@@ -190,179 +190,463 @@ def _asset_file(root: Path, asset_id: str, entry: dict) -> Path:
     return path
 
 
+def _normalize_token(value: str) -> str:
+    value = unicodedata.normalize("NFC", str(value)).lower()
+    return "".join(
+        char
+        for char in value
+        if not unicodedata.category(char).startswith(("P", "S")) and not char.isspace()
+    )
+
+
+def _normalize_words(value: str) -> str:
+    value = unicodedata.normalize("NFC", str(value)).lower()
+    chars = []
+    for char in value:
+        category = unicodedata.category(char)
+        chars.append(" " if char.isspace() or category.startswith(("P", "S")) else char)
+    return " ".join("".join(chars).split())
+
+
+def _design_token(root: Path) -> tuple[dict, str]:
+    import hashlib
+
+    path = root / "design.md"
+    try:
+        markdown = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read design.md: {exc}") from exc
+
+    fence = chr(96) * 3
+    match = re.search(
+        r"<!-- STYLE_TOKEN_BEGIN -->\s*"
+        + re.escape(fence)
+        + r"json\s*([\s\S]*?)\s*"
+        + re.escape(fence)
+        + r"\s*<!-- STYLE_TOKEN_END -->",
+        markdown,
+    )
+    if not match:
+        raise PipelineError("design.md is missing the marked STYLE_TOKEN JSON block.")
+    try:
+        token = json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        raise PipelineError(f"design.md STYLE_TOKEN JSON is invalid: {exc}") from exc
+
+    required = {
+        "id",
+        "version",
+        "palette_roles",
+        "character_construction",
+        "shape_language",
+        "caption_emphasis",
+        "safe_zone",
+        "motion_grammar",
+    }
+    if not isinstance(token, dict) or not required.issubset(token):
+        raise PipelineError("design.md STYLE_TOKEN is missing required v2 fields.")
+
+    canonical = json.dumps(token, ensure_ascii=False, separators=(",", ":"))
+    return token, hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def validate_package(package_root: Path) -> dict:
-    """Validate the video handoff, renderer scaffold, narration, and SVG assets."""
+    """Validate one Zodiac Video Pipeline v2.0 creative package."""
     root = Path(package_root).resolve()
     production = _load_json(root / "production.json", "production.json")
-    video = production.get("video")
-    if not isinstance(video, dict) or any(
-        not isinstance(video.get(key), int)
-        or isinstance(video[key], bool)
-        or video[key] <= 0
-        for key in ("width", "height", "fps")
-    ):
-        raise PipelineError("production.json video must have positive integer width, height, and fps.")
+    if production.get("version") != "2.0":
+        raise PipelineError("production.json must use Zodiac production contract version 2.0.")
 
-    scenes = production.get("scenes")
+    video = production.get("video")
+    if (
+        not isinstance(video, dict)
+        or video.get("width") != 1080
+        or video.get("height") != 1920
+        or not isinstance(video.get("fps"), int)
+        or isinstance(video.get("fps"), bool)
+        or video["fps"] <= 0
+    ):
+        raise PipelineError("production.json video must be 1080x1920 with a positive integer fps.")
+
+    visual = production.get("visual_system")
+    caption_style = production.get("caption_style")
     assets = production.get("assets")
     primitives = production.get("primitives")
-    if not isinstance(scenes, list) or not scenes:
-        raise PipelineError("production.json must contain at least one scene.")
+    scenes = production.get("scenes")
+    if not isinstance(visual, dict) or not isinstance(caption_style, dict):
+        raise PipelineError("production.json needs visual_system and caption_style.")
     if not isinstance(assets, dict) or not isinstance(primitives, dict):
         raise PipelineError("production.json must contain assets and primitives registries.")
+    if not isinstance(scenes, list) or not scenes:
+        raise PipelineError("production.json must contain at least one scene.")
 
-    scene_ids: list[str] = []
-    voices: list[str] = []
-    for scene in scenes:
-        if not isinstance(scene, dict) or not isinstance(scene.get("id"), str) or not scene["id"]:
-            raise PipelineError("every production scene needs a non-empty id.")
-        if scene["id"] in scene_ids:
-            raise PipelineError(f"duplicate scene id: {scene['id']}")
-        scene_ids.append(scene["id"])
-        voice = scene.get("voice")
-        if not isinstance(voice, str) or not voice.strip():
-            raise PipelineError(f"scene {scene['id']} has no voice text.")
-        voices.append(voice)
+    token, source_hash = _design_token(root)
+    compiled = visual.get("style_token")
+    if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
+        raise PipelineError("production.json style_token must match design.md.")
+    if compiled.get("source_hash") != source_hash:
+        raise PipelineError("production.json style token is stale; run npm run compile:style in renderer/.")
+    if (
+        caption_style.get("font_family") != "Be Vietnam Pro"
+        or caption_style.get("font_weight") != 500
+        or not isinstance(caption_style.get("font_size_px"), int)
+        or not isinstance(caption_style.get("min_font_size_px"), int)
+    ):
+        raise PipelineError(
+            "caption_style must use local Be Vietnam Pro weight 500 with a declared size range."
+        )
 
-    narration_path = root / "narration.txt"
-    try:
-        narration = narration_path.read_text(encoding="utf-8").replace("\r\n", "\n").rstrip("\n")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise PipelineError(f"cannot read narration.txt: {exc}") from exc
-    if narration not in {"\n".join(voices), "\n\n".join(voices)}:
-        raise PipelineError("narration.txt must exactly match ordered scene.voice values.")
-
-    readme = root / "README.md"
-    try:
-        readme_text = readme.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise PipelineError(f"cannot read README.md: {exc}") from exc
-    if "PLUGIN SIDE COMPLETE" not in readme_text:
-        raise PipelineError("README.md must identify the package as PLUGIN SIDE COMPLETE.")
-
-    renderer_root = root / "renderer"
-    renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
-    if renderer.get("name") != "zodiac-remotion-renderer":
-        raise PipelineError("renderer/package.json is not the Zodiac Remotion renderer scaffold.")
-    if renderer.get("dependencies") != EXPECTED_DEPENDENCIES:
-        raise PipelineError("renderer/package.json Remotion/React versions do not match plugin 0.9.1.")
-    dev_dependencies = renderer.get("devDependencies")
-    expected_dev_dependencies = dict(EXPECTED_DEV_DEPENDENCIES)
-    if isinstance(dev_dependencies, dict) and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS:
-        expected_dev_dependencies["typescript"] = dev_dependencies["typescript"]
-    if dev_dependencies != expected_dev_dependencies:
-        raise PipelineError("renderer/package.json TypeScript versions do not match plugin 0.9.1.")
-    if renderer.get("scripts") != EXPECTED_SCRIPTS:
-        raise PipelineError("renderer/package.json scripts do not match plugin 0.9.1.")
-    for required in ("src/index.ts", "src/Root.tsx", "scripts/render.mjs", "scripts/generate-sfx.mjs"):
-        if not (renderer_root / required).is_file():
-            raise PipelineError(f"renderer scaffold is incomplete: missing renderer/{required}.")
-
+    style_id = compiled.get("id")
     for asset_id, entry in assets.items():
         if not isinstance(entry, dict):
             raise PipelineError(f"asset registry entry {asset_id!r} must be an object.")
         _asset_file(root, asset_id, entry)
+        if entry.get("style_id") != style_id:
+            raise PipelineError(
+                f"asset {asset_id!r} style_id does not match the compiled design token."
+            )
+
+    voices = []
+    scene_ids: set[str] = set()
+    event_ids: set[str] = set()
+    motion_presets = visual.get("motion_presets", {})
+    transition_presets = visual.get("transition_presets", {})
+    sfx_profiles = visual.get("sfx_profiles", {})
 
     for scene in scenes:
-        for actor in scene.get("actors", []):
-            asset_id = actor.get("asset") if isinstance(actor, dict) else None
-            if asset_id not in assets:
-                raise PipelineError(f"scene {scene['id']} refers to undeclared actor asset {asset_id!r}.")
-        for obj in scene.get("objects", []):
-            if not isinstance(obj, dict) or (bool(obj.get("asset")) == bool(obj.get("primitive"))):
-                raise PipelineError(f"scene {scene['id']} objects must reference exactly one asset or primitive.")
-            if obj.get("asset"):
-                asset_id = obj["asset"]
-                if asset_id not in assets:
-                    raise PipelineError(f"scene {scene['id']} refers to undeclared object asset {asset_id!r}.")
-                _asset_file(root, asset_id, assets[asset_id])
-            elif obj.get("primitive") not in primitives:
-                raise PipelineError(f"scene {scene['id']} refers to undeclared primitive {obj.get('primitive')!r}.")
+        if not isinstance(scene, dict):
+            raise PipelineError("every production scene must be an object.")
+        scene_id = scene.get("id")
+        if not isinstance(scene_id, str) or not scene_id or scene_id in scene_ids:
+            raise PipelineError(f"invalid or duplicate scene id: {scene_id!r}")
+        scene_ids.add(scene_id)
+
+        voice = scene.get("voice")
+        if not isinstance(voice, str) or not voice.strip():
+            raise PipelineError(f"scene {scene_id} has no voice text.")
+        voices.append(voice)
+
+        if scene.get("timing") != {"mode": "from_voice"}:
+            raise PipelineError(f"scene {scene_id} must use timing.mode=from_voice.")
+
+        entities = scene.get("entities")
+        events = scene.get("events")
+        if not isinstance(entities, list) or not isinstance(events, list) or not events:
+            raise PipelineError(
+                f"scene {scene_id} needs entities and at least one visual event."
+            )
+
+        entity_map = {}
+        for entity in entities:
+            if not isinstance(entity, dict) or not isinstance(entity.get("id"), str):
+                raise PipelineError(f"scene {scene_id} contains an invalid entity.")
+            entity_id = entity["id"]
+            if entity_id in entity_map:
+                raise PipelineError(f"scene {scene_id} has duplicate entity {entity_id}.")
+
+            states = entity.get("states")
+            initial_state = entity.get("initial_state")
+            if not isinstance(states, dict) or initial_state not in states:
+                raise PipelineError(f"entity {entity_id} has no valid initial_state.")
+
+            for state_id, state in states.items():
+                if not isinstance(state, dict):
+                    raise PipelineError(f"state {entity_id}.{state_id} must be an object.")
+                has_asset = bool(state.get("asset"))
+                has_primitive = bool(state.get("primitive"))
+                if has_asset == has_primitive:
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} must reference exactly one asset or primitive."
+                    )
+
+                if has_asset:
+                    if state["asset"] not in assets:
+                        raise PipelineError(
+                            f"state {entity_id}.{state_id} refers to missing asset {state['asset']!r}."
+                        )
+                elif state["primitive"] not in primitives:
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} refers to missing primitive {state['primitive']!r}."
+                    )
+
+                transform = state.get("transform")
+                if (
+                    not isinstance(transform, dict)
+                    or not all(
+                        isinstance(transform.get(key), (int, float))
+                        for key in ("x", "y", "width", "height")
+                    )
+                    or transform["width"] <= 0
+                    or transform["height"] <= 0
+                    or not isinstance(state.get("layer"), (int, float))
+                    or not isinstance(state.get("visible"), bool)
+                ):
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} has an invalid transform/layer/visible value."
+                    )
+            entity_map[entity_id] = entity
+
+        current_states = {
+            entity_id: entity["initial_state"]
+            for entity_id, entity in entity_map.items()
+        }
+        meaningful_change = False
+
+        for event in events:
+            if not isinstance(event, dict):
+                raise PipelineError(f"scene {scene_id} contains an invalid event.")
+
+            event_id = event.get("id")
+            if not isinstance(event_id, str) or not event_id or event_id in event_ids:
+                raise PipelineError(
+                    f"event IDs must be unique and non-empty: {event_id!r}"
+                )
+            event_ids.add(event_id)
+
+            target = event.get("target")
+            trigger = event.get("trigger")
+            motion = event.get("motion")
+            if (
+                not isinstance(trigger, dict)
+                or trigger.get("source") not in {"scene_start", "voice_anchor"}
+                or (
+                    trigger.get("source") == "voice_anchor"
+                    and not str(trigger.get("text", "")).strip()
+                )
+            ):
+                raise PipelineError(f"event {event_id} has an invalid trigger.")
+
+            if (
+                not isinstance(motion, dict)
+                or motion.get("preset") not in motion_presets
+                or not isinstance(motion.get("duration_frames"), int)
+                or motion["duration_frames"] < 1
+            ):
+                raise PipelineError(
+                    f"event {event_id} has an invalid motion preset/duration."
+                )
+
+            if event.get("sfx") and event["sfx"] not in sfx_profiles:
+                raise PipelineError(
+                    f"event {event_id} refers to missing SFX profile {event['sfx']!r}."
+                )
+
+            if target == "camera":
+                continue
+            if target not in entity_map:
+                raise PipelineError(
+                    f"event {event_id} targets missing entity {target!r}."
+                )
+            if event.get("state_before") != current_states[target]:
+                raise PipelineError(
+                    f"event {event_id} state_before does not follow prior state."
+                )
+
+            after = event.get("state_after")
+            if after not in entity_map[target]["states"]:
+                raise PipelineError(f"event {event_id} state_after is not declared.")
+            if after != current_states[target]:
+                meaningful_change = True
+            current_states[target] = after
+
+        if not meaningful_change:
+            raise PipelineError(
+                f"scene {scene_id} needs a non-camera story-changing state event."
+            )
+
+        transition = scene.get("transition")
+        if (
+            not isinstance(transition, dict)
+            or transition.get("type") not in transition_presets
+            or not isinstance(transition.get("duration_frames"), int)
+            or transition["duration_frames"] < 0
+        ):
+            raise PipelineError(f"scene {scene_id} has an invalid transition.")
+
+        captions = scene.get("captions")
+        if (
+            not isinstance(captions, dict)
+            or captions.get("source") != "voice"
+            or not all(
+                isinstance(captions.get(key), int)
+                for key in ("page_target_words", "max_words", "max_lines")
+            )
+            or not 3 <= captions["page_target_words"] <= 7
+            or not 3 <= captions["max_words"] <= 7
+            or not 1 <= captions["max_lines"] <= 2
+        ):
+            raise PipelineError(f"scene {scene_id} has an invalid v2 caption policy.")
+
+    narration_path = root / "narration.txt"
+    try:
+        narration = narration_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read narration.txt: {exc}") from exc
+
+    if narration.endswith("\n"):
+        narration = narration[:-1]
+    if narration != "\n".join(voices):
+        raise PipelineError(
+            "narration.txt must exactly match ordered scene.voice lines."
+        )
+
+    try:
+        readme_text = (root / "README.md").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read README.md: {exc}") from exc
+    if "PLUGIN SIDE COMPLETE" not in readme_text:
+        raise PipelineError(
+            "README.md must identify the package as PLUGIN SIDE COMPLETE."
+        )
+
+    renderer_root = root / "renderer"
+    renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
+    if renderer.get("name") != "zodiac-remotion-renderer":
+        raise PipelineError(
+            "renderer/package.json is not the Zodiac Remotion renderer scaffold."
+        )
+    if renderer.get("dependencies") != EXPECTED_DEPENDENCIES:
+        raise PipelineError(
+            "renderer dependencies do not match the current Zodiac v2 renderer contract."
+        )
+
+    dev_dependencies = renderer.get("devDependencies")
+    expected_dev = dict(EXPECTED_DEV_DEPENDENCIES)
+    if (
+        isinstance(dev_dependencies, dict)
+        and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS
+    ):
+        expected_dev["typescript"] = dev_dependencies["typescript"]
+    if dev_dependencies != expected_dev:
+        raise PipelineError(
+            "renderer development dependencies do not match the current Zodiac v2 contract."
+        )
+
+    if renderer.get("scripts") != EXPECTED_SCRIPTS:
+        raise PipelineError(
+            "renderer scripts do not match the current Zodiac v2 renderer contract."
+        )
+
+    required_renderer = (
+        "src/index.ts",
+        "src/Root.tsx",
+        "src/ZodiacComposition.tsx",
+        "src/PrimitiveSvg.tsx",
+        "src/types.ts",
+        "src/runtime-contract.mjs",
+        "scripts/render.mjs",
+        "scripts/generate-sfx.mjs",
+        "scripts/style-token.mjs",
+        "scripts/compile-style-token.mjs",
+        "schemas/production.schema.json",
+        "tests/pipeline-contract.test.mjs",
+    )
+    for required in required_renderer:
+        if not (renderer_root / required).is_file():
+            raise PipelineError(
+                f"renderer scaffold is incomplete: missing renderer/{required}."
+            )
     return production
 
 
-def _normalize_words(text: str) -> str:
-    return " ".join(text.split())
-
-
 def validate_timing(package_root: Path, timing: dict | Path) -> dict:
-    """Check measured timing IDs, continuous frame ranges, captions, and voice coverage."""
+    """Validate scene frames and one measured caption token per spoken word."""
     root = Path(package_root).resolve()
     production = validate_package(root)
     if isinstance(timing, Path):
         timing = _load_json(timing, "timing.json")
+
     if timing.get("fps") != production["video"]["fps"]:
         raise PipelineError("timing.json fps must match production.json.")
+
     rows = timing.get("scenes")
     scenes = production["scenes"]
     if not isinstance(rows, list) or len(rows) != len(scenes):
-        raise PipelineError("timing.json must contain one ordered row per production scene.")
+        raise PipelineError(
+            "timing.json must contain one ordered row per production scene."
+        )
 
     cursor = 0
     fps = timing["fps"]
     for scene, row in zip(scenes, rows):
         if not isinstance(row, dict) or row.get("scene_id") != scene["id"]:
-            raise PipelineError(f"timing.json scene order/id mismatch at {scene['id']}.")
-        start = row.get("start_frame")
-        duration = row.get("duration_frames")
+            raise PipelineError(
+                f"timing.json scene order/id mismatch at {scene['id']}."
+            )
+
+        start_frame = row.get("start_frame")
+        duration_frames = row.get("duration_frames")
         if (
-            not isinstance(start, int)
-            or isinstance(start, bool)
-            or start < 0
-            or not isinstance(duration, int)
-            or isinstance(duration, bool)
-            or duration < 1
+            not isinstance(start_frame, int)
+            or isinstance(start_frame, bool)
+            or start_frame < 0
+            or not isinstance(duration_frames, int)
+            or isinstance(duration_frames, bool)
+            or duration_frames < 1
         ):
-            raise PipelineError(f"scene {scene['id']} needs non-negative start_frame and positive duration_frames.")
-        if start != cursor:
-            raise PipelineError("scene frame ranges must be continuous and ordered from measured voice timing.")
-        cursor = start + duration
+            raise PipelineError(
+                f"scene {scene['id']} needs non-negative start_frame and positive duration_frames."
+            )
+
+        if start_frame != cursor:
+            raise PipelineError(
+                "scene frame ranges must be continuous and ordered from measured voice timing."
+            )
+        cursor = start_frame + duration_frames
+
         captions = row.get("captions")
         if not isinstance(captions, list) or not captions:
-            raise PipelineError(f"measured caption cues are required for {scene['id']}.")
-        texts = []
-        prior_start = -1
+            raise PipelineError(
+                f"word-level measured caption tokens are required for {scene['id']}."
+            )
+
+        prior_end = -1.0
+        caption_text = []
         for cue in captions:
             if not isinstance(cue, dict):
-                raise PipelineError(f"invalid caption cue in {scene['id']}.")
-            text = cue.get("text")
+                raise PipelineError(f"invalid caption token in {scene['id']}.")
+            text_value = cue.get("text")
             begin = cue.get("startMs")
-            end = cue.get("endMs")
-            timestamp = cue.get("timestampMs")
-            confidence = cue.get("confidence")
+            end_value = cue.get("endMs")
             if (
-                not isinstance(text, str)
-                or not text.strip()
+                not isinstance(text_value, str)
+                or not text_value.strip()
+                or re.search(r"\s", text_value.strip())
                 or not isinstance(begin, (int, float))
                 or isinstance(begin, bool)
                 or not math.isfinite(begin)
-                or not isinstance(end, (int, float))
-                or isinstance(end, bool)
-                or not math.isfinite(end)
-                or end <= begin
-                or (
-                    timestamp is not None
-                    and (not isinstance(timestamp, (int, float)) or isinstance(timestamp, bool) or not math.isfinite(timestamp))
-                )
-                or (
-                    confidence is not None
-                    and (not isinstance(confidence, (int, float)) or isinstance(confidence, bool) or not math.isfinite(confidence))
-                )
-                or "timestampMs" not in cue
-                or "confidence" not in cue
+                or not isinstance(end_value, (int, float))
+                or isinstance(end_value, bool)
+                or not math.isfinite(end_value)
+                or end_value <= begin
             ):
-                raise PipelineError(f"invalid caption cue in {scene['id']}.")
-            if begin < prior_start:
-                raise PipelineError(f"caption cues are not time ordered in {scene['id']}.")
-            if begin < (start * 1000 / fps) - 100 or end > (cursor * 1000 / fps) + 100:
-                raise PipelineError(f"caption cue falls outside measured scene timing in {scene['id']}.")
-            prior_start = begin
-            texts.append(text)
-        if _normalize_words(" ".join(texts)) != _normalize_words(scene["voice"]):
-            raise PipelineError(f"caption text does not match scene.voice in {scene['id']}.")
+                raise PipelineError(
+                    f"invalid word-level caption token in {scene['id']}."
+                )
+
+            if begin < prior_end:
+                raise PipelineError(
+                    f"caption word timings overlap or are out of order in {scene['id']}."
+                )
+            if (
+                begin < (start_frame * 1000 / fps) - 100
+                or end_value > (cursor * 1000 / fps) + 100
+            ):
+                raise PipelineError(
+                    f"caption word falls outside measured scene timing in {scene['id']}."
+                )
+            prior_end = end_value
+            caption_text.append(text_value)
+
+        if _normalize_words(" ".join(caption_text)) != _normalize_words(scene["voice"]):
+            raise PipelineError(
+                f"caption word tokens do not exactly cover scene.voice in {scene['id']}."
+            )
 
     if timing.get("total_duration_frames") != cursor:
-        raise PipelineError("total_duration_frames must equal the final measured scene boundary.")
+        raise PipelineError(
+            "total_duration_frames must equal the final measured scene boundary."
+        )
     return timing
 
 
