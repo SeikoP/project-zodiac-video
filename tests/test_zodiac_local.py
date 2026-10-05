@@ -3,12 +3,15 @@ import stat
 import tempfile
 import unittest
 import zipfile
+import wave
 from pathlib import Path
 
 from tools.zodiac_local import (
     PipelineError,
     import_package,
     safe_extract_zip,
+    build_timing_from_durations,
+    concatenate_wavs,
     validate_package,
     validate_timing,
 )
@@ -140,8 +143,46 @@ class SafeExtractionTests(unittest.TestCase):
             with self.assertRaisesRegex(PipelineError, "assets/props/note.svg"):
                 import_package(archive, root / "jobs")
 
+    def test_accepts_available_typescript_patch_version(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            files = package_files()
+            renderer_package = json.loads(files["renderer/package.json"])
+            renderer_package["devDependencies"]["typescript"] = "5.8.2"
+            files["renderer/package.json"] = json.dumps(renderer_package)
+            archive = root / "typescript-patch.zip"
+            write_zip(archive, files)
+            imported = import_package(archive, root / "jobs")
+            self.assertEqual(validate_package(imported)["video"]["fps"], 30)
+
 
 class RuntimeTimingTests(unittest.TestCase):
+    def test_builds_continuous_timing_from_measured_scene_durations(self):
+        production = json.loads(package_files()["production.json"])
+        timing = build_timing_from_durations(production, {"S01": 0.5})
+        self.assertEqual(timing["total_duration_frames"], 15)
+        self.assertEqual(timing["scenes"][0]["start_frame"], 0)
+        self.assertEqual(timing["scenes"][0]["duration_frames"], 15)
+        self.assertEqual(timing["scenes"][0]["captions"][0]["text"], "Xin chào mọi người.")
+
+    def test_concatenates_pcm_wavs_without_reencoding(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            inputs = []
+            for index, frames in enumerate((3, 5)):
+                path = root / f"scene-{index}.wav"
+                with wave.open(str(path), "wb") as wav:
+                    wav.setnchannels(1)
+                    wav.setsampwidth(2)
+                    wav.setframerate(10)
+                    wav.writeframes((index + 1).to_bytes(2, "little") * frames)
+                inputs.append(path)
+            output = root / "voice.wav"
+            concatenate_wavs(inputs, output)
+            with wave.open(str(output), "rb") as wav:
+                self.assertEqual(wav.getnframes(), 8)
+                self.assertEqual(wav.readframes(8), b"\x01\x00" * 3 + b"\x02\x00" * 5)
+
     def test_accepts_measured_timing_covering_scene_voice(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

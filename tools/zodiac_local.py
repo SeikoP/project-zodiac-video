@@ -46,6 +46,9 @@ EXPECTED_SCRIPTS = {
     "render": "node scripts/render.mjs",
     "typecheck": "tsc --noEmit",
 }
+SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
+DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
+DEFAULT_TTS_VOICE = "Hải Đăng"
 
 
 def _safe_relative_path(raw_name: str) -> PurePosixPath:
@@ -218,7 +221,7 @@ def validate_package(package_root: Path) -> dict:
         narration = narration_path.read_text(encoding="utf-8").replace("\r\n", "\n").rstrip("\n")
     except (OSError, UnicodeDecodeError) as exc:
         raise PipelineError(f"cannot read narration.txt: {exc}") from exc
-    if narration != "\n".join(voices):
+    if narration not in {"\n".join(voices), "\n\n".join(voices)}:
         raise PipelineError("narration.txt must exactly match ordered scene.voice values.")
 
     readme = root / "README.md"
@@ -235,7 +238,11 @@ def validate_package(package_root: Path) -> dict:
         raise PipelineError("renderer/package.json is not the Zodiac Remotion renderer scaffold.")
     if renderer.get("dependencies") != EXPECTED_DEPENDENCIES:
         raise PipelineError("renderer/package.json Remotion/React versions do not match plugin 0.9.1.")
-    if renderer.get("devDependencies") != EXPECTED_DEV_DEPENDENCIES:
+    dev_dependencies = renderer.get("devDependencies")
+    expected_dev_dependencies = dict(EXPECTED_DEV_DEPENDENCIES)
+    if isinstance(dev_dependencies, dict) and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS:
+        expected_dev_dependencies["typescript"] = dev_dependencies["typescript"]
+    if dev_dependencies != expected_dev_dependencies:
         raise PipelineError("renderer/package.json TypeScript versions do not match plugin 0.9.1.")
     if renderer.get("scripts") != EXPECTED_SCRIPTS:
         raise PipelineError("renderer/package.json scripts do not match plugin 0.9.1.")
@@ -363,6 +370,161 @@ def validate_voice(path: Path) -> None:
         raise PipelineError(f"voice.wav is not a readable PCM WAV file: {exc}") from exc
 
 
+def concatenate_wavs(inputs: list[Path], output: Path) -> None:
+    """Concatenate PCM WAV files without re-encoding them."""
+    if not inputs:
+        raise PipelineError("no scene WAV files were generated.")
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    params = None
+    with wave.open(str(output), "wb") as destination:
+        for source_path in inputs:
+            try:
+                with wave.open(str(source_path), "rb") as source:
+                    if source.getcomptype() != "NONE":
+                        raise PipelineError(f"scene WAV is compressed: {source_path}")
+                    current = source.getparams()
+                    if params is None:
+                        params = current
+                        destination.setnchannels(current.nchannels)
+                        destination.setsampwidth(current.sampwidth)
+                        destination.setframerate(current.framerate)
+                        destination.setcomptype("NONE", "not compressed")
+                    elif current[:3] != params[:3]:
+                        raise PipelineError("scene WAV files do not share one PCM format.")
+                    destination.writeframes(source.readframes(source.getnframes()))
+            except (wave.Error, EOFError, OSError) as exc:
+                raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
+
+
+def build_timing_from_durations(production: dict, durations: dict[str, float]) -> dict:
+    """Build the renderer timing contract from measured scene seconds."""
+    fps = production["video"]["fps"]
+    rows = []
+    elapsed = 0.0
+    for scene in production["scenes"]:
+        scene_id = scene["id"]
+        seconds = durations.get(scene_id)
+        if not isinstance(seconds, (int, float)) or seconds <= 0:
+            raise PipelineError(f"missing measured duration for scene {scene_id}.")
+        start = round(elapsed * fps)
+        elapsed += float(seconds)
+        end = max(start + 1, round(elapsed * fps))
+        rows.append(
+            {
+                "scene_id": scene_id,
+                "start_frame": start,
+                "duration_frames": end - start,
+                "captions": [
+                    {
+                        "text": scene["voice"],
+                        "startMs": start * 1000 / fps,
+                        "endMs": end * 1000 / fps,
+                        "timestampMs": None,
+                        "confidence": None,
+                    }
+                ],
+            }
+        )
+    return {"fps": fps, "total_duration_frames": rows[-1]["start_frame"] + rows[-1]["duration_frames"], "scenes": rows}
+
+
+def _tts_python(tts_root: Path, requested: Path | None) -> Path:
+    candidate = Path(requested).expanduser() if requested else Path(tts_root) / ".venv" / "Scripts" / "python.exe"
+    if not candidate.is_file():
+        raise PipelineError(f"VieNeu Python environment not found: {candidate}")
+    return candidate.resolve()
+
+
+def synthesize_voice(
+    package_root: Path,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+) -> dict:
+    """Generate one scene WAV per scene, then attach voice and measured timing."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    tts_root = Path(tts_root).expanduser().resolve()
+    python = _tts_python(tts_root, tts_python)
+    runtime = root / ".runtime"
+    scene_dir = runtime / "tts-scenes"
+    scene_dir.mkdir(parents=True, exist_ok=True)
+    manifest = runtime / "tts-manifest.json"
+    rows = [
+        {"scene_id": scene["id"], "text": scene["voice"], "output": str(scene_dir / f"{scene['id']}.wav")}
+        for scene in production["scenes"]
+    ]
+    manifest.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    script = (
+        "import json, shutil, sys, urllib.request\n"
+        "from pathlib import Path\n"
+        "from gradio_client import Client\n"
+        "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
+        "url, voice = sys.argv[2].rstrip('/'), sys.argv[3]\n"
+        "config = json.load(urllib.request.urlopen(url + '/config', timeout=10))\n"
+        "components = {item['id']: item for item in config.get('components', [])}\n"
+        "deps = [d for d in config.get('dependencies', []) if d.get('api_name') and len(d.get('inputs', [])) == 12 and len(d.get('outputs', [])) == 3]\n"
+        "if not deps: raise RuntimeError('Không tìm thấy API tạo giọng đơn của VieNeu Gradio.')\n"
+        "dep = next((d for d in deps if d['api_name'] == 'wrapper'), deps[0])\n"
+        "client = Client(url, verbose=False)\n"
+        "for row in rows:\n"
+        "    print('VieNeu API:', row['scene_id'], flush=True)\n"
+        "    args = [components.get(i, {}).get('props', {}).get('value') for i in dep['inputs'] if components.get(i, {}).get('type') != 'state']\n"
+        "    args[0], args[1] = row['text'], voice\n"
+        "    result = client.predict(*args, api_name='/' + dep['api_name'])\n"
+        "    if isinstance(result, (tuple, list)) and result[0] is None and 'Vui lòng tải model trước' in str(result[1]):\n"
+        "        print('VieNeu: đang nạp model vào server…', flush=True)\n"
+        "        loaded = client.predict('VieNeu-TTS-v3-Turbo', 'VieNeu-Codec', 'Auto', True, '', 'VieNeu-TTS-v3-Nano (preview)', '', api_name='/load_model')\n"
+        "        if not str(loaded[0]).startswith('✅ Model đã tải thành công'): raise RuntimeError('VieNeu không nạp được model: ' + str(loaded[0]))\n"
+        "        result = client.predict(*args, api_name='/' + dep['api_name'])\n"
+        "    audio = result[0] if isinstance(result, (tuple, list)) else result\n"
+        "    if isinstance(result, (tuple, list)) and result[0] is None: raise RuntimeError(str(result[1]))\n"
+        "    if isinstance(audio, dict): audio = audio.get('path') or audio.get('name')\n"
+        "    if not audio or not Path(str(audio)).is_file(): raise RuntimeError('VieNeu API không trả về file WAV: ' + str(audio))\n"
+        "    shutil.copy2(audio, row['output'])\n"
+    )
+    if vieneu_url:
+        print(f"Generating voice through VieNeu Gradio: {vieneu_url}", flush=True)
+        run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), vieneu_url, voice]
+    else:
+        script = (
+            "import json, sys\n"
+            "from pathlib import Path\n"
+            "from vieneu import Vieneu\n"
+            "from apps.user_voices import load_user_voices\n"
+            "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
+            "tts = Vieneu(mode=sys.argv[2])\n"
+            "load_user_voices(tts)\n"
+            "if sys.argv[3] not in tts._preset_voices: raise ValueError('VieNeu voice not found: ' + sys.argv[3])\n"
+            "for row in rows:\n"
+            "    print('VieNeu:', row['scene_id'], flush=True)\n"
+            "    tts.save(tts.infer(row['text'], voice=sys.argv[3]), row['output'])\n"
+        )
+        print("Generating Vietnamese voice with VieNeu (standalone)...", flush=True)
+        run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), mode, voice]
+    try:
+        subprocess.run(run_args, cwd=tts_root, check=True)
+    except FileNotFoundError as exc:
+        raise PipelineError(f"cannot start VieNeu Python: {exc}") from exc
+    except subprocess.CalledProcessError as exc:
+        raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.") from exc
+
+    scene_wavs = [scene_dir / f"{scene['id']}.wav" for scene in production["scenes"]]
+    durations = {}
+    for scene, path in zip(production["scenes"], scene_wavs):
+        validate_voice(path)
+        with wave.open(str(path), "rb") as wav:
+            durations[scene["id"]] = wav.getnframes() / wav.getframerate()
+    concatenate_wavs(scene_wavs, root / "voice.wav")
+    timing = build_timing_from_durations(production, durations)
+    validate_timing(root, timing)
+    (runtime / "timing.json").write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return timing
+
+
 def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
     """Safely import one RENDER_READY video package and return its job directory."""
     archive_path = Path(archive_path).expanduser().resolve()
@@ -417,7 +579,93 @@ def _run_npm(args: list[str], cwd: Path) -> None:
         subprocess.run(["npm", *args], cwd=cwd, check=True)
 
 
-def run_renderer(package_root: Path, action: str) -> None:
+def _install_renderer(renderer: Path) -> None:
+    try:
+        _run_npm(["install", "--no-audit", "--no-fund"], renderer)
+    except subprocess.CalledProcessError:
+        package_path = renderer / "package.json"
+        package = _load_json(package_path, "renderer/package.json")
+        dev_dependencies = package.get("devDependencies", {})
+        if dev_dependencies.get("typescript") != "5.8.0":
+            raise
+        probe = subprocess.run(
+            ["npm.cmd" if os.name == "nt" else "npm", "view", "typescript@5.8", "version", "--json"],
+            cwd=renderer,
+            capture_output=True,
+            text=True,
+        )
+        try:
+            versions = json.loads(probe.stdout) if probe.returncode == 0 else []
+        except json.JSONDecodeError:
+            versions = []
+        if isinstance(versions, str):
+            versions = [versions]
+        fallback = next((version for version in reversed(versions) if version in SUPPORTED_TYPESCRIPT_VERSIONS), "")
+        if fallback not in SUPPORTED_TYPESCRIPT_VERSIONS or fallback == "5.8.0":
+            raise
+        dev_dependencies["typescript"] = fallback
+        package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
+        print(f"typescript@5.8.0 unavailable; using available {fallback}.", flush=True)
+        _run_npm(["install", "--no-audit", "--no-fund"], renderer)
+
+
+def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
+    """Keep the shipped JSON cast valid on current TypeScript versions."""
+    for relative in ("src/Root.tsx", "src/ZodiacComposition.tsx"):
+        path = renderer / relative
+        try:
+            source = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise PipelineError(f"cannot read renderer/{relative}: {exc}") from exc
+        patched = source.replace("as Production", "as unknown as Production")
+        if patched != source:
+            path.write_text(patched, encoding="utf-8")
+
+
+def configure_background_music(package_root: Path, music: Path | None, volume: float = 0.12) -> None:
+    root = Path(package_root).resolve()
+    timing_path = root / ".runtime" / "timing.json"
+    timing = _load_json(timing_path, "timing.json")
+    if not 0 <= volume <= 1:
+        raise PipelineError("background music volume must be between 0 and 1.")
+    composition = root / "renderer" / "src" / "ZodiacComposition.tsx"
+    types = root / "renderer" / "src" / "types.ts"
+    source = composition.read_text(encoding="utf-8")
+    audio = re.search(r'(?m)^(?P<indent>[ \t]*)<Audio\s+src=\{staticFile\("voice\.wav"\)\}\s*/>', source)
+    if not audio:
+        raise PipelineError("renderer does not contain the expected voice audio track.")
+    if "timing.background_music &&" not in source:
+        indent = audio.group("indent")
+        music_line = indent + "{timing.background_music && <Audio src={staticFile(timing.background_music)} volume={timing.background_music_volume ?? 0.12} loop />}"
+        source = source[:audio.end()] + "\n" + music_line + source[audio.end():]
+        composition.write_text(source, encoding="utf-8")
+    type_source = types.read_text(encoding="utf-8")
+    if not re.search(r"scenes\s*:\s*RuntimeSceneTiming\[\]", type_source):
+        raise PipelineError("renderer RuntimeTiming type is unsupported.")
+    if "background_music?: string;" not in type_source:
+        type_source = re.sub(r"(scenes\s*:\s*RuntimeSceneTiming\[\]);?", r"\1; background_music?: string; background_music_volume?: number", type_source, count=1)
+        types.write_text(type_source, encoding="utf-8")
+
+    if music is None:
+        timing.pop("background_music", None)
+        timing.pop("background_music_volume", None)
+    else:
+        music = Path(music).expanduser().resolve()
+        if not music.is_file():
+            raise PipelineError(f"background music file does not exist: {music}")
+        extension = music.suffix.lower()
+        if extension not in {".mp3", ".wav", ".m4a", ".aac", ".ogg"}:
+            raise PipelineError(f"unsupported background music format: {extension}")
+        destination = root / ".runtime" / f"background-music{extension}"
+        shutil.copy2(music, destination)
+        timing["background_music"] = f".runtime/{destination.name}"
+        timing["background_music_volume"] = volume
+    timing_path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def run_renderer(package_root: Path, action: str, music: Path | None = None, music_volume: float = 0.12, update_music: bool = False) -> None:
+    if update_music:
+        configure_background_music(package_root, music, music_volume)
     validate_runtime(package_root)
     renderer = Path(package_root).resolve() / "renderer"
     if shutil.which("node") is None or (shutil.which("npm") is None and shutil.which("npm.cmd") is None):
@@ -427,13 +675,76 @@ def run_renderer(package_root: Path, action: str) -> None:
     tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
     if not remotion_bin.is_file() or not tsc_bin.is_file():
         print("Installing the pinned Remotion dependencies…", flush=True)
-        _run_npm(["install", "--no-audit", "--no-fund"], renderer)
+        _install_renderer(renderer)
+    _patch_renderer_typescript_compatibility(renderer)
     print("Checking renderer TypeScript…", flush=True)
     _run_npm(["run", "typecheck"], renderer)
     if action == "preview":
         _run_npm(["run", "studio", "--", "--props=../.runtime/timing.json"], renderer)
     else:
         _run_npm(["run", "render"], renderer)
+
+
+def _choose(prompt: str, values: list[Path]) -> Path:
+    if not values:
+        raise PipelineError(f"no choices available for {prompt}.")
+    print(prompt)
+    for index, value in enumerate(values, 1):
+        print(f"  {index}. {value}")
+    while True:
+        answer = input("Choose number (q to quit): ").strip().lower()
+        if answer == "q":
+            raise PipelineError("cancelled.")
+        if answer.isdigit() and 1 <= int(answer) <= len(values):
+            return values[int(answer) - 1]
+        print("Please choose one of the listed numbers.")
+
+
+def run_tui(args: argparse.Namespace, workspace: Path) -> None:
+    """Small dependency-free terminal menu for the complete local flow."""
+    jobs_dir = workspace / "jobs"
+    if args.archive:
+        archive = Path(args.archive).expanduser().resolve()
+        requested = args.name or archive.stem.replace("-render-ready", "")
+        target = jobs_dir / re.sub(r"[^a-zA-Z0-9._-]+", "-", requested).strip("-.").lower()
+        if not target.exists():
+            target = import_package(archive, jobs_dir, args.name)
+        job = target
+    else:
+        jobs = sorted(path for path in jobs_dir.glob("*") if path.is_dir())
+        archives = sorted(Path("ready").glob("*.zip"))
+        if jobs:
+            job = _choose("Existing jobs:", jobs)
+        else:
+            job = import_package(_choose("Ready packages:", archives), jobs_dir, args.name)
+
+    print(f"\nZodiac local TUI\nJob: {job.name}\n")
+    while True:
+        print("1. Generate VieNeu voice + timing")
+        print("2. Generate voice + render MP4")
+        print("3. Preview in Remotion Studio")
+        print("4. Render MP4")
+        print("5. Check package/runtime")
+        print("q. Quit")
+        choice = input("Action: ").strip().lower()
+        if choice == "q":
+            return
+        if choice == "1":
+            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode)
+            print("Voice and timing ready.")
+        elif choice == "2":
+            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode)
+            run_renderer(job, "render")
+        elif choice == "3":
+            run_renderer(job, "preview")
+        elif choice == "4":
+            run_renderer(job, "render")
+        elif choice == "5":
+            validate_package(job)
+            validate_runtime(job)
+            print("Package and local runtime: valid")
+        else:
+            print("Unknown action.")
 
 
 def _job_path(value: str, workspace: Path) -> Path:
@@ -454,11 +765,29 @@ def build_parser() -> argparse.ArgumentParser:
     attach.add_argument("job")
     attach.add_argument("--voice", required=True, type=Path)
     attach.add_argument("--timing", required=True, type=Path)
+    voice_command = commands.add_parser("voice", help="generate voice.wav and measured timing with VieNeu-TTS")
+    voice_command.add_argument("job")
+    voice_command.add_argument("--voice", default=DEFAULT_TTS_VOICE)
+    voice_command.add_argument("--tts-root", type=Path, default=DEFAULT_TTS_ROOT)
+    voice_command.add_argument("--tts-python", type=Path)
+    voice_command.add_argument("--tts-mode", default="v3turbo")
+    voice_command.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server instead of loading another model")
     inspect = commands.add_parser("check", help="check the creative package and local runtime inputs")
     inspect.add_argument("job")
     for command in ("preview", "render"):
         sub = commands.add_parser(command, help=f"validate and run Remotion {command}")
         sub.add_argument("job")
+        music_group = sub.add_mutually_exclusive_group()
+        music_group.add_argument("--music", type=Path, help="loop this background track under the narration")
+        music_group.add_argument("--no-music", action="store_true", help="remove background music from this render")
+        sub.add_argument("--music-volume", type=float, default=0.12, help="background music volume from 0 to 1")
+    tui = commands.add_parser("tui", help="interactive local voice and Remotion workflow")
+    tui.add_argument("--archive", type=Path, help="ready ZIP to import automatically")
+    tui.add_argument("--name", help="local job name when importing")
+    tui.add_argument("--voice", default=DEFAULT_TTS_VOICE)
+    tui.add_argument("--tts-root", type=Path, default=DEFAULT_TTS_ROOT)
+    tui.add_argument("--tts-python", type=Path)
+    tui.add_argument("--tts-mode", default="v3turbo")
     return parser
 
 
@@ -476,6 +805,9 @@ def main(argv: list[str] | None = None) -> int:
             root = _job_path(args.job, workspace)
             attach_runtime(root, args.voice, args.timing)
             print(f"Voice and measured timing attached: {root}")
+        elif args.command == "voice":
+            timing = synthesize_voice(_job_path(args.job, workspace), args.tts_root, args.tts_python, args.voice, args.tts_mode, args.vieneu_url)
+            print(f"Voice and measured timing attached ({timing['total_duration_frames']} frames).")
         elif args.command == "check":
             root = _job_path(args.job, workspace)
             validate_package(root)
@@ -487,7 +819,10 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print("Local voice/timing: valid")
         elif args.command in {"preview", "render"}:
-            run_renderer(_job_path(args.job, workspace), args.command)
+            music = args.music if args.music else None
+            run_renderer(_job_path(args.job, workspace), args.command, music, args.music_volume, bool(args.music or args.no_music))
+        elif args.command == "tui":
+            run_tui(args, workspace)
     except PipelineError as exc:
         print(f"ZODIAC_LOCAL_ERROR: {exc}", file=sys.stderr)
         return 2
