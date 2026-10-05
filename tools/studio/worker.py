@@ -545,7 +545,12 @@ class PipelineWorker:
                     "bằng chứng thiếu coverage; không sinh lại TTS."
                 )
                 return None
-            if not tts_scene_frame_cap_retry_eligible(self.root, scene_id):
+            if not tts_scene_frame_cap_retry_eligible(
+                self.root,
+                scene_id,
+                selected_mode=self.tts_mode,
+                allow_fp32_fallback=self.tts_fp32_fallback,
+            ):
                 return None
             self._raise_if_cancelled()
             recovered = recover_scene_alignment_with_adaptive_frame_cap(
@@ -556,6 +561,8 @@ class PipelineWorker:
                 tts_root=self.tts_root or DEFAULT_TTS_ROOT,
                 voice=self.voice,
                 max_chars=self.tts_max_chars,
+                selected_mode=self.tts_mode,
+                allow_fp32_fallback=self.tts_fp32_fallback,
                 log_callback=self.log,
             )
             recovered_ids.append(scene_id)
