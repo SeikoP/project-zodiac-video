@@ -276,6 +276,101 @@ def _design_token(root: Path) -> tuple[dict, str]:
     return token, hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _read_renderer_source(renderer_root: Path, relative: str) -> str:
+    path = renderer_root / relative
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(
+            f"PACKAGE_RENDERER_STALE: cannot read renderer/{relative}: {exc}"
+        ) from exc
+    if not text.strip():
+        raise PipelineError(
+            f"PACKAGE_RENDERER_STALE: renderer/{relative} is empty."
+        )
+    return text
+
+
+def _validate_renderer_source_contract(renderer_root: Path) -> None:
+    """Reject placeholder/stale renderer trees before local runtime work."""
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    render_requirements = {
+        "render-props.json": r"render-props\.json",
+        "runtime props write": r"\bwriteFile\b",
+        "Remotion invocation": r"\bspawnSync\b",
+        "composition id": r"ZodiacVideo",
+        "MP4 output": r"zodiac-story\.mp4",
+    }
+    missing = [
+        label
+        for label, pattern in render_requirements.items()
+        if re.search(pattern, render_script) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/scripts/render.mjs is not the "
+            "canonical local renderer; missing " + ", ".join(missing) + "."
+        )
+
+    root_source = _read_renderer_source(renderer_root, "src/Root.tsx")
+    if (
+        "calculateMetadata" not in root_source
+        or "total_duration_frames" not in root_source
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/Root.tsx must derive "
+            "duration from runtime total_duration_frames via calculateMetadata."
+        )
+
+    composition = _read_renderer_source(
+        renderer_root,
+        "src/ZodiacComposition.tsx",
+    )
+    composition_requirements = {
+        "all production scenes": r"production\.scenes\.map",
+        "runtime scene timing": r"timing\.scenes",
+        "scene Sequence": r"\bSequence\b",
+        "local voice": r"voice\.wav",
+        "entity rendering": r"scene\.entities",
+        "event rendering": r"scene\.events",
+    }
+    missing = [
+        label
+        for label, pattern in composition_requirements.items()
+        if re.search(pattern, composition) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx is "
+            "a reduced/stale renderer; missing " + ", ".join(missing) + "."
+        )
+
+    types_source = _read_renderer_source(renderer_root, "src/types.ts")
+    if re.search(r"\bProduction\s*=\s*any\b", types_source):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/types.ts uses Production = any."
+        )
+    for required_type in ("Production", "ProductionScene", "RuntimeTiming"):
+        if re.search(
+            rf"\b(?:export\s+)?type\s+{required_type}\b",
+            types_source,
+        ) is None:
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: renderer/src/types.ts is missing "
+                f"{required_type}."
+            )
+
+    runtime_contract = _read_renderer_source(
+        renderer_root,
+        "src/runtime-contract.mjs",
+    )
+    if "resolveProductionEvents" not in runtime_contract:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/runtime-contract.mjs "
+            "cannot resolve production events."
+        )
+
+
 def validate_package(package_root: Path) -> dict:
     """Validate one Zodiac Video Pipeline v2.0 creative package."""
     root = Path(package_root).resolve()
@@ -578,8 +673,10 @@ def validate_production_document(root: Path, production: dict) -> dict:
     for required in required_renderer:
         if not (renderer_root / required).is_file():
             raise PipelineError(
-                f"renderer scaffold is incomplete: missing renderer/{required}."
+                f"renderer source is incomplete: missing renderer/{required}."
             )
+
+    _validate_renderer_source_contract(renderer_root)
     return production
 
 
