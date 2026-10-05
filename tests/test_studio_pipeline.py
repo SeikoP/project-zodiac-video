@@ -130,8 +130,20 @@ class WorkerHarness(unittest.TestCase):
         write_pcm(Path(package_root) / "voice.wav", seconds=0.5)
         return Path(package_root) / "voice.wav"
 
-    def fake_align(self, production, durations, aligner, scene_wavs=None):
-        self.align_calls.append({"scenes": list(durations)})
+    def fake_align(
+        self,
+        production,
+        durations,
+        aligner,
+        scene_wavs=None,
+        mismatch_recovery=None,
+    ):
+        self.align_calls.append(
+            {
+                "scenes": list(durations),
+                "has_recovery": mismatch_recovery is not None,
+            }
+        )
         if self.fail_align:
             raise RuntimeError("recognized words do not match approved narration")
         return valid_timing()
