@@ -43,11 +43,12 @@ LABEL_MUSIC = "Nhạc nền"
 LABEL_VOLUME = "Âm lượng"
 LABEL_ALIGN_MODEL = "Độ chính xác căn từ"
 
-# faster-whisper is weak on Vietnamese: 'small' mishears xử/lỗi/bạn and turns
-# spelled numbers into digits, which blocks the approved-narration check.
-ALIGN_MODEL_DEFAULT = "medium"
-ALIGN_MODEL_CHOICES = ("medium", "large-v3", "small")
-ALIGN_MODEL_HINT = "medium nghe đúng tiếng Việt; large-v3 chính xác hơn nhưng chậm hơn nhiều (CPU)."
+# Measured on the real Virgo job: small, medium and large-v3 all produced the
+# same 88/89-word result, because the mismatch comes from the TTS reading too
+# fast, not from model quality. So the fastest model wins on CPU.
+ALIGN_MODEL_DEFAULT = "small"
+ALIGN_MODEL_CHOICES = ("small", "medium", "large-v3")
+ALIGN_MODEL_HINT = "small nhanh nhất và cho kết quả giống medium trên CPU."
 LABEL_MORE = "…"
 LABEL_PATH_PLACEHOLDER = "Chưa chọn"
 LABEL_PIPELINE_BASENAME = "Job: "

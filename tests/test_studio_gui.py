@@ -209,7 +209,7 @@ class StudioAppTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             app = self._app(Path(temp) / "ws")
-            self.assertEqual(app.audio.align_model.get(), "medium")
+            self.assertEqual(app.audio.align_model.get(), "small")
             app.audio.align_model.set("large-v3")
             self.assertEqual(app.audio.values()["align_model"], "large-v3")
             self.assertIn("medium", ALIGN_MODEL_CHOICES)
