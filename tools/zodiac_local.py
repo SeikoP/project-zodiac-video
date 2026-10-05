@@ -55,6 +55,11 @@ EXPECTED_SCRIPTS = {
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 DEFAULT_TTS_VOICE = "Hải Đăng"
+DEFAULT_TTS_BACKEND = "onnx"
+DEFAULT_TTS_PRECISION = "fp32"
+DEFAULT_TTS_FRAME_CAP = "on"
+DEFAULT_TTS_MAX_CHARS = 256
+DEFAULT_SPEECH_RATE_WARNING_WPS = 3.8
 AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
@@ -770,7 +775,7 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
     heard_norm = [_normalize_token(item["heard"]) for item in measured]
     if expected_norm != heard_norm:
         raise PipelineError(
-            "word alignment does not match approved narration for "
+            "ALIGNMENT_MISMATCH: word alignment does not match approved narration for "
             f"{audio_path.name}. expected={expected_norm!r}, heard={heard_norm!r}. "
             "Do not guess timings; correct the TTS/alignment and retry."
         )
@@ -900,6 +905,99 @@ def tts_manifest_rows(production: dict, scene_ids: list[str] | None = None) -> l
     ]
 
 
+def build_tts_diagnostics(
+    production: dict,
+    durations: dict[str, float],
+    *,
+    warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    transport: str = "local",
+    backend: str | None = None,
+    precision: str | None = None,
+    frame_cap: bool | None = None,
+    max_chars: int | None = None,
+) -> dict:
+    """Measure narration density immediately after TTS, before ASR alignment."""
+    if warning_wps <= 0:
+        raise PipelineError("speech-rate warning threshold must be greater than zero.")
+
+    scenes = []
+    total_words = 0
+    total_seconds = 0.0
+    for scene in production.get("scenes", []):
+        scene_id = str(scene.get("id", ""))
+        seconds = durations.get(scene_id)
+        if not isinstance(seconds, (int, float)) or seconds <= 0:
+            raise PipelineError(f"missing measured duration for scene {scene_id}.")
+        words = len(_expected_caption_tokens(str(scene.get("voice", ""))))
+        wps = words / float(seconds)
+        warning = wps > warning_wps
+        scenes.append(
+            {
+                "scene_id": scene_id,
+                "word_count": words,
+                "duration_seconds": round(float(seconds), 6),
+                "words_per_second": round(wps, 6),
+                "speech_rate_warning": warning,
+            }
+        )
+        total_words += words
+        total_seconds += float(seconds)
+
+    total_wps = total_words / total_seconds if total_seconds > 0 else 0.0
+    return {
+        "version": 1,
+        "config": {
+            "transport": transport,
+            "backend": backend,
+            "precision": precision,
+            "frame_cap": frame_cap,
+            "max_chars": max_chars,
+            "warning_wps": warning_wps,
+        },
+        "summary": {
+            "word_count": total_words,
+            "duration_seconds": round(total_seconds, 6),
+            "words_per_second": round(total_wps, 6),
+            "speech_rate_warning": total_wps > warning_wps
+            or any(item["speech_rate_warning"] for item in scenes),
+        },
+        "scenes": scenes,
+    }
+
+
+def write_tts_diagnostics(runtime: Path, diagnostics: dict) -> Path:
+    path = Path(runtime) / "tts-diagnostics.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(diagnostics, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _print_tts_diagnostics(diagnostics: dict) -> None:
+    threshold = diagnostics["config"]["warning_wps"]
+    for scene in diagnostics["scenes"]:
+        status = "TTS_RATE_WARNING" if scene["speech_rate_warning"] else "TTS_RATE"
+        print(
+            f"{status}: {scene['scene_id']} "
+            f"{scene['duration_seconds']:.1f}s / {scene['word_count']} từ = "
+            f"{scene['words_per_second']:.2f} từ/giây"
+            + (
+                f" > ngưỡng {threshold:.2f}"
+                if scene["speech_rate_warning"]
+                else ""
+            ),
+            flush=True,
+        )
+    summary = diagnostics["summary"]
+    print(
+        f"TTS_RATE_TOTAL: {summary['duration_seconds']:.1f}s / "
+        f"{summary['word_count']} từ = {summary['words_per_second']:.2f} từ/giây",
+        flush=True,
+    )
+
+
 def run_tts_batch(
     runtime: Path,
     rows: list[dict],
@@ -909,10 +1007,23 @@ def run_tts_batch(
     voice: str = DEFAULT_TTS_VOICE,
     mode: str = "v3turbo",
     vieneu_url: str | None = None,
+    backend: str = DEFAULT_TTS_BACKEND,
+    precision: str = DEFAULT_TTS_PRECISION,
+    frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
 ) -> None:
     """Generate the given scene WAVs with VieNeu, in one subprocess call."""
     if not rows:
         return
+    if max_chars < 32:
+        raise PipelineError("--tts-max-chars must be at least 32.")
+    if frame_cap not in {"on", "off"}:
+        raise PipelineError("--tts-frame-cap must be 'on' or 'off'.")
+    if vieneu_url and frame_cap == "off":
+        raise PipelineError(
+            "--tts-frame-cap off cannot control an already-running Gradio server. "
+            "Run VieNeu directly (omit --vieneu-url) for the cap/no-cap diagnostic."
+        )
     runtime = Path(runtime)
     scene_dir = runtime / "tts-scenes"
     scene_dir.mkdir(parents=True, exist_ok=True)
@@ -927,17 +1038,23 @@ def run_tts_batch(
         "from pathlib import Path\n"
         "from gradio_client import Client\n"
         "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
-        "url, voice = sys.argv[2].rstrip('/'), sys.argv[3]\n"
+        "url, voice, max_chars = sys.argv[2].rstrip('/'), sys.argv[3], int(sys.argv[4])\n"
         "config = json.load(urllib.request.urlopen(url + '/config', timeout=10))\n"
         "components = {item['id']: item for item in config.get('components', [])}\n"
-        "deps = [d for d in config.get('dependencies', []) if d.get('api_name') and len(d.get('inputs', [])) == 12 and len(d.get('outputs', [])) == 3]\n"
+        "deps = [d for d in config.get('dependencies', []) if d.get('api_name') and len(d.get('inputs', [])) >= 2 and len(d.get('outputs', [])) >= 1]\n"
         "if not deps: raise RuntimeError('Không tìm thấy API tạo giọng đơn của VieNeu Gradio.')\n"
         "dep = next((d for d in deps if d['api_name'] == 'wrapper'), deps[0])\n"
         "client = Client(url, verbose=False)\n"
         "for row in rows:\n"
         "    print('VieNeu API:', row['scene_id'], flush=True)\n"
-        "    args = [components.get(i, {}).get('props', {}).get('value') for i in dep['inputs'] if components.get(i, {}).get('type') != 'state']\n"
+        "    input_ids = [i for i in dep['inputs'] if components.get(i, {}).get('type') != 'state']\n"
+        "    args = [components.get(i, {}).get('props', {}).get('value') for i in input_ids]\n"
+        "    if len(args) < 2: raise RuntimeError('API VieNeu thiếu input text/voice.')\n"
         "    args[0], args[1] = row['text'], voice\n"
+        "    for pos, component_id in enumerate(input_ids):\n"
+        "        label = str(components.get(component_id, {}).get('props', {}).get('label', '')).lower()\n"
+        "        if 'max chars' in label or 'ký tự' in label:\n"
+        "            args[pos] = max_chars\n"
         "    result = client.predict(*args, api_name='/' + dep['api_name'])\n"
         "    if isinstance(result, (tuple, list)) and result[0] is None and 'Vui lòng tải model trước' in str(result[1]):\n"
         "        print('VieNeu: đang nạp model vào server…', flush=True)\n"
@@ -952,7 +1069,12 @@ def run_tts_batch(
     )
     if vieneu_url:
         print("Đang tạo giọng đọc qua VieNeu Gradio…", flush=True)
-        run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), vieneu_url, voice]
+        print(
+            "VieNeu Gradio đang quản lý backend/precision/frame-cap; "
+            "các cờ đó chỉ áp dụng khi chạy direct local SDK.",
+            flush=True,
+        )
+        run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), vieneu_url, voice, str(max_chars)]
     else:
         script = (
             "import json, sys\n"
@@ -960,15 +1082,34 @@ def run_tts_batch(
             "from vieneu import Vieneu\n"
             "from apps.user_voices import load_user_voices\n"
             "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
-            "tts = Vieneu(mode=sys.argv[2])\n"
+            "mode, voice, backend, precision, frame_cap, max_chars = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], int(sys.argv[7])\n"
+            "kwargs = {}\n"
+            "if mode == 'v3turbo': kwargs.update(backend=backend, precision=precision)\n"
+            "tts = Vieneu(mode=mode, **kwargs)\n"
             "load_user_voices(tts)\n"
-            "if sys.argv[3] not in tts._preset_voices: raise ValueError('VieNeu voice not found: ' + sys.argv[3])\n"
+            "if voice not in tts._preset_voices: raise ValueError('VieNeu voice not found: ' + voice)\n"
+            "if mode == 'v3turbo' and frame_cap == 'off':\n"
+            "    if getattr(tts, 'backend', None) != 'onnx': raise RuntimeError('frame-cap off diagnostic is supported only on v3turbo ONNX/CPU')\n"
+            "    import vieneu.v3turbo as turbo_module\n"
+            "    turbo_module._cap_frames = lambda sampling, cap: dict(sampling)\n"
+            "    original_engine_infer = tts.engine.infer\n"
+            "    def uncapped_engine_infer(*args, **kwargs):\n"
+            "        kwargs['frame_cap'] = False\n"
+            "        return original_engine_infer(*args, **kwargs)\n"
+            "    tts.engine.infer = uncapped_engine_infer\n"
             "for row in rows:\n"
             "    print('VieNeu:', row['scene_id'], flush=True)\n"
-            "    tts.save(tts.infer(row['text'], voice=sys.argv[3]), row['output'])\n"
+            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars), row['output'])\n"
         )
-        print("Đang tạo giọng đọc tiếng Việt bằng VieNeu…", flush=True)
-        run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), mode, voice]
+        print(
+            f"Đang tạo giọng bằng VieNeu direct: mode={mode}, backend={backend}, "
+            f"precision={precision}, frame_cap={frame_cap}, max_chars={max_chars}…",
+            flush=True,
+        )
+        run_args = [
+            str(python), "-X", "utf8", "-c", script, str(manifest),
+            mode, voice, backend, precision, frame_cap, str(max_chars),
+        ]
     try:
         subprocess.run(run_args, cwd=tts_root, check=True)
     except FileNotFoundError as exc:
@@ -987,6 +1128,11 @@ def generate_scene_voices(
     voice: str = DEFAULT_TTS_VOICE,
     mode: str = "v3turbo",
     vieneu_url: str | None = None,
+    backend: str = DEFAULT_TTS_BACKEND,
+    precision: str = DEFAULT_TTS_PRECISION,
+    frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
 ) -> dict[str, float]:
     """Generate the selected scene WAVs and return their measured durations."""
     root = Path(package_root).resolve()
@@ -999,6 +1145,10 @@ def generate_scene_voices(
         voice=voice,
         mode=mode,
         vieneu_url=vieneu_url,
+        backend=backend,
+        precision=precision,
+        frame_cap=frame_cap,
+        max_chars=max_chars,
     )
 
     durations: dict[str, float] = {}
@@ -1010,6 +1160,27 @@ def generate_scene_voices(
             raise PipelineError(f"Scene {row['scene_id']}: {exc}") from exc
         with wave.open(str(path), "rb") as wav:
             durations[row["scene_id"]] = wav.getnframes() / wav.getframerate()
+
+    selected = set(scene_ids) if scene_ids is not None else None
+    diagnostic_production = {
+        **production,
+        "scenes": [
+            scene for scene in production["scenes"]
+            if selected is None or scene["id"] in selected
+        ],
+    }
+    diagnostics = build_tts_diagnostics(
+        diagnostic_production,
+        durations,
+        warning_wps=speech_rate_warning_wps,
+        transport="gradio" if vieneu_url else "local",
+        backend="server-managed" if vieneu_url else backend,
+        precision="server-managed" if vieneu_url else precision,
+        frame_cap=None if vieneu_url else (frame_cap == "on"),
+        max_chars=max_chars,
+    )
+    write_tts_diagnostics(root / ".runtime", diagnostics)
+    _print_tts_diagnostics(diagnostics)
     return durations
 
 
@@ -1058,6 +1229,11 @@ def synthesize_voice(
     align_model: str = "small",
     align_device: str = "cpu",
     align_compute_type: str = "int8",
+    tts_backend: str = DEFAULT_TTS_BACKEND,
+    tts_precision: str = DEFAULT_TTS_PRECISION,
+    tts_frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    tts_max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
 ) -> dict:
     """Compatibility wrapper over the granular voice/timing operations."""
     root = Path(package_root).resolve()
@@ -1076,6 +1252,11 @@ def synthesize_voice(
         voice=voice,
         mode=mode,
         vieneu_url=vieneu_url,
+        backend=tts_backend,
+        precision=tts_precision,
+        frame_cap=tts_frame_cap,
+        max_chars=tts_max_chars,
+        speech_rate_warning_wps=speech_rate_warning_wps,
     )
     concatenate_scene_voices(root, production)
 
@@ -1596,10 +1777,40 @@ def run_tui(args: argparse.Namespace, workspace: Path) -> None:
         if choice == "q":
             return
         if choice == "1":
-            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode, align_model=args.align_model, align_device=args.align_device, align_compute_type=args.align_compute_type)
+            synthesize_voice(
+                job,
+                args.tts_root,
+                args.tts_python,
+                args.voice,
+                args.tts_mode,
+                args.vieneu_url,
+                args.align_model,
+                args.align_device,
+                args.align_compute_type,
+                args.tts_backend,
+                args.tts_precision,
+                args.tts_frame_cap,
+                args.tts_max_chars,
+                args.speech_rate_warning_wps,
+            )
             print("Voice and timing ready.")
         elif choice == "2":
-            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode, align_model=args.align_model, align_device=args.align_device, align_compute_type=args.align_compute_type)
+            synthesize_voice(
+                job,
+                args.tts_root,
+                args.tts_python,
+                args.voice,
+                args.tts_mode,
+                args.vieneu_url,
+                args.align_model,
+                args.align_device,
+                args.align_compute_type,
+                args.tts_backend,
+                args.tts_precision,
+                args.tts_frame_cap,
+                args.tts_max_chars,
+                args.speech_rate_warning_wps,
+            )
             run_renderer(job, "render")
         elif choice == "3":
             run_renderer(job, "preview")
@@ -1638,6 +1849,11 @@ def build_parser() -> argparse.ArgumentParser:
     voice_command.add_argument("--tts-python", type=Path)
     voice_command.add_argument("--tts-mode", default="v3turbo")
     voice_command.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server instead of loading another model")
+    voice_command.add_argument("--tts-backend", choices=("auto", "onnx", "pytorch"), default=DEFAULT_TTS_BACKEND, help="direct v3 Turbo backend; CPU diagnosis should use onnx")
+    voice_command.add_argument("--tts-precision", choices=("fp32", "int8"), default=DEFAULT_TTS_PRECISION, help="direct ONNX precision; fp32 is the safe default")
+    voice_command.add_argument("--tts-frame-cap", choices=("on", "off"), default=DEFAULT_TTS_FRAME_CAP, help="direct ONNX diagnostic: disable only to test suspected truncation")
+    voice_command.add_argument("--tts-max-chars", type=int, default=DEFAULT_TTS_MAX_CHARS)
+    voice_command.add_argument("--speech-rate-warning-wps", type=float, default=DEFAULT_SPEECH_RATE_WARNING_WPS)
     voice_command.add_argument("--align-model", default="small", help="faster-whisper model for measured word timing")
     voice_command.add_argument("--align-device", default="cpu", help="faster-whisper device")
     voice_command.add_argument("--align-compute-type", default="int8", help="faster-whisper compute type")
@@ -1662,6 +1878,12 @@ def build_parser() -> argparse.ArgumentParser:
     tui.add_argument("--tts-root", type=Path, default=DEFAULT_TTS_ROOT)
     tui.add_argument("--tts-python", type=Path)
     tui.add_argument("--tts-mode", default="v3turbo")
+    tui.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server")
+    tui.add_argument("--tts-backend", choices=("auto", "onnx", "pytorch"), default=DEFAULT_TTS_BACKEND)
+    tui.add_argument("--tts-precision", choices=("fp32", "int8"), default=DEFAULT_TTS_PRECISION)
+    tui.add_argument("--tts-frame-cap", choices=("on", "off"), default=DEFAULT_TTS_FRAME_CAP)
+    tui.add_argument("--tts-max-chars", type=int, default=DEFAULT_TTS_MAX_CHARS)
+    tui.add_argument("--speech-rate-warning-wps", type=float, default=DEFAULT_SPEECH_RATE_WARNING_WPS)
     tui.add_argument("--align-model", default="small")
     tui.add_argument("--align-device", default="cpu")
     tui.add_argument("--align-compute-type", default="int8")
@@ -1693,6 +1915,11 @@ def main(argv: list[str] | None = None) -> int:
                 args.align_model,
                 args.align_device,
                 args.align_compute_type,
+                args.tts_backend,
+                args.tts_precision,
+                args.tts_frame_cap,
+                args.tts_max_chars,
+                args.speech_rate_warning_wps,
             )
             print(f"Voice and measured timing attached ({timing['total_duration_frames']} frames).")
         elif args.command == "audio-preview":
