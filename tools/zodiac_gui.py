@@ -7,6 +7,8 @@ import json
 import os
 import queue
 import re
+import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -38,6 +40,59 @@ def saved_voices() -> list[str]:
     return list(voices) or ["Hải Đăng"]
 
 
+def open_path(path: Path) -> None:
+    """Open a file/folder using the native launcher without a shell."""
+    path = Path(path).resolve()
+    if sys.platform == "win32":
+        os.startfile(str(path))
+        return
+
+    launcher_name = "open" if sys.platform == "darwin" else "xdg-open"
+    launcher = shutil.which(launcher_name)
+    if not launcher:
+        raise OSError(
+            f"Không tìm thấy trình mở mặc định {launcher_name!r}."
+        )
+    subprocess.Popen(
+        [str(Path(launcher).resolve()), str(path)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        shell=False,
+    )
+
+
+def terminate_process_tree(process: subprocess.Popen) -> None:
+    """Terminate a detached preview process and its child tree."""
+    if process.poll() is not None:
+        return
+
+    if os.name == "nt":
+        subprocess.run(
+            [
+                "taskkill",
+                "/T",
+                "/F",
+                "/PID",
+                str(process.pid),
+            ],
+            capture_output=True,
+            check=False,
+            shell=False,
+        )
+        return
+
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+
+
+
 class ZodiacGui(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
@@ -56,6 +111,8 @@ class ZodiacGui(tk.Tk):
         self.video_status = tk.StringVar(value="Chưa có video render")
         self.buttons: list[tk.Button] = []
         self.service_process: subprocess.Popen | None = None
+        self.preview_process: subprocess.Popen | None = None
+        self.preview_stop_requested = False
         self._style()
         self._build()
         self.after(100, self._drain_messages)
@@ -121,18 +178,21 @@ class ZodiacGui(tk.Tk):
         volume_row = tk.Frame(setup, bg=COLORS["panel"])
         volume_row.pack(fill="x", pady=(7, 0))
         self._label(volume_row, "Âm lượng nhạc", size=9, color=COLORS["muted"], width=12, anchor="w").pack(side="left")
-        ttk.Scale(volume_row, variable=self.volume, from_=0, to=0.35, command=self._show_volume).pack(side="left", fill="x", expand=True, padx=(0, 9))
+        ttk.Scale(volume_row, variable=self.volume, from_=0, to=1.0, command=self._show_volume).pack(side="left", fill="x", expand=True, padx=(0, 9))
         self.volume_label = self._label(volume_row, "12%", size=9, color=COLORS["muted"], width=5, anchor="e")
         self.volume_label.pack(side="right")
+        self.listen_button = self._button(volume_row, "Nghe thử", self._listen_music)
+        self.listen_button.pack(side="right", padx=(0, 8))
 
-        actions = self._card(body, "02  ·  Tạo video", "Voice tạo qua server VieNeu ở trên; Remotion dựng video cục bộ.")
+        actions = self._card(body, "02  ·  Tạo video", "Render tạo MP4; Remotion Studio là preview tương tác và chạy cho tới khi bạn đóng nó.")
         actions.pack(fill="x", pady=(0, 10))
         action_row = tk.Frame(actions, bg=COLORS["panel"])
         action_row.pack(fill="x", pady=(2, 0))
         self.primary_button = self._button(action_row, "Tạo voice + render", self._voice_render, primary=True)
         self.primary_button.pack(side="left")
         self._button(action_row, "Render lại", self._render).pack(side="left", padx=(8, 0))
-        self._button(action_row, "Preview Remotion", self._preview).pack(side="left", padx=(8, 0))
+        self.preview_button = self._button(action_row, "Mở Remotion Studio", self._preview)
+        self.preview_button.pack(side="left", padx=(8, 0))
         self._button(action_row, "Kiểm tra", self._check).pack(side="right")
         self.progress = ttk.Progressbar(actions, mode="indeterminate", style="Zodiac.Horizontal.TProgressbar")
         self.progress.pack(fill="x", pady=(12, 0))
@@ -215,7 +275,14 @@ class ZodiacGui(tk.Tk):
             command.append("--no-music")
         return command
 
-    def _start(self, commands: list[list[str]]) -> None:
+    def _start(
+        self,
+        commands: list[list[str]],
+        *,
+        detach_last: bool = False,
+        done_kind: str = "done",
+        done_message: str = "Hoàn tất.",
+    ) -> None:
         if not commands:
             self._log("Không có bước nào cần chạy.")
             return
@@ -223,37 +290,90 @@ class ZodiacGui(tk.Tk):
             button.configure(state="disabled")
         self.progress.start(12)
 
+        def spawn(
+            command: list[str],
+            *,
+            detached: bool = False,
+        ) -> subprocess.Popen:
+            self.messages.put(
+                ("log", "> " + subprocess.list2cmdline(command))
+            )
+            kwargs = {}
+            if detached and os.name != "nt":
+                kwargs["start_new_session"] = True
+            elif detached and os.name == "nt":
+                kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+            return subprocess.Popen(
+                command,
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                shell=False,
+                **kwargs,
+            )
+
+        def consume(process: subprocess.Popen) -> tuple[int, list[str]]:
+            assert process.stdout is not None
+            tail: list[str] = []
+            for line in process.stdout:
+                line = line.rstrip()
+                self.messages.put(("log", line))
+                if line:
+                    tail.append(line)
+                    del tail[:-10]
+            return process.wait(), tail
+
         def worker() -> None:
             try:
-                for command in commands:
-                    self.messages.put(("log", "> " + subprocess.list2cmdline(command)))
-                    process = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                               text=True, encoding="utf-8", errors="replace", bufsize=1)
-                    assert process.stdout is not None
-                    tail: list[str] = []
-                    for line in process.stdout:
-                        line = line.rstrip()
-                        self.messages.put(("log", line))
-                        if line:
-                            tail.append(line)
-                            del tail[:-10]
-                    code = process.wait()
+                for index, command in enumerate(commands):
+                    detached = detach_last and index == len(commands) - 1
+                    process = spawn(command, detached=detached)
+                    if detached:
+                        self.preview_process = process
+                        self.preview_stop_requested = False
+                        self.messages.put((
+                            "studio_started",
+                            "Remotion Studio đang chạy ở process riêng. Nút này sẽ đổi thành Dừng Studio.",
+                        ))
+
+                        def watch_studio() -> None:
+                            code, tail = consume(process)
+                            stopped = self.preview_stop_requested
+                            self.preview_process = None
+                            if code and not stopped:
+                                details = "\n".join(tail)
+                                message = f"Remotion Studio dừng với mã {code}."
+                                if details:
+                                    message += f"\n\n{details}"
+                                self.messages.put(("studio_error", message))
+                            else:
+                                self.messages.put(("studio_stopped", "Remotion Studio đã đóng."))
+
+                        threading.Thread(target=watch_studio, daemon=True).start()
+                        return
+
+                    code, tail = consume(process)
                     if code:
                         details = "\n".join(tail)
                         raise RuntimeError(f"Lệnh dừng với mã {code}." + (f"\n\n{details}" if details else ""))
-                self.messages.put(("done", "Hoàn tất."))
+                self.messages.put((done_kind, done_message))
             except Exception as exc:
                 self.messages.put(("error", str(exc)))
+
         threading.Thread(target=worker, daemon=True).start()
 
-    def _run_action(self, action: str, *, voice: bool = False) -> None:
+    def _run_action(self, action: str, *, voice: bool = False, detach_last: bool = False) -> None:
         if voice and not self._service_online():
             raise ValueError("VieNeu chưa sẵn sàng. Chờ trạng thái kết nối rồi thử lại.")
         commands = self._base_commands()
         if voice:
             commands.append([sys.executable, "tools/zodiac_local.py", "voice", self._job_name(), "--voice", self.voice.get().strip(), "--vieneu-url", TTS_URL])
         commands.append(self._render_command(action))
-        self._start(commands)
+        self._start(commands, detach_last=detach_last)
 
     def _guarded(self, action) -> None:
         try:
@@ -268,7 +388,45 @@ class ZodiacGui(tk.Tk):
         self._guarded(lambda: self._run_action("render"))
 
     def _preview(self) -> None:
-        self._guarded(lambda: self._run_action("preview"))
+        if self.preview_process and self.preview_process.poll() is None:
+            self._stop_preview()
+            return
+        self._guarded(lambda: self._run_action("preview", detach_last=True))
+
+    def _stop_preview(self) -> None:
+        process = self.preview_process
+        if not process or process.poll() is not None:
+            return
+        self.preview_stop_requested = True
+        terminate_process_tree(process)
+        self._log("Đang dừng Remotion Studio và toàn bộ process con…")
+
+    def _listen_music(self) -> None:
+        def start_preview() -> None:
+            music = Path(self.music.get().strip()).expanduser()
+            if not music.is_file():
+                raise ValueError("Chọn một file nhạc nền hợp lệ trước khi nghe thử.")
+            voice = self._job_path() / "voice.wav"
+            if not voice.is_file():
+                raise ValueError("Chưa có voice.wav. Hãy chạy Tạo voice + render ít nhất một lần trước khi nghe thử mix.")
+            output = self._job_path() / ".runtime" / "audio-preview.wav"
+            command = [
+                sys.executable,
+                "tools/zodiac_local.py",
+                "audio-preview",
+                self._job_name(),
+                "--music",
+                str(music),
+                "--music-volume",
+                f"{self.volume.get():.3f}",
+            ]
+            self._start(
+                [command],
+                done_kind="audio_preview",
+                done_message=str(output),
+            )
+
+        self._guarded(start_preview)
 
     def _check(self) -> None:
         self._guarded(lambda: self._start([*self._base_commands(), [sys.executable, "tools/zodiac_local.py", "check", self._job_name()]]))
@@ -349,12 +507,12 @@ class ZodiacGui(tk.Tk):
     def _open_video(self) -> None:
         video = self._video_path()
         if video.is_file():
-            os.startfile(video)
+            open_path(video)
 
     def _open_folder(self) -> None:
         folder = self._video_path().parent
         if folder.exists():
-            os.startfile(folder)
+            open_path(folder)
 
     def _drain_messages(self) -> None:
         try:
@@ -362,12 +520,45 @@ class ZodiacGui(tk.Tk):
                 kind, message = self.messages.get_nowait()
                 if kind in {"log", "service_log"}:
                     self._log(message)
-                elif kind == "done":
+                elif kind in {"done", "audio_preview"}:
                     self.progress.stop()
                     for button in self.buttons:
                         button.configure(state="normal")
                     self._refresh_output()
+                    if kind == "audio_preview":
+                        path = Path(message)
+                        if path.is_file():
+                            self._log(
+                                f"Nghe thử mix ở mức {self.volume.get():.0%}: {path.name}"
+                            )
+                            try:
+                                open_path(path)
+                            except OSError as exc:
+                                self._log(f"Không tự mở được preview: {exc}")
+                                messagebox.showwarning(
+                                    "Preview đã tạo",
+                                    f"File đã tạo tại:\n{path}\n\nKhông tự mở được: {exc}",
+                                )
+                        else:
+                            messagebox.showerror("Không thể nghe thử", f"Không tìm thấy file preview: {path}")
+                    else:
+                        self._log(message)
+                elif kind == "studio_started":
+                    self.progress.stop()
+                    for button in self.buttons:
+                        button.configure(state="normal")
+                    self.preview_button.configure(text="Dừng Studio", state="normal")
                     self._log(message)
+                elif kind == "studio_stopped":
+                    self.preview_button.configure(text="Mở Remotion Studio", state="normal")
+                    self._log(message)
+                elif kind == "studio_error":
+                    self.progress.stop()
+                    self.preview_button.configure(text="Mở Remotion Studio", state="normal")
+                    for button in self.buttons:
+                        button.configure(state="normal")
+                    self._log(message)
+                    messagebox.showerror("Remotion Studio dừng", message)
                 elif kind in {"error", "service_error"}:
                     if kind == "error":
                         self.progress.stop()
