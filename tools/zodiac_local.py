@@ -707,13 +707,14 @@ def _expected_caption_tokens(text: str) -> list[str]:
     return tokens
 
 
-def _load_word_aligner(model_name: str, device: str, compute_type: str):
+def load_word_aligner(model_name: str, device: str, compute_type: str):
+    require_word_aligner_installed()
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:
         raise PipelineError(
             "Automatic word-level timing requires faster-whisper. "
-            "Install it with: python -m pip install -r requirements-local.txt"
+            f"Install it with:\n{aligner_install_command()}"
         ) from exc
 
     try:
@@ -852,31 +853,73 @@ def _tts_python(tts_root: Path, requested: Path | None) -> Path:
     return candidate.resolve()
 
 
-def synthesize_voice(
-    package_root: Path,
+def file_sha256(path: Path) -> str:
+    """Content fingerprint used for package and per-scene voice reuse."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def aligner_install_command() -> str:
+    """The only supported install command: the interpreter running this runner."""
+    return f'"{sys.executable}" -m pip install -r requirements-local.txt'
+
+
+def require_word_aligner_installed() -> None:
+    """Fail before any expensive TTS work when measured timing cannot be produced."""
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError as exc:
+        raise PipelineError(
+            "Automatic word-level timing requires faster-whisper, which is missing from the "
+            f"Python running Zodiac Studio ({sys.executable}).\n"
+            f"Install it with:\n{aligner_install_command()}"
+        ) from exc
+
+
+def scene_wav_path(root: Path, scene_id: str) -> Path:
+    return Path(root) / ".runtime" / "tts-scenes" / f"{scene_id}.wav"
+
+
+def tts_manifest_rows(production: dict, scene_ids: list[str] | None = None) -> list[dict]:
+    wanted = set(scene_ids) if scene_ids is not None else None
+    return [
+        {
+            "scene_id": scene["id"],
+            "text": scene["voice"],
+            "output": str(scene_wav_path(".", scene["id"])),
+        }
+        for scene in production["scenes"]
+        if wanted is None or scene["id"] in wanted
+    ]
+
+
+def run_tts_batch(
+    runtime: Path,
+    rows: list[dict],
+    *,
     tts_root: Path = DEFAULT_TTS_ROOT,
     tts_python: Path | None = None,
     voice: str = DEFAULT_TTS_VOICE,
     mode: str = "v3turbo",
     vieneu_url: str | None = None,
-    align_model: str = "small",
-    align_device: str = "cpu",
-    align_compute_type: str = "int8",
-) -> dict:
-    """Generate one scene WAV per scene, then attach voice and measured timing."""
-    root = Path(package_root).resolve()
-    production = validate_package(root)
-    tts_root = Path(tts_root).expanduser().resolve()
-    python = _tts_python(tts_root, tts_python)
-    runtime = root / ".runtime"
+) -> None:
+    """Generate the given scene WAVs with VieNeu, in one subprocess call."""
+    if not rows:
+        return
+    runtime = Path(runtime)
     scene_dir = runtime / "tts-scenes"
     scene_dir.mkdir(parents=True, exist_ok=True)
+    for row in rows:
+        row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
     manifest = runtime / "tts-manifest.json"
-    rows = [
-        {"scene_id": scene["id"], "text": scene["voice"], "output": str(scene_dir / f"{scene['id']}.wav")}
-        for scene in production["scenes"]
-    ]
     manifest.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    python = _tts_python(Path(tts_root).expanduser().resolve(), tts_python)
+
     script = (
         "import json, shutil, sys, urllib.request\n"
         "from pathlib import Path\n"
@@ -906,7 +949,7 @@ def synthesize_voice(
         "    shutil.copy2(audio, row['output'])\n"
     )
     if vieneu_url:
-        print(f"Generating voice through VieNeu Gradio: {vieneu_url}", flush=True)
+        print("Đang tạo giọng đọc qua VieNeu Gradio…", flush=True)
         run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), vieneu_url, voice]
     else:
         script = (
@@ -922,52 +965,130 @@ def synthesize_voice(
             "    print('VieNeu:', row['scene_id'], flush=True)\n"
             "    tts.save(tts.infer(row['text'], voice=sys.argv[3]), row['output'])\n"
         )
-        print("Generating Vietnamese voice with VieNeu (standalone)...", flush=True)
+        print("Đang tạo giọng đọc tiếng Việt bằng VieNeu…", flush=True)
         run_args = [str(python), "-X", "utf8", "-c", script, str(manifest), mode, voice]
     try:
         subprocess.run(run_args, cwd=tts_root, check=True)
     except FileNotFoundError as exc:
         raise PipelineError(f"cannot start VieNeu Python: {exc}") from exc
     except subprocess.CalledProcessError as exc:
-        raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.") from exc
+        raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.")
 
-    scene_wavs = [
-        scene_dir / f"{scene['id']}.wav"
-        for scene in production["scenes"]
-    ]
-    durations = {}
-    for scene, path in zip(production["scenes"], scene_wavs):
-        validate_voice(path)
+
+def generate_scene_voices(
+    package_root: Path,
+    production: dict,
+    scene_ids: list[str] | None = None,
+    *,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+) -> dict[str, float]:
+    """Generate the selected scene WAVs and return their measured durations."""
+    root = Path(package_root).resolve()
+    rows = tts_manifest_rows(production, scene_ids)
+    run_tts_batch(
+        root / ".runtime",
+        rows,
+        tts_root=tts_root,
+        tts_python=tts_python,
+        voice=voice,
+        mode=mode,
+        vieneu_url=vieneu_url,
+    )
+
+    durations: dict[str, float] = {}
+    for row in rows:
+        path = Path(row["output"])
+        try:
+            validate_voice(path)
+        except PipelineError as exc:
+            raise PipelineError(f"Scene {row['scene_id']}: {exc}") from exc
         with wave.open(str(path), "rb") as wav:
-            durations[scene["id"]] = wav.getnframes() / wav.getframerate()
+            durations[row["scene_id"]] = wav.getnframes() / wav.getframerate()
+    return durations
 
-    concatenate_wavs(scene_wavs, root / "voice.wav")
 
-    print(
-        f"Measuring word-level Vietnamese timing with faster-whisper/{align_model}…",
-        flush=True,
-    )
-    aligner = _load_word_aligner(
-        align_model,
-        align_device,
-        align_compute_type,
-    )
+def scene_voice_files(package_root: Path, production: dict) -> list[Path]:
+    return [scene_wav_path(package_root, scene["id"]) for scene in production["scenes"]]
+
+
+def concatenate_scene_voices(package_root: Path, production: dict) -> Path:
+    root = Path(package_root).resolve()
+    inputs = scene_voice_files(root, production)
+    output = root / "voice.wav"
+    concatenate_wavs(inputs, output)
+    return output
+
+
+def align_scene_timings(
+    production: dict,
+    durations: dict[str, float],
+    aligner,
+    scene_wavs: list[Path] | None = None,
+) -> dict:
+    """Align every scene and build frames from measured audio."""
     aligned_words = {
         scene["id"]: _align_scene_words(aligner, path, scene["voice"])
-        for scene, path in zip(production["scenes"], scene_wavs)
+        for scene, path in zip(production["scenes"], scene_wavs or [])
     }
+    return build_timing_from_word_alignment(production, durations, aligned_words)
 
-    timing = build_timing_from_word_alignment(
+
+def build_and_write_timing(package_root: Path, timing: dict) -> dict:
+    root = Path(package_root).resolve()
+    validate_timing(root, timing)
+    path = root / ".runtime" / "timing.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return timing
+
+
+def synthesize_voice(
+    package_root: Path,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+    align_model: str = "small",
+    align_device: str = "cpu",
+    align_compute_type: str = "int8",
+) -> dict:
+    """Compatibility wrapper over the granular voice/timing operations."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+
+    # Root-cause guard: the aligner dependency is checked before any TTS work,
+    # so a missing faster-whisper never costs a full voice generation pass.
+    require_word_aligner_installed()
+
+    durations = generate_scene_voices(
+        root,
+        production,
+        None,
+        tts_root=tts_root,
+        tts_python=tts_python,
+        voice=voice,
+        mode=mode,
+        vieneu_url=vieneu_url,
+    )
+    concatenate_scene_voices(root, production)
+
+    print(
+        f"Đang đo căn thời gian từng từ với faster-whisper/{align_model}…",
+        flush=True,
+    )
+    aligner = load_word_aligner(align_model, align_device, align_compute_type)
+    timing = align_scene_timings(
         production,
         durations,
-        aligned_words,
+        aligner,
+        scene_voice_files(root, production),
     )
-    validate_timing(root, timing)
-    (runtime / "timing.json").write_text(
-        json.dumps(timing, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    return timing
+    return build_and_write_timing(root, timing)
 
 def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
     """Safely import one RENDER_READY video package and return its job directory."""
@@ -1351,6 +1472,53 @@ def mix_background_music_into_render(package_root: Path) -> Path:
     return output
 
 
+def prepare_renderer(
+    package_root: Path,
+    *,
+    music: Path | None = None,
+    music_volume: float = 0.12,
+    update_music: bool = False,
+) -> None:
+    """Install pins, compile design.md, run renderer tests and typecheck."""
+    root = Path(package_root).resolve()
+    if update_music:
+        configure_background_music(root, music, music_volume)
+
+    validate_runtime(root)
+    renderer = root / "renderer"
+    if shutil.which("node") is None or (
+        shutil.which("npm") is None and shutil.which("npm.cmd") is None
+    ):
+        raise PipelineError(
+            "Node.js và npm là bắt buộc. "
+            "Hãy cài Node.js LTS mới nhất rồi thử lại."
+        )
+
+    bin_dir = renderer / "node_modules" / ".bin"
+    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
+    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
+    if not remotion_bin.is_file() or not tsc_bin.is_file():
+        print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
+        _install_renderer(renderer)
+
+    print("Đang biên dịch design.md → style token trong production.json…", flush=True)
+    _run_npm(["run", "compile:style"], renderer)
+    validate_package(root)
+
+    print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
+    _run_npm(["run", "test"], renderer)
+
+    print("Đang kiểm tra TypeScript của renderer…", flush=True)
+    _run_npm(["run", "typecheck"], renderer)
+
+
+def render_video(package_root: Path) -> None:
+    """Render the canonical Remotion MP4 for the package."""
+    root = Path(package_root).resolve()
+    validate_runtime(root)
+    _run_npm(["run", "render"], root / "renderer")
+
+
 def run_renderer(
     package_root: Path,
     action: str,
@@ -1359,63 +1527,20 @@ def run_renderer(
     update_music: bool = False,
 ) -> None:
     root = Path(package_root).resolve()
-    if update_music:
-        configure_background_music(
-            root,
-            music,
-            music_volume,
-        )
-
-    validate_runtime(root)
-    renderer = root / "renderer"
-    if shutil.which("node") is None or (
-        shutil.which("npm") is None
-        and shutil.which("npm.cmd") is None
-    ):
-        raise PipelineError(
-            "Node.js and npm are required. "
-            "Install the current Node.js LTS release, then retry."
-        )
-
-    bin_dir = renderer / "node_modules" / ".bin"
-    remotion_bin = bin_dir / (
-        "remotion.cmd" if os.name == "nt" else "remotion"
-    )
-    tsc_bin = bin_dir / (
-        "tsc.cmd" if os.name == "nt" else "tsc"
-    )
-    if not remotion_bin.is_file() or not tsc_bin.is_file():
-        print(
-            "Installing the pinned Zodiac v2 Remotion dependencies…",
-            flush=True,
-        )
-        _install_renderer(renderer)
-
-    print(
-        "Compiling design.md → production.json style token…",
-        flush=True,
-    )
-    _run_npm(["run", "compile:style"], renderer)
-    validate_package(root)
-
-    print("Running renderer contract tests…", flush=True)
-    _run_npm(["run", "test"], renderer)
-
-    print("Checking renderer TypeScript…", flush=True)
-    _run_npm(["run", "typecheck"], renderer)
+    prepare_renderer(root, music=music, music_volume=music_volume, update_music=update_music)
 
     if action == "preview":
         config = validate_background_music(root)
         if config:
             print(
-                "Remotion Studio previews voice/SFX. "
-                "Use 'Nghe thử' for the selected background-music mix "
+                "Remotion Studio xem trước voice/SFX. "
+                "Dùng 'Nghe thử' để nghe bản trộn nhạc nền đã chọn "
                 f"({config['background_music_volume']:.0%}).",
                 flush=True,
             )
-        _run_npm(["run", "studio"], renderer)
+        _run_npm(["run", "studio"], root / "renderer")
     else:
-        _run_npm(["run", "render"], renderer)
+        render_video(root)
         mix_background_music_into_render(root)
 
 
