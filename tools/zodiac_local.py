@@ -746,12 +746,93 @@ _VI_DIGIT_WORDS = {
 }
 
 
+def _vi_under_thousand_words(value: int, *, force_hundreds: bool = False) -> list[str]:
+    if value < 0 or value >= 1000:
+        raise ValueError("value must be between 0 and 999")
+    if value == 0:
+        return ["không"] if not force_hundreds else []
+
+    words: list[str] = []
+    hundreds, remainder = divmod(value, 100)
+    tens, ones = divmod(remainder, 10)
+
+    if hundreds:
+        words.extend([_VI_DIGIT_WORDS[str(hundreds)], "trăm"])
+    elif force_hundreds and remainder:
+        words.extend(["không", "trăm"])
+
+    if tens == 0:
+        if ones:
+            if hundreds or force_hundreds:
+                words.append("linh")
+            words.append(_VI_DIGIT_WORDS[str(ones)])
+        return words
+
+    if tens == 1:
+        words.append("mười")
+    else:
+        words.extend([_VI_DIGIT_WORDS[str(tens)], "mươi"])
+
+    if ones:
+        if tens >= 2 and ones == 1:
+            words.append("mốt")
+        elif tens >= 2 and ones == 4:
+            words.append("tư")
+        elif tens >= 1 and ones == 5:
+            words.append("lăm")
+        else:
+            words.append(_VI_DIGIT_WORDS[str(ones)])
+    return words
+
+
+def _vi_integer_words(raw_digits: str) -> list[str]:
+    """Canonical Vietnamese reading for an unsigned integer token."""
+    digits = str(raw_digits).lstrip("0") or "0"
+    if digits == "0":
+        return ["không"]
+
+    groups: list[int] = []
+    while digits:
+        groups.append(int(digits[-3:]))
+        digits = digits[:-3]
+
+    scale_names = {
+        0: [],
+        1: ["nghìn"],
+        2: ["triệu"],
+        3: ["tỷ"],
+        4: ["nghìn", "tỷ"],
+        5: ["triệu", "tỷ"],
+        6: ["tỷ", "tỷ"],
+    }
+    if len(groups) - 1 > max(scale_names):
+        # Very large identifiers are safer as individual digits than guessed
+        # Vietnamese large-number grammar.
+        return [_VI_DIGIT_WORDS[ch] for ch in raw_digits]
+
+    words: list[str] = []
+    highest = len(groups) - 1
+    for index in range(highest, -1, -1):
+        group = groups[index]
+        if group == 0:
+            continue
+        force_hundreds = bool(words) and group < 100
+        words.extend(
+            _vi_under_thousand_words(
+                group,
+                force_hundreds=force_hundreds,
+            )
+        )
+        words.extend(scale_names[index])
+    return words
+
+
 def _alignment_units(raw_token: str) -> list[str]:
-    """Canonical comparison units; preserves common Whisper numeric compaction."""
+    """Canonical comparison units; preserves Whisper numeric compaction."""
     raw = unicodedata.normalize("NFC", str(raw_token)).strip().lower()
-    numeric = re.fullmatch(r"([0-9])\s*(%)?", raw)
+    numeric = re.fullmatch(r"([0-9]+)\s*(%)?", raw)
     if numeric:
-        units = [_VI_DIGIT_WORDS[numeric.group(1)]]
+        units = _vi_integer_words(numeric.group(1))
         if numeric.group(2):
             units.extend(["phần", "trăm"])
         return units
@@ -1640,8 +1721,17 @@ def _wav_duration_seconds(path: Path) -> float:
         return wav.getnframes() / wav.getframerate()
 
 
-def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> bool:
-    """Allow scene-level retry for fast Gradio or capped direct fp32 output."""
+def tts_scene_frame_cap_retry_eligible(
+    package_root: Path,
+    scene_id: str,
+    *,
+    selected_mode: str,
+    allow_fp32_fallback: bool,
+) -> bool:
+    """Whether a coverage-gap retry can preserve the selected TTS policy."""
+    if not allow_fp32_fallback or selected_mode != "v3turbo":
+        return False
+
     diagnostics_path = Path(package_root) / ".runtime" / "tts-diagnostics.json"
     try:
         diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
@@ -1658,10 +1748,7 @@ def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> boo
             and generation.get("precision") == "fp32"
             and generation.get("frame_cap") is True
         )
-        return bool(
-            scene.get("speech_rate_warning")
-            and (transport == "gradio" or direct_fp32)
-        )
+        return transport == "gradio" or direct_fp32
     return False
 
 
@@ -1754,9 +1841,20 @@ def recover_scene_alignment_with_adaptive_frame_cap(
     voice: str = DEFAULT_TTS_VOICE,
     max_chars: int = DEFAULT_TTS_MAX_CHARS,
     frame_cap_scales: tuple[float, ...] = (1.25, 1.50),
+    selected_mode: str = "v3turbo",
+    allow_fp32_fallback: bool = True,
     log_callback=None,
 ) -> tuple[list[dict], float]:
-    """Retry a mismatching scene with a bounded, progressively wider frame cap."""
+    """Retry one proven coverage gap without changing the selected TTS model."""
+    if not allow_fp32_fallback:
+        raise PipelineError(
+            "TTS_RECOVERY_DISABLED: direct ONNX/fp32 fallback was disabled by the caller."
+        )
+    if selected_mode != "v3turbo":
+        raise PipelineError(
+            "TTS_RECOVERY_UNSUPPORTED_MODE: adaptive frame-cap recovery "
+            f"cannot preserve selected mode {selected_mode!r}."
+        )
     root = Path(package_root).resolve()
     scene = next(
         (item for item in production.get("scenes", []) if item.get("id") == scene_id),
@@ -1841,7 +1939,7 @@ def recover_scene_alignment_with_adaptive_frame_cap(
                 tts_root=tts_root,
                 tts_python=tts_python,
                 voice=voice,
-                mode="v3turbo",
+                mode=selected_mode,
                 vieneu_url=None,
                 backend="onnx",
                 precision="fp32",
@@ -1853,13 +1951,24 @@ def recover_scene_alignment_with_adaptive_frame_cap(
             validate_voice(current)
             duration = _wav_duration_seconds(current)
             aligned = _align_scene_words(aligner, current, scene["voice"])
-        except PipelineError as exc:
+        except AlignmentMismatchError as exc:
             if generated and current.is_file():
                 failed = evidence_dir / f"{scene_id}.frame-cap-{scale:.2f}.failed.wav"
                 shutil.copy2(current, failed)
-            if "ALIGNMENT_MISMATCH" in str(exc):
+            if exc.coverage_gap:
                 last_mismatch = exc
                 continue
+            shutil.copy2(baseline, current)
+            _emit_tts_log(
+                f"TTS_FRAME_CAP_RETRY_STOP: {scene_id} retry chỉ còn ASR variant; "
+                "dừng nới frame và khôi phục WAV baseline.",
+                log_callback,
+            )
+            raise
+        except PipelineError:
+            if generated and current.is_file():
+                failed = evidence_dir / f"{scene_id}.frame-cap-{scale:.2f}.failed.wav"
+                shutil.copy2(current, failed)
             shutil.copy2(baseline, current)
             raise
         except Exception:
@@ -1918,11 +2027,8 @@ def align_scene_timings(
                 path,
                 scene["voice"],
             )
-        except PipelineError as exc:
-            if (
-                mismatch_recovery is None
-                or "ALIGNMENT_MISMATCH" not in str(exc)
-            ):
+        except AlignmentMismatchError as exc:
+            if mismatch_recovery is None or not exc.coverage_gap:
                 raise
             recovered = mismatch_recovery(scene, path, aligner, exc)
             if recovered is None:
@@ -1993,7 +2099,14 @@ def synthesize_voice(
     aligner = load_word_aligner(align_model, align_device, align_compute_type)
     def recover_mismatch(scene, _path, active_aligner, _error):
         scene_id = scene["id"]
-        if not tts_scene_frame_cap_retry_eligible(root, scene_id):
+        if not bool(getattr(_error, "coverage_gap", False)):
+            return None
+        if not tts_scene_frame_cap_retry_eligible(
+            root,
+            scene_id,
+            selected_mode=mode,
+            allow_fp32_fallback=tts_fp32_fallback,
+        ):
             return None
         return recover_scene_alignment_with_adaptive_frame_cap(
             root,
@@ -2004,6 +2117,8 @@ def synthesize_voice(
             tts_python=tts_python,
             voice=voice,
             max_chars=tts_max_chars,
+            selected_mode=mode,
+            allow_fp32_fallback=tts_fp32_fallback,
         )
 
     timing = align_scene_timings(
