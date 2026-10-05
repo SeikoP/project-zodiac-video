@@ -449,12 +449,14 @@ class ControllerTests(WorkerHarness):
 
     def test_accepting_the_conflict_reimports_the_selected_package(self):
         controller = self._controller()
-        controller.select_archive(self._archive("a"))
+        first = self._archive("a")
+        second = self._archive("b")
+        controller.select_archive(first)
         controller.sync_package()
-        controller.select_archive(self._archive("b"))
+        controller.select_archive(second)
         controller.accept_package_conflict("import")
         self.assertFalse(controller.package_changed)
-        controller.select_archive(self._archive("b"))
+        controller.select_archive(second)
         controller.sync_package()
         self.assertEqual(
             controller.stored_fingerprint,

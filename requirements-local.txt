@@ -1,1 +1,0 @@
-# Automatic measured word timing for the local voice flow\nfaster-whisper>=1,<2\n
