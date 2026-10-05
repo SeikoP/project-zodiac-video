@@ -296,8 +296,9 @@ class StudioController:
             archive=self.archive,
             job_name=self.job.name,
         )
-        self.status_text = f"Đang chạy: {STEP_NAMES_VI[start_step]}"
-        self.worker.start(start_step)  # background thread; Tk stays responsive
+        effective_start = self.worker.plan.continue_from() or start_step
+        self.status_text = f"Đang chạy: {STEP_NAMES_VI[effective_start]}"
+        self.worker.start(effective_start)  # background thread; Tk stays responsive
 
     def handle_event(self, kind: str, payload: dict) -> None:
         """Called by the worker thread; the app forwards these to the Tk queue."""

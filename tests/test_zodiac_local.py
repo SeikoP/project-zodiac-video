@@ -10,9 +10,15 @@ from pathlib import Path
 
 from tools.zodiac_local import (
     PipelineError,
+    _align_scene_words,
     _run_ffmpeg,
+    _select_vieneu_gradio_dependency,
     build_audio_preview,
+    build_parser,
     build_timing_from_word_alignment,
+    build_tts_diagnostics,
+    effective_tts_generation_config,
+    generate_scene_voices,
     concatenate_wavs,
     configure_background_music,
     import_package,
@@ -570,6 +576,213 @@ class RuntimeTimingTests(unittest.TestCase):
                     wav.getnframes(),
                     5,
                 )
+
+
+class TtsDurationGuardTests(unittest.TestCase):
+    def test_flags_fast_vietnamese_speech_before_alignment(self):
+        words = [f"tu{i}" for i in range(89)]
+        production = {
+            "scenes": [
+                {
+                    "id": "S01",
+                    "voice": " ".join(words),
+                },
+            ],
+        }
+        diagnostics = build_tts_diagnostics(
+            production,
+            {"S01": 20.1},
+            warning_wps=3.8,
+            transport="local",
+            backend="onnx",
+            precision="int8",
+            frame_cap=True,
+            max_chars=256,
+        )
+        scene = diagnostics["scenes"][0]
+        self.assertEqual(scene["word_count"], 89)
+        self.assertAlmostEqual(scene["words_per_second"], 89 / 20.1, places=3)
+        self.assertTrue(scene["speech_rate_warning"])
+        self.assertTrue(diagnostics["summary"]["speech_rate_warning"])
+
+    def test_natural_rate_does_not_warn(self):
+        production = {
+            "scenes": [
+                {
+                    "id": "S01",
+                    "voice": " ".join(f"tu{i}" for i in range(89)),
+                },
+            ],
+        }
+        diagnostics = build_tts_diagnostics(
+            production,
+            {"S01": 27.0},
+            warning_wps=3.8,
+        )
+        self.assertFalse(diagnostics["scenes"][0]["speech_rate_warning"])
+        self.assertFalse(diagnostics["summary"]["speech_rate_warning"])
+
+    def test_alignment_mismatch_has_stable_error_code(self):
+        class Word:
+            word = "một"
+            start = 0.0
+            end = 0.2
+            probability = 0.99
+
+        class Segment:
+            words = [Word()]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        with self.assertRaisesRegex(PipelineError, "ALIGNMENT_MISMATCH"):
+            _align_scene_words(
+                Model(),
+                Path("S01.wav"),
+                "một hai",
+            )
+
+    def test_voice_cli_exposes_turbo_diagnostic_controls(self):
+        args = build_parser().parse_args(
+            [
+                "voice",
+                "job",
+                "--tts-backend",
+                "onnx",
+                "--tts-precision",
+                "int8",
+                "--tts-frame-cap",
+                "off",
+                "--tts-max-chars",
+                "160",
+                "--speech-rate-warning-wps",
+                "3.9",
+            ]
+        )
+        self.assertEqual(args.tts_backend, "onnx")
+        self.assertEqual(args.tts_precision, "int8")
+        self.assertEqual(args.tts_frame_cap, "off")
+        self.assertEqual(args.tts_max_chars, 160)
+        self.assertEqual(args.speech_rate_warning_wps, 3.9)
+        self.assertTrue(args.tts_fp32_fallback)
+
+        no_fallback = build_parser().parse_args(
+            ["voice", "job", "--no-tts-fp32-fallback"]
+        )
+        self.assertFalse(no_fallback.tts_fp32_fallback)
+
+
+class VieNeuGradioEndpointTests(unittest.TestCase):
+    @staticmethod
+    def _config(api_name="wrapper", text_label="Văn bản", output_type="audio"):
+        return {
+            "components": [
+                {"id": 1, "type": "textbox", "props": {"label": text_label, "value": ""}},
+                {"id": 2, "type": "dropdown", "props": {"label": "Giọng mẫu", "value": "Hải Đăng"}},
+                {"id": 3, "type": output_type, "props": {"label": "Audio"}},
+                {"id": 4, "type": "textbox", "props": {"label": "Khác"}},
+            ],
+            "dependencies": [
+                {"api_name": api_name, "inputs": [1, 2], "outputs": [3]},
+            ],
+        }
+
+    def test_selects_only_verified_single_speaker_synthesis_endpoint(self):
+        config = self._config()
+        config["dependencies"].insert(
+            0,
+            {"api_name": "load_model", "inputs": [1, 4], "outputs": [3]},
+        )
+        dep = _select_vieneu_gradio_dependency(config)
+        self.assertEqual(dep["api_name"], "wrapper")
+
+    def test_rejects_unrelated_endpoint_instead_of_falling_back(self):
+        config = self._config(api_name="load_model")
+        with self.assertRaisesRegex(PipelineError, "endpoint tạo giọng"):
+            _select_vieneu_gradio_dependency(config)
+
+    def test_rejects_semantically_wrong_wrapper(self):
+        config = self._config(text_label="Kịch bản hội thoại")
+        with self.assertRaisesRegex(PipelineError, "endpoint tạo giọng"):
+            _select_vieneu_gradio_dependency(config)
+
+
+class TtsDiagnosticsRegressionTests(unittest.TestCase):
+    def test_rejects_non_finite_threshold(self):
+        production = {"scenes": [{"id": "S01", "voice": "một hai"}]}
+        for value in (float("nan"), float("inf"), float("-inf"), 0.0, -1.0):
+            with self.subTest(value=value):
+                with self.assertRaises(PipelineError):
+                    build_tts_diagnostics(
+                        production,
+                        {"S01": 1.0},
+                        warning_wps=value,
+                    )
+
+    def test_invalid_threshold_fails_before_tts_runs(self):
+        production = {"scenes": [{"id": "S01", "voice": "một hai"}]}
+        with tempfile.TemporaryDirectory() as temp, patch(
+            "tools.zodiac_local.run_tts_batch"
+        ) as run:
+            with self.assertRaises(PipelineError):
+                generate_scene_voices(
+                    Path(temp),
+                    production,
+                    speech_rate_warning_wps=float("nan"),
+                )
+            run.assert_not_called()
+
+    def test_partial_generation_writes_job_wide_diagnostics(self):
+        production = {
+            "scenes": [
+                {"id": "S01", "voice": "một hai ba"},
+                {"id": "S02", "voice": "bốn năm sáu"},
+            ],
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            write_pcm(root / ".runtime" / "tts-scenes" / "S01.wav", seconds=1.0)
+
+            def fake_batch(runtime, rows, **_kwargs):
+                scene_dir = Path(runtime) / "tts-scenes"
+                scene_dir.mkdir(parents=True, exist_ok=True)
+                for row in rows:
+                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+                    write_pcm(Path(row["output"]), seconds=2.0)
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
+                durations = generate_scene_voices(
+                    root,
+                    production,
+                    ["S02"],
+                    fp32_fallback_on_rate_warning=False,
+                )
+
+            self.assertEqual(set(durations), {"S01", "S02"})
+            diagnostics = json.loads(
+                (root / ".runtime" / "tts-diagnostics.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                [scene["scene_id"] for scene in diagnostics["scenes"]],
+                ["S01", "S02"],
+            )
+            self.assertEqual(diagnostics["summary"]["word_count"], 6)
+
+    def test_non_turbo_config_reports_only_applied_settings(self):
+        config = effective_tts_generation_config(
+            mode="v3nano",
+            vieneu_url=None,
+            backend="onnx",
+            precision="fp32",
+            frame_cap="on",
+            max_chars=256,
+        )
+        self.assertEqual(config["transport"], "local")
+        self.assertIsNone(config["backend"])
+        self.assertIsNone(config["precision"])
+        self.assertIsNone(config["frame_cap"])
+        self.assertEqual(config["max_chars"], 256)
 
 
 class BackgroundMusicTests(unittest.TestCase):
