@@ -54,12 +54,12 @@ from tools.zodiac_local import (
     load_word_aligner,
     mix_background_music_into_render,
     prepare_renderer,
-    recover_scene_alignment_with_uncapped_tts,
+    recover_scene_alignment_with_adaptive_frame_cap,
     render_video,
     require_word_aligner_installed,
     scene_voice_files,
     scene_wav_path,
-    tts_scene_uncapped_retry_eligible,
+    tts_scene_frame_cap_retry_eligible,
     validate_package,
     validate_runtime,
     validate_voice,
@@ -539,10 +539,10 @@ class PipelineWorker:
 
         def recover_mismatch(scene, _path, active_aligner, _error):
             scene_id = scene["id"]
-            if not tts_scene_uncapped_retry_eligible(self.root, scene_id):
+            if not tts_scene_frame_cap_retry_eligible(self.root, scene_id):
                 return None
             self._raise_if_cancelled()
-            recovered = recover_scene_alignment_with_uncapped_tts(
+            recovered = recover_scene_alignment_with_adaptive_frame_cap(
                 self.root,
                 production,
                 scene_id,
@@ -558,10 +558,10 @@ class PipelineWorker:
                 scene_id,
                 DONE,
                 file_hash=file_sha256(scene_wav_path(self.root, scene_id)),
-                tts_recovery="frame_cap_off_after_alignment_mismatch",
+                tts_recovery="adaptive_frame_cap_after_alignment_mismatch",
                 tts_actual_backend="onnx",
                 tts_actual_precision="fp32",
-                tts_actual_frame_cap=False,
+                tts_actual_frame_cap=True,
             )
             self._checkpoint()
             return recovered
@@ -578,7 +578,7 @@ class PipelineWorker:
             output = concatenate_scene_voices(self.root, production)
             self.plan.steps[CONCAT_VOICE].fingerprint = output.stat().st_size
             self.log(
-                "Đã ghép lại voice.wav sau frame-cap recovery: "
+                "Đã ghép lại voice.wav sau adaptive frame-cap recovery: "
                 + ", ".join(recovered_ids)
             )
         build_and_write_timing(self.root, timing)
