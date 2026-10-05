@@ -1033,11 +1033,11 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
         else:
             self.fail("Expected alignment mismatch")
 
-    def test_percent_number_compaction_does_not_look_like_missing_words(self):
+    def test_percent_number_compaction_is_split_across_approved_words(self):
         class Word:
             word = "8%"
             start = 0.0
-            end = 0.4
+            end = 0.6
             probability = 0.95
 
         class Segment:
@@ -1047,16 +1047,17 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             def transcribe(self, *args, **kwargs):
                 return [Segment()], object()
 
-        try:
-            _align_scene_words(
-                Model(),
-                Path("S01.wav"),
-                "tám phần trăm",
-            )
-        except PipelineError as exc:
-            self.assertFalse(getattr(exc, "coverage_gap", True))
-        else:
-            self.fail("Expected exact-token mismatch before timing reconciliation")
+        aligned = _align_scene_words(
+            Model(),
+            Path("S01.wav"),
+            "tám phần trăm",
+        )
+        self.assertEqual(
+            [item["text"] for item in aligned],
+            ["tám", "phần", "trăm"],
+        )
+        self.assertAlmostEqual(aligned[0]["startMs"], 0.0)
+        self.assertAlmostEqual(aligned[-1]["endMs"], 600.0)
 
     def test_non_turbo_config_reports_only_applied_settings(self):
         config = effective_tts_generation_config(
