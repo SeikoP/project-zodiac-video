@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import os
@@ -22,6 +23,23 @@ from pathlib import Path, PurePosixPath
 
 class PipelineError(Exception):
     """A package, runtime, or local-tool prerequisite is invalid."""
+
+
+class AlignmentMismatchError(PipelineError):
+    """ASR differs from approved narration, with coverage metadata for retry policy."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        expected: list[str],
+        heard: list[str],
+        coverage_gap: bool,
+    ) -> None:
+        super().__init__(message)
+        self.expected = expected
+        self.heard = heard
+        self.coverage_gap = bool(coverage_gap)
 
 
 MAX_ZIP_ENTRIES = 5000
@@ -714,6 +732,66 @@ def _expected_caption_tokens(text: str) -> list[str]:
     return tokens
 
 
+_VI_DIGIT_WORDS = {
+    "0": "không",
+    "1": "một",
+    "2": "hai",
+    "3": "ba",
+    "4": "bốn",
+    "5": "năm",
+    "6": "sáu",
+    "7": "bảy",
+    "8": "tám",
+    "9": "chín",
+}
+
+
+def _alignment_units(raw_token: str) -> list[str]:
+    """Canonical comparison units; preserves common Whisper numeric compaction."""
+    raw = unicodedata.normalize("NFC", str(raw_token)).strip().lower()
+    numeric = re.fullmatch(r"([0-9])\s*(%)?", raw)
+    if numeric:
+        units = [_VI_DIGIT_WORDS[numeric.group(1)]]
+        if numeric.group(2):
+            units.extend(["phần", "trăm"])
+        return units
+    normalized = _normalize_token(raw)
+    return [normalized] if normalized else []
+
+
+def _alignment_coverage_gap(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> bool:
+    """True only when ASR evidence suggests approved words have no counterpart.
+
+    Substitutions of the same/greater heard span are treated as transcription
+    variants, not as proof that TTS omitted audio. This prevents expensive TTS
+    regeneration for cases such as Xử/Sử, 8%/tám phần trăm, or word splitting.
+    """
+    expected_units = [
+        unit
+        for token in expected_tokens
+        for unit in _alignment_units(token)
+    ]
+    heard_units = [
+        unit
+        for item in measured_words
+        for unit in _alignment_units(item.get("heard", ""))
+    ]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "delete":
+            return True
+        if tag == "replace" and (i2 - i1) > (j2 - j1):
+            return True
+    return False
+
+
 def load_word_aligner(model_name: str, device: str, compute_type: str):
     require_word_aligner_installed()
     try:
@@ -774,10 +852,20 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
     expected_norm = [_normalize_token(token) for token in expected]
     heard_norm = [_normalize_token(item["heard"]) for item in measured]
     if expected_norm != heard_norm:
-        raise PipelineError(
+        coverage_gap = _alignment_coverage_gap(expected, measured)
+        mismatch_kind = (
+            "coverage_gap"
+            if coverage_gap
+            else "asr_transcription_variant"
+        )
+        raise AlignmentMismatchError(
             "ALIGNMENT_MISMATCH: word alignment does not match approved narration for "
-            f"{audio_path.name}. expected={expected_norm!r}, heard={heard_norm!r}. "
-            "Do not guess timings; correct the TTS/alignment and retry."
+            f"{audio_path.name}. kind={mismatch_kind}. "
+            f"expected={expected_norm!r}, heard={heard_norm!r}. "
+            "Do not guess timings; correct the TTS/alignment and retry.",
+            expected=expected_norm,
+            heard=heard_norm,
+            coverage_gap=coverage_gap,
         )
 
     return [
@@ -1431,205 +1519,25 @@ def generate_scene_voices(
     fp32_fallback_on_rate_warning: bool = True,
     log_callback=None,
 ) -> dict[str, float]:
-    """Generate selected WAVs with probe-first routing and return whole-job durations."""
+    """Generate selected WAVs once; WPS is diagnostic, never a batch retry trigger."""
     speech_rate_warning_wps = _validate_speech_rate_warning_wps(
         speech_rate_warning_wps
     )
     root = Path(package_root).resolve()
-    runtime = root / ".runtime"
     rows = tts_manifest_rows(production, scene_ids)
-    generated_ids = {row["scene_id"] for row in rows}
-    generated_scene_configs: dict[str, dict] = {}
-    direct_adaptive_scale = 1.25
-    routed_direct = False
-
-    can_probe_gradio = bool(
-        rows
-        and vieneu_url
-        and mode == "v3turbo"
-        and fp32_fallback_on_rate_warning
+    run_tts_batch(
+        root / ".runtime",
+        rows,
+        tts_root=tts_root,
+        tts_python=tts_python,
+        voice=voice,
+        mode=mode,
+        vieneu_url=vieneu_url,
+        backend=backend,
+        precision=precision,
+        frame_cap=frame_cap,
+        max_chars=max_chars,
     )
-    cached_route = (
-        _load_direct_adaptive_route(
-            runtime,
-            mode=mode,
-            voice=voice,
-            vieneu_url=vieneu_url,
-            max_chars=max_chars,
-            warning_wps=speech_rate_warning_wps,
-        )
-        if can_probe_gradio
-        else None
-    )
-
-    if cached_route is not None:
-        scale = float(cached_route.get("frame_cap_scale", direct_adaptive_scale))
-        _emit_tts_log(
-            "TTS_ROUTE_CACHE: job này đã xác nhận Gradio quá nhanh; "
-            f"bỏ Gradio và chạy direct ONNX/fp32 frame-cap x{scale:.2f}.",
-            log_callback,
-        )
-        run_tts_batch(
-            runtime,
-            rows,
-            tts_root=tts_root,
-            tts_python=tts_python,
-            voice=voice,
-            mode=mode,
-            vieneu_url=None,
-            backend="onnx",
-            precision="fp32",
-            frame_cap="on",
-            frame_cap_scale=scale,
-            max_chars=max_chars,
-        )
-        config = _direct_adaptive_generation_config(max_chars, scale)
-        generated_scene_configs.update(
-            {row["scene_id"]: dict(config) for row in rows}
-        )
-        routed_direct = True
-
-    elif can_probe_gradio and len(rows) > 1:
-        probe_row = rows[0]
-        _emit_tts_log(
-            f"TTS_GRADIO_PROBE: chỉ sinh {probe_row['scene_id']} trước để tránh "
-            "phải bỏ cả batch nếu Gradio quá nhanh.",
-            log_callback,
-        )
-        run_tts_batch(
-            runtime,
-            [probe_row],
-            tts_root=tts_root,
-            tts_python=tts_python,
-            voice=voice,
-            mode=mode,
-            vieneu_url=vieneu_url,
-            backend=backend,
-            precision=precision,
-            frame_cap=frame_cap,
-            max_chars=max_chars,
-        )
-        probe_duration, probe_words, probe_wps = _measure_generated_row(
-            root,
-            probe_row,
-        )
-        probe_warning = probe_wps > speech_rate_warning_wps
-        probe_report = {
-            "version": 1,
-            "scene_id": probe_row["scene_id"],
-            "word_count": probe_words,
-            "duration_seconds": round(probe_duration, 6),
-            "words_per_second": round(probe_wps, 6),
-            "warning_wps": speech_rate_warning_wps,
-            "speech_rate_warning": probe_warning,
-        }
-        write_tts_diagnostics(runtime, probe_report, "tts-gradio-probe.json")
-
-        if probe_warning:
-            _emit_tts_log(
-                f"TTS_GRADIO_PROBE_WARNING: {probe_row['scene_id']} "
-                f"{probe_duration:.1f}s / {probe_words} từ = {probe_wps:.2f} từ/giây "
-                f"> {speech_rate_warning_wps:.2f}; bỏ full Gradio.",
-                log_callback,
-            )
-            _write_direct_adaptive_route(
-                runtime,
-                mode=mode,
-                voice=voice,
-                vieneu_url=vieneu_url,
-                max_chars=max_chars,
-                warning_wps=speech_rate_warning_wps,
-                probe_scene_id=probe_row["scene_id"],
-                probe_wps=probe_wps,
-                frame_cap_scale=direct_adaptive_scale,
-            )
-            _emit_tts_log(
-                "TTS_ROUTE_SWITCH: chạy toàn bộ scene cần tạo bằng direct "
-                f"ONNX/fp32 frame-cap x{direct_adaptive_scale:.2f}.",
-                log_callback,
-            )
-            run_tts_batch(
-                runtime,
-                rows,
-                tts_root=tts_root,
-                tts_python=tts_python,
-                voice=voice,
-                mode=mode,
-                vieneu_url=None,
-                backend="onnx",
-                precision="fp32",
-                frame_cap="on",
-                frame_cap_scale=direct_adaptive_scale,
-                max_chars=max_chars,
-            )
-            config = _direct_adaptive_generation_config(
-                max_chars,
-                direct_adaptive_scale,
-            )
-            generated_scene_configs.update(
-                {row["scene_id"]: dict(config) for row in rows}
-            )
-            routed_direct = True
-        else:
-            gradio_config = effective_tts_generation_config(
-                mode=mode,
-                vieneu_url=vieneu_url,
-                backend=backend,
-                precision=precision,
-                frame_cap=frame_cap,
-                max_chars=max_chars,
-            )
-            generated_scene_configs[probe_row["scene_id"]] = dict(gradio_config)
-            remaining = rows[1:]
-            _emit_tts_log(
-                f"TTS_GRADIO_PROBE_PASS: {probe_row['scene_id']} "
-                f"{probe_wps:.2f} từ/giây; tiếp tục Gradio cho "
-                f"{len(remaining)} scene còn lại.",
-                log_callback,
-            )
-            if remaining:
-                run_tts_batch(
-                    runtime,
-                    remaining,
-                    tts_root=tts_root,
-                    tts_python=tts_python,
-                    voice=voice,
-                    mode=mode,
-                    vieneu_url=vieneu_url,
-                    backend=backend,
-                    precision=precision,
-                    frame_cap=frame_cap,
-                    max_chars=max_chars,
-                )
-                generated_scene_configs.update(
-                    {row["scene_id"]: dict(gradio_config) for row in remaining}
-                )
-
-    else:
-        run_tts_batch(
-            runtime,
-            rows,
-            tts_root=tts_root,
-            tts_python=tts_python,
-            voice=voice,
-            mode=mode,
-            vieneu_url=vieneu_url,
-            backend=backend,
-            precision=precision,
-            frame_cap=frame_cap,
-            max_chars=max_chars,
-        )
-        config = effective_tts_generation_config(
-            mode=mode,
-            vieneu_url=vieneu_url,
-            backend=backend,
-            precision=precision,
-            frame_cap=frame_cap,
-            max_chars=max_chars,
-        )
-        generated_scene_configs.update(
-            {row["scene_id"]: dict(config) for row in rows}
-        )
 
     durations: dict[str, float] = {}
     for scene in production["scenes"]:
@@ -1654,83 +1562,31 @@ def generate_scene_voices(
         durations,
         warning_wps=speech_rate_warning_wps,
         **applied_config,
-        scene_configs=generated_scene_configs,
     )
-    _print_tts_diagnostics(diagnostics, log_callback)
-
     warning_ids = [
         item["scene_id"]
         for item in diagnostics["scenes"]
         if item["speech_rate_warning"]
-        and item["scene_id"] in generated_ids
-        and (item.get("generation") or {}).get("transport") == "gradio"
+        and item["scene_id"] in {row["scene_id"] for row in rows}
     ]
-    if (
-        can_probe_gradio
-        and not routed_direct
-        and warning_ids
-    ):
-        write_tts_diagnostics(
-            runtime,
-            diagnostics,
-            "tts-diagnostics.initial.json",
-        )
+    if warning_ids:
+        diagnostics["rate_policy"] = {
+            "action": "warning_only",
+            "reason": (
+                "speech rate alone is not evidence of missing narration; "
+                "alignment decides whether a scene-level retry is justified"
+            ),
+            "scene_ids": warning_ids,
+        }
+    write_tts_diagnostics(root / ".runtime", diagnostics)
+    _print_tts_diagnostics(diagnostics, log_callback)
+    if warning_ids and fp32_fallback_on_rate_warning:
         _emit_tts_log(
-            "TTS_FP32_RETRY: một số scene Gradio còn quá nhanh; "
-            f"retry riêng bằng direct ONNX/fp32 frame-cap x{direct_adaptive_scale:.2f}: "
-            + ", ".join(warning_ids),
+            "TTS_RATE_NOTICE: tốc độ cao chỉ được ghi cảnh báo; "
+            "không sinh lại cả batch. Alignment sẽ quyết định retry theo từng scene.",
             log_callback,
         )
-        retry_rows = [
-            row for row in rows
-            if row["scene_id"] in set(warning_ids)
-        ]
-        run_tts_batch(
-            runtime,
-            retry_rows,
-            tts_root=tts_root,
-            tts_python=tts_python,
-            voice=voice,
-            mode=mode,
-            vieneu_url=None,
-            backend="onnx",
-            precision="fp32",
-            frame_cap="on",
-            frame_cap_scale=direct_adaptive_scale,
-            max_chars=max_chars,
-        )
-        retry_config = _direct_adaptive_generation_config(
-            max_chars,
-            direct_adaptive_scale,
-        )
-        for row in retry_rows:
-            path = Path(row["output"])
-            try:
-                validate_voice(path)
-            except PipelineError as exc:
-                raise PipelineError(
-                    f"Scene {row['scene_id']} fp32 retry: {exc}"
-                ) from exc
-            durations[row["scene_id"]] = _wav_duration_seconds(path)
-            generated_scene_configs[row["scene_id"]] = dict(retry_config)
-
-        diagnostics = build_tts_diagnostics(
-            production,
-            durations,
-            warning_wps=speech_rate_warning_wps,
-            **applied_config,
-            scene_configs=generated_scene_configs,
-        )
-        diagnostics["fallback"] = {
-            "reason": "speech_rate_warning",
-            "scene_ids": warning_ids,
-            "frame_cap_scale": direct_adaptive_scale,
-        }
-        _print_tts_diagnostics(diagnostics, log_callback)
-
-    write_tts_diagnostics(runtime, diagnostics)
     return durations
-
 def scene_voice_files(package_root: Path, production: dict) -> list[Path]:
     return [scene_wav_path(package_root, scene["id"]) for scene in production["scenes"]]
 
