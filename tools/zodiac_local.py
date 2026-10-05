@@ -1605,7 +1605,7 @@ def _wav_duration_seconds(path: Path) -> float:
 
 
 def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> bool:
-    """Retry only after capped ONNX/fp32 is still fast and exact alignment fails."""
+    """Allow scene-level retry for fast Gradio or capped direct fp32 output."""
     diagnostics_path = Path(package_root) / ".runtime" / "tts-diagnostics.json"
     try:
         diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
@@ -1615,11 +1615,16 @@ def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> boo
         if scene.get("scene_id") != scene_id:
             continue
         generation = scene.get("generation") or {}
-        return bool(
-            scene.get("speech_rate_warning")
+        transport = generation.get("transport")
+        direct_fp32 = (
+            transport == "local"
             and generation.get("backend") == "onnx"
             and generation.get("precision") == "fp32"
             and generation.get("frame_cap") is True
+        )
+        return bool(
+            scene.get("speech_rate_warning")
+            and (transport == "gradio" or direct_fp32)
         )
     return False
 
@@ -1737,6 +1742,7 @@ def recover_scene_alignment_with_adaptive_frame_cap(
         )
 
     baseline_scale = 1.0
+    baseline_transport = "local"
     diagnostics_path = root / ".runtime" / "tts-diagnostics.json"
     try:
         current_diagnostics = json.loads(
@@ -1748,6 +1754,7 @@ def recover_scene_alignment_with_adaptive_frame_cap(
         if item.get("scene_id") != scene_id:
             continue
         generation = item.get("generation") or {}
+        baseline_transport = str(generation.get("transport") or "local")
         try:
             baseline_scale = float(generation.get("frame_cap_scale", 1.0))
         except (TypeError, ValueError):
@@ -1755,9 +1762,12 @@ def recover_scene_alignment_with_adaptive_frame_cap(
         break
 
     scales = tuple(
-        value
-        for value in configured_scales
-        if value > baseline_scale + 1e-9
+        ([1.0] if baseline_transport == "gradio" else [])
+        + [
+            value
+            for value in configured_scales
+            if value > baseline_scale + 1e-9
+        ]
     )
     if not scales:
         raise PipelineError(
@@ -1777,8 +1787,14 @@ def recover_scene_alignment_with_adaptive_frame_cap(
 
     for scale in scales:
         _emit_tts_log(
-            f"TTS_FRAME_CAP_RETRY: {scene_id} capped ONNX/fp32 vẫn mismatch; "
-            f"thử nới frame-cap x{scale:.2f}.",
+            (
+                f"TTS_SCENE_FP32_RETRY: {scene_id} Gradio mismatch có coverage gap; "
+                "thử riêng scene bằng direct ONNX/fp32 cap x1.00."
+                if baseline_transport == "gradio" and math.isclose(scale, 1.0)
+                else
+                f"TTS_FRAME_CAP_RETRY: {scene_id} direct ONNX/fp32 vẫn mismatch; "
+                f"thử nới frame-cap x{scale:.2f}."
+            ),
             log_callback,
         )
         generated = False
