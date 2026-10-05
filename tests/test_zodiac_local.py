@@ -536,6 +536,92 @@ class RuntimeTimingTests(unittest.TestCase):
             "chào",
         )
 
+    def test_clamps_small_whisper_end_overshoot_to_wav_boundary(self):
+        production = json.loads(
+            package_files()["production.json"]
+        )
+        relative = [
+            {
+                "text": "Xin",
+                "startMs": 0,
+                "endMs": 180,
+                "timestampMs": 0,
+                "confidence": 0.9,
+            },
+            {
+                "text": "chào",
+                "startMs": 180,
+                "endMs": 380,
+                "timestampMs": 180,
+                "confidence": 0.9,
+            },
+            {
+                "text": "mọi",
+                "startMs": 380,
+                "endMs": 700,
+                "timestampMs": 380,
+                "confidence": 0.9,
+            },
+            {
+                "text": "người.",
+                "startMs": 700,
+                "endMs": 1120,
+                "timestampMs": 700,
+                "confidence": 0.9,
+            },
+        ]
+        timing = build_timing_from_word_alignment(
+            production,
+            {"S01": 1.0},
+            {"S01": relative},
+        )
+        last = timing["scenes"][0]["captions"][-1]
+        self.assertEqual(last["endMs"], 1000.0)
+
+    def test_rejects_large_whisper_end_overshoot(self):
+        production = json.loads(
+            package_files()["production.json"]
+        )
+        relative = [
+            {
+                "text": "Xin",
+                "startMs": 0,
+                "endMs": 180,
+                "timestampMs": 0,
+                "confidence": 0.9,
+            },
+            {
+                "text": "chào",
+                "startMs": 180,
+                "endMs": 380,
+                "timestampMs": 180,
+                "confidence": 0.9,
+            },
+            {
+                "text": "mọi",
+                "startMs": 380,
+                "endMs": 700,
+                "timestampMs": 380,
+                "confidence": 0.9,
+            },
+            {
+                "text": "người.",
+                "startMs": 700,
+                "endMs": 1400,
+                "timestampMs": 700,
+                "confidence": 0.9,
+            },
+        ]
+        with self.assertRaisesRegex(
+            PipelineError,
+            "outside measured WAV boundary",
+        ):
+            build_timing_from_word_alignment(
+                production,
+                {"S01": 1.0},
+                {"S01": relative},
+            )
+
     def test_accepts_measured_word_timing(self):
         with tempfile.TemporaryDirectory() as temp:
             job = write_package(Path(temp))
