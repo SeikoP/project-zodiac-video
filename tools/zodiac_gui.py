@@ -11,10 +11,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     from tools.studio.app import main as studio_main
 
-    return studio_main(argv)
+    return studio_main()
 
 
 if __name__ == "__main__":
