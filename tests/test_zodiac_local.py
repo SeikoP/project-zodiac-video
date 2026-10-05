@@ -2,6 +2,7 @@ import json
 import stat
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 import wave
 from pathlib import Path
@@ -12,6 +13,8 @@ from tools.zodiac_local import (
     safe_extract_zip,
     build_timing_from_durations,
     concatenate_wavs,
+    configure_background_music,
+    build_audio_preview,
     validate_package,
     validate_timing,
 )
@@ -204,6 +207,74 @@ class RuntimeTimingTests(unittest.TestCase):
             timing["scenes"][0]["captions"][0]["text"] = "Nội dung khác."
             with self.assertRaisesRegex(PipelineError, "caption text"):
                 validate_timing(root / "zodiac-venus-virgo", timing)
+
+
+class BackgroundMusicTests(unittest.TestCase):
+    def _runtime_job(self, root: Path) -> Path:
+        job = root / "job"
+        (job / ".runtime").mkdir(parents=True)
+        (job / "renderer" / "src").mkdir(parents=True)
+        (job / ".runtime" / "timing.json").write_text(
+            json.dumps(valid_timing(), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        (job / "renderer" / "src" / "ZodiacComposition.tsx").write_text(
+            'const C = () => (<>\n  <Audio src={staticFile("voice.wav")} />\n</>);\n',
+            encoding="utf-8",
+        )
+        (job / "renderer" / "src" / "types.ts").write_text(
+            "type RuntimeSceneTiming = {};\nexport type RuntimeTiming = {fps: number; scenes: RuntimeSceneTiming[];};\n",
+            encoding="utf-8",
+        )
+        with wave.open(str(job / "voice.wav"), "wb") as wav:
+            wav.setnchannels(1)
+            wav.setsampwidth(2)
+            wav.setframerate(8000)
+            wav.writeframes(b"\x00\x00" * 8000)
+        return job
+
+    def test_background_music_uses_public_media_path_and_accepts_100_percent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            job = self._runtime_job(root)
+            music = root / "music.mp3"
+            music.write_bytes(b"fake mp3")
+            configure_background_music(job, music, 1.0)
+            timing = json.loads((job / ".runtime" / "timing.json").read_text(encoding="utf-8"))
+            self.assertEqual(timing["background_music"], "media/background-music.mp3")
+            self.assertEqual(timing["background_music_volume"], 1.0)
+            self.assertTrue((job / "media" / "background-music.mp3").is_file())
+            source = (job / "renderer" / "src" / "ZodiacComposition.tsx").read_text(encoding="utf-8")
+            self.assertIn("timing.background_music", source)
+
+    def test_background_music_rejects_volume_above_100_percent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            job = self._runtime_job(root)
+            music = root / "music.mp3"
+            music.write_bytes(b"fake mp3")
+            with self.assertRaisesRegex(PipelineError, "between 0 and 1"):
+                configure_background_music(job, music, 1.01)
+
+    def test_audio_preview_uses_selected_mix_volume(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            job = self._runtime_job(root)
+            music = root / "music.mp3"
+            music.write_bytes(b"fake mp3")
+
+            def fake_run(command, check):
+                Path(command[-1]).write_bytes(b"preview")
+
+            with patch("tools.zodiac_local.shutil.which", return_value="ffmpeg"), patch(
+                "tools.zodiac_local.subprocess.run", side_effect=fake_run
+            ) as run:
+                output = build_audio_preview(job, music, 0.75, 5)
+            self.assertEqual(output, job / ".runtime" / "audio-preview.wav")
+            command = run.call_args.args[0]
+            filter_complex = command[command.index("-filter_complex") + 1]
+            self.assertIn("volume=0.750", filter_complex)
+            self.assertIn("atrim=0:5.000", filter_complex)
 
 
 if __name__ == "__main__":
