@@ -106,10 +106,18 @@ class PipelinePlan:
     def scene_status(self, step: str, scene_id: str) -> str:
         return (self.steps[step].scenes.get(scene_id) or {}).get("status", PENDING)
 
+    def scenes_pending(self, step: str) -> bool:
+        """A per-scene step is only finished when every scene checkpoint is."""
+        scenes = self.steps[step].scenes
+        return any(entry.get("status") != DONE for entry in scenes.values())
+
+    def is_finished(self, step: str) -> bool:
+        return self.status(step) == DONE and not self.scenes_pending(step)
+
     def next_step(self) -> str | None:
         """First step that is not finished: used by 'Chạy toàn bộ'."""
         for step in STEP_ORDER:
-            if self.status(step) != DONE:
+            if not self.is_finished(step):
                 return step
         return None
 
@@ -161,6 +169,13 @@ class PipelinePlan:
         """Reset one step and everything that depends on it."""
         for target in (step, *DOWNSTREAM.get(step, ())):
             self.mark(target, PENDING)
+
+    def complete_step(self, step: str) -> None:
+        """Mark a step finished; finished downstream steps must be redone."""
+        for target in DOWNSTREAM.get(step, ()):
+            if self.status(target) == DONE:
+                self.mark(target, PENDING)
+        self.mark(step, DONE)
 
     def apply_change(self, change: str, *, changed_scenes: list[str] | None = None) -> None:
         """Invalidate exactly the steps affected by a creative edit."""

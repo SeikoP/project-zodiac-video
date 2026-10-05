@@ -70,10 +70,13 @@ class PreflightChecker:
 
     @staticmethod
     def failures(checks: list[Check]) -> list[Check]:
+        """Every check that is not green."""
         return [check for check in checks if not check.ok]
 
-    def dependency_checks(self, checks: list[Check]) -> list[Check]:
-        return [check for check in self.failures(checks) if check.error_code == "DEPENDENCY_MISSING"]
+    @staticmethod
+    def dependency_checks(checks: list[Check]) -> list[Check]:
+        """Missing installable dependencies, ignoring VieNeu/package state."""
+        return [check for check in checks if check.error_code == "DEPENDENCY_MISSING"]
 
     # ---- individual checks -------------------------------------------
     def _python(self) -> Check:

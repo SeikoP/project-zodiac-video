@@ -9,6 +9,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+from tools.zodiac_local import PipelineError
 from tools.studio.pipeline import (
     ALIGN_TIMING,
     CONCAT_VOICE,
@@ -77,23 +78,46 @@ class JobStateStore:
         if payload is not None:
             plan = PipelinePlan(job=payload.get("job", self.root.name))
             plan.load_payload(payload)
-            return plan
+        else:
+            migrated = migrate_legacy_job(self.root)
+            plan = PipelinePlan(job=self.root.name)
+            plan.load_payload({"job": self.root.name, "package_fingerprint": None, "steps": migrated})
 
-        migrated = migrate_legacy_job(self.root)
-        plan = PipelinePlan(job=self.root.name)
-        plan.load_payload({"job": self.root.name, "package_fingerprint": None, "steps": migrated})
+        self.recover(plan)
+        verify_scene_artifacts(self.root, plan)
         return plan
+
+
+def verify_scene_artifacts(package_root: Path, plan: PipelinePlan) -> PipelinePlan:
+    """A checkpointed scene whose WAV vanished must be generated again."""
+    from tools.zodiac_local import file_sha256, scene_wav_path, validate_package, validate_voice
+
+    step = plan.steps[VOICE_SCENES]
+    if not step.scenes:
+        return plan
+    try:
+        production = {scene["id"]: scene for scene in validate_package(package_root)["scenes"]}
+    except PipelineError:
+        return plan
+
+    for scene_id, entry in list(step.scenes.items()):
+        if entry.get("status") != DONE:
+            continue
+        path = scene_wav_path(package_root, scene_id)
+        scene = production.get(scene_id)
+        try:
+            validate_voice(path)
+        except PipelineError:
+            plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
+            continue
+        if scene is None or entry.get("file_hash") != file_sha256(path):
+            plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
+    return plan
 
 
 def migrate_legacy_job(package_root: Path) -> dict:
     """First run on an old job: trust provable artifacts, never invent provenance."""
-    from tools.zodiac_local import (
-        PipelineError,
-        scene_voice_files,
-        validate_package,
-        validate_timing,
-        validate_voice,
-    )
+    from tools.zodiac_local import scene_voice_files, validate_package, validate_timing, validate_voice
 
     root = Path(package_root)
     steps = {
