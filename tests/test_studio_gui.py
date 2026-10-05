@@ -91,6 +91,94 @@ class StudioAppTests(unittest.TestCase):
             app._refresh_buttons()
             self.assertEqual(str(app.continue_button.cget("state")), "normal")
 
+    def test_job_selector_switches_the_active_job(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "ws"
+            jobs_dir = workspace / "jobs"
+            jobs_dir.mkdir(parents=True)
+            for index, name in enumerate(("zebra", "alpha")):
+                write_multi_scene_job(Path(temp) / f"src{index}").rename(jobs_dir / name)
+            app = self._app(workspace)
+            names = app.project.job_choices()
+            self.assertEqual(names, ["alpha", "zebra"])
+            app.project.choose_job("zebra")
+            app._refresh_buttons()
+            self.assertEqual(app.controller.job.name, "zebra")
+            self.assertEqual(app.project.job_name.get(), "zebra")
+
+    def test_importing_a_new_zip_makes_it_the_active_job(self):
+        import tempfile
+
+        from test_studio_pipeline import write_multi_scene_job
+
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "ws"
+            app = self._app(workspace)
+            app.controller.use_job(write_multi_scene_job(Path(temp) / "first"))
+            second = write_multi_scene_job(Path(temp) / "second")
+            second.rename(second.parent / "second")  # package root name becomes the job name
+            archive = self._zip(Path(temp) / "second")
+            self.assertTrue(archive.is_file())
+            app.project.archive.set(str(archive))
+            app.controller.select_archive(archive)
+            app._project_changed()
+            self.assertEqual(app.controller.job.name, "second")
+            self.assertEqual(app.project.job_name.get(), "second")
+
+    def _zip(self, source: Path) -> Path:
+        """Zip the job directory itself, so production.json sits at the package root."""
+        import zipfile
+
+        job = next(item for item in source.iterdir() if item.is_dir())
+        path = source.parent / f"{job.name}-render-ready.zip"
+        with zipfile.ZipFile(path, "w") as handle:
+            for item in sorted(job.rglob("*")):
+                if item.is_file() and ".runtime" not in item.parts:
+                    handle.write(item, f"{job.name}/{item.relative_to(job).as_posix()}")
+        return path
+
+    def test_startup_stays_blank_when_every_job_is_finished(self):
+        import tempfile
+
+        from tools.studio.job_state import JobStateStore
+        from tools.studio.pipeline import STEP_ORDER
+
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "ws"
+            job = write_multi_scene_job(Path(temp))
+            (workspace / "jobs").mkdir(parents=True)
+            done_job = workspace / "jobs" / "done-job"
+            job.rename(done_job)
+            plan = JobStateStore(done_job).open()
+            for step in STEP_ORDER:
+                plan.mark(step, "DONE")
+            JobStateStore(done_job).save(plan)
+
+            app = self._app(workspace)
+            app.update()
+            self.assertIsNone(app.controller.job)
+            self.assertEqual(app.project.archive.get(), "")
+
+    def test_startup_reopens_a_job_with_unfinished_work(self):
+        import tempfile
+
+        from tools.studio.job_state import JobStateStore
+
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "ws"
+            job = write_multi_scene_job(Path(temp))
+            (workspace / "jobs").mkdir(parents=True)
+            unfinished = workspace / "jobs" / "unfinished"
+            job.rename(unfinished)
+            JobStateStore(unfinished).save(JobStateStore(unfinished).open())
+
+            app = self._app(workspace)
+            app._resume_unfinished_job()
+            self.assertEqual(app.controller.job.name, "unfinished")
+            self.assertEqual(app.project.archive.get(), "")
+
     def test_install_button_follows_preflight(self):
         import tempfile
 

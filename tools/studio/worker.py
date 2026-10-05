@@ -37,6 +37,7 @@ from tools.studio.pipeline import (
 from tools.zodiac_local import (
     DEFAULT_TTS_ROOT,
     PipelineError,
+    aligner_install_command,
     align_scene_timings,
     build_and_write_timing,
     concatenate_scene_voices,
@@ -118,7 +119,7 @@ class PipelineWorker:
         tts_root: Path | None = None,
         vieneu_url: str | None = None,
         music: Path | None = None,
-        music_volume: float = 0.12,
+        music_volume: float = 1.0,
         workspace: Path | None = None,
         archive: Path | None = None,
         job_name: str | None = None,

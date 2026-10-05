@@ -37,7 +37,7 @@ class AudioPanel(tk.Frame):
         voices = saved_voices()
         self.voice = tk.StringVar(value="cuongdepzai" if "cuongdepzai" in voices else voices[0])
         self.music = tk.StringVar(value="")
-        self.volume = tk.DoubleVar(value=0.12)
+        self.volume = tk.DoubleVar(value=1.0)
 
         card = section(self, SECTION_SETUP)
         card.pack(fill="both", expand=True)
@@ -55,7 +55,7 @@ class AudioPanel(tk.Frame):
         volume_row = tk.Frame(card, bg=COLORS["panel"])
         volume_row.pack(fill="x", pady=(0, 12))
         label(volume_row, LABEL_VOLUME, width=10).pack(side="left")
-        self.volume_label = label(volume_row, "12%", width=5)
+        self.volume_label = label(volume_row, "100%", width=5)
         self.volume_label.pack(side="right")
         ttk.Scale(
             volume_row,

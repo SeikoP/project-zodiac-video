@@ -19,6 +19,7 @@ from pathlib import Path
 from tkinter import messagebox
 
 from tools.studio.controller import StudioController
+from tools.studio.job_state import JobStateStore
 from tools.studio.messages_vi import (
     APP_SUBTITLE,
     APP_TITLE,
@@ -88,7 +89,6 @@ class ZodiacStudioApp(tk.Tk):
         self.environment_text = tk.StringVar(value=ENV_BUSY)
 
         self.body = tk.Frame(self, bg=COLORS["bg"], padx=20)
-        initial = DEFAULT_ARCHIVE if DEFAULT_ARCHIVE.is_file() else None
         self.project = ProjectPanel(self.body, self.controller, on_changed=self._project_changed)
         self.audio = AudioPanel(self.body, self.controller, on_listen=self._listen)
         self.pipeline = PipelinePanel(self.body, self.controller, on_rerun=self._rerun_step)
@@ -98,13 +98,12 @@ class ZodiacStudioApp(tk.Tk):
         self._build(self.project, self.audio)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
 
-        if initial is not None:
-            self.project.archive.set(str(initial))
-            self.controller.select_archive(initial)
+        # Nothing is preselected: the project starts blank, except that a job with
+        # unfinished work is reopened so 'Tiếp tục' has something to resume.
         self.after(120, self._pump)
         self.after(600, self._refresh_environment)
         self.after(1200, self._poll_service)
-        self._poll_jobs()
+        self.after(400, self._resume_unfinished_job)
 
     # ---- layout ------------------------------------------------------
     def _build(self, project, audio) -> None:
@@ -164,10 +163,18 @@ class ZodiacStudioApp(tk.Tk):
 
     # ---- project -----------------------------------------------------
     def _project_changed(self) -> None:
-        if self.controller.sync_package():
+        try:
+            imported = self.controller.sync_package()
+        except Exception as exc:
+            self.log.append(str(exc))
+            messagebox.showerror("Không nhập được gói video", str(exc), parent=self)
+            self.project.archive.set("")
+            self.controller.select_archive(None)
+            return
+        if imported:
             self.project.refresh()
             self._refresh_buttons()
-            self.status_text.set("Đã nhập gói video.")
+            self.status_text.set(f"Đã nhập gói video: {self.controller.job.name}")
             return
         if self.controller.package_changed:
             self._ask_package_conflict()
@@ -206,13 +213,18 @@ class ZodiacStudioApp(tk.Tk):
         self.wait_window(dialog)
         return result["choice"]
 
-    def _poll_jobs(self) -> None:
-        jobs = sorted(path for path in (WORKSPACE / "jobs").glob("*") if path.is_dir())
-        if jobs and self.controller.job is None:
-            self.controller.use_job(jobs[0])
-            self.project.refresh()
-            self._refresh_buttons()
-        self.after(4000, self._poll_jobs)
+    def _resume_unfinished_job(self) -> None:
+        """Reopen only a job that still has work left; finished jobs stay untouched."""
+        if self.controller.job is not None:
+            return
+        for path in sorted(item for item in self.controller.jobs_dir.glob("*") if item.is_dir()):
+            plan = JobStateStore(path).open()
+            if plan.can_resume and not plan.finished:
+                self.controller.use_job(path)
+                self.status_text.set(f"Tiếp tục công việc dang dở: {path.name}")
+                break
+        self.project.refresh()
+        self._refresh_buttons()
 
     # ---- pipeline ----------------------------------------------------
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:

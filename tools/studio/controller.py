@@ -66,6 +66,14 @@ class StudioController:
     def job_name(self) -> str:
         return self.job.name if self.job else ""
 
+    def available_jobs(self) -> list[str]:
+        if not self.jobs_dir.is_dir():
+            return []
+        return sorted(item.name for item in self.jobs_dir.iterdir() if item.is_dir())
+
+    def job_path(self, name: str) -> Path:
+        return self.jobs_dir / name
+
     @property
     def video_path(self) -> Path | None:
         return self.job / "out" / "zodiac-story.mp4" if self.job else None
@@ -275,7 +283,7 @@ class StudioController:
             voice=voice or DEFAULT_VOICE,
             tts_mode=DEFAULT_TTS_MODE,
             music=music,
-            music_volume=0.12 if volume is None else volume,
+            music_volume=1.0 if volume is None else volume,
             tts_root=self.tts_root,
             vieneu_url=self.vieneu_url,
             workspace=self.workspace,

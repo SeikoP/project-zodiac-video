@@ -56,6 +56,8 @@ SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 DEFAULT_TTS_VOICE = "Hải Đăng"
 AUDIO_PREVIEW_SECONDS = 10.0
+AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
+DEFAULT_MUSIC_VOLUME = 1.0
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 
 
@@ -1336,12 +1338,14 @@ def _run_ffmpeg(arguments: list[str]) -> None:
 def build_audio_preview(
     package_root: Path,
     music: Path,
-    volume: float = 0.12,
+    volume: float = AUDIO_PREVIEW_DEFAULT_VOLUME,
     seconds: float = AUDIO_PREVIEW_SECONDS,
 ) -> Path:
     root = Path(package_root).resolve()
     voice = root / "voice.wav"
-    validate_voice(voice)
+    has_voice = voice.is_file()
+    if has_voice:
+        validate_voice(voice)
     source = _validate_music_file(music)
     volume = _validate_music_volume(volume)
 
@@ -1359,27 +1363,34 @@ def build_audio_preview(
     output.parent.mkdir(parents=True, exist_ok=True)
     duration = float(seconds)
 
-    filter_complex = (
-        f"[0:a]apad=pad_dur={duration:.3f},"
-        f"atrim=0:{duration:.3f},asetpts=PTS-STARTPTS[voice];"
-        f"[1:a]atrim=0:{duration:.3f},"
-        f"asetpts=PTS-STARTPTS,volume={volume:.3f}[music];"
-        f"[voice][music]amix=inputs=2:duration=longest:"
-        f"dropout_transition=0,atrim=0:{duration:.3f},"
-        f"alimiter=limit=0.95[out]"
-    )
+    if has_voice:
+        filter_complex = (
+            f"[0:a]apad=pad_dur={duration:.3f},"
+            f"atrim=0:{duration:.3f},asetpts=PTS-STARTPTS[voice];"
+            f"[1:a]atrim=0:{duration:.3f},"
+            f"asetpts=PTS-STARTPTS,volume={volume:.3f}[music];"
+            f"[voice][music]amix=inputs=2:duration=longest:"
+            f"dropout_transition=0,atrim=0:{duration:.3f},"
+            f"alimiter=limit=0.95[out]"
+        )
+        inputs = ["-i", str(voice), "-stream_loop", "-1", "-i", str(source)]
+        mix_note = f"{output.name}: voice + nhac @ {volume:.0%}"
+    else:
+        # Auditioning the track before any voice exists is normal; do not force a render first.
+        filter_complex = (
+            f"[0:a]atrim=0:{duration:.3f},"
+            f"asetpts=PTS-STARTPTS,volume={volume:.3f},"
+            f"alimiter=limit=0.95[out]"
+        )
+        inputs = ["-stream_loop", "-1", "-i", str(source)]
+        mix_note = f"{output.name}: chi nhac @ {volume:.0%} (chua co voice.wav)"
 
     _run_ffmpeg(
         [
             "-y",
             "-v",
             "error",
-            "-i",
-            str(voice),
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(source),
+            *inputs,
             "-filter_complex",
             filter_complex,
             "-map",
@@ -1397,11 +1408,7 @@ def build_audio_preview(
             "FFmpeg finished without creating audio-preview.wav."
         )
 
-    print(
-        f"Audio preview: {output} "
-        f"({volume:.0%} background music, {duration:.1f}s).",
-        flush=True,
-    )
+    print(f"Audio preview: {output} ({mix_note}, {duration:.1f}s).", flush=True)
     return output
 
 
@@ -1639,7 +1646,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_preview = commands.add_parser("audio-preview", help="render a short voice + background-music mix for volume checking")
     audio_preview.add_argument("job")
     audio_preview.add_argument("--music", required=True, type=Path)
-    audio_preview.add_argument("--music-volume", type=float, default=0.12, help="background music volume from 0 to 1")
+    audio_preview.add_argument("--music-volume", type=float, default=AUDIO_PREVIEW_DEFAULT_VOLUME, help="background music volume from 0 to 1")
     audio_preview.add_argument("--seconds", type=float, default=AUDIO_PREVIEW_SECONDS, help="preview duration from 1 to 30 seconds")
     for command in ("preview", "render"):
         sub = commands.add_parser(command, help=f"validate and run Remotion {command}")
@@ -1647,7 +1654,7 @@ def build_parser() -> argparse.ArgumentParser:
         music_group = sub.add_mutually_exclusive_group()
         music_group.add_argument("--music", type=Path, help="loop this background track under the narration")
         music_group.add_argument("--no-music", action="store_true", help="remove background music from this render")
-        sub.add_argument("--music-volume", type=float, default=0.12, help="background music volume from 0 to 1")
+        sub.add_argument("--music-volume", type=float, default=DEFAULT_MUSIC_VOLUME, help="background music volume from 0 to 1")
     tui = commands.add_parser("tui", help="interactive local voice and Remotion workflow")
     tui.add_argument("--archive", type=Path, help="ready ZIP to import automatically")
     tui.add_argument("--name", help="local job name when importing")
