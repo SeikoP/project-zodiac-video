@@ -9,8 +9,11 @@ import zipfile
 from pathlib import Path
 
 from tools.zodiac_local import (
+    AlignmentMismatchError,
     PipelineError,
     _align_scene_words,
+    _alignment_coverage_gap,
+    _alignment_units,
     _run_ffmpeg,
     _select_vieneu_gradio_dependency,
     align_scene_timings,
@@ -21,6 +24,7 @@ from tools.zodiac_local import (
     effective_tts_generation_config,
     generate_scene_voices,
     recover_scene_alignment_with_adaptive_frame_cap,
+    tts_scene_frame_cap_retry_eligible,
     concatenate_wavs,
     configure_background_music,
     import_package,
@@ -1058,6 +1062,219 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
         )
         self.assertAlmostEqual(aligned[0]["startMs"], 0.0)
         self.assertAlmostEqual(aligned[-1]["endMs"], 600.0)
+
+    def test_alignment_variant_never_calls_recovery_callback(self):
+        production = {
+            "video": {"fps": 30},
+            "scenes": [{"id": "S01", "voice": "Xử Nữ"}],
+        }
+        mismatch = AlignmentMismatchError(
+            "ALIGNMENT_MISMATCH: variant",
+            expected=["xử", "nữ"],
+            heard=["sử", "nữ"],
+            coverage_gap=False,
+        )
+        calls = []
+
+        def recover(*args):
+            calls.append(args)
+            return [], 1.0
+
+        with patch("tools.zodiac_local._align_scene_words", side_effect=mismatch):
+            with self.assertRaises(AlignmentMismatchError):
+                align_scene_timings(
+                    production,
+                    {"S01": 1.0},
+                    object(),
+                    [Path("S01.wav")],
+                    mismatch_recovery=recover,
+                )
+        self.assertEqual(calls, [])
+
+    def test_retry_eligibility_does_not_require_rate_warning(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = root / ".runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "tts-diagnostics.json").write_text(
+                json.dumps(
+                    {
+                        "scenes": [
+                            {
+                                "scene_id": "S01",
+                                "speech_rate_warning": False,
+                                "generation": {
+                                    "transport": "gradio",
+                                    "backend": "server-managed",
+                                    "precision": "server-managed",
+                                    "frame_cap": None,
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertTrue(
+                tts_scene_frame_cap_retry_eligible(
+                    root,
+                    "S01",
+                    selected_mode="v3turbo",
+                    allow_fp32_fallback=True,
+                )
+            )
+
+    def test_retry_eligibility_respects_fp32_opt_out(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = root / ".runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "tts-diagnostics.json").write_text(
+                json.dumps(
+                    {
+                        "scenes": [
+                            {
+                                "scene_id": "S01",
+                                "speech_rate_warning": True,
+                                "generation": {
+                                    "transport": "gradio",
+                                    "backend": "server-managed",
+                                    "precision": "server-managed",
+                                    "frame_cap": None,
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertFalse(
+                tts_scene_frame_cap_retry_eligible(
+                    root,
+                    "S01",
+                    selected_mode="v3turbo",
+                    allow_fp32_fallback=False,
+                )
+            )
+
+    def test_retry_eligibility_rejects_non_turbo_mode(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = root / ".runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "tts-diagnostics.json").write_text(
+                json.dumps(
+                    {
+                        "scenes": [
+                            {
+                                "scene_id": "S01",
+                                "speech_rate_warning": True,
+                                "generation": {
+                                    "transport": "gradio",
+                                    "backend": "server-managed",
+                                    "precision": "server-managed",
+                                    "frame_cap": None,
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.assertFalse(
+                tts_scene_frame_cap_retry_eligible(
+                    root,
+                    "S01",
+                    selected_mode="v3nano",
+                    allow_fp32_fallback=True,
+                )
+            )
+
+    def test_adaptive_retry_stops_when_next_mismatch_has_no_coverage_gap(self):
+        production = {
+            "scenes": [{"id": "S01", "voice": "một hai"}],
+        }
+        variant = AlignmentMismatchError(
+            "ALIGNMENT_MISMATCH: variant after retry",
+            expected=["một", "hai"],
+            heard=["mốt", "hai"],
+            coverage_gap=False,
+        )
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = root / ".runtime"
+            scene = runtime / "tts-scenes" / "S01.wav"
+            write_pcm(scene, seconds=1.0, rate=8000)
+            runtime.mkdir(parents=True, exist_ok=True)
+            (runtime / "tts-diagnostics.json").write_text(
+                json.dumps(
+                    {
+                        "scenes": [
+                            {
+                                "scene_id": "S01",
+                                "generation": {
+                                    "transport": "gradio",
+                                    "backend": "server-managed",
+                                    "precision": "server-managed",
+                                    "frame_cap": None,
+                                },
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            def fake_batch(runtime_path, rows, **kwargs):
+                calls.append(kwargs["frame_cap_scale"])
+                write_pcm(
+                    Path(runtime_path) / "tts-scenes" / "S01.wav",
+                    seconds=2.0,
+                    rate=8000,
+                )
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch), patch(
+                "tools.zodiac_local._align_scene_words",
+                side_effect=variant,
+            ):
+                with self.assertRaises(AlignmentMismatchError):
+                    recover_scene_alignment_with_adaptive_frame_cap(
+                        root,
+                        production,
+                        "S01",
+                        object(),
+                        selected_mode="v3turbo",
+                        allow_fp32_fallback=True,
+                    )
+
+            self.assertEqual(calls, [1.0])
+            with wave.open(str(scene), "rb") as wav:
+                self.assertAlmostEqual(
+                    wav.getnframes() / wav.getframerate(),
+                    1.0,
+                    places=2,
+                )
+
+    def test_multi_digit_number_compaction_matches_spelled_number(self):
+        self.assertEqual(
+            _alignment_units("12%"),
+            ["mười", "hai", "phần", "trăm"],
+        )
+        measured = [
+            {
+                "heard": "12%",
+                "startMs": 0.0,
+                "endMs": 500.0,
+                "confidence": 0.95,
+            }
+        ]
+        self.assertFalse(
+            _alignment_coverage_gap(
+                ["mười", "hai", "phần", "trăm"],
+                measured,
+            )
+        )
 
     def test_non_turbo_config_reports_only_applied_settings(self):
         config = effective_tts_generation_config(
