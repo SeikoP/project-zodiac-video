@@ -258,6 +258,39 @@ class VoiceResumeTests(WorkerHarness):
         self.assertEqual(plan.scene_status(VOICE_SCENES, "S03"), DONE)
 
 
+class RerunStepTests(WorkerHarness):
+    """'Chạy lại bước' is an explicit request: it must really redo that step."""
+
+    def test_rerun_voice_step_regenerates_every_scene(self):
+        from tools.studio.controller import StudioController
+
+        self.make_worker().run_to_completion()
+        controller = StudioController(workspace=self.root / "ws")
+        controller.use_job(self.job)
+        self.assertEqual(controller.plan.scene_status(VOICE_SCENES, "S01"), DONE)
+
+        self.tts_calls.clear()
+        self.stub_pipeline()
+        controller.start_pipeline(rerun=VOICE_SCENES)
+        controller.worker.join(timeout=60)
+        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+
+    def test_rerun_renderer_keeps_the_voice_checkpoints(self):
+        self.make_worker().run_to_completion()
+        plan = JobStateStore(self.job).open()
+        plan.invalidate_from("RENDER_VIDEO")
+        self.assertEqual(plan.scene_status(VOICE_SCENES, "S01"), DONE)
+
+    def test_resume_after_a_scene_failure_still_reuses_finished_scenes(self):
+        self.fail_scene = "S04"
+        self.make_worker().run_to_completion()
+        self.tts_calls.clear()
+        self.fail_scene = None
+        worker = self.reopened_worker()
+        worker.run_from(worker.plan.continue_from())
+        self.assertEqual(self.tts_calls, [["S04"]])
+
+
 class AlignmentResumeTests(WorkerHarness):
     def test_alignment_failure_preserves_scene_wavs_and_voice(self):
         self.fail_align = True

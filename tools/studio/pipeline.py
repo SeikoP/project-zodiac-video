@@ -165,10 +165,17 @@ class PipelinePlan:
         entry["status"] = status
         self.steps[step].scenes[scene_id] = entry
 
-    def invalidate_from(self, step: str) -> None:
-        """Reset one step and everything that depends on it."""
+    def invalidate_from(self, step: str, *, drop_scene_checkpoints: bool = False) -> None:
+        """Reset one step and everything that depends on it.
+
+        ``drop_scene_checkpoints`` is for an explicit 'Chạy lại bước': the user
+        asked for that step to really run again, so per-scene reuse must not
+        short-circuit it. A plain resume keeps the checkpoints.
+        """
         for target in (step, *DOWNSTREAM.get(step, ())):
             self.mark(target, PENDING)
+            if target == VOICE_SCENES and drop_scene_checkpoints:
+                self.steps[target].scenes = {}
 
     def complete_step(self, step: str) -> None:
         """Mark a step finished; finished downstream steps must be redone."""

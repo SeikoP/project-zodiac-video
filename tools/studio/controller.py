@@ -250,7 +250,8 @@ class StudioController:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
             return False
         if rerun:
-            self.plan.invalidate_from(rerun)
+            # An explicit rerun really redoes the step, scene reuse included.
+            self.plan.invalidate_from(rerun, drop_scene_checkpoints=True)
         start = self.plan.continue_from() if resume else self.plan.next_step()
         if start is None:
             self.status_text = NO_RESUME_MESSAGE
