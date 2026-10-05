@@ -78,6 +78,7 @@ DEFAULT_TTS_PRECISION = "fp32"
 DEFAULT_TTS_FRAME_CAP = "on"
 DEFAULT_TTS_MAX_CHARS = 256
 DEFAULT_SPEECH_RATE_WARNING_WPS = 3.8
+ASR_SCENE_BOUNDARY_TOLERANCE_MS = 250.0
 AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
@@ -1085,6 +1086,68 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
     ]
 
 
+def _clamp_aligned_words_to_wav_boundary(
+    scene_id: str,
+    words: list[dict],
+    seconds: float,
+    *,
+    tolerance_ms: float = ASR_SCENE_BOUNDARY_TOLERANCE_MS,
+) -> list[dict]:
+    """Clamp only small ASR boundary drift; reject timestamps outside real audio."""
+    duration_ms = float(seconds) * 1000.0
+    normalized: list[dict] = []
+    prior_end = 0.0
+
+    for index, word in enumerate(words):
+        item = dict(word)
+        try:
+            start_ms = float(item["startMs"])
+            end_ms = float(item["endMs"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise PipelineError(
+                f"invalid measured word timing in {scene_id}."
+            ) from exc
+
+        if not math.isfinite(start_ms) or not math.isfinite(end_ms) or end_ms <= start_ms:
+            raise PipelineError(f"invalid measured word timing in {scene_id}.")
+
+        if start_ms < 0:
+            if start_ms < -tolerance_ms:
+                raise PipelineError(
+                    f"caption word falls outside measured WAV boundary in {scene_id}."
+                )
+            start_ms = 0.0
+            if item.get("timestampMs") is not None:
+                item["timestampMs"] = 0.0
+
+        if start_ms + 1e-6 < prior_end:
+            raise PipelineError(
+                f"measured caption timings overlap or are out of order in {scene_id}."
+            )
+
+        if end_ms > duration_ms:
+            overrun = end_ms - duration_ms
+            is_last = index == len(words) - 1
+            if not is_last or overrun > tolerance_ms or start_ms >= duration_ms:
+                raise PipelineError(
+                    f"caption word falls outside measured WAV boundary in {scene_id}."
+                )
+            end_ms = duration_ms
+
+        item["startMs"] = start_ms
+        item["endMs"] = end_ms
+        if item.get("timestampMs") is not None:
+            timestamp = float(item["timestampMs"])
+            if timestamp < 0 and timestamp >= -tolerance_ms:
+                timestamp = 0.0
+            item["timestampMs"] = min(max(timestamp, start_ms), end_ms)
+
+        prior_end = end_ms
+        normalized.append(item)
+
+    return normalized
+
+
 def build_timing_from_word_alignment(
     production: dict,
     durations: dict[str, float],
@@ -1107,6 +1170,12 @@ def build_timing_from_word_alignment(
             raise PipelineError(
                 f"missing measured word timing for scene {scene_id}."
             )
+
+        words = _clamp_aligned_words_to_wav_boundary(
+            scene_id,
+            words,
+            float(seconds),
+        )
 
         start_frame = round(elapsed_seconds * fps)
         offset_ms = elapsed_seconds * 1000
