@@ -7,6 +7,8 @@ import json
 import os
 import queue
 import re
+import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -36,6 +38,55 @@ def saved_voices() -> list[str]:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         voices = {}
     return list(voices) or ["Hải Đăng"]
+
+
+def open_path(path: Path) -> None:
+    """Open a file/folder using the native launcher without a shell."""
+    path = Path(path).resolve()
+    if sys.platform == "win32":
+        os.startfile(str(path))
+        return
+
+    launcher_name = "open" if sys.platform == "darwin" else "xdg-open"
+    launcher = shutil.which(launcher_name)
+    if not launcher:
+        raise OSError(
+            f"Không tìm thấy trình mở mặc định {launcher_name!r}."
+        )
+    subprocess.Popen(
+        [str(Path(launcher).resolve()), str(path)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        shell=False,
+    )
+
+
+def terminate_process_tree(process: subprocess.Popen) -> None:
+    """Terminate a detached preview process and its child tree."""
+    if process.poll() is not None:
+        return
+
+    if os.name == "nt":
+        subprocess.run(
+            [
+                "taskkill",
+                "/T",
+                "/F",
+                "/PID",
+                str(process.pid),
+            ],
+            capture_output=True,
+            check=False,
+            shell=False,
+        )
+        return
+
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+
 
 
 class ZodiacGui(tk.Tk):
@@ -235,8 +286,19 @@ class ZodiacGui(tk.Tk):
             button.configure(state="disabled")
         self.progress.start(12)
 
-        def spawn(command: list[str]) -> subprocess.Popen:
-            self.messages.put(("log", "> " + subprocess.list2cmdline(command)))
+        def spawn(
+            command: list[str],
+            *,
+            detached: bool = False,
+        ) -> subprocess.Popen:
+            self.messages.put(
+                ("log", "> " + subprocess.list2cmdline(command))
+            )
+            kwargs = {}
+            if detached and os.name != "nt":
+                kwargs["start_new_session"] = True
+            elif detached and os.name == "nt":
+                kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
             return subprocess.Popen(
                 command,
                 cwd=ROOT,
@@ -246,6 +308,8 @@ class ZodiacGui(tk.Tk):
                 encoding="utf-8",
                 errors="replace",
                 bufsize=1,
+                shell=False,
+                **kwargs,
             )
 
         def consume(process: subprocess.Popen) -> tuple[int, list[str]]:
@@ -262,8 +326,9 @@ class ZodiacGui(tk.Tk):
         def worker() -> None:
             try:
                 for index, command in enumerate(commands):
-                    process = spawn(command)
-                    if detach_last and index == len(commands) - 1:
+                    detached = detach_last and index == len(commands) - 1
+                    process = spawn(command, detached=detached)
+                    if detached:
                         self.preview_process = process
                         self.preview_stop_requested = False
                         self.messages.put((
@@ -329,11 +394,8 @@ class ZodiacGui(tk.Tk):
         if not process or process.poll() is not None:
             return
         self.preview_stop_requested = True
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True, check=False)
-        else:
-            process.terminate()
-        self._log("Đang dừng Remotion Studio…")
+        terminate_process_tree(process)
+        self._log("Đang dừng Remotion Studio và toàn bộ process con…")
 
     def _listen_music(self) -> None:
         def start_preview() -> None:
@@ -441,12 +503,12 @@ class ZodiacGui(tk.Tk):
     def _open_video(self) -> None:
         video = self._video_path()
         if video.is_file():
-            os.startfile(video)
+            open_path(video)
 
     def _open_folder(self) -> None:
         folder = self._video_path().parent
         if folder.exists():
-            os.startfile(folder)
+            open_path(folder)
 
     def _drain_messages(self) -> None:
         try:
@@ -462,8 +524,17 @@ class ZodiacGui(tk.Tk):
                     if kind == "audio_preview":
                         path = Path(message)
                         if path.is_file():
-                            self._log(f"Nghe thử mix ở mức {self.volume.get():.0%}: {path.name}")
-                            os.startfile(path)
+                            self._log(
+                                f"Nghe thử mix ở mức {self.volume.get():.0%}: {path.name}"
+                            )
+                            try:
+                                open_path(path)
+                            except OSError as exc:
+                                self._log(f"Không tự mở được preview: {exc}")
+                                messagebox.showwarning(
+                                    "Preview đã tạo",
+                                    f"File đã tạo tại:\n{path}\n\nKhông tự mở được: {exc}",
+                                )
                         else:
                             messagebox.showerror("Không thể nghe thử", f"Không tìm thấy file preview: {path}")
                     else:
