@@ -851,6 +851,9 @@ def synthesize_voice(
     voice: str = DEFAULT_TTS_VOICE,
     mode: str = "v3turbo",
     vieneu_url: str | None = None,
+    align_model: str = "small",
+    align_device: str = "cpu",
+    align_compute_type: str = "int8",
 ) -> dict:
     """Generate one scene WAV per scene, then attach voice and measured timing."""
     root = Path(package_root).resolve()
@@ -920,18 +923,43 @@ def synthesize_voice(
     except subprocess.CalledProcessError as exc:
         raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.") from exc
 
-    scene_wavs = [scene_dir / f"{scene['id']}.wav" for scene in production["scenes"]]
+    scene_wavs = [
+        scene_dir / f"{scene['id']}.wav"
+        for scene in production["scenes"]
+    ]
     durations = {}
     for scene, path in zip(production["scenes"], scene_wavs):
         validate_voice(path)
         with wave.open(str(path), "rb") as wav:
             durations[scene["id"]] = wav.getnframes() / wav.getframerate()
-    concatenate_wavs(scene_wavs, root / "voice.wav")
-    timing = build_timing_from_durations(production, durations)
-    validate_timing(root, timing)
-    (runtime / "timing.json").write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return timing
 
+    concatenate_wavs(scene_wavs, root / "voice.wav")
+
+    print(
+        f"Measuring word-level Vietnamese timing with faster-whisper/{align_model}…",
+        flush=True,
+    )
+    aligner = _load_word_aligner(
+        align_model,
+        align_device,
+        align_compute_type,
+    )
+    aligned_words = {
+        scene["id"]: _align_scene_words(aligner, path, scene["voice"])
+        for scene, path in zip(production["scenes"], scene_wavs)
+    }
+
+    timing = build_timing_from_word_alignment(
+        production,
+        durations,
+        aligned_words,
+    )
+    validate_timing(root, timing)
+    (runtime / "timing.json").write_text(
+        json.dumps(timing, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return timing
 
 def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
     """Safely import one RENDER_READY video package and return its job directory."""
@@ -1252,7 +1280,7 @@ def run_tui(args: argparse.Namespace, workspace: Path) -> None:
         if choice == "q":
             return
         if choice == "1":
-            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode)
+            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode, align_model=args.align_model, align_device=args.align_device, align_compute_type=args.align_compute_type)
             print("Voice and timing ready.")
         elif choice == "2":
             synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode)
@@ -1294,6 +1322,9 @@ def build_parser() -> argparse.ArgumentParser:
     voice_command.add_argument("--tts-python", type=Path)
     voice_command.add_argument("--tts-mode", default="v3turbo")
     voice_command.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server instead of loading another model")
+    voice_command.add_argument("--align-model", default="small", help="faster-whisper model for measured word timing")
+    voice_command.add_argument("--align-device", default="cpu", help="faster-whisper device")
+    voice_command.add_argument("--align-compute-type", default="int8", help="faster-whisper compute type")
     inspect = commands.add_parser("check", help="check the creative package and local runtime inputs")
     inspect.add_argument("job")
     audio_preview = commands.add_parser("audio-preview", help="render a short voice + background-music mix for volume checking")
@@ -1315,6 +1346,9 @@ def build_parser() -> argparse.ArgumentParser:
     tui.add_argument("--tts-root", type=Path, default=DEFAULT_TTS_ROOT)
     tui.add_argument("--tts-python", type=Path)
     tui.add_argument("--tts-mode", default="v3turbo")
+    tui.add_argument("--align-model", default="small")
+    tui.add_argument("--align-device", default="cpu")
+    tui.add_argument("--align-compute-type", default="int8")
     return parser
 
 
@@ -1327,13 +1361,23 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "import":
             result = import_package(args.archive, jobs_dir, args.name)
             print(f"Imported package: {result}")
-            print("Next: create voice.wav and measured .runtime/timing.json, then run the attach command.")
+            print("Next: generate/attach voice.wav plus measured word-level .runtime/timing.json.")
         elif args.command == "attach":
             root = _job_path(args.job, workspace)
             attach_runtime(root, args.voice, args.timing)
             print(f"Voice and measured timing attached: {root}")
         elif args.command == "voice":
-            timing = synthesize_voice(_job_path(args.job, workspace), args.tts_root, args.tts_python, args.voice, args.tts_mode, args.vieneu_url)
+            timing = synthesize_voice(
+                _job_path(args.job, workspace),
+                args.tts_root,
+                args.tts_python,
+                args.voice,
+                args.tts_mode,
+                args.vieneu_url,
+                args.align_model,
+                args.align_device,
+                args.align_compute_type,
+            )
             print(f"Voice and measured timing attached ({timing['total_duration_frames']} frames).")
         elif args.command == "audio-preview":
             result = build_audio_preview(_job_path(args.job, workspace), args.music, args.music_volume, args.seconds)
