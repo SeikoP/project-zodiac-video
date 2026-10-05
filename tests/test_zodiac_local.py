@@ -13,12 +13,14 @@ from tools.zodiac_local import (
     _align_scene_words,
     _run_ffmpeg,
     _select_vieneu_gradio_dependency,
+    align_scene_timings,
     build_audio_preview,
     build_parser,
     build_timing_from_word_alignment,
     build_tts_diagnostics,
     effective_tts_generation_config,
     generate_scene_voices,
+    recover_scene_alignment_with_adaptive_frame_cap,
     concatenate_wavs,
     configure_background_music,
     import_package,
@@ -642,6 +644,168 @@ class TtsDurationGuardTests(unittest.TestCase):
                 Path("S01.wav"),
                 "một hai",
             )
+
+    def test_alignment_mismatch_can_use_scene_recovery_callback(self):
+        production = {
+            "video": {"fps": 30},
+            "scenes": [{"id": "S01", "voice": "một hai"}],
+        }
+
+        class Word:
+            word = "một"
+            start = 0.0
+            end = 0.2
+            probability = 0.99
+
+        class Segment:
+            words = [Word()]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        recovered_words = [
+            {
+                "text": "một",
+                "startMs": 0.0,
+                "endMs": 300.0,
+                "timestampMs": 0.0,
+                "confidence": 0.99,
+            },
+            {
+                "text": "hai",
+                "startMs": 300.0,
+                "endMs": 800.0,
+                "timestampMs": 300.0,
+                "confidence": 0.99,
+            },
+        ]
+        seen = []
+
+        def recover(scene, path, aligner, error):
+            seen.append((scene["id"], path.name, str(error)))
+            return recovered_words, 1.5
+
+        timing = align_scene_timings(
+            production,
+            {"S01": 1.0},
+            Model(),
+            [Path("S01.wav")],
+            mismatch_recovery=recover,
+        )
+        self.assertEqual(len(seen), 1)
+        self.assertIn("ALIGNMENT_MISMATCH", seen[0][2])
+        self.assertEqual(timing["scenes"][0]["duration_frames"], 45)
+
+    def test_adaptive_frame_cap_restores_original_when_all_attempts_fail(self):
+        production = {
+            "scenes": [{"id": "S01", "voice": "một hai"}],
+        }
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            scene = root / ".runtime" / "tts-scenes" / "S01.wav"
+            write_pcm(scene, seconds=1.0, rate=8000)
+
+            def fake_batch(runtime, rows, **kwargs):
+                calls.append(kwargs["frame_cap_scale"])
+                self.assertEqual(kwargs["backend"], "onnx")
+                self.assertEqual(kwargs["precision"], "fp32")
+                self.assertEqual(kwargs["frame_cap"], "on")
+                write_pcm(
+                    Path(runtime) / "tts-scenes" / "S01.wav",
+                    seconds=1.0 + kwargs["frame_cap_scale"],
+                    rate=8000,
+                )
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch), patch(
+                "tools.zodiac_local._align_scene_words",
+                side_effect=PipelineError("ALIGNMENT_MISMATCH: still missing"),
+            ):
+                with self.assertRaisesRegex(
+                    PipelineError,
+                    "ADAPTIVE_FRAME_CAP_RETRY_FAILED",
+                ):
+                    recover_scene_alignment_with_adaptive_frame_cap(
+                        root,
+                        production,
+                        "S01",
+                        object(),
+                    )
+
+            self.assertEqual(calls, [1.25, 1.50])
+            with wave.open(str(scene), "rb") as wav:
+                self.assertAlmostEqual(
+                    wav.getnframes() / wav.getframerate(),
+                    1.0,
+                    places=2,
+                )
+            evidence_dir = root / ".runtime" / "tts-diagnostics"
+            self.assertTrue((evidence_dir / "S01.frame-cap-1.00.wav").is_file())
+            self.assertTrue((evidence_dir / "S01.frame-cap-1.25.failed.wav").is_file())
+            self.assertTrue((evidence_dir / "S01.frame-cap-1.50.failed.wav").is_file())
+
+    def test_adaptive_frame_cap_escalates_until_alignment_passes(self):
+        production = {
+            "scenes": [{"id": "S01", "voice": "một hai"}],
+        }
+        aligned = [
+            {
+                "text": "một",
+                "startMs": 0.0,
+                "endMs": 300.0,
+                "timestampMs": 0.0,
+                "confidence": 0.99,
+            },
+            {
+                "text": "hai",
+                "startMs": 300.0,
+                "endMs": 900.0,
+                "timestampMs": 300.0,
+                "confidence": 0.99,
+            },
+        ]
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            scene = root / ".runtime" / "tts-scenes" / "S01.wav"
+            write_pcm(scene, seconds=1.0, rate=8000)
+
+            def fake_batch(runtime, rows, **kwargs):
+                scale = kwargs["frame_cap_scale"]
+                calls.append(scale)
+                write_pcm(
+                    Path(runtime) / "tts-scenes" / "S01.wav",
+                    seconds=scale,
+                    rate=8000,
+                )
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch), patch(
+                "tools.zodiac_local._align_scene_words",
+                side_effect=[
+                    PipelineError("ALIGNMENT_MISMATCH: still missing at 1.25"),
+                    aligned,
+                ],
+            ):
+                words, duration = recover_scene_alignment_with_adaptive_frame_cap(
+                    root,
+                    production,
+                    "S01",
+                    object(),
+                )
+
+            self.assertEqual(calls, [1.25, 1.50])
+            self.assertEqual(words, aligned)
+            self.assertAlmostEqual(duration, 1.50, places=2)
+            with wave.open(str(scene), "rb") as wav:
+                self.assertAlmostEqual(
+                    wav.getnframes() / wav.getframerate(),
+                    1.50,
+                    places=2,
+                )
+            evidence_dir = root / ".runtime" / "tts-diagnostics"
+            self.assertTrue((evidence_dir / "S01.frame-cap-1.00.wav").is_file())
+            self.assertTrue((evidence_dir / "S01.frame-cap-1.25.failed.wav").is_file())
 
     def test_voice_cli_exposes_turbo_diagnostic_controls(self):
         args = build_parser().parse_args(
