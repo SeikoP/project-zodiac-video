@@ -35,12 +35,18 @@ from tools.studio.pipeline import (
     VOICE_SCENES,
 )
 from tools.zodiac_local import (
+    DEFAULT_SPEECH_RATE_WARNING_WPS,
+    DEFAULT_TTS_BACKEND,
+    DEFAULT_TTS_FRAME_CAP,
+    DEFAULT_TTS_MAX_CHARS,
+    DEFAULT_TTS_PRECISION,
     DEFAULT_TTS_ROOT,
     PipelineError,
     aligner_install_command,
     align_scene_timings,
     build_and_write_timing,
     concatenate_scene_voices,
+    effective_tts_generation_config,
     file_sha256,
     generate_scene_voices,
     import_package,
@@ -121,6 +127,12 @@ class PipelineWorker:
         align_model: str = ALIGN_MODEL_DEFAULT,
         tts_root: Path | None = None,
         vieneu_url: str | None = None,
+        tts_backend: str = DEFAULT_TTS_BACKEND,
+        tts_precision: str = DEFAULT_TTS_PRECISION,
+        tts_frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+        tts_max_chars: int = DEFAULT_TTS_MAX_CHARS,
+        speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+        tts_fp32_fallback: bool = True,
         music: Path | None = None,
         music_volume: float = 1.0,
         workspace: Path | None = None,
@@ -136,6 +148,12 @@ class PipelineWorker:
         self.align_model = align_model or ALIGN_MODEL_DEFAULT
         self.tts_root = tts_root
         self.vieneu_url = vieneu_url
+        self.tts_backend = tts_backend
+        self.tts_precision = tts_precision
+        self.tts_frame_cap = tts_frame_cap
+        self.tts_max_chars = int(tts_max_chars)
+        self.speech_rate_warning_wps = float(speech_rate_warning_wps)
+        self.tts_fp32_fallback = bool(tts_fp32_fallback)
         self.music = Path(music) if music else None
         self.music_volume = music_volume
         self.workspace = Path(workspace) if workspace else None
@@ -147,6 +165,46 @@ class PipelineWorker:
         self._process: subprocess.Popen | None = None
         self._thread: threading.Thread | None = None
         self._scenes_lock = threading.Lock()
+
+        self._invalidate_incompatible_voice_cache()
+
+    def _voice_cache_fields(self) -> dict:
+        config = effective_tts_generation_config(
+            mode=self.tts_mode,
+            vieneu_url=self.vieneu_url,
+            backend=self.tts_backend,
+            precision=self.tts_precision,
+            frame_cap=self.tts_frame_cap,
+            max_chars=self.tts_max_chars,
+        )
+        return {
+            "tts_transport": config["transport"],
+            "tts_backend": config["backend"],
+            "tts_precision": config["precision"],
+            "tts_frame_cap": config["frame_cap"],
+            "tts_max_chars": config["max_chars"],
+            "tts_fp32_fallback": self.tts_fp32_fallback,
+            "speech_rate_warning_wps": self.speech_rate_warning_wps,
+        }
+
+    def _invalidate_incompatible_voice_cache(self) -> None:
+        expected = self._voice_cache_fields()
+        incompatible = []
+        for scene_id, entry in self.plan.steps[VOICE_SCENES].scenes.items():
+            if entry.get("status") != DONE:
+                continue
+            if any(entry.get(key) != value for key, value in expected.items()):
+                incompatible.append(scene_id)
+
+        if not incompatible:
+            return
+        for scene_id in incompatible:
+            self.plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
+        self.plan.invalidate_from(VOICE_SCENES)
+        self.log(
+            "Đã vô hiệu cache giọng cũ do cấu hình TTS thay đổi: "
+            + ", ".join(incompatible)
+        )
 
     # ---- lifecycle ---------------------------------------------------
     def start(self, start_step: str | None = None) -> None:
@@ -349,6 +407,7 @@ class PipelineWorker:
                     voice_id=self.voice,
                     tts_mode=self.tts_mode,
                     file_hash=file_sha256(path),
+                    **self._voice_cache_fields(),
                 )
                 self.log(f"{scene_id}: dùng lại giọng đã tạo.")
                 continue
@@ -371,6 +430,13 @@ class PipelineWorker:
                 voice=self.voice,
                 mode=self.tts_mode,
                 vieneu_url=self.vieneu_url,
+                backend=self.tts_backend,
+                precision=self.tts_precision,
+                frame_cap=self.tts_frame_cap,
+                max_chars=self.tts_max_chars,
+                speech_rate_warning_wps=self.speech_rate_warning_wps,
+                fp32_fallback_on_rate_warning=self.tts_fp32_fallback,
+                log_callback=self.log,
             )
         except Exception:
             # Whatever did land on disk stays reusable; only the missing scenes are retried.
@@ -404,6 +470,7 @@ class PipelineWorker:
                 voice_id=self.voice,
                 tts_mode=self.tts_mode,
                 file_hash=file_sha256(path),
+                **self._voice_cache_fields(),
             )
             self.log(f"{scene_id}: xong.")
 
@@ -415,6 +482,9 @@ class PipelineWorker:
         if entry.get("text_hash") != self._text_hash(scene):
             return False
         if entry.get("voice_id") != self.voice or entry.get("tts_mode") != self.tts_mode:
+            return False
+        expected = self._voice_cache_fields()
+        if any(entry.get(key) != value for key, value in expected.items()):
             return False
         if not path.is_file():
             return False
