@@ -933,107 +933,11 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             )
             self.assertEqual(diagnostics["summary"]["word_count"], 6)
 
-    def test_gradio_probe_warning_skips_full_gradio_batch(self):
-        words = " ".join(f"t{i}" for i in range(10))
+    def test_rate_warning_does_not_regenerate_full_batch(self):
         production = {
             "scenes": [
-                {"id": "S01", "voice": words},
-                {"id": "S02", "voice": words},
-            ],
-        }
-        calls = []
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-
-            def fake_batch(runtime, rows, **kwargs):
-                calls.append(
-                    {
-                        "ids": [row["scene_id"] for row in rows],
-                        "url": kwargs.get("vieneu_url"),
-                        "scale": kwargs.get("frame_cap_scale", 1.0),
-                        "precision": kwargs.get("precision"),
-                    }
-                )
-                scene_dir = Path(runtime) / "tts-scenes"
-                scene_dir.mkdir(parents=True, exist_ok=True)
-                seconds = 1.0 if kwargs.get("vieneu_url") else 4.0
-                for row in rows:
-                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
-                    write_pcm(Path(row["output"]), seconds=seconds)
-
-            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
-                generate_scene_voices(
-                    root,
-                    production,
-                    vieneu_url="http://127.0.0.1:7860",
-                )
-
-            self.assertEqual(calls[0]["ids"], ["S01"])
-            self.assertEqual(calls[0]["url"], "http://127.0.0.1:7860")
-            self.assertEqual(calls[1]["ids"], ["S01", "S02"])
-            self.assertIsNone(calls[1]["url"])
-            self.assertEqual(calls[1]["precision"], "fp32")
-            self.assertEqual(calls[1]["scale"], 1.25)
-            self.assertEqual(len(calls), 2)
-
-    def test_cached_fast_gradio_route_skips_probe_entirely(self):
-        words = " ".join(f"t{i}" for i in range(10))
-        production = {
-            "scenes": [
-                {"id": "S01", "voice": words},
-                {"id": "S02", "voice": words},
-            ],
-        }
-        calls = []
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            runtime = root / ".runtime"
-            runtime.mkdir(parents=True)
-            (runtime / "tts-route.json").write_text(
-                json.dumps(
-                    {
-                        "version": 1,
-                        "mode": "v3turbo",
-                        "voice": "Hải Đăng",
-                        "vieneu_url": "http://127.0.0.1:7860",
-                        "decision": "direct_fp32_adaptive",
-                    }
-                ),
-                encoding="utf-8",
-            )
-
-            def fake_batch(runtime, rows, **kwargs):
-                calls.append(
-                    {
-                        "ids": [row["scene_id"] for row in rows],
-                        "url": kwargs.get("vieneu_url"),
-                        "scale": kwargs.get("frame_cap_scale", 1.0),
-                    }
-                )
-                scene_dir = Path(runtime) / "tts-scenes"
-                scene_dir.mkdir(parents=True, exist_ok=True)
-                for row in rows:
-                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
-                    write_pcm(Path(row["output"]), seconds=4.0)
-
-            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
-                generate_scene_voices(
-                    root,
-                    production,
-                    vieneu_url="http://127.0.0.1:7860",
-                )
-
-            self.assertEqual(len(calls), 1)
-            self.assertEqual(calls[0]["ids"], ["S01", "S02"])
-            self.assertIsNone(calls[0]["url"])
-            self.assertEqual(calls[0]["scale"], 1.25)
-
-    def test_gradio_probe_at_natural_rate_finishes_remaining_rows_on_gradio(self):
-        words = " ".join(f"t{i}" for i in range(10))
-        production = {
-            "scenes": [
-                {"id": "S01", "voice": words},
-                {"id": "S02", "voice": words},
+                {"id": "S01", "voice": " ".join(f"t{i}" for i in range(10))},
+                {"id": "S02", "voice": " ".join(f"t{i}" for i in range(10))},
             ],
         }
         calls = []
@@ -1051,7 +955,7 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
                 scene_dir.mkdir(parents=True, exist_ok=True)
                 for row in rows:
                     row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
-                    write_pcm(Path(row["output"]), seconds=4.0)
+                    write_pcm(Path(row["output"]), seconds=1.0)
 
             with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
                 generate_scene_voices(
@@ -1063,10 +967,98 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             self.assertEqual(
                 calls,
                 [
-                    {"ids": ["S01"], "url": "http://127.0.0.1:7860"},
-                    {"ids": ["S02"], "url": "http://127.0.0.1:7860"},
+                    {
+                        "ids": ["S01", "S02"],
+                        "url": "http://127.0.0.1:7860",
+                    }
                 ],
             )
+            diagnostics = json.loads(
+                (root / ".runtime" / "tts-diagnostics.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                diagnostics["rate_policy"]["action"],
+                "warning_only",
+            )
+
+    def test_asr_spelling_variant_is_not_a_coverage_gap(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.95
+
+        class Segment:
+            words = [
+                Word("Sử", 0.0, 0.2),
+                Word("Nữ", 0.2, 0.4),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        try:
+            _align_scene_words(Model(), Path("S01.wav"), "Xử Nữ")
+        except PipelineError as exc:
+            self.assertIn("ALIGNMENT_MISMATCH", str(exc))
+            self.assertFalse(getattr(exc, "coverage_gap", True))
+        else:
+            self.fail("Expected alignment mismatch")
+
+    def test_missing_expected_word_is_a_coverage_gap(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.95
+
+        class Segment:
+            words = [
+                Word("một", 0.0, 0.2),
+                Word("ba", 0.2, 0.4),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        try:
+            _align_scene_words(Model(), Path("S01.wav"), "một hai ba")
+        except PipelineError as exc:
+            self.assertIn("ALIGNMENT_MISMATCH", str(exc))
+            self.assertTrue(getattr(exc, "coverage_gap", False))
+        else:
+            self.fail("Expected alignment mismatch")
+
+    def test_percent_number_compaction_does_not_look_like_missing_words(self):
+        class Word:
+            word = "8%"
+            start = 0.0
+            end = 0.4
+            probability = 0.95
+
+        class Segment:
+            words = [Word()]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        try:
+            _align_scene_words(
+                Model(),
+                Path("S01.wav"),
+                "tám phần trăm",
+            )
+        except PipelineError as exc:
+            self.assertFalse(getattr(exc, "coverage_gap", True))
+        else:
+            self.fail("Expected exact-token mismatch before timing reconciliation")
 
     def test_non_turbo_config_reports_only_applied_settings(self):
         config = effective_tts_generation_config(
