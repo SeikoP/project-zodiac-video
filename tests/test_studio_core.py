@@ -87,6 +87,17 @@ class PreflightTests(unittest.TestCase):
         self.assertEqual(codes["NPM"], "NPM_MISSING")
         self.assertEqual(codes["FFMPEG"], "FFMPEG_MISSING")
 
+    def test_install_command_targets_a_file_that_exists(self):
+        command = self._checker().install_command()
+        self.assertTrue(Path(command[-1]).is_file(), command[-1])
+
+    def test_missing_requirements_file_is_reported_not_installed(self):
+        from tools.zodiac_local import PipelineError
+
+        with patch("tools.studio.preflight.REQUIREMENTS", Path("nope/requirements-local.txt")):
+            with self.assertRaisesRegex(PipelineError, "requirements-local.txt"):
+                self._checker().install_command()
+
     def test_install_command_uses_the_running_interpreter(self):
         command = self._checker().install_command()
         self.assertEqual(command[:4], [sys.executable, "-m", "pip", "install"])

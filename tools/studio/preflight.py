@@ -11,6 +11,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from tools.zodiac_local import PipelineError
+
 ROOT = Path(__file__).resolve().parents[2]
 REQUIREMENTS = ROOT / "requirements-local.txt"
 
@@ -45,7 +47,16 @@ class PreflightChecker:
         self.require_music = require_music
 
     # ---- commands ----------------------------------------------------
+    @property
+    def requirements_path(self) -> Path:
+        return REQUIREMENTS
+
     def install_command(self) -> list[str]:
+        if not REQUIREMENTS.is_file():
+            # A missing requirements file must not produce a command pip cannot run.
+            raise PipelineError(
+                f"Không tìm thấy {REQUIREMENTS}. Không thể cài dependency tự động."
+            )
         return [sys.executable, "-m", "pip", "install", "-r", str(REQUIREMENTS)]
 
     def install_command_text(self) -> str:
