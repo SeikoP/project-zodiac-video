@@ -933,6 +933,141 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             )
             self.assertEqual(diagnostics["summary"]["word_count"], 6)
 
+    def test_gradio_probe_warning_skips_full_gradio_batch(self):
+        words = " ".join(f"t{i}" for i in range(10))
+        production = {
+            "scenes": [
+                {"id": "S01", "voice": words},
+                {"id": "S02", "voice": words},
+            ],
+        }
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+
+            def fake_batch(runtime, rows, **kwargs):
+                calls.append(
+                    {
+                        "ids": [row["scene_id"] for row in rows],
+                        "url": kwargs.get("vieneu_url"),
+                        "scale": kwargs.get("frame_cap_scale", 1.0),
+                        "precision": kwargs.get("precision"),
+                    }
+                )
+                scene_dir = Path(runtime) / "tts-scenes"
+                scene_dir.mkdir(parents=True, exist_ok=True)
+                seconds = 1.0 if kwargs.get("vieneu_url") else 4.0
+                for row in rows:
+                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+                    write_pcm(Path(row["output"]), seconds=seconds)
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
+                generate_scene_voices(
+                    root,
+                    production,
+                    vieneu_url="http://127.0.0.1:7860",
+                )
+
+            self.assertEqual(calls[0]["ids"], ["S01"])
+            self.assertEqual(calls[0]["url"], "http://127.0.0.1:7860")
+            self.assertEqual(calls[1]["ids"], ["S01", "S02"])
+            self.assertIsNone(calls[1]["url"])
+            self.assertEqual(calls[1]["precision"], "fp32")
+            self.assertEqual(calls[1]["scale"], 1.25)
+            self.assertEqual(len(calls), 2)
+
+    def test_cached_fast_gradio_route_skips_probe_entirely(self):
+        words = " ".join(f"t{i}" for i in range(10))
+        production = {
+            "scenes": [
+                {"id": "S01", "voice": words},
+                {"id": "S02", "voice": words},
+            ],
+        }
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            runtime = root / ".runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "tts-route.json").write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "mode": "v3turbo",
+                        "voice": "Hải Đăng",
+                        "vieneu_url": "http://127.0.0.1:7860",
+                        "decision": "direct_fp32_adaptive",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            def fake_batch(runtime, rows, **kwargs):
+                calls.append(
+                    {
+                        "ids": [row["scene_id"] for row in rows],
+                        "url": kwargs.get("vieneu_url"),
+                        "scale": kwargs.get("frame_cap_scale", 1.0),
+                    }
+                )
+                scene_dir = Path(runtime) / "tts-scenes"
+                scene_dir.mkdir(parents=True, exist_ok=True)
+                for row in rows:
+                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+                    write_pcm(Path(row["output"]), seconds=4.0)
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
+                generate_scene_voices(
+                    root,
+                    production,
+                    vieneu_url="http://127.0.0.1:7860",
+                )
+
+            self.assertEqual(len(calls), 1)
+            self.assertEqual(calls[0]["ids"], ["S01", "S02"])
+            self.assertIsNone(calls[0]["url"])
+            self.assertEqual(calls[0]["scale"], 1.25)
+
+    def test_gradio_probe_at_natural_rate_finishes_remaining_rows_on_gradio(self):
+        words = " ".join(f"t{i}" for i in range(10))
+        production = {
+            "scenes": [
+                {"id": "S01", "voice": words},
+                {"id": "S02", "voice": words},
+            ],
+        }
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+
+            def fake_batch(runtime, rows, **kwargs):
+                calls.append(
+                    {
+                        "ids": [row["scene_id"] for row in rows],
+                        "url": kwargs.get("vieneu_url"),
+                    }
+                )
+                scene_dir = Path(runtime) / "tts-scenes"
+                scene_dir.mkdir(parents=True, exist_ok=True)
+                for row in rows:
+                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+                    write_pcm(Path(row["output"]), seconds=4.0)
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
+                generate_scene_voices(
+                    root,
+                    production,
+                    vieneu_url="http://127.0.0.1:7860",
+                )
+
+            self.assertEqual(
+                calls,
+                [
+                    {"ids": ["S01"], "url": "http://127.0.0.1:7860"},
+                    {"ids": ["S02"], "url": "http://127.0.0.1:7860"},
+                ],
+            )
+
     def test_non_turbo_config_reports_only_applied_settings(self):
         config = effective_tts_generation_config(
             mode="v3nano",
