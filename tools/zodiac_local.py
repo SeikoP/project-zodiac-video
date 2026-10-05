@@ -13,6 +13,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import wave
 import zipfile
 import xml.etree.ElementTree as ET
@@ -34,6 +35,9 @@ EXPECTED_DEPENDENCIES = {
     "remotion": "4.0.530",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "@remotion/layout-utils": "4.0.530",
+    "@fontsource/be-vietnam-pro": "5.3.0",
+    "ajv": "8.20.0",
 }
 EXPECTED_DEV_DEPENDENCIES = {
     "@types/node": "24.0.0",
@@ -41,10 +45,12 @@ EXPECTED_DEV_DEPENDENCIES = {
     "typescript": "5.8.0",
 }
 EXPECTED_SCRIPTS = {
-    "prestudio": "node scripts/generate-sfx.mjs",
-    "studio": "remotion studio src/index.ts",
+    "prepare:runtime": "node scripts/render.mjs --prepare-only",
+    "studio": "npm run prepare:runtime && remotion studio src/index.ts --props=../.runtime/render-props.json",
     "render": "node scripts/render.mjs",
+    "test": "node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
+    "compile:style": "node scripts/compile-style-token.mjs",
 }
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
