@@ -865,10 +865,11 @@ def _alignment_coverage_gap(
         b=heard_units,
         autojunk=False,
     )
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+    for tag, _i1, _i2, _j1, _j2 in matcher.get_opcodes():
+        # A replacement is ambiguous ASR evidence: Whisper may substitute,
+        # merge, or split spoken words. Only an actual delete proves that an
+        # approved unit has no measured counterpart at all.
         if tag == "delete":
-            return True
-        if tag == "replace" and (i2 - i1) > (j2 - j1):
             return True
     return False
 
@@ -940,7 +941,7 @@ def _reconcile_asr_variant(
                 }
             continue
 
-        if tag != "replace" or expected_count < 1 or heard_count < expected_count:
+        if tag != "replace" or expected_count < 1 or heard_count < 1:
             return None
 
         if expected_count == heard_count:
