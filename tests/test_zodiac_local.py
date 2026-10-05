@@ -983,7 +983,7 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
                 "warning_only",
             )
 
-    def test_asr_spelling_variant_is_not_a_coverage_gap(self):
+    def test_asr_spelling_variant_reuses_measured_timing(self):
         class Word:
             def __init__(self, word, start, end):
                 self.word = word
@@ -1001,13 +1001,11 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             def transcribe(self, *args, **kwargs):
                 return [Segment()], object()
 
-        try:
-            _align_scene_words(Model(), Path("S01.wav"), "Xử Nữ")
-        except PipelineError as exc:
-            self.assertIn("ALIGNMENT_MISMATCH", str(exc))
-            self.assertFalse(getattr(exc, "coverage_gap", True))
-        else:
-            self.fail("Expected alignment mismatch")
+        aligned = _align_scene_words(Model(), Path("S01.wav"), "Xử Nữ")
+        self.assertEqual([item["text"] for item in aligned], ["Xử", "Nữ"])
+        self.assertEqual(aligned[0]["alignment_source"], "asr_variant")
+        self.assertAlmostEqual(aligned[0]["startMs"], 0.0)
+        self.assertAlmostEqual(aligned[0]["endMs"], 200.0)
 
     def test_missing_expected_word_is_a_coverage_gap(self):
         class Word:
