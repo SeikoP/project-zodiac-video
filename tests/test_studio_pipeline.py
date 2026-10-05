@@ -536,6 +536,28 @@ class ControllerTests(WorkerHarness):
             controller.archive_fingerprint,
         )
 
+    def test_controller_restarts_at_voice_when_worker_invalidates_legacy_tts_cache(self):
+        self.make_worker(
+            tts_mode="v3turbo",
+            tts_backend="onnx",
+            tts_precision="fp32",
+        ).run_to_completion()
+
+        plan = JobStateStore(self.job).open()
+        for entry in plan.steps[VOICE_SCENES].scenes.values():
+            entry.pop("tts_backend", None)
+            entry.pop("tts_precision", None)
+        plan.mark(ALIGN_TIMING, PENDING)
+        JobStateStore(self.job).save(plan)
+
+        self.tts_calls.clear()
+        controller = StudioController(workspace=self.root / "ws")
+        controller.use_job(self.job)
+        controller.start_pipeline(resume=True)
+        controller.worker.join(timeout=60)
+
+        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+
     def test_install_command_uses_the_running_interpreter(self):
         import sys
 
