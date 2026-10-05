@@ -962,7 +962,7 @@ def _select_vieneu_gradio_dependency(config: dict) -> dict:
         if isinstance(item, dict) and "id" in item
     }
     trusted_name = re.compile(
-        r"^(?:wrapper(?:_\\d+)?|synthesize_speech(?:_with_estimate)?(?:_\\d+)?)$"
+        r"^(?:wrapper(?:_\d+)?|synthesize_speech(?:_with_estimate)?(?:_\d+)?)$"
     )
     matches = []
     seen_api_names = []
@@ -1055,7 +1055,11 @@ def build_tts_diagnostics(
     for scene in production.get("scenes", []):
         scene_id = str(scene.get("id", ""))
         seconds = durations.get(scene_id)
-        if not isinstance(seconds, (int, float)) or seconds <= 0:
+        if (
+            not isinstance(seconds, (int, float))
+            or not math.isfinite(float(seconds))
+            or float(seconds) <= 0
+        ):
             raise PipelineError(f"missing measured duration for scene {scene_id}.")
         words = len(_expected_caption_tokens(str(scene.get("voice", ""))))
         wps = words / float(seconds)
@@ -1217,7 +1221,7 @@ def run_tts_batch(
         "        print('VieNeu: đang nạp model vào server…', flush=True)\n"
         "        loaded = client.predict('VieNeu-TTS-v3-Turbo', 'VieNeu-Codec', 'Auto', True, '', 'VieNeu-TTS-v3-Nano (preview)', '', api_name='/load_model')\n"
         "        if not str(loaded[0]).startswith('✅ Model đã tải thành công'): raise RuntimeError('VieNeu không nạp được model: ' + str(loaded[0]))\n"
-        "        result = client.predict(*args, api_name='/' + dep['api_name'])\n"
+        "        result = client.predict(*args, api_name='/' + api_name)\n"
         "    audio = result[0] if isinstance(result, (tuple, list)) else result\n"
         "    if isinstance(result, (tuple, list)) and result[0] is None: raise RuntimeError(str(result[1]))\n"
         "    if isinstance(audio, dict): audio = audio.get('path') or audio.get('name')\n"
