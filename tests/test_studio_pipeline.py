@@ -89,6 +89,7 @@ class WorkerHarness(unittest.TestCase):
     fail_scene: str | None = None
     fail_align = False
     fail_render = False
+    emit_tts_warning = False
 
     def setUp(self):
         self._temp = tempfile.TemporaryDirectory()
@@ -98,6 +99,7 @@ class WorkerHarness(unittest.TestCase):
         self.tts_calls: list[list[str]] = []
         self.align_calls: list[dict] = []
         self.render_calls: list[str] = []
+        self.emit_tts_warning = False
         self._patches: list = []
         self.addCleanup(self._stop_patches)
 
@@ -116,6 +118,8 @@ class WorkerHarness(unittest.TestCase):
         """Writes scenes in order and fails at fail_scene, like a real TTS batch."""
         requested = list(scene_ids) if scene_ids is not None else [s["id"] for s in production["scenes"]]
         self.tts_calls.append(requested)
+        if self.emit_tts_warning and kwargs.get("log_callback"):
+            kwargs["log_callback"]("TTS_RATE_WARNING: S01 4.40 từ/giây")
         for scene_id in requested:
             if self.fail_scene == scene_id:
                 raise RuntimeError(f"VieNeu failed on {scene_id}")
@@ -256,6 +260,36 @@ class VoiceResumeTests(WorkerHarness):
         self.assertEqual(plan.scene_status(VOICE_SCENES, "S01"), DONE)
         self.assertEqual(plan.scene_status(VOICE_SCENES, "S02"), PENDING)
         self.assertEqual(plan.scene_status(VOICE_SCENES, "S03"), DONE)
+
+    def test_scene_cache_includes_backend_and_precision(self):
+        self.make_worker(
+            tts_mode="v3turbo",
+            tts_backend="onnx",
+            tts_precision="fp32",
+        ).run_to_completion()
+        entry = JobStateStore(self.job).load()["steps"][VOICE_SCENES]["scenes"]["S01"]
+        self.assertEqual(entry["tts_backend"], "onnx")
+        self.assertEqual(entry["tts_precision"], "fp32")
+
+    def test_backend_or_precision_change_invalidates_cached_wavs(self):
+        self.make_worker(
+            tts_mode="v3turbo",
+            tts_backend="onnx",
+            tts_precision="fp32",
+        ).run_to_completion()
+        plan = JobStateStore(self.job).open()
+        plan.mark(VOICE_SCENES, PENDING)
+        JobStateStore(self.job).save(plan)
+        self.tts_calls.clear()
+
+        worker = self.make_worker(
+            plan=JobStateStore(self.job).open(),
+            tts_mode="v3turbo",
+            tts_backend="onnx",
+            tts_precision="int8",
+        )
+        worker.run_from(VOICE_SCENES)
+        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
 
 
 class RerunStepTests(WorkerHarness):
@@ -423,6 +457,12 @@ class WorkerThreadingTests(WorkerHarness):
         self.make_worker().run_to_completion()
         logs = [payload["text"] for kind, payload in self.events if kind == LOG_LINE]
         self.assertTrue(any("S01" in text for text in logs))
+
+    def test_tts_rate_warning_is_streamed_to_studio_log(self):
+        self.emit_tts_warning = True
+        self.make_worker().run_to_completion()
+        logs = [payload["text"] for kind, payload in self.events if kind == LOG_LINE]
+        self.assertTrue(any("TTS_RATE_WARNING" in text for text in logs))
 
     def test_worker_can_run_in_background_and_be_joined(self):
         worker = self.make_worker()
