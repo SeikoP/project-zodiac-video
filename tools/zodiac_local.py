@@ -1011,6 +1011,76 @@ def load_word_aligner(model_name: str, device: str, compute_type: str):
         ) from exc
 
 
+def _repair_aligner_word_timestamps(
+    raw_words: list[dict],
+    audio_path: Path,
+    *,
+    tolerance_ms: float = ASR_SCENE_BOUNDARY_TOLERANCE_MS,
+) -> list[dict]:
+    """Repair only zero-duration ASR tokens from adjacent measured boundaries."""
+    repaired: list[dict] = []
+    tolerance_seconds = float(tolerance_ms) / 1000.0
+
+    for index, raw in enumerate(raw_words):
+        start = raw.get("start")
+        end = raw.get("end")
+        if start is None or end is None:
+            raise PipelineError(
+                f"aligner returned an invalid word timestamp for {audio_path.name}."
+            )
+        try:
+            start = float(start)
+            end = float(end)
+        except (TypeError, ValueError) as exc:
+            raise PipelineError(
+                f"aligner returned an invalid word timestamp for {audio_path.name}."
+            ) from exc
+        if not math.isfinite(start) or not math.isfinite(end) or end < start:
+            raise PipelineError(
+                f"aligner returned an invalid word timestamp for {audio_path.name}."
+            )
+
+        if math.isclose(end, start, rel_tol=0.0, abs_tol=1e-9):
+            next_start = None
+            if index + 1 < len(raw_words):
+                candidate = raw_words[index + 1].get("start")
+                try:
+                    candidate = float(candidate) if candidate is not None else None
+                except (TypeError, ValueError):
+                    candidate = None
+                if candidate is not None and math.isfinite(candidate):
+                    next_start = candidate
+
+            if (
+                next_start is not None
+                and next_start > start
+                and next_start - start <= tolerance_seconds
+            ):
+                end = next_start
+            else:
+                previous_end = (
+                    float(repaired[-1]["end"])
+                    if repaired
+                    else None
+                )
+                if (
+                    previous_end is None
+                    or previous_end >= start
+                    or start - previous_end > tolerance_seconds
+                ):
+                    raise PipelineError(
+                        f"aligner returned an invalid word timestamp for {audio_path.name}."
+                    )
+                start = previous_end
+
+        item = dict(raw)
+        item["start"] = start
+        item["end"] = end
+        repaired.append(item)
+
+    return repaired
+
+
 def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict]:
     expected = _expected_caption_tokens(approved_text)
     try:
@@ -1021,21 +1091,17 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
             vad_filter=False,
             condition_on_previous_text=False,
         )
-        measured = []
+        raw_words = []
         for segment in segments:
             for word in segment.words or []:
                 heard = str(word.word).strip()
                 if not _normalize_token(heard):
                     continue
-                if word.start is None or word.end is None or word.end <= word.start:
-                    raise PipelineError(
-                        f"aligner returned an invalid word timestamp for {audio_path.name}."
-                    )
-                measured.append(
+                raw_words.append(
                     {
                         "heard": heard,
-                        "startMs": float(word.start) * 1000,
-                        "endMs": float(word.end) * 1000,
+                        "start": word.start,
+                        "end": word.end,
                         "confidence": (
                             float(word.probability)
                             if word.probability is not None
@@ -1043,6 +1109,20 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
                         ),
                     }
                 )
+
+        measured = []
+        for word in _repair_aligner_word_timestamps(
+            raw_words,
+            audio_path,
+        ):
+            measured.append(
+                {
+                    "heard": word["heard"],
+                    "startMs": float(word["start"]) * 1000,
+                    "endMs": float(word["end"]) * 1000,
+                    "confidence": word["confidence"],
+                }
+            )
     except PipelineError:
         raise
     except Exception as exc:

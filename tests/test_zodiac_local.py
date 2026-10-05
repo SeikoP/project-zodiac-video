@@ -714,6 +714,66 @@ class TtsDurationGuardTests(unittest.TestCase):
         self.assertFalse(diagnostics["scenes"][0]["speech_rate_warning"])
         self.assertFalse(diagnostics["summary"]["speech_rate_warning"])
 
+    def test_repairs_zero_duration_aligner_token_from_neighbor_boundaries(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.9
+
+        class Segment:
+            words = [
+                Word("một", 0.00, 0.20),
+                Word("hai", 0.20, 0.20),
+                Word("ba", 0.34, 0.50),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        aligned = _align_scene_words(
+            Model(),
+            Path("S02.wav"),
+            "một hai ba",
+        )
+        self.assertEqual(
+            [item["text"] for item in aligned],
+            ["một", "hai", "ba"],
+        )
+        self.assertGreater(aligned[1]["endMs"], aligned[1]["startMs"])
+        self.assertLessEqual(aligned[1]["endMs"], aligned[2]["startMs"])
+
+    def test_rejects_unrepairable_zero_duration_aligner_token(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.9
+
+        class Segment:
+            words = [
+                Word("một", 0.00, 0.20),
+                Word("hai", 0.20, 0.20),
+                Word("ba", 1.20, 1.40),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        with self.assertRaisesRegex(
+            PipelineError,
+            "invalid word timestamp",
+        ):
+            _align_scene_words(
+                Model(),
+                Path("S02.wav"),
+                "một hai ba",
+            )
+
     def test_alignment_mismatch_has_stable_error_code(self):
         class Word:
             word = "một"
