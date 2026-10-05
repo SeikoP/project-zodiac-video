@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.editor.geometry import CanvasTransform
-from tools.zodiac_gui import COLORS
+from tools.studio.theme import COLORS
 
 HANDLE = 8
 MIN_SIZE = 1.0

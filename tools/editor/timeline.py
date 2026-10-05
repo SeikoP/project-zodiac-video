@@ -13,7 +13,7 @@ from tools.editor.timing import (
     resolve_event,
     scene_frame_to_x,
 )
-from tools.zodiac_gui import COLORS
+from tools.studio.theme import COLORS
 
 LANE_HEIGHT = 96
 MARKER_RADIUS = 7

@@ -13,7 +13,7 @@ from tools.editor.inspector import EventInspector, Inspector
 from tools.editor.runtime import invalidate_runtime_for
 from tools.editor.scene_list import SceneList
 from tools.editor.timeline import TimelineView, selection_for_event
-from tools.zodiac_gui import COLORS
+from tools.studio.theme import COLORS
 
 
 class EditorWorkspace(tk.Toplevel):

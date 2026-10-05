@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from tools.zodiac_gui import COLORS
+from tools.studio.theme import COLORS
 
 FIELD_FONT = ("Segoe UI", 9)
 
