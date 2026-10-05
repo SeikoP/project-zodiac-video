@@ -10,9 +10,12 @@ from pathlib import Path
 
 from tools.zodiac_local import (
     PipelineError,
+    _align_scene_words,
     _run_ffmpeg,
     build_audio_preview,
+    build_parser,
     build_timing_from_word_alignment,
+    build_tts_diagnostics,
     concatenate_wavs,
     configure_background_music,
     import_package,
@@ -570,6 +573,95 @@ class RuntimeTimingTests(unittest.TestCase):
                     wav.getnframes(),
                     5,
                 )
+
+
+class TtsDurationGuardTests(unittest.TestCase):
+    def test_flags_fast_vietnamese_speech_before_alignment(self):
+        words = [f"tu{i}" for i in range(89)]
+        production = {
+            "scenes": [
+                {
+                    "id": "S01",
+                    "voice": " ".join(words),
+                },
+            ],
+        }
+        diagnostics = build_tts_diagnostics(
+            production,
+            {"S01": 20.1},
+            warning_wps=3.8,
+            transport="local",
+            backend="onnx",
+            precision="int8",
+            frame_cap=True,
+            max_chars=256,
+        )
+        scene = diagnostics["scenes"][0]
+        self.assertEqual(scene["word_count"], 89)
+        self.assertAlmostEqual(scene["words_per_second"], 89 / 20.1, places=3)
+        self.assertTrue(scene["speech_rate_warning"])
+        self.assertTrue(diagnostics["summary"]["speech_rate_warning"])
+
+    def test_natural_rate_does_not_warn(self):
+        production = {
+            "scenes": [
+                {
+                    "id": "S01",
+                    "voice": " ".join(f"tu{i}" for i in range(89)),
+                },
+            ],
+        }
+        diagnostics = build_tts_diagnostics(
+            production,
+            {"S01": 27.0},
+            warning_wps=3.8,
+        )
+        self.assertFalse(diagnostics["scenes"][0]["speech_rate_warning"])
+        self.assertFalse(diagnostics["summary"]["speech_rate_warning"])
+
+    def test_alignment_mismatch_has_stable_error_code(self):
+        class Word:
+            word = "một"
+            start = 0.0
+            end = 0.2
+            probability = 0.99
+
+        class Segment:
+            words = [Word()]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        with self.assertRaisesRegex(PipelineError, "ALIGNMENT_MISMATCH"):
+            _align_scene_words(
+                Model(),
+                Path("S01.wav"),
+                "một hai",
+            )
+
+    def test_voice_cli_exposes_turbo_diagnostic_controls(self):
+        args = build_parser().parse_args(
+            [
+                "voice",
+                "job",
+                "--tts-backend",
+                "onnx",
+                "--tts-precision",
+                "int8",
+                "--tts-frame-cap",
+                "off",
+                "--tts-max-chars",
+                "160",
+                "--speech-rate-warning-wps",
+                "3.9",
+            ]
+        )
+        self.assertEqual(args.tts_backend, "onnx")
+        self.assertEqual(args.tts_precision, "int8")
+        self.assertEqual(args.tts_frame_cap, "off")
+        self.assertEqual(args.tts_max_chars, 160)
+        self.assertEqual(args.speech_rate_warning_wps, 3.9)
 
 
 class BackgroundMusicTests(unittest.TestCase):
