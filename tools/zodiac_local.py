@@ -1448,7 +1448,7 @@ def run_tui(args: argparse.Namespace, workspace: Path) -> None:
             synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode, align_model=args.align_model, align_device=args.align_device, align_compute_type=args.align_compute_type)
             print("Voice and timing ready.")
         elif choice == "2":
-            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode)
+            synthesize_voice(job, args.tts_root, args.tts_python, args.voice, args.tts_mode, align_model=args.align_model, align_device=args.align_device, align_compute_type=args.align_compute_type)
             run_renderer(job, "render")
         elif choice == "3":
             run_renderer(job, "preview")
