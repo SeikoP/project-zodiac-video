@@ -1,23 +1,44 @@
-# zodiac-video-pipeline 0.9.1 review
+# Current zodiac-video-pipeline v2 compatibility review
 
-Reviewed the 0.9.1 skill, production-handoff contract, Remotion renderer scaffold, and the `RENDER_READY` example package.
+This repository now targets the plugin's current **production contract v2.0** rather than the previous 0.9.1/v1 handoff.
 
-## Confirmed design
+## Matched contract
 
-- The plugin owns evidence, story, narration, visual compile, and video-specific asset production.
-- Production illustrations are hand-authored SVGs unique to each video's contract. Simple shapes/props can be declared as procedural SVG primitives in `production.json`; the pipeline does not need a fixed pose library or generated raster images.
-- A `RENDER_READY` export contains `narration.txt`, one canonical `production.json`, its own `assets/`, and `renderer/`.
-- Voice creation, measured `.runtime/timing.json`, preview, and MP4 rendering are local production steps. Runtime timing belongs outside the canonical `production.json`.
-- The uploaded `zodiac-content-pipeline-v0.1.zip` is a carousel/content skill; it is not a video package and has no production contract or Remotion renderer.
+- `design.md` is required and its marked STYLE_TOKEN hash must match `production.json.visual_system.style_token.source_hash`.
+- `production.json.version` must be `2.0`.
+- Scenes use `entities + states + events`, not the old `actors/objects/actions/motion` layout.
+- Events support `scene_start` and exact `voice_anchor` triggers.
+- Runtime captions are measured word-level tokens, enabling active-word caption pages and event resolution.
+- Caption contract requires local **Be Vietnam Pro** weight 500.
+- The current renderer scaffold includes schema validation, style compilation, runtime event resolution, renderer tests and TypeScript typecheck.
+- Local runtime preserves `production.json` as the creative contract; voice/timing/audio settings remain runtime-owned.
 
-## Findings to address in the plugin
+## Local voice boundary
 
-1. **No dependency lockfile.** `renderer/package.json` pins direct versions, but the renderer handoff uses `npm install` without a `package-lock.json`; transitive versions can therefore resolve differently across dates or machines. Add and ship a lockfile, then use `npm ci` in the local handoff.
-2. **Object asset files are not checked by the renderer preflight.** `renderer/scripts/render.mjs` verifies actor SVG paths and object asset IDs, but it does not verify that an object's registered SVG path exists. This runner checks all registered assets and scene object references before invoking Remotion.
-3. **Voice duration is not compared with total frame duration.** The renderer requires `voice.wav` and checks timing continuity, but it does not compare the WAV's measured duration with `total_duration_frames / fps`. Add a tolerance-based check so a mismatched voice/timing pair is caught before rendering.
-4. **Generated SFX files are present in the plugin export template.** The renderer regenerates declared procedural SFX from `production.json`; shipping pre-generated WAVs in the template can leave stale/duplicate artifacts. Keep only the generator in the template, or document why generated files belong there.
-5. **Full build/render verification is still outstanding.** The contract and example package pass the runner's static checks, but this review did not run `npm install`, the TypeScript compiler, or an MP4 render. Do not treat the renderer as end-to-end verified until those commands pass with a real measured voice/timing pair.
+The repository keeps VieNeu as its local TTS integration. This does not change the plugin creative contract.
 
-## Runner boundary
+After scene WAV generation, `faster-whisper` supplies measured word timestamps. Alignment is strict: if normalized recognized tokens do not match approved narration, the local run stops instead of fabricating timestamps.
 
-This repository handles safe extraction, package and SVG validation, runtime timing validation, pinned direct dependency installation, typecheck, preview, and render. It does not synthesize Vietnamese voice or infer timestamps from narration text: timing must come from the actual generated or recorded voice.
+Externally generated voice/timing remains supported through `attach`.
+
+## Audio boundary
+
+Background music is local runtime state, not a creative `production.json` field.
+
+- selected music is copied to `media/`;
+- volume is stored in `.runtime/audio.json`;
+- **Nghe thử** creates an exact-duration voice/music audition;
+- final background music is post-mixed after Remotion renders voice + SFX;
+- the canonical renderer source is not patched.
+
+## Preview boundary
+
+The GUI label now describes the operation correctly: it opens **Remotion Studio**, which remains alive until stopped.
+
+On POSIX, Studio is launched in its own session/process group and stop sends SIGTERM to the group with SIGKILL fallback. Windows uses `taskkill /T /F`.
+
+## Remaining verification boundary
+
+Static/unit tests cover the Python package/runtime contract and audio command construction. A real end-to-end acceptance still requires a current v2 plugin package plus real VieNeu output/faster-whisper alignment, npm install, Remotion Studio/render and listening to the exported MP4.
+
+Do not claim a particular video/audio export passed visual or listening QA until that local render has actually been inspected.
