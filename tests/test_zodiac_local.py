@@ -1309,6 +1309,50 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
                     allow_fp32_fallback=True,
                 )
 
+    def test_asr_merged_words_do_not_trigger_coverage_retry(self):
+        expected = ["mấy", "chuyện", "bé", "tí"]
+        measured = [
+            {"heard": "mới", "startMs": 0.0, "endMs": 150.0, "confidence": 0.9},
+            {"heard": "chuyện", "startMs": 150.0, "endMs": 350.0, "confidence": 0.95},
+            {"heard": "betty", "startMs": 350.0, "endMs": 650.0, "confidence": 0.85},
+        ]
+        self.assertFalse(_alignment_coverage_gap(expected, measured))
+
+    def test_asr_merged_token_is_split_across_approved_words(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.9
+
+        class Segment:
+            words = [
+                Word("mới", 0.0, 0.15),
+                Word("chuyện", 0.15, 0.35),
+                Word("betty", 0.35, 0.65),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        aligned = _align_scene_words(
+            Model(),
+            Path("S01.wav"),
+            "mấy chuyện bé tí",
+        )
+        self.assertEqual(
+            [item["text"] for item in aligned],
+            ["mấy", "chuyện", "bé", "tí"],
+        )
+        self.assertEqual(
+            [item["alignment_source"] for item in aligned[-2:]],
+            ["asr_variant_split", "asr_variant_split"],
+        )
+        self.assertAlmostEqual(aligned[-2]["startMs"], 350.0)
+        self.assertAlmostEqual(aligned[-1]["endMs"], 650.0)
+
     def test_multi_digit_number_compaction_matches_spelled_number(self):
         self.assertEqual(
             _alignment_units("12%"),
