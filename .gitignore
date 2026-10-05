@@ -1,0 +1,11 @@
+.zodiac-work/
+jobs/
+__pycache__/
+*.py[cod]
+node_modules/
+renderer/generated/sfx/
+voice.wav
+.runtime/
+out/
+*.wav
+*.mp4
