@@ -84,6 +84,10 @@ def terminate_process_tree(process: subprocess.Popen) -> None:
 
     try:
         os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:
         return
 
