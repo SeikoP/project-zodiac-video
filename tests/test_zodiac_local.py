@@ -933,6 +933,132 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
             )
             self.assertEqual(diagnostics["summary"]["word_count"], 6)
 
+    def test_rate_warning_does_not_regenerate_full_batch(self):
+        production = {
+            "scenes": [
+                {"id": "S01", "voice": " ".join(f"t{i}" for i in range(10))},
+                {"id": "S02", "voice": " ".join(f"t{i}" for i in range(10))},
+            ],
+        }
+        calls = []
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+
+            def fake_batch(runtime, rows, **kwargs):
+                calls.append(
+                    {
+                        "ids": [row["scene_id"] for row in rows],
+                        "url": kwargs.get("vieneu_url"),
+                    }
+                )
+                scene_dir = Path(runtime) / "tts-scenes"
+                scene_dir.mkdir(parents=True, exist_ok=True)
+                for row in rows:
+                    row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+                    write_pcm(Path(row["output"]), seconds=1.0)
+
+            with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch):
+                generate_scene_voices(
+                    root,
+                    production,
+                    vieneu_url="http://127.0.0.1:7860",
+                )
+
+            self.assertEqual(
+                calls,
+                [
+                    {
+                        "ids": ["S01", "S02"],
+                        "url": "http://127.0.0.1:7860",
+                    }
+                ],
+            )
+            diagnostics = json.loads(
+                (root / ".runtime" / "tts-diagnostics.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                diagnostics["rate_policy"]["action"],
+                "warning_only",
+            )
+
+    def test_asr_spelling_variant_reuses_measured_timing(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.95
+
+        class Segment:
+            words = [
+                Word("Sử", 0.0, 0.2),
+                Word("Nữ", 0.2, 0.4),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        aligned = _align_scene_words(Model(), Path("S01.wav"), "Xử Nữ")
+        self.assertEqual([item["text"] for item in aligned], ["Xử", "Nữ"])
+        self.assertEqual(aligned[0]["alignment_source"], "asr_variant")
+        self.assertAlmostEqual(aligned[0]["startMs"], 0.0)
+        self.assertAlmostEqual(aligned[0]["endMs"], 200.0)
+
+    def test_missing_expected_word_is_a_coverage_gap(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.95
+
+        class Segment:
+            words = [
+                Word("một", 0.0, 0.2),
+                Word("ba", 0.2, 0.4),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        try:
+            _align_scene_words(Model(), Path("S01.wav"), "một hai ba")
+        except PipelineError as exc:
+            self.assertIn("ALIGNMENT_MISMATCH", str(exc))
+            self.assertTrue(getattr(exc, "coverage_gap", False))
+        else:
+            self.fail("Expected alignment mismatch")
+
+    def test_percent_number_compaction_is_split_across_approved_words(self):
+        class Word:
+            word = "8%"
+            start = 0.0
+            end = 0.6
+            probability = 0.95
+
+        class Segment:
+            words = [Word()]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        aligned = _align_scene_words(
+            Model(),
+            Path("S01.wav"),
+            "tám phần trăm",
+        )
+        self.assertEqual(
+            [item["text"] for item in aligned],
+            ["tám", "phần", "trăm"],
+        )
+        self.assertAlmostEqual(aligned[0]["startMs"], 0.0)
+        self.assertAlmostEqual(aligned[-1]["endMs"], 600.0)
+
     def test_non_turbo_config_reports_only_applied_settings(self):
         config = effective_tts_generation_config(
             mode="v3nano",

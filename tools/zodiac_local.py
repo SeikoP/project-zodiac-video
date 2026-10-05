@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import os
@@ -22,6 +23,23 @@ from pathlib import Path, PurePosixPath
 
 class PipelineError(Exception):
     """A package, runtime, or local-tool prerequisite is invalid."""
+
+
+class AlignmentMismatchError(PipelineError):
+    """ASR differs from approved narration, with coverage metadata for retry policy."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        expected: list[str],
+        heard: list[str],
+        coverage_gap: bool,
+    ) -> None:
+        super().__init__(message)
+        self.expected = expected
+        self.heard = heard
+        self.coverage_gap = bool(coverage_gap)
 
 
 MAX_ZIP_ENTRIES = 5000
@@ -714,6 +732,184 @@ def _expected_caption_tokens(text: str) -> list[str]:
     return tokens
 
 
+_VI_DIGIT_WORDS = {
+    "0": "không",
+    "1": "một",
+    "2": "hai",
+    "3": "ba",
+    "4": "bốn",
+    "5": "năm",
+    "6": "sáu",
+    "7": "bảy",
+    "8": "tám",
+    "9": "chín",
+}
+
+
+def _alignment_units(raw_token: str) -> list[str]:
+    """Canonical comparison units; preserves common Whisper numeric compaction."""
+    raw = unicodedata.normalize("NFC", str(raw_token)).strip().lower()
+    numeric = re.fullmatch(r"([0-9])\s*(%)?", raw)
+    if numeric:
+        units = [_VI_DIGIT_WORDS[numeric.group(1)]]
+        if numeric.group(2):
+            units.extend(["phần", "trăm"])
+        return units
+    normalized = _normalize_token(raw)
+    return [normalized] if normalized else []
+
+
+def _alignment_coverage_gap(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> bool:
+    """True only when ASR evidence suggests approved words have no counterpart.
+
+    Substitutions of the same/greater heard span are treated as transcription
+    variants, not as proof that TTS omitted audio. This prevents expensive TTS
+    regeneration for cases such as Xử/Sử, 8%/tám phần trăm, or word splitting.
+    """
+    expected_units = [
+        unit
+        for token in expected_tokens
+        for unit in _alignment_units(token)
+    ]
+    heard_units = [
+        unit
+        for item in measured_words
+        for unit in _alignment_units(item.get("heard", ""))
+    ]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "delete":
+            return True
+        if tag == "replace" and (i2 - i1) > (j2 - j1):
+            return True
+    return False
+
+
+def _expanded_measured_alignment_words(measured_words: list[dict]) -> list[dict]:
+    """Expand compact ASR forms while retaining a measured time span."""
+    expanded: list[dict] = []
+    for item in measured_words:
+        units = _alignment_units(item.get("heard", ""))
+        if not units:
+            continue
+        start_ms = float(item["startMs"])
+        end_ms = float(item["endMs"])
+        width = (end_ms - start_ms) / len(units)
+        for index, unit in enumerate(units):
+            begin = start_ms + width * index
+            end = end_ms if index == len(units) - 1 else start_ms + width * (index + 1)
+            expanded.append(
+                {
+                    "heard": unit,
+                    "startMs": begin,
+                    "endMs": end,
+                    "confidence": item.get("confidence"),
+                }
+            )
+    return expanded
+
+
+def _reconcile_asr_variant(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> list[dict] | None:
+    """Map transcription variants back to approved tokens without hiding omissions.
+
+    Reconciliation is allowed only when every approved token has measured audio
+    coverage. Equal-length substitutions reuse measured word spans; one-to-many
+    ASR splits share the measured replacement span. Missing approved words and
+    standalone ASR insertions are rejected.
+    """
+    expected_units: list[str] = []
+    for token in expected_tokens:
+        units = _alignment_units(token)
+        if len(units) != 1:
+            return None
+        expected_units.append(units[0])
+
+    measured = _expanded_measured_alignment_words(measured_words)
+    heard_units = [str(item["heard"]) for item in measured]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    output: list[dict | None] = [None] * len(expected_tokens)
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        expected_count = i2 - i1
+        heard_count = j2 - j1
+        if tag == "equal":
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_exact",
+                }
+            continue
+
+        if tag != "replace" or expected_count < 1 or heard_count < expected_count:
+            return None
+
+        if expected_count == heard_count:
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_variant",
+                }
+            continue
+
+        span_start = float(measured[j1]["startMs"])
+        span_end = float(measured[j2 - 1]["endMs"])
+        weights = [
+            max(1, len(_normalize_token(expected_tokens[index])))
+            for index in range(i1, i2)
+        ]
+        total_weight = sum(weights)
+        cursor = span_start
+        confidences = [
+            item.get("confidence")
+            for item in measured[j1:j2]
+            if item.get("confidence") is not None
+        ]
+        confidence = min(confidences) if confidences else None
+        for relative, weight in enumerate(weights):
+            fraction = weight / total_weight
+            end = span_end if relative == len(weights) - 1 else cursor + (
+                (span_end - span_start) * fraction
+            )
+            index = i1 + relative
+            output[index] = {
+                "text": expected_tokens[index],
+                "startMs": cursor,
+                "endMs": end,
+                "timestampMs": cursor,
+                "confidence": confidence,
+                "alignment_source": "asr_variant_split",
+            }
+            cursor = end
+
+    if any(item is None for item in output):
+        return None
+    return [item for item in output if item is not None]
+
+
 def load_word_aligner(model_name: str, device: str, compute_type: str):
     require_word_aligner_installed()
     try:
@@ -774,10 +970,24 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
     expected_norm = [_normalize_token(token) for token in expected]
     heard_norm = [_normalize_token(item["heard"]) for item in measured]
     if expected_norm != heard_norm:
-        raise PipelineError(
+        coverage_gap = _alignment_coverage_gap(expected, measured)
+        if not coverage_gap:
+            reconciled = _reconcile_asr_variant(expected, measured)
+            if reconciled is not None:
+                return reconciled
+        mismatch_kind = (
+            "coverage_gap"
+            if coverage_gap
+            else "unreconciled_asr_variant"
+        )
+        raise AlignmentMismatchError(
             "ALIGNMENT_MISMATCH: word alignment does not match approved narration for "
-            f"{audio_path.name}. expected={expected_norm!r}, heard={heard_norm!r}. "
-            "Do not guess timings; correct the TTS/alignment and retry."
+            f"{audio_path.name}. kind={mismatch_kind}. "
+            f"expected={expected_norm!r}, heard={heard_norm!r}. "
+            "Do not guess timings; correct the TTS/alignment and retry.",
+            expected=expected_norm,
+            heard=heard_norm,
+            coverage_gap=coverage_gap,
         )
 
     return [
@@ -787,6 +997,7 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
             "endMs": item["endMs"],
             "timestampMs": item["startMs"],
             "confidence": item["confidence"],
+            "alignment_source": "asr_exact",
         }
         for display, item in zip(expected, measured)
     ]
@@ -1342,7 +1553,7 @@ def generate_scene_voices(
     fp32_fallback_on_rate_warning: bool = True,
     log_callback=None,
 ) -> dict[str, float]:
-    """Generate selected WAVs and return measured durations for the whole job."""
+    """Generate selected WAVs once; WPS is diagnostic, never a batch retry trigger."""
     speech_rate_warning_wps = _validate_speech_rate_warning_wps(
         speech_rate_warning_wps
     )
@@ -1370,8 +1581,7 @@ def generate_scene_voices(
             validate_voice(path)
         except PipelineError as exc:
             raise PipelineError(f"Scene {scene_id}: {exc}") from exc
-        with wave.open(str(path), "rb") as wav:
-            durations[scene_id] = wav.getnframes() / wav.getframerate()
+        durations[scene_id] = _wav_duration_seconds(path)
 
     applied_config = effective_tts_generation_config(
         mode=mode,
@@ -1387,88 +1597,29 @@ def generate_scene_voices(
         warning_wps=speech_rate_warning_wps,
         **applied_config,
     )
-    _print_tts_diagnostics(diagnostics, log_callback)
-
-    generated_ids = {row["scene_id"] for row in rows}
     warning_ids = [
         item["scene_id"]
         for item in diagnostics["scenes"]
-        if item["speech_rate_warning"] and item["scene_id"] in generated_ids
+        if item["speech_rate_warning"]
+        and item["scene_id"] in {row["scene_id"] for row in rows}
     ]
-    if (
-        vieneu_url
-        and mode == "v3turbo"
-        and fp32_fallback_on_rate_warning
-        and warning_ids
-    ):
-        write_tts_diagnostics(
-            root / ".runtime",
-            diagnostics,
-            "tts-diagnostics.initial.json",
-        )
+    if warning_ids:
+        diagnostics["rate_policy"] = {
+            "action": "warning_only",
+            "reason": (
+                "speech rate alone is not evidence of missing narration; "
+                "alignment decides whether a scene-level retry is justified"
+            ),
+            "scene_ids": warning_ids,
+        }
+    write_tts_diagnostics(root / ".runtime", diagnostics)
+    _print_tts_diagnostics(diagnostics, log_callback)
+    if warning_ids and fp32_fallback_on_rate_warning:
         _emit_tts_log(
-            "TTS_FP32_RETRY: Gradio sinh audio quá nhanh; "
-            "sinh lại scene cảnh báo bằng direct ONNX/fp32: "
-            + ", ".join(warning_ids),
+            "TTS_RATE_NOTICE: tốc độ cao chỉ được ghi cảnh báo; "
+            "không sinh lại cả batch. Alignment sẽ quyết định retry theo từng scene.",
             log_callback,
         )
-        retry_rows = [
-            row for row in rows
-            if row["scene_id"] in set(warning_ids)
-        ]
-        run_tts_batch(
-            root / ".runtime",
-            retry_rows,
-            tts_root=tts_root,
-            tts_python=tts_python,
-            voice=voice,
-            mode=mode,
-            vieneu_url=None,
-            backend="onnx",
-            precision="fp32",
-            frame_cap="on",
-            max_chars=max_chars,
-        )
-        for row in retry_rows:
-            path = Path(row["output"])
-            try:
-                validate_voice(path)
-            except PipelineError as exc:
-                raise PipelineError(
-                    f"Scene {row['scene_id']} fp32 retry: {exc}"
-                ) from exc
-            with wave.open(str(path), "rb") as wav:
-                durations[row["scene_id"]] = (
-                    wav.getnframes() / wav.getframerate()
-                )
-
-        retry_config = effective_tts_generation_config(
-            mode=mode,
-            vieneu_url=None,
-            backend="onnx",
-            precision="fp32",
-            frame_cap="on",
-            max_chars=max_chars,
-        )
-        final_diagnostics = build_tts_diagnostics(
-            production,
-            durations,
-            warning_wps=speech_rate_warning_wps,
-            **applied_config,
-            scene_configs={
-                scene_id: retry_config
-                for scene_id in warning_ids
-            },
-        )
-        final_diagnostics["fallback"] = {
-            "reason": "speech_rate_warning",
-            "scene_ids": warning_ids,
-            "initial_summary": diagnostics["summary"],
-        }
-        diagnostics = final_diagnostics
-        _print_tts_diagnostics(diagnostics, log_callback)
-
-    write_tts_diagnostics(root / ".runtime", diagnostics)
     return durations
 
 
@@ -1490,7 +1641,7 @@ def _wav_duration_seconds(path: Path) -> float:
 
 
 def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> bool:
-    """Retry only after capped ONNX/fp32 is still fast and exact alignment fails."""
+    """Allow scene-level retry for fast Gradio or capped direct fp32 output."""
     diagnostics_path = Path(package_root) / ".runtime" / "tts-diagnostics.json"
     try:
         diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
@@ -1500,11 +1651,16 @@ def tts_scene_frame_cap_retry_eligible(package_root: Path, scene_id: str) -> boo
         if scene.get("scene_id") != scene_id:
             continue
         generation = scene.get("generation") or {}
-        return bool(
-            scene.get("speech_rate_warning")
+        transport = generation.get("transport")
+        direct_fp32 = (
+            transport == "local"
             and generation.get("backend") == "onnx"
             and generation.get("precision") == "fp32"
             and generation.get("frame_cap") is True
+        )
+        return bool(
+            scene.get("speech_rate_warning")
+            and (transport == "gradio" or direct_fp32)
         )
     return False
 
@@ -1609,28 +1765,72 @@ def recover_scene_alignment_with_adaptive_frame_cap(
     if scene is None:
         raise PipelineError(f"unknown scene for adaptive frame-cap retry: {scene_id}")
 
-    scales = tuple(float(value) for value in frame_cap_scales)
-    if not scales or any(
+    configured_scales = tuple(float(value) for value in frame_cap_scales)
+    if not configured_scales or any(
         not math.isfinite(value) or value <= 1.0
-        for value in scales
-    ) or any(right <= left for left, right in zip(scales, scales[1:])):
+        for value in configured_scales
+    ) or any(
+        right <= left
+        for left, right in zip(configured_scales, configured_scales[1:])
+    ):
         raise PipelineError(
             "frame_cap_scales must be an increasing sequence of finite values > 1."
+        )
+
+    baseline_scale = 1.0
+    baseline_transport = "local"
+    diagnostics_path = root / ".runtime" / "tts-diagnostics.json"
+    try:
+        current_diagnostics = json.loads(
+            diagnostics_path.read_text(encoding="utf-8")
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        current_diagnostics = {}
+    for item in current_diagnostics.get("scenes", []):
+        if item.get("scene_id") != scene_id:
+            continue
+        generation = item.get("generation") or {}
+        baseline_transport = str(generation.get("transport") or "local")
+        try:
+            baseline_scale = float(generation.get("frame_cap_scale", 1.0))
+        except (TypeError, ValueError):
+            baseline_scale = 1.0
+        break
+
+    scales = tuple(
+        ([1.0] if baseline_transport == "gradio" else [])
+        + [
+            value
+            for value in configured_scales
+            if value > baseline_scale + 1e-9
+        ]
+    )
+    if not scales:
+        raise PipelineError(
+            "ADAPTIVE_FRAME_CAP_RETRY_EXHAUSTED: "
+            f"{scene_id} already used frame-cap x{baseline_scale:.2f}; "
+            "no wider bounded retry remains."
         )
 
     current = scene_wav_path(root, scene_id)
     validate_voice(current)
     evidence_dir = root / ".runtime" / "tts-diagnostics"
     evidence_dir.mkdir(parents=True, exist_ok=True)
-    baseline = evidence_dir / f"{scene_id}.frame-cap-1.00.wav"
+    baseline = evidence_dir / f"{scene_id}.frame-cap-{baseline_scale:.2f}.wav"
     shutil.copy2(current, baseline)
     baseline_duration = _wav_duration_seconds(current)
     last_mismatch: Exception | None = None
 
     for scale in scales:
         _emit_tts_log(
-            f"TTS_FRAME_CAP_RETRY: {scene_id} capped ONNX/fp32 vẫn mismatch; "
-            f"thử nới frame-cap x{scale:.2f}.",
+            (
+                f"TTS_SCENE_FP32_RETRY: {scene_id} Gradio mismatch có coverage gap; "
+                "thử riêng scene bằng direct ONNX/fp32 cap x1.00."
+                if baseline_transport == "gradio" and math.isclose(scale, 1.0)
+                else
+                f"TTS_FRAME_CAP_RETRY: {scene_id} direct ONNX/fp32 vẫn mismatch; "
+                f"thử nới frame-cap x{scale:.2f}."
+            ),
             log_callback,
         )
         generated = False
@@ -1687,7 +1887,7 @@ def recover_scene_alignment_with_adaptive_frame_cap(
     _emit_tts_log(
         f"TTS_FRAME_CAP_RETRY_FAILED: {scene_id}; cap x"
         + ", x".join(f"{value:.2f}" for value in scales)
-        + " vẫn không align đúng, đã khôi phục WAV cap x1.00.",
+        + f" vẫn không align đúng, đã khôi phục WAV cap x{baseline_scale:.2f}.",
         log_callback,
     )
     raise PipelineError(

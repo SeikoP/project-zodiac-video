@@ -539,6 +539,12 @@ class PipelineWorker:
 
         def recover_mismatch(scene, _path, active_aligner, _error):
             scene_id = scene["id"]
+            if not bool(getattr(_error, "coverage_gap", False)):
+                self.log(
+                    f"{scene_id}: alignment khác cách Whisper chép nhưng không có "
+                    "bằng chứng thiếu coverage; không sinh lại TTS."
+                )
+                return None
             if not tts_scene_frame_cap_retry_eligible(self.root, scene_id):
                 return None
             self._raise_if_cancelled()
