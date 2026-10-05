@@ -25,6 +25,7 @@ from tools.studio.pipeline import (
     FAILED,
     IMPORT_PACKAGE,
     MIX_MUSIC,
+    PENDING,
     PipelinePlan,
     PREFLIGHT,
     PREPARE_RENDERER,
