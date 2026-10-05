@@ -1412,95 +1412,6 @@ def run_tts_batch(
         raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.")
 
 
-def _tts_route_path(runtime: Path) -> Path:
-    return Path(runtime) / "tts-route.json"
-
-
-def _load_direct_adaptive_route(
-    runtime: Path,
-    *,
-    mode: str,
-    voice: str,
-    vieneu_url: str,
-    max_chars: int,
-    warning_wps: float,
-) -> dict | None:
-    try:
-        route = json.loads(_tts_route_path(runtime).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return None
-    if route.get("version") != 1 or route.get("decision") != "direct_fp32_adaptive":
-        return None
-    if route.get("mode") != mode or route.get("voice") != voice:
-        return None
-    if str(route.get("vieneu_url") or "").rstrip("/") != str(vieneu_url).rstrip("/"):
-        return None
-    if int(route.get("max_chars", DEFAULT_TTS_MAX_CHARS)) != int(max_chars):
-        return None
-    try:
-        cached_threshold = float(
-            route.get("warning_wps", DEFAULT_SPEECH_RATE_WARNING_WPS)
-        )
-    except (TypeError, ValueError):
-        return None
-    if not math.isclose(cached_threshold, float(warning_wps), rel_tol=0.0, abs_tol=1e-9):
-        return None
-    return route
-
-
-def _write_direct_adaptive_route(
-    runtime: Path,
-    *,
-    mode: str,
-    voice: str,
-    vieneu_url: str,
-    max_chars: int,
-    warning_wps: float,
-    probe_scene_id: str,
-    probe_wps: float,
-    frame_cap_scale: float,
-) -> Path:
-    route = {
-        "version": 1,
-        "mode": mode,
-        "voice": voice,
-        "vieneu_url": str(vieneu_url).rstrip("/"),
-        "max_chars": int(max_chars),
-        "warning_wps": float(warning_wps),
-        "decision": "direct_fp32_adaptive",
-        "reason": "gradio_probe_rate_warning",
-        "probe_scene_id": probe_scene_id,
-        "probe_words_per_second": round(float(probe_wps), 6),
-        "frame_cap_scale": float(frame_cap_scale),
-    }
-    path = _tts_route_path(runtime)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(route, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return path
-
-
-def _measure_generated_row(root: Path, row: dict) -> tuple[float, int, float]:
-    path = scene_wav_path(root, row["scene_id"])
-    validate_voice(path)
-    duration = _wav_duration_seconds(path)
-    words = len(_expected_caption_tokens(str(row.get("text", ""))))
-    wps = words / duration if duration > 0 else 0.0
-    return duration, words, wps
-
-
-def _direct_adaptive_generation_config(max_chars: int, scale: float) -> dict:
-    config = effective_tts_generation_config(
-        mode="v3turbo",
-        vieneu_url=None,
-        backend="onnx",
-        precision="fp32",
-        frame_cap="on",
-        max_chars=max_chars,
-    )
-    config["frame_cap_scale"] = float(scale)
-    return config
-
-
 def generate_scene_voices(
     package_root: Path,
     production: dict,
@@ -1587,6 +1498,8 @@ def generate_scene_voices(
             log_callback,
         )
     return durations
+
+
 def scene_voice_files(package_root: Path, production: dict) -> list[Path]:
     return [scene_wav_path(package_root, scene["id"]) for scene in production["scenes"]]
 
