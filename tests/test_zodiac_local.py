@@ -662,6 +662,12 @@ class TtsDurationGuardTests(unittest.TestCase):
         self.assertEqual(args.tts_frame_cap, "off")
         self.assertEqual(args.tts_max_chars, 160)
         self.assertEqual(args.speech_rate_warning_wps, 3.9)
+        self.assertTrue(args.tts_fp32_fallback)
+
+        no_fallback = build_parser().parse_args(
+            ["voice", "job", "--no-tts-fp32-fallback"]
+        )
+        self.assertFalse(no_fallback.tts_fp32_fallback)
 
 
 class BackgroundMusicTests(unittest.TestCase):
