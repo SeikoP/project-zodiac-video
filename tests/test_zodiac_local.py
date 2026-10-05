@@ -274,21 +274,40 @@ def package_files():
         "assets/characters/lead-active.svg": svg,
         "renderer/package.json": json.dumps(renderer_package),
     }
-    for path in (
-        "renderer/src/index.ts",
-        "renderer/src/Root.tsx",
-        "renderer/src/ZodiacComposition.tsx",
-        "renderer/src/PrimitiveSvg.tsx",
-        "renderer/src/types.ts",
-        "renderer/src/runtime-contract.mjs",
-        "renderer/scripts/render.mjs",
-        "renderer/scripts/generate-sfx.mjs",
-        "renderer/scripts/style-token.mjs",
-        "renderer/scripts/compile-style-token.mjs",
-        "renderer/schemas/production.schema.json",
-        "renderer/tests/pipeline-contract.test.mjs",
-    ):
-        files[path] = "test fixture\n"
+    renderer_sources = {
+        "renderer/src/index.ts": "registerRoot(RemotionRoot);\n",
+        "renderer/src/Root.tsx": (
+            "const calculateMetadata = ({props}) => ({durationInFrames: props.total_duration_frames});\n"
+            "export const RemotionRoot = () => <Composition calculateMetadata={calculateMetadata} durationInFrames={1} />;\n"
+        ),
+        "renderer/src/ZodiacComposition.tsx": (
+            "export const ZodiacComposition = (timing) => production.scenes.map((scene) => {\n"
+            "  const row = timing.scenes.find((item) => item.scene_id === scene.id);\n"
+            "  return <Sequence from={row.start_frame} durationInFrames={row.duration_frames}>\n"
+            "    <Audio src={staticFile(\"voice.wav\")} />{scene.entities.map(() => null)}{scene.events.map(() => null)}\n"
+            "  </Sequence>;\n"
+            "});\n"
+        ),
+        "renderer/src/PrimitiveSvg.tsx": "export const PrimitiveSvg = () => null;\n",
+        "renderer/src/types.ts": (
+            "export type ProductionScene = {id: string};\n"
+            "export type Production = {version: \"2.0\"; scenes: ProductionScene[]};\n"
+            "export type RuntimeTiming = {total_duration_frames: number; scenes: unknown[]};\n"
+        ),
+        "renderer/src/runtime-contract.mjs": "export const resolveProductionEvents = () => ({});\n",
+        "renderer/scripts/render.mjs": (
+            "const renderPropsPath = path.join(packageRoot, '.runtime', 'render-props.json');\n"
+            "await writeFile(renderPropsPath, JSON.stringify(timing));\n"
+            "const args = ['render', 'src/index.ts', 'ZodiacVideo', '../out/zodiac-story.mp4'];\n"
+            "const result = spawnSync(cli, args);\n"
+        ),
+        "renderer/scripts/generate-sfx.mjs": "export const generateSfx = async () => {};\n",
+        "renderer/scripts/style-token.mjs": "export const parseDesignToken = () => ({});\n",
+        "renderer/scripts/compile-style-token.mjs": "export {};\n",
+        "renderer/schemas/production.schema.json": "{}\n",
+        "renderer/tests/pipeline-contract.test.mjs": "test('renderer contract', () => {});\n",
+    }
+    files.update(renderer_sources)
     return files
 
 
@@ -464,6 +483,58 @@ class SafeExtractionTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 PipelineError,
                 "lead-active.svg",
+            ):
+                validate_package(job)
+
+    def test_rejects_static_check_only_render_script(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "renderer/scripts/render.mjs").write_text(
+                'console.log("Static package checks passed; local voice/timing present.");\n',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*render.mjs",
+            ):
+                validate_package(job)
+
+    def test_rejects_root_without_runtime_metadata_duration(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "renderer/src/Root.tsx").write_text(
+                "export const RemotionRoot = () => <Composition durationInFrames={1} />;\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*Root.tsx",
+            ):
+                validate_package(job)
+
+    def test_rejects_single_scene_composition_stub(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "renderer/src/ZodiacComposition.tsx").write_text(
+                "export const ZodiacComposition = () => production.scenes[0];\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*ZodiacComposition.tsx",
+            ):
+                validate_package(job)
+
+    def test_rejects_any_production_type_stub(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "renderer/src/types.ts").write_text(
+                "export type Production = any;\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*types.ts",
             ):
                 validate_package(job)
 
