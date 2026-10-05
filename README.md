@@ -175,6 +175,34 @@ Output:
 .zodiac-work/jobs/<job>/out/zodiac-story.mp4
 ```
 
+## Editor Workspace (v1)
+
+**Mở Editor** in the desktop GUI opens a separate window over one imported v2 job. It edits only the v2 scene model — `scene.entities[].states[].transform/layer/visible` — and never touches `design.md`, `visual_system.style_token` or the compiled `source_hash`.
+
+```text
+tools/editor/
+  document.py     EditorDocument: load, dirty tracking, edits, validate, atomic save, revert
+  geometry.py     CanvasTransform: 1080x1920 production <-> fitted 9:16 display
+  commands.py     StateCommand + History for undo/redo (in memory only)
+  runtime.py      invalidate_runtime_for(edit_type): SAFE edits drop render-props only
+  scene_list.py   scene navigator with a short voice preview
+  canvas.py       layer-ordered items, hit test, drag, corner resize, safe-zone overlay
+  inspector.py    read-only identity + editable X/Y/W/H/Layer/Visible, two-way sync
+  workspace.py    window shell: Save / Revert / Validate / Undo / Redo
+```
+
+Behaviour:
+
+- drag updates the working copy only; `production.json` is written on **Save**;
+- **Save** runs the canonical v2 validator first and writes atomically (temp file + `os.replace`), so an invalid edit never overwrites the file;
+- **Revert** re-reads the file from disk (no Git);
+- `Ctrl+Z` / `Ctrl+Shift+Z` cover move, resize, layer and visibility;
+- the window title shows `Zodiac Editor — S03 *` while dirty, and closing while dirty asks Save / Discard / Cancel;
+- if `production.json` changed on disk, Save asks Reload / Overwrite / Cancel and never silently overwrites;
+- `voice.wav` and `.runtime/timing.json` survive every edit; only `.runtime/render-props.json` is invalidated.
+
+Canvas artwork is a best-effort vector preview of the same SVG/primitive data Remotion renders; geometry is exact, fidelity is not pixel-identical.
+
 ## Safety
 
 ZIP import rejects traversal, links, duplicate paths, oversized entries and suspicious compression ratios. SVG assets must remain self-contained vector files under `assets/`.

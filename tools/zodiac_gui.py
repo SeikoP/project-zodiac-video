@@ -194,6 +194,8 @@ class ZodiacGui(tk.Tk):
         self.preview_button = self._button(action_row, "Mở Remotion Studio", self._preview)
         self.preview_button.pack(side="left", padx=(8, 0))
         self._button(action_row, "Kiểm tra", self._check).pack(side="right")
+        self.editor_button = self._button(action_row, "Mở Editor", self._open_editor)
+        self.editor_button.pack(side="right", padx=(0, 8))
         self.progress = ttk.Progressbar(actions, mode="indeterminate", style="Zodiac.Horizontal.TProgressbar")
         self.progress.pack(fill="x", pady=(12, 0))
 
@@ -254,6 +256,32 @@ class ZodiacGui(tk.Tk):
             self.video_status.set("Chưa có video render")
             self.open_video_button.configure(state="disabled")
             self.open_folder_button.configure(state="normal" if self._job_path().exists() else "disabled")
+        self.editor_button.configure(state="normal" if self._editor_job() else "disabled")
+
+    def _editor_job(self) -> Path | None:
+        """The Editor needs an imported v2 job on disk."""
+        production = self._job_path() / "production.json"
+        if not production.is_file():
+            return None
+        try:
+            if json.loads(production.read_text(encoding="utf-8")).get("version") != "2.0":
+                return None
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return None
+        return self._job_path()
+
+    def _open_editor(self) -> None:
+        def launch() -> None:
+            job = self._editor_job()
+            if job is None:
+                raise ValueError("Editor cần một job production.json v2.0 đã import trong .zodiac-work/jobs.")
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from tools.editor.workspace import open_editor
+
+            open_editor(self, job)
+
+        self._guarded(launch)
 
     def _base_commands(self) -> list[list[str]]:
         archive = Path(self.archive.get()).expanduser()

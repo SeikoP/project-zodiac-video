@@ -253,7 +253,15 @@ def _design_token(root: Path) -> tuple[dict, str]:
 def validate_package(package_root: Path) -> dict:
     """Validate one Zodiac Video Pipeline v2.0 creative package."""
     root = Path(package_root).resolve()
-    production = _load_json(root / "production.json", "production.json")
+    return validate_production_document(
+        root,
+        _load_json(root / "production.json", "production.json"),
+    )
+
+
+def validate_production_document(root: Path, production: dict) -> dict:
+    """Validate an in-memory v2 production document against its package root."""
+    root = Path(root).resolve()
     if production.get("version") != "2.0":
         raise PipelineError("production.json must use Zodiac production contract version 2.0.")
 
