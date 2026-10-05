@@ -722,9 +722,15 @@ class TtsDurationGuardTests(unittest.TestCase):
                     rate=8000,
                 )
 
+            gap = AlignmentMismatchError(
+                "ALIGNMENT_MISMATCH: still missing",
+                expected=["một", "hai"],
+                heard=["một"],
+                coverage_gap=True,
+            )
             with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch), patch(
                 "tools.zodiac_local._align_scene_words",
-                side_effect=PipelineError("ALIGNMENT_MISMATCH: still missing"),
+                side_effect=gap,
             ):
                 with self.assertRaisesRegex(
                     PipelineError,
@@ -784,10 +790,16 @@ class TtsDurationGuardTests(unittest.TestCase):
                     rate=8000,
                 )
 
+            gap = AlignmentMismatchError(
+                "ALIGNMENT_MISMATCH: still missing at 1.25",
+                expected=["một", "hai"],
+                heard=["một"],
+                coverage_gap=True,
+            )
             with patch("tools.zodiac_local.run_tts_batch", side_effect=fake_batch), patch(
                 "tools.zodiac_local._align_scene_words",
                 side_effect=[
-                    PipelineError("ALIGNMENT_MISMATCH: still missing at 1.25"),
+                    gap,
                     aligned,
                 ],
             ):
@@ -1254,6 +1266,47 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
                     wav.getnframes() / wav.getframerate(),
                     1.0,
                     places=2,
+                )
+
+    def test_recovery_function_rejects_fp32_opt_out(self):
+        production = {"scenes": [{"id": "S01", "voice": "một hai"}]}
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            write_pcm(
+                root / ".runtime" / "tts-scenes" / "S01.wav",
+                seconds=1.0,
+                rate=8000,
+            )
+            with self.assertRaisesRegex(PipelineError, "TTS_RECOVERY_DISABLED"):
+                recover_scene_alignment_with_adaptive_frame_cap(
+                    root,
+                    production,
+                    "S01",
+                    object(),
+                    selected_mode="v3turbo",
+                    allow_fp32_fallback=False,
+                )
+
+    def test_recovery_function_rejects_model_switch(self):
+        production = {"scenes": [{"id": "S01", "voice": "một hai"}]}
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            write_pcm(
+                root / ".runtime" / "tts-scenes" / "S01.wav",
+                seconds=1.0,
+                rate=8000,
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "TTS_RECOVERY_UNSUPPORTED_MODE",
+            ):
+                recover_scene_alignment_with_adaptive_frame_cap(
+                    root,
+                    production,
+                    "S01",
+                    object(),
+                    selected_mode="v3nano",
+                    allow_fp32_fallback=True,
                 )
 
     def test_multi_digit_number_compaction_matches_spelled_number(self):
