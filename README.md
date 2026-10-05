@@ -1,92 +1,184 @@
 # Zodiac Video local runner
 
-Import a `RENDER_READY` ZIP exported by **zodiac-video-pipeline 0.9.1**, check that its video-specific SVGs and Remotion scaffold are complete, attach the voice and measured timing, then preview or render with Remotion on your machine.
+Local runtime for current **zodiac-video-pipeline production contract v2.0**.
 
-Each video keeps its own hand-authored SVG assets from the package. This repository does not ship a fixed character-pose collection or generate raster images.
+The plugin owns evidence, story, narration, visual compile, `design.md`, `production.json` and video-specific SVG assets. This repository owns local voice generation/attachment, measured word timing, Remotion preview/render, background-music audition and final audio mix.
 
 ## Requirements
 
-- Python 3.9 or newer (standard library only)
-- Node.js and npm, for the Remotion renderer
+- Python 3.9+
+- Node.js + npm
+- FFmpeg on `PATH` for background-music preview/final mix
+- VieNeu-TTS at `E:\\projects\\VieNeu-TTS` for the built-in local voice flow, or attach your own `voice.wav`
+- `faster-whisper` for automatic word-level timing:
+
+```bash
+python -m pip install -r requirements-local.txt
+```
+
+The first alignment run may download the selected Whisper model. Default alignment is `small` on CPU/int8.
+
+## Accepted package
+
+A package must contain:
+
+```text
+design.md
+narration.txt
+production.json          # version 2.0
+README.md
+assets/
+renderer/
+```
+
+The runner validates the v2 entity/state/event contract, compiled design-token hash, Be Vietnam Pro caption contract, SVG paths/style IDs, renderer scripts/dependencies and package narration before import.
+
+Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
 
 ## Quick start
 
-Clone this repository, open a terminal in its folder, then import the video package ZIP:
+Import:
 
 ```bash
-python tools/zodiac_local.py import "/path/to/zodiac-venus-virgo-render-ready.zip"
+python tools/zodiac_local.py import "/path/to/zodiac-render-ready.zip"
 ```
 
-The package is extracted into `.zodiac-work/jobs/<package-name>/`. Check it with:
+Check:
 
 ```bash
-python tools/zodiac_local.py check zodiac-venus-virgo
+python tools/zodiac_local.py check zodiac-sun-gemini
 ```
 
-Create `voice.wav` from `narration.txt` with your chosen Vietnamese TTS or recording workflow. Measure the scene and caption boundaries against that actual voice and save them using the schema in the package's `renderer/README.template.md`. Then attach both files:
+### Generate VieNeu voice + measured words
+
+```powershell
+python tools/zodiac_local.py voice zodiac-sun-gemini --voice "Hải Đăng"
+```
+
+The voice flow:
+
+1. generates one PCM WAV per production scene;
+2. concatenates them into `voice.wav`;
+3. uses faster-whisper forced word timing against each approved `scene.voice`;
+4. writes word-level `.runtime/timing.json`.
+
+The aligner does **not** distribute a scene duration evenly across words. If recognized word order does not match approved narration, the command stops instead of inventing timing.
+
+Optional aligner controls:
 
 ```bash
-python tools/zodiac_local.py attach zodiac-venus-virgo \
+--align-model small
+--align-device cpu
+--align-compute-type int8
+```
+
+To reuse a running VieNeu Gradio service:
+
+```powershell
+python tools/zodiac_local.py voice zodiac-sun-gemini \
+  --voice "Hải Đăng" \
+  --vieneu-url http://127.0.0.1:7860
+```
+
+### Attach externally measured voice/timing
+
+```bash
+python tools/zodiac_local.py attach zodiac-sun-gemini \
   --voice "/path/to/voice.wav" \
   --timing "/path/to/timing.json"
 ```
 
-Open Remotion Studio to preview, or render the MP4:
+Timing must contain one measured token per spoken word. This is required by v2 for:
+
+- phrase/page captions;
+- active-word highlighting;
+- `voice_anchor` event resolution;
+- intra-scene character/object/camera animation.
+
+## Preview vs render
 
 ```bash
-python tools/zodiac_local.py preview zodiac-venus-virgo
-python tools/zodiac_local.py render zodiac-venus-virgo
-```
-
-For this machine, the local flow can generate both voice and measured timing through `E:\projects\VieNeu-TTS`, then render with Remotion:
-
-```powershell
-python tools/zodiac_local.py voice zodiac-sun-gemini --voice "Hải Đăng"
+python tools/zodiac_local.py preview zodiac-sun-gemini
 python tools/zodiac_local.py render zodiac-sun-gemini
 ```
 
-Or use the dependency-free TUI for import/check/voice/preview/render:
+**Preview means Remotion Studio**, an interactive long-running process. It is not a short MP4 preview.
 
-```powershell
-python tools/zodiac_local.py tui --archive "ready\zodiac-sun-gemini-render-ready.zip"
+Before preview/render the runner:
+
+1. validates local voice + word timing;
+2. installs pinned renderer dependencies if needed;
+3. runs `npm run compile:style`;
+4. runs renderer contract tests;
+5. runs TypeScript typecheck;
+6. lets the canonical renderer create `.runtime/render-props.json` and resolve `voice_anchor` events.
+
+The renderer package itself owns captions, event resolution, visual states, SFX and transitions. The local runner no longer regex-patches `ZodiacComposition.tsx`.
+
+## Background music
+
+GUI volume range is **0–100%**. 100% means gain `1.0` relative to the source file.
+
+The selected track is copied to package-local `media/` and its local setting is stored in:
+
+```text
+.runtime/audio.json
 ```
 
-For the Windows desktop controller:
+Remotion renders voice + SFX first. The local runner then post-mixes the selected background track into the final MP4 with FFmpeg. This keeps the plugin's canonical renderer unchanged.
+
+CLI example:
+
+```bash
+python tools/zodiac_local.py render zodiac-sun-gemini \
+  --music "/path/to/music.mp3" \
+  --music-volume 0.45
+```
+
+Disable:
+
+```bash
+python tools/zodiac_local.py render zodiac-sun-gemini --no-music
+```
+
+### Nghe thử
+
+The GUI has **Nghe thử**. It creates a 10-second `voice.wav + music` mix at the current slider value.
+
+If `voice.wav` is shorter than 10 seconds, silence is padded so the preview still lasts exactly 10 seconds. The file is opened with the native launcher:
+
+- Windows: `startfile`
+- macOS: `open`
+- Linux: `xdg-open`
+
+## Desktop GUI
 
 ```powershell
 python tools/zodiac_gui.py
 ```
 
-The GUI starts `uv run vieneu-web` from `E:\projects\VieNeu-TTS` if `http://127.0.0.1:7860` is not already available, then calls the running Gradio API for voice generation. This reuses the model already loaded by VieNeu instead of opening a second model process. Saved voices are listed from `%USERPROFILE%\.vieneu\user_voices_v3_turbo.json`; `cuongdepzai` is preselected when present. A selected background track loops beneath the narration; its volume defaults to 12%. The output card shows the latest MP4, opens it with the Windows default video player, or opens the output folder. Preview opens Remotion Studio.
+The GUI:
 
-The `voice` command synthesizes each scene separately, concatenates the PCM WAVs into `voice.wav`, and writes `.runtime/timing.json` from their measured sample durations. Pass `--vieneu-url http://127.0.0.1:7860` to reuse a running VieNeu Gradio server, or omit it to run the VieNeu SDK in its own process. Set `--tts-root` or `--tts-python` when VieNeu is installed elsewhere.
+- imports the selected RENDER_READY ZIP when needed;
+- starts/reuses VieNeu;
+- generates voice + measured word timing;
+- controls music at 0–100%;
+- creates an audio mix preview;
+- opens **Remotion Studio** without locking the rest of the GUI;
+- changes the Studio button to **Dừng Studio** while running;
+- terminates the full Studio process tree on Windows and the full POSIX process group on macOS/Linux;
+- renders the final MP4 and post-mixes background music.
 
-VieNeu checks Hugging Face's local cache on startup. Model files are normally reused after the first download; the app still loads the weights into memory each time the server starts. Downloads recur only when required files are missing, the cache location changes, or the Hub reports a newer revision. The current machine has a local cache entry for `pnnbao-ump/VieNeu-TTS-v3-Turbo` under `%USERPROFILE%\.cache\huggingface\hub`.
+Output:
 
-The output video is written to `.zodiac-work/jobs/zodiac-venus-virgo/out/zodiac-story.mp4`. The runner checks Python-side package and timing consistency, installs the renderer's pinned dependencies on first use (using an available TypeScript 5.8 patch when the old 5.8.0 pin is no longer published), runs TypeScript typechecking, and then runs Remotion.
-
-On Windows PowerShell, use the same commands with Windows paths, for example:
-
-```powershell
-python tools/zodiac_local.py import "D:\Videos\zodiac-venus-virgo-render-ready.zip"
-python tools/zodiac_local.py attach zodiac-venus-virgo --voice "D:\Videos\voice.wav" --timing "D:\Videos\timing.json"
-python tools/zodiac_local.py render zodiac-venus-virgo
+```text
+.zodiac-work/jobs/<job>/out/zodiac-story.mp4
 ```
 
-Use `--workspace <folder>` before the subcommand to store jobs somewhere else:
+## Safety
 
-```bash
-python tools/zodiac_local.py --workspace "/data/zodiac-work" import "/path/to/package.zip"
-```
+ZIP import rejects traversal, links, duplicate paths, oversized entries and suspicious compression ratios. SVG assets must remain self-contained vector files under `assets/`.
 
-## Accepted input
+FFmpeg/npm calls pass validated executables and arguments as argv with `shell=False`; user-selected paths are never interpreted as shell source.
 
-Use the exported **video package ZIP** with `production.json`, `narration.txt`, video-specific `assets/`, and the `renderer/` scaffold. A `zodiac-content-pipeline` ZIP is a separate carousel/content skill and is not renderable: it does not contain the video production contract or Remotion project.
-
-The importer validates ZIP paths before extraction, rejects links and duplicate paths, checks the canonical narration against ordered `scene.voice` text, checks every registered SVG and referenced object/actor asset, and verifies the renderer versions and scripts against plugin 0.9.1. It also validates measured scene frames and caption text before preview/render.
-
-## Plugin review: 0.9.1
-
-See [docs/plugin-review.md](docs/plugin-review.md) for the review notes and limitations. In short: the plugin correctly emits per-video SVGs and a Remotion scaffold, while voice creation and voice-derived timing remain local inputs. This runner automates extraction, validation, dependency setup, preview, and rendering around that boundary.
-
-Only run a package exported by a plugin/version you trust. The renderer runs local Node.js code from the package, and its first run downloads the declared npm dependencies.
+Only run renderer packages exported by a trusted plugin/workflow because a package contains executable Node.js renderer code.
