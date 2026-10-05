@@ -227,7 +227,15 @@ class StudioController:
         step = self.plan.continue_from()
         return STEP_NAMES_VI.get(step, NO_RESUME_MESSAGE) if step else NO_RESUME_MESSAGE
 
-    def start_pipeline(self, *, resume: bool = True, rerun: str | None = None) -> bool:
+    def start_pipeline(
+        self,
+        *,
+        resume: bool = True,
+        rerun: str | None = None,
+        voice: str | None = None,
+        music: Path | None = None,
+        volume: float | None = None,
+    ) -> bool:
         if self.job is None:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
             return False
@@ -237,21 +245,42 @@ class StudioController:
         if start is None:
             self.status_text = NO_RESUME_MESSAGE
             return False
-        self._start_worker(start)
+        self._start_worker(
+            start,
+            voice=voice,
+            music=music,
+            volume=volume,
+        )
         return True
 
-    def _start_worker(self, start_step: str) -> None:
+    def _start_worker(
+        self,
+        start_step: str,
+        *,
+        voice: str | None = None,
+        music: Path | None = None,
+        volume: float | None = None,
+    ) -> None:
         from tools.studio.worker import PipelineWorker
 
         if self.package_changed:
             self.status_text = "Gói ZIP đã thay đổi. Hãy chọn nhập lại hoặc giữ job cũ."
             return
+        from tools.studio.worker import DEFAULT_TTS_MODE, DEFAULT_VOICE
+
         self.worker = PipelineWorker(
             self.job,
             plan=self.plan,
             on_event=self.handle_event,
+            voice=voice or DEFAULT_VOICE,
+            tts_mode=DEFAULT_TTS_MODE,
+            music=music,
+            music_volume=0.12 if volume is None else volume,
             tts_root=self.tts_root,
             vieneu_url=self.vieneu_url,
+            workspace=self.workspace,
+            archive=self.archive,
+            job_name=self.job.name,
         )
         self.status_text = f"Đang chạy: {STEP_NAMES_VI[start_step]}"
         self.worker.start(start_step)  # background thread; Tk stays responsive

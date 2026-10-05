@@ -228,29 +228,16 @@ class ZodiacStudioApp(tk.Tk):
             self.status_text.set("Chưa thấy file nhạc nền đã chọn.")
             return
 
-        from tools.studio.worker import PipelineWorker
-
-        plan = self.controller.plan
-        if rerun:
-            plan.invalidate_from(rerun)
-        self.worker = PipelineWorker(
-            self.controller.job,
-            plan=plan,
-            on_event=self._on_worker_event,
+        started = self.controller.start_pipeline(
+            resume=resume,
+            rerun=rerun,
             voice=settings["voice"],
             music=music,
-            music_volume=settings["volume"],
-            tts_root=TTS_ROOT,
-            vieneu_url=TTS_URL,
-            workspace=self.controller.workspace,
-            archive=self.controller.archive,
-            job_name=self.controller.job.name,
+            volume=settings["volume"],
         )
-        start = self.controller.start_pipeline(resume=resume, rerun=rerun)
-        if start:
-            self.worker = self.controller.worker
-            self.worker.on_event = self._on_worker_event
-            self.worker.start(None)
+        if started and self.controller.worker is not None:
+            # the controller already started the worker thread; forward its events
+            self.controller.worker.on_event = self._on_worker_event
             self.status_text.set("Đang chạy quy trình…")
         self._refresh_buttons()
 

@@ -245,24 +245,39 @@ class PipelineWorker:
         self._checkpoint()
 
     def _classify(self, step: str, exc: Exception) -> tuple[str, str]:
+        """Stable error code per step; the UI must never show a bare exit code."""
         text = str(exc)
         lowered = text.lower()
-        if "faster-whisper" in lowered or "faster_whisper" in lowered:
-            return ("Không tải được bộ căn thời gian từ.", "ALIGNER_LOAD_FAILED")
-        if "does not match approved narration" in lowered or "align" in lowered:
-            return (
-                "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thử lại.",
-                "ALIGNMENT_MISMATCH",
-            )
-        if "node.js" in lowered or "npm" in lowered:
-            return ("Thiếu Node.js/npm để chạy renderer.", "NODE_MISSING")
-        if "ffmpeg" in lowered:
-            return ("Thiếu FFmpeg trên PATH.", "FFMPEG_MISSING")
         code = STEP_ERROR_CODES.get(step, "SUBPROCESS_FAILED")
-        return (f"Không hoàn tất được bước này: {text.splitlines()[0][:200]}", code)
+        message = f"Không hoàn tất được bước này: {text.splitlines()[0][:200]}"
+
+        if "faster-whisper" in lowered or "faster_whisper" in lowered:
+            code = "DEPENDENCY_MISSING" if step == PREFLIGHT else "ALIGNER_LOAD_FAILED"
+            message = (
+                "Thiếu thư viện faster-whisper trong Python đang chạy Zodiac Studio. "
+                "Cài dependency rồi chạy lại."
+            )
+        elif "does not match approved narration" in lowered:
+            code = "ALIGNMENT_MISMATCH"
+            message = "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thạ lại."
+        elif "node.js" in lowered or "npm" in lowered:
+            code = "NODE_MISSING"
+            message = "Thiếu Node.js/npm để chạy renderer."
+        elif "ffmpeg" in lowered:
+            code = "FFMPEG_MISSING"
+            message = "Thiếu FFmpeg trên PATH."
+        elif "vieneu" in lowered:
+            code = "VIENEU_UNAVAILABLE"
+            message = "Không tạo được giọng đọc từ VieNeu."
+        return (message, code)
 
     # ---- steps -------------------------------------------------------
+    def _raise_if_cancelled(self) -> None:
+        if self._cancel.is_set():
+            raise CancelledError("dừng theo yêu cầu")
+
     def _run_step(self, step: str) -> None:
+        self._raise_if_cancelled()
         self.plan.mark(step, RUNNING)
         self._checkpoint()
         self.emit(STEP_STARTED, step=step, name=self.plan.steps[step].name)
@@ -356,7 +371,9 @@ class PipelineWorker:
             # Whatever did land on disk stays reusable; only the missing scenes are retried.
             self._checkpoint_scene_artifacts(production, pending)
             raise
+        self._raise_if_cancelled()
 
+        self._raise_if_cancelled()
         self._durations = dict(durations)
         self._checkpoint_scene_artifacts(production, pending)
         self._checkpoint()
@@ -431,6 +448,7 @@ class PipelineWorker:
 
         require_word_aligner_installed()
         aligner = load_word_aligner("small", "cpu", "int8")
+        self._raise_if_cancelled()
         timing = align_scene_timings(production, durations, aligner, scene_voice_files(self.root, production))
         build_and_write_timing(self.root, timing)
         self.log(f"Đã căn {len(timing['scenes'])} scene theo từng từ.")
@@ -453,6 +471,7 @@ class PipelineWorker:
     def _step_render(self) -> None:
 
         render_video(self.root)
+        self._raise_if_cancelled()
         self.log("Đã kết xuất video.")
 
     def _step_mix(self) -> None:

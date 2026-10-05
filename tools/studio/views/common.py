@@ -74,4 +74,31 @@ class Button(tk.Button):
 
 
 def use_theme(root) -> None:
-    ttk.Style(root).theme_use("clam")
+    """Dark ttk widgets so combobox and slider match the panel colours."""
+    style = ttk.Style(root)
+    style.theme_use("clam")
+    style.configure(
+        "TCombobox",
+        fieldbackground=COLORS["field"],
+        background=COLORS["field"],
+        foreground=COLORS["fg"],
+        arrowcolor=COLORS["fg"],
+        bordercolor=COLORS["line"],
+        lightcolor=COLORS["field"],
+        darkcolor=COLORS["field"],
+    )
+    style.map(
+        "TCombobox",
+        fieldbackground=[("readonly", COLORS["field"])],
+        foreground=[("readonly", COLORS["fg"])],
+        selectbackground=[("readonly", COLORS["field"])],
+    )
+    style.configure(
+        "Horizontal.TScale",
+        background=COLORS["panel"],
+        troughcolor=COLORS["field"],
+    )
+    root.option_add("*TCombobox*Listbox.background", COLORS["field"])
+    root.option_add("*TCombobox*Listbox.foreground", COLORS["fg"])
+    root.option_add("*TCombobox*Listbox.selectBackground", COLORS["accent"])
+    root.option_add("*TCombobox*Listbox.selectForeground", COLORS["bg"])

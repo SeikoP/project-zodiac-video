@@ -151,25 +151,71 @@ If `voice.wav` is shorter than 10 seconds, silence is padded so the preview stil
 - macOS: `open`
 - Linux: `xdg-open`
 
-## Desktop GUI
+## Zodiac Studio (GUI tiếng Việt)
 
 ```powershell
 python tools/zodiac_gui.py
 ```
 
-The GUI:
+Bố cục theo workflow: **DỰ ÁN** (chọn gói ZIP) → **THIẾT LẬP** (giọng đọc, nhạc nền, âm lượng, Nghe thử) → **QUY TRÌNH** (9 bước có trạng thái) → **KẾT QUẢ** → **NHẬT KÝ** (thu gọn được). Thanh đầu hiển thị trạng thái VieNeu và môi trường.
 
-- imports the selected RENDER_READY ZIP when needed;
-- starts/reuses VieNeu;
-- generates voice + measured word timing;
-- controls music at 0–100%;
-- creates an audio mix preview;
-- opens **Remotion Studio** without locking the rest of the GUI;
-- changes the Studio button to **Dừng Studio** while running;
-- terminates the full Studio process tree on Windows and the full POSIX process group on macOS/Linux;
-- renders the final MP4 and post-mixes background music.
+![Zodiac Studio v2](docs/studio-v2.png)
 
-Output:
+### Pipeline và resume
+
+```text
+IMPORT_PACKAGE → PREFLIGHT → VOICE_SCENES → CONCAT_VOICE → ALIGN_TIMING
+               → VALIDATE_RUNTIME → PREPARE_RENDERER → RENDER_VIDEO → MIX_MUSIC
+```
+
+Mỗi bước có trạng thái `PENDING / RUNNING / DONE / FAILED / SKIPPED / CANCELLED` và được ghi vào `.runtime/pipeline-state.json` (ghi atomic bằng temp file + `os.replace`).
+
+| Nút | Việc làm |
+| --- | --- |
+| **Chạy toàn bộ** | chạy từ bước đầu tiên chưa `DONE` |
+| **Tiếp tục** | chạy lại bước `FAILED`/`CANCELLED` hiện tại rồi đi tiếp phía dưới |
+| **Chạy lại bước** | chạy lại một bước đã chọn và vô hiệu hoá đúng các bước phụ thuộc |
+| **Dừng** | dừng worker và tiêu diệt cây process (taskkill /T trên Windows, process group trên POSIX); bước đang chạy thành `CANCELLED`, bước đã xong giữ nguyên |
+| **Kiểm tra** | kiểm tra gói + môi trường, không chạy TTS/render |
+
+`VOICE_SCENES` checkpoint **từng scene**: `S01…S0N` trong `.runtime/tts-scenes/`. Một scene chỉ được dùng lại khi scene id, `scene.voice`, giọng VieNeu, chế độ TTS không đổi, file tồn tại, `validate_voice` đạt và hash khớp state. Bấm **Tiếp tục** chỉ tạo lại scene chưa xong.
+
+Invalidation đúng phạm vi, không xóa bừa runtime:
+
+```text
+đổi lời thoại 1 scene → scene đó + CONCAT_VOICE → ALIGN_TIMING → runtime → render
+đổi giọng VieNeu     → toàn bộ chuỗi giọng
+đổi anchor/layout    → PREPARE_RENDERER → RENDER_VIDEO → MIX_MUSIC (voice + timing giữ nguyên)
+đổi nhạc nền         → chỉ MIX_MUSIC
+```
+
+Mở lại app: bước `RUNNING` bị ngắt được đưa về `PENDING` (không bao giờ coi là xong). Job cũ chưa có `pipeline-state.json` vẫn mở được — lần đầu chỉ đánh dấu `DONE` khi artifact kiểm chứng được (package hợp lệ, `voice.wav` + `timing.json` hợp lệ, đủ scene WAV); không bịa provenance.
+
+### Preflight và lỗi faster-whisper
+
+Trước khi tạo bất kỳ giọng đọc nào, preflight kiểm tra: Python đang chạy, `faster-whisper`, Node.js, npm, FFmpeg, gói video, VieNeu. `faster-whisper` được kiểm tra **trong chính interpreter đang chạy Zodiac Studio**, không dùng `python` khác trên PATH.
+
+Nếu thiếu, badge đầu cửa sổ chuyển sang *Thiếu dependency* và nút **Cài dependency còn thiếu** xuất hiện (không tự cài âm thầm). Lệnh cài luôn là:
+
+```powershell
+<sys.executable> -m pip install -r requirements-local.txt
+```
+
+Cài xong preflight chạy lại; chỉ khi mọi thứ xanh mới chạy TTS. Nếu thiếu mà bấm **Chạy toàn bộ**/**Tiếp tục**, bước *Kiểm tra môi trường* fail với mã `DEPENDENCY_MISSING` và **không scene nào** được tạo.
+
+### Chọn đúng gói ZIP
+
+Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZIP đã nhập. Chọn ZIP khác (kể cả cùng tên job) sẽ báo *Gói video đã thay đổi* và hỏi **Nhập lại** hoặc **Giữ job cũ** — không bao giờ dùng nhầm package đã cache. Gói mới được validate trong thư mục tạm trước khi thay thế job cũ.
+
+### Xử lý sự cố
+
+| Tình huống | Cách xử lý |
+| --- | --- |
+| Báo *Thiếu dependency* | bấm **Cài dependency còn thiếu**, hoặc chạy lệnh pip ở trên bằng đúng interpreter |
+| Bước *Tạo giọng đọc* đỏ | xem chi tiết trong **NHẬT KÝ**; bấm **Tiếp tục** — chỉ scene chưa xong được tạo lại |
+| Bước *Căn thời gian từ* đỏ (`ALIGNMENT_MISMATCH`) | lời thoại đã duyệt không khớp giọng đã tạo; sửa lời thoại hoặc tạo lại giọng rồi **Tiếp tục** |
+| Bước *Kết xuất video* đỏ | `voice.wav` và `timing.json` được giữ; **Tiếp tục** chỉ chạy lại renderer |
+| Muốn làm lại từ đầu | **Chạy lại bước** ở bước *Nhập gói video* (vô hiệu hoá phía dưới), hoặc xóa riêng `.runtime/pipeline-state.json` để app suy luận lại từ artifact |Output:
 
 ```text
 .zodiac-work/jobs/<job>/out/zodiac-story.mp4
