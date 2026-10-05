@@ -49,6 +49,8 @@ EXPECTED_SCRIPTS = {
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 DEFAULT_TTS_VOICE = "Hải Đăng"
+AUDIO_PREVIEW_SECONDS = 10.0
+SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 
 
 def _safe_relative_path(raw_name: str) -> PurePosixPath:
@@ -568,6 +570,7 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
     production = validate_package(root)
     validate_voice(root / "voice.wav")
     timing = validate_timing(root, root / ".runtime" / "timing.json")
+    validate_background_music(root, timing)
     return production, timing
 
 
@@ -622,12 +625,44 @@ def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
             path.write_text(patched, encoding="utf-8")
 
 
-def configure_background_music(package_root: Path, music: Path | None, volume: float = 0.12) -> None:
-    root = Path(package_root).resolve()
-    timing_path = root / ".runtime" / "timing.json"
-    timing = _load_json(timing_path, "timing.json")
-    if not 0 <= volume <= 1:
+def _validate_music_volume(volume: float) -> float:
+    if (
+        not isinstance(volume, (int, float))
+        or isinstance(volume, bool)
+        or not math.isfinite(volume)
+        or not 0 <= float(volume) <= 1
+    ):
         raise PipelineError("background music volume must be between 0 and 1.")
+    return float(volume)
+
+
+def _validate_music_file(music: Path) -> Path:
+    path = Path(music).expanduser().resolve()
+    if not path.is_file():
+        raise PipelineError(f"background music file does not exist: {path}")
+    if path.suffix.lower() not in SUPPORTED_MUSIC_EXTENSIONS:
+        raise PipelineError(f"unsupported background music format: {path.suffix.lower()}")
+    return path
+
+
+def validate_background_music(package_root: Path, timing: dict) -> None:
+    raw = timing.get("background_music")
+    volume = timing.get("background_music_volume")
+    if raw is None and volume is None:
+        return
+    if not isinstance(raw, str) or not raw.startswith("media/"):
+        raise PipelineError(
+            "background music must be stored under media/. Re-run render/preview with --music to migrate legacy jobs."
+        )
+    _validate_music_volume(volume)
+    root = Path(package_root).resolve()
+    path = (root / raw).resolve()
+    media_root = (root / "media").resolve()
+    if not path.is_relative_to(media_root) or not path.is_file():
+        raise PipelineError(f"configured background music is missing: {raw}")
+
+
+def _patch_background_music_renderer(root: Path) -> None:
     composition = root / "renderer" / "src" / "ZodiacComposition.tsx"
     types = root / "renderer" / "src" / "types.ts"
     source = composition.read_text(encoding="utf-8")
@@ -643,24 +678,105 @@ def configure_background_music(package_root: Path, music: Path | None, volume: f
     if not re.search(r"scenes\s*:\s*RuntimeSceneTiming\[\]", type_source):
         raise PipelineError("renderer RuntimeTiming type is unsupported.")
     if "background_music?: string;" not in type_source:
-        type_source = re.sub(r"(scenes\s*:\s*RuntimeSceneTiming\[\]);?", r"\1; background_music?: string; background_music_volume?: number", type_source, count=1)
+        type_source = re.sub(
+            r"(scenes\s*:\s*RuntimeSceneTiming\[\]);?",
+            r"\1; background_music?: string; background_music_volume?: number",
+            type_source,
+            count=1,
+        )
         types.write_text(type_source, encoding="utf-8")
+
+
+def configure_background_music(package_root: Path, music: Path | None, volume: float = 0.12) -> None:
+    root = Path(package_root).resolve()
+    timing_path = root / ".runtime" / "timing.json"
+    timing = _load_json(timing_path, "timing.json")
+    volume = _validate_music_volume(volume)
+    _patch_background_music_renderer(root)
+
+    media_dir = root / "media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    runtime_dir = root / ".runtime"
+    if runtime_dir.is_dir():
+        for legacy in runtime_dir.glob("background-music.*"):
+            legacy.unlink(missing_ok=True)
 
     if music is None:
         timing.pop("background_music", None)
         timing.pop("background_music_volume", None)
+        for old in media_dir.glob("background-music.*"):
+            old.unlink(missing_ok=True)
+        print("Background music: disabled.", flush=True)
     else:
-        music = Path(music).expanduser().resolve()
-        if not music.is_file():
-            raise PipelineError(f"background music file does not exist: {music}")
-        extension = music.suffix.lower()
-        if extension not in {".mp3", ".wav", ".m4a", ".aac", ".ogg"}:
-            raise PipelineError(f"unsupported background music format: {extension}")
-        destination = root / ".runtime" / f"background-music{extension}"
-        shutil.copy2(music, destination)
-        timing["background_music"] = f".runtime/{destination.name}"
+        source = _validate_music_file(music)
+        destination = media_dir / f"background-music{source.suffix.lower()}"
+        for old in media_dir.glob("background-music.*"):
+            if old.resolve() != destination.resolve():
+                old.unlink(missing_ok=True)
+        if source.resolve() != destination.resolve():
+            shutil.copy2(source, destination)
+        timing["background_music"] = f"media/{destination.name}"
         timing["background_music_volume"] = volume
+        validate_background_music(root, timing)
+        print(f"Background music: {source.name} @ {volume:.0%}.", flush=True)
+
     timing_path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def build_audio_preview(
+    package_root: Path,
+    music: Path,
+    volume: float = 0.12,
+    seconds: float = AUDIO_PREVIEW_SECONDS,
+) -> Path:
+    root = Path(package_root).resolve()
+    voice = root / "voice.wav"
+    validate_voice(voice)
+    source = _validate_music_file(music)
+    volume = _validate_music_volume(volume)
+    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or not math.isfinite(seconds) or not 1 <= float(seconds) <= 30:
+        raise PipelineError("audio preview duration must be between 1 and 30 seconds.")
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise PipelineError("FFmpeg is required for Nghe thử. Install ffmpeg and make sure it is available on PATH.")
+
+    output = root / ".runtime" / "audio-preview.wav"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    duration = float(seconds)
+    filter_complex = (
+        f"[0:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS[voice];"
+        f"[1:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,volume={volume:.3f}[music];"
+        "[voice][music]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[out]"
+    )
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                str(voice),
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(source),
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "[out]",
+                "-c:a",
+                "pcm_s16le",
+                str(output),
+            ],
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise PipelineError(f"cannot create audio preview: {exc}") from exc
+    if not output.is_file():
+        raise PipelineError("FFmpeg finished without creating audio-preview.wav.")
+    print(f"Audio preview: {output} ({volume:.0%} background music).", flush=True)
+    return output
 
 
 def run_renderer(package_root: Path, action: str, music: Path | None = None, music_volume: float = 0.12, update_music: bool = False) -> None:
@@ -774,6 +890,11 @@ def build_parser() -> argparse.ArgumentParser:
     voice_command.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server instead of loading another model")
     inspect = commands.add_parser("check", help="check the creative package and local runtime inputs")
     inspect.add_argument("job")
+    audio_preview = commands.add_parser("audio-preview", help="render a short voice + background-music mix for volume checking")
+    audio_preview.add_argument("job")
+    audio_preview.add_argument("--music", required=True, type=Path)
+    audio_preview.add_argument("--music-volume", type=float, default=0.12, help="background music volume from 0 to 1")
+    audio_preview.add_argument("--seconds", type=float, default=AUDIO_PREVIEW_SECONDS, help="preview duration from 1 to 30 seconds")
     for command in ("preview", "render"):
         sub = commands.add_parser(command, help=f"validate and run Remotion {command}")
         sub.add_argument("job")
@@ -808,6 +929,9 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "voice":
             timing = synthesize_voice(_job_path(args.job, workspace), args.tts_root, args.tts_python, args.voice, args.tts_mode, args.vieneu_url)
             print(f"Voice and measured timing attached ({timing['total_duration_frames']} frames).")
+        elif args.command == "audio-preview":
+            result = build_audio_preview(_job_path(args.job, workspace), args.music, args.music_volume, args.seconds)
+            print(f"Audio mix preview ready: {result}")
         elif args.command == "check":
             root = _job_path(args.job, workspace)
             validate_package(root)
