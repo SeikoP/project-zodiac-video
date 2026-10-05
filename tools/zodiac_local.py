@@ -2298,7 +2298,7 @@ def validate_background_music(package_root: Path) -> dict | None:
 def configure_background_music(
     package_root: Path,
     music: Path | None,
-    volume: float = 0.12,
+    volume: float = DEFAULT_MUSIC_VOLUME,
 ) -> None:
     root = Path(package_root).resolve()
     volume = _validate_music_volume(volume)
@@ -2475,7 +2475,7 @@ def mix_background_music_into_render(package_root: Path) -> Path:
     music = config["_path"]
     filter_complex = (
         f"[1:a]volume={volume:.3f}[music];"
-        "[0:a][music]amix=inputs=2:duration=first:"
+        "[0:a][music]amix=inputs=2:duration=first:normalize=0:"
         "dropout_transition=0,alimiter=limit=0.95[out]"
     )
 
@@ -2523,7 +2523,7 @@ def prepare_renderer(
     package_root: Path,
     *,
     music: Path | None = None,
-    music_volume: float = 0.12,
+    music_volume: float = DEFAULT_MUSIC_VOLUME,
     update_music: bool = False,
 ) -> None:
     """Install pins, compile design.md, run renderer tests and typecheck."""
@@ -2570,7 +2570,7 @@ def run_renderer(
     package_root: Path,
     action: str,
     music: Path | None = None,
-    music_volume: float = 0.12,
+    music_volume: float = DEFAULT_MUSIC_VOLUME,
     update_music: bool = False,
 ) -> None:
     root = Path(package_root).resolve()

@@ -100,6 +100,42 @@ class DefaultVolumeTests(unittest.TestCase):
 
         self.assertEqual(zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME, 1.0)
 
+    def test_render_and_mix_paths_default_to_full_volume(self):
+        import inspect
+
+        from tools import zodiac_local
+
+        for function in (
+            zodiac_local.configure_background_music,
+            zodiac_local.prepare_renderer,
+            zodiac_local.run_renderer,
+        ):
+            with self.subTest(function=function.__name__):
+                signature = inspect.signature(function)
+                names = [n for n in ("music_volume", "volume") if n in signature.parameters]
+                self.assertTrue(names, f"{function.__name__} has no volume argument")
+                for name in names:
+                    self.assertEqual(signature.parameters[name].default, 1.0)
+
+    def test_configured_music_volume_is_stored_and_replayed(self):
+        from tools.zodiac_local import configure_background_music, validate_background_music
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_multi_scene_job(Path(temp))
+            music = Path(temp) / "nhac.mp3"
+            music.write_bytes(b"fake")
+            configure_background_music(job, music, 1.0)
+            self.assertEqual(validate_background_music(job)["background_music_volume"], 1.0)
+
+    def test_music_mix_does_not_halve_volume(self):
+        """ffmpeg amix normalises by input count, which would halve music."""
+        import inspect
+
+        from tools import zodiac_local
+
+        source = inspect.getsource(zodiac_local.mix_background_music_into_render)
+        self.assertIn("normalize=0", source)
+
 
 if __name__ == "__main__":
     unittest.main()

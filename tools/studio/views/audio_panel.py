@@ -55,6 +55,7 @@ class AudioPanel(tk.Frame):
         music_row.pack(fill="x", pady=(0, 10))
         label(music_row, LABEL_MUSIC, width=10).pack(side="left")
         entry(music_row, self.music).pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 8))
+        Button(music_row, "Chọn…", self._pick_music).pack(side="left", padx=(0, 8))
         Button(music_row, BTN_LISTEN, self._listen).pack(side="left")
 
         volume_row = tk.Frame(card, bg=COLORS["panel"])
@@ -84,6 +85,18 @@ class AudioPanel(tk.Frame):
 
         self.music_note = label(card, "")
         self.music_note.pack(anchor="w")
+
+    def _pick_music(self) -> None:
+        chosen = filedialog.askopenfilename(
+            title="Chọn nhạc nền",
+            filetypes=[
+                ("Tệp âm thanh", "*.mp3 *.wav *.m4a *.aac *.flac *.ogg"),
+                ("Tất cả tệp", "*.*"),
+            ],
+        )
+        if chosen:
+            self.music.set(chosen)
+            self.refresh()
 
     def _listen(self) -> None:
         self.on_listen(self.volume.get())
