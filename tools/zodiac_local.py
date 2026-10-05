@@ -1004,16 +1004,24 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
     production = validate_package(root)
     validate_voice(root / "voice.wav")
     timing = validate_timing(root, root / ".runtime" / "timing.json")
-    validate_background_music(root, timing)
+    validate_background_music(root)
     return production, timing
 
 
+def _npm_executable() -> str:
+    raw = shutil.which("npm.cmd" if os.name == "nt" else "npm") or shutil.which("npm")
+    if not raw:
+        raise PipelineError("npm is required but was not found on PATH.")
+    return str(Path(raw).resolve())
+
+
 def _run_npm(args: list[str], cwd: Path) -> None:
-    if os.name == "nt":
-        command = "npm.cmd " + subprocess.list2cmdline(args)
-        subprocess.run(command, cwd=cwd, check=True, shell=True)
-    else:
-        subprocess.run(["npm", *args], cwd=cwd, check=True)
+    subprocess.run(
+        [_npm_executable(), *args],
+        cwd=cwd,
+        check=True,
+        shell=False,
+    )
 
 
 def _install_renderer(renderer: Path) -> None:
@@ -1026,10 +1034,11 @@ def _install_renderer(renderer: Path) -> None:
         if dev_dependencies.get("typescript") != "5.8.0":
             raise
         probe = subprocess.run(
-            ["npm.cmd" if os.name == "nt" else "npm", "view", "typescript@5.8", "version", "--json"],
+            [_npm_executable(), "view", "typescript@5.8", "version", "--json"],
             cwd=renderer,
             capture_output=True,
             text=True,
+            shell=False,
         )
         try:
             versions = json.loads(probe.stdout) if probe.returncode == 0 else []
@@ -1075,86 +1084,113 @@ def _validate_music_file(music: Path) -> Path:
     if not path.is_file():
         raise PipelineError(f"background music file does not exist: {path}")
     if path.suffix.lower() not in SUPPORTED_MUSIC_EXTENSIONS:
-        raise PipelineError(f"unsupported background music format: {path.suffix.lower()}")
+        raise PipelineError(
+            f"unsupported background music format: {path.suffix.lower()}"
+        )
     return path
 
 
-def validate_background_music(package_root: Path, timing: dict) -> None:
-    raw = timing.get("background_music")
-    volume = timing.get("background_music_volume")
-    if raw is None and volume is None:
-        return
+def _audio_config_path(root: Path) -> Path:
+    return root / ".runtime" / "audio.json"
+
+
+def validate_background_music(package_root: Path) -> dict | None:
+    root = Path(package_root).resolve()
+    config_path = _audio_config_path(root)
+    if not config_path.is_file():
+        return None
+
+    config = _load_json(config_path, "audio.json")
+    raw = config.get("background_music")
+    volume = _validate_music_volume(config.get("background_music_volume"))
     if not isinstance(raw, str) or not raw.startswith("media/"):
         raise PipelineError(
-            "background music must be stored under media/. Re-run render/preview with --music to migrate legacy jobs."
+            "background music must resolve under package media/."
         )
-    _validate_music_volume(volume)
-    root = Path(package_root).resolve()
+
     path = (root / raw).resolve()
     media_root = (root / "media").resolve()
     if not path.is_relative_to(media_root) or not path.is_file():
-        raise PipelineError(f"configured background music is missing: {raw}")
-
-
-def _patch_background_music_renderer(root: Path) -> None:
-    composition = root / "renderer" / "src" / "ZodiacComposition.tsx"
-    types = root / "renderer" / "src" / "types.ts"
-    source = composition.read_text(encoding="utf-8")
-    audio = re.search(r'(?m)^(?P<indent>[ \t]*)<Audio\s+src=\{staticFile\("voice\.wav"\)\}\s*/>', source)
-    if not audio:
-        raise PipelineError("renderer does not contain the expected voice audio track.")
-    if "timing.background_music &&" not in source:
-        indent = audio.group("indent")
-        music_line = indent + "{timing.background_music && <Audio src={staticFile(timing.background_music)} volume={timing.background_music_volume ?? 0.12} loop />}"
-        source = source[:audio.end()] + "\n" + music_line + source[audio.end():]
-        composition.write_text(source, encoding="utf-8")
-    type_source = types.read_text(encoding="utf-8")
-    if not re.search(r"scenes\s*:\s*RuntimeSceneTiming\[\]", type_source):
-        raise PipelineError("renderer RuntimeTiming type is unsupported.")
-    if "background_music?: string;" not in type_source:
-        type_source = re.sub(
-            r"(scenes\s*:\s*RuntimeSceneTiming\[\]);?",
-            r"\1; background_music?: string; background_music_volume?: number",
-            type_source,
-            count=1,
+        raise PipelineError(
+            f"configured background music is missing: {raw}"
         )
-        types.write_text(type_source, encoding="utf-8")
+    return {
+        **config,
+        "background_music_volume": volume,
+        "_path": path,
+    }
 
 
-def configure_background_music(package_root: Path, music: Path | None, volume: float = 0.12) -> None:
+def configure_background_music(
+    package_root: Path,
+    music: Path | None,
+    volume: float = 0.12,
+) -> None:
     root = Path(package_root).resolve()
-    timing_path = root / ".runtime" / "timing.json"
-    timing = _load_json(timing_path, "timing.json")
     volume = _validate_music_volume(volume)
-    _patch_background_music_renderer(root)
+    config_path = _audio_config_path(root)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
 
     media_dir = root / "media"
     media_dir.mkdir(parents=True, exist_ok=True)
-    runtime_dir = root / ".runtime"
-    if runtime_dir.is_dir():
-        for legacy in runtime_dir.glob("background-music.*"):
-            legacy.unlink(missing_ok=True)
 
     if music is None:
-        timing.pop("background_music", None)
-        timing.pop("background_music_volume", None)
+        config_path.unlink(missing_ok=True)
         for old in media_dir.glob("background-music.*"):
             old.unlink(missing_ok=True)
         print("Background music: disabled.", flush=True)
-    else:
-        source = _validate_music_file(music)
-        destination = media_dir / f"background-music{source.suffix.lower()}"
-        for old in media_dir.glob("background-music.*"):
-            if old.resolve() != destination.resolve():
-                old.unlink(missing_ok=True)
-        if source.resolve() != destination.resolve():
-            shutil.copy2(source, destination)
-        timing["background_music"] = f"media/{destination.name}"
-        timing["background_music_volume"] = volume
-        validate_background_music(root, timing)
-        print(f"Background music: {source.name} @ {volume:.0%}.", flush=True)
+        return
 
-    timing_path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    source = _validate_music_file(music)
+    destination = media_dir / f"background-music{source.suffix.lower()}"
+    for old in media_dir.glob("background-music.*"):
+        if old.resolve() != destination.resolve():
+            old.unlink(missing_ok=True)
+
+    if source.resolve() != destination.resolve():
+        shutil.copy2(source, destination)
+
+    config = {
+        "background_music": f"media/{destination.name}",
+        "background_music_volume": volume,
+    }
+    config_path.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    validate_background_music(root)
+    print(
+        f"Background music: {source.name} @ {volume:.0%}.",
+        flush=True,
+    )
+
+
+def _trusted_executable(name: str) -> str:
+    raw = shutil.which(name)
+    if not raw:
+        raise PipelineError(
+            f"{name} is required but was not found on PATH."
+        )
+    resolved = Path(raw).resolve()
+    if not resolved.is_file():
+        raise PipelineError(
+            f"resolved executable is not a file: {resolved}"
+        )
+    return str(resolved)
+
+
+def _run_ffmpeg(arguments: list[str]) -> None:
+    ffmpeg = _trusted_executable("ffmpeg")
+    # User-selected paths remain individual argv items. shell=False means
+    # they are never interpreted as shell syntax.
+    try:
+        subprocess.run(
+            [ffmpeg, *arguments],
+            check=True,
+            shell=False,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise PipelineError(f"FFmpeg failed: {exc}") from exc
 
 
 def build_audio_preview(
@@ -1168,71 +1204,200 @@ def build_audio_preview(
     validate_voice(voice)
     source = _validate_music_file(music)
     volume = _validate_music_volume(volume)
-    if not isinstance(seconds, (int, float)) or isinstance(seconds, bool) or not math.isfinite(seconds) or not 1 <= float(seconds) <= 30:
-        raise PipelineError("audio preview duration must be between 1 and 30 seconds.")
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        raise PipelineError("FFmpeg is required for Nghe thử. Install ffmpeg and make sure it is available on PATH.")
+
+    if (
+        not isinstance(seconds, (int, float))
+        or isinstance(seconds, bool)
+        or not math.isfinite(seconds)
+        or not 1 <= float(seconds) <= 30
+    ):
+        raise PipelineError(
+            "audio preview duration must be between 1 and 30 seconds."
+        )
 
     output = root / ".runtime" / "audio-preview.wav"
     output.parent.mkdir(parents=True, exist_ok=True)
     duration = float(seconds)
+
     filter_complex = (
-        f"[0:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS[voice];"
-        f"[1:a]atrim=0:{duration:.3f},asetpts=PTS-STARTPTS,volume={volume:.3f}[music];"
-        "[voice][music]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[out]"
+        f"[0:a]apad=pad_dur={duration:.3f},"
+        f"atrim=0:{duration:.3f},asetpts=PTS-STARTPTS[voice];"
+        f"[1:a]atrim=0:{duration:.3f},"
+        f"asetpts=PTS-STARTPTS,volume={volume:.3f}[music];"
+        f"[voice][music]amix=inputs=2:duration=longest:"
+        f"dropout_transition=0,atrim=0:{duration:.3f},"
+        f"alimiter=limit=0.95[out]"
     )
-    try:
-        subprocess.run(
-            [
-                ffmpeg,
-                "-y",
-                "-v",
-                "error",
-                "-i",
-                str(voice),
-                "-stream_loop",
-                "-1",
-                "-i",
-                str(source),
-                "-filter_complex",
-                filter_complex,
-                "-map",
-                "[out]",
-                "-c:a",
-                "pcm_s16le",
-                str(output),
-            ],
-            check=True,
-        )
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise PipelineError(f"cannot create audio preview: {exc}") from exc
+
+    _run_ffmpeg(
+        [
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            str(voice),
+            "-stream_loop",
+            "-1",
+            "-i",
+            str(source),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[out]",
+            "-t",
+            f"{duration:.3f}",
+            "-c:a",
+            "pcm_s16le",
+            str(output),
+        ]
+    )
+
     if not output.is_file():
-        raise PipelineError("FFmpeg finished without creating audio-preview.wav.")
-    print(f"Audio preview: {output} ({volume:.0%} background music).", flush=True)
+        raise PipelineError(
+            "FFmpeg finished without creating audio-preview.wav."
+        )
+
+    print(
+        f"Audio preview: {output} "
+        f"({volume:.0%} background music, {duration:.1f}s).",
+        flush=True,
+    )
     return output
 
 
-def run_renderer(package_root: Path, action: str, music: Path | None = None, music_volume: float = 0.12, update_music: bool = False) -> None:
+def mix_background_music_into_render(package_root: Path) -> Path:
+    root = Path(package_root).resolve()
+    config = validate_background_music(root)
+    output = root / "out" / "zodiac-story.mp4"
+
+    if not output.is_file():
+        raise PipelineError(
+            f"Remotion output is missing: {output}"
+        )
+
+    if config is None:
+        print(
+            "Final audio: voice/SFX only "
+            "(background music disabled).",
+            flush=True,
+        )
+        return output
+
+    mixed = output.with_name("zodiac-story.with-music.mp4")
+    volume = config["background_music_volume"]
+    music = config["_path"]
+    filter_complex = (
+        f"[1:a]volume={volume:.3f}[music];"
+        "[0:a][music]amix=inputs=2:duration=first:"
+        "dropout_transition=0,alimiter=limit=0.95[out]"
+    )
+
+    _run_ffmpeg(
+        [
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            str(output),
+            "-stream_loop",
+            "-1",
+            "-i",
+            str(music),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "0:v:0",
+            "-map",
+            "[out]",
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-shortest",
+            str(mixed),
+        ]
+    )
+
+    if not mixed.is_file():
+        raise PipelineError(
+            "background-music post-mix did not create the final MP4."
+        )
+
+    mixed.replace(output)
+    print(
+        f"Final audio: mixed {music.name} @ {volume:.0%} "
+        f"into {output.name}.",
+        flush=True,
+    )
+    return output
+
+
+def run_renderer(
+    package_root: Path,
+    action: str,
+    music: Path | None = None,
+    music_volume: float = 0.12,
+    update_music: bool = False,
+) -> None:
+    root = Path(package_root).resolve()
     if update_music:
-        configure_background_music(package_root, music, music_volume)
-    validate_runtime(package_root)
-    renderer = Path(package_root).resolve() / "renderer"
-    if shutil.which("node") is None or (shutil.which("npm") is None and shutil.which("npm.cmd") is None):
-        raise PipelineError("Node.js and npm are required. Install the current Node.js LTS release, then retry.")
+        configure_background_music(
+            root,
+            music,
+            music_volume,
+        )
+
+    validate_runtime(root)
+    renderer = root / "renderer"
+    if shutil.which("node") is None or (
+        shutil.which("npm") is None
+        and shutil.which("npm.cmd") is None
+    ):
+        raise PipelineError(
+            "Node.js and npm are required. "
+            "Install the current Node.js LTS release, then retry."
+        )
+
     bin_dir = renderer / "node_modules" / ".bin"
-    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
-    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
+    remotion_bin = bin_dir / (
+        "remotion.cmd" if os.name == "nt" else "remotion"
+    )
+    tsc_bin = bin_dir / (
+        "tsc.cmd" if os.name == "nt" else "tsc"
+    )
     if not remotion_bin.is_file() or not tsc_bin.is_file():
-        print("Installing the pinned Remotion dependencies…", flush=True)
+        print(
+            "Installing the pinned Zodiac v2 Remotion dependencies…",
+            flush=True,
+        )
         _install_renderer(renderer)
-    _patch_renderer_typescript_compatibility(renderer)
+
+    print(
+        "Compiling design.md → production.json style token…",
+        flush=True,
+    )
+    _run_npm(["run", "compile:style"], renderer)
+    validate_package(root)
+
+    print("Running renderer contract tests…", flush=True)
+    _run_npm(["run", "test"], renderer)
+
     print("Checking renderer TypeScript…", flush=True)
     _run_npm(["run", "typecheck"], renderer)
+
     if action == "preview":
-        _run_npm(["run", "studio", "--", "--props=../.runtime/timing.json"], renderer)
+        config = validate_background_music(root)
+        if config:
+            print(
+                "Remotion Studio previews voice/SFX. "
+                "Use 'Nghe thử' for the selected background-music mix "
+                f"({config['background_music_volume']:.0%}).",
+                flush=True,
+            )
+        _run_npm(["run", "studio"], renderer)
     else:
         _run_npm(["run", "render"], renderer)
+        mix_background_music_into_render(root)
 
 
 def _choose(prompt: str, values: list[Path]) -> Path:
