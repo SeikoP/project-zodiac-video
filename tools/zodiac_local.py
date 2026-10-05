@@ -965,8 +965,12 @@ def build_tts_diagnostics(
     }
 
 
-def write_tts_diagnostics(runtime: Path, diagnostics: dict) -> Path:
-    path = Path(runtime) / "tts-diagnostics.json"
+def write_tts_diagnostics(
+    runtime: Path,
+    diagnostics: dict,
+    filename: str = "tts-diagnostics.json",
+) -> Path:
+    path = Path(runtime) / filename
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(diagnostics, ensure_ascii=False, indent=2) + "\n",
@@ -1133,6 +1137,7 @@ def generate_scene_voices(
     frame_cap: str = DEFAULT_TTS_FRAME_CAP,
     max_chars: int = DEFAULT_TTS_MAX_CHARS,
     speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    fp32_fallback_on_rate_warning: bool = True,
 ) -> dict[str, float]:
     """Generate the selected scene WAVs and return their measured durations."""
     root = Path(package_root).resolve()
@@ -1179,8 +1184,79 @@ def generate_scene_voices(
         frame_cap=None if vieneu_url else (frame_cap == "on"),
         max_chars=max_chars,
     )
-    write_tts_diagnostics(root / ".runtime", diagnostics)
     _print_tts_diagnostics(diagnostics)
+
+    warning_ids = [
+        item["scene_id"]
+        for item in diagnostics["scenes"]
+        if item["speech_rate_warning"]
+    ]
+    if (
+        vieneu_url
+        and mode == "v3turbo"
+        and fp32_fallback_on_rate_warning
+        and warning_ids
+    ):
+        write_tts_diagnostics(
+            root / ".runtime",
+            diagnostics,
+            "tts-diagnostics.initial.json",
+        )
+        print(
+            "TTS_FP32_RETRY: Gradio sinh audio quá nhanh; "
+            "sinh lại scene cảnh báo bằng direct ONNX/fp32: "
+            + ", ".join(warning_ids),
+            flush=True,
+        )
+        retry_rows = [
+            row for row in rows
+            if row["scene_id"] in set(warning_ids)
+        ]
+        run_tts_batch(
+            root / ".runtime",
+            retry_rows,
+            tts_root=tts_root,
+            tts_python=tts_python,
+            voice=voice,
+            mode=mode,
+            vieneu_url=None,
+            backend="onnx",
+            precision="fp32",
+            frame_cap="on",
+            max_chars=max_chars,
+        )
+        for row in retry_rows:
+            path = Path(row["output"])
+            try:
+                validate_voice(path)
+            except PipelineError as exc:
+                raise PipelineError(
+                    f"Scene {row['scene_id']} fp32 retry: {exc}"
+                ) from exc
+            with wave.open(str(path), "rb") as wav:
+                durations[row["scene_id"]] = (
+                    wav.getnframes() / wav.getframerate()
+                )
+
+        final_diagnostics = build_tts_diagnostics(
+            diagnostic_production,
+            durations,
+            warning_wps=speech_rate_warning_wps,
+            transport="gradio->local-fp32-retry",
+            backend="onnx",
+            precision="fp32",
+            frame_cap=True,
+            max_chars=max_chars,
+        )
+        final_diagnostics["fallback"] = {
+            "reason": "speech_rate_warning",
+            "scene_ids": warning_ids,
+            "initial_summary": diagnostics["summary"],
+        }
+        diagnostics = final_diagnostics
+        _print_tts_diagnostics(diagnostics)
+
+    write_tts_diagnostics(root / ".runtime", diagnostics)
     return durations
 
 
@@ -1234,6 +1310,7 @@ def synthesize_voice(
     tts_frame_cap: str = DEFAULT_TTS_FRAME_CAP,
     tts_max_chars: int = DEFAULT_TTS_MAX_CHARS,
     speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    tts_fp32_fallback: bool = True,
 ) -> dict:
     """Compatibility wrapper over the granular voice/timing operations."""
     root = Path(package_root).resolve()
@@ -1257,6 +1334,7 @@ def synthesize_voice(
         frame_cap=tts_frame_cap,
         max_chars=tts_max_chars,
         speech_rate_warning_wps=speech_rate_warning_wps,
+        fp32_fallback_on_rate_warning=tts_fp32_fallback,
     )
     concatenate_scene_voices(root, production)
 
@@ -1792,6 +1870,7 @@ def run_tui(args: argparse.Namespace, workspace: Path) -> None:
                 args.tts_frame_cap,
                 args.tts_max_chars,
                 args.speech_rate_warning_wps,
+                args.tts_fp32_fallback,
             )
             print("Voice and timing ready.")
         elif choice == "2":
@@ -1810,6 +1889,7 @@ def run_tui(args: argparse.Namespace, workspace: Path) -> None:
                 args.tts_frame_cap,
                 args.tts_max_chars,
                 args.speech_rate_warning_wps,
+                args.tts_fp32_fallback,
             )
             run_renderer(job, "render")
         elif choice == "3":
@@ -1854,6 +1934,13 @@ def build_parser() -> argparse.ArgumentParser:
     voice_command.add_argument("--tts-frame-cap", choices=("on", "off"), default=DEFAULT_TTS_FRAME_CAP, help="direct ONNX diagnostic: disable only to test suspected truncation")
     voice_command.add_argument("--tts-max-chars", type=int, default=DEFAULT_TTS_MAX_CHARS)
     voice_command.add_argument("--speech-rate-warning-wps", type=float, default=DEFAULT_SPEECH_RATE_WARNING_WPS)
+    voice_command.add_argument(
+        "--no-tts-fp32-fallback",
+        action="store_false",
+        dest="tts_fp32_fallback",
+        help="do not retry fast Gradio scenes with direct ONNX/fp32",
+    )
+    voice_command.set_defaults(tts_fp32_fallback=True)
     voice_command.add_argument("--align-model", default="small", help="faster-whisper model for measured word timing")
     voice_command.add_argument("--align-device", default="cpu", help="faster-whisper device")
     voice_command.add_argument("--align-compute-type", default="int8", help="faster-whisper compute type")
@@ -1884,6 +1971,12 @@ def build_parser() -> argparse.ArgumentParser:
     tui.add_argument("--tts-frame-cap", choices=("on", "off"), default=DEFAULT_TTS_FRAME_CAP)
     tui.add_argument("--tts-max-chars", type=int, default=DEFAULT_TTS_MAX_CHARS)
     tui.add_argument("--speech-rate-warning-wps", type=float, default=DEFAULT_SPEECH_RATE_WARNING_WPS)
+    tui.add_argument(
+        "--no-tts-fp32-fallback",
+        action="store_false",
+        dest="tts_fp32_fallback",
+    )
+    tui.set_defaults(tts_fp32_fallback=True)
     tui.add_argument("--align-model", default="small")
     tui.add_argument("--align-device", default="cpu")
     tui.add_argument("--align-compute-type", default="int8")
@@ -1920,6 +2013,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.tts_frame_cap,
                 args.tts_max_chars,
                 args.speech_rate_warning_wps,
+                args.tts_fp32_fallback,
             )
             print(f"Voice and measured timing attached ({timing['total_duration_frames']} frames).")
         elif args.command == "audio-preview":
