@@ -10,13 +10,17 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from tools.studio.messages_vi import (
+    ALIGN_MODEL_CHOICES,
+    ALIGN_MODEL_HINT,
     BTN_LISTEN,
+    LABEL_ALIGN_MODEL,
     LABEL_MUSIC,
     LABEL_VOLUME,
     LABEL_VOICE,
     SECTION_SETUP,
 )
 from tools.studio.views.common import Button, entry, label, section
+from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio.theme import COLORS
 
 
@@ -38,6 +42,7 @@ class AudioPanel(tk.Frame):
         self.voice = tk.StringVar(value="cuongdepzai" if "cuongdepzai" in voices else voices[0])
         self.music = tk.StringVar(value="")
         self.volume = tk.DoubleVar(value=1.0)
+        self.align_model = tk.StringVar(value=ALIGN_MODEL_DEFAULT)
 
         card = section(self, SECTION_SETUP)
         card.pack(fill="both", expand=True)
@@ -65,6 +70,18 @@ class AudioPanel(tk.Frame):
             command=lambda _value: self.volume_label.configure(text=f"{self.volume.get():.0%}"),
         ).pack(side="left", fill="x", expand=True, padx=(0, 9))
 
+        align_row = tk.Frame(card, bg=COLORS["panel"])
+        align_row.pack(fill="x", pady=(0, 8))
+        label(align_row, LABEL_ALIGN_MODEL, width=10).pack(side="left")
+        ttk.Combobox(
+            align_row,
+            textvariable=self.align_model,
+            values=list(ALIGN_MODEL_CHOICES),
+            state="readonly",
+            width=12,
+        ).pack(side="left")
+        label(align_row, ALIGN_MODEL_HINT, wraplength=140, justify="left").pack(side="left", padx=(10, 0))
+
         self.music_note = label(card, "")
         self.music_note.pack(anchor="w")
 
@@ -72,7 +89,12 @@ class AudioPanel(tk.Frame):
         self.on_listen(self.volume.get())
 
     def values(self) -> dict:
-        return {"voice": self.voice.get(), "music": self.music.get(), "volume": self.volume.get()}
+        return {
+            "voice": self.voice.get(),
+            "music": self.music.get(),
+            "volume": self.volume.get(),
+            "align_model": self.align_model.get(),
+        }
 
     def refresh(self) -> None:
         note = "Chưa chọn nhạc nền" if not self.music.get().strip() else Path(self.music.get()).name

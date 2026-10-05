@@ -246,6 +246,7 @@ class ZodiacStudioApp(tk.Tk):
             voice=settings["voice"],
             music=music,
             volume=settings["volume"],
+            align_model=settings.get("align_model"),
         )
         if started and self.controller.worker is not None:
             # the controller already started the worker thread; forward its events
@@ -416,13 +417,18 @@ class ZodiacStudioApp(tk.Tk):
         self.after(120, self._pump)
 
     def _handle_worker(self, kind: str, payload: dict) -> None:
-        from tools.studio.worker import LOG_LINE, PIPELINE_CANCELLED, PIPELINE_DONE, STEP_FAILED, STEP_PROGRESS, STEP_STARTED
+        from tools.studio.worker import (
+            LOG_LINE,
+            PIPELINE_CANCELLED,
+            PIPELINE_DONE,
+            STEP_FAILED,
+            STEP_PROGRESS,
+            STEP_STARTED,
+        )
 
         if kind == LOG_LINE:
             self.log.append(payload["text"])
-        elif kind == STEP_STARTED:
-            self.pipeline.refresh()
-        elif kind == STEP_PROGRESS:
+        elif kind in (STEP_STARTED, STEP_PROGRESS):
             self.pipeline.refresh()
         elif kind == STEP_FAILED:
             self.pipeline.refresh()
@@ -434,6 +440,11 @@ class ZodiacStudioApp(tk.Tk):
             messagebox.showerror(title, body + (f"\n\nChi tiết: {details}" if details else ""), parent=self)
         elif kind in (PIPELINE_DONE, PIPELINE_CANCELLED):
             self.pipeline.refresh()
+            self.status_text.set(
+                "Da dung. Tiep tuc se chay lai buoc dang dung."
+                if kind == PIPELINE_CANCELLED
+                else "Da hoan tat toan bo quy trinh."
+            )
         self._refresh_buttons()
 
     def _handle_listen(self, code: int, out: str, err: str) -> None:
@@ -499,10 +510,11 @@ class ZodiacStudioApp(tk.Tk):
         self.editor_button.configure(
             state="normal" if self.controller.editor_available() else "disabled"
         )
-        if not running:
-            self.pipeline.refresh()
-            self.project.refresh()
-            self.output.refresh()
+        # Always repaint: scene progress advances while a step is running, and a
+        # stale 0/N counter reads as a hang even though the worker is fine.
+        self.pipeline.refresh()
+        self.project.refresh()
+        self.output.refresh()
         self.status_text.set(
             STATUS_RUNNING if running else (STATUS_IDLE if has_job else NO_JOB_MESSAGE)
         )

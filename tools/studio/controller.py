@@ -9,6 +9,7 @@ from pathlib import Path
 
 from tools.studio.job_state import JobStateStore
 from tools.studio.messages_vi import (
+    ALIGN_MODEL_DEFAULT,
     ERROR_TITLES_BY_STEP,
     NO_RESUME_MESSAGE,
     PIPELINE_CANCELLED_MESSAGE,
@@ -243,6 +244,7 @@ class StudioController:
         voice: str | None = None,
         music: Path | None = None,
         volume: float | None = None,
+        align_model: str | None = None,
     ) -> bool:
         if self.job is None:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
@@ -258,6 +260,7 @@ class StudioController:
             voice=voice,
             music=music,
             volume=volume,
+            align_model=align_model,
         )
         return True
 
@@ -268,6 +271,7 @@ class StudioController:
         voice: str | None = None,
         music: Path | None = None,
         volume: float | None = None,
+        align_model: str | None = None,
     ) -> None:
         from tools.studio.worker import PipelineWorker
 
@@ -282,6 +286,7 @@ class StudioController:
             on_event=self.handle_event,
             voice=voice or DEFAULT_VOICE,
             tts_mode=DEFAULT_TTS_MODE,
+            align_model=align_model or ALIGN_MODEL_DEFAULT,
             music=music,
             music_volume=1.0 if volume is None else volume,
             tts_root=self.tts_root,

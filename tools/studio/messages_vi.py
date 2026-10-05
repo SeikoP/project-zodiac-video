@@ -41,6 +41,13 @@ LABEL_JOB = "Job"
 LABEL_VOICE = "Giọng đọc"
 LABEL_MUSIC = "Nhạc nền"
 LABEL_VOLUME = "Âm lượng"
+LABEL_ALIGN_MODEL = "Độ chính xác căn từ"
+
+# faster-whisper is weak on Vietnamese: 'small' mishears xử/lỗi/bạn and turns
+# spelled numbers into digits, which blocks the approved-narration check.
+ALIGN_MODEL_DEFAULT = "medium"
+ALIGN_MODEL_CHOICES = ("medium", "large-v3", "small")
+ALIGN_MODEL_HINT = "medium nghe đúng tiếng Việt; large-v3 chính xác hơn nhưng chậm hơn nhiều (CPU)."
 LABEL_MORE = "…"
 LABEL_PATH_PLACEHOLDER = "Chưa chọn"
 LABEL_PIPELINE_BASENAME = "Job: "

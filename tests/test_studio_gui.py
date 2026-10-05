@@ -179,6 +179,41 @@ class StudioAppTests(unittest.TestCase):
             self.assertEqual(app.controller.job.name, "unfinished")
             self.assertEqual(app.project.archive.get(), "")
 
+    def test_pipeline_progress_is_visible_while_the_worker_runs(self):
+        import tempfile
+
+        from tools.studio.job_state import JobStateStore
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            job = write_multi_scene_job(Path(temp))
+            app.controller.use_job(job)
+            plan = JobStateStore(job).open()
+            for scene_id in ("S01", "S02"):
+                plan.set_scene_state("VOICE_SCENES", scene_id, "DONE")
+            app.controller.plan = plan
+
+            class _Alive:
+                def is_alive(self):
+                    return True
+
+            app.controller.worker = _Alive()
+            app._refresh_buttons()
+            detail = app.pipeline.rows["VOICE_SCENES"]["detail"].cget("text")
+            self.assertEqual(detail, "2/2 scene xong")
+
+    def test_align_model_is_selectable_in_the_gui(self):
+        import tempfile
+
+        from tools.studio.messages_vi import ALIGN_MODEL_CHOICES
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            self.assertEqual(app.audio.align_model.get(), "medium")
+            app.audio.align_model.set("large-v3")
+            self.assertEqual(app.audio.values()["align_model"], "large-v3")
+            self.assertIn("medium", ALIGN_MODEL_CHOICES)
+
     def test_install_button_follows_preflight(self):
         import tempfile
 

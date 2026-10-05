@@ -64,6 +64,8 @@ PIPELINE_DONE = "PIPELINE_DONE"
 PIPELINE_CANCELLED = "PIPELINE_CANCELLED"
 LOG_LINE = "LOG_LINE"
 
+from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
+
 DEFAULT_VOICE = "Hải Đăng"
 DEFAULT_TTS_MODE = "v3turbo"
 
@@ -116,6 +118,7 @@ class PipelineWorker:
         on_event=None,
         voice: str = DEFAULT_VOICE,
         tts_mode: str = DEFAULT_TTS_MODE,
+        align_model: str = ALIGN_MODEL_DEFAULT,
         tts_root: Path | None = None,
         vieneu_url: str | None = None,
         music: Path | None = None,
@@ -130,6 +133,7 @@ class PipelineWorker:
         self.on_event = on_event or (lambda kind, payload: None)
         self.voice = voice
         self.tts_mode = tts_mode
+        self.align_model = align_model or ALIGN_MODEL_DEFAULT
         self.tts_root = tts_root
         self.vieneu_url = vieneu_url
         self.music = Path(music) if music else None
@@ -448,11 +452,11 @@ class PipelineWorker:
                     durations[scene["id"]] = handle.getnframes() / handle.getframerate()
 
         require_word_aligner_installed()
-        aligner = load_word_aligner("small", "cpu", "int8")
+        aligner = load_word_aligner(self.align_model, "cpu", "int8")
         self._raise_if_cancelled()
         timing = align_scene_timings(production, durations, aligner, scene_voice_files(self.root, production))
         build_and_write_timing(self.root, timing)
-        self.log(f"Đã căn {len(timing['scenes'])} scene theo từng từ.")
+        self.log(f"Đã căn {len(timing['scenes'])} scene bằng faster-whisper/{self.align_model}.")
 
     def _step_validate_runtime(self) -> None:
 
