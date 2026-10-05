@@ -102,6 +102,7 @@ class EditorWorkspace(tk.Toplevel):
             self.document,
             on_commit=self._commit,
             on_status=self._set_status,
+            on_select_entity=self._select_entity,
         )
         self.inspector.configure(width=240)
         self.inspector.grid(row=0, column=2, sticky="nsew", padx=(10, 0))
@@ -120,8 +121,16 @@ class EditorWorkspace(tk.Toplevel):
     def show_scene(self, scene_id: str) -> None:
         self.scene_id = scene_id
         self.canvas.show_scene(scene_id)
+        self.inspector.load_entities(self.document.placements(scene_id))
         self._set_status(f"Scene {scene_id}")
         self._update_title()
+
+    def _select_entity(self, entity_id: str) -> None:
+        """Select from the entity list; the only way to reach a hidden entity."""
+        if not self.scene_id:
+            return
+        self.canvas.select(entity_id)
+        self.inspector.show(self.canvas.selected.placement if self.canvas.selected else None)
 
     def _on_select(self, placement) -> None:
         self.inspector.show(placement)
@@ -138,6 +147,7 @@ class EditorWorkspace(tk.Toplevel):
             StateCommand(self.document, scene_id, entity_id, label).begin(after, before)
         )
         self.canvas.refresh()
+        self.inspector.load_entities(self.document.placements(scene_id))
         self.inspector.sync()
         self._update_title()
 

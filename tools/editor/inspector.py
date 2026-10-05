@@ -11,15 +11,17 @@ FIELD_FONT = ("Segoe UI", 9)
 
 
 class Inspector(tk.Frame):
-    """Two-way sync between the canvas and the contract values."""
+    """Entity list plus two-way sync between the canvas and the contract values."""
 
-    def __init__(self, parent, document, *, on_commit=None, on_status=None) -> None:
+    def __init__(self, parent, document, *, on_commit=None, on_status=None, on_select_entity=None) -> None:
         super().__init__(parent, bg=COLORS["panel"])
         self.document = document
         self.on_commit = on_commit or (lambda label, scene_id, entity_id, before, after: None)
         self.on_status = on_status or (lambda message: None)
+        self.on_select_entity = on_select_entity or (lambda entity_id: None)
         self.placement = None
         self._loading = False
+        self._entity_ids: list[str] = []
         self._vars: dict[str, tk.Variable] = {
             key: tk.StringVar() for key in ("x", "y", "width", "height", "layer")
         }
@@ -27,6 +29,26 @@ class Inspector(tk.Frame):
 
         tk.Label(self, text="INSPECTOR", bg=COLORS["panel"], fg=COLORS["fg"],
                  font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(0, 8))
+
+        tk.Label(self, text="ENTITIES", bg=COLORS["panel"], fg=COLORS["muted"],
+                 font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        self.entity_list = tk.Listbox(
+            self,
+            bg=COLORS["field"],
+            fg=COLORS["fg"],
+            relief="flat",
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=COLORS["line"],
+            selectbackground=COLORS["accent"],
+            selectforeground=COLORS["bg"],
+            activestyle="none",
+            font=("Segoe UI", 9),
+            exportselection=False,
+            height=6,
+        )
+        self.entity_list.pack(fill="x", pady=(2, 10))
+        self.entity_list.bind("<<ListboxSelect>>", self._on_entity_pick)
 
         self.readonly: dict[str, tk.Label] = {}
         for key, caption in (
@@ -76,6 +98,32 @@ class Inspector(tk.Frame):
         entry.bind("<FocusOut>", lambda _event, k=key: self._apply_fields({k: self._vars[k].get()}))
 
     # ---- public ------------------------------------------------------
+    def load_entities(self, placements) -> None:
+        """List every entity of the scene, hidden ones included."""
+        self._loading = True
+        self.entity_list.delete(0, "end")
+        self._entity_ids = []
+        for placement in placements:
+            self._entity_ids.append(placement.entity_id)
+            label = placement.entity_id if placement.visible else f"{placement.entity_id}  (hidden)"
+            self.entity_list.insert("end", label)
+        self._loading = False
+        if self.placement is not None:
+            self._highlight(self.placement.entity_id)
+
+    def _highlight(self, entity_id: str | None) -> None:
+        if entity_id in self._entity_ids:
+            self.entity_list.selection_clear(0, "end")
+            self.entity_list.selection_set(self._entity_ids.index(entity_id))
+            self.entity_list.see(self._entity_ids.index(entity_id))
+
+    def _on_entity_pick(self, _event) -> None:
+        if self._loading:
+            return
+        selection = self.entity_list.curselection()
+        if selection and selection[0] < len(self._entity_ids):
+            self.on_select_entity(self._entity_ids[selection[0]])
+
     def show(self, placement) -> None:
         self._loading = True
         self.placement = placement
@@ -85,6 +133,7 @@ class Inspector(tk.Frame):
             for variable in self._vars.values():
                 variable.set("")
             self.visible.set(False)
+            self.entity_list.selection_clear(0, "end")
             self._loading = False
             return
 
@@ -92,6 +141,7 @@ class Inspector(tk.Frame):
         self.readonly["kind"].configure(text=placement.kind or "—")
         self.readonly["state_id"].configure(text=placement.state_id)
         self.readonly["source"].configure(text=placement.source_id)
+        self._highlight(placement.entity_id)
         state = self.document.state(placement.scene_id, placement.entity_id, placement.state_id)
         transform = state.get("transform") or {}
         for key in ("x", "y", "width", "height"):

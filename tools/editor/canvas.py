@@ -277,8 +277,15 @@ class CanvasView(tk.Frame):
         self.on_select(None)
 
     def select(self, entity_id: str | None) -> None:
+        """Select by id, including hidden entities chosen from the inspector list."""
         self.selected = next(
-            (item for item in self.items if item.placement.entity_id == entity_id),
+            (
+                item
+                for item in build_items(
+                    self.document, self.scene_id, self._view, include_hidden=True
+                )
+                if item.entity_id == entity_id
+            ),
             None,
         )
         self.refresh()
@@ -376,33 +383,33 @@ class CanvasView(tk.Frame):
         )
 
     def _on_press(self, event) -> None:
-        if self.scene_id is None:
-            return
-        offset_x, offset_y = self._offset
-        # hidden entities stay clickable so a hidden object can be brought back
-        items = build_items(self.document, self.scene_id, self._view, include_hidden=True)
-        x, y = event.x - offset_x, event.y - offset_y
-        if self.selected is not None and in_handle(self.selected.display_rect, x, y):
+            if self.scene_id is None:
+                return
+            offset_x, offset_y = self._offset
+            # hidden entities are never clickable; the inspector entity list selects them
+            items = build_items(self.document, self.scene_id, self._view)
+            x, y = event.x - offset_x, event.y - offset_y
+            if self.selected is not None and in_handle(self.selected.display_rect, x, y):
+                self._drag = {
+                    "mode": "resize",
+                    "before": self._snapshot(self.selected.placement),
+                    "rect": self.selected.display_rect,
+                    "origin": (event.x, event.y),
+                }
+                return
+            item = hit_test(items, x, y)
+            self.selected = item
+            self.refresh()
+            if item is None:
+                self.on_select(None)
+                return
+            self.on_select(item.placement)
             self._drag = {
-                "mode": "resize",
-                "before": self._snapshot(self.selected.placement),
-                "rect": self.selected.display_rect,
+                "mode": "move",
+                "before": self._snapshot(item.placement),
+                "rect": item.display_rect,
                 "origin": (event.x, event.y),
             }
-            return
-        item = hit_test(items, x, y)
-        self.selected = item
-        self.refresh()
-        if item is None:
-            self.on_select(None)
-            return
-        self.on_select(item.placement)
-        self._drag = {
-            "mode": "move",
-            "before": self._snapshot(item.placement),
-            "rect": item.display_rect,
-            "origin": (event.x, event.y),
-        }
 
     def _on_drag(self, event) -> None:
         if not self._drag or self.selected is None:

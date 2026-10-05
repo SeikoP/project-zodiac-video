@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from test_zodiac_local import package_files, write_pcm
-from tools.editor.canvas import build_items, hit_test
+from tools.editor.canvas import build_items, describe_source, hit_test
 from tools.editor.commands import History, StateCommand
 from tools.editor.document import EditorDocument, EditorError
 from tools.editor.geometry import CanvasTransform
@@ -292,7 +292,7 @@ class CanvasHitTestTests(unittest.TestCase):
             self.assertEqual(hit.entity_id, "bg.wall")
             self.assertIsNone(hit_test(items, -50, -50))
 
-    def test_hidden_entity_stays_clickable_but_is_not_drawn(self):
+    def test_hidden_entity_is_not_hit_tested_on_canvas(self):
         view = CanvasTransform(1080, 1920, 540, 960)
         with tempfile.TemporaryDirectory() as temp:
             job = write_editor_package(Path(temp))
@@ -302,9 +302,14 @@ class CanvasHitTestTests(unittest.TestCase):
                 "character.lead",
                 [item.entity_id for item in build_items(document, "S01", view)],
             )
-            clickable = build_items(document, "S01", view, include_hidden=True)
-            hit = hit_test(clickable, 200 * view.scale, 200 * view.scale)
-            self.assertEqual(hit.entity_id, "character.lead")
+            self.assertNotEqual(
+                hit_test(build_items(document, "S01", view), 200 * view.scale, 200 * view.scale).entity_id,
+                "character.lead",
+            )
+            # the inspector entity list is the only way back to a hidden entity
+            hidden = [p for p in document.placements("S01") if p.entity_id == "character.lead"]
+            self.assertEqual(len(hidden), 1)
+            self.assertFalse(hidden[0].visible)
 
     def test_layer_order_matches_contract_layer(self):
         view = CanvasTransform(1080, 1920, 540, 960)
@@ -342,6 +347,131 @@ class RuntimeInvalidationTests(unittest.TestCase):
             self.assertTrue(timing.exists())
             self.assertTrue((job / "voice.wav").exists())
             self.assertTrue((job / ".runtime" / "timing.json").exists())
+
+
+def editor_sample_archive() -> Path | None:
+    """The reviewer-provided v2 sample package, when the local zip is present."""
+    archive = Path(__file__).resolve().parents[1] / "ready" / "zodiac-v2-editor-sample.zip"
+    return archive if archive.is_file() else None
+
+
+def import_sample_package(root: Path) -> Path:
+    from tools.zodiac_local import import_package
+
+    return import_package(editor_sample_archive(), root / "jobs")
+
+
+def sample_shaped_package(job: Path) -> Path:
+    """Use the sample's S01 narrator numbers so both fixtures assert the same values."""
+    production = json.loads((job / "production.json").read_text(encoding="utf-8"))
+    state = production["scenes"][0]["entities"][0]["states"]["neutral"]
+    state["transform"] = {"x": 95, "y": 650, "width": 205, "height": 350}
+    state["layer"] = 3
+    (job / "production.json").write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+    return job
+
+
+class PersistenceRegressionTests(unittest.TestCase):
+    """load -> valid resize -> save -> reload -> invalid resize -> rejected save."""
+
+    RESIZED = {"x": 95, "y": 650, "width": 152, "height": 259}
+
+    def _run_sequence(self, job: Path, entity_id: str) -> None:
+        document = EditorDocument(job)
+        document.set_transform("S01", entity_id, width=152, height=259)
+        document.save()
+
+        reopened = EditorDocument(job)
+        self.assertFalse(reopened.is_dirty)
+        self.assertEqual(reopened.state("S01", entity_id)["transform"], self.RESIZED)
+
+        reopened.set_transform("S01", entity_id, width=0, height=259)
+        with self.assertRaises(EditorError):
+            reopened.save()
+
+        disk = json.loads((job / "production.json").read_text(encoding="utf-8"))
+        entity = next(
+            item
+            for scene in disk["scenes"]
+            if scene["id"] == "S01"
+            for item in scene["entities"]
+            if item["id"] == entity_id
+        )
+        self.assertEqual(entity["states"][entity["initial_state"]]["transform"], self.RESIZED)
+        self.assertEqual(list(job.glob("production.json*.tmp")), [])
+
+    def test_generated_package_keeps_last_valid_resize(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = sample_shaped_package(write_editor_package(Path(temp)))
+            self._run_sequence(job, "character.lead")
+
+    def test_editor_sample_zip_keeps_last_valid_resize(self):
+        if editor_sample_archive() is None:
+            self.skipTest("ready/zodiac-v2-editor-sample.zip is not available")
+        with tempfile.TemporaryDirectory() as temp:
+            self._run_sequence(import_sample_package(Path(temp)), "character.narrator")
+
+
+class SamplePackageTests(unittest.TestCase):
+    def setUp(self):
+        if editor_sample_archive() is None:
+            self.skipTest("ready/zodiac-v2-editor-sample.zip is not available")
+        self._temp = tempfile.TemporaryDirectory()
+        self.job = import_sample_package(Path(self._temp.name))
+
+    def tearDown(self):
+        self._temp.cleanup()
+
+    def test_fixture_matches_the_v2_contract(self):
+        document = EditorDocument(self.job)
+        self.assertEqual(document.working["version"], "2.0")
+        self.assertEqual(document.video, {"width": 1080, "height": 1920, "fps": 30})
+        self.assertEqual(len(document.scene_ids), 2)
+        for scene_id in document.scene_ids:
+            self.assertEqual(len(document.placements(scene_id)), 3)
+
+    def test_fixture_svg_and_primitive_sources_resolve(self):
+        document = EditorDocument(self.job)
+        for scene_id in document.scene_ids:
+            for placement in document.placements(scene_id):
+                detail, missing = describe_source(document, placement)
+                self.assertFalse(missing, f"{placement.entity_id} -> {detail}")
+                if placement.asset:
+                    self.assertTrue((self.job / detail).is_file())
+
+    def test_scene_start_and_voice_anchor_survive_a_save(self):
+        before = json.loads((self.job / "production.json").read_text(encoding="utf-8"))
+        document = EditorDocument(self.job)
+        document.set_transform("S01", "character.narrator", x=95, y=650)
+        document.save()
+        after = json.loads((self.job / "production.json").read_text(encoding="utf-8"))
+        self.assertEqual(before["scenes"][0]["events"], after["scenes"][0]["events"])
+        self.assertEqual(
+            [event["trigger"] for event in after["scenes"][0]["events"]],
+            [{"source": "scene_start"}, {"source": "voice_anchor", "text": "bảng giả thuyết"}],
+        )
+        self.assertEqual(before["scenes"][0]["voice"], after["scenes"][0]["voice"])
+
+    def test_design_and_style_token_are_untouched(self):
+        design = (self.job / "design.md").read_bytes()
+        token = EditorDocument(self.job).working["visual_system"]["style_token"]
+        document = EditorDocument(self.job)
+        document.set_layer("S01", "character.narrator", 4)
+        document.save()
+        self.assertEqual((self.job / "design.md").read_bytes(), design)
+        saved = json.loads((self.job / "production.json").read_text(encoding="utf-8"))
+        self.assertEqual(saved["visual_system"]["style_token"], token)
+
+    def test_hidden_initial_state_is_not_hit_tested(self):
+        document = EditorDocument(self.job)
+        view = CanvasTransform(1080, 1920, 405, 720)
+        items = build_items(document, "S01", view)
+        self.assertEqual([item.entity_id for item in items], ["character.friend", "character.narrator"])
+        card = [p for p in document.placements("S01") if p.entity_id == "object.card"][0]
+        self.assertFalse(card.visible)
+        self.assertIsNone(
+            hit_test(items, view.to_display(card.x + 10, card.y + 10)[0], view.to_display(card.x + 10, card.y + 10)[1])
+        )
 
 
 if __name__ == "__main__":
