@@ -1016,6 +1016,9 @@ def _npm_executable() -> str:
 
 
 def _run_npm(args: list[str], cwd: Path) -> None:
+    if any(not isinstance(arg, str) or "\x00" in arg for arg in args):
+        raise PipelineError("npm arguments must be NUL-free strings.")
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     subprocess.run(
         [_npm_executable(), *args],
         cwd=cwd,
@@ -1181,11 +1184,19 @@ def _trusted_executable(name: str) -> str:
 
 def _run_ffmpeg(arguments: list[str]) -> None:
     ffmpeg = _trusted_executable("ffmpeg")
-    # User-selected paths remain individual argv items. shell=False means
-    # they are never interpreted as shell syntax.
+    safe_arguments = []
+    for argument in arguments:
+        if not isinstance(argument, str) or "\x00" in argument:
+            raise PipelineError("FFmpeg arguments must be NUL-free strings.")
+        safe_arguments.append(argument)
+
+    # Security: the executable is resolved from PATH to an absolute file,
+    # every user-selected path remains a separate argv element, and no shell
+    # parses the values. shlex.escape() is intentionally unnecessary here.
     try:
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         subprocess.run(
-            [ffmpeg, *arguments],
+            [ffmpeg, *safe_arguments],
             check=True,
             shell=False,
         )
