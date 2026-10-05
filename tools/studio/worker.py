@@ -194,6 +194,14 @@ class PipelineWorker:
         for scene_id, entry in self.plan.steps[VOICE_SCENES].scenes.items():
             if entry.get("status") != DONE:
                 continue
+            # Voice/mode changes have their own explicit invalidation path. This
+            # automatic migration only invalidates otherwise-compatible cached
+            # scenes whose generation settings changed across app versions.
+            if (
+                entry.get("voice_id") != self.voice
+                or entry.get("tts_mode") != self.tts_mode
+            ):
+                continue
             if any(entry.get(key) != value for key, value in expected.items()):
                 incompatible.append(scene_id)
 
