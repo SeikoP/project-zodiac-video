@@ -553,7 +553,7 @@ class ControllerTests(WorkerHarness):
         self.tts_calls.clear()
         controller = StudioController(workspace=self.root / "ws")
         controller.use_job(self.job)
-        controller.start_pipeline(resume=True)
+        controller.start_pipeline(resume=True, voice="test-voice")
         controller.worker.join(timeout=60)
 
         self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
