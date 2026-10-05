@@ -45,7 +45,7 @@ class Inspector(tk.Frame):
             activestyle="none",
             font=("Segoe UI", 9),
             exportselection=False,
-            height=6,
+            height=4,
         )
         self.entity_list.pack(fill="x", pady=(2, 10))
         self.entity_list.bind("<<ListboxSelect>>", self._on_entity_pick)
@@ -210,3 +210,179 @@ class Inspector(tk.Frame):
             return
         self.document.set_visible(placement.scene_id, placement.entity_id, after["visible"], placement.state_id)
         self.on_commit("Visible", placement.scene_id, placement.entity_id, before, after)
+
+
+class EventInspector(tk.Frame):
+    """Read-only event fields; only the semantic voice anchor is editable."""
+
+    def __init__(self, parent, document, *, on_select_event=None, on_commit=None, on_status=None) -> None:
+        super().__init__(parent, bg=COLORS["panel"])
+        self.document = document
+        self.on_select_event = on_select_event or (lambda event_id: None)
+        self.on_commit = on_commit or (lambda event_id, before, after: None)
+        self.on_status = on_status or (lambda message: None)
+        self.scene_id: str | None = None
+        self.event: dict | None = None
+        self._loading = False
+        self._event_ids: list[str] = []
+        self.anchor_text = tk.StringVar()
+        self.anchor_occurrence = tk.StringVar()
+
+        tk.Label(self, text="EVENT INSPECTOR", bg=COLORS["panel"], fg=COLORS["fg"],
+                 font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(0, 8))
+
+        self.event_list = tk.Listbox(
+            self, bg=COLORS["field"], fg=COLORS["fg"], relief="flat", bd=0, highlightthickness=1,
+            highlightbackground=COLORS["line"], selectbackground=COLORS["accent"],
+            selectforeground=COLORS["bg"], activestyle="none", font=("Segoe UI", 9),
+            exportselection=False, height=4,
+        )
+        self.event_list.pack(fill="x", pady=(0, 8))
+        self.event_list.bind("<<ListboxSelect>>", self._on_pick)
+
+        self.readonly: dict[str, tk.Label] = {}
+        for key, caption in (
+            ("event_id", "event.id"),
+            ("target", "target"),
+            ("action", "action"),
+            ("state_before", "state_before"),
+            ("state_after", "state_after"),
+            ("trigger_source", "trigger.source"),
+            ("motion", "motion"),
+            ("sfx", "sfx"),
+        ):
+            self.readonly[key] = self._readonly_row(caption)
+
+        anchor_frame = tk.Frame(self, bg=COLORS["panel"])
+        anchor_frame.pack(fill="x", pady=(8, 0))
+        tk.Label(anchor_frame, text="voice_anchor", bg=COLORS["panel"], fg=COLORS["muted"],
+                 font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        self.anchor_text_entry = self._entry(anchor_frame, self.anchor_text)
+        self.anchor_occurrence_entry = self._entry(anchor_frame, self.anchor_occurrence)
+        apply_row = tk.Frame(self, bg=COLORS["panel"])
+        apply_row.pack(fill="x", pady=(6, 0))
+        self.apply_button = tk.Button(
+            apply_row, text="Áp dụng anchor", command=self._apply, bg=COLORS["field"], fg=COLORS["fg"],
+            relief="flat", bd=0, padx=10, pady=5, font=("Segoe UI", 9), cursor="hand2",
+            highlightthickness=1, highlightbackground=COLORS["line"],
+        )
+        self.apply_button.pack(side="left")
+        self._set_anchor_editable(False)
+
+    def _readonly_row(self, caption: str) -> tk.Label:
+        row = tk.Frame(self, bg=COLORS["panel"])
+        row.pack(fill="x", pady=1)
+        tk.Label(row, text=caption, bg=COLORS["panel"], fg=COLORS["muted"], font=FIELD_FONT,
+                 width=15, anchor="w").pack(side="left")
+        value = tk.Label(row, text="—", bg=COLORS["panel"], fg=COLORS["fg"], font=FIELD_FONT,
+                         anchor="w", wraplength=120, justify="left")
+        value.pack(side="left", fill="x", expand=True)
+        return value
+
+    def _entry(self, parent, variable) -> tk.Entry:
+        row = tk.Frame(parent, bg=COLORS["panel"])
+        row.pack(fill="x", pady=2)
+        tk.Label(row, text="text" if variable is self.anchor_text else "occurrence", bg=COLORS["panel"],
+                 fg=COLORS["muted"], font=FIELD_FONT, width=10, anchor="w").pack(side="left")
+        entry = tk.Entry(row, textvariable=variable, bg=COLORS["field"], fg=COLORS["fg"],
+                         insertbackground=COLORS["fg"], relief="flat", bd=0, font=FIELD_FONT,
+                         highlightthickness=1, highlightbackground=COLORS["line"],
+                         highlightcolor=COLORS["accent"])
+        entry.pack(side="left", fill="x", expand=True, ipady=5)
+        return entry
+
+    def _set_anchor_editable(self, enabled: bool) -> None:
+        state = "normal" if enabled else "disabled"
+        self.anchor_text_entry.configure(state=state)
+        self.anchor_occurrence_entry.configure(state=state)
+        self.apply_button.configure(state=state)
+
+    # ---- public ------------------------------------------------------
+    def load_events(self, scene_id: str | None, events=None) -> None:
+        self.scene_id = scene_id
+        events = list(events if events is not None else (self.document.events(scene_id) if scene_id else []))
+        self._loading = True
+        self.event_list.delete(0, "end")
+        self._event_ids = []
+        for event in events:
+            event_id = str(event.get("id"))
+            self._event_ids.append(event_id)
+            trigger = event.get("trigger") or {}
+            tag = "scene_start" if trigger.get("source") == "scene_start" else "voice_anchor"
+            self.event_list.insert("end", f"{event_id}  ({tag})")
+        self._loading = False
+        self.show(None)
+
+    def select(self, event_id: str | None) -> None:
+        self._loading = True
+        self.event_list.selection_clear(0, "end")
+        if event_id in self._event_ids:
+            self.event_list.selection_set(self._event_ids.index(event_id))
+        self._loading = False
+        event = self._event(event_id)
+        self.show(event)
+
+    def show(self, event: dict | None) -> None:
+        self._loading = True
+        self.event = event
+        if event is None:
+            for label in self.readonly.values():
+                label.configure(text="—")
+            self.anchor_text.set("")
+            self.anchor_occurrence.set("")
+            self._set_anchor_editable(False)
+            self._loading = False
+            return
+
+        trigger = event.get("trigger") or {}
+        motion = event.get("motion") or {}
+        self.readonly["event_id"].configure(text=str(event.get("id")))
+        self.readonly["target"].configure(text=str(event.get("target", "—")))
+        self.readonly["action"].configure(text=str(event.get("action", "—")))
+        self.readonly["state_before"].configure(text=str(event.get("state_before", "—")))
+        self.readonly["state_after"].configure(text=str(event.get("state_after", "—")))
+        self.readonly["trigger_source"].configure(text=str(trigger.get("source", "—")))
+        self.readonly["motion"].configure(
+            text=f"{motion.get('preset', '—')} · {motion.get('duration_frames', '—')}f"
+        )
+        self.readonly["sfx"].configure(text=str(event.get("sfx") or "—"))
+        editable = trigger.get("source") == "voice_anchor"
+        self._set_anchor_editable(editable)
+        if editable:
+            self.anchor_text.set(str(trigger.get("text", "")))
+            self.anchor_occurrence.set("" if trigger.get("occurrence") is None else str(trigger["occurrence"]))
+        self._loading = False
+
+    def _event(self, event_id: str | None) -> dict | None:
+        if not event_id or not self.scene_id:
+            return None
+        for event in self.document.events(self.scene_id):
+            if event.get("id") == event_id:
+                return event
+        return None
+
+    def _on_pick(self, _event) -> None:
+        if self._loading:
+            return
+        selection = self.event_list.curselection()
+        if selection and selection[0] < len(self._event_ids):
+            self.on_select_event(self._event_ids[selection[0]])
+
+    def _apply(self) -> None:
+        if self._loading or self.event is None:
+            return
+        before = dict(self.event.get("trigger") or {})
+        text = self.anchor_text.get().strip()
+        raw_occurrence = self.anchor_occurrence.get().strip()
+        try:
+            occurrence = int(raw_occurrence) if raw_occurrence else None
+        except ValueError:
+            self.on_status("occurrence phải là số nguyên 1-based.")
+            return
+        after = {"source": "voice_anchor", "text": text}
+        if occurrence is not None:
+            after["occurrence"] = occurrence
+        if after == before:
+            self.on_status("Anchor không đổi.")
+            return
+        self.on_commit(str(self.event.get("id")), before, after)

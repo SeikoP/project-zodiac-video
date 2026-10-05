@@ -10,6 +10,12 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from tools.editor.timing import (
+    TIMING_VALID,
+    AnchorProblem,
+    RuntimeTimingDocument,
+    resolve_event,
+)
 from tools.zodiac_local import validate_production_document
 
 SAFE_EDIT_TYPES = ("transform", "layer", "visible")
@@ -167,6 +173,41 @@ class EditorDocument:
     def set_visible(self, scene_id: str, entity_id: str, visible: bool, state_id: str | None = None) -> None:
         self.state(scene_id, entity_id, state_id)["visible"] = bool(visible)
 
+    # ---- events ------------------------------------------------------
+    def events(self, scene_id: str) -> list[dict]:
+        events = self.scene(scene_id).get("events")
+        return [event for event in events if isinstance(event, dict)] if isinstance(events, list) else []
+
+    def event(self, scene_id: str, event_id: str) -> dict:
+        for event in self.events(scene_id):
+            if event.get("id") == event_id:
+                return event
+        raise EditorError(f"Không tìm thấy event {event_id} trong scene {scene_id}.")
+
+    def set_anchor(
+        self,
+        scene_id: str,
+        event_id: str,
+        *,
+        text: str | None = None,
+        occurrence=None,
+        drop_occurrence: bool = False,
+    ) -> dict:
+        """Edit only the semantic anchor; no timestamp is ever written."""
+        event = self.event(scene_id, event_id)
+        trigger = event.get("trigger")
+        if not isinstance(trigger, dict) or trigger.get("source") != "voice_anchor":
+            raise EditorError(f"Event {event_id} không phải voice_anchor nên không sửa được.")
+        if text is not None:
+            if not str(text).strip():
+                raise EditorError("voice_anchor.text không được rỗng.")
+            trigger["text"] = str(text)
+        if drop_occurrence:
+            trigger.pop("occurrence", None)
+        elif occurrence is not None:
+            trigger["occurrence"] = occurrence
+        return trigger
+
     # ---- persistence --------------------------------------------------
     def _disk_signature(self) -> tuple[int, str]:
         try:
@@ -185,12 +226,42 @@ class EditorDocument:
         """Accept the current on-disk file after an explicit overwrite choice."""
         self._disk = self._disk_signature()
 
+    @property
+    def timing(self):
+        """Read-only measured timing for the timeline; never written by the editor."""
+        return RuntimeTimingDocument.load(self.root)
+
     def validate(self) -> None:
         """Validate the working copy with the canonical v2 validator."""
         try:
             validate_production_document(self.root, self.working)
         except Exception as exc:  # PipelineError and friends
             raise EditorError(f"Save blocked:\n{exc}") from exc
+
+    def validate_anchors(self) -> None:
+        """Resolve every voice_anchor against measured words when timing exists."""
+        timing = self.timing
+        if timing.state != TIMING_VALID:
+            # Without measured words there is nothing honest to validate against.
+            return
+
+        problems = []
+        for scene_id in self.scene_ids:
+            scene_timing = timing.scene(scene_id)
+            if scene_timing is None:
+                problems.append(f"scene {scene_id} has no measured timing row")
+                continue
+            for event in self.events(scene_id):
+                if (event.get("trigger") or {}).get("source") != "voice_anchor":
+                    continue
+                try:
+                    resolve_event(scene_timing, event)
+                except AnchorProblem as problem:
+                    problems.append(f"event {event.get('id')}: {problem}")
+        if problems:
+            raise EditorError(
+                "Save blocked:\n" + "\n".join(f"- {problem}" for problem in problems)
+            )
 
     def save(self) -> None:
         """Validate, then replace production.json atomically."""
@@ -200,6 +271,7 @@ class EditorDocument:
                 "Reload or overwrite explicitly before saving."
             )
         self.validate()
+        self.validate_anchors()
 
         handle, temporary = tempfile.mkstemp(
             dir=str(self.root),
@@ -221,3 +293,4 @@ class EditorDocument:
 
         self._original = json.loads(_canonical(self.working))
         self._disk = self._disk_signature()
+        return True

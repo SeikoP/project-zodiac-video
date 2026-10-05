@@ -203,6 +203,34 @@ Behaviour:
 
 Canvas artwork is a best-effort vector preview of the same SVG/primitive data Remotion renders; geometry is exact, fidelity is not pixel-identical.
 
+### Voice Anchor Timeline
+
+The panel below the canvas shows the **active scene** only: measured word tokens from `.runtime/timing.json` plus one marker per event. Markers are placed at resolved frames; they are never draggable, because the event contract is semantic (`voice_anchor` text + occurrence), not a manual timestamp.
+
+```text
+tools/editor/timing.py    RuntimeTimingDocument (read-only) + anchor resolution + time mapping
+tools/editor/timeline.py  TimelineView + selection_for_event()
+tools/editor/inspector.py EventInspector: read-only event fields, editable voice anchor
+```
+
+Runtime states:
+
+| state | behaviour |
+| --- | --- |
+| `NO_TIMING` | events and anchor text are listed, badge `Timing chưa có`, no timeline position is invented |
+| `TIMING_VALID` | every marker resolves to a measured frame; `scene_start` sits on frame 0 of the scene |
+| `TIMING_STALE_OR_INVALID` | the specific validator error is shown, unresolved anchors are flagged, the editor stays usable |
+
+Anchor resolution reuses the package's canonical timing validator plus the measured word tokens: contiguous normalized word runs, `occurrence` is 1-based, and ambiguous anchors are refused instead of silently taking the first match:
+
+```text
+ANCHOR_NOT_FOUND / ANCHOR_AMBIGUOUS / ANCHOR_OCCURRENCE_INVALID
+```
+
+Editing `trigger.text` / `trigger.occurrence` never writes a timestamp. Save runs the v2 validator plus anchor resolution, so an unresolvable anchor blocks the write and leaves disk untouched. Selecting an event or a marker is pure selection: `dirty` stays false, no file changes.
+
+`.runtime/timing.json` is derived runtime data and is read-only for the editor. Anchor edits preserve `voice.wav` and `timing.json` byte-for-byte and only invalidate `.runtime/render-props.json`.
+
 ## Safety
 
 ZIP import rejects traversal, links, duplicate paths, oversized entries and suspicious compression ratios. SVG assets must remain self-contained vector files under `assets/`.

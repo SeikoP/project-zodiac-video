@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-SAFE_EDITS = frozenset({"transform", "layer", "visible"})
+SAFE_EDITS = frozenset({"transform", "layer", "visible", "anchor"})
 
 # ponytail: only visual derived props are dropped; voice.wav and
 # .runtime/timing.json survive every SAFE edit by construction. Add entries here

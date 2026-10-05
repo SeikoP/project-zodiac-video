@@ -9,9 +9,10 @@ from tkinter import messagebox
 from tools.editor.canvas import CanvasView
 from tools.editor.commands import History, StateCommand
 from tools.editor.document import EditorDocument, EditorError
-from tools.editor.inspector import Inspector
+from tools.editor.inspector import EventInspector, Inspector
 from tools.editor.runtime import invalidate_runtime_for
 from tools.editor.scene_list import SceneList
+from tools.editor.timeline import TimelineView, selection_for_event
 from tools.zodiac_gui import COLORS
 
 
@@ -33,6 +34,8 @@ class EditorWorkspace(tk.Toplevel):
 
         self.status = tk.StringVar(value="Ready")
         self.scene_id: str | None = None
+        self.selected_event: str | None = None
+        self._pending_edit = "transform"
 
         self._build()
 
@@ -97,6 +100,14 @@ class EditorWorkspace(tk.Toplevel):
         )
         self.canvas.grid(row=0, column=1, sticky="nsew")
 
+        self.timeline = TimelineView(
+            body,
+            self.document,
+            on_select_event=self.select_event,
+            on_status=self._set_status,
+        )
+        self.timeline.grid(row=1, column=1, sticky="nsew", pady=(10, 0))
+
         self.inspector = Inspector(
             body,
             self.document,
@@ -107,8 +118,18 @@ class EditorWorkspace(tk.Toplevel):
         self.inspector.configure(width=240)
         self.inspector.grid(row=0, column=2, sticky="nsew", padx=(10, 0))
 
+        self.events = EventInspector(
+            body,
+            self.document,
+            on_select_event=self.select_event,
+            on_commit=self._commit_anchor,
+            on_status=self._set_status,
+        )
+        self.events.configure(width=240)
+        self.events.grid(row=1, column=2, sticky="nsew", padx=(10, 0), pady=(10, 0))
+
         self.scenes = SceneList(body, self.document, on_select=self.show_scene)
-        self.scenes.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        self.scenes.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=(0, 10))
 
         footer = tk.Frame(self, bg=COLORS["panel"])
         footer.pack(fill="x", side="bottom")
@@ -120,9 +141,41 @@ class EditorWorkspace(tk.Toplevel):
     # ---- wiring -------------------------------------------------------
     def show_scene(self, scene_id: str) -> None:
         self.scene_id = scene_id
+        self.selected_event = None
         self.canvas.show_scene(scene_id)
         self.inspector.load_entities(self.document.placements(scene_id))
+        self.events.load_events(scene_id)
+        self.timeline.set_scene(scene_id)
         self._set_status(f"Scene {scene_id}")
+        self._update_title()
+
+    def select_event(self, event_id: str) -> None:
+        """Select an event: marker, Event Inspector and target entity, no mutation."""
+        event, entity_id = selection_for_event(self.document, event_id)
+        self.selected_event = event_id if event else None
+        self.timeline.select(self.selected_event)
+        self.events.select(event_id)
+        if entity_id:
+            self._select_entity(entity_id)
+        if event is not None:
+            self._set_status(f"Event {event_id} ({event.get('trigger', {}).get('source')})")
+
+    def _commit_anchor(self, event_id: str, before: dict, after: dict) -> None:
+        self._pending_edit = "anchor"
+        try:
+            self.document.set_anchor(
+                self.scene_id,
+                event_id,
+                text=after.get("text"),
+                occurrence=after.get("occurrence"),
+                drop_occurrence=after.get("occurrence") is None,
+            )
+        except EditorError as exc:
+            self._set_status(str(exc))
+            return
+        self.events.select(event_id)
+        self.timeline.refresh()
+        self._set_status(f"Đã đổi anchor {event_id}: “{after.get('text')}”")
         self._update_title()
 
     def _select_entity(self, entity_id: str) -> None:
@@ -143,6 +196,7 @@ class EditorWorkspace(tk.Toplevel):
         self.canvas.refresh()
 
     def _commit(self, label: str, scene_id: str, entity_id: str, before: dict, after: dict) -> None:
+        self._pending_edit = "transform"
         self.history.push(
             StateCommand(self.document, scene_id, entity_id, label).begin(after, before)
         )
@@ -281,7 +335,7 @@ class EditorWorkspace(tk.Toplevel):
         self._reload()
 
     def _announce_runtime(self) -> None:
-        removed = invalidate_runtime_for(self.package_root, "transform")
+        removed = invalidate_runtime_for(self.package_root, self._pending_edit)
         for path in removed:
             self._set_status(f"Saved production.json · invalidated {path.name}")
 
