@@ -1461,17 +1461,224 @@ def concatenate_scene_voices(package_root: Path, production: dict) -> Path:
     return output
 
 
+def _wav_duration_seconds(path: Path) -> float:
+    with wave.open(str(path), "rb") as wav:
+        return wav.getnframes() / wav.getframerate()
+
+
+def tts_scene_uncapped_retry_eligible(package_root: Path, scene_id: str) -> bool:
+    """Only retry cap-off after capped ONNX/fp32 is still fast and misaligned."""
+    diagnostics_path = Path(package_root) / ".runtime" / "tts-diagnostics.json"
+    try:
+        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    for scene in diagnostics.get("scenes", []):
+        if scene.get("scene_id") != scene_id:
+            continue
+        generation = scene.get("generation") or {}
+        return bool(
+            scene.get("speech_rate_warning")
+            and generation.get("backend") == "onnx"
+            and generation.get("precision") == "fp32"
+            and generation.get("frame_cap") is True
+        )
+    return False
+
+
+def _record_uncapped_recovery_diagnostics(
+    package_root: Path,
+    scene_id: str,
+    duration: float,
+    *,
+    max_chars: int,
+) -> None:
+    runtime = Path(package_root) / ".runtime"
+    path = runtime / "tts-diagnostics.json"
+    try:
+        diagnostics = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return
+
+    if not (runtime / "tts-diagnostics.pre-frame-cap-retry.json").exists():
+        write_tts_diagnostics(
+            runtime,
+            diagnostics,
+            "tts-diagnostics.pre-frame-cap-retry.json",
+        )
+
+    threshold = _validate_speech_rate_warning_wps(
+        (diagnostics.get("config") or {}).get(
+            "warning_wps",
+            DEFAULT_SPEECH_RATE_WARNING_WPS,
+        )
+    )
+    recovery_entry = None
+    for scene in diagnostics.get("scenes", []):
+        if scene.get("scene_id") != scene_id:
+            continue
+        words = int(scene.get("word_count") or 0)
+        wps = words / duration if duration > 0 else 0.0
+        scene["duration_seconds"] = round(duration, 6)
+        scene["words_per_second"] = round(wps, 6)
+        scene["speech_rate_warning"] = wps > threshold
+        scene["generation"] = effective_tts_generation_config(
+            mode="v3turbo",
+            vieneu_url=None,
+            backend="onnx",
+            precision="fp32",
+            frame_cap="off",
+            max_chars=max_chars,
+        )
+        scene["recovery"] = {
+            "reason": "alignment_mismatch_after_capped_fp32",
+            "strategy": "direct_onnx_fp32_frame_cap_off",
+        }
+        recovery_entry = {
+            "scene_id": scene_id,
+            "duration_seconds": round(duration, 6),
+            "words_per_second": round(wps, 6),
+        }
+        break
+
+    scenes = diagnostics.get("scenes", [])
+    total_words = sum(int(item.get("word_count") or 0) for item in scenes)
+    total_seconds = sum(float(item.get("duration_seconds") or 0.0) for item in scenes)
+    total_wps = total_words / total_seconds if total_seconds > 0 else 0.0
+    diagnostics["summary"] = {
+        "word_count": total_words,
+        "duration_seconds": round(total_seconds, 6),
+        "words_per_second": round(total_wps, 6),
+        "speech_rate_warning": (
+            total_wps > threshold
+            or any(bool(item.get("speech_rate_warning")) for item in scenes)
+        ),
+    }
+    if recovery_entry is not None:
+        recoveries = diagnostics.setdefault("frame_cap_recoveries", [])
+        recoveries.append(recovery_entry)
+    write_tts_diagnostics(runtime, diagnostics)
+
+
+def recover_scene_alignment_with_uncapped_tts(
+    package_root: Path,
+    production: dict,
+    scene_id: str,
+    aligner,
+    *,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    log_callback=None,
+) -> tuple[list[dict], float]:
+    """A/B frame-cap only after capped ONNX/fp32 still fails exact alignment."""
+    root = Path(package_root).resolve()
+    scene = next(
+        (item for item in production.get("scenes", []) if item.get("id") == scene_id),
+        None,
+    )
+    if scene is None:
+        raise PipelineError(f"unknown scene for uncapped TTS retry: {scene_id}")
+
+    current = scene_wav_path(root, scene_id)
+    validate_voice(current)
+    evidence_dir = root / ".runtime" / "tts-diagnostics"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    baseline = evidence_dir / f"{scene_id}.frame-cap-on.wav"
+    failed_candidate = evidence_dir / f"{scene_id}.frame-cap-off.failed.wav"
+    shutil.copy2(current, baseline)
+    baseline_duration = _wav_duration_seconds(current)
+
+    _emit_tts_log(
+        f"TTS_FRAME_CAP_RETRY: {scene_id} capped ONNX/fp32 vẫn mismatch; "
+        "thử direct ONNX/fp32 với frame-cap off.",
+        log_callback,
+    )
+    generated = False
+    try:
+        run_tts_batch(
+            root / ".runtime",
+            [{"scene_id": scene_id, "text": scene["voice"]}],
+            tts_root=tts_root,
+            tts_python=tts_python,
+            voice=voice,
+            mode="v3turbo",
+            vieneu_url=None,
+            backend="onnx",
+            precision="fp32",
+            frame_cap="off",
+            max_chars=max_chars,
+        )
+        generated = True
+        validate_voice(current)
+        duration = _wav_duration_seconds(current)
+        aligned = _align_scene_words(aligner, current, scene["voice"])
+    except Exception as exc:
+        if generated and current.is_file():
+            shutil.copy2(current, failed_candidate)
+        shutil.copy2(baseline, current)
+        _emit_tts_log(
+            f"TTS_FRAME_CAP_RETRY_FAILED: {scene_id}; "
+            "uncapped vẫn không align đúng, đã khôi phục WAV capped.",
+            log_callback,
+        )
+        if isinstance(exc, PipelineError) and "ALIGNMENT_MISMATCH" in str(exc):
+            raise PipelineError(
+                "UNCAPPED_RETRY_FAILED: frame-cap off still does not match "
+                f"approved narration for {scene_id}. Baseline={baseline_duration:.3f}s. "
+                f"{exc}"
+            ) from exc
+        raise
+
+    _record_uncapped_recovery_diagnostics(
+        root,
+        scene_id,
+        duration,
+        max_chars=max_chars,
+    )
+    _emit_tts_log(
+        f"TTS_FRAME_CAP_RECOVERED: {scene_id} align PASS; "
+        f"{baseline_duration:.1f}s capped -> {duration:.1f}s uncapped.",
+        log_callback,
+    )
+    return aligned, duration
+
+
 def align_scene_timings(
     production: dict,
     durations: dict[str, float],
     aligner,
     scene_wavs: list[Path] | None = None,
+    mismatch_recovery=None,
 ) -> dict:
-    """Align every scene and build frames from measured audio."""
-    aligned_words = {
-        scene["id"]: _align_scene_words(aligner, path, scene["voice"])
-        for scene, path in zip(production["scenes"], scene_wavs or [])
-    }
+    """Align every scene; optionally recover exact mismatches scene-by-scene."""
+    paths = list(scene_wavs or [])
+    if len(paths) != len(production.get("scenes", [])):
+        raise PipelineError("scene WAV count does not match production scene count.")
+
+    aligned_words: dict[str, list[dict]] = {}
+    for scene, path in zip(production["scenes"], paths):
+        scene_id = scene["id"]
+        try:
+            aligned_words[scene_id] = _align_scene_words(
+                aligner,
+                path,
+                scene["voice"],
+            )
+        except PipelineError as exc:
+            if (
+                mismatch_recovery is None
+                or "ALIGNMENT_MISMATCH" not in str(exc)
+            ):
+                raise
+            recovered = mismatch_recovery(scene, path, aligner, exc)
+            if recovered is None:
+                raise
+            words, seconds = recovered
+            aligned_words[scene_id] = words
+            durations[scene_id] = float(seconds)
+
     return build_timing_from_word_alignment(production, durations, aligned_words)
 
 
@@ -1532,12 +1739,29 @@ def synthesize_voice(
         flush=True,
     )
     aligner = load_word_aligner(align_model, align_device, align_compute_type)
+    def recover_mismatch(scene, _path, active_aligner, _error):
+        scene_id = scene["id"]
+        if not tts_scene_uncapped_retry_eligible(root, scene_id):
+            return None
+        return recover_scene_alignment_with_uncapped_tts(
+            root,
+            production,
+            scene_id,
+            active_aligner,
+            tts_root=tts_root,
+            tts_python=tts_python,
+            voice=voice,
+            max_chars=tts_max_chars,
+        )
+
     timing = align_scene_timings(
         production,
         durations,
         aligner,
         scene_voice_files(root, production),
+        mismatch_recovery=recover_mismatch,
     )
+    concatenate_scene_voices(root, production)
     return build_and_write_timing(root, timing)
 
 def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
