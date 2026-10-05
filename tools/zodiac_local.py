@@ -792,6 +792,124 @@ def _alignment_coverage_gap(
     return False
 
 
+def _expanded_measured_alignment_words(measured_words: list[dict]) -> list[dict]:
+    """Expand compact ASR forms while retaining a measured time span."""
+    expanded: list[dict] = []
+    for item in measured_words:
+        units = _alignment_units(item.get("heard", ""))
+        if not units:
+            continue
+        start_ms = float(item["startMs"])
+        end_ms = float(item["endMs"])
+        width = (end_ms - start_ms) / len(units)
+        for index, unit in enumerate(units):
+            begin = start_ms + width * index
+            end = end_ms if index == len(units) - 1 else start_ms + width * (index + 1)
+            expanded.append(
+                {
+                    "heard": unit,
+                    "startMs": begin,
+                    "endMs": end,
+                    "confidence": item.get("confidence"),
+                }
+            )
+    return expanded
+
+
+def _reconcile_asr_variant(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> list[dict] | None:
+    """Map transcription variants back to approved tokens without hiding omissions.
+
+    Reconciliation is allowed only when every approved token has measured audio
+    coverage. Equal-length substitutions reuse measured word spans; one-to-many
+    ASR splits share the measured replacement span. Missing approved words and
+    standalone ASR insertions are rejected.
+    """
+    expected_units: list[str] = []
+    for token in expected_tokens:
+        units = _alignment_units(token)
+        if len(units) != 1:
+            return None
+        expected_units.append(units[0])
+
+    measured = _expanded_measured_alignment_words(measured_words)
+    heard_units = [str(item["heard"]) for item in measured]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    output: list[dict | None] = [None] * len(expected_tokens)
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        expected_count = i2 - i1
+        heard_count = j2 - j1
+        if tag == "equal":
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_exact",
+                }
+            continue
+
+        if tag != "replace" or expected_count < 1 or heard_count < expected_count:
+            return None
+
+        if expected_count == heard_count:
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_variant",
+                }
+            continue
+
+        span_start = float(measured[j1]["startMs"])
+        span_end = float(measured[j2 - 1]["endMs"])
+        weights = [
+            max(1, len(_normalize_token(expected_tokens[index])))
+            for index in range(i1, i2)
+        ]
+        total_weight = sum(weights)
+        cursor = span_start
+        confidences = [
+            item.get("confidence")
+            for item in measured[j1:j2]
+            if item.get("confidence") is not None
+        ]
+        confidence = min(confidences) if confidences else None
+        for relative, weight in enumerate(weights):
+            fraction = weight / total_weight
+            end = span_end if relative == len(weights) - 1 else cursor + (
+                (span_end - span_start) * fraction
+            )
+            index = i1 + relative
+            output[index] = {
+                "text": expected_tokens[index],
+                "startMs": cursor,
+                "endMs": end,
+                "timestampMs": cursor,
+                "confidence": confidence,
+                "alignment_source": "asr_variant_split",
+            }
+            cursor = end
+
+    if any(item is None for item in output):
+        return None
+    return [item for item in output if item is not None]
+
+
 def load_word_aligner(model_name: str, device: str, compute_type: str):
     require_word_aligner_installed()
     try:
@@ -853,10 +971,14 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
     heard_norm = [_normalize_token(item["heard"]) for item in measured]
     if expected_norm != heard_norm:
         coverage_gap = _alignment_coverage_gap(expected, measured)
+        if not coverage_gap:
+            reconciled = _reconcile_asr_variant(expected, measured)
+            if reconciled is not None:
+                return reconciled
         mismatch_kind = (
             "coverage_gap"
             if coverage_gap
-            else "asr_transcription_variant"
+            else "unreconciled_asr_variant"
         )
         raise AlignmentMismatchError(
             "ALIGNMENT_MISMATCH: word alignment does not match approved narration for "
@@ -875,6 +997,7 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
             "endMs": item["endMs"],
             "timestampMs": item["startMs"],
             "confidence": item["confidence"],
+            "alignment_source": "asr_exact",
         }
         for display, item in zip(expected, measured)
     ]
