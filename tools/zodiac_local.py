@@ -689,36 +689,152 @@ def concatenate_wavs(inputs: list[Path], output: Path) -> None:
                 raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
 
 
-def build_timing_from_durations(production: dict, durations: dict[str, float]) -> dict:
-    """Build the renderer timing contract from measured scene seconds."""
+def _expected_caption_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for raw in text.split():
+        if _normalize_token(raw):
+            tokens.append(raw)
+        elif tokens:
+            tokens[-1] += raw
+    return tokens
+
+
+def _load_word_aligner(model_name: str, device: str, compute_type: str):
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError as exc:
+        raise PipelineError(
+            "Automatic word-level timing requires faster-whisper. "
+            "Install it with: python -m pip install -r requirements-local.txt"
+        ) from exc
+
+    try:
+        return WhisperModel(model_name, device=device, compute_type=compute_type)
+    except Exception as exc:
+        raise PipelineError(
+            f"cannot load faster-whisper model {model_name!r}: {exc}"
+        ) from exc
+
+
+def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict]:
+    expected = _expected_caption_tokens(approved_text)
+    try:
+        segments, _info = model.transcribe(
+            str(audio_path),
+            language="vi",
+            word_timestamps=True,
+            vad_filter=False,
+            condition_on_previous_text=False,
+        )
+        measured = []
+        for segment in segments:
+            for word in segment.words or []:
+                heard = str(word.word).strip()
+                if not _normalize_token(heard):
+                    continue
+                if word.start is None or word.end is None or word.end <= word.start:
+                    raise PipelineError(
+                        f"aligner returned an invalid word timestamp for {audio_path.name}."
+                    )
+                measured.append(
+                    {
+                        "heard": heard,
+                        "startMs": float(word.start) * 1000,
+                        "endMs": float(word.end) * 1000,
+                        "confidence": (
+                            float(word.probability)
+                            if word.probability is not None
+                            else None
+                        ),
+                    }
+                )
+    except PipelineError:
+        raise
+    except Exception as exc:
+        raise PipelineError(
+            f"word alignment failed for {audio_path.name}: {exc}"
+        ) from exc
+
+    expected_norm = [_normalize_token(token) for token in expected]
+    heard_norm = [_normalize_token(item["heard"]) for item in measured]
+    if expected_norm != heard_norm:
+        raise PipelineError(
+            "word alignment does not match approved narration for "
+            f"{audio_path.name}. expected={expected_norm!r}, heard={heard_norm!r}. "
+            "Do not guess timings; correct the TTS/alignment and retry."
+        )
+
+    return [
+        {
+            "text": display,
+            "startMs": item["startMs"],
+            "endMs": item["endMs"],
+            "timestampMs": item["startMs"],
+            "confidence": item["confidence"],
+        }
+        for display, item in zip(expected, measured)
+    ]
+
+
+def build_timing_from_word_alignment(
+    production: dict,
+    durations: dict[str, float],
+    aligned_words: dict[str, list[dict]],
+) -> dict:
+    """Build scene frames from measured WAV duration plus measured word alignment."""
     fps = production["video"]["fps"]
     rows = []
-    elapsed = 0.0
+    elapsed_seconds = 0.0
+
     for scene in production["scenes"]:
         scene_id = scene["id"]
         seconds = durations.get(scene_id)
+        words = aligned_words.get(scene_id)
         if not isinstance(seconds, (int, float)) or seconds <= 0:
-            raise PipelineError(f"missing measured duration for scene {scene_id}.")
-        start = round(elapsed * fps)
-        elapsed += float(seconds)
-        end = max(start + 1, round(elapsed * fps))
+            raise PipelineError(
+                f"missing measured duration for scene {scene_id}."
+            )
+        if not isinstance(words, list) or not words:
+            raise PipelineError(
+                f"missing measured word timing for scene {scene_id}."
+            )
+
+        start_frame = round(elapsed_seconds * fps)
+        offset_ms = elapsed_seconds * 1000
+        elapsed_seconds += float(seconds)
+        end_frame = max(start_frame + 1, round(elapsed_seconds * fps))
+
+        global_words = []
+        for word in words:
+            global_words.append(
+                {
+                    **word,
+                    "startMs": offset_ms + float(word["startMs"]),
+                    "endMs": offset_ms + float(word["endMs"]),
+                    "timestampMs": (
+                        None
+                        if word.get("timestampMs") is None
+                        else offset_ms + float(word["timestampMs"])
+                    ),
+                }
+            )
+
         rows.append(
             {
                 "scene_id": scene_id,
-                "start_frame": start,
-                "duration_frames": end - start,
-                "captions": [
-                    {
-                        "text": scene["voice"],
-                        "startMs": start * 1000 / fps,
-                        "endMs": end * 1000 / fps,
-                        "timestampMs": None,
-                        "confidence": None,
-                    }
-                ],
+                "start_frame": start_frame,
+                "duration_frames": end_frame - start_frame,
+                "captions": global_words,
             }
         )
-    return {"fps": fps, "total_duration_frames": rows[-1]["start_frame"] + rows[-1]["duration_frames"], "scenes": rows}
+
+    return {
+        "fps": fps,
+        "total_duration_frames": (
+            rows[-1]["start_frame"] + rows[-1]["duration_frames"]
+        ),
+        "scenes": rows,
+    }
 
 
 def _tts_python(tts_root: Path, requested: Path | None) -> Path:
