@@ -1,0 +1,21 @@
+{
+  "interface": {
+    "displayName": "Zodiac Video Pipeline",
+    "shortDescription": "Zodiac conversational storytelling + semantic video",
+    "longDescription": "Build Vietnamese Zodiac sticker-story videos with evidence-bounded Direct or Conversational delivery, micro-scenes and narrator reactions, semantic reusable assets, coordinated interaction choreography, and data-only zodiac-job@3 packages pinned to Zodiac Studio runtime.",
+    "developerName": "Personal",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": "Use skills/zodiac-video-pipeline/SKILL.md. Before writing, choose story shape separately from delivery_mode (direct|conversational) using references/narrative-modes.md. Conversational is a delivery layer, not a mandatory section: topic/sign must appear early, riff is short, contradiction must be evidence-bounded, and relational beats must compile into Interaction Choreography. Write .authoring/narrative-plan.json and validate narration with validate-narrative.mjs; never ship .authoring/**. Preserve approved insight/evidence. Keep canonical asset-library-v3 v3.4 and runtime zodiac-remotion@1.15.0 hash 4d52e6ca766649546482a5cdfbf879f4f19c4d3c41c07c7743cccec1a7100ffa. Do not add reusable state assets or make zodiac-job@3 heavier."
+  },
+  "name": "zodiac-video-pipeline",
+  "version": "1.21.0",
+  "description": "Vietnamese Zodiac pipeline with evidence-bounded Direct/Conversational storytelling, semantic sticker assets, interaction choreography, thin runtime-pinned job packages, and publish-ready local outputs.",
+  "author": {
+    "name": "Personal"
+  },
+  "keywords": [],
+  "skills": "./skills"
+}
