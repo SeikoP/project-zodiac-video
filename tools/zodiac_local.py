@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import contextvars
 import difflib
 import json
 import math
@@ -2310,7 +2312,7 @@ def run_tts_batch(
             mode, voice, backend, precision, frame_cap, str(frame_cap_scale), str(max_chars),
         ]
     try:
-        subprocess.run(run_args, cwd=tts_root, check=True)
+        run_managed_subprocess(run_args, cwd=tts_root, check=True)
     except FileNotFoundError as exc:
         raise PipelineError(f"cannot start VieNeu Python: {exc}") from exc
     except subprocess.CalledProcessError as exc:
@@ -2879,6 +2881,73 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
     return production, timing
 
 
+_PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
+
+
+@contextlib.contextmanager
+def observe_subprocesses(observer):
+    """Expose the currently running child process to the Studio worker."""
+    token = _PROCESS_OBSERVER.set(observer)
+    try:
+        yield
+    finally:
+        _PROCESS_OBSERVER.reset(token)
+
+
+def _process_group_kwargs() -> dict:
+    if os.name == "nt":
+        flag = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return {"creationflags": flag} if flag else {}
+    return {"start_new_session": True}
+
+
+def run_managed_subprocess(
+    arguments: list[str],
+    *,
+    cwd: Path | str | None = None,
+    check: bool = False,
+    capture_output: bool = False,
+    text: bool = False,
+) -> subprocess.CompletedProcess:
+    """Run one cancellable child in its own process group."""
+    if any(not isinstance(arg, str) or "\x00" in arg for arg in arguments):
+        raise PipelineError("subprocess arguments must be NUL-free strings.")
+
+    popen_kwargs = _process_group_kwargs()
+    if capture_output:
+        popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(
+        arguments,
+        cwd=cwd,
+        shell=False,
+        text=text,
+        **popen_kwargs,
+    )
+    observer = _PROCESS_OBSERVER.get()
+    if observer is not None:
+        observer(process)
+    try:
+        stdout, stderr = process.communicate()
+    finally:
+        if observer is not None:
+            observer(None)
+
+    result = subprocess.CompletedProcess(
+        arguments,
+        process.returncode,
+        stdout,
+        stderr,
+    )
+    if check and process.returncode:
+        raise subprocess.CalledProcessError(
+            process.returncode,
+            arguments,
+            output=stdout,
+            stderr=stderr,
+        )
+    return result
+
+
 def _npm_executable() -> str:
     raw = shutil.which("npm.cmd" if os.name == "nt" else "npm") or shutil.which("npm")
     if not raw:
@@ -2889,12 +2958,10 @@ def _npm_executable() -> str:
 def _run_npm(args: list[str], cwd: Path) -> None:
     if any(not isinstance(arg, str) or "\x00" in arg for arg in args):
         raise PipelineError("npm arguments must be NUL-free strings.")
-    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-    subprocess.run(
+    run_managed_subprocess(
         [_npm_executable(), *args],
         cwd=cwd,
         check=True,
-        shell=False,
     )
 
 
@@ -2907,12 +2974,11 @@ def _install_renderer(renderer: Path) -> None:
         dev_dependencies = package.get("devDependencies", {})
         if dev_dependencies.get("typescript") != "5.8.0":
             raise
-        probe = subprocess.run(
+        probe = run_managed_subprocess(
             [_npm_executable(), "view", "typescript@5.8", "version", "--json"],
             cwd=renderer,
             capture_output=True,
             text=True,
-            shell=False,
         )
         try:
             versions = json.loads(probe.stdout) if probe.returncode == 0 else []
@@ -3146,11 +3212,9 @@ def _run_ffmpeg(arguments: list[str]) -> None:
     # every user-selected path remains a separate argv element, and no shell
     # parses the values. shlex.escape() is intentionally unnecessary here.
     try:
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        subprocess.run(
+        run_managed_subprocess(
             [ffmpeg, *safe_arguments],
             check=True,
-            shell=False,
         )
     except (OSError, subprocess.CalledProcessError) as exc:
         raise PipelineError(f"FFmpeg failed: {exc}") from exc
