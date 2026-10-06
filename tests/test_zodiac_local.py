@@ -1876,6 +1876,39 @@ class RuntimeTimingTests(unittest.TestCase):
                     5,
                 )
 
+    def test_concatenates_pcm_wavs_with_scene_gap(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            first = root / "a.wav"
+            second = root / "b.wav"
+            write_pcm(first, 0.2, 10)
+            write_pcm(second, 0.3, 10)
+            output = root / "voice.wav"
+            concatenate_wavs([first, second], output, gap_ms=300)
+            with wave.open(str(output), "rb") as wav:
+                self.assertEqual(wav.getnframes(), 8)
+
+    def test_word_timing_can_hold_scene_for_breathing_gap(self):
+        production = {
+            "video": {"fps": 30},
+            "scenes": [
+                {"id": "S01", "voice": "một"},
+                {"id": "S02", "voice": "hai"},
+            ],
+        }
+        timing = build_timing_from_word_alignment(
+            production,
+            {"S01": 1.0, "S02": 1.0},
+            {
+                "S01": [{"text": "một", "startMs": 0, "endMs": 900, "timestampMs": 0}],
+                "S02": [{"text": "hai", "startMs": 0, "endMs": 900, "timestampMs": 0}],
+            },
+            scene_gap_ms=350,
+        )
+        self.assertEqual(timing["scenes"][0]["duration_frames"], 40)
+        self.assertEqual(timing["scenes"][1]["start_frame"], 40)
+        self.assertAlmostEqual(timing["scenes"][1]["captions"][0]["startMs"], 1350.0)
+
 
 class TtsDurationGuardTests(unittest.TestCase):
     def test_flags_fast_vietnamese_speech_before_alignment(self):
@@ -3332,6 +3365,38 @@ class BackgroundMusicTests(unittest.TestCase):
                 "volume=0.650",
                 filter_complex,
             )
+
+
+class PlaybackRateTests(unittest.TestCase):
+    def test_095_playback_slows_video_and_audio_before_music(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            pristine = root / ".runtime" / "pristine" / "zodiac-story.mp4"
+            pristine.parent.mkdir(parents=True)
+            pristine.write_bytes(b"render")
+            out = root / "out"
+            out.mkdir()
+            captured = []
+
+            def fake_ffmpeg(arguments):
+                captured.append(arguments)
+                Path(arguments[-1]).write_bytes(b"slowed")
+
+            with patch("tools.zodiac_local.validate_background_music", return_value=None), patch(
+                "tools.zodiac_local._run_ffmpeg",
+                side_effect=fake_ffmpeg,
+            ), patch(
+                "tools.zodiac_local.artifact_fingerprints",
+                return_value={"mix": "mix-fingerprint"},
+            ):
+                result = mix_background_music_into_render(root, playback_rate=0.95)
+
+            self.assertEqual(result, out / "zodiac-story.mp4")
+            self.assertEqual((out / "zodiac-story.mp4").read_bytes(), b"slowed")
+            self.assertEqual(len(captured), 1)
+            filter_complex = captured[0][captured[0].index("-filter_complex") + 1]
+            self.assertIn("setpts=PTS/0.950000", filter_complex)
+            self.assertIn("atempo=0.950000", filter_complex)
 
 
 if __name__ == "__main__":
