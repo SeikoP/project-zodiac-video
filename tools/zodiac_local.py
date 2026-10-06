@@ -313,9 +313,6 @@ def _load_package_manifest(root: Path) -> dict | None:
         forbidden_names.extend([
             "FINAL_VALIDATION.json",
             "handoff-manifest.json",
-            ".runtime",
-            "out",
-            "voice.wav",
         ])
         required_v4 = (
             "production.json",
@@ -356,6 +353,25 @@ def _load_package_manifest(root: Path) -> dict | None:
             "RUNTIME_HASH_MISMATCH: requested runtime hash does not match bundled renderer source."
         )
     return manifest
+
+
+def _validate_import_boundary(root: Path) -> None:
+    """Reject local-runtime artifacts only at the incoming zodiac-job@4 ZIP boundary."""
+    root = Path(root).resolve()
+    manifest = _load_package_manifest(root)
+    if manifest is None or manifest.get("format") != PACKAGE_FORMAT_V4:
+        return
+    forbidden = [
+        name
+        for name in (".runtime", "out", "voice.wav")
+        if (root / name).exists()
+    ]
+    if forbidden:
+        raise PipelineError(
+            "PACKAGE_V4_BLOAT: incoming zodiac-job@4 must not contain "
+            + ", ".join(forbidden)
+            + "."
+        )
 
 
 def _validate_package_manifest_design(manifest: dict | None, token: dict, source_hash: str) -> None:
@@ -3805,6 +3821,7 @@ def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) 
         extracted = Path(scratch) / "extracted"
         safe_extract_zip(archive_path, extracted)
         package_root = _package_root(extracted)
+        _validate_import_boundary(package_root)
         validate_package(package_root)
         requested = name or (package_root.name if package_root != extracted else archive_path.stem)
         slug = re.sub(r"[^a-zA-Z0-9._-]+", "-", requested.strip()).strip("-.").lower()
