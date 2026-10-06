@@ -1,0 +1,24 @@
+name: Build temporary plugin overlay
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build-overlay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Decode and compress plugin overlay
+        shell: bash
+        run: |
+          base64 -d tmp/zodiac-plugin-1.13.0-overlay.tar.b64 > zodiac-plugin-1.13.0-overlay.tar
+          gzip -n -9 zodiac-plugin-1.13.0-overlay.tar
+      - name: Upload plugin overlay
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-plugin-1.13.0-overlay
+          path: zodiac-plugin-1.13.0-overlay.tar.gz
+          retention-days: 1
