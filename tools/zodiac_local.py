@@ -2563,7 +2563,7 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
             "music": music,
         }
     )
-    bundle = _fingerprint_value(
+    final = _fingerprint_value(
         {
             "mix": mix,
             "cover": cover,
@@ -2583,7 +2583,7 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         "video": video,
         "cover": cover,
         "mix": mix,
-        "bundle": bundle,
+        "final": final,
     }
 
 
@@ -4348,16 +4348,34 @@ def write_local_final_validation(
     return path
 
 
-def package_publish_outputs(
+def _pristine_render_path(package_root: Path) -> Path:
+    root = Path(package_root).resolve()
+    return root / ".runtime" / "pristine" / "zodiac-story.mp4"
+
+
+def _cache_pristine_render(package_root: Path) -> Path:
+    root = Path(package_root).resolve()
+    output = root / "out" / "zodiac-story.mp4"
+    if not output.is_file():
+        raise PipelineError(f"Remotion output is missing: {output}")
+    pristine = _pristine_render_path(root)
+    pristine.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(output, pristine)
+    (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
+    return pristine
+
+
+def finalize_publish_outputs(
     package_root: Path,
     *,
     final_video: Path | None = None,
-) -> Path:
+) -> dict[str, Path]:
+    """Validate final outputs and write the local receipt without creating a ZIP."""
     root = Path(package_root).resolve()
-    fingerprint = artifact_fingerprints(root)["bundle"]
+    fingerprint = artifact_fingerprints(root)["final"]
     with measure_performance_stage(
         root,
-        "publish.bundle",
+        "publish.finalize",
         input_fingerprint=fingerprint,
     ):
         outputs = validate_publish_outputs(
@@ -4365,55 +4383,47 @@ def package_publish_outputs(
             final_video=final_video,
         )
         manifest = _load_package_manifest(root)
-        final_validation = None
         if manifest is not None and manifest.get("format") == PACKAGE_FORMAT_V4:
-            final_validation = write_local_final_validation(
+            write_local_final_validation(
                 root,
                 final_video=outputs["video"],
             )
-        bundle = root / "out" / "zodiac-publish-bundle.zip"
-        with zipfile.ZipFile(
-            bundle,
-            "w",
-            compression=zipfile.ZIP_DEFLATED,
-        ) as archive:
-            archive.write(outputs["video"], "zodiac-story.mp4")
-            archive.write(outputs["cover"], "cover.png")
-            archive.write(outputs["copy"], "publish-copy.txt")
-            archive.write(outputs["metadata"], "publish.json")
-            if final_validation is not None:
-                archive.write(final_validation, "FINAL_VALIDATION.json")
-    print(f"Publish bundle: {bundle}", flush=True)
-    return bundle
+        (root / "out" / "zodiac-publish-bundle.zip").unlink(missing_ok=True)
+        (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
+    print(f"Final outputs ready in {root / 'out'}.", flush=True)
+    return outputs
 
 
 def mix_background_music_into_render(package_root: Path) -> Path:
+    """Create exactly one public final MP4 while keeping a pristine remix cache hidden."""
     root = Path(package_root).resolve()
     config = validate_background_music(root)
     output = root / "out" / "zodiac-story.mp4"
+    pristine = _pristine_render_path(root)
 
-    if not output.is_file():
-        raise PipelineError(
-            f"Remotion output is missing: {output}"
-        )
+    if not pristine.is_file():
+        if not output.is_file():
+            raise PipelineError(f"Remotion output is missing: {output}")
+        pristine.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output, pristine)
+
+    fingerprint = artifact_fingerprints(root)["mix"]
 
     if config is None:
-        fingerprint = artifact_fingerprints(root)["mix"]
         with measure_performance_stage(
             root,
             "audio.mix",
             input_fingerprint=fingerprint,
             cache_hit=True,
         ):
-            pass
+            shutil.copy2(pristine, output)
+            (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
         print(
-            "Final audio: voice/SFX only "
-            "(background music disabled).",
+            "Final audio: voice/SFX only (background music disabled).",
             flush=True,
         )
         return output
 
-    mixed = output.with_name("zodiac-story.with-music.mp4")
     volume = config["background_music_volume"]
     music = config["_path"]
     filter_complex = (
@@ -4421,8 +4431,10 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         "[0:a][music]amix=inputs=2:duration=first:normalize=0:"
         "dropout_transition=0,alimiter=limit=0.95[out]"
     )
+    mixed_tmp = root / ".runtime" / "zodiac-story.mix.tmp.mp4"
+    mixed_tmp.parent.mkdir(parents=True, exist_ok=True)
+    mixed_tmp.unlink(missing_ok=True)
 
-    fingerprint = artifact_fingerprints(root)["mix"]
     with measure_performance_stage(
         root,
         "audio.mix",
@@ -4434,7 +4446,7 @@ def mix_background_music_into_render(package_root: Path) -> Path:
                 "-v",
                 "error",
                 "-i",
-                str(output),
+                str(pristine),
                 "-stream_loop",
                 "-1",
                 "-i",
@@ -4449,22 +4461,24 @@ def mix_background_music_into_render(package_root: Path) -> Path:
                 "copy",
                 "-c:a",
                 "aac",
+                "-b:a",
+                "192k",
                 "-shortest",
-                str(mixed),
+                str(mixed_tmp),
             ]
         )
-
-    if not mixed.is_file():
-        raise PipelineError(
-            "background-music post-mix did not create the final MP4."
-        )
+        if not mixed_tmp.is_file():
+            raise PipelineError(
+                "background-music post-mix did not create the final MP4."
+            )
+        os.replace(mixed_tmp, output)
+        (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
 
     print(
-        f"Final audio: mixed {music.name} @ {volume:.0%} "
-        f"into {mixed.name}.",
+        f"Final audio: mixed {music.name} @ {volume:.0%} into {output.name}.",
         flush=True,
     )
-    return mixed
+    return output
 
 
 def prepare_renderer(
@@ -4630,6 +4644,7 @@ def render_video(package_root: Path) -> None:
         else:
             _run_npm(["run", "render"], renderer)
     validate_publish_outputs(root)
+    _cache_pristine_render(root)
 
 
 def run_renderer(
@@ -4659,7 +4674,7 @@ def run_renderer(
     else:
         render_video(root)
         final_video = mix_background_music_into_render(root)
-        package_publish_outputs(
+        finalize_publish_outputs(
             root,
             final_video=final_video,
         )

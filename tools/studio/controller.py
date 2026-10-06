@@ -79,9 +79,6 @@ class StudioController:
     def video_path(self) -> Path | None:
         if not self.job:
             return None
-        mixed = self.job / "out" / "zodiac-story.with-music.mp4"
-        if mixed.is_file():
-            return mixed
         return self.job / "out" / "zodiac-story.mp4"
 
     @property
@@ -89,12 +86,6 @@ class StudioController:
         if not self.job:
             return None
         return self.job / "out" / "cover.png"
-
-    @property
-    def publish_bundle_path(self) -> Path | None:
-        if not self.job:
-            return None
-        return self.job / "out" / "zodiac-publish-bundle.zip"
 
     @property
     def stored_fingerprint(self) -> str | None:

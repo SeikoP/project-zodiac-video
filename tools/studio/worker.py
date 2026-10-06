@@ -32,7 +32,6 @@ from tools.studio.pipeline import (
     FAILED,
     IMPORT_PACKAGE,
     MIX_MUSIC,
-    PACKAGE_PUBLISH,
     PENDING,
     PipelinePlan,
     PREFLIGHT,
@@ -62,7 +61,7 @@ from tools.zodiac_local import (
     load_word_aligner,
     mix_background_music_into_render,
     observe_subprocesses,
-    package_publish_outputs,
+    finalize_publish_outputs,
     prepare_renderer,
     recover_scene_alignment_with_adaptive_frame_cap,
     render_video,
@@ -99,7 +98,6 @@ STEP_ERROR_CODES = {
     PREPARE_RENDERER: "RENDERER_INVALID",
     RENDER_VIDEO: "RENDER_FAILED",
     MIX_MUSIC: "MIX_FAILED",
-    PACKAGE_PUBLISH: "PUBLISH_BUNDLE_FAILED",
 }
 
 
@@ -439,7 +437,6 @@ class PipelineWorker:
             PREPARE_RENDERER: self._step_prepare_renderer,
             RENDER_VIDEO: self._step_render,
             MIX_MUSIC: self._step_mix,
-            PACKAGE_PUBLISH: self._step_package_publish,
         }[step]
 
         try:
@@ -711,21 +708,12 @@ class PipelineWorker:
         self.log("Đã kết xuất video.")
 
     def _step_mix(self) -> None:
-
-        if self.music is None:
-            self.plan.mark(MIX_MUSIC, SKIPPED, message="Không chọn nhạc nền.")
-            self.log("Không có nhạc nền: bỏ qua bước trộn nhạc.")
-            return
-        mix_background_music_into_render(self.root)
-        self.log("Đã trộn nhạc nền.")
-
-    def _step_package_publish(self) -> None:
-
-        mixed = self.root / "out" / "zodiac-story.with-music.mp4"
-        rendered = self.root / "out" / "zodiac-story.mp4"
-        final_video = mixed if mixed.is_file() else rendered
-        bundle = package_publish_outputs(
+        final_video = mix_background_music_into_render(self.root)
+        finalize_publish_outputs(
             self.root,
             final_video=final_video,
         )
-        self.log(f"Đã đóng gói xuất bản: {bundle.name}.")
+        if self.music is None:
+            self.log("Không có nhạc nền: giữ voice/SFX và hoàn tất video cuối.")
+        else:
+            self.log("Đã trộn nhạc nền và hoàn tất một video cuối.")

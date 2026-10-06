@@ -34,7 +34,7 @@ from tools.zodiac_local import (
     configure_background_music,
     import_package,
     mix_background_music_into_render,
-    package_publish_outputs,
+    finalize_publish_outputs,
     resolve_renderer_root,
     safe_extract_zip,
     validate_background_music,
@@ -1302,15 +1302,15 @@ class ThinPackageV4Tests(unittest.TestCase):
             shutil.copy2(job / "publish" / "publish-copy.txt", out / "publish-copy.txt")
             shutil.copy2(job / "publish" / "publish.json", out / "publish.json")
 
-            bundle = package_publish_outputs(job, final_video=out / "zodiac-story.mp4")
+            outputs = finalize_publish_outputs(job, final_video=out / "zodiac-story.mp4")
             receipt_path = out / "FINAL_VALIDATION.json"
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             self.assertEqual(receipt["status"], "PASS")
             self.assertEqual(receipt["voice"], "PASS")
             self.assertEqual(receipt["measured_timing"], "PASS")
             self.assertEqual(receipt["runtime"]["version"], "1.15.0")
-            with zipfile.ZipFile(bundle) as archive:
-                self.assertIn("FINAL_VALIDATION.json", archive.namelist())
+            self.assertEqual(outputs["video"], out / "zodiac-story.mp4")
+            self.assertFalse((out / "zodiac-publish-bundle.zip").exists())
 
 
 class SemanticRuntimeV315Tests(unittest.TestCase):
@@ -2599,7 +2599,7 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
         self.assertEqual(config["max_chars"], 256)
 
 
-class PublishBundleTests(unittest.TestCase):
+class FinalOutputTests(unittest.TestCase):
     def _rendered_job(self, root: Path) -> Path:
         job = write_package(root)
         out = job / "out"
@@ -2623,30 +2623,24 @@ class PublishBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(PipelineError, "cover.png"):
                 validate_publish_outputs(job)
 
-    def test_publish_bundle_contains_video_cover_copy_and_metadata(self):
+    def test_finalize_keeps_loose_outputs_and_creates_no_publish_zip(self):
         with tempfile.TemporaryDirectory() as temp:
             job = self._rendered_job(Path(temp))
-            mixed = job / "out/zodiac-story.with-music.mp4"
-            mixed.write_bytes(b"mixed")
-            bundle = package_publish_outputs(
+            out = job / "out"
+            stale_bundle = out / "zodiac-publish-bundle.zip"
+            stale_mixed = out / "zodiac-story.with-music.mp4"
+            stale_bundle.write_bytes(b"old")
+            stale_mixed.write_bytes(b"old")
+            outputs = finalize_publish_outputs(
                 job,
-                final_video=mixed,
+                final_video=out / "zodiac-story.mp4",
             )
-            self.assertTrue(bundle.is_file())
-            with zipfile.ZipFile(bundle) as archive:
-                self.assertEqual(
-                    set(archive.namelist()),
-                    {
-                        "zodiac-story.mp4",
-                        "cover.png",
-                        "publish-copy.txt",
-                        "publish.json",
-                    },
-                )
-                self.assertEqual(
-                    archive.read("zodiac-story.mp4"),
-                    b"mixed",
-                )
+            self.assertEqual(outputs["video"], out / "zodiac-story.mp4")
+            self.assertTrue((out / "cover.png").is_file())
+            self.assertTrue((out / "publish-copy.txt").is_file())
+            self.assertTrue((out / "publish.json").is_file())
+            self.assertFalse(stale_bundle.exists())
+            self.assertFalse(stale_mixed.exists())
 
 
 class RendererPrepareCacheTests(unittest.TestCase):
@@ -2906,7 +2900,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["publish_copy"], after["publish_copy"])
             self.assertNotEqual(before["publish"], after["publish"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_cover_hook_change_dirties_cover_not_video(self):
         from tools.zodiac_local import artifact_fingerprints
@@ -2927,7 +2921,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertNotEqual(before["cover_spec"], after["cover_spec"])
             self.assertNotEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["publish"], after["publish"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_runtime_timing_change_dirties_video_mix_but_not_cover(self):
         from tools.zodiac_local import artifact_fingerprints
@@ -2955,7 +2949,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertNotEqual(before["mix"], after["mix"])
             self.assertEqual(before["cover"], after["cover"])
 
-    def test_music_change_dirties_mix_and_bundle_not_video_or_cover(self):
+    def test_music_change_dirties_mix_and_final_not_video_or_cover(self):
         from tools.zodiac_local import artifact_fingerprints
 
         with tempfile.TemporaryDirectory() as temp:
@@ -2983,7 +2977,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["music"], after["music"])
             self.assertNotEqual(before["mix"], after["mix"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_stage_metrics_are_persisted_for_benchmarking(self):
         from tools.zodiac_local import measure_performance_stage
@@ -3168,16 +3162,22 @@ class BackgroundMusicTests(unittest.TestCase):
                     job
                 )
 
-            mixed = job / "out" / "zodiac-story.with-music.mp4"
-            self.assertEqual(result, mixed)
+            pristine = job / ".runtime" / "pristine" / "zodiac-story.mp4"
+            self.assertEqual(result, out)
             self.assertEqual(
-                mixed.read_bytes(),
+                out.read_bytes(),
                 b"mixed",
             )
             self.assertEqual(
-                out.read_bytes(),
+                pristine.read_bytes(),
                 b"video",
-                "the pristine render must survive so remixing cannot stack audio",
+                "the pristine render must survive in hidden runtime cache for idempotent remixing",
+            )
+            self.assertFalse((job / "out" / "zodiac-story.with-music.mp4").exists())
+            self.assertIn("-b:a", captured["arguments"])
+            self.assertEqual(
+                captured["arguments"][captured["arguments"].index("-b:a") + 1],
+                "192k",
             )
             filter_complex = captured["arguments"][
                 captured["arguments"].index(
