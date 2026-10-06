@@ -85,6 +85,18 @@ class StudioController:
         return self.job / "out" / "zodiac-story.mp4"
 
     @property
+    def cover_path(self) -> Path | None:
+        if not self.job:
+            return None
+        return self.job / "out" / "cover.png"
+
+    @property
+    def publish_bundle_path(self) -> Path | None:
+        if not self.job:
+            return None
+        return self.job / "out" / "zodiac-publish-bundle.zip"
+
+    @property
     def stored_fingerprint(self) -> str | None:
         if self.plan.fingerprint:
             return self.plan.fingerprint

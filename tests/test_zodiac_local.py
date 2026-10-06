@@ -22,6 +22,7 @@ from tools.zodiac_local import (
     build_parser,
     build_timing_from_word_alignment,
     build_tts_diagnostics,
+    canonical_narration_text,
     effective_tts_generation_config,
     generate_scene_voices,
     recover_scene_alignment_with_adaptive_frame_cap,
@@ -181,12 +182,12 @@ def package_files():
         },
         "caption_style": {
             "font_family": "Be Vietnam Pro",
-            "font_size_px": 58,
-            "min_font_size_px": 42,
+            "font_size_px": 46,
+            "min_font_size_px": 34,
             "font_weight": 500,
             "color": "#252A2E",
             "highlight_color": "#E36C54",
-            "background": "#FFFDF8",
+            "background": "transparent",
             "safe_area": token["safe_zone"],
             "max_lines": 2,
         },
@@ -291,6 +292,15 @@ def package_files():
         "design.md": design_markdown(token),
         "narration.txt": "Xin chào mọi người.\n",
         "production.json": json.dumps(production, ensure_ascii=False),
+        "handoff-manifest.json": json.dumps(
+            {
+                "package_id": "zodiac-test",
+                "plugin_version": "test",
+                "status": ["LOCAL_RUNTIME_PENDING"],
+                "render_ready": False,
+            },
+            ensure_ascii=False,
+        ),
         "assets/characters/lead-neutral.svg": svg,
         "assets/characters/lead-active.svg": svg,
         "renderer/package.json": json.dumps(renderer_package),
@@ -546,6 +556,73 @@ class SafeExtractionTests(unittest.TestCase):
                 "COVER_IDENTITY_MISSING",
             ):
                 validate_publish_contract(job)
+
+    def test_canonical_narration_serializer_has_no_extra_scene_separator(self):
+        production = {
+            "scenes": [
+                {"voice": "Đoạn A.\n\nNghỉ trong scene."},
+                {"voice": "Đoạn B."},
+            ]
+        }
+        self.assertEqual(
+            canonical_narration_text(production),
+            "Đoạn A.\n\nNghỉ trong scene.\nĐoạn B.",
+        )
+
+    def test_rejects_extra_blank_line_between_scene_voice_blocks(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            second = json.loads(json.dumps(production["scenes"][0]))
+            second["id"] = "S02"
+            second["voice"] = "Cảnh thứ hai."
+            second["events"][0]["id"] = "S02-E01"
+            production["scenes"].append(second)
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            (job / "narration.txt").write_text(
+                "Xin chào mọi người.\n\nCảnh thứ hai.\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "narration.txt must exactly match",
+            ):
+                validate_package(job)
+
+    def test_structured_handoff_manifest_replaces_legacy_readme_marker(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "README.md").write_text(
+                "# Video package\n\nStructured handoff only.\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_rejects_missing_handoff_boundary_when_legacy_marker_is_absent(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "handoff-manifest.json").unlink()
+            (job / "README.md").write_text("# Video package\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                PipelineError,
+                "handoff",
+            ):
+                validate_package(job)
+
+    def test_rejects_caption_style_drift_from_design_token(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["caption_style"]["font_size_px"] = 58
+            production["caption_style"]["background"] = "#FFFDF8"
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(
+                PipelineError,
+                "caption_style.*design.md",
+            ):
+                validate_package(job)
 
     def test_rejects_v1_contract(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -38,11 +38,19 @@ class OutputPanel(tk.Frame):
 
     def refresh(self) -> None:
         video = self.controller.video_path
-        if video is not None and video.is_file():
-            self.status.configure(text=f"{video.name}  ·  {video.stat().st_size / 1024 / 1024:.1f} MB")
-            self.video_button.configure(state="normal")
+        bundle = self.controller.publish_bundle_path
+        if bundle is not None and bundle.is_file():
+            self.status.configure(
+                text=f"Gói xuất bản sẵn sàng · {bundle.name} · {bundle.stat().st_size / 1024 / 1024:.1f} MB"
+            )
+        elif video is not None and video.is_file():
+            self.status.configure(
+                text=f"{video.name}  ·  {video.stat().st_size / 1024 / 1024:.1f} MB"
+            )
         else:
             self.status.configure(text=NO_VIDEO)
-            self.video_button.configure(state="disabled")
+        self.video_button.configure(
+            state="normal" if video is not None and video.is_file() else "disabled"
+        )
         ready = self.controller.job is not None and self.controller.job.exists()
         self.folder_button.configure(state="normal" if ready else "disabled")

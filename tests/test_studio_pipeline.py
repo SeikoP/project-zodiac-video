@@ -24,6 +24,8 @@ from tools.studio.pipeline import (
     PENDING,
     PREPARE_RENDERER,
     RENDER_VIDEO,
+    MIX_MUSIC,
+    PACKAGE_PUBLISH,
     SKIPPED,
     STEP_ORDER,
     VALIDATE_RUNTIME,
@@ -168,6 +170,11 @@ class WorkerHarness(unittest.TestCase):
 
     def fake_mix(self, package_root):
         self.render_calls.append("mix")
+        return Path(package_root) / "out" / "zodiac-story.with-music.mp4"
+
+    def fake_package(self, package_root, **kwargs):
+        self.render_calls.append("package")
+        return Path(package_root) / "out" / "zodiac-publish-bundle.zip"
 
     def ready_preflight(self, *_args, **_kwargs):
         from tools.studio.preflight import Check
@@ -184,6 +191,7 @@ class WorkerHarness(unittest.TestCase):
         self.stub("tools.studio.worker.prepare_renderer", self.fake_prepare)
         self.stub("tools.studio.worker.render_video", self.fake_render)
         self.stub("tools.studio.worker.mix_background_music_into_render", self.fake_mix)
+        self.stub("tools.studio.worker.package_publish_outputs", self.fake_package)
         self.stub("tools.studio.worker.load_word_aligner", lambda *a, **k: object())
         self.stub("tools.studio.worker.require_word_aligner_installed", lambda: None)
 
@@ -372,9 +380,20 @@ class RenderResumeTests(WorkerHarness):
     def test_completed_run_without_music_has_nothing_to_resume(self):
         """A SKIPPED step is finished work; resume must reach a terminal state."""
         plan = self.make_worker().run_to_completion()
-        self.assertEqual(plan.status("MIX_MUSIC"), SKIPPED)
+        self.assertEqual(plan.status(MIX_MUSIC), SKIPPED)
+        self.assertEqual(plan.status(PACKAGE_PUBLISH), DONE)
+        self.assertIn("package", self.render_calls)
         self.assertIsNone(plan.continue_from())
         self.assertFalse(plan.can_resume)
+
+    def test_publish_bundle_runs_after_render_even_without_music(self):
+        self.make_worker().run_to_completion()
+        self.assertIn("render", self.render_calls)
+        self.assertIn("package", self.render_calls)
+        self.assertLess(
+            self.render_calls.index("render"),
+            self.render_calls.index("package"),
+        )
 
     def test_failed_step_still_wins_over_a_skipped_tail(self):
         plan = self.make_worker().run_to_completion()
@@ -385,8 +404,9 @@ class RenderResumeTests(WorkerHarness):
     def test_music_change_reopens_only_the_skipped_step(self):
         plan = self.make_worker().run_to_completion()
         plan.apply_change("music")
-        self.assertEqual(plan.status("MIX_MUSIC"), PENDING)
-        self.assertEqual(plan.continue_from(), "MIX_MUSIC")
+        self.assertEqual(plan.status(MIX_MUSIC), PENDING)
+        self.assertEqual(plan.status(PACKAGE_PUBLISH), PENDING)
+        self.assertEqual(plan.continue_from(), MIX_MUSIC)
 
     def test_render_failure_preserves_voice_and_timing(self):
         self.fail_render = True
@@ -415,7 +435,8 @@ class RenderResumeTests(WorkerHarness):
         plan = JobStateStore(self.job).open()
         plan.apply_change("music")
         self.assertEqual(plan.status(RENDER_VIDEO), DONE)
-        self.assertEqual(plan.status("MIX_MUSIC"), PENDING)
+        self.assertEqual(plan.status(MIX_MUSIC), PENDING)
+        self.assertEqual(plan.status(PACKAGE_PUBLISH), PENDING)
 
 
 class CancelTests(WorkerHarness):
@@ -509,6 +530,17 @@ class ControllerTests(WorkerHarness):
         controller = StudioController(workspace=self.root / "ws")
         controller.use_job(self.job)
         return controller
+
+    def test_controller_exposes_cover_and_publish_bundle_paths(self):
+        controller = self._controller()
+        self.assertEqual(
+            controller.cover_path,
+            self.job / "out" / "cover.png",
+        )
+        self.assertEqual(
+            controller.publish_bundle_path,
+            self.job / "out" / "zodiac-publish-bundle.zip",
+        )
 
     def test_pipeline_rows_are_vietnamese_and_ordered(self):
         from tools.studio.messages_vi import STEP_NAMES_VI

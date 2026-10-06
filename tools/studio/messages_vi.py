@@ -8,6 +8,7 @@ from tools.studio.pipeline import (
     CONCAT_VOICE,
     IMPORT_PACKAGE,
     MIX_MUSIC,
+    PACKAGE_PUBLISH,
     PREFLIGHT,
     PREPARE_RENDERER,
     RENDER_VIDEO,
@@ -28,6 +29,7 @@ STEP_NAMES_VI = {
     PREPARE_RENDERER: "Chuẩn bị renderer",
     RENDER_VIDEO: "Kết xuất video",
     MIX_MUSIC: "Trộn nhạc nền",
+    PACKAGE_PUBLISH: "Đóng gói xuất bản",
 }
 
 SECTION_PROJECT = "DỰ ÁN"
@@ -111,6 +113,7 @@ ERROR_TITLES = {
     "RENDERER_INVALID": "Renderer không hợp lệ",
     "RENDER_FAILED": "Không kết xuất được video",
     "MIX_FAILED": "Không trộn được nhạc nền",
+    "PUBLISH_BUNDLE_FAILED": "Không đóng được gói xuất bản",
     "CANCELLED_BY_USER": "Đã dừng theo yêu cầu",
     "SUBPROCESS_FAILED": "Lệnh thất bại",
 }
@@ -125,6 +128,7 @@ ERROR_TITLES_BY_STEP = {
     PREPARE_RENDERER: ERROR_TITLES["RENDERER_INVALID"],
     RENDER_VIDEO: ERROR_TITLES["RENDER_FAILED"],
     MIX_MUSIC: ERROR_TITLES["MIX_FAILED"],
+    PACKAGE_PUBLISH: ERROR_TITLES["PUBLISH_BUNDLE_FAILED"],
 }
 
 PIPELINE_DONE_MESSAGE = "Đã hoàn tất toàn bộ quy trình."

@@ -22,6 +22,7 @@ from tools.studio.pipeline import (
     PREPARE_RENDERER,
     RENDER_VIDEO,
     MIX_MUSIC,
+    PACKAGE_PUBLISH,
 )
 from tools.studio.preflight import PreflightChecker
 
@@ -151,7 +152,7 @@ class JobStateTests(unittest.TestCase):
     def test_save_and_load_round_trip(self):
         self.store.save(self.plan)
         loaded = self.store.load()
-        self.assertEqual(loaded["version"], 1)
+        self.assertEqual(loaded["version"], 2)
         self.assertEqual(loaded["job"], "zodiac-test")
         self.assertEqual(loaded["steps"][IMPORT_PACKAGE]["status"], "DONE")
         self.assertEqual(loaded["steps"][IMPORT_PACKAGE]["fingerprint"], "abc")
@@ -262,6 +263,7 @@ class PipelinePlanTests(unittest.TestCase):
                 PREPARE_RENDERER,
                 RENDER_VIDEO,
                 MIX_MUSIC,
+                PACKAGE_PUBLISH,
             ),
         )
 
@@ -303,6 +305,7 @@ class PipelinePlanTests(unittest.TestCase):
         self.assertEqual(plan.status(ALIGN_TIMING), "DONE")
         self.assertEqual(plan.status(RENDER_VIDEO), "PENDING")
         self.assertEqual(plan.status(MIX_MUSIC), "PENDING")
+        self.assertEqual(plan.status(PACKAGE_PUBLISH), "PENDING")
 
     def test_music_edit_only_invalidates_the_mix(self):
         plan = PipelinePlan(job="j")
@@ -311,6 +314,7 @@ class PipelinePlanTests(unittest.TestCase):
         plan.apply_change("music")
         self.assertEqual(plan.status(RENDER_VIDEO), "DONE")
         self.assertEqual(plan.status(MIX_MUSIC), "PENDING")
+        self.assertEqual(plan.status(PACKAGE_PUBLISH), "PENDING")
 
     def test_voice_change_invalidates_the_whole_voice_chain(self):
         plan = PipelinePlan(job="j")
@@ -335,7 +339,7 @@ class PipelinePlanTests(unittest.TestCase):
         plan = PipelinePlan(job="j")
         payload = plan.to_dict()
         self.assertEqual(payload["job"], "j")
-        self.assertEqual(payload["version"], 1)
+        self.assertEqual(payload["version"], 2)
         self.assertEqual(set(payload["steps"]), set(STEP_ORDER))
         for step in STEP_ORDER:
             self.assertTrue(STEP_NAMES_VI[step])
