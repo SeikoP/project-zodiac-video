@@ -1215,6 +1215,29 @@ class ThinPackageV4Tests(unittest.TestCase):
                 with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT"):
                     validate_package(job)
 
+    def test_v4_rejects_runtime_outputs_and_missing_publish_files(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            (job / "voice.wav").write_bytes(b"runtime")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT"):
+                validate_package(job)
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            (job / "publish" / "publish.json").unlink()
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_MANIFEST_INVALID.*publish/publish.json"):
+                validate_package(job)
+
+    def test_v4_malformed_runtime_reference_fails_as_manifest_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "package-manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["runtime"] = None
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_MANIFEST_INVALID"):
+                validate_package(job)
+
     def test_v4_still_validates_asset_lineage_and_semantic_mechanism(self):
         with tempfile.TemporaryDirectory() as temp:
             job = write_v4_package(Path(temp))
