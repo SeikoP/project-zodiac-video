@@ -124,6 +124,7 @@ def style_token():
 
 RUNTIME_V3_HASH = "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8"
 RUNTIME_V315_HASH = "4d52e6ca766649546482a5cdfbf879f4f19c4d3c41c07c7743cccec1a7100ffa"
+RUNTIME_V316_HASH = "728a98743563c19b8c6fead718fc817782965b5c3bd30fefe257135c38f6f754"
 
 
 def v3_style_token():
@@ -698,6 +699,43 @@ def v4_package_files():
 def write_v4_package(root: Path) -> Path:
     job = root / "zodiac-v4-test"
     for name, content in v4_package_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
+
+def performance_v316_files():
+    files = v4_package_files()
+    production = json.loads(files["production.json"])
+    for scene in production["scenes"]:
+        scene["captions"] = {
+            "source": "voice",
+            "segmentation": "semantic",
+            "max_lines": 2,
+        }
+        for event in scene["events"]:
+            event["performance"] = {
+                "intent": "make the visible state change readable before it lands",
+                "phase": "action",
+                "energy": 0.45,
+                "anticipation_frames": 4,
+                "hold_frames": 8,
+                "settle_frames": 6,
+            }
+    files["production.json"] = json.dumps(production, ensure_ascii=False)
+    manifest = json.loads(files["package-manifest.json"])
+    manifest["runtime"] = {
+        "id": "zodiac-remotion",
+        "version": "1.16.0",
+    }
+    manifest["producer"]["version"] = "1.30.0"
+    files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
+    return files
+
+
+def write_performance_v316_package(root: Path) -> Path:
+    job = root / "zodiac-v316-performance"
+    for name, content in performance_v316_files().items():
         target = job / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
