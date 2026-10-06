@@ -287,6 +287,7 @@ def package_files():
             "    <Audio src={staticFile(\"voice.wav\")} />{scene.entities.map(() => null)}{scene.events.map(() => null)}\n"
             "  </Sequence>;\n"
             "});\n"
+            "const captionStyle = {width: \"fit-content\", maxWidth: area.width, left: \"50%\", transform: \"translateX(-50%)\"};\n"
         ),
         "renderer/src/PrimitiveSvg.tsx": "export const PrimitiveSvg = () => null;\n",
         "renderer/src/types.ts": (
@@ -583,6 +584,18 @@ class SafeExtractionTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 PipelineError,
                 "PACKAGE_RENDERER_STALE.*ZodiacComposition.tsx",
+            ):
+                validate_package(job)
+
+    def test_rejects_renderer_without_compact_caption_box(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            source = (job / "renderer/src/ZodiacComposition.tsx").read_text(encoding="utf-8")
+            source = source.replace('width: "fit-content"', 'width: area.width')
+            (job / "renderer/src/ZodiacComposition.tsx").write_text(source, encoding="utf-8")
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*compact caption",
             ):
                 validate_package(job)
 
