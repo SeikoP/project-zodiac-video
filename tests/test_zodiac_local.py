@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import stat
 import tempfile
 import unittest
@@ -33,6 +34,7 @@ from tools.zodiac_local import (
     safe_extract_zip,
     validate_background_music,
     validate_package,
+    validate_publish_contract,
     validate_publish_outputs,
     validate_timing,
 )
@@ -499,7 +501,16 @@ class SafeExtractionTests(unittest.TestCase):
                 PipelineError,
                 "publish-copy.txt",
             ):
-                validate_package(job)
+                validate_publish_contract(job)
+
+    def test_creative_validation_allows_publish_pending(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            shutil.rmtree(job / "publish")
+            self.assertEqual(
+                validate_package(job)["version"],
+                "2.0",
+            )
 
     def test_rejects_missing_cover_identity(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -515,7 +526,7 @@ class SafeExtractionTests(unittest.TestCase):
                 PipelineError,
                 "COVER_IDENTITY_MISSING",
             ):
-                validate_package(job)
+                validate_publish_contract(job)
 
     def test_rejects_v1_contract(self):
         with tempfile.TemporaryDirectory() as temp:
