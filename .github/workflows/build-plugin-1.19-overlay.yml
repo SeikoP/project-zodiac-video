@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate staged asset library
-        run: node tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-library.mjs
-      - name: Syntax-check interaction validator
-        run: node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.mjs
+      - name: Syntax-check staged validators
+        run: |
+          node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-library.mjs
+          node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.mjs
       - name: Build overlay archive
         run: tar -C tmp/plugin-1.19-overlay-root -czf plugin-1.19-overlay.tar.gz .
       - uses: actions/upload-artifact@v4
