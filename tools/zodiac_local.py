@@ -69,7 +69,7 @@ EXPECTED_DEV_DEPENDENCIES = {
     "@types/react": "19.0.0",
     "typescript": "5.8.0",
 }
-EXPECTED_SCRIPTS = {
+LEGACY_EXPECTED_SCRIPTS = {
     "prepare:runtime": "node scripts/render.mjs --prepare-only",
     "studio": "npm run prepare:runtime && remotion studio src/index.ts --props=../.runtime/render-props.json",
     "render": "node scripts/render.mjs",
@@ -77,6 +77,19 @@ EXPECTED_SCRIPTS = {
     "typecheck": "tsc --noEmit",
     "compile:style": "node scripts/compile-style-token.mjs",
 }
+EXPECTED_SCRIPTS = {
+    "prepare:runtime": "node scripts/render.mjs --prepare-only",
+    "studio": "node scripts/render.mjs --studio",
+    "render": "node scripts/render.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "compile:style": "node scripts/compile-style-token.mjs",
+}
+PACKAGE_FORMAT_V3 = "zodiac-job@3"
+RUNTIME_FORMAT = "zodiac-runtime@1"
+RUNTIME_ID = "zodiac-remotion"
+RUNTIME_VERSION = "1.14.0"
+BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 DEFAULT_TTS_VOICE = "Hải Đăng"
@@ -197,6 +210,166 @@ def _package_root(extracted: Path) -> Path:
     if len(candidates) != 1:
         raise PipelineError("ZIP must contain exactly one production.json.")
     return candidates[0].parent
+
+
+def _renderer_tree_sha256(renderer_root: Path) -> str:
+    """Hash immutable renderer source/config; ignore installed/generated runtime state."""
+    import hashlib
+
+    renderer_root = Path(renderer_root).resolve()
+    digest = hashlib.sha256()
+    ignored_dirs = {"node_modules", ".cache", "generated"}
+    ignored_files = {"package-lock.json"}
+    files = [
+        path
+        for path in renderer_root.rglob("*")
+        if path.is_file()
+        and path.name not in ignored_files
+        and not any(part in ignored_dirs for part in path.relative_to(renderer_root).parts)
+    ]
+    for file_path in sorted(files, key=lambda item: item.relative_to(renderer_root).as_posix()):
+        relative = file_path.relative_to(renderer_root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(file_path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _bundled_runtime_root(runtime_ref: dict) -> Path:
+    runtime_id = runtime_ref.get("id")
+    version = runtime_ref.get("version")
+    if not isinstance(runtime_id, str) or not isinstance(version, str):
+        raise PipelineError("PACKAGE_MANIFEST_INVALID: runtime id/version must be strings.")
+    root = BUNDLED_RUNTIMES / runtime_id / version
+    if not root.is_dir():
+        raise PipelineError(
+            f"RUNTIME_MISSING: {runtime_id}@{version} is not bundled with this Zodiac Studio."
+        )
+    return root
+
+
+def _load_package_manifest(root: Path) -> dict | None:
+    """Load/validate thin-package metadata; absence means legacy v2 mode."""
+    root = Path(root).resolve()
+    path = root / "package-manifest.json"
+    if not path.is_file():
+        return None
+    manifest = _load_json(path, "package-manifest.json")
+    if manifest.get("format") != PACKAGE_FORMAT_V3 or manifest.get("production_contract") != "2.0":
+        raise PipelineError(
+            "PACKAGE_MANIFEST_INVALID: expected format zodiac-job@3 and production_contract 2.0."
+        )
+    runtime_ref = manifest.get("runtime")
+    design_ref = manifest.get("design")
+    producer = manifest.get("producer")
+    if (
+        not isinstance(runtime_ref, dict)
+        or not all(isinstance(runtime_ref.get(key), str) and runtime_ref[key].strip() for key in ("id", "version", "sha256"))
+        or not re.fullmatch(r"[0-9a-f]{64}", runtime_ref["sha256"])
+        or not isinstance(design_ref, dict)
+        or not all(isinstance(design_ref.get(key), str) and design_ref[key].strip() for key in ("id", "version", "sha256"))
+        or not re.fullmatch(r"[0-9a-f]{64}", design_ref["sha256"])
+        or not isinstance(producer, dict)
+        or producer.get("plugin") != "zodiac-video-pipeline"
+        or not isinstance(producer.get("version"), str)
+        or not producer["version"].strip()
+    ):
+        raise PipelineError("PACKAGE_MANIFEST_INVALID: runtime/design/producer references are incomplete.")
+
+    forbidden = [
+        name for name in ("renderer", "library", "references", "node_modules")
+        if (root / name).exists()
+    ]
+    if forbidden:
+        raise PipelineError(
+            "PACKAGE_V3_BLOAT: thin packages must not contain " + ", ".join(forbidden) + "."
+        )
+
+    bundled = _bundled_runtime_root(runtime_ref)
+    runtime_manifest = _load_json(bundled / "runtime-manifest.json", "runtime-manifest.json")
+    if (
+        runtime_manifest.get("format") != RUNTIME_FORMAT
+        or runtime_manifest.get("id") != runtime_ref["id"]
+        or runtime_manifest.get("version") != runtime_ref["version"]
+    ):
+        raise PipelineError("RUNTIME_HASH_MISMATCH: bundled runtime metadata does not match package reference.")
+    actual_hash = _renderer_tree_sha256(bundled / "renderer")
+    if runtime_manifest.get("sha256") != actual_hash or runtime_ref["sha256"] != actual_hash:
+        raise PipelineError(
+            "RUNTIME_HASH_MISMATCH: requested runtime hash does not match bundled renderer source."
+        )
+    return manifest
+
+
+def _validate_package_manifest_design(manifest: dict | None, token: dict, source_hash: str) -> None:
+    if manifest is None:
+        return
+    design = manifest["design"]
+    if (
+        design.get("id") != token.get("id")
+        or design.get("version") != str(token.get("version"))
+        or design.get("sha256") != source_hash
+    ):
+        raise PipelineError(
+            "PACKAGE_MANIFEST_INVALID: design reference must match design.md and compiled source_hash."
+        )
+
+
+def _workspace_root_for_job(root: Path) -> Path:
+    root = Path(root).resolve()
+    if root.parent.name == "jobs":
+        return root.parent.parent
+    return root.parent / ".zodiac-work"
+
+
+def _verify_cached_runtime(runtime_root: Path, runtime_ref: dict) -> None:
+    manifest = _load_json(runtime_root / "runtime-manifest.json", "cached runtime-manifest.json")
+    actual_hash = _renderer_tree_sha256(runtime_root / "renderer")
+    if (
+        manifest.get("id") != runtime_ref.get("id")
+        or manifest.get("version") != runtime_ref.get("version")
+        or manifest.get("sha256") != runtime_ref.get("sha256")
+        or actual_hash != runtime_ref.get("sha256")
+    ):
+        raise PipelineError(
+            "RUNTIME_HASH_MISMATCH: cached runtime differs from the exact package runtime reference."
+        )
+
+
+def resolve_renderer_root(package_root: Path, *, materialize: bool = True) -> Path:
+    """Return legacy package renderer or exact shared v3 runtime renderer."""
+    root = Path(package_root).resolve()
+    manifest = _load_package_manifest(root)
+    if manifest is None:
+        return root / "renderer"
+    runtime_ref = manifest["runtime"]
+    bundled = _bundled_runtime_root(runtime_ref)
+    if not materialize:
+        return bundled / "renderer"
+
+    workspace = _workspace_root_for_job(root)
+    runtime_root = workspace / "runtimes" / runtime_ref["id"] / runtime_ref["version"]
+    if not runtime_root.exists():
+        runtime_root.parent.mkdir(parents=True, exist_ok=True)
+        scratch = runtime_root.with_name(runtime_root.name + f".tmp-{os.getpid()}")
+        if scratch.exists():
+            shutil.rmtree(scratch)
+        shutil.copytree(bundled, scratch)
+        try:
+            os.replace(scratch, runtime_root)
+        except OSError:
+            if not runtime_root.exists():
+                raise
+            shutil.rmtree(scratch, ignore_errors=True)
+    _verify_cached_runtime(runtime_root, runtime_ref)
+    return runtime_root / "renderer"
+
+
+def _renderer_environment(package_root: Path) -> dict[str, str]:
+    env = dict(os.environ)
+    env["ZODIAC_PACKAGE_ROOT"] = str(Path(package_root).resolve())
+    return env
 
 
 def _validate_handoff_boundary(root: Path) -> None:
@@ -721,6 +894,54 @@ def _validate_publish_document(root: Path, production: dict) -> dict:
     return publish
 
 
+def _validate_renderer_package_contract(
+    renderer_root: Path,
+    *,
+    expected_scripts: dict,
+    accepted_dependencies: tuple[dict, ...],
+    require_isolated_layout: bool = False,
+    require_overlay_layout: bool = False,
+) -> None:
+    renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
+    if renderer.get("name") != "zodiac-remotion-renderer":
+        raise PipelineError("renderer/package.json is not the Zodiac Remotion renderer scaffold.")
+    if renderer.get("dependencies") not in accepted_dependencies:
+        raise PipelineError("renderer dependencies do not match the pinned Zodiac renderer contract.")
+    dev_dependencies = renderer.get("devDependencies")
+    expected_dev = dict(EXPECTED_DEV_DEPENDENCIES)
+    if (
+        isinstance(dev_dependencies, dict)
+        and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS
+    ):
+        expected_dev["typescript"] = dev_dependencies["typescript"]
+    if dev_dependencies != expected_dev:
+        raise PipelineError("renderer development dependencies do not match the Zodiac renderer contract.")
+    if renderer.get("scripts") != expected_scripts:
+        raise PipelineError("renderer scripts do not match the Zodiac renderer contract.")
+
+    required_renderer = (
+        "src/index.ts",
+        "src/Root.tsx",
+        "src/ZodiacComposition.tsx",
+        "src/PrimitiveSvg.tsx",
+        "src/types.ts",
+        "src/runtime-contract.mjs",
+        "scripts/render.mjs",
+        "scripts/generate-sfx.mjs",
+        "scripts/style-token.mjs",
+        "scripts/compile-style-token.mjs",
+        "schemas/production.schema.json",
+    )
+    for required in required_renderer:
+        if not (renderer_root / required).is_file():
+            raise PipelineError(f"renderer source is incomplete: missing renderer/{required}.")
+    _validate_renderer_source_contract(
+        renderer_root,
+        require_isolated_layout=require_isolated_layout,
+        require_overlay_layout=require_overlay_layout,
+    )
+
+
 def _validate_publish_renderer_contract(renderer_root: Path) -> None:
     """Require cover rendering only at final publish/renderer readiness."""
     render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
@@ -782,7 +1003,7 @@ def validate_publish_contract(package_root: Path) -> dict:
     root = Path(package_root).resolve()
     production = validate_package(root)
     publish = _validate_publish_document(root, production)
-    _validate_publish_renderer_contract(root / "renderer")
+    _validate_publish_renderer_contract(resolve_renderer_root(root, materialize=False))
     return publish
 
 
@@ -816,6 +1037,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         raise PipelineError("production.json must contain at least one scene.")
 
     token, source_hash = _design_token(root)
+    package_manifest = _load_package_manifest(root)
+    _validate_package_manifest_design(package_manifest, token, source_hash)
     compiled = visual.get("style_token")
     if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
         raise PipelineError("production.json style_token must match design.md.")
@@ -825,6 +1048,10 @@ def validate_production_document(root: Path, production: dict) -> dict:
     font_weight = caption_style.get("font_weight")
     legacy_caption = font_family == "Be Vietnam Pro" and font_weight == 500
     overlay_caption = font_family == "Patrick Hand" and font_weight == 400
+    if package_manifest is not None and not overlay_caption:
+        raise PipelineError(
+            "PACKAGE_MANIFEST_INVALID: zodiac-job@3 requires the canonical Patrick Hand overlay caption contract."
+        )
     if (
         not (legacy_caption or overlay_caption)
         or not isinstance(caption_style.get("font_size_px"), int)
@@ -931,10 +1158,12 @@ def validate_production_document(root: Path, production: dict) -> dict:
             )
 
     style_id = compiled.get("id")
+    referenced_asset_paths: set[str] = set()
     for asset_id, entry in assets.items():
         if not isinstance(entry, dict):
             raise PipelineError(f"asset registry entry {asset_id!r} must be an object.")
-        _asset_file(root, asset_id, entry)
+        asset_path = _asset_file(root, asset_id, entry)
+        referenced_asset_paths.add(asset_path.relative_to(root).as_posix())
         if entry.get("style_id") != style_id:
             raise PipelineError(
                 f"asset {asset_id!r} style_id does not match the compiled design token."
@@ -1128,60 +1357,33 @@ def validate_production_document(root: Path, production: dict) -> dict:
 
     _validate_handoff_boundary(root)
 
-    renderer_root = root / "renderer"
-    renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
-    if renderer.get("name") != "zodiac-remotion-renderer":
-        raise PipelineError(
-            "renderer/package.json is not the Zodiac Remotion renderer scaffold."
-        )
-    dependencies = renderer.get("dependencies")
-    if dependencies not in (LEGACY_EXPECTED_DEPENDENCIES, EXPECTED_DEPENDENCIES):
-        raise PipelineError(
-            "renderer dependencies do not match either the legacy or current Zodiac v2 renderer contract."
-        )
-
-    dev_dependencies = renderer.get("devDependencies")
-    expected_dev = dict(EXPECTED_DEV_DEPENDENCIES)
-    if (
-        isinstance(dev_dependencies, dict)
-        and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS
-    ):
-        expected_dev["typescript"] = dev_dependencies["typescript"]
-    if dev_dependencies != expected_dev:
-        raise PipelineError(
-            "renderer development dependencies do not match the current Zodiac v2 contract."
-        )
-
-    if renderer.get("scripts") != EXPECTED_SCRIPTS:
-        raise PipelineError(
-            "renderer scripts do not match the current Zodiac v2 renderer contract."
-        )
-
-    required_renderer = (
-        "src/index.ts",
-        "src/Root.tsx",
-        "src/ZodiacComposition.tsx",
-        "src/PrimitiveSvg.tsx",
-        "src/types.ts",
-        "src/runtime-contract.mjs",
-        "scripts/render.mjs",
-        "scripts/generate-sfx.mjs",
-        "scripts/style-token.mjs",
-        "scripts/compile-style-token.mjs",
-        "schemas/production.schema.json",
-        "tests/pipeline-contract.test.mjs",
-    )
-    for required in required_renderer:
-        if not (renderer_root / required).is_file():
+    if package_manifest is not None:
+        actual_assets = {
+            path.relative_to(root).as_posix()
+            for path in _tree_files(root, "assets")
+        }
+        extra_assets = sorted(actual_assets - referenced_asset_paths)
+        if extra_assets:
             raise PipelineError(
-                f"renderer source is incomplete: missing renderer/{required}."
+                "PACKAGE_V3_BLOAT: assets/ contains files not referenced by production.assets: "
+                + ", ".join(extra_assets[:8])
             )
-
-    _validate_renderer_source_contract(
-        renderer_root,
-        require_isolated_layout=isolated_layout,
-        require_overlay_layout=overlay_layout,
-    )
+        renderer_root = resolve_renderer_root(root, materialize=False)
+        _validate_renderer_package_contract(
+            renderer_root,
+            expected_scripts=EXPECTED_SCRIPTS,
+            accepted_dependencies=(EXPECTED_DEPENDENCIES,),
+            require_overlay_layout=True,
+        )
+    else:
+        renderer_root = root / "renderer"
+        _validate_renderer_package_contract(
+            renderer_root,
+            expected_scripts=LEGACY_EXPECTED_SCRIPTS,
+            accepted_dependencies=(LEGACY_EXPECTED_DEPENDENCIES, EXPECTED_DEPENDENCIES),
+            require_isolated_layout=isolated_layout,
+            require_overlay_layout=overlay_layout,
+        )
     return production
 
 
@@ -1976,15 +2178,21 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         root / "narration.txt",
         root / "design.md",
         root / "handoff-manifest.json",
+        root / "package-manifest.json",
         *_tree_files(root, "assets"),
     ]
-    renderer_files = [
-        *_tree_files(
-            root,
-            "renderer",
-            exclude={"node_modules", "generated", ".cache"},
-        ),
-    ]
+    package_manifest = _load_package_manifest(root)
+    renderer_files = (
+        []
+        if package_manifest is not None
+        else [
+            *_tree_files(
+                root,
+                "renderer",
+                exclude={"node_modules", "generated", ".cache"},
+            ),
+        ]
+    )
     runtime_files = [
         root / "voice.wav",
         root / ".runtime" / "timing.json",
@@ -2022,7 +2230,11 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
             publish_document = {}
 
     creative = _fingerprint_files(root, creative_files)
-    renderer = _fingerprint_files(root, renderer_files)
+    renderer = (
+        package_manifest["runtime"]["sha256"]
+        if package_manifest is not None
+        else _fingerprint_files(root, renderer_files)
+    )
     runtime = _fingerprint_files(root, runtime_files)
     publish_metadata = _fingerprint_value(publish_document)
     publish_copy = _fingerprint_files(root, publish_copy_files)
@@ -2181,9 +2393,10 @@ def _mark_prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> None
 
 def renderer_dependency_fingerprint(package_root: Path) -> str:
     root = Path(package_root).resolve()
-    renderer = root / "renderer"
+    renderer = resolve_renderer_root(root, materialize=True)
     package = _load_json(renderer / "package.json", "renderer/package.json")
-    lock = _fingerprint_files(root, [renderer / "package-lock.json"])
+    lock_path = renderer / "package-lock.json"
+    lock = file_sha256(lock_path) if lock_path.is_file() else ""
     return _fingerprint_value(
         {
             "dependencies": package.get("dependencies") or {},
@@ -2217,7 +2430,14 @@ def _renderer_dependencies_installed(renderer: Path) -> bool:
             installed = json.loads(installed_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             return False
-        if installed.get("version") != version:
+        installed_version = installed.get("version")
+        if (
+            name == "typescript"
+            and version == "5.8.0"
+            and installed_version in SUPPORTED_TYPESCRIPT_VERSIONS
+        ):
+            continue
+        if installed_version != version:
             return False
 
     bin_dir = renderer / "node_modules" / ".bin"
@@ -2229,19 +2449,18 @@ def _renderer_dependencies_installed(renderer: Path) -> bool:
 def style_compile_fingerprint(package_root: Path) -> str:
     root = Path(package_root).resolve()
     _token, source_hash = _design_token(root)
-    compiler = _fingerprint_files(
-        root,
-        [
-            root / "renderer" / "scripts" / "style-token.mjs",
-            root / "renderer" / "scripts" / "compile-style-token.mjs",
-        ],
-    )
-    return _fingerprint_value(
-        {
-            "design_source_hash": source_hash,
-            "compiler": compiler,
-        }
-    )
+    manifest = _load_package_manifest(root)
+    if manifest is not None:
+        compiler = manifest["runtime"]["sha256"]
+    else:
+        compiler = _fingerprint_files(
+            root,
+            [
+                root / "renderer" / "scripts" / "style-token.mjs",
+                root / "renderer" / "scripts" / "compile-style-token.mjs",
+            ],
+        )
+    return _fingerprint_value({"design_source_hash": source_hash, "compiler": compiler})
 
 
 def _style_compilation_current(package_root: Path) -> bool:
@@ -2262,6 +2481,9 @@ def _style_compilation_current(package_root: Path) -> bool:
 
 def renderer_check_fingerprint(package_root: Path) -> str:
     root = Path(package_root).resolve()
+    manifest = _load_package_manifest(root)
+    if manifest is not None:
+        return manifest["runtime"]["sha256"]
     fingerprints = artifact_fingerprints(root)
     production = _fingerprint_files(root, [root / "production.json"])
     return _fingerprint_value(
@@ -2273,19 +2495,31 @@ def renderer_check_fingerprint(package_root: Path) -> str:
     )
 
 
+def _shared_runtime_check_cache_path(package_root: Path) -> Path:
+    return resolve_renderer_root(package_root, materialize=True).parent / ".checks.json"
+
+
 def renderer_checks_cached(package_root: Path, fingerprint: str) -> bool:
-    return _prepare_stage_cached(
-        Path(package_root).resolve(),
-        "renderer_checks",
-        fingerprint,
-    )
+    root = Path(package_root).resolve()
+    if _load_package_manifest(root) is None:
+        return _prepare_stage_cached(root, "renderer_checks", fingerprint)
+    path = _shared_runtime_check_cache_path(root)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return payload.get("status") == "PASS" and payload.get("fingerprint") == fingerprint
 
 
 def mark_renderer_checks_cached(package_root: Path, fingerprint: str) -> None:
-    _mark_prepare_stage_cached(
-        Path(package_root).resolve(),
-        "renderer_checks",
-        fingerprint,
+    root = Path(package_root).resolve()
+    if _load_package_manifest(root) is None:
+        _mark_prepare_stage_cached(root, "renderer_checks", fingerprint)
+        return
+    path = _shared_runtime_check_cache_path(root)
+    path.write_text(
+        json.dumps({"status": "PASS", "fingerprint": fingerprint}, indent=2) + "\n",
+        encoding="utf-8",
     )
 
 
@@ -3360,6 +3594,7 @@ def run_managed_subprocess(
     check: bool = False,
     capture_output: bool = False,
     text: bool = False,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess:
     """Run one cancellable child in its own process group."""
     if any(not isinstance(arg, str) or "\x00" in arg for arg in arguments):
@@ -3373,6 +3608,7 @@ def run_managed_subprocess(
         cwd=cwd,
         shell=False,
         text=text,
+        env=env,
         **popen_kwargs,
     )
     observer = _PROCESS_OBSERVER.get()
@@ -3407,17 +3643,18 @@ def _npm_executable() -> str:
     return str(Path(raw).resolve())
 
 
-def _run_npm(args: list[str], cwd: Path) -> None:
+def _run_npm(args: list[str], cwd: Path, *, env: dict[str, str] | None = None) -> None:
     if any(not isinstance(arg, str) or "\x00" in arg for arg in args):
         raise PipelineError("npm arguments must be NUL-free strings.")
     run_managed_subprocess(
         [_npm_executable(), *args],
         cwd=cwd,
         check=True,
+        env=env,
     )
 
 
-def _install_renderer(renderer: Path) -> None:
+def _install_renderer(renderer: Path, *, immutable_source: bool = False) -> None:
     try:
         _run_npm(["install", "--no-audit", "--no-fund"], renderer)
     except subprocess.CalledProcessError:
@@ -3441,10 +3678,14 @@ def _install_renderer(renderer: Path) -> None:
         fallback = next((version for version in reversed(versions) if version in SUPPORTED_TYPESCRIPT_VERSIONS), "")
         if fallback not in SUPPORTED_TYPESCRIPT_VERSIONS or fallback == "5.8.0":
             raise
-        dev_dependencies["typescript"] = fallback
-        package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
-        print(f"typescript@5.8.0 unavailable; using available {fallback}.", flush=True)
-        _run_npm(["install", "--no-audit", "--no-fund"], renderer)
+        if immutable_source:
+            print(f"typescript@5.8.0 unavailable; installing {fallback} without mutating shared runtime source.", flush=True)
+            _run_npm(["install", "--no-audit", "--no-fund", "--no-save", f"typescript@{fallback}"], renderer)
+        else:
+            dev_dependencies["typescript"] = fallback
+            package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
+            print(f"typescript@5.8.0 unavailable; using available {fallback}.", flush=True)
+            _run_npm(["install", "--no-audit", "--no-fund"], renderer)
 
 
 def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
@@ -3899,7 +4140,9 @@ def prepare_renderer(
     # can run. A stale design/production pair must fail closed, not self-repair
     # by executing an untrusted compile script first.
     validate_runtime(root)
-    renderer = root / "renderer"
+    package_manifest = _load_package_manifest(root)
+    shared_runtime = package_manifest is not None
+    renderer = resolve_renderer_root(root, materialize=True)
     if shutil.which("node") is None or (
         shutil.which("npm") is None and shutil.which("npm.cmd") is None
     ):
@@ -3912,10 +4155,13 @@ def prepare_renderer(
     dependencies_installed = _renderer_dependencies_installed(renderer)
     dependencies_cached = (
         dependencies_installed
-        and _prepare_stage_cached(root, "dependencies", dependency_fingerprint)
+        and (
+            shared_runtime
+            or _prepare_stage_cached(root, "dependencies", dependency_fingerprint)
+        )
     )
     lock_exists = (renderer / "package-lock.json").is_file()
-    bootstrap_safe = dependencies_installed and not lock_exists
+    bootstrap_safe = dependencies_installed and (shared_runtime or not lock_exists)
     dependency_reused = dependencies_cached or bootstrap_safe
 
     with measure_performance_stage(
@@ -3933,7 +4179,7 @@ def prepare_renderer(
                 )
         else:
             print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
-            _install_renderer(renderer)
+            _install_renderer(renderer, immutable_source=shared_runtime)
             if not _renderer_dependencies_installed(renderer):
                 raise PipelineError(
                     "renderer dependencies were installed but pinned package versions "
@@ -3972,8 +4218,9 @@ def prepare_renderer(
 
     # Backward compatibility only. New plugin exports should already contain
     # these fixes, but old imported jobs can be repaired before typecheck.
-    _patch_renderer_typescript_compatibility(renderer)
-    _patch_renderer_font_readiness(renderer)
+    if not shared_runtime:
+        _patch_renderer_typescript_compatibility(renderer)
+        _patch_renderer_font_readiness(renderer)
 
     check_fingerprint = renderer_check_fingerprint(root)
     checks_cached = renderer_checks_cached(root, check_fingerprint)
@@ -4003,7 +4250,7 @@ def prepare_renderer(
             "renderer.contract_tests",
             input_fingerprint=check_fingerprint,
         ):
-            _run_npm(["run", "test"], renderer)
+            _run_npm(["run", "test"], renderer, env=_renderer_environment(root))
 
         print("Đang kiểm tra TypeScript của renderer…", flush=True)
         with measure_performance_stage(
@@ -4011,7 +4258,7 @@ def prepare_renderer(
             "renderer.typecheck",
             input_fingerprint=check_fingerprint,
         ):
-            _run_npm(["run", "typecheck"], renderer)
+            _run_npm(["run", "typecheck"], renderer, env=_renderer_environment(root))
 
         # Mark only after BOTH contract tests and TypeScript have passed.
         mark_renderer_checks_cached(root, check_fingerprint)
@@ -4028,7 +4275,11 @@ def render_video(package_root: Path) -> None:
         "renderer.render",
         input_fingerprint=fingerprint,
     ):
-        _run_npm(["run", "render"], root / "renderer")
+        _run_npm(
+            ["run", "render"],
+            resolve_renderer_root(root, materialize=True),
+            env=_renderer_environment(root),
+        )
     validate_publish_outputs(root)
 
 
@@ -4051,7 +4302,11 @@ def run_renderer(
                 f"({config['background_music_volume']:.0%}).",
                 flush=True,
             )
-        _run_npm(["run", "studio"], root / "renderer")
+        _run_npm(
+            ["run", "studio"],
+            resolve_renderer_root(root, materialize=True),
+            env=_renderer_environment(root),
+        )
     else:
         render_video(root)
         final_video = mix_background_music_into_render(root)
