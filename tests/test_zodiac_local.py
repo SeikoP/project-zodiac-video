@@ -36,6 +36,8 @@ from tools.zodiac_local import (
     mix_background_music_into_render,
     finalize_publish_outputs,
     resolve_renderer_root,
+    renderer_check_fingerprint,
+    style_compile_fingerprint,
     safe_extract_zip,
     validate_background_music,
     validate_package,
@@ -1244,6 +1246,16 @@ class ThinPackageV4Tests(unittest.TestCase):
             self.assertNotIn("sha256", manifest["runtime"])
             self.assertNotIn("design", manifest)
             self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_v4_fingerprints_resolve_bundled_runtime_hash_without_manifest_sha(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            manifest = json.loads(
+                (job / "package-manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("sha256", manifest["runtime"])
+            self.assertEqual(renderer_check_fingerprint(job), RUNTIME_V316_HASH)
+            self.assertRegex(style_compile_fingerprint(job), r"^[0-9a-f]{64}$")
 
     def test_v4_rejects_plugin_owned_receipts_in_thin_package(self):
         for forbidden in ("FINAL_VALIDATION.json", "handoff-manifest.json"):
