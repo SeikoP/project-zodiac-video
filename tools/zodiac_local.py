@@ -293,7 +293,11 @@ def _load_package_manifest(root: Path) -> dict | None:
             and bool(re.fullmatch(r"[0-9a-f]{64}", design_ref.get("sha256", "")))
         )
     else:
-        design_valid = "design" not in manifest and "sha256" not in runtime_ref
+        design_valid = (
+            isinstance(runtime_ref, dict)
+            and "design" not in manifest
+            and "sha256" not in runtime_ref
+        )
 
     producer_valid = (
         isinstance(producer, dict)
@@ -306,7 +310,26 @@ def _load_package_manifest(root: Path) -> dict | None:
 
     forbidden_names = ["renderer", "library", "references", "node_modules", ".authoring"]
     if package_format == PACKAGE_FORMAT_V4:
-        forbidden_names.extend(["FINAL_VALIDATION.json", "handoff-manifest.json"])
+        forbidden_names.extend([
+            "FINAL_VALIDATION.json",
+            "handoff-manifest.json",
+            ".runtime",
+            "out",
+            "voice.wav",
+        ])
+        required_v4 = (
+            "production.json",
+            "narration.txt",
+            "design.md",
+            "publish/publish.json",
+            "publish/publish-copy.txt",
+        )
+        missing_v4 = [name for name in required_v4 if not (root / name).is_file()]
+        if missing_v4 or not (root / "assets").is_dir():
+            missing = missing_v4 + ([] if (root / "assets").is_dir() else ["assets/"])
+            raise PipelineError(
+                "PACKAGE_MANIFEST_INVALID: zodiac-job@4 is missing " + ", ".join(missing) + "."
+            )
     forbidden = [name for name in forbidden_names if (root / name).exists()]
     if forbidden:
         code = "PACKAGE_V4_BLOAT" if package_format == PACKAGE_FORMAT_V4 else "PACKAGE_V3_BLOAT"
