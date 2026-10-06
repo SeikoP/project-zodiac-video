@@ -4727,6 +4727,9 @@ def mix_background_music_into_render(
     root = Path(package_root).resolve()
     config = validate_background_music(root)
     output = root / "out" / "zodiac-story.mp4"
+    pristine = _pristine_render_path(root)
+    if not pristine.is_file() and not output.is_file():
+        raise PipelineError(f"Remotion output is missing: {output}")
     base_video = _playback_adjusted_render(
         root,
         playback_rate=playback_rate,
