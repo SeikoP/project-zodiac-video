@@ -8,6 +8,27 @@ description: Use when building Vietnamese Zodiac sticker-story videos through ev
 ## Core boundary
 Local runtime owns the trusted shared Remotion renderer, its npm dependencies/tests, TTS, measured timing, render-props, MP4, rendered cover still and final publish bundle. Creative packages own narration, production/used assets, canonical design, package/runtime reference, structured handoff, receipts and publish metadata/copy. New packages are data-only zodiac-job@3 ZIPs and MUST NOT embed .authoring/**, renderer/**, library/**, references/** or node_modules/**. Preserve approved insight/evidence. Rewrite approved narration only when explicitly requested.
 
+## Fresh Run Isolation — mandatory
+
+Treat a new plugin invocation as a **fresh content run** unless the user explicitly asks to continue, reuse, resume, compare with, or restore prior Zodiac work.
+
+On a fresh run:
+- do NOT use account/personal memory to choose the sign, concept, thesis, evidence, progression, examples, situations, narrator wording, or payoff;
+- do NOT search prior conversations for Zodiac continuity;
+- do NOT auto-load old approved packages, continuity snapshots, sign-specific examples, or example narrations;
+- do NOT infer “the user probably wants the previous Song Tử/Xử Nữ concept” from history;
+- use only the current request, current-turn attachments, explicitly requested research, and canonical non-content contracts.
+
+Memory may still exist at the ChatGPT product level; this plugin rule controls **whether it is used as creative/project input**. Use prior context only when the user explicitly signals continuity such as “tiếp tục”, “dùng lại bản trước”, “series hôm qua”, “theo concept cũ”, or points to a prior file/chat/package.
+
+### Example/reference isolation
+
+Files whose purpose is demonstration or continuity are opt-in only. Never load a sign-specific example merely because its filename appears in the plugin file list.
+
+- `references/current-gemini-example.md` is quarantined and contains no reusable creative content.
+- `references/narrative-mode-demo.md`, `phase3-performance-demo.md`, and external subtitle/reference cases teach **mechanics only**. They MUST NOT supply sign choice, claims, situations, jokes, phrasing, or progression to a fresh run unless the user explicitly asks to analyze/reuse that reference.
+- Canonical contracts such as design, asset, package, validation and runtime references remain safe to load because they do not select creative content.
+
 ## Approved-content refresh
 When improving approved content, read `references/content-refresh.md`. Use selected Viral/analysis tooling and Exa when requested. If an explicitly selected helper capability is unavailable, STOP that phase and ask the user to load/reconnect it. Never silently substitute another provider.
 

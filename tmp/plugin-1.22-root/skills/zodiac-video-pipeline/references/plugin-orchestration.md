@@ -2,6 +2,12 @@
 
 The Zodiac pipeline owns synthesis, scope, evidence boundaries, story-shape/delivery-mode selection and phase transitions.
 
+## Fresh-run routing
+
+Default route is FRESH. Prior-chat memory, saved continuity, prior packages, sign-specific examples and old concepts are not inputs unless the user explicitly requests continuity. A sign name present only in memory or an example file must never become the fresh-run sign.
+
+Continuity route activates only from an explicit current-turn signal such as continue/reuse/resume/compare/restore, or an explicit reference to a previous series/file/package. Only then retrieve the minimum prior context needed for that request.
+
 ## Approved-content reuse route
 
 When the user explicitly asks to reuse already-approved content and a matching package is available:
