@@ -89,7 +89,7 @@ PACKAGE_FORMAT_V3 = "zodiac-job@3"
 PACKAGE_FORMAT_V4 = "zodiac-job@4"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
-RUNTIME_VERSION = "1.15.0"
+RUNTIME_VERSION = "1.16.0"
 BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
@@ -1106,6 +1106,16 @@ def _uses_semantic_runtime(package_manifest: dict | None) -> bool:
     )
 
 
+def _uses_performance_runtime(package_manifest: dict | None) -> bool:
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 16, 0)
+    )
+
+
 _MECHANICAL_ACTION = re.compile(
     r"(?:^|_)(open|close|fold|unfold|zip|unzip|unlock|lock|insert|remove|pick|place|hold|release|hand|turn_page|drawer|curtain|door|lid|flap|notify|notification|screen_change|lamp_on|lamp_off|light_on|light_off|wear|remove_mask)(?:_|$)",
     re.IGNORECASE,
@@ -1214,6 +1224,139 @@ def _validate_semantic_animation_scene(scene: dict, entity_map: dict[str, dict])
             )
 
 
+_PERFORMANCE_PHASES = {"anticipation", "action", "reaction", "hold", "settle"}
+_PERFORMANCE_RESERVED_FOCUS = {"audience", "self", "offscreen_left", "offscreen_right"}
+
+
+def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dict]) -> None:
+    prior_event_ids: set[str] = set()
+    for event in scene.get("events", []):
+        event_id = event.get("id")
+        performance = event.get("performance")
+        if not isinstance(performance, dict):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: event requires performance metadata: {event_id}"
+            )
+        allowed = {
+            "intent",
+            "phase",
+            "energy",
+            "focus",
+            "anticipation_frames",
+            "hold_frames",
+            "settle_frames",
+            "cause_event_id",
+        }
+        if set(performance) - allowed:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: unsupported performance fields: {event_id}"
+            )
+        if not isinstance(performance.get("intent"), str) or not performance["intent"].strip():
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: performance intent is required: {event_id}"
+            )
+        if performance.get("phase") not in _PERFORMANCE_PHASES:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: unsupported performance phase: {event_id}"
+            )
+        energy = performance.get("energy")
+        if (
+            not isinstance(energy, (int, float))
+            or isinstance(energy, bool)
+            or not 0 <= energy <= 1
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: energy must be within 0..1: {event_id}"
+            )
+        for key, maximum in (
+            ("anticipation_frames", 24),
+            ("hold_frames", 90),
+            ("settle_frames", 45),
+        ):
+            value = performance.get(key)
+            if (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value < 0
+                or value > maximum
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: invalid {key}: {event_id}"
+                )
+        focus = performance.get("focus")
+        if focus is not None and (
+            not isinstance(focus, str)
+            or (
+                focus not in _PERFORMANCE_RESERVED_FOCUS
+                and focus not in entity_map
+            )
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: invalid focus target: {event_id}"
+            )
+        if focus == event.get("target"):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: use focus=self for the acting entity: {event_id}"
+            )
+        cause = performance.get("cause_event_id")
+        if performance.get("phase") == "reaction" and not cause:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: reaction needs cause_event_id: {event_id}"
+            )
+        if cause is not None and (
+            not isinstance(cause, str) or cause not in prior_event_ids
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: cause_event_id must reference an earlier event: {event_id}"
+            )
+        if (
+            event.get("target") != "camera"
+            and event.get("state_before") != event.get("state_after")
+            and performance["anticipation_frames"]
+            + performance["hold_frames"]
+            + performance["settle_frames"]
+            == 0
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: story-changing event needs anticipation, hold, or settle timing: {event_id}"
+            )
+        if isinstance(event_id, str):
+            prior_event_ids.add(event_id)
+
+
+def _validate_performance_renderer_contract(renderer_root: Path) -> None:
+    required = (
+        "src/performance-animation.mjs",
+        "src/performance-animation.d.mts",
+        "tests/performance-animation-gate.test.mjs",
+        "tests/caption-semantic.test.mjs",
+    )
+    for relative in required:
+        if not (renderer_root / relative).is_file():
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: performance runtime is missing renderer/{relative}."
+            )
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    composition = _read_renderer_source(renderer_root, "src/ZodiacComposition.tsx")
+    schema_text = _read_renderer_source(renderer_root, "schemas/production.schema.json")
+    if "validatePerformanceAnimation" not in render_script or "validatePerformanceTiming" not in render_script:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime does not execute Performance Animation Gate."
+        )
+    if '"performance"' not in schema_text or '"segmentation"' not in schema_text:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime schema is incomplete."
+        )
+    if "performanceMotionValues" not in composition:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: composition does not consume performance metadata."
+        )
+    if "targetWords:" in composition or "maxWords:" in composition:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime still uses fixed-word caption slicing."
+        )
+
+
 def _validate_semantic_validation_receipt(root: Path) -> None:
     path = root / "FINAL_VALIDATION.json"
     if not path.is_file():
@@ -1305,6 +1448,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
     package_manifest = _load_package_manifest(root)
     _validate_package_manifest_design(package_manifest, token, source_hash)
     semantic_runtime = _uses_semantic_runtime(package_manifest)
+    performance_runtime = _uses_performance_runtime(package_manifest)
     compiled = visual.get("style_token")
     if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
         raise PipelineError("production.json style_token must match design.md.")
@@ -1524,6 +1668,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         meaningful_change = False
         if semantic_runtime:
             _validate_semantic_animation_scene(scene, entity_map)
+        if performance_runtime:
+            _validate_performance_animation_scene(scene, entity_map)
 
         for event in events:
             if not isinstance(event, dict):
@@ -1597,17 +1743,38 @@ def validate_production_document(root: Path, production: dict) -> dict:
             raise PipelineError(f"scene {scene_id} has an invalid transition.")
 
         captions = scene.get("captions")
-        if (
-            not isinstance(captions, dict)
-            or captions.get("source") != "voice"
-            or not all(
-                isinstance(captions.get(key), int)
-                for key in ("page_target_words", "max_words", "max_lines")
+        if performance_runtime:
+            valid_captions = (
+                isinstance(captions, dict)
+                and captions.get("source") == "voice"
+                and captions.get("segmentation") == "semantic"
+                and isinstance(captions.get("max_lines"), int)
+                and not isinstance(captions.get("max_lines"), bool)
+                and 1 <= captions["max_lines"] <= 2
+                and all(
+                    key not in captions
+                    or (
+                        isinstance(captions[key], int)
+                        and not isinstance(captions[key], bool)
+                        and 1 <= captions[key] <= 32
+                    )
+                    for key in ("page_target_words", "max_words")
+                )
             )
-            or not 3 <= captions["page_target_words"] <= 7
-            or not 3 <= captions["max_words"] <= 7
-            or not 1 <= captions["max_lines"] <= 2
-        ):
+        else:
+            valid_captions = (
+                isinstance(captions, dict)
+                and captions.get("source") == "voice"
+                and all(
+                    isinstance(captions.get(key), int)
+                    and not isinstance(captions.get(key), bool)
+                    for key in ("page_target_words", "max_words", "max_lines")
+                )
+                and 3 <= captions["page_target_words"] <= 7
+                and 3 <= captions["max_words"] <= 7
+                and 1 <= captions["max_lines"] <= 2
+            )
+        if not valid_captions:
             raise PipelineError(f"scene {scene_id} has an invalid v2 caption policy.")
 
         _validate_visual_progression_proxy(scene)
@@ -1652,6 +1819,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         )
         if semantic_runtime:
             _validate_semantic_renderer_contract(renderer_root)
+        if performance_runtime:
+            _validate_performance_renderer_contract(renderer_root)
     else:
         renderer_root = root / "renderer"
         _validate_renderer_package_contract(

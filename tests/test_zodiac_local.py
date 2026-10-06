@@ -124,6 +124,7 @@ def style_token():
 
 RUNTIME_V3_HASH = "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8"
 RUNTIME_V315_HASH = "4d52e6ca766649546482a5cdfbf879f4f19c4d3c41c07c7743cccec1a7100ffa"
+RUNTIME_V316_HASH = "728a98743563c19b8c6fead718fc817782965b5c3bd30fefe257135c38f6f754"
 
 
 def v3_style_token():
@@ -698,6 +699,43 @@ def v4_package_files():
 def write_v4_package(root: Path) -> Path:
     job = root / "zodiac-v4-test"
     for name, content in v4_package_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
+
+def performance_v316_files():
+    files = v4_package_files()
+    production = json.loads(files["production.json"])
+    for scene in production["scenes"]:
+        scene["captions"] = {
+            "source": "voice",
+            "segmentation": "semantic",
+            "max_lines": 2,
+        }
+        for event in scene["events"]:
+            event["performance"] = {
+                "intent": "make the visible state change readable before it lands",
+                "phase": "action",
+                "energy": 0.45,
+                "anticipation_frames": 4,
+                "hold_frames": 8,
+                "settle_frames": 6,
+            }
+    files["production.json"] = json.dumps(production, ensure_ascii=False)
+    manifest = json.loads(files["package-manifest.json"])
+    manifest["runtime"] = {
+        "id": "zodiac-remotion",
+        "version": "1.16.0",
+    }
+    manifest["producer"]["version"] = "1.30.0"
+    files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
+    return files
+
+
+def write_performance_v316_package(root: Path) -> Path:
+    job = root / "zodiac-v316-performance"
+    for name, content in performance_v316_files().items():
         target = job / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
@@ -1312,6 +1350,99 @@ class ThinPackageV4Tests(unittest.TestCase):
             self.assertEqual(outputs["video"], out / "zodiac-story.mp4")
             self.assertFalse((out / "zodiac-publish-bundle.zip").exists())
 
+
+class PerformanceRuntimeV316Tests(unittest.TestCase):
+    def test_v316_performance_package_validates_and_resolves_exact_runtime(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            production = validate_package(job)
+            self.assertEqual(production["scenes"][0]["captions"]["segmentation"], "semantic")
+            self.assertIn("performance", production["scenes"][0]["events"][0])
+            renderer = resolve_renderer_root(job, materialize=False)
+            self.assertIn("1.16.0", renderer.parts)
+
+    def test_v316_requires_performance_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["events"][0].pop("performance")
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "PERFORMANCE_ANIMATION_GATE"):
+                validate_package(job)
+
+    def test_v316_reaction_requires_an_earlier_cause(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            performance = production["scenes"][0]["events"][0]["performance"]
+            performance["phase"] = "reaction"
+            performance["cause_event_id"] = "MISSING"
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "cause_event_id"):
+                validate_package(job)
+
+    def test_v316_requires_semantic_caption_policy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["captions"] = {
+                "source": "voice",
+                "page_target_words": 4,
+                "max_words": 7,
+                "max_lines": 2,
+            }
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "caption policy"):
+                validate_package(job)
+
+    @unittest.skipUnless(
+        os.environ.get("ZODIAC_E2E_RUNTIME") == "1",
+        "golden runtime prepare runs only in the dedicated shared-runtime CI job",
+    )
+    def test_v316_runtime_prepare_accepts_local_first_v4_without_handoff_manifest(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_performance_v316_package(Path(temp))
+            self.assertFalse((job / "handoff-manifest.json").exists())
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime_state = job / ".runtime"
+            runtime_state.mkdir(parents=True, exist_ok=True)
+            (runtime_state / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            runtime_dir = (
+                Path(__file__).resolve().parents[1]
+                / "runtime"
+                / "zodiac-remotion"
+                / "1.16.0"
+                / "renderer"
+            )
+            env = dict(os.environ)
+            env["ZODIAC_PACKAGE_ROOT"] = str(job)
+            result = subprocess.run(
+                ["node", "scripts/render.mjs", "--prepare-only"],
+                cwd=runtime_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=result.stdout + "\n" + result.stderr,
+            )
+            props = json.loads(
+                (runtime_state / "render-props.json").read_text(encoding="utf-8")
+            )
+            self.assertIn("performance", props["production"]["scenes"][0]["events"][0])
+            self.assertEqual(
+                props["production"]["scenes"][0]["captions"]["segmentation"],
+                "semantic",
+            )
 
 class SemanticRuntimeV315Tests(unittest.TestCase):
     def test_v315_thief_child_entity_mechanism_validates(self):
