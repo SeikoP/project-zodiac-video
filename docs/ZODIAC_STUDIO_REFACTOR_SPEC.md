@@ -3,7 +3,7 @@
 Status: **PLANNED — specification only; no implementation in this change**  
 Target repository: `SeikoP/project-zodiac-video`  
 Target branch for implementation: feature branches derived from `main`  
-Current exposed product scope after the refactor foundation: **Import ZIP → Render → Open final video**
+Current exposed product scope after the refactor foundation: **full functional parity with the current Zodiac Studio main window**. The first new Studio release is not a reduced Import/Render form.
 
 ---
 
@@ -19,7 +19,9 @@ The current Tkinter application is still useful as a runner, but the project is 
 - a future Performance Compiler in runtime 2.0;
 - a visual editor and performance timeline.
 
-The refactor must therefore establish the **long-term application architecture now**, while exposing only a small user-facing feature set initially.
+The refactor must therefore establish the **long-term application architecture now** while preserving the useful capabilities already present in the current main Studio window.
+
+The first new Studio release is an **MVP only in the sense that Editor/Performance expansion is deferred**. It is not a reduced GUI. Main-window functionality must reach parity with the current Tkinter Studio before that GUI can be considered replaceable.
 
 This is **not an MVP architecture** and must not be designed to be discarded later.
 
@@ -27,54 +29,162 @@ This is **not an MVP architecture** and must not be designed to be discarded lat
 
 ## 2. Product scope
 
-### 2.1 Exposed in the first new Studio UI
+### 2.1 Required main-window parity in the first new Studio UI
 
-The initial new desktop UI exposes only:
+The first new desktop UI must reproduce the **functional scope of the current Zodiac Studio main window**, while improving layout and implementation architecture.
 
-1. Select/import a `zodiac-job@4` ZIP.
-2. Validate/import it into a Studio project/workspace.
-3. Render the project through the existing local pipeline.
-4. Show structured progress.
-5. Cancel/retry when supported.
-6. Open `out/zodiac-story.mp4`.
-7. Open the output folder.
+Required areas:
 
-The backend is still expected to perform all required work automatically:
+#### Header / environment status
+
+The header must expose:
+
+- Zodiac Studio identity/subtitle;
+- VieNeu service status;
+- local environment/dependency status;
+- busy/ready/failure states;
+- dependency-install availability when required.
+
+The frontend must receive these as structured state/events rather than polling/parsing Tkinter-era text.
+
+#### DỰ ÁN
+
+Required capabilities:
+
+- select a `zodiac-job@4` ZIP;
+- validate/import the selected package;
+- choose an existing imported job/project;
+- display the active job/project;
+- detect a source ZIP fingerprint change;
+- allow the equivalent of **Nhập lại** or **Giữ job cũ**;
+- resume an unfinished job when appropriate.
+
+#### THIẾT LẬP
+
+Required controls:
+
+- voice selection/input;
+- background-music file selection;
+- music volume;
+- audio preview / **Nghe thử**;
+- alignment model selection (`small / medium / large-v3`);
+- current music/setting summary.
+
+These controls remain part of the first new main window. They are **not** deferred to a later Audio workspace.
+
+#### QUY TRÌNH
+
+The UI must expose the current pipeline in a readable form:
+
+```text
+Nhập gói video
+Kiểm tra môi trường
+Tạo giọng đọc
+Ghép voice.wav
+Căn thời gian từ
+Kiểm tra runtime
+Chuẩn bị renderer
+Kết xuất video
+Trộn nhạc nền
+```
+
+Required behavior:
+
+- status per pipeline node;
+- progress where available;
+- per-scene TTS progress;
+- failed/cancelled emphasis;
+- select a node;
+- **Chạy lại bước**;
+- correct dependency invalidation;
+- resume from unfinished work;
+- no duplicated pipeline logic in React.
+
+The frontend may present a DAG-derived view rather than a literal vertical copy of the Tkinter list, but all current behaviors must remain accessible.
+
+#### Main actions
+
+Required actions:
+
+- **Tiếp tục**;
+- **Chạy toàn bộ**;
+- **Dừng**;
+- **Chạy lại bước**;
+- **Kiểm tra**;
+- **Mở Remotion Studio / Dừng Remotion Studio**;
+- **Cài dependency còn thiếu**;
+- **Mở Editor** entrypoint.
+
+The first refactor wave does **not** need to rewrite the Editor itself. The **Mở Editor** entrypoint may bridge to the existing legacy Editor until the Editor migration phase, but the main-window action must not disappear.
+
+#### KẾT QUẢ
+
+Required behavior:
+
+- show whether a final video exists;
+- display the final video filename/size;
+- **Mở video**;
+- **Mở thư mục**;
+- use the single-final-output contract `out/zodiac-story.mp4`.
+
+#### NHẬT KÝ
+
+Required behavior:
+
+- collapsible/expandable log area;
+- live structured logs from the Engine;
+- technical details available without making raw log strings the application-state protocol;
+- preserve enough diagnostics for TTS, timing, runtime, Remotion and FFmpeg failures.
+
+#### Footer / global run status
+
+The main window must expose the current high-level run state:
+
+```text
+Idle / Ready / Running / Done / Failed / Cancelled
+```
+
+localized appropriately in the UI.
+
+### 2.2 Backend execution behind the parity UI
+
+The backend still performs the complete dependency-aware flow:
 
 ```text
 Import
 → package/security validation
-→ runtime compatibility
-→ TTS when required
+→ preflight
+→ TTS scenes
 → voice concat
 → measured timing
 → runtime validation
 → renderer preparation
 → render
-→ background-music mix when configured
+→ background-music mix
 → final validation
 → out/zodiac-story.mp4
 ```
 
-### 2.2 Planned but not exposed initially
+The user may run the whole graph, resume, cancel, check only, or rerun a selected node as the current Studio allows.
 
-The architecture must allow later addition of:
+### 2.3 Planned after main-window parity
 
-- project/history browser;
+The architecture must allow later addition/migration of:
+
+- richer project/history browser and revision comparison;
 - run comparison;
-- audio/voice/music settings;
-- pipeline inspector;
-- structured logs UI;
-- embedded Remotion preview;
-- scene editor;
+- embedded high-fidelity Remotion preview inside the new shell;
+- full Scene Editor migration;
 - actor inspector;
 - performance timeline;
 - causal choreography graph;
 - camera director;
 - asset browser;
-- runtime inspector;
-- runtime 2.0 Performance Compiler;
+- advanced runtime inspector;
+- runtime 2.0 Performance Compiler UI;
 - local worker pool / remote worker transport if ever required.
+
+The current legacy Editor may remain callable during the first release, but its internals are not part of main-window parity.
 
 These future features must not require another top-level Studio rewrite.
 
@@ -499,17 +609,33 @@ Example event:
 }
 ```
 
-Initial command set should include:
+Initial command set must be broad enough to support main-window parity:
 
 ```text
 import_package
 open_project
+list_projects
 start_run
+continue_run
 cancel_run
-retry_run
+rerun_node
+check_project
 get_run_status
+get_pipeline
+get_environment_status
+install_missing_dependencies
+get_tts_service_status
+start_tts_service
+stop_tts_service
+create_audio_preview
+start_remotion_studio
+stop_remotion_studio
+open_legacy_editor
 open_output
+open_output_folder
 ```
+
+The exact command names may change during contract design, but no main-window feature should require the React frontend to call a legacy Python script directly.
 
 Future commands may be added without changing the architecture.
 
@@ -698,41 +824,56 @@ Features and domain entities are the primary boundaries.
 
 ---
 
-## 16. Initial Studio shell
+## 16. Initial Studio shell and main-window parity
 
-The first UI must already use a workspace architecture rather than a disposable import form.
+The first UI must use a workspace architecture, but it must also expose the **complete operational surface of the current main GUI**.
 
-Target shape:
+A target composition is:
 
 ```text
-┌─────────────────────────────────────────────────┐
-│ Zodiac Studio                        Run status │
-├────────────┬────────────────────────────────────┤
-│            │                                    │
-│ Projects   │             Workspace              │
-│            │                                    │
-│ Gemini     │          Import / Render            │
-│ Virgo      │                                    │
-│ Scorpio    │                                    │
-│            │                                    │
-├────────────┴────────────────────────────────────┤
-│ Current run / structured progress              │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ ZODIAC STUDIO                 VieNeu ●       Environment ●       │
+├──────────────────────────────────────────────────────────────────┤
+│ DỰ ÁN                                                            │
+│ ZIP / project selector / active project / package state          │
+├───────────────────────────────┬──────────────────────────────────┤
+│ THIẾT LẬP                    │ QUY TRÌNH                         │
+│ Voice                        │ ○ Nhập gói video                  │
+│ Music                        │ ○ Kiểm tra môi trường             │
+│ Volume                       │ ○ Tạo giọng đọc                   │
+│ Alignment model              │ ○ Ghép voice.wav                 │
+│ Nghe thử                     │ ○ Căn thời gian từ               │
+│                              │ ○ Kiểm tra runtime                │
+│                              │ ○ Chuẩn bị renderer               │
+│                              │ ○ Kết xuất video                 │
+│                              │ ○ Trộn nhạc nền                   │
+├───────────────────────────────┴──────────────────────────────────┤
+│ KẾT QUẢ                                                         │
+│ zodiac-story.mp4                       [Mở video] [Mở thư mục]   │
+├──────────────────────────────────────────────────────────────────┤
+│ NHẬT KÝ                                           [Mở/Thu gọn]   │
+├──────────────────────────────────────────────────────────────────┤
+│ [Tiếp tục] [Chạy toàn bộ] [Dừng] [Mở Editor] [Kiểm tra]         │
+│ [Mở Remotion Studio]                    [Cài dependency]         │
+├──────────────────────────────────────────────────────────────────┤
+│ Global run status                                                │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-Initially only the Render workspace is active.
+This is a **functional parity target**, not a requirement to visually copy the Tkinter layout. React/Tauri should improve responsive layout, hierarchy, spacing, state presentation and error affordances.
 
-Future workspaces may add:
+The shell should still be extensible into future workspaces such as:
 
 ```text
 Scenes
 Performance
-Audio
 Runtime
 Publish
 ```
 
-without replacing the application shell.
+Audio is already part of first-release parity and must not be deferred.
+
+The later workspaces must attach to the same shell rather than trigger another navigation/layout rewrite.
 
 ---
 
@@ -969,18 +1110,27 @@ Create desktop shell and engine process lifecycle.
 
 No editor migration.
 
-### Phase G — Import + Render workspace
+### Phase G — Main Studio parity release
 
-Expose only the first user-facing path:
+Expose the complete current main-window workflow on the new architecture:
 
 ```text
-Import ZIP
-→ Render
-→ structured status/progress
-→ Open video
+Environment + VieNeu status
+→ Project/ZIP import and existing-project selection
+→ Voice/music/volume/alignment settings
+→ Audio preview
+→ Check
+→ Run all / Continue / Cancel / Rerun node
+→ 9-node pipeline state + per-scene TTS progress
+→ Remotion Studio launch/stop
+→ Dependency installation
+→ legacy Editor entrypoint
+→ final result
+→ Open video / Open folder
+→ structured collapsible logs
 ```
 
-This is the first usable release of the new Studio, but it sits on the final architecture.
+This is the first usable replacement for the Tkinter main window. It sits on the final architecture and must reach functional parity before the legacy main window is retired.
 
 ### Phase H — Shared render-core
 
@@ -1007,8 +1157,7 @@ Do not:
 - rewrite pipeline/domain logic in Rust;
 - implement a PySide6 intermediate GUI;
 - copy the Tkinter UI 1:1 into React;
-- expose all existing Studio settings immediately;
-- build a full Editor immediately;
+- build a full replacement Editor immediately;
 - build remote/distributed workers;
 - create cloud infrastructure;
 - introduce microservices;
@@ -1076,38 +1225,74 @@ Keep existing runtime version-specific test suites.
 
 ### Desktop E2E
 
+Desktop E2E must cover main-window parity, not only a happy-path render.
+
 At minimum:
 
 ```text
 launch app
+→ observe environment + VieNeu state
 → import known-good zodiac-job@4 ZIP
-→ render
-→ observe completed run
+→ select voice/music/alignment settings
+→ create audio preview
+→ run Check
+→ start full pipeline
+→ observe node and scene progress
+→ cancel/resume in a dedicated recovery test
+→ rerun one eligible node in a dedicated invalidation test
+→ render completes
 → out/zodiac-story.mp4 exists
-→ open-output action resolves correct path
+→ open-video and open-folder resolve correctly
+→ structured logs are visible
+→ Remotion Studio start/stop command is reachable
+→ legacy Editor entrypoint is reachable
 ```
 
-No future editor feature should be required for this test.
+Dependency-install behavior should be covered with a mocked/missing-dependency integration path.
+
+No full future Editor implementation or Performance Timeline is required for this milestone.
 
 ---
 
 ## 26. Completion criteria for the first new Studio release
 
-The architecture foundation is considered usable when:
+The first new Studio release is complete only when the **main window reaches functional parity** with the current Tkinter Studio.
 
-1. Tauri/React Studio launches without importing Tkinter.
+Required criteria:
+
+1. Tauri/React Studio launches without using Tkinter for the main window.
 2. Python Studio Engine starts and reports protocol version.
-3. User imports a valid `zodiac-job@4` ZIP.
-4. Project/revision is persisted.
-5. User starts a render.
-6. UI receives typed progress/events.
-7. Existing local pipeline performs required TTS/timing/runtime/render work.
-8. Cache/invalidation behavior remains correct.
-9. Render completes with exactly one public `out/zodiac-story.mp4`.
-10. User can open the video/folder.
-11. Failed runs are persisted and recoverable.
-12. The same Engine can still be driven by a CLI adapter.
-13. No Editor/Timeline implementation is required to meet this milestone.
+3. VieNeu service state is visible and updates correctly.
+4. Environment/dependency state is visible; missing installable dependencies can be installed from the main UI.
+5. User can import a valid `zodiac-job@4` ZIP.
+6. Existing imported projects/jobs can be selected.
+7. Package fingerprint conflicts support re-import vs keep-existing behavior.
+8. Project/revision is persisted.
+9. Voice can be selected/entered.
+10. Background music can be selected or omitted.
+11. Music volume can be changed.
+12. Alignment model can be selected.
+13. Audio preview can be generated/opened.
+14. **Kiểm tra** performs package/environment checks without running the full pipeline.
+15. **Chạy toàn bộ** starts the dependency-aware run.
+16. **Tiếp tục** resumes unfinished/failed/cancelled work correctly.
+17. **Dừng** cancels the active worker/process tree safely.
+18. The pipeline view exposes all current nine logical nodes and their status.
+19. Per-scene TTS progress remains visible.
+20. A selected node can be rerun and downstream invalidation remains correct.
+21. Remotion Studio can be started and stopped from the main UI.
+22. The **Mở Editor** main-window entrypoint remains available; it may launch the legacy Editor until Editor migration.
+23. UI state/progress/errors arrive through typed protocol events rather than parsed log text.
+24. Logs remain available in a collapsible technical log surface.
+25. Existing local pipeline performs required TTS/timing/runtime/render work.
+26. Cache/invalidation behavior remains correct.
+27. Render completes with exactly one public `out/zodiac-story.mp4`.
+28. Result area reports the final video and allows **Mở video / Mở thư mục**.
+29. Failed runs are persisted and recoverable.
+30. The same Engine can still be driven by a CLI adapter.
+31. Full Editor migration, Performance Timeline and runtime-2.0 UI are not required for this milestone.
+
+The legacy Tkinter **main window must not be retired before these criteria pass**.
 
 ---
 
@@ -1136,9 +1321,18 @@ The refactor is intentionally asymmetrical:
 **User-visible first release:**
 
 ```text
-Import ZIP
-→ Render
-→ Open final video
+Full current main-window parity
+├─ environment + VieNeu status
+├─ project/ZIP management
+├─ voice/music/volume/alignment setup
+├─ audio preview
+├─ Check / Run all / Continue / Stop / Rerun
+├─ 9-node pipeline + scene progress
+├─ Remotion Studio controls
+├─ dependency install
+├─ legacy Editor entrypoint
+├─ result/open video/open folder
+└─ collapsible structured logs
 ```
 
 **Underlying architecture:**
@@ -1161,4 +1355,4 @@ Remotion runtime
 shared Render Core / future Performance Compiler
 ```
 
-This architecture is the target foundation for Zodiac Studio, Editor migration, Performance Timeline and runtime 2.0. Feature exposure may remain intentionally small while the underlying boundaries are production-grade and extensible.
+This architecture is the target foundation for Zodiac Studio, Editor migration, Performance Timeline and runtime 2.0. The first release intentionally defers the **full Editor/Performance expansion**, but it does **not** reduce the current main Studio workflow.
