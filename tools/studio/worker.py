@@ -12,10 +12,17 @@ import queue
 import signal
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 from tools.studio.preflight import PreflightChecker
 from tools.studio.job_state import JobStateStore
+from tools.studio.observability import (
+    PerformanceStore,
+    artifact_fingerprints,
+    snapshot_fingerprint,
+    step_input_fingerprint,
+)
 from tools.studio.pipeline import (
     ALIGN_TIMING,
     STEP_ORDER,
@@ -187,6 +194,7 @@ class PipelineWorker:
         self._process: subprocess.Popen | None = None
         self._thread: threading.Thread | None = None
         self._scenes_lock = threading.Lock()
+        self.performance = PerformanceStore(self.root)
 
         self._invalidate_incompatible_voice_cache()
 
@@ -382,8 +390,41 @@ class PipelineWorker:
         if self._cancel.is_set():
             raise CancelledError("dừng theo yêu cầu")
 
+    def _capture_fingerprints(self) -> dict:
+        try:
+            return artifact_fingerprints(self.root)
+        except Exception as exc:
+            self.log(f"PERFORMANCE_TELEMETRY_WARNING: fingerprint failed: {exc}")
+            return {}
+
+    def _record_step_performance(
+        self,
+        *,
+        step: str,
+        started_at: float,
+        result: str,
+        before: dict,
+    ) -> None:
+        try:
+            after = self._capture_fingerprints()
+            self.performance.write_artifacts(after)
+            self.performance.append(
+                step=step,
+                elapsed_ms=(time.perf_counter() - started_at) * 1000,
+                result=result,
+                input_fingerprint=step_input_fingerprint(step, before),
+                output_fingerprint=snapshot_fingerprint(after),
+                cache_hit=None,
+            )
+        except Exception as exc:
+            self.log(f"PERFORMANCE_TELEMETRY_WARNING: record failed: {exc}")
+
     def _run_step(self, step: str) -> None:
         self._raise_if_cancelled()
+        before = self._capture_fingerprints()
+        started_at = time.perf_counter()
+        result = "failed"
+
         self.plan.mark(step, RUNNING)
         self._checkpoint()
         self.emit(STEP_STARTED, step=step, name=self.plan.steps[step].name)
@@ -400,14 +441,30 @@ class PipelineWorker:
             MIX_MUSIC: self._step_mix,
             PACKAGE_PUBLISH: self._step_package_publish,
         }[step]
-        with observe_subprocesses(self.attach_process):
-            handler()
-        self._raise_if_cancelled()
 
-        if self.plan.status(step) != SKIPPED:
-            self.plan.complete_step(step)
-        self._checkpoint()
-        self.emit(STEP_DONE, step=step, status=self.plan.status(step))
+        try:
+            with observe_subprocesses(self.attach_process):
+                handler()
+            self._raise_if_cancelled()
+
+            if self.plan.status(step) != SKIPPED:
+                self.plan.complete_step(step)
+            result = self.plan.status(step).lower()
+            self._checkpoint()
+            self.emit(STEP_DONE, step=step, status=self.plan.status(step))
+        except CancelledError:
+            result = "cancelled"
+            raise
+        except Exception:
+            result = "failed"
+            raise
+        finally:
+            self._record_step_performance(
+                step=step,
+                started_at=started_at,
+                result=result,
+                before=before,
+            )
 
     # ---- individual steps --------------------------------------------
     def _production(self) -> dict:
