@@ -899,6 +899,7 @@ def _validate_renderer_package_contract(
     *,
     expected_scripts: dict,
     accepted_dependencies: tuple[dict, ...],
+    required_test: str,
     require_isolated_layout: bool = False,
     require_overlay_layout: bool = False,
 ) -> None:
@@ -931,6 +932,7 @@ def _validate_renderer_package_contract(
         "scripts/style-token.mjs",
         "scripts/compile-style-token.mjs",
         "schemas/production.schema.json",
+        required_test,
     )
     for required in required_renderer:
         if not (renderer_root / required).is_file():
@@ -1373,6 +1375,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
             renderer_root,
             expected_scripts=EXPECTED_SCRIPTS,
             accepted_dependencies=(EXPECTED_DEPENDENCIES,),
+            required_test="tests/shared-runtime.test.mjs",
             require_overlay_layout=True,
         )
     else:
@@ -1381,6 +1384,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
             renderer_root,
             expected_scripts=LEGACY_EXPECTED_SCRIPTS,
             accepted_dependencies=(LEGACY_EXPECTED_DEPENDENCIES, EXPECTED_DEPENDENCIES),
+            required_test="tests/pipeline-contract.test.mjs",
             require_isolated_layout=isolated_layout,
             require_overlay_layout=overlay_layout,
         )
