@@ -88,15 +88,16 @@ if(plan.delivery_mode==="conversational"){
   }
   if(maxReactionOnlyRun>=3)warn("three or more reaction/riff-only beats occur consecutively; review narrator spam");
 
+  const normalizedNarration=normalize(narration);
   const analysisBridgePatterns=[
-    /\bvấn đề là\b/giu,
-    /\bđiểm chính(?: là)?\b/giu,
-    /\bđó chính là\b/giu,
-    /\bchỉ là\b/giu,
-    /\bnói cách khác\b/giu,
-    /\bđiều này (?:cho thấy|có nghĩa)\b/giu
+    /(?:^| )van de la(?: |$)/g,
+    /(?:^| )diem chinh(?: la)?(?: |$)/g,
+    /(?:^| )do chinh la(?: |$)/g,
+    /(?:^| )chi la(?: |$)/g,
+    /(?:^| )noi cach khac(?: |$)/g,
+    /(?:^| )dieu nay (?:cho thay|co nghia)(?: |$)/g
   ];
-  const analysisBridgeCount=analysisBridgePatterns.reduce((sum,pattern)=>sum+(narration.match(pattern)?.length??0),0);
+  const analysisBridgeCount=analysisBridgePatterns.reduce((sum,pattern)=>sum+(normalizedNarration.match(pattern)?.length??0),0);
   if(analysisBridgeCount>=3)warn("ANALYSIS_VOICE_DENSITY: conversational narration uses several explanatory bridge phrases; review for post-scene over-explanation");
 
   if(plan.audience_vibe==="student_peer"){
