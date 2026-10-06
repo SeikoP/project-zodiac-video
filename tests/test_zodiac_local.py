@@ -30,6 +30,7 @@ from tools.zodiac_local import (
     generate_scene_voices,
     recover_scene_alignment_with_adaptive_frame_cap,
     tts_scene_frame_cap_retry_eligible,
+    concatenate_scene_voices,
     concatenate_wavs,
     configure_background_music,
     import_package,
@@ -1887,6 +1888,62 @@ class RuntimeTimingTests(unittest.TestCase):
             concatenate_wavs([first, second], output, gap_ms=300)
             with wave.open(str(output), "rb") as wav:
                 self.assertEqual(wav.getnframes(), 8)
+
+    def test_sentence_pause_shifts_following_words_and_extends_scene(self):
+        production = {
+            "video": {"fps": 30},
+            "scenes": [{"id": "S01", "voice": "một. hai"}],
+        }
+        timing = build_timing_from_word_alignment(
+            production,
+            {"S01": 1.0},
+            {
+                "S01": [
+                    {"text": "một.", "startMs": 0, "endMs": 300, "timestampMs": 0},
+                    {"text": "hai", "startMs": 400, "endMs": 900, "timestampMs": 400},
+                ],
+            },
+            sentence_pause_ms=300,
+        )
+        row = timing["scenes"][0]
+        self.assertEqual(row["duration_frames"], 39)
+        self.assertAlmostEqual(row["captions"][0]["endMs"], 300.0)
+        self.assertAlmostEqual(row["captions"][1]["startMs"], 700.0)
+        self.assertAlmostEqual(row["captions"][1]["endMs"], 1200.0)
+
+    def test_final_voice_inserts_sentence_silence_without_regenerating_scene_wav(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            scene_dir = root / ".runtime" / "tts-scenes"
+            scene_dir.mkdir(parents=True)
+            source = scene_dir / "S01.wav"
+            write_pcm(source, 1.0, 10)
+            production = {
+                "video": {"fps": 30},
+                "scenes": [{"id": "S01", "voice": "một. hai"}],
+            }
+            timing = build_timing_from_word_alignment(
+                production,
+                {"S01": 1.0},
+                {
+                    "S01": [
+                        {"text": "một.", "startMs": 0, "endMs": 300, "timestampMs": 0},
+                        {"text": "hai", "startMs": 400, "endMs": 900, "timestampMs": 400},
+                    ],
+                },
+                sentence_pause_ms=300,
+            )
+            output = concatenate_scene_voices(
+                root,
+                production,
+                sentence_pause_ms=300,
+                timing=timing,
+            )
+            with wave.open(str(source), "rb") as original:
+                self.assertEqual(original.getnframes(), 10)
+            with wave.open(str(output), "rb") as final:
+                self.assertEqual(final.getnframes(), 13)
+
 
     def test_word_timing_can_hold_scene_for_breathing_gap(self):
         production = {

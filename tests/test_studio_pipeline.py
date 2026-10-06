@@ -399,9 +399,23 @@ class RenderResumeTests(WorkerHarness):
         self.assertEqual(worker.plan.status(ALIGN_TIMING), PENDING)
         self.assertEqual(worker.plan.status(RENDER_VIDEO), PENDING)
 
+    def test_sentence_pause_change_rebuilds_from_concat_without_tts(self):
+        self.make_worker().run_to_completion()
+        plan = JobStateStore(self.job).open()
+        self.tts_calls.clear()
+        worker = self.make_worker(
+            plan=plan,
+            sentence_pause_ms=500,
+        )
+        self.assertEqual(worker.plan.status(VOICE_SCENES), DONE)
+        self.assertEqual(worker.plan.status(CONCAT_VOICE), PENDING)
+        worker.run_from(worker.plan.continue_from())
+        self.assertEqual(self.tts_calls, [])
+
     def test_worker_defaults_to_breathing_gap_and_095_playback(self):
         worker = self.make_worker()
         self.assertEqual(worker.scene_gap_ms, 350.0)
+        self.assertEqual(worker.sentence_pause_ms, 320.0)
         self.assertEqual(worker.playback_rate, 0.95)
 
     def test_finalization_runs_after_render_even_without_music(self):
