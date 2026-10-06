@@ -1,0 +1,22 @@
+name: Build plugin 1.19 overlay
+on:
+  push:
+    branches: [feat/runtime-1.15-semantic-interaction]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate staged asset library
+        run: node tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-library.mjs
+      - name: Syntax-check interaction validator
+        run: node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.mjs
+      - name: Build overlay archive
+        run: tar -C tmp/plugin-1.19-overlay-root -czf plugin-1.19-overlay.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-1.19-overlay
+          path: plugin-1.19-overlay.tar.gz
+          retention-days: 1
