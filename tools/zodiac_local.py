@@ -561,13 +561,157 @@ def _validate_renderer_source_contract(
         )
 
 
+def _validate_publish_document(root: Path, production: dict) -> dict:
+    publish_dir = root / "publish"
+    copy_path = publish_dir / "publish-copy.txt"
+    json_path = publish_dir / "publish.json"
+    if not copy_path.is_file():
+        raise PipelineError("publish/publish-copy.txt is required.")
+    if not json_path.is_file():
+        raise PipelineError("publish/publish.json is required.")
+
+    try:
+        copy_text = copy_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read publish-copy.txt: {exc}") from exc
+
+    for heading in ("COVER IDENTITY:", "HOOK:", "TIKTOK CAPTION:", "HASHTAGS:"):
+        if heading not in copy_text:
+            raise PipelineError(
+                f"publish-copy.txt is missing required section {heading}"
+            )
+
+    publish = _load_json(json_path, "publish/publish.json")
+    cover = publish.get("cover")
+    identity = cover.get("identity") if isinstance(cover, dict) else None
+    if (
+        not isinstance(cover, dict)
+        or cover.get("layout") != "tilted_top_hook"
+        or not isinstance(identity, dict)
+        or not all(
+            isinstance(identity.get(key), str) and identity[key].strip()
+            for key in ("sign_id", "label", "glyph")
+        )
+        or not isinstance(cover.get("hook"), str)
+        or not cover["hook"].strip()
+    ):
+        raise PipelineError(
+            "COVER_IDENTITY_MISSING: publish cover needs sign_id, label, "
+            "glyph, hook, and layout=tilted_top_hook."
+        )
+
+    scene_id = cover.get("source_scene_id")
+    scene = next(
+        (
+            item
+            for item in production.get("scenes", [])
+            if item.get("id") == scene_id
+        ),
+        None,
+    )
+    if scene is None:
+        raise PipelineError(
+            f"publish cover source_scene_id does not resolve: {scene_id!r}."
+        )
+    entities = {
+        entity.get("id"): entity
+        for entity in scene.get("entities", [])
+        if isinstance(entity, dict)
+    }
+    visuals = cover.get("visuals")
+    if not isinstance(visuals, list) or not visuals:
+        raise PipelineError("publish cover must reuse at least one production visual.")
+    for visual in visuals:
+        if not isinstance(visual, dict):
+            raise PipelineError("publish cover visuals must be objects.")
+        entity_id = visual.get("entity_id")
+        state_id = visual.get("state_id")
+        entity = entities.get(entity_id)
+        if not isinstance(entity, dict) or state_id not in entity.get("states", {}):
+            raise PipelineError(
+                f"publish cover visual does not resolve: {entity_id}.{state_id}."
+            )
+
+    if not isinstance(publish.get("caption"), str) or not publish["caption"].strip():
+        raise PipelineError("publish.json caption must be non-empty.")
+    hashtags = publish.get("hashtags")
+    if (
+        not isinstance(hashtags, list)
+        or not hashtags
+        or not all(isinstance(tag, str) and tag.startswith("#") for tag in hashtags)
+    ):
+        raise PipelineError("publish.json hashtags must be a non-empty hashtag list.")
+
+    if identity["label"] not in copy_text or cover["hook"] not in copy_text:
+        raise PipelineError(
+            "publish-copy.txt must contain the selected cover identity and hook."
+        )
+    return publish
+
+
+def _validate_publish_renderer_contract(renderer_root: Path) -> None:
+    """Require cover rendering only at final publish/renderer readiness."""
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    render_requirements = {
+        "cover composition id": r"ZodiacCover",
+        "cover PNG output": r"cover\.png",
+        "publish copy output": r"publish-copy\.txt",
+        "publish metadata output": r"publish\.json",
+    }
+    missing = [
+        label
+        for label, pattern in render_requirements.items()
+        if re.search(pattern, render_script) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/scripts/render.mjs "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+    root_source = _read_renderer_source(renderer_root, "src/Root.tsx")
+    if "Still" not in root_source or "ZodiacCover" not in root_source:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/Root.tsx "
+            "must register the ZodiacCover Still."
+        )
+
+    cover_source = _read_renderer_source(renderer_root, "src/ZodiacCover.tsx")
+    cover_requirements = {
+        "tilted hook card": r"rotate\(-3deg\)",
+        "cover identity": r"publish\.cover\.identity",
+        "cover hook": r"publish\.cover\.hook",
+        "scene reuse": r"production\.scenes\.find",
+        "state reuse": r"entity\.states",
+    }
+    missing = [
+        label
+        for label, pattern in cover_requirements.items()
+        if re.search(pattern, cover_source) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/ZodiacCover.tsx "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+
 def validate_package(package_root: Path) -> dict:
-    """Validate one Zodiac Video Pipeline v2.0 creative package."""
+    """Validate the creative package without requiring final publish metadata."""
     root = Path(package_root).resolve()
     return validate_production_document(
         root,
         _load_json(root / "production.json", "production.json"),
     )
+
+
+def validate_publish_contract(package_root: Path) -> dict:
+    """Validate final publish metadata, cover identity, and cover renderer."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    publish = _validate_publish_document(root, production)
+    _validate_publish_renderer_contract(root / "renderer")
+    return publish
 
 
 def validate_production_document(root: Path, production: dict) -> dict:
@@ -2948,6 +3092,54 @@ def build_audio_preview(
     return output
 
 
+def validate_publish_outputs(
+    package_root: Path,
+    *,
+    final_video: Path | None = None,
+) -> dict[str, Path]:
+    root = Path(package_root).resolve()
+    out = root / "out"
+    video = Path(final_video).resolve() if final_video else out / "zodiac-story.mp4"
+    required = {
+        "video": video,
+        "cover": out / "cover.png",
+        "copy": out / "publish-copy.txt",
+        "metadata": out / "publish.json",
+    }
+    for label, path in required.items():
+        if not path.is_file():
+            raise PipelineError(f"publish output is missing {label}: {path}")
+    try:
+        json.loads(required["metadata"].read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PipelineError(f"out/publish.json is invalid: {exc}") from exc
+    return required
+
+
+def package_publish_outputs(
+    package_root: Path,
+    *,
+    final_video: Path | None = None,
+) -> Path:
+    root = Path(package_root).resolve()
+    outputs = validate_publish_outputs(
+        root,
+        final_video=final_video,
+    )
+    bundle = root / "out" / "zodiac-publish-bundle.zip"
+    with zipfile.ZipFile(
+        bundle,
+        "w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        archive.write(outputs["video"], "zodiac-story.mp4")
+        archive.write(outputs["cover"], "cover.png")
+        archive.write(outputs["copy"], "publish-copy.txt")
+        archive.write(outputs["metadata"], "publish.json")
+    print(f"Publish bundle: {bundle}", flush=True)
+    return bundle
+
+
 def mix_background_music_into_render(package_root: Path) -> Path:
     root = Path(package_root).resolve()
     config = validate_background_music(root)
@@ -3046,6 +3238,7 @@ def prepare_renderer(
     print("Đang biên dịch design.md → style token trong production.json…", flush=True)
     _run_npm(["run", "compile:style"], renderer)
     validate_package(root)
+    validate_publish_contract(root)
 
     _patch_renderer_typescript_compatibility(renderer)
 
@@ -3057,10 +3250,12 @@ def prepare_renderer(
 
 
 def render_video(package_root: Path) -> None:
-    """Render the canonical Remotion MP4 for the package."""
+    """Render canonical video + cover + publish metadata for the package."""
     root = Path(package_root).resolve()
     validate_runtime(root)
+    validate_publish_contract(root)
     _run_npm(["run", "render"], root / "renderer")
+    validate_publish_outputs(root)
 
 
 def run_renderer(
@@ -3085,7 +3280,11 @@ def run_renderer(
         _run_npm(["run", "studio"], root / "renderer")
     else:
         render_video(root)
-        mix_background_music_into_render(root)
+        final_video = mix_background_music_into_render(root)
+        package_publish_outputs(
+            root,
+            final_video=final_video,
+        )
 
 
 def _choose(prompt: str, values: list[Path]) -> Path:

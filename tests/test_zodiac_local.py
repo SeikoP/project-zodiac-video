@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import stat
 import tempfile
 import unittest
@@ -29,9 +30,12 @@ from tools.zodiac_local import (
     configure_background_music,
     import_package,
     mix_background_music_into_render,
+    package_publish_outputs,
     safe_extract_zip,
     validate_background_music,
     validate_package,
+    validate_publish_contract,
+    validate_publish_outputs,
     validate_timing,
 )
 
@@ -290,12 +294,53 @@ def package_files():
         "assets/characters/lead-neutral.svg": svg,
         "assets/characters/lead-active.svg": svg,
         "renderer/package.json": json.dumps(renderer_package),
+        "publish/publish-copy.txt": (
+            "COVER IDENTITY:\nXỬ NỮ ♍\n\n"
+            "HOOK:\nBẬT CHẾ ĐỘ KIỂM LỖI 24/7?\n\n"
+            "TIKTOK CAPTION:\nMột caption thử nghiệm.\n\n"
+            "HASHTAGS:\n#xunu #cungxunu #virgo\n"
+        ),
+        "publish/publish.json": json.dumps(
+            {
+                "version": "1.1",
+                "platform": "tiktok",
+                "cover": {
+                    "layout": "tilted_top_hook",
+                    "identity": {
+                        "sign_id": "virgo",
+                        "label": "XỬ NỮ",
+                        "glyph": "♍",
+                    },
+                    "hook": "BẬT CHẾ ĐỘ KIỂM LỖI 24/7?",
+                    "source_scene_id": "S01",
+                    "visuals": [
+                        {
+                            "entity_id": "character.lead",
+                            "state_id": "neutral",
+                        }
+                    ],
+                },
+                "caption": "Một caption thử nghiệm.",
+                "hashtags": ["#xunu", "#cungxunu", "#virgo"],
+            },
+            ensure_ascii=False,
+        ),
     }
     renderer_sources = {
         "renderer/src/index.ts": "registerRoot(RemotionRoot);\n",
         "renderer/src/Root.tsx": (
             "const calculateMetadata = ({props}) => ({durationInFrames: props.total_duration_frames});\n"
-            "export const RemotionRoot = () => <Composition calculateMetadata={calculateMetadata} durationInFrames={1} />;\n"
+            "export const RemotionRoot = () => <>"
+            "<Composition id=\"ZodiacVideo\" calculateMetadata={calculateMetadata} durationInFrames={1} />"
+            "<Still id=\"ZodiacCover\" component={ZodiacCover} />"
+            "</>;\n"
+        ),
+        "renderer/src/ZodiacCover.tsx": (
+            "const scene = production.scenes.find((item) => item.id === publish.cover.source_scene_id);\n"
+            "const entity = scene.entities.find((item) => item.id === visual.entity_id);\n"
+            "const state = entity.states[visual.state_id];\n"
+            "const tilted = {transform: \"rotate(-3deg)\"};\n"
+            "export const ZodiacCover = () => <div>{publish.cover.identity.label}{publish.cover.hook}</div>;\n"
         ),
         "renderer/src/ZodiacComposition.tsx": (
             "export const ZodiacComposition = (timing) => production.scenes.map((scene) => {\n"
@@ -318,8 +363,11 @@ def package_files():
         "renderer/scripts/render.mjs": (
             "const renderPropsPath = path.join(packageRoot, '.runtime', 'render-props.json');\n"
             "await writeFile(renderPropsPath, JSON.stringify(timing));\n"
-            "const args = ['render', 'src/index.ts', 'ZodiacVideo', '../out/zodiac-story.mp4'];\n"
-            "const result = spawnSync(cli, args);\n"
+            "const videoArgs = ['render', 'src/index.ts', 'ZodiacVideo', '../out/zodiac-story.mp4'];\n"
+            "const coverArgs = ['still', 'src/index.ts', 'ZodiacCover', '../out/cover.png'];\n"
+            "spawnSync(cli, videoArgs); spawnSync(cli, coverArgs);\n"
+            "await copyFile('publish/publish-copy.txt', '../out/publish-copy.txt');\n"
+            "await copyFile('publish/publish.json', '../out/publish.json');\n"
         ),
         "renderer/scripts/generate-sfx.mjs": "export const generateSfx = async () => {};\n",
         "renderer/scripts/style-token.mjs": "export const parseDesignToken = () => ({});\n",
@@ -463,6 +511,41 @@ class SafeExtractionTests(unittest.TestCase):
                 validate_package(imported)["version"],
                 "2.0",
             )
+
+    def test_rejects_missing_publish_copy_file(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "publish/publish-copy.txt").unlink()
+            with self.assertRaisesRegex(
+                PipelineError,
+                "publish-copy.txt",
+            ):
+                validate_publish_contract(job)
+
+    def test_creative_validation_allows_publish_pending(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            shutil.rmtree(job / "publish")
+            self.assertEqual(
+                validate_package(job)["version"],
+                "2.0",
+            )
+
+    def test_rejects_missing_cover_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "publish/publish.json"
+            publish = json.loads(path.read_text(encoding="utf-8"))
+            publish["cover"]["identity"]["label"] = ""
+            path.write_text(
+                json.dumps(publish, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                PipelineError,
+                "COVER_IDENTITY_MISSING",
+            ):
+                validate_publish_contract(job)
 
     def test_rejects_v1_contract(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -1769,6 +1852,56 @@ class TtsDiagnosticsRegressionTests(unittest.TestCase):
         self.assertIsNone(config["precision"])
         self.assertIsNone(config["frame_cap"])
         self.assertEqual(config["max_chars"], 256)
+
+
+class PublishBundleTests(unittest.TestCase):
+    def _rendered_job(self, root: Path) -> Path:
+        job = write_package(root)
+        out = job / "out"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "zodiac-story.mp4").write_bytes(b"video")
+        (out / "cover.png").write_bytes(b"cover")
+        (out / "publish-copy.txt").write_text(
+            "COVER IDENTITY:\nXỬ NỮ ♍\n",
+            encoding="utf-8",
+        )
+        (out / "publish.json").write_text(
+            json.dumps({"version": "1.1"}),
+            encoding="utf-8",
+        )
+        return job
+
+    def test_publish_outputs_require_cover(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = self._rendered_job(Path(temp))
+            (job / "out/cover.png").unlink()
+            with self.assertRaisesRegex(PipelineError, "cover.png"):
+                validate_publish_outputs(job)
+
+    def test_publish_bundle_contains_video_cover_copy_and_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = self._rendered_job(Path(temp))
+            mixed = job / "out/zodiac-story.with-music.mp4"
+            mixed.write_bytes(b"mixed")
+            bundle = package_publish_outputs(
+                job,
+                final_video=mixed,
+            )
+            self.assertTrue(bundle.is_file())
+            with zipfile.ZipFile(bundle) as archive:
+                self.assertEqual(
+                    set(archive.namelist()),
+                    {
+                        "zodiac-story.mp4",
+                        "cover.png",
+                        "publish-copy.txt",
+                        "publish.json",
+                    },
+                )
+                self.assertEqual(
+                    archive.read("zodiac-story.mp4"),
+                    b"mixed",
+                )
 
 
 class BackgroundMusicTests(unittest.TestCase):
