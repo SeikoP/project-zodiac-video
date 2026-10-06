@@ -22,7 +22,6 @@ from tools.studio.pipeline import (
     PREPARE_RENDERER,
     RENDER_VIDEO,
     MIX_MUSIC,
-    PACKAGE_PUBLISH,
 )
 from tools.studio.preflight import PreflightChecker
 
@@ -263,7 +262,6 @@ class PipelinePlanTests(unittest.TestCase):
                 PREPARE_RENDERER,
                 RENDER_VIDEO,
                 MIX_MUSIC,
-                PACKAGE_PUBLISH,
             ),
         )
 
@@ -305,7 +303,6 @@ class PipelinePlanTests(unittest.TestCase):
         self.assertEqual(plan.status(ALIGN_TIMING), "DONE")
         self.assertEqual(plan.status(RENDER_VIDEO), "PENDING")
         self.assertEqual(plan.status(MIX_MUSIC), "PENDING")
-        self.assertEqual(plan.status(PACKAGE_PUBLISH), "PENDING")
 
     def test_music_edit_only_invalidates_the_mix(self):
         plan = PipelinePlan(job="j")

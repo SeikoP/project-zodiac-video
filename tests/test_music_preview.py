@@ -94,23 +94,23 @@ class DefaultVolumeTests(unittest.TestCase):
 
         self.assertEqual(zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME, 1.0)
 
-    def test_mix_keeps_the_pristine_render_so_remixing_is_idempotent(self):
-        """Re-running MIX_MUSIC must not stack music onto an already-mixed file."""
+    def test_mix_uses_hidden_pristine_cache_so_remixing_is_idempotent(self):
+        """Re-running MIX_MUSIC must not stack music onto the public final file."""
         import inspect
 
         from tools import zodiac_local
 
         source = inspect.getsource(zodiac_local.mix_background_music_into_render)
-        self.assertNotIn(".replace(", source)
-        self.assertIn("zodiac-story.with-music.mp4", source)
+        self.assertIn("_pristine_render_path", source)
+        self.assertIn("os.replace", source)
+        self.assertNotIn('output.with_name("zodiac-story.with-music.mp4")', source)
 
-    def test_video_path_prefers_the_mixed_file(self):
-        import inspect
-
+    def test_video_path_is_always_the_single_final_file(self):
         from tools.studio.controller import StudioController
 
-        source = inspect.getsource(StudioController.video_path.fget)
-        self.assertIn("zodiac-story.with-music.mp4", source)
+        controller = StudioController(Path("."))
+        controller.job = Path("job")
+        self.assertEqual(controller.video_path, Path("job/out/zodiac-story.mp4"))
 
     def test_bundled_music_is_optional_and_never_fabricated(self):
         from tools.zodiac_local import BUNDLED_MUSIC, default_music_path

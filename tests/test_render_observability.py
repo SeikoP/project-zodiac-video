@@ -59,8 +59,8 @@ class ArtifactFingerprintTests(unittest.TestCase):
         self.assertEqual(before["renderer"], after["renderer"])
         self.assertEqual(before["voice"], after["voice"])
         self.assertNotEqual(
-            step_input_fingerprint("PACKAGE_PUBLISH", before),
-            step_input_fingerprint("PACKAGE_PUBLISH", after),
+            step_input_fingerprint("MIX_MUSIC", before),
+            step_input_fingerprint("MIX_MUSIC", after),
         )
 
 
