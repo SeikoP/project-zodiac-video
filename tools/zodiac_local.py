@@ -4250,7 +4250,10 @@ def prepare_renderer(
             "renderer.contract_tests",
             input_fingerprint=check_fingerprint,
         ):
-            _run_npm(["run", "test"], renderer, env=_renderer_environment(root))
+            if shared_runtime:
+                _run_npm(["run", "test"], renderer, env=_renderer_environment(root))
+            else:
+                _run_npm(["run", "test"], renderer)
 
         print("Đang kiểm tra TypeScript của renderer…", flush=True)
         with measure_performance_stage(
@@ -4258,7 +4261,10 @@ def prepare_renderer(
             "renderer.typecheck",
             input_fingerprint=check_fingerprint,
         ):
-            _run_npm(["run", "typecheck"], renderer, env=_renderer_environment(root))
+            if shared_runtime:
+                _run_npm(["run", "typecheck"], renderer, env=_renderer_environment(root))
+            else:
+                _run_npm(["run", "typecheck"], renderer)
 
         # Mark only after BOTH contract tests and TypeScript have passed.
         mark_renderer_checks_cached(root, check_fingerprint)
@@ -4275,11 +4281,11 @@ def render_video(package_root: Path) -> None:
         "renderer.render",
         input_fingerprint=fingerprint,
     ):
-        _run_npm(
-            ["run", "render"],
-            resolve_renderer_root(root, materialize=True),
-            env=_renderer_environment(root),
-        )
+        renderer = resolve_renderer_root(root, materialize=True)
+        if _load_package_manifest(root) is not None:
+            _run_npm(["run", "render"], renderer, env=_renderer_environment(root))
+        else:
+            _run_npm(["run", "render"], renderer)
     validate_publish_outputs(root)
 
 
@@ -4302,11 +4308,11 @@ def run_renderer(
                 f"({config['background_music_volume']:.0%}).",
                 flush=True,
             )
-        _run_npm(
-            ["run", "studio"],
-            resolve_renderer_root(root, materialize=True),
-            env=_renderer_environment(root),
-        )
+        renderer = resolve_renderer_root(root, materialize=True)
+        if _load_package_manifest(root) is not None:
+            _run_npm(["run", "studio"], renderer, env=_renderer_environment(root))
+        else:
+            _run_npm(["run", "studio"], renderer)
     else:
         render_video(root)
         final_video = mix_background_music_into_render(root)
