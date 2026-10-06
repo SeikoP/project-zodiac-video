@@ -828,14 +828,36 @@ class RendererTypeCompatTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
             _patch_renderer_typescript_compatibility(renderer)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 patched = (renderer / "src" / name).read_text(encoding="utf-8")
                 self.assertIn("as unknown as Production", patched, name)
+
+    def test_patch_covers_zodiac_cover_json_cast(self):
+        from tools.zodiac_local import _patch_renderer_typescript_compatibility
+
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            (renderer / "src" / "Root.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacComposition.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacCover.tsx").write_text(
+                "const production = productionJson as Production;\n",
+                encoding="utf-8",
+            )
+            _patch_renderer_typescript_compatibility(renderer)
+            patched = (renderer / "src" / "ZodiacCover.tsx").read_text(encoding="utf-8")
+            self.assertIn("as unknown as Production", patched)
 
     def test_prepare_renderer_applies_the_cast_patch_before_typecheck(self):
         """The shipped renderer casts JSON directly, which fails TS2352."""
@@ -854,7 +876,7 @@ class RendererTypeCompatTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
