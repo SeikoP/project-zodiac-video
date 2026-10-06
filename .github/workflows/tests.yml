@@ -20,3 +20,21 @@ jobs:
         run: python -m compileall -q tools tests
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+
+  renderer-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tests/renderer-smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install renderer smoke dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck renderer smoke
+        run: npm run typecheck
+      - name: Render frame-0 font smoke
+        run: npm run smoke
