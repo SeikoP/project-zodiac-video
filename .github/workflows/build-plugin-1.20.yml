@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test interaction validator
+        run: node --test tmp/plugin-1.20-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.test.mjs
       - name: Build plugin overlay archive
         shell: bash
         run: |
