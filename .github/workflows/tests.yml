@@ -82,3 +82,24 @@ jobs:
         env:
           ZODIAC_E2E_RUNTIME: "1"
         run: python -m unittest tests.test_zodiac_local.SemanticRuntimeV315Tests.test_v315_runtime_prepare_golden_thief -v
+
+  shared-runtime-1-16:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.16.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install performance runtime dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test performance runtime
+        run: npm test
+      - name: Typecheck performance runtime
+        run: npm run typecheck
+      - name: Print canonical runtime 1.16 hash
+        working-directory: .
+        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.16.0/renderer
