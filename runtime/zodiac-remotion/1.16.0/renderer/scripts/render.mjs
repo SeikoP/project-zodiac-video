@@ -48,10 +48,18 @@ if (
   (captionToken.ghost_frame === true && caption.background !== "transparent")
 ) fail("caption_style must exactly match design.md caption_emphasis/safe_zone, including the transparent handwritten overlay contract.");
 
-let handoff;
-try { handoff = JSON.parse(await readFile(path.join(packageRoot, "handoff-manifest.json"), "utf8")); } catch (error) { fail("handoff-manifest.json is required and must be valid JSON: " + error.message); }
-if (!handoff.package_id || !handoff.plugin_version || !Array.isArray(handoff.status) || !handoff.status.some((value) => ["LOCAL_RUNTIME_PENDING", "RENDER_READY"].includes(value))) {
-  fail("handoff-manifest.json must identify package/plugin and declare LOCAL_RUNTIME_PENDING or RENDER_READY.");
+let packageManifest = null;
+const packageManifestPath = path.join(packageRoot, "package-manifest.json");
+if (await hasFile(packageManifestPath)) {
+  try { packageManifest = JSON.parse(await readFile(packageManifestPath, "utf8")); } catch (error) { fail("package-manifest.json is invalid: " + error.message); }
+}
+const localFirstV4 = packageManifest?.format === "zodiac-job@4";
+if (!localFirstV4) {
+  let handoff;
+  try { handoff = JSON.parse(await readFile(path.join(packageRoot, "handoff-manifest.json"), "utf8")); } catch (error) { fail("handoff-manifest.json is required and must be valid JSON: " + error.message); }
+  if (!handoff.package_id || !handoff.plugin_version || !Array.isArray(handoff.status) || !handoff.status.some((value) => ["LOCAL_RUNTIME_PENDING", "RENDER_READY"].includes(value))) {
+    fail("handoff-manifest.json must identify package/plugin and declare LOCAL_RUNTIME_PENDING or RENDER_READY.");
+  }
 }
 if (!(await hasFile(path.join(packageRoot, "voice.wav")))) fail("voice.wav is missing; create it from narration.txt first.");
 let narration;
