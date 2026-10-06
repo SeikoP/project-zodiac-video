@@ -26,13 +26,10 @@ jobs:
           grep -q "Fresh Run Isolation" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/SKILL.md
           grep -q "student_peer" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/phase3-narrator-performance.md
           grep -q "DO NOT AUTO-LOAD THIS FILE" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/current-gemini-example.md
-      - name: Build plugin overlay archive
-        shell: bash
-        run: |
-          tar -C tmp/plugin-1.22-root -czf plugin-1.22-overlay.tar.gz .
-      - name: Upload plugin overlay
+      - name: Upload plugin source
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-1.22-overlay
-          path: plugin-1.22-overlay.tar.gz
+          name: plugin-1.22-source
+          path: tmp/plugin-1.22-root/
+          include-hidden-files: true
           retention-days: 1
