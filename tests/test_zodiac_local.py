@@ -932,6 +932,75 @@ class RendererTypeCompatTests(unittest.TestCase):
             )
 
 
+class RenderProfileRetimingTests(unittest.TestCase):
+    def test_scales_legacy_frame_duration_without_changing_wall_time(self):
+        from tools.zodiac_local import scale_frame_duration
+
+        self.assertEqual(scale_frame_duration(12, 30, 24), 10)
+        self.assertEqual(scale_frame_duration(15, 30, 24), 12)
+        self.assertEqual(scale_frame_duration(0, 30, 24, allow_zero=True), 0)
+
+    def test_retimes_runtime_frames_but_preserves_measured_word_milliseconds(self):
+        from tools.zodiac_local import retime_runtime_timing
+
+        timing = valid_timing()
+        original_captions = json.loads(
+            json.dumps(timing["scenes"][0]["captions"])
+        )
+        retimed = retime_runtime_timing(timing, 24)
+
+        self.assertEqual(retimed["fps"], 24)
+        self.assertEqual(retimed["total_duration_frames"], 24)
+        self.assertEqual(retimed["scenes"][0]["start_frame"], 0)
+        self.assertEqual(retimed["scenes"][0]["duration_frames"], 24)
+        self.assertEqual(
+            retimed["scenes"][0]["captions"],
+            original_captions,
+        )
+        self.assertEqual(timing["fps"], 30, "retiming must not mutate measured timing")
+
+    def test_retime_preserves_scene_boundaries_after_rounding(self):
+        from tools.zodiac_local import retime_runtime_timing
+
+        timing = {
+            "fps": 30,
+            "total_duration_frames": 61,
+            "scenes": [
+                {
+                    "scene_id": "S01",
+                    "start_frame": 0,
+                    "duration_frames": 31,
+                    "captions": [],
+                },
+                {
+                    "scene_id": "S02",
+                    "start_frame": 31,
+                    "duration_frames": 30,
+                    "captions": [],
+                },
+            ],
+        }
+        retimed = retime_runtime_timing(timing, 24)
+        first = retimed["scenes"][0]
+        second = retimed["scenes"][1]
+        self.assertEqual(
+            first["start_frame"] + first["duration_frames"],
+            second["start_frame"],
+        )
+        self.assertEqual(
+            second["start_frame"] + second["duration_frames"],
+            retimed["total_duration_frames"],
+        )
+
+    def test_rejects_invalid_target_fps(self):
+        from tools.zodiac_local import retime_runtime_timing
+
+        for value in (0, -1, True, 23.976):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(PipelineError, "target FPS"):
+                    retime_runtime_timing(valid_timing(), value)
+
+
 class RuntimeTimingTests(unittest.TestCase):
     def test_builds_word_level_timing(self):
         production = json.loads(
