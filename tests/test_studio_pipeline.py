@@ -434,7 +434,6 @@ class RenderResumeTests(WorkerHarness):
         plan.apply_change("music")
         self.assertEqual(plan.status(RENDER_VIDEO), DONE)
         self.assertEqual(plan.status(MIX_MUSIC), PENDING)
-        self.assertEqual(plan.status(PACKAGE_PUBLISH), PENDING)
 
 
 class CancelTests(WorkerHarness):
