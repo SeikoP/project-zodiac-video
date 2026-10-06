@@ -2931,7 +2931,11 @@ def _install_renderer(renderer: Path) -> None:
 
 def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
     """Keep the shipped JSON cast valid on current TypeScript versions."""
-    for relative in ("src/Root.tsx", "src/ZodiacComposition.tsx"):
+    for relative in (
+        "src/Root.tsx",
+        "src/ZodiacComposition.tsx",
+        "src/ZodiacCover.tsx",
+    ):
         path = renderer / relative
         try:
             source = path.read_text(encoding="utf-8")
