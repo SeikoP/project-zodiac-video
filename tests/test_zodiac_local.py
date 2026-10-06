@@ -2045,6 +2045,80 @@ class PublishBundleTests(unittest.TestCase):
                 )
 
 
+class ArtifactFingerprintTests(unittest.TestCase):
+    def test_publish_only_change_does_not_dirty_video_fingerprint(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            before = artifact_fingerprints(job)
+            copy_path = job / "publish" / "publish-copy.txt"
+            copy_path.write_text(
+                copy_path.read_text(encoding="utf-8") + "\nALT HOOK\n",
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertNotEqual(before["publish"], after["publish"])
+            self.assertNotEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
+
+    def test_runtime_timing_change_dirties_video_but_not_cover(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            runtime = job / ".runtime"
+            runtime.mkdir(parents=True, exist_ok=True)
+            timing = valid_timing()
+            (runtime / "timing.json").write_text(
+                json.dumps(timing),
+                encoding="utf-8",
+            )
+            before = artifact_fingerprints(job)
+            timing["scenes"][0]["duration_frames"] += 1
+            timing["total_duration_frames"] += 1
+            (runtime / "timing.json").write_text(
+                json.dumps(timing),
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertNotEqual(before["runtime"], after["runtime"])
+            self.assertNotEqual(before["video"], after["video"])
+            self.assertEqual(before["cover"], after["cover"])
+
+    def test_stage_metrics_are_persisted_for_benchmarking(self):
+        from tools.zodiac_local import measure_performance_stage
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            with patch(
+                "tools.zodiac_local.time.perf_counter",
+                side_effect=[10.0, 10.25],
+            ):
+                with measure_performance_stage(
+                    job,
+                    "renderer.typecheck",
+                    input_fingerprint="abc123",
+                    cache_hit=False,
+                ):
+                    pass
+
+            payload = json.loads(
+                (job / ".runtime" / "performance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            row = payload["stages"]["renderer.typecheck"]
+            self.assertEqual(row["elapsed_ms"], 250)
+            self.assertEqual(row["status"], "PASS")
+            self.assertFalse(row["cache_hit"])
+            self.assertEqual(row["input_fingerprint"], "abc123")
+            self.assertIn("video", payload["fingerprints"])
+
+
 class BackgroundMusicTests(unittest.TestCase):
     def _job(self, root: Path) -> Path:
         job = root / "job"
