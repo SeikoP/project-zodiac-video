@@ -86,6 +86,7 @@ EXPECTED_SCRIPTS = {
     "compile:style": "node scripts/compile-style-token.mjs",
 }
 PACKAGE_FORMAT_V3 = "zodiac-job@3"
+PACKAGE_FORMAT_V4 = "zodiac-job@4"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
 RUNTIME_VERSION = "1.15.0"
@@ -212,6 +213,20 @@ def _package_root(extracted: Path) -> Path:
     return candidates[0].parent
 
 
+_RUNTIME_TEXT_SUFFIXES = {
+    ".css", ".html", ".js", ".json", ".jsx", ".md", ".mjs", ".mts",
+    ".ts", ".tsx", ".txt", ".yaml", ".yml",
+}
+
+
+def _canonical_runtime_file_bytes(file_path: Path) -> bytes:
+    """Normalize text line endings so runtime integrity is checkout-platform agnostic."""
+    data = file_path.read_bytes()
+    if file_path.suffix.lower() in _RUNTIME_TEXT_SUFFIXES or file_path.name.endswith(".d.ts"):
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return data
+
+
 def _renderer_tree_sha256(renderer_root: Path) -> str:
     """Hash immutable renderer source/config; ignore installed/generated runtime state."""
     import hashlib
@@ -231,7 +246,7 @@ def _renderer_tree_sha256(renderer_root: Path) -> str:
         relative = file_path.relative_to(renderer_root).as_posix()
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")
-        digest.update(file_path.read_bytes())
+        digest.update(_canonical_runtime_file_bytes(file_path))
         digest.update(b"\0")
     return digest.hexdigest()
 
@@ -256,34 +271,47 @@ def _load_package_manifest(root: Path) -> dict | None:
     if not path.is_file():
         return None
     manifest = _load_json(path, "package-manifest.json")
-    if manifest.get("format") != PACKAGE_FORMAT_V3 or manifest.get("production_contract") != "2.0":
+    package_format = manifest.get("format")
+    if package_format not in {PACKAGE_FORMAT_V3, PACKAGE_FORMAT_V4} or manifest.get("production_contract") != "2.0":
         raise PipelineError(
-            "PACKAGE_MANIFEST_INVALID: expected format zodiac-job@3 and production_contract 2.0."
+            "PACKAGE_MANIFEST_INVALID: expected zodiac-job@3/@4 with production_contract 2.0."
         )
+
     runtime_ref = manifest.get("runtime")
-    design_ref = manifest.get("design")
     producer = manifest.get("producer")
-    if (
-        not isinstance(runtime_ref, dict)
-        or not all(isinstance(runtime_ref.get(key), str) and runtime_ref[key].strip() for key in ("id", "version", "sha256"))
-        or not re.fullmatch(r"[0-9a-f]{64}", runtime_ref["sha256"])
-        or not isinstance(design_ref, dict)
-        or not all(isinstance(design_ref.get(key), str) and design_ref[key].strip() for key in ("id", "version", "sha256"))
-        or not re.fullmatch(r"[0-9a-f]{64}", design_ref["sha256"])
-        or not isinstance(producer, dict)
-        or producer.get("plugin") != "zodiac-video-pipeline"
-        or not isinstance(producer.get("version"), str)
-        or not producer["version"].strip()
-    ):
+    runtime_keys = ("id", "version", "sha256") if package_format == PACKAGE_FORMAT_V3 else ("id", "version")
+    runtime_valid = (
+        isinstance(runtime_ref, dict)
+        and all(isinstance(runtime_ref.get(key), str) and runtime_ref[key].strip() for key in runtime_keys)
+    )
+    if package_format == PACKAGE_FORMAT_V3:
+        runtime_valid = runtime_valid and bool(re.fullmatch(r"[0-9a-f]{64}", runtime_ref.get("sha256", "")))
+        design_ref = manifest.get("design")
+        design_valid = (
+            isinstance(design_ref, dict)
+            and all(isinstance(design_ref.get(key), str) and design_ref[key].strip() for key in ("id", "version", "sha256"))
+            and bool(re.fullmatch(r"[0-9a-f]{64}", design_ref.get("sha256", "")))
+        )
+    else:
+        design_valid = "design" not in manifest and "sha256" not in runtime_ref
+
+    producer_valid = (
+        isinstance(producer, dict)
+        and producer.get("plugin") == "zodiac-video-pipeline"
+        and isinstance(producer.get("version"), str)
+        and bool(producer["version"].strip())
+    )
+    if not runtime_valid or not design_valid or not producer_valid:
         raise PipelineError("PACKAGE_MANIFEST_INVALID: runtime/design/producer references are incomplete.")
 
-    forbidden = [
-        name for name in ("renderer", "library", "references", "node_modules", ".authoring")
-        if (root / name).exists()
-    ]
+    forbidden_names = ["renderer", "library", "references", "node_modules", ".authoring"]
+    if package_format == PACKAGE_FORMAT_V4:
+        forbidden_names.extend(["FINAL_VALIDATION.json", "handoff-manifest.json"])
+    forbidden = [name for name in forbidden_names if (root / name).exists()]
     if forbidden:
+        code = "PACKAGE_V4_BLOAT" if package_format == PACKAGE_FORMAT_V4 else "PACKAGE_V3_BLOAT"
         raise PipelineError(
-            "PACKAGE_V3_BLOAT: thin packages must not contain " + ", ".join(forbidden) + "."
+            code + ": thin packages must not contain " + ", ".join(forbidden) + "."
         )
 
     bundled = _bundled_runtime_root(runtime_ref)
@@ -293,9 +321,14 @@ def _load_package_manifest(root: Path) -> dict | None:
         or runtime_manifest.get("id") != runtime_ref["id"]
         or runtime_manifest.get("version") != runtime_ref["version"]
     ):
-        raise PipelineError("RUNTIME_HASH_MISMATCH: bundled runtime metadata does not match package reference.")
+        code = "BUNDLED_RUNTIME_CORRUPT" if package_format == PACKAGE_FORMAT_V4 else "RUNTIME_HASH_MISMATCH"
+        raise PipelineError(code + ": bundled runtime metadata does not match the requested runtime.")
+
     actual_hash = _renderer_tree_sha256(bundled / "renderer")
-    if runtime_manifest.get("sha256") != actual_hash or runtime_ref["sha256"] != actual_hash:
+    if runtime_manifest.get("sha256") != actual_hash:
+        code = "BUNDLED_RUNTIME_CORRUPT" if package_format == PACKAGE_FORMAT_V4 else "RUNTIME_HASH_MISMATCH"
+        raise PipelineError(code + ": bundled renderer source does not match its runtime manifest.")
+    if package_format == PACKAGE_FORMAT_V3 and runtime_ref["sha256"] != actual_hash:
         raise PipelineError(
             "RUNTIME_HASH_MISMATCH: requested runtime hash does not match bundled renderer source."
         )
@@ -303,7 +336,7 @@ def _load_package_manifest(root: Path) -> dict | None:
 
 
 def _validate_package_manifest_design(manifest: dict | None, token: dict, source_hash: str) -> None:
-    if manifest is None:
+    if manifest is None or manifest.get("format") == PACKAGE_FORMAT_V4:
         return
     design = manifest["design"]
     if (
@@ -326,19 +359,26 @@ def _workspace_root_for_job(root: Path) -> Path:
 def _verify_cached_runtime(runtime_root: Path, runtime_ref: dict) -> None:
     manifest = _load_json(runtime_root / "runtime-manifest.json", "cached runtime-manifest.json")
     actual_hash = _renderer_tree_sha256(runtime_root / "renderer")
+    expected_hash = runtime_ref.get("sha256")
+    if not isinstance(expected_hash, str) or not expected_hash:
+        bundled = _bundled_runtime_root(runtime_ref)
+        expected_hash = _load_json(
+            bundled / "runtime-manifest.json",
+            "runtime-manifest.json",
+        ).get("sha256")
     if (
         manifest.get("id") != runtime_ref.get("id")
         or manifest.get("version") != runtime_ref.get("version")
-        or manifest.get("sha256") != runtime_ref.get("sha256")
-        or actual_hash != runtime_ref.get("sha256")
+        or manifest.get("sha256") != expected_hash
+        or actual_hash != expected_hash
     ):
         raise PipelineError(
-            "RUNTIME_HASH_MISMATCH: cached runtime differs from the exact package runtime reference."
+            "RUNTIME_HASH_MISMATCH: cached runtime differs from the exact local runtime reference."
         )
 
 
 def resolve_renderer_root(package_root: Path, *, materialize: bool = True) -> Path:
-    """Return legacy package renderer or exact shared v3 runtime renderer."""
+    """Return legacy package renderer or exact shared v3/v4 runtime renderer."""
     root = Path(package_root).resolve()
     manifest = _load_package_manifest(root)
     if manifest is None:
@@ -1546,9 +1586,11 @@ def validate_production_document(root: Path, production: dict) -> dict:
             "narration.txt must exactly match canonical ordered scene.voice serialization."
         )
 
-    _validate_handoff_boundary(root)
-    if semantic_runtime:
-        _validate_semantic_validation_receipt(root)
+    local_first_v4 = package_manifest is not None and package_manifest.get("format") == PACKAGE_FORMAT_V4
+    if not local_first_v4:
+        _validate_handoff_boundary(root)
+        if semantic_runtime:
+            _validate_semantic_validation_receipt(root)
 
     if package_manifest is not None:
         actual_assets = {
@@ -2369,17 +2411,21 @@ def _tree_files(root: Path, relative: str, *, exclude: set[str] | None = None) -
 def artifact_fingerprints(package_root: Path) -> dict[str, str]:
     """Describe exact input groups for render, cover, mix, and publish outputs."""
     root = Path(package_root).resolve()
+    package_manifest = _load_package_manifest(root)
+    local_first_v4 = package_manifest is not None and package_manifest.get("format") == PACKAGE_FORMAT_V4
 
     creative_files = [
         root / "production.json",
         root / "narration.txt",
         root / "design.md",
-        root / "handoff-manifest.json",
         root / "package-manifest.json",
-        root / "FINAL_VALIDATION.json",
         *_tree_files(root, "assets"),
     ]
-    package_manifest = _load_package_manifest(root)
+    if not local_first_v4:
+        creative_files.extend([
+            root / "handoff-manifest.json",
+            root / "FINAL_VALIDATION.json",
+        ])
     renderer_files = (
         []
         if package_manifest is not None
@@ -2428,11 +2474,17 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
             publish_document = {}
 
     creative = _fingerprint_files(root, creative_files)
-    renderer = (
-        package_manifest["runtime"]["sha256"]
-        if package_manifest is not None
-        else _fingerprint_files(root, renderer_files)
-    )
+    if package_manifest is None:
+        renderer = _fingerprint_files(root, renderer_files)
+    else:
+        runtime_ref = package_manifest["runtime"]
+        renderer = runtime_ref.get("sha256")
+        if not isinstance(renderer, str) or not renderer:
+            runtime_manifest = _load_json(
+                _bundled_runtime_root(runtime_ref) / "runtime-manifest.json",
+                "runtime-manifest.json",
+            )
+            renderer = str(runtime_manifest.get("sha256") or "")
     runtime = _fingerprint_files(root, runtime_files)
     publish_metadata = _fingerprint_value(publish_document)
     publish_copy = _fingerprint_files(root, publish_copy_files)
@@ -4212,6 +4264,50 @@ def validate_publish_outputs(
     return required
 
 
+def write_local_final_validation(
+    package_root: Path,
+    *,
+    final_video: Path | None = None,
+) -> Path:
+    """Write the runtime-owned final receipt for a completed zodiac-job@4 run."""
+    root = Path(package_root).resolve()
+    manifest = _load_package_manifest(root)
+    if manifest is None or manifest.get("format") != PACKAGE_FORMAT_V4:
+        raise PipelineError("LOCAL_FINAL_VALIDATION_UNSUPPORTED: only zodiac-job@4 uses the local final receipt.")
+
+    production, _timing = validate_runtime(root)
+    outputs = validate_publish_outputs(root, final_video=final_video)
+    runtime_ref = manifest["runtime"]
+    runtime_manifest = _load_json(
+        _bundled_runtime_root(runtime_ref) / "runtime-manifest.json",
+        "runtime-manifest.json",
+    )
+    receipt = {
+        "status": "PASS",
+        "production_sha256": file_sha256(root / "production.json"),
+        "runtime": {
+            "id": runtime_ref["id"],
+            "version": runtime_ref["version"],
+            "sha256": runtime_manifest["sha256"],
+        },
+        "package_validation": "PASS",
+        "asset_lineage": "PASS",
+        "semantic_animation": "PASS",
+        "voice": "PASS",
+        "measured_timing": "PASS",
+        "visual_progression_measured": "PASS",
+        "renderer_contract": "PASS",
+        "video": "PASS" if outputs["video"].is_file() else "FAIL",
+        "cover": "PASS" if outputs["cover"].is_file() else "FAIL",
+    }
+    path = root / "out" / "FINAL_VALIDATION.json"
+    path.write_text(
+        json.dumps(receipt, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def package_publish_outputs(
     package_root: Path,
     *,
@@ -4228,6 +4324,13 @@ def package_publish_outputs(
             root,
             final_video=final_video,
         )
+        manifest = _load_package_manifest(root)
+        final_validation = None
+        if manifest is not None and manifest.get("format") == PACKAGE_FORMAT_V4:
+            final_validation = write_local_final_validation(
+                root,
+                final_video=outputs["video"],
+            )
         bundle = root / "out" / "zodiac-publish-bundle.zip"
         with zipfile.ZipFile(
             bundle,
@@ -4238,6 +4341,8 @@ def package_publish_outputs(
             archive.write(outputs["cover"], "cover.png")
             archive.write(outputs["copy"], "publish-copy.txt")
             archive.write(outputs["metadata"], "publish.json")
+            if final_validation is not None:
+                archive.write(final_validation, "FINAL_VALIDATION.json")
     print(f"Publish bundle: {bundle}", flush=True)
     return bundle
 
