@@ -43,6 +43,8 @@ from tools.studio.pipeline import (
     VOICE_SCENES,
 )
 from tools.zodiac_local import (
+    DEFAULT_PLAYBACK_RATE,
+    DEFAULT_SCENE_GAP_MS,
     DEFAULT_SPEECH_RATE_WARNING_WPS,
     DEFAULT_TTS_BACKEND,
     DEFAULT_TTS_FRAME_CAP,
@@ -162,6 +164,8 @@ class PipelineWorker:
         tts_fp32_fallback: bool = True,
         music: Path | None = None,
         music_volume: float = 1.0,
+        scene_gap_ms: float = DEFAULT_SCENE_GAP_MS,
+        playback_rate: float = DEFAULT_PLAYBACK_RATE,
         workspace: Path | None = None,
         archive: Path | None = None,
         job_name: str | None = None,
@@ -183,6 +187,8 @@ class PipelineWorker:
         self.tts_fp32_fallback = bool(tts_fp32_fallback)
         self.music = Path(music) if music else None
         self.music_volume = music_volume
+        self.scene_gap_ms = float(scene_gap_ms)
+        self.playback_rate = float(playback_rate)
         self.workspace = Path(workspace) if workspace else None
         self.archive = Path(archive) if archive else None
         self.job_name = job_name
@@ -603,7 +609,11 @@ class PipelineWorker:
     def _step_concat(self) -> None:
 
         production = self._production()
-        output = concatenate_scene_voices(self.root, production)
+        output = concatenate_scene_voices(
+            self.root,
+            production,
+            scene_gap_ms=self.scene_gap_ms,
+        )
         self.log(f"Đã ghép {output.name}.")
         self.plan.steps[CONCAT_VOICE].fingerprint = output.stat().st_size
 
@@ -674,17 +684,25 @@ class PipelineWorker:
             aligner,
             scene_voice_files(self.root, production),
             mismatch_recovery=recover_mismatch,
+            scene_gap_ms=self.scene_gap_ms,
         )
         self._durations = dict(durations)
         if recovered_ids:
-            output = concatenate_scene_voices(self.root, production)
+            output = concatenate_scene_voices(
+                self.root,
+                production,
+                scene_gap_ms=self.scene_gap_ms,
+            )
             self.plan.steps[CONCAT_VOICE].fingerprint = output.stat().st_size
             self.log(
                 "Đã ghép lại voice.wav sau adaptive frame-cap recovery: "
                 + ", ".join(recovered_ids)
             )
         build_and_write_timing(self.root, timing)
-        self.log(f"Đã căn {len(timing['scenes'])} scene bằng faster-whisper/{self.align_model}.")
+        self.log(
+            f"Đã căn {len(timing['scenes'])} scene bằng faster-whisper/{self.align_model}; "
+            f"nghỉ {self.scene_gap_ms:.0f} ms giữa scene."
+        )
 
     def _step_validate_runtime(self) -> None:
 
@@ -708,12 +726,17 @@ class PipelineWorker:
         self.log("Đã kết xuất video.")
 
     def _step_mix(self) -> None:
-        final_video = mix_background_music_into_render(self.root)
+        final_video = mix_background_music_into_render(
+            self.root,
+            playback_rate=self.playback_rate,
+        )
         finalize_publish_outputs(
             self.root,
             final_video=final_video,
         )
         if self.music is None:
-            self.log("Không có nhạc nền: giữ voice/SFX và hoàn tất video cuối.")
+            self.log(
+                f"Không có nhạc nền: hoàn tất video ở tốc độ {self.playback_rate:.2f}x."
+            )
         else:
             self.log("Đã trộn nhạc nền và hoàn tất một video cuối.")
