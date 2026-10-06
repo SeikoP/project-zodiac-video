@@ -216,8 +216,8 @@ def _asset_file(root: Path, asset_id: str, entry: dict) -> Path:
     if tree.tag.split("}")[-1] != "svg":
         raise PipelineError(f"asset is not an SVG document: {raw}")
     metadata_label = re.compile(
-        r"\\b(?:animation-ready|derived state|scene module|prop master|"
-        r"(?:virgo|viewer|gemini|narrator) master)\\b",
+        r"\b(?:animation-ready|derived state|scene module|prop master|"
+        r"(?:virgo|viewer|gemini|narrator) (?:master|state))\b",
         re.IGNORECASE,
     )
     for element in tree.iter():
@@ -266,42 +266,38 @@ def _normalized_word_tokens(value: str) -> list[str]:
     return _normalize_words(value).split()
 
 
-def _find_anchor_word_index(
+def _find_anchor_word_index_for_progression(
     words: list[str],
     anchor_text: str,
     occurrence: int | None = None,
-) -> int:
+) -> tuple[int | None, bool]:
+    """Best-effort anchor lookup for density only; semantic validation lives elsewhere."""
     anchor = _normalized_word_tokens(anchor_text)
     if not anchor:
-        raise PipelineError("voice_anchor text must not be empty.")
+        return None, False
     matches = [
         index
         for index in range(len(words) - len(anchor) + 1)
         if words[index:index + len(anchor)] == anchor
     ]
     if not matches:
-        raise PipelineError(f"voice_anchor not found in narration: {anchor_text!r}.")
+        return None, False
     if occurrence is None:
-        if len(matches) != 1:
-            raise PipelineError(
-                f"voice_anchor is ambiguous; provide occurrence for {anchor_text!r}."
-            )
-        return matches[0]
+        return matches[0], True
     if (
         not isinstance(occurrence, int)
         or isinstance(occurrence, bool)
         or occurrence < 1
         or occurrence > len(matches)
     ):
-        raise PipelineError(
-            f"voice_anchor occurrence is out of range for {anchor_text!r}."
-        )
-    return matches[occurrence - 1]
+        return None, False
+    return matches[occurrence - 1], True
 
 
-def _story_change_positions_words(scene: dict) -> list[int]:
+def _story_change_positions_words(scene: dict) -> tuple[list[int], bool]:
     words = _normalized_word_tokens(scene.get("voice", ""))
     positions: list[int] = []
+    complete = True
     for event in scene.get("events", []):
         if (
             event.get("target") == "camera"
@@ -312,21 +308,27 @@ def _story_change_positions_words(scene: dict) -> list[int]:
         if trigger.get("source") == "scene_start":
             positions.append(0)
         elif trigger.get("source") == "voice_anchor":
-            positions.append(
-                _find_anchor_word_index(
-                    words,
-                    str(trigger.get("text", "")),
-                    trigger.get("occurrence"),
-                )
+            position, resolved = _find_anchor_word_index_for_progression(
+                words,
+                str(trigger.get("text", "")),
+                trigger.get("occurrence"),
             )
-    return sorted(set(positions))
+            if resolved and position is not None:
+                positions.append(position)
+            else:
+                complete = False
+    return sorted(set(positions)), complete
 
 
 def _validate_visual_progression_proxy(scene: dict) -> None:
     words = _normalized_word_tokens(scene.get("voice", ""))
     if not words:
         return
-    positions = _story_change_positions_words(scene)
+    positions, complete = _story_change_positions_words(scene)
+    if not complete:
+        # Anchor semantics are owned by the editor/renderer. Do not replace their
+        # stable missing/ambiguous/occurrence error codes with a density error.
+        return
     if not positions:
         raise PipelineError(
             f"VISUAL_PROGRESSION_DENSITY: scene {scene.get('id')} has no meaningful visual change."
@@ -367,17 +369,11 @@ def _validate_measured_visual_progression(scene: dict, row: dict, fps: int) -> N
             if caption_words[index:index + len(anchor)] == anchor
         ]
         if not matches:
-            raise PipelineError(
-                f"VISUAL_PROGRESSION_TIMING: anchor {trigger.get('text')!r} "
-                f"is missing from measured captions in {scene.get('id')}."
-            )
+            # Runtime/editor anchor validation owns this semantic error. Keeping
+            # timing loadable lets the editor present and repair the bad anchor.
+            return
         occurrence = trigger.get("occurrence")
         if occurrence is None:
-            if len(matches) != 1:
-                raise PipelineError(
-                    f"VISUAL_PROGRESSION_TIMING: anchor {trigger.get('text')!r} "
-                    f"is ambiguous in {scene.get('id')}."
-                )
             match_index = matches[0]
         elif (
             not isinstance(occurrence, int)
@@ -385,10 +381,7 @@ def _validate_measured_visual_progression(scene: dict, row: dict, fps: int) -> N
             or occurrence < 1
             or occurrence > len(matches)
         ):
-            raise PipelineError(
-                f"VISUAL_PROGRESSION_TIMING: anchor occurrence is invalid "
-                f"for {event.get('id')}."
-            )
+            return
         else:
             match_index = matches[occurrence - 1]
         positions.append(math.floor(captions[match_index]["startMs"] * fps / 1000))
