@@ -822,20 +822,84 @@ class SafeExtractionTests(unittest.TestCase):
 
 
 class RendererTypeCompatTests(unittest.TestCase):
+    def test_patch_waits_for_font_before_caption_measurement(self):
+        from tools.zodiac_local import _patch_renderer_font_readiness
+
+        old_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  useEffect(() => {
+    document.fonts.load(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)
+      .then((faces) => {
+        if (!faces.length || !document.fonts.check(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)) throw new Error("Required Vietnamese font face is unavailable.");
+        continueRender(handle);
+      })
+      .catch((error) => cancelRender(new Error("Vietnamese font failed to load: " + String(error))));
+  }, [handle]);
+};
+'''
+        old_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  useVietnameseFont();
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            path = renderer / "src" / "ZodiacComposition.tsx"
+            path.write_text(old_hook + "\n" + old_entry, encoding="utf-8")
+            _patch_renderer_font_readiness(renderer)
+            patched = path.read_text(encoding="utf-8")
+            self.assertIn("const [fontReady, setFontReady] = useState(false);", patched)
+            self.assertIn("await document.fonts.ready;", patched)
+            self.assertIn("if (!fontReady)", patched)
+            self.assertIn("requestAnimationFrame(() => continueRender(handle));", patched)
+
+    def test_prepare_renderer_applies_font_patch_before_renderer_tests(self):
+        import inspect
+
+        from tools.zodiac_local import prepare_renderer
+
+        source = inspect.getsource(prepare_renderer)
+        self.assertIn("_patch_renderer_font_readiness(renderer)", source)
+        patch_at = source.index("_patch_renderer_font_readiness(renderer)")
+        self.assertLess(patch_at, source.index('["run", "test"]'))
+        self.assertLess(patch_at, source.index('"typecheck"'))
+
     def test_patch_widens_the_production_json_cast(self):
         from tools.zodiac_local import _patch_renderer_typescript_compatibility
 
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
             _patch_renderer_typescript_compatibility(renderer)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 patched = (renderer / "src" / name).read_text(encoding="utf-8")
                 self.assertIn("as unknown as Production", patched, name)
+
+    def test_patch_covers_zodiac_cover_json_cast(self):
+        from tools.zodiac_local import _patch_renderer_typescript_compatibility
+
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            (renderer / "src" / "Root.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacComposition.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacCover.tsx").write_text(
+                "const production = productionJson as Production;\n",
+                encoding="utf-8",
+            )
+            _patch_renderer_typescript_compatibility(renderer)
+            patched = (renderer / "src" / "ZodiacCover.tsx").read_text(encoding="utf-8")
+            self.assertIn("as unknown as Production", patched)
 
     def test_prepare_renderer_applies_the_cast_patch_before_typecheck(self):
         """The shipped renderer casts JSON directly, which fails TS2352."""
@@ -854,7 +918,7 @@ class RendererTypeCompatTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
