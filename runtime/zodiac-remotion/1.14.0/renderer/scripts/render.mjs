@@ -146,26 +146,22 @@ if (!publish.cover?.identity?.label || !publish.cover?.identity?.glyph || !publi
 if (publish.cover.layout !== "tilted_top_hook") fail("cover.layout must be tilted_top_hook.");
 await writeFile(renderPropsPath, JSON.stringify({...timing, resolved_events: resolvedEvents, production, publish}, null, 2) + "\n", "utf8");
 await generateSfx(production, path.join(packageRoot, ".runtime", "sfx"));
-const publicArg = "--public-dir=" + packageRoot;
-const propsArg = "--props=" + renderPropsPath;
-if (process.argv.includes("--prepare-only")) { console.log("Prepared .runtime/render-props.json for preview."); process.exit(0); }
-if (process.argv.includes("--studio")) {
-  const studioResult = spawnSync(cli, ["studio", "src/index.ts", propsArg, publicArg], {cwd: rendererDir, stdio: "inherit", shell: process.platform === "win32"});
-  if (studioResult.error) fail(studioResult.error.message);
-  process.exit(studioResult.status ?? 0);
-}
+const publicArg="--public-dir="+packageRoot;
+const propsArg="--props="+renderPropsPath;
+if(process.argv.includes("--prepare-only")){console.log("Prepared .runtime/render-props.json for preview.");process.exit(0);}
+const cli=path.join(rendererDir,"node_modules",".bin",process.platform==="win32"?"remotion.cmd":"remotion");
+if(!(await hasFile(cli))) fail("Remotion CLI is missing; install the exact pinned dependencies in renderer/ first.");
+if(process.argv.includes("--studio")){const studioResult=spawnSync(cli,["studio","src/index.ts",propsArg,publicArg],{cwd:rendererDir,stdio:"inherit",shell:process.platform==="win32"});if(studioResult.error)fail(studioResult.error.message);process.exit(studioResult.status??0);}
 
 await mkdir(path.join(packageRoot, "out"), {recursive: true});
-const cli = path.join(rendererDir, "node_modules", ".bin", process.platform === "win32" ? "remotion.cmd" : "remotion");
-if (!(await hasFile(cli))) fail("Remotion CLI is missing; install the exact pinned dependencies in renderer/ first.");
-const videoArgs = ["render", "src/index.ts", "ZodiacVideo", path.join(packageRoot, "out", "zodiac-story.mp4"), propsArg, publicArg, "--codec=h264"];
+const videoArgs=["render","src/index.ts","ZodiacVideo",path.join(packageRoot,"out","zodiac-story.mp4"),propsArg,publicArg,"--codec=h264"];
 const videoResult = spawnSync(cli, videoArgs, {cwd: rendererDir, stdio: "inherit", shell: process.platform === "win32"});
 if (videoResult.error) fail(videoResult.error.message);
 if (videoResult.status !== 0) process.exit(videoResult.status ?? 1);
-const coverArgs = ["still", "src/index.ts", "ZodiacCover", path.join(packageRoot, "out", "cover.png"), propsArg, publicArg];
+const coverArgs=["still","src/index.ts","ZodiacCover",path.join(packageRoot,"out","cover.png"),propsArg,publicArg];
 const coverResult = spawnSync(cli, coverArgs, {cwd: rendererDir, stdio: "inherit", shell: process.platform === "win32"});
 if (coverResult.error) fail(coverResult.error.message);
 if (coverResult.status !== 0) process.exit(coverResult.status ?? 1);
 await copyFile(publishCopyPath, path.join(packageRoot, "out", "publish-copy.txt"));
 await copyFile(publishJsonPath, path.join(packageRoot, "out", "publish.json"));
-console.log("Rendered ../out/zodiac-story.mp4 and ../out/cover.png; copied publish text/metadata into out/.");
+console.log("Rendered job video/cover and copied publish text/metadata into out/.");

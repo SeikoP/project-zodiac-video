@@ -291,18 +291,11 @@ const SceneView: React.FC<{scene: ProductionScene; timing: RuntimeSceneTiming; a
 };
 
 export const ZodiacComposition: React.FC<RenderProps> = (props) => {
-  const production = props.production;
-  const timing: RuntimeTiming = props;
-  if (!production?.video) throw new Error("Render props must include production.");
-  const fontReady = useVietnameseFont(production);
-  if (!fontReady) return <AbsoluteFill style={{backgroundColor: production.visual_system.palette.paper}} />;
-  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
-  return <AbsoluteFill style={{backgroundColor: production.visual_system.palette.paper}}>
-    <Audio src={staticFile("voice.wav")} />
-    {production.scenes.map((scene) => {
-      const row = sceneTiming.get(scene.id);
-      if (!row) throw new Error("Runtime timing missing scene " + scene.id);
-      return <Sequence key={scene.id} name={scene.id} from={row.start_frame} durationInFrames={row.duration_frames}><SceneView production={production} scene={scene} timing={row} allTiming={timing} /></Sequence>;
-    })}
-  </AbsoluteFill>;
+  const production=props.production;
+  const timing:RuntimeTiming=props;
+  if(!production?.video) throw new Error("Render props must include production.");
+  const fontReady=useVietnameseFont(production);
+  if(!fontReady) return <AbsoluteFill style={{backgroundColor:production.visual_system.palette.paper}}/>;
+  const sceneTiming=new Map(timing.scenes.map((item)=>[item.scene_id,item]));
+  return <AbsoluteFill style={{backgroundColor:production.visual_system.palette.paper}}><Audio src={staticFile("voice.wav")}/>{production.scenes.map((scene)=>{const row=sceneTiming.get(scene.id);if(!row)throw new Error("Runtime timing missing scene "+scene.id);return <Sequence key={scene.id} name={scene.id} from={row.start_frame} durationInFrames={row.duration_frames}><SceneView production={production} scene={scene} timing={row} allTiming={timing}/></Sequence>;})}</AbsoluteFill>;
 };

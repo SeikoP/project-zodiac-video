@@ -91,7 +91,4 @@ export type PublishDocument = {
   caption: string;
   hashtags: string[];
 };
-export type RenderProps = RuntimeTiming & {
-  production: Production;
-  publish: PublishDocument | null;
-};
+export type RenderProps = RuntimeTiming & {production: Production; publish: PublishDocument | null};
