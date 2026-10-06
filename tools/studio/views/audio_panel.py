@@ -20,6 +20,7 @@ from tools.studio.messages_vi import (
     SECTION_SETUP,
 )
 from tools.studio.views.common import Button, entry, label, section
+from tools.zodiac_local import default_music_path
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio.theme import COLORS
 
@@ -40,7 +41,7 @@ class AudioPanel(tk.Frame):
         self.on_listen = on_listen or (lambda volume: None)
         voices = saved_voices()
         self.voice = tk.StringVar(value="cuongdepzai" if "cuongdepzai" in voices else voices[0])
-        self.music = tk.StringVar(value="")
+        self.music = tk.StringVar(value=str(default_music_path() or ""))
         self.volume = tk.DoubleVar(value=1.0)
         self.align_model = tk.StringVar(value=ALIGN_MODEL_DEFAULT)
 

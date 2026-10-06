@@ -83,6 +83,13 @@ AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
+# Bundled background track; resolved from the repo so it works from any cwd.
+BUNDLED_MUSIC = Path(__file__).resolve().parents[1] / "assets" / "music" / "background.mp3"
+
+
+def default_music_path() -> Path | None:
+    """Bundled background track when it exists, otherwise None (no music)."""
+    return BUNDLED_MUSIC if BUNDLED_MUSIC.is_file() else None
 
 
 def _safe_relative_path(raw_name: str) -> PurePosixPath:
@@ -2756,13 +2763,12 @@ def mix_background_music_into_render(package_root: Path) -> Path:
             "background-music post-mix did not create the final MP4."
         )
 
-    mixed.replace(output)
     print(
         f"Final audio: mixed {music.name} @ {volume:.0%} "
-        f"into {output.name}.",
+        f"into {mixed.name}.",
         flush=True,
     )
-    return output
+    return mixed
 
 
 def prepare_renderer(
@@ -2797,6 +2803,8 @@ def prepare_renderer(
     print("Đang biên dịch design.md → style token trong production.json…", flush=True)
     _run_npm(["run", "compile:style"], renderer)
     validate_package(root)
+
+    _patch_renderer_typescript_compatibility(renderer)
 
     print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
     _run_npm(["run", "test"], renderer)

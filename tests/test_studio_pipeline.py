@@ -24,6 +24,7 @@ from tools.studio.pipeline import (
     PENDING,
     PREPARE_RENDERER,
     RENDER_VIDEO,
+    SKIPPED,
     STEP_ORDER,
     VALIDATE_RUNTIME,
     VOICE_SCENES,
@@ -368,6 +369,25 @@ class AlignmentResumeTests(WorkerHarness):
 
 
 class RenderResumeTests(WorkerHarness):
+    def test_completed_run_without_music_has_nothing_to_resume(self):
+        """A SKIPPED step is finished work; resume must reach a terminal state."""
+        plan = self.make_worker().run_to_completion()
+        self.assertEqual(plan.status("MIX_MUSIC"), SKIPPED)
+        self.assertIsNone(plan.continue_from())
+        self.assertFalse(plan.can_resume)
+
+    def test_failed_step_still_wins_over_a_skipped_tail(self):
+        plan = self.make_worker().run_to_completion()
+        plan.invalidate_from("RENDER_VIDEO")
+        plan.mark("RENDER_VIDEO", FAILED, message="render died")
+        self.assertEqual(plan.continue_from(), "RENDER_VIDEO")
+
+    def test_music_change_reopens_only_the_skipped_step(self):
+        plan = self.make_worker().run_to_completion()
+        plan.apply_change("music")
+        self.assertEqual(plan.status("MIX_MUSIC"), PENDING)
+        self.assertEqual(plan.continue_from(), "MIX_MUSIC")
+
     def test_render_failure_preserves_voice_and_timing(self):
         self.fail_render = True
         plan = self.make_worker().run_to_completion()

@@ -122,12 +122,20 @@ class PipelinePlan:
         return None
 
     def continue_from(self) -> str | None:
-        """First step that still has work: failed/cancelled first, then pending."""
+        """First step that still has work: failed/cancelled first, then pending.
+
+        A SKIPPED step is settled work, not pending work, so a finished run with
+        no background music has nothing left to resume. Adding music reopens the
+        step through apply_change("music").
+        """
         for step in STEP_ORDER:
             status = self.status(step)
             if status in (FAILED, CANCELLED):
                 return step
-        return self.next_step()
+        for step in STEP_ORDER:
+            if self.status(step) != SKIPPED and not self.is_finished(step):
+                return step
+        return None
 
     @property
     def can_resume(self) -> bool:

@@ -558,6 +558,53 @@ class SafeExtractionTests(unittest.TestCase):
             )
 
 
+class RendererTypeCompatTests(unittest.TestCase):
+    def test_patch_widens_the_production_json_cast(self):
+        from tools.zodiac_local import _patch_renderer_typescript_compatibility
+
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+                (renderer / "src" / name).write_text(
+                    "const production = productionJson as Production;\n", encoding="utf-8"
+                )
+            _patch_renderer_typescript_compatibility(renderer)
+            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+                patched = (renderer / "src" / name).read_text(encoding="utf-8")
+                self.assertIn("as unknown as Production", patched, name)
+
+    def test_prepare_renderer_applies_the_cast_patch_before_typecheck(self):
+        """The shipped renderer casts JSON directly, which fails TS2352."""
+        import inspect
+
+        from tools.zodiac_local import prepare_renderer
+
+        source = inspect.getsource(prepare_renderer)
+        self.assertIn("_patch_renderer_typescript_compatibility(renderer)", source)
+        patch_at = source.index("_patch_renderer_typescript_compatibility(renderer)")
+        self.assertLess(patch_at, source.index('"typecheck"'))
+
+    def test_patch_is_idempotent(self):
+        from tools.zodiac_local import _patch_renderer_typescript_compatibility
+
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+                (renderer / "src" / name).write_text(
+                    "const production = productionJson as Production;\n", encoding="utf-8"
+                )
+            _patch_renderer_typescript_compatibility(renderer)
+            _patch_renderer_typescript_compatibility(renderer)
+            self.assertEqual(
+                (renderer / "src" / "Root.tsx").read_text(encoding="utf-8").count(
+                    "as unknown as Production"
+                ),
+                1,
+            )
+
+
 class RuntimeTimingTests(unittest.TestCase):
     def test_builds_word_level_timing(self):
         production = json.loads(
@@ -1760,10 +1807,16 @@ class BackgroundMusicTests(unittest.TestCase):
                     job
                 )
 
-            self.assertEqual(result, out)
+            mixed = job / "out" / "zodiac-story.with-music.mp4"
+            self.assertEqual(result, mixed)
+            self.assertEqual(
+                mixed.read_bytes(),
+                b"mixed",
+            )
             self.assertEqual(
                 out.read_bytes(),
-                b"mixed",
+                b"video",
+                "the pristine render must survive so remixing cannot stack audio",
             )
             filter_complex = captured["arguments"][
                 captured["arguments"].index(

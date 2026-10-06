@@ -100,6 +100,40 @@ class DefaultVolumeTests(unittest.TestCase):
 
         self.assertEqual(zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME, 1.0)
 
+    def test_mix_keeps_the_pristine_render_so_remixing_is_idempotent(self):
+        """Re-running MIX_MUSIC must not stack music onto an already-mixed file."""
+        import inspect
+
+        from tools import zodiac_local
+
+        source = inspect.getsource(zodiac_local.mix_background_music_into_render)
+        self.assertNotIn(".replace(", source)
+        self.assertIn("zodiac-story.with-music.mp4", source)
+
+    def test_video_path_prefers_the_mixed_file(self):
+        import inspect
+
+        from tools.studio.controller import StudioController
+
+        source = inspect.getsource(StudioController.video_path.fget)
+        self.assertIn("zodiac-story.with-music.mp4", source)
+
+    def test_bundled_music_ships_with_the_repo(self):
+        from tools.zodiac_local import BUNDLED_MUSIC, default_music_path
+
+        self.assertTrue(BUNDLED_MUSIC.is_file(), f"missing bundled track: {BUNDLED_MUSIC}")
+        self.assertIn(BUNDLED_MUSIC.suffix.lower(), {".mp3", ".wav", ".m4a", ".aac", ".ogg"})
+        self.assertEqual(default_music_path(), BUNDLED_MUSIC)
+
+    def test_gui_starts_with_the_bundled_track_selected(self):
+        import inspect
+
+        from tools.studio.views import audio_panel
+
+        source = inspect.getsource(audio_panel)
+        self.assertIn("default_music_path()", source)
+        self.assertIn("self.music = tk.StringVar(value=str(", source)
+
     def test_render_and_mix_paths_default_to_full_volume(self):
         import inspect
 
