@@ -1,0 +1,21 @@
+{
+  "interface": {
+    "displayName": "Zodiac Video Pipeline",
+    "shortDescription": "Zodiac video + thin runtime-pinned packages",
+    "longDescription": "Build or refresh approved Zodiac content, derive semantic reusable assets, compile full-canvas handwritten Vietnamese subtitles, and export data-only zodiac-job@3 packages that pin a shared Zodiac Studio runtime instead of duplicating renderer/library/reference files.",
+    "developerName": "Personal",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": "Use skills/zodiac-video-pipeline/SKILL.md. Preserve approved insight/evidence. New ZIP exports MUST use zodiac-job@3: include package-manifest.json with exact runtime zodiac-remotion@1.14.0 hash 88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8 and matching design hash; include only production/narration/design/handoff/publish/used assets/receipts; NEVER copy renderer/**, library/**, references/** or node_modules/** into a v3 job ZIP. narration.txt must equal exact join(scene.voice, LF); caption_style must match design.md; FINAL_VALIDATION may claim PASS only after the same package gates pass. Studio owns shared runtime/TTS/timing/render/output."
+  },
+  "name": "zodiac-video-pipeline",
+  "version": "1.15.0",
+  "description": "Vietnamese Zodiac pipeline with semantic sticker assets, fixed handwritten Vietnamese overlay subtitles, thin runtime-pinned job packages, reusable Remotion cover rendering, and publish-ready local outputs.",
+  "author": {
+    "name": "Personal"
+  },
+  "keywords": [],
+  "skills": "./skills"
+}
