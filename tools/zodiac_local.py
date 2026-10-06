@@ -470,10 +470,6 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
         "Remotion invocation": r"\bspawnSync\b",
         "composition id": r"ZodiacVideo",
         "MP4 output": r"zodiac-story\.mp4",
-        "cover composition id": r"ZodiacCover",
-        "cover PNG output": r"cover\.png",
-        "publish copy output": r"publish-copy\.txt",
-        "publish metadata output": r"publish\.json",
     }
     missing = [
         label
@@ -490,13 +486,10 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
     if (
         "calculateMetadata" not in root_source
         or "total_duration_frames" not in root_source
-        or "Still" not in root_source
-        or "ZodiacCover" not in root_source
     ):
         raise PipelineError(
             "PACKAGE_RENDERER_STALE: renderer/src/Root.tsx must derive "
-            "duration from runtime total_duration_frames via calculateMetadata "
-            "and register the ZodiacCover Still."
+            "duration from runtime total_duration_frames via calculateMetadata."
         )
 
     composition = _read_renderer_source(
@@ -530,25 +523,6 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
             "must use the compact caption box contract."
         )
 
-    cover_source = _read_renderer_source(renderer_root, "src/ZodiacCover.tsx")
-    cover_requirements = {
-        "tilted hook card": r"rotate\(-3deg\)",
-        "cover identity": r"publish\.cover\.identity",
-        "cover hook": r"publish\.cover\.hook",
-        "scene reuse": r"production\.scenes\.find",
-        "state reuse": r"entity\.states",
-    }
-    missing = [
-        label
-        for label, pattern in cover_requirements.items()
-        if re.search(pattern, cover_source) is None
-    ]
-    if missing:
-        raise PipelineError(
-            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacCover.tsx is "
-            "missing canonical cover behavior: " + ", ".join(missing) + "."
-        )
-
     types_source = _read_renderer_source(renderer_root, "src/types.ts")
     if re.search(r"\bProduction\s*=\s*any\b", types_source):
         raise PipelineError(
@@ -575,7 +549,7 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
         )
 
 
-def _validate_publish_contract(root: Path, production: dict) -> dict:
+def _validate_publish_document(root: Path, production: dict) -> dict:
     publish_dir = root / "publish"
     copy_path = publish_dir / "publish-copy.txt"
     json_path = publish_dir / "publish.json"
@@ -663,15 +637,69 @@ def _validate_publish_contract(root: Path, production: dict) -> dict:
     return publish
 
 
+def _validate_publish_renderer_contract(renderer_root: Path) -> None:
+    """Require cover rendering only at final publish/renderer readiness."""
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    render_requirements = {
+        "cover composition id": r"ZodiacCover",
+        "cover PNG output": r"cover\.png",
+        "publish copy output": r"publish-copy\.txt",
+        "publish metadata output": r"publish\.json",
+    }
+    missing = [
+        label
+        for label, pattern in render_requirements.items()
+        if re.search(pattern, render_script) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/scripts/render.mjs "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+    root_source = _read_renderer_source(renderer_root, "src/Root.tsx")
+    if "Still" not in root_source or "ZodiacCover" not in root_source:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/Root.tsx "
+            "must register the ZodiacCover Still."
+        )
+
+    cover_source = _read_renderer_source(renderer_root, "src/ZodiacCover.tsx")
+    cover_requirements = {
+        "tilted hook card": r"rotate\(-3deg\)",
+        "cover identity": r"publish\.cover\.identity",
+        "cover hook": r"publish\.cover\.hook",
+        "scene reuse": r"production\.scenes\.find",
+        "state reuse": r"entity\.states",
+    }
+    missing = [
+        label
+        for label, pattern in cover_requirements.items()
+        if re.search(pattern, cover_source) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/ZodiacCover.tsx "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+
 def validate_package(package_root: Path) -> dict:
-    """Validate one Zodiac Video Pipeline v2.0 creative package."""
+    """Validate the creative package without requiring final publish metadata."""
     root = Path(package_root).resolve()
-    production = validate_production_document(
+    return validate_production_document(
         root,
         _load_json(root / "production.json", "production.json"),
     )
-    _validate_publish_contract(root, production)
-    return production
+
+
+def validate_publish_contract(package_root: Path) -> dict:
+    """Validate final publish metadata, cover identity, and cover renderer."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    publish = _validate_publish_document(root, production)
+    _validate_publish_renderer_contract(root / "renderer")
+    return publish
 
 
 def validate_production_document(root: Path, production: dict) -> dict:
@@ -3162,6 +3190,7 @@ def prepare_renderer(
     print("Đang biên dịch design.md → style token trong production.json…", flush=True)
     _run_npm(["run", "compile:style"], renderer)
     validate_package(root)
+    validate_publish_contract(root)
 
     _patch_renderer_typescript_compatibility(renderer)
 
@@ -3176,6 +3205,7 @@ def render_video(package_root: Path) -> None:
     """Render canonical video + cover + publish metadata for the package."""
     root = Path(package_root).resolve()
     validate_runtime(root)
+    validate_publish_contract(root)
     _run_npm(["run", "render"], root / "renderer")
     validate_publish_outputs(root)
 
