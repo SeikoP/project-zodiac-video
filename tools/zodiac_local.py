@@ -49,7 +49,7 @@ MAX_ZIP_ENTRIES = 5000
 MAX_FILE_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 512 * 1024 * 1024
 MAX_COMPRESSION_RATIO = 250
-EXPECTED_DEPENDENCIES = {
+LEGACY_EXPECTED_DEPENDENCIES = {
     "@remotion/captions": "4.0.530",
     "@remotion/cli": "4.0.530",
     "@remotion/media": "4.0.530",
@@ -59,6 +59,10 @@ EXPECTED_DEPENDENCIES = {
     "@remotion/layout-utils": "4.0.530",
     "@fontsource/be-vietnam-pro": "5.3.0",
     "ajv": "8.20.0",
+}
+EXPECTED_DEPENDENCIES = {
+    **LEGACY_EXPECTED_DEPENDENCIES,
+    "@fontsource/patrick-hand": "5.3.0",
 }
 EXPECTED_DEV_DEPENDENCIES = {
     "@types/node": "24.0.0",
@@ -516,6 +520,7 @@ def _validate_renderer_source_contract(
     renderer_root: Path,
     *,
     require_isolated_layout: bool = False,
+    require_overlay_layout: bool = False,
 ) -> None:
     """Reject placeholder/stale renderer trees before local runtime work."""
     render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
@@ -583,8 +588,24 @@ def _validate_renderer_source_contract(
     ):
         raise PipelineError(
             "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
-            "must implement the v1.8 isolated content frame contract."
+            "must implement the legacy isolated content frame contract."
         )
+    if require_overlay_layout:
+        required_overlay = (
+            "captionOverlayTop",
+            "fullCanvasContentStyle",
+            'overflow: "visible"',
+        )
+        if not all(token in composition for token in required_overlay):
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+                "must implement the full-canvas collision-aware caption overlay contract."
+            )
+        if "contentFrameStyle()" in composition:
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: canonical overlay packages must not clip "
+                "visuals into the legacy content frame."
+            )
 
     types_source = _read_renderer_source(renderer_root, "src/types.ts")
     if re.search(r"\bProduction\s*=\s*any\b", types_source):
@@ -800,35 +821,61 @@ def validate_production_document(root: Path, production: dict) -> dict:
         raise PipelineError("production.json style_token must match design.md.")
     if compiled.get("source_hash") != source_hash:
         raise PipelineError("production.json style token is stale; run npm run compile:style in renderer/.")
+    font_family = caption_style.get("font_family")
+    font_weight = caption_style.get("font_weight")
+    legacy_caption = font_family == "Be Vietnam Pro" and font_weight == 500
+    overlay_caption = font_family == "Patrick Hand" and font_weight == 400
     if (
-        caption_style.get("font_family") != "Be Vietnam Pro"
-        or caption_style.get("font_weight") != 500
+        not (legacy_caption or overlay_caption)
         or not isinstance(caption_style.get("font_size_px"), int)
         or not isinstance(caption_style.get("min_font_size_px"), int)
     ):
         raise PipelineError(
-            "caption_style must use local Be Vietnam Pro weight 500 with a declared size range."
+            "caption_style must use either legacy Be Vietnam Pro 500 or "
+            "canonical Patrick Hand 400 with a declared size range."
         )
     safe_area = caption_style.get("safe_area")
-    if (
-        caption_style["font_size_px"] > 64
-        or caption_style["min_font_size_px"] > 48
-        or not isinstance(safe_area, dict)
-        or not all(
+    safe_area_numeric = (
+        isinstance(safe_area, dict)
+        and all(
             isinstance(safe_area.get(key), (int, float))
             and not isinstance(safe_area.get(key), bool)
             for key in ("x", "y", "width", "height")
         )
-        or safe_area["x"] < 80
-        or safe_area["y"] < 1280
-        or safe_area["width"] > 900
-        or safe_area["height"] > 220
-        or safe_area["y"] + safe_area["height"] > 1620
-    ):
-        raise PipelineError(
-            "caption_style must use the compact lower-third contract "
-            "(font <=64px, y>=1280, width<=900, height<=220)."
-        )
+    )
+    if legacy_caption:
+        if (
+            caption_style["font_size_px"] > 64
+            or caption_style["min_font_size_px"] > 48
+            or not safe_area_numeric
+            or safe_area["x"] < 80
+            or safe_area["y"] < 1280
+            or safe_area["width"] > 900
+            or safe_area["height"] > 220
+            or safe_area["y"] + safe_area["height"] > 1620
+        ):
+            raise PipelineError(
+                "legacy caption_style must use the compact lower-third contract "
+                "(font <=64px, y>=1280, width<=900, height<=220)."
+            )
+    else:
+        if (
+            caption_style["font_size_px"] < 72
+            or caption_style["font_size_px"] > 96
+            or caption_style["min_font_size_px"] < 56
+            or caption_style["min_font_size_px"] > caption_style["font_size_px"]
+            or not safe_area_numeric
+            or safe_area["x"] < 56
+            or safe_area["y"] < 900
+            or safe_area["width"] > 968
+            or safe_area["height"] > 640
+            or safe_area["y"] + safe_area["height"] > 1680
+        ):
+            raise PipelineError(
+                "canonical caption_style must use the large collision-aware overlay "
+                "(Patrick Hand 72-96px default range, min >=56px, overlay envelope "
+                "inside the TikTok-safe canvas)."
+            )
 
     caption_token = token.get("caption_emphasis")
     if (
@@ -850,7 +897,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         )
 
     layout_zones = compiled.get("layout_zones")
-    isolated_layout = isinstance(layout_zones, dict)
+    isolated_layout = legacy_caption and isinstance(layout_zones, dict)
+    overlay_layout = overlay_caption and not isinstance(layout_zones, dict)
     if isolated_layout:
         content_zone = layout_zones.get("content")
         caption_zone = layout_zones.get("caption")
@@ -1086,9 +1134,10 @@ def validate_production_document(root: Path, production: dict) -> dict:
         raise PipelineError(
             "renderer/package.json is not the Zodiac Remotion renderer scaffold."
         )
-    if renderer.get("dependencies") != EXPECTED_DEPENDENCIES:
+    dependencies = renderer.get("dependencies")
+    if dependencies not in (LEGACY_EXPECTED_DEPENDENCIES, EXPECTED_DEPENDENCIES):
         raise PipelineError(
-            "renderer dependencies do not match the current Zodiac v2 renderer contract."
+            "renderer dependencies do not match either the legacy or current Zodiac v2 renderer contract."
         )
 
     dev_dependencies = renderer.get("devDependencies")
@@ -1131,6 +1180,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
     _validate_renderer_source_contract(
         renderer_root,
         require_isolated_layout=isolated_layout,
+        require_overlay_layout=overlay_layout,
     )
     return production
 
