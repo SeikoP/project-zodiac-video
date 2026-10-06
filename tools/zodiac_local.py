@@ -2077,8 +2077,137 @@ def _write_performance_stage(
     os.replace(temp, path)
 
 
-def _renderer_check_cache_path(root: Path) -> Path:
-    return Path(root) / ".runtime" / "renderer-check-cache.json"
+def _prepare_cache_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "prepare-cache.json"
+
+
+def _load_prepare_cache(root: Path) -> dict:
+    path = _prepare_cache_path(root)
+    if not path.is_file():
+        return {"version": 1, "stages": {}}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"version": 1, "stages": {}}
+    if payload.get("version") != 1 or not isinstance(payload.get("stages"), dict):
+        return {"version": 1, "stages": {}}
+    return payload
+
+
+def _prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> bool:
+    payload = _load_prepare_cache(root)
+    entry = payload["stages"].get(stage)
+    return (
+        isinstance(entry, dict)
+        and entry.get("status") == "PASS"
+        and entry.get("fingerprint") == fingerprint
+    )
+
+
+def _mark_prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> None:
+    path = _prepare_cache_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = _load_prepare_cache(root)
+    stages = dict(payload.get("stages") or {})
+    stages[stage] = {
+        "status": "PASS",
+        "fingerprint": fingerprint,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "stages": stages,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def renderer_dependency_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    renderer = root / "renderer"
+    package = _load_json(renderer / "package.json", "renderer/package.json")
+    lock = _fingerprint_files(root, [renderer / "package-lock.json"])
+    return _fingerprint_value(
+        {
+            "dependencies": package.get("dependencies") or {},
+            "devDependencies": package.get("devDependencies") or {},
+            "package_lock": lock,
+        }
+    )
+
+
+def _renderer_dependencies_installed(renderer: Path) -> bool:
+    renderer = Path(renderer).resolve()
+    try:
+        package = _load_json(renderer / "package.json", "renderer/package.json")
+    except PipelineError:
+        return False
+
+    expected = {}
+    for field in ("dependencies", "devDependencies"):
+        values = package.get(field)
+        if not isinstance(values, dict):
+            return False
+        expected.update(values)
+
+    for name, version in expected.items():
+        parts = name.split("/")
+        installed_path = renderer / "node_modules"
+        for part in parts:
+            installed_path /= part
+        installed_path /= "package.json"
+        try:
+            installed = json.loads(installed_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        if installed.get("version") != version:
+            return False
+
+    bin_dir = renderer / "node_modules" / ".bin"
+    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
+    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
+    return remotion_bin.is_file() and tsc_bin.is_file()
+
+
+def style_compile_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    _token, source_hash = _design_token(root)
+    compiler = _fingerprint_files(
+        root,
+        [
+            root / "renderer" / "scripts" / "style-token.mjs",
+            root / "renderer" / "scripts" / "compile-style-token.mjs",
+        ],
+    )
+    return _fingerprint_value(
+        {
+            "design_source_hash": source_hash,
+            "compiler": compiler,
+        }
+    )
+
+
+def _style_compilation_current(package_root: Path) -> bool:
+    root = Path(package_root).resolve()
+    try:
+        token, source_hash = _design_token(root)
+        production = _load_json(root / "production.json", "production.json")
+    except PipelineError:
+        return False
+    visual = production.get("visual_system")
+    compiled = visual.get("style_token") if isinstance(visual, dict) else None
+    return (
+        isinstance(compiled, dict)
+        and compiled.get("id") == token.get("id")
+        and compiled.get("source_hash") == source_hash
+    )
 
 
 def renderer_check_fingerprint(package_root: Path) -> str:
@@ -2095,36 +2224,19 @@ def renderer_check_fingerprint(package_root: Path) -> str:
 
 
 def renderer_checks_cached(package_root: Path, fingerprint: str) -> bool:
-    path = _renderer_check_cache_path(package_root)
-    if not path.is_file():
-        return False
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        return False
-    return (
-        payload.get("version") == 1
-        and payload.get("renderer_checks") == fingerprint
+    return _prepare_stage_cached(
+        Path(package_root).resolve(),
+        "renderer_checks",
+        fingerprint,
     )
 
 
 def mark_renderer_checks_cached(package_root: Path, fingerprint: str) -> None:
-    path = _renderer_check_cache_path(package_root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(path.name + ".tmp")
-    temp.write_text(
-        json.dumps(
-            {
-                "version": 1,
-                "renderer_checks": fingerprint,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    _mark_prepare_stage_cached(
+        Path(package_root).resolve(),
+        "renderer_checks",
+        fingerprint,
     )
-    os.replace(temp, path)
 
 
 @contextlib.contextmanager
@@ -3728,11 +3840,14 @@ def prepare_renderer(
     music_volume: float = DEFAULT_MUSIC_VOLUME,
     update_music: bool = False,
 ) -> None:
-    """Install pins, compile design.md, run renderer tests and typecheck."""
+    """Validate one package, reuse safe prepare work, then gate the renderer."""
     root = Path(package_root).resolve()
     if update_music:
         configure_background_music(root, music, music_volume)
 
+    # This validates the compiled style token before any package-owned Node code
+    # can run. A stale design/production pair must fail closed, not self-repair
+    # by executing an untrusted compile script first.
     validate_runtime(root)
     renderer = root / "renderer"
     if shutil.which("node") is None or (
@@ -3743,39 +3858,75 @@ def prepare_renderer(
             "Hãy cài Node.js LTS mới nhất rồi thử lại."
         )
 
-    bin_dir = renderer / "node_modules" / ".bin"
-    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
-    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
-    dependencies_ready = remotion_bin.is_file() and tsc_bin.is_file()
-    renderer_fingerprint = artifact_fingerprints(root)["renderer"]
+    dependency_fingerprint = renderer_dependency_fingerprint(root)
+    dependencies_installed = _renderer_dependencies_installed(renderer)
+    dependencies_cached = (
+        dependencies_installed
+        and _prepare_stage_cached(root, "dependencies", dependency_fingerprint)
+    )
+    lock_exists = (renderer / "package-lock.json").is_file()
+    bootstrap_safe = dependencies_installed and not lock_exists
+    dependency_reused = dependencies_cached or bootstrap_safe
+
     with measure_performance_stage(
         root,
         "renderer.dependencies",
-        input_fingerprint=renderer_fingerprint,
-        cache_hit=dependencies_ready,
+        input_fingerprint=dependency_fingerprint,
+        cache_hit=dependency_reused,
     ):
-        if not dependencies_ready:
+        if dependency_reused:
+            if not dependencies_cached:
+                _mark_prepare_stage_cached(
+                    root,
+                    "dependencies",
+                    dependency_fingerprint,
+                )
+        else:
             print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
             _install_renderer(renderer)
+            if not _renderer_dependencies_installed(renderer):
+                raise PipelineError(
+                    "renderer dependencies were installed but pinned package versions "
+                    "could not be verified."
+                )
+            dependency_fingerprint = renderer_dependency_fingerprint(root)
+            _mark_prepare_stage_cached(
+                root,
+                "dependencies",
+                dependency_fingerprint,
+            )
 
-    print("Đang biên dịch design.md → style token trong production.json…", flush=True)
+    style_fingerprint = style_compile_fingerprint(root)
+    style_current = _style_compilation_current(root)
+    if not style_current:
+        raise PipelineError(
+            "compiled style token is stale after package validation; "
+            "re-export the package from the canonical plugin."
+        )
     with measure_performance_stage(
         root,
         "renderer.compile_style",
-        input_fingerprint=artifact_fingerprints(root)["creative"],
+        input_fingerprint=style_fingerprint,
+        cache_hit=True,
     ):
-        _run_npm(["run", "compile:style"], renderer)
+        # The package validator above already proves the compiled style token
+        # matches design.md. Re-running compile:style on every retry is redundant.
+        _mark_prepare_stage_cached(
+            root,
+            "compile_style",
+            style_fingerprint,
+        )
+
     validate_package(root)
     validate_publish_contract(root)
 
+    # Backward compatibility only. New plugin exports should already contain
+    # these fixes, but old imported jobs can be repaired before typecheck.
     _patch_renderer_typescript_compatibility(renderer)
     _patch_renderer_font_readiness(renderer)
 
     check_fingerprint = renderer_check_fingerprint(root)
-    checks_cached = (
-        dependencies_ready
-        and renderer_checks_cached(root, check_fingerprint)
-    )
+    checks_cached = renderer_checks_cached(root, check_fingerprint)
     if checks_cached:
         print(
             "Renderer tests/typecheck: dùng lại kết quả PASS cùng fingerprint.",
@@ -3811,6 +3962,8 @@ def prepare_renderer(
             input_fingerprint=check_fingerprint,
         ):
             _run_npm(["run", "typecheck"], renderer)
+
+        # Mark only after BOTH contract tests and TypeScript have passed.
         mark_renderer_checks_cached(root, check_fingerprint)
 
 
