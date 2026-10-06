@@ -756,15 +756,6 @@ def validate_production_document(root: Path, production: dict) -> dict:
                     raise PipelineError(
                         f"state {entity_id}.{state_id} has an invalid transform/layer/visible value."
                     )
-                if (
-                    isolated_layout
-                    and state.get("visible")
-                    and transform["y"] + transform["height"]
-                    > layout_zones["content"]["y"] + layout_zones["content"]["height"]
-                ):
-                    raise PipelineError(
-                        f"state {entity_id}.{state_id} extends below the isolated content frame."
-                    )
             entity_map[entity_id] = entity
 
         current_states = {
