@@ -16,6 +16,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unicodedata
 import wave
 import zipfile
@@ -1866,6 +1867,216 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _fingerprint_files(root: Path, files: list[Path]) -> str:
+    """Hash file names + bytes deterministically; missing optional files are omitted."""
+    import hashlib
+
+    root = Path(root).resolve()
+    digest = hashlib.sha256()
+    unique = {
+        Path(path).resolve()
+        for path in files
+        if Path(path).is_file()
+    }
+    for path in sorted(
+        unique,
+        key=lambda item: item.relative_to(root).as_posix(),
+    ):
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _fingerprint_value(value) -> str:
+    import hashlib
+
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _tree_files(root: Path, relative: str, *, exclude: set[str] | None = None) -> list[Path]:
+    base = Path(root) / relative
+    if not base.is_dir():
+        return []
+    excluded = exclude or set()
+    return [
+        path
+        for path in base.rglob("*")
+        if path.is_file()
+        and not any(part in excluded for part in path.relative_to(base).parts)
+    ]
+
+
+def artifact_fingerprints(package_root: Path) -> dict[str, str]:
+    """Describe which expensive outputs should be invalidated by which inputs."""
+    root = Path(package_root).resolve()
+
+    creative_files = [
+        root / "production.json",
+        root / "narration.txt",
+        root / "design.md",
+        root / "handoff-manifest.json",
+        *_tree_files(root, "assets"),
+    ]
+    renderer_files = [
+        *_tree_files(
+            root,
+            "renderer",
+            exclude={"node_modules", "generated", ".cache"},
+        ),
+    ]
+    runtime_files = [
+        root / "voice.wav",
+        root / ".runtime" / "timing.json",
+    ]
+    publish_files = [
+        root / "publish" / "publish.json",
+        root / "publish" / "publish-copy.txt",
+    ]
+    music_files = [root / ".runtime" / "audio.json"]
+    audio_config = root / ".runtime" / "audio.json"
+    if audio_config.is_file():
+        try:
+            raw = json.loads(audio_config.read_text(encoding="utf-8")).get(
+                "background_music"
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            raw = None
+        if isinstance(raw, str):
+            music_files.append(root / raw)
+
+    production = {}
+    production_path = root / "production.json"
+    if production_path.is_file():
+        try:
+            production = json.loads(production_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            production = {}
+
+    creative = _fingerprint_files(root, creative_files)
+    renderer = _fingerprint_files(root, renderer_files)
+    runtime = _fingerprint_files(root, runtime_files)
+    publish = _fingerprint_files(root, publish_files)
+    music = _fingerprint_files(root, music_files)
+    render_profile = _fingerprint_value(production.get("video", {}))
+
+    video = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "runtime": runtime,
+            "render_profile": render_profile,
+        }
+    )
+    cover = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "publish": publish,
+            "render_profile": render_profile,
+        }
+    )
+    bundle = _fingerprint_value(
+        {
+            "video": video,
+            "cover": cover,
+            "publish": publish,
+            "music": music,
+        }
+    )
+    return {
+        "creative": creative,
+        "renderer": renderer,
+        "runtime": runtime,
+        "publish": publish,
+        "music": music,
+        "render_profile": render_profile,
+        "video": video,
+        "cover": cover,
+        "bundle": bundle,
+    }
+
+
+def _performance_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "performance.json"
+
+
+def _write_performance_stage(
+    root: Path,
+    stage: str,
+    *,
+    elapsed_ms: int,
+    status: str,
+    cache_hit: bool,
+    input_fingerprint: str | None,
+) -> None:
+    path = _performance_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        payload = {}
+    stages = payload.get("stages")
+    if not isinstance(stages, dict):
+        stages = {}
+    stages[stage] = {
+        "elapsed_ms": int(elapsed_ms),
+        "status": status,
+        "cache_hit": bool(cache_hit),
+        "input_fingerprint": input_fingerprint,
+    }
+    payload = {
+        "version": 1,
+        "fingerprints": artifact_fingerprints(root),
+        "stages": stages,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+@contextlib.contextmanager
+def measure_performance_stage(
+    package_root: Path,
+    stage: str,
+    *,
+    input_fingerprint: str | None = None,
+    cache_hit: bool = False,
+):
+    """Persist the latest elapsed time for a measurable runtime stage."""
+    root = Path(package_root).resolve()
+    started = time.perf_counter()
+    status = "PASS"
+    try:
+        yield
+    except Exception:
+        status = "FAIL"
+        raise
+    finally:
+        elapsed_ms = round((time.perf_counter() - started) * 1000)
+        _write_performance_stage(
+            root,
+            stage,
+            elapsed_ms=elapsed_ms,
+            status=status,
+            cache_hit=cache_hit,
+            input_fingerprint=input_fingerprint,
+        )
+
+
 def aligner_install_command() -> str:
     """The only supported install command: the interpreter running this runner."""
     return f'"{sys.executable}" -m pip install -r requirements-local.txt'
@@ -3327,20 +3538,26 @@ def package_publish_outputs(
     final_video: Path | None = None,
 ) -> Path:
     root = Path(package_root).resolve()
-    outputs = validate_publish_outputs(
+    fingerprint = artifact_fingerprints(root)["bundle"]
+    with measure_performance_stage(
         root,
-        final_video=final_video,
-    )
-    bundle = root / "out" / "zodiac-publish-bundle.zip"
-    with zipfile.ZipFile(
-        bundle,
-        "w",
-        compression=zipfile.ZIP_DEFLATED,
-    ) as archive:
-        archive.write(outputs["video"], "zodiac-story.mp4")
-        archive.write(outputs["cover"], "cover.png")
-        archive.write(outputs["copy"], "publish-copy.txt")
-        archive.write(outputs["metadata"], "publish.json")
+        "publish.bundle",
+        input_fingerprint=fingerprint,
+    ):
+        outputs = validate_publish_outputs(
+            root,
+            final_video=final_video,
+        )
+        bundle = root / "out" / "zodiac-publish-bundle.zip"
+        with zipfile.ZipFile(
+            bundle,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            archive.write(outputs["video"], "zodiac-story.mp4")
+            archive.write(outputs["cover"], "cover.png")
+            archive.write(outputs["copy"], "publish-copy.txt")
+            archive.write(outputs["metadata"], "publish.json")
     print(f"Publish bundle: {bundle}", flush=True)
     return bundle
 
@@ -3356,6 +3573,14 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         )
 
     if config is None:
+        fingerprint = artifact_fingerprints(root)["music"]
+        with measure_performance_stage(
+            root,
+            "audio.mix",
+            input_fingerprint=fingerprint,
+            cache_hit=True,
+        ):
+            pass
         print(
             "Final audio: voice/SFX only "
             "(background music disabled).",
@@ -3372,31 +3597,37 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         "dropout_transition=0,alimiter=limit=0.95[out]"
     )
 
-    _run_ffmpeg(
-        [
-            "-y",
-            "-v",
-            "error",
-            "-i",
-            str(output),
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(music),
-            "-filter_complex",
-            filter_complex,
-            "-map",
-            "0:v:0",
-            "-map",
-            "[out]",
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-shortest",
-            str(mixed),
-        ]
-    )
+    fingerprint = artifact_fingerprints(root)["music"]
+    with measure_performance_stage(
+        root,
+        "audio.mix",
+        input_fingerprint=fingerprint,
+    ):
+        _run_ffmpeg(
+            [
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                str(output),
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(music),
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "0:v:0",
+                "-map",
+                "[out]",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-shortest",
+                str(mixed),
+            ]
+        )
 
     if not mixed.is_file():
         raise PipelineError(
@@ -3436,23 +3667,47 @@ def prepare_renderer(
     bin_dir = renderer / "node_modules" / ".bin"
     remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
     tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
-    if not remotion_bin.is_file() or not tsc_bin.is_file():
-        print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
-        _install_renderer(renderer)
+    dependencies_ready = remotion_bin.is_file() and tsc_bin.is_file()
+    renderer_fingerprint = artifact_fingerprints(root)["renderer"]
+    with measure_performance_stage(
+        root,
+        "renderer.dependencies",
+        input_fingerprint=renderer_fingerprint,
+        cache_hit=dependencies_ready,
+    ):
+        if not dependencies_ready:
+            print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
+            _install_renderer(renderer)
 
     print("Đang biên dịch design.md → style token trong production.json…", flush=True)
-    _run_npm(["run", "compile:style"], renderer)
+    with measure_performance_stage(
+        root,
+        "renderer.compile_style",
+        input_fingerprint=artifact_fingerprints(root)["creative"],
+    ):
+        _run_npm(["run", "compile:style"], renderer)
     validate_package(root)
     validate_publish_contract(root)
 
     _patch_renderer_typescript_compatibility(renderer)
     _patch_renderer_font_readiness(renderer)
 
+    check_fingerprint = artifact_fingerprints(root)["renderer"]
     print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
-    _run_npm(["run", "test"], renderer)
+    with measure_performance_stage(
+        root,
+        "renderer.contract_tests",
+        input_fingerprint=check_fingerprint,
+    ):
+        _run_npm(["run", "test"], renderer)
 
     print("Đang kiểm tra TypeScript của renderer…", flush=True)
-    _run_npm(["run", "typecheck"], renderer)
+    with measure_performance_stage(
+        root,
+        "renderer.typecheck",
+        input_fingerprint=check_fingerprint,
+    ):
+        _run_npm(["run", "typecheck"], renderer)
 
 
 def render_video(package_root: Path) -> None:
@@ -3460,7 +3715,13 @@ def render_video(package_root: Path) -> None:
     root = Path(package_root).resolve()
     validate_runtime(root)
     validate_publish_contract(root)
-    _run_npm(["run", "render"], root / "renderer")
+    fingerprint = artifact_fingerprints(root)["video"]
+    with measure_performance_stage(
+        root,
+        "renderer.render",
+        input_fingerprint=fingerprint,
+    ):
+        _run_npm(["run", "render"], root / "renderer")
     validate_publish_outputs(root)
 
 
