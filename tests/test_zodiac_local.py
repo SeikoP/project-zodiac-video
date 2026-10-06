@@ -1215,13 +1215,23 @@ class ThinPackageV4Tests(unittest.TestCase):
                 with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT"):
                     validate_package(job)
 
-    def test_v4_rejects_runtime_outputs_and_missing_publish_files(self):
+    def test_v4_rejects_runtime_outputs_only_at_import_boundary(self):
         with tempfile.TemporaryDirectory() as temp:
-            job = write_v4_package(Path(temp))
-            (job / "voice.wav").write_bytes(b"runtime")
-            with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT"):
-                validate_package(job)
+            root = Path(temp)
+            files = v4_package_files()
+            files["voice.wav"] = b"runtime"
+            archive = root / "bad-v4.zip"
+            write_zip(archive, files, root="zodiac-v4-test")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT.*voice.wav"):
+                import_package(archive, root / "jobs")
 
+            job = write_v4_package(root / "local")
+            (job / "voice.wav").write_bytes(b"runtime")
+            (job / ".runtime").mkdir()
+            (job / "out").mkdir()
+            self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_v4_rejects_missing_publish_files(self):
         with tempfile.TemporaryDirectory() as temp:
             job = write_v4_package(Path(temp))
             (job / "publish" / "publish.json").unlink()
