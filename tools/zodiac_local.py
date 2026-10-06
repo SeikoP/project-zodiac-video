@@ -79,6 +79,8 @@ DEFAULT_TTS_FRAME_CAP = "on"
 DEFAULT_TTS_MAX_CHARS = 256
 DEFAULT_SPEECH_RATE_WARNING_WPS = 3.8
 ASR_SCENE_BOUNDARY_TOLERANCE_MS = 250.0
+MAX_VISUAL_GAP_WORDS = 15
+MAX_VISUAL_GAP_SECONDS = 5.0
 AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
@@ -213,10 +215,29 @@ def _asset_file(root: Path, asset_id: str, entry: dict) -> Path:
         raise PipelineError(f"asset SVG is unreadable or invalid: {raw} ({exc})") from exc
     if tree.tag.split("}")[-1] != "svg":
         raise PipelineError(f"asset is not an SVG document: {raw}")
+    metadata_label = re.compile(
+        r"\\b(?:animation-ready|derived state|scene module|prop master|"
+        r"(?:virgo|viewer|gemini|narrator) master)\\b",
+        re.IGNORECASE,
+    )
     for element in tree.iter():
         tag = element.tag.split("}")[-1].lower()
         if tag in {"script", "foreignobject", "image"}:
             raise PipelineError(f"unsupported active or raster SVG element <{tag}> in {raw}.")
+        if (
+            tag == "rect"
+            and str(element.attrib.get("width", "")).strip() == "100%"
+            and str(element.attrib.get("height", "")).strip() == "100%"
+        ):
+            raise PipelineError(
+                f"PRODUCTION_ASSET_DIRTY: full-artboard background is not allowed in {raw}."
+            )
+        if tag == "text":
+            label = " ".join("".join(element.itertext()).split())
+            if metadata_label.search(label):
+                raise PipelineError(
+                    f"PRODUCTION_ASSET_DIRTY: asset-library metadata label remains in {raw}: {label!r}."
+                )
         for key, value in element.attrib.items():
             if key.split("}")[-1].lower() in {"href", "src"} or "url(" in value.lower():
                 raise PipelineError(f"external SVG links are not allowed in {raw}.")
@@ -239,6 +260,155 @@ def _normalize_words(value: str) -> str:
         category = unicodedata.category(char)
         chars.append(" " if char.isspace() or category.startswith(("P", "S")) else char)
     return " ".join("".join(chars).split())
+
+
+def _normalized_word_tokens(value: str) -> list[str]:
+    return _normalize_words(value).split()
+
+
+def _find_anchor_word_index(
+    words: list[str],
+    anchor_text: str,
+    occurrence: int | None = None,
+) -> int:
+    anchor = _normalized_word_tokens(anchor_text)
+    if not anchor:
+        raise PipelineError("voice_anchor text must not be empty.")
+    matches = [
+        index
+        for index in range(len(words) - len(anchor) + 1)
+        if words[index:index + len(anchor)] == anchor
+    ]
+    if not matches:
+        raise PipelineError(f"voice_anchor not found in narration: {anchor_text!r}.")
+    if occurrence is None:
+        if len(matches) != 1:
+            raise PipelineError(
+                f"voice_anchor is ambiguous; provide occurrence for {anchor_text!r}."
+            )
+        return matches[0]
+    if (
+        not isinstance(occurrence, int)
+        or isinstance(occurrence, bool)
+        or occurrence < 1
+        or occurrence > len(matches)
+    ):
+        raise PipelineError(
+            f"voice_anchor occurrence is out of range for {anchor_text!r}."
+        )
+    return matches[occurrence - 1]
+
+
+def _story_change_positions_words(scene: dict) -> list[int]:
+    words = _normalized_word_tokens(scene.get("voice", ""))
+    positions: list[int] = []
+    for event in scene.get("events", []):
+        if (
+            event.get("target") == "camera"
+            or event.get("state_before") == event.get("state_after")
+        ):
+            continue
+        trigger = event.get("trigger", {})
+        if trigger.get("source") == "scene_start":
+            positions.append(0)
+        elif trigger.get("source") == "voice_anchor":
+            positions.append(
+                _find_anchor_word_index(
+                    words,
+                    str(trigger.get("text", "")),
+                    trigger.get("occurrence"),
+                )
+            )
+    return sorted(set(positions))
+
+
+def _validate_visual_progression_proxy(scene: dict) -> None:
+    words = _normalized_word_tokens(scene.get("voice", ""))
+    if not words:
+        return
+    positions = _story_change_positions_words(scene)
+    if not positions:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_DENSITY: scene {scene.get('id')} has no meaningful visual change."
+        )
+    checkpoints = [0, *positions, len(words)]
+    max_gap = max(
+        right - left
+        for left, right in zip(checkpoints, checkpoints[1:])
+    )
+    if max_gap > MAX_VISUAL_GAP_WORDS:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_DENSITY: scene {scene.get('id')} has "
+            f"{max_gap} words without a meaningful visual change; "
+            f"max {MAX_VISUAL_GAP_WORDS} words before local timing."
+        )
+
+
+def _validate_measured_visual_progression(scene: dict, row: dict, fps: int) -> None:
+    captions = row["captions"]
+    caption_words = [_normalize_token(cue["text"]) for cue in captions]
+    positions: list[int] = []
+    for event in scene.get("events", []):
+        if (
+            event.get("target") == "camera"
+            or event.get("state_before") == event.get("state_after")
+        ):
+            continue
+        trigger = event.get("trigger", {})
+        if trigger.get("source") == "scene_start":
+            positions.append(row["start_frame"])
+            continue
+        if trigger.get("source") != "voice_anchor":
+            continue
+        anchor = _normalized_word_tokens(str(trigger.get("text", "")))
+        matches = [
+            index
+            for index in range(len(caption_words) - len(anchor) + 1)
+            if caption_words[index:index + len(anchor)] == anchor
+        ]
+        if not matches:
+            raise PipelineError(
+                f"VISUAL_PROGRESSION_TIMING: anchor {trigger.get('text')!r} "
+                f"is missing from measured captions in {scene.get('id')}."
+            )
+        occurrence = trigger.get("occurrence")
+        if occurrence is None:
+            if len(matches) != 1:
+                raise PipelineError(
+                    f"VISUAL_PROGRESSION_TIMING: anchor {trigger.get('text')!r} "
+                    f"is ambiguous in {scene.get('id')}."
+                )
+            match_index = matches[0]
+        elif (
+            not isinstance(occurrence, int)
+            or isinstance(occurrence, bool)
+            or occurrence < 1
+            or occurrence > len(matches)
+        ):
+            raise PipelineError(
+                f"VISUAL_PROGRESSION_TIMING: anchor occurrence is invalid "
+                f"for {event.get('id')}."
+            )
+        else:
+            match_index = matches[occurrence - 1]
+        positions.append(math.floor(captions[match_index]["startMs"] * fps / 1000))
+
+    if not positions:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_TIMING: scene {scene.get('id')} has no measured visual changes."
+        )
+    points = [row["start_frame"], *sorted(set(positions)), row["start_frame"] + row["duration_frames"]]
+    max_gap_frames = max(
+        right - left
+        for left, right in zip(points, points[1:])
+    )
+    limit = MAX_VISUAL_GAP_SECONDS * fps
+    if max_gap_frames > limit:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_TIMING: scene {scene.get('id')} has a "
+            f"{max_gap_frames / fps:.2f}s gap without a meaningful visual change; "
+            f"max {MAX_VISUAL_GAP_SECONDS:.1f}s."
+        )
 
 
 def _design_token(root: Path) -> tuple[dict, str]:
@@ -351,6 +521,14 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
             "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx is "
             "a reduced/stale renderer; missing " + ", ".join(missing) + "."
         )
+    if not all(
+        token in composition
+        for token in ('width: "fit-content"', "maxWidth", 'translateX(-50%)')
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+            "must use the compact caption box contract."
+        )
 
     types_source = _read_renderer_source(renderer_root, "src/types.ts")
     if re.search(r"\bProduction\s*=\s*any\b", types_source):
@@ -430,6 +608,26 @@ def validate_production_document(root: Path, production: dict) -> dict:
     ):
         raise PipelineError(
             "caption_style must use local Be Vietnam Pro weight 500 with a declared size range."
+        )
+    safe_area = caption_style.get("safe_area")
+    if (
+        caption_style["font_size_px"] > 64
+        or caption_style["min_font_size_px"] > 48
+        or not isinstance(safe_area, dict)
+        or not all(
+            isinstance(safe_area.get(key), (int, float))
+            and not isinstance(safe_area.get(key), bool)
+            for key in ("x", "y", "width", "height")
+        )
+        or safe_area["x"] < 80
+        or safe_area["y"] < 1280
+        or safe_area["width"] > 840
+        or safe_area["height"] > 220
+        or safe_area["y"] + safe_area["height"] > 1620
+    ):
+        raise PipelineError(
+            "caption_style must use the compact lower-third contract "
+            "(font <=64px, y>=1280, height<=220)."
         )
 
     style_id = compiled.get("id")
@@ -613,6 +811,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         ):
             raise PipelineError(f"scene {scene_id} has an invalid v2 caption policy.")
 
+        _validate_visual_progression_proxy(scene)
+
     narration_path = root / "narration.txt"
     try:
         narration = narration_path.read_text(encoding="utf-8").replace("\r\n", "\n")
@@ -780,6 +980,8 @@ def validate_timing(package_root: Path, timing: dict | Path) -> dict:
             raise PipelineError(
                 f"caption word tokens do not exactly cover scene.voice in {scene['id']}."
             )
+
+        _validate_measured_visual_progression(scene, row, fps)
 
     if timing.get("total_duration_frames") != cursor:
         raise PipelineError(
