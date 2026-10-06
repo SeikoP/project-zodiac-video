@@ -20,26 +20,43 @@ The first alignment run may download the selected Whisper model. Default alignme
 
 ## Accepted package
 
-New exports use **thin package v3**. A v3 ZIP contains creative data only:
+New exports use **thin package v4**. A v4 ZIP is creative data only:
 
 ```text
-package-manifest.json     # zodiac-job@3, exact runtime/design refs
+package-manifest.json     # zodiac-job@4, runtime id/version only
 design.md
 narration.txt
 production.json           # production contract 2.0
-handoff-manifest.json
 publish/
 README.md                  # optional human-facing handoff
 assets/                    # only assets referenced by production.json
 ```
 
-A v3 ZIP must not contain `.authoring/`, `renderer/`, `library/`, `references/`, or `node_modules/`. The exact renderer is pinned by `package-manifest.json.runtime` and resolved from the Studio runtime registry at `.zodiac-work/runtimes/<id>/<version>/`. Studio verifies the runtime SHA-256 and never falls back to “latest”.
+A v4 ZIP must not contain `.authoring/`, `renderer/`, `library/`, `references/`,
+`node_modules/`, `.runtime/`, `out/`, `voice.wav`, `FINAL_VALIDATION.json`,
+or `handoff-manifest.json`.
 
-Legacy v2 ZIPs without `package-manifest.json` remain supported and continue to use their package-local `renderer/`.
+The package selects an exact runtime **id + version**. Zodiac Studio resolves that
+runtime from its local registry and verifies the bundled/cached renderer against
+the local `runtime-manifest.json`. Runtime SHA-256 is therefore a Studio concern,
+not package metadata, and Studio never falls back to "latest".
 
-The runner validates the production entity/state/event contract, compiled design-token hash, fixed Patrick Hand Vietnamese overlay caption contract for v3, SVG paths/style IDs, exact runtime reference and canonical narration before import. Packages pinned to `zodiac-remotion@1.15.0` additionally require asset lineage, semantic mechanism declarations, and a fresh `FINAL_VALIDATION.json` bound to the current `production.json` SHA-256.
+Studio validates the production entity/state/event contract, the design token,
+Patrick Hand caption contract, SVG safety/style, asset lineage, semantic animation,
+canonical narration, and referenced-asset boundary directly from the creative
+package. After local TTS, measured alignment, runtime checks, video and cover
+exist, Studio writes `out/FINAL_VALIDATION.json` and includes it in the publish
+bundle.
 
-Old v1 packages using `actors/objects/actions/motion` are intentionally rejected. See `docs/THIN_PACKAGE_V3_SPEC.md` for the full boundary and migration contract.
+Compatibility remains unchanged:
+- legacy v2 ZIPs without `package-manifest.json` continue to use package-local `renderer/`;
+- `zodiac-job@3` remains accepted with its existing runtime/design hashes and
+  semantic `FINAL_VALIDATION.json` receipt;
+- new plugin exports default to `zodiac-job@4`.
+
+Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
+See `docs/THIN_PACKAGE_V4_SPEC.md` for the current boundary and
+`docs/THIN_PACKAGE_V3_SPEC.md` for the compatibility contract.
 
 ## Quick start
 

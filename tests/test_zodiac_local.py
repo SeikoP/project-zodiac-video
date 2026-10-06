@@ -17,6 +17,7 @@ from tools.zodiac_local import (
     _align_scene_words,
     _alignment_coverage_gap,
     _alignment_units,
+    _renderer_tree_sha256,
     _run_ffmpeg,
     _select_vieneu_gradio_dependency,
     align_scene_timings,
@@ -672,6 +673,37 @@ def write_semantic_thief_v315_package(root: Path) -> Path:
     return job
 
 
+def v4_package_files():
+    files = semantic_thief_v315_files()
+    files.pop("FINAL_VALIDATION.json", None)
+    files.pop("handoff-manifest.json", None)
+    files["package-manifest.json"] = json.dumps(
+        {
+            "format": "zodiac-job@4",
+            "production_contract": "2.0",
+            "runtime": {
+                "id": "zodiac-remotion",
+                "version": "1.15.0",
+            },
+            "producer": {
+                "plugin": "zodiac-video-pipeline",
+                "version": "1.21.0",
+            },
+        },
+        ensure_ascii=False,
+    )
+    return files
+
+
+def write_v4_package(root: Path) -> Path:
+    job = root / "zodiac-v4-test"
+    for name, content in v4_package_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
+
+
 def write_v3_package(root: Path) -> Path:
     job = root / "zodiac-v3-test"
     for name, content in v3_package_files().items():
@@ -1162,6 +1194,123 @@ class ThinPackageV3Tests(unittest.TestCase):
             self.assertIn("runtimes", first.parts)
             self.assertIn("zodiac-remotion", first.parts)
             self.assertIn("1.14.0", first.parts)
+
+
+class ThinPackageV4Tests(unittest.TestCase):
+    def test_v4_validates_without_plugin_final_receipt_handoff_or_runtime_hash(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            self.assertFalse((job / "FINAL_VALIDATION.json").exists())
+            self.assertFalse((job / "handoff-manifest.json").exists())
+            manifest = json.loads((job / "package-manifest.json").read_text(encoding="utf-8"))
+            self.assertNotIn("sha256", manifest["runtime"])
+            self.assertNotIn("design", manifest)
+            self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_v4_rejects_plugin_owned_receipts_in_thin_package(self):
+        for forbidden in ("FINAL_VALIDATION.json", "handoff-manifest.json"):
+            with self.subTest(forbidden=forbidden), tempfile.TemporaryDirectory() as temp:
+                job = write_v4_package(Path(temp))
+                (job / forbidden).write_text("{}", encoding="utf-8")
+                with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT"):
+                    validate_package(job)
+
+    def test_v4_rejects_runtime_outputs_only_at_import_boundary(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            files = v4_package_files()
+            files["voice.wav"] = b"runtime"
+            archive = root / "bad-v4.zip"
+            write_zip(archive, files, root="zodiac-v4-test")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_V4_BLOAT.*voice.wav"):
+                import_package(archive, root / "jobs")
+
+            job = write_v4_package(root / "local")
+            (job / "voice.wav").write_bytes(b"runtime")
+            (job / ".runtime").mkdir()
+            (job / "out").mkdir()
+            self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_v4_rejects_missing_publish_files(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            (job / "publish" / "publish.json").unlink()
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_MANIFEST_INVALID.*publish/publish.json"):
+                validate_package(job)
+
+    def test_v4_malformed_runtime_reference_fails_as_manifest_error(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "package-manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["runtime"] = None
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_MANIFEST_INVALID"):
+                validate_package(job)
+
+    def test_v4_still_validates_asset_lineage_and_semantic_mechanism(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["assets"]["safe.body"].pop("lineage")
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "ASSET_LINEAGE_INVALID"):
+                validate_package(job)
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["events"][0].pop("mechanism")
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "SEMANTIC_ANIMATION_GATE"):
+                validate_package(job)
+
+    def test_v4_rejects_narration_mismatch_without_receipt_indirection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            (job / "narration.txt").write_text("Khác lời thoại.", encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "narration.txt"):
+                validate_package(job)
+
+    def test_runtime_tree_hash_normalizes_lf_and_crlf(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            lf = root / "lf"
+            crlf = root / "crlf"
+            (lf / "src").mkdir(parents=True)
+            (crlf / "src").mkdir(parents=True)
+            (lf / "src" / "sample.ts").write_bytes(b"const a = 1;\nconst b = 2;\n")
+            (crlf / "src" / "sample.ts").write_bytes(b"const a = 1;\r\nconst b = 2;\r\n")
+            self.assertEqual(_renderer_tree_sha256(lf), _renderer_tree_sha256(crlf))
+
+    def test_v4_local_publish_writes_final_runtime_receipt(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime = job / ".runtime"
+            runtime.mkdir(parents=True)
+            (runtime / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            out = job / "out"
+            out.mkdir()
+            (out / "zodiac-story.mp4").write_bytes(b"video")
+            (out / "cover.png").write_bytes(b"cover")
+            shutil.copy2(job / "publish" / "publish-copy.txt", out / "publish-copy.txt")
+            shutil.copy2(job / "publish" / "publish.json", out / "publish.json")
+
+            bundle = package_publish_outputs(job, final_video=out / "zodiac-story.mp4")
+            receipt_path = out / "FINAL_VALIDATION.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["status"], "PASS")
+            self.assertEqual(receipt["voice"], "PASS")
+            self.assertEqual(receipt["measured_timing"], "PASS")
+            self.assertEqual(receipt["runtime"]["version"], "1.15.0")
+            with zipfile.ZipFile(bundle) as archive:
+                self.assertIn("FINAL_VALIDATION.json", archive.namelist())
 
 
 class SemanticRuntimeV315Tests(unittest.TestCase):

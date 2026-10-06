@@ -233,9 +233,17 @@ class StudioAppTests(unittest.TestCase):
             ]
             with patch.object(app.controller, "run_preflight", return_value=missing):
                 app._refresh_environment()
+                deadline = time.time() + 2
+                while time.time() < deadline and app._environment_refresh_running:
+                    app.update()
+                    time.sleep(0.01)
                 self.assertEqual(str(app.install_button.cget("state")), "normal")
             with patch.object(app.controller, "run_preflight", return_value=ready):
                 app._refresh_environment()
+                deadline = time.time() + 2
+                while time.time() < deadline and app._environment_refresh_running:
+                    app.update()
+                    time.sleep(0.01)
                 self.assertEqual(str(app.install_button.cget("state")), "disabled")
 
     def test_worker_events_reach_the_ui_through_the_queue(self):
@@ -283,6 +291,24 @@ def _all_text(widget) -> str:
 
     walk(widget)
     return "\n".join(chunks)
+
+
+class StudioProbeThreadingTests(unittest.TestCase):
+    def test_service_poll_does_not_call_network_inline(self):
+        import inspect
+        from tools.studio.app import ZodiacStudioApp
+
+        source = inspect.getsource(ZodiacStudioApp._poll_service)
+        self.assertIn("threading.Thread", source)
+        self.assertNotIn("online = self._service_online()", source)
+
+    def test_environment_refresh_runs_preflight_in_worker_thread(self):
+        import inspect
+        from tools.studio.app import ZodiacStudioApp
+
+        source = inspect.getsource(ZodiacStudioApp._refresh_environment)
+        self.assertIn("threading.Thread", source)
+        self.assertNotIn("self.controller.run_preflight()", source)
 
 
 class ControllerThreadingTests(WorkerHarness):

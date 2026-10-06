@@ -87,6 +87,8 @@ class ZodiacStudioApp(tk.Tk):
         self.status_text = tk.StringVar(value=STATUS_IDLE)
         self.service_text = tk.StringVar(value=SERVICE_OFFLINE)
         self.environment_text = tk.StringVar(value=ENV_BUSY)
+        self._environment_refresh_running = False
+        self._service_probe_running = False
 
         self.body = tk.Frame(self, bg=COLORS["bg"], padx=20)
         self.project = ProjectPanel(self.body, self.controller, on_changed=self._project_changed)
@@ -410,6 +412,19 @@ class ZodiacStudioApp(tk.Tk):
                 self._handle_listen(*payload)
             elif channel == "install":
                 self._handle_install(*payload)
+            elif channel == "environment":
+                self._environment_refresh_running = False
+                self._apply_environment(payload[0])
+            elif channel == "environment_error":
+                self._environment_refresh_running = False
+                self.environment_text.set(ENV_FAILED)
+                self.environment_dot.configure(fg=COLORS["danger"])
+                self.log.append(payload[0])
+            elif channel == "service":
+                self._service_probe_running = False
+                online = bool(payload[0])
+                self.service_text.set(SERVICE_ONLINE if online else SERVICE_OFFLINE)
+                self.service_dot.configure(fg=COLORS["sage"] if online else COLORS["accent"])
             elif channel == "studio_done":
                 self.studio_button.configure(text=BTN_STUDIO_OPEN)
                 self.studio_process = None
@@ -475,19 +490,37 @@ class ZodiacStudioApp(tk.Tk):
 
     # ---- header state -------------------------------------------------
     def _refresh_environment(self) -> None:
-        checks = self.controller.run_preflight()
+        """Run potentially slow dependency/service checks away from the Tk thread."""
+        if self._environment_refresh_running:
+            return
+        self._environment_refresh_running = True
+        self.environment_text.set(ENV_BUSY)
+        threading.Thread(target=self._run_environment_refresh, daemon=True).start()
+
+    def _run_environment_refresh(self) -> None:
+        try:
+            checks = self.controller.run_preflight()
+        except Exception as exc:
+            self.events.put(("environment_error", (str(exc),)))
+            return
+        self.events.put(("environment", (checks,)))
+
+    def _apply_environment(self, checks: list) -> None:
         ready = PreflightChecker.ready(checks)
         self.environment_text.set(ENV_READY if ready else ENV_FAILED)
         self.environment_dot.configure(fg=COLORS["sage"] if ready else COLORS["danger"])
         missing = [check for check in PreflightChecker.failures(checks) if check.missing]
         self.install_button.configure(state="normal" if missing else "disabled")
-        return None
 
     def _poll_service(self) -> None:
-        online = self._service_online()
-        self.service_text.set(SERVICE_ONLINE if online else SERVICE_OFFLINE)
-        self.service_dot.configure(fg=COLORS["sage"] if online else COLORS["accent"])
+        """Poll VieNeu without blocking Tk when the service is offline or slow."""
+        if not self._service_probe_running:
+            self._service_probe_running = True
+            threading.Thread(target=self._run_service_probe, daemon=True).start()
         self.after(2500, self._poll_service)
+
+    def _run_service_probe(self) -> None:
+        self.events.put(("service", (self._service_online(),)))
 
     def _service_online(self) -> bool:
         import urllib.error

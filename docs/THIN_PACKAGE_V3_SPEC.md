@@ -1,5 +1,7 @@
 # Zodiac Thin Package v3 — Runtime Registry Specification
 
+> **Compatibility contract:** v3 remains supported for existing packages. New creative exports use [`zodiac-job@4`](THIN_PACKAGE_V4_SPEC.md), where runtime integrity and final validation are owned locally by Zodiac Studio.
+
 Status: implementation target  
 Package format: `zodiac-job@3`  
 Current semantic runtime: `zodiac-remotion@1.15.0` (1.14.0 remains supported and immutable)
