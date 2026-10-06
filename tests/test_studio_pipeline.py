@@ -521,6 +521,31 @@ class CancelTests(WorkerHarness):
         self.assertTrue(errors, "killed subprocess should surface a non-zero exit")
 
 
+class PerformanceTelemetryTests(WorkerHarness):
+    def test_worker_records_performance_and_artifact_snapshot(self):
+        self.make_worker().run_to_completion()
+
+        performance = json.loads(
+            (self.job / ".runtime" / "performance.json").read_text(encoding="utf-8")
+        )
+        records = performance["records"]
+        recorded_steps = {record["step"] for record in records}
+        self.assertIn(RENDER_VIDEO, recorded_steps)
+        self.assertIn(PACKAGE_PUBLISH, recorded_steps)
+        for record in records:
+            self.assertGreaterEqual(record["elapsed_ms"], 0)
+            self.assertEqual(len(record["input_fingerprint"]), 64)
+            self.assertEqual(len(record["output_fingerprint"]), 64)
+            self.assertIsNone(record["cache_hit"])
+
+        artifacts = json.loads(
+            (self.job / ".runtime" / "artifacts.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(artifacts["version"], 1)
+        self.assertIn("renderer", artifacts["fingerprints"])
+        self.assertIn("render_profile", artifacts["fingerprints"])
+
+
 class WorkerThreadingTests(WorkerHarness):
     def test_worker_runs_on_its_own_thread(self):
         worker = self.make_worker()
