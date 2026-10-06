@@ -37,7 +37,7 @@ Forbidden: `renderer/**`, `library/**`, `references/**`, `node_modules/**`.
   },
   "producer": {
     "plugin": "zodiac-video-pipeline",
-    "version": "1.15.0"
+    "version": "1.16.0"
   }
 }
 ```
