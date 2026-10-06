@@ -56,7 +56,7 @@ Every file below `assets/**` MUST be referenced by `production.assets`. The pack
   },
   "producer": {
     "plugin": "zodiac-video-pipeline",
-    "version": "1.14.0"
+    "version": "1.19.1"
   }
 }
 ```
@@ -72,7 +72,10 @@ Bundled source-of-truth:
 ```text
 runtime/
 └─ zodiac-remotion/
-   └─ 1.14.0/
+   ├─ 1.14.0/              # immutable compatibility baseline
+   │  ├─ runtime-manifest.json
+   │  └─ renderer/**
+   └─ 1.15.0/              # current semantic runtime
       ├─ runtime-manifest.json
       └─ renderer/**
 ```
@@ -83,7 +86,8 @@ Workspace cache:
 .zodiac-work/
 ├─ runtimes/
 │  └─ zodiac-remotion/
-│     └─ 1.14.0/
+│     ├─ 1.14.0/
+│     └─ 1.15.0/
 │        ├─ runtime-manifest.json
 │        ├─ renderer/**
 │        └─ renderer/node_modules/**
