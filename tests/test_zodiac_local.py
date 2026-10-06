@@ -2,6 +2,7 @@ import hashlib
 import json
 import shutil
 import stat
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
