@@ -37,7 +37,7 @@ Forbidden: `.authoring/**`, `renderer/**`, `library/**`, `references/**`, `node_
   },
   "producer": {
     "plugin": "zodiac-video-pipeline",
-    "version": "1.19.0"
+    "version": "1.19.1"
   }
 }
 ```

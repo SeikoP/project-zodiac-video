@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "zodiac-video-pipeline",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "description": "Vietnamese Zodiac pipeline with semantic sticker assets, interaction choreography, fixed handwritten Vietnamese overlay subtitles, thin runtime-pinned job packages, reusable Remotion cover rendering, and publish-ready local outputs.",
   "author": {
     "name": "Personal"

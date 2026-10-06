@@ -11,7 +11,7 @@
     "defaultPrompt": "Use skills/zodiac-video-pipeline/SKILL.md. Preserve approved insight/evidence. New work uses canonical asset-library-v3 v3.4. Relational beats MUST be choreographed through .authoring/interaction-plan.json and pass validate-interactions.mjs before export; never ship .authoring/**. New ZIP exports MUST use zodiac-job@3 with exact runtime zodiac-remotion@1.15.0 hash 4d52e6ca766649546482a5cdfbf879f4f19c4d3c41c07c7743cccec1a7100ffa and matching design hash. Every production SVG asset requires canonical v3 lineage; mechanical events require valid Semantic Animation Gate mechanisms. FINAL_VALIDATION.json is required, must hash the exact production.json, and may claim PASS only after narration/design/handoff/lineage/semantic/interaction/thin-package gates pass. Include only production/narration/design/handoff/publish/used assets/receipts; NEVER copy renderer/**, library/**, references/** or node_modules/**. Studio owns shared runtime/TTS/timing/render/output."
   },
   "name": "zodiac-video-pipeline",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "description": "Vietnamese Zodiac pipeline with semantic sticker assets, interaction choreography, fixed handwritten Vietnamese overlay subtitles, thin runtime-pinned job packages, reusable Remotion cover rendering, and publish-ready local outputs.",
   "author": {
     "name": "Personal"
