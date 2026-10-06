@@ -106,6 +106,7 @@ AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
 DEFAULT_SCENE_GAP_MS = 350.0
+DEFAULT_SENTENCE_PAUSE_MS = 320.0
 DEFAULT_PLAYBACK_RATE = 0.95
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 # Bundled background track; resolved from the repo so it works from any cwd.
@@ -2009,6 +2010,17 @@ def _expected_caption_tokens(text: str) -> list[str]:
     return tokens
 
 
+def _sentence_pause_after_indices(text: str) -> set[int]:
+    """Token indices after which Studio inserts an explicit sentence pause."""
+    tokens = _expected_caption_tokens(text)
+    pauses: set[int] = set()
+    for index, token in enumerate(tokens[:-1]):
+        visible = token.rstrip('”"’\'»)]}')
+        if re.search(r"(?:[.!?…]+)$", visible):
+            pauses.add(index)
+    return pauses
+
+
 _VI_DIGIT_WORDS = {
     "0": "không",
     "1": "một",
@@ -2510,14 +2522,22 @@ def build_timing_from_word_alignment(
     aligned_words: dict[str, list[dict]],
     *,
     scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
 ) -> dict:
-    """Build scene frames from measured WAV duration plus optional scene breathing room."""
+    """Build scene frames from measured WAV duration plus explicit breathing pauses."""
     try:
         scene_gap_ms = float(scene_gap_ms)
+        sentence_pause_ms = float(sentence_pause_ms)
     except (TypeError, ValueError, OverflowError):
-        raise PipelineError("scene gap must be a finite non-negative number.") from None
+        raise PipelineError("pacing pauses must be finite non-negative numbers.") from None
     if not math.isfinite(scene_gap_ms) or scene_gap_ms < 0 or scene_gap_ms > 5000:
         raise PipelineError("scene gap must be between 0 and 5000 ms.")
+    if (
+        not math.isfinite(sentence_pause_ms)
+        or sentence_pause_ms < 0
+        or sentence_pause_ms > 3000
+    ):
+        raise PipelineError("sentence pause must be between 0 and 3000 ms.")
 
     fps = production["video"]["fps"]
     rows = []
@@ -2543,27 +2563,34 @@ def build_timing_from_word_alignment(
             float(seconds),
         )
 
+        pause_after = _sentence_pause_after_indices(scene["voice"])
         start_frame = round(elapsed_seconds * fps)
         offset_ms = elapsed_seconds * 1000
-        elapsed_seconds += float(seconds)
+        elapsed_seconds += float(seconds) + (
+            len(pause_after) * sentence_pause_ms / 1000.0
+        )
         if scene_index < len(scenes) - 1:
             elapsed_seconds += scene_gap_ms / 1000.0
         end_frame = max(start_frame + 1, round(elapsed_seconds * fps))
 
         global_words = []
-        for word in words:
+        pauses_before = 0
+        for word_index, word in enumerate(words):
+            shift_ms = pauses_before * sentence_pause_ms
             global_words.append(
                 {
                     **word,
-                    "startMs": offset_ms + float(word["startMs"]),
-                    "endMs": offset_ms + float(word["endMs"]),
+                    "startMs": offset_ms + shift_ms + float(word["startMs"]),
+                    "endMs": offset_ms + shift_ms + float(word["endMs"]),
                     "timestampMs": (
                         None
                         if word.get("timestampMs") is None
-                        else offset_ms + float(word["timestampMs"])
+                        else offset_ms + shift_ms + float(word["timestampMs"])
                     ),
                 }
             )
+            if word_index in pause_after:
+                pauses_before += 1
 
         rows.append(
             {
@@ -3614,11 +3641,113 @@ def concatenate_scene_voices(
     production: dict,
     *,
     scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
+    timing: dict | None = None,
 ) -> Path:
+    """Compose final voice.wav from cached scene WAVs with explicit breathing pauses."""
     root = Path(package_root).resolve()
     inputs = scene_voice_files(root, production)
     output = root / "voice.wav"
-    concatenate_wavs(inputs, output, gap_ms=scene_gap_ms)
+
+    if sentence_pause_ms <= 0 or timing is None:
+        concatenate_wavs(inputs, output, gap_ms=scene_gap_ms)
+        return output
+
+    try:
+        sentence_pause_ms = float(sentence_pause_ms)
+        scene_gap_ms = float(scene_gap_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("pacing pauses must be finite non-negative numbers.") from None
+    if not math.isfinite(sentence_pause_ms) or not 0 <= sentence_pause_ms <= 3000:
+        raise PipelineError("sentence pause must be between 0 and 3000 ms.")
+    if not math.isfinite(scene_gap_ms) or not 0 <= scene_gap_ms <= 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+
+    rows = timing.get("scenes") if isinstance(timing, dict) else None
+    if not isinstance(rows, list) or len(rows) != len(production.get("scenes", [])):
+        raise PipelineError("timing rows are required to compose sentence pauses.")
+    fps = timing.get("fps")
+    if not isinstance(fps, (int, float)) or fps <= 0:
+        raise PipelineError("timing fps is invalid for sentence pause composition.")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    params = None
+    with wave.open(str(output), "wb") as destination:
+        for scene_index, (scene, source_path, row) in enumerate(
+            zip(production["scenes"], inputs, rows)
+        ):
+            try:
+                with wave.open(str(source_path), "rb") as source:
+                    if source.getcomptype() != "NONE":
+                        raise PipelineError(f"scene WAV is compressed: {source_path}")
+                    current = source.getparams()
+                    if params is None:
+                        params = current
+                        destination.setnchannels(current.nchannels)
+                        destination.setsampwidth(current.sampwidth)
+                        destination.setframerate(current.framerate)
+                        destination.setcomptype("NONE", "not compressed")
+                    elif current[:3] != params[:3]:
+                        raise PipelineError("scene WAV files do not share one PCM format.")
+
+                    frame_bytes = current.sampwidth * current.nchannels
+                    raw = source.readframes(source.getnframes())
+                    pause_after = sorted(_sentence_pause_after_indices(scene["voice"]))
+                    captions = row.get("captions")
+                    if not isinstance(captions, list):
+                        raise PipelineError(f"timing captions missing for {scene['id']}.")
+                    expected = _expected_caption_tokens(scene["voice"])
+                    if len(captions) != len(expected):
+                        raise PipelineError(
+                            f"timing captions do not cover sentence pauses for {scene['id']}."
+                        )
+
+                    scene_start_ms = float(row["start_frame"]) * 1000.0 / float(fps)
+                    cursor_frame = 0
+                    for pause_number, token_index in enumerate(pause_after):
+                        adjusted_end_ms = float(captions[token_index]["endMs"]) - scene_start_ms
+                        source_end_ms = adjusted_end_ms - (
+                            pause_number * sentence_pause_ms
+                        )
+                        boundary_frame = round(
+                            source_end_ms * current.framerate / 1000.0
+                        )
+                        boundary_frame = min(
+                            max(boundary_frame, cursor_frame),
+                            source.getnframes(),
+                        )
+                        destination.writeframes(
+                            raw[cursor_frame * frame_bytes : boundary_frame * frame_bytes]
+                        )
+                        silent_frames = round(
+                            current.framerate * sentence_pause_ms / 1000.0
+                        )
+                        silent_sample = (
+                            b"\x80"
+                            if current.sampwidth == 1
+                            else b"\x00" * current.sampwidth
+                        )
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
+                        cursor_frame = boundary_frame
+
+                    destination.writeframes(raw[cursor_frame * frame_bytes :])
+
+                    if scene_index < len(inputs) - 1 and scene_gap_ms > 0:
+                        silent_frames = round(
+                            current.framerate * scene_gap_ms / 1000.0
+                        )
+                        silent_sample = (
+                            b"\x80"
+                            if current.sampwidth == 1
+                            else b"\x00" * current.sampwidth
+                        )
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
+            except (wave.Error, EOFError, OSError) as exc:
+                raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
     return output
 
 
@@ -3920,6 +4049,7 @@ def align_scene_timings(
     mismatch_recovery=None,
     *,
     scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
 ) -> dict:
     """Align every scene; optionally recover exact mismatches scene-by-scene."""
     paths = list(scene_wavs or [])
@@ -3950,6 +4080,7 @@ def align_scene_timings(
         durations,
         aligned_words,
         scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
     )
 
 
@@ -3978,6 +4109,8 @@ def synthesize_voice(
     tts_max_chars: int = DEFAULT_TTS_MAX_CHARS,
     speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
     tts_fp32_fallback: bool = True,
+    scene_gap_ms: float = DEFAULT_SCENE_GAP_MS,
+    sentence_pause_ms: float = DEFAULT_SENTENCE_PAUSE_MS,
 ) -> dict:
     """Compatibility wrapper over the granular voice/timing operations."""
     root = Path(package_root).resolve()
@@ -4003,7 +4136,7 @@ def synthesize_voice(
         speech_rate_warning_wps=speech_rate_warning_wps,
         fp32_fallback_on_rate_warning=tts_fp32_fallback,
     )
-    concatenate_scene_voices(root, production)
+    concatenate_scene_voices(root, production, scene_gap_ms=scene_gap_ms)
 
     print(
         f"Đang đo căn thời gian từng từ với faster-whisper/{align_model}…",
@@ -4040,8 +4173,16 @@ def synthesize_voice(
         aligner,
         scene_voice_files(root, production),
         mismatch_recovery=recover_mismatch,
+        scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
     )
-    concatenate_scene_voices(root, production)
+    concatenate_scene_voices(
+        root,
+        production,
+        scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
+        timing=timing,
+    )
     return build_and_write_timing(root, timing)
 
 def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
