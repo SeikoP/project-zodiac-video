@@ -2904,12 +2904,31 @@ def _renderer_dependencies_installed(renderer: Path) -> bool:
     return remotion_bin.is_file() and tsc_bin.is_file()
 
 
+def _package_runtime_sha256(manifest: dict) -> str:
+    """Resolve the exact runtime hash for both v3 and local-first v4 packages."""
+    runtime_ref = manifest["runtime"]
+    runtime_sha = runtime_ref.get("sha256")
+    if isinstance(runtime_sha, str) and re.fullmatch(r"[0-9a-f]{64}", runtime_sha):
+        return runtime_sha
+
+    runtime_manifest = _load_json(
+        _bundled_runtime_root(runtime_ref) / "runtime-manifest.json",
+        "runtime-manifest.json",
+    )
+    runtime_sha = runtime_manifest.get("sha256")
+    if not isinstance(runtime_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", runtime_sha):
+        raise PipelineError(
+            "BUNDLED_RUNTIME_CORRUPT: runtime manifest is missing a valid sha256."
+        )
+    return runtime_sha
+
+
 def style_compile_fingerprint(package_root: Path) -> str:
     root = Path(package_root).resolve()
     _token, source_hash = _design_token(root)
     manifest = _load_package_manifest(root)
     if manifest is not None:
-        compiler = manifest["runtime"]["sha256"]
+        compiler = _package_runtime_sha256(manifest)
     else:
         compiler = _fingerprint_files(
             root,
@@ -2941,7 +2960,7 @@ def renderer_check_fingerprint(package_root: Path) -> str:
     root = Path(package_root).resolve()
     manifest = _load_package_manifest(root)
     if manifest is not None:
-        return manifest["runtime"]["sha256"]
+        return _package_runtime_sha256(manifest)
     fingerprints = artifact_fingerprints(root)
     production = _fingerprint_files(root, [root / "production.json"])
     return _fingerprint_value(
