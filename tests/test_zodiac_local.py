@@ -2146,7 +2146,7 @@ class BackgroundMusicTests(unittest.TestCase):
                 "10.000",
             )
 
-    def test_ffmpeg_runner_never_uses_shell(self):
+    def test_ffmpeg_runner_uses_the_managed_argv_boundary(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp) / "ffmpeg"
             fake.write_bytes(b"x")
@@ -2154,20 +2154,18 @@ class BackgroundMusicTests(unittest.TestCase):
                 "tools.zodiac_local.shutil.which",
                 return_value=str(fake),
             ), patch(
-                "tools.zodiac_local.subprocess.run",
+                "tools.zodiac_local.run_managed_subprocess",
             ) as run:
                 _run_ffmpeg(
                     ["-i", "name;not-shell.mp3"]
                 )
-            self.assertFalse(
-                run.call_args.kwargs["shell"]
-            )
+            args = run.call_args.args[0]
+            self.assertEqual(Path(args[0]), fake.resolve())
             self.assertEqual(
-                Path(
-                    run.call_args.args[0][0]
-                ),
-                fake.resolve(),
+                args[1:],
+                ["-i", "name;not-shell.mp3"],
             )
+            self.assertTrue(run.call_args.kwargs["check"])
 
     def test_final_render_postmix_uses_selected_volume(self):
         with tempfile.TemporaryDirectory() as temp:
