@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "interactions": [
+        {
+          "id": "I1",
+          "type": "shared_focus",
+          "participants": [
+            "thief",
+            "culprit"
+          ],
+          "initiator": "thief",
+          "responders": [
+            "culprit"
+          ],
+          "scene_slot": "desk_left",
+          "anchors": [
+            {
+              "entity": "thief",
+              "anchor": "right_hand",
+              "target_entity": "culprit",
+              "target_anchor": "left_hand"
+            },
+            {
+              "entity": "culprit",
+              "anchor": "gaze_origin",
+              "target_entity": "thief",
+              "target_anchor": "face"
+            }
+          ],
+          "event_ids": [
+            "E1",
+            "E2"
+          ],
+          "intent": "Both characters focus on the revealed clue.",
+          "resolution": "completed"
+        }
+      ]
+    }
+  ]
+}
