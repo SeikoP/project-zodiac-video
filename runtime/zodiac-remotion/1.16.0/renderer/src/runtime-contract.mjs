@@ -7,7 +7,6 @@ const normalizeToken = (value) => String(value)
 
 const sentenceEnd = (text) => /[.!?…]["'”’)}\]]*$/u.test(String(text).trim());
 
-const sentenceEnd = (text) => /[.!?…]["'”’)}\]]*$/u.test(String(text).trim());
 const clauseEnd = (text) => /[,;:—–-]["'”’)}\]]*$/u.test(String(text).trim());
 const measuredLine = (words) => words.map((word) => word.text).join(" ");
 const measureBalancedLines = (words, measure, maxWidth, maxLines) => {
