@@ -2946,6 +2946,83 @@ def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
             path.write_text(patched, encoding="utf-8")
 
 
+def _patch_renderer_font_readiness(renderer: Path) -> None:
+    """Prevent measured caption layout from running before the local font loads."""
+    path = renderer / "src" / "ZodiacComposition.tsx"
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read renderer/src/ZodiacComposition.tsx: {exc}") from exc
+
+    if (
+        "const [fontReady, setFontReady] = useState(false);" in source
+        and "await document.fonts.ready;" in source
+        and "if (!fontReady)" in source
+    ):
+        return
+
+    old_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  useEffect(() => {
+    document.fonts.load(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)
+      .then((faces) => {
+        if (!faces.length || !document.fonts.check(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)) throw new Error("Required Vietnamese font face is unavailable.");
+        continueRender(handle);
+      })
+      .catch((error) => cancelRender(new Error("Vietnamese font failed to load: " + String(error))));
+  }, [handle]);
+};
+'''
+    new_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  const [fontReady, setFontReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const descriptor = `500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`;
+        const faces = await document.fonts.load(descriptor, fontText);
+        await document.fonts.ready;
+        if (!faces.length || !document.fonts.check(descriptor, fontText)) {
+          throw new Error("Required Vietnamese font face is unavailable.");
+        }
+        if (cancelled) return;
+        setFontReady(true);
+        requestAnimationFrame(() => continueRender(handle));
+      } catch (error) {
+        if (!cancelled) {
+          cancelRender(new Error("Vietnamese font failed to load: " + String(error)));
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [handle]);
+  return fontReady;
+};
+'''
+    old_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  useVietnameseFont();
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+    new_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  const fontReady = useVietnameseFont();
+  if (!fontReady) {
+    return <AbsoluteFill style={{backgroundColor: production.visual_system.palette.paper}} />;
+  }
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+
+    if old_hook not in source or old_entry not in source:
+        raise PipelineError(
+            "renderer font readiness contract is stale but cannot be auto-repaired safely."
+        )
+    patched = source.replace(old_hook, new_hook).replace(old_entry, new_entry)
+    path.write_text(patched, encoding="utf-8")
+
+
 def _validate_music_volume(volume: float) -> float:
     if (
         not isinstance(volume, (int, float))
@@ -3305,6 +3382,7 @@ def prepare_renderer(
     validate_publish_contract(root)
 
     _patch_renderer_typescript_compatibility(renderer)
+    _patch_renderer_font_readiness(renderer)
 
     print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
     _run_npm(["run", "test"], renderer)
