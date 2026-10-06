@@ -54,6 +54,7 @@ from tools.zodiac_local import (
     import_package,
     load_word_aligner,
     mix_background_music_into_render,
+    observe_subprocesses,
     package_publish_outputs,
     prepare_renderer,
     recover_scene_alignment_with_adaptive_frame_cap,
@@ -100,7 +101,7 @@ class CancelledError(Exception):
 
 
 def terminate_process_tree(process: subprocess.Popen) -> None:
-    """Windows: taskkill /T. POSIX: signal the whole process group."""
+    """Terminate a managed child tree without ever signaling Studio's own group."""
     if process.poll() is not None:
         return
     if os.name == "nt":
@@ -111,12 +112,27 @@ def terminate_process_tree(process: subprocess.Popen) -> None:
             shell=False,
         )
         return
+
     try:
-        os.killpg(process.pid, signal.SIGTERM)
+        pgid = os.getpgid(process.pid)
+    except ProcessLookupError:
+        return
+
+    own_group = pgid == os.getpgrp()
+    try:
+        if own_group:
+            process.terminate()
+        else:
+            os.killpg(pgid, signal.SIGTERM)
         try:
             process.wait(timeout=3)
+            return
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
+            if own_group:
+                process.kill()
+            else:
+                os.killpg(pgid, signal.SIGKILL)
+            process.wait(timeout=3)
     except (ProcessLookupError, PermissionError):
         return
 
@@ -239,9 +255,11 @@ class PipelineWorker:
         if self._process is not None:
             terminate_process_tree(self._process)
 
-    def attach_process(self, process: subprocess.Popen) -> None:
-        """Register an external subprocess so cancel can kill its tree."""
+    def attach_process(self, process: subprocess.Popen | None) -> None:
+        """Register the active managed subprocess so cancel can kill its tree."""
         self._process = process
+        if process is not None and self._cancel.is_set():
+            terminate_process_tree(process)
 
     @property
     def cancelled(self) -> bool:
@@ -278,6 +296,17 @@ class PipelineWorker:
                 self.emit(PIPELINE_CANCELLED, step=step)
                 return self.plan
             except Exception as exc:
+                if self._cancel.is_set():
+                    self.plan.mark(
+                        step,
+                        CANCELLED,
+                        error_code="CANCELLED_BY_USER",
+                        message="Đã dừng theo yêu cầu.",
+                        details=str(exc),
+                    )
+                    self._checkpoint()
+                    self.emit(PIPELINE_CANCELLED, step=step)
+                    return self.plan
                 self._fail(step, exc)
                 state = self.plan.steps[step]
                 self.emit(
@@ -371,7 +400,9 @@ class PipelineWorker:
             MIX_MUSIC: self._step_mix,
             PACKAGE_PUBLISH: self._step_package_publish,
         }[step]
-        handler()
+        with observe_subprocesses(self.attach_process):
+            handler()
+        self._raise_if_cancelled()
 
         if self.plan.status(step) != SKIPPED:
             self.plan.complete_step(step)

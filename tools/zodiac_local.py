@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import contextvars
 import difflib
 import json
 import math
@@ -14,6 +16,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import unicodedata
 import wave
 import zipfile
@@ -1864,6 +1867,407 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _fingerprint_files(root: Path, files: list[Path]) -> str:
+    """Hash file names + bytes deterministically; missing optional files are omitted."""
+    import hashlib
+
+    root = Path(root).resolve()
+    digest = hashlib.sha256()
+    unique = {
+        Path(path).resolve()
+        for path in files
+        if Path(path).is_file()
+    }
+    for path in sorted(
+        unique,
+        key=lambda item: item.relative_to(root).as_posix(),
+    ):
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _fingerprint_value(value) -> str:
+    import hashlib
+
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _tree_files(root: Path, relative: str, *, exclude: set[str] | None = None) -> list[Path]:
+    base = Path(root) / relative
+    if not base.is_dir():
+        return []
+    excluded = exclude or set()
+    return [
+        path
+        for path in base.rglob("*")
+        if path.is_file()
+        and not any(part in excluded for part in path.relative_to(base).parts)
+    ]
+
+
+def artifact_fingerprints(package_root: Path) -> dict[str, str]:
+    """Describe exact input groups for render, cover, mix, and publish outputs."""
+    root = Path(package_root).resolve()
+
+    creative_files = [
+        root / "production.json",
+        root / "narration.txt",
+        root / "design.md",
+        root / "handoff-manifest.json",
+        *_tree_files(root, "assets"),
+    ]
+    renderer_files = [
+        *_tree_files(
+            root,
+            "renderer",
+            exclude={"node_modules", "generated", ".cache"},
+        ),
+    ]
+    runtime_files = [
+        root / "voice.wav",
+        root / ".runtime" / "timing.json",
+    ]
+    publish_copy_files = [
+        root / "publish" / "publish-copy.txt",
+    ]
+    music_files = [root / ".runtime" / "audio.json"]
+
+    audio_config = root / ".runtime" / "audio.json"
+    if audio_config.is_file():
+        try:
+            raw = json.loads(audio_config.read_text(encoding="utf-8")).get(
+                "background_music"
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            raw = None
+        if isinstance(raw, str):
+            music_files.append(root / raw)
+
+    production = {}
+    production_path = root / "production.json"
+    if production_path.is_file():
+        try:
+            production = json.loads(production_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            production = {}
+
+    publish_document = {}
+    publish_path = root / "publish" / "publish.json"
+    if publish_path.is_file():
+        try:
+            publish_document = json.loads(publish_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            publish_document = {}
+
+    creative = _fingerprint_files(root, creative_files)
+    renderer = _fingerprint_files(root, renderer_files)
+    runtime = _fingerprint_files(root, runtime_files)
+    publish_metadata = _fingerprint_value(publish_document)
+    publish_copy = _fingerprint_files(root, publish_copy_files)
+    publish = _fingerprint_value(
+        {
+            "metadata": publish_metadata,
+            "copy": publish_copy,
+        }
+    )
+    cover_spec = _fingerprint_value(
+        publish_document.get("cover", {})
+        if isinstance(publish_document, dict)
+        else {}
+    )
+    music = _fingerprint_files(root, music_files)
+    render_profile = _fingerprint_value(production.get("video", {}))
+
+    video = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "runtime": runtime,
+            "render_profile": render_profile,
+        }
+    )
+    cover = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "cover_spec": cover_spec,
+            "render_profile": render_profile,
+        }
+    )
+    mix = _fingerprint_value(
+        {
+            "video": video,
+            "music": music,
+        }
+    )
+    bundle = _fingerprint_value(
+        {
+            "mix": mix,
+            "cover": cover,
+            "publish": publish,
+        }
+    )
+    return {
+        "creative": creative,
+        "renderer": renderer,
+        "runtime": runtime,
+        "publish_metadata": publish_metadata,
+        "publish_copy": publish_copy,
+        "publish": publish,
+        "cover_spec": cover_spec,
+        "music": music,
+        "render_profile": render_profile,
+        "video": video,
+        "cover": cover,
+        "mix": mix,
+        "bundle": bundle,
+    }
+
+
+def _performance_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "performance.json"
+
+
+def _write_performance_stage(
+    root: Path,
+    stage: str,
+    *,
+    elapsed_ms: int,
+    status: str,
+    cache_hit: bool,
+    input_fingerprint: str | None,
+) -> None:
+    path = _performance_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        payload = {}
+    stages = payload.get("stages")
+    if not isinstance(stages, dict):
+        stages = {}
+    stages[stage] = {
+        "elapsed_ms": int(elapsed_ms),
+        "status": status,
+        "cache_hit": bool(cache_hit),
+        "input_fingerprint": input_fingerprint,
+    }
+    payload = {
+        "version": 1,
+        "fingerprints": artifact_fingerprints(root),
+        "stages": stages,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def _prepare_cache_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "prepare-cache.json"
+
+
+def _load_prepare_cache(root: Path) -> dict:
+    path = _prepare_cache_path(root)
+    if not path.is_file():
+        return {"version": 1, "stages": {}}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"version": 1, "stages": {}}
+    if payload.get("version") != 1 or not isinstance(payload.get("stages"), dict):
+        return {"version": 1, "stages": {}}
+    return payload
+
+
+def _prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> bool:
+    payload = _load_prepare_cache(root)
+    entry = payload["stages"].get(stage)
+    return (
+        isinstance(entry, dict)
+        and entry.get("status") == "PASS"
+        and entry.get("fingerprint") == fingerprint
+    )
+
+
+def _mark_prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> None:
+    path = _prepare_cache_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = _load_prepare_cache(root)
+    stages = dict(payload.get("stages") or {})
+    stages[stage] = {
+        "status": "PASS",
+        "fingerprint": fingerprint,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "stages": stages,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def renderer_dependency_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    renderer = root / "renderer"
+    package = _load_json(renderer / "package.json", "renderer/package.json")
+    lock = _fingerprint_files(root, [renderer / "package-lock.json"])
+    return _fingerprint_value(
+        {
+            "dependencies": package.get("dependencies") or {},
+            "devDependencies": package.get("devDependencies") or {},
+            "package_lock": lock,
+        }
+    )
+
+
+def _renderer_dependencies_installed(renderer: Path) -> bool:
+    renderer = Path(renderer).resolve()
+    try:
+        package = _load_json(renderer / "package.json", "renderer/package.json")
+    except PipelineError:
+        return False
+
+    expected = {}
+    for field in ("dependencies", "devDependencies"):
+        values = package.get(field)
+        if not isinstance(values, dict):
+            return False
+        expected.update(values)
+
+    for name, version in expected.items():
+        parts = name.split("/")
+        installed_path = renderer / "node_modules"
+        for part in parts:
+            installed_path /= part
+        installed_path /= "package.json"
+        try:
+            installed = json.loads(installed_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        if installed.get("version") != version:
+            return False
+
+    bin_dir = renderer / "node_modules" / ".bin"
+    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
+    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
+    return remotion_bin.is_file() and tsc_bin.is_file()
+
+
+def style_compile_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    _token, source_hash = _design_token(root)
+    compiler = _fingerprint_files(
+        root,
+        [
+            root / "renderer" / "scripts" / "style-token.mjs",
+            root / "renderer" / "scripts" / "compile-style-token.mjs",
+        ],
+    )
+    return _fingerprint_value(
+        {
+            "design_source_hash": source_hash,
+            "compiler": compiler,
+        }
+    )
+
+
+def _style_compilation_current(package_root: Path) -> bool:
+    root = Path(package_root).resolve()
+    try:
+        token, source_hash = _design_token(root)
+        production = _load_json(root / "production.json", "production.json")
+    except PipelineError:
+        return False
+    visual = production.get("visual_system")
+    compiled = visual.get("style_token") if isinstance(visual, dict) else None
+    return (
+        isinstance(compiled, dict)
+        and compiled.get("id") == token.get("id")
+        and compiled.get("source_hash") == source_hash
+    )
+
+
+def renderer_check_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    fingerprints = artifact_fingerprints(root)
+    production = _fingerprint_files(root, [root / "production.json"])
+    return _fingerprint_value(
+        {
+            "renderer": fingerprints["renderer"],
+            "production": production,
+            "publish_metadata": fingerprints["publish_metadata"],
+        }
+    )
+
+
+def renderer_checks_cached(package_root: Path, fingerprint: str) -> bool:
+    return _prepare_stage_cached(
+        Path(package_root).resolve(),
+        "renderer_checks",
+        fingerprint,
+    )
+
+
+def mark_renderer_checks_cached(package_root: Path, fingerprint: str) -> None:
+    _mark_prepare_stage_cached(
+        Path(package_root).resolve(),
+        "renderer_checks",
+        fingerprint,
+    )
+
+
+@contextlib.contextmanager
+def measure_performance_stage(
+    package_root: Path,
+    stage: str,
+    *,
+    input_fingerprint: str | None = None,
+    cache_hit: bool = False,
+):
+    """Persist the latest elapsed time for a measurable runtime stage."""
+    root = Path(package_root).resolve()
+    started = time.perf_counter()
+    status = "PASS"
+    try:
+        yield
+    except Exception:
+        status = "FAIL"
+        raise
+    finally:
+        elapsed_ms = round((time.perf_counter() - started) * 1000)
+        _write_performance_stage(
+            root,
+            stage,
+            elapsed_ms=elapsed_ms,
+            status=status,
+            cache_hit=cache_hit,
+            input_fingerprint=input_fingerprint,
+        )
+
+
 def aligner_install_command() -> str:
     """The only supported install command: the interpreter running this runner."""
     return f'"{sys.executable}" -m pip install -r requirements-local.txt'
@@ -2310,7 +2714,7 @@ def run_tts_batch(
             mode, voice, backend, precision, frame_cap, str(frame_cap_scale), str(max_chars),
         ]
     try:
-        subprocess.run(run_args, cwd=tts_root, check=True)
+        run_managed_subprocess(run_args, cwd=tts_root, check=True)
     except FileNotFoundError as exc:
         raise PipelineError(f"cannot start VieNeu Python: {exc}") from exc
     except subprocess.CalledProcessError as exc:
@@ -2879,6 +3283,73 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
     return production, timing
 
 
+_PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
+
+
+@contextlib.contextmanager
+def observe_subprocesses(observer):
+    """Expose the currently running child process to the Studio worker."""
+    token = _PROCESS_OBSERVER.set(observer)
+    try:
+        yield
+    finally:
+        _PROCESS_OBSERVER.reset(token)
+
+
+def _process_group_kwargs() -> dict:
+    if os.name == "nt":
+        flag = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return {"creationflags": flag} if flag else {}
+    return {"start_new_session": True}
+
+
+def run_managed_subprocess(
+    arguments: list[str],
+    *,
+    cwd: Path | str | None = None,
+    check: bool = False,
+    capture_output: bool = False,
+    text: bool = False,
+) -> subprocess.CompletedProcess:
+    """Run one cancellable child in its own process group."""
+    if any(not isinstance(arg, str) or "\x00" in arg for arg in arguments):
+        raise PipelineError("subprocess arguments must be NUL-free strings.")
+
+    popen_kwargs = _process_group_kwargs()
+    if capture_output:
+        popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(
+        arguments,
+        cwd=cwd,
+        shell=False,
+        text=text,
+        **popen_kwargs,
+    )
+    observer = _PROCESS_OBSERVER.get()
+    if observer is not None:
+        observer(process)
+    try:
+        stdout, stderr = process.communicate()
+    finally:
+        if observer is not None:
+            observer(None)
+
+    result = subprocess.CompletedProcess(
+        arguments,
+        process.returncode,
+        stdout,
+        stderr,
+    )
+    if check and process.returncode:
+        raise subprocess.CalledProcessError(
+            process.returncode,
+            arguments,
+            output=stdout,
+            stderr=stderr,
+        )
+    return result
+
+
 def _npm_executable() -> str:
     raw = shutil.which("npm.cmd" if os.name == "nt" else "npm") or shutil.which("npm")
     if not raw:
@@ -2889,12 +3360,10 @@ def _npm_executable() -> str:
 def _run_npm(args: list[str], cwd: Path) -> None:
     if any(not isinstance(arg, str) or "\x00" in arg for arg in args):
         raise PipelineError("npm arguments must be NUL-free strings.")
-    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-    subprocess.run(
+    run_managed_subprocess(
         [_npm_executable(), *args],
         cwd=cwd,
         check=True,
-        shell=False,
     )
 
 
@@ -2907,12 +3376,11 @@ def _install_renderer(renderer: Path) -> None:
         dev_dependencies = package.get("devDependencies", {})
         if dev_dependencies.get("typescript") != "5.8.0":
             raise
-        probe = subprocess.run(
+        probe = run_managed_subprocess(
             [_npm_executable(), "view", "typescript@5.8", "version", "--json"],
             cwd=renderer,
             capture_output=True,
             text=True,
-            shell=False,
         )
         try:
             versions = json.loads(probe.stdout) if probe.returncode == 0 else []
@@ -2931,7 +3399,11 @@ def _install_renderer(renderer: Path) -> None:
 
 def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
     """Keep the shipped JSON cast valid on current TypeScript versions."""
-    for relative in ("src/Root.tsx", "src/ZodiacComposition.tsx"):
+    for relative in (
+        "src/Root.tsx",
+        "src/ZodiacComposition.tsx",
+        "src/ZodiacCover.tsx",
+    ):
         path = renderer / relative
         try:
             source = path.read_text(encoding="utf-8")
@@ -2940,6 +3412,83 @@ def _patch_renderer_typescript_compatibility(renderer: Path) -> None:
         patched = source.replace("as Production", "as unknown as Production")
         if patched != source:
             path.write_text(patched, encoding="utf-8")
+
+
+def _patch_renderer_font_readiness(renderer: Path) -> None:
+    """Prevent measured caption layout from running before the local font loads."""
+    path = renderer / "src" / "ZodiacComposition.tsx"
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read renderer/src/ZodiacComposition.tsx: {exc}") from exc
+
+    if (
+        "const [fontReady, setFontReady] = useState(false);" in source
+        and "await document.fonts.ready;" in source
+        and "if (!fontReady)" in source
+    ):
+        return
+
+    old_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  useEffect(() => {
+    document.fonts.load(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)
+      .then((faces) => {
+        if (!faces.length || !document.fonts.check(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)) throw new Error("Required Vietnamese font face is unavailable.");
+        continueRender(handle);
+      })
+      .catch((error) => cancelRender(new Error("Vietnamese font failed to load: " + String(error))));
+  }, [handle]);
+};
+'''
+    new_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  const [fontReady, setFontReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const descriptor = `500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`;
+        const faces = await document.fonts.load(descriptor, fontText);
+        await document.fonts.ready;
+        if (!faces.length || !document.fonts.check(descriptor, fontText)) {
+          throw new Error("Required Vietnamese font face is unavailable.");
+        }
+        if (cancelled) return;
+        setFontReady(true);
+        requestAnimationFrame(() => continueRender(handle));
+      } catch (error) {
+        if (!cancelled) {
+          cancelRender(new Error("Vietnamese font failed to load: " + String(error)));
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [handle]);
+  return fontReady;
+};
+'''
+    old_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  useVietnameseFont();
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+    new_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  const fontReady = useVietnameseFont();
+  if (!fontReady) {
+    return <AbsoluteFill style={{backgroundColor: production.visual_system.palette.paper}} />;
+  }
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+
+    if old_hook not in source or old_entry not in source:
+        raise PipelineError(
+            "renderer font readiness contract is stale but cannot be auto-repaired safely."
+        )
+    patched = source.replace(old_hook, new_hook).replace(old_entry, new_entry)
+    path.write_text(patched, encoding="utf-8")
 
 
 def _validate_music_volume(volume: float) -> float:
@@ -3065,11 +3614,9 @@ def _run_ffmpeg(arguments: list[str]) -> None:
     # every user-selected path remains a separate argv element, and no shell
     # parses the values. shlex.escape() is intentionally unnecessary here.
     try:
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        subprocess.run(
+        run_managed_subprocess(
             [ffmpeg, *safe_arguments],
             check=True,
-            shell=False,
         )
     except (OSError, subprocess.CalledProcessError) as exc:
         raise PipelineError(f"FFmpeg failed: {exc}") from exc
@@ -3182,20 +3729,26 @@ def package_publish_outputs(
     final_video: Path | None = None,
 ) -> Path:
     root = Path(package_root).resolve()
-    outputs = validate_publish_outputs(
+    fingerprint = artifact_fingerprints(root)["bundle"]
+    with measure_performance_stage(
         root,
-        final_video=final_video,
-    )
-    bundle = root / "out" / "zodiac-publish-bundle.zip"
-    with zipfile.ZipFile(
-        bundle,
-        "w",
-        compression=zipfile.ZIP_DEFLATED,
-    ) as archive:
-        archive.write(outputs["video"], "zodiac-story.mp4")
-        archive.write(outputs["cover"], "cover.png")
-        archive.write(outputs["copy"], "publish-copy.txt")
-        archive.write(outputs["metadata"], "publish.json")
+        "publish.bundle",
+        input_fingerprint=fingerprint,
+    ):
+        outputs = validate_publish_outputs(
+            root,
+            final_video=final_video,
+        )
+        bundle = root / "out" / "zodiac-publish-bundle.zip"
+        with zipfile.ZipFile(
+            bundle,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as archive:
+            archive.write(outputs["video"], "zodiac-story.mp4")
+            archive.write(outputs["cover"], "cover.png")
+            archive.write(outputs["copy"], "publish-copy.txt")
+            archive.write(outputs["metadata"], "publish.json")
     print(f"Publish bundle: {bundle}", flush=True)
     return bundle
 
@@ -3211,6 +3764,14 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         )
 
     if config is None:
+        fingerprint = artifact_fingerprints(root)["mix"]
+        with measure_performance_stage(
+            root,
+            "audio.mix",
+            input_fingerprint=fingerprint,
+            cache_hit=True,
+        ):
+            pass
         print(
             "Final audio: voice/SFX only "
             "(background music disabled).",
@@ -3227,31 +3788,37 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         "dropout_transition=0,alimiter=limit=0.95[out]"
     )
 
-    _run_ffmpeg(
-        [
-            "-y",
-            "-v",
-            "error",
-            "-i",
-            str(output),
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(music),
-            "-filter_complex",
-            filter_complex,
-            "-map",
-            "0:v:0",
-            "-map",
-            "[out]",
-            "-c:v",
-            "copy",
-            "-c:a",
-            "aac",
-            "-shortest",
-            str(mixed),
-        ]
-    )
+    fingerprint = artifact_fingerprints(root)["mix"]
+    with measure_performance_stage(
+        root,
+        "audio.mix",
+        input_fingerprint=fingerprint,
+    ):
+        _run_ffmpeg(
+            [
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                str(output),
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(music),
+                "-filter_complex",
+                filter_complex,
+                "-map",
+                "0:v:0",
+                "-map",
+                "[out]",
+                "-c:v",
+                "copy",
+                "-c:a",
+                "aac",
+                "-shortest",
+                str(mixed),
+            ]
+        )
 
     if not mixed.is_file():
         raise PipelineError(
@@ -3273,11 +3840,14 @@ def prepare_renderer(
     music_volume: float = DEFAULT_MUSIC_VOLUME,
     update_music: bool = False,
 ) -> None:
-    """Install pins, compile design.md, run renderer tests and typecheck."""
+    """Validate one package, reuse safe prepare work, then gate the renderer."""
     root = Path(package_root).resolve()
     if update_music:
         configure_background_music(root, music, music_volume)
 
+    # This validates the compiled style token before any package-owned Node code
+    # can run. A stale design/production pair must fail closed, not self-repair
+    # by executing an untrusted compile script first.
     validate_runtime(root)
     renderer = root / "renderer"
     if shutil.which("node") is None or (
@@ -3288,25 +3858,113 @@ def prepare_renderer(
             "Hãy cài Node.js LTS mới nhất rồi thử lại."
         )
 
-    bin_dir = renderer / "node_modules" / ".bin"
-    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
-    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
-    if not remotion_bin.is_file() or not tsc_bin.is_file():
-        print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
-        _install_renderer(renderer)
+    dependency_fingerprint = renderer_dependency_fingerprint(root)
+    dependencies_installed = _renderer_dependencies_installed(renderer)
+    dependencies_cached = (
+        dependencies_installed
+        and _prepare_stage_cached(root, "dependencies", dependency_fingerprint)
+    )
+    lock_exists = (renderer / "package-lock.json").is_file()
+    bootstrap_safe = dependencies_installed and not lock_exists
+    dependency_reused = dependencies_cached or bootstrap_safe
 
-    print("Đang biên dịch design.md → style token trong production.json…", flush=True)
-    _run_npm(["run", "compile:style"], renderer)
+    with measure_performance_stage(
+        root,
+        "renderer.dependencies",
+        input_fingerprint=dependency_fingerprint,
+        cache_hit=dependency_reused,
+    ):
+        if dependency_reused:
+            if not dependencies_cached:
+                _mark_prepare_stage_cached(
+                    root,
+                    "dependencies",
+                    dependency_fingerprint,
+                )
+        else:
+            print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
+            _install_renderer(renderer)
+            if not _renderer_dependencies_installed(renderer):
+                raise PipelineError(
+                    "renderer dependencies were installed but pinned package versions "
+                    "could not be verified."
+                )
+            dependency_fingerprint = renderer_dependency_fingerprint(root)
+            _mark_prepare_stage_cached(
+                root,
+                "dependencies",
+                dependency_fingerprint,
+            )
+
+    style_fingerprint = style_compile_fingerprint(root)
+    style_current = _style_compilation_current(root)
+    if not style_current:
+        raise PipelineError(
+            "compiled style token is stale after package validation; "
+            "re-export the package from the canonical plugin."
+        )
+    with measure_performance_stage(
+        root,
+        "renderer.compile_style",
+        input_fingerprint=style_fingerprint,
+        cache_hit=True,
+    ):
+        # The package validator above already proves the compiled style token
+        # matches design.md. Re-running compile:style on every retry is redundant.
+        _mark_prepare_stage_cached(
+            root,
+            "compile_style",
+            style_fingerprint,
+        )
+
     validate_package(root)
     validate_publish_contract(root)
 
+    # Backward compatibility only. New plugin exports should already contain
+    # these fixes, but old imported jobs can be repaired before typecheck.
     _patch_renderer_typescript_compatibility(renderer)
+    _patch_renderer_font_readiness(renderer)
 
-    print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
-    _run_npm(["run", "test"], renderer)
+    check_fingerprint = renderer_check_fingerprint(root)
+    checks_cached = renderer_checks_cached(root, check_fingerprint)
+    if checks_cached:
+        print(
+            "Renderer tests/typecheck: dùng lại kết quả PASS cùng fingerprint.",
+            flush=True,
+        )
+        with measure_performance_stage(
+            root,
+            "renderer.contract_tests",
+            input_fingerprint=check_fingerprint,
+            cache_hit=True,
+        ):
+            pass
+        with measure_performance_stage(
+            root,
+            "renderer.typecheck",
+            input_fingerprint=check_fingerprint,
+            cache_hit=True,
+        ):
+            pass
+    else:
+        print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
+        with measure_performance_stage(
+            root,
+            "renderer.contract_tests",
+            input_fingerprint=check_fingerprint,
+        ):
+            _run_npm(["run", "test"], renderer)
 
-    print("Đang kiểm tra TypeScript của renderer…", flush=True)
-    _run_npm(["run", "typecheck"], renderer)
+        print("Đang kiểm tra TypeScript của renderer…", flush=True)
+        with measure_performance_stage(
+            root,
+            "renderer.typecheck",
+            input_fingerprint=check_fingerprint,
+        ):
+            _run_npm(["run", "typecheck"], renderer)
+
+        # Mark only after BOTH contract tests and TypeScript have passed.
+        mark_renderer_checks_cached(root, check_fingerprint)
 
 
 def render_video(package_root: Path) -> None:
@@ -3314,7 +3972,13 @@ def render_video(package_root: Path) -> None:
     root = Path(package_root).resolve()
     validate_runtime(root)
     validate_publish_contract(root)
-    _run_npm(["run", "render"], root / "renderer")
+    fingerprint = artifact_fingerprints(root)["video"]
+    with measure_performance_stage(
+        root,
+        "renderer.render",
+        input_fingerprint=fingerprint,
+    ):
+        _run_npm(["run", "render"], root / "renderer")
     validate_publish_outputs(root)
 
 

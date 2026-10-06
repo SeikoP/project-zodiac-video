@@ -2,7 +2,10 @@
 
 import contextlib
 import json
+import os
+import sys
 import tempfile
+import time
 import threading
 import unittest
 import wave
@@ -479,13 +482,43 @@ class CancelTests(WorkerHarness):
 
         worker = PipelineWorker(self.job)
         process = subprocess.Popen(
-            ["python", "-c", "import time; time.sleep(30)"],
+            [sys.executable, "-c", "import time; time.sleep(30)"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            start_new_session=(os.name != "nt"),
         )
         worker.attach_process(process)
         worker.request_cancel()
-        self.assertTrue(process.wait(timeout=20) != 0 or process.poll() is not None)
+        self.assertTrue(process.wait(timeout=10) != 0 or process.poll() is not None)
+
+    def test_cancel_interrupts_a_runtime_managed_subprocess(self):
+        import subprocess
+
+        from tools.zodiac_local import observe_subprocesses, run_managed_subprocess
+
+        worker = PipelineWorker(self.job)
+        errors = []
+
+        def run_child():
+            try:
+                with observe_subprocesses(worker.attach_process):
+                    run_managed_subprocess(
+                        [sys.executable, "-c", "import time; time.sleep(30)"],
+                        check=True,
+                    )
+            except subprocess.CalledProcessError as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=run_child)
+        thread.start()
+        deadline = time.time() + 5
+        while worker._process is None and time.time() < deadline:
+            time.sleep(0.01)
+        self.assertIsNotNone(worker._process, "managed subprocess was never registered")
+        worker.request_cancel()
+        thread.join(timeout=10)
+        self.assertFalse(thread.is_alive(), "managed subprocess did not stop after cancel")
+        self.assertTrue(errors, "killed subprocess should surface a non-zero exit")
 
 
 class WorkerThreadingTests(WorkerHarness):

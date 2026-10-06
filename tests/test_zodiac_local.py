@@ -822,20 +822,84 @@ class SafeExtractionTests(unittest.TestCase):
 
 
 class RendererTypeCompatTests(unittest.TestCase):
+    def test_patch_waits_for_font_before_caption_measurement(self):
+        from tools.zodiac_local import _patch_renderer_font_readiness
+
+        old_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  useEffect(() => {
+    document.fonts.load(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)
+      .then((faces) => {
+        if (!faces.length || !document.fonts.check(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)) throw new Error("Required Vietnamese font face is unavailable.");
+        continueRender(handle);
+      })
+      .catch((error) => cancelRender(new Error("Vietnamese font failed to load: " + String(error))));
+  }, [handle]);
+};
+'''
+        old_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  useVietnameseFont();
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            path = renderer / "src" / "ZodiacComposition.tsx"
+            path.write_text(old_hook + "\n" + old_entry, encoding="utf-8")
+            _patch_renderer_font_readiness(renderer)
+            patched = path.read_text(encoding="utf-8")
+            self.assertIn("const [fontReady, setFontReady] = useState(false);", patched)
+            self.assertIn("await document.fonts.ready;", patched)
+            self.assertIn("if (!fontReady)", patched)
+            self.assertIn("requestAnimationFrame(() => continueRender(handle));", patched)
+
+    def test_prepare_renderer_applies_font_patch_before_renderer_tests(self):
+        import inspect
+
+        from tools.zodiac_local import prepare_renderer
+
+        source = inspect.getsource(prepare_renderer)
+        self.assertIn("_patch_renderer_font_readiness(renderer)", source)
+        patch_at = source.index("_patch_renderer_font_readiness(renderer)")
+        self.assertLess(patch_at, source.index('["run", "test"]'))
+        self.assertLess(patch_at, source.index('"typecheck"'))
+
     def test_patch_widens_the_production_json_cast(self):
         from tools.zodiac_local import _patch_renderer_typescript_compatibility
 
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
             _patch_renderer_typescript_compatibility(renderer)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 patched = (renderer / "src" / name).read_text(encoding="utf-8")
                 self.assertIn("as unknown as Production", patched, name)
+
+    def test_patch_covers_zodiac_cover_json_cast(self):
+        from tools.zodiac_local import _patch_renderer_typescript_compatibility
+
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            (renderer / "src" / "Root.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacComposition.tsx").write_text(
+                "const production = productionJson as unknown as Production;\n",
+                encoding="utf-8",
+            )
+            (renderer / "src" / "ZodiacCover.tsx").write_text(
+                "const production = productionJson as Production;\n",
+                encoding="utf-8",
+            )
+            _patch_renderer_typescript_compatibility(renderer)
+            patched = (renderer / "src" / "ZodiacCover.tsx").read_text(encoding="utf-8")
+            self.assertIn("as unknown as Production", patched)
 
     def test_prepare_renderer_applies_the_cast_patch_before_typecheck(self):
         """The shipped renderer casts JSON directly, which fails TS2352."""
@@ -854,7 +918,7 @@ class RendererTypeCompatTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             renderer = Path(temp) / "renderer"
             (renderer / "src").mkdir(parents=True)
-            for name in ("Root.tsx", "ZodiacComposition.tsx"):
+            for name in ("Root.tsx", "ZodiacComposition.tsx", "ZodiacCover.tsx"):
                 (renderer / "src" / name).write_text(
                     "const production = productionJson as Production;\n", encoding="utf-8"
                 )
@@ -1981,6 +2045,373 @@ class PublishBundleTests(unittest.TestCase):
                 )
 
 
+class RendererPrepareCacheTests(unittest.TestCase):
+    def _prepare_twice(self, job):
+        from tools.zodiac_local import prepare_renderer
+
+        calls = []
+        installs = []
+
+        def fake_npm(args, _cwd):
+            calls.append(tuple(args))
+
+        def fake_install(_renderer):
+            installs.append("install")
+
+        common = (
+            patch("tools.zodiac_local.validate_runtime"),
+            patch("tools.zodiac_local.validate_package"),
+            patch("tools.zodiac_local.validate_publish_contract"),
+            patch("tools.zodiac_local._patch_renderer_typescript_compatibility"),
+            patch("tools.zodiac_local._patch_renderer_font_readiness"),
+            patch("tools.zodiac_local._renderer_dependencies_installed", return_value=True),
+            patch("tools.zodiac_local._install_renderer", side_effect=fake_install),
+            patch("tools.zodiac_local._run_npm", side_effect=fake_npm),
+            patch("tools.zodiac_local.shutil.which", return_value="/usr/bin/true"),
+        )
+        with (
+            common[0],
+            common[1],
+            common[2],
+            common[3],
+            common[4],
+            common[5],
+            common[6],
+            common[7],
+            common[8],
+        ):
+            prepare_renderer(job)
+            first = list(calls)
+            calls.clear()
+            prepare_renderer(job)
+            second = list(calls)
+        return first, second, installs
+
+    def test_renderer_dependency_fingerprint_changes_with_dependency_spec(self):
+        from tools.zodiac_local import renderer_dependency_fingerprint
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            before = renderer_dependency_fingerprint(job)
+            package_path = job / "renderer" / "package.json"
+            package = json.loads(package_path.read_text(encoding="utf-8"))
+            package["dependencies"]["react"] = "19.0.1"
+            package_path.write_text(json.dumps(package), encoding="utf-8")
+            after = renderer_dependency_fingerprint(job)
+            self.assertNotEqual(before, after)
+
+    def test_renderer_check_cache_invalidates_on_publish_metadata_change(self):
+        from tools.zodiac_local import (
+            mark_renderer_checks_cached,
+            renderer_check_fingerprint,
+            renderer_checks_cached,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            key = renderer_check_fingerprint(job)
+            self.assertFalse(renderer_checks_cached(job, key))
+            mark_renderer_checks_cached(job, key)
+            self.assertTrue(renderer_checks_cached(job, key))
+
+            publish_path = job / "publish" / "publish.json"
+            publish = json.loads(publish_path.read_text(encoding="utf-8"))
+            publish["cover"]["hook"] = "HOOK KHÁC"
+            publish_path.write_text(
+                json.dumps(publish, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            changed = renderer_check_fingerprint(job)
+            self.assertNotEqual(key, changed)
+            self.assertFalse(renderer_checks_cached(job, changed))
+
+    def test_renderer_check_cache_ignores_publish_copy_only_change(self):
+        from tools.zodiac_local import (
+            mark_renderer_checks_cached,
+            renderer_check_fingerprint,
+            renderer_checks_cached,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            key = renderer_check_fingerprint(job)
+            mark_renderer_checks_cached(job, key)
+
+            copy_path = job / "publish" / "publish-copy.txt"
+            copy_path.write_text(
+                copy_path.read_text(encoding="utf-8") + "\nALT CAPTION\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(key, renderer_check_fingerprint(job))
+            self.assertTrue(renderer_checks_cached(job, key))
+
+    def test_identical_second_prepare_skips_install_compile_tests_and_typecheck(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            first, second, installs = self._prepare_twice(job)
+
+            self.assertIn(("run", "test"), first)
+            self.assertIn(("run", "typecheck"), first)
+            self.assertNotIn(("run", "compile:style"), first)
+            self.assertEqual(installs, [])
+            self.assertEqual(second, [])
+
+            metrics = json.loads(
+                (job / ".runtime" / "performance.json").read_text(encoding="utf-8")
+            )
+            self.assertTrue(metrics["stages"]["renderer.dependencies"]["cache_hit"])
+            self.assertTrue(metrics["stages"]["renderer.compile_style"]["cache_hit"])
+            self.assertTrue(metrics["stages"]["renderer.contract_tests"]["cache_hit"])
+            self.assertTrue(metrics["stages"]["renderer.typecheck"]["cache_hit"])
+
+    def test_renderer_source_change_reruns_checks_without_compile_or_install(self):
+        from tools.zodiac_local import prepare_renderer
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            calls = []
+
+            def fake_npm(args, _cwd):
+                calls.append(tuple(args))
+
+            common = (
+                patch("tools.zodiac_local.validate_runtime"),
+                patch("tools.zodiac_local.validate_package"),
+                patch("tools.zodiac_local.validate_publish_contract"),
+                patch("tools.zodiac_local._patch_renderer_typescript_compatibility"),
+                patch("tools.zodiac_local._patch_renderer_font_readiness"),
+                patch("tools.zodiac_local._renderer_dependencies_installed", return_value=True),
+                patch("tools.zodiac_local._install_renderer"),
+                patch("tools.zodiac_local._run_npm", side_effect=fake_npm),
+                patch("tools.zodiac_local.shutil.which", return_value="/usr/bin/true"),
+            )
+            with (
+                common[0],
+                common[1],
+                common[2],
+                common[3],
+                common[4],
+                common[5],
+                common[6],
+                common[7],
+                common[8],
+            ):
+                prepare_renderer(job)
+                calls.clear()
+                source = job / "renderer" / "src" / "PrimitiveSvg.tsx"
+                source.write_text(
+                    source.read_text(encoding="utf-8") + "\n// changed\n",
+                    encoding="utf-8",
+                )
+                prepare_renderer(job)
+
+            self.assertIn(("run", "test"), calls)
+            self.assertIn(("run", "typecheck"), calls)
+            self.assertNotIn(("run", "compile:style"), calls)
+
+    def test_publish_copy_change_does_not_rerun_renderer_checks(self):
+        from tools.zodiac_local import prepare_renderer
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            calls = []
+
+            def fake_npm(args, _cwd):
+                calls.append(tuple(args))
+
+            common = (
+                patch("tools.zodiac_local.validate_runtime"),
+                patch("tools.zodiac_local.validate_package"),
+                patch("tools.zodiac_local.validate_publish_contract"),
+                patch("tools.zodiac_local._patch_renderer_typescript_compatibility"),
+                patch("tools.zodiac_local._patch_renderer_font_readiness"),
+                patch("tools.zodiac_local._renderer_dependencies_installed", return_value=True),
+                patch("tools.zodiac_local._install_renderer"),
+                patch("tools.zodiac_local._run_npm", side_effect=fake_npm),
+                patch("tools.zodiac_local.shutil.which", return_value="/usr/bin/true"),
+            )
+            with (
+                common[0],
+                common[1],
+                common[2],
+                common[3],
+                common[4],
+                common[5],
+                common[6],
+                common[7],
+                common[8],
+            ):
+                prepare_renderer(job)
+                calls.clear()
+                copy_path = job / "publish" / "publish-copy.txt"
+                copy_path.write_text(
+                    copy_path.read_text(encoding="utf-8") + "\nALT CAPTION\n",
+                    encoding="utf-8",
+                )
+                prepare_renderer(job)
+
+            self.assertEqual(calls, [])
+
+    def test_typecheck_failure_is_never_cached(self):
+        from tools.zodiac_local import (
+            prepare_renderer,
+            renderer_check_fingerprint,
+            renderer_checks_cached,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+
+            def fake_npm(args, _cwd):
+                if tuple(args) == ("run", "typecheck"):
+                    raise subprocess.CalledProcessError(2, args)
+
+            with (
+                patch("tools.zodiac_local.validate_runtime"),
+                patch("tools.zodiac_local.validate_package"),
+                patch("tools.zodiac_local.validate_publish_contract"),
+                patch("tools.zodiac_local._patch_renderer_typescript_compatibility"),
+                patch("tools.zodiac_local._patch_renderer_font_readiness"),
+                patch("tools.zodiac_local._renderer_dependencies_installed", return_value=True),
+                patch("tools.zodiac_local._install_renderer"),
+                patch("tools.zodiac_local._run_npm", side_effect=fake_npm),
+                patch("tools.zodiac_local.shutil.which", return_value="/usr/bin/true"),
+            ):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    prepare_renderer(job)
+
+            key = renderer_check_fingerprint(job)
+            self.assertFalse(renderer_checks_cached(job, key))
+
+
+class ArtifactFingerprintTests(unittest.TestCase):
+    def test_publish_copy_change_does_not_dirty_video_or_cover(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            before = artifact_fingerprints(job)
+            copy_path = job / "publish" / "publish-copy.txt"
+            copy_path.write_text(
+                copy_path.read_text(encoding="utf-8") + "\nALT CAPTION\n",
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["publish_copy"], after["publish_copy"])
+            self.assertNotEqual(before["publish"], after["publish"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
+
+    def test_cover_hook_change_dirties_cover_not_video(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            before = artifact_fingerprints(job)
+            publish_path = job / "publish" / "publish.json"
+            publish = json.loads(publish_path.read_text(encoding="utf-8"))
+            publish["cover"]["hook"] = "HOOK MỚI"
+            publish_path.write_text(
+                json.dumps(publish, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertNotEqual(before["cover_spec"], after["cover_spec"])
+            self.assertNotEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["publish"], after["publish"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
+
+    def test_runtime_timing_change_dirties_video_mix_but_not_cover(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            runtime = job / ".runtime"
+            runtime.mkdir(parents=True, exist_ok=True)
+            timing = valid_timing()
+            (runtime / "timing.json").write_text(
+                json.dumps(timing),
+                encoding="utf-8",
+            )
+            before = artifact_fingerprints(job)
+            timing["scenes"][0]["duration_frames"] += 1
+            timing["total_duration_frames"] += 1
+            (runtime / "timing.json").write_text(
+                json.dumps(timing),
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertNotEqual(before["runtime"], after["runtime"])
+            self.assertNotEqual(before["video"], after["video"])
+            self.assertNotEqual(before["mix"], after["mix"])
+            self.assertEqual(before["cover"], after["cover"])
+
+    def test_music_change_dirties_mix_and_bundle_not_video_or_cover(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            media = job / "media"
+            media.mkdir(parents=True, exist_ok=True)
+            music = media / "background-music.mp3"
+            music.write_bytes(b"one")
+            runtime = job / ".runtime"
+            runtime.mkdir(parents=True, exist_ok=True)
+            (runtime / "audio.json").write_text(
+                json.dumps(
+                    {
+                        "background_music": "media/background-music.mp3",
+                        "background_music_volume": 0.5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            before = artifact_fingerprints(job)
+            music.write_bytes(b"two")
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["music"], after["music"])
+            self.assertNotEqual(before["mix"], after["mix"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
+
+    def test_stage_metrics_are_persisted_for_benchmarking(self):
+        from tools.zodiac_local import measure_performance_stage
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            with patch(
+                "tools.zodiac_local.time.perf_counter",
+                side_effect=[10.0, 10.25],
+            ):
+                with measure_performance_stage(
+                    job,
+                    "renderer.typecheck",
+                    input_fingerprint="abc123",
+                    cache_hit=False,
+                ):
+                    pass
+
+            payload = json.loads(
+                (job / ".runtime" / "performance.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            row = payload["stages"]["renderer.typecheck"]
+            self.assertEqual(row["elapsed_ms"], 250)
+            self.assertEqual(row["status"], "PASS")
+            self.assertFalse(row["cache_hit"])
+            self.assertEqual(row["input_fingerprint"], "abc123")
+            self.assertIn("video", payload["fingerprints"])
+            self.assertIn("mix", payload["fingerprints"])
+
+
 class BackgroundMusicTests(unittest.TestCase):
     def _job(self, root: Path) -> Path:
         job = root / "job"
@@ -2082,7 +2513,7 @@ class BackgroundMusicTests(unittest.TestCase):
                 "10.000",
             )
 
-    def test_ffmpeg_runner_never_uses_shell(self):
+    def test_ffmpeg_runner_uses_the_managed_argv_boundary(self):
         with tempfile.TemporaryDirectory() as temp:
             fake = Path(temp) / "ffmpeg"
             fake.write_bytes(b"x")
@@ -2090,20 +2521,18 @@ class BackgroundMusicTests(unittest.TestCase):
                 "tools.zodiac_local.shutil.which",
                 return_value=str(fake),
             ), patch(
-                "tools.zodiac_local.subprocess.run",
+                "tools.zodiac_local.run_managed_subprocess",
             ) as run:
                 _run_ffmpeg(
                     ["-i", "name;not-shell.mp3"]
                 )
-            self.assertFalse(
-                run.call_args.kwargs["shell"]
-            )
+            args = run.call_args.args[0]
+            self.assertEqual(Path(args[0]), fake.resolve())
             self.assertEqual(
-                Path(
-                    run.call_args.args[0][0]
-                ),
-                fake.resolve(),
+                args[1:],
+                ["-i", "name;not-shell.mp3"],
             )
+            self.assertTrue(run.call_args.kwargs["check"])
 
     def test_final_render_postmix_uses_selected_volume(self):
         with tempfile.TemporaryDirectory() as temp:
