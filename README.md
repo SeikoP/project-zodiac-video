@@ -20,22 +20,26 @@ The first alignment run may download the selected Whisper model. Default alignme
 
 ## Accepted package
 
-A package must contain:
+New exports use **thin package v3**. A v3 ZIP contains creative data only:
 
 ```text
+package-manifest.json     # zodiac-job@3, exact runtime/design refs
 design.md
 narration.txt
-production.json          # version 2.0
+production.json           # production contract 2.0
 handoff-manifest.json
 publish/
-README.md
-assets/
-renderer/
+README.md                  # optional human-facing handoff
+assets/                    # only assets referenced by production.json
 ```
 
-The runner validates the v2 entity/state/event contract, compiled design-token hash, Be Vietnam Pro caption contract, SVG paths/style IDs, renderer scripts/dependencies and package narration before import.
+A v3 ZIP must not contain `renderer/`, `library/`, `references/`, or `node_modules/`. The exact renderer is pinned by `package-manifest.json.runtime` and resolved from the Studio runtime registry at `.zodiac-work/runtimes/<id>/<version>/`. Studio verifies the runtime SHA-256 and never falls back to “latest”.
 
-Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
+Legacy v2 ZIPs without `package-manifest.json` remain supported and continue to use their package-local `renderer/`.
+
+The runner validates the production entity/state/event contract, compiled design-token hash, fixed Patrick Hand Vietnamese overlay caption contract for v3, SVG paths/style IDs, exact runtime reference and canonical narration before import.
+
+Old v1 packages using `actors/objects/actions/motion` are intentionally rejected. See `docs/THIN_PACKAGE_V3_SPEC.md` for the full boundary and migration contract.
 
 ## Quick start
 
@@ -109,13 +113,13 @@ python tools/zodiac_local.py render zodiac-sun-gemini
 Before preview/render the runner:
 
 1. validates local voice + word timing;
-2. installs pinned renderer dependencies if needed;
-3. runs `npm run compile:style`;
-4. runs renderer contract tests;
-5. runs TypeScript typecheck;
-6. lets the canonical renderer create `.runtime/render-props.json` and resolve `voice_anchor` events.
+2. resolves the exact pinned renderer runtime;
+3. installs pinned runtime dependencies only when that shared runtime is not already prepared;
+4. verifies the compiled style token;
+5. runs runtime contract tests + TypeScript once per runtime hash;
+6. lets the canonical renderer create `.runtime/render-props.json`, resolve `voice_anchor` events, and render against the job root as its public asset directory.
 
-The renderer package itself owns captions, event resolution, visual states, SFX and transitions. New packages are expected to ship canonical renderer source that already passes. The local runner keeps narrowly scoped compatibility repair for older imported jobs (TypeScript JSON casts and the font-readiness guard) before renderer tests/typecheck; this is backward compatibility, not the renderer source of truth.
+For v3, captions, event resolution, visual states, SFX and transitions are owned by the trusted shared runtime, not executable code inside the ZIP. Multiple jobs using the same runtime reuse the same source, `node_modules`, and runtime-check cache. Legacy v2 jobs keep package-local renderer compatibility repair for older exports.
 
 ## Background music
 
@@ -294,4 +298,4 @@ ZIP import rejects traversal, links, duplicate paths, oversized entries and susp
 
 FFmpeg/npm calls pass validated executables and arguments as argv with `shell=False`; user-selected paths are never interpreted as shell source.
 
-Only run renderer packages exported by a trusted plugin/workflow because a package contains executable Node.js renderer code.
+Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.

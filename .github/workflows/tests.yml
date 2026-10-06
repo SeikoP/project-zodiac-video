@@ -38,3 +38,21 @@ jobs:
         run: npm run typecheck
       - name: Render frame-0 font smoke
         run: npm run smoke
+
+  shared-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.14.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install shared runtime dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test shared runtime contract
+        run: npm test
+      - name: Typecheck shared runtime
+        run: npm run typecheck

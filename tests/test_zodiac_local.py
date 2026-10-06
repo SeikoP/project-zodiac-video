@@ -33,6 +33,7 @@ from tools.zodiac_local import (
     import_package,
     mix_background_music_into_render,
     package_publish_outputs,
+    resolve_renderer_root,
     safe_extract_zip,
     validate_background_music,
     validate_package,
@@ -115,6 +116,59 @@ def style_token():
                 "height": 150,
             },
             "gap_px": 100,
+        },
+    }
+
+
+RUNTIME_V3_HASH = "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8"
+
+
+def v3_style_token():
+    return {
+        "id": "zodiac-paper-doodle-meme-v3",
+        "version": "3.1",
+        "style_family": "paper-doodle-chibi-meme",
+        "hard_style_lock": True,
+        "palette_roles": {
+            "paper": "#F6F0E6",
+            "card": "#FFFDF9",
+            "ink": "#2F3C44",
+            "soft_ink": "#5C6B75",
+            "hair_ink": "#4B5B61",
+            "skin": "#F1C6A0",
+            "sticker_edge": "#FFFDF9",
+            "soft_shadow": "#D0C1B3",
+            "teal": "#8EC0B9",
+            "coral": "#E97A66",
+            "ochre": "#F2C45C",
+            "slate": "#435064",
+        },
+        "character_construction": {
+            "head_to_body_ratio": [1.15, 1.4],
+            "outline_px_at_1080": [5, 8],
+            "hair_silhouette_catalog": ["a", "b", "c", "d", "e"],
+        },
+        "shape_language": {"medium": "handmade-paper-doodle-stickers"},
+        "caption_emphasis": {
+            "font_family": "Patrick Hand",
+            "font_weight": 400,
+            "font_size_px": 84,
+            "min_font_size_px": 64,
+            "max_lines": 2,
+            "color_role": "ink",
+            "highlight_role": "coral",
+            "background_role": "sticker_edge",
+            "ghost_frame": True,
+        },
+        "safe_zone": {"x": 72, "y": 960, "width": 936, "height": 620},
+        "caption_overlay": {
+            "mode": "collision_aware",
+            "preferred_anchor": "lower_center",
+        },
+        "motion_grammar": {"state_swap": "voice-anchored-pose-change"},
+        "asset_style_contract": {
+            "required_visual_cues": ["warm-paper-background"],
+            "forbidden": ["photoreal"],
         },
     }
 
@@ -388,6 +442,68 @@ def package_files():
     }
     files.update(renderer_sources)
     return files
+
+
+def v3_package_files():
+    files = package_files()
+    token = v3_style_token()
+    source_hash = token_hash(token)
+    production = json.loads(files["production.json"])
+    production["visual_system"]["palette"] = token["palette_roles"]
+    production["visual_system"]["style_token"] = {**token, "source_hash": source_hash}
+    production["caption_style"] = {
+        "font_family": "Patrick Hand",
+        "font_size_px": 84,
+        "min_font_size_px": 64,
+        "font_weight": 400,
+        "color": token["palette_roles"]["ink"],
+        "highlight_color": token["palette_roles"]["coral"],
+        "background": "transparent",
+        "safe_area": token["safe_zone"],
+        "max_lines": 2,
+    }
+    for asset in production["assets"].values():
+        asset["style_id"] = token["id"]
+
+    files["design.md"] = design_markdown(token)
+    files["production.json"] = json.dumps(production, ensure_ascii=False)
+    handoff = json.loads(files["handoff-manifest.json"])
+    handoff["plugin_version"] = "1.14.0"
+    files["handoff-manifest.json"] = json.dumps(handoff, ensure_ascii=False)
+    files["package-manifest.json"] = json.dumps(
+        {
+            "format": "zodiac-job@3",
+            "production_contract": "2.0",
+            "runtime": {
+                "id": "zodiac-remotion",
+                "version": "1.14.0",
+                "sha256": RUNTIME_V3_HASH,
+            },
+            "design": {
+                "id": token["id"],
+                "version": token["version"],
+                "sha256": source_hash,
+            },
+            "producer": {
+                "plugin": "zodiac-video-pipeline",
+                "version": "1.14.0",
+            },
+        },
+        ensure_ascii=False,
+    )
+    for name in list(files):
+        if name.startswith("renderer/"):
+            del files[name]
+    return files
+
+
+def write_v3_package(root: Path) -> Path:
+    job = root / "zodiac-v3-test"
+    for name, content in v3_package_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
 
 
 def write_package(root: Path) -> Path:
@@ -820,6 +936,57 @@ class SafeExtractionTests(unittest.TestCase):
                 validate_package(job)["video"]["fps"],
                 30,
             )
+
+
+class ThinPackageV3Tests(unittest.TestCase):
+    def test_v3_validates_without_package_local_renderer(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v3_package(Path(temp))
+            self.assertFalse((job / "renderer").exists())
+            self.assertEqual(validate_package(job)["version"], "2.0")
+
+    def test_v3_rejects_bundled_renderer_library_and_references(self):
+        for forbidden in ("renderer", "library", "references"):
+            with self.subTest(forbidden=forbidden), tempfile.TemporaryDirectory() as temp:
+                job = write_v3_package(Path(temp))
+                path = job / forbidden / "unexpected.txt"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("duplicate", encoding="utf-8")
+                with self.assertRaisesRegex(PipelineError, "PACKAGE_V3_BLOAT"):
+                    validate_package(job)
+
+    def test_v3_rejects_runtime_hash_mismatch_without_latest_fallback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v3_package(Path(temp))
+            path = job / "package-manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["runtime"]["sha256"] = "0" * 64
+            path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "RUNTIME_HASH_MISMATCH"):
+                validate_package(job)
+
+    def test_v3_rejects_unreferenced_asset_bloat(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v3_package(Path(temp))
+            extra = job / "assets" / "unused.svg"
+            extra.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_V3_BLOAT.*not referenced"):
+                validate_package(job)
+
+    def test_v3_materializes_one_shared_runtime_outside_job(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v3_package(Path(temp))
+            first = resolve_renderer_root(job, materialize=True)
+            second = resolve_renderer_root(job, materialize=True)
+            self.assertEqual(first, second)
+            self.assertTrue(first.is_dir())
+            self.assertFalse((job / "renderer").exists())
+            self.assertIn("runtimes", first.parts)
+            self.assertIn("zodiac-remotion", first.parts)
+            self.assertIn("1.14.0", first.parts)
 
 
 class RendererTypeCompatTests(unittest.TestCase):

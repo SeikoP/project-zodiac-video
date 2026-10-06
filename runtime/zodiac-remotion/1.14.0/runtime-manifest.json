@@ -1,0 +1,7 @@
+{
+  "format": "zodiac-runtime@1",
+  "id": "zodiac-remotion",
+  "version": "1.14.0",
+  "sha256": "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8",
+  "renderer_contract": "shared-job-props-v1"
+}
