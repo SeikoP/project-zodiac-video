@@ -1782,6 +1782,88 @@ def _clamp_aligned_words_to_wav_boundary(
     return normalized
 
 
+def _validate_integer_fps(value, *, label: str) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value <= 0
+    ):
+        raise PipelineError(f"{label} must be a positive integer.")
+    return value
+
+
+def scale_frame_duration(
+    frames: int,
+    source_fps: int,
+    target_fps: int,
+    *,
+    allow_zero: bool = False,
+) -> int:
+    """Scale a legacy frame-authored duration without changing wall time."""
+    source = _validate_integer_fps(source_fps, label="source FPS")
+    target = _validate_integer_fps(target_fps, label="target FPS")
+    if (
+        not isinstance(frames, int)
+        or isinstance(frames, bool)
+        or frames < 0
+        or (frames == 0 and not allow_zero)
+    ):
+        raise PipelineError("frame duration must be a positive integer.")
+    if frames == 0:
+        return 0
+    return max(1, round(frames * target / source))
+
+
+def retime_runtime_timing(timing: dict, target_fps: int) -> dict:
+    """Retarget frame boundaries while preserving measured millisecond captions."""
+    target = _validate_integer_fps(target_fps, label="target FPS")
+    source = _validate_integer_fps(timing.get("fps"), label="source FPS")
+    rows = timing.get("scenes")
+    total = timing.get("total_duration_frames")
+    if (
+        not isinstance(rows, list)
+        or not isinstance(total, int)
+        or isinstance(total, bool)
+        or total < 1
+    ):
+        raise PipelineError("runtime timing is missing valid frame boundaries.")
+
+    retimed = json.loads(json.dumps(timing))
+    previous_end = 0
+    for index, row in enumerate(retimed["scenes"]):
+        original = rows[index]
+        start = original.get("start_frame")
+        duration = original.get("duration_frames")
+        if (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or start < 0
+            or not isinstance(duration, int)
+            or isinstance(duration, bool)
+            or duration < 1
+        ):
+            raise PipelineError("runtime timing has an invalid scene frame boundary.")
+
+        original_end = start + duration
+        scaled_start = round(start * target / source)
+        scaled_end = round(original_end * target / source)
+        if index > 0:
+            scaled_start = previous_end
+        if scaled_end <= scaled_start:
+            scaled_end = scaled_start + 1
+        row["start_frame"] = scaled_start
+        row["duration_frames"] = scaled_end - scaled_start
+        previous_end = scaled_end
+
+    scaled_total = round(total * target / source)
+    if retimed["scenes"]:
+        scaled_total = max(scaled_total, previous_end)
+        retimed["scenes"][-1]["duration_frames"] += scaled_total - previous_end
+    retimed["fps"] = target
+    retimed["total_duration_frames"] = scaled_total
+    return retimed
+
+
 def build_timing_from_word_alignment(
     production: dict,
     durations: dict[str, float],
