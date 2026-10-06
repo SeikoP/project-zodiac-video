@@ -152,7 +152,7 @@ class JobStateTests(unittest.TestCase):
     def test_save_and_load_round_trip(self):
         self.store.save(self.plan)
         loaded = self.store.load()
-        self.assertEqual(loaded["version"], 1)
+        self.assertEqual(loaded["version"], 2)
         self.assertEqual(loaded["job"], "zodiac-test")
         self.assertEqual(loaded["steps"][IMPORT_PACKAGE]["status"], "DONE")
         self.assertEqual(loaded["steps"][IMPORT_PACKAGE]["fingerprint"], "abc")
