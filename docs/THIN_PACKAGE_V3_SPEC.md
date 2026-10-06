@@ -30,6 +30,7 @@ README.md                     # optional human-facing handoff
 Forbidden in a thin v3 package:
 
 ```text
+.authoring/**
 renderer/**
 library/**
 references/**
@@ -172,7 +173,7 @@ ZIP safety checks still reject traversal, links, duplicate paths, oversized file
 
 - legacy v2 package still validates and renders through package-local renderer;
 - v3 package validates without `renderer/**`;
-- v3 package containing `renderer/**`, `library/**`, or `references/**` is rejected;
+- v3 package containing `.authoring/**`, `renderer/**`, `library/**`, or `references/**` is rejected;
 - runtime hash mismatch is rejected without latest-version fallback;
 - two v3 jobs using the same runtime resolve to one workspace runtime directory;
 - shared renderer does not import job JSON from relative source paths;
