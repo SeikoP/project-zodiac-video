@@ -1,4 +1,5 @@
 import hashlib
+import os
 import json
 import shutil
 import stat
@@ -1215,6 +1216,48 @@ class SemanticRuntimeV315Tests(unittest.TestCase):
             (job / "narration.txt").write_text("Xin chào mọi người nhé.", encoding="utf-8")
             with self.assertRaisesRegex(PipelineError, "FINAL_VALIDATION_STALE"):
                 validate_package(job)
+
+    @unittest.skipUnless(
+        os.environ.get("ZODIAC_E2E_RUNTIME") == "1",
+        "golden runtime prepare runs only in the dedicated shared-runtime CI job",
+    )
+    def test_v315_runtime_prepare_golden_thief(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime_dir = (
+                Path(__file__).resolve().parents[1]
+                / "runtime"
+                / "zodiac-remotion"
+                / "1.15.0"
+                / "renderer"
+            )
+            runtime_state = job / ".runtime"
+            runtime_state.mkdir(parents=True, exist_ok=True)
+            (runtime_state / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            env = dict(os.environ)
+            env["ZODIAC_PACKAGE_ROOT"] = str(job)
+            result = subprocess.run(
+                ["node", "scripts/render.mjs", "--prepare-only"],
+                cwd=runtime_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=result.stdout + "\n" + result.stderr,
+            )
+            props = json.loads(
+                (runtime_state / "render-props.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(props["production"]["scenes"][0]["events"][0]["mechanism"]["mode"], "child_entities")
+            self.assertEqual(props["production"]["assets"]["safe.door.open"]["lineage"]["source_master"], "compact-safe")
 
     def test_v315_rejects_authoring_directory_in_thin_zip(self):
         with tempfile.TemporaryDirectory() as temp:
