@@ -1,1 +1,8 @@
-runtime/zodiac-remotion/** text eol=lf
+runtime/zodiac-remotion/**/*.json text eol=lf
+runtime/zodiac-remotion/**/*.js text eol=lf
+runtime/zodiac-remotion/**/*.mjs text eol=lf
+runtime/zodiac-remotion/**/*.ts text eol=lf
+runtime/zodiac-remotion/**/*.tsx text eol=lf
+runtime/zodiac-remotion/**/*.mts text eol=lf
+runtime/zodiac-remotion/**/*.css text eol=lf
+runtime/zodiac-remotion/**/*.md text eol=lf
