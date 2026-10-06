@@ -192,6 +192,40 @@ def _package_root(extracted: Path) -> Path:
     return candidates[0].parent
 
 
+def _validate_handoff_boundary(root: Path) -> None:
+    """Accept the structured plugin handoff; retain README literal only for legacy packages."""
+    manifest_path = root / "handoff-manifest.json"
+    if manifest_path.is_file():
+        manifest = _load_json(manifest_path, "handoff-manifest.json")
+        statuses = manifest.get("status")
+        if (
+            not isinstance(manifest.get("package_id"), str)
+            or not manifest["package_id"].strip()
+            or not isinstance(manifest.get("plugin_version"), str)
+            or not manifest["plugin_version"].strip()
+            or not isinstance(statuses, list)
+            or not any(
+                status in {"LOCAL_RUNTIME_PENDING", "RENDER_READY"}
+                for status in statuses
+            )
+        ):
+            raise PipelineError(
+                "handoff-manifest.json must identify the package/plugin and declare "
+                "LOCAL_RUNTIME_PENDING or RENDER_READY."
+            )
+        return
+
+    try:
+        readme_text = (root / "README.md").read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read README.md or structured handoff manifest: {exc}") from exc
+    if "PLUGIN SIDE COMPLETE" not in readme_text:
+        raise PipelineError(
+            "package handoff is missing: add handoff-manifest.json or the legacy "
+            "README.md marker PLUGIN SIDE COMPLETE."
+        )
+
+
 def _asset_file(root: Path, asset_id: str, entry: dict) -> Path:
     raw = entry.get("path")
     if not isinstance(raw, str) or not raw:
@@ -264,6 +298,20 @@ def _normalize_words(value: str) -> str:
 
 def _normalized_word_tokens(value: str) -> list[str]:
     return _normalize_words(value).split()
+
+
+def canonical_narration_text(production: dict) -> str:
+    """Serialize approved scene voices exactly as the package/runtime contract expects."""
+    scenes = production.get("scenes")
+    if not isinstance(scenes, list):
+        raise PipelineError("production.json scenes must be a list before narration serialization.")
+    voices: list[str] = []
+    for scene in scenes:
+        voice = scene.get("voice") if isinstance(scene, dict) else None
+        if not isinstance(voice, str):
+            raise PipelineError("every scene must have string voice text before narration serialization.")
+        voices.append(voice)
+    return "\n".join(voices)
 
 
 def _find_anchor_word_index_for_progression(
@@ -779,6 +827,25 @@ def validate_production_document(root: Path, production: dict) -> dict:
             "(font <=64px, y>=1280, width<=900, height<=220)."
         )
 
+    caption_token = token.get("caption_emphasis")
+    if (
+        not isinstance(caption_token, dict)
+        or caption_style.get("font_family") != caption_token.get("font_family")
+        or caption_style.get("font_weight") != caption_token.get("font_weight")
+        or caption_style.get("font_size_px") != caption_token.get("font_size_px")
+        or caption_style.get("min_font_size_px") != caption_token.get("min_font_size_px")
+        or caption_style.get("max_lines") != caption_token.get("max_lines")
+        or safe_area != token.get("safe_zone")
+        or (
+            caption_token.get("ghost_frame") is True
+            and caption_style.get("background") != "transparent"
+        )
+    ):
+        raise PipelineError(
+            "caption_style must match design.md caption_emphasis/safe_zone, "
+            "including transparent background for ghost-frame captions."
+        )
+
     layout_zones = compiled.get("layout_zones")
     isolated_layout = isinstance(layout_zones, dict)
     if isolated_layout:
@@ -1003,19 +1070,12 @@ def validate_production_document(root: Path, production: dict) -> dict:
 
     if narration.endswith("\n"):
         narration = narration[:-1]
-    if narration != "\n".join(voices):
+    if narration != canonical_narration_text(production):
         raise PipelineError(
-            "narration.txt must exactly match ordered scene.voice lines."
+            "narration.txt must exactly match canonical ordered scene.voice serialization."
         )
 
-    try:
-        readme_text = (root / "README.md").read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise PipelineError(f"cannot read README.md: {exc}") from exc
-    if "PLUGIN SIDE COMPLETE" not in readme_text:
-        raise PipelineError(
-            "README.md must identify the package as PLUGIN SIDE COMPLETE."
-        )
+    _validate_handoff_boundary(root)
 
     renderer_root = root / "renderer"
     renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
