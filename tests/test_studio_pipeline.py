@@ -531,6 +531,17 @@ class ControllerTests(WorkerHarness):
         controller.use_job(self.job)
         return controller
 
+    def test_controller_exposes_cover_and_publish_bundle_paths(self):
+        controller = self._controller()
+        self.assertEqual(
+            controller.cover_path,
+            self.job / "out" / "cover.png",
+        )
+        self.assertEqual(
+            controller.publish_bundle_path,
+            self.job / "out" / "zodiac-publish-bundle.zip",
+        )
+
     def test_pipeline_rows_are_vietnamese_and_ordered(self):
         from tools.studio.messages_vi import STEP_NAMES_VI
 
