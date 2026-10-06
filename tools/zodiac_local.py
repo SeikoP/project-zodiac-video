@@ -1918,7 +1918,7 @@ def _tree_files(root: Path, relative: str, *, exclude: set[str] | None = None) -
 
 
 def artifact_fingerprints(package_root: Path) -> dict[str, str]:
-    """Describe which expensive outputs should be invalidated by which inputs."""
+    """Describe exact input groups for render, cover, mix, and publish outputs."""
     root = Path(package_root).resolve()
 
     creative_files = [
@@ -1939,11 +1939,11 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         root / "voice.wav",
         root / ".runtime" / "timing.json",
     ]
-    publish_files = [
-        root / "publish" / "publish.json",
+    publish_copy_files = [
         root / "publish" / "publish-copy.txt",
     ]
     music_files = [root / ".runtime" / "audio.json"]
+
     audio_config = root / ".runtime" / "audio.json"
     if audio_config.is_file():
         try:
@@ -1963,10 +1963,30 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             production = {}
 
+    publish_document = {}
+    publish_path = root / "publish" / "publish.json"
+    if publish_path.is_file():
+        try:
+            publish_document = json.loads(publish_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            publish_document = {}
+
     creative = _fingerprint_files(root, creative_files)
     renderer = _fingerprint_files(root, renderer_files)
     runtime = _fingerprint_files(root, runtime_files)
-    publish = _fingerprint_files(root, publish_files)
+    publish_metadata = _fingerprint_value(publish_document)
+    publish_copy = _fingerprint_files(root, publish_copy_files)
+    publish = _fingerprint_value(
+        {
+            "metadata": publish_metadata,
+            "copy": publish_copy,
+        }
+    )
+    cover_spec = _fingerprint_value(
+        publish_document.get("cover", {})
+        if isinstance(publish_document, dict)
+        else {}
+    )
     music = _fingerprint_files(root, music_files)
     render_profile = _fingerprint_value(production.get("video", {}))
 
@@ -1982,27 +2002,36 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         {
             "creative": creative,
             "renderer": renderer,
-            "publish": publish,
+            "cover_spec": cover_spec,
             "render_profile": render_profile,
+        }
+    )
+    mix = _fingerprint_value(
+        {
+            "video": video,
+            "music": music,
         }
     )
     bundle = _fingerprint_value(
         {
-            "video": video,
+            "mix": mix,
             "cover": cover,
             "publish": publish,
-            "music": music,
         }
     )
     return {
         "creative": creative,
         "renderer": renderer,
         "runtime": runtime,
+        "publish_metadata": publish_metadata,
+        "publish_copy": publish_copy,
         "publish": publish,
+        "cover_spec": cover_spec,
         "music": music,
         "render_profile": render_profile,
         "video": video,
         "cover": cover,
+        "mix": mix,
         "bundle": bundle,
     }
 
@@ -3573,7 +3602,7 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         )
 
     if config is None:
-        fingerprint = artifact_fingerprints(root)["music"]
+        fingerprint = artifact_fingerprints(root)["mix"]
         with measure_performance_stage(
             root,
             "audio.mix",
@@ -3597,7 +3626,7 @@ def mix_background_music_into_render(package_root: Path) -> Path:
         "dropout_transition=0,alimiter=limit=0.95[out]"
     )
 
-    fingerprint = artifact_fingerprints(root)["music"]
+    fingerprint = artifact_fingerprints(root)["mix"]
     with measure_performance_stage(
         root,
         "audio.mix",
