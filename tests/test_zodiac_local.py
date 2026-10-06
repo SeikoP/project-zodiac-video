@@ -822,6 +822,48 @@ class SafeExtractionTests(unittest.TestCase):
 
 
 class RendererTypeCompatTests(unittest.TestCase):
+    def test_patch_waits_for_font_before_caption_measurement(self):
+        from tools.zodiac_local import _patch_renderer_font_readiness
+
+        old_hook = '''const useVietnameseFont = () => {
+  const [handle] = useState(() => delayRender("Load local Be Vietnam Pro font"));
+  useEffect(() => {
+    document.fonts.load(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)
+      .then((faces) => {
+        if (!faces.length || !document.fonts.check(`500 ${production.caption_style.font_size_px}px "Be Vietnam Pro"`, fontText)) throw new Error("Required Vietnamese font face is unavailable.");
+        continueRender(handle);
+      })
+      .catch((error) => cancelRender(new Error("Vietnamese font failed to load: " + String(error))));
+  }, [handle]);
+};
+'''
+        old_entry = '''export const ZodiacComposition: React.FC<RuntimeTiming> = (timing) => {
+  useVietnameseFont();
+  const sceneTiming = new Map(timing.scenes.map((item) => [item.scene_id, item]));
+'''
+        with tempfile.TemporaryDirectory() as temp:
+            renderer = Path(temp) / "renderer"
+            (renderer / "src").mkdir(parents=True)
+            path = renderer / "src" / "ZodiacComposition.tsx"
+            path.write_text(old_hook + "\n" + old_entry, encoding="utf-8")
+            _patch_renderer_font_readiness(renderer)
+            patched = path.read_text(encoding="utf-8")
+            self.assertIn("const [fontReady, setFontReady] = useState(false);", patched)
+            self.assertIn("await document.fonts.ready;", patched)
+            self.assertIn("if (!fontReady)", patched)
+            self.assertIn("requestAnimationFrame(() => continueRender(handle));", patched)
+
+    def test_prepare_renderer_applies_font_patch_before_renderer_tests(self):
+        import inspect
+
+        from tools.zodiac_local import prepare_renderer
+
+        source = inspect.getsource(prepare_renderer)
+        self.assertIn("_patch_renderer_font_readiness(renderer)", source)
+        patch_at = source.index("_patch_renderer_font_readiness(renderer)")
+        self.assertLess(patch_at, source.index('["run", "test"]'))
+        self.assertLess(patch_at, source.index('"typecheck"'))
+
     def test_patch_widens_the_production_json_cast(self):
         from tools.zodiac_local import _patch_renderer_typescript_compatibility
 
