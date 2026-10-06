@@ -2077,6 +2077,56 @@ def _write_performance_stage(
     os.replace(temp, path)
 
 
+def _renderer_check_cache_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "renderer-check-cache.json"
+
+
+def renderer_check_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    fingerprints = artifact_fingerprints(root)
+    production = _fingerprint_files(root, [root / "production.json"])
+    return _fingerprint_value(
+        {
+            "renderer": fingerprints["renderer"],
+            "production": production,
+            "publish_metadata": fingerprints["publish_metadata"],
+        }
+    )
+
+
+def renderer_checks_cached(package_root: Path, fingerprint: str) -> bool:
+    path = _renderer_check_cache_path(package_root)
+    if not path.is_file():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return (
+        payload.get("version") == 1
+        and payload.get("renderer_checks") == fingerprint
+    )
+
+
+def mark_renderer_checks_cached(package_root: Path, fingerprint: str) -> None:
+    path = _renderer_check_cache_path(package_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "renderer_checks": fingerprint,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
 @contextlib.contextmanager
 def measure_performance_stage(
     package_root: Path,
@@ -3721,22 +3771,47 @@ def prepare_renderer(
     _patch_renderer_typescript_compatibility(renderer)
     _patch_renderer_font_readiness(renderer)
 
-    check_fingerprint = artifact_fingerprints(root)["renderer"]
-    print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
-    with measure_performance_stage(
-        root,
-        "renderer.contract_tests",
-        input_fingerprint=check_fingerprint,
-    ):
-        _run_npm(["run", "test"], renderer)
+    check_fingerprint = renderer_check_fingerprint(root)
+    checks_cached = (
+        dependencies_ready
+        and renderer_checks_cached(root, check_fingerprint)
+    )
+    if checks_cached:
+        print(
+            "Renderer tests/typecheck: dùng lại kết quả PASS cùng fingerprint.",
+            flush=True,
+        )
+        with measure_performance_stage(
+            root,
+            "renderer.contract_tests",
+            input_fingerprint=check_fingerprint,
+            cache_hit=True,
+        ):
+            pass
+        with measure_performance_stage(
+            root,
+            "renderer.typecheck",
+            input_fingerprint=check_fingerprint,
+            cache_hit=True,
+        ):
+            pass
+    else:
+        print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
+        with measure_performance_stage(
+            root,
+            "renderer.contract_tests",
+            input_fingerprint=check_fingerprint,
+        ):
+            _run_npm(["run", "test"], renderer)
 
-    print("Đang kiểm tra TypeScript của renderer…", flush=True)
-    with measure_performance_stage(
-        root,
-        "renderer.typecheck",
-        input_fingerprint=check_fingerprint,
-    ):
-        _run_npm(["run", "typecheck"], renderer)
+        print("Đang kiểm tra TypeScript của renderer…", flush=True)
+        with measure_performance_stage(
+            root,
+            "renderer.typecheck",
+            input_fingerprint=check_fingerprint,
+        ):
+            _run_npm(["run", "typecheck"], renderer)
+        mark_renderer_checks_cached(root, check_fingerprint)
 
 
 def render_video(package_root: Path) -> None:

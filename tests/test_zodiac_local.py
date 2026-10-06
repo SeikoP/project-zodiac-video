@@ -2045,6 +2045,90 @@ class PublishBundleTests(unittest.TestCase):
                 )
 
 
+class RendererPrepareCacheTests(unittest.TestCase):
+    def test_renderer_check_cache_invalidates_on_publish_metadata_change(self):
+        from tools.zodiac_local import (
+            mark_renderer_checks_cached,
+            renderer_check_fingerprint,
+            renderer_checks_cached,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            key = renderer_check_fingerprint(job)
+            self.assertFalse(renderer_checks_cached(job, key))
+            mark_renderer_checks_cached(job, key)
+            self.assertTrue(renderer_checks_cached(job, key))
+
+            publish_path = job / "publish" / "publish.json"
+            publish = json.loads(publish_path.read_text(encoding="utf-8"))
+            publish["cover"]["hook"] = "HOOK KHÁC"
+            publish_path.write_text(
+                json.dumps(publish, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            changed = renderer_check_fingerprint(job)
+            self.assertNotEqual(key, changed)
+            self.assertFalse(renderer_checks_cached(job, changed))
+
+    def test_renderer_check_cache_ignores_publish_copy_only_change(self):
+        from tools.zodiac_local import (
+            mark_renderer_checks_cached,
+            renderer_check_fingerprint,
+            renderer_checks_cached,
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            key = renderer_check_fingerprint(job)
+            mark_renderer_checks_cached(job, key)
+
+            copy_path = job / "publish" / "publish-copy.txt"
+            copy_path.write_text(
+                copy_path.read_text(encoding="utf-8") + "\nALT CAPTION\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(key, renderer_check_fingerprint(job))
+            self.assertTrue(renderer_checks_cached(job, key))
+
+    def test_prepare_renderer_reuses_successful_checks_when_inputs_are_identical(self):
+        from tools.zodiac_local import prepare_renderer
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            bin_dir = job / "renderer" / "node_modules" / ".bin"
+            bin_dir.mkdir(parents=True)
+            for name in ("remotion", "remotion.cmd", "tsc", "tsc.cmd"):
+                (bin_dir / name).write_text("", encoding="utf-8")
+
+            calls = []
+
+            def fake_npm(args, _cwd):
+                calls.append(tuple(args))
+
+            common = (
+                patch("tools.zodiac_local.validate_runtime"),
+                patch("tools.zodiac_local.validate_package"),
+                patch("tools.zodiac_local.validate_publish_contract"),
+                patch("tools.zodiac_local._patch_renderer_typescript_compatibility"),
+                patch("tools.zodiac_local._patch_renderer_font_readiness"),
+                patch("tools.zodiac_local._run_npm", side_effect=fake_npm),
+                patch("tools.zodiac_local.shutil.which", return_value="/usr/bin/true"),
+            )
+            with common[0], common[1], common[2], common[3], common[4], common[5], common[6]:
+                prepare_renderer(job)
+                first = list(calls)
+                calls.clear()
+                prepare_renderer(job)
+                second = list(calls)
+
+            self.assertIn(("run", "test"), first)
+            self.assertIn(("run", "typecheck"), first)
+            self.assertIn(("run", "compile:style"), second)
+            self.assertNotIn(("run", "test"), second)
+            self.assertNotIn(("run", "typecheck"), second)
+
+
 class ArtifactFingerprintTests(unittest.TestCase):
     def test_publish_copy_change_does_not_dirty_video_or_cover(self):
         from tools.zodiac_local import artifact_fingerprints
