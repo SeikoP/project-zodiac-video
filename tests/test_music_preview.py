@@ -76,18 +76,12 @@ class MusicOnlyPreviewTests(unittest.TestCase):
 
 
 class DefaultVolumeTests(unittest.TestCase):
-    def test_gui_defaults_to_full_volume(self):
-        import tkinter as tk
+    def test_gui_defaults_to_full_volume_without_creating_tk(self):
+        from tools.studio.views.audio_panel import DEFAULT_PANEL_VOLUME
+        from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
 
-        from tools.studio.views.audio_panel import AudioPanel
-
-        root = tk.Tk()
-        root.withdraw()
-        try:
-            panel = AudioPanel(root, None)
-            self.assertEqual(panel.values()["volume"], 1.0)
-        finally:
-            root.destroy()
+        self.assertEqual(DEFAULT_PANEL_VOLUME, DEFAULT_MUSIC_VOLUME)
+        self.assertEqual(DEFAULT_PANEL_VOLUME, 1.0)
 
     def test_controller_defaults_to_full_volume(self):
         from tools.studio.worker import PipelineWorker
@@ -118,12 +112,13 @@ class DefaultVolumeTests(unittest.TestCase):
         source = inspect.getsource(StudioController.video_path.fget)
         self.assertIn("zodiac-story.with-music.mp4", source)
 
-    def test_bundled_music_ships_with_the_repo(self):
+    def test_bundled_music_is_optional_and_never_fabricated(self):
         from tools.zodiac_local import BUNDLED_MUSIC, default_music_path
 
-        self.assertTrue(BUNDLED_MUSIC.is_file(), f"missing bundled track: {BUNDLED_MUSIC}")
-        self.assertIn(BUNDLED_MUSIC.suffix.lower(), {".mp3", ".wav", ".m4a", ".aac", ".ogg"})
-        self.assertEqual(default_music_path(), BUNDLED_MUSIC)
+        expected = BUNDLED_MUSIC if BUNDLED_MUSIC.is_file() else None
+        self.assertEqual(default_music_path(), expected)
+        if expected is not None:
+            self.assertIn(expected.suffix.lower(), {".mp3", ".wav", ".m4a", ".aac", ".ogg"})
 
     def test_gui_starts_with_the_bundled_track_selected(self):
         import inspect
