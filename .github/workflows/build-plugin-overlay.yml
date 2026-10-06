@@ -1,0 +1,25 @@
+name: Build plugin overlay
+
+on:
+  push:
+    branches: [feat/thin-package-v3-runtime-registry]
+
+permissions:
+  contents: read
+
+jobs:
+  build-plugin-overlay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build plugin overlay archive
+        shell: bash
+        run: |
+          test -f tmp/plugin-overlay-root/plugin.json
+          tar -C tmp/plugin-overlay-root -czf plugin-1.15-overlay.tar.gz .
+      - name: Upload plugin overlay
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-1.15-overlay
+          path: plugin-1.15-overlay.tar.gz
+          retention-days: 1
