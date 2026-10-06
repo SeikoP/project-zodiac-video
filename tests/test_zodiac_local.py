@@ -120,7 +120,7 @@ def style_token():
     }
 
 
-RUNTIME_V3_HASH = "285e43136bd22cb7744d76455b7f5bdb7e0a920192ebc3a7399405174cd53c8f"
+RUNTIME_V3_HASH = "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8"
 
 
 def v3_style_token():
