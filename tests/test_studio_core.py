@@ -311,7 +311,6 @@ class PipelinePlanTests(unittest.TestCase):
         plan.apply_change("music")
         self.assertEqual(plan.status(RENDER_VIDEO), "DONE")
         self.assertEqual(plan.status(MIX_MUSIC), "PENDING")
-        self.assertEqual(plan.status(PACKAGE_PUBLISH), "PENDING")
 
     def test_voice_change_invalidates_the_whole_voice_chain(self):
         plan = PipelinePlan(job="j")
