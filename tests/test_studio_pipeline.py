@@ -131,7 +131,7 @@ class WorkerHarness(unittest.TestCase):
             write_scene_wav(Path(package_root) / ".runtime" / "tts-scenes" / f"{scene_id}.wav")
         return {scene_id: 0.5 for scene_id in requested}
 
-    def fake_concat(self, package_root, production):
+    def fake_concat(self, package_root, production, **kwargs):
         write_pcm(Path(package_root) / "voice.wav", seconds=0.5)
         return Path(package_root) / "voice.wav"
 
@@ -142,6 +142,7 @@ class WorkerHarness(unittest.TestCase):
         aligner,
         scene_wavs=None,
         mismatch_recovery=None,
+        **kwargs,
     ):
         self.align_calls.append(
             {
@@ -170,7 +171,7 @@ class WorkerHarness(unittest.TestCase):
         if self.fail_render:
             raise RuntimeError("remotion failed")
 
-    def fake_mix(self, package_root):
+    def fake_mix(self, package_root, **kwargs):
         self.render_calls.append("mix")
         return Path(package_root) / "out" / "zodiac-story.mp4"
 
@@ -385,6 +386,11 @@ class RenderResumeTests(WorkerHarness):
         self.assertIn("finalize", self.render_calls)
         self.assertIsNone(plan.continue_from())
         self.assertFalse(plan.can_resume)
+
+    def test_worker_defaults_to_breathing_gap_and_095_playback(self):
+        worker = self.make_worker()
+        self.assertEqual(worker.scene_gap_ms, 350.0)
+        self.assertEqual(worker.playback_rate, 0.95)
 
     def test_finalization_runs_after_render_even_without_music(self):
         self.make_worker().run_to_completion()
