@@ -77,18 +77,18 @@ def style_token():
         "caption_emphasis": {
             "font_family": "Be Vietnam Pro",
             "font_weight": 500,
-            "font_size_px": 72,
-            "min_font_size_px": 48,
+            "font_size_px": 58,
+            "min_font_size_px": 42,
             "max_lines": 2,
             "color_role": "ink",
             "highlight_role": "coral",
             "background_role": "sticker_edge",
         },
         "safe_zone": {
-            "x": 72,
-            "y": 1190,
-            "width": 840,
-            "height": 300,
+            "x": 150,
+            "y": 1370,
+            "width": 780,
+            "height": 190,
         },
         "motion_grammar": {
             "state_swap": "voice-anchored-character-pose-change",
@@ -160,8 +160,8 @@ def package_files():
         },
         "caption_style": {
             "font_family": "Be Vietnam Pro",
-            "font_size_px": 72,
-            "min_font_size_px": 48,
+            "font_size_px": 58,
+            "min_font_size_px": 42,
             "font_weight": 500,
             "color": "#252A2E",
             "highlight_color": "#E36C54",
@@ -287,6 +287,7 @@ def package_files():
             "    <Audio src={staticFile(\"voice.wav\")} />{scene.entities.map(() => null)}{scene.events.map(() => null)}\n"
             "  </Sequence>;\n"
             "});\n"
+            "const captionStyle = {width: \"fit-content\", maxWidth: area.width, left: \"50%\", transform: \"translateX(-50%)\"};\n"
         ),
         "renderer/src/PrimitiveSvg.tsx": "export const PrimitiveSvg = () => null;\n",
         "renderer/src/types.ts": (
@@ -484,6 +485,64 @@ class SafeExtractionTests(unittest.TestCase):
                 PipelineError,
                 "lead-active.svg",
             ):
+                validate_package(job)
+
+    def test_rejects_full_artboard_background_in_production_svg(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "assets/characters/lead-neutral.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 720">'
+                '<rect width="100%" height="100%" fill="#F6F0E6"/>'
+                '<circle cx="260" cy="360" r="100"/>'
+                '</svg>',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(PipelineError, "PRODUCTION_ASSET_DIRTY.*full-artboard"):
+                validate_package(job)
+
+    def test_rejects_asset_library_metadata_label_in_production_svg(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            (job / "assets/characters/lead-neutral.svg").write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 720">'
+                '<text x="260" y="42">Virgo master</text>'
+                '<circle cx="260" cy="360" r="100"/>'
+                '</svg>',
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(PipelineError, "PRODUCTION_ASSET_DIRTY.*metadata label"):
+                validate_package(job)
+
+    def test_rejects_oversized_caption_contract(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["caption_style"]["font_size_px"] = 72
+            production["caption_style"]["safe_area"]["height"] = 300
+            path.write_text(json.dumps(production), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "caption_style.*compact"):
+                validate_package(job)
+
+    def test_rejects_sparse_visual_progression_proxy_before_timing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            long_voice = " ".join(f"tu{i}" for i in range(40))
+            production["scenes"][0]["voice"] = long_voice
+            path.write_text(json.dumps(production), encoding="utf-8")
+            (job / "narration.txt").write_text(long_voice + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_DENSITY.*15 words"):
+                validate_package(job)
+
+    def test_rejects_renderer_without_compact_caption_box(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            source = (job / "renderer/src/ZodiacComposition.tsx").read_text(encoding="utf-8")
+            source = source.replace('width: "fit-content"', 'width: area.width')
+            (job / "renderer/src/ZodiacComposition.tsx").write_text(source, encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_RENDERER_STALE.*compact caption"):
                 validate_package(job)
 
     def test_rejects_static_check_only_render_script(self):
@@ -751,6 +810,21 @@ class RuntimeTimingTests(unittest.TestCase):
                 result["total_duration_frames"],
                 30,
             )
+
+    def test_rejects_measured_visual_gap_over_five_seconds(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            timing = valid_timing()
+            timing["total_duration_frames"] = 240
+            timing["scenes"][0]["duration_frames"] = 240
+            timing["scenes"][0]["captions"] = [
+                {"text": "Xin", "startMs": 0, "endMs": 180, "timestampMs": 0, "confidence": 0.99},
+                {"text": "chào", "startMs": 180, "endMs": 2500, "timestampMs": 180, "confidence": 0.99},
+                {"text": "mọi", "startMs": 2500, "endMs": 5200, "timestampMs": 2500, "confidence": 0.99},
+                {"text": "người.", "startMs": 5200, "endMs": 7900, "timestampMs": 5200, "confidence": 0.99},
+            ]
+            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_TIMING.*5.0s"):
+                validate_timing(job, timing)
 
     def test_rejects_phrase_level_caption(self):
         with tempfile.TemporaryDirectory() as temp:
