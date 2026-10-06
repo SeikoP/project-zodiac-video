@@ -213,7 +213,7 @@ class DocumentTests(unittest.TestCase):
     def test_safe_zone_comes_from_caption_style(self):
         self.assertEqual(
             self.document.safe_area,
-            {"x": 150, "y": 1370, "width": 780, "height": 190},
+            {"x": 90, "y": 1430, "width": 900, "height": 150},
         )
 
 

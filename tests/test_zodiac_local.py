@@ -77,21 +77,38 @@ def style_token():
         "caption_emphasis": {
             "font_family": "Be Vietnam Pro",
             "font_weight": 500,
-            "font_size_px": 58,
-            "min_font_size_px": 42,
+            "font_size_px": 46,
+            "min_font_size_px": 34,
             "max_lines": 2,
             "color_role": "ink",
             "highlight_role": "coral",
             "background_role": "sticker_edge",
         },
         "safe_zone": {
-            "x": 150,
-            "y": 1370,
-            "width": 780,
-            "height": 190,
+            "x": 90,
+            "y": 1430,
+            "width": 900,
+            "height": 150,
         },
         "motion_grammar": {
             "state_swap": "voice-anchored-character-pose-change",
+        },
+        "layout_zones": {
+            "content": {
+                "x": 48,
+                "y": 70,
+                "width": 984,
+                "height": 1260,
+                "radius": 28,
+                "border_px": 3,
+            },
+            "caption": {
+                "x": 90,
+                "y": 1430,
+                "width": 900,
+                "height": 150,
+            },
+            "gap_px": 100,
         },
     }
 
@@ -288,6 +305,8 @@ def package_files():
             "  </Sequence>;\n"
             "});\n"
             "const captionStyle = {width: \"fit-content\", maxWidth: area.width, left: \"50%\", transform: \"translateX(-50%)\"};\n"
+            "const canonicalContentZone = () => ({x:48,y:70,width:984,height:1260});\n"
+            "const contentFrameStyle = () => ({overflow: \"hidden\"});\n"
         ),
         "renderer/src/PrimitiveSvg.tsx": "export const PrimitiveSvg = () => null;\n",
         "renderer/src/types.ts": (
@@ -543,6 +562,31 @@ class SafeExtractionTests(unittest.TestCase):
             source = source.replace('width: "fit-content"', 'width: area.width')
             (job / "renderer/src/ZodiacComposition.tsx").write_text(source, encoding="utf-8")
             with self.assertRaisesRegex(PipelineError, "PACKAGE_RENDERER_STALE.*compact caption"):
+                validate_package(job)
+
+    def test_rejects_overlapping_content_and_caption_zones(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["visual_system"]["style_token"]["layout_zones"]["content"]["height"] = 1400
+            path.write_text(json.dumps(production), encoding="utf-8")
+            with self.assertRaisesRegex(
+                PipelineError,
+                "layout_zones.*overlap",
+            ):
+                validate_package(job)
+
+    def test_rejects_v18_renderer_without_isolated_content_frame(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            source = (job / "renderer/src/ZodiacComposition.tsx").read_text(encoding="utf-8")
+            source = source.replace("contentFrameStyle", "missingContentFrame")
+            (job / "renderer/src/ZodiacComposition.tsx").write_text(source, encoding="utf-8")
+            with self.assertRaisesRegex(
+                PipelineError,
+                "PACKAGE_RENDERER_STALE.*isolated content frame",
+            ):
                 validate_package(job)
 
     def test_rejects_static_check_only_render_script(self):

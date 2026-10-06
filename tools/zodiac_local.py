@@ -461,7 +461,11 @@ def _read_renderer_source(renderer_root: Path, relative: str) -> str:
     return text
 
 
-def _validate_renderer_source_contract(renderer_root: Path) -> None:
+def _validate_renderer_source_contract(
+    renderer_root: Path,
+    *,
+    require_isolated_layout: bool = False,
+) -> None:
     """Reject placeholder/stale renderer trees before local runtime work."""
     render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
     render_requirements = {
@@ -521,6 +525,14 @@ def _validate_renderer_source_contract(renderer_root: Path) -> None:
         raise PipelineError(
             "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
             "must use the compact caption box contract."
+        )
+    if require_isolated_layout and not all(
+        token in composition
+        for token in ("canonicalContentZone", "contentFrameStyle", 'overflow: "hidden"')
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+            "must implement the v1.8 isolated content frame contract."
         )
 
     types_source = _read_renderer_source(renderer_root, "src/types.ts")
@@ -614,14 +626,47 @@ def validate_production_document(root: Path, production: dict) -> dict:
         )
         or safe_area["x"] < 80
         or safe_area["y"] < 1280
-        or safe_area["width"] > 840
+        or safe_area["width"] > 900
         or safe_area["height"] > 220
         or safe_area["y"] + safe_area["height"] > 1620
     ):
         raise PipelineError(
             "caption_style must use the compact lower-third contract "
-            "(font <=64px, y>=1280, height<=220)."
+            "(font <=64px, y>=1280, width<=900, height<=220)."
         )
+
+    layout_zones = compiled.get("layout_zones")
+    isolated_layout = isinstance(layout_zones, dict)
+    if isolated_layout:
+        content_zone = layout_zones.get("content")
+        caption_zone = layout_zones.get("caption")
+        if (
+            not isinstance(content_zone, dict)
+            or not isinstance(caption_zone, dict)
+            or not all(
+                isinstance(content_zone.get(key), (int, float))
+                and not isinstance(content_zone.get(key), bool)
+                for key in ("x", "y", "width", "height")
+            )
+            or not all(
+                isinstance(caption_zone.get(key), (int, float))
+                and not isinstance(caption_zone.get(key), bool)
+                for key in ("x", "y", "width", "height")
+            )
+        ):
+            raise PipelineError("layout_zones must define numeric content and caption frames.")
+        content_bottom = content_zone["y"] + content_zone["height"]
+        if (
+            content_zone["x"] < 0
+            or content_zone["y"] < 0
+            or content_zone["x"] + content_zone["width"] > video["width"]
+            or content_bottom > video["height"]
+            or caption_zone != safe_area
+            or caption_zone["y"] - content_bottom < 80
+        ):
+            raise PipelineError(
+                "layout_zones content/caption frames overlap or do not match caption_style.safe_area."
+            )
 
     style_id = compiled.get("id")
     for asset_id, entry in assets.items():
@@ -876,7 +921,10 @@ def validate_production_document(root: Path, production: dict) -> dict:
                 f"renderer source is incomplete: missing renderer/{required}."
             )
 
-    _validate_renderer_source_contract(renderer_root)
+    _validate_renderer_source_contract(
+        renderer_root,
+        require_isolated_layout=isolated_layout,
+    )
     return production
 
 
