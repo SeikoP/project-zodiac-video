@@ -638,11 +638,11 @@ def semantic_thief_v315_files():
     }
     manifest["producer"] = {
         "plugin": "zodiac-video-pipeline",
-        "version": "1.19.0",
+        "version": "1.20.0",
     }
     files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
     handoff = json.loads(files["handoff-manifest.json"])
-    handoff["plugin_version"] = "1.19.0"
+    handoff["plugin_version"] = "1.20.0"
     files["handoff-manifest.json"] = json.dumps(handoff, ensure_ascii=False)
     files["FINAL_VALIDATION.json"] = json.dumps(
         {
