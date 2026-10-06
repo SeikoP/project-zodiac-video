@@ -13,6 +13,8 @@ jobs:
         run: |
           node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-library.mjs
           node --check tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.mjs
+      - name: Smoke interaction choreography
+        run: node tmp/plugin-1.19-overlay-root/skills/zodiac-video-pipeline/references/asset-library-v3/validate-interactions.mjs tmp/plugin-interaction-smoke/production.json tmp/plugin-interaction-smoke/plan.json
       - name: Build overlay archive
         run: tar -C tmp/plugin-1.19-overlay-root -czf plugin-1.19-overlay.tar.gz .
       - uses: actions/upload-artifact@v4
