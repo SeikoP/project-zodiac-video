@@ -103,3 +103,8 @@ jobs:
       - name: Print canonical runtime 1.16 hash
         working-directory: .
         run: python tools/hash_runtime.py runtime/zodiac-remotion/1.16.0/renderer
+      - name: Golden performance v4 package prepare
+        working-directory: .
+        env:
+          ZODIAC_E2E_RUNTIME: "1"
+        run: python -m unittest tests.test_zodiac_local.PerformanceRuntimeV316Tests.test_v316_runtime_prepare_accepts_local_first_v4_without_handoff_manifest -v
