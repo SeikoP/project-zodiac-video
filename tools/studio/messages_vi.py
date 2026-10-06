@@ -8,7 +8,6 @@ from tools.studio.pipeline import (
     CONCAT_VOICE,
     IMPORT_PACKAGE,
     MIX_MUSIC,
-    PACKAGE_PUBLISH,
     PREFLIGHT,
     PREPARE_RENDERER,
     RENDER_VIDEO,
@@ -29,7 +28,6 @@ STEP_NAMES_VI = {
     PREPARE_RENDERER: "Chuẩn bị renderer",
     RENDER_VIDEO: "Kết xuất video",
     MIX_MUSIC: "Trộn nhạc nền",
-    PACKAGE_PUBLISH: "Đóng gói xuất bản",
 }
 
 SECTION_PROJECT = "DỰ ÁN"
@@ -128,7 +126,6 @@ ERROR_TITLES_BY_STEP = {
     PREPARE_RENDERER: ERROR_TITLES["RENDERER_INVALID"],
     RENDER_VIDEO: ERROR_TITLES["RENDER_FAILED"],
     MIX_MUSIC: ERROR_TITLES["MIX_FAILED"],
-    PACKAGE_PUBLISH: ERROR_TITLES["PUBLISH_BUNDLE_FAILED"],
 }
 
 PIPELINE_DONE_MESSAGE = "Đã hoàn tất toàn bộ quy trình."
@@ -137,7 +134,7 @@ CHECK_DONE_MESSAGE = "Đã kiểm tra gói video và môi trường."
 CHECK_FAILED_MESSAGE = "Kiểm tra không đạt."
 TIMING_MISSING_MESSAGE = "Chưa có timing.json: căn thời gian từ chưa thể chạy."
 NO_RESUME_MESSAGE = "Không còn bước nào cần chạy."
-MUSIC_DISABLED_MESSAGE = "Không có nhạc nền: bước trộn nhạc được bỏ qua."
+MUSIC_DISABLED_MESSAGE = "Không có nhạc nền: video cuối giữ voice/SFX."
 STUDIO_OPENING_MESSAGE = "Remotion Studio đang chạy ở process riêng."
 STUDIO_STOPPED_MESSAGE = "Remotion Studio đã đóng."
 STUDIO_FAILED_MESSAGE = "Remotion Studio dừng bất thường."

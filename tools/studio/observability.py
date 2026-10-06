@@ -50,8 +50,7 @@ _STEP_INPUT_KEYS = {
         "publish",
         "render_profile",
     ),
-    "MIX_MUSIC": ("video", "music"),
-    "PACKAGE_PUBLISH": ("video", "mixed_video", "cover", "publish"),
+    "MIX_MUSIC": ("pristine_video", "music", "cover", "publish"),
 }
 
 
@@ -164,9 +163,8 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str | None]:
         "timing": _file_hash(root / ".runtime" / "timing.json"),
         "music": _music_hash(root),
         "video": _file_hash(root / "out" / "zodiac-story.mp4"),
-        "mixed_video": _file_hash(root / "out" / "zodiac-story.with-music.mp4"),
+        "pristine_video": _file_hash(root / ".runtime" / "pristine" / "zodiac-story.mp4"),
         "cover": _file_hash(root / "out" / "cover.png"),
-        "publish_bundle": _file_hash(root / "out" / "zodiac-publish-bundle.zip"),
         "render_profile": (
             _sha256_json(
                 {

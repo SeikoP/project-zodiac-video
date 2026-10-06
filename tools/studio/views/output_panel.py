@@ -38,12 +38,7 @@ class OutputPanel(tk.Frame):
 
     def refresh(self) -> None:
         video = self.controller.video_path
-        bundle = self.controller.publish_bundle_path
-        if bundle is not None and bundle.is_file():
-            self.status.configure(
-                text=f"Gói xuất bản sẵn sàng · {bundle.name} · {bundle.stat().st_size / 1024 / 1024:.1f} MB"
-            )
-        elif video is not None and video.is_file():
+        if video is not None and video.is_file():
             self.status.configure(
                 text=f"{video.name}  ·  {video.stat().st_size / 1024 / 1024:.1f} MB"
             )
