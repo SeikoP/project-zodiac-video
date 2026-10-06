@@ -45,6 +45,7 @@ from tools.studio.pipeline import (
 from tools.zodiac_local import (
     DEFAULT_PLAYBACK_RATE,
     DEFAULT_SCENE_GAP_MS,
+    DEFAULT_SENTENCE_PAUSE_MS,
     DEFAULT_SPEECH_RATE_WARNING_WPS,
     DEFAULT_TTS_BACKEND,
     DEFAULT_TTS_FRAME_CAP,
@@ -165,6 +166,7 @@ class PipelineWorker:
         music: Path | None = None,
         music_volume: float = 1.0,
         scene_gap_ms: float = DEFAULT_SCENE_GAP_MS,
+        sentence_pause_ms: float = DEFAULT_SENTENCE_PAUSE_MS,
         playback_rate: float = DEFAULT_PLAYBACK_RATE,
         workspace: Path | None = None,
         archive: Path | None = None,
@@ -188,6 +190,7 @@ class PipelineWorker:
         self.music = Path(music) if music else None
         self.music_volume = music_volume
         self.scene_gap_ms = float(scene_gap_ms)
+        self.sentence_pause_ms = float(sentence_pause_ms)
         self.playback_rate = float(playback_rate)
         self.workspace = Path(workspace) if workspace else None
         self.archive = Path(archive) if archive else None
@@ -261,6 +264,12 @@ class PipelineWorker:
         ):
             raise PipelineError("scene gap must be between 0 and 5000 ms.")
         if (
+            not math.isfinite(self.sentence_pause_ms)
+            or self.sentence_pause_ms < 0
+            or self.sentence_pause_ms > 3000
+        ):
+            raise PipelineError("sentence pause must be between 0 and 3000 ms.")
+        if (
             not math.isfinite(self.playback_rate)
             or self.playback_rate < 0.5
             or self.playback_rate > 1.5
@@ -276,19 +285,25 @@ class PipelineWorker:
                 previous = {}
 
         expected = {
-            "version": 1,
+            "version": 2,
             "scene_gap_ms": self.scene_gap_ms,
+            "sentence_pause_ms": self.sentence_pause_ms,
             "playback_rate": self.playback_rate,
         }
         old_gap = previous.get("scene_gap_ms")
+        old_sentence_pause = previous.get("sentence_pause_ms")
         old_rate = previous.get("playback_rate")
         had_completed_audio_chain = self.plan.status(CONCAT_VOICE) == DONE
 
-        if old_gap != self.scene_gap_ms and had_completed_audio_chain:
+        if (
+            old_gap != self.scene_gap_ms
+            or old_sentence_pause != self.sentence_pause_ms
+        ) and had_completed_audio_chain:
             self.plan.invalidate_from(CONCAT_VOICE)
             self.log(
-                f"Pacing mới: ghép lại từ scene WAV đã cache với "
-                f"{self.scene_gap_ms:.0f} ms nghỉ; không tạo lại TTS."
+                "Pacing mới: dùng lại scene WAV đã cache, "
+                f"nghỉ {self.sentence_pause_ms:.0f} ms giữa câu và "
+                f"{self.scene_gap_ms:.0f} ms giữa scene; không tạo lại TTS."
             )
         elif old_rate != self.playback_rate and self.plan.status(MIX_MUSIC) in (DONE, SKIPPED):
             self.plan.invalidate_from(MIX_MUSIC)
@@ -740,15 +755,18 @@ class PipelineWorker:
             scene_voice_files(self.root, production),
             mismatch_recovery=recover_mismatch,
             scene_gap_ms=self.scene_gap_ms,
+            sentence_pause_ms=self.sentence_pause_ms,
         )
         self._durations = dict(durations)
+        output = concatenate_scene_voices(
+            self.root,
+            production,
+            scene_gap_ms=self.scene_gap_ms,
+            sentence_pause_ms=self.sentence_pause_ms,
+            timing=timing,
+        )
+        self.plan.steps[CONCAT_VOICE].fingerprint = output.stat().st_size
         if recovered_ids:
-            output = concatenate_scene_voices(
-                self.root,
-                production,
-                scene_gap_ms=self.scene_gap_ms,
-            )
-            self.plan.steps[CONCAT_VOICE].fingerprint = output.stat().st_size
             self.log(
                 "Đã ghép lại voice.wav sau adaptive frame-cap recovery: "
                 + ", ".join(recovered_ids)
@@ -756,7 +774,8 @@ class PipelineWorker:
         build_and_write_timing(self.root, timing)
         self.log(
             f"Đã căn {len(timing['scenes'])} scene bằng faster-whisper/{self.align_model}; "
-            f"nghỉ {self.scene_gap_ms:.0f} ms giữa scene."
+            f"nghỉ {self.sentence_pause_ms:.0f} ms giữa câu và "
+            f"{self.scene_gap_ms:.0f} ms giữa scene."
         )
 
     def _step_validate_runtime(self) -> None:
