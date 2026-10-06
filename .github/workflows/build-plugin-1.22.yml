@@ -1,0 +1,38 @@
+name: Build plugin 1.22 overlay
+
+on:
+  push:
+    branches: [chore/plugin-1.22-narrator-performance]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test narrative validator
+        run: node --test tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/validate-narrative.test.mjs
+      - name: Test fresh-run context isolation
+        run: node --test tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/context-isolation.test.mjs
+      - name: Contract smoke
+        shell: bash
+        run: |
+          grep -q "Phase3WriterBrief" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/SKILL.md
+          grep -q "Fresh Run Isolation" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/SKILL.md
+          grep -q "student_peer" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/phase3-narrator-performance.md
+          grep -q "DO NOT AUTO-LOAD THIS FILE" tmp/plugin-1.22-root/skills/zodiac-video-pipeline/references/current-gemini-example.md
+      - name: Build plugin overlay archive
+        shell: bash
+        run: |
+          tar -C tmp/plugin-1.22-root -czf plugin-1.22-overlay.tar.gz .
+      - name: Upload plugin overlay
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-1.22-overlay
+          path: plugin-1.22-overlay.tar.gz
+          retention-days: 1
