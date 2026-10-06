@@ -33,11 +33,11 @@ README.md                  # optional human-facing handoff
 assets/                    # only assets referenced by production.json
 ```
 
-A v3 ZIP must not contain `renderer/`, `library/`, `references/`, or `node_modules/`. The exact renderer is pinned by `package-manifest.json.runtime` and resolved from the Studio runtime registry at `.zodiac-work/runtimes/<id>/<version>/`. Studio verifies the runtime SHA-256 and never falls back to “latest”.
+A v3 ZIP must not contain `.authoring/`, `renderer/`, `library/`, `references/`, or `node_modules/`. The exact renderer is pinned by `package-manifest.json.runtime` and resolved from the Studio runtime registry at `.zodiac-work/runtimes/<id>/<version>/`. Studio verifies the runtime SHA-256 and never falls back to “latest”.
 
 Legacy v2 ZIPs without `package-manifest.json` remain supported and continue to use their package-local `renderer/`.
 
-The runner validates the production entity/state/event contract, compiled design-token hash, fixed Patrick Hand Vietnamese overlay caption contract for v3, SVG paths/style IDs, exact runtime reference and canonical narration before import.
+The runner validates the production entity/state/event contract, compiled design-token hash, fixed Patrick Hand Vietnamese overlay caption contract for v3, SVG paths/style IDs, exact runtime reference and canonical narration before import. Packages pinned to `zodiac-remotion@1.15.0` additionally require asset lineage, semantic mechanism declarations, and a fresh `FINAL_VALIDATION.json` bound to the current `production.json` SHA-256.
 
 Old v1 packages using `actors/objects/actions/motion` are intentionally rejected. See `docs/THIN_PACKAGE_V3_SPEC.md` for the full boundary and migration contract.
 
@@ -119,7 +119,7 @@ Before preview/render the runner:
 5. runs runtime contract tests + TypeScript once per runtime hash;
 6. lets the canonical renderer create `.runtime/render-props.json`, resolve `voice_anchor` events, and render against the job root as its public asset directory.
 
-For v3, captions, event resolution, visual states, SFX and transitions are owned by the trusted shared runtime, not executable code inside the ZIP. Multiple jobs using the same runtime reuse the same source, `node_modules`, and runtime-check cache. Legacy v2 jobs keep package-local renderer compatibility repair for older exports.
+For v3, captions, event resolution, visual states, SFX and transitions are owned by the trusted shared runtime, not executable code inside the ZIP. `zodiac-remotion@1.14.0` remains the immutable thin-package baseline; `zodiac-remotion@1.15.0` adds the semantic lineage/mechanism contract and executes the Semantic Animation Gate. Multiple jobs using the same runtime reuse the same source, `node_modules`, and runtime-check cache. Legacy v2 jobs keep package-local renderer compatibility repair for older exports.
 
 ## Background music
 

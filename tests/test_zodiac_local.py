@@ -1,4 +1,5 @@
 import hashlib
+import os
 import json
 import shutil
 import stat
@@ -121,6 +122,7 @@ def style_token():
 
 
 RUNTIME_V3_HASH = "88f845a0e9304383ed6627127206185d301ba1516b1e16e591cbe1ba47c3d1f8"
+RUNTIME_V315_HASH = "4d52e6ca766649546482a5cdfbf879f4f19c4d3c41c07c7743cccec1a7100ffa"
 
 
 def v3_style_token():
@@ -495,6 +497,179 @@ def v3_package_files():
         if name.startswith("renderer/"):
             del files[name]
     return files
+
+
+def semantic_thief_v315_files():
+    files = v3_package_files()
+    production = json.loads(files["production.json"])
+    token = v3_style_token()
+    source_hash = token_hash(token)
+
+    def lineage(intent, mutated=None, preserved=None):
+        value = {
+            "mode": "semantic_variant",
+            "source_library": "zodiac-paper-doodle-asset-library-v3",
+            "source_master": "compact-safe",
+            "semantic_intent": intent,
+        }
+        if mutated is not None:
+            value["mutated_groups"] = mutated
+        if preserved is not None:
+            value["preserved_groups"] = preserved
+        return value
+
+    asset_base = {
+        "kind": "svg",
+        "category": "prop_state",
+        "format": "image/svg+xml",
+        "style_id": token["id"],
+    }
+    production["assets"] = {
+        "safe.body": {
+            **asset_base,
+            "pose": "body",
+            "path": "assets/props/safe-body.svg",
+            "lineage": lineage(
+                "Keep the compact-safe structural shell while its door moves independently.",
+                [],
+                ["body", "dial", "interior", "contents_slot"],
+            ),
+        },
+        "safe.door.closed": {
+            **asset_base,
+            "pose": "door_closed",
+            "path": "assets/props/safe-door-closed.svg",
+            "lineage": lineage(
+                "Extract the compact-safe door as a child entity in its closed orientation.",
+                ["door"],
+                ["body", "dial"],
+            ),
+        },
+        "safe.door.open": {
+            **asset_base,
+            "pose": "door_open",
+            "path": "assets/props/safe-door-open.svg",
+            "lineage": lineage(
+                "Rotate the compact-safe door child entity into an open orientation.",
+                ["door"],
+                ["body", "dial"],
+            ),
+        },
+    }
+    transform = {"x": 260, "y": 480, "width": 420, "height": 420}
+    production["scenes"][0]["entities"] = [
+        {
+            "id": "safe",
+            "kind": "object",
+            "initial_state": "body",
+            "states": {
+                "body": {
+                    "asset": "safe.body",
+                    "transform": transform,
+                    "layer": 2,
+                    "visible": True,
+                }
+            },
+        },
+        {
+            "id": "safe-door",
+            "kind": "object",
+            "initial_state": "closed",
+            "states": {
+                "closed": {
+                    "asset": "safe.door.closed",
+                    "transform": transform,
+                    "layer": 3,
+                    "visible": True,
+                },
+                "open": {
+                    "asset": "safe.door.open",
+                    "transform": transform,
+                    "layer": 3,
+                    "visible": True,
+                },
+            },
+        },
+    ]
+    production["scenes"][0]["events"] = [
+        {
+            "id": "S01-E01",
+            "target": "safe-door",
+            "action": "open_safe",
+            "state_before": "closed",
+            "state_after": "open",
+            "trigger": {"source": "scene_start"},
+            "motion": {"preset": "state_swap", "duration_frames": 6},
+            "mechanism": {
+                "mode": "child_entities",
+                "parts": ["safe-door"],
+            },
+        }
+    ]
+
+    for name in list(files):
+        if name.startswith("assets/"):
+            del files[name]
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" '
+        'viewBox="0 0 10 10"><g id="body"><rect x="1" y="1" width="8" height="8"/></g></svg>'
+    )
+    files["assets/props/safe-body.svg"] = svg
+    files["assets/props/safe-door-closed.svg"] = svg
+    files["assets/props/safe-door-open.svg"] = svg
+
+    publish = json.loads(files["publish/publish.json"])
+    publish["cover"]["source_scene_id"] = "S01"
+    publish["cover"]["visuals"] = [{"entity_id": "safe-door", "state_id": "closed"}]
+    files["publish/publish.json"] = json.dumps(publish, ensure_ascii=False)
+
+    production_text = json.dumps(production, ensure_ascii=False)
+    files["production.json"] = production_text
+    manifest = json.loads(files["package-manifest.json"])
+    manifest["runtime"] = {
+        "id": "zodiac-remotion",
+        "version": "1.15.0",
+        "sha256": RUNTIME_V315_HASH,
+    }
+    manifest["design"] = {
+        "id": token["id"],
+        "version": token["version"],
+        "sha256": source_hash,
+    }
+    manifest["producer"] = {
+        "plugin": "zodiac-video-pipeline",
+        "version": "1.20.0",
+    }
+    files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
+    handoff = json.loads(files["handoff-manifest.json"])
+    handoff["plugin_version"] = "1.20.0"
+    files["handoff-manifest.json"] = json.dumps(handoff, ensure_ascii=False)
+    files["FINAL_VALIDATION.json"] = json.dumps(
+        {
+            "status": "PASS",
+            "package_compatibility_gate": "PASS",
+            "narration_scene_voice_identity": "PASS",
+            "caption_design_lock": "PASS",
+            "handoff_boundary": "PASS",
+            "asset_lineage": "PASS",
+            "semantic_animation_gate": "PASS",
+            "interaction_choreography": "NOT_APPLICABLE",
+            "production_sha256": hashlib.sha256(
+                production_text.encode("utf-8")
+            ).hexdigest(),
+        },
+        ensure_ascii=False,
+    )
+    return files
+
+
+def write_semantic_thief_v315_package(root: Path) -> Path:
+    job = root / "zodiac-v315-thief"
+    for name, content in semantic_thief_v315_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
 
 
 def write_v3_package(root: Path) -> Path:
@@ -987,6 +1162,118 @@ class ThinPackageV3Tests(unittest.TestCase):
             self.assertIn("runtimes", first.parts)
             self.assertIn("zodiac-remotion", first.parts)
             self.assertIn("1.14.0", first.parts)
+
+
+class SemanticRuntimeV315Tests(unittest.TestCase):
+    def test_v315_thief_child_entity_mechanism_validates(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            production = validate_package(job)
+            self.assertEqual(production["version"], "2.0")
+            renderer = resolve_renderer_root(job, materialize=False)
+            self.assertIn("1.15.0", renderer.parts)
+
+    def test_v315_requires_asset_lineage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["assets"]["safe.body"].pop("lineage")
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "ASSET_LINEAGE_INVALID"):
+                validate_package(job)
+
+    def test_v315_requires_mechanism_for_mechanical_action(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["events"][0].pop("mechanism")
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "SEMANTIC_ANIMATION_GATE"):
+                validate_package(job)
+
+    def test_v315_rejects_whole_asset_strong_articulation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["events"][0]["mechanism"] = {
+                "mode": "whole_asset",
+                "justification": "Replace the whole object even though the door should articulate.",
+            }
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "strong articulation"):
+                validate_package(job)
+
+    def test_v315_rejects_stale_final_validation_receipt(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["scenes"][0]["voice"] = "Xin chào mọi người nhé."
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            (job / "narration.txt").write_text("Xin chào mọi người nhé.", encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "FINAL_VALIDATION_STALE"):
+                validate_package(job)
+
+    @unittest.skipUnless(
+        os.environ.get("ZODIAC_E2E_RUNTIME") == "1",
+        "golden runtime prepare runs only in the dedicated shared-runtime CI job",
+    )
+    def test_v315_runtime_prepare_golden_thief(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime_dir = (
+                Path(__file__).resolve().parents[1]
+                / "runtime"
+                / "zodiac-remotion"
+                / "1.15.0"
+                / "renderer"
+            )
+            runtime_state = job / ".runtime"
+            runtime_state.mkdir(parents=True, exist_ok=True)
+            (runtime_state / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            env = dict(os.environ)
+            env["ZODIAC_PACKAGE_ROOT"] = str(job)
+            result = subprocess.run(
+                ["node", "scripts/render.mjs", "--prepare-only"],
+                cwd=runtime_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=result.stdout + "\n" + result.stderr,
+            )
+            props = json.loads(
+                (runtime_state / "render-props.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(props["production"]["scenes"][0]["events"][0]["mechanism"]["mode"], "child_entities")
+            self.assertEqual(props["production"]["assets"]["safe.door.open"]["lineage"]["source_master"], "compact-safe")
+
+    def test_v315_rejects_authoring_directory_in_thin_zip(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_semantic_thief_v315_package(Path(temp))
+            authoring = job / ".authoring" / "interaction-plan.json"
+            authoring.parent.mkdir(parents=True)
+            authoring.write_text('{"version":"1.0","scenes":[]}', encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "PACKAGE_V3_BLOAT.*authoring"):
+                validate_package(job)
+
+    def test_v114_package_remains_backward_compatible_without_semantic_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v3_package(Path(temp))
+            production = validate_package(job)
+            self.assertEqual(production["version"], "2.0")
+            self.assertFalse((job / "FINAL_VALIDATION.json").exists())
 
 
 class RendererTypeCompatTests(unittest.TestCase):

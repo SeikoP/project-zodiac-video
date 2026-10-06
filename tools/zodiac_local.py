@@ -88,7 +88,7 @@ EXPECTED_SCRIPTS = {
 PACKAGE_FORMAT_V3 = "zodiac-job@3"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
-RUNTIME_VERSION = "1.14.0"
+RUNTIME_VERSION = "1.15.0"
 BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
@@ -278,7 +278,7 @@ def _load_package_manifest(root: Path) -> dict | None:
         raise PipelineError("PACKAGE_MANIFEST_INVALID: runtime/design/producer references are incomplete.")
 
     forbidden = [
-        name for name in ("renderer", "library", "references", "node_modules")
+        name for name in ("renderer", "library", "references", "node_modules", ".authoring")
         if (root / name).exists()
     ]
     if forbidden:
@@ -1009,6 +1009,190 @@ def validate_publish_contract(package_root: Path) -> dict:
     return publish
 
 
+def _runtime_semver(runtime_ref: dict) -> tuple[int, int, int]:
+    raw = runtime_ref.get("version", "")
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", raw)
+    if not match:
+        raise PipelineError(f"PACKAGE_MANIFEST_INVALID: runtime version is not semver: {raw!r}")
+    return tuple(int(part) for part in match.groups())
+
+
+def _uses_semantic_runtime(package_manifest: dict | None) -> bool:
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 15, 0)
+    )
+
+
+_MECHANICAL_ACTION = re.compile(
+    r"(?:^|_)(open|close|fold|unfold|zip|unzip|unlock|lock|insert|remove|pick|place|hold|release|hand|turn_page|drawer|curtain|door|lid|flap|notify|notification|screen_change|lamp_on|lamp_off|light_on|light_off|wear|remove_mask)(?:_|$)",
+    re.IGNORECASE,
+)
+_STRONG_ARTICULATION_ACTION = re.compile(
+    r"(?:^|_)(open|close|fold|unfold|zip|unzip|insert|remove|pick|place|hold|release|turn_page|drawer|curtain|door|lid|flap|wear|remove_mask)(?:_|$)",
+    re.IGNORECASE,
+)
+
+
+def _validate_asset_lineage(asset_id: str, entry: dict) -> None:
+    lineage = entry.get("lineage")
+    if not isinstance(lineage, dict):
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} requires lineage metadata."
+        )
+    allowed = {
+        "mode",
+        "source_library",
+        "source_master",
+        "semantic_intent",
+        "mutated_groups",
+        "preserved_groups",
+    }
+    if set(lineage) - allowed:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} has unsupported lineage fields."
+        )
+    if lineage.get("mode") not in {
+        "direct_copy",
+        "derived_copy",
+        "semantic_variant",
+        "composite",
+    }:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} has invalid lineage mode."
+        )
+    if lineage.get("source_library") != "zodiac-paper-doodle-asset-library-v3":
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} must derive from the canonical v3 library."
+        )
+    source_master = lineage.get("source_master")
+    valid_master = (
+        isinstance(source_master, str)
+        and bool(source_master.strip())
+    ) or (
+        isinstance(source_master, list)
+        and bool(source_master)
+        and all(isinstance(value, str) and value.strip() for value in source_master)
+    )
+    if not valid_master:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} needs source_master provenance."
+        )
+    if not isinstance(lineage.get("semantic_intent"), str) or not lineage["semantic_intent"].strip():
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} needs semantic_intent."
+        )
+    for key in ("mutated_groups", "preserved_groups"):
+        value = lineage.get(key)
+        if value is not None and (
+            not isinstance(value, list)
+            or any(not isinstance(item, str) or not item.strip() for item in value)
+        ):
+            raise PipelineError(
+                f"ASSET_LINEAGE_INVALID: asset {asset_id!r} {key} must be a string list."
+            )
+
+
+def _validate_semantic_animation_scene(scene: dict, entity_map: dict[str, dict]) -> None:
+    for event in scene.get("events", []):
+        if event.get("target") == "camera":
+            continue
+        action = str(event.get("action", ""))
+        if not _MECHANICAL_ACTION.search(action):
+            continue
+        mechanism = event.get("mechanism")
+        if not isinstance(mechanism, dict):
+            raise PipelineError(
+                f"SEMANTIC_ANIMATION_GATE: mechanical event requires mechanism declaration: {event.get('id')}"
+            )
+        mode = mechanism.get("mode")
+        if mode == "child_entities":
+            parts = mechanism.get("parts")
+            if (
+                not isinstance(parts, list)
+                or not parts
+                or any(not isinstance(part, str) or part not in entity_map for part in parts)
+            ):
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: child_entities must reference scene entities: {event.get('id')}"
+                )
+        elif mode == "whole_asset":
+            if _STRONG_ARTICULATION_ACTION.search(action):
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: strong articulation action cannot use whole_asset: {event.get('id')}"
+                )
+            justification = mechanism.get("justification")
+            if not isinstance(justification, str) or len(justification.strip()) < 20:
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: whole_asset needs a concrete justification: {event.get('id')}"
+                )
+        else:
+            raise PipelineError(
+                f"SEMANTIC_ANIMATION_GATE: unsupported mechanism mode: {event.get('id')}"
+            )
+
+
+def _validate_semantic_validation_receipt(root: Path) -> None:
+    path = root / "FINAL_VALIDATION.json"
+    if not path.is_file():
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: semantic runtime packages require FINAL_VALIDATION.json."
+        )
+    receipt = _load_json(path, "FINAL_VALIDATION.json")
+    expected_pass = (
+        "package_compatibility_gate",
+        "narration_scene_voice_identity",
+        "caption_design_lock",
+        "handoff_boundary",
+        "asset_lineage",
+        "semantic_animation_gate",
+    )
+    if receipt.get("status") != "PASS" or any(receipt.get(key) != "PASS" for key in expected_pass):
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: semantic package gates are not all PASS."
+        )
+    if receipt.get("interaction_choreography") not in {"PASS", "NOT_APPLICABLE"}:
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: interaction_choreography must be PASS or NOT_APPLICABLE."
+        )
+    production_path = root / "production.json"
+    if receipt.get("production_sha256") != file_sha256(production_path):
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: production_sha256 does not match production.json."
+        )
+
+
+def _validate_semantic_renderer_contract(renderer_root: Path) -> None:
+    required = (
+        "src/semantic-animation.mjs",
+        "tests/semantic-animation-gate.test.mjs",
+    )
+    for relative in required:
+        if not (renderer_root / relative).is_file():
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: semantic runtime is missing renderer/{relative}."
+            )
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    schema_text = _read_renderer_source(renderer_root, "schemas/production.schema.json")
+    type_text = _read_renderer_source(renderer_root, "src/types.ts")
+    if "validateSemanticAnimation" not in render_script:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: semantic runtime does not execute Semantic Animation Gate."
+        )
+    for marker in ('"mechanism"', '"lineage"'):
+        if marker not in schema_text:
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: semantic runtime schema is missing {marker}."
+            )
+    if "EventMechanism" not in type_text or "AssetLineage" not in type_text:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: semantic runtime TypeScript contract is incomplete."
+        )
+
+
 def validate_production_document(root: Path, production: dict) -> dict:
     """Validate an in-memory v2 production document against its package root."""
     root = Path(root).resolve()
@@ -1041,6 +1225,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
     token, source_hash = _design_token(root)
     package_manifest = _load_package_manifest(root)
     _validate_package_manifest_design(package_manifest, token, source_hash)
+    semantic_runtime = _uses_semantic_runtime(package_manifest)
     compiled = visual.get("style_token")
     if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
         raise PipelineError("production.json style_token must match design.md.")
@@ -1170,6 +1355,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
             raise PipelineError(
                 f"asset {asset_id!r} style_id does not match the compiled design token."
             )
+        if semantic_runtime:
+            _validate_asset_lineage(asset_id, entry)
 
     voices = []
     scene_ids: set[str] = set()
@@ -1256,6 +1443,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
             for entity_id, entity in entity_map.items()
         }
         meaningful_change = False
+        if semantic_runtime:
+            _validate_semantic_animation_scene(scene, entity_map)
 
         for event in events:
             if not isinstance(event, dict):
@@ -1358,6 +1547,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
         )
 
     _validate_handoff_boundary(root)
+    if semantic_runtime:
+        _validate_semantic_validation_receipt(root)
 
     if package_manifest is not None:
         actual_assets = {
@@ -1378,6 +1569,8 @@ def validate_production_document(root: Path, production: dict) -> dict:
             required_test="tests/shared-runtime.test.mjs",
             require_overlay_layout=True,
         )
+        if semantic_runtime:
+            _validate_semantic_renderer_contract(renderer_root)
     else:
         renderer_root = root / "renderer"
         _validate_renderer_package_contract(
@@ -2183,6 +2376,7 @@ def artifact_fingerprints(package_root: Path) -> dict[str, str]:
         root / "design.md",
         root / "handoff-manifest.json",
         root / "package-manifest.json",
+        root / "FINAL_VALIDATION.json",
         *_tree_files(root, "assets"),
     ]
     package_manifest = _load_package_manifest(root)

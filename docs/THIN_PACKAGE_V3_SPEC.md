@@ -2,7 +2,7 @@
 
 Status: implementation target  
 Package format: `zodiac-job@3`  
-Canonical runtime: `zodiac-remotion@1.14.0`
+Current semantic runtime: `zodiac-remotion@1.15.0` (1.14.0 remains supported and immutable)
 
 ## 1. Goal
 
@@ -23,13 +23,14 @@ handoff-manifest.json
 assets/**
 publish/publish.json
 publish/publish-copy.txt
-FINAL_VALIDATION.json        # when a final receipt is emitted
+FINAL_VALIDATION.json        # required by semantic runtime 1.15+
 README.md                     # optional human-facing handoff
 ```
 
 Forbidden in a thin v3 package:
 
 ```text
+.authoring/**
 renderer/**
 library/**
 references/**
@@ -46,7 +47,7 @@ Every file below `assets/**` MUST be referenced by `production.assets`. The pack
   "production_contract": "2.0",
   "runtime": {
     "id": "zodiac-remotion",
-    "version": "1.14.0",
+    "version": "1.15.0",
     "sha256": "<canonical runtime tree hash>"
   },
   "design": {
@@ -56,7 +57,7 @@ Every file below `assets/**` MUST be referenced by `production.assets`. The pack
   },
   "producer": {
     "plugin": "zodiac-video-pipeline",
-    "version": "1.14.0"
+    "version": "1.19.1"
   }
 }
 ```
@@ -72,7 +73,10 @@ Bundled source-of-truth:
 ```text
 runtime/
 └─ zodiac-remotion/
-   └─ 1.14.0/
+   ├─ 1.14.0/              # immutable compatibility baseline
+   │  ├─ runtime-manifest.json
+   │  └─ renderer/**
+   └─ 1.15.0/              # current semantic runtime
       ├─ runtime-manifest.json
       └─ renderer/**
 ```
@@ -83,7 +87,8 @@ Workspace cache:
 .zodiac-work/
 ├─ runtimes/
 │  └─ zodiac-remotion/
-│     └─ 1.14.0/
+│     ├─ 1.14.0/
+│     └─ 1.15.0/
 │        ├─ runtime-manifest.json
 │        ├─ renderer/**
 │        └─ renderer/node_modules/**
@@ -131,7 +136,10 @@ Has `package-manifest.json` with `format=zodiac-job@3`:
 ## 7. Stable failure codes
 
 - `PACKAGE_MANIFEST_INVALID`: malformed or inconsistent v3 manifest.
-- `PACKAGE_V3_BLOAT`: forbidden runtime/library/reference files or unreferenced assets are present.
+- `PACKAGE_V3_BLOAT`: forbidden `.authoring`/runtime/library/reference files or unreferenced assets are present.
+- `ASSET_LINEAGE_INVALID`: semantic-runtime package asset provenance is missing or invalid.
+- `SEMANTIC_ANIMATION_GATE`: a mechanical event has no valid child-entity/whole-asset mechanism.
+- `FINAL_VALIDATION_STALE`: the semantic/interaction receipt is absent, incomplete, or does not match the current production SHA-256.
 - `RUNTIME_MISSING`: requested runtime id/version is unavailable.
 - `RUNTIME_HASH_MISMATCH`: requested, bundled, or cached runtime hash does not match.
 - existing package/renderer/timing errors remain unchanged for legacy packages.
@@ -155,7 +163,7 @@ ZIP safety checks still reject traversal, links, duplicate paths, oversized file
 ## 10. Migration / rollout
 
 1. Add v3 manifest parser + runtime registry while retaining legacy v2.
-2. Ship `zodiac-remotion@1.14.0` as a bundled shared runtime.
+2. Keep `zodiac-remotion@1.14.0` immutable for existing packages and ship `zodiac-remotion@1.15.0` for semantic lineage/mechanism packages.
 3. Make Studio resolve renderer roots through the registry for v3.
 4. Update the plugin to emit v3 thin packages by default and stop copying `renderer/**`, `library/**`, and `references/**`.
 5. Keep v2 import/render tests permanently.
@@ -165,9 +173,23 @@ ZIP safety checks still reject traversal, links, duplicate paths, oversized file
 
 - legacy v2 package still validates and renders through package-local renderer;
 - v3 package validates without `renderer/**`;
-- v3 package containing `renderer/**`, `library/**`, or `references/**` is rejected;
+- v3 package containing `.authoring/**`, `renderer/**`, `library/**`, or `references/**` is rejected;
 - runtime hash mismatch is rejected without latest-version fallback;
 - two v3 jobs using the same runtime resolve to one workspace runtime directory;
 - shared renderer does not import job JSON from relative source paths;
 - runtime uses the job root as public media directory;
 - all repo tests and renderer smoke CI pass.
+
+
+## Semantic runtime 1.15 extension
+
+Packages pinned to `zodiac-remotion@1.15.0` add two production-level contracts without changing `production.version=2.0`:
+
+- every production SVG asset carries canonical v3 lineage (`mode`, `source_library`, `source_master`, `semantic_intent`, optional mutated/preserved groups);
+- mechanical events declare `mechanism.mode=child_entities` with real scene entity IDs, or a justified `whole_asset` mode for non-strong rigid/information transitions.
+
+Strong articulation actions such as open/close/fold/zip/insert/remove/pick/place/hold/release/door/drawer/lid/flap may not use `whole_asset`.
+
+Interaction planning remains authoring-time only. `.authoring/interaction-plan.json` is validated before export and never ships in the ZIP. The package instead carries a fresh `FINAL_VALIDATION.json` whose `production_sha256` must match the current `production.json`, with `asset_lineage=PASS`, `semantic_animation_gate=PASS`, and `interaction_choreography=PASS|NOT_APPLICABLE`.
+
+Runtime 1.15 does not auto-upgrade 1.14 packages and Studio never falls back to a different runtime version.
