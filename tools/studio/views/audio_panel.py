@@ -20,10 +20,11 @@ from tools.studio.messages_vi import (
     SECTION_SETUP,
 )
 from tools.studio.views.common import Button, entry, label, section
-from tools.zodiac_local import default_music_path
+from tools.zodiac_local import DEFAULT_MUSIC_VOLUME, default_music_path
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio.theme import COLORS
 
+DEFAULT_PANEL_VOLUME = DEFAULT_MUSIC_VOLUME
 
 def saved_voices() -> list[str]:
     home = Path(os.environ.get("VIENEU_HOME") or (Path.home() / ".vieneu"))
@@ -42,7 +43,7 @@ class AudioPanel(tk.Frame):
         voices = saved_voices()
         self.voice = tk.StringVar(value="cuongdepzai" if "cuongdepzai" in voices else voices[0])
         self.music = tk.StringVar(value=str(default_music_path() or ""))
-        self.volume = tk.DoubleVar(value=1.0)
+        self.volume = tk.DoubleVar(value=DEFAULT_PANEL_VOLUME)
         self.align_model = tk.StringVar(value=ALIGN_MODEL_DEFAULT)
 
         card = section(self, SECTION_SETUP)
