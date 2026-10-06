@@ -387,6 +387,18 @@ class RenderResumeTests(WorkerHarness):
         self.assertIsNone(plan.continue_from())
         self.assertFalse(plan.can_resume)
 
+    def test_existing_job_migrates_pacing_without_regenerating_scene_tts(self):
+        self.make_worker().run_to_completion()
+        pacing = self.job / ".runtime" / "pacing.json"
+        pacing.unlink()
+        plan = JobStateStore(self.job).open()
+        self.assertEqual(plan.status(VOICE_SCENES), DONE)
+        worker = self.make_worker(plan=plan)
+        self.assertEqual(worker.plan.status(VOICE_SCENES), DONE)
+        self.assertEqual(worker.plan.status(CONCAT_VOICE), PENDING)
+        self.assertEqual(worker.plan.status(ALIGN_TIMING), PENDING)
+        self.assertEqual(worker.plan.status(RENDER_VIDEO), PENDING)
+
     def test_worker_defaults_to_breathing_gap_and_095_playback(self):
         worker = self.make_worker()
         self.assertEqual(worker.scene_gap_ms, 350.0)
