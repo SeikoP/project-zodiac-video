@@ -2900,7 +2900,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["publish_copy"], after["publish_copy"])
             self.assertNotEqual(before["publish"], after["publish"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_cover_hook_change_dirties_cover_not_video(self):
         from tools.zodiac_local import artifact_fingerprints
@@ -2921,7 +2921,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertNotEqual(before["cover_spec"], after["cover_spec"])
             self.assertNotEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["publish"], after["publish"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_runtime_timing_change_dirties_video_mix_but_not_cover(self):
         from tools.zodiac_local import artifact_fingerprints
@@ -2949,7 +2949,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertNotEqual(before["mix"], after["mix"])
             self.assertEqual(before["cover"], after["cover"])
 
-    def test_music_change_dirties_mix_and_bundle_not_video_or_cover(self):
+    def test_music_change_dirties_mix_and_final_not_video_or_cover(self):
         from tools.zodiac_local import artifact_fingerprints
 
         with tempfile.TemporaryDirectory() as temp:
@@ -2977,7 +2977,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["music"], after["music"])
             self.assertNotEqual(before["mix"], after["mix"])
-            self.assertNotEqual(before["bundle"], after["bundle"])
+            self.assertNotEqual(before["final"], after["final"])
 
     def test_stage_metrics_are_persisted_for_benchmarking(self):
         from tools.zodiac_local import measure_performance_stage
