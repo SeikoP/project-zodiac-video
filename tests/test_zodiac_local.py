@@ -2046,7 +2046,7 @@ class PublishBundleTests(unittest.TestCase):
 
 
 class ArtifactFingerprintTests(unittest.TestCase):
-    def test_publish_only_change_does_not_dirty_video_fingerprint(self):
+    def test_publish_copy_change_does_not_dirty_video_or_cover(self):
         from tools.zodiac_local import artifact_fingerprints
 
         with tempfile.TemporaryDirectory() as temp:
@@ -2054,17 +2054,39 @@ class ArtifactFingerprintTests(unittest.TestCase):
             before = artifact_fingerprints(job)
             copy_path = job / "publish" / "publish-copy.txt"
             copy_path.write_text(
-                copy_path.read_text(encoding="utf-8") + "\nALT HOOK\n",
+                copy_path.read_text(encoding="utf-8") + "\nALT CAPTION\n",
                 encoding="utf-8",
             )
             after = artifact_fingerprints(job)
 
             self.assertEqual(before["video"], after["video"])
+            self.assertEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["publish_copy"], after["publish_copy"])
             self.assertNotEqual(before["publish"], after["publish"])
-            self.assertNotEqual(before["cover"], after["cover"])
             self.assertNotEqual(before["bundle"], after["bundle"])
 
-    def test_runtime_timing_change_dirties_video_but_not_cover(self):
+    def test_cover_hook_change_dirties_cover_not_video(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            before = artifact_fingerprints(job)
+            publish_path = job / "publish" / "publish.json"
+            publish = json.loads(publish_path.read_text(encoding="utf-8"))
+            publish["cover"]["hook"] = "HOOK MỚI"
+            publish_path.write_text(
+                json.dumps(publish, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertNotEqual(before["cover_spec"], after["cover_spec"])
+            self.assertNotEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["publish"], after["publish"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
+
+    def test_runtime_timing_change_dirties_video_mix_but_not_cover(self):
         from tools.zodiac_local import artifact_fingerprints
 
         with tempfile.TemporaryDirectory() as temp:
@@ -2087,7 +2109,38 @@ class ArtifactFingerprintTests(unittest.TestCase):
 
             self.assertNotEqual(before["runtime"], after["runtime"])
             self.assertNotEqual(before["video"], after["video"])
+            self.assertNotEqual(before["mix"], after["mix"])
             self.assertEqual(before["cover"], after["cover"])
+
+    def test_music_change_dirties_mix_and_bundle_not_video_or_cover(self):
+        from tools.zodiac_local import artifact_fingerprints
+
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            media = job / "media"
+            media.mkdir(parents=True, exist_ok=True)
+            music = media / "background-music.mp3"
+            music.write_bytes(b"one")
+            runtime = job / ".runtime"
+            runtime.mkdir(parents=True, exist_ok=True)
+            (runtime / "audio.json").write_text(
+                json.dumps(
+                    {
+                        "background_music": "media/background-music.mp3",
+                        "background_music_volume": 0.5,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            before = artifact_fingerprints(job)
+            music.write_bytes(b"two")
+            after = artifact_fingerprints(job)
+
+            self.assertEqual(before["video"], after["video"])
+            self.assertEqual(before["cover"], after["cover"])
+            self.assertNotEqual(before["music"], after["music"])
+            self.assertNotEqual(before["mix"], after["mix"])
+            self.assertNotEqual(before["bundle"], after["bundle"])
 
     def test_stage_metrics_are_persisted_for_benchmarking(self):
         from tools.zodiac_local import measure_performance_stage
@@ -2117,6 +2170,7 @@ class ArtifactFingerprintTests(unittest.TestCase):
             self.assertFalse(row["cache_hit"])
             self.assertEqual(row["input_fingerprint"], "abc123")
             self.assertIn("video", payload["fingerprints"])
+            self.assertIn("mix", payload["fingerprints"])
 
 
 class BackgroundMusicTests(unittest.TestCase):
