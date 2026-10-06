@@ -1011,7 +1011,7 @@ def validate_publish_contract(package_root: Path) -> dict:
 
 def _runtime_semver(runtime_ref: dict) -> tuple[int, int, int]:
     raw = runtime_ref.get("version", "")
-    match = re.fullmatch(r"(\\d+)\\.(\\d+)\\.(\\d+)", raw)
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", raw)
     if not match:
         raise PipelineError(f"PACKAGE_MANIFEST_INVALID: runtime version is not semver: {raw!r}")
     return tuple(int(part) for part in match.groups())
