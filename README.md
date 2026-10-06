@@ -26,6 +26,8 @@ A package must contain:
 design.md
 narration.txt
 production.json          # version 2.0
+handoff-manifest.json
+publish/
 README.md
 assets/
 renderer/
@@ -113,7 +115,7 @@ Before preview/render the runner:
 5. runs TypeScript typecheck;
 6. lets the canonical renderer create `.runtime/render-props.json` and resolve `voice_anchor` events.
 
-The renderer package itself owns captions, event resolution, visual states, SFX and transitions. The local runner no longer regex-patches `ZodiacComposition.tsx`.
+The renderer package itself owns captions, event resolution, visual states, SFX and transitions. New packages are expected to ship canonical renderer source that already passes. The local runner keeps narrowly scoped compatibility repair for older imported jobs (TypeScript JSON casts and the font-readiness guard) before renderer tests/typecheck; this is backward compatibility, not the renderer source of truth.
 
 ## Background music
 
@@ -157,7 +159,7 @@ If `voice.wav` is shorter than 10 seconds, silence is padded so the preview stil
 python tools/zodiac_gui.py
 ```
 
-Bố cục theo workflow: **DỰ ÁN** (chọn gói ZIP) → **THIẾT LẬP** (giọng đọc, nhạc nền, âm lượng, Nghe thử) → **QUY TRÌNH** (9 bước có trạng thái) → **KẾT QUẢ** → **NHẬT KÝ** (thu gọn được). Thanh đầu hiển thị trạng thái VieNeu và môi trường.
+Bố cục theo workflow: **DỰ ÁN** (chọn gói ZIP) → **THIẾT LẬP** (giọng đọc, nhạc nền, âm lượng, Nghe thử) → **QUY TRÌNH** (10 bước có trạng thái) → **KẾT QUẢ** → **NHẬT KÝ** (thu gọn được). Thanh đầu hiển thị trạng thái VieNeu và môi trường.
 
 ![Zodiac Studio v2](docs/studio-v2.png)
 
@@ -165,7 +167,8 @@ Bố cục theo workflow: **DỰ ÁN** (chọn gói ZIP) → **THIẾT LẬP** (
 
 ```text
 IMPORT_PACKAGE → PREFLIGHT → VOICE_SCENES → CONCAT_VOICE → ALIGN_TIMING
-               → VALIDATE_RUNTIME → PREPARE_RENDERER → RENDER_VIDEO → MIX_MUSIC
+               → VALIDATE_RUNTIME → PREPARE_RENDERER → RENDER_VIDEO
+               → MIX_MUSIC → PACKAGE_PUBLISH
 ```
 
 Mỗi bước có trạng thái `PENDING / RUNNING / DONE / FAILED / SKIPPED / CANCELLED` và được ghi vào `.runtime/pipeline-state.json` (ghi atomic bằng temp file + `os.replace`).
@@ -185,8 +188,8 @@ Invalidation đúng phạm vi, không xóa bừa runtime:
 ```text
 đổi lời thoại 1 scene → scene đó + CONCAT_VOICE → ALIGN_TIMING → runtime → render
 đổi giọng VieNeu     → toàn bộ chuỗi giọng
-đổi anchor/layout    → PREPARE_RENDERER → RENDER_VIDEO → MIX_MUSIC (voice + timing giữ nguyên)
-đổi nhạc nền         → chỉ MIX_MUSIC
+đổi anchor/layout    → PREPARE_RENDERER → RENDER_VIDEO → MIX_MUSIC → PACKAGE_PUBLISH (voice + timing giữ nguyên)
+đổi nhạc nền         → MIX_MUSIC → PACKAGE_PUBLISH
 ```
 
 Mở lại app: bước `RUNNING` bị ngắt được đưa về `PENDING` (không bao giờ coi là xong). Job cũ chưa có `pipeline-state.json` vẫn mở được — lần đầu chỉ đánh dấu `DONE` khi artifact kiểm chứng được (package hợp lệ, `voice.wav` + `timing.json` hợp lệ, đủ scene WAV); không bịa provenance.
@@ -215,11 +218,19 @@ Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZI
 | Bước *Tạo giọng đọc* đỏ | xem chi tiết trong **NHẬT KÝ**; bấm **Tiếp tục** — chỉ scene chưa xong được tạo lại |
 | Bước *Căn thời gian từ* đỏ (`ALIGNMENT_MISMATCH`) | lời thoại đã duyệt không khớp giọng đã tạo; sửa lời thoại hoặc tạo lại giọng rồi **Tiếp tục** |
 | Bước *Kết xuất video* đỏ | `voice.wav` và `timing.json` được giữ; **Tiếp tục** chỉ chạy lại renderer |
-| Muốn làm lại từ đầu | **Chạy lại bước** ở bước *Nhập gói video* (vô hiệu hoá phía dưới), hoặc xóa riêng `.runtime/pipeline-state.json` để app suy luận lại từ artifact |Output:
+| Muốn làm lại từ đầu | **Chạy lại bước** ở bước *Nhập gói video* (vô hiệu hoá phía dưới), hoặc xóa riêng `.runtime/pipeline-state.json` để app suy luận lại từ artifact |Output sau render/publish:
 
 ```text
-.zodiac-work/jobs/<job>/out/zodiac-story.mp4
+.zodiac-work/jobs/<job>/out/
+├─ zodiac-story.mp4
+├─ zodiac-story.with-music.mp4   # chỉ khi bật nhạc nền
+├─ cover.png
+├─ publish-copy.txt
+├─ publish.json
+└─ zodiac-publish-bundle.zip
 ```
+
+Nếu không chọn nhạc nền, `PACKAGE_PUBLISH` dùng trực tiếp `zodiac-story.mp4`. Nhạc bundled trong repo là tùy chọn; nếu không có file mặc định, Studio bắt đầu ở trạng thái chưa chọn nhạc thay vì coi đó là lỗi môi trường.
 
 ## Editor Workspace (v1)
 
