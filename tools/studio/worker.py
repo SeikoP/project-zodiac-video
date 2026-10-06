@@ -201,6 +201,7 @@ class PipelineWorker:
         self.performance = PerformanceStore(self.root)
 
         self._invalidate_incompatible_voice_cache()
+        self._sync_pacing_profile()
 
     def _voice_cache_fields(self) -> dict:
         config = effective_tts_generation_config(
@@ -247,6 +248,60 @@ class PipelineWorker:
             "Đã vô hiệu cache giọng cũ do cấu hình TTS thay đổi: "
             + ", ".join(incompatible)
         )
+
+    def _sync_pacing_profile(self) -> None:
+        """Persist pacing defaults and invalidate only the work they actually affect."""
+        import json
+        import math
+
+        if (
+            not math.isfinite(self.scene_gap_ms)
+            or self.scene_gap_ms < 0
+            or self.scene_gap_ms > 5000
+        ):
+            raise PipelineError("scene gap must be between 0 and 5000 ms.")
+        if (
+            not math.isfinite(self.playback_rate)
+            or self.playback_rate < 0.5
+            or self.playback_rate > 1.5
+        ):
+            raise PipelineError("playback rate must be between 0.5 and 1.5.")
+
+        path = self.root / ".runtime" / "pacing.json"
+        previous = {}
+        if path.is_file():
+            try:
+                previous = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                previous = {}
+
+        expected = {
+            "version": 1,
+            "scene_gap_ms": self.scene_gap_ms,
+            "playback_rate": self.playback_rate,
+        }
+        old_gap = previous.get("scene_gap_ms")
+        old_rate = previous.get("playback_rate")
+        had_completed_audio_chain = self.plan.status(CONCAT_VOICE) == DONE
+
+        if old_gap != self.scene_gap_ms and had_completed_audio_chain:
+            self.plan.invalidate_from(CONCAT_VOICE)
+            self.log(
+                f"Pacing mới: ghép lại từ scene WAV đã cache với "
+                f"{self.scene_gap_ms:.0f} ms nghỉ; không tạo lại TTS."
+            )
+        elif old_rate != self.playback_rate and self.plan.status(MIX_MUSIC) in (DONE, SKIPPED):
+            self.plan.invalidate_from(MIX_MUSIC)
+            self.log(
+                f"Pacing mới: chỉ cần áp lại tốc độ video {self.playback_rate:.2f}x."
+            )
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(expected, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        self.store.save(self.plan)
 
     # ---- lifecycle ---------------------------------------------------
     def start(self, start_step: str | None = None) -> None:
