@@ -105,6 +105,8 @@ MAX_VISUAL_GAP_SECONDS = 5.0
 AUDIO_PREVIEW_SECONDS = 10.0
 AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
+DEFAULT_SCENE_GAP_MS = 350.0
+DEFAULT_PLAYBACK_RATE = 0.95
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 # Bundled background track; resolved from the repo so it works from any cwd.
 BUNDLED_MUSIC = Path(__file__).resolve().parents[1] / "assets" / "music" / "background.mp3"
@@ -1949,15 +1951,27 @@ def validate_voice(path: Path) -> None:
         raise PipelineError(f"voice.wav is not a readable PCM WAV file: {exc}") from exc
 
 
-def concatenate_wavs(inputs: list[Path], output: Path) -> None:
-    """Concatenate PCM WAV files without re-encoding them."""
+def concatenate_wavs(
+    inputs: list[Path],
+    output: Path,
+    *,
+    gap_ms: float = 0.0,
+) -> None:
+    """Concatenate PCM WAV files and optionally insert silence between items."""
     if not inputs:
         raise PipelineError("no scene WAV files were generated.")
+    try:
+        gap_ms = float(gap_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("scene gap must be a finite non-negative number.") from None
+    if not math.isfinite(gap_ms) or gap_ms < 0 or gap_ms > 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     params = None
     with wave.open(str(output), "wb") as destination:
-        for source_path in inputs:
+        for index, source_path in enumerate(inputs):
             try:
                 with wave.open(str(source_path), "rb") as source:
                     if source.getcomptype() != "NONE":
@@ -1972,6 +1986,15 @@ def concatenate_wavs(inputs: list[Path], output: Path) -> None:
                     elif current[:3] != params[:3]:
                         raise PipelineError("scene WAV files do not share one PCM format.")
                     destination.writeframes(source.readframes(source.getnframes()))
+                    if index < len(inputs) - 1 and gap_ms > 0:
+                        silent_frames = round(current.framerate * gap_ms / 1000.0)
+                        if current.sampwidth == 1:
+                            silent_sample = b"\x80"
+                        else:
+                            silent_sample = b"\x00" * current.sampwidth
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
             except (wave.Error, EOFError, OSError) as exc:
                 raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
 
@@ -2485,13 +2508,23 @@ def build_timing_from_word_alignment(
     production: dict,
     durations: dict[str, float],
     aligned_words: dict[str, list[dict]],
+    *,
+    scene_gap_ms: float = 0.0,
 ) -> dict:
-    """Build scene frames from measured WAV duration plus measured word alignment."""
+    """Build scene frames from measured WAV duration plus optional scene breathing room."""
+    try:
+        scene_gap_ms = float(scene_gap_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("scene gap must be a finite non-negative number.") from None
+    if not math.isfinite(scene_gap_ms) or scene_gap_ms < 0 or scene_gap_ms > 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+
     fps = production["video"]["fps"]
     rows = []
     elapsed_seconds = 0.0
+    scenes = production["scenes"]
 
-    for scene in production["scenes"]:
+    for scene_index, scene in enumerate(scenes):
         scene_id = scene["id"]
         seconds = durations.get(scene_id)
         words = aligned_words.get(scene_id)
@@ -2513,6 +2546,8 @@ def build_timing_from_word_alignment(
         start_frame = round(elapsed_seconds * fps)
         offset_ms = elapsed_seconds * 1000
         elapsed_seconds += float(seconds)
+        if scene_index < len(scenes) - 1:
+            elapsed_seconds += scene_gap_ms / 1000.0
         end_frame = max(start_frame + 1, round(elapsed_seconds * fps))
 
         global_words = []
@@ -3574,11 +3609,16 @@ def scene_voice_files(package_root: Path, production: dict) -> list[Path]:
     return [scene_wav_path(package_root, scene["id"]) for scene in production["scenes"]]
 
 
-def concatenate_scene_voices(package_root: Path, production: dict) -> Path:
+def concatenate_scene_voices(
+    package_root: Path,
+    production: dict,
+    *,
+    scene_gap_ms: float = 0.0,
+) -> Path:
     root = Path(package_root).resolve()
     inputs = scene_voice_files(root, production)
     output = root / "voice.wav"
-    concatenate_wavs(inputs, output)
+    concatenate_wavs(inputs, output, gap_ms=scene_gap_ms)
     return output
 
 
@@ -3878,6 +3918,8 @@ def align_scene_timings(
     aligner,
     scene_wavs: list[Path] | None = None,
     mismatch_recovery=None,
+    *,
+    scene_gap_ms: float = 0.0,
 ) -> dict:
     """Align every scene; optionally recover exact mismatches scene-by-scene."""
     paths = list(scene_wavs or [])
@@ -3903,7 +3945,12 @@ def align_scene_timings(
             aligned_words[scene_id] = words
             durations[scene_id] = float(seconds)
 
-    return build_timing_from_word_alignment(production, durations, aligned_words)
+    return build_timing_from_word_alignment(
+        production,
+        durations,
+        aligned_words,
+        scene_gap_ms=scene_gap_ms,
+    )
 
 
 def build_and_write_timing(package_root: Path, timing: dict) -> dict:
@@ -4582,20 +4629,115 @@ def finalize_publish_outputs(
     return outputs
 
 
-def mix_background_music_into_render(package_root: Path) -> Path:
-    """Create exactly one public final MP4 while keeping a pristine remix cache hidden."""
+def _playback_adjusted_render(
+    package_root: Path,
+    *,
+    playback_rate: float,
+) -> Path:
     root = Path(package_root).resolve()
-    config = validate_background_music(root)
-    output = root / "out" / "zodiac-story.mp4"
-    pristine = _pristine_render_path(root)
+    try:
+        playback_rate = float(playback_rate)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("playback rate must be a finite number.") from None
+    if not math.isfinite(playback_rate) or not 0.5 <= playback_rate <= 1.5:
+        raise PipelineError("playback rate must be between 0.5 and 1.5.")
 
+    pristine = _pristine_render_path(root)
     if not pristine.is_file():
+        output = root / "out" / "zodiac-story.mp4"
         if not output.is_file():
             raise PipelineError(f"Remotion output is missing: {output}")
         pristine.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(output, pristine)
 
-    fingerprint = artifact_fingerprints(root)["mix"]
+    if math.isclose(playback_rate, 1.0, rel_tol=0.0, abs_tol=1e-9):
+        return pristine
+
+    adjusted = root / ".runtime" / "zodiac-story.playback.mp4"
+    tmp = root / ".runtime" / "zodiac-story.playback.tmp.mp4"
+    tmp.unlink(missing_ok=True)
+    fingerprint = _fingerprint_value(
+        {
+            "pristine_sha256": file_sha256(pristine),
+            "playback_rate": playback_rate,
+        }
+    )
+    cache = root / ".runtime" / "playback-rate.json"
+    try:
+        cached = _load_json(cache, "playback-rate.json")
+    except PipelineError:
+        cached = {}
+    if adjusted.is_file() and cached.get("fingerprint") == fingerprint:
+        return adjusted
+
+    _run_ffmpeg(
+        [
+            "-y",
+            "-v",
+            "error",
+            "-i",
+            str(pristine),
+            "-filter_complex",
+            f"[0:v]setpts=PTS/{playback_rate:.6f}[v];"
+            f"[0:a]atempo={playback_rate:.6f}[a]",
+            "-map",
+            "[v]",
+            "-map",
+            "[a]",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "18",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-movflags",
+            "+faststart",
+            str(tmp),
+        ]
+    )
+    if not tmp.is_file():
+        raise PipelineError("playback-rate transform did not create an MP4.")
+    os.replace(tmp, adjusted)
+    cache.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "playback_rate": playback_rate,
+                "fingerprint": fingerprint,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return adjusted
+
+
+def mix_background_music_into_render(
+    package_root: Path,
+    *,
+    playback_rate: float = 1.0,
+) -> Path:
+    """Apply global playback speed, then mix normal-speed background music."""
+    root = Path(package_root).resolve()
+    config = validate_background_music(root)
+    output = root / "out" / "zodiac-story.mp4"
+    base_video = _playback_adjusted_render(
+        root,
+        playback_rate=playback_rate,
+    )
+
+    fingerprint = _fingerprint_value(
+        {
+            "mix": artifact_fingerprints(root)["mix"],
+            "playback_rate": float(playback_rate),
+        }
+    )
 
     if config is None:
         with measure_performance_stage(
@@ -4604,10 +4746,10 @@ def mix_background_music_into_render(package_root: Path) -> Path:
             input_fingerprint=fingerprint,
             cache_hit=True,
         ):
-            shutil.copy2(pristine, output)
+            shutil.copy2(base_video, output)
             (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
         print(
-            "Final audio: voice/SFX only (background music disabled).",
+            f"Final audio: voice/SFX only at playback {float(playback_rate):.2f}x.",
             flush=True,
         )
         return output
@@ -4634,7 +4776,7 @@ def mix_background_music_into_render(package_root: Path) -> Path:
                 "-v",
                 "error",
                 "-i",
-                str(pristine),
+                str(base_video),
                 "-stream_loop",
                 "-1",
                 "-i",
