@@ -64,7 +64,7 @@ class StudioController:
         import re
 
         stem = Path(archive).stem.replace("-render-ready", "")
-        stem = re.sub(r"-v\\d+(?:\\.\\d+)*$", "", stem, flags=re.IGNORECASE)
+        stem = re.sub(r"-v\d+(?:\.\d+)*$", "", stem, flags=re.IGNORECASE)
         return re.sub(r"[^a-zA-Z0-9._-]+", "-", stem).strip("-.").lower()
 
     def _destination_for_archive(self, archive: Path) -> Path:
@@ -201,6 +201,7 @@ class StudioController:
         before = artifact_fingerprints(destination) if destination.exists() else {}
         old_voice = self._voice_signature(destination)
 
+        self.workspace.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=".zodiac-import-", dir=str(self.workspace)) as scratch:
             imported = import_package(self.archive, Path(scratch) / "jobs", name)
             after = artifact_fingerprints(imported)
