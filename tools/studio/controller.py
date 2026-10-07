@@ -23,7 +23,9 @@ from tools.studio.pipeline import (
     FAILED,
     IMPORT_PACKAGE,
     MIX_MUSIC,
+    PREPARE_RENDERER,
     STEP_ORDER,
+    VALIDATE_RUNTIME,
     PipelinePlan,
 )
 from tools.studio.preflight import PreflightChecker, describe_missing, environment_status
