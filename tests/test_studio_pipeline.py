@@ -490,6 +490,30 @@ class RenderResumeTests(WorkerHarness):
         self.assertEqual(plan.status(MIX_MUSIC), PENDING)
 
 
+    def test_music_only_rerun_applies_new_track_without_rerendering_video(self):
+        first = self.root / "first.mp3"
+        second = self.root / "second.mp3"
+        first.write_bytes(b"first-track")
+        second.write_bytes(b"second-track")
+
+        self.make_worker(music=first).run_to_completion()
+        plan = JobStateStore(self.job).open()
+        plan.apply_change("music")
+        JobStateStore(self.job).save(plan)
+
+        self.render_calls.clear()
+        worker = self.make_worker(
+            plan=JobStateStore(self.job).open(),
+            music=second,
+        )
+        worker.run_from(worker.plan.continue_from())
+
+        self.assertNotIn("render", self.render_calls)
+        self.assertIn("mix", self.render_calls)
+        copied = self.job / "media" / "background-music.mp3"
+        self.assertEqual(copied.read_bytes(), b"second-track")
+
+
 class CancelTests(WorkerHarness):
     def test_cancel_marks_running_step_cancelled_and_keeps_done_steps(self):
         worker = PipelineWorker(
