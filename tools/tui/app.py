@@ -1028,12 +1028,16 @@ class ZodiacTui(App):
                 )
                 return
             self.controller.select_archive(path)
-            name = self.controller.job_name_for(path)
-            destination = self.controller.job_path(name)
+            destination = self.controller.archive_destination(path)
             if destination.exists():
                 self.controller.use_job(destination)
                 self.controller.select_archive(path)
                 if self.controller.package_changed:
+                    if self.controller.is_versioned_patch_archive(path):
+                        if not self.controller.accept_package_conflict("import"):
+                            raise RuntimeError("Không thể nhập patch đã chọn.")
+                        self.call_from_thread(self._after_project_change)
+                        return
                     self.call_from_thread(self._show_package_conflict)
                     return
             if not self.controller.sync_package():
