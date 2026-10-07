@@ -266,7 +266,20 @@ class VoiceResumeTests(WorkerHarness):
         worker = self.make_worker(plan=JobStateStore(self.job).open())
         worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
 
-        self.assertEqual(self.tts_calls, [])
+        self.assertEqual(
+            self.tts_calls,
+            [],
+            msg=json.dumps(
+                {
+                    "entry": worker.plan.steps[VOICE_SCENES].scenes.get("S02"),
+                    "active_take": worker.voice_artifacts.active_take("S02"),
+                    "expected_fields": worker._voice_cache_fields(),
+                    "events": self.events[-12:],
+                },
+                ensure_ascii=False,
+                default=str,
+            ),
+        )
         self.assertTrue(working.is_file())
         index = json.loads(
             (self.job / ".runtime" / "artifacts" / "voice" / "S02" / "index.json").read_text(
