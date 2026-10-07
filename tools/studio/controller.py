@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import shutil
 import tempfile
+import zipfile
 from pathlib import Path
 
 from tools.studio.job_state import JobStateStore
@@ -54,7 +57,9 @@ class StudioController:
 
         self.archive: Path | None = None
         self.archive_fingerprint: str | None = None
+        self.archive_content_identity: str | None = None
         self.job: Path | None = None
+        self.job_content_identity: str | None = None
         self.plan = PipelinePlan(job="")
         self.store: JobStateStore | None = None
         self.worker = None
@@ -65,6 +70,93 @@ class StudioController:
     @property
     def jobs_dir(self) -> Path:
         return self.workspace / "jobs"
+
+    @staticmethod
+    def _package_owned_relative(relative: str) -> bool:
+        relative = relative.replace("\\", "/").lstrip("/")
+        exact = {
+            "package-manifest.json",
+            "production.json",
+            "narration.txt",
+            "design.md",
+            "README.md",
+        }
+        if relative in exact:
+            return True
+        return relative.startswith(("assets/", "publish/", "renderer/"))
+
+    @staticmethod
+    def _identity_rows(rows: list[dict[str, str]]) -> str:
+        payload = json.dumps(
+            sorted(rows, key=lambda item: item["path"]),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def _workspace_content_identity(self, root: Path | None) -> str | None:
+        if root is None or not Path(root).is_dir():
+            return None
+        root = Path(root).resolve()
+        rows: list[dict[str, str]] = []
+        for path in sorted(root.rglob("*")):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(root).as_posix()
+            if not self._package_owned_relative(relative):
+                continue
+            rows.append(
+                {
+                    "path": relative,
+                    "sha256": file_sha256(path),
+                }
+            )
+        return self._identity_rows(rows) if rows else None
+
+    def _archive_content_identity(self, archive: Path | None) -> str | None:
+        if archive is None or not Path(archive).is_file():
+            return None
+        try:
+            with zipfile.ZipFile(archive) as handle:
+                files = [
+                    info.filename.replace("\\", "/").lstrip("/")
+                    for info in handle.infolist()
+                    if not info.is_dir()
+                ]
+                if "production.json" in files:
+                    prefix = ""
+                else:
+                    production_candidates = [
+                        name
+                        for name in files
+                        if name.endswith("/production.json")
+                    ]
+                    if len(production_candidates) != 1:
+                        return None
+                    prefix = production_candidates[0][: -len("production.json")]
+                rows: list[dict[str, str]] = []
+                for info in handle.infolist():
+                    if info.is_dir():
+                        continue
+                    name = info.filename.replace("\\", "/").lstrip("/")
+                    if prefix:
+                        if not name.startswith(prefix):
+                            continue
+                        relative = name[len(prefix):]
+                    else:
+                        relative = name
+                    if not self._package_owned_relative(relative):
+                        continue
+                    rows.append(
+                        {
+                            "path": relative,
+                            "sha256": hashlib.sha256(handle.read(info)).hexdigest(),
+                        }
+                    )
+                return self._identity_rows(rows) if rows else None
+        except (OSError, zipfile.BadZipFile):
+            return None
 
     def job_name_for(self, archive: Path) -> str:
         import re
@@ -147,6 +239,7 @@ class StudioController:
     def select_archive(self, archive: Path | None) -> None:
         self.archive = Path(archive) if archive else None
         self.archive_fingerprint = self._fingerprint(self.archive) if self.archive else None
+        self.archive_content_identity = self._archive_content_identity(self.archive)
         if self.package_changed:
             # The workspace no longer matches the selected package, so the import
             # step is no longer valid and the pipeline must not reuse the cache.
@@ -162,11 +255,16 @@ class StudioController:
 
     @property
     def package_changed(self) -> bool:
-        """True when the selected ZIP is not the package currently in the workspace."""
+        """True when selected ZIP content differs from the package-owned workspace payload."""
         if self.archive is None or self.job is None:
             return False
         if not (self.job / "production.json").is_file():
             return True
+        if self.archive_content_identity is not None:
+            current = self.job_content_identity or self._workspace_content_identity(self.job)
+            return self.archive_content_identity != current
+        # Fallback only for unreadable/legacy archives; content identity owns
+        # normal patch detection and repairs poisoned historical fingerprints.
         return self.archive_fingerprint != self.stored_fingerprint
 
     def sync_package(self) -> bool:
@@ -195,6 +293,7 @@ class StudioController:
         self.store = JobStateStore(self.job)
         self.plan = self.store.open()
         self.plan.fingerprint = self.stored_fingerprint or self.plan.fingerprint
+        self.job_content_identity = self._workspace_content_identity(self.job)
         # Health checks belong to one concrete job/runtime snapshot. Reusing
         # checks from the previously selected job makes the TUI show stale green
         # lights while a new package is still being validated.

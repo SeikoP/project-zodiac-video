@@ -3,6 +3,7 @@
 import contextlib
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -782,6 +783,72 @@ class ControllerTests(WorkerHarness):
         self.assertNotEqual(controller.archive_fingerprint, controller.stored_fingerprint)
         self.assertEqual(controller.plan.status(IMPORT_PACKAGE), PENDING)
 
+    def test_content_identity_repairs_poisoned_stored_archive_fingerprint(self):
+        controller = StudioController(workspace=self.root / "ws")
+        legacy = controller.jobs_dir / "zodiac-bocap-hai-phien-ban-v1.1"
+        shutil.copytree(self.job, legacy)
+        controller.use_job(legacy)
+
+        design = self.job / "design.md"
+        original = design.read_text(encoding="utf-8")
+        try:
+            design.write_text(original + "\npatch-v1.3\n", encoding="utf-8")
+            patch = self.root / "zodiac-bocap-hai-phien-ban-v1.3.zip"
+            with zipfile.ZipFile(patch, "w") as handle:
+                for path in sorted(self.job.rglob("*")):
+                    if path.is_file() and ".runtime" not in path.parts and "out" not in path.parts:
+                        handle.write(path, path.relative_to(self.job).as_posix())
+        finally:
+            design.write_text(original, encoding="utf-8")
+
+        # Simulate the historical bug: state says this exact ZIP was imported
+        # even though the workspace still contains the old creative payload.
+        controller.plan.fingerprint = controller._fingerprint(patch)
+        controller.store.save(controller.plan)
+
+        controller.select_archive(patch)
+
+        self.assertEqual(controller.archive_fingerprint, controller.stored_fingerprint)
+        self.assertTrue(controller.package_changed)
+        self.assertNotEqual(
+            controller.archive_content_identity,
+            controller.job_content_identity,
+        )
+
+    def test_importing_patch_repairs_workspace_content_identity(self):
+        controller = StudioController(workspace=self.root / "ws")
+        legacy = controller.jobs_dir / "zodiac-bocap-hai-phien-ban-v1.1"
+        shutil.copytree(self.job, legacy)
+        controller.use_job(legacy)
+
+        design = self.job / "design.md"
+        original = design.read_text(encoding="utf-8")
+        try:
+            design.write_text(original + "\npatch-v1.3\n", encoding="utf-8")
+            patch = self.root / "zodiac-bocap-hai-phien-ban-v1.3.zip"
+            with zipfile.ZipFile(patch, "w") as handle:
+                for path in sorted(self.job.rglob("*")):
+                    if path.is_file() and ".runtime" not in path.parts and "out" not in path.parts:
+                        handle.write(path, path.relative_to(self.job).as_posix())
+        finally:
+            design.write_text(original, encoding="utf-8")
+
+        controller.plan.fingerprint = controller._fingerprint(patch)
+        controller.store.save(controller.plan)
+        controller.select_archive(patch)
+        self.assertTrue(controller.package_changed)
+
+        self.assertTrue(controller.accept_package_conflict("import"))
+        self.assertFalse(controller.package_changed)
+        self.assertEqual(
+            controller.archive_content_identity,
+            controller.job_content_identity,
+        )
+        self.assertIn(
+            "patch-v1.3",
+            (legacy / "design.md").read_text(encoding="utf-8"),
+        )
+
     def test_changed_zip_masks_stale_downstream_pipeline_rows(self):
         controller = self._controller()
         first = self._archive("a")
@@ -1034,13 +1101,20 @@ class ControllerTests(WorkerHarness):
 
     def _archive(self, marker: str) -> Path:
         # same file name in different folders -> same job slug, different package
+        # Package identity only tracks package-owned files, so vary README.md
+        # instead of an ignored ad-hoc marker.
         archive = self.root / marker / "zodiac-multi.zip"
         archive.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(archive, "w") as handle:
             for path in sorted(Path(self.job).rglob("*")):
-                if path.is_file() and ".runtime" not in path.parts and "out" not in path.parts:
-                    handle.write(path, f"zodiac-multi/{path.relative_to(self.job).as_posix()}")
-            handle.writestr(f"zodiac-multi/.marker-{marker}", marker)
+                if not path.is_file() or ".runtime" in path.parts or "out" in path.parts:
+                    continue
+                relative = path.relative_to(self.job).as_posix()
+                if relative == "README.md":
+                    text_value = path.read_text(encoding="utf-8") + f"\nmarker:{marker}\n"
+                    handle.writestr(f"zodiac-multi/{relative}", text_value)
+                else:
+                    handle.write(path, f"zodiac-multi/{relative}")
         return archive
 
 
