@@ -228,6 +228,10 @@ class ZodiacTui(App):
         height: 1fr;
     }
 
+    #sidebar .section {
+        height: auto;
+    }
+
     .section {
         padding: 0 1;
         background: #111722;

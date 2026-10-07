@@ -106,6 +106,24 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.screen.has_class("tiny"))
 
 
+class ListenButtonVisibilityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_listen_button_is_not_clipped_at_common_terminal_height(self):
+        """Nghe thử used to be cut off silently: Vertical defaults to height:1fr,
+        so the sidebar sections split the height and clipped their overflow."""
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 40)) as pilot:
+            await pilot.pause()
+            button = app.screen.find_widget(app.query_one("#listen"))
+            sidebar = app.screen.find_widget(app.query_one("#sidebar"))
+            self.assertGreaterEqual(button.region.y, sidebar.region.y)
+            self.assertLessEqual(
+                button.region.bottom,
+                sidebar.region.bottom,
+                "Nghe thử is clipped out of the sidebar; clicks land on nothing",
+            )
+            self.assertLess(button.region.bottom, 40)
+
+
 class FullRunWorkflowTests(unittest.TestCase):
     def test_run_full_uses_unbounded_pipeline_target(self):
         app = ZodiacTui()
