@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import json
-import os
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
@@ -22,17 +20,10 @@ from tools.studio.messages_vi import (
 from tools.studio.views.common import Button, entry, label, section
 from tools.zodiac_local import DEFAULT_MUSIC_VOLUME, default_music_path
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
+from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.studio.theme import COLORS
 
 DEFAULT_PANEL_VOLUME = DEFAULT_MUSIC_VOLUME
-
-def saved_voices() -> list[str]:
-    home = Path(os.environ.get("VIENEU_HOME") or (Path.home() / ".vieneu"))
-    try:
-        voices = json.loads((home / "user_voices_v3_turbo.json").read_text(encoding="utf-8")).get("presets", {})
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-        voices = {}
-    return list(voices) or ["Hải Đăng"]
 
 
 class AudioPanel(tk.Frame):
@@ -41,7 +32,7 @@ class AudioPanel(tk.Frame):
         self.controller = controller
         self.on_listen = on_listen or (lambda volume: None)
         voices = saved_voices()
-        self.voice = tk.StringVar(value="cuongdepzai" if "cuongdepzai" in voices else voices[0])
+        self.voice = tk.StringVar(value=preferred_voice(voices))
         self.music = tk.StringVar(value=str(default_music_path() or ""))
         self.volume = tk.DoubleVar(value=DEFAULT_PANEL_VOLUME)
         self.align_model = tk.StringVar(value=ALIGN_MODEL_DEFAULT)
