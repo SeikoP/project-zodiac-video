@@ -686,10 +686,12 @@ class PipelineWorker:
         require_word_aligner_installed()
         production = self._production()
         pending: list[str] = []
+        reused = 0
         for scene in production["scenes"]:
             scene_id = scene["id"]
             path = scene_wav_path(self.root, scene_id)
             if self._scene_reusable(scene, path):
+                take = self.voice_artifacts.active_take(scene_id)
                 self.plan.set_scene_state(
                     VOICE_SCENES,
                     scene_id,
@@ -698,9 +700,12 @@ class PipelineWorker:
                     voice_id=self.voice,
                     tts_mode=self.tts_mode,
                     file_hash=file_sha256(path),
+                    artifact_take_id=take.get("take_id") if take else None,
+                    cache_reason=CacheReason.REUSED_APPROVED,
                     **self._voice_cache_fields(),
                 )
-                self.log(f"{scene_id}: dùng lại giọng đã tạo.")
+                reused += 1
+                self.log(f"{scene_id}: dùng lại approved voice artifact.")
                 continue
             self.plan.set_scene_state(VOICE_SCENES, scene_id, RUNNING)
             self._checkpoint()
@@ -708,9 +713,15 @@ class PipelineWorker:
             pending.append(scene_id)
 
         if not pending:
+            self._step_cache_hit[VOICE_SCENES] = True
+            self._step_cache_reason[VOICE_SCENES] = CacheReason.REUSED_APPROVED
             self.log("Tất cả giọng scene đã có, bỏ qua bước tạo giọng.")
             return
 
+        self._step_cache_hit[VOICE_SCENES] = False
+        self._step_cache_reason[VOICE_SCENES] = (
+            CacheReason.PARTIAL_REUSE if reused else CacheReason.NO_ARTIFACT
+        )
         self.log(f"Đang tạo giọng cho: {', '.join(pending)}")
         try:
             durations = generate_scene_voices(
@@ -753,17 +764,32 @@ class PipelineWorker:
                 self.plan.set_scene_state(VOICE_SCENES, scene_id, FAILED)
                 self.log(f"{scene_id}: không tạo được file giọng.")
                 continue
+            text_hash = self._text_hash(scene)
+            fields = self._voice_cache_fields()
+            take = self.voice_artifacts.register_approved(
+                scene_id,
+                path,
+                identity=VoiceIdentity(
+                    text_hash=text_hash,
+                    voice_profile_hash=fields["voice_profile_hash"],
+                    generation_profile_hash=fields["generation_profile_hash"],
+                    performance_context_hash=None,
+                ),
+                approval_source="pipeline-compatibility",
+            )
             self.plan.set_scene_state(
                 VOICE_SCENES,
                 scene_id,
                 DONE,
-                text_hash=self._text_hash(scene),
+                text_hash=text_hash,
                 voice_id=self.voice,
                 tts_mode=self.tts_mode,
                 file_hash=file_sha256(path),
-                **self._voice_cache_fields(),
+                artifact_take_id=take["take_id"],
+                cache_reason=CacheReason.GENERATED_NEW,
+                **fields,
             )
-            self.log(f"{scene_id}: xong.")
+            self.log(f"{scene_id}: xong; đã lưu approved voice artifact.")
 
     def _scene_reusable(self, scene: dict, path: Path) -> bool:
 
@@ -777,12 +803,36 @@ class PipelineWorker:
         expected = self._voice_cache_fields()
         if any(entry.get(key) != value for key, value in expected.items()):
             return False
+
+        if not path.is_file():
+            restored = self.voice_artifacts.restore_approved(
+                scene["id"],
+                path,
+                text_hash=self._text_hash(scene),
+                voice_profile_hash=self.voice_profile_hash,
+                performance_context_hash=None,
+            )
+            if restored:
+                self.log(f"{scene['id']}: khôi phục WAV làm việc từ approved artifact.")
+
         if not path.is_file():
             return False
         try:
             validate_voice(path)
         except Exception:
-            return False
+            restored = self.voice_artifacts.restore_approved(
+                scene["id"],
+                path,
+                text_hash=self._text_hash(scene),
+                voice_profile_hash=self.voice_profile_hash,
+                performance_context_hash=None,
+            )
+            if not restored:
+                return False
+            try:
+                validate_voice(path)
+            except Exception:
+                return False
         return entry.get("file_hash") == file_sha256(path)
 
     @staticmethod
