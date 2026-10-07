@@ -24,4 +24,6 @@ test("runtime 1.20 schema accepts visual-grammar v4 lineage and caption font met
   assert.match(types,/zodiac-visual-grammar-v4/);
   assert.match(types,/font_stack\?: string\[\]/);
   assert.match(types,/css_font_family\?: string/);
+  const composition=await read("../src/ZodiacComposition.tsx");
+  assert.match(composition,/style\.css_font_family \?\? style\.font_family/);
 });
