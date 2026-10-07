@@ -4,6 +4,7 @@ import json
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -35,6 +36,8 @@ from tools.zodiac_local import (
     configure_background_music,
     import_package,
     mix_background_music_into_render,
+    observe_subprocess_output,
+    run_managed_subprocess,
     finalize_publish_outputs,
     resolve_renderer_root,
     renderer_check_fingerprint,
@@ -3518,6 +3521,49 @@ class BackgroundMusicTests(unittest.TestCase):
                 args[args.index("-t") + 1],
                 "10.000",
             )
+
+    def test_audio_preview_falls_back_to_music_when_voice_is_invalid(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            job = self._job(root)
+            (job / "voice.wav").write_bytes(b"broken")
+            music = root / "music.mp3"
+            music.write_bytes(b"fake")
+            captured = {}
+
+            def fake_ffmpeg(arguments):
+                captured["arguments"] = arguments
+                Path(arguments[-1]).write_bytes(b"preview")
+
+            with patch("tools.zodiac_local._run_ffmpeg", side_effect=fake_ffmpeg):
+                output = build_audio_preview(job, music, 0.5, 10)
+
+            self.assertTrue(output.is_file())
+            args = captured["arguments"]
+            loop = args.index("-stream_loop")
+            self.assertEqual(args[loop:loop + 3], ["-stream_loop", "-1", "-i"])
+            self.assertNotIn(str(job / "voice.wav"), args)
+
+    def test_managed_subprocess_output_observer_receives_stdout_and_stderr(self):
+        seen = []
+        with observe_subprocess_output(
+            lambda line, channel=None: seen.append((channel, line))
+        ):
+            result = run_managed_subprocess(
+                [
+                    sys.executable,
+                    "-c",
+                    "import sys; print('hello-out'); print('hello-err', file=sys.stderr)",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+        self.assertIn("hello-out", result.stdout)
+        self.assertIn("hello-err", result.stderr)
+        self.assertIn(("stdout", "hello-out"), seen)
+        self.assertIn(("stderr", "hello-err"), seen)
 
     def test_ffmpeg_runner_uses_the_managed_argv_boundary(self):
         with tempfile.TemporaryDirectory() as temp:

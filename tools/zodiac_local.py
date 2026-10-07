@@ -4299,6 +4299,10 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
 
 
 _PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
+_PROCESS_LOG_OBSERVER = contextvars.ContextVar(
+    "zodiac_process_log_observer",
+    default=None,
+)
 
 
 @contextlib.contextmanager
@@ -4309,6 +4313,22 @@ def observe_subprocesses(observer):
         yield
     finally:
         _PROCESS_OBSERVER.reset(token)
+
+
+@contextlib.contextmanager
+def observe_subprocess_output(observer):
+    """Route child stdout/stderr into a caller-owned log sink.
+
+    Textual must never let npm/ffmpeg/pip inherit its terminal because those
+    processes can overwrite the alternate-screen UI. Output is captured and
+    emitted line-for-line after the child exits, preserving CompletedProcess
+    stdout/stderr semantics for callers that explicitly request them.
+    """
+    token = _PROCESS_LOG_OBSERVER.set(observer)
+    try:
+        yield
+    finally:
+        _PROCESS_LOG_OBSERVER.reset(token)
 
 
 def _process_group_kwargs() -> dict:
@@ -4332,7 +4352,10 @@ def run_managed_subprocess(
         raise PipelineError("subprocess arguments must be NUL-free strings.")
 
     popen_kwargs = _process_group_kwargs()
-    if capture_output:
+    process_observer = _PROCESS_OBSERVER.get()
+    log_observer = _PROCESS_LOG_OBSERVER.get()
+    should_capture = capture_output or log_observer is not None
+    if should_capture:
         popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process = subprocess.Popen(
         arguments,
@@ -4342,14 +4365,61 @@ def run_managed_subprocess(
         env=env,
         **popen_kwargs,
     )
-    observer = _PROCESS_OBSERVER.get()
-    if observer is not None:
-        observer(process)
+    if process_observer is not None:
+        process_observer(process)
     try:
-        stdout, stderr = process.communicate()
+        if log_observer is None:
+            stdout, stderr = process.communicate()
+        else:
+            import threading
+
+            stdout_chunks = []
+            stderr_chunks = []
+            sentinel = "" if text else b""
+
+            def pump(stream, chunks, channel: str) -> None:
+                if stream is None:
+                    return
+                try:
+                    for raw in iter(stream.readline, sentinel):
+                        chunks.append(raw)
+                        rendered = (
+                            raw
+                            if isinstance(raw, str)
+                            else raw.decode("utf-8", errors="replace")
+                        )
+                        line = rendered.rstrip("\r\n")
+                        if line:
+                            log_observer(line, channel=channel)
+                finally:
+                    stream.close()
+
+            threads = [
+                threading.Thread(
+                    target=pump,
+                    args=(process.stdout, stdout_chunks, "stdout"),
+                    daemon=True,
+                ),
+                threading.Thread(
+                    target=pump,
+                    args=(process.stderr, stderr_chunks, "stderr"),
+                    daemon=True,
+                ),
+            ]
+            for thread in threads:
+                thread.start()
+            process.wait()
+            for thread in threads:
+                thread.join()
+            if text:
+                stdout = "".join(stdout_chunks)
+                stderr = "".join(stderr_chunks)
+            else:
+                stdout = b"".join(stdout_chunks)
+                stderr = b"".join(stderr_chunks)
     finally:
-        if observer is not None:
-            observer(None)
+        if process_observer is not None:
+            process_observer(None)
 
     result = subprocess.CompletedProcess(
         arguments,
@@ -4654,7 +4724,16 @@ def build_audio_preview(
     voice = root / "voice.wav"
     has_voice = voice.is_file()
     if has_voice:
-        validate_voice(voice)
+        try:
+            validate_voice(voice)
+        except PipelineError as exc:
+            # Preview is an audition tool, not a runtime validation gate. A
+            # stale/partial voice.wav must not make the music control unusable.
+            has_voice = False
+            print(
+                f"Audio preview warning: bỏ qua voice.wav chưa hợp lệ ({exc}).",
+                flush=True,
+            )
     source = _validate_music_file(music)
     volume = _validate_music_volume(volume)
 

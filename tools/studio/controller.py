@@ -314,21 +314,34 @@ class StudioController:
     def install_command_text(self) -> str:
         return self.preflight().install_command_text()
 
-    def install_dependencies(self) -> None:
-        """Explicit, user-triggered install using the running interpreter."""
+    def install_dependencies(self, *, log_callback=None) -> None:
+        """Explicit, user-triggered install using the running interpreter.
+
+        Output is never inherited by the terminal. Textual owns the screen, so
+        pip stdout/stderr must be forwarded through the log callback instead.
+        """
         checker = self.preflight()
         command = checker.install_command()
         self.status_text = "Đang cài dependency…"
+        if log_callback is not None:
+            log_callback("$ " + " ".join(command))
         try:
-            result = subprocess_run(command)
+            result = subprocess_run(command, on_line=log_callback)
         except OSError as exc:
             self.status_text = f"Không cài được dependency: {exc}"
+            if log_callback is not None:
+                log_callback(self.status_text)
             return
         if result.returncode == 0:
             self.run_preflight()
             self.status_text = "Đã cài dependency và kiểm tra lại môi trường."
         else:
-            self.status_text = "Không cài được dependency. Xem nhật ký để biết lý do."
+            self.status_text = (
+                f"Không cài được dependency (exit {result.returncode}). "
+                "Xem nhật ký để biết lý do."
+            )
+        if log_callback is not None:
+            log_callback(self.status_text)
 
     # ---- pipeline -----------------------------------------------------
     def pipeline_rows(self) -> list[dict]:
@@ -479,10 +492,32 @@ class StudioController:
             return False
 
 
-def subprocess_run(command: list[str]):
+def subprocess_run(command: list[str], *, on_line=None):
     import subprocess
 
-    return subprocess.run(command, shell=False)
+    process = subprocess.Popen(
+        command,
+        shell=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    lines: list[str] = []
+    assert process.stdout is not None
+    for raw in process.stdout:
+        line = raw.rstrip("\r\n")
+        lines.append(raw)
+        if on_line is not None and line:
+            on_line(line)
+    returncode = process.wait()
+    return subprocess.CompletedProcess(
+        command,
+        returncode,
+        "".join(lines),
+        None,
+    )
 
 
 def import_package(archive: Path, jobs_dir: Path, name: str) -> Path:

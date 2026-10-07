@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import tempfile
+import sys
+import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from textual import events
 
@@ -68,6 +71,7 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             log_section = app.query_one("#log-section")
             self.assertTrue(log_section.has_class("hidden"))
             self.assertFalse(app.log_visible)
+            self.assertFalse(app.query_one("#log").markup)
 
             self.assertEqual(app._command_status(), "Nạp ZIP hoặc chọn job để bắt đầu.")
 
@@ -123,6 +127,48 @@ class ListenButtonVisibilityTests(unittest.IsolatedAsyncioTestCase):
                 "Nghe thử is clipped out of the sidebar; clicks land on nothing",
             )
             self.assertLess(button.region.bottom, 40)
+
+
+class LogLifecycleTests(unittest.IsolatedAsyncioTestCase):
+    async def test_failed_step_logs_code_message_and_details(self):
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 46)) as pilot:
+            app._handle_engine_event(
+                "STEP_FAILED",
+                {
+                    "step": "RENDER_VIDEO",
+                    "error_code": "RENDER_FAILED",
+                    "message": "Không render được.",
+                    "details": "renderer stderr detail",
+                },
+            )
+            await pilot.pause()
+            log = app.query_one("#log", SelectableLog)
+            text = "\n".join(line.text for line in log.lines)
+            self.assertIn("RENDER_FAILED", text)
+            self.assertIn("Không render được.", text)
+            self.assertIn("renderer stderr detail", text)
+            self.assertTrue(app.log_visible)
+
+
+class NativeAudioPlaybackTests(unittest.TestCase):
+    def test_windows_preview_uses_winsound_async(self):
+        calls = []
+        fake = types.SimpleNamespace(
+            SND_FILENAME=1,
+            SND_ASYNC=2,
+            SND_NODEFAULT=4,
+            PlaySound=lambda path, flags: calls.append((path, flags)),
+        )
+        app = ZodiacTui()
+        preview = Path("preview.wav")
+        fake_os = types.SimpleNamespace(name="nt")
+        with patch("tools.tui.app.os", fake_os), patch.dict(
+            sys.modules, {"winsound": fake}
+        ):
+            app._play_audio_file(preview)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1], 7)
 
 
 class FullRunWorkflowTests(unittest.TestCase):

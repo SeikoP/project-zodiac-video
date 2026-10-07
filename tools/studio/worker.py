@@ -67,6 +67,7 @@ from tools.zodiac_local import (
     import_package,
     load_word_aligner,
     mix_background_music_into_render,
+    observe_subprocess_output,
     observe_subprocesses,
     finalize_publish_outputs,
     prepare_renderer,
@@ -657,7 +658,9 @@ class PipelineWorker:
         }[step]
 
         try:
-            with observe_subprocesses(self.attach_process):
+            with observe_subprocesses(self.attach_process), observe_subprocess_output(
+                lambda line, channel=None: self.log(line)
+            ):
                 handler()
             self._raise_if_cancelled()
 

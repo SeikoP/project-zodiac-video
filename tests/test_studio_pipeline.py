@@ -856,6 +856,24 @@ class ControllerTests(WorkerHarness):
         for entry in reopened.steps[VOICE_SCENES].scenes.values():
             self.assertTrue(entry.get("artifact_take_id"))
 
+    def test_dependency_installer_streams_output_through_callback(self):
+        from tools.studio.controller import subprocess_run
+
+        lines = []
+        result = subprocess_run(
+            [
+                sys.executable,
+                "-c",
+                "import sys; print('[notice] stdout'); print('stderr-line', file=sys.stderr)",
+            ],
+            on_line=lines.append,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("[notice] stdout", lines)
+        self.assertIn("stderr-line", lines)
+        self.assertIn("[notice] stdout", result.stdout)
+
     def test_install_command_uses_the_running_interpreter(self):
         import sys
 
