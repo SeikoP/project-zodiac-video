@@ -13,9 +13,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+from rich.segment import Segment
+from rich.style import Style
+
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
+from textual.strip import Strip
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, RichLog, Select, Static
 
 from tools.studio.controller import StudioController
@@ -39,6 +43,113 @@ TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 TTS_URL = "http://127.0.0.1:7860"
 SUPPORTED_MUSIC = (".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg")
 COMPLETE = (DONE, SKIPPED)
+
+
+class SelectableLog(RichLog):
+    """RichLog with drag-select: releasing the mouse copies the selection to the clipboard."""
+
+    ALLOW_SELECT = False
+    SELECT_BG = "#28456f"
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._select_anchor: tuple[int, int] | None = None
+        self._select_end: tuple[int, int] | None = None
+
+    def _pos_from_event(self, event) -> tuple[int, int]:
+        scroll_x, scroll_y = self.scroll_offset
+        col = max(0, scroll_x + event.x)
+        row = max(0, min(len(self.lines) - 1, scroll_y + event.y))
+        return row, col
+
+    def on_mouse_down(self, event) -> None:
+        if self.app.mouse_captured is not None:
+            return
+        if event.button == 0:
+            self._select_anchor = self._pos_from_event(event)
+            self._select_end = None
+            self.capture_mouse()
+            self.refresh()
+
+    def on_mouse_move(self, event) -> None:
+        if self._select_anchor is None:
+            return
+        self._select_end = self._pos_from_event(event)
+        self.refresh()
+
+    def on_mouse_up(self, event) -> None:
+        if event.button == 0 and self._select_anchor is not None:
+            self.release_mouse()
+            if self._select_end is None:
+                self._select_anchor = None
+                self.refresh()
+                return
+            text = self._selected_text()
+            self._select_anchor = None
+            self._select_end = None
+            self.refresh()
+            if text:
+                self.app.copy_to_clipboard(text)
+
+    def _selection_span(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
+        if self._select_anchor is None or self._select_end is None:
+            return None
+        (r1, c1), (r2, c2) = sorted((self._select_anchor, self._select_end))
+        return (r1, c1), (r2, c2)
+
+    def _span_for_row(self, y: int) -> tuple[int, int] | None:
+        pair = self._selection_span()
+        if pair is None:
+            return None
+        (r1, c1), (r2, c2) = pair
+        row = self.scroll_offset.y + y
+        if row < r1 or row > r2:
+            return None
+        if r1 == r2:
+            return c1, c2
+        row_end = self.lines[row].cell_length
+        if row == r1:
+            return c1, row_end
+        if row == r2:
+            return 0, c2
+        return 0, row_end
+
+    def render_line(self, y: int) -> Strip:
+        strip = super().render_line(y)
+        span = self._span_for_row(y)
+        if span is None or span[0] >= span[1]:
+            return strip
+        scroll_x = self.scroll_offset.x
+        start = max(0, span[0] - scroll_x)
+        end = max(start, span[1] - scroll_x)
+        if start >= end:
+            return strip
+        sel_style = Style(bgcolor=self.SELECT_BG)
+        pre = strip.crop(0, start)._segments
+        mid = [
+            Segment(seg.text, (seg.style or Style()) + sel_style)
+            for seg in strip.crop(start, end)._segments
+        ]
+        post = strip.crop(end, None)._segments
+        return Strip([*pre, *mid, *post])
+
+    def _selected_text(self) -> str:
+        pair = self._selection_span()
+        if pair is None:
+            return ""
+        (r1, c1), (r2, c2) = pair
+        parts: list[str] = []
+        for row in range(r1, r2 + 1):
+            cells = self.lines[row].text
+            if r1 == r2:
+                parts.append(cells[c1:c2])
+            elif row == r1:
+                parts.append(cells[c1:])
+            elif row == r2:
+                parts.append(cells[:c2])
+            else:
+                parts.append(cells)
+        return "\n".join(parts)
 
 
 class TuiStudioController(StudioController):
@@ -515,7 +626,7 @@ class ZodiacTui(App):
 
                 with Vertical(classes="section", id="log-section"):
                     yield Label("NHẬT KÝ", classes="section-title")
-                    yield RichLog(id="log", wrap=True, highlight=True, markup=True)
+                    yield SelectableLog(id="log", wrap=True, highlight=True, markup=True)
 
         with Container(id="command-bar"):
             yield Static("Chưa chạy", id="command-status")
@@ -1023,10 +1134,10 @@ class ZodiacTui(App):
         command = [
             sys.executable,
             str(ROOT / "tools" / "zodiac_local.py"),
-            "preview",
-            self.controller.job.name,
             "--workspace",
             str(WORKSPACE),
+            "preview",
+            self.controller.job.name,
         ]
         try:
             self.studio_process = subprocess.Popen(

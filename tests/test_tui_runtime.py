@@ -6,8 +6,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from textual import events
+
 from tools.studio.voice_catalog import preferred_voice, saved_voices
-from tools.tui.app import ZodiacTui
+from tools.tui.app import SelectableLog, ZodiacTui
 from tools.tui.file_picker import FilteredDirectoryTree
 
 
@@ -45,6 +47,69 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             await pilot.pause()
             self.assertTrue(app.screen.has_class("narrow"))
             self.assertTrue(app.screen.has_class("tiny"))
+
+
+class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
+    def _drag(self, app, sx, sy, ex, ey):
+        screen = app.screen
+        screen._forward_event(
+            events.MouseDown(x=sx, y=sy, screen_x=sx, screen_y=sy, widget=None, delta_x=0, delta_y=0, button=0, shift=False, meta=False, ctrl=False)
+        )
+        screen._forward_event(
+            events.MouseMove(x=ex, y=ey, screen_x=ex, screen_y=ey, widget=None, delta_x=ex - sx, delta_y=ey - sy, button=0, shift=False, meta=False, ctrl=False)
+        )
+        screen._forward_event(
+            events.MouseUp(x=ex, y=ey, screen_x=ex, screen_y=ey, widget=None, delta_x=0, delta_y=0, button=0, shift=False, meta=False, ctrl=False)
+        )
+
+    async def test_drag_select_copies_on_release(self):
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 46)) as pilot:
+            log = app.query_one("#log", SelectableLog)
+            log.write("alpha alpha alpha")
+            log.write("bbbbbbbbbb")
+            await pilot.pause()
+
+            region = app.screen.find_widget(log).region
+            self._drag(app, region.x + 3, region.y, region.x + 8, region.y + 1)
+            await pilot.pause()
+
+            self.assertEqual(app._clipboard, "ha alpha alpha\nbbbbbbbb")
+            self.assertIsNone(log._select_anchor)
+
+    async def test_click_without_drag_clears_and_does_not_copy(self):
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 46)) as pilot:
+            log = app.query_one("#log", SelectableLog)
+            log.write("alpha alpha alpha")
+            log.write("bbbbbbbbbb")
+            await pilot.pause()
+
+            region = app.screen.find_widget(log).region
+            app._clipboard = ""
+            self._drag(app, region.x + 3, region.y, region.x + 8, region.y + 1)
+            await pilot.pause()
+            self.assertEqual(app._clipboard, "ha alpha alpha\nbbbbbbbb")
+
+            self._drag(app, region.x + 1, region.y + 1, region.x + 1, region.y + 1)
+            await pilot.pause()
+            self.assertEqual(app._clipboard, "ha alpha alpha\nbbbbbbbb")
+            self.assertIsNone(log._select_anchor)
+
+    async def test_selection_highlight_renders_without_error(self):
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 46)) as pilot:
+            log = app.query_one("#log", SelectableLog)
+            log.write("alpha alpha alpha")
+            log.write("bbbbbbbbbb")
+            await pilot.pause()
+
+            log._select_anchor = (0, 3)
+            log._select_end = (1, 8)
+            line0 = log.render_line(0).text
+            line1 = log.render_line(1).text
+            self.assertTrue(line0.startswith("alpha alpha alpha"))
+            self.assertTrue(line1.startswith("bbbbbbbbbb"))
 
 
 if __name__ == "__main__":
