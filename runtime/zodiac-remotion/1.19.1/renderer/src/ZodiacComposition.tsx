@@ -164,15 +164,43 @@ const overlapArea = (a: OverlayRect, b: OverlayRect) => {
   const height = Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
   return width * height;
 };
-const visibleSceneRects = (scene: ProductionScene): OverlayRect[] =>
-  scene.entities.flatMap((entity) => Object.values(entity.states).filter((state) => state.visible).map((state) => state.transform));
-const captionOverlayTop = (scene: ProductionScene, page: ReturnType<typeof captionPages>[number], production: Production) => {
+const transitionProgress = (frame: number, duration: number) => {
+  if (duration <= 1) return 1;
+  return Math.min(1, Math.max(0, frame / (duration - 1)));
+};
+const activeSceneRects = (scene: ProductionScene, frame: number, timing: RuntimeSceneTiming, allTiming: RuntimeTiming): OverlayRect[] =>
+  scene.entities.flatMap((entity) => {
+    let stateId = entity.initial_state;
+    const history = scene.events
+      .filter((event) => event.target === entity.id)
+      .map((event) => {
+        const globalStart = allTiming.resolved_events?.[event.id];
+        if (!Number.isInteger(globalStart)) return null;
+        return {event, start:Number(globalStart) - timing.start_frame};
+      })
+      .filter((item): item is {event: VisualEvent; start: number} => item !== null)
+      .sort((a,b)=>a.start-b.start);
+    for (const item of history) {
+      if (frame < item.start) break;
+      const beforeState = stateVisual(entity, item.event.state_before);
+      const afterState = stateVisual(entity, item.event.state_after);
+      if (frame < item.start + item.event.motion.duration_frames) {
+        if (!beforeState.visible && !afterState.visible) return [];
+        const progress = transitionProgress(frame-item.start, item.event.motion.duration_frames);
+        return [interpolateStateTransform(beforeState.transform, afterState.transform, progress)];
+      }
+      stateId = item.event.state_after;
+    }
+    const state = stateVisual(entity, stateId);
+    return state.visible ? [state.transform] : [];
+  });
+const captionOverlayTop = (scene: ProductionScene, page: ReturnType<typeof captionPages>[number], production: Production, frame: number, timing: RuntimeSceneTiming, allTiming: RuntimeTiming) => {
   const area = production.caption_style.safe_area;
   const lineCount = Math.max(1, page.lines.length);
   const captionHeight = Math.min(area.height, page.fontSize * 1.04 * lineCount + 28);
   const maxTop = Math.max(area.y, area.y + area.height - captionHeight);
   const candidates = [maxTop, area.y + (maxTop - area.y) * 0.5, area.y];
-  const visualRects = visibleSceneRects(scene);
+  const visualRects = activeSceneRects(scene, frame, timing, allTiming);
   return candidates.map((top, index) => {
     const box = {x: area.x, y: top, width: area.width, height: captionHeight};
     const overlap = visualRects.reduce((sum, rect) => sum + overlapArea(box, rect), 0);
@@ -183,10 +211,10 @@ const fullCanvasContentStyle = (production: Production, cameraStyle?: CSSPropert
   position: "absolute", inset: 0, width: production.video.width, height: production.video.height,
   overflow: "visible", ...cameraStyle,
 });
-const CaptionPage: React.FC<{page: ReturnType<typeof captionPages>[number]; scene: ProductionScene; production: Production; pageStartFrame: number; fps: number}> = ({page, scene, production, pageStartFrame, fps}) => {
+const CaptionPage: React.FC<{page: ReturnType<typeof captionPages>[number]; scene: ProductionScene; production: Production; pageStartFrame: number; fps: number; timing: RuntimeSceneTiming; allTiming: RuntimeTiming}> = ({page, scene, production, pageStartFrame, fps, timing, allTiming}) => {
   const frame = useCurrentFrame() + pageStartFrame;
   const nowMs = frame * 1000 / fps;
-  const top = captionOverlayTop(scene, page, production);
+  const top = captionOverlayTop(scene, page, production, frame - timing.start_frame, timing, allTiming);
   return <div style={{...captionStyle(top, production), fontSize: page.fontSize}}>{page.words.map((word, index) => {
     const active = nowMs >= word.startMs && nowMs < word.endMs;
     return <React.Fragment key={String(word.startMs) + "-" + index}><span style={active ? {color: production.caption_style.highlight_color} : undefined}>{word.text}</span>{index < page.words.length - 1 ? " " : ""}</React.Fragment>;
@@ -244,7 +272,7 @@ const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: 
   const afterState = stateVisual(entity, stateId);
   if (!afterState.visible && !transition) return null;
   if (transition && beforeState) {
-    const progress = Math.min(1, Math.max(0, (frame - transition.start) / Math.max(1, transition.event.motion.duration_frames)));
+    const progress = transitionProgress(frame - transition.start, transition.event.motion.duration_frames);
     const tweenTransform = interpolateStateTransform(beforeState.transform, afterState.transform, progress);
     const focusDirection = focusDirectionFor(scene, transition.event, beforeState);
     const localFrame = frame - transition.start;
@@ -290,7 +318,7 @@ const SceneView: React.FC<{scene: ProductionScene; timing: RuntimeSceneTiming; a
     const start = Math.max(0, frameAtMs(page.startMs, allTiming.fps) - timing.start_frame);
     const end = Math.min(timing.duration_frames, frameAtMs(page.endMs, allTiming.fps) - timing.start_frame + 1);
     if (end <= start) return null;
-    return <Sequence key={scene.id + "-caption-" + index} from={start} durationInFrames={end - start} name="Caption page"><CaptionPage page={page} scene={scene} production={production} pageStartFrame={frameAtMs(page.startMs, allTiming.fps)} fps={allTiming.fps} /></Sequence>;
+    return <Sequence key={scene.id + "-caption-" + index} from={start} durationInFrames={end - start} name="Caption page"><CaptionPage page={page} scene={scene} production={production} pageStartFrame={frameAtMs(page.startMs, allTiming.fps)} fps={allTiming.fps} timing={timing} allTiming={allTiming} /></Sequence>;
   });
   const cameraHistory = scene.events.filter((event)=>event.target==="camera").map((event)=>({event,start:Number(allTiming.resolved_events?.[event.id])-timing.start_frame})).filter((item)=>Number.isInteger(item.start)).sort((a,b)=>a.start-b.start);
   const upcomingCamera = cameraHistory.find((item)=>frame < item.start && frame >= item.start - item.event.performance.anticipation_frames);
