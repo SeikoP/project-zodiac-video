@@ -64,7 +64,32 @@ class StudioController:
         import re
 
         stem = Path(archive).stem.replace("-render-ready", "")
+        stem = re.sub(r"-v\d+(?:\.\d+)*$", "", stem, flags=re.IGNORECASE)
         return re.sub(r"[^a-zA-Z0-9._-]+", "-", stem).strip("-.").lower()
+
+    def _destination_for_archive(self, archive: Path) -> Path:
+        """Resolve one stable workspace for every patch of the same sign/concept."""
+        logical = self.job_name_for(archive)
+        exact = self.jobs_dir / logical
+        if exact.exists():
+            return exact
+        if (
+            self.job is not None
+            and self.job.exists()
+            and self.job.parent == self.jobs_dir.resolve()
+            and self.job_name_for(Path(self.job.name + ".zip")) == logical
+        ):
+            return self.job
+        if self.jobs_dir.is_dir():
+            candidates = [
+                item
+                for item in self.jobs_dir.iterdir()
+                if item.is_dir()
+                and self.job_name_for(Path(item.name + ".zip")) == logical
+            ]
+            if candidates:
+                return max(candidates, key=lambda item: item.stat().st_mtime)
+        return exact
 
     @property
     def job_name(self) -> str:
@@ -128,7 +153,7 @@ class StudioController:
         if self.archive is None:
             return False
         name = self.job_name_for(self.archive)
-        destination = self.jobs_dir / name
+        destination = self._destination_for_archive(self.archive)
         if destination.exists() and self.package_changed:
             return False
         if not destination.exists():
@@ -173,10 +198,11 @@ class StudioController:
             return False
 
         name = self.job_name_for(self.archive)
-        destination = self.jobs_dir / name
+        destination = self._destination_for_archive(self.archive)
         before = artifact_fingerprints(destination) if destination.exists() else {}
         old_voice = self._voice_signature(destination)
 
+        self.workspace.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=".zodiac-import-", dir=str(self.workspace)) as scratch:
             imported = import_package(self.archive, Path(scratch) / "jobs", name)
             after = artifact_fingerprints(imported)

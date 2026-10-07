@@ -1128,7 +1128,19 @@ class SafeExtractionTests(unittest.TestCase):
             production["scenes"][0]["voice"] = long_voice
             path.write_text(json.dumps(production), encoding="utf-8")
             (job / "narration.txt").write_text(long_voice + "\n", encoding="utf-8")
-            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_DENSITY.*15 words"):
+            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_DENSITY.*10 words"):
+                validate_package(job)
+
+    def test_rejects_visual_gap_that_is_acceptable_by_old_15_word_proxy(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            voice = "mot hai ba bon nam sau bay tam chin muoi muoi-mot muoi-hai muoi-ba"
+            production["scenes"][0]["voice"] = voice
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            (job / "narration.txt").write_text(voice + "\n", encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_DENSITY.*10 words"):
                 validate_package(job)
 
     def test_rejects_renderer_without_compact_caption_box(self):
