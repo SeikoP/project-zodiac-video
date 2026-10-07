@@ -130,3 +130,14 @@ those implementation details into the default dashboard.
 The TUI restores useful controls from the legacy GUI (dependency install, audio
 preview and rerun-step) but intentionally does not restore the duplicate visual
 editor.
+
+
+## Single-job performance roadmap
+
+Long-form execution, voice/timing artifact reuse, segment rendering and intra-job
+parallelism are specified separately in:
+
+`docs/SINGLE_JOB_PERFORMANCE_ENGINE_SPEC.md`
+
+That document is authoritative for 10–20 minute single-job performance work.
+Do not introduce multi-job scheduling or duplicate performance policy in the TUI.
