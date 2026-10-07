@@ -19,6 +19,7 @@ import type {CSSProperties} from "react";
 import {PrimitiveSvg} from "./PrimitiveSvg";
 import {segmentCaptionWords} from "./runtime-contract.mjs";
 import {performanceMotionValues, poseTransitionChoreographyValues} from "./performance-animation.mjs";
+import {effectiveZIndex} from "./layout-safety.mjs";
 import type {Motion, Performance, Production, ProductionScene, RenderProps, RuntimeSceneTiming, RuntimeTiming, VisualEntity, VisualEvent, VisualState} from "./types";
 
 const fontText = "Tiếng Việt: ă â ê ô ơ ư đ Ă Â Ê Ô Ơ Ư Đ á à ả ã ạ ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự";
