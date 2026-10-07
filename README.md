@@ -391,8 +391,8 @@ FFmpeg/npm calls pass validated executables and arguments as argv with `shell=Fa
 Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.
 
 
-## Runtime 1.19.1 — production
+## Runtime 1.20.0 — production
 
-New jobs use `zodiac-remotion@1.19.1`. Runtime materializes omitted deterministic motion/performance fields, preserves anticipation continuously into the action transition, swaps whole-pose SVG states while the character is already moving, then overshoots and settles. State transform interpolation reaches the exact destination on the final transition frame, and caption collision uses only the states active at the current frame.
+New jobs use `zodiac-remotion@1.20.0`. It keeps the 1.19.1 deterministic animation/caption behavior and adds scene-level layer safety: runtime evaluates the declared active state sequence, blocks materially overlapping visible entities that share the same layer, and uses deterministic z-index ordering.
 
-This is choreography around whole-pose state changes, not skeletal morphing. Semantic Assets still owns pose/contact/anatomical readability.
+Runtime deliberately does not auto-move meaningful props or characters because overlap may represent holding, hugging or offering. Internal SVG groups such as torso, outfit decoration, arms and baked props remain a Semantic Assets compile-time concern. Whole-pose choreography is still not skeletal morphing.
