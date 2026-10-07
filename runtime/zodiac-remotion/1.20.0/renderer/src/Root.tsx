@@ -1,4 +1,5 @@
-import {Composition, Still, type CalculateMetadataFunction} from "remotion";
+import {AbsoluteFill, Composition, Still, type CalculateMetadataFunction} from "remotion";
+import {BrandOverlay} from "./BrandOverlay";
 import {ZodiacComposition} from "./ZodiacComposition";
 import {ZodiacCover} from "./ZodiacCover";
 import type {Production, RenderProps} from "./types";
@@ -12,7 +13,11 @@ const calculateMetadata: CalculateMetadataFunction<RenderProps> = ({props}) => {
   if(!props.resolved_events||Object.keys(props.resolved_events).length===0) throw new Error("Measured event anchors must be resolved by scripts/render.mjs before rendering.");
   return {durationInFrames:props.total_duration_frames,width:production.video.width,height:production.video.height,fps:production.video.fps};
 };
+const ZodiacVideoWithBrand=(props:RenderProps)=><AbsoluteFill>
+  <ZodiacComposition {...props}/>
+  <BrandOverlay production={props.production}/>
+</AbsoluteFill>;
 export const RemotionRoot=()=> <>
-  <Composition id="ZodiacVideo" component={ZodiacComposition} durationInFrames={1} width={1080} height={1920} fps={30} defaultProps={defaultProps} calculateMetadata={calculateMetadata}/>
+  <Composition id="ZodiacVideo" component={ZodiacVideoWithBrand} durationInFrames={1} width={1080} height={1920} fps={30} defaultProps={defaultProps} calculateMetadata={calculateMetadata}/>
   <Still id="ZodiacCover" component={ZodiacCover} width={1080} height={1920} defaultProps={defaultProps}/>
 </>;

@@ -262,6 +262,7 @@ jobs:
         working-directory: .
         run: |
           HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.20.0/renderer | tail -n 1)
+          echo "RUNTIME_1_20_0_HASH=$HASH"
           grep -q "$HASH" runtime/zodiac-remotion/1.20.0/runtime-manifest.json
       - name: Golden runtime 1.20 Studio prepare
         working-directory: .

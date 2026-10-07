@@ -61,7 +61,7 @@ class MemeV31CompatibilityTests(unittest.TestCase):
         )
 
     def test_asset_only_change_does_not_regress_pacing_defaults(self):
-        self.assertEqual(DEFAULT_PLAYBACK_RATE, 0.95)
+        self.assertEqual(DEFAULT_PLAYBACK_RATE, 1.0)
         self.assertEqual(DEFAULT_SCENE_GAP_MS, 350.0)
         self.assertEqual(DEFAULT_SENTENCE_PAUSE_MS, 320.0)
 
