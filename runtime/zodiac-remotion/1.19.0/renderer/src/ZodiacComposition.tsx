@@ -18,7 +18,7 @@ import "@fontsource/patrick-hand/vietnamese-400.css";
 import type {CSSProperties} from "react";
 import {PrimitiveSvg} from "./PrimitiveSvg";
 import {segmentCaptionWords} from "./runtime-contract.mjs";
-import {performanceMotionValues} from "./performance-animation.mjs";
+import {performanceMotionValues, poseTransitionChoreographyValues} from "./performance-animation.mjs";
 import type {Motion, Performance, Production, ProductionScene, RenderProps, RuntimeSceneTiming, RuntimeTiming, VisualEntity, VisualEvent, VisualState} from "./types";
 
 const fontText = "Tiếng Việt: ă â ê ô ơ ư đ Ă Â Ê Ô Ơ Ư Đ á à ả ã ạ ắ ằ ẳ ẵ ặ ế ề ể ễ ệ ố ồ ổ ỗ ộ ớ ờ ở ỡ ợ ứ ừ ử ữ ự";
@@ -83,12 +83,13 @@ const motionValues = (frame: number, motion: Motion, production: Production): Re
   return values;
 };
 
-const motionStyle = (frame: number, motion: Motion | undefined, production: Production, opacity = 1, performance?: Performance, focusDirection = 0): CSSProperties => {
+const motionStyle = (frame: number, motion: Motion | undefined, production: Production, opacity = 1, performance?: Performance, focusDirection = 0, choreography?: {x:number;y:number;rotate_deg:number;scale:number;opacity:number}): CSSProperties => {
   const base = motion && frame >= 0 && frame < motion.duration_frames ? motionValues(frame, motion, production) : {x:0,y:0,rotate_deg:0,scale:1,opacity:1};
   const acting = performance ? performanceMotionValues(frame, motion?.duration_frames ?? 1, performance, focusDirection) : {x:0,y:0,rotate_deg:0,scale:1,opacity:1};
+  const bridge = choreography ?? {x:0,y:0,rotate_deg:0,scale:1,opacity:1};
   return {
-    transform: `translate(${(base.x ?? 0) + (acting.x ?? 0)}px, ${(base.y ?? 0) + (acting.y ?? 0)}px) rotate(${(base.rotate_deg ?? 0) + (acting.rotate_deg ?? 0)}deg) scale(${(base.scale ?? 1) * (acting.scale ?? 1)})`,
-    opacity: opacity * (base.opacity ?? 1) * (acting.opacity ?? 1),
+    transform: `translate(${(base.x ?? 0) + (acting.x ?? 0) + bridge.x}px, ${(base.y ?? 0) + (acting.y ?? 0) + bridge.y}px) rotate(${(base.rotate_deg ?? 0) + (acting.rotate_deg ?? 0) + bridge.rotate_deg}deg) scale(${(base.scale ?? 1) * (acting.scale ?? 1) * bridge.scale})`,
+    opacity: opacity * (base.opacity ?? 1) * (acting.opacity ?? 1) * bridge.opacity,
   };
 };
 
@@ -247,10 +248,13 @@ const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: 
     const tweenTransform = interpolateStateTransform(beforeState.transform, afterState.transform, progress);
     const focusDirection = focusDirectionFor(scene, transition.event, beforeState);
     const localFrame = frame - transition.start;
-    if (beforeState.visible && afterState.visible) return <>
-      <VisualStateNode production={production} state={beforeState} key={transition.before} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>
-      <VisualStateNode production={production} state={afterState} key={transition.after} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>
-    </>;
+    if (beforeState.visible && afterState.visible) {
+      const choreography = poseTransitionChoreographyValues(localFrame, transition.event.motion.duration_frames, transition.event.performance, focusDirection);
+      const showingAfter = choreography.pose === "after";
+      const poseState = showingAfter ? afterState : beforeState;
+      const poseKey = showingAfter ? transition.after : transition.before;
+      return <VisualStateNode production={production} state={poseState} key={poseKey} event={transition.event} frame={localFrame} opacity={1} transformOverride={tweenTransform} focusDirection={focusDirection} choreography={choreography}/>;
+    }
     if (beforeState.visible && !afterState.visible) return <VisualStateNode production={production} state={beforeState} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
     if (!beforeState.visible && afterState.visible) return <VisualStateNode production={production} state={afterState} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
   }
@@ -261,12 +265,12 @@ const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: 
   return <VisualStateNode production={production} state={afterState} frame={frame} opacity={1}/>;
 };
 
-const VisualStateNode: React.FC<{production:Production;state:VisualState;event?:VisualEvent;frame:number;opacity:number;focusDirection?:number;transformOverride?:VisualState["transform"]}> = ({production,state,event,frame,opacity,focusDirection=0,transformOverride}) => {
+const VisualStateNode: React.FC<{production:Production;state:VisualState;event?:VisualEvent;frame:number;opacity:number;focusDirection?:number;transformOverride?:VisualState["transform"];choreography?:{x:number;y:number;rotate_deg:number;scale:number;opacity:number}}> = ({production,state,event,frame,opacity,focusDirection=0,transformOverride,choreography}) => {
   if (!state.visible) return null;
   const box = transformOverride ?? state.transform;
   const style:CSSProperties = {
     position:"absolute",left:box.x,top:box.y,width:box.width,height:box.height,zIndex:state.layer,
-    ...motionStyle(frame,event?.motion,production,opacity,event?.performance,focusDirection),
+    ...motionStyle(frame,event?.motion,production,opacity,event?.performance,focusDirection,choreography),
   };
   if (state.asset) {
     const asset=production.assets[state.asset];
