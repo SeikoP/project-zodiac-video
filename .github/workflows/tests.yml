@@ -162,3 +162,25 @@ jobs:
         run: |
           HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.18.0/renderer | tail -n 1)
           grep -q "$HASH" runtime/zodiac-remotion/1.18.0/runtime-manifest.json
+
+
+  shared-runtime-1-18-1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.18.1/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install corrected runtime dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test corrected runtime
+        run: npm test
+      - name: Typecheck corrected runtime
+        run: npm run typecheck
+      - name: Print canonical runtime 1.18.1 hash
+        working-directory: .
+        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.18.1/renderer
