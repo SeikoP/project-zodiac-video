@@ -317,15 +317,14 @@ Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZI
 
 ```text
 .zodiac-work/jobs/<job>/out/
-├─ zodiac-story.mp4
-├─ zodiac-story.with-music.mp4   # chỉ khi bật nhạc nền
+├─ zodiac-story.mp4              # final MP4; nhạc nền được mix trực tiếp vào file này nếu bật
 ├─ cover.png
 ├─ publish-copy.txt
 ├─ publish.json
-└─ zodiac-publish-bundle.zip
+└─ FINAL_VALIDATION.json         # receipt local runtime cho zodiac-job@4
 ```
 
-Nếu không chọn nhạc nền, `PACKAGE_PUBLISH` dùng trực tiếp `zodiac-story.mp4`. Nhạc bundled trong repo là tùy chọn; nếu không có file mặc định, Studio bắt đầu ở trạng thái chưa chọn nhạc thay vì coi đó là lỗi môi trường.
+Studio không tạo ZIP publish thứ hai và không giữ `zodiac-story.with-music.mp4`; các tên legacy này được dọn nếu còn sót. Nhạc bundled trong repo là tùy chọn; nếu không có file mặc định, Studio bắt đầu ở trạng thái chưa chọn nhạc thay vì coi đó là lỗi môi trường.
 
 ## Editor Workspace (v1)
 
@@ -392,16 +391,8 @@ FFmpeg/npm calls pass validated executables and arguments as argv with `shell=Fa
 Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.
 
 
-## Runtime 1.18
+## Runtime 1.19.1 — production
 
-New jobs use `zodiac-remotion@1.19.0`: deterministic motion/performance defaults are materialized locally, and visible pose-to-pose changes use a single-pose bridge instead of full-SVG crossfades.
+New jobs use `zodiac-remotion@1.19.1`. Runtime materializes omitted deterministic motion/performance fields, preserves anticipation continuously into the action transition, swaps whole-pose SVG states while the character is already moving, then overshoots and settles. State transform interpolation reaches the exact destination on the final transition frame, and caption collision uses only the states active at the current frame.
 
-
-### Runtime 1.18.1 correction
-
-Runtime 1.18.1 keeps the deterministic animation defaults introduced in 1.18.0, but removes the midpoint single-pose swap. The earlier visual symptom was incorrectly treated as proof of full-body overlap. State changes use the prior neutral blend again; pose continuity itself remains a separate authoring/runtime design problem and is not claimed as solved by this patch.
-
-
-### Runtime 1.19 pose-transition choreography
-
-New jobs use `zodiac-remotion@1.19.0`. Visible whole-pose state changes now use a deterministic transition envelope: the outgoing pose begins moving first, the asset swap happens while the body is already displaced/squashed, and the incoming pose continues through overshoot and settle. This smooths action-to-action changes without requiring the agent to author intermediate frames or changing the production schema. It is not skeletal morphing; Semantic Assets still owns pose/contact/anatomical readability.
+This is choreography around whole-pose state changes, not skeletal morphing. Semantic Assets still owns pose/contact/anatomical readability.

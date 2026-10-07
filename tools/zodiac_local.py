@@ -89,7 +89,7 @@ PACKAGE_FORMAT_V3 = "zodiac-job@3"
 PACKAGE_FORMAT_V4 = "zodiac-job@4"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
-RUNTIME_VERSION = "1.19.0"
+RUNTIME_VERSION = "1.19.1"
 BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
@@ -1055,7 +1055,7 @@ def _validate_publish_renderer_contract(renderer_root: Path) -> None:
 
     cover_source = _read_renderer_source(renderer_root, "src/ZodiacCover.tsx")
     cover_requirements = {
-        "tilted hook card": r"rotate\(-3deg\)",
+        "tilted hook card": r"rotate\(-?\d+(?:\.\d+)?deg\)",
         "cover identity": r"publish\.cover\.identity",
         "cover hook": r"publish\.cover\.hook",
         "scene reuse": r"production\.scenes\.find",
@@ -1116,6 +1116,17 @@ def _uses_performance_runtime(package_manifest: dict | None) -> bool:
     return (
         runtime_ref.get("id") == RUNTIME_ID
         and _runtime_semver(runtime_ref) >= (1, 16, 0)
+    )
+
+
+def _uses_runtime_owned_animation_defaults(package_manifest: dict | None) -> bool:
+    """Runtime >=1.18 materializes omitted motion/performance fields after schema validation."""
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 18, 0)
     )
 
 
@@ -1231,11 +1242,20 @@ _PERFORMANCE_PHASES = {"anticipation", "action", "reaction", "hold", "settle"}
 _PERFORMANCE_RESERVED_FOCUS = {"audience", "self", "offscreen_left", "offscreen_right"}
 
 
-def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dict]) -> None:
+def _validate_performance_animation_scene(
+    scene: dict,
+    entity_map: dict[str, dict],
+    *,
+    allow_runtime_defaults: bool = False,
+) -> None:
     prior_event_ids: set[str] = set()
     for event in scene.get("events", []):
         event_id = event.get("id")
         performance = event.get("performance")
+        if performance is None and allow_runtime_defaults:
+            if isinstance(event_id, str):
+                prior_event_ids.add(event_id)
+            continue
         if not isinstance(performance, dict):
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: event requires performance metadata: {event_id}"
@@ -1254,16 +1274,42 @@ def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dic
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: unsupported performance fields: {event_id}"
             )
-        if not isinstance(performance.get("intent"), str) or not performance["intent"].strip():
+
+        intent = performance.get("intent")
+        if allow_runtime_defaults:
+            if intent is not None and (
+                not isinstance(intent, str) or not intent.strip()
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: performance intent must be non-empty when provided: {event_id}"
+                )
+        elif not isinstance(intent, str) or not intent.strip():
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: performance intent is required: {event_id}"
             )
-        if performance.get("phase") not in _PERFORMANCE_PHASES:
+
+        phase = performance.get("phase")
+        if allow_runtime_defaults:
+            if phase is not None and phase not in _PERFORMANCE_PHASES:
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: unsupported performance phase: {event_id}"
+                )
+        elif phase not in _PERFORMANCE_PHASES:
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: unsupported performance phase: {event_id}"
             )
+
         energy = performance.get("energy")
-        if (
+        if allow_runtime_defaults:
+            if energy is not None and (
+                not isinstance(energy, (int, float))
+                or isinstance(energy, bool)
+                or not 0 <= energy <= 1
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: energy must be within 0..1: {event_id}"
+                )
+        elif (
             not isinstance(energy, (int, float))
             or isinstance(energy, bool)
             or not 0 <= energy <= 1
@@ -1271,12 +1317,16 @@ def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dic
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: energy must be within 0..1: {event_id}"
             )
-        for key, maximum in (
+
+        timing_fields = (
             ("anticipation_frames", 24),
             ("hold_frames", 90),
             ("settle_frames", 45),
-        ):
+        )
+        for key, maximum in timing_fields:
             value = performance.get(key)
+            if allow_runtime_defaults and value is None:
+                continue
             if (
                 not isinstance(value, int)
                 or isinstance(value, bool)
@@ -1286,6 +1336,7 @@ def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dic
                 raise PipelineError(
                     f"PERFORMANCE_ANIMATION_GATE: invalid {key}: {event_id}"
                 )
+
         focus = performance.get("focus")
         if focus is not None and (
             not isinstance(focus, str)
@@ -1301,8 +1352,10 @@ def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dic
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: use focus=self for the acting entity: {event_id}"
             )
+
         cause = performance.get("cause_event_id")
-        if performance.get("phase") == "reaction" and not cause:
+        effective_phase = phase or ("reaction" if cause else "action")
+        if effective_phase == "reaction" and not cause:
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: reaction needs cause_event_id: {event_id}"
             )
@@ -1312,13 +1365,17 @@ def _validate_performance_animation_scene(scene: dict, entity_map: dict[str, dic
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: cause_event_id must reference an earlier event: {event_id}"
             )
+
+        authored_timing = [
+            performance.get(key)
+            for key, _maximum in timing_fields
+        ]
+        timing_is_complete = all(value is not None for value in authored_timing)
         if (
             event.get("target") != "camera"
             and event.get("state_before") != event.get("state_after")
-            and performance["anticipation_frames"]
-            + performance["hold_frames"]
-            + performance["settle_frames"]
-            == 0
+            and timing_is_complete
+            and sum(authored_timing) == 0
         ):
             raise PipelineError(
                 f"PERFORMANCE_ANIMATION_GATE: story-changing event needs anticipation, hold, or settle timing: {event_id}"
@@ -1452,6 +1509,7 @@ def validate_production_document(root: Path, production: dict) -> dict:
     _validate_package_manifest_design(package_manifest, token, source_hash)
     semantic_runtime = _uses_semantic_runtime(package_manifest)
     performance_runtime = _uses_performance_runtime(package_manifest)
+    runtime_owned_animation_defaults = _uses_runtime_owned_animation_defaults(package_manifest)
     compiled = visual.get("style_token")
     if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
         raise PipelineError("production.json style_token must match design.md.")
@@ -1672,7 +1730,11 @@ def validate_production_document(root: Path, production: dict) -> dict:
         if semantic_runtime:
             _validate_semantic_animation_scene(scene, entity_map)
         if performance_runtime:
-            _validate_performance_animation_scene(scene, entity_map)
+            _validate_performance_animation_scene(
+                scene,
+                entity_map,
+                allow_runtime_defaults=runtime_owned_animation_defaults,
+            )
 
         for event in events:
             if not isinstance(event, dict):
@@ -1698,10 +1760,13 @@ def validate_production_document(root: Path, production: dict) -> dict:
             ):
                 raise PipelineError(f"event {event_id} has an invalid trigger.")
 
-            if (
+            if motion is None and runtime_owned_animation_defaults:
+                pass
+            elif (
                 not isinstance(motion, dict)
                 or motion.get("preset") not in motion_presets
                 or not isinstance(motion.get("duration_frames"), int)
+                or isinstance(motion.get("duration_frames"), bool)
                 or motion["duration_frames"] < 1
             ):
                 raise PipelineError(

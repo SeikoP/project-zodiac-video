@@ -1,0 +1,7 @@
+{
+  "format": "zodiac-runtime@1",
+  "id": "zodiac-remotion",
+  "version": "1.19.1",
+  "sha256": "7354c6813c6e93144c60f7ca0048633d4ba167318e9703b96c0e44a4859e8dc0",
+  "renderer_contract": "shared-job-props-v2-runtime-owned-pose-transition-choreography-active-caption-state"
+}
