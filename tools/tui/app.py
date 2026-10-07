@@ -577,6 +577,7 @@ class ZodiacTui(App):
         self.log_visible = False
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
+        self._pipeline_table_key: tuple | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -721,7 +722,8 @@ class ZodiacTui(App):
     def _do_refresh(self) -> None:
         job = self.controller.job
         archive = self.controller.archive
-        worker_running = any(row["status"] == RUNNING for row in self.controller.pipeline_rows())
+        pipeline_rows = self.controller.pipeline_rows()
+        worker_running = any(row["status"] == RUNNING for row in pipeline_rows)
         package_changed = self.controller.package_changed
         video = self.controller.video_path
         video_ready = self._final_complete()
@@ -755,24 +757,36 @@ class ZodiacTui(App):
         )
         self._refresh_health_from_checks()
 
-        self.pipeline_groups = compact_pipeline_rows(self.controller.pipeline_rows())
-        table = self.query_one("#pipeline-table", DataTable)
-        cursor_row = table.cursor_coordinate.row if table.row_count else 0
-        table.clear()
-        for row in self.pipeline_groups:
-            percent = int(round(row["progress"] * 100))
-            detail = ""
-            if row["scene_total"]:
-                detail = f'{row["scene_done"]}/{row["scene_total"]} scene'
-            table.add_row(
-                row["glyph"],
+        self.pipeline_groups = compact_pipeline_rows(pipeline_rows)
+        table_key = tuple(
+            (
                 row["label"],
-                status_label(row["status"]),
-                f"{percent}%",
-                detail,
+                row["status"],
+                round(float(row["progress"]), 4),
+                row["scene_done"],
+                row["scene_total"],
             )
-        if self.pipeline_groups:
-            table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
+            for row in self.pipeline_groups
+        )
+        if table_key != self._pipeline_table_key:
+            table = self.query_one("#pipeline-table", DataTable)
+            cursor_row = table.cursor_coordinate.row if table.row_count else 0
+            table.clear()
+            for row in self.pipeline_groups:
+                percent = int(round(row["progress"] * 100))
+                detail = ""
+                if row["scene_total"]:
+                    detail = f'{row["scene_done"]}/{row["scene_total"]} scene'
+                table.add_row(
+                    row["glyph"],
+                    row["label"],
+                    status_label(row["status"]),
+                    f"{percent}%",
+                    detail,
+                )
+            if self.pipeline_groups:
+                table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
+            self._pipeline_table_key = table_key
 
         self.query_one("#pipeline-summary", Static).update(self._workflow_summary())
         self.query_one("#command-status", Static).update(self._command_status())
