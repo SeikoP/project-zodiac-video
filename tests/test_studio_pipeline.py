@@ -434,11 +434,11 @@ class RenderResumeTests(WorkerHarness):
         worker.run_from(worker.plan.continue_from())
         self.assertEqual(self.tts_calls, [])
 
-    def test_worker_defaults_to_breathing_gap_and_095_playback(self):
+    def test_worker_defaults_to_breathing_gap_and_100_playback(self):
         worker = self.make_worker()
         self.assertEqual(worker.scene_gap_ms, 350.0)
         self.assertEqual(worker.sentence_pause_ms, 320.0)
-        self.assertEqual(worker.playback_rate, 0.95)
+        self.assertEqual(worker.playback_rate, 1.0)
 
     def test_finalization_runs_after_render_even_without_music(self):
         self.make_worker().run_to_completion()
