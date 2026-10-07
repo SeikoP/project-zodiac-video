@@ -1,0 +1,35 @@
+{
+  "format": "meme-v31-compile-contract@1",
+  "runtime": {"id": "zodiac-remotion", "version": "1.16.0"},
+  "compile_target": "production-v2-entity-state-event-contract",
+  "runtime_recipe_ids": false,
+  "recipes_are": "accelerators_not_whitelist",
+  "approved_recipes": [
+    "fake_flex",
+    "awkward",
+    "emotional_damage",
+    "heart_offer",
+    "damage_run",
+    "banner_bonk",
+    "rose_peek",
+    "receipt_shame"
+  ],
+  "rejected_recipes": ["hush_blob", "side_eye_peek", "floor_melt", "pls_pls"],
+  "hard_attachments": {
+    "banner_bonk": {
+      "prop_attachment": "top_banner",
+      "required_anchors": ["left_hand", "right_hand", "top_banner"],
+      "must_visually_contact_hands": true,
+      "floating_prop_forbidden": true
+    },
+    "rose_peek": {
+      "prop_attachment": "mouth",
+      "required_anchors": ["mouth", "left_edge_anchor"],
+      "must_touch_anchor": true,
+      "floating_near_face_fallback": false
+    },
+    "receipt_shame": {
+      "reuse_master": "props/master/receipt.svg"
+    }
+  }
+}
