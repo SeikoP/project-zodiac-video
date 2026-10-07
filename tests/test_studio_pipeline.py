@@ -711,6 +711,21 @@ class ControllerTests(WorkerHarness):
             "zodiac-bocap-hai-phien-ban",
         )
 
+    def test_patch_archive_reuses_existing_legacy_versioned_workspace(self):
+        controller = StudioController(workspace=self.root / "ws")
+        legacy = controller.jobs_dir / "zodiac-bocap-hai-phien-ban-v1.1"
+        legacy.mkdir(parents=True, exist_ok=True)
+        (legacy / "production.json").write_text(
+            '{"version":"2.0","scenes":[]}',
+            encoding="utf-8",
+        )
+        controller.use_job(legacy)
+        patch = self.root / "zodiac-bocap-hai-phien-ban-v1.2.zip"
+        self.assertEqual(
+            controller._destination_for_archive(patch),
+            legacy,
+        )
+
     def test_selecting_a_new_archive_is_not_silently_reused(self):
         controller = self._controller()
         first = self._archive("a")
