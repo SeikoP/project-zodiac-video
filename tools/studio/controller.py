@@ -346,17 +346,23 @@ class StudioController:
     # ---- pipeline -----------------------------------------------------
     def pipeline_rows(self) -> list[dict]:
         rows = []
+        package_changed = self.package_changed
         for step in STEP_ORDER:
             state = self.plan.steps[step]
+            stale_downstream = package_changed and step != IMPORT_PACKAGE
             rows.append(
                 {
                     "step": step,
                     "name": STEP_NAMES_VI[step],
-                    "status": state.status,
-                    "error_code": state.error_code,
-                    "message": state.message,
-                    "progress": state.progress,
-                    "scenes": dict(state.scenes),
+                    "status": PENDING if stale_downstream else state.status,
+                    "error_code": "" if stale_downstream else state.error_code,
+                    "message": (
+                        "Chờ nhập ZIP mới; kết quả job trước chỉ được giữ làm cache."
+                        if stale_downstream
+                        else state.message
+                    ),
+                    "progress": 0.0 if stale_downstream else state.progress,
+                    "scenes": {} if stale_downstream else dict(state.scenes),
                 }
             )
         return rows
