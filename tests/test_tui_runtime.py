@@ -38,8 +38,12 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)):
             table = app.query_one("#pipeline-table")
-            self.assertEqual(table.row_count, 6)
+            self.assertEqual(table.row_count, 5)
             self.assertEqual(app.query_one("#voice-select").value, preferred_voice(app.voice_choices))
+            self.assertEqual(app.query_one("#run-full").label, "Chạy toàn bộ")
+            self.assertFalse(app.query("#studio"))
+            self.assertFalse(app.query("#prepare-studio"))
+            self.assertFalse(app.query("#final-render"))
 
     async def test_tui_switches_to_narrow_layout_class(self):
         app = ZodiacTui()
