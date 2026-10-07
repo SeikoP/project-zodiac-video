@@ -68,14 +68,14 @@ class ZodiacTui(App):
     }
 
     Header {
-        height: 3;
+        height: 1;
         background: #101620;
         color: #f4f7fb;
     }
 
     #status-strip {
         layout: horizontal;
-        height: 3;
+        height: 1;
         padding: 0 1;
         background: #111722;
         border-bottom: solid #273245;
@@ -83,9 +83,7 @@ class ZodiacTui(App):
 
     .health-item {
         width: 1fr;
-        height: 3;
         padding: 0 1;
-        border-left: solid #273245;
         content-align: left middle;
         color: #b8c3d2;
     }
@@ -98,9 +96,9 @@ class ZodiacTui(App):
     }
 
     #sidebar {
-        width: 34%;
-        min-width: 34;
-        max-width: 54;
+        width: 39%;
+        min-width: 40;
+        max-width: 58;
         height: 1fr;
         padding-right: 1;
     }
@@ -111,30 +109,24 @@ class ZodiacTui(App):
     }
 
     .section {
-        padding: 1 1 1 1;
+        padding: 0 1;
         background: #111722;
         border-bottom: solid #273245;
     }
 
-    #project-section {
+    #pipeline-section {
+        height: 1fr;
         min-height: 12;
     }
 
-    #settings-section {
-        min-height: 20;
-    }
-
-    #pipeline-section {
-        height: 1fr;
-        min-height: 21;
-    }
-
     #output-section {
-        min-height: 7;
+        height: auto;
     }
 
     #log-section {
-        height: 12;
+        height: 1fr;
+        min-height: 8;
+        max-height: 20;
     }
 
     #log-section.hidden {
@@ -144,7 +136,6 @@ class ZodiacTui(App):
     .section-title {
         color: #9fb8ff;
         text-style: bold;
-        margin-bottom: 1;
     }
 
     .field-label {
@@ -162,9 +153,16 @@ class ZodiacTui(App):
         height: auto;
     }
 
-    Input, Select {
+    Button {
+        min-height: 1;
+        padding: 0 1;
+    }
+
+    Select, Input {
         background: #0c1119;
-        border: tall #354158;
+        border: solid #354158;
+        height: 3;
+        min-height: 3;
     }
 
     .button-row {
@@ -181,8 +179,7 @@ class ZodiacTui(App):
 
     #pipeline-head {
         layout: horizontal;
-        height: 4;
-        margin-bottom: 1;
+        height: 3;
     }
 
     #pipeline-heading {
@@ -199,17 +196,16 @@ class ZodiacTui(App):
     #pipeline-tools {
         layout: horizontal;
         width: auto;
-        height: 3;
     }
 
     #pipeline-tools Button {
-        min-width: 11;
+        min-width: 9;
         margin-left: 1;
     }
 
     #pipeline-table {
         height: 1fr;
-        min-height: 11;
+        min-height: 9;
         background: #0c1119;
         border: none;
     }
@@ -227,26 +223,26 @@ class ZodiacTui(App):
 
     #command-bar {
         layout: horizontal;
-        height: 5;
-        padding: 1;
+        height: 3;
+        padding: 0 1;
         background: #101620;
         border-top: solid #273245;
     }
 
     #command-status {
         width: 1fr;
-        padding: 1 1 0 1;
+        padding: 0 1;
         color: #aab6c7;
+        content-align: left middle;
     }
 
     #primary-actions {
         layout: horizontal;
         width: auto;
-        height: 3;
     }
 
     #primary-actions Button {
-        min-width: 12;
+        min-width: 9;
         margin-left: 1;
     }
 
@@ -256,7 +252,7 @@ class ZodiacTui(App):
 
     Screen.narrow #status-strip {
         layout: vertical;
-        height: 7;
+        height: 5;
         padding: 0 1;
     }
 
@@ -287,12 +283,12 @@ class ZodiacTui(App):
     }
 
     Screen.narrow #pipeline-section {
-        height: 25;
+        height: 20;
     }
 
     Screen.narrow #command-bar {
         layout: vertical;
-        height: 9;
+        height: 6;
     }
 
     Screen.narrow #command-status {
@@ -312,7 +308,7 @@ class ZodiacTui(App):
 
     Screen.tiny #pipeline-head {
         layout: vertical;
-        height: 9;
+        height: auto;
     }
 
     Screen.tiny #pipeline-summary {
@@ -342,7 +338,8 @@ class ZodiacTui(App):
     }
 
     Screen.tiny #command-bar {
-        height: 17;
+        height: 11;
+        padding: 1;
     }
 
     Screen.tiny #primary-actions {
@@ -353,7 +350,7 @@ class ZodiacTui(App):
     Screen.tiny #primary-actions Button {
         width: 1fr;
         margin-left: 0;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
     """
 
@@ -377,7 +374,7 @@ class ZodiacTui(App):
         )
         self.studio_process: subprocess.Popen | None = None
         self.music_path: Path | None = None
-        self.log_visible = False
+        self.log_visible = True
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
 
@@ -451,7 +448,7 @@ class ZodiacTui(App):
                         yield Button("Mở video", id="open-video")
                         yield Button("Mở thư mục", id="open-folder")
 
-                with Vertical(classes="section hidden", id="log-section"):
+                with Vertical(classes="section", id="log-section"):
                     yield Label("NHẬT KÝ", classes="section-title")
                     yield RichLog(id="log", wrap=True, highlight=True, markup=True)
 
