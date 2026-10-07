@@ -4,3 +4,5 @@ export function validatePerformanceTiming(scene: ProductionScene, resolvedEvents
 export function performanceMotionValues(frame: number, motionDuration: number, performance: Performance, focusDirection?: number): {x:number;y:number;rotate_deg:number;scale:number;opacity:number};
 
 export function materializeProductionDefaults(production: Production): Production;
+
+export function poseTransitionChoreographyValues(frame: number, motionDuration: number, performance: Performance, focusDirection?: number): {pose:"before"|"after";swap_progress:number;x:number;y:number;rotate_deg:number;scale:number;opacity:number};
