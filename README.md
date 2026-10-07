@@ -394,4 +394,9 @@ Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the 
 
 ## Runtime 1.18
 
-New jobs use `zodiac-remotion@1.18.0`: deterministic motion/performance defaults are materialized locally, and visible pose-to-pose changes use a single-pose bridge instead of full-SVG crossfades.
+New jobs use `zodiac-remotion@1.18.1`: deterministic motion/performance defaults are materialized locally, and visible pose-to-pose changes use a single-pose bridge instead of full-SVG crossfades.
+
+
+### Runtime 1.18.1 correction
+
+Runtime 1.18.1 keeps the deterministic animation defaults introduced in 1.18.0, but removes the midpoint single-pose swap. The earlier visual symptom was incorrectly treated as proof of full-body overlap. State changes use the prior neutral blend again; pose continuity itself remains a separate authoring/runtime design problem and is not claimed as solved by this patch.
