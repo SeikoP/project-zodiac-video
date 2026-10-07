@@ -248,6 +248,7 @@ class PerformanceStore:
         input_fingerprint: str,
         output_fingerprint: str,
         cache_hit: bool | None,
+        cache_reason: str | None = None,
     ) -> None:
         payload = self._load()
         payload["records"].append(
@@ -258,6 +259,7 @@ class PerformanceStore:
                 "input_fingerprint": input_fingerprint,
                 "output_fingerprint": output_fingerprint,
                 "cache_hit": cache_hit,
+                "cache_reason": cache_reason,
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
             }
         )
