@@ -68,8 +68,7 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(log_section.has_class("hidden"))
             self.assertFalse(app.log_visible)
 
-            status = app.query_one("#command-status")
-            self.assertIn("Nạp ZIP", str(status.renderable))
+            self.assertEqual(app._command_status(), "Nạp ZIP hoặc chọn job để bắt đầu.")
 
     async def test_tui_switches_to_narrow_layout_class(self):
         app = ZodiacTui()
@@ -107,6 +106,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_drag_select_copies_on_release(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")
@@ -122,6 +123,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_click_without_drag_clears_and_does_not_copy(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")
@@ -141,6 +144,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_selection_highlight_renders_without_error(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")
