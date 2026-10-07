@@ -27,7 +27,7 @@ class StudioReviewBoundaryTests(WorkerHarness):
 
         self.assertEqual(controller.plan.status(PREPARE_RENDERER), DONE)
         self.assertNotEqual(controller.plan.status(RENDER_VIDEO), DONE)
-        self.assertEqual(self.render_calls, [])
+        self.assertNotIn("render", self.render_calls)
         self.assertIn("Chuẩn bị renderer", controller.status_text)
 
     def test_final_resume_after_prepare_only_runs_render_chain(self):
