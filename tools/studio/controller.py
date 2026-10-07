@@ -271,8 +271,13 @@ class StudioController:
             # timing remain valid, but runtime validation/render no longer are.
             self.plan.invalidate_from(VALIDATE_RUNTIME)
         elif before.get("publish") != after.get("publish"):
-            # Publishing/cover metadata starts at renderer preparation.
-            self.plan.invalidate_from(PREPARE_RENDERER)
+            if before.get("cover_spec") != after.get("cover_spec"):
+                # Cover composition is renderer input.
+                self.plan.invalidate_from(PREPARE_RENDERER)
+            else:
+                # Caption/hashtags/copy do not justify a video re-render. The
+                # final mix step also refreshes publish outputs.
+                self.plan.invalidate_from(MIX_MUSIC)
 
         self.plan.mark(IMPORT_PACKAGE, DONE)
         self.store.save(self.plan)
