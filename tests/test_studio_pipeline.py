@@ -3,6 +3,7 @@
 import contextlib
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -1100,13 +1101,20 @@ class ControllerTests(WorkerHarness):
 
     def _archive(self, marker: str) -> Path:
         # same file name in different folders -> same job slug, different package
+        # Package identity only tracks package-owned files, so vary README.md
+        # instead of an ignored ad-hoc marker.
         archive = self.root / marker / "zodiac-multi.zip"
         archive.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(archive, "w") as handle:
             for path in sorted(Path(self.job).rglob("*")):
-                if path.is_file() and ".runtime" not in path.parts and "out" not in path.parts:
-                    handle.write(path, f"zodiac-multi/{path.relative_to(self.job).as_posix()}")
-            handle.writestr(f"zodiac-multi/.marker-{marker}", marker)
+                if not path.is_file() or ".runtime" in path.parts or "out" in path.parts:
+                    continue
+                relative = path.relative_to(self.job).as_posix()
+                if relative == "README.md":
+                    text_value = path.read_text(encoding="utf-8") + f"\nmarker:{marker}\n"
+                    handle.writestr(f"zodiac-multi/{relative}", text_value)
+                else:
+                    handle.write(path, f"zodiac-multi/{relative}")
         return archive
 
 
