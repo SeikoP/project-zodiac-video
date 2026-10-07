@@ -53,6 +53,18 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(app.screen.has_class("tiny"))
 
 
+class FullRunWorkflowTests(unittest.TestCase):
+    def test_run_full_uses_unbounded_pipeline_target(self):
+        app = ZodiacTui()
+        app.controller.job = Path("job")
+        calls = []
+        app._start_pipeline = lambda **kwargs: calls.append(kwargs)  # type: ignore[method-assign]
+
+        app.action_run_full()
+
+        self.assertEqual(calls, [{"rerun": None}])
+
+
 class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     def _drag(self, app, sx, sy, ex, ey):
         screen = app.screen
