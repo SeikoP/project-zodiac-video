@@ -239,3 +239,32 @@ jobs:
         env:
           ZODIAC_E2E_RUNTIME: "1"
         run: python -m unittest tests.test_zodiac_local.RuntimeOwnedAnimationV3191Tests.test_v3191_runtime_prepare_materializes_animation_defaults -v
+
+
+  shared-runtime-1-20-0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.20.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install runtime 1.20.0 dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test runtime 1.20.0
+        run: npm test
+      - name: Typecheck runtime 1.20.0
+        run: npm run typecheck
+      - name: Verify canonical runtime 1.20.0 hash
+        working-directory: .
+        run: |
+          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.20.0/renderer | tail -n 1)
+          grep -q "$HASH" runtime/zodiac-remotion/1.20.0/runtime-manifest.json
+      - name: Golden runtime 1.20 Studio prepare
+        working-directory: .
+        env:
+          ZODIAC_E2E_RUNTIME: "1"
+        run: python -m unittest tests.test_zodiac_local.RuntimeLayerSafetyV3200Tests.test_v3200_runtime_prepare_with_layer_safety -v
