@@ -15,8 +15,10 @@ import threading
 import time
 from pathlib import Path
 
+from tools.studio.artifacts import CacheReason, VoiceArtifactStore, VoiceIdentity, canonical_hash
 from tools.studio.preflight import PreflightChecker
 from tools.studio.job_state import JobStateStore
+from tools.studio.voice_catalog import voice_profile_hash
 from tools.studio.observability import (
     PerformanceStore,
     artifact_fingerprints,
@@ -202,11 +204,16 @@ class PipelineWorker:
         self._thread: threading.Thread | None = None
         self._scenes_lock = threading.Lock()
         self.performance = PerformanceStore(self.root)
+        self.voice_artifacts = VoiceArtifactStore(self.root)
+        self.voice_profile_hash = voice_profile_hash(self.voice)
+        self._step_cache_hit: dict[str, bool | None] = {}
+        self._step_cache_reason: dict[str, str | None] = {}
 
+        self._migrate_voice_artifacts()
         self._invalidate_incompatible_voice_cache()
         self._sync_pacing_profile()
 
-    def _voice_cache_fields(self) -> dict:
+    def _generation_profile_payload(self) -> dict:
         config = effective_tts_generation_config(
             mode=self.tts_mode,
             vieneu_url=self.vieneu_url,
@@ -216,6 +223,7 @@ class PipelineWorker:
             max_chars=self.tts_max_chars,
         )
         return {
+            "tts_mode": self.tts_mode,
             "tts_transport": config["transport"],
             "tts_backend": config["backend"],
             "tts_precision": config["precision"],
@@ -224,6 +232,80 @@ class PipelineWorker:
             "tts_fp32_fallback": self.tts_fp32_fallback,
             "speech_rate_warning_wps": self.speech_rate_warning_wps,
         }
+
+    def _voice_cache_fields(self) -> dict:
+        profile = self._generation_profile_payload()
+        return {
+            **{key: value for key, value in profile.items() if key != "tts_mode"},
+            "voice_profile_hash": self.voice_profile_hash,
+            "generation_profile_hash": canonical_hash(profile),
+        }
+
+    def _legacy_generation_profile_hash(self, entry: dict) -> str:
+        return canonical_hash(
+            {
+                "tts_mode": entry.get("tts_mode") or self.tts_mode,
+                "tts_transport": entry.get("tts_transport"),
+                "tts_backend": entry.get("tts_backend"),
+                "tts_precision": entry.get("tts_precision"),
+                "tts_frame_cap": entry.get("tts_frame_cap"),
+                "tts_max_chars": entry.get("tts_max_chars"),
+                "tts_fp32_fallback": entry.get("tts_fp32_fallback"),
+                "speech_rate_warning_wps": entry.get("speech_rate_warning_wps"),
+            }
+        )
+
+    def _migrate_voice_artifacts(self) -> None:
+        """Mirror existing valid checkpoints into immutable job-local take storage."""
+        changed = False
+        for scene_id, entry in list(self.plan.steps[VOICE_SCENES].scenes.items()):
+            if entry.get("status") != DONE:
+                continue
+            if entry.get("voice_id") != self.voice or entry.get("tts_mode") != self.tts_mode:
+                continue
+            path = scene_wav_path(self.root, scene_id)
+            if not path.is_file():
+                continue
+            try:
+                validate_voice(path)
+            except Exception:
+                continue
+            file_hash = file_sha256(path)
+            if entry.get("file_hash") and entry.get("file_hash") != file_hash:
+                continue
+
+            text_hash = entry.get("text_hash")
+            if not text_hash:
+                continue
+            profile_hash = entry.get("voice_profile_hash") or self.voice_profile_hash
+            generation_hash = (
+                entry.get("generation_profile_hash")
+                or self._legacy_generation_profile_hash(entry)
+            )
+            take = self.voice_artifacts.register_approved(
+                scene_id,
+                path,
+                identity=VoiceIdentity(
+                    text_hash=text_hash,
+                    voice_profile_hash=profile_hash,
+                    generation_profile_hash=generation_hash,
+                    performance_context_hash=None,
+                ),
+                approval_source="legacy-checkpoint",
+                migrated_from_checkpoint=True,
+            )
+            fields = {}
+            if not entry.get("voice_profile_hash"):
+                fields["voice_profile_hash"] = profile_hash
+            if not entry.get("generation_profile_hash"):
+                fields["generation_profile_hash"] = generation_hash
+            if entry.get("artifact_take_id") != take["take_id"]:
+                fields["artifact_take_id"] = take["take_id"]
+            if fields:
+                self.plan.set_scene_state(VOICE_SCENES, scene_id, DONE, **fields)
+                changed = True
+        if changed:
+            self._checkpoint()
 
     def _invalidate_incompatible_voice_cache(self) -> None:
         expected = self._voice_cache_fields()
@@ -518,7 +600,8 @@ class PipelineWorker:
                 result=result,
                 input_fingerprint=step_input_fingerprint(step, before),
                 output_fingerprint=snapshot_fingerprint(after),
-                cache_hit=None,
+                cache_hit=self._step_cache_hit.get(step),
+                cache_reason=self._step_cache_reason.get(step),
             )
         except Exception as exc:
             self.log(f"PERFORMANCE_TELEMETRY_WARNING: record failed: {exc}")
@@ -529,6 +612,8 @@ class PipelineWorker:
         started_at = time.perf_counter()
         result = "failed"
 
+        self._step_cache_hit[step] = None
+        self._step_cache_reason[step] = None
         self.plan.mark(step, RUNNING)
         self._checkpoint()
         self.emit(STEP_STARTED, step=step, name=self.plan.steps[step].name)
