@@ -93,6 +93,7 @@ class WorkerHarness(unittest.TestCase):
 
     fail_scene: str | None = None
     fail_align = False
+    fail_runtime_visual = False
     fail_render = False
     emit_tts_warning = False
 
@@ -105,6 +106,7 @@ class WorkerHarness(unittest.TestCase):
         self.align_calls: list[dict] = []
         self.render_calls: list[str] = []
         self.emit_tts_warning = False
+        self.fail_runtime_visual = False
         self._patches: list = []
         self.addCleanup(self._stop_patches)
 
@@ -162,6 +164,10 @@ class WorkerHarness(unittest.TestCase):
     def fake_validate_runtime(self, package_root):
         if not (Path(package_root) / ".runtime" / "timing.json").is_file():
             raise RuntimeError("timing.json is missing")
+        if self.fail_runtime_visual:
+            raise PipelineError(
+                "VISUAL_PROGRESSION_TIMING: scene S02 has a 5.79s gap without a meaningful visual change; max 5.0s."
+            )
 
     def fake_prepare(self, package_root, **kwargs):
         self.render_calls.append("prepare")
@@ -391,6 +397,14 @@ class AlignmentResumeTests(WorkerHarness):
         worker.run_from(worker.plan.continue_from())
         self.assertEqual(self.tts_calls, [])
         self.assertTrue(self.align_calls)
+
+    def test_visual_progression_failure_happens_after_alignment_cache_is_saved(self):
+        self.fail_runtime_visual = True
+        plan = self.make_worker().run_to_completion()
+        self.assertEqual(plan.status(ALIGN_TIMING), DONE)
+        self.assertEqual(plan.status(VALIDATE_RUNTIME), FAILED)
+        self.assertTrue((self.job / ".runtime" / "timing.json").is_file())
+        self.assertEqual(plan.steps[VALIDATE_RUNTIME].error_code, "VISUAL_PROGRESSION_TIMING")
 
     def test_alignment_mismatch_uses_an_actionable_error_code(self):
         self.fail_align = True
