@@ -805,6 +805,32 @@ class ControllerTests(WorkerHarness):
         self.assertEqual(controller.plan.status(VALIDATE_RUNTIME), PENDING)
         self.assertEqual(controller.plan.status(RENDER_VIDEO), PENDING)
 
+    def test_publish_copy_only_refresh_does_not_rerender_video(self):
+        controller = self._controller()
+        first = self._archive("publish-a")
+        controller.select_archive(first)
+        controller.sync_package()
+        for step in STEP_ORDER:
+            controller.plan.mark(step, DONE)
+        controller.store.save(controller.plan)
+
+        publish_copy = self.job / "publish" / "publish-copy.txt"
+        original = publish_copy.read_text(encoding="utf-8")
+        try:
+            publish_copy.write_text(
+                original + "\n# copy-only refresh\n",
+                encoding="utf-8",
+            )
+            second = self._archive("publish-b")
+        finally:
+            publish_copy.write_text(original, encoding="utf-8")
+
+        controller.select_archive(second)
+        self.assertTrue(controller.accept_package_conflict("import"))
+
+        self.assertEqual(controller.plan.status(RENDER_VIDEO), DONE)
+        self.assertEqual(controller.plan.status(MIX_MUSIC), PENDING)
+
     def test_controller_preserves_approved_voice_when_legacy_generation_fields_are_missing(self):
         self.make_worker(
             tts_mode="v3turbo",
