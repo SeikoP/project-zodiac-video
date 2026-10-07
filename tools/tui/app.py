@@ -722,8 +722,9 @@ class ZodiacTui(App):
         job = self.controller.job
         archive = self.controller.archive
         worker_running = any(row["status"] == RUNNING for row in self.controller.pipeline_rows())
+        package_changed = self.controller.package_changed
         video = self.controller.video_path
-        video_ready = bool(video and video.is_file())
+        video_ready = self._final_complete()
 
         package_name = archive.name if archive else (job.name if job else "Chưa chọn package")
         package_path = str(archive.parent) if archive else (
@@ -733,8 +734,17 @@ class ZodiacTui(App):
         self.query_one("#package-path", Static).update(package_path)
         self.query_one("#active-job", Static).update(job.name if job else "—")
 
+        job_health_text = (
+            "ZIP thay đổi"
+            if package_changed
+            else (job.name if job else "Chưa chọn")
+        )
         self.query_one("#health-job", Static).update(
-            self._status_light("JOB", job.name if job else "Chưa chọn", ok=job is not None)
+            self._status_light(
+                "JOB",
+                job_health_text,
+                ok=(job is not None and not package_changed) if job is not None else None,
+            )
         )
         self.query_one("#health-output", Static).update(
             self._status_light(
@@ -768,15 +778,19 @@ class ZodiacTui(App):
         self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
 
-        self.query_one("#run-full", Button).disabled = job is None or worker_running
+        blocked = job is None or worker_running or package_changed
+        self.query_one("#run-full", Button).disabled = blocked
         self.query_one("#run-full", Button).label = (
             "Render lại" if self._final_complete() else "Chạy toàn bộ"
         )
-        self.query_one("#rerun-stage", Button).disabled = job is None or worker_running
+        self.query_one("#rerun-stage", Button).disabled = blocked
         self.query_one("#stop", Button).disabled = not worker_running
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
-        self.query_one("#listen", Button).disabled = job is None or self.music_path is None
+        voice_ready = bool(job and (job / "voice.wav").is_file())
+        self.query_one("#listen", Button).disabled = (
+            job is None or self.music_path is None or not voice_ready
+        )
 
     def _command_status(self) -> str:
         if self.controller.job is None:
@@ -794,8 +808,12 @@ class ZodiacTui(App):
         return "Chạy toàn bộ để tạo video cuối."
 
     def _final_complete(self) -> bool:
+        video = self.controller.video_path
         return bool(
             self.controller.job
+            and not self.controller.package_changed
+            and video
+            and video.is_file()
             and self.controller.plan.status(RENDER_VIDEO) in COMPLETE
             and self.controller.plan.status(MIX_MUSIC) in COMPLETE
         )
@@ -843,9 +861,11 @@ class ZodiacTui(App):
             f"Voice {'✓' if voice.is_file() else '○'}",
             f"Timing {'✓' if timing.is_file() else '○'}",
         ]
-        if video and video.is_file():
+        if video and video.is_file() and self._final_complete():
             size_mb = video.stat().st_size / (1024 * 1024)
             parts.append(f"Video ✓ {size_mb:.1f} MB")
+        elif video and video.is_file():
+            parts.append("Video cũ · cần render lại")
         else:
             parts.append("Video ○")
         self.query_one("#output-summary", Static).update("   ".join(parts))
@@ -859,7 +879,7 @@ class ZodiacTui(App):
             self.query_one("#music-select", Select).value = Select.NULL
             self._save_music_path()
             if self.controller.job:
-                self.controller.plan.apply_change("music")
+                self.controller.apply_change("music")
             self._refresh_view()
         elif button_id == "listen":
             self._start_audio_preview()
@@ -894,7 +914,7 @@ class ZodiacTui(App):
             self.music_path = path if path not in (None, Select.NULL) else None
             self._save_music_path()
             if self.controller.job:
-                self.controller.plan.apply_change("music")
+                self.controller.apply_change("music")
             self._refresh_view()
 
     def action_pick_zip(self) -> None:
@@ -936,7 +956,8 @@ class ZodiacTui(App):
                 title="Package đã thay đổi",
                 message=(
                     "ZIP đang chọn khác với package đã nhập cho job này. "
-                    "Nhập lại sẽ validate ở thư mục tạm trước khi thay job cũ."
+                    "Nhập lại sẽ validate trước, cập nhật creative payload và giữ "
+                    "voice/timing cache còn hợp lệ."
                 ),
             ),
             self._package_conflict_choice,
