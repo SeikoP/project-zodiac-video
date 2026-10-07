@@ -81,6 +81,17 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertFalse(app.query("#primary-actions"))
 
+            # All right-side actions must fit inside the pipeline console.
+            actions_panel = app.query_one("#pipeline-actions")
+            for selector in ("#rerun-stage", "#toggle-log", "#run-full", "#stop"):
+                button = app.query_one(selector)
+                self.assertGreaterEqual(button.region.height, 3, selector)
+                self.assertLessEqual(
+                    button.region.bottom,
+                    actions_panel.region.bottom,
+                    f"{selector} is clipped below the action panel",
+                )
+
             # Health lights live at the top of the pipeline console.
             self.assertTrue(app.query("#pipeline-status"))
             self.assertIn("[bold red]●[/]", app._status_light("JOB", "Chưa chọn", ok=False))
