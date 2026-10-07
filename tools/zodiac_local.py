@@ -1140,7 +1140,12 @@ _STRONG_ARTICULATION_ACTION = re.compile(
 )
 
 
-def _validate_asset_lineage(asset_id: str, entry: dict) -> None:
+def _validate_asset_lineage(
+    asset_id: str,
+    entry: dict,
+    *,
+    allow_visual_grammar_v4: bool = False,
+) -> None:
     lineage = entry.get("lineage")
     if not isinstance(lineage, dict):
         raise PipelineError(
@@ -1167,9 +1172,14 @@ def _validate_asset_lineage(asset_id: str, entry: dict) -> None:
         raise PipelineError(
             f"ASSET_LINEAGE_INVALID: asset {asset_id!r} has invalid lineage mode."
         )
-    if lineage.get("source_library") != "zodiac-paper-doodle-asset-library-v3":
+    source_library = lineage.get("source_library")
+    allowed_libraries = {"zodiac-paper-doodle-asset-library-v3"}
+    if allow_visual_grammar_v4:
+        allowed_libraries.add("zodiac-visual-grammar-v4")
+    if source_library not in allowed_libraries:
+        expected = "canonical v3 or native visual-grammar v4 library" if allow_visual_grammar_v4 else "canonical v3 library"
         raise PipelineError(
-            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} must derive from the canonical v3 library."
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} must derive from the {expected}."
         )
     source_master = lineage.get("source_master")
     valid_master = (
@@ -1640,7 +1650,14 @@ def validate_production_document(root: Path, production: dict) -> dict:
                 f"asset {asset_id!r} style_id does not match the compiled design token."
             )
         if semantic_runtime:
-            _validate_asset_lineage(asset_id, entry)
+            _validate_asset_lineage(
+                asset_id,
+                entry,
+                allow_visual_grammar_v4=(
+                    package_manifest is not None
+                    and package_manifest.get("format") == PACKAGE_FORMAT_V4
+                ),
+            )
 
     voices = []
     scene_ids: set[str] = set()
