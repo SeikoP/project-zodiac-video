@@ -1672,6 +1672,25 @@ class SharedRuntimeCacheRepairTests(unittest.TestCase):
             )
             self.assertTrue((cache_root / "runtime-manifest.json").is_file())
 
+class RuntimeManifestIntegrityTests(unittest.TestCase):
+    def test_runtime_120_manifest_hash_matches_renderer_tree(self):
+        runtime_root = (
+            Path(__file__).resolve().parents[1]
+            / "runtime"
+            / "zodiac-remotion"
+            / "1.20.0"
+        )
+        manifest = json.loads(
+            (runtime_root / "runtime-manifest.json").read_text(encoding="utf-8")
+        )
+        actual = _renderer_tree_sha256(runtime_root / "renderer")
+        self.assertEqual(
+            manifest["sha256"],
+            actual,
+            f"runtime 1.20 manifest hash must be {actual}",
+        )
+
+
 class RuntimeLayerSafetyV3200Tests(unittest.TestCase):
     def test_v3200_accepts_runtime_owned_animation_package(self):
         with tempfile.TemporaryDirectory() as temp:
