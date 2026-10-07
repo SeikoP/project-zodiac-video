@@ -53,11 +53,80 @@ export const materializeProductionDefaults = (production) => {
         };
         const motion = event.motion ?? {
           preset: chooseMotionPreset(event, production, phase),
-          duration_frames: frameCount(fps, phase === "reaction" ? 0.24 : 0.28, 5, 12),
+          duration_frames: frameCount(fps, phase === "reaction" ? 0.30 : 0.36, 8, 14),
         };
         return {...event, motion, performance};
       }),
     })),
+  };
+};
+
+
+const smoothStep = (value) => {
+  const p = Math.max(0, Math.min(1, value));
+  return p * p * (3 - 2 * p);
+};
+const lerp = (from, to, progress) => from + (to - from) * progress;
+
+export const poseTransitionChoreographyValues = (frame, motionDuration, performance, focusDirection = 0) => {
+  const duration = Math.max(6, Number(motionDuration) || 1);
+  const progress = Math.max(0, Math.min(1, frame / Math.max(1, duration - 1)));
+  const energy = clamp01(performance?.energy ?? 0.5);
+  const direction = focusDirection === 0 ? 1 : Math.sign(focusDirection);
+  const swapAt = performance?.phase === "reaction" ? 0.36 : 0.44;
+  const outgoing = {
+    x: -direction * 7 * energy,
+    y: 3.5 * energy,
+    rotate_deg: -direction * 2.6 * energy,
+    scale: 1 - 0.052 * energy,
+    opacity: 1,
+  };
+  const overshoot = {
+    x: direction * 4.5 * energy,
+    y: -3 * energy,
+    rotate_deg: direction * 1.7 * energy,
+    scale: 1 + 0.028 * energy,
+    opacity: 1,
+  };
+  const neutral = {x:0,y:0,rotate_deg:0,scale:1,opacity:1};
+
+  if (progress < swapAt) {
+    const p = smoothStep(progress / Math.max(0.001, swapAt));
+    return {
+      pose: "before",
+      swap_progress: swapAt,
+      x: lerp(neutral.x, outgoing.x, p),
+      y: lerp(neutral.y, outgoing.y, p),
+      rotate_deg: lerp(neutral.rotate_deg, outgoing.rotate_deg, p),
+      scale: lerp(neutral.scale, outgoing.scale, p),
+      opacity: 1,
+    };
+  }
+
+  const incomingProgress = (progress - swapAt) / Math.max(0.001, 1 - swapAt);
+  const overshootAt = 0.48;
+  if (incomingProgress < overshootAt) {
+    const p = smoothStep(incomingProgress / overshootAt);
+    return {
+      pose: "after",
+      swap_progress: swapAt,
+      x: lerp(outgoing.x, overshoot.x, p),
+      y: lerp(outgoing.y, overshoot.y, p),
+      rotate_deg: lerp(outgoing.rotate_deg, overshoot.rotate_deg, p),
+      scale: lerp(outgoing.scale, overshoot.scale, p),
+      opacity: 1,
+    };
+  }
+
+  const p = smoothStep((incomingProgress - overshootAt) / Math.max(0.001, 1 - overshootAt));
+  return {
+    pose: "after",
+    swap_progress: swapAt,
+    x: lerp(overshoot.x, neutral.x, p),
+    y: lerp(overshoot.y, neutral.y, p),
+    rotate_deg: lerp(overshoot.rotate_deg, neutral.rotate_deg, p),
+    scale: lerp(overshoot.scale, neutral.scale, p),
+    opacity: 1,
   };
 };
 
