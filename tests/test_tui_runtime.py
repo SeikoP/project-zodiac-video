@@ -161,10 +161,12 @@ class NativeAudioPlaybackTests(unittest.TestCase):
             PlaySound=lambda path, flags: calls.append((path, flags)),
         )
         app = ZodiacTui()
-        with patch("tools.tui.app.os.name", "nt"), patch.dict(
+        preview = Path("preview.wav")
+        fake_os = types.SimpleNamespace(name="nt")
+        with patch("tools.tui.app.os", fake_os), patch.dict(
             sys.modules, {"winsound": fake}
         ):
-            app._play_audio_file(Path("preview.wav"))
+            app._play_audio_file(preview)
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][1], 7)
 
