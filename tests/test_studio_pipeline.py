@@ -826,6 +826,31 @@ class ControllerTests(WorkerHarness):
         self.assertEqual(controller.plan.status(RENDER_VIDEO), DONE)
         self.assertIn("ZIP", controller.status_text)
 
+    def test_invalid_current_package_stops_at_package_before_worker_start(self):
+        controller = self._controller()
+        production_path = controller.job / "production.json"
+        production = json.loads(production_path.read_text(encoding="utf-8"))
+        production["scenes"][0]["voice"] = " ".join(f"tu{i}" for i in range(40))
+        production_path.write_text(
+            json.dumps(production, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        (controller.job / "narration.txt").write_text(
+            production["scenes"][0]["voice"] + "\n",
+            encoding="utf-8",
+        )
+        controller.plan.mark(IMPORT_PACKAGE, DONE)
+        controller.plan.mark(ALIGN_TIMING, PENDING)
+        controller.store.save(controller.plan)
+
+        started = controller.start_pipeline(resume=True)
+
+        self.assertFalse(started)
+        self.assertIsNone(controller.worker)
+        self.assertEqual(controller.plan.status(IMPORT_PACKAGE), FAILED)
+        self.assertEqual(controller.plan.steps[IMPORT_PACKAGE].error_code, "PACKAGE_INVALID")
+        self.assertIn("VISUAL_PROGRESSION_DENSITY", controller.plan.steps[IMPORT_PACKAGE].details)
+
     def test_running_worker_blocks_second_start(self):
         controller = self._controller()
 
