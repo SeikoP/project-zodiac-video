@@ -31,6 +31,7 @@ from tools.studio.pipeline import (
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.tui.file_picker import ChoiceDialog, FilePicker
 from tools.tui.model import compact_pipeline_rows, status_label
+from tools.zodiac_local import default_music_path
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = ROOT / ".zodiac-work"
@@ -67,6 +68,12 @@ class ZodiacTui(App):
         color: #e8edf5;
     }
 
+    Button {
+        height: 1;
+        min-height: 1;
+        padding: 0 2;
+    }
+
     Header {
         height: 1;
         background: #101620;
@@ -77,12 +84,12 @@ class ZodiacTui(App):
         layout: horizontal;
         height: 1;
         padding: 0 1;
-        background: #111722;
-        border-bottom: solid #273245;
+        background: #1b2536;
     }
 
     .health-item {
         width: 1fr;
+        height: 1;
         padding: 0 1;
         content-align: left middle;
         color: #b8c3d2;
@@ -264,7 +271,7 @@ class ZodiacTui(App):
 
     #command-bar {
         layout: horizontal;
-        height: 3;
+        height: 2;
         padding: 0 1;
         background: #101620;
         border-top: solid #273245;
@@ -329,12 +336,12 @@ class ZodiacTui(App):
 
     Screen.narrow #command-bar {
         layout: vertical;
-        height: 6;
+        height: 3;
     }
 
     Screen.narrow #command-status {
         width: 1fr;
-        height: 2;
+        height: 1;
         padding: 0 1;
     }
 
@@ -379,7 +386,7 @@ class ZodiacTui(App):
     }
 
     Screen.tiny #command-bar {
-        height: 11;
+        height: 7;
         padding: 1;
     }
 
@@ -414,7 +421,7 @@ class ZodiacTui(App):
             event_sink=self._engine_event_from_thread,
         )
         self.studio_process: subprocess.Popen | None = None
-        self.music_path: Path | None = None
+        self.music_path = default_music_path()
         self.log_visible = True
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
@@ -470,10 +477,13 @@ class ZodiacTui(App):
                         )
                     with Horizontal(classes="setting-row"):
                         yield Label("Âm lượng", classes="setting-name")
-                        yield Input(value="35", id="music-volume", type="number")
+                        yield Input(value="100", id="music-volume", type="number")
                     with Horizontal(classes="setting-row"):
                         yield Label("Nhạc", classes="setting-name")
-                        yield Static("Không dùng nhạc nền", id="music-label")
+                        yield Static(
+                            self.music_path.name if self.music_path else "Không dùng nhạc nền",
+                            id="music-label",
+                        )
                     with Container(classes="button-row"):
                         yield Button("Chọn nhạc", id="pick-music")
                         yield Button("Nghe thử", id="listen")
@@ -551,6 +561,11 @@ class ZodiacTui(App):
             select.value = self.controller.job_name
 
     def _refresh_view(self) -> None:
+        if not self.screen_stack or not self.screen.query("#package-name"):
+            return
+        self._do_refresh()
+
+    def _do_refresh(self) -> None:
         job = self.controller.job
         archive = self.controller.archive
         worker_running = any(row["status"] == RUNNING for row in self.controller.pipeline_rows())
@@ -817,7 +832,7 @@ class ZodiacTui(App):
         voice = preferred_voice(self.voice_choices) if voice_value == Select.NULL else str(voice_value)
         align_value = self.query_one("#align-select", Select).value
         align_model = ALIGN_MODEL_DEFAULT if align_value == Select.NULL else str(align_value)
-        raw_volume = self.query_one("#music-volume", Input).value.strip() or "35"
+        raw_volume = self.query_one("#music-volume", Input).value.strip() or "100"
         volume = max(0.0, min(100.0, float(raw_volume))) / 100.0
         return voice, align_model, volume
 

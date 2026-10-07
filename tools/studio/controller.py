@@ -27,6 +27,7 @@ from tools.studio.pipeline import (
     PipelinePlan,
 )
 from tools.studio.preflight import PreflightChecker, describe_missing, environment_status
+from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
 
 
 class StudioController:
@@ -300,7 +301,7 @@ class StudioController:
             tts_mode=DEFAULT_TTS_MODE,
             align_model=align_model or ALIGN_MODEL_DEFAULT,
             music=music,
-            music_volume=1.0 if volume is None else volume,
+            music_volume=DEFAULT_MUSIC_VOLUME if volume is None else volume,
             tts_root=self.tts_root,
             vieneu_url=self.vieneu_url,
             workspace=self.workspace,

@@ -17,6 +17,7 @@ from pathlib import Path
 
 from tools.studio.preflight import PreflightChecker
 from tools.studio.job_state import JobStateStore
+from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
 from tools.studio.observability import (
     PerformanceStore,
     artifact_fingerprints,
@@ -164,7 +165,7 @@ class PipelineWorker:
         speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
         tts_fp32_fallback: bool = True,
         music: Path | None = None,
-        music_volume: float = 1.0,
+        music_volume: float = DEFAULT_MUSIC_VOLUME,
         scene_gap_ms: float = DEFAULT_SCENE_GAP_MS,
         sentence_pause_ms: float = DEFAULT_SENTENCE_PAUSE_MS,
         playback_rate: float = DEFAULT_PLAYBACK_RATE,

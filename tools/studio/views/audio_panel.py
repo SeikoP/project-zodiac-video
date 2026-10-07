@@ -54,7 +54,7 @@ class AudioPanel(tk.Frame):
         volume_row = tk.Frame(card, bg=COLORS["panel"])
         volume_row.pack(fill="x", pady=(0, 12))
         label(volume_row, LABEL_VOLUME, width=10).pack(side="left")
-        self.volume_label = label(volume_row, "100%", width=5)
+        self.volume_label = label(volume_row, f"{DEFAULT_PANEL_VOLUME:.0%}", width=5)
         self.volume_label.pack(side="right")
         ttk.Scale(
             volume_row,
