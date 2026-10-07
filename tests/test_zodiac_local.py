@@ -184,6 +184,70 @@ def v3_style_token():
     }
 
 
+def v4_style_token():
+    return {
+        "id": "zodiac-paper-doodle-meme-v4",
+        "version": "4.0",
+        "style_family": "paper-doodle-chibi-meme",
+        "handmade_profile": "human-stroke-v2",
+        "hard_style_lock": True,
+        "palette_roles": {
+            "paper": "#F6F0E6",
+            "card": "#FFFDF9",
+            "ink": "#2F3C44",
+            "soft_ink": "#5C6B75",
+            "hair_ink": "#4B5B61",
+            "skin": "#F1C6A0",
+            "sticker_edge": "#FFFDF9",
+            "soft_shadow": "#D0C1B3",
+            "teal": "#8EC0B9",
+            "coral": "#E97A66",
+            "ochre": "#F2C45C",
+            "slate": "#435064",
+        },
+        "character_construction": {
+            "handmade_profile": "human-stroke-v2",
+            "identity_rule": "body_profile + hair_id + outfit_id; pose/expression are state only",
+            "body_variation": "authored_geometry_not_scale_transform",
+        },
+        "shape_language": {
+            "medium": "handmade-paper-doodle-stickers",
+            "geometry_preference": "path-first",
+            "density": "one-focal-interaction-one-supporting-prop",
+        },
+        "caption_emphasis": {
+            "font_family": "Patrick Hand",
+            "font_weight": 400,
+            "font_size_px": 84,
+            "min_font_size_px": 64,
+            "max_lines": 2,
+            "color_role": "ink",
+            "highlight_role": "coral",
+            "background_role": "sticker_edge",
+            "ghost_frame": True,
+            "segmentation": "semantic-sentence-or-natural-clause",
+        },
+        "safe_zone": {"x": 72, "y": 960, "width": 936, "height": 620},
+        "caption_overlay": {
+            "mode": "collision_aware",
+            "preferred_anchor": "lower_center",
+            "max_visual_overlap_ratio": 0.24,
+            "edge_margin_px": 72,
+            "paper_halo_px": 18,
+        },
+        "motion_grammar": {
+            "state_swap": "voice-anchored-pose-or-expression-change",
+            "camera_focus": "restrained-focus-shift",
+            "freeze_then_release": "hold-reaction-then-resume",
+        },
+        "asset_style_contract": {
+            "style_token": "zodiac-paper-doodle-meme-v4",
+            "handmade_profile": "human-stroke-v2",
+            "legacy_v3_direct_copy": False,
+        },
+    }
+
+
 def token_hash(token):
     encoded = json.dumps(
         token,
@@ -791,6 +855,58 @@ def runtime_owned_v3200_files():
 def write_runtime_owned_v3200_package(root: Path) -> Path:
     job = root / "zodiac-v3200-layer-safety"
     for name, content in runtime_owned_v3200_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
+
+
+def runtime_owned_v3210_files():
+    files = runtime_owned_v3200_files()
+    token = v4_style_token()
+    source_hash = token_hash(token)
+    production = json.loads(files["production.json"])
+    production["visual_system"]["palette"] = token["palette_roles"]
+    production["visual_system"]["style_token"] = {**token, "source_hash": source_hash}
+    production["caption_style"].update(
+        {
+            "font_family": "Patrick Hand",
+            "font_stack": ["Patrick Hand", "Segoe Print", "cursive"],
+            "css_font_family": '"Patrick Hand", "Segoe Print", cursive',
+            "font_size_px": 84,
+            "min_font_size_px": 64,
+            "font_weight": 400,
+            "color": token["palette_roles"]["ink"],
+            "highlight_color": token["palette_roles"]["coral"],
+            "background": "transparent",
+            "safe_area": token["safe_zone"],
+            "max_lines": 2,
+        }
+    )
+    for asset_id, asset in production["assets"].items():
+        asset["style_id"] = token["id"]
+        lineage = asset.get("lineage")
+        if isinstance(lineage, dict):
+            lineage["mode"] = "composite"
+            lineage["source_library"] = "zodiac-visual-grammar-v4"
+            lineage["source_master"] = str(lineage.get("source_master") or asset_id)
+    files["design.md"] = design_markdown(token)
+    files["production.json"] = json.dumps(production, ensure_ascii=False)
+    manifest = json.loads(files["package-manifest.json"])
+    manifest["runtime"] = {"id": "zodiac-remotion", "version": "1.21.0"}
+    manifest["producer"]["version"] = "1.58.0"
+    files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
+    if "publish/publish.json" in files:
+        publish = json.loads(files["publish/publish.json"])
+        publish.setdefault("source", {})["narration"] = "narration.txt"
+        publish["source"]["production"] = "production.json"
+        files["publish/publish.json"] = json.dumps(publish, ensure_ascii=False)
+    return files
+
+
+def write_runtime_owned_v3210_package(root: Path) -> Path:
+    job = root / "zodiac-v3210-v4-style"
+    for name, content in runtime_owned_v3210_files().items():
         target = job / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
@@ -1673,6 +1789,23 @@ class SharedRuntimeCacheRepairTests(unittest.TestCase):
             self.assertTrue((cache_root / "runtime-manifest.json").is_file())
 
 class RuntimeManifestIntegrityTests(unittest.TestCase):
+    def test_runtime_121_manifest_hash_matches_renderer_tree(self):
+        runtime_root = (
+            Path(__file__).resolve().parents[1]
+            / "runtime"
+            / "zodiac-remotion"
+            / "1.21.0"
+        )
+        manifest = json.loads(
+            (runtime_root / "runtime-manifest.json").read_text(encoding="utf-8")
+        )
+        actual = _renderer_tree_sha256(runtime_root / "renderer")
+        self.assertEqual(
+            manifest["sha256"],
+            actual,
+            f"runtime 1.21 manifest hash must be {actual}",
+        )
+
     def test_runtime_120_manifest_hash_matches_renderer_tree(self):
         runtime_root = (
             Path(__file__).resolve().parents[1]
@@ -1689,6 +1822,73 @@ class RuntimeManifestIntegrityTests(unittest.TestCase):
             actual,
             f"runtime 1.20 manifest hash must be {actual}",
         )
+
+
+class RuntimeV3210StyleContractTests(unittest.TestCase):
+    def test_v3210_accepts_native_v4_style_and_lineage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_runtime_owned_v3210_package(Path(temp))
+            production = validate_package(job)
+            self.assertEqual(
+                production["visual_system"]["style_token"]["id"],
+                "zodiac-paper-doodle-meme-v4",
+            )
+            self.assertTrue(
+                all(
+                    asset.get("lineage", {}).get("source_library")
+                    == "zodiac-visual-grammar-v4"
+                    for asset in production["assets"].values()
+                )
+            )
+            renderer = resolve_renderer_root(job, materialize=False)
+            self.assertIn("1.21.0", renderer.parts)
+
+    @unittest.skipUnless(
+        os.environ.get("ZODIAC_E2E_RUNTIME") == "1",
+        "golden runtime prepare runs only in the dedicated shared-runtime CI job",
+    )
+    def test_v3210_runtime_prepare_golden_v4_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_runtime_owned_v3210_package(Path(temp))
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime_state = job / ".runtime"
+            runtime_state.mkdir(parents=True, exist_ok=True)
+            (runtime_state / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            runtime_dir = (
+                Path(__file__).resolve().parents[1]
+                / "runtime"
+                / "zodiac-remotion"
+                / "1.21.0"
+                / "renderer"
+            )
+            env = dict(os.environ)
+            env["ZODIAC_PACKAGE_ROOT"] = str(job)
+            result = subprocess.run(
+                ["node", "scripts/render.mjs", "--prepare-only"],
+                cwd=runtime_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=result.stdout + "\n" + result.stderr,
+            )
+            props = json.loads(
+                (runtime_state / "render-props.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                props["production"]["visual_system"]["style_token"]["id"],
+                "zodiac-paper-doodle-meme-v4",
+            )
+            event = props["production"]["scenes"][0]["events"][0]
+            self.assertIn("motion", event)
+            self.assertIn("performance", event)
 
 
 class RuntimeLayerSafetyV3200Tests(unittest.TestCase):
