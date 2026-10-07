@@ -311,19 +311,43 @@ class PipelineWorker:
     def _invalidate_incompatible_voice_cache(self) -> None:
         expected = self._voice_cache_fields()
         incompatible = []
+        preserved_drift = []
         for scene_id, entry in self.plan.steps[VOICE_SCENES].scenes.items():
             if entry.get("status") != DONE:
                 continue
-            # Voice/mode changes have their own explicit invalidation path. This
-            # automatic migration only invalidates otherwise-compatible cached
-            # scenes whose generation settings changed across app versions.
+            # Voice/mode changes have their own explicit invalidation path.
             if (
                 entry.get("voice_id") != self.voice
                 or entry.get("tts_mode") != self.tts_mode
             ):
                 continue
+
+            text_hash = entry.get("text_hash")
+            path = scene_wav_path(self.root, scene_id)
+            if text_hash:
+                approved = self.voice_artifacts.restore_approved(
+                    scene_id,
+                    path,
+                    text_hash=text_hash,
+                    voice_profile_hash=self.voice_profile_hash,
+                    performance_context_hash=None,
+                )
+                if approved is not None:
+                    # An approved take is a production artifact. Generation
+                    # backend/precision/version drift is provenance, not a reason
+                    # to destroy a take that was already accepted.
+                    if entry.get("generation_profile_hash") != expected["generation_profile_hash"]:
+                        preserved_drift.append(scene_id)
+                    continue
+
             if any(entry.get(key) != value for key, value in expected.items()):
                 incompatible.append(scene_id)
+
+        if preserved_drift:
+            self.log(
+                "VOICE_PROFILE_DRIFT: giữ approved take dù cấu hình sinh giọng hiện tại "
+                "đã thay đổi: " + ", ".join(preserved_drift)
+            )
 
         if not incompatible:
             return
@@ -331,7 +355,7 @@ class PipelineWorker:
             self.plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
         self.plan.invalidate_from(VOICE_SCENES)
         self.log(
-            "Đã vô hiệu cache giọng cũ do cấu hình TTS thay đổi: "
+            "Đã vô hiệu cache giọng không còn tương thích: "
             + ", ".join(incompatible)
         )
 
@@ -801,39 +825,36 @@ class PipelineWorker:
             return False
         if entry.get("voice_id") != self.voice or entry.get("tts_mode") != self.tts_mode:
             return False
+        approved = self.voice_artifacts.restore_approved(
+            scene["id"],
+            path,
+            text_hash=self._text_hash(scene),
+            voice_profile_hash=self.voice_profile_hash,
+            performance_context_hash=None,
+        )
+        if approved is not None:
+            try:
+                validate_voice(path)
+            except Exception:
+                return False
+            if entry.get("file_hash") == file_sha256(path):
+                if entry.get("generation_profile_hash") != self._voice_cache_fields()["generation_profile_hash"]:
+                    self.log(
+                        f"{scene['id']}: approved take được giữ dù generation profile đã đổi."
+                    )
+                return True
+
+        # Compatibility fallback for legacy checkpoints that have not yet been
+        # mirrored into the artifact store.
         expected = self._voice_cache_fields()
         if any(entry.get(key) != value for key, value in expected.items()):
             return False
-
-        if not path.is_file():
-            restored = self.voice_artifacts.restore_approved(
-                scene["id"],
-                path,
-                text_hash=self._text_hash(scene),
-                voice_profile_hash=self.voice_profile_hash,
-                performance_context_hash=None,
-            )
-            if restored:
-                self.log(f"{scene['id']}: khôi phục WAV làm việc từ approved artifact.")
-
         if not path.is_file():
             return False
         try:
             validate_voice(path)
         except Exception:
-            restored = self.voice_artifacts.restore_approved(
-                scene["id"],
-                path,
-                text_hash=self._text_hash(scene),
-                voice_profile_hash=self.voice_profile_hash,
-                performance_context_hash=None,
-            )
-            if not restored:
-                return False
-            try:
-                validate_voice(path)
-            except Exception:
-                return False
+            return False
         return entry.get("file_hash") == file_sha256(path)
 
     @staticmethod
