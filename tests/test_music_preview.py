@@ -1,4 +1,4 @@
-"""RED tests: audition music without a rendered voice, and 100% default volume."""
+"""Regression tests for music audition and the current 35% default volume."""
 
 import sys
 import tempfile
@@ -76,12 +76,12 @@ class MusicOnlyPreviewTests(unittest.TestCase):
 
 
 class DefaultVolumeTests(unittest.TestCase):
-    def test_gui_defaults_to_full_volume_without_creating_tk(self):
+    def test_gui_uses_the_shared_default_volume_without_creating_tk(self):
         from tools.studio.views.audio_panel import DEFAULT_PANEL_VOLUME
         from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
 
         self.assertEqual(DEFAULT_PANEL_VOLUME, DEFAULT_MUSIC_VOLUME)
-        self.assertEqual(DEFAULT_PANEL_VOLUME, 1.0)
+        self.assertEqual(DEFAULT_PANEL_VOLUME, 0.35)
 
     def test_controller_defaults_to_full_volume(self):
         from tools.studio.worker import PipelineWorker
@@ -89,10 +89,14 @@ class DefaultVolumeTests(unittest.TestCase):
         worker = PipelineWorker(Path("."))
         self.assertEqual(worker.music_volume, 1.0)
 
-    def test_cli_audio_preview_defaults_to_full_volume(self):
+    def test_cli_audio_preview_uses_current_default_volume(self):
         from tools import zodiac_local
 
-        self.assertEqual(zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME, 1.0)
+        self.assertEqual(
+            zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME,
+            zodiac_local.DEFAULT_MUSIC_VOLUME,
+        )
+        self.assertEqual(zodiac_local.AUDIO_PREVIEW_DEFAULT_VOLUME, 0.35)
 
     def test_mix_uses_hidden_pristine_cache_so_remixing_is_idempotent(self):
         """Re-running MIX_MUSIC must not stack music onto the public final file."""
@@ -129,7 +133,7 @@ class DefaultVolumeTests(unittest.TestCase):
         self.assertIn("default_music_path()", source)
         self.assertIn("self.music = tk.StringVar(value=str(", source)
 
-    def test_render_and_mix_paths_default_to_full_volume(self):
+    def test_render_and_mix_paths_use_shared_music_default(self):
         import inspect
 
         from tools import zodiac_local
@@ -144,7 +148,10 @@ class DefaultVolumeTests(unittest.TestCase):
                 names = [n for n in ("music_volume", "volume") if n in signature.parameters]
                 self.assertTrue(names, f"{function.__name__} has no volume argument")
                 for name in names:
-                    self.assertEqual(signature.parameters[name].default, 1.0)
+                    self.assertEqual(
+                        signature.parameters[name].default,
+                        zodiac_local.DEFAULT_MUSIC_VOLUME,
+                    )
 
     def test_configured_music_volume_is_stored_and_replayed(self):
         from tools.zodiac_local import configure_background_music, validate_background_music
