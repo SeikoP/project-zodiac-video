@@ -114,3 +114,27 @@ jobs:
         env:
           ZODIAC_E2E_RUNTIME: "1"
         run: python -m unittest tests.test_zodiac_local.PerformanceRuntimeV316Tests.test_v316_runtime_prepare_accepts_local_first_v4_without_handoff_manifest -v
+
+
+  shared-runtime-1-17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.17.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install cover-safe runtime dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test cover-safe runtime
+        run: npm test
+      - name: Typecheck cover-safe runtime
+        run: npm run typecheck
+      - name: Verify canonical runtime 1.17 hash
+        working-directory: .
+        run: |
+          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.17.0/renderer | tail -n 1)
+          grep -q "$HASH" runtime/zodiac-remotion/1.17.0/runtime-manifest.json
