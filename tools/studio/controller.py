@@ -73,6 +73,21 @@ class StudioController:
         stem = re.sub(r"-v\d+(?:\.\d+)*$", "", stem, flags=re.IGNORECASE)
         return re.sub(r"[^a-zA-Z0-9._-]+", "-", stem).strip("-.").lower()
 
+    def is_versioned_patch_archive(self, archive: Path) -> bool:
+        import re
+
+        return bool(
+            re.search(
+                r"-v\d+(?:\.\d+)*$",
+                Path(archive).stem,
+                flags=re.IGNORECASE,
+            )
+        )
+
+    def archive_destination(self, archive: Path) -> Path:
+        """Public archive-to-workspace resolver used by every UI/import path."""
+        return self._destination_for_archive(archive)
+
     def _destination_for_archive(self, archive: Path) -> Path:
         """Resolve one stable workspace for every patch of the same sign/concept."""
         logical = self.job_name_for(archive)
