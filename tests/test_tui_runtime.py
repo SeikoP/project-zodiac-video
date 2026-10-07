@@ -8,6 +8,7 @@ from pathlib import Path
 
 from textual import events
 
+from tools.studio.pipeline import DONE, MIX_MUSIC, RENDER_VIDEO
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.tui.app import SelectableLog, ZodiacTui
 from tools.tui.file_picker import FilteredDirectoryTree
@@ -134,6 +135,21 @@ class FullRunWorkflowTests(unittest.TestCase):
         app.action_run_full()
 
         self.assertEqual(calls, [{"rerun": None}])
+
+
+    def test_run_full_recovers_when_state_is_done_but_video_is_missing(self):
+        app = ZodiacTui()
+        app.controller.job = Path("job")
+        app.controller.plan.mark(RENDER_VIDEO, DONE)
+        app.controller.plan.mark(MIX_MUSIC, DONE)
+        calls = []
+        app._start_pipeline = lambda **kwargs: calls.append(kwargs)  # type: ignore[method-assign]
+
+        self.assertFalse(app._final_complete())
+        self.assertTrue(app._final_pipeline_settled())
+        app.action_run_full()
+
+        self.assertEqual(calls, [{"rerun": RENDER_VIDEO}])
 
 
 class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
