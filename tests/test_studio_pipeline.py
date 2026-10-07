@@ -406,6 +406,17 @@ class AlignmentResumeTests(WorkerHarness):
         self.assertTrue((self.job / ".runtime" / "timing.json").is_file())
         self.assertEqual(plan.steps[VALIDATE_RUNTIME].error_code, "VISUAL_PROGRESSION_TIMING")
 
+    def test_visual_density_error_is_not_reported_as_alignment_mismatch(self):
+        worker = self.make_worker()
+        message, code = worker._classify(
+            ALIGN_TIMING,
+            RuntimeError(
+                "VISUAL_PROGRESSION_DENSITY: scene S01 has 14 words without a meaningful visual change; max 10 words before local timing."
+            ),
+        )
+        self.assertEqual(code, "PACKAGE_INVALID")
+        self.assertIn("Gói video", message)
+
     def test_alignment_mismatch_uses_an_actionable_error_code(self):
         self.fail_align = True
         self.make_worker().run_to_completion()
