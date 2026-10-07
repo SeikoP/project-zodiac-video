@@ -64,6 +64,7 @@ class StudioController:
         import re
 
         stem = Path(archive).stem.replace("-render-ready", "")
+        stem = re.sub(r"-v\\d+(?:\\.\\d+)*$", "", stem, flags=re.IGNORECASE)
         return re.sub(r"[^a-zA-Z0-9._-]+", "-", stem).strip("-.").lower()
 
     @property
