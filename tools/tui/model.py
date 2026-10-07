@@ -47,7 +47,7 @@ GROUPS = (
     ("GÓI", (IMPORT_PACKAGE, PREFLIGHT)),
     ("GIỌNG", (VOICE_SCENES, CONCAT_VOICE)),
     ("TIMING", (ALIGN_TIMING,)),
-    ("RUNTIME", (VALIDATE_RUNTIME, PREPARE_RENDERER)),
+    ("STUDIO", (VALIDATE_RUNTIME, PREPARE_RENDERER)),
     ("RENDER", (RENDER_VIDEO,)),
     ("ÂM THANH", (MIX_MUSIC,)),
 )
@@ -107,6 +107,7 @@ def compact_pipeline_rows(rows: list[dict]) -> list[dict]:
                 "scene_done": scene_done,
                 "scene_total": scene_total,
                 "steps": steps,
+                "rerun_step": steps[0],
             }
         )
     return compact

@@ -319,10 +319,19 @@ class PipelineWorker:
         self.store.save(self.plan)
 
     # ---- lifecycle ---------------------------------------------------
-    def start(self, start_step: str | None = None) -> None:
+    def start(
+        self,
+        start_step: str | None = None,
+        *,
+        stop_after: str | None = None,
+    ) -> None:
         if self._thread is not None:
             raise RuntimeError("worker already started")
-        self._thread = threading.Thread(target=self.run_to_completion, args=(start_step,), daemon=True)
+        self._thread = threading.Thread(
+            target=self.run_to_completion,
+            args=(start_step, stop_after),
+            daemon=True,
+        )
         self._thread.start()
 
     def join(self, timeout: float | None = None) -> None:
@@ -358,8 +367,12 @@ class PipelineWorker:
         self.store.save(self.plan)
 
     # ---- main loop ---------------------------------------------------
-    def run_to_completion(self, start_step: str | None = None) -> PipelinePlan:
-        steps = list(self._steps_from(start_step))
+    def run_to_completion(
+        self,
+        start_step: str | None = None,
+        stop_after: str | None = None,
+    ) -> PipelinePlan:
+        steps = list(self._steps_from(start_step, stop_after=stop_after))
         for step in steps:
             if self._cancel.is_set():
                 self.plan.mark(step, CANCELLED, error_code="CANCELLED_BY_USER", message="Đã dừng theo yêu cầu.")
@@ -400,14 +413,24 @@ class PipelineWorker:
                 )
                 return self.plan
         self._checkpoint()
-        self.emit(PIPELINE_DONE, plan=self.plan.to_dict())
+        self.emit(
+            PIPELINE_DONE,
+            plan=self.plan.to_dict(),
+            stop_after=stop_after,
+            partial=bool(stop_after and stop_after != STEP_ORDER[-1]),
+        )
         return self.plan
 
-    def run_from(self, start_step: str | None) -> PipelinePlan:
-        """Public alias used by the controller when the user presses Tiếp tục."""
-        return self.run_to_completion(start_step)
+    def run_from(
+        self,
+        start_step: str | None,
+        *,
+        stop_after: str | None = None,
+    ) -> PipelinePlan:
+        """Run from a step, optionally stopping at an explicit workflow boundary."""
+        return self.run_to_completion(start_step, stop_after=stop_after)
 
-    def _steps_from(self, start_step: str | None):
+    def _steps_from(self, start_step: str | None, *, stop_after: str | None = None):
         if start_step is None:
             start_step = self.plan.continue_from()
             if start_step is None:
@@ -415,7 +438,14 @@ class PipelineWorker:
         if start_step is None:
             return []
         index = STEP_ORDER.index(start_step)
-        return STEP_ORDER[index:]
+        if stop_after is None:
+            return STEP_ORDER[index:]
+        if stop_after not in STEP_ORDER:
+            raise ValueError(f"unknown stop_after step: {stop_after}")
+        stop_index = STEP_ORDER.index(stop_after)
+        if stop_index < index:
+            return ()
+        return STEP_ORDER[index : stop_index + 1]
 
     def _fail(self, step: str, exc: Exception) -> None:
         message, code = self._classify(step, exc)

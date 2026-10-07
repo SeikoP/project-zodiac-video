@@ -203,21 +203,23 @@ TUI hiện có:
 
 - nút **Nạp ZIP** với file browser ngay trong terminal;
 - chọn lại job đã import;
-- status strip cho Job / Environment / VieNeu / Remotion / Output;
+- status strip gọn cho Job / Environment / VieNeu / Studio / Output;
 - dashboard 6 stage trên pipeline nội bộ 9 node;
-- **Tiếp tục / Chạy toàn bộ / Chạy lại bước / Dừng**;
-- voice, align model, music, volume và **Nghe thử**;
-- **Mở/Dừng Remotion Studio**;
-- summary Voice / Timing / Video;
-- log có thể ẩn/hiện để ưu tiên không gian cho pipeline.
+- chọn trực tiếp một hàng pipeline rồi bấm **Chạy lại** — không có dropdown bước riêng;
+- voice dropdown lấy preset VieNeu đã lưu, align model, music, volume và **Nghe thử**;
+- workflow mặc định **Chuẩn bị Studio → Duyệt trong Studio → Render cuối**;
+- **Chuẩn bị Studio** dừng pipeline tại `PREPARE_RENDERER`; không render MP4 sớm;
+- **Render cuối** chỉ chạy render/mix sau khi job đã sẵn sàng cho Studio;
+- layout responsive: desktop hai cột, cửa sổ hẹp tự chuyển thành một cột;
+- log mặc định ẩn, tự mở khi pipeline lỗi.
 
 Phím tắt:
 
 ```text
 I  Nạp ZIP
-R  Chạy toàn bộ
-C  Tiếp tục
+P  Chuẩn bị Studio
 S  Mở / dừng Remotion Studio
+R  Render cuối
 L  Ẩn / hiện log
 X  Dừng
 Q  Thoát
@@ -225,6 +227,27 @@ Q  Thoát
 
 Tkinter GUI phía dưới hiện chỉ còn là fallback trong giai đoạn migration và sẽ
 được retire sau khi TUI + Remotion authoring đạt parity.
+
+
+### Workflow review trước final render
+
+Đường đi mặc định của TUI không còn là “chạy hết rồi mới mở Studio”:
+
+```text
+Import / Preflight / Voice / Timing / Validate / Prepare Renderer
+                              ↓
+                       Remotion Studio
+                   review visual + timing
+                              ↓
+                         Render cuối
+                              ↓
+                          Mix music
+```
+
+Ở runtime hiện tại, Remotion Studio chủ yếu là **preview/debug chính xác theo renderer**
+(animation, caption, timing, camera, composition). Nó chưa phải một production.json
+editor hoàn chỉnh. ActorLab / ScenePreview / PerformanceLab và các authoring controls
+sẽ là bước tiếp theo; TUI không tái tạo những editor đó.
 
 ## Zodiac Studio (legacy fallback)
 

@@ -253,6 +253,7 @@ class StudioController:
         music: Path | None = None,
         volume: float | None = None,
         align_model: str | None = None,
+        stop_after: str | None = None,
     ) -> bool:
         if self.job is None:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
@@ -270,6 +271,7 @@ class StudioController:
             music=music,
             volume=volume,
             align_model=align_model,
+            stop_after=stop_after,
         )
         return True
 
@@ -281,6 +283,7 @@ class StudioController:
         music: Path | None = None,
         volume: float | None = None,
         align_model: str | None = None,
+        stop_after: str | None = None,
     ) -> None:
         from tools.studio.worker import PipelineWorker
 
@@ -306,7 +309,10 @@ class StudioController:
         )
         effective_start = self.worker.plan.continue_from() or start_step
         self.status_text = f"Đang chạy: {STEP_NAMES_VI[effective_start]}"
-        self.worker.start(effective_start)  # background thread; Tk stays responsive
+        self.worker.start(
+            effective_start,
+            stop_after=stop_after,
+        )  # background thread; UI stays responsive
 
     def handle_event(self, kind: str, payload: dict) -> None:
         """Called by the worker thread; the app forwards these to the Tk queue."""
@@ -317,7 +323,11 @@ class StudioController:
         elif kind == "STEP_DONE":
             self.status_text = f"Xong: {STEP_NAMES_VI.get(payload.get('step'), '')}"
         elif kind == "PIPELINE_DONE":
-            self.status_text = PIPELINE_DONE_MESSAGE
+            stop_after = payload.get("stop_after")
+            if payload.get("partial") and stop_after:
+                self.status_text = f"Đã hoàn tất đến: {STEP_NAMES_VI.get(stop_after, stop_after)}"
+            else:
+                self.status_text = PIPELINE_DONE_MESSAGE
         elif kind == "PIPELINE_CANCELLED":
             self.status_text = PIPELINE_CANCELLED_MESSAGE
 

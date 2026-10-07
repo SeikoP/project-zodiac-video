@@ -14,8 +14,14 @@ from textual.widgets import Button, DirectoryTree, Label, Static
 class FilteredDirectoryTree(DirectoryTree):
     """Directory tree that keeps directories plus files matching suffixes."""
 
-    def __init__(self, path: str | Path, *, suffixes: tuple[str, ...]) -> None:
-        super().__init__(path)
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        suffixes: tuple[str, ...],
+        **kwargs,
+    ) -> None:
+        super().__init__(path, **kwargs)
         self.suffixes = tuple(item.lower() for item in suffixes)
 
     def filter_paths(self, paths: Iterable[Path]) -> Iterable[Path]:
