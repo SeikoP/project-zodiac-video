@@ -27,7 +27,7 @@ from tools.studio.pipeline import (
     PipelinePlan,
 )
 from tools.studio.preflight import PreflightChecker, describe_missing, environment_status
-from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
+from tools.zodiac_local import DEFAULT_MUSIC_VOLUME, artifact_fingerprints
 
 
 class StudioController:
@@ -147,33 +147,139 @@ class StudioController:
         self.store = JobStateStore(self.job)
         self.plan = self.store.open()
         self.plan.fingerprint = self.stored_fingerprint or self.plan.fingerprint
+        # Health checks belong to one concrete job/runtime snapshot. Reusing
+        # checks from the previously selected job makes the TUI show stale green
+        # lights while a new package is still being validated.
+        self.preflight_checks = []
 
     def accept_package_conflict(self, choice: str) -> bool:
-        """Explicit user decision for a stale package: import again or keep the old job."""
+        """Resolve a changed ZIP without throwing away expensive job artifacts.
+
+        The selected archive is validated in a scratch job first. Only creative
+        package files are then replaced in-place; .runtime/, approved voice
+        takes, timing, and prior render outputs stay available for deterministic
+        invalidation/reuse.
+        """
         if choice == "keep":
-            # Working with the already imported job: drop the stale selection and
-            # keep the import checkpoint that produced this job.
             self.select_archive(None)
             if self.job is not None and (self.job / "production.json").is_file():
                 self.plan.mark(IMPORT_PACKAGE, DONE)
+                if self.store is not None:
+                    self.store.save(self.plan)
             return False
         if choice != "import" or self.archive is None:
             return False
+
         name = self.job_name_for(self.archive)
         destination = self.jobs_dir / name
+        before = artifact_fingerprints(destination) if destination.exists() else {}
+        old_voice = self._voice_signature(destination)
 
-        # Validate the new archive in a scratch workspace first, so a broken ZIP
-        # never destroys the job the user still has.
         with tempfile.TemporaryDirectory(prefix=".zodiac-import-", dir=str(self.workspace)) as scratch:
             imported = import_package(self.archive, Path(scratch) / "jobs", name)
-            if self.job is not None and self.job.exists():
-                shutil.rmtree(self.job)
-            self.jobs_dir.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(imported), str(destination))
+            after = artifact_fingerprints(imported)
+            new_voice = self._voice_signature(imported)
+
+            if destination.exists():
+                self._replace_creative_payload(imported, destination)
+            else:
+                self.jobs_dir.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(imported), str(destination))
 
         self.use_job(destination)
+        self._reconcile_package_refresh(before, after, old_voice, new_voice)
         self._remember_fingerprint()
         return True
+
+    @staticmethod
+    def _voice_signature(root: Path) -> list[tuple[str, str]]:
+        import json
+
+        path = Path(root) / "production.json"
+        try:
+            production = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return []
+        rows: list[tuple[str, str]] = []
+        for scene in production.get("scenes") or []:
+            if isinstance(scene, dict):
+                rows.append((str(scene.get("id") or ""), str(scene.get("voice") or "")))
+        return rows
+
+    @staticmethod
+    def _replace_creative_payload(source: Path, destination: Path) -> None:
+        """Replace package-owned files while preserving local runtime artifacts."""
+        source = Path(source)
+        destination = Path(destination)
+        destination.mkdir(parents=True, exist_ok=True)
+        package_roots = (
+            "package-manifest.json",
+            "production.json",
+            "narration.txt",
+            "design.md",
+            "assets",
+            "publish",
+            "README.md",
+        )
+        for name in package_roots:
+            src = source / name
+            dst = destination / name
+            if dst.is_dir():
+                shutil.rmtree(dst)
+            elif dst.exists():
+                dst.unlink()
+            if src.is_dir():
+                shutil.copytree(src, dst)
+            elif src.is_file():
+                shutil.copy2(src, dst)
+
+    def _reconcile_package_refresh(
+        self,
+        before: dict,
+        after: dict,
+        old_voice: list[tuple[str, str]],
+        new_voice: list[tuple[str, str]],
+    ) -> None:
+        """Invalidate the cheapest safe suffix after an in-place package refresh."""
+        if self.store is None:
+            return
+
+        if old_voice != new_voice:
+            old_by_id = dict(old_voice)
+            new_ids = {scene_id for scene_id, _ in new_voice}
+            checkpoints = self.plan.steps[VOICE_SCENES].scenes
+            self.plan.steps[VOICE_SCENES].scenes = {
+                scene_id: entry
+                for scene_id, entry in checkpoints.items()
+                if scene_id in new_ids
+            }
+            for scene_id, voice in new_voice:
+                if old_by_id.get(scene_id) != voice:
+                    self.plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
+            # Reordered scenes still need concat/timing rebuilt even when every
+            # individual WAV can be reused.
+            self.plan.mark(
+                VOICE_SCENES,
+                PENDING,
+                message="Package mới thay đổi lời thoại hoặc thứ tự scene.",
+            )
+            self.plan.invalidate_from(CONCAT_VOICE)
+        elif before.get("creative") != after.get("creative"):
+            # Layout/assets/design/runtime reference changed; voice and measured
+            # timing remain valid, but runtime validation/render no longer are.
+            self.plan.invalidate_from(VALIDATE_RUNTIME)
+        elif before.get("publish") != after.get("publish"):
+            # Publishing/cover metadata starts at renderer preparation.
+            self.plan.invalidate_from(PREPARE_RENDERER)
+
+        self.plan.mark(IMPORT_PACKAGE, DONE)
+        self.store.save(self.plan)
+
+    def apply_change(self, change: str, *, changed_scenes: list[str] | None = None) -> None:
+        """Apply a UI edit and persist the invalidation immediately."""
+        self.plan.apply_change(change, changed_scenes=changed_scenes)
+        if self.store is not None:
+            self.store.save(self.plan)
 
     # ---- preflight ----------------------------------------------------
     def preflight(self, *, require_music: bool = False) -> PreflightChecker:
@@ -203,12 +309,9 @@ class StudioController:
 
     def install_dependencies(self) -> None:
         """Explicit, user-triggered install using the running interpreter."""
-        from tools.studio.worker import PipelineWorker
-
         checker = self.preflight()
         command = checker.install_command()
         self.status_text = "Đang cài dependency…"
-        process = PipelineWorker(self.job or self.workspace) if self.job else None
         try:
             result = subprocess_run(command)
         except OSError as exc:
@@ -259,14 +362,22 @@ class StudioController:
         if self.job is None:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
             return False
+        if self.package_changed:
+            self.status_text = "Gói ZIP đã thay đổi. Hãy chọn nhập lại hoặc giữ job cũ."
+            return False
+        if self.worker is not None and self.worker.is_alive():
+            self.status_text = "Pipeline đang chạy."
+            return False
         if rerun:
-            # An explicit rerun really redoes the step, scene reuse included.
+            # Guard conflict/running state before mutating the persisted plan.
             self.plan.invalidate_from(rerun, drop_scene_checkpoints=True)
+            if self.store is not None:
+                self.store.save(self.plan)
         start = self.plan.continue_from() if resume else self.plan.next_step()
         if start is None:
             self.status_text = NO_RESUME_MESSAGE
             return False
-        self._start_worker(
+        return self._start_worker(
             start,
             voice=voice,
             music=music,
@@ -274,7 +385,6 @@ class StudioController:
             align_model=align_model,
             stop_after=stop_after,
         )
-        return True
 
     def _start_worker(
         self,
@@ -285,12 +395,12 @@ class StudioController:
         volume: float | None = None,
         align_model: str | None = None,
         stop_after: str | None = None,
-    ) -> None:
+    ) -> bool:
         from tools.studio.worker import PipelineWorker
 
         if self.package_changed:
             self.status_text = "Gói ZIP đã thay đổi. Hãy chọn nhập lại hoặc giữ job cũ."
-            return
+            return False
         from tools.studio.worker import DEFAULT_TTS_MODE, DEFAULT_VOICE
 
         self.worker = PipelineWorker(
@@ -314,6 +424,7 @@ class StudioController:
             effective_start,
             stop_after=stop_after,
         )  # background thread; UI stays responsive
+        return True
 
     def handle_event(self, kind: str, payload: dict) -> None:
         """Called by the worker thread; the app forwards these to the Tk queue."""
