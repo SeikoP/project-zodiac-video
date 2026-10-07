@@ -89,16 +89,25 @@ export const poseTransitionChoreographyValues = (frame, motionDuration, performa
     opacity: 1,
   };
   const neutral = {x:0,y:0,rotate_deg:0,scale:1,opacity:1};
+  const preload = (performance?.anticipation_frames ?? 0) > 0
+    ? {
+        x:-direction*5*energy,
+        y:2.5*energy,
+        rotate_deg:-direction*1.4*energy,
+        scale:1-0.012*energy,
+        opacity:1,
+      }
+    : neutral;
 
   if (progress < swapAt) {
     const p = smoothStep(progress / Math.max(0.001, swapAt));
     return {
       pose: "before",
       swap_progress: swapAt,
-      x: lerp(neutral.x, outgoing.x, p),
-      y: lerp(neutral.y, outgoing.y, p),
-      rotate_deg: lerp(neutral.rotate_deg, outgoing.rotate_deg, p),
-      scale: lerp(neutral.scale, outgoing.scale, p),
+      x: lerp(preload.x, outgoing.x, p),
+      y: lerp(preload.y, outgoing.y, p),
+      rotate_deg: lerp(preload.rotate_deg, outgoing.rotate_deg, p),
+      scale: lerp(preload.scale, outgoing.scale, p),
       opacity: 1,
     };
   }
@@ -175,7 +184,8 @@ export const performanceMotionValues = (frame, motionDuration, performance, focu
   const direction = focusDirection === 0 ? 1 : Math.sign(focusDirection);
   if (frame < 0) {
     if (!anticipation || frame < -anticipation) return neutral;
-    const p = (frame + anticipation) / Math.max(1, anticipation);
+    const raw = anticipation <= 1 ? 1 : (frame + anticipation) / (anticipation - 1);
+    const p = Math.max(0, Math.min(1, raw));
     const eased = p * p * (3 - 2 * p);
     return {x:-direction*5*energy*eased,y:2.5*energy*eased,rotate_deg:-direction*1.4*energy*eased,scale:1-0.012*energy*eased,opacity:1};
   }
