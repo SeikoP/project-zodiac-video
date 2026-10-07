@@ -89,7 +89,8 @@ class JobStateStore:
 
 
 def verify_scene_artifacts(package_root: Path, plan: PipelinePlan) -> PipelinePlan:
-    """A checkpointed scene whose WAV vanished must be generated again."""
+    """Verify working WAVs, restoring approved artifacts before invalidating."""
+    from tools.studio.artifacts import VoiceArtifactStore
     from tools.zodiac_local import file_sha256, scene_wav_path, validate_package, validate_voice
 
     step = plan.steps[VOICE_SCENES]
@@ -100,17 +101,36 @@ def verify_scene_artifacts(package_root: Path, plan: PipelinePlan) -> PipelinePl
     except PipelineError:
         return plan
 
+    artifacts = VoiceArtifactStore(package_root)
     for scene_id, entry in list(step.scenes.items()):
         if entry.get("status") != DONE:
             continue
         path = scene_wav_path(package_root, scene_id)
         scene = production.get(scene_id)
+
+        valid = False
         try:
             validate_voice(path)
+            valid = entry.get("file_hash") == file_sha256(path)
         except PipelineError:
-            plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
-            continue
-        if scene is None or entry.get("file_hash") != file_sha256(path):
+            valid = False
+
+        if not valid and entry.get("text_hash") and entry.get("voice_profile_hash"):
+            restored = artifacts.restore_approved(
+                scene_id,
+                path,
+                text_hash=entry["text_hash"],
+                voice_profile_hash=entry["voice_profile_hash"],
+                performance_context_hash=entry.get("performance_context_hash"),
+            )
+            if restored is not None:
+                try:
+                    validate_voice(path)
+                    valid = entry.get("file_hash") == file_sha256(path)
+                except PipelineError:
+                    valid = False
+
+        if scene is None or not valid:
             plan.set_scene_state(VOICE_SCENES, scene_id, PENDING)
     return plan
 

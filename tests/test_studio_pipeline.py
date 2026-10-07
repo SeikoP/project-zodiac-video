@@ -250,14 +250,34 @@ class VoiceResumeTests(WorkerHarness):
         self.assertTrue(entry["file_hash"])
         self.assertEqual(entry["voice_id"], "test-voice")
         self.assertEqual(entry["tts_mode"], "test-mode")
+        self.assertEqual(len(entry["voice_profile_hash"]), 64)
+        self.assertEqual(len(entry["generation_profile_hash"]), 64)
+        self.assertTrue(entry["artifact_take_id"])
 
-    def test_deleted_scene_wav_is_regenerated_on_resume(self):
+    def test_deleted_scene_wav_is_restored_from_approved_artifact(self):
         self.make_worker().run_to_completion()
-        (self.job / ".runtime" / "tts-scenes" / "S02.wav").unlink()
+        working = self.job / ".runtime" / "tts-scenes" / "S02.wav"
+        working.unlink()
         self.tts_calls.clear()
-        worker = self.reopened_worker()
-        worker.run_from(worker.plan.continue_from())
-        self.assertEqual(self.tts_calls, [["S02"]])
+
+        # Reopening the job is enough to restore the compatibility working WAV
+        # before PipelineWorker decides whether the scene is dirty.
+        plan = JobStateStore(self.job).open()
+        self.assertEqual(plan.scene_status(VOICE_SCENES, "S02"), DONE)
+        self.assertTrue(working.is_file())
+
+        plan.mark(VOICE_SCENES, PENDING)
+        JobStateStore(self.job).save(plan)
+        worker = self.make_worker(plan=JobStateStore(self.job).open())
+        worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
+
+        self.assertEqual(self.tts_calls, [])
+        index = json.loads(
+            (self.job / ".runtime" / "artifacts" / "voice" / "S02" / "index.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertTrue(index["active_take"])
 
     def test_changed_scene_voice_only_regenerates_that_scene(self):
         self.make_worker().run_to_completion()
@@ -295,7 +315,7 @@ class VoiceResumeTests(WorkerHarness):
         self.assertEqual(entry["tts_backend"], "onnx")
         self.assertEqual(entry["tts_precision"], "fp32")
 
-    def test_backend_or_precision_change_invalidates_cached_wavs(self):
+    def test_generation_profile_change_preserves_approved_wavs(self):
         self.make_worker(
             tts_mode="v3turbo",
             tts_backend="onnx",
@@ -312,8 +332,10 @@ class VoiceResumeTests(WorkerHarness):
             tts_backend="onnx",
             tts_precision="int8",
         )
-        worker.run_from(VOICE_SCENES)
-        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+        worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
+        self.assertEqual(self.tts_calls, [])
+        logs = [payload["text"] for kind, payload in self.events if kind == LOG_LINE]
+        self.assertTrue(any("VOICE_PROFILE_DRIFT" in text for text in logs))
 
 
 class RerunStepTests(WorkerHarness):
@@ -562,7 +584,9 @@ class PerformanceTelemetryTests(WorkerHarness):
             self.assertGreaterEqual(record["elapsed_ms"], 0)
             self.assertEqual(len(record["input_fingerprint"]), 64)
             self.assertEqual(len(record["output_fingerprint"]), 64)
-            self.assertIsNone(record["cache_hit"])
+            if record["step"] != VOICE_SCENES:
+                self.assertIsNone(record["cache_hit"])
+            self.assertIn("cache_reason", record)
 
         artifacts = json.loads(
             (self.job / ".runtime" / "artifacts.json").read_text(encoding="utf-8")
@@ -684,7 +708,7 @@ class ControllerTests(WorkerHarness):
             controller.archive_fingerprint,
         )
 
-    def test_controller_restarts_at_voice_when_worker_invalidates_legacy_tts_cache(self):
+    def test_controller_preserves_approved_voice_when_legacy_generation_fields_are_missing(self):
         self.make_worker(
             tts_mode="v3turbo",
             tts_backend="onnx",
@@ -704,7 +728,10 @@ class ControllerTests(WorkerHarness):
         controller.start_pipeline(resume=True, voice="test-voice")
         controller.worker.join(timeout=60)
 
-        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+        self.assertEqual(self.tts_calls, [])
+        reopened = JobStateStore(self.job).open()
+        for entry in reopened.steps[VOICE_SCENES].scenes.values():
+            self.assertTrue(entry.get("artifact_take_id"))
 
     def test_install_command_uses_the_running_interpreter(self):
         import sys
