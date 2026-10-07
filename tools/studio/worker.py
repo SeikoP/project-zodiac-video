@@ -578,7 +578,13 @@ class PipelineWorker:
         code = STEP_ERROR_CODES.get(step, "SUBPROCESS_FAILED")
         message = f"Không hoàn tất được bước này: {text.splitlines()[0][:200]}"
 
-        if "faster-whisper" in lowered or "faster_whisper" in lowered:
+        if "visual_progression_density" in lowered:
+            code = "PACKAGE_INVALID"
+            message = (
+                "Gói video không hợp lệ với contract visual hiện tại. "
+                "Nạp bản vá mới trước khi chạy voice/timing."
+            )
+        elif "faster-whisper" in lowered or "faster_whisper" in lowered:
             code = "DEPENDENCY_MISSING" if step == PREFLIGHT else "ALIGNER_LOAD_FAILED"
             message = (
                 "Thiếu thư viện faster-whisper trong Python đang chạy Zodiac Studio. "

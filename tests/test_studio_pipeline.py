@@ -406,6 +406,17 @@ class AlignmentResumeTests(WorkerHarness):
         self.assertTrue((self.job / ".runtime" / "timing.json").is_file())
         self.assertEqual(plan.steps[VALIDATE_RUNTIME].error_code, "VISUAL_PROGRESSION_TIMING")
 
+    def test_visual_density_error_is_not_reported_as_alignment_mismatch(self):
+        worker = self.make_worker()
+        message, code = worker._classify(
+            ALIGN_TIMING,
+            RuntimeError(
+                "VISUAL_PROGRESSION_DENSITY: scene S01 has 14 words without a meaningful visual change; max 10 words before local timing."
+            ),
+        )
+        self.assertEqual(code, "PACKAGE_INVALID")
+        self.assertIn("Gói video", message)
+
     def test_alignment_mismatch_uses_an_actionable_error_code(self):
         self.fail_align = True
         self.make_worker().run_to_completion()
@@ -825,6 +836,31 @@ class ControllerTests(WorkerHarness):
         self.assertFalse(started)
         self.assertEqual(controller.plan.status(RENDER_VIDEO), DONE)
         self.assertIn("ZIP", controller.status_text)
+
+    def test_invalid_current_package_stops_at_package_before_worker_start(self):
+        controller = self._controller()
+        production_path = controller.job / "production.json"
+        production = json.loads(production_path.read_text(encoding="utf-8"))
+        production["scenes"][0]["voice"] = " ".join(f"tu{i}" for i in range(40))
+        production_path.write_text(
+            json.dumps(production, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        (controller.job / "narration.txt").write_text(
+            production["scenes"][0]["voice"] + "\n",
+            encoding="utf-8",
+        )
+        controller.plan.mark(IMPORT_PACKAGE, DONE)
+        controller.plan.mark(ALIGN_TIMING, PENDING)
+        controller.store.save(controller.plan)
+
+        started = controller.start_pipeline(resume=True)
+
+        self.assertFalse(started)
+        self.assertIsNone(controller.worker)
+        self.assertEqual(controller.plan.status(IMPORT_PACKAGE), FAILED)
+        self.assertEqual(controller.plan.steps[IMPORT_PACKAGE].error_code, "PACKAGE_INVALID")
+        self.assertIn("VISUAL_PROGRESSION_DENSITY", controller.plan.steps[IMPORT_PACKAGE].details)
 
     def test_running_worker_blocks_second_start(self):
         controller = self._controller()

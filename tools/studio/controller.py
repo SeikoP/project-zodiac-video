@@ -29,7 +29,13 @@ from tools.studio.pipeline import (
     PipelinePlan,
 )
 from tools.studio.preflight import PreflightChecker, describe_missing, environment_status
-from tools.zodiac_local import DEFAULT_MUSIC_VOLUME, artifact_fingerprints
+from tools.zodiac_local import (
+    DEFAULT_MUSIC_VOLUME,
+    PipelineError,
+    artifact_fingerprints,
+    file_sha256,
+    validate_package,
+)
 
 
 class StudioController:
@@ -217,6 +223,8 @@ class StudioController:
         self.use_job(destination)
         self._reconcile_package_refresh(before, after, old_voice, new_voice)
         self._remember_fingerprint()
+        producer, sha = self._package_identity()
+        self.status_text = f"Đã nhập patch: {producer}; production {sha}."
         return True
 
     @staticmethod
@@ -369,6 +377,48 @@ class StudioController:
         if log_callback is not None:
             log_callback(self.status_text)
 
+    def _package_identity(self) -> tuple[str, str]:
+        import json
+
+        producer = "unknown"
+        manifest = self.job / "package-manifest.json" if self.job else None
+        if manifest is not None and manifest.is_file():
+            try:
+                payload = json.loads(manifest.read_text(encoding="utf-8"))
+                producer_data = payload.get("producer") or {}
+                producer = (
+                    f"{producer_data.get('plugin', 'unknown')}@"
+                    f"{producer_data.get('version', 'unknown')}"
+                )
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                producer = "unknown"
+        production = self.job / "production.json" if self.job else None
+        sha = file_sha256(production)[:12] if production is not None and production.is_file() else "missing"
+        return producer, sha
+
+    def _validate_current_package_before_run(self) -> bool:
+        if self.job is None:
+            return False
+        try:
+            validate_package(self.job)
+        except PipelineError as exc:
+            self.plan.mark(
+                IMPORT_PACKAGE,
+                FAILED,
+                error_code="PACKAGE_INVALID",
+                message="Gói video không hợp lệ; hãy nạp bản vá hợp lệ trước khi chạy.",
+                details=str(exc),
+            )
+            if self.store is not None:
+                self.store.save(self.plan)
+            producer, sha = self._package_identity()
+            self.status_text = (
+                f"Gói video không hợp lệ ({producer}, production {sha}): "
+                f"{str(exc).splitlines()[0][:180]}"
+            )
+            return False
+        return True
+
     # ---- pipeline -----------------------------------------------------
     def pipeline_rows(self) -> list[dict]:
         rows = []
@@ -419,6 +469,8 @@ class StudioController:
             return False
         if self.worker is not None and self.worker.is_alive():
             self.status_text = "Pipeline đang chạy."
+            return False
+        if not self._validate_current_package_before_run():
             return False
         if rerun:
             # Guard conflict/running state before mutating the persisted plan.
