@@ -24,6 +24,8 @@ from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Ric
 from tools.studio.controller import StudioController
 from tools.studio.messages_vi import ALIGN_MODEL_CHOICES, ALIGN_MODEL_DEFAULT, STEP_NAMES_VI
 from tools.studio.pipeline import (
+    ALIGN_TIMING,
+    CONCAT_VOICE,
     DONE,
     MIX_MUSIC,
     RENDER_VIDEO,
@@ -801,9 +803,27 @@ class ZodiacTui(App):
         self.query_one("#stop", Button).disabled = not worker_running
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
-        voice_ready = bool(job and (job / "voice.wav").is_file())
+
+        # Never let the operator mutate project/settings while the worker is
+        # consuming the same plan. This avoids cross-job event drift and plan
+        # invalidation racing a render in progress.
+        self.query_one("#pick-zip", Button).disabled = worker_running
+        self.query_one("#job-select", Select).disabled = worker_running
+        self.query_one("#check", Button).disabled = worker_running
+        self.query_one("#install-deps", Button).disabled = worker_running
+        self.query_one("#voice-select", Select).disabled = worker_running
+        self.query_one("#align-select", Select).disabled = worker_running
+        self.query_one("#music-volume", Input).disabled = worker_running
+        self.query_one("#music-select", Select).disabled = worker_running
+        self.query_one("#clear-music", Button).disabled = worker_running
+
+        voice_ready = bool(
+            job
+            and (job / "voice.wav").is_file()
+            and self.controller.plan.status(CONCAT_VOICE) in COMPLETE
+        )
         self.query_one("#listen", Button).disabled = (
-            job is None or self.music_path is None or not voice_ready
+            worker_running or job is None or self.music_path is None or not voice_ready
         )
 
     def _command_status(self) -> str:
@@ -876,9 +896,25 @@ class ZodiacTui(App):
         video = self.controller.video_path
         voice = job / "voice.wav"
         timing = job / ".runtime" / "timing.json"
+        voice_current = (
+            voice.is_file()
+            and self.controller.plan.status(CONCAT_VOICE) in COMPLETE
+        )
+        timing_current = (
+            timing.is_file()
+            and self.controller.plan.status(ALIGN_TIMING) in COMPLETE
+        )
         parts = [
-            f"Voice {'✓' if voice.is_file() else '○'}",
-            f"Timing {'✓' if timing.is_file() else '○'}",
+            (
+                "Voice ✓"
+                if voice_current
+                else ("Voice cũ · cần cập nhật" if voice.is_file() else "Voice ○")
+            ),
+            (
+                "Timing ✓"
+                if timing_current
+                else ("Timing cũ · cần cập nhật" if timing.is_file() else "Timing ○")
+            ),
         ]
         if video and video.is_file() and self._final_complete():
             size_mb = video.stat().st_size / (1024 * 1024)
@@ -921,6 +957,9 @@ class ZodiacTui(App):
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "job-select" and event.value not in (None, Select.NULL):
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                self.notify("Pipeline đang chạy; hãy dừng trước khi đổi job.", severity="warning")
+                return
             name = str(event.value)
             if name in self.controller.available_jobs():
                 self.controller.use_job(self.controller.job_path(name))
@@ -949,6 +988,13 @@ class ZodiacTui(App):
     @work(thread=True, group="package", exclusive=True)
     def _load_archive(self, path: Path) -> None:
         try:
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                self.call_from_thread(
+                    self.notify,
+                    "Pipeline đang chạy; hãy dừng trước khi đổi package.",
+                    severity="warning",
+                )
+                return
             self.controller.select_archive(path)
             name = self.controller.job_name_for(path)
             destination = self.controller.job_path(name)
