@@ -4,6 +4,7 @@ import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
 import Ajv2020 from "ajv/dist/2020.js";
 import {generateSfx} from "./generate-sfx.mjs";
+import {validateSceneLayerSafety} from "../src/layout-safety.mjs";
 import {resolveProductionEvents, validateEventStates, validateNarrationProgressionProxy, validateVisualProgression} from "../src/runtime-contract.mjs";
 import {validateSemanticAnimation} from "../src/semantic-animation.mjs";
 import {materializeProductionDefaults, validatePerformanceAnimation, validatePerformanceTiming} from "../src/performance-animation.mjs";
@@ -95,6 +96,7 @@ for (let i = 0; i < production.scenes.length; i++) {
   }
   if (!Array.isArray(scene.entities) || !Array.isArray(scene.events) || scene.events.length === 0) fail("each scene requires visual entities and at least one story-changing event: " + scene.id);
   try { validateEventStates(scene); } catch (error) { fail(error.message); }
+  try { validateSceneLayerSafety(scene); } catch (error) { fail(error.message); }
   try { validateSemanticAnimation(scene); } catch (error) { fail(error.message); }
   try { validatePerformanceAnimation(scene); } catch (error) { fail(error.message); }
   try { validateNarrationProgressionProxy(scene); } catch (error) { fail(error.message); }
