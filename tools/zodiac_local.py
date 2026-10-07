@@ -1932,8 +1932,13 @@ def validate_production_document(root: Path, production: dict) -> dict:
     return production
 
 
-def validate_timing(package_root: Path, timing: dict | Path) -> dict:
-    """Validate scene frames and one measured caption token per spoken word."""
+def validate_timing(
+    package_root: Path,
+    timing: dict | Path,
+    *,
+    check_visual_progression: bool = True,
+) -> dict:
+    """Validate measured timing; visual progression may be deferred to runtime validation."""
     root = Path(package_root).resolve()
     production = validate_package(root)
     if isinstance(timing, Path):
@@ -2026,7 +2031,8 @@ def validate_timing(package_root: Path, timing: dict | Path) -> dict:
                 f"caption word tokens do not exactly cover scene.voice in {scene['id']}."
             )
 
-        _validate_measured_visual_progression(scene, row, fps)
+        if check_visual_progression:
+            _validate_measured_visual_progression(scene, row, fps)
 
     if timing.get("total_duration_frames") != cursor:
         raise PipelineError(
@@ -4179,9 +4185,18 @@ def align_scene_timings(
     )
 
 
-def build_and_write_timing(package_root: Path, timing: dict) -> dict:
+def build_and_write_timing(
+    package_root: Path,
+    timing: dict,
+    *,
+    check_visual_progression: bool = True,
+) -> dict:
     root = Path(package_root).resolve()
-    validate_timing(root, timing)
+    validate_timing(
+        root,
+        timing,
+        check_visual_progression=check_visual_progression,
+    )
     path = root / ".runtime" / "timing.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
