@@ -197,7 +197,7 @@ class StudioController:
             return False
 
         name = self.job_name_for(self.archive)
-        destination = self.jobs_dir / name
+        destination = self._destination_for_archive(self.archive)
         before = artifact_fingerprints(destination) if destination.exists() else {}
         old_voice = self._voice_signature(destination)
 
