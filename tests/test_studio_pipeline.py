@@ -708,6 +708,79 @@ class ControllerTests(WorkerHarness):
             controller.archive_fingerprint,
         )
 
+    def test_ui_change_is_persisted_immediately(self):
+        controller = self._controller()
+        for step in STEP_ORDER:
+            controller.plan.mark(step, DONE)
+        controller.store.save(controller.plan)
+
+        controller.apply_change("music")
+
+        reopened = JobStateStore(controller.job).open()
+        self.assertEqual(reopened.status(MIX_MUSIC), PENDING)
+
+    def test_package_conflict_blocks_rerun_before_mutating_plan(self):
+        controller = self._controller()
+        first = self._archive("a")
+        second = self._archive("b")
+        controller.select_archive(first)
+        controller.sync_package()
+        for step in STEP_ORDER:
+            controller.plan.mark(step, DONE)
+        controller.store.save(controller.plan)
+
+        controller.select_archive(second)
+        self.assertTrue(controller.package_changed)
+        started = controller.start_pipeline(rerun=RENDER_VIDEO)
+
+        self.assertFalse(started)
+        self.assertEqual(controller.plan.status(RENDER_VIDEO), DONE)
+        self.assertIn("ZIP", controller.status_text)
+
+    def test_running_worker_blocks_second_start(self):
+        controller = self._controller()
+
+        class AliveWorker:
+            @staticmethod
+            def is_alive():
+                return True
+
+        controller.worker = AliveWorker()
+        self.assertFalse(controller.start_pipeline())
+        self.assertEqual(controller.status_text, "Pipeline đang chạy.")
+
+    def test_visual_only_package_refresh_preserves_runtime_cache(self):
+        controller = self._controller()
+        first = self._archive("a")
+        controller.select_archive(first)
+        controller.sync_package()
+
+        for step in STEP_ORDER:
+            controller.plan.mark(step, DONE)
+        controller.store.save(controller.plan)
+        sentinel = controller.job / ".runtime" / "cache-sentinel.txt"
+        sentinel.parent.mkdir(parents=True, exist_ok=True)
+        sentinel.write_text("keep-me", encoding="utf-8")
+
+        design = self.job / "design.md"
+        original = design.read_text(encoding="utf-8")
+        try:
+            design.write_text(original + "\nvisual-refresh\n", encoding="utf-8")
+            second = self._archive("b")
+        finally:
+            design.write_text(original, encoding="utf-8")
+
+        controller.select_archive(second)
+        self.assertTrue(controller.package_changed)
+        self.assertTrue(controller.accept_package_conflict("import"))
+
+        self.assertTrue(sentinel.is_file())
+        self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep-me")
+        self.assertEqual(controller.plan.status(VOICE_SCENES), DONE)
+        self.assertEqual(controller.plan.status(ALIGN_TIMING), DONE)
+        self.assertEqual(controller.plan.status(VALIDATE_RUNTIME), PENDING)
+        self.assertEqual(controller.plan.status(RENDER_VIDEO), PENDING)
+
     def test_controller_preserves_approved_voice_when_legacy_generation_fields_are_missing(self):
         self.make_worker(
             tts_mode="v3turbo",
