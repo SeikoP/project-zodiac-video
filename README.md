@@ -390,3 +390,8 @@ ZIP import rejects traversal, links, duplicate paths, oversized entries and susp
 FFmpeg/npm calls pass validated executables and arguments as argv with `shell=False`; user-selected paths are never interpreted as shell source.
 
 Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.
+
+
+## Runtime 1.18
+
+New jobs use `zodiac-remotion@1.18.0`: deterministic motion/performance defaults are materialized locally, and visible pose-to-pose changes use a single-pose bridge instead of full-SVG crossfades.
