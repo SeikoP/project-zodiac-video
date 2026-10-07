@@ -60,6 +60,7 @@ from tools.zodiac_local import (
     align_scene_timings,
     build_and_write_timing,
     concatenate_scene_voices,
+    configure_background_music,
     effective_tts_generation_config,
     file_sha256,
     generate_scene_voices,
@@ -987,6 +988,14 @@ class PipelineWorker:
         self.log("Đã kết xuất video.")
 
     def _step_mix(self) -> None:
+        # Music-only edits intentionally reopen only MIX_MUSIC. Materialize the
+        # currently selected track here so an audio change never depends on the
+        # much more expensive PREPARE_RENDERER/RENDER_VIDEO suffix.
+        configure_background_music(
+            self.root,
+            self.music,
+            self.music_volume,
+        )
         final_video = mix_background_music_into_render(
             self.root,
             playback_rate=self.playback_rate,
