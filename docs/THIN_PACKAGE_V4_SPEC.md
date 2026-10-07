@@ -3,7 +3,7 @@
 Status: current default  
 Package format: `zodiac-job@4`  
 Production contract: `2.0`  
-Current runtime: `zodiac-remotion@1.15.0`
+Current runtime: `zodiac-remotion@1.20.0`
 
 ## 1. Goal
 
@@ -62,7 +62,7 @@ Those are local job state and are not package bloat after the import boundary.
   "production_contract": "2.0",
   "runtime": {
     "id": "zodiac-remotion",
-    "version": "1.15.0"
+    "version": "1.20.0"
   },
   "producer": {
     "plugin": "zodiac-video-pipeline",
@@ -87,7 +87,7 @@ Studio validates directly from source artifacts:
 - `design.md` token against the compiled production style token;
 - caption/design lock;
 - SVG safety and style;
-- canonical v3 asset lineage for semantic runtime packages;
+- explicit asset lineage for semantic runtime packages: canonical v3 migration sources or native `zodiac-visual-grammar-v4` sources;
 - Semantic Animation Gate mechanisms;
 - exact `narration.txt` serialization;
 - visual progression proxy;
