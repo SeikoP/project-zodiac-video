@@ -8,11 +8,11 @@ import os
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 
-class CacheReason(StrEnum):
+class CacheReason(str, Enum):
     REUSED_APPROVED = "REUSED_APPROVED"
     REUSED_CANDIDATE = "REUSED_CANDIDATE"
     PARTIAL_REUSE = "PARTIAL_REUSE"
@@ -27,7 +27,7 @@ class CacheReason(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
-class VoiceTakeStatus(StrEnum):
+class VoiceTakeStatus(str, Enum):
     GENERATED = "GENERATED"
     TECH_VALID = "TECH_VALID"
     APPROVED = "APPROVED"
