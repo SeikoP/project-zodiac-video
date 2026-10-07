@@ -1,0 +1,30 @@
+{
+  "name": "zodiac-remotion-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:runtime": "node scripts/render.mjs --prepare-only",
+    "studio": "node scripts/render.mjs --studio",
+    "render": "node scripts/render.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "compile:style": "node scripts/compile-style-token.mjs"
+  },
+  "dependencies": {
+    "@remotion/captions": "4.0.530",
+    "@remotion/cli": "4.0.530",
+    "@remotion/media": "4.0.530",
+    "remotion": "4.0.530",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "@remotion/layout-utils": "4.0.530",
+    "@fontsource/be-vietnam-pro": "5.3.0",
+    "ajv": "8.20.0",
+    "@fontsource/patrick-hand": "5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "@types/react": "19.0.0",
+    "typescript": "5.8.2"
+  }
+}
