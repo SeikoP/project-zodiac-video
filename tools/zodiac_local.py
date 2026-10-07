@@ -4724,7 +4724,16 @@ def build_audio_preview(
     voice = root / "voice.wav"
     has_voice = voice.is_file()
     if has_voice:
-        validate_voice(voice)
+        try:
+            validate_voice(voice)
+        except PipelineError as exc:
+            # Preview is an audition tool, not a runtime validation gate. A
+            # stale/partial voice.wav must not make the music control unusable.
+            has_voice = False
+            print(
+                f"Audio preview warning: bỏ qua voice.wav chưa hợp lệ ({exc}).",
+                flush=True,
+            )
     source = _validate_music_file(music)
     volume = _validate_music_volume(volume)
 
