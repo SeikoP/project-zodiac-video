@@ -4299,6 +4299,10 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
 
 
 _PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
+_PROCESS_LOG_OBSERVER = contextvars.ContextVar(
+    "zodiac_process_log_observer",
+    default=None,
+)
 
 
 @contextlib.contextmanager
@@ -4309,6 +4313,22 @@ def observe_subprocesses(observer):
         yield
     finally:
         _PROCESS_OBSERVER.reset(token)
+
+
+@contextlib.contextmanager
+def observe_subprocess_output(observer):
+    """Route child stdout/stderr into a caller-owned log sink.
+
+    Textual must never let npm/ffmpeg/pip inherit its terminal because those
+    processes can overwrite the alternate-screen UI. Output is captured and
+    emitted line-for-line after the child exits, preserving CompletedProcess
+    stdout/stderr semantics for callers that explicitly request them.
+    """
+    token = _PROCESS_LOG_OBSERVER.set(observer)
+    try:
+        yield
+    finally:
+        _PROCESS_LOG_OBSERVER.reset(token)
 
 
 def _process_group_kwargs() -> dict:
@@ -4332,7 +4352,10 @@ def run_managed_subprocess(
         raise PipelineError("subprocess arguments must be NUL-free strings.")
 
     popen_kwargs = _process_group_kwargs()
-    if capture_output:
+    process_observer = _PROCESS_OBSERVER.get()
+    log_observer = _PROCESS_LOG_OBSERVER.get()
+    should_capture = capture_output or log_observer is not None
+    if should_capture:
         popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     process = subprocess.Popen(
         arguments,
@@ -4342,14 +4365,26 @@ def run_managed_subprocess(
         env=env,
         **popen_kwargs,
     )
-    observer = _PROCESS_OBSERVER.get()
-    if observer is not None:
-        observer(process)
+    if process_observer is not None:
+        process_observer(process)
     try:
         stdout, stderr = process.communicate()
     finally:
-        if observer is not None:
-            observer(None)
+        if process_observer is not None:
+            process_observer(None)
+
+    if log_observer is not None:
+        for channel, payload in (("stdout", stdout), ("stderr", stderr)):
+            if not payload:
+                continue
+            rendered = (
+                payload
+                if isinstance(payload, str)
+                else payload.decode("utf-8", errors="replace")
+            )
+            for line in rendered.splitlines():
+                if line:
+                    log_observer(line, channel=channel)
 
     result = subprocess.CompletedProcess(
         arguments,
