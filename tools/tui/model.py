@@ -23,22 +23,33 @@ from tools.studio.pipeline import (
     VOICE_SCENES,
 )
 
+CANCELLED = "CANCELLED"
+
 STATUS_GLYPHS = {
     DONE: "✓",
     RUNNING: "●",
     FAILED: "✕",
     SKIPPED: "–",
     PENDING: "○",
-    "CANCELLED": "!",
+    CANCELLED: "!",
+}
+
+STATUS_LABELS = {
+    DONE: "Hoàn tất",
+    RUNNING: "Đang chạy",
+    FAILED: "Thất bại",
+    SKIPPED: "Bỏ qua",
+    PENDING: "Chờ",
+    CANCELLED: "Đã dừng",
 }
 
 GROUPS = (
-    ("PACKAGE", (IMPORT_PACKAGE, PREFLIGHT)),
-    ("VOICE", (VOICE_SCENES, CONCAT_VOICE)),
+    ("GÓI", (IMPORT_PACKAGE, PREFLIGHT)),
+    ("GIỌNG", (VOICE_SCENES, CONCAT_VOICE)),
     ("TIMING", (ALIGN_TIMING,)),
     ("RUNTIME", (VALIDATE_RUNTIME, PREPARE_RENDERER)),
     ("RENDER", (RENDER_VIDEO,)),
-    ("AUDIO", (MIX_MUSIC,)),
+    ("ÂM THANH", (MIX_MUSIC,)),
 )
 
 
@@ -46,18 +57,29 @@ def status_glyph(status: str) -> str:
     return STATUS_GLYPHS.get(status, "?")
 
 
+def status_label(status: str) -> str:
+    return STATUS_LABELS.get(status, status or "Không rõ")
+
+
 def _group_status(statuses: list[str]) -> str:
     if not statuses:
         return PENDING
     if FAILED in statuses:
         return FAILED
-    if "CANCELLED" in statuses:
-        return "CANCELLED"
+    if CANCELLED in statuses:
+        return CANCELLED
     if RUNNING in statuses:
         return RUNNING
     if all(item in (DONE, SKIPPED) for item in statuses):
         return DONE
     return PENDING
+
+
+def _effective_progress(row: dict) -> float:
+    status = str(row.get("status") or PENDING)
+    if status in (DONE, SKIPPED):
+        return 1.0
+    return max(0.0, min(1.0, float(row.get("progress") or 0.0)))
 
 
 def compact_pipeline_rows(rows: list[dict]) -> list[dict]:
@@ -70,7 +92,7 @@ def compact_pipeline_rows(rows: list[dict]) -> list[dict]:
         status = _group_status(statuses)
         progress = 0.0
         if members:
-            progress = sum(float(row.get("progress") or 0.0) for row in members) / len(members)
+            progress = sum(_effective_progress(row) for row in members) / len(members)
         scene_done = scene_total = 0
         for row in members:
             scenes = row.get("scenes") or {}

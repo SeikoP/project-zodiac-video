@@ -174,7 +174,59 @@ If `voice.wav` is shorter than 10 seconds, silence is padded so the preview stil
 - macOS: `open`
 - Linux: `xdg-open`
 
-## Zodiac Studio (GUI tiếng Việt)
+## Zodiac TUI (khuyến nghị)
+
+TUI là control plane mặc định cho local workflow. Remotion Studio tiếp tục đảm nhiệm
+preview và visual authoring; TUI chỉ quản lý package, job, TTS/timing, pipeline,
+audio, output và process Remotion.
+
+### Chạy nhanh với uv
+
+```powershell
+uv run zodiac
+```
+
+### Hoặc cài command một lần
+
+```powershell
+python -m pip install -e .
+zodiac
+```
+
+Dependency cho full local voice/alignment vẫn có thể cài bằng:
+
+```powershell
+python -m pip install -r requirements-local.txt
+```
+
+TUI hiện có:
+
+- nút **Nạp ZIP** với file browser ngay trong terminal;
+- chọn lại job đã import;
+- status strip cho Job / Environment / VieNeu / Remotion / Output;
+- dashboard 6 stage trên pipeline nội bộ 9 node;
+- **Tiếp tục / Chạy toàn bộ / Chạy lại bước / Dừng**;
+- voice, align model, music, volume và **Nghe thử**;
+- **Mở/Dừng Remotion Studio**;
+- summary Voice / Timing / Video;
+- log có thể ẩn/hiện để ưu tiên không gian cho pipeline.
+
+Phím tắt:
+
+```text
+I  Nạp ZIP
+R  Chạy toàn bộ
+C  Tiếp tục
+S  Mở / dừng Remotion Studio
+L  Ẩn / hiện log
+X  Dừng
+Q  Thoát
+```
+
+Tkinter GUI phía dưới hiện chỉ còn là fallback trong giai đoạn migration và sẽ
+được retire sau khi TUI + Remotion authoring đạt parity.
+
+## Zodiac Studio (legacy fallback)
 
 ```powershell
 python tools/zodiac_gui.py
