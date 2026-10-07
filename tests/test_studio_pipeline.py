@@ -250,14 +250,30 @@ class VoiceResumeTests(WorkerHarness):
         self.assertTrue(entry["file_hash"])
         self.assertEqual(entry["voice_id"], "test-voice")
         self.assertEqual(entry["tts_mode"], "test-mode")
+        self.assertEqual(len(entry["voice_profile_hash"]), 64)
+        self.assertEqual(len(entry["generation_profile_hash"]), 64)
+        self.assertTrue(entry["artifact_take_id"])
 
-    def test_deleted_scene_wav_is_regenerated_on_resume(self):
+    def test_deleted_scene_wav_is_restored_from_approved_artifact(self):
         self.make_worker().run_to_completion()
-        (self.job / ".runtime" / "tts-scenes" / "S02.wav").unlink()
+        working = self.job / ".runtime" / "tts-scenes" / "S02.wav"
+        working.unlink()
         self.tts_calls.clear()
-        worker = self.reopened_worker()
-        worker.run_from(worker.plan.continue_from())
-        self.assertEqual(self.tts_calls, [["S02"]])
+
+        plan = JobStateStore(self.job).open()
+        plan.mark(VOICE_SCENES, PENDING)
+        JobStateStore(self.job).save(plan)
+        worker = self.make_worker(plan=JobStateStore(self.job).open())
+        worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
+
+        self.assertEqual(self.tts_calls, [])
+        self.assertTrue(working.is_file())
+        index = json.loads(
+            (self.job / ".runtime" / "artifacts" / "voice" / "S02" / "index.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertTrue(index["active_take"])
 
     def test_changed_scene_voice_only_regenerates_that_scene(self):
         self.make_worker().run_to_completion()
@@ -562,7 +578,9 @@ class PerformanceTelemetryTests(WorkerHarness):
             self.assertGreaterEqual(record["elapsed_ms"], 0)
             self.assertEqual(len(record["input_fingerprint"]), 64)
             self.assertEqual(len(record["output_fingerprint"]), 64)
-            self.assertIsNone(record["cache_hit"])
+            if record["step"] != VOICE_SCENES:
+                self.assertIsNone(record["cache_hit"])
+            self.assertIn("cache_reason", record)
 
         artifacts = json.loads(
             (self.job / ".runtime" / "artifacts.json").read_text(encoding="utf-8")
