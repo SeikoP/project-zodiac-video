@@ -52,3 +52,15 @@ test("reaction pose swap happens earlier than ordinary action",()=>{
   assert.equal(action.pose,"before");
   assert.equal(reaction.pose,"after");
 });
+
+test("anticipation terminal frame matches choreography start",()=>{
+  const p=perf({energy:0.8,anticipation_frames:4});
+  const anticipated=performanceMotionValues(-1,12,p,1);
+  const start=poseTransitionChoreographyValues(0,12,p,1);
+  for(const key of ["x","y","rotate_deg","scale"]) assert.ok(Math.abs(anticipated[key]-start[key])<1e-9,key);
+});
+test("choreography starts neutral when anticipation is disabled",()=>{
+  const p=perf({energy:0.8,anticipation_frames:0});
+  const start=poseTransitionChoreographyValues(0,12,p,1);
+  assert.equal(start.x,0);assert.equal(start.y,0);assert.equal(start.rotate_deg,0);assert.equal(start.scale,1);
+});
