@@ -1369,6 +1369,32 @@ class ThinPackageV4Tests(unittest.TestCase):
             with self.assertRaisesRegex(PipelineError, "SEMANTIC_ANIMATION_GATE"):
                 validate_package(job)
 
+    def test_v4_accepts_native_visual_grammar_v4_lineage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            lineage = production["assets"]["safe.body"]["lineage"]
+            lineage["mode"] = "composite"
+            lineage["source_library"] = "zodiac-visual-grammar-v4"
+            lineage["source_master"] = [
+                "body:standard_compact",
+                "hair:asym_bang",
+                "outfit:scorpio",
+            ]
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            validate_package(job)
+
+    def test_v4_rejects_unknown_asset_lineage_library(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            production["assets"]["safe.body"]["lineage"]["source_library"] = "unknown-library"
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "ASSET_LINEAGE_INVALID"):
+                validate_package(job)
+
     def test_v4_rejects_narration_mismatch_without_receipt_indirection(self):
         with tempfile.TemporaryDirectory() as temp:
             job = write_v4_package(Path(temp))
