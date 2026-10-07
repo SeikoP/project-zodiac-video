@@ -38,11 +38,11 @@ class TuiModelTests(unittest.TestCase):
             )
         ]
 
-    def test_collapses_internal_dag_to_six_operator_stages(self):
+    def test_collapses_internal_dag_to_five_operator_stages(self):
         rows = compact_pipeline_rows(self._rows())
         self.assertEqual(
             [row["label"] for row in rows],
-            ["GÓI", "GIỌNG", "TIMING", "STUDIO", "RENDER", "ÂM THANH"],
+            ["GÓI", "GIỌNG", "TIMING", "RENDER", "ÂM THANH"],
         )
 
     def test_failure_dominates_a_group(self):
