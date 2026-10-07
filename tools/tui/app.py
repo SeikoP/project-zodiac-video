@@ -593,7 +593,7 @@ class ZodiacTui(App):
                         yield Label("Nhạc", classes="setting-name")
                         yield Select(
                             self._music_options(),
-                            value=self.music_path,
+                            value=self.music_path if self.music_path is not None else Select.NULL,
                             id="music-select",
                             prompt="Không dùng nhạc nền",
                             allow_blank=True,
