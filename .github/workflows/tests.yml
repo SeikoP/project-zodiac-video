@@ -258,6 +258,13 @@ jobs:
         run: npm test
       - name: Typecheck runtime 1.20.0
         run: npm run typecheck
-      - name: Print canonical runtime 1.20.0 hash
+      - name: Verify canonical runtime 1.20.0 hash
         working-directory: .
-        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.20.0/renderer
+        run: |
+          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.20.0/renderer | tail -n 1)
+          grep -q "$HASH" runtime/zodiac-remotion/1.20.0/runtime-manifest.json
+      - name: Golden runtime 1.20 Studio prepare
+        working-directory: .
+        env:
+          ZODIAC_E2E_RUNTIME: "1"
+        run: python -m unittest tests.test_zodiac_local.RuntimeLayerSafetyV3200Tests.test_v3200_runtime_prepare_with_layer_safety -v
