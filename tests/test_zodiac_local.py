@@ -3540,7 +3540,8 @@ class BackgroundMusicTests(unittest.TestCase):
 
             self.assertTrue(output.is_file())
             args = captured["arguments"]
-            self.assertEqual(args[2:5], ["-stream_loop", "-1", "-i"])
+            loop = args.index("-stream_loop")
+            self.assertEqual(args[loop:loop + 3], ["-stream_loop", "-1", "-i"])
             self.assertNotIn(str(job / "voice.wav"), args)
 
     def test_managed_subprocess_output_observer_receives_stdout_and_stderr(self):
