@@ -176,9 +176,10 @@ If `voice.wav` is shorter than 10 seconds, silence is padded so the preview stil
 
 ## Zodiac TUI (khuyến nghị)
 
-TUI là control plane mặc định cho local workflow. Remotion Studio tiếp tục đảm nhiệm
-preview và visual authoring; TUI chỉ quản lý package, job, TTS/timing, pipeline,
-audio, output và process Remotion.
+TUI là control plane mặc định cho local workflow. **Remotion Studio hiện tạm tắt
+trong workflow TUI** vì runtime hiện chỉ cung cấp preview/debug, chưa có authoring
+/save-back đủ hữu ích. TUI hiện chạy thẳng package → voice/timing → render → audio
+→ output. Backend/CLI Remotion Studio vẫn được giữ để bật lại sau.
 
 ### Chạy nhanh với uv
 
@@ -203,13 +204,13 @@ TUI hiện có:
 
 - nút **Nạp ZIP** với file browser ngay trong terminal;
 - chọn lại job đã import;
-- status strip gọn cho Job / Environment / VieNeu / Studio / Output;
-- dashboard 6 stage trên pipeline nội bộ 9 node;
+- status strip gọn cho Job / Environment / VieNeu / Output;
+- dashboard 5 stage trên pipeline nội bộ 9 node: **GÓI / GIỌNG / TIMING / RENDER / ÂM THANH**;
 - chọn trực tiếp một hàng pipeline rồi bấm **Chạy lại** — không có dropdown bước riêng;
 - voice dropdown lấy preset VieNeu đã lưu, align model, music, volume và **Nghe thử**;
-- workflow mặc định **Chuẩn bị Studio → Duyệt trong Studio → Render cuối**;
-- **Chuẩn bị Studio** dừng pipeline tại `PREPARE_RENDERER`; không render MP4 sớm;
-- **Render cuối** chỉ chạy render/mix sau khi job đã sẵn sàng cho Studio;
+- nút **Chạy toàn bộ** chạy/resume pipeline thẳng tới final output;
+- `VALIDATE_RUNTIME` và `PREPARE_RENDERER` vẫn chạy nội bộ trong stage **RENDER**;
+- nếu final đã hoàn tất, nút chính chuyển thành **Render lại**;
 - layout responsive: desktop hai cột, cửa sổ hẹp tự chuyển thành một cột;
 - log mặc định ẩn, tự mở khi pipeline lỗi.
 
@@ -217,37 +218,33 @@ Phím tắt:
 
 ```text
 I  Nạp ZIP
-P  Chuẩn bị Studio
-S  Mở / dừng Remotion Studio
-R  Render cuối
+R  Chạy toàn bộ / render lại
 L  Ẩn / hiện log
 X  Dừng
 Q  Thoát
 ```
 
-Tkinter GUI phía dưới hiện chỉ còn là fallback trong giai đoạn migration và sẽ
-được retire sau khi TUI + Remotion authoring đạt parity.
+Tkinter GUI phía dưới hiện chỉ còn là fallback trong giai đoạn migration.
 
-
-### Workflow review trước final render
-
-Đường đi mặc định của TUI không còn là “chạy hết rồi mới mở Studio”:
+### Workflow TUI hiện tại
 
 ```text
-Import / Preflight / Voice / Timing / Validate / Prepare Renderer
-                              ↓
-                       Remotion Studio
-                   review visual + timing
-                              ↓
-                         Render cuối
-                              ↓
-                          Mix music
+Import / Preflight
+        ↓
+Voice / Concatenate
+        ↓
+Timing
+        ↓
+Validate / Prepare Renderer / Render
+        ↓
+Mix music
+        ↓
+final.mp4
 ```
 
-Ở runtime hiện tại, Remotion Studio chủ yếu là **preview/debug chính xác theo renderer**
-(animation, caption, timing, camera, composition). Nó chưa phải một production.json
-editor hoàn chỉnh. ActorLab / ScenePreview / PerformanceLab và các authoring controls
-sẽ là bước tiếp theo; TUI không tái tạo những editor đó.
+Remotion Studio **không còn là checkpoint bắt buộc**. Lệnh preview/Studio ở local
+runtime vẫn được giữ cho debug thủ công, nhưng TUI không mở hoặc yêu cầu Studio
+trong luồng production cho đến khi authoring/save-back được thiết kế lại.
 
 ## Zodiac Studio (legacy fallback)
 

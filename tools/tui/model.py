@@ -47,8 +47,7 @@ GROUPS = (
     ("GÓI", (IMPORT_PACKAGE, PREFLIGHT)),
     ("GIỌNG", (VOICE_SCENES, CONCAT_VOICE)),
     ("TIMING", (ALIGN_TIMING,)),
-    ("STUDIO", (VALIDATE_RUNTIME, PREPARE_RENDERER)),
-    ("RENDER", (RENDER_VIDEO,)),
+    ("RENDER", (VALIDATE_RUNTIME, PREPARE_RENDERER, RENDER_VIDEO)),
     ("ÂM THANH", (MIX_MUSIC,)),
 )
 
@@ -83,7 +82,7 @@ def _effective_progress(row: dict) -> float:
 
 
 def compact_pipeline_rows(rows: list[dict]) -> list[dict]:
-    """Collapse the internal 9-step DAG into six operator-facing stages."""
+    """Collapse the internal 9-step DAG into five operator-facing stages."""
     by_step = {row.get("step"): row for row in rows}
     compact: list[dict] = []
     for label, steps in GROUPS:

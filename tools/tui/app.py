@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Responsive Textual control plane for Zodiac local production.
 
-The TUI is intentionally operational. Remotion Studio is the visual preview /
-authoring surface; final rendering stays behind an explicit review boundary.
+The TUI is intentionally operational. Remotion Studio support remains in the
+local runtime, but the current TUI workflow runs straight through to final output.
 """
 
 from __future__ import annotations
@@ -411,7 +411,7 @@ class ZodiacTui(App):
 
     Screen.narrow #status-strip {
         layout: vertical;
-        height: 5;
+        height: 4;
         padding: 0 1;
     }
 
@@ -497,7 +497,7 @@ class ZodiacTui(App):
     }
 
     Screen.tiny #command-bar {
-        height: 7;
+        height: 5;
         padding: 1;
     }
 
@@ -515,9 +515,7 @@ class ZodiacTui(App):
 
     BINDINGS = [
         ("i", "pick_zip", "Nạp ZIP"),
-        ("p", "prepare_studio", "Chuẩn bị"),
-        ("s", "toggle_studio", "Studio"),
-        ("r", "final_render", "Render"),
+        ("r", "run_full", "Chạy toàn bộ"),
         ("l", "toggle_log", "Log"),
         ("x", "stop", "Dừng"),
         ("q", "quit", "Thoát"),
@@ -544,7 +542,6 @@ class ZodiacTui(App):
             yield Static("JOB  Chưa chọn", id="health-job", classes="health-item")
             yield Static("ENV  Chưa kiểm tra", id="health-env", classes="health-item")
             yield Static("VIENEU  Chưa kiểm tra", id="health-tts", classes="health-item")
-            yield Static("STUDIO  Đã dừng", id="health-studio", classes="health-item")
             yield Static("OUTPUT  Chưa render", id="health-output", classes="health-item")
 
         with VerticalScroll(id="workspace"):
@@ -613,7 +610,7 @@ class ZodiacTui(App):
                             yield Button("Hiện log", id="toggle-log")
                     yield DataTable(id="pipeline-table", zebra_stripes=False)
                     yield Static(
-                        "1 Chuẩn bị Studio  →  2 Duyệt visual trong Studio  →  3 Render cuối",
+                        "Nạp ZIP  →  Chạy toàn bộ  →  Video cuối",
                         id="workflow-hint",
                     )
 
@@ -631,9 +628,7 @@ class ZodiacTui(App):
         with Container(id="command-bar"):
             yield Static("Chưa chạy", id="command-status")
             with Container(id="primary-actions"):
-                yield Button("Chuẩn bị Studio", id="prepare-studio", variant="primary")
-                yield Button("Mở Studio", id="studio")
-                yield Button("Render cuối", id="final-render", variant="success")
+                yield Button("Chạy toàn bộ", id="run-full", variant="success")
                 yield Button("Dừng", id="stop", variant="error")
 
         yield Footer()
@@ -683,8 +678,6 @@ class ZodiacTui(App):
         job = self.controller.job
         archive = self.controller.archive
         worker_running = any(row["status"] == RUNNING for row in self.controller.pipeline_rows())
-        studio_running = self._studio_running()
-        studio_ready = self._studio_ready()
         video = self.controller.video_path
         video_ready = bool(video and video.is_file())
 
@@ -697,9 +690,6 @@ class ZodiacTui(App):
         self.query_one("#active-job", Static).update(job.name if job else "—")
 
         self.query_one("#health-job", Static).update(f"JOB  {job.name if job else 'Chưa chọn'}")
-        self.query_one("#health-studio", Static).update(
-            f"STUDIO  {'Đang chạy' if studio_running else ('Sẵn sàng' if studio_ready else 'Chưa chuẩn bị')}"
-        )
         self.query_one("#health-output", Static).update(
             f"OUTPUT  {'Sẵn sàng' if video_ready else 'Chưa render'}"
         )
@@ -728,15 +718,12 @@ class ZodiacTui(App):
         self.query_one("#command-status", Static).update(self.controller.status_text)
         self._refresh_output_summary()
 
-        self.query_one("#prepare-studio", Button).disabled = job is None or worker_running or studio_ready
-        self.query_one("#studio", Button).disabled = job is None or not studio_ready
-        self.query_one("#studio", Button).label = "Dừng Studio" if studio_running else "Mở Studio"
-        self.query_one("#final-render", Button).disabled = job is None or worker_running or not studio_ready
-        self.query_one("#final-render", Button).label = (
-            "Render lại" if self._final_complete() else "Render cuối"
+        self.query_one("#run-full", Button).disabled = job is None or worker_running
+        self.query_one("#run-full", Button).label = (
+            "Render lại" if self._final_complete() else "Chạy toàn bộ"
         )
         self.query_one("#rerun-stage", Button).disabled = job is None or worker_running
-        self.query_one("#stop", Button).disabled = not (worker_running or studio_running)
+        self.query_one("#stop", Button).disabled = not worker_running
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
         self.query_one("#listen", Button).disabled = job is None or self.music_path is None
@@ -744,16 +731,12 @@ class ZodiacTui(App):
     def _workflow_summary(self) -> str:
         if self.controller.job is None:
             return "Nạp ZIP hoặc chọn job để bắt đầu."
-        if not self._studio_ready():
-            next_step = self.controller.plan.continue_from()
-            if next_step:
-                return f"Chuẩn bị Studio · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
-            return "Chuẩn bị Studio trước khi duyệt visual."
-        if self._studio_running():
-            return "Studio đang mở · duyệt animation, caption, timing và bố cục trước Render cuối."
-        if not self._final_complete():
-            return "Studio đã sẵn sàng · mở Studio để duyệt visual, sau đó Render cuối."
-        return "Video cuối đã có · mở Studio nếu cần kiểm tra lại visual trước khi render lại."
+        if self._final_complete():
+            return "Video cuối đã sẵn sàng. Chạy lại chỉ khi cần render lại output."
+        next_step = self.controller.plan.continue_from()
+        if next_step:
+            return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
+        return "Chạy toàn bộ để tạo video cuối."
 
     def _studio_ready(self) -> bool:
         return bool(
@@ -822,12 +805,8 @@ class ZodiacTui(App):
             self._check_environment()
         elif button_id == "install-deps":
             self._install_dependencies()
-        elif button_id == "prepare-studio":
-            self.action_prepare_studio()
-        elif button_id == "studio":
-            self.action_toggle_studio()
-        elif button_id == "final-render":
-            self.action_final_render()
+        elif button_id == "run-full":
+            self.action_run_full()
         elif button_id == "rerun-stage":
             self._rerun_selected_stage()
         elif button_id == "toggle-log":
@@ -963,6 +942,17 @@ class ZodiacTui(App):
         volume = max(0.0, min(100.0, float(raw_volume))) / 100.0
         return voice, align_model, volume
 
+    def action_run_full(self) -> None:
+        """Run or resume the current job straight through to final output."""
+        if self.controller.job is None:
+            self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
+            return
+        rerun = RENDER_VIDEO if self._final_complete() else None
+        self._start_pipeline(rerun=rerun)
+
+    # Remotion Studio actions are intentionally retained but not exposed by the
+    # TUI while Studio authoring is disabled. This keeps the runtime/CLI path
+    # available for future reactivation without making it a workflow boundary.
     def action_prepare_studio(self) -> None:
         if self.controller.job is None:
             self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
