@@ -4368,23 +4368,58 @@ def run_managed_subprocess(
     if process_observer is not None:
         process_observer(process)
     try:
-        stdout, stderr = process.communicate()
+        if log_observer is None:
+            stdout, stderr = process.communicate()
+        else:
+            import threading
+
+            stdout_chunks = []
+            stderr_chunks = []
+            sentinel = "" if text else b""
+
+            def pump(stream, chunks, channel: str) -> None:
+                if stream is None:
+                    return
+                try:
+                    for raw in iter(stream.readline, sentinel):
+                        chunks.append(raw)
+                        rendered = (
+                            raw
+                            if isinstance(raw, str)
+                            else raw.decode("utf-8", errors="replace")
+                        )
+                        line = rendered.rstrip("\r\n")
+                        if line:
+                            log_observer(line, channel=channel)
+                finally:
+                    stream.close()
+
+            threads = [
+                threading.Thread(
+                    target=pump,
+                    args=(process.stdout, stdout_chunks, "stdout"),
+                    daemon=True,
+                ),
+                threading.Thread(
+                    target=pump,
+                    args=(process.stderr, stderr_chunks, "stderr"),
+                    daemon=True,
+                ),
+            ]
+            for thread in threads:
+                thread.start()
+            process.wait()
+            for thread in threads:
+                thread.join()
+            if text:
+                stdout = "".join(stdout_chunks)
+                stderr = "".join(stderr_chunks)
+            else:
+                stdout = b"".join(stdout_chunks)
+                stderr = b"".join(stderr_chunks)
     finally:
         if process_observer is not None:
             process_observer(None)
-
-    if log_observer is not None:
-        for channel, payload in (("stdout", stdout), ("stderr", stderr)):
-            if not payload:
-                continue
-            rendered = (
-                payload
-                if isinstance(payload, str)
-                else payload.decode("utf-8", errors="replace")
-            )
-            for line in rendered.splitlines():
-                if line:
-                    log_observer(line, channel=channel)
 
     result = subprocess.CompletedProcess(
         arguments,
