@@ -190,15 +190,18 @@ class ZodiacTui(App):
         color: #f4f7fb;
     }
 
-    #status-strip {
+    #pipeline-status {
         layout: horizontal;
-        height: 1;
+        height: 2;
+        min-height: 2;
         padding: 0 1;
-        background: #1b2536;
+        background: #151d2a;
+        border-bottom: solid #273245;
     }
 
     .health-item {
         width: 1fr;
+        min-width: 12;
         height: 1;
         padding: 0 1;
         content-align: left middle;
@@ -232,8 +235,48 @@ class ZodiacTui(App):
     }
 
     #pipeline-section {
+        height: 18;
+        min-height: 16;
+        max-height: 20;
+    }
+
+    #pipeline-top {
+        layout: horizontal;
+        height: 3;
+        min-height: 3;
+    }
+
+    #pipeline-body {
+        layout: horizontal;
         height: 1fr;
-        min-height: 12;
+        min-height: 11;
+    }
+
+    #pipeline-left {
+        width: 1fr;
+        height: 1fr;
+        padding-right: 1;
+    }
+
+    #pipeline-actions {
+        width: 22;
+        min-width: 20;
+        max-width: 26;
+        height: 1fr;
+        padding-left: 1;
+        border-left: solid #273245;
+    }
+
+    #pipeline-actions .section-title {
+        height: 1;
+        margin-bottom: 1;
+    }
+
+    #pipeline-actions Button {
+        width: 1fr;
+        height: 3;
+        min-height: 3;
+        margin-bottom: 1;
     }
 
     #output-section {
@@ -339,36 +382,22 @@ class ZodiacTui(App):
         margin-right: 1;
     }
 
-    #pipeline-head {
-        layout: horizontal;
-        height: 3;
-        min-height: 3;
-    }
-
     #pipeline-heading {
-        width: auto;
+        width: 12;
         min-width: 12;
+        content-align: left middle;
     }
 
     #pipeline-summary {
         width: 1fr;
         padding: 0 1;
         color: #b8c3d2;
-    }
-
-    #pipeline-tools {
-        layout: horizontal;
-        width: auto;
-    }
-
-    #pipeline-tools Button {
-        min-width: 9;
-        margin-left: 1;
+        content-align: left middle;
     }
 
     #pipeline-table {
         height: 1fr;
-        min-height: 9;
+        min-height: 7;
         background: #0c1119;
         border: none;
     }
@@ -385,8 +414,8 @@ class ZodiacTui(App):
     }
 
     #command-bar {
-        layout: horizontal;
-        height: 3;
+        height: 1;
+        min-height: 1;
         padding: 0 1;
         background: #101620;
         border-top: solid #273245;
@@ -399,21 +428,12 @@ class ZodiacTui(App):
         content-align: left middle;
     }
 
-    #primary-actions {
-        layout: horizontal;
-        width: auto;
-    }
-
-    #primary-actions Button {
-        min-width: 9;
-        margin-left: 1;
-    }
 
     Footer {
         background: #090d13;
     }
 
-    Screen.narrow #status-strip {
+    Screen.narrow #pipeline-status {
         layout: vertical;
         height: 4;
         padding: 0 1;
@@ -446,12 +466,42 @@ class ZodiacTui(App):
     }
 
     Screen.narrow #pipeline-section {
-        height: 20;
+        height: 30;
+        max-height: 34;
     }
 
-    Screen.narrow #command-bar {
+    Screen.narrow #pipeline-body {
         layout: vertical;
-        height: 7;
+        height: 1fr;
+    }
+
+    Screen.narrow #pipeline-left {
+        width: 1fr;
+        height: 15;
+        padding-right: 0;
+    }
+
+    Screen.narrow #pipeline-actions {
+        width: 1fr;
+        max-width: 100%;
+        height: 13;
+        padding-left: 0;
+        border-left: none;
+        border-top: solid #273245;
+    }
+
+    Screen.narrow #pipeline-actions {
+        layout: grid;
+        grid-size: 2 2;
+        grid-gutter: 0 1;
+    }
+
+    Screen.narrow #pipeline-actions .section-title {
+        display: none;
+    }
+
+    Screen.narrow #pipeline-actions Button {
+        margin-bottom: 0;
     }
 
     Screen.narrow #command-status {
@@ -460,34 +510,20 @@ class ZodiacTui(App):
         padding: 0 1;
     }
 
-    Screen.narrow #primary-actions {
-        width: 1fr;
-    }
-
-    Screen.narrow #primary-actions Button {
-        width: 1fr;
-        min-width: 8;
-    }
-
-    Screen.tiny #pipeline-head {
+    Screen.tiny #pipeline-top {
         layout: vertical;
-        height: auto;
+        height: 4;
+    }
+
+    Screen.tiny #pipeline-heading {
+        width: 1fr;
+        height: 1;
     }
 
     Screen.tiny #pipeline-summary {
         width: 1fr;
-        height: 2;
+        height: 3;
         padding: 0;
-    }
-
-    Screen.tiny #pipeline-tools {
-        width: 1fr;
-    }
-
-    Screen.tiny #pipeline-tools Button {
-        width: 1fr;
-        margin-left: 0;
-        margin-right: 1;
     }
 
     Screen.tiny .button-row {
@@ -500,20 +536,19 @@ class ZodiacTui(App):
         margin-bottom: 1;
     }
 
-    Screen.tiny #command-bar {
-        height: 9;
-        padding: 1;
-    }
-
-    Screen.tiny #primary-actions {
+    Screen.tiny #pipeline-actions {
         layout: vertical;
-        height: auto;
+        height: 14;
     }
 
-    Screen.tiny #primary-actions Button {
+    Screen.tiny #pipeline-actions Button {
         width: 1fr;
-        margin-left: 0;
-        margin-bottom: 0;
+        margin-bottom: 1;
+    }
+
+    Screen.tiny #command-bar {
+        height: 1;
+        padding: 0 1;
     }
     """
 
@@ -540,12 +575,6 @@ class ZodiacTui(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-
-        with Container(id="status-strip"):
-            yield Static("JOB  Chưa chọn", id="health-job", classes="health-item")
-            yield Static("ENV  Chưa kiểm tra", id="health-env", classes="health-item")
-            yield Static("VIENEU  Chưa kiểm tra", id="health-tts", classes="health-item")
-            yield Static("OUTPUT  Chưa render", id="health-output", classes="health-item")
 
         with VerticalScroll(id="workspace"):
             with VerticalScroll(id="sidebar"):
@@ -605,17 +634,27 @@ class ZodiacTui(App):
 
             with Vertical(id="content"):
                 with Vertical(classes="section", id="pipeline-section"):
-                    with Container(id="pipeline-head"):
+                    with Container(id="pipeline-top"):
                         yield Label("QUY TRÌNH", id="pipeline-heading", classes="section-title")
                         yield Static("Nạp ZIP hoặc chọn job để bắt đầu.", id="pipeline-summary")
-                        with Container(id="pipeline-tools"):
+                    with Container(id="pipeline-status"):
+                        yield Static("● JOB  Chưa chọn", id="health-job", classes="health-item")
+                        yield Static("● ENV  Chưa kiểm tra", id="health-env", classes="health-item")
+                        yield Static("● VIENEU  Chưa kiểm tra", id="health-tts", classes="health-item")
+                        yield Static("● OUTPUT  Chưa render", id="health-output", classes="health-item")
+                    with Container(id="pipeline-body"):
+                        with Vertical(id="pipeline-left"):
+                            yield DataTable(id="pipeline-table", zebra_stripes=False)
+                            yield Static(
+                                "Nạp ZIP  →  Chạy toàn bộ  →  Video cuối",
+                                id="workflow-hint",
+                            )
+                        with Vertical(id="pipeline-actions"):
+                            yield Label("THAO TÁC", classes="section-title")
                             yield Button("Chạy lại", id="rerun-stage")
                             yield Button("Hiện log", id="toggle-log")
-                    yield DataTable(id="pipeline-table", zebra_stripes=False)
-                    yield Static(
-                        "Nạp ZIP  →  Chạy toàn bộ  →  Video cuối",
-                        id="workflow-hint",
-                    )
+                            yield Button("Chạy toàn bộ", id="run-full", variant="success")
+                            yield Button("Dừng", id="stop", variant="error")
 
                 with Vertical(classes="section", id="output-section"):
                     yield Label("KẾT QUẢ", classes="section-title")
@@ -630,9 +669,6 @@ class ZodiacTui(App):
 
         with Container(id="command-bar"):
             yield Static("Chưa chạy", id="command-status")
-            with Container(id="primary-actions"):
-                yield Button("Chạy toàn bộ", id="run-full", variant="success")
-                yield Button("Dừng", id="stop", variant="error")
 
         yield Footer()
 
@@ -692,9 +728,15 @@ class ZodiacTui(App):
         self.query_one("#package-path", Static).update(package_path)
         self.query_one("#active-job", Static).update(job.name if job else "—")
 
-        self.query_one("#health-job", Static).update(f"JOB  {job.name if job else 'Chưa chọn'}")
+        self.query_one("#health-job", Static).update(
+            self._status_light("JOB", job.name if job else "Chưa chọn", ok=job is not None)
+        )
         self.query_one("#health-output", Static).update(
-            f"OUTPUT  {'Sẵn sàng' if video_ready else 'Chưa render'}"
+            self._status_light(
+                "OUTPUT",
+                "Sẵn sàng" if video_ready else "Chưa render",
+                ok=video_ready if job is not None else None,
+            )
         )
         self._refresh_health_from_checks()
 
@@ -753,19 +795,35 @@ class ZodiacTui(App):
             and self.controller.plan.status(MIX_MUSIC) in COMPLETE
         )
 
+    @staticmethod
+    def _status_light(label: str, text: str, *, ok: bool | None) -> str:
+        if ok is True:
+            dot = "[bold green]●[/]"
+        elif ok is False:
+            dot = "[bold red]●[/]"
+        else:
+            dot = "[dim]●[/]"
+        return f"{dot} {label}  {text}"
+
     def _refresh_health_from_checks(self) -> None:
         checks = self.controller.preflight_checks
         if not checks:
-            self.query_one("#health-env", Static).update("ENV  Chưa kiểm tra")
-            self.query_one("#health-tts", Static).update("VIENEU  Chưa kiểm tra")
+            self.query_one("#health-env", Static).update(
+                self._status_light("ENV", "Chưa kiểm tra", ok=None)
+            )
+            self.query_one("#health-tts", Static).update(
+                self._status_light("VIENEU", "Chưa kiểm tra", ok=None)
+            )
             return
         vieneu = next((check for check in checks if check.code == "VIENEU"), None)
         env_checks = [check for check in checks if check.code != "VIENEU"]
+        env_ok = bool(env_checks and all(check.ok for check in env_checks))
+        tts_ok = bool(vieneu and vieneu.ok)
         self.query_one("#health-env", Static).update(
-            f"ENV  {'Sẵn sàng' if env_checks and all(check.ok for check in env_checks) else 'Cần xử lý'}"
+            self._status_light("ENV", "Sẵn sàng" if env_ok else "Cần xử lý", ok=env_ok)
         )
         self.query_one("#health-tts", Static).update(
-            f"VIENEU  {'Đã kết nối' if vieneu and vieneu.ok else 'Chưa kết nối'}"
+            self._status_light("VIENEU", "Đã kết nối" if tts_ok else "Chưa kết nối", ok=tts_ok)
         )
 
     def _refresh_output_summary(self) -> None:

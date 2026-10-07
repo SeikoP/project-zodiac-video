@@ -206,6 +206,8 @@ TUI hiện có:
 - chọn lại job đã import;
 - status strip gọn cho Job / Environment / VieNeu / Output;
 - dashboard 5 stage trên pipeline nội bộ 9 node: **GÓI / GIỌNG / TIMING / RENDER / ÂM THANH**;
+- khối **QUY TRÌNH** chia hai cột: pipeline bên trái, toàn bộ thao tác **Chạy lại / Hiện log / Chạy toàn bộ / Dừng** bên phải;
+- status compact phía trên pipeline dùng đèn xanh/đỏ/xám cho Job / Environment / VieNeu / Output;
 - chọn trực tiếp một hàng pipeline rồi bấm **Chạy lại** — không có dropdown bước riêng;
 - voice dropdown lấy preset VieNeu đã lưu, align model, music, volume và **Nghe thử**;
 - nút **Chạy toàn bộ** chạy/resume pipeline thẳng tới final output;

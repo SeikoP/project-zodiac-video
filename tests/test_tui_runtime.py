@@ -70,6 +70,23 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(app._command_status(), "Nạp ZIP hoặc chọn job để bắt đầu.")
 
+            # Pipeline console: stages on the left, all run controls on the right.
+            self.assertTrue(app.query("#pipeline-left"))
+            self.assertTrue(app.query("#pipeline-actions"))
+            actions = app.query_one("#pipeline-actions")
+            action_ids = [button.id for button in actions.query("Button")]
+            self.assertEqual(
+                action_ids,
+                ["rerun-stage", "toggle-log", "run-full", "stop"],
+            )
+            self.assertFalse(app.query("#primary-actions"))
+
+            # Health lights live at the top of the pipeline console.
+            self.assertTrue(app.query("#pipeline-status"))
+            self.assertIn("[bold red]●[/]", app._status_light("JOB", "Chưa chọn", ok=False))
+            self.assertIn("[bold green]●[/]", app._status_light("ENV", "Sẵn sàng", ok=True))
+            self.assertIn("[dim]●[/]", app._status_light("ENV", "Chưa kiểm tra", ok=None))
+
     async def test_tui_switches_to_narrow_layout_class(self):
         app = ZodiacTui()
         async with app.run_test(size=(72, 44)) as pilot:
