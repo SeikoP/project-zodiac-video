@@ -599,7 +599,17 @@ class PipelineWorker:
         elif "does not match approved narration" in lowered:
             code = "ALIGNMENT_MISMATCH"
             message = "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thử lại."
-        elif "node.js" in lowered or "npm" in lowered:
+        elif (
+            "render_blocked" in lowered
+            and "production.json does not match v2.0 schema" in lowered
+        ):
+            code = "RENDER_CONTRACT_INVALID"
+            message = "Renderer từ chối production.json vì schema runtime không khớp package."
+        elif (
+            "node.js is required" in lowered
+            or "npm is required but was not found" in lowered
+            or ("node.js/npm" in lowered and "not found" in lowered)
+        ):
             code = "NODE_MISSING"
             message = "Thiếu Node.js/npm để chạy renderer."
         elif "ffmpeg" in lowered:
