@@ -249,7 +249,7 @@ const focusDirectionFor = (scene: ProductionScene, event: VisualEvent, sourceSta
   return targetX === sourceX ? 0 : targetX > sourceX ? 1 : -1;
 };
 
-const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: ProductionScene; timing: RuntimeSceneTiming; allTiming: RuntimeTiming; production: Production}> = ({entity, events, scene, timing, allTiming, production}) => {
+const EntityView: React.FC<{entity: VisualEntity; entityIndex:number; events: VisualEvent[]; scene: ProductionScene; timing: RuntimeSceneTiming; allTiming: RuntimeTiming; production: Production}> = ({entity, entityIndex, events, scene, timing, allTiming, production}) => {
   const frame = useCurrentFrame();
   const history = events.filter((event) => event.target === entity.id).map((event) => {
     const start = allTiming.resolved_events?.[event.id];
@@ -281,23 +281,23 @@ const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: 
       const showingAfter = choreography.pose === "after";
       const poseState = showingAfter ? afterState : beforeState;
       const poseKey = showingAfter ? transition.after : transition.before;
-      return <VisualStateNode production={production} state={poseState} key={poseKey} event={transition.event} frame={localFrame} opacity={1} transformOverride={tweenTransform} focusDirection={focusDirection} choreography={choreography}/>;
+      return <VisualStateNode production={production} entityIndex={entityIndex} state={poseState} key={poseKey} event={transition.event} frame={localFrame} opacity={1} transformOverride={tweenTransform} focusDirection={focusDirection} choreography={choreography}/>;
     }
-    if (beforeState.visible && !afterState.visible) return <VisualStateNode production={production} state={beforeState} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
-    if (!beforeState.visible && afterState.visible) return <VisualStateNode production={production} state={afterState} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
+    if (beforeState.visible && !afterState.visible) return <VisualStateNode production={production} entityIndex={entityIndex} state={beforeState} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
+    if (!beforeState.visible && afterState.visible) return <VisualStateNode production={production} entityIndex={entityIndex} state={afterState} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
   }
   if (acting) {
     const focusDirection = focusDirectionFor(scene, acting.event, afterState);
-    return <VisualStateNode production={production} state={afterState} event={acting.event} frame={frame-acting.start} opacity={1} focusDirection={focusDirection}/>;
+    return <VisualStateNode production={production} entityIndex={entityIndex} state={afterState} event={acting.event} frame={frame-acting.start} opacity={1} focusDirection={focusDirection}/>;
   }
-  return <VisualStateNode production={production} state={afterState} frame={frame} opacity={1}/>;
+  return <VisualStateNode production={production} entityIndex={entityIndex} state={afterState} frame={frame} opacity={1}/>;
 };
 
-const VisualStateNode: React.FC<{production:Production;state:VisualState;event?:VisualEvent;frame:number;opacity:number;focusDirection?:number;transformOverride?:VisualState["transform"];choreography?:{x:number;y:number;rotate_deg:number;scale:number;opacity:number}}> = ({production,state,event,frame,opacity,focusDirection=0,transformOverride,choreography}) => {
+const VisualStateNode: React.FC<{production:Production;entityIndex:number;state:VisualState;event?:VisualEvent;frame:number;opacity:number;focusDirection?:number;transformOverride?:VisualState["transform"];choreography?:{x:number;y:number;rotate_deg:number;scale:number;opacity:number}}> = ({production,entityIndex,state,event,frame,opacity,focusDirection=0,transformOverride,choreography}) => {
   if (!state.visible) return null;
   const box = transformOverride ?? state.transform;
   const style:CSSProperties = {
-    position:"absolute",left:box.x,top:box.y,width:box.width,height:box.height,zIndex:state.layer,
+    position:"absolute",left:box.x,top:box.y,width:box.width,height:box.height,zIndex:effectiveZIndex(state.layer,entityIndex),
     ...motionStyle(frame,event?.motion,production,opacity,event?.performance,focusDirection,choreography),
   };
   if (state.asset) {
@@ -335,7 +335,7 @@ const SceneView: React.FC<{scene: ProductionScene; timing: RuntimeSceneTiming; a
   });
   return <AbsoluteFill style={{backgroundColor: production.visual_system.palette.paper, ...transition}}>
     <div style={fullCanvasContentStyle(production, cameraStyle)}>
-      {scene.entities.map((entity) => <EntityView key={entity.id} production={production} entity={entity} events={scene.events} scene={scene} timing={timing} allTiming={allTiming} />)}
+      {scene.entities.map((entity, entityIndex) => <EntityView key={entity.id} production={production} entity={entity} entityIndex={entityIndex} events={scene.events} scene={scene} timing={timing} allTiming={allTiming} />)}
     </div>
     {captionNodes}
     {sfxNodes}
