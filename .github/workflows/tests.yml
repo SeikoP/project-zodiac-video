@@ -157,6 +157,8 @@ jobs:
         run: npm test
       - name: Typecheck runtime-owned animation
         run: npm run typecheck
-      - name: Print canonical runtime 1.18 hash
+      - name: Verify canonical runtime 1.18 hash
         working-directory: .
-        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.18.0/renderer
+        run: |
+          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.18.0/renderer | tail -n 1)
+          grep -q "$HASH" runtime/zodiac-remotion/1.18.0/runtime-manifest.json
