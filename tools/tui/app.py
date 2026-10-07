@@ -1211,11 +1211,9 @@ class ZodiacTui(App):
             def log_child(line: str, *, channel: str = "stdout") -> None:
                 self.call_from_thread(self._write_log, line)
 
-            with (
-                observe_subprocess_output(log_child),
-                contextlib.redirect_stdout(captured),
-                contextlib.redirect_stderr(captured),
-            ):
+            with observe_subprocess_output(log_child), contextlib.redirect_stdout(
+                captured
+            ), contextlib.redirect_stderr(captured):
                 preview = build_audio_preview(
                     job,
                     music,
