@@ -1,6 +1,6 @@
 # Zodiac Single-Job Performance Engine Spec
 
-Status: **architecture locked, implementation pending**
+Status: **architecture locked; voice foundation implemented; remaining work deferred**
 
 Scope: optimize the execution time and iteration cost of **one Zodiac video job**, with a design target that remains practical when videos grow toward **10–20 minutes**.
 
@@ -585,44 +585,100 @@ Hashes/provenance remain in diagnostics/logs.
 
 ---
 
+## 15.1 Implementation checkpoint — 2026-10-07
+
+Current merged foundation: PR #31 / commit `8715721e3c7bdb446037257cea7b5ede40254c15`.
+
+Implemented now:
+
+- [x] job-local immutable voice artifact store under `.runtime/artifacts/voice/<scene>/`
+- [x] per-scene take IDs and active approved take index
+- [x] `voice_profile_hash` based on VieNeu preset data and referenced local files when available
+- [x] `generation_profile_hash` stored as provenance
+- [x] approved voice artifact survives backend/precision generation-profile drift
+- [x] `VOICE_PROFILE_DRIFT` is surfaced instead of silently regenerating approved audio
+- [x] existing valid scene WAV checkpoints migrate into the artifact store without TTS regeneration
+- [x] missing/corrupted working scene WAV can be restored from the approved artifact during job-state verification
+- [x] performance telemetry stores `cache_reason`
+- [x] voice-stage cache reasons include `REUSED_APPROVED`, `PARTIAL_REUSE`, `NO_ARTIFACT`, and `GENERATED_NEW`
+- [x] approved artifact files are not overwritten in place
+- [x] Python/unit, renderer-smoke and shared-runtime CI passed for the foundation
+
+Not implemented yet:
+
+- [ ] per-scene timing/alignment artifact cache
+- [ ] `TimingAssembler`
+- [ ] canonical artifact dependency graph
+- [ ] TUI cache/reuse counters and dirty-reason drilldown
+- [ ] scene-aware `SegmentPlanner`
+- [ ] incremental segment rendering/assembly
+- [ ] measured Remotion/Whisper/VieNeu concurrency profiles
+- [ ] shared `ResourceBudget`
+- [ ] ScenePreview / SegmentPreview / PerformanceLab
+- [ ] runtime 2.0 semantic performance context/compiler
+- [ ] cross-job artifact reuse
+- [ ] manual creative take approval UI / multi-take selection workflow
+
+### Deferred policy
+
+All unchecked work below is intentionally **deferred**. Do not start it opportunistically while fixing unrelated UI/runtime issues.
+
+When this roadmap is resumed, continue in this order:
+
+```text
+P2 per-scene timing cache
+        ↓
+measure cold-run stage costs
+        ↓
+choose cold-run bottleneck work
+        ↓
+P3 artifact graph
+        ↓
+P4/P5 segment rendering only when needed
+```
+
+After P2, benchmark actual cold-run stage time before automatically continuing deeper into rerun optimization. This prevents the project from optimizing only repeat runs while first-run performance remains unknown.
+
+---
+
 # 16. Implementation checklist
 
 Order matters. Do not start segment rendering before artifact/timing invalidation is correct.
 
-## Phase P0 — contracts and measurement — DO NOW
+## Phase P0 — contracts and measurement — PARTIAL / DEFER REMAINDER
 
 - [ ] define stable artifact IDs and manifest schemas
-- [ ] define cache-decision reason enum
-- [ ] extend current performance telemetry with `cache_reason`
+- [x] define cache-decision reason enum
+- [x] extend current performance telemetry with `cache_reason`
 - [ ] create a fixed long-ish benchmark fixture/profile
 - [ ] capture cold and warm baseline timings
 - [ ] test: visual-only change never calls TTS/ASR
 - [ ] test: music-only change never calls Remotion
-- [ ] test: approved artifact cannot be overwritten in place
+- [x] test: approved artifact cannot be overwritten in place
 - [ ] define resource-profile file format, without auto-tuning yet
 - [ ] keep runtime behavior otherwise unchanged until telemetry/tests are green
 
 **Exit:** reuse decisions are measurable and explainable.
 
-## Phase P1 — voice artifact store — DO NEXT
+## Phase P1 — voice artifact store — FOUNDATION IMPLEMENTED / DEFER REMAINDER
 
-- [ ] per-scene voice artifact manifest
-- [ ] take IDs
-- [ ] `GENERATED / TECH_VALID / APPROVED / SUPERSEDED`
-- [ ] `voice_profile_hash`
-- [ ] `generation_profile_hash`
-- [ ] optional `performance_context_hash`
-- [ ] migrate current valid scene WAV checkpoint as initial take without regeneration
-- [ ] force-regenerate creates new take
-- [ ] approved take immutable
-- [ ] detect `VOICE_PROFILE_DRIFT`
-- [ ] preserve approved take on regeneration failure
-- [ ] restart/resume/rollback tests
-- [ ] no cross-job reuse
+- [x] per-scene voice artifact manifest
+- [x] take IDs
+- [ ] complete creative lifecycle for `GENERATED / TECH_VALID / APPROVED / SUPERSEDED` (enum/store foundation exists; manual approval flow is deferred)
+- [x] `voice_profile_hash`
+- [x] `generation_profile_hash`
+- [x] optional `performance_context_hash` field supported; currently `NONE`
+- [x] migrate current valid scene WAV checkpoint as initial take without regeneration
+- [ ] explicit force-regenerate UX/API creates a selectable new take (immutable storage already supports distinct takes)
+- [x] approved take immutable
+- [x] detect `VOICE_PROFILE_DRIFT`
+- [x] preserve approved take on regeneration failure
+- [ ] complete restart/resume/rollback matrix (restart/restore coverage exists; full rollback matrix deferred)
+- [x] no cross-job reuse
 
 **Exit:** one-scene change never regenerates unrelated approved voice.
 
-## Phase P2 — per-scene timing artifacts
+## Phase P2 — per-scene timing artifacts — DEFERRED / NEXT RESUME POINT
 
 - [ ] store alignment per scene
 - [ ] key by WAV hash + text + aligner profile
@@ -635,7 +691,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** unchanged audio is never re-aligned unnecessarily.
 
-## Phase P3 — canonical artifact graph
+## Phase P3 — canonical artifact graph — DEFERRED
 
 - [ ] artifact dependency graph service
 - [ ] explicit dependency edges
@@ -646,7 +702,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** engine, not individual modules, owns cache validity.
 
-## Phase P4 — segment planner, no renderer switch yet
+## Phase P4 — segment planner, no renderer switch yet — DEFERRED
 
 - [ ] deterministic scene-aware `SegmentPlanner`
 - [ ] safe transition-boundary policy
@@ -658,7 +714,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** engine knows exactly which long-form segments require work.
 
-## Phase P5 — incremental segment renderer
+## Phase P5 — incremental segment renderer — DEFERRED
 
 - [ ] render one segment independently
 - [ ] cache pristine segment
@@ -675,7 +731,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** local edit no longer forces full-video render.
 
-## Phase P6 — measured performance tuning
+## Phase P6 — measured performance tuning — DEFERRED
 
 - [ ] benchmark Remotion `2/4/6/8`
 - [ ] benchmark x264 presets
@@ -689,7 +745,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** defaults come from measured throughput, not CPU-count guesses.
 
-## Phase P7 — Remotion long-form surfaces
+## Phase P7 — Remotion long-form surfaces — DEFERRED
 
 - [ ] `ScenePreview`
 - [ ] `SegmentPreview`
@@ -701,7 +757,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** Studio remains practical on a 10–20 minute job.
 
-## Phase P8 — runtime 2.0 semantics
+## Phase P8 — runtime 2.0 semantics — DEFERRED
 
 - [ ] canonical performance-context schema
 - [ ] time-based semantic motion/transition durations
@@ -714,7 +770,7 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 ---
 
-## 17. Recommended future PR sequence
+## 17. Recommended future PR sequence — DEFERRED
 
 1. **PR A — artifact/telemetry contracts**: schemas, reason codes, benchmark baseline; no behavior change.
 2. **PR B — voice takes**: manifests, profile hashes, immutable approved takes, checkpoint migration.
