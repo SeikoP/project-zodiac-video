@@ -260,6 +260,20 @@ class VoiceResumeTests(WorkerHarness):
         working.unlink()
         self.tts_calls.clear()
 
+        from tools.studio.artifacts import VoiceArtifactStore
+
+        before = JobStateStore(self.job).open().steps[VOICE_SCENES].scenes["S02"]
+        store = VoiceArtifactStore(self.job)
+        direct = store.restore_approved(
+            "S02",
+            working,
+            text_hash=before["text_hash"],
+            voice_profile_hash=before["voice_profile_hash"],
+            performance_context_hash=None,
+        )
+        self.assertIsNotNone(direct, "approved artifact could not restore its working WAV directly")
+        working.unlink()
+
         plan = JobStateStore(self.job).open()
         plan.mark(VOICE_SCENES, PENDING)
         JobStateStore(self.job).save(plan)
