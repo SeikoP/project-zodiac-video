@@ -74,6 +74,20 @@ class TuiModelTests(unittest.TestCase):
         voice_group = next(row for row in compact if row["label"] == "GIỌNG")
         self.assertEqual((voice_group["scene_done"], voice_group["scene_total"]), (2, 3))
 
+
+    def test_reopened_voice_scene_makes_group_pending_and_progress_partial(self):
+        rows = self._rows(DONE)
+        voice = next(row for row in rows if row["step"] == VOICE_SCENES)
+        voice["scenes"] = {
+            "S01": {"status": DONE},
+            "S02": {"status": PENDING},
+            "S03": {"status": DONE},
+        }
+        compact = compact_pipeline_rows(rows)
+        voice_group = next(row for row in compact if row["label"] == "GIỌNG")
+        self.assertEqual(voice_group["status"], PENDING)
+        self.assertLess(voice_group["progress"], 1.0)
+
     def test_skipped_step_counts_as_complete_progress(self):
         rows = self._rows(DONE)
         audio = next(row for row in rows if row["step"] == MIX_MUSIC)
