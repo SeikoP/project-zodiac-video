@@ -1642,6 +1642,36 @@ class RuntimeOwnedAnimationV3191Tests(unittest.TestCase):
             self.assertGreaterEqual(event["motion"]["duration_frames"], 8)
 
 
+class SharedRuntimeCacheRepairTests(unittest.TestCase):
+    def test_stale_cached_runtime_is_rebuilt_from_exact_local_reference(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            job = write_runtime_owned_v3200_package(root / "ws" / "jobs")
+            first = resolve_renderer_root(job, materialize=True)
+            cache_root = first.parent
+            target = first / "package.json"
+            original = target.read_text(encoding="utf-8")
+            target.write_text(original + "\n// stale cache\n", encoding="utf-8")
+
+            repaired = resolve_renderer_root(job, materialize=True)
+
+            self.assertEqual(repaired, first)
+            self.assertNotIn(
+                "// stale cache",
+                (repaired / "package.json").read_text(encoding="utf-8"),
+            )
+            self.assertEqual(
+                _renderer_tree_sha256(repaired),
+                _renderer_tree_sha256(
+                    Path(__file__).resolve().parents[1]
+                    / "runtime"
+                    / "zodiac-remotion"
+                    / "1.20.0"
+                    / "renderer"
+                ),
+            )
+            self.assertTrue((cache_root / "runtime-manifest.json").is_file())
+
 class RuntimeLayerSafetyV3200Tests(unittest.TestCase):
     def test_v3200_accepts_runtime_owned_animation_package(self):
         with tempfile.TemporaryDirectory() as temp:
