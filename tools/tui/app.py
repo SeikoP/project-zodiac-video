@@ -817,13 +817,10 @@ class ZodiacTui(App):
         self.query_one("#music-select", Select).disabled = worker_running
         self.query_one("#clear-music", Button).disabled = worker_running
 
-        voice_ready = bool(
-            job
-            and (job / "voice.wav").is_file()
-            and self.controller.plan.status(CONCAT_VOICE) in COMPLETE
-        )
+        # The backend intentionally supports music-only audition before
+        # voice.wav exists, so preview must not be gated on voice generation.
         self.query_one("#listen", Button).disabled = (
-            worker_running or job is None or self.music_path is None or not voice_ready
+            worker_running or job is None or self.music_path is None
         )
 
     def _command_status(self) -> str:
