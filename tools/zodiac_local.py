@@ -1138,6 +1138,19 @@ _STRONG_ARTICULATION_ACTION = re.compile(
     r"(?:^|_)(open|close|fold|unfold|zip|unzip|insert|remove|pick|place|hold|release|turn_page|drawer|curtain|door|lid|flap|wear|remove_mask)(?:_|$)",
     re.IGNORECASE,
 )
+_SEMANTIC_CLOSE_ACTION = re.compile(
+    r"(?:^|_)(?:are|feel|feels|felt|grow|grows|grew|become|becomes|became|stay|stays|stayed|remain|remains|remained|get|gets|got)_close(?:_|$)",
+    re.IGNORECASE,
+)
+
+
+def _requires_semantic_mechanism(action: str) -> bool:
+    matches = [match.group(1).lower() for match in _MECHANICAL_ACTION.finditer(action)]
+    if not matches:
+        return False
+    if set(matches) == {"close"} and _SEMANTIC_CLOSE_ACTION.search(action):
+        return False
+    return True
 
 
 def _validate_asset_lineage(
@@ -1214,7 +1227,7 @@ def _validate_semantic_animation_scene(scene: dict, entity_map: dict[str, dict])
         if event.get("target") == "camera":
             continue
         action = str(event.get("action", ""))
-        if not _MECHANICAL_ACTION.search(action):
+        if not _requires_semantic_mechanism(action):
             continue
         mechanism = event.get("mechanism")
         if not isinstance(mechanism, dict):
