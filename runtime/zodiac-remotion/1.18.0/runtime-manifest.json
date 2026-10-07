@@ -1,0 +1,7 @@
+{
+  "format": "zodiac-runtime@1",
+  "id": "zodiac-remotion",
+  "version": "1.18.0",
+  "sha256": "9e30417273c338493a67529bfeef47809baaeb77bd4ac22b76d299e3946fb56f",
+  "renderer_contract": "shared-job-props-v2-runtime-owned-animation-single-pose-bridge"
+}
