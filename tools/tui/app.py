@@ -15,7 +15,7 @@ from pathlib import Path
 
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, RichLog, Select, Static
 
 from tools.studio.controller import StudioController
@@ -158,11 +158,52 @@ class ZodiacTui(App):
         padding: 0 1;
     }
 
-    Select, Input {
+    Select {
+        background: #0c1119;
+    }
+
+    Input {
         background: #0c1119;
         border: solid #354158;
         height: 3;
         min-height: 3;
+    }
+
+    #job-select {
+        width: 1fr;
+        margin-top: 1;
+        border-bottom: solid #354158;
+    }
+
+    .setting-row {
+        layout: horizontal;
+        height: 3;
+        margin-top: 1;
+    }
+
+    .setting-name {
+        width: auto;
+        padding: 0 1 0 0;
+        content-align: left middle;
+        color: #909db1;
+    }
+
+    .setting-row Select {
+        width: 1fr;
+        border-bottom: solid #354158;
+        content-align: center middle;
+    }
+
+    .setting-row Input {
+        width: 1fr;
+        height: 3;
+        min-height: 3;
+    }
+
+    .setting-row Static {
+        width: 1fr;
+        content-align: left middle;
+        color: #8795a9;
     }
 
     .button-row {
@@ -394,8 +435,13 @@ class ZodiacTui(App):
                     yield Label("DỰ ÁN", classes="section-title")
                     yield Static("Chưa chọn package", id="package-name")
                     yield Static("Nạp zodiac-job ZIP để bắt đầu", id="package-path")
-                    yield Label("Job đang dùng", classes="field-label")
-                    yield Select([], prompt="Chọn job đã nhập", id="job-select", allow_blank=True)
+                    yield Select(
+                        [],
+                        prompt="Chọn job đã nhập",
+                        id="job-select",
+                        allow_blank=True,
+                        compact=True,
+                    )
                     yield Static("—", id="active-job")
                     with Container(classes="button-row"):
                         yield Button("Nạp ZIP", id="pick-zip", variant="primary")
@@ -404,28 +450,34 @@ class ZodiacTui(App):
 
                 with Vertical(classes="section", id="settings-section"):
                     yield Label("THIẾT LẬP", classes="section-title")
-                    yield Label("Giọng đọc", classes="field-label")
-                    yield Select(
-                        [(voice, voice) for voice in self.voice_choices],
-                        value=preferred_voice(self.voice_choices),
-                        id="voice-select",
-                        allow_blank=False,
-                    )
-                    yield Label("Căn thời gian từ", classes="field-label")
-                    yield Select(
-                        [(value, value) for value in ALIGN_MODEL_CHOICES],
-                        value=ALIGN_MODEL_DEFAULT,
-                        id="align-select",
-                        allow_blank=False,
-                    )
-                    yield Label("Nhạc nền", classes="field-label")
-                    yield Static("Không dùng nhạc nền", id="music-label")
+                    with Horizontal(classes="setting-row"):
+                        yield Label("Giọng", classes="setting-name")
+                        yield Select(
+                            [(voice, voice) for voice in self.voice_choices],
+                            value=preferred_voice(self.voice_choices),
+                            id="voice-select",
+                            allow_blank=False,
+                            compact=True,
+                        )
+                    with Horizontal(classes="setting-row"):
+                        yield Label("Căn Tg", classes="setting-name")
+                        yield Select(
+                            [(value, value) for value in ALIGN_MODEL_CHOICES],
+                            value=ALIGN_MODEL_DEFAULT,
+                            id="align-select",
+                            allow_blank=False,
+                            compact=True,
+                        )
+                    with Horizontal(classes="setting-row"):
+                        yield Label("Âm lượng", classes="setting-name")
+                        yield Input(value="35", id="music-volume", type="number")
+                    with Horizontal(classes="setting-row"):
+                        yield Label("Nhạc", classes="setting-name")
+                        yield Static("Không dùng nhạc nền", id="music-label")
                     with Container(classes="button-row"):
                         yield Button("Chọn nhạc", id="pick-music")
                         yield Button("Nghe thử", id="listen")
                         yield Button("Bỏ", id="clear-music")
-                    yield Label("Âm lượng nhạc 0–100", classes="field-label")
-                    yield Input(value="35", id="music-volume", type="number")
 
             with Vertical(id="content"):
                 with Vertical(classes="section", id="pipeline-section"):
@@ -899,7 +951,11 @@ class ZodiacTui(App):
                 self.call_from_thread(self._write_log, result.stdout.strip())
             if result.returncode != 0:
                 raise RuntimeError(result.stderr.strip() or "Không tạo được audio preview.")
-            self.call_from_thread(self.notify, "Đã mở bản nghe thử 10 giây.")
+            preview = self.controller.job / ".runtime" / "audio-preview.wav"
+            if not preview.is_file():
+                raise RuntimeError("Không tìm thấy tệp nghe thử.")
+            self.call_from_thread(self._open_path, preview)
+            self.call_from_thread(self.notify, "Đang phát bản nghe thử 10 giây.")
         except Exception as exc:
             self.call_from_thread(self.notify, str(exc), severity="error")
 
