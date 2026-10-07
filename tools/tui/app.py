@@ -283,7 +283,7 @@ class ZodiacTui(App):
                     with Horizontal(classes="inline-row"):
                         yield Button("Nạp ZIP", id="pick-zip", variant="primary")
                         yield Button("Kiểm tra", id="check")
-                        yield Button("Cài dependency", id="install-deps")
+                        yield Button("Cài deps", id="install-deps")
 
                 with Vertical(classes="card", id="settings-card"):
                     yield Label("THIẾT LẬP", classes="section-title")
@@ -673,13 +673,20 @@ class ZodiacTui(App):
         except Exception as exc:
             self.call_from_thread(self.notify, str(exc), severity="error")
 
-    @work(thread=True, group="audio-preview", exclusive=True)
-    def _listen_audio(self) -> None:
+    def _start_audio_preview(self) -> None:
         if self.controller.job is None or self.music_path is None:
-            self.call_from_thread(self.notify, "Chọn job và nhạc nền trước.", severity="warning")
+            self.notify("Chọn job và nhạc nền trước.", severity="warning")
             return
         try:
             _, _, volume = self._pipeline_settings()
+        except ValueError:
+            self.notify("Âm lượng phải là số từ 0 đến 100.", severity="error")
+            return
+        self._run_audio_preview(volume)
+
+    @work(thread=True, group="audio-preview", exclusive=True)
+    def _run_audio_preview(self, volume: float) -> None:
+        try:
             command = [
                 sys.executable,
                 str(ROOT / "tools" / "zodiac_local.py"),
