@@ -736,6 +736,24 @@ class ControllerTests(WorkerHarness):
             "zodiac-bocap-hai-phien-ban",
         )
 
+    def test_versioned_patch_archive_is_detected_for_auto_import(self):
+        controller = StudioController(workspace=self.root / "ws")
+        self.assertTrue(
+            controller.is_versioned_patch_archive(
+                self.root / "zodiac-bocap-hai-phien-ban-v1.3.zip"
+            )
+        )
+        self.assertTrue(
+            controller.is_versioned_patch_archive(
+                self.root / "zodiac-bocap-hai-phien-ban-v2.3.4.zip"
+            )
+        )
+        self.assertFalse(
+            controller.is_versioned_patch_archive(
+                self.root / "zodiac-bocap-hai-phien-ban.zip"
+            )
+        )
+
     def test_patch_archive_reuses_existing_legacy_versioned_workspace(self):
         controller = StudioController(workspace=self.root / "ws")
         legacy = controller.jobs_dir / "zodiac-bocap-hai-phien-ban-v1.1"
@@ -782,6 +800,21 @@ class ControllerTests(WorkerHarness):
             self.assertEqual(rows[step]["progress"], 0.0)
             self.assertEqual(rows[step]["scenes"], {})
             self.assertIn("ZIP mới", rows[step]["message"])
+
+    def test_archive_destination_public_api_reuses_legacy_patch_workspace(self):
+        controller = StudioController(workspace=self.root / "ws")
+        legacy = controller.jobs_dir / "zodiac-bocap-hai-phien-ban-v1.1"
+        legacy.mkdir(parents=True, exist_ok=True)
+        (legacy / "production.json").write_text(
+            '{"version":"2.0","scenes":[]}',
+            encoding="utf-8",
+        )
+        self.assertEqual(
+            controller.archive_destination(
+                self.root / "zodiac-bocap-hai-phien-ban-v1.3.zip"
+            ),
+            legacy,
+        )
 
     def test_conflicting_archive_needs_an_explicit_choice(self):
         controller = self._controller()
