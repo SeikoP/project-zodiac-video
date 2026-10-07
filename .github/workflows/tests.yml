@@ -138,3 +138,25 @@ jobs:
         run: |
           HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.17.0/renderer | tail -n 1)
           grep -q "$HASH" runtime/zodiac-remotion/1.17.0/runtime-manifest.json
+
+
+  shared-runtime-1-18:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-remotion/1.18.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install runtime-owned animation dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test runtime-owned animation
+        run: npm test
+      - name: Typecheck runtime-owned animation
+        run: npm run typecheck
+      - name: Print canonical runtime 1.18 hash
+        working-directory: .
+        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.18.0/renderer
