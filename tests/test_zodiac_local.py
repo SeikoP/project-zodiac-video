@@ -772,6 +772,27 @@ def write_runtime_owned_v3191_package(root: Path) -> Path:
     return job
 
 
+def runtime_owned_v3200_files():
+    files = runtime_owned_v3191_files()
+    manifest = json.loads(files["package-manifest.json"])
+    manifest["runtime"] = {
+        "id": "zodiac-remotion",
+        "version": "1.20.0",
+    }
+    manifest["producer"]["version"] = "1.46.0"
+    files["package-manifest.json"] = json.dumps(manifest, ensure_ascii=False)
+    return files
+
+
+def write_runtime_owned_v3200_package(root: Path) -> Path:
+    job = root / "zodiac-v3200-layer-safety"
+    for name, content in runtime_owned_v3200_files().items():
+        target = job / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return job
+
+
 def write_v3_package(root: Path) -> Path:
     job = root / "zodiac-v3-test"
     for name, content in v3_package_files().items():
@@ -1554,6 +1575,61 @@ class RuntimeOwnedAnimationV3191Tests(unittest.TestCase):
             self.assertIn("motion", event)
             self.assertIn("performance", event)
             self.assertGreaterEqual(event["motion"]["duration_frames"], 8)
+
+
+class RuntimeLayerSafetyV3200Tests(unittest.TestCase):
+    def test_v3200_accepts_runtime_owned_animation_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_runtime_owned_v3200_package(Path(temp))
+            production = validate_package(job)
+            event = production["scenes"][0]["events"][0]
+            self.assertNotIn("motion", event)
+            self.assertNotIn("performance", event)
+            renderer = resolve_renderer_root(job, materialize=False)
+            self.assertIn("1.20.0", renderer.parts)
+
+    @unittest.skipUnless(
+        os.environ.get("ZODIAC_E2E_RUNTIME") == "1",
+        "golden runtime prepare runs only in the dedicated shared-runtime CI job",
+    )
+    def test_v3200_runtime_prepare_with_layer_safety(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_runtime_owned_v3200_package(Path(temp))
+            write_pcm(job / "voice.wav", seconds=1.0)
+            runtime_state = job / ".runtime"
+            runtime_state.mkdir(parents=True, exist_ok=True)
+            (runtime_state / "timing.json").write_text(
+                json.dumps(valid_timing(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            runtime_dir = (
+                Path(__file__).resolve().parents[1]
+                / "runtime"
+                / "zodiac-remotion"
+                / "1.20.0"
+                / "renderer"
+            )
+            env = dict(os.environ)
+            env["ZODIAC_PACKAGE_ROOT"] = str(job)
+            result = subprocess.run(
+                ["node", "scripts/render.mjs", "--prepare-only"],
+                cwd=runtime_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=result.stdout + "\n" + result.stderr,
+            )
+            props = json.loads(
+                (runtime_state / "render-props.json").read_text(encoding="utf-8")
+            )
+            event = props["production"]["scenes"][0]["events"][0]
+            self.assertIn("motion", event)
+            self.assertIn("performance", event)
 
 
 class SemanticRuntimeV315Tests(unittest.TestCase):
