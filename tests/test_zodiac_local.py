@@ -1395,6 +1395,29 @@ class ThinPackageV4Tests(unittest.TestCase):
             with self.assertRaisesRegex(PipelineError, "ASSET_LINEAGE_INVALID"):
                 validate_package(job)
 
+    def test_v4_semantic_close_phrase_does_not_require_mechanism(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            event = production["scenes"][0]["events"][0]
+            event["action"] = "knows_you_are_close"
+            event.pop("mechanism", None)
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            validate_package(job)
+
+    def test_v4_real_close_action_still_requires_mechanism(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_v4_package(Path(temp))
+            path = job / "production.json"
+            production = json.loads(path.read_text(encoding="utf-8"))
+            event = production["scenes"][0]["events"][0]
+            event["action"] = "close_safe"
+            event.pop("mechanism", None)
+            path.write_text(json.dumps(production, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(PipelineError, "SEMANTIC_ANIMATION_GATE"):
+                validate_package(job)
+
     def test_v4_rejects_narration_mismatch_without_receipt_indirection(self):
         with tempfile.TemporaryDirectory() as temp:
             job = write_v4_package(Path(temp))
