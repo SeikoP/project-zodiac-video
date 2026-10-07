@@ -25,7 +25,20 @@ The TUI is an operator control plane, not a video editor.
 
 ## Phase 1 implemented
 
-Entry point:
+Preferred entry point:
+
+```powershell
+uv run zodiac
+```
+
+Or install the local command once:
+
+```powershell
+python -m pip install -e .
+zodiac
+```
+
+Compatibility launcher remains available:
 
 ```powershell
 python tools/zodiac_tui.py
@@ -86,3 +99,34 @@ visual source of truth.
 
 CLI, TUI and tests must converge on the same Python application/domain layer.
 The TUI must not become a second implementation of pipeline rules.
+
+
+## UX revision
+
+The operator surface is now organized by decision priority rather than by
+implementation modules:
+
+```text
+Health strip
+  Job | Environment | VieNeu | Remotion | Output
+
+Sidebar
+  Project
+  Production settings
+
+Main workspace
+  Pipeline + next action
+  Output summary
+  Collapsible log
+
+Persistent command bar
+  Continue | Run all | Remotion | Stop
+```
+
+The six visible pipeline stages remain a projection of the nine-node resumable
+DAG. Advanced rerun keeps access to individual internal nodes without forcing
+those implementation details into the default dashboard.
+
+The TUI restores useful controls from the legacy GUI (dependency install, audio
+preview and rerun-step) but intentionally does not restore the duplicate visual
+editor.
