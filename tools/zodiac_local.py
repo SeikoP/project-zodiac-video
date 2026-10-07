@@ -419,6 +419,32 @@ def _verify_cached_runtime(runtime_root: Path, runtime_ref: dict) -> None:
         )
 
 
+def _materialize_exact_runtime_cache(runtime_root: Path, bundled: Path) -> None:
+    """Atomically replace a stale shared runtime with the exact bundled reference."""
+    runtime_root = Path(runtime_root)
+    bundled = Path(bundled)
+    runtime_root.parent.mkdir(parents=True, exist_ok=True)
+
+    scratch = runtime_root.with_name(runtime_root.name + f".refresh-{os.getpid()}")
+    backup = runtime_root.with_name(runtime_root.name + f".stale-{os.getpid()}")
+    shutil.rmtree(scratch, ignore_errors=True)
+    shutil.rmtree(backup, ignore_errors=True)
+    shutil.copytree(bundled, scratch)
+
+    had_existing = runtime_root.exists()
+    try:
+        if had_existing:
+            os.replace(runtime_root, backup)
+        os.replace(scratch, runtime_root)
+    except OSError:
+        shutil.rmtree(scratch, ignore_errors=True)
+        if had_existing and backup.exists() and not runtime_root.exists():
+            os.replace(backup, runtime_root)
+        raise
+    else:
+        shutil.rmtree(backup, ignore_errors=True)
+
+
 def resolve_renderer_root(package_root: Path, *, materialize: bool = True) -> Path:
     """Return legacy package renderer or exact shared v3/v4 runtime renderer."""
     root = Path(package_root).resolve()
@@ -433,18 +459,18 @@ def resolve_renderer_root(package_root: Path, *, materialize: bool = True) -> Pa
     workspace = _workspace_root_for_job(root)
     runtime_root = workspace / "runtimes" / runtime_ref["id"] / runtime_ref["version"]
     if not runtime_root.exists():
-        runtime_root.parent.mkdir(parents=True, exist_ok=True)
-        scratch = runtime_root.with_name(runtime_root.name + f".tmp-{os.getpid()}")
-        if scratch.exists():
-            shutil.rmtree(scratch)
-        shutil.copytree(bundled, scratch)
-        try:
-            os.replace(scratch, runtime_root)
-        except OSError:
-            if not runtime_root.exists():
-                raise
-            shutil.rmtree(scratch, ignore_errors=True)
-    _verify_cached_runtime(runtime_root, runtime_ref)
+        _materialize_exact_runtime_cache(runtime_root, bundled)
+    try:
+        _verify_cached_runtime(runtime_root, runtime_ref)
+    except PipelineError as exc:
+        if "RUNTIME_HASH_MISMATCH" not in str(exc):
+            raise
+        print(
+            "RUNTIME_CACHE_REFRESH: cached runtime is stale; rebuilding exact local runtime reference.",
+            flush=True,
+        )
+        _materialize_exact_runtime_cache(runtime_root, bundled)
+        _verify_cached_runtime(runtime_root, runtime_ref)
     return runtime_root / "renderer"
 
 
