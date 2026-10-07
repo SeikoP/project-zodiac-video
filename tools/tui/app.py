@@ -718,12 +718,7 @@ class ZodiacTui(App):
             table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
 
         self.query_one("#pipeline-summary", Static).update(self._workflow_summary())
-        command_status = (
-            self.controller.status_text
-            if job is not None
-            else "Nạp ZIP hoặc chọn job để bắt đầu."
-        )
-        self.query_one("#command-status", Static).update(command_status)
+        self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
 
         self.query_one("#run-full", Button).disabled = job is None or worker_running
@@ -735,6 +730,11 @@ class ZodiacTui(App):
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
         self.query_one("#listen", Button).disabled = job is None or self.music_path is None
+
+    def _command_status(self) -> str:
+        if self.controller.job is None:
+            return "Nạp ZIP hoặc chọn job để bắt đầu."
+        return self.controller.status_text
 
     def _workflow_summary(self) -> str:
         if self.controller.job is None:
