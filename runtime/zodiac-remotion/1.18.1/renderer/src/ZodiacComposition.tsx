@@ -247,14 +247,10 @@ const EntityView: React.FC<{entity: VisualEntity; events: VisualEvent[]; scene: 
     const tweenTransform = interpolateStateTransform(beforeState.transform, afterState.transform, progress);
     const focusDirection = focusDirectionFor(scene, transition.event, beforeState);
     const localFrame = frame - transition.start;
-    if (beforeState.visible && afterState.visible) {
-      // Keep one persistent entity slot. Swap the pose at the motion midpoint instead
-      // of crossfading two complete SVG bodies on top of one another.
-      const showingAfter = progress >= 0.5;
-      const bridgeState = showingAfter ? afterState : beforeState;
-      const bridgeKey = showingAfter ? transition.after : transition.before;
-      return <VisualStateNode production={production} state={bridgeState} key={bridgeKey} event={transition.event} frame={localFrame} opacity={1} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
-    }
+    if (beforeState.visible && afterState.visible) return <>
+      <VisualStateNode production={production} state={beforeState} key={transition.before} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>
+      <VisualStateNode production={production} state={afterState} key={transition.after} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>
+    </>;
     if (beforeState.visible && !afterState.visible) return <VisualStateNode production={production} state={beforeState} event={transition.event} frame={localFrame} opacity={1-progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
     if (!beforeState.visible && afterState.visible) return <VisualStateNode production={production} state={afterState} event={transition.event} frame={localFrame} opacity={progress} transformOverride={tweenTransform} focusDirection={focusDirection}/>;
   }
