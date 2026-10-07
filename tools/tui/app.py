@@ -795,7 +795,7 @@ class ZodiacTui(App):
         blocked = job is None or worker_running or package_changed
         self.query_one("#run-full", Button).disabled = blocked
         self.query_one("#run-full", Button).label = (
-            "Render lại" if self._final_complete() else "Chạy toàn bộ"
+            "Render lại" if self._final_pipeline_settled() else "Chạy toàn bộ"
         )
         self.query_one("#rerun-stage", Button).disabled = blocked
         self.query_one("#stop", Button).disabled = not worker_running
@@ -821,15 +821,20 @@ class ZodiacTui(App):
             return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
         return "Chạy toàn bộ để tạo video cuối."
 
-    def _final_complete(self) -> bool:
-        video = self.controller.video_path
+    def _final_pipeline_settled(self) -> bool:
         return bool(
             self.controller.job
             and not self.controller.package_changed
-            and video
-            and video.is_file()
             and self.controller.plan.status(RENDER_VIDEO) in COMPLETE
             and self.controller.plan.status(MIX_MUSIC) in COMPLETE
+        )
+
+    def _final_complete(self) -> bool:
+        video = self.controller.video_path
+        return bool(
+            self._final_pipeline_settled()
+            and video
+            and video.is_file()
         )
 
     @staticmethod
@@ -1044,7 +1049,7 @@ class ZodiacTui(App):
         if self.controller.job is None:
             self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
             return
-        rerun = RENDER_VIDEO if self._final_complete() else None
+        rerun = RENDER_VIDEO if self._final_pipeline_settled() else None
         self._start_pipeline(rerun=rerun)
 
     def _rerun_selected_stage(self) -> None:
