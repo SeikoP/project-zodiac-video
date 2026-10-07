@@ -584,7 +584,7 @@ class PipelineWorker:
             )
         elif "does not match approved narration" in lowered:
             code = "ALIGNMENT_MISMATCH"
-            message = "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thạ lại."
+            message = "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thử lại."
         elif "node.js" in lowered or "npm" in lowered:
             code = "NODE_MISSING"
             message = "Thiếu Node.js/npm để chạy renderer."
