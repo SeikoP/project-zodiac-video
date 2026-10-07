@@ -24,6 +24,8 @@ from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Ric
 from tools.studio.controller import StudioController
 from tools.studio.messages_vi import ALIGN_MODEL_CHOICES, ALIGN_MODEL_DEFAULT, STEP_NAMES_VI
 from tools.studio.pipeline import (
+    ALIGN_TIMING,
+    CONCAT_VOICE,
     DONE,
     MIX_MUSIC,
     RENDER_VIDEO,
@@ -577,6 +579,7 @@ class ZodiacTui(App):
         self.log_visible = False
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
+        self._pipeline_table_key: tuple | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -721,9 +724,11 @@ class ZodiacTui(App):
     def _do_refresh(self) -> None:
         job = self.controller.job
         archive = self.controller.archive
-        worker_running = any(row["status"] == RUNNING for row in self.controller.pipeline_rows())
+        pipeline_rows = self.controller.pipeline_rows()
+        worker_running = any(row["status"] == RUNNING for row in pipeline_rows)
+        package_changed = self.controller.package_changed
         video = self.controller.video_path
-        video_ready = bool(video and video.is_file())
+        video_ready = self._final_complete()
 
         package_name = archive.name if archive else (job.name if job else "Chưa chọn package")
         package_path = str(archive.parent) if archive else (
@@ -733,8 +738,17 @@ class ZodiacTui(App):
         self.query_one("#package-path", Static).update(package_path)
         self.query_one("#active-job", Static).update(job.name if job else "—")
 
+        job_health_text = (
+            "ZIP thay đổi"
+            if package_changed
+            else (job.name if job else "Chưa chọn")
+        )
         self.query_one("#health-job", Static).update(
-            self._status_light("JOB", job.name if job else "Chưa chọn", ok=job is not None)
+            self._status_light(
+                "JOB",
+                job_health_text,
+                ok=(job is not None and not package_changed) if job is not None else None,
+            )
         )
         self.query_one("#health-output", Static).update(
             self._status_light(
@@ -745,38 +759,69 @@ class ZodiacTui(App):
         )
         self._refresh_health_from_checks()
 
-        self.pipeline_groups = compact_pipeline_rows(self.controller.pipeline_rows())
-        table = self.query_one("#pipeline-table", DataTable)
-        cursor_row = table.cursor_coordinate.row if table.row_count else 0
-        table.clear()
-        for row in self.pipeline_groups:
-            percent = int(round(row["progress"] * 100))
-            detail = ""
-            if row["scene_total"]:
-                detail = f'{row["scene_done"]}/{row["scene_total"]} scene'
-            table.add_row(
-                row["glyph"],
+        self.pipeline_groups = compact_pipeline_rows(pipeline_rows)
+        table_key = tuple(
+            (
                 row["label"],
-                status_label(row["status"]),
-                f"{percent}%",
-                detail,
+                row["status"],
+                round(float(row["progress"]), 4),
+                row["scene_done"],
+                row["scene_total"],
             )
-        if self.pipeline_groups:
-            table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
+            for row in self.pipeline_groups
+        )
+        if table_key != self._pipeline_table_key:
+            table = self.query_one("#pipeline-table", DataTable)
+            cursor_row = table.cursor_coordinate.row if table.row_count else 0
+            table.clear()
+            for row in self.pipeline_groups:
+                percent = int(round(row["progress"] * 100))
+                detail = ""
+                if row["scene_total"]:
+                    detail = f'{row["scene_done"]}/{row["scene_total"]} scene'
+                table.add_row(
+                    row["glyph"],
+                    row["label"],
+                    status_label(row["status"]),
+                    f"{percent}%",
+                    detail,
+                )
+            if self.pipeline_groups:
+                table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
+            self._pipeline_table_key = table_key
 
         self.query_one("#pipeline-summary", Static).update(self._workflow_summary())
         self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
 
-        self.query_one("#run-full", Button).disabled = job is None or worker_running
+        blocked = job is None or worker_running or package_changed
+        self.query_one("#run-full", Button).disabled = blocked
         self.query_one("#run-full", Button).label = (
-            "Render lại" if self._final_complete() else "Chạy toàn bộ"
+            "Render lại" if self._final_pipeline_settled() else "Chạy toàn bộ"
         )
-        self.query_one("#rerun-stage", Button).disabled = job is None or worker_running
+        self.query_one("#rerun-stage", Button).disabled = blocked
         self.query_one("#stop", Button).disabled = not worker_running
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
-        self.query_one("#listen", Button).disabled = job is None or self.music_path is None
+
+        # Never let the operator mutate project/settings while the worker is
+        # consuming the same plan. This avoids cross-job event drift and plan
+        # invalidation racing a render in progress.
+        self.query_one("#pick-zip", Button).disabled = worker_running
+        self.query_one("#job-select", Select).disabled = worker_running
+        self.query_one("#check", Button).disabled = worker_running
+        self.query_one("#install-deps", Button).disabled = worker_running
+        self.query_one("#voice-select", Select).disabled = worker_running
+        self.query_one("#align-select", Select).disabled = worker_running
+        self.query_one("#music-volume", Input).disabled = worker_running
+        self.query_one("#music-select", Select).disabled = worker_running
+        self.query_one("#clear-music", Button).disabled = worker_running
+
+        # The backend intentionally supports music-only audition before
+        # voice.wav exists, so preview must not be gated on voice generation.
+        self.query_one("#listen", Button).disabled = (
+            worker_running or job is None or self.music_path is None
+        )
 
     def _command_status(self) -> str:
         if self.controller.job is None:
@@ -793,11 +838,20 @@ class ZodiacTui(App):
             return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
         return "Chạy toàn bộ để tạo video cuối."
 
-    def _final_complete(self) -> bool:
+    def _final_pipeline_settled(self) -> bool:
         return bool(
             self.controller.job
+            and not self.controller.package_changed
             and self.controller.plan.status(RENDER_VIDEO) in COMPLETE
             and self.controller.plan.status(MIX_MUSIC) in COMPLETE
+        )
+
+    def _final_complete(self) -> bool:
+        video = self.controller.video_path
+        return bool(
+            self._final_pipeline_settled()
+            and video
+            and video.is_file()
         )
 
     @staticmethod
@@ -839,13 +893,31 @@ class ZodiacTui(App):
         video = self.controller.video_path
         voice = job / "voice.wav"
         timing = job / ".runtime" / "timing.json"
+        voice_current = (
+            voice.is_file()
+            and self.controller.plan.status(CONCAT_VOICE) in COMPLETE
+        )
+        timing_current = (
+            timing.is_file()
+            and self.controller.plan.status(ALIGN_TIMING) in COMPLETE
+        )
         parts = [
-            f"Voice {'✓' if voice.is_file() else '○'}",
-            f"Timing {'✓' if timing.is_file() else '○'}",
+            (
+                "Voice ✓"
+                if voice_current
+                else ("Voice cũ · cần cập nhật" if voice.is_file() else "Voice ○")
+            ),
+            (
+                "Timing ✓"
+                if timing_current
+                else ("Timing cũ · cần cập nhật" if timing.is_file() else "Timing ○")
+            ),
         ]
-        if video and video.is_file():
+        if video and video.is_file() and self._final_complete():
             size_mb = video.stat().st_size / (1024 * 1024)
             parts.append(f"Video ✓ {size_mb:.1f} MB")
+        elif video and video.is_file():
+            parts.append("Video cũ · cần render lại")
         else:
             parts.append("Video ○")
         self.query_one("#output-summary", Static).update("   ".join(parts))
@@ -859,7 +931,7 @@ class ZodiacTui(App):
             self.query_one("#music-select", Select).value = Select.NULL
             self._save_music_path()
             if self.controller.job:
-                self.controller.plan.apply_change("music")
+                self.controller.apply_change("music")
             self._refresh_view()
         elif button_id == "listen":
             self._start_audio_preview()
@@ -882,6 +954,9 @@ class ZodiacTui(App):
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "job-select" and event.value not in (None, Select.NULL):
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                self.notify("Pipeline đang chạy; hãy dừng trước khi đổi job.", severity="warning")
+                return
             name = str(event.value)
             if name in self.controller.available_jobs():
                 self.controller.use_job(self.controller.job_path(name))
@@ -890,11 +965,13 @@ class ZodiacTui(App):
                 self._refresh_view()
                 self._check_environment()
         elif event.select.id == "music-select":
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                return
             path = event.value
             self.music_path = path if path not in (None, Select.NULL) else None
             self._save_music_path()
             if self.controller.job:
-                self.controller.plan.apply_change("music")
+                self.controller.apply_change("music")
             self._refresh_view()
 
     def action_pick_zip(self) -> None:
@@ -910,6 +987,13 @@ class ZodiacTui(App):
     @work(thread=True, group="package", exclusive=True)
     def _load_archive(self, path: Path) -> None:
         try:
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                self.call_from_thread(
+                    self.notify,
+                    "Pipeline đang chạy; hãy dừng trước khi đổi package.",
+                    severity="warning",
+                )
+                return
             self.controller.select_archive(path)
             name = self.controller.job_name_for(path)
             destination = self.controller.job_path(name)
@@ -936,7 +1020,8 @@ class ZodiacTui(App):
                 title="Package đã thay đổi",
                 message=(
                     "ZIP đang chọn khác với package đã nhập cho job này. "
-                    "Nhập lại sẽ validate ở thư mục tạm trước khi thay job cũ."
+                    "Nhập lại sẽ validate trước, cập nhật creative payload và giữ "
+                    "voice/timing cache còn hợp lệ."
                 ),
             ),
             self._package_conflict_choice,
@@ -1009,7 +1094,7 @@ class ZodiacTui(App):
         if self.controller.job is None:
             self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
             return
-        rerun = RENDER_VIDEO if self._final_complete() else None
+        rerun = RENDER_VIDEO if self._final_pipeline_settled() else None
         self._start_pipeline(rerun=rerun)
 
     def _rerun_selected_stage(self) -> None:
