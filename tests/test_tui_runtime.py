@@ -36,7 +36,8 @@ class VoiceCatalogTests(unittest.TestCase):
 class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
     async def test_tui_mounts_at_desktop_size(self):
         app = ZodiacTui()
-        async with app.run_test(size=(132, 46)):
+        async with app.run_test(size=(132, 46)) as pilot:
+            await pilot.pause()
             table = app.query_one("#pipeline-table")
             self.assertEqual(table.row_count, 5)
             self.assertEqual(app.query_one("#voice-select").value, preferred_voice(app.voice_choices))
@@ -44,6 +45,30 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(app.query("#studio"))
             self.assertFalse(app.query("#prepare-studio"))
             self.assertFalse(app.query("#final-render"))
+
+            # Regression for the Windows screenshot where one-line Textual
+            # buttons rendered as empty colored bars with no visible labels.
+            for selector in (
+                "#pick-zip",
+                "#check",
+                "#install-deps",
+                "#listen",
+                "#clear-music",
+                "#rerun-stage",
+                "#toggle-log",
+                "#open-video",
+                "#open-folder",
+                "#run-full",
+                "#stop",
+            ):
+                button = app.query_one(selector)
+                self.assertGreaterEqual(button.region.height, 3, selector)
+
+            log_section = app.query_one("#log-section")
+            self.assertTrue(log_section.has_class("hidden"))
+            self.assertFalse(app.log_visible)
+
+            self.assertEqual(app._command_status(), "Nạp ZIP hoặc chọn job để bắt đầu.")
 
     async def test_tui_switches_to_narrow_layout_class(self):
         app = ZodiacTui()
@@ -81,6 +106,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_drag_select_copies_on_release(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")
@@ -96,6 +123,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_click_without_drag_clears_and_does_not_copy(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")
@@ -115,6 +144,8 @@ class LogSelectionTests(unittest.IsolatedAsyncioTestCase):
     async def test_selection_highlight_renders_without_error(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
+            app._set_log_visible(True)
+            await pilot.pause()
             log = app.query_one("#log", SelectableLog)
             log.write("alpha alpha alpha")
             log.write("bbbbbbbbbb")

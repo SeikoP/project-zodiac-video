@@ -8,7 +8,6 @@ local runtime, but the current TUI workflow runs straight through to final outpu
 from __future__ import annotations
 
 import os
-import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -27,7 +26,6 @@ from tools.studio.messages_vi import ALIGN_MODEL_CHOICES, ALIGN_MODEL_DEFAULT, S
 from tools.studio.pipeline import (
     DONE,
     MIX_MUSIC,
-    PREPARE_RENDERER,
     RENDER_VIDEO,
     RUNNING,
     SKIPPED,
@@ -180,9 +178,10 @@ class ZodiacTui(App):
     }
 
     Button {
-        height: 1;
-        min-height: 1;
-        padding: 0 2;
+        height: 3;
+        min-height: 3;
+        padding: 0 1;
+        content-align: center middle;
     }
 
     Header {
@@ -238,7 +237,8 @@ class ZodiacTui(App):
     }
 
     #output-section {
-        height: auto;
+        height: 7;
+        min-height: 7;
     }
 
     #log-section {
@@ -272,8 +272,9 @@ class ZodiacTui(App):
     }
 
     Button {
-        min-height: 1;
+        min-height: 3;
         padding: 0 1;
+        content-align: center middle;
     }
 
     Select {
@@ -300,7 +301,7 @@ class ZodiacTui(App):
     }
 
     .setting-name {
-        width: auto;
+        width: 12;
         padding: 0 1 0 0;
         content-align: left middle;
         color: #909db1;
@@ -308,8 +309,10 @@ class ZodiacTui(App):
 
     .setting-row Select {
         width: 1fr;
+        min-width: 18;
+        height: 3;
         border-bottom: solid #354158;
-        content-align: center middle;
+        content-align: left middle;
     }
 
     .setting-row Input {
@@ -326,7 +329,7 @@ class ZodiacTui(App):
 
     .button-row {
         layout: horizontal;
-        height: auto;
+        height: 3;
         margin-top: 1;
     }
 
@@ -339,6 +342,7 @@ class ZodiacTui(App):
     #pipeline-head {
         layout: horizontal;
         height: 3;
+        min-height: 3;
     }
 
     #pipeline-heading {
@@ -382,7 +386,7 @@ class ZodiacTui(App):
 
     #command-bar {
         layout: horizontal;
-        height: 2;
+        height: 3;
         padding: 0 1;
         background: #101620;
         border-top: solid #273245;
@@ -447,7 +451,7 @@ class ZodiacTui(App):
 
     Screen.narrow #command-bar {
         layout: vertical;
-        height: 3;
+        height: 7;
     }
 
     Screen.narrow #command-status {
@@ -497,7 +501,7 @@ class ZodiacTui(App):
     }
 
     Screen.tiny #command-bar {
-        height: 5;
+        height: 9;
         padding: 1;
     }
 
@@ -529,9 +533,8 @@ class ZodiacTui(App):
             vieneu_url=TTS_URL,
             event_sink=self._engine_event_from_thread,
         )
-        self.studio_process: subprocess.Popen | None = None
         self.music_path = self._saved_music_path() or default_music_path()
-        self.log_visible = True
+        self.log_visible = False
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
 
@@ -621,7 +624,7 @@ class ZodiacTui(App):
                         yield Button("Mở video", id="open-video")
                         yield Button("Mở thư mục", id="open-folder")
 
-                with Vertical(classes="section", id="log-section"):
+                with Vertical(classes="section hidden", id="log-section"):
                     yield Label("NHẬT KÝ", classes="section-title")
                     yield SelectableLog(id="log", wrap=True, highlight=True, markup=True)
 
@@ -715,7 +718,7 @@ class ZodiacTui(App):
             table.move_cursor(row=min(cursor_row, len(self.pipeline_groups) - 1))
 
         self.query_one("#pipeline-summary", Static).update(self._workflow_summary())
-        self.query_one("#command-status", Static).update(self.controller.status_text)
+        self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
 
         self.query_one("#run-full", Button).disabled = job is None or worker_running
@@ -728,6 +731,11 @@ class ZodiacTui(App):
         self.query_one("#open-folder", Button).disabled = job is None
         self.query_one("#listen", Button).disabled = job is None or self.music_path is None
 
+    def _command_status(self) -> str:
+        if self.controller.job is None:
+            return "Nạp ZIP hoặc chọn job để bắt đầu."
+        return self.controller.status_text
+
     def _workflow_summary(self) -> str:
         if self.controller.job is None:
             return "Nạp ZIP hoặc chọn job để bắt đầu."
@@ -737,12 +745,6 @@ class ZodiacTui(App):
         if next_step:
             return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
         return "Chạy toàn bộ để tạo video cuối."
-
-    def _studio_ready(self) -> bool:
-        return bool(
-            self.controller.job
-            and self.controller.plan.status(PREPARE_RENDERER) in COMPLETE
-        )
 
     def _final_complete(self) -> bool:
         return bool(
@@ -784,9 +786,6 @@ class ZodiacTui(App):
         else:
             parts.append("Video ○")
         self.query_one("#output-summary", Static).update("   ".join(parts))
-
-    def _studio_running(self) -> bool:
-        return self.studio_process is not None and self.studio_process.poll() is None
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
@@ -915,7 +914,7 @@ class ZodiacTui(App):
         if not music_dir.is_dir():
             return []
         return sorted(
-            (p.name, p)
+            (p.stem, p)
             for p in music_dir.iterdir()
             if p.is_file() and p.suffix.lower() in SUPPORTED_MUSIC
         )
@@ -948,31 +947,6 @@ class ZodiacTui(App):
             self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
             return
         rerun = RENDER_VIDEO if self._final_complete() else None
-        self._start_pipeline(rerun=rerun)
-
-    # Remotion Studio actions are intentionally retained but not exposed by the
-    # TUI while Studio authoring is disabled. This keeps the runtime/CLI path
-    # available for future reactivation without making it a workflow boundary.
-    def action_prepare_studio(self) -> None:
-        if self.controller.job is None:
-            self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
-            return
-        if self._studio_ready():
-            self.notify("Job đã sẵn sàng cho Remotion Studio.")
-            return
-        self._start_pipeline(stop_after=PREPARE_RENDERER)
-
-    def action_final_render(self) -> None:
-        if self.controller.job is None:
-            self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
-            return
-        if not self._studio_ready():
-            self.notify("Chuẩn bị Studio trước khi render cuối.", severity="warning")
-            return
-
-        rerun = None
-        if self._final_complete():
-            rerun = RENDER_VIDEO
         self._start_pipeline(rerun=rerun)
 
     def _rerun_selected_stage(self) -> None:
@@ -1103,75 +1077,7 @@ class ZodiacTui(App):
     def action_stop(self) -> None:
         if self.controller.worker is not None:
             self.controller.cancel()
-        if self._studio_running():
-            self._stop_studio_process()
         self._refresh_view()
-
-    def action_toggle_studio(self) -> None:
-        if self._studio_running():
-            self._stop_studio_process()
-            return
-        if self.controller.job is None:
-            self.notify("Chưa có job để mở Remotion Studio.", severity="warning")
-            return
-        if not self._studio_ready():
-            self.notify("Bấm Chuẩn bị Studio trước.", severity="warning")
-            return
-        self._launch_studio()
-
-    @work(thread=True, group="studio", exclusive=True)
-    def _launch_studio(self) -> None:
-        command = [
-            sys.executable,
-            str(ROOT / "tools" / "zodiac_local.py"),
-            "--workspace",
-            str(WORKSPACE),
-            "preview",
-            self.controller.job.name,
-        ]
-        try:
-            self.studio_process = subprocess.Popen(
-                command,
-                cwd=str(ROOT),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0),
-                start_new_session=(os.name != "nt"),
-                shell=False,
-            )
-            self.controller.status_text = "Remotion Studio đang chạy."
-            self.call_from_thread(self._refresh_view)
-            for line in self.studio_process.stdout or ():
-                if line.strip():
-                    self.call_from_thread(self._write_log, line.rstrip())
-        except Exception as exc:
-            self.controller.status_text = f"Remotion Studio lỗi: {exc}"
-            self.call_from_thread(self.notify, str(exc), severity="error")
-        finally:
-            self.studio_process = None
-            self.call_from_thread(self._refresh_view)
-
-    def _stop_studio_process(self) -> None:
-        process = self.studio_process
-        if process is None or process.poll() is not None:
-            return
-        if os.name == "nt":
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=False,
-            )
-        else:
-            try:
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-            except (ProcessLookupError, PermissionError):
-                process.terminate()
-        self.controller.status_text = "Đã dừng Remotion Studio."
-        self.studio_process = None
 
     def _open_path(self, path: Path | None) -> None:
         if path is None or not path.exists():
@@ -1191,8 +1097,6 @@ class ZodiacTui(App):
                     self.controller.cancel()
             except Exception:
                 pass
-        if self._studio_running():
-            self._stop_studio_process()
 
 
 def main() -> int:
