@@ -708,8 +708,30 @@ class ZodiacTui(App):
     def _handle_engine_event(self, kind: str, payload: dict) -> None:
         if kind == "LOG_LINE":
             self._write_log(payload.get("text", ""))
+        elif kind == "STEP_STARTED":
+            step = payload.get("step")
+            self._write_log(
+                f"START {STEP_NAMES_VI.get(step, step or 'unknown')}"
+            )
+        elif kind == "STEP_DONE":
+            step = payload.get("step")
+            self._write_log(
+                f"DONE  {STEP_NAMES_VI.get(step, step or 'unknown')}"
+            )
         elif kind == "STEP_FAILED":
+            step = payload.get("step")
+            name = STEP_NAMES_VI.get(step, step or "unknown")
+            code = payload.get("error_code") or "UNKNOWN"
+            message = payload.get("message") or "Không có thông báo lỗi."
+            self._write_log(f"FAIL  {name} [{code}] {message}")
+            details = str(payload.get("details") or "").strip()
+            if details and details != message:
+                self._write_log(details)
             self._set_log_visible(True)
+        elif kind == "PIPELINE_CANCELLED":
+            self._write_log("CANCEL Pipeline đã dừng theo yêu cầu.")
+        elif kind == "PIPELINE_DONE":
+            self._write_log("DONE  Pipeline hoàn tất.")
         self._refresh_view()
 
     def _write_log(self, text: str) -> None:
