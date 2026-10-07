@@ -584,6 +584,12 @@ class PipelineWorker:
                 "Thiếu thư viện faster-whisper trong Python đang chạy Zodiac Studio. "
                 "Cài dependency rồi chạy lại."
             )
+        elif "visual_progression_timing" in lowered:
+            code = "VISUAL_PROGRESSION_TIMING"
+            message = (
+                "Nhịp hình ảnh có khoảng trống dài hơn giới hạn 5 giây. "
+                "Timing/voice đã được giữ lại; sửa visual rồi chạy tiếp."
+            )
         elif "does not match approved narration" in lowered:
             code = "ALIGNMENT_MISMATCH"
             message = "Căn thời gian từ không khớp lời thoại đã duyệt. Sửa TTS hoặc lời thoại rồi thử lại."
@@ -962,7 +968,11 @@ class PipelineWorker:
                 "Đã ghép lại voice.wav sau adaptive frame-cap recovery: "
                 + ", ".join(recovered_ids)
             )
-        build_and_write_timing(self.root, timing)
+        build_and_write_timing(
+            self.root,
+            timing,
+            check_visual_progression=False,
+        )
         self.log(
             f"Đã căn {len(timing['scenes'])} scene bằng faster-whisper/{self.align_model}; "
             f"nghỉ {self.sentence_pause_ms:.0f} ms giữa câu và "
