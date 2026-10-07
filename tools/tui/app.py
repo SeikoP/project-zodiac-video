@@ -235,9 +235,9 @@ class ZodiacTui(App):
     }
 
     #pipeline-section {
-        height: 18;
-        min-height: 16;
-        max-height: 20;
+        height: 25;
+        min-height: 23;
+        max-height: 27;
     }
 
     #pipeline-top {
@@ -249,7 +249,7 @@ class ZodiacTui(App):
     #pipeline-body {
         layout: horizontal;
         height: 1fr;
-        min-height: 11;
+        min-height: 18;
     }
 
     #pipeline-left {
@@ -466,8 +466,9 @@ class ZodiacTui(App):
     }
 
     Screen.narrow #pipeline-section {
-        height: 30;
-        max-height: 34;
+        height: 34;
+        min-height: 32;
+        max-height: 38;
     }
 
     Screen.narrow #pipeline-body {
