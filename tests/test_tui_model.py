@@ -42,7 +42,7 @@ class TuiModelTests(unittest.TestCase):
         rows = compact_pipeline_rows(self._rows())
         self.assertEqual(
             [row["label"] for row in rows],
-            ["GÓI", "GIỌNG", "TIMING", "RUNTIME", "RENDER", "ÂM THANH"],
+            ["GÓI", "GIỌNG", "TIMING", "STUDIO", "RENDER", "ÂM THANH"],
         )
 
     def test_failure_dominates_a_group(self):
