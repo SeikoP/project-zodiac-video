@@ -260,41 +260,18 @@ class VoiceResumeTests(WorkerHarness):
         working.unlink()
         self.tts_calls.clear()
 
-        from tools.studio.artifacts import VoiceArtifactStore
-
-        before = JobStateStore(self.job).open().steps[VOICE_SCENES].scenes["S02"]
-        store = VoiceArtifactStore(self.job)
-        direct = store.restore_approved(
-            "S02",
-            working,
-            text_hash=before["text_hash"],
-            voice_profile_hash=before["voice_profile_hash"],
-            performance_context_hash=None,
-        )
-        self.assertIsNotNone(direct, "approved artifact could not restore its working WAV directly")
-        working.unlink()
-
+        # Reopening the job is enough to restore the compatibility working WAV
+        # before PipelineWorker decides whether the scene is dirty.
         plan = JobStateStore(self.job).open()
+        self.assertEqual(plan.scene_status(VOICE_SCENES, "S02"), DONE)
+        self.assertTrue(working.is_file())
+
         plan.mark(VOICE_SCENES, PENDING)
         JobStateStore(self.job).save(plan)
         worker = self.make_worker(plan=JobStateStore(self.job).open())
         worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
 
-        self.assertEqual(
-            self.tts_calls,
-            [],
-            msg=json.dumps(
-                {
-                    "entry": worker.plan.steps[VOICE_SCENES].scenes.get("S02"),
-                    "active_take": worker.voice_artifacts.active_take("S02"),
-                    "expected_fields": worker._voice_cache_fields(),
-                    "events": self.events[-12:],
-                },
-                ensure_ascii=False,
-                default=str,
-            ),
-        )
-        self.assertTrue(working.is_file())
+        self.assertEqual(self.tts_calls, [])
         index = json.loads(
             (self.job / ".runtime" / "artifacts" / "voice" / "S02" / "index.json").read_text(
                 encoding="utf-8"
@@ -731,7 +708,7 @@ class ControllerTests(WorkerHarness):
             controller.archive_fingerprint,
         )
 
-    def test_controller_restarts_at_voice_when_worker_invalidates_legacy_tts_cache(self):
+    def test_controller_preserves_approved_voice_when_legacy_generation_fields_are_missing(self):
         self.make_worker(
             tts_mode="v3turbo",
             tts_backend="onnx",
@@ -751,7 +728,10 @@ class ControllerTests(WorkerHarness):
         controller.start_pipeline(resume=True, voice="test-voice")
         controller.worker.join(timeout=60)
 
-        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+        self.assertEqual(self.tts_calls, [])
+        reopened = JobStateStore(self.job).open()
+        for entry in reopened.steps[VOICE_SCENES].scenes.values():
+            self.assertTrue(entry.get("artifact_take_id"))
 
     def test_install_command_uses_the_running_interpreter(self):
         import sys
