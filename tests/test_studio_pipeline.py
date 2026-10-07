@@ -338,7 +338,7 @@ class VoiceResumeTests(WorkerHarness):
         self.assertEqual(entry["tts_backend"], "onnx")
         self.assertEqual(entry["tts_precision"], "fp32")
 
-    def test_backend_or_precision_change_invalidates_cached_wavs(self):
+    def test_generation_profile_change_preserves_approved_wavs(self):
         self.make_worker(
             tts_mode="v3turbo",
             tts_backend="onnx",
@@ -355,8 +355,10 @@ class VoiceResumeTests(WorkerHarness):
             tts_backend="onnx",
             tts_precision="int8",
         )
-        worker.run_from(VOICE_SCENES)
-        self.assertEqual(self.tts_calls, [["S01", "S02", "S03", "S04"]])
+        worker.run_from(VOICE_SCENES, stop_after=VOICE_SCENES)
+        self.assertEqual(self.tts_calls, [])
+        logs = [payload["text"] for kind, payload in self.events if kind == LOG_LINE]
+        self.assertTrue(any("VOICE_PROFILE_DRIFT" in text for text in logs))
 
 
 class RerunStepTests(WorkerHarness):
