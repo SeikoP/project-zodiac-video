@@ -26,7 +26,6 @@ from tools.studio.messages_vi import ALIGN_MODEL_CHOICES, ALIGN_MODEL_DEFAULT, S
 from tools.studio.pipeline import (
     DONE,
     MIX_MUSIC,
-    PREPARE_RENDERER,
     RENDER_VIDEO,
     RUNNING,
     SKIPPED,
@@ -747,12 +746,6 @@ class ZodiacTui(App):
             return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
         return "Chạy toàn bộ để tạo video cuối."
 
-    def _studio_ready(self) -> bool:
-        return bool(
-            self.controller.job
-            and self.controller.plan.status(PREPARE_RENDERER) in COMPLETE
-        )
-
     def _final_complete(self) -> bool:
         return bool(
             self.controller.job
@@ -793,9 +786,6 @@ class ZodiacTui(App):
         else:
             parts.append("Video ○")
         self.query_one("#output-summary", Static).update("   ".join(parts))
-
-    def _studio_running(self) -> bool:
-        return self.studio_process is not None and self.studio_process.poll() is None
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
@@ -924,7 +914,7 @@ class ZodiacTui(App):
         if not music_dir.is_dir():
             return []
         return sorted(
-            (p.name, p)
+            (p.stem, p)
             for p in music_dir.iterdir()
             if p.is_file() and p.suffix.lower() in SUPPORTED_MUSIC
         )
@@ -957,31 +947,6 @@ class ZodiacTui(App):
             self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
             return
         rerun = RENDER_VIDEO if self._final_complete() else None
-        self._start_pipeline(rerun=rerun)
-
-    # Remotion Studio actions are intentionally retained but not exposed by the
-    # TUI while Studio authoring is disabled. This keeps the runtime/CLI path
-    # available for future reactivation without making it a workflow boundary.
-    def action_prepare_studio(self) -> None:
-        if self.controller.job is None:
-            self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
-            return
-        if self._studio_ready():
-            self.notify("Job đã sẵn sàng cho Remotion Studio.")
-            return
-        self._start_pipeline(stop_after=PREPARE_RENDERER)
-
-    def action_final_render(self) -> None:
-        if self.controller.job is None:
-            self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
-            return
-        if not self._studio_ready():
-            self.notify("Chuẩn bị Studio trước khi render cuối.", severity="warning")
-            return
-
-        rerun = None
-        if self._final_complete():
-            rerun = RENDER_VIDEO
         self._start_pipeline(rerun=rerun)
 
     def _rerun_selected_stage(self) -> None:
