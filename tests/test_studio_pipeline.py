@@ -707,6 +707,25 @@ class ControllerTests(WorkerHarness):
         self.assertNotEqual(controller.archive_fingerprint, controller.stored_fingerprint)
         self.assertEqual(controller.plan.status(IMPORT_PACKAGE), PENDING)
 
+    def test_changed_zip_masks_stale_downstream_pipeline_rows(self):
+        controller = self._controller()
+        first = self._archive("a")
+        second = self._archive("b")
+        controller.select_archive(first)
+        controller.sync_package()
+        for step in STEP_ORDER:
+            controller.plan.mark(step, DONE)
+
+        controller.select_archive(second)
+
+        rows = {row["step"]: row for row in controller.pipeline_rows()}
+        self.assertEqual(rows[IMPORT_PACKAGE]["status"], PENDING)
+        for step in STEP_ORDER[1:]:
+            self.assertEqual(rows[step]["status"], PENDING)
+            self.assertEqual(rows[step]["progress"], 0.0)
+            self.assertEqual(rows[step]["scenes"], {})
+            self.assertIn("ZIP mới", rows[step]["message"])
+
     def test_conflicting_archive_needs_an_explicit_choice(self):
         controller = self._controller()
         controller.select_archive(self._archive("a"))
