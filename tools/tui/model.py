@@ -74,10 +74,40 @@ def _group_status(statuses: list[str]) -> str:
     return PENDING
 
 
-def _effective_progress(row: dict) -> float:
+def _effective_status(row: dict) -> str:
+    """Project scene checkpoints into the operator-facing step status.
+
+    VOICE_SCENES can stay DONE while one scene is intentionally reopened. The
+    backend correctly treats that step as unfinished, so the TUI must not show a
+    green GIỌNG stage until every scene checkpoint is settled too.
+    """
     status = str(row.get("status") or PENDING)
+    if status in (FAILED, CANCELLED, RUNNING):
+        return status
+
+    scenes = row.get("scenes") or {}
+    if scenes:
+        scene_statuses = [str(item.get("status") or PENDING) for item in scenes.values()]
+        if FAILED in scene_statuses:
+            return FAILED
+        if CANCELLED in scene_statuses:
+            return CANCELLED
+        if RUNNING in scene_statuses:
+            return RUNNING
+        if any(item != DONE for item in scene_statuses):
+            return PENDING
+    return status
+
+
+def _effective_progress(row: dict) -> float:
+    status = _effective_status(row)
     if status in (DONE, SKIPPED):
         return 1.0
+
+    scenes = row.get("scenes") or {}
+    if scenes:
+        done = sum(1 for item in scenes.values() if item.get("status") == DONE)
+        return done / len(scenes)
     return max(0.0, min(1.0, float(row.get("progress") or 0.0)))
 
 
@@ -87,7 +117,7 @@ def compact_pipeline_rows(rows: list[dict]) -> list[dict]:
     compact: list[dict] = []
     for label, steps in GROUPS:
         members = [by_step[step] for step in steps if step in by_step]
-        statuses = [str(row.get("status") or PENDING) for row in members]
+        statuses = [_effective_status(row) for row in members]
         status = _group_status(statuses)
         progress = 0.0
         if members:
