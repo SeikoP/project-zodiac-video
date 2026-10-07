@@ -24,6 +24,7 @@ from tools.zodiac_local import (
     align_scene_timings,
     build_audio_preview,
     build_parser,
+    build_and_write_timing,
     build_timing_from_word_alignment,
     build_tts_diagnostics,
     canonical_narration_text,
@@ -2080,6 +2081,24 @@ class RuntimeTimingTests(unittest.TestCase):
             ]
             with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_TIMING.*5.0s"):
                 validate_timing(job, timing)
+
+    def test_alignment_writer_can_persist_timing_before_visual_runtime_gate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            job = write_package(Path(temp))
+            timing = valid_timing()
+            timing["total_duration_frames"] = 240
+            timing["scenes"][0]["duration_frames"] = 240
+            timing["scenes"][0]["captions"] = [
+                {"text": "Xin", "startMs": 0, "endMs": 180, "timestampMs": 0, "confidence": 0.99},
+                {"text": "chào", "startMs": 180, "endMs": 2500, "timestampMs": 180, "confidence": 0.99},
+                {"text": "mọi", "startMs": 2500, "endMs": 5200, "timestampMs": 2500, "confidence": 0.99},
+                {"text": "người.", "startMs": 5200, "endMs": 7900, "timestampMs": 5200, "confidence": 0.99},
+            ]
+            build_and_write_timing(job, timing, check_visual_progression=False)
+            saved = job / ".runtime" / "timing.json"
+            self.assertTrue(saved.is_file())
+            with self.assertRaisesRegex(PipelineError, "VISUAL_PROGRESSION_TIMING.*5.0s"):
+                validate_timing(job, saved)
 
     def test_rejects_phrase_level_caption(self):
         with tempfile.TemporaryDirectory() as temp:
