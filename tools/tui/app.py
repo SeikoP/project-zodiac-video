@@ -968,6 +968,8 @@ class ZodiacTui(App):
                 self._refresh_view()
                 self._check_environment()
         elif event.select.id == "music-select":
+            if self.controller.worker is not None and self.controller.worker.is_alive():
+                return
             path = event.value
             self.music_path = path if path not in (None, Select.NULL) else None
             self._save_music_path()
