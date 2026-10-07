@@ -7,6 +7,8 @@ local runtime, but the current TUI workflow runs straight through to final outpu
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import subprocess
 import sys
@@ -35,7 +37,11 @@ from tools.studio.pipeline import (
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.tui.file_picker import ChoiceDialog, FilePicker
 from tools.tui.model import compact_pipeline_rows, status_label
-from tools.zodiac_local import default_music_path
+from tools.zodiac_local import (
+    build_audio_preview,
+    default_music_path,
+    observe_subprocess_output,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = ROOT / ".zodiac-work"
@@ -673,7 +679,7 @@ class ZodiacTui(App):
 
                 with Vertical(classes="section hidden", id="log-section"):
                     yield Label("NHẬT KÝ", classes="section-title")
-                    yield SelectableLog(id="log", wrap=True, highlight=True, markup=True)
+                    yield SelectableLog(id="log", wrap=True, highlight=True, markup=False)
 
         with Container(id="command-bar"):
             yield Static("Chưa chạy", id="command-status")
@@ -707,7 +713,12 @@ class ZodiacTui(App):
         self._refresh_view()
 
     def _write_log(self, text: str) -> None:
-        self.query_one("#log", RichLog).write(text)
+        """Write literal log text without Rich markup interpretation."""
+        log = self.query_one("#log", RichLog)
+        rendered = str(text).replace("\r\n", "\n").replace("\r", "\n")
+        for line in rendered.split("\n"):
+            if line:
+                log.write(line)
 
     def _refresh_jobs(self) -> None:
         select = self.query_one("#job-select", Select)
@@ -1159,15 +1170,30 @@ class ZodiacTui(App):
     @work(thread=True, group="install", exclusive=True)
     def _install_dependencies(self) -> None:
         try:
-            self.controller.install_dependencies()
-            self.call_from_thread(self._write_log, self.controller.status_text)
-            self.call_from_thread(self.notify, self.controller.status_text)
+            self.call_from_thread(self._set_log_visible, True)
+            self.controller.install_dependencies(
+                log_callback=lambda line: self.call_from_thread(self._write_log, line)
+            )
+            severity = (
+                "information"
+                if self.controller.status_text.startswith("Đã cài")
+                else "error"
+            )
+            self.call_from_thread(
+                self.notify,
+                self.controller.status_text,
+                severity=severity,
+            )
             self.call_from_thread(self._refresh_view)
         except Exception as exc:
+            self.call_from_thread(self._set_log_visible, True)
+            self.call_from_thread(self._write_log, f"Cài dependency lỗi: {exc}")
             self.call_from_thread(self.notify, str(exc), severity="error")
 
     def _start_audio_preview(self) -> None:
-        if self.controller.job is None or self.music_path is None:
+        job = self.controller.job
+        music = self.music_path
+        if job is None or music is None:
             self.notify("Chọn job và nhạc nền trước.", severity="warning")
             return
         try:
@@ -1175,43 +1201,54 @@ class ZodiacTui(App):
         except ValueError:
             self.notify("Âm lượng phải là số từ 0 đến 100.", severity="error")
             return
-        self._run_audio_preview(volume)
+        self._run_audio_preview(job, Path(music), volume)
 
     @work(thread=True, group="audio-preview", exclusive=True)
-    def _run_audio_preview(self, volume: float) -> None:
+    def _run_audio_preview(self, job: Path, music: Path, volume: float) -> None:
         try:
-            command = [
-                sys.executable,
-                str(ROOT / "tools" / "zodiac_local.py"),
-                "--workspace",
-                str(WORKSPACE),
-                "audio-preview",
-                self.controller.job.name,
-                "--music",
-                str(self.music_path),
-                "--music-volume",
-                f"{volume:.3f}",
-            ]
-            result = subprocess.run(
-                command,
-                cwd=str(ROOT),
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                shell=False,
-            )
-            if result.stdout.strip():
-                self.call_from_thread(self._write_log, result.stdout.strip())
-            if result.returncode != 0:
-                raise RuntimeError(result.stderr.strip() or "Không tạo được audio preview.")
-            preview = self.controller.job / ".runtime" / "audio-preview.wav"
+            captured = io.StringIO()
+
+            def log_child(line: str, *, channel: str = "stdout") -> None:
+                self.call_from_thread(self._write_log, line)
+
+            with (
+                observe_subprocess_output(log_child),
+                contextlib.redirect_stdout(captured),
+                contextlib.redirect_stderr(captured),
+            ):
+                preview = build_audio_preview(
+                    job,
+                    music,
+                    volume=volume,
+                )
+
+            output = captured.getvalue().strip()
+            if output:
+                self.call_from_thread(self._write_log, output)
             if not preview.is_file():
                 raise RuntimeError("Không tìm thấy tệp nghe thử.")
-            self.call_from_thread(self._open_path, preview)
-            self.call_from_thread(self.notify, "Đang phát bản nghe thử 10 giây.")
+
+            self.call_from_thread(self._play_audio_file, preview)
+            self.call_from_thread(
+                self.notify,
+                "Đang phát bản nghe thử 10 giây.",
+            )
         except Exception as exc:
+            self.call_from_thread(self._set_log_visible, True)
+            self.call_from_thread(self._write_log, f"Nghe thử lỗi: {exc}")
             self.call_from_thread(self.notify, str(exc), severity="error")
+
+    def _play_audio_file(self, path: Path) -> None:
+        """Play preview reliably on Windows without relying on file association."""
+        if os.name == "nt":
+            import winsound
+
+            winsound.PlaySound(
+                str(path.resolve()),
+                winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT,
+            )
+            return
+        self._open_path(path)
 
     def action_toggle_log(self) -> None:
         self._set_log_visible(not self.log_visible)
