@@ -151,7 +151,7 @@ const captionStyle = (top: number, production: Production): CSSProperties => {
     transform: "translateX(-50%) rotate(-0.35deg)",
     boxSizing: "border-box", padding: "4px 10px", borderRadius: 0,
     backgroundColor: "transparent", color: style.color,
-    fontFamily: style.font_family, fontSize: style.font_size_px, fontWeight: style.font_weight,
+    fontFamily: style.css_font_family ?? style.font_family, fontSize: style.font_size_px, fontWeight: style.font_weight,
     lineHeight: 1.04, letterSpacing: 0.4, textAlign: "center", whiteSpace: "pre-wrap",
     WebkitTextStroke: "1px rgba(255,253,249,0.96)",
     textShadow: "0 2px 0 rgba(255,253,249,0.98), 0 0 10px rgba(255,253,249,0.96), 0 0 22px rgba(246,240,230,0.90)",

@@ -407,6 +407,27 @@ class AlignmentResumeTests(WorkerHarness):
         self.assertTrue((self.job / ".runtime" / "timing.json").is_file())
         self.assertEqual(plan.steps[VALIDATE_RUNTIME].error_code, "VISUAL_PROGRESSION_TIMING")
 
+    def test_renderer_schema_failure_is_not_reported_as_node_missing(self):
+        worker = self.make_worker()
+        message, code = worker._classify(
+            RENDER_VIDEO,
+            RuntimeError(
+                "Command ['C:\\Program Files\\nodejs\\npm.cmd', 'run', 'render'] returned non-zero exit status 1. "
+                "RENDER_BLOCKED: production.json does not match v2.0 schema"
+            ),
+        )
+        self.assertEqual(code, "RENDER_CONTRACT_INVALID")
+        self.assertIn("schema", message.lower())
+
+    def test_actual_missing_npm_is_still_reported_as_node_missing(self):
+        worker = self.make_worker()
+        message, code = worker._classify(
+            PREPARE_RENDERER,
+            RuntimeError("npm is required but was not found on PATH."),
+        )
+        self.assertEqual(code, "NODE_MISSING")
+        self.assertIn("Node.js/npm", message)
+
     def test_visual_density_error_is_not_reported_as_alignment_mismatch(self):
         worker = self.make_worker()
         message, code = worker._classify(

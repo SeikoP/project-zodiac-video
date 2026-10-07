@@ -5,7 +5,7 @@ export type PrimitiveElement = {tag: string; attributes: Record<string, string |
 export type Primitive = {kind: "svg_elements"; viewBox: string; elements: PrimitiveElement[]};
 export type AssetLineage = {
   mode: "direct_copy" | "derived_copy" | "semantic_variant" | "composite";
-  source_library: "zodiac-paper-doodle-asset-library-v3";
+  source_library: "zodiac-paper-doodle-asset-library-v3" | "zodiac-visual-grammar-v4";
   source_master: string | string[];
   semantic_intent: string;
   mutated_groups?: string[];
@@ -86,6 +86,8 @@ export type Production = {
   };
   caption_style: {
     font_family: "Patrick Hand";
+    font_stack?: string[];
+    css_font_family?: string;
     font_size_px: number;
     min_font_size_px: number;
     font_weight: number;

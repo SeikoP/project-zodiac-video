@@ -9,3 +9,21 @@ test("schema and render path enforce semantic contracts",async()=>{const schema=
 test("runtime 1.19.1 choreographs visible pose swaps with active-state caption collision",async()=>{const schema=JSON.parse(await read("../schemas/production.schema.json"));const render=await read("../scripts/render.mjs");const composition=await read("../src/ZodiacComposition.tsx");assert.ok(schema.$defs.performance);assert.ok(!schema.$defs.event.required.includes("performance"));assert.ok(!schema.$defs.event.required.includes("motion"));assert.equal(schema.$defs.scene.properties.captions.properties.segmentation.const,"semantic");assert.match(render,/materializeProductionDefaults/);assert.match(render,/validatePerformanceAnimation/);assert.match(render,/validatePerformanceTiming/);assert.match(composition,/poseTransitionChoreographyValues/);assert.match(composition,/choreography\.pose === "after"/);assert.match(composition,/choreography=\{choreography\}/);assert.match(composition,/transitionProgress/);assert.match(composition,/activeSceneRects/);assert.doesNotMatch(composition,/Object\.values\(entity\.states\)/);assert.doesNotMatch(composition,/state=\{beforeState\} key=\{transition\.before\}/);assert.doesNotMatch(composition,/state=\{afterState\} key=\{transition\.after\}/);assert.doesNotMatch(composition,/targetWords:/);assert.doesNotMatch(composition,/maxWords:/);});
 
 test("runtime 1.20 enforces deterministic scene layer safety",async()=>{const render=await read("../scripts/render.mjs");const composition=await read("../src/ZodiacComposition.tsx");assert.match(render,/validateSceneLayerSafety/);assert.match(composition,/effectiveZIndex/);assert.match(composition,/entityIndex/);});
+
+
+test("runtime 1.20 schema accepts visual-grammar v4 lineage and caption font metadata",async()=>{
+  const schema=JSON.parse(await read("../schemas/production.schema.json"));
+  const types=await read("../src/types.ts");
+  const caption=schema.properties.caption_style.properties;
+  assert.ok(caption.font_stack);
+  assert.ok(caption.css_font_family);
+  assert.deepEqual(
+    schema.$defs.lineage.properties.source_library.enum,
+    ["zodiac-paper-doodle-asset-library-v3","zodiac-visual-grammar-v4"],
+  );
+  assert.match(types,/zodiac-visual-grammar-v4/);
+  assert.match(types,/font_stack\?: string\[\]/);
+  assert.match(types,/css_font_family\?: string/);
+  const composition=await read("../src/ZodiacComposition.tsx");
+  assert.match(composition,/style\.css_font_family \?\? style\.font_family/);
+});
