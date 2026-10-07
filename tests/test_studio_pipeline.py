@@ -694,6 +694,23 @@ class ControllerTests(WorkerHarness):
         (self.job / "production.json").write_text('{"version": "1.0"}', encoding="utf-8")
         self.assertFalse(controller.editor_available())
 
+    def test_patch_version_suffix_reuses_the_same_logical_job_workspace(self):
+        controller = self._controller()
+        base = self.root / "zodiac-bocap-hai-phien-ban.zip"
+        patch = self.root / "zodiac-bocap-hai-phien-ban-v1.1.zip"
+        self.assertEqual(
+            controller.job_name_for(base),
+            "zodiac-bocap-hai-phien-ban",
+        )
+        self.assertEqual(
+            controller.job_name_for(patch),
+            "zodiac-bocap-hai-phien-ban",
+        )
+        self.assertEqual(
+            controller.job_name_for(self.root / "zodiac-bocap-hai-phien-ban-v2.3.4.zip"),
+            "zodiac-bocap-hai-phien-ban",
+        )
+
     def test_selecting_a_new_archive_is_not_silently_reused(self):
         controller = self._controller()
         first = self._archive("a")
