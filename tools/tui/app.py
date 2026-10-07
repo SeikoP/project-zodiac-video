@@ -155,7 +155,7 @@ class ZodiacTui(App):
         text-style: bold;
     }
 
-    #package-path, #music-label, #workflow-hint, #output-summary {
+    #package-path, #workflow-hint, #output-summary {
         color: #8795a9;
         height: auto;
     }
@@ -421,7 +421,7 @@ class ZodiacTui(App):
             event_sink=self._engine_event_from_thread,
         )
         self.studio_process: subprocess.Popen | None = None
-        self.music_path = default_music_path()
+        self.music_path = self._saved_music_path() or default_music_path()
         self.log_visible = True
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
@@ -480,12 +480,15 @@ class ZodiacTui(App):
                         yield Input(value="100", id="music-volume", type="number")
                     with Horizontal(classes="setting-row"):
                         yield Label("Nhạc", classes="setting-name")
-                        yield Static(
-                            self.music_path.name if self.music_path else "Không dùng nhạc nền",
-                            id="music-label",
+                        yield Select(
+                            self._music_options(),
+                            value=self.music_path,
+                            id="music-select",
+                            prompt="Không dùng nhạc nền",
+                            allow_blank=True,
+                            compact=True,
                         )
                     with Container(classes="button-row"):
-                        yield Button("Chọn nhạc", id="pick-music")
                         yield Button("Nghe thử", id="listen")
                         yield Button("Bỏ", id="clear-music")
 
@@ -695,11 +698,10 @@ class ZodiacTui(App):
         button_id = event.button.id
         if button_id == "pick-zip":
             self.action_pick_zip()
-        elif button_id == "pick-music":
-            self._pick_music()
         elif button_id == "clear-music":
             self.music_path = None
-            self.query_one("#music-label", Static).update("Không dùng nhạc nền")
+            self.query_one("#music-select", Select).value = Select.NULL
+            self._save_music_path()
             if self.controller.job:
                 self.controller.plan.apply_change("music")
             self._refresh_view()
@@ -735,6 +737,13 @@ class ZodiacTui(App):
                 self.controller.status_text = f"Đã chọn job: {name}"
                 self._refresh_view()
                 self._check_environment()
+        elif event.select.id == "music-select":
+            path = event.value
+            self.music_path = path if path not in (None, Select.NULL) else None
+            self._save_music_path()
+            if self.controller.job:
+                self.controller.plan.apply_change("music")
+            self._refresh_view()
 
     def action_pick_zip(self) -> None:
         self.push_screen(
@@ -811,21 +820,28 @@ class ZodiacTui(App):
         self.notify(f"Đã nạp {self.controller.job_name}")
         self._check_environment()
 
-    def _pick_music(self) -> None:
-        start = self.music_path.parent if self.music_path else Path.cwd()
-        self.push_screen(
-            FilePicker(title="Chọn nhạc nền", start=start, suffixes=SUPPORTED_MUSIC),
-            self._music_picked,
+    def _music_options(self) -> list[tuple[str, Path]]:
+        music_dir = ROOT / "assets" / "music"
+        if not music_dir.is_dir():
+            return []
+        return sorted(
+            (p.name, p)
+            for p in music_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in SUPPORTED_MUSIC
         )
 
-    def _music_picked(self, path: Path | None) -> None:
-        if path is None:
-            return
-        self.music_path = path
-        self.query_one("#music-label", Static).update(path.name)
-        if self.controller.job:
-            self.controller.plan.apply_change("music")
-        self._refresh_view()
+    def _saved_music_path(self) -> Path | None:
+        config = WORKSPACE / "tui-audio.json"
+        if not config.is_file():
+            return None
+        raw = config.read_text(encoding="utf-8").strip()
+        path = Path(raw) if raw else None
+        return path if path is not None and path.is_file() else None
+
+    def _save_music_path(self) -> None:
+        config = WORKSPACE / "tui-audio.json"
+        config.parent.mkdir(parents=True, exist_ok=True)
+        config.write_text(str(self.music_path) if self.music_path else "", encoding="utf-8")
 
     def _pipeline_settings(self) -> tuple[str, str, float]:
         voice_value = self.query_one("#voice-select", Select).value
