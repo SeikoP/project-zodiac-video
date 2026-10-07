@@ -107,7 +107,7 @@ AUDIO_PREVIEW_DEFAULT_VOLUME = 1.0
 DEFAULT_MUSIC_VOLUME = 1.0
 DEFAULT_SCENE_GAP_MS = 350.0
 DEFAULT_SENTENCE_PAUSE_MS = 320.0
-DEFAULT_PLAYBACK_RATE = 0.95
+DEFAULT_PLAYBACK_RATE = 1.0
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 # Bundled background track; resolved from the repo so it works from any cwd.
 BUNDLED_MUSIC = Path(__file__).resolve().parents[1] / "assets" / "music" / "background.mp3"
