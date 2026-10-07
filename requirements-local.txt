@@ -1,2 +1,5 @@
 # Automatic measured word timing for the local voice flow
 faster-whisper>=1,<2
+
+# Terminal control plane. Remotion Studio remains the visual workspace.
+textual>=1
