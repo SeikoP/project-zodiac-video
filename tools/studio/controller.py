@@ -76,6 +76,7 @@ class StudioController:
         if (
             self.job is not None
             and self.job.exists()
+            and self.job.parent == self.jobs_dir.resolve()
             and self.job_name_for(Path(self.job.name + ".zip")) == logical
         ):
             return self.job
