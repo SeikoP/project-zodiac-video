@@ -156,7 +156,7 @@ class WorkerHarness(unittest.TestCase):
             raise RuntimeError("recognized words do not match approved narration")
         return valid_timing()
 
-    def fake_write_timing(self, package_root, timing):
+    def fake_write_timing(self, package_root, timing, **_kwargs):
         (Path(package_root) / ".runtime").mkdir(parents=True, exist_ok=True)
         (Path(package_root) / ".runtime" / "timing.json").write_text(json.dumps(timing), encoding="utf-8")
         return timing
@@ -165,7 +165,7 @@ class WorkerHarness(unittest.TestCase):
         if not (Path(package_root) / ".runtime" / "timing.json").is_file():
             raise RuntimeError("timing.json is missing")
         if self.fail_runtime_visual:
-            raise PipelineError(
+            raise RuntimeError(
                 "VISUAL_PROGRESSION_TIMING: scene S02 has a 5.79s gap without a meaningful visual change; max 5.0s."
             )
 
