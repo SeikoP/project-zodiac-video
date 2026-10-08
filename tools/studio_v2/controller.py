@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import tempfile
 from typing import Any
 
 from tools.control_plane.cache import plan_key
@@ -12,6 +13,7 @@ from tools.control_plane.contracts import (
     validate_contract_shape,
 )
 from tools.control_plane.errors import ControlPlaneError
+from tools.control_plane.package_io import extract_package_archive
 from tools.control_plane.render_plan import validate_render_plan
 from tools.control_plane.timeline import compile_render_plan
 
@@ -82,6 +84,26 @@ class StudioV2Controller:
 
     def import_package(self, source: Path) -> Path:
         source = Path(source).resolve()
+        if source.is_dir():
+            return self._import_package_root(source, display_name=source.name)
+        if source.is_file() and source.suffix.casefold() == ".zip":
+            with tempfile.TemporaryDirectory(prefix="zodiac-job5-import-") as temp:
+                package_root = extract_package_archive(
+                    source,
+                    Path(temp) / "package",
+                )
+                return self._import_package_root(
+                    package_root,
+                    display_name=source.name,
+                )
+        raise ControlPlaneError(
+            code="PACKAGE_INVALID",
+            stage="PACKAGE",
+            message="package source must be a directory or .zip archive",
+            detail={"path": str(source)},
+        )
+
+    def _import_package_root(self, source: Path, *, display_name: str) -> Path:
         manifest = _read_json(
             source / "package-manifest.json",
             code="PACKAGE_INVALID",
@@ -126,11 +148,12 @@ class StudioV2Controller:
 
         for relative in ("package-manifest.json", *required):
             shutil.copy2(source / relative, self.workspace / relative)
+
+        target_assets = self.workspace / "assets"
         source_assets = source / "assets"
+        if target_assets.exists():
+            shutil.rmtree(target_assets)
         if source_assets.is_dir():
-            target_assets = self.workspace / "assets"
-            if target_assets.exists():
-                shutil.rmtree(target_assets)
             shutil.copytree(source_assets, target_assets)
 
         runtime = self.workspace / ".runtime"
@@ -150,7 +173,7 @@ class StudioV2Controller:
         package_hash = _package_hash(self.workspace)
         producer_version = str(manifest["producer"]["version"])
         self.state.set_package_revision(
-            display_name=source.name,
+            display_name=display_name,
             package_hash=package_hash,
             package_version=producer_version,
         )
