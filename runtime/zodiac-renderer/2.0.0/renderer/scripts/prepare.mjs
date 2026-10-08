@@ -129,7 +129,7 @@ export const prepareRendererProps = async (packageRoot) => {
       }
     }
     for (const event of scene.events ?? []) {
-      if (!ids.has(event.target)) throw new Error(`EVENT_TARGET_MISSING scene=${scene.id} target=${event.target}`);
+      if (ids.size && !ids.has(event.target)) throw new Error(`EVENT_TARGET_MISSING scene=${scene.id} target=${event.target}`);
     }
     // Count presence as an authoring integrity check; visibility remains
     // under the actual scene timeline and is never faked by the renderer.
