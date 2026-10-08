@@ -16,6 +16,7 @@ from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.resource_budget import load_resource_profile
 from tools.zodiac_local import (
     PipelineError,
+    AlignmentMismatchError,
     _align_scene_words,
     build_timing_from_word_alignment,
     file_sha256,
@@ -213,7 +214,35 @@ def _align_cached_scenes(
                     ),
                 )
             duration = _wav_seconds(path)
-            words = _align_scene_words(model, path, scene["voice"])
+            try:
+                words = _align_scene_words(model, path, scene["voice"])
+            except AlignmentMismatchError as first_error:
+                # Only the failed scene is retried with a more accurate ASR model.
+                # Never turn an ASR mismatch into fabricated word timestamps.
+                primary_model = str(settings.get("model") or "small")
+                if primary_model == "medium":
+                    raise
+                from tools.zodiac_local import _emit_tts_log
+                _emit_tts_log(
+                    f"TIMING RETRY {scene_id}: {primary_model} mismatch; verifying with medium"
+                )
+                try:
+                    fallback_model = load_word_aligner(
+                        "medium",
+                        str(settings.get("device") or "cpu"),
+                        str(settings.get("compute_type") or "int8"),
+                        cpu_threads=int(settings.get("cpu_threads") or resource_profile["whisper_cpu_threads"]),
+                        num_workers=int(settings.get("num_workers") or resource_profile["whisper_workers"]),
+                    )
+                    words = _align_scene_words(fallback_model, path, scene["voice"])
+                except (AlignmentMismatchError, PipelineError) as retry_error:
+                    raise PipelineError(
+                        f"TIMING_REVIEW_REQUIRED: {scene_id}. "
+                        f"Primary ({primary_model}): {first_error}. "
+                        f"Fallback (medium): {retry_error}. "
+                        "Review this WAV or regenerate only this scene; valid scene caches remain."
+                    ) from retry_error
+                _emit_tts_log(f"TIMING VERIFIED {scene_id}: medium ASR accepted")
             _write_json_atomic(
                 cache_path,
                 {
