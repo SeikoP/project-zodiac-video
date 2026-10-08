@@ -1604,16 +1604,34 @@ class ZodiacTui(App):
     @work(thread=True, group="checks", exclusive=True)
     def _check_environment(self) -> None:
         try:
-            checks = self.controller.check_only()
-            failures = [item for item in checks if not item.ok]
-            for item in checks:
-                mark = "✓" if item.ok else "✕"
-                self.call_from_thread(self._write_log, f"{mark} {item.label}: {item.message}")
-            severity = "error" if failures else "information"
-            message = f"{len(failures)} kiểm tra lỗi" if failures else "Môi trường sẵn sàng"
-            self.call_from_thread(self.notify, message, severity=severity)
+            if self._pipeline_mode == "v2" and self.v2_session.job is not None:
+                from tools.control_plane.package_validation import validate_job5_package_root
+                from tools.control_plane.contracts import canonical_contract_hash
+                import importlib.util
+                job = self.v2_session.job
+                validate_job5_package_root(job)
+                checks = [
+                    ("Gói Job@5", f"Hợp lệ · {job.name}"),
+                    ("Authoring contract", canonical_contract_hash("authoring-ir-v1")[:16]),
+                    ("Timing", "Có timing" if (job / ".runtime" / "timing.json").is_file() else "Chưa chạy"),
+                    ("PyAV", "Đã cài" if importlib.util.find_spec("av") else "Chưa cài"),
+                    ("faster-whisper", "Đã cài" if importlib.util.find_spec("faster_whisper") else "Chưa cài"),
+                ]
+                for label, info in checks:
+                    self.call_from_thread(self._write_log, f"✓ {label}: {info}")
+                self.call_from_thread(self.notify, "Đã kiểm tra Job@5; trạng thái runtime xem trong pipeline.")
+            else:
+                checks = self.controller.check_only()
+                failures = [item for item in checks if not item.ok]
+                for item in checks:
+                    mark = "✓" if item.ok else "✕"
+                    self.call_from_thread(self._write_log, f"{mark} {item.label}: {item.message}")
+                severity = "error" if failures else "information"
+                message = f"{len(failures)} kiểm tra lỗi" if failures else "Môi trường sẵn sàng"
+                self.call_from_thread(self.notify, message, severity=severity)
             self.call_from_thread(self._refresh_view)
         except Exception as exc:
+            self.call_from_thread(self._write_log, f"FAIL  Kiểm tra môi trường: {exc}", error=True)
             self.call_from_thread(self.notify, str(exc), severity="error")
 
     @work(thread=True, group="install", exclusive=True)
