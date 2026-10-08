@@ -65,6 +65,7 @@ export type RenderPlanPresentation = {
   ink?: string;
   caption?: {
     font_family?: string;
+    font_data_uri?: string;
     font_size_px?: number;
     font_weight?: number;
     max_lines?: number;
