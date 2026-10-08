@@ -341,3 +341,32 @@ jobs:
           node-version: "22"
       - name: Test renderer 2 prepare boundary
         run: npm test
+
+
+  renderer-v2-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install renderer 2 dependencies
+        working-directory: runtime/zodiac-renderer/2.0.0/renderer
+        run: npm install --no-audit --no-fund
+      - name: Test renderer 2 boundary
+        working-directory: runtime/zodiac-renderer/2.0.0/renderer
+        run: npm test
+      - name: Typecheck renderer 2
+        working-directory: runtime/zodiac-renderer/2.0.0/renderer
+        run: npm run typecheck
+      - name: Prepare Scorpio executable plan
+        run: |
+          mkdir -p /tmp/zodiac-scorpio-v2/.runtime
+          cp tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-scorpio-v2/.runtime/render-plan.json
+          node runtime/zodiac-renderer/2.0.0/renderer/scripts/prepare.mjs /tmp/zodiac-scorpio-v2
+      - name: Render Scorpio frame smoke
+        working-directory: runtime/zodiac-renderer/2.0.0/renderer
+        run: |
+          npx remotion still src/index.ts ZodiacRenderPlan /tmp/zodiac-scorpio-v2/frame.png --props=/tmp/zodiac-scorpio-v2/.runtime/renderer-v2-props.json --frame=38
+          test -s /tmp/zodiac-scorpio-v2/frame.png
