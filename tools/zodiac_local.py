@@ -465,10 +465,7 @@ def resolve_renderer_root(package_root: Path, *, materialize: bool = True) -> Pa
     except PipelineError as exc:
         if "RUNTIME_HASH_MISMATCH" not in str(exc):
             raise
-        print(
-            "RUNTIME_CACHE_REFRESH: cached runtime is stale; rebuilding exact local runtime reference.",
-            flush=True,
-        )
+        _emit_tts_log("RUNTIME_CACHE_REFRESH: cached runtime is stale; rebuilding exact local runtime reference.")
         _materialize_exact_runtime_cache(runtime_root, bundled)
         _verify_cached_runtime(runtime_root, runtime_ref)
     return runtime_root / "renderer"
@@ -2408,7 +2405,14 @@ def _reconcile_asr_variant(
     return [item for item in output if item is not None]
 
 
-def load_word_aligner(model_name: str, device: str, compute_type: str):
+def load_word_aligner(
+    model_name: str,
+    device: str,
+    compute_type: str,
+    *,
+    cpu_threads: int | None = None,
+    num_workers: int = 1,
+):
     require_word_aligner_installed()
     try:
         from faster_whisper import WhisperModel
@@ -2419,7 +2423,14 @@ def load_word_aligner(model_name: str, device: str, compute_type: str):
         ) from exc
 
     try:
-        return WhisperModel(model_name, device=device, compute_type=compute_type)
+        options = {"cpu_threads": cpu_threads} if cpu_threads is not None else {}
+        return WhisperModel(
+            model_name,
+            device=device,
+            compute_type=compute_type,
+            num_workers=num_workers,
+            **options,
+        )
     except Exception as exc:
         raise PipelineError(
             f"cannot load faster-whisper model {model_name!r}: {exc}"
@@ -3459,6 +3470,8 @@ def write_tts_diagnostics(
 def _emit_tts_log(text: str, log_callback=None) -> None:
     if log_callback is not None:
         log_callback(str(text))
+    elif _PROCESS_LOG_OBSERVER.get() is not None:
+        _PROCESS_LOG_OBSERVER.get()(str(text), channel="stdout")
     else:
         print(str(text), flush=True)
 
@@ -3587,12 +3600,9 @@ def run_tts_batch(
         "    shutil.copy2(audio, row['output'])\n"
     )
     if vieneu_url:
-        print("Đang tạo giọng đọc qua VieNeu Gradio…", flush=True)
-        print(
-            "VieNeu Gradio đang quản lý backend/precision/frame-cap; "
-            "các cờ đó chỉ áp dụng khi chạy direct local SDK.",
-            flush=True,
-        )
+        _emit_tts_log("Đang tạo giọng đọc qua VieNeu Gradio…")
+        _emit_tts_log("VieNeu Gradio đang quản lý backend/precision/frame-cap; "
+            "các cờ đó chỉ áp dụng khi chạy direct local SDK.")
         run_args = [
             str(python), "-X", "utf8", "-c", script, str(manifest),
             vieneu_url, voice, str(max_chars),
@@ -3650,15 +3660,12 @@ def run_tts_batch(
             frame_cap=frame_cap,
             max_chars=max_chars,
         )
-        print(
-            f"Đang tạo giọng bằng VieNeu direct: mode={mode}, "
+        _emit_tts_log(f"Đang tạo giọng bằng VieNeu direct: mode={mode}, "
             f"backend={actual['backend'] or 'n/a'}, "
             f"precision={actual['precision'] or 'n/a'}, "
             f"frame_cap={actual['frame_cap'] if actual['frame_cap'] is not None else 'n/a'}, "
             f"frame_cap_scale={frame_cap_scale:.2f}, "
-            f"max_chars={max_chars}…",
-            flush=True,
-        )
+            f"max_chars={max_chars}…")
         run_args = [
             str(python), "-X", "utf8", "-c", script, str(manifest),
             mode, voice, backend, precision, frame_cap, str(frame_cap_scale), str(max_chars),
@@ -4274,10 +4281,7 @@ def synthesize_voice(
     )
     concatenate_scene_voices(root, production, scene_gap_ms=scene_gap_ms)
 
-    print(
-        f"Đang đo căn thời gian từng từ với faster-whisper/{align_model}…",
-        flush=True,
-    )
+    _emit_tts_log(f"Đang đo căn thời gian từng từ với faster-whisper/{align_model}…")
     aligner = load_word_aligner(align_model, align_device, align_compute_type)
     def recover_mismatch(scene, _path, active_aligner, _error):
         scene_id = scene["id"]
@@ -4551,12 +4555,12 @@ def _install_renderer(renderer: Path, *, immutable_source: bool = False) -> None
         if fallback not in SUPPORTED_TYPESCRIPT_VERSIONS or fallback == "5.8.0":
             raise
         if immutable_source:
-            print(f"typescript@5.8.0 unavailable; installing {fallback} without mutating shared runtime source.", flush=True)
+            _emit_tts_log(f"typescript@5.8.0 unavailable; installing {fallback} without mutating shared runtime source.")
             _run_npm(["install", "--no-audit", "--no-fund", "--no-save", f"typescript@{fallback}"], renderer)
         else:
             dev_dependencies["typescript"] = fallback
             package_path.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
-            print(f"typescript@5.8.0 unavailable; using available {fallback}.", flush=True)
+            _emit_tts_log(f"typescript@5.8.0 unavailable; using available {fallback}.")
             _run_npm(["install", "--no-audit", "--no-fund"], renderer)
 
 
@@ -4724,7 +4728,7 @@ def configure_background_music(
         config_path.unlink(missing_ok=True)
         for old in media_dir.glob("background-music.*"):
             old.unlink(missing_ok=True)
-        print("Background music: disabled.", flush=True)
+        _emit_tts_log("Background music: disabled.")
         return
 
     source = _validate_music_file(music)
@@ -4745,10 +4749,7 @@ def configure_background_music(
         encoding="utf-8",
     )
     validate_background_music(root)
-    print(
-        f"Background music: {source.name} @ {volume:.0%}.",
-        flush=True,
-    )
+    _emit_tts_log(f"Background music: {source.name} @ {volume:.0%}.")
 
 
 def _trusted_executable(name: str) -> str:
@@ -4801,10 +4802,7 @@ def build_audio_preview(
             # Preview is an audition tool, not a runtime validation gate. A
             # stale/partial voice.wav must not make the music control unusable.
             has_voice = False
-            print(
-                f"Audio preview warning: bỏ qua voice.wav chưa hợp lệ ({exc}).",
-                flush=True,
-            )
+            _emit_tts_log(f"Audio preview warning: bỏ qua voice.wav chưa hợp lệ ({exc}).")
     source = _validate_music_file(music)
     volume = _validate_music_volume(volume)
 
@@ -4867,7 +4865,7 @@ def build_audio_preview(
             "FFmpeg finished without creating audio-preview.wav."
         )
 
-    print(f"Audio preview: {output} ({mix_note}, {duration:.1f}s).", flush=True)
+    _emit_tts_log(f"Audio preview: {output} ({mix_note}, {duration:.1f}s).")
     return output
 
 
@@ -4981,7 +4979,7 @@ def finalize_publish_outputs(
             )
         (root / "out" / "zodiac-publish-bundle.zip").unlink(missing_ok=True)
         (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
-    print(f"Final outputs ready in {root / 'out'}.", flush=True)
+    _emit_tts_log(f"Final outputs ready in {root / 'out'}.")
     return outputs
 
 
@@ -5107,10 +5105,7 @@ def mix_background_music_into_render(
         ):
             shutil.copy2(base_video, output)
             (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
-        print(
-            f"Final audio: voice/SFX only at playback {float(playback_rate):.2f}x.",
-            flush=True,
-        )
+        _emit_tts_log(f"Final audio: voice/SFX only at playback {float(playback_rate):.2f}x.")
         return output
 
     volume = config["background_music_volume"]
@@ -5163,10 +5158,7 @@ def mix_background_music_into_render(
         os.replace(mixed_tmp, output)
         (root / "out" / "zodiac-story.with-music.mp4").unlink(missing_ok=True)
 
-    print(
-        f"Final audio: mixed {music.name} @ {volume:.0%} into {output.name}.",
-        flush=True,
-    )
+    _emit_tts_log(f"Final audio: mixed {music.name} @ {volume:.0%} into {output.name}.")
     return output
 
 
@@ -5224,7 +5216,7 @@ def prepare_renderer(
                     dependency_fingerprint,
                 )
         else:
-            print("Đang cài các dependency Remotion v2 đã ghim…", flush=True)
+            _emit_tts_log("Đang cài các dependency Remotion v2 đã ghim…")
             _install_renderer(renderer, immutable_source=shared_runtime)
             if not _renderer_dependencies_installed(renderer):
                 raise PipelineError(
@@ -5271,10 +5263,7 @@ def prepare_renderer(
     check_fingerprint = renderer_check_fingerprint(root)
     checks_cached = renderer_checks_cached(root, check_fingerprint)
     if checks_cached:
-        print(
-            "Renderer tests/typecheck: dùng lại kết quả PASS cùng fingerprint.",
-            flush=True,
-        )
+        _emit_tts_log("Renderer tests/typecheck: dùng lại kết quả PASS cùng fingerprint.")
         with measure_performance_stage(
             root,
             "renderer.contract_tests",
@@ -5290,7 +5279,7 @@ def prepare_renderer(
         ):
             pass
     else:
-        print("Đang chạy kiểm thử hợp đồng renderer…", flush=True)
+        _emit_tts_log("Đang chạy kiểm thử hợp đồng renderer…")
         with measure_performance_stage(
             root,
             "renderer.contract_tests",
@@ -5301,7 +5290,7 @@ def prepare_renderer(
             else:
                 _run_npm(["run", "test"], renderer)
 
-        print("Đang kiểm tra TypeScript của renderer…", flush=True)
+        _emit_tts_log("Đang kiểm tra TypeScript của renderer…")
         with measure_performance_stage(
             root,
             "renderer.typecheck",
@@ -5349,12 +5338,9 @@ def run_renderer(
     if action == "preview":
         config = validate_background_music(root)
         if config:
-            print(
-                "Remotion Studio xem trước voice/SFX. "
+            _emit_tts_log("Remotion Studio xem trước voice/SFX. "
                 "Dùng 'Nghe thử' để nghe bản trộn nhạc nền đã chọn "
-                f"({config['background_music_volume']:.0%}).",
-                flush=True,
-            )
+                f"({config['background_music_volume']:.0%}).")
         renderer = resolve_renderer_root(root, materialize=True)
         if _load_package_manifest(root) is not None:
             _run_npm(["run", "studio"], renderer, env=_renderer_environment(root))

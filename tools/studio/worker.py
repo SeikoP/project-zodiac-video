@@ -681,7 +681,7 @@ class PipelineWorker:
 
         try:
             with observe_subprocesses(self.attach_process), observe_subprocess_output(
-                lambda line, channel=None: self.log(line)
+                lambda line, channel=None: self.emit(LOG_LINE, text=str(line), channel=channel, step=step)
             ):
                 handler()
             self._raise_if_cancelled()

@@ -172,7 +172,8 @@ class StudioV2VoiceTests(unittest.TestCase):
                 generator=fake,
             )
             self.assertFalse(second.reused)
-            self.assertEqual(fake.calls, 2)
+            self.assertEqual(second.cache_reason, "REUSED_SCENES")
+            self.assertEqual(fake.calls, 1)
 
     def test_generator_failure_is_structured_voice_error(self):
         with tempfile.TemporaryDirectory() as temp:

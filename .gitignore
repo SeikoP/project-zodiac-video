@@ -13,3 +13,5 @@ out/
 *.mp3
 zodiac_video_local.egg-info/dependency_links.txt
 /zodiac_video_local.egg-info
+/checklist
+ready/runtime-watermark-config.json

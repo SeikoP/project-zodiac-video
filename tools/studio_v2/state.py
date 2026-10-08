@@ -24,6 +24,7 @@ def save_state(workspace: Path, state: PipelineStateV2) -> None:
                 "input_hash": step.input_hash,
                 "output_hash": step.output_hash,
                 "reused": step.reused,
+                "cache_reason": step.cache_reason,
                 "error": step.error,
             }
             for name, step in state.steps.items()
@@ -70,6 +71,8 @@ def load_state(workspace: Path) -> PipelineStateV2 | None:
             step.input_hash = raw.get("input_hash")
             step.output_hash = raw.get("output_hash")
             step.reused = bool(raw.get("reused", False))
+            reason = raw.get("cache_reason")
+            step.cache_reason = str(reason) if reason is not None else None
             error = raw.get("error")
             step.error = dict(error) if isinstance(error, dict) else None
     return state

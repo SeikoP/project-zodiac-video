@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import os
+import re
+from datetime import datetime
 import subprocess
 import sys
 from pathlib import Path
@@ -21,7 +24,7 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.strip import Strip
-from textual.widgets import Button, DataTable, Footer, Header, Input, Label, RichLog, Select, Static
+from textual.widgets import Button, DataTable, Footer, Header, Input, Label, RichLog, Select, Static, ProgressBar
 
 from tools.control_plane.errors import ControlPlaneError
 from tools.studio.controller import StudioController
@@ -98,7 +101,7 @@ class SelectableLog(RichLog):
             self._select_end = None
             self.refresh()
             if text:
-                self.app.copy_to_clipboard(text)
+                self.app._copy_text(text)
 
     def _selection_span(self) -> tuple[tuple[int, int], tuple[int, int]] | None:
         if self._select_anchor is None or self._select_end is None:
@@ -221,7 +224,8 @@ class ZodiacTui(App):
 
     #workspace {
         layout: horizontal;
-        height: 1fr;
+        height: 32;
+        min-height: 32;
         padding: 0 1;
         scrollbar-size: 1 1;
     }
@@ -251,8 +255,8 @@ class ZodiacTui(App):
 
     #pipeline-section {
         height: 25;
-        min-height: 23;
-        max-height: 27;
+        min-height: 25;
+        max-height: 25;
     }
 
     #pipeline-top {
@@ -301,8 +305,9 @@ class ZodiacTui(App):
 
     #log-section {
         height: 1fr;
-        min-height: 8;
-        max-height: 20;
+        min-height: 4;
+        padding: 0 1;
+        layout: horizontal;
     }
 
     #log-section.hidden {
@@ -422,7 +427,36 @@ class ZodiacTui(App):
         padding: 0 1;
     }
 
-    #log {
+    #project-heading { height: 1; }
+    #project-heading .section-title { width: 10; }
+    #package-name { width: 1fr; height: 1; }
+    .log-panel { height: 1fr; padding: 0 1; }
+    #error-panel { width: 46%; border-right: solid #273245; }
+    #workflow-panel { width: 1fr; }
+    .log-heading {
+        layout: horizontal;
+        height: 3;
+        min-height: 3;
+    }
+    .log-heading .section-title {
+        width: 1fr;
+        content-align: left middle;
+    }
+    .log-heading Button {
+        width: 14;
+        min-width: 14;
+        height: 3;
+    }
+    .log-empty {
+        height: 3;
+        padding: 0 1;
+        color: #8795a9;
+        content-align: left middle;
+    }
+    .log-empty.hidden { display: none; }
+    #workflow-task { height: 2; }
+    #workflow-progress { height: 1; }
+    #error-log, #log {
         height: 1fr;
         background: #090d13;
         border: none;
@@ -571,7 +605,7 @@ class ZodiacTui(App):
     BINDINGS = [
         ("i", "pick_zip", "Nạp ZIP"),
         ("r", "run_full", "Chạy toàn bộ"),
-        ("l", "toggle_log", "Log"),
+        ("l", "focus_log", "Log"),
         ("x", "stop", "Dừng"),
         ("q", "quit", "Thoát"),
     ]
@@ -588,7 +622,9 @@ class ZodiacTui(App):
         self.v2_session = V2TuiSession(self.workspace_root)
         self._pipeline_mode = "legacy"
         self.music_path = self._saved_music_path() or default_music_path()
-        self.log_visible = False
+        self.log_visible = True
+        self.active_step = ""
+        self.active_scene = ""
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
         self._pipeline_table_key: tuple | None = None
@@ -599,8 +635,9 @@ class ZodiacTui(App):
         with VerticalScroll(id="workspace"):
             with VerticalScroll(id="sidebar"):
                 with Vertical(classes="section", id="project-section"):
-                    yield Label("DỰ ÁN", classes="section-title")
-                    yield Static("Chưa chọn package", id="package-name")
+                    with Horizontal(id="project-heading"):
+                        yield Label("DỰ ÁN", classes="section-title")
+                        yield Static("Chưa chọn package", id="package-name", markup=False)
                     yield Static("Nạp zodiac-job ZIP để bắt đầu", id="package-path")
                     yield Select(
                         [],
@@ -672,7 +709,6 @@ class ZodiacTui(App):
                         with Vertical(id="pipeline-actions"):
                             yield Label("THAO TÁC", classes="section-title")
                             yield Button("Chạy lại", id="rerun-stage")
-                            yield Button("Hiện log", id="toggle-log")
                             yield Button("Chạy toàn bộ", id="run-full", variant="success")
                             yield Button("Dừng", id="stop", variant="error")
 
@@ -683,9 +719,21 @@ class ZodiacTui(App):
                         yield Button("Mở video", id="open-video")
                         yield Button("Mở thư mục", id="open-folder")
 
-                with Vertical(classes="section hidden", id="log-section"):
-                    yield Label("NHẬT KÝ", classes="section-title")
-                    yield SelectableLog(id="log", wrap=True, highlight=True, markup=False)
+        with Horizontal(id="log-section"):
+            with Vertical(classes="section log-panel", id="error-panel"):
+                with Horizontal(classes="log-heading"):
+                    yield Label("LỖI", classes="section-title")
+                    yield Button("Sao chép", id="copy-errors")
+                yield Static("Không có lỗi. Chẩn đoán sẽ lưu lỗi và chi tiết bước thất bại.", id="error-empty", classes="log-empty", markup=False)
+                yield SelectableLog(id="error-log", wrap=True, highlight=False, markup=False)
+            with Vertical(classes="section log-panel", id="workflow-panel"):
+                with Horizontal(classes="log-heading"):
+                    yield Label("WORKFLOW", classes="section-title")
+                    yield Button("Sao chép", id="copy-workflow")
+                yield Static("Chưa chạy tác vụ.", id="workflow-task", markup=False)
+                yield ProgressBar(total=100, show_eta=False, id="workflow-progress")
+                yield Static("Tiến trình và đầu ra từng bước sẽ hiện ở đây.", id="workflow-empty", classes="log-empty", markup=False)
+                yield SelectableLog(id="log", wrap=True, highlight=False, markup=False)
 
         with Container(id="command-bar"):
             yield Static("Chưa chạy", id="command-status")
@@ -713,12 +761,20 @@ class ZodiacTui(App):
 
     def _handle_engine_event(self, kind: str, payload: dict) -> None:
         if kind == "LOG_LINE":
-            self._write_log(payload.get("text", ""))
+            step = payload.get("step") or self.active_step
+            channel = payload.get("channel") or "stdout"
+            self._write_log(f"[{step or 'system'} / {channel}] {payload.get('text', '')}", error=channel == "stderr")
         elif kind == "STEP_STARTED":
             step = payload.get("step")
+            self.active_step = step or ""
+            self.active_scene = ""
             self._write_log(
                 f"START {STEP_NAMES_VI.get(step, step or 'unknown')}"
             )
+        elif kind == "STEP_PROGRESS":
+            self.active_step = payload.get("step") or self.active_step
+            self.active_scene = payload.get("scene_id") or ""
+            self._write_log(f"TASK {self.active_step} queued_scene={self.active_scene}")
         elif kind == "STEP_DONE":
             step = payload.get("step")
             self._write_log(
@@ -729,10 +785,10 @@ class ZodiacTui(App):
             name = STEP_NAMES_VI.get(step, step or "unknown")
             code = payload.get("error_code") or "UNKNOWN"
             message = payload.get("message") or "Không có thông báo lỗi."
-            self._write_log(f"FAIL  {name} [{code}] {message}")
+            self._write_log(f"FAIL  {name} [{step}] [{code}] {message}", error=True)
             details = str(payload.get("details") or "").strip()
             if details and details != message:
-                self._write_log(details)
+                self._write_log(details, error=True)
             self._set_log_visible(True)
         elif kind == "PIPELINE_CANCELLED":
             self._write_log("CANCEL Pipeline đã dừng theo yêu cầu.")
@@ -740,13 +796,79 @@ class ZodiacTui(App):
             self._write_log("DONE  Pipeline hoàn tất.")
         self._refresh_view()
 
-    def _write_log(self, text: str) -> None:
-        """Write literal log text without Rich markup interpretation."""
-        log = self.query_one("#log", RichLog)
+    def _write_log(self, text: str, *, error: bool = False) -> None:
+        """Route each line to exactly one of the workflow or error logs."""
         rendered = str(text).replace("\r\n", "\n").replace("\r", "\n")
         for line in rendered.split("\n"):
             if line:
-                log.write(line)
+                stamped = f"{datetime.now():%H:%M:%S} {line}"
+                is_error = error or re.search(
+                    r"(?i)(?:\b(?:error|failed|exception|traceback|fatal)\b|^FAIL\b|^✕|\blỗi\b|\bthất bại\b)",
+                    line,
+                )
+                if is_error:
+                    self.query_one("#error-log", RichLog).write(stamped)
+                    self.query_one("#error-empty", Static).add_class("hidden")
+                else:
+                    self.query_one("#log", RichLog).write(stamped)
+                    self.query_one("#workflow-empty", Static).add_class("hidden")
+
+    def _copy_log(self, selector: str, message: str) -> None:
+        text = "\n".join(line.text for line in self.query_one(selector, RichLog).lines)
+        if not text:
+            self.notify("Chưa có log để sao chép.", severity="warning")
+            return
+        if self._copy_text(text):
+            self.notify(message)
+
+    def _copy_text(self, text: str) -> bool:
+        try:
+            if os.name == "nt":
+                import ctypes
+                from ctypes import wintypes
+
+                user32 = ctypes.WinDLL("user32", use_last_error=True)
+                kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+                user32.OpenClipboard.argtypes = [wintypes.HWND]
+                user32.OpenClipboard.restype = wintypes.BOOL
+                user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
+                user32.SetClipboardData.restype = wintypes.HANDLE
+                kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
+                kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
+                kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
+                kernel32.GlobalLock.restype = ctypes.c_void_p
+                kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
+                kernel32.GlobalFree.argtypes = [wintypes.HGLOBAL]
+                payload = (text + "\0").encode("utf-16-le")
+                handle = kernel32.GlobalAlloc(0x0002, len(payload))
+                if not handle:
+                    raise ctypes.WinError(ctypes.get_last_error())
+                locked = kernel32.GlobalLock(handle)
+                if not locked:
+                    kernel32.GlobalFree(handle)
+                    raise ctypes.WinError(ctypes.get_last_error())
+                ctypes.memmove(locked, payload, len(payload))
+                kernel32.GlobalUnlock(handle)
+                if not user32.OpenClipboard(None):
+                    kernel32.GlobalFree(handle)
+                    raise ctypes.WinError(ctypes.get_last_error())
+                try:
+                    if not user32.EmptyClipboard() or not user32.SetClipboardData(13, handle):
+                        kernel32.GlobalFree(handle)
+                        raise ctypes.WinError(ctypes.get_last_error())
+                finally:
+                    user32.CloseClipboard()
+            else:
+                self.copy_to_clipboard(text)
+        except Exception as exc:
+            self.notify(f"Không thể sao chép log: {exc}", severity="error")
+            return False
+        return True
+
+    def notify(self, message, *, title="", severity="information", timeout=None):
+        if severity == "error" and self.is_mounted and self.query("#error-log"):
+            self._write_log(f"{title}: {message}" if title else str(message), error=True)
+        return super().notify(message, title=title, severity=severity, timeout=timeout)
 
     def _refresh_jobs(self) -> None:
         select = self.query_one("#job-select", Select)
@@ -780,7 +902,10 @@ class ZodiacTui(App):
         return self.controller.video_path
 
     def _refresh_view(self) -> None:
-        if not self.screen_stack or not self.screen.query("#package-name"):
+        if not self.screen_stack or any(
+            not self.screen.query(selector)
+            for selector in ("#package-name", "#workflow-task", "#workflow-progress", "#pipeline-table")
+        ):
             return
         self._do_refresh()
 
@@ -825,6 +950,21 @@ class ZodiacTui(App):
         )
         self._refresh_health_from_checks()
 
+        running = next((row for row in pipeline_rows if row["status"] == RUNNING), None)
+        progress = self.query_one("#workflow-progress", ProgressBar)
+        if running:
+            scenes = running.get("scenes") or {}
+            done = sum(item.get("status") == DONE for item in scenes.values())
+            value = done / len(scenes) if scenes else float(running.get("progress") or 0)
+            name = STEP_NAMES_VI.get(running["step"], running["step"])
+            detail = f" • {done}/{len(scenes)} scene" if scenes else ""
+            scene = f" • queued: {self.active_scene}" if self.active_scene and self.active_step == running["step"] else ""
+            self.query_one("#workflow-task", Static).update(f"{name}{detail}{scene}")
+            progress.update(total=100 if scenes or value > 0 else None, progress=value * 100)
+        else:
+            self.query_one("#workflow-task", Static).update(self._command_status())
+            progress.update(total=100, progress=100 if self.controller.plan.finished else 0)
+
         self.pipeline_groups = compact_pipeline_rows(pipeline_rows)
         table_key = tuple(
             (
@@ -849,7 +989,7 @@ class ZodiacTui(App):
                     row["glyph"],
                     row["label"],
                     status_label(row["status"]),
-                    f"{percent}%",
+                    "Đang xử lý" if row["status"] == RUNNING and not row["scene_total"] and not percent else f"{percent}%",
                     detail,
                 )
             if self.pipeline_groups:
@@ -989,11 +1129,12 @@ class ZodiacTui(App):
         if self._pipeline_mode == "v2":
             if self.v2_session.job is None:
                 return "Nạp ZIP hoặc chọn job để bắt đầu."
+            cache_summary = self._v2_artifact_summary()
             if self._final_complete():
-                return "Video cuối đã sẵn sàng; artifact không đổi sẽ được dùng lại."
+                return "Video cuối đã sẵn sàng. " + cache_summary
             for row in self.v2_session.pipeline_rows():
                 if row["status"] != DONE:
-                    return f"Studio v2 · tiếp theo: {row['label']}"
+                    return f"Studio v2 · tiếp theo: {row['label']} · {cache_summary}"
             return "Studio v2 đã hoàn tất."
         if self.controller.job is None:
             return "Nạp ZIP hoặc chọn job để bắt đầu."
@@ -1003,6 +1144,41 @@ class ZodiacTui(App):
         if next_step:
             return f"Chạy toàn bộ · tiếp theo: {STEP_NAMES_VI.get(next_step, next_step)}"
         return "Chạy toàn bộ để tạo video cuối."
+
+    def _v2_artifact_summary(self) -> str:
+        job = self.v2_session.job
+        if job is None:
+            return ""
+        path = job / ".runtime" / "artifacts" / "manifest.json"
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return "Cache chưa có chi tiết scene."
+        records = payload.get("artifacts") if isinstance(payload, dict) else None
+        if not isinstance(records, dict):
+            return "Cache chưa có chi tiết scene."
+
+        def count(artifact_type: str, reused_reason: str, dirty_reason: str) -> str:
+            rows = [
+                row
+                for row in records.values()
+                if isinstance(row, dict) and row.get("artifact_type") == artifact_type
+            ]
+            reused = sum(
+                (row.get("provenance") or {}).get("cache_reason") == reused_reason
+                for row in rows
+            )
+            dirty = sum(
+                (row.get("provenance") or {}).get("cache_reason") == dirty_reason
+                for row in rows
+            )
+            return f"{reused} dùng lại · {dirty} mới" if rows else "0 scene"
+
+        return (
+            "VOICE " + count("voice.scene", "REUSED_APPROVED", "GENERATED_NEW")
+            + "  TIMING " + count("timing.scene", "REUSED_SCENE", "ALIGNED_NEW")
+            + "  RENDER " + count("render.segment", "REUSED_SEGMENT", "RENDERED_NEW")
+        )
 
     def _final_pipeline_settled(self) -> bool:
         if self._pipeline_mode == "v2":
@@ -1116,7 +1292,11 @@ class ZodiacTui(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
-        if button_id == "pick-zip":
+        if button_id == "copy-errors":
+            self._copy_log("#error-log", "Đã sao chép log lỗi.")
+        elif button_id == "copy-workflow":
+            self._copy_log("#log", "Đã sao chép log workflow.")
+        elif button_id == "pick-zip":
             self.action_pick_zip()
         elif button_id == "clear-music":
             self.music_path = None
@@ -1498,14 +1678,14 @@ class ZodiacTui(App):
             return
         self._open_path(path)
 
+    def action_focus_log(self) -> None:
+        self.query_one("#log", RichLog).focus()
+
     def action_toggle_log(self) -> None:
-        self._set_log_visible(not self.log_visible)
+        self.action_focus_log()
 
     def _set_log_visible(self, visible: bool) -> None:
-        self.log_visible = visible
-        section = self.query_one("#log-section", Vertical)
-        section.set_class(not visible, "hidden")
-        self.query_one("#toggle-log", Button).label = "Ẩn log" if visible else "Hiện log"
+        self.log_visible = True
 
     def action_stop(self) -> None:
         if self._pipeline_mode == "v2":

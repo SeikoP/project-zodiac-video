@@ -43,6 +43,7 @@ class StepStateV2:
     input_hash: str | None = None
     output_hash: str | None = None
     reused: bool = False
+    cache_reason: str | None = None
     error: dict[str, Any] | None = None
 
     def reset(self) -> None:
@@ -50,6 +51,7 @@ class StepStateV2:
         self.input_hash = None
         self.output_hash = None
         self.reused = False
+        self.cache_reason = None
         self.error = None
 
 
@@ -68,12 +70,14 @@ class PipelineStateV2:
         input_hash: str,
         output_hash: str,
         reused: bool,
+        cache_reason: str | None = None,
     ) -> None:
         state = self.steps[step]
         state.status = DONE
         state.input_hash = input_hash
         state.output_hash = output_hash
         state.reused = bool(reused)
+        state.cache_reason = cache_reason
         state.error = None
 
     def mark_failed(self, step: str, *, error: dict[str, Any]) -> None:
@@ -81,6 +85,7 @@ class PipelineStateV2:
         state.status = FAILED
         state.error = dict(error)
         state.reused = False
+        state.cache_reason = None
 
     def invalidate_for(self, change: str) -> None:
         try:

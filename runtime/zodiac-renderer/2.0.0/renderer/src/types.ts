@@ -50,6 +50,8 @@ export type RenderPlanEvent = {
 
 export type RenderPlanScene = {
   id: string;
+  continuity_group?: string;
+  performance_context_hash?: string;
   start_frame: number;
   duration_frames: number;
   measured_duration_frames?: number;
@@ -88,6 +90,7 @@ export type RendererV2Props = {
   fps: number;
   video: {width: number; height: number};
   presentation?: RenderPlanPresentation;
+  performance_context_hash?: string;
   assets: Record<string, RenderPlanAsset>;
   scenes: RenderPlanScene[];
 };

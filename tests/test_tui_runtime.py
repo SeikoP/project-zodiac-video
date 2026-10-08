@@ -24,6 +24,16 @@ class FilePickerRegressionTests(unittest.TestCase):
         self.assertEqual(tree.id, "picker-tree")
 
 
+class InternalLogTests(unittest.TestCase):
+    def test_internal_logs_use_observer_without_touching_terminal(self):
+        from tools.zodiac_local import _emit_tts_log, observe_subprocess_output
+        received = []
+        with observe_subprocess_output(lambda text, **fields: received.append((text, fields))), patch("builtins.print") as terminal:
+            _emit_tts_log("internal diagnostic")
+        terminal.assert_not_called()
+        self.assertEqual(received, [("internal diagnostic", {"channel": "stdout"})])
+
+
 class VoiceCatalogTests(unittest.TestCase):
     def test_saved_voices_are_loaded_for_dropdown(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -59,7 +69,6 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
                 "#listen",
                 "#clear-music",
                 "#rerun-stage",
-                "#toggle-log",
                 "#open-video",
                 "#open-folder",
                 "#run-full",
@@ -69,8 +78,8 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
                 self.assertGreaterEqual(button.region.height, 3, selector)
 
             log_section = app.query_one("#log-section")
-            self.assertTrue(log_section.has_class("hidden"))
-            self.assertFalse(app.log_visible)
+            self.assertFalse(log_section.has_class("hidden"))
+            self.assertTrue(app.log_visible)
             self.assertFalse(app.query_one("#log").markup)
 
             self.assertEqual(app._command_status(), "Nạp ZIP hoặc chọn job để bắt đầu.")
@@ -82,13 +91,13 @@ class TuiMountSmokeTests(unittest.IsolatedAsyncioTestCase):
             action_ids = [button.id for button in actions.query("Button")]
             self.assertEqual(
                 action_ids,
-                ["rerun-stage", "toggle-log", "run-full", "stop"],
+                ["rerun-stage", "run-full", "stop"],
             )
             self.assertFalse(app.query("#primary-actions"))
 
             # All right-side actions must fit inside the pipeline console.
             actions_panel = app.query_one("#pipeline-actions")
-            for selector in ("#rerun-stage", "#toggle-log", "#run-full", "#stop"):
+            for selector in ("#rerun-stage", "#run-full", "#stop"):
                 button = app.query_one(selector)
                 self.assertGreaterEqual(button.region.height, 3, selector)
                 self.assertLessEqual(
@@ -130,6 +139,30 @@ class ListenButtonVisibilityTests(unittest.IsolatedAsyncioTestCase):
 
 
 class LogLifecycleTests(unittest.IsolatedAsyncioTestCase):
+    async def test_logs_span_screen_and_keep_stderr_and_toast_errors(self):
+        app = ZodiacTui()
+        async with app.run_test(size=(132, 46)) as pilot:
+            await pilot.pause()
+            logs = app.query_one("#log-section")
+            workspace = app.query_one("#workspace")
+            self.assertGreaterEqual(logs.region.width, workspace.region.width - 2)
+            self.assertGreaterEqual(logs.region.y, workspace.region.bottom)
+            self.assertEqual(app.query_one("#package-name").region.y, app.query_one("#project-heading").region.y)
+            self.assertFalse(app.query("#toggle-log"))
+            app._handle_engine_event("LOG_LINE", {"text": "diagnostic detail", "channel": "stderr", "step": "RENDER_VIDEO"})
+            app.notify("Import invalid", severity="error")
+            await pilot.pause()
+            errors = "\n".join(line.text for line in app.query_one("#error-log").lines)
+            self.assertIn("RENDER_VIDEO / stderr", errors)
+            self.assertIn("diagnostic detail", errors)
+            self.assertIn("Import invalid", errors)
+            app.controller.plan.mark(RENDER_VIDEO, "RUNNING", progress=0.25)
+            app._refresh_view()
+            self.assertEqual(app.query_one("#workflow-progress").progress, 25)
+            app.controller.plan.mark(RENDER_VIDEO, "RUNNING", progress=0)
+            app._refresh_view()
+            self.assertIsNone(app.query_one("#workflow-progress").total)
+
     async def test_failed_step_logs_code_message_and_details(self):
         app = ZodiacTui()
         async with app.run_test(size=(132, 46)) as pilot:
@@ -144,7 +177,7 @@ class LogLifecycleTests(unittest.IsolatedAsyncioTestCase):
             )
             await pilot.pause()
             log = app.query_one("#log", SelectableLog)
-            text = "\n".join(line.text for line in log.lines)
+            text = "".join(line.text for line in log.lines)
             self.assertIn("RENDER_FAILED", text)
             self.assertIn("Không render được.", text)
             self.assertIn("renderer stderr detail", text)

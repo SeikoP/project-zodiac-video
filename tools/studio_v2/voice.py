@@ -2,12 +2,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
-import shutil
 from typing import Any, Callable
 
-from tools.control_plane.cache import voice_key
+from tools.control_plane.cache import scene_voice_key, voice_key
+from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.errors import ControlPlaneError
+from tools.studio.artifacts import (
+    VoiceArtifactStore,
+    VoiceIdentity,
+    canonical_hash,
+)
 from tools.zodiac_local import (
     DEFAULT_SPEECH_RATE_WARNING_WPS,
     DEFAULT_TTS_BACKEND,
@@ -37,6 +43,9 @@ class VoiceArtifact:
     output_hash: str
     scene_hashes: dict[str, str]
     reused: bool
+    cache_reason: str = "UNKNOWN"
+    reused_scenes: int = 0
+    generated_scenes: int = 0
 
 
 def _json_safe(value: Any) -> Any:
@@ -51,6 +60,20 @@ def _json_safe(value: Any) -> Any:
 
 def _normalized_words(value: str) -> str:
     return " ".join(str(value).replace("\r\n", "\n").replace("\r", "\n").split())
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+    try:
+        temp.write_text(
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 def _production_from_ir(ir: dict[str, Any]) -> dict[str, Any]:
@@ -130,6 +153,7 @@ def _scene_hashes_valid(
 def _cached_artifact(
     workspace: Path,
     input_key: str,
+    scene_ids: list[str],
 ) -> VoiceArtifact | None:
     meta = _read_meta(_meta_path(workspace))
     if not meta or meta.get("input_key") != input_key:
@@ -141,7 +165,7 @@ def _cached_artifact(
     if (
         not isinstance(expected_output, str)
         or not isinstance(scene_hashes, dict)
-        or not scene_hashes
+        or set(scene_hashes) != set(scene_ids)
     ):
         return None
 
@@ -160,6 +184,8 @@ def _cached_artifact(
         output_hash=expected_output,
         scene_hashes={str(key): str(value) for key, value in scene_hashes.items()},
         reused=True,
+        cache_reason="REUSED_GLOBAL",
+        reused_scenes=len(scene_hashes),
     )
 
 
@@ -203,31 +229,156 @@ def ensure_voice_artifact(
         safe_settings,
         engine_version,
     )
-    cached = _cached_artifact(workspace, input_key)
+    scene_ids = [str(scene["id"]) for scene in production["scenes"]]
+    scene_settings = {
+        key: value for key, value in safe_settings.items() if key != "scene_gap_ms"
+    }
+    scene_keys = {
+        str(scene["id"]): scene_voice_key(
+            _normalized_words(scene["voice"]),
+            voice_profile,
+            scene_settings,
+            engine_version,
+        )
+        for scene in production["scenes"]
+    }
+    profile_hash = canonical_hash(
+        {
+            "voice_profile": voice_profile,
+            "voice_identity": safe_settings.get("voice_identity"),
+        }
+    )
+    generation_profile_hash = canonical_hash(
+        {"engine_version": engine_version, "settings": scene_settings}
+    )
+    voice_store = VoiceArtifactStore(workspace)
+    scene_by_id = {str(scene["id"]): scene for scene in production["scenes"]}
+
+    def record_scene_artifacts(
+        scene_hashes: dict[str, str], generated_scene_ids: set[str] | None = None
+    ) -> None:
+        graph = ArtifactGraph(workspace)
+        for scene_id in scene_ids:
+            scene = scene_by_id[scene_id]
+            text_hash = canonical_hash(_normalized_words(scene["voice"]))
+            wav_path = scene_wav_path(workspace, scene_id)
+            take = voice_store.active_take(scene_id)
+            if (
+                not take
+                or take.get("wav_sha256") != scene_hashes.get(scene_id)
+                or take.get("text_hash") != text_hash
+                or take.get("voice_profile_hash") != profile_hash
+            ):
+                take = voice_store.register_approved(
+                    scene_id,
+                    wav_path,
+                    identity=VoiceIdentity(
+                        text_hash=text_hash,
+                        voice_profile_hash=profile_hash,
+                        generation_profile_hash=generation_profile_hash,
+                        performance_context_hash=None,
+                    ),
+                    approval_source="studio-v2-compatibility",
+                    migrated_from_checkpoint=True,
+                )
+            graph.record(
+                f"voice.scene.{scene_id}",
+                "voice.scene",
+                canonical_hash({"text_hash": text_hash, "voice_profile_hash": profile_hash}),
+                workspace / take["path"],
+                producer="voice-artifact-store",
+                producer_version=str(take.get("generation_profile_hash") or engine_version),
+                approval_status="APPROVED",
+                provenance={
+                    "take_id": take.get("take_id"),
+                    "generation_profile_hash": take.get("generation_profile_hash"),
+                    "working_wav_hash": scene_hashes.get(scene_id),
+                    "cache_reason": (
+                        "GENERATED_NEW"
+                        if generated_scene_ids and scene_id in generated_scene_ids
+                        else "REUSED_APPROVED"
+                    ),
+                },
+            )
+
+    cached = _cached_artifact(workspace, input_key, scene_ids)
     if cached is not None:
+        record_scene_artifacts(cached.scene_hashes)
+        meta = _read_meta(_meta_path(workspace))
+        if meta is not None and meta.get("scene_keys") != scene_keys:
+            meta.update(version=3, scene_keys=scene_keys)
+            _write_json_atomic(_meta_path(workspace), meta)
         return cached
 
-    scene_ids = [str(scene["id"]) for scene in production["scenes"]]
     runtime = workspace / ".runtime"
     runtime.mkdir(parents=True, exist_ok=True)
-    scene_root = runtime / "tts-scenes"
-    if scene_root.exists():
-        shutil.rmtree(scene_root)
+    prior = _read_meta(_meta_path(workspace)) or {}
+    prior_keys = prior.get("scene_keys")
+    prior_hashes = prior.get("scene_hashes")
+    restored_approved: set[str] = set()
+    dirty_scene_ids = []
+    for scene_id in scene_ids:
+        path = scene_wav_path(workspace, scene_id)
+        text_hash = canonical_hash(_normalized_words(scene_by_id[scene_id]["voice"]))
+        approved = voice_store.restore_approved(
+            scene_id,
+            path,
+            text_hash=text_hash,
+            voice_profile_hash=profile_hash,
+            performance_context_hash=None,
+        )
+        if approved is not None:
+            try:
+                validate_voice(path)
+                restored_approved.add(scene_id)
+                continue
+            except Exception:
+                pass
+        expected_hash = prior_hashes.get(scene_id) if isinstance(prior_hashes, dict) else None
+        reusable = (
+            isinstance(prior_keys, dict)
+            and prior_keys.get(scene_id) == scene_keys[scene_id]
+            and isinstance(expected_hash, str)
+            and path.is_file()
+        )
+        if reusable:
+            try:
+                validate_voice(path)
+                reusable = file_sha256(path) == expected_hash
+            except Exception:
+                reusable = False
+        if not reusable:
+            dirty_scene_ids.append(scene_id)
 
     active_generator = generator or _legacy_generator
     try:
-        active_generator(
-            workspace,
-            production,
-            scene_ids,
-            voice_profile,
-            dict(tts_settings),
-        )
+        if dirty_scene_ids:
+            active_generator(
+                workspace,
+                production,
+                dirty_scene_ids,
+                voice_profile,
+                dict(tts_settings),
+            )
         scene_hashes: dict[str, str] = {}
         for scene_id in scene_ids:
             path = scene_wav_path(workspace, scene_id)
             validate_voice(path)
             scene_hashes[scene_id] = file_sha256(path)
+            if scene_id not in restored_approved:
+                scene = scene_by_id[scene_id]
+                voice_store.register_approved(
+                    scene_id,
+                    path,
+                    identity=VoiceIdentity(
+                        text_hash=canonical_hash(_normalized_words(scene["voice"])),
+                        voice_profile_hash=profile_hash,
+                        generation_profile_hash=generation_profile_hash,
+                        performance_context_hash=None,
+                    ),
+                    approval_source="studio-v2-compatibility",
+                    migrated_from_checkpoint=scene_id not in dirty_scene_ids,
+                )
 
         output = concatenate_scene_voices(
             workspace,
@@ -251,25 +402,32 @@ def ensure_voice_artifact(
         ) from exc
 
     output_hash = file_sha256(output)
+    record_scene_artifacts(scene_hashes, set(dirty_scene_ids))
     meta = {
-        "version": 2,
+        "version": 3,
         "input_key": input_key,
         "output_hash": output_hash,
         "scene_hashes": scene_hashes,
+        "scene_keys": scene_keys,
         "voice_profile": voice_profile,
         "engine_version": engine_version,
         "tts_settings": safe_settings,
     }
     path = _meta_path(workspace)
-    path.write_text(
-        json.dumps(meta, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
-        encoding="utf-8",
-        newline="\n",
-    )
+    _write_json_atomic(path, meta)
     return VoiceArtifact(
         path=output,
         input_key=input_key,
         output_hash=output_hash,
         scene_hashes=scene_hashes,
         reused=False,
+        cache_reason=(
+            "REUSED_SCENES"
+            if not dirty_scene_ids
+            else "PARTIAL_REUSE"
+            if len(dirty_scene_ids) < len(scene_ids)
+            else "GENERATED_NEW"
+        ),
+        reused_scenes=len(scene_ids) - len(dirty_scene_ids),
+        generated_scenes=len(dirty_scene_ids),
     )

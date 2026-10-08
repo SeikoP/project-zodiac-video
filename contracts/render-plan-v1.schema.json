@@ -95,6 +95,14 @@
           "type": "string",
           "minLength": 1
         },
+        "continuity_group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "performance_context_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
         "start_frame": {
           "type": "integer",
           "minimum": 0
@@ -263,6 +271,10 @@
     },
     "presentation": {
       "$ref": "#/$defs/presentation"
+    },
+    "performance_context_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }

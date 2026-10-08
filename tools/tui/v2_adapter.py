@@ -124,7 +124,7 @@ def v2_pipeline_rows(state: PipelineStateV2) -> list[dict[str, Any]]:
         item = state.steps[step]
         detail = _error_detail(item.error)
         if not detail and item.status == DONE:
-            detail = "Dùng lại" if item.reused else "Tạo mới"
+            detail = item.cache_reason or ("Dùng lại" if item.reused else "Tạo mới")
         rows.append(
             {
                 "step": step,

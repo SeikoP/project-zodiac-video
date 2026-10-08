@@ -7,6 +7,7 @@ from .anchors import resolve_voice_anchor
 from .authoring import validate_authoring_ir
 from .contracts import validate_contract_shape
 from .errors import ControlPlaneError
+from .performance import compile_motion_duration, context_hash
 
 
 FINAL_LANDING_TAIL_FRAMES = 24
@@ -131,6 +132,7 @@ def compile_render_plan(
     timing_by_scene = {scene["id"]: scene for scene in timing["scenes"]}
     motion_defaults = design_token.get("motion_defaults") or {}
     plan_scenes: list[dict[str, Any]] = []
+    performance_contexts: dict[str, str] = {}
     final_scene_index = len(ir["scenes"]) - 1
 
     for scene_index, scene in enumerate(ir["scenes"]):
@@ -152,6 +154,10 @@ def compile_render_plan(
         executable_duration = measured_duration + (
             FINAL_LANDING_TAIL_FRAMES if scene_index == final_scene_index else 0
         )
+        performance_context = scene.get("performance_context")
+        scene_context_hash = context_hash(performance_context)
+        if scene_context_hash:
+            performance_contexts[scene_id] = scene_context_hash
 
         lane_last: dict[str, dict[str, Any]] = {}
         outputs: list[dict[str, Any]] = []
@@ -162,9 +168,7 @@ def compile_render_plan(
             target = event["target"]
             motion_id = event["desired_motion"]
             motion_profile = motion_defaults.get(motion_id)
-            if not isinstance(motion_profile, dict) or not isinstance(
-                motion_profile.get("duration_frames"), int
-            ):
+            if not isinstance(motion_profile, dict):
                 raise ControlPlaneError(
                     code="MOTION_PROFILE_MISSING",
                     stage="PLAN",
@@ -174,7 +178,11 @@ def compile_render_plan(
                     target=target,
                     detail={"motion": motion_id},
                 )
-            duration = int(motion_profile["duration_frames"])
+            duration, _ = compile_motion_duration(
+                scene,
+                motion_profile,
+                fps=fps,
+            )
             preferred = resolve_voice_anchor(scene, measured, event["trigger"])
             start = preferred
             end = start + duration
@@ -270,8 +278,7 @@ def compile_render_plan(
                 "authored_index": authored_index,
             }
 
-        plan_scenes.append(
-            {
+        plan_scene = {
                 "id": scene_id,
                 "start_frame": scene_start,
                 "duration_frames": executable_duration,
@@ -284,9 +291,14 @@ def compile_render_plan(
                 ),
                 "events": outputs,
             }
-        )
+        continuity_group = (scene.get("performance_context") or {}).get("continuity_group")
+        if continuity_group:
+            plan_scene["continuity_group"] = continuity_group
+        if scene_context_hash:
+            plan_scene["performance_context_hash"] = scene_context_hash
+        plan_scenes.append(plan_scene)
 
-    return {
+    result = {
         "format": "zodiac-render-plan@1",
         "fps": fps,
         "video": deepcopy(ir["video"]),
@@ -294,3 +306,6 @@ def compile_render_plan(
         "assets": deepcopy(ir["assets"]),
         "scenes": plan_scenes,
     }
+    if performance_contexts:
+        result["performance_context_hash"] = context_hash(performance_contexts)
+    return result

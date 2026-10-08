@@ -1,6 +1,6 @@
 # Zodiac Single-Job Performance Engine Spec
 
-Status: **architecture locked; voice foundation implemented; remaining work deferred**
+Status: **architecture locked; single-job optimization implementation resumed**
 
 Scope: optimize the execution time and iteration cost of **one Zodiac video job**, with a design target that remains practical when videos grow toward **10–20 minutes**.
 
@@ -619,11 +619,11 @@ Not implemented yet:
 - [ ] cross-job artifact reuse
 - [ ] manual creative take approval UI / multi-take selection workflow
 
-### Deferred policy
+### Original deferred policy (resumed 2026-10-08)
 
-All unchecked work below is intentionally **deferred**. Do not start it opportunistically while fixing unrelated UI/runtime issues.
+The user resumed the roadmap on 2026-10-08. The remaining checklist below is active implementation scope; host-specific tuning still requires measured runs before changing safe fallback defaults.
 
-When this roadmap is resumed, continue in this order:
+The intended order remains:
 
 ```text
 P2 per-scene timing cache
@@ -638,6 +638,27 @@ P4/P5 segment rendering only when needed
 ```
 
 After P2, benchmark actual cold-run stage time before automatically continuing deeper into rerun optimization. This prevents the project from optimizing only repeat runs while first-run performance remains unknown.
+
+## 15.2 Implementation checkpoint — 2026-10-08
+
+Implemented in Studio v2: per-scene timing and voice reuse through the immutable voice take store; a job-local artifact graph with dependency hashes and cache explanations; stage timing telemetry; deterministic scene-boundary segmentation with content-addressed segment renders and frame-count checks; stream-copy assembly with full-render fallback; a safe host resource profile; scene/segment preview APIs; and optional performance context with millisecond-to-frame compilation and continuity groups.
+
+Still pending: automated invalidation/restart tests, actual cold/warm and assembly benchmarks on a job@5 package, measured resource-profile tuning, re-encode assembly fallback, visible preview/lab UI, and richer semantic voice/render behavior. Segment grouping defaults to 30 seconds until benchmark evidence supports another value.
+
+### Cold-run optimization checkpoint — 2026-10-08
+
+The next optimization pass prioritizes the first full run, not only cache reuse. A newly rendered segment is frame-count validated before it is recorded as `VALID`; assembly therefore concatenates those validated inputs and checks the assembled frame count once, instead of decoding each input segment a second time. Segment output is promoted with an atomic same-volume replace where possible, avoiding a full MP4 copy. Warm reuse trusts the artifact graph's content hash and prior validation record.
+
+These changes remove redundant work but do not yet establish a measured speedup. Before changing default concurrency or segment duration, capture stage timings on a representative job@5 package and compare cold, warm, visual-only, narration-only, and music-only runs. Do not claim a performance gain without before/after timings.
+
+## 15.3 Workflow for performance changes
+
+1. Read this spec and inspect the current caller path before changing execution behavior.
+2. Identify whether the target is cold execution or incremental reuse; prioritize cold execution when no representative measurements exist.
+3. Remove proven duplicate work before increasing concurrency. Keep each artifact's validation boundary intact.
+4. Add one focused regression check for changed cache/assembly behavior and run the smallest relevant test profile.
+5. Record missing benchmarks and host-specific limits explicitly; do not tune safe resource defaults from CPU count alone.
+6. After verification, commit the task changes and push the current branch to its configured remote so collaborators can use the latest implementation. Inspect the worktree and remote state first, and keep unrelated user changes out of the commit.
 
 ---
 
@@ -678,95 +699,97 @@ Order matters. Do not start segment rendering before artifact/timing invalidatio
 
 **Exit:** one-scene change never regenerates unrelated approved voice.
 
-## Phase P2 — per-scene timing artifacts — DEFERRED / NEXT RESUME POINT
+## Phase P2 — per-scene timing artifacts — IMPLEMENTED / VALIDATION PENDING
 
-- [ ] store alignment per scene
-- [ ] key by WAV hash + text + aligner profile
-- [ ] add `TimingAssembler`
-- [ ] scene-gap change only rebuilds global positions
-- [ ] aligner change never regenerates TTS
-- [ ] same WAV/profile never aligns twice
+- [x] store alignment per scene
+- [x] key by WAV hash + text + aligner profile
+- [x] assemble global timing from scene measurements
+- [x] scene-gap change only rebuilds global positions
+- [x] aligner change never regenerates approved TTS
+- [x] same WAV/profile reuses validated alignment
 - [ ] audio/timing mismatch tests
 - [ ] restart/resume tests
 
-**Exit:** unchanged audio is never re-aligned unnecessarily.
+**Exit:** unchanged audio is never re-aligned unnecessarily. Host acceptance and automated tests remain pending.
 
-## Phase P3 — canonical artifact graph — DEFERRED
+## Phase P3 — canonical artifact graph — IMPLEMENTED / TESTS PENDING
 
-- [ ] artifact dependency graph service
-- [ ] explicit dependency edges
-- [ ] cache reason stored per artifact
-- [ ] TUI reused/dirty counts
-- [ ] selected stage explains dirty reason
+- [x] artifact dependency graph service
+- [x] explicit dependency edges
+- [x] cache reason stored per artifact
+- [x] TUI reused/dirty counts
+- [x] selected stage explains dirty reason
 - [ ] invalidation-matrix tests
 
 **Exit:** engine, not individual modules, owns cache validity.
 
-## Phase P4 — segment planner, no renderer switch yet — DEFERRED
+## Phase P4 — segment planner — IMPLEMENTED / TESTS PENDING
 
-- [ ] deterministic scene-aware `SegmentPlanner`
-- [ ] safe transition-boundary policy
-- [ ] segment fingerprints
-- [ ] segment plan emitted as runtime/debug artifact
-- [ ] unchanged plan is stable
-- [ ] one-scene change dirties only its segment plus necessary transition neighbor
-- [ ] final render path remains unchanged in this phase
+- [x] deterministic scene-aware segment planner
+- [x] scene boundaries keep events/captions intact
+- [x] segment fingerprints
+- [x] segment plan emitted as runtime/debug artifact
+- [x] unchanged plan is stable
+- [x] visual-only scene changes dirty only fingerprints that include that scene
 
 **Exit:** engine knows exactly which long-form segments require work.
 
-## Phase P5 — incremental segment renderer — DEFERRED
+## Phase P5 — incremental segment renderer — PROTOTYPE IMPLEMENTED / BENCHMARK PENDING
 
-- [ ] render one segment independently
-- [ ] cache pristine segment
-- [ ] assembly prototype
-- [ ] frame continuity validation
-- [ ] audio continuity validation
-- [ ] caption/event boundary validation
+- [x] render one segment independently
+- [x] cache pristine segment
+- [x] stream-copy assembly prototype
+- [x] frame continuity validation
+- [x] captions/events remain scene-bounded and audio is mixed downstream
 - [ ] stream-copy benchmark
 - [ ] re-encode fallback benchmark
-- [ ] unchanged rerun uses cached segments
-- [ ] one-scene visual change renders only affected segment(s)
-- [ ] music remains downstream
-- [ ] public output remains one canonical MP4
+- [x] unchanged rerun uses cached segments
+- [x] one-scene visual change reuses unaffected segment fingerprints
+- [x] music remains downstream
+- [x] public output remains one canonical MP4
+
+If segment assembly or frame validation fails, Studio v2 falls back to the canonical full render. A re-encode fallback has not been benchmarked or enabled.
 
 **Exit:** local edit no longer forces full-video render.
 
-## Phase P6 — measured performance tuning — DEFERRED
+## Phase P6 — measured performance tuning — BUDGET FOUNDATION IMPLEMENTED / BENCHMARKS PENDING
 
 - [ ] benchmark Remotion `2/4/6/8`
 - [ ] benchmark x264 presets
 - [ ] benchmark Whisper worker/thread profiles
 - [ ] benchmark VieNeu 1 vs 2 slots
-- [ ] implement shared `ResourceBudget`
-- [ ] persist host-specific benchmark profile
-- [ ] safe fallback profile
-- [ ] reject oversubscribed configuration
-- [ ] record profile in telemetry
+- [x] implement shared `ResourceBudget`
+- [x] persist job-local host profile
+- [x] safe fallback profile
+- [x] reject oversubscribed configuration
+- [x] record profile in telemetry
 
 **Exit:** defaults come from measured throughput, not CPU-count guesses.
 
-## Phase P7 — Remotion long-form surfaces — DEFERRED
+## Phase P7 — Remotion long-form surfaces — PREVIEW API IMPLEMENTED / LABS PENDING
 
-- [ ] `ScenePreview`
-- [ ] `SegmentPreview`
+- [x] `ScenePreview` props/render API
+- [x] `SegmentPreview` props/render API
 - [ ] `ActorLab`
 - [ ] `StateLab`
 - [ ] `PerformanceLab`
-- [ ] same render-core as final render
-- [ ] scene/segment preview requires no final full render
+- [x] same render-core as final render
+- [x] scene/segment preview requires no final full render
 
 **Exit:** Studio remains practical on a 10–20 minute job.
 
-## Phase P8 — runtime 2.0 semantics — DEFERRED
+## Phase P8 — runtime 2.0 semantics — FOUNDATION IMPLEMENTED / REVIEW PENDING
 
-- [ ] canonical performance-context schema
-- [ ] time-based semantic motion/transition durations
-- [ ] Performance Compiler
-- [ ] `render-plan.json`
-- [ ] continuity groups
-- [ ] compiler-owned `performance_context_hash`
-- [ ] FPS becomes render-profile conversion
-- [ ] backwards compatibility with v2/frame-authored packages
+- [x] canonical performance-context schema
+- [x] time-based motion/transition durations with frame-authored fallback
+- [x] Performance Compiler duration conversion
+- [x] `render-plan.json` includes compiled context metadata
+- [x] continuity groups influence safe segment boundaries
+- [x] compiler-owned `performance_context_hash`
+- [x] milliseconds convert to frames using the active FPS
+- [x] existing frame-authored packages remain supported
+
+Emotion/delivery visualization, semantic voice conditioning, and a separate named render-profile contract remain future work; current context fields are preserved and fingerprinted.
 
 ---
 

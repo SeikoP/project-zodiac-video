@@ -42,6 +42,23 @@ def voice_key(
     )
 
 
+def scene_voice_key(
+    narration: str,
+    voice_profile: str,
+    tts_settings: dict[str, Any],
+    engine_version: str,
+) -> str:
+    return _key(
+        "voice.scene",
+        {
+            "narration": narration,
+            "voice_profile": voice_profile,
+            "tts_settings": tts_settings,
+            "engine_version": engine_version,
+        },
+    )
+
+
 def timing_key(
     voice_hash: str,
     narration: str,
@@ -53,6 +70,23 @@ def timing_key(
         {
             "voice_hash": voice_hash,
             "narration": narration,
+            "aligner_settings": aligner_settings,
+            "aligner_version": aligner_version,
+        },
+    )
+
+
+def scene_timing_key(
+    wav_sha256: str,
+    canonical_text_hash: str,
+    aligner_settings: dict[str, Any],
+    aligner_version: str,
+) -> str:
+    return _key(
+        "timing.scene",
+        {
+            "wav_sha256": wav_sha256,
+            "canonical_text_hash": canonical_text_hash,
             "aligner_settings": aligner_settings,
             "aligner_version": aligner_version,
         },

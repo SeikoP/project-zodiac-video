@@ -1,5 +1,5 @@
 import {readFile, writeFile, mkdir} from "node:fs/promises";
-import {resolve, join, extname} from "node:path";
+import {resolve, join, extname, sep} from "node:path";
 
 const fail = (code, message, detail = {}) => {
   const payload = {
@@ -48,7 +48,7 @@ const hydrateAssets = async (root, assets) => {
     const asset = {...raw};
     if (typeof asset.path === "string") {
       const source = resolve(root, asset.path);
-      const relativeSafe = source === root || source.startsWith(root + "/");
+      const relativeSafe = source === root || source.startsWith(root + sep);
       if (!relativeSafe) throw new Error(`asset ${assetId} escapes package root`);
       const bytes = await readFile(source);
       const extension = extname(source).toLowerCase();
@@ -78,6 +78,9 @@ export const prepareRendererProps = async (packageRoot) => {
     fps: plan.fps,
     video: plan.video,
     presentation: plan.presentation ?? {},
+    ...(plan.performance_context_hash
+      ? {performance_context_hash: plan.performance_context_hash}
+      : {}),
     assets: await hydrateAssets(root, plan.assets),
     scenes: plan.scenes,
   };

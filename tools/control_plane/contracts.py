@@ -17,6 +17,7 @@ _CONTRACT_FILES = {
     "render-plan-v1": "render-plan-v1.schema.json",
     "design-token-v4": "design-token-v4.schema.json",
     "publish-v1": "publish-v1.schema.json",
+    "performance-context-v1": "performance-context-v1.schema.json",
     "error-v1": "error-v1.schema.json",
 }
 

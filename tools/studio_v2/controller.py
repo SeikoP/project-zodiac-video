@@ -12,6 +12,7 @@ from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.package_io import extract_package_archive
 from tools.control_plane.package_validation import validate_job5_package_root
 from tools.control_plane.render_plan import validate_render_plan
+from tools.control_plane.segments import plan_segments, props_for_segment, scene_asset_ids
 from tools.control_plane.timeline import compile_render_plan
 
 from .pipeline import PACKAGE, PLAN, PipelineStateV2
@@ -219,4 +220,60 @@ class StudioV2Controller:
                 stage="RENDER",
                 message="renderer prepare completed without renderer-v2-props.json",
             )
+        return output
+
+    def _write_preview_props(self, scene_ids: list[str], preview_id: str) -> Path:
+        props_path = self.prepare_renderer()
+        props = _read_json(props_path, code="RENDERER_PROPS_INVALID", stage="RENDER")
+        selected = set(scene_ids)
+        scenes = [scene for scene in props.get("scenes", []) if scene.get("id") in selected]
+        if len(scenes) != len(selected):
+            raise ControlPlaneError(
+                code="PREVIEW_SCENE_MISSING",
+                stage="RENDER",
+                message="preview references a scene that is absent from the current plan",
+                detail={"scene_ids": scene_ids},
+            )
+        segment = {
+            "scene_ids": scene_ids,
+            "start_frame": min(int(scene["start_frame"]) for scene in scenes),
+            "asset_ids": sorted(set().union(*(scene_asset_ids(scene) for scene in scenes))),
+        }
+        output = self.workspace / ".runtime" / "previews" / f"{preview_id}.props.json"
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(props_for_segment(props, segment), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        return output
+
+    def prepare_scene_preview(self, scene_id: str) -> Path:
+        return self._write_preview_props([scene_id], f"scene-{_sha256_text(scene_id)[:16]}")
+
+    def prepare_segment_preview(self, segment_id: str) -> Path:
+        props = _read_json(
+            self.prepare_renderer(),
+            code="RENDERER_PROPS_INVALID",
+            stage="RENDER",
+        )
+        segments = plan_segments(
+            props,
+            renderer_version="2.0.0",
+            renderer_hash="zodiac-renderer@2.0.0",
+        )
+        segment = next((item for item in segments if item["segment_id"] == segment_id), None)
+        if segment is None:
+            raise ControlPlaneError(
+                code="PREVIEW_SEGMENT_MISSING",
+                stage="RENDER",
+                message=f"segment {segment_id!r} is not present in the current plan",
+            )
+        output = self.workspace / ".runtime" / "previews" / f"segment-{segment_id}.props.json"
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(
+            json.dumps(props_for_segment(props, segment), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
         return output

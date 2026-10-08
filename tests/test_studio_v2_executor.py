@@ -5,10 +5,17 @@ import tempfile
 import unittest
 import wave
 from pathlib import Path
+from unittest.mock import patch
 
+from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.contracts import canonical_contract_hash
 from tools.studio_v2.controller import StudioV2Controller
-from tools.studio_v2.executor import ExecutorConfig, StudioV2Executor
+from tools.studio_v2.executor import (
+    ExecutorConfig,
+    StudioV2Executor,
+    _assemble_segments,
+    _render_segmented,
+)
 from tools.studio_v2.pipeline import (
     AUDIO,
     DONE,
@@ -101,7 +108,7 @@ class StageCounters:
     def render_handler(self, workspace, props_path, output_path):
         self.render += 1
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_bytes(b"rendered-" + props_path.read_bytes()[:32])
+        output_path.write_bytes(b"rendered-" + props_path.read_bytes())
         return output_path
 
     def audio_handler(self, workspace, rendered_path, music_path, mix_settings, output_path):
@@ -120,6 +127,26 @@ class StageCounters:
 
 class StudioV2ExecutorTests(unittest.TestCase):
     def _executor(self, root: Path, counters: StageCounters):
+        def probe(path):
+            props_path = Path(path).parent / "props.json"
+            props = json.loads(props_path.read_text(encoding="utf-8"))
+            return max(
+                int(scene["start_frame"]) + int(scene["duration_frames"])
+                for scene in props["scenes"]
+            )
+
+        def assemble(segments, _frames, destination):
+            destination.write_bytes(
+                b"assembled" + b"".join(Path(path).read_bytes() for path, _ in segments)
+            )
+            return destination
+
+        probe_patch = patch("tools.studio_v2.executor._probe_frames", side_effect=probe)
+        assembly = patch("tools.studio_v2.executor._assemble_segments", side_effect=assemble)
+        probe_patch.start()
+        assembly.start()
+        self.addCleanup(probe_patch.stop)
+        self.addCleanup(assembly.stop)
         controller = StudioV2Controller(root / "workspace")
         voice_service = lambda workspace, ir, **kwargs: ensure_voice_artifact(
             workspace,
@@ -192,6 +219,82 @@ class StudioV2ExecutorTests(unittest.TestCase):
             for step in (VOICE, TIMING, PLAN, RENDER, AUDIO, OUTPUT):
                 self.assertTrue(state.steps[step].reused, step)
 
+    def test_valid_cached_segment_skips_full_frame_decode(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            props = {
+                "fps": 24,
+                "scenes": [{"id": "S01", "start_frame": 0, "duration_frames": 24}],
+                "assets": {},
+            }
+            props_path = workspace / "props.json"
+            props_path.write_text(json.dumps(props), encoding="utf-8")
+            graph = ArtifactGraph(workspace)
+            from tools.control_plane.segments import plan_segments
+
+            segment = plan_segments(
+                props, renderer_version="2", renderer_hash="renderer", target_seconds=1
+            )[0]
+            artifact_path = (
+                workspace / ".runtime" / "artifacts" / "render" / "segments"
+                / segment["segment_id"] / f"{segment['input_fingerprint']}.mp4"
+            )
+            artifact_path.parent.mkdir(parents=True)
+            artifact_path.write_bytes(b"validated segment")
+            graph.record(
+                f"render.segment.{segment['segment_id']}",
+                "render.segment",
+                segment["input_fingerprint"],
+                artifact_path,
+                producer="test",
+                producer_version="1",
+            )
+            output_path = workspace / "rendered.mp4"
+
+            def assemble(_segments, _frames, destination):
+                destination.write_bytes(b"assembled")
+                return destination
+
+            with patch("tools.studio_v2.executor.shutil.which", return_value="tool"), patch(
+                "tools.studio_v2.executor._probe_frames",
+                side_effect=AssertionError("cached segment should not be decoded"),
+            ), patch("tools.studio_v2.executor._assemble_segments", side_effect=assemble):
+                result, dependencies, mode = _render_segmented(
+                    workspace,
+                    props_path,
+                    output_path,
+                    graph=graph,
+                    render_handler=lambda *_: self.fail("cached segment should not render"),
+                    renderer_version="2",
+                    renderer_hash="renderer",
+                    target_seconds=1,
+                    render_fingerprint="plan",
+                )
+
+            self.assertEqual(result.read_bytes(), b"assembled")
+            self.assertEqual(mode, "segments")
+            self.assertIn(f"render.segment.{segment['segment_id']}", dependencies)
+
+    def test_segment_assembly_does_not_decode_each_input_again(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp)
+            segment = workspace / "segment.mp4"
+            segment.write_bytes(b"validated segment")
+            output = workspace / "assembled.mp4"
+
+            def run_ffmpeg(command, **_kwargs):
+                Path(command[-1]).write_bytes(b"assembled")
+                return type("Result", (), {"stdout": ""})()
+
+            with patch("tools.studio_v2.executor.shutil.which", return_value="ffmpeg"), patch(
+                "tools.studio_v2.executor.run_structured_command", side_effect=run_ffmpeg
+            ), patch(
+                "tools.studio_v2.executor._probe_frames", return_value=24
+            ) as probe:
+                _assemble_segments([(segment, 24)], 24, output)
+
+            probe.assert_called_once_with(output)
+
     def test_visual_only_patch_reuses_voice_timing_and_rebuilds_downstream(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -205,6 +308,7 @@ class StudioV2ExecutorTests(unittest.TestCase):
             ir_path = source / "production.ir.json"
             ir = json.loads(ir_path.read_text(encoding="utf-8"))
             ir["assets"]["decor.extra"] = {"path": "assets/char-scorpio.svg"}
+            ir["scenes"][0]["entities"][0]["states"]["open"]["asset"] = "decor.extra"
             ir_path.write_text(json.dumps(ir, indent=2) + "\n", encoding="utf-8")
             controller.import_package(source)
             state = executor.run(config)
@@ -251,4 +355,3 @@ class StudioV2ExecutorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

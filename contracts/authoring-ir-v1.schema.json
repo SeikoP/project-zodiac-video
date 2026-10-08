@@ -142,6 +142,20 @@
         }
       }
     },
+    "performance_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "delivery": {"type": "string", "minLength": 1},
+        "energy": {"type": "number", "minimum": 0, "maximum": 1},
+        "emotion": {"type": "string", "minLength": 1},
+        "pace": {"enum": ["slow", "medium", "fast"]},
+        "emphasis": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "continuity_group": {"type": "string", "minLength": 1},
+        "motion_duration_ms": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "transition_duration_ms": {"type": "integer", "minimum": 1, "maximum": 10000}
+      }
+    },
     "scene": {
       "type": "object",
       "required": [
@@ -159,6 +173,9 @@
         },
         "voice": {
           "type": "string"
+        },
+        "performance_context": {
+          "$ref": "#/$defs/performance_context"
         },
         "duration_hint_frames": {
           "type": "integer",
