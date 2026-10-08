@@ -811,7 +811,7 @@ class ZodiacTui(App):
                         log_dir = self.v2_session.job / ".runtime" / "logs"
                         log_dir.mkdir(parents=True, exist_ok=True)
                         with (log_dir / "tui-live.log").open("a", encoding="utf-8") as log:
-                            log.write(stamped + "\\n")
+                            log.write(stamped + "\n")
                     except OSError:
                         pass  # Logging must never stop the production pipeline.
                 is_error = error or re.search(
