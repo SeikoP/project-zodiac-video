@@ -1,5 +1,5 @@
 import {readFile, writeFile, mkdir} from "node:fs/promises";
-import {resolve, join} from "node:path";
+import {resolve, join, extname} from "node:path";
 
 const fail = (code, message, detail = {}) => {
   const payload = {
@@ -42,6 +42,26 @@ export const validateExecutablePlan = (plan) => {
   return plan;
 };
 
+const hydrateAssets = async (root, assets) => {
+  const output = {};
+  for (const [assetId, raw] of Object.entries(assets ?? {})) {
+    const asset = {...raw};
+    if (typeof asset.path === "string") {
+      const source = resolve(root, asset.path);
+      const relativeSafe = source === root || source.startsWith(root + "/");
+      if (!relativeSafe) throw new Error(`asset ${assetId} escapes package root`);
+      const bytes = await readFile(source);
+      const extension = extname(source).toLowerCase();
+      if (extension !== ".svg") {
+        throw new Error(`asset ${assetId} has unsupported renderer-v2 media type: ${extension}`);
+      }
+      asset.src = `data:image/svg+xml;base64,${bytes.toString("base64")}`;
+    }
+    output[assetId] = asset;
+  }
+  return output;
+};
+
 export const prepareRendererProps = async (packageRoot) => {
   const root = resolve(packageRoot);
   const runtimeDir = join(root, ".runtime");
@@ -57,7 +77,7 @@ export const prepareRendererProps = async (packageRoot) => {
     contract: "zodiac-render-plan@1",
     fps: plan.fps,
     video: plan.video,
-    assets: plan.assets,
+    assets: await hydrateAssets(root, plan.assets),
     scenes: plan.scenes,
   };
   await mkdir(runtimeDir, {recursive: true});
