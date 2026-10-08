@@ -387,7 +387,7 @@ def ensure_voice_artifact(
         output = concatenate_scene_voices(
             workspace,
             production,
-            scene_gap_ms=float(tts_settings.get("scene_gap_ms", 0.0)),
+            scene_gap_ms=float(tts_settings.get("scene_gap_ms", 180.0)),
         )
         validate_voice(output)
     except ControlPlaneError:
