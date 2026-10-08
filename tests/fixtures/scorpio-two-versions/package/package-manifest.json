@@ -7,7 +7,7 @@
   "contract": {
     "id": "zodiac-authoring-ir",
     "version": "1.0.0",
-    "sha256": "06233fa281c8a10479038209af3ef98e6dc01e14ba99a912b3f0269aa0581544"
+    "sha256": "5728656019306975d7b3c4feabad9a02fa02cda2a22b38a27eff4563f3c77f95"
   },
   "renderer": {
     "id": "zodiac-renderer",
