@@ -53,3 +53,29 @@ def test_decorative_still_scene_allowed():
     ir["scenes"][0]["spatial_bindings"] = []
     assert semantic_diagnostics(ir) == []
     assert asset_category_from_path("assets/effects/x.svg") == "effect"
+
+
+def test_alternate_anchor_states_do_not_trigger_false_spatial_failure():
+    ir = scene_fixture()
+    actor = ir["scenes"][0]["entities"][0]
+    actor["states"]["far"] = {
+        "asset": "PERSON", "visible": True,
+        "transform": {"x": 700, "y": 700, "width": 100, "height": 100},
+    }
+    # A pose is alternative, not simultaneously present.
+    assert "SPATIAL_BOUND_EXCEEDED" not in [e.code for e in semantic_diagnostics(ir)]
+
+
+def test_effect_hidden_then_visible_must_eventually_release():
+    ir = scene_fixture()
+    ir["scenes"][0]["events"] = [
+        {"target": "mark", "state_after": "hidden"},
+        {"target": "mark", "state_after": "visible"},
+    ]
+    assert "EFFECT_NO_RELEASE" in [e.code for e in strict_errors(ir)]
+
+
+def test_effect_never_shown_is_invalid():
+    ir = scene_fixture()
+    ir["scenes"][0]["events"] = [{"target": "mark", "state_after": "hidden"}]
+    assert "EFFECT_NO_ENTRANCE" in [e.code for e in strict_errors(ir)]
