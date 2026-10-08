@@ -60,6 +60,14 @@
         "motion": {
           "type": "string",
           "minLength": 1
+        },
+        "merged_event_ids": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
