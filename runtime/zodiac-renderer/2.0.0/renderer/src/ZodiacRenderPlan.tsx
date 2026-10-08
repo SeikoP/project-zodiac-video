@@ -82,8 +82,8 @@ const SceneLayer: React.FC<{
     <AbsoluteFill>
       {[...(scene.entities ?? [])]
         .sort((a, b) => {
-          const aState = a.states[a.initial_state];
-          const bState = b.states[b.initial_state];
+          const aState = stateForFrame(scene, a, frame, assets).state;
+          const bState = stateForFrame(scene, b, frame, assets).state;
           return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
         })
         .map((entity) => {
