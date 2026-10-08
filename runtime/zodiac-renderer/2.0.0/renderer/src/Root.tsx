@@ -1,5 +1,6 @@
 import React from "react";
-import {Composition} from "remotion";
+import {Composition, Still} from "remotion";
+import {ZodiacCover} from "./ZodiacCover";
 
 import {ZodiacRenderPlan} from "./ZodiacRenderPlan";
 import type {RendererV2Props} from "./types";
@@ -18,7 +19,7 @@ const duration = (props: RendererV2Props) =>
     ...props.scenes.map((scene) => scene.start_frame + scene.duration_frames),
   );
 
-export const Root: React.FC = () => (
+export const Root: React.FC = () => (<>
   <Composition
     id="ZodiacRenderPlan"
     component={ZodiacRenderPlan}
@@ -34,4 +35,5 @@ export const Root: React.FC = () => (
       height: props.video.height,
     })}
   />
-);
+  <Still id="ZodiacCover" component={ZodiacCover} width={1080} height={1920} defaultProps={defaultProps} />
+</>);
