@@ -9,6 +9,9 @@ test("state transition renders only one complete SVG at a time", async () => {
   assert.doesNotMatch(src, /data-transition-from/);
   assert.doesNotMatch(src, /blend!\.progress/);
   assert.match(src, /const structural = entity\.id\.startsWith\("env__"\)/);
-  assert.match(src, /const idleY = character/);
+  assert.match(src, /top: transform\\.y \\?\\? 0/);
+  assert.doesNotMatch(src, /idleY|idleScale/);
+  assert.match(src, /const focusEnvelope = active/);
+  assert.match(src, /const focusScale = character/);
   assert.match(src, /const effectPulse = role === "effect"/);
 });
