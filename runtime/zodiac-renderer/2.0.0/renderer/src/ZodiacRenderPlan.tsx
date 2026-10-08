@@ -95,31 +95,36 @@ const SceneLayer: React.FC<{
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
           const src = asset?.src;
+          if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
+          const role = entity.id === "story_prop" ? "prop" : entity.id === "story_effect" ? "effect" : "other";
+          const active = scene.events.find((item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame);
+          const local = active ? frame - active.start_frame : relativeFrame;
+          const fraction = Math.min(1, Math.max(0, local / (role === "effect" ? 9 : 7)));
+          const eased = 1 - Math.pow(1 - fraction, 3);
+          const revealScale = role === "effect" ? 0.94 + 0.06 * eased : role === "prop" ? 0.97 + 0.03 * eased : 1;
+          const revealOpacity = role === "effect" ? eased : role === "prop" ? 0.4 + 0.6 * eased : 1;
           const style: React.CSSProperties = {
             position: "absolute",
             left: transform.x ?? 0,
             top: transform.y ?? 0,
             width: transform.width ?? 520,
             height: transform.height ?? 520,
-            transform: `scale(${transform.scale ?? 1}) rotate(${transform.rotation ?? 0}deg)`,
+            transform: `scale(${(transform.scale ?? 1) * revealScale}) rotate(${transform.rotation ?? 0}deg)`,
+            opacity: revealOpacity,
             zIndex: state.layer ?? 0,
             objectFit: "contain",
           };
-          return src ? (
+          return (
             <Img
               key={entity.id}
               src={src}
               data-entity-id={entity.id}
               data-asset-id={assetId}
+              data-visual-role={role}
               style={style}
             />
-          ) : (
-            <div key={entity.id} data-entity-id={entity.id} style={style}>
-              {entity.id}
-            </div>
-          );
-        })}
+          );        })}
 
       {caption ? (
         <div
