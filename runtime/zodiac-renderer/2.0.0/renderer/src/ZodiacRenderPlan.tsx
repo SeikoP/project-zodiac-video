@@ -1,5 +1,5 @@
-import React from "react";
-import {AbsoluteFill, Img, Sequence, useCurrentFrame} from "remotion";
+import React, {useEffect, useState} from "react";
+import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import type {
   RenderPlanEntity,
@@ -7,6 +7,34 @@ import type {
   RenderPlanScene,
   RendererV2Props,
 } from "./types";
+
+const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => {
+  const needsFont = presentation.caption?.font_family === "Patrick Hand";
+  const fontUri = presentation.caption?.font_data_uri;
+  const [handle] = useState(() => delayRender("Verify caption font", {timeoutInMilliseconds: 30000}));
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      if (needsFont) {
+        if (!fontUri?.startsWith("data:font/ttf;base64,")) {
+          throw new Error("FONT_LOAD_FAILED requested=Patrick Hand actual=missing fallback=false");
+        }
+        const font = new FontFace("Patrick Hand", `url("${fontUri}")`, {weight: "400"});
+        await font.load();
+        document.fonts.add(font);
+        if (!document.fonts.check('400 84px "Patrick Hand"')) {
+          throw new Error("FONT_LOAD_FAILED requested=Patrick Hand actual=unavailable fallback=false");
+        }
+        console.info("Patrick Hand loaded; fallback=false; requested=Patrick Hand; actual=Patrick Hand");
+      }
+      if (active) continueRender(handle);
+    };
+    run().catch((error) => {
+      if (active) cancelRender(error instanceof Error ? error : new Error(String(error)));
+    });
+    return () => {active = false;};
+  }, [handle, needsFont, fontUri]);
+};
 
 const stateForFrame = (
   scene: RenderPlanScene,
@@ -145,7 +173,9 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
   scenes,
   assets,
   presentation = {},
-}) => (
+}) => {
+  useVerifiedCaptionFont(presentation);
+  return (
   <AbsoluteFill style={{backgroundColor: presentation.paper ?? "#ffffff"}}>
     {scenes.map((scene) => (
       <Sequence
@@ -158,4 +188,5 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
     ))}
     <Watermark presentation={presentation} />
   </AbsoluteFill>
-);
+  );
+};
