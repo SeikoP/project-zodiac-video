@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zodiac.local/contracts/publish-v1.schema.json",
+  "type": "object",
+  "required": [
+    "format",
+    "source"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "format": {
+      "const": "zodiac-publish@1"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "narration",
+        "production"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "narration": {
+          "const": "narration.txt"
+        },
+        "production": {
+          "const": "production.ir.json"
+        }
+      }
+    }
+  }
+}
