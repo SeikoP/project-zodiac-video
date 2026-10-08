@@ -108,6 +108,115 @@
           "items": {
             "$ref": "#/$defs/event"
           }
+        },
+        "measured_duration_frames": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/entity"
+          }
+        },
+        "captions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/caption"
+          }
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "required": [
+        "asset"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "asset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transform": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "layer": {
+          "type": "integer"
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "id",
+        "initial_state",
+        "states"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "initial_state": {
+          "type": "string",
+          "minLength": 1
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/state"
+          }
+        }
+      }
+    },
+    "caption": {
+      "type": "object",
+      "required": [
+        "text",
+        "start_frame",
+        "end_frame"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start_frame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_frame": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "paper": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ink": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caption": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "watermark": {
+          "type": "object",
+          "additionalProperties": true
         }
       }
     }
@@ -151,6 +260,9 @@
       "items": {
         "$ref": "#/$defs/scene"
       }
+    },
+    "presentation": {
+      "$ref": "#/$defs/presentation"
     }
   }
 }
