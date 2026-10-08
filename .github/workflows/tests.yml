@@ -362,8 +362,9 @@ jobs:
         run: npm run typecheck
       - name: Prepare Scorpio executable plan
         run: |
-          mkdir -p /tmp/zodiac-scorpio-v2/.runtime
+          mkdir -p /tmp/zodiac-scorpio-v2/.runtime /tmp/zodiac-scorpio-v2/assets
           cp tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-scorpio-v2/.runtime/render-plan.json
+          cp tests/fixtures/scorpio-two-versions/package/assets/char-scorpio.svg /tmp/zodiac-scorpio-v2/assets/char-scorpio.svg
           node runtime/zodiac-renderer/2.0.0/renderer/scripts/prepare.mjs /tmp/zodiac-scorpio-v2
       - name: Render Scorpio frame smoke
         working-directory: runtime/zodiac-renderer/2.0.0/renderer
