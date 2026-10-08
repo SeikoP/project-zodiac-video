@@ -1,5 +1,6 @@
 import {readFile, writeFile, mkdir} from "node:fs/promises";
-import {resolve, join, extname, sep} from "node:path";
+import {resolve, join, extname, sep, dirname} from "node:path";
+import {fileURLToPath} from "node:url";
 
 const fail = (code, message, detail = {}) => {
   const payload = {
@@ -73,11 +74,33 @@ export const prepareRendererProps = async (packageRoot) => {
     throw new Error(`cannot read render-plan.json: ${error.message}`);
   }
   validateExecutablePlan(plan);
+  const presentation = structuredClone(plan.presentation ?? {});
+  const requestedFont = String(presentation.caption?.font_family ?? "sans-serif");
+  if (requestedFont === "Patrick Hand") {
+    const fontPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fonts", "PatrickHand-Regular.ttf");
+    let fontBytes;
+    try {
+      fontBytes = await readFile(fontPath);
+    } catch (error) {
+      throw new Error(`FONT_LOAD_FAILED requested=Patrick Hand path=${fontPath} fallback=false: ${error.message}`);
+    }
+    if (fontBytes.length < 1024 || !["00010000", "4f54544f", "74727565"].includes(fontBytes.subarray(0, 4).toString("hex"))) {
+      // TrueType starts with 00010000; this renderer ships Patrick Hand TTF.
+      if (fontBytes.subarray(0, 4).toString("hex") !== "00010000") {
+        throw new Error(`FONT_LOAD_FAILED invalid TrueType header at ${fontPath}; fallback=false`);
+      }
+    }
+    if (!presentation.caption) presentation.caption = {};
+    presentation.caption.font_data_uri = `data:font/ttf;base64,${fontBytes.toString("base64")}`;
+    process.stdout.write(`FONT_REQUESTED=Patrick Hand FONT_SOURCE=${fontPath} FONT_BYTES=${fontBytes.length} FALLBACK=false\\n`);
+  } else {
+    process.stdout.write(`FONT_REQUESTED=${requestedFont} FONT_SOURCE=system FALLBACK=unspecified\\n`);
+  }
   const props = {
     contract: "zodiac-render-plan@1",
     fps: plan.fps,
     video: plan.video,
-    presentation: plan.presentation ?? {},
+    presentation,
     ...(plan.performance_context_hash
       ? {performance_context_hash: plan.performance_context_hash}
       : {}),
