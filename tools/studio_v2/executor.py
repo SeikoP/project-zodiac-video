@@ -300,6 +300,7 @@ def _render_segmented(
     render_fingerprint: str,
 ) -> tuple[Path, dict[str, str], str]:
     props = _read_json(props_path, code="RENDERER_PROPS_INVALID", stage="RENDER")
+    dependencies: dict[str, str] = {}
 
     def full_render_fallback() -> tuple[Path, dict[str, str], str]:
         produced = Path(render_handler(workspace, props_path, output_path))
