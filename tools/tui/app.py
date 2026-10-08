@@ -628,6 +628,7 @@ class ZodiacTui(App):
         self.voice_choices = saved_voices()
         self.pipeline_groups: list[dict] = []
         self._pipeline_table_key: tuple | None = None
+        self._v2_last_stage_snapshot: tuple | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -1034,6 +1035,14 @@ class ZodiacTui(App):
         archive = self.v2_session.archive
         rows = self.v2_session.pipeline_rows()
         worker_running = self.v2_session.running
+        if worker_running:
+            snapshot = tuple((row["step"], row["status"]) for row in rows)
+            if snapshot != self._v2_last_stage_snapshot:
+                old = dict(self._v2_last_stage_snapshot or ())
+                for row in rows:
+                    if old.get(row["step"]) != row["status"] and row["status"] in (RUNNING, DONE, FAILED):
+                        self._write_log(f"STAGE {row['label']} → {row['status']} {row.get('detail', '')}", error=row["status"] == FAILED)
+                self._v2_last_stage_snapshot = snapshot
         video = self.v2_session.video_path
         video_ready = self._final_complete()
 
@@ -1484,6 +1493,12 @@ class ZodiacTui(App):
             if self.v2_session.job is None:
                 self.notify("Hãy nạp ZIP hoặc chọn job trước.", severity="warning")
                 return
+            if self.v2_session.running:
+                self.notify("Pipeline đang chạy.", severity="warning")
+                return
+            self._v2_last_stage_snapshot = None
+            self._write_log("START  Studio v2 · khởi chạy pipeline")
+            self.query_one("#workflow-task", Static).update("Đang khởi chạy…")
             self._run_v2_full()
             return
         if self.controller.job is None:
@@ -1550,6 +1565,9 @@ class ZodiacTui(App):
 
         group = self.pipeline_groups[index]
         steps = group["steps"]
+        if self._pipeline_mode == "v2":
+            self.notify("Chạy lại riêng stage chưa được hỗ trợ cho Job@5; dùng Chạy toàn bộ (có cache).", severity="warning")
+            return
         self._start_pipeline(
             rerun=group["rerun_step"],
             stop_after=steps[-1],
