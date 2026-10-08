@@ -321,11 +321,14 @@ jobs:
             tests.test_timeline_compiler \
             tests.test_render_plan_validator \
             tests.test_control_plane_cli \
-            tests.test_control_plane_scorpio_golden -v
+            tests.test_control_plane_scorpio_golden \
+            tests.test_scorpio_v2_production_e2e -v
       - name: Build minimal job through headless compiler
         run: zodiac-control build tests/fixtures/control-plane-v2/minimal --output /tmp/render-plan.json
       - name: Verify Scorpio E22 golden regression
         run: python -m unittest tests.test_control_plane_scorpio_golden -v
+      - name: Verify Scorpio Studio v2 production scenarios
+        run: python -m unittest tests.test_scorpio_v2_production_e2e -v
 
 
   renderer-v2-boundary:
