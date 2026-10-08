@@ -45,12 +45,18 @@ const stateForFrame = (
   assets: RendererV2Props["assets"],
 ) => {
   let stateId = entity.initial_state;
+  let lastResolvedAfterAsset: string | undefined;
   let blend: {fromAsset: string; progress: number} | undefined;
   for (const event of [...scene.events].filter((e) => e.target === entity.id).sort(
     (a, b) => a.end_frame - b.end_frame,
   )) {
-    if (frame < event.end_frame) break;
-    stateId = event.state_after;
+    if (frame >= event.end_frame) {
+      stateId = event.state_after;
+      // Runtime resolves the exact authored after-asset, rather than inventing one.
+      lastResolvedAfterAsset = assets[event.asset_after] ? event.asset_after : undefined;
+    } else {
+      break;
+    }
     const before = entity.states[event.state_before]?.asset ?? event.asset_before;
     const after = entity.states[event.state_after]?.asset ?? event.asset_after;
     const frames = Math.min(5, Math.max(1, event.end_frame - event.start_frame));
@@ -61,7 +67,7 @@ const stateForFrame = (
     }
   }
   const state = entity.states[stateId] ?? entity.states[entity.initial_state];
-  return {state, assetId: state?.asset, blend};
+  return {state, assetId: state?.asset ?? lastResolvedAfterAsset, blend};
 };
 
 const SceneLayer: React.FC<{
