@@ -4,6 +4,7 @@
   "type": "object",
   "required": [
     "format",
+    "job",
     "contract",
     "renderer",
     "producer"
@@ -64,6 +65,24 @@
           "minLength": 1
         },
         "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "required": [
+        "id",
+        "revision"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$"
+        },
+        "revision": {
           "type": "string",
           "minLength": 1
         }
