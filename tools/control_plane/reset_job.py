@@ -56,7 +56,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         reset_job(args.archive, yes=args.yes)
-    except (OSError, ValueError, Exception) as exc:
+    except Exception as exc:
         print(f"RESET_FAILED: {exc}")
         return 2
     return 0
