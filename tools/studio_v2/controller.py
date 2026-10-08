@@ -19,7 +19,7 @@ from tools.control_plane.timeline import compile_render_plan
 
 from .pipeline import DONE, PACKAGE, PLAN, TIMING, PipelineStateV2
 from .runner import run_structured_command
-from .state import save_state
+from .state import load_state, save_state
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -80,7 +80,9 @@ class StudioV2Controller:
     def __init__(self, workspace: Path) -> None:
         self.workspace = Path(workspace).resolve()
         self.workspace.mkdir(parents=True, exist_ok=True)
-        self.state = PipelineStateV2(workspace_id=self.workspace.name)
+        self.state = load_state(self.workspace) or PipelineStateV2(
+            workspace_id=self.workspace.name
+        )
 
     def import_package(self, source: Path) -> Path:
         source = Path(source).resolve()
