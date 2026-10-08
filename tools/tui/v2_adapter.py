@@ -114,6 +114,13 @@ def _error_detail(error: dict[str, Any] | None) -> str:
         )
         if value
     )
+    if code == "TIMING_ALIGNMENT_FAILED" and ("ALIGNMENT_MISMATCH" in message or "TIMING_REVIEW_REQUIRED" in message):
+        import re
+        match = re.search(r"(S\\d+)\\.wav", message)
+        scene = match.group(1) if match else "scene không xác định"
+        message = f"{scene}: lời đọc và ASR chưa khớp. Xem tab LỖI và kiểm tra WAV."
+    elif len(message) > 180:
+        message = message[:177] + "..."
     result = f"{code}: {message}".strip()
     return f"{result} · {context}" if context else result
 
