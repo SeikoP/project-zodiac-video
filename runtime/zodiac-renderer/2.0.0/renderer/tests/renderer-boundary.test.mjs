@@ -40,3 +40,24 @@ test("renderer 2 draws the resolved asset_after directly", async () => {
   assert.match(source, /<Img/);
   assert.match(source, /assets\[event\.asset_after\]/);
 });
+
+
+test("renderer 2 persists entity state and renders executable presentation layers", async () => {
+  const source = await read("../src/ZodiacRenderPlan.tsx");
+  assert.match(source, /useCurrentFrame/);
+  assert.match(source, /scene\.entities/);
+  assert.match(source, /initial_state/);
+  assert.match(source, /state_after/);
+  assert.match(source, /transform/);
+  assert.match(source, /scene\.captions/);
+  assert.match(source, /presentation\.watermark/);
+  assert.match(source, /presentation\.caption/);
+  assert.doesNotMatch(source, /voice_anchor/);
+  assert.doesNotMatch(source, /max_drift_frames/);
+});
+
+test("renderer 2 does not make event visibility end when an event interval ends", async () => {
+  const source = await read("../src/ZodiacRenderPlan.tsx");
+  assert.doesNotMatch(source, /durationInFrames=\{event\.end_frame\s*-\s*event\.start_frame\}/);
+  assert.match(source, /frame\s*>=\s*event\.end_frame/);
+});
