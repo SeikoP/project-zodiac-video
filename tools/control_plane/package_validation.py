@@ -249,11 +249,19 @@ def validate_job5_package_root(root: Path) -> dict[str, Any]:
     _validate_schema("zodiac-job-v5", manifest, code="PACKAGE_INVALID")
     expected_hash = canonical_contract_hash("authoring-ir-v1")
     contract = manifest["contract"]
-    if contract["sha256"] != expected_hash:
+    # The original Job@5 authoring schema shipped without the optional
+    # performance_context field. The current schema adds that field without
+    # changing any existing required fields or event structures.
+    # Accept only this audited legacy fingerprint; all packages still undergo
+    # validation against the current canonical schema below.
+    legacy_hashes = {
+        "06233fa281c8a10479038209af3ef98e6dc01e14ba99a912b3f0269aa0581544",
+    }
+    if contract["sha256"] not in {expected_hash, *legacy_hashes}:
         _fail(
             "PACKAGE_CONTRACT_MISMATCH",
-            "package authoring contract hash does not match canonical local contract",
-            detail={"expected": expected_hash, "actual": contract["sha256"]},
+            "package authoring contract hash is not a supported canonical contract",
+            detail={"expected": expected_hash, "accepted_legacy": sorted(legacy_hashes), "actual": contract["sha256"]},
         )
     renderer = manifest["renderer"]
     if renderer != {"id": "zodiac-renderer", "version": "2.0.0"}:
