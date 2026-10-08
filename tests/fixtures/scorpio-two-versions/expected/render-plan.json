@@ -19,7 +19,9 @@
           "start_frame": 30,
           "state_after": "open",
           "state_before": "guarded",
-          "target": "scorpio"
+          "target": "scorpio",
+          "asset_before": "char.scorpio",
+          "asset_after": "char.scorpio"
         },
         {
           "end_frame": 46,
@@ -30,7 +32,9 @@
           "start_frame": 38,
           "state_after": "side_eye",
           "state_before": "open",
-          "target": "scorpio"
+          "target": "scorpio",
+          "asset_before": "char.scorpio",
+          "asset_after": "char.scorpio"
         }
       ],
       "id": "S02",
