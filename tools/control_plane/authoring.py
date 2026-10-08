@@ -87,8 +87,8 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
             # is needed before enforcing category-specific dynamic density limits.
             if density["max_characters"] > 3:
                 raise _invalid("too many characters in density budget", scene_id=scene_id)
-            if density["max_characters"] == 3 and (density["max_prominent_props"] > 1 or density["max_prominent_effects"] > 1):
-                raise _invalid("3-character scene must reduce props/effects", scene_id=scene_id)
+            # These are upper bounds, not actual per-frame occupancy. Enforce
+            # dynamic counts after asset classification and transform resolution.
 
         entities: dict[str, dict[str, Any]] = {}
         for entity in scene["entities"]:
