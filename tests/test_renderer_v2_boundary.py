@@ -34,7 +34,7 @@ class RendererV2BoundaryTests(unittest.TestCase):
     def test_renderer_package_exposes_prepare_and_test_commands(self):
         package = json.loads((RENDERER / "package.json").read_text(encoding="utf-8"))
         self.assertEqual(package["name"], "zodiac-renderer-v2")
-        self.assertIn("prepare", package["scripts"])
+        self.assertIn("prepare:renderer", package["scripts"])
         self.assertIn("test", package["scripts"])
 
     def test_renderer_tree_has_its_own_boundary_tests(self):
