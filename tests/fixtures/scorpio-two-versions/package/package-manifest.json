@@ -1,9 +1,13 @@
 {
   "format": "zodiac-job@5",
+  "job": {
+    "id": "bocap-hai-phien-ban",
+    "revision": "1.0"
+  },
   "contract": {
     "id": "zodiac-authoring-ir",
     "version": "1.0.0",
-    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    "sha256": "06233fa281c8a10479038209af3ef98e6dc01e14ba99a912b3f0269aa0581544"
   },
   "renderer": {
     "id": "zodiac-renderer",
@@ -12,9 +16,5 @@
   "producer": {
     "plugin": "zodiac-video-pipeline",
     "version": "2.0.0"
-  },
-  "job": {
-    "id": "scorpio-two-versions",
-    "revision": "1.0.0"
   }
 }

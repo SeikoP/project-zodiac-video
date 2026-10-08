@@ -1,0 +1,31 @@
+{
+  "format": "zodiac-publish@1",
+  "version": "2.0",
+  "platform": "tiktok",
+  "cover": {
+    "layout": "tilted_top_hook",
+    "identity": {
+      "sign_id": "scorpio",
+      "label": "BỌ CẠP",
+      "glyph": "♏"
+    },
+    "hook": "HAI PHIÊN BẢN",
+    "source_scene_id": "S02",
+    "visuals": [
+      {
+        "entity_id": "scorpio",
+        "state_id": "side_eye"
+      }
+    ]
+  },
+  "caption": "Người ngoài và người đã vào vòng trong có thể đang kể về hai Bọ Cạp khác nhau.",
+  "hashtags": [
+    "#bocap",
+    "#scorpio",
+    "#12cunghoangdao"
+  ],
+  "source": {
+    "narration": "narration.txt",
+    "production": "production.ir.json"
+  }
+}
