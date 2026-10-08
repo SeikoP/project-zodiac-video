@@ -81,6 +81,8 @@ class ScorpioCounters:
 
 
 class ScorpioProductionE2ETests(unittest.TestCase):
+    # Fake MP4 fixture deliberately lacks decodable media. Segmented preflight
+    # falls back to one full render; test cache invalidation, not segment count.
     def make_source(self, root: Path) -> Path:
         source = root / "source"
         shutil.copytree(PACKAGE, source)
@@ -133,9 +135,9 @@ class ScorpioProductionE2ETests(unittest.TestCase):
             controller, executor = self.make_executor(root, counters)
             controller.import_package(self.make_source(root))
             state = executor.run(self.config(root))
-            self.assertEqual(counters.render_overlap_counts, [0, 0])
-            self.assertEqual(counters.e22_ranges, [(38, 46), (38, 46)])
-            self.assertEqual((counters.voice, counters.timing, counters.render, counters.audio, counters.output), (1, 1, 2, 1, 1))
+            self.assertEqual(counters.render_overlap_counts, [0])
+            self.assertEqual(counters.e22_ranges, [(38, 46)])
+            self.assertEqual((counters.voice, counters.timing, counters.render, counters.audio, counters.output), (1, 1, 1, 1, 1))
             self.assertTrue((controller.workspace / "out" / "zodiac-story.mp4").is_file())
             for step in (VOICE, TIMING, PLAN, RENDER, AUDIO, OUTPUT):
                 self.assertEqual(state.steps[step].status, "DONE")
@@ -163,9 +165,9 @@ class ScorpioProductionE2ETests(unittest.TestCase):
             state = executor.run(config)
             self.assertEqual(counters.voice, 1)
             self.assertEqual(counters.timing, 1)
-            self.assertEqual(counters.render, 4)
-            self.assertEqual(counters.render_overlap_counts, [0, 0, 0, 0])
-            self.assertEqual(counters.e22_ranges, [(38, 46)] * 4)
+            self.assertEqual(counters.render, 2)
+            self.assertEqual(counters.render_overlap_counts, [0, 0])
+            self.assertEqual(counters.e22_ranges, [(38, 46)] * 2)
             self.assertTrue(state.steps[VOICE].reused)
             self.assertTrue(state.steps[TIMING].reused)
             self.assertFalse(state.steps[PLAN].reused)
@@ -178,13 +180,13 @@ class ScorpioProductionE2ETests(unittest.TestCase):
             controller.import_package(self.make_source(root))
             executor.run(self.config(root, renderer_hash="renderer-a"))
             state = executor.run(self.config(root, renderer_hash="renderer-b"))
-            self.assertEqual((counters.voice, counters.timing, counters.render), (1, 1, 4))
+            self.assertEqual((counters.voice, counters.timing, counters.render), (1, 1, 2))
             self.assertTrue(state.steps[VOICE].reused)
             self.assertTrue(state.steps[TIMING].reused)
             self.assertTrue(state.steps[PLAN].reused)
             self.assertFalse(state.steps[RENDER].reused)
-            self.assertEqual(counters.render_overlap_counts, [0, 0, 0, 0])
-            self.assertEqual(counters.e22_ranges, [(38, 46)] * 4)
+            self.assertEqual(counters.render_overlap_counts, [0, 0])
+            self.assertEqual(counters.e22_ranges, [(38, 46)] * 2)
 
     def test_music_only_patch_reuses_through_render(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -194,12 +196,12 @@ class ScorpioProductionE2ETests(unittest.TestCase):
             controller.import_package(self.make_source(root))
             executor.run(self.config(root, music_bytes=b"music-a"))
             state = executor.run(self.config(root, music_bytes=b"music-b"))
-            self.assertEqual((counters.voice, counters.timing, counters.render, counters.audio, counters.output), (1, 1, 2, 2, 2))
+            self.assertEqual((counters.voice, counters.timing, counters.render, counters.audio, counters.output), (1, 1, 1, 2, 2))
             for step in (VOICE, TIMING, PLAN, RENDER):
                 self.assertTrue(state.steps[step].reused, step)
             self.assertFalse(state.steps[AUDIO].reused)
-            self.assertEqual(counters.render_overlap_counts, [0, 0])
-            self.assertEqual(counters.e22_ranges, [(38, 46)] * 2)
+            self.assertEqual(counters.render_overlap_counts, [0])
+            self.assertEqual(counters.e22_ranges, [(38, 46)])
 
 
 if __name__ == "__main__":
