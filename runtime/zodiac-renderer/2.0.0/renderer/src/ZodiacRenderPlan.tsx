@@ -93,7 +93,12 @@ const SceneLayer: React.FC<{
           const src = asset?.src;
           if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
-          const role = entity.id === "story_prop" ? "prop" : entity.id === "story_effect" ? "effect" : "other";
+          const relation = (scene.spatial_bindings ?? []).find((binding) => binding.entity === entity.id)?.relation;
+          const role = entity.id === "story_effect" || relation === "emitted_by"
+            ? "effect"
+            : entity.id === "story_prop" || relation === "held_by" || relation === "on_surface"
+            ? "prop"
+            : "other";
           const active = scene.events.find((item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame);
           const local = active ? frame - active.start_frame : relativeFrame;
           const fraction = Math.min(1, Math.max(0, local / (role === "effect" ? 9 : 7)));
