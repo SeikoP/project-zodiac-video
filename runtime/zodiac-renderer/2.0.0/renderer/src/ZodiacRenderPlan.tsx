@@ -93,28 +93,20 @@ const SceneLayer: React.FC<{
           return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
         })
         .map((entity) => {
-          const {state, assetId} = stateForFrame(scene, entity, frame, assets);
+          const {state, assetId, blend} = stateForFrame(scene, entity, frame, assets);
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
           const src = asset?.src;
           if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
-          const binding = (scene.spatial_bindings ?? []).find((item) => item.entity === entity.id);
-          const relation = binding?.relation;
+          const relation = (scene.spatial_bindings ?? []).find((binding) => binding.entity === entity.id)?.relation;
           const role = entity.id === "story_effect" || relation === "emitted_by"
             ? "effect"
-            : entity.id === "story_prop" || Boolean(binding)
+            : entity.id === "story_prop" || relation === "held_by" || relation === "on_surface"
             ? "prop"
             : "other";
           const active = scene.events.find((item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame);
           const local = active ? frame - active.start_frame : relativeFrame;
-          // Share deterministic performance between preview and final render.
-          const structural = entity.id.startsWith("env__");
-          const character = !structural && role === "other";
-          const phase = relativeFrame * 0.115;
-          const idleY = character ? Math.sin(phase) * 1.6 : role === "prop" ? Math.sin(phase + 1.2) * 2.4 : 0;
-          const idleScale = character ? 1 + Math.sin(phase * 0.7) * 0.004 : 1;
-          const effectPulse = role === "effect" && active ? 1 + Math.sin((frame - active.start_frame) * 0.38) * 0.055 : 1;
           const fraction = Math.min(1, Math.max(0, local / (role === "effect" ? 9 : 7)));
           const eased = 1 - Math.pow(1 - fraction, 3);
           const revealScale = role === "effect" ? 0.94 + 0.06 * eased : role === "prop" ? 0.97 + 0.03 * eased : 1;
@@ -122,23 +114,32 @@ const SceneLayer: React.FC<{
           const style: React.CSSProperties = {
             position: "absolute",
             left: transform.x ?? 0,
-            top: (transform.y ?? 0) + idleY,
+            top: transform.y ?? 0,
             width: transform.width ?? 520,
             height: transform.height ?? 520,
-            transform: `scale(${(transform.scale ?? 1) * revealScale * idleScale * effectPulse}) rotate(${transform.rotation ?? 0}deg)`,
+            transform: `scale(${(transform.scale ?? 1) * revealScale}) rotate(${transform.rotation ?? 0}deg)`,
             opacity: revealOpacity,
             zIndex: state.layer ?? 0,
             objectFit: "contain",
           };
+          const previousSrc = blend ? assets[blend.fromAsset]?.src : undefined;
           return (
-            <Img
-              key={entity.id}
-              src={src}
-              data-entity-id={entity.id}
-              data-asset-id={assetId}
-              data-visual-role={role}
-              style={style}
-            />
+            <React.Fragment key={entity.id}>
+              {previousSrc ? (
+                <Img
+                  src={previousSrc}
+                  data-transition-from={blend?.fromAsset}
+                  style={{...style, opacity: (1 - blend!.progress) * revealOpacity}}
+                />
+              ) : null}
+              <Img
+                src={src}
+                data-entity-id={entity.id}
+                data-asset-id={assetId}
+                data-visual-role={role}
+                style={{...style, opacity: blend ? blend.progress * revealOpacity : revealOpacity}}
+              />
+            </React.Fragment>
           );        })}
 
       {caption ? (
