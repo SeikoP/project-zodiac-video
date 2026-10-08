@@ -90,6 +90,22 @@ class PipelineStateV2:
         for step in targets:
             self.steps[step].reset()
 
+    def reuse_if_input_matches(self, step: str, input_hash: str) -> bool:
+        state = self.steps[step]
+        if (
+            state.status == DONE
+            and state.input_hash == input_hash
+            and state.output_hash is not None
+        ):
+            state.reused = True
+            state.error = None
+            return True
+
+        start = STEP_ORDER.index(step)
+        for target in STEP_ORDER[start:]:
+            self.steps[target].reset()
+        return False
+
     def set_package_revision(
         self,
         *,
