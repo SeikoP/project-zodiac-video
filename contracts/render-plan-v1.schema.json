@@ -21,7 +21,9 @@
         "end_frame",
         "state_before",
         "state_after",
-        "motion"
+        "motion",
+        "asset_before",
+        "asset_after"
       ],
       "additionalProperties": false,
       "properties": {
@@ -68,6 +70,14 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "asset_before": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_after": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
