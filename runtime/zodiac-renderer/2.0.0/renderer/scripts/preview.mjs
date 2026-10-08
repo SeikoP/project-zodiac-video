@@ -33,6 +33,9 @@ export const previewFrames = async (workspace, outputDir) => {
       report.scenes.push({id:scene.id,frame,file});
     }
   }
+  const rows = report.scenes.map((item) => `<figure><img src="${item.file}" alt="${item.id} frame ${item.frame}"><figcaption>${item.id} · frame ${item.frame}</figcaption></figure>`).join("");
+  const html = `<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Renderer-faithful review</title><style>body{font:16px system-ui;background:#eee9e0;color:#29363d;margin:24px}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:15px}figure{margin:0;background:white;padding:10px;border-radius:8px}img{width:100%;aspect-ratio:9/16;object-fit:contain}figcaption{padding:6px 0}</style><h1>Render-plan review — Remotion stills</h1><p>Source: render-plan.json · Font: ${report.font} · Same composition as final renderer</p><main>${rows}</main></html>`;
+  await writeFile(join(out,"index.html"),html);
   await writeFile(join(out,"preview-report.json"),JSON.stringify(report,null,2)+"\n");
   return report;
 };
