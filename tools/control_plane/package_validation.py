@@ -257,6 +257,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     legacy_hashes = {
         "06233fa281c8a10479038209af3ef98e6dc01e14ba99a912b3f0269aa0581544",
         "5728656019306975d7b3c4feabad9a02fa02cda2a22b38a27eff4563f3c77f95",
+        "786274b1c5bf7aacf80a0c6348fa579f9e21fb7231be33143cc87c10dacd3762",
     }
     if contract["sha256"] not in {expected_hash, *legacy_hashes}:
         _fail(
