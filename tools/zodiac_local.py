@@ -2569,11 +2569,23 @@ def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict
             if coverage_gap
             else "unreconciled_asr_variant"
         )
+        matcher = difflib.SequenceMatcher(a=expected_norm, b=heard_norm, autojunk=False)
+        differences = [
+            {
+                "expected": " ".join(expected_norm[i1:i2]),
+                "heard": " ".join(heard_norm[j1:j2]),
+            }
+            for tag, i1, i2, j1, j2 in matcher.get_opcodes()
+            if tag != "equal"
+        ]
+        preview = "; ".join(
+            f"expected [{row['expected']}] / heard [{row['heard']}]"
+            for row in differences[:4]
+        )
         raise AlignmentMismatchError(
-            "ALIGNMENT_MISMATCH: word alignment does not match approved narration for "
-            f"{audio_path.name}. kind={mismatch_kind}. "
-            f"expected={expected_norm!r}, heard={heard_norm!r}. "
-            "Do not guess timings; correct the TTS/alignment and retry.",
+            "ALIGNMENT_MISMATCH: "
+            f"{audio_path.name}: {mismatch_kind}. {preview}. "
+            "Audio/ASR needs verification; no inferred timestamps were written.",
             expected=expected_norm,
             heard=heard_norm,
             coverage_gap=coverage_gap,
