@@ -3,6 +3,7 @@
 // detect entity/asset/spatial-binding loss before spending CPU on Remotion.
 import {readFile,writeFile,mkdir} from "node:fs/promises";
 import {resolve,join} from "node:path";
+import {fileURLToPath} from "node:url";
 const read = async path => JSON.parse(await readFile(path,"utf8"));
 
 export const auditJob5Payload = (ir, plan) => {
@@ -40,7 +41,7 @@ export const auditJob5Payload = (ir, plan) => {
   return {format:"zodiac-job5-payload-parity@1",ok:errors.length===0,errors,scenes};
 };
 
-if(process.argv[1]&&resolve(process.argv[1])===new URL(import.meta.url).pathname){
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const root=resolve(process.argv[2]??".");
   const ir=await read(join(root,"production.ir.json"));
   const plan=await read(join(root,".runtime","render-plan.json"));
