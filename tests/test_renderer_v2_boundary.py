@@ -17,8 +17,10 @@ class RendererV2BoundaryTests(unittest.TestCase):
     def test_prepare_boundary_only_reads_render_plan(self):
         source = (RENDERER / "scripts" / "prepare.mjs").read_text(encoding="utf-8")
         self.assertIn("render-plan.json", source)
+        # Cover parity can inspect publish.source.production, but the renderer
+        # must not read or compile Authoring IR as a second execution source.
+        self.assertNotIn('readFile(join(root, "production.ir.json")', source)
         for forbidden in (
-            "production.ir.json",
             "production.json",
             "materializeProductionDefaults",
             "resolveProductionEvents",

@@ -8,7 +8,7 @@ import type {
   RendererV2Props,
 } from "./types";
 
-const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => {
+export const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => {
   const needsFont = presentation.caption?.font_family === "Patrick Hand";
   const fontUri = presentation.caption?.font_data_uri;
   const [handle] = useState(() => delayRender("Verify caption font", {timeoutInMilliseconds: 30000}));

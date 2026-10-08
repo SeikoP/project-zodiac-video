@@ -374,6 +374,13 @@ jobs:
         run: |
           npx remotion still src/index.ts ZodiacRenderPlan /tmp/zodiac-scorpio-v2/frame.png --props=/tmp/zodiac-scorpio-v2/.runtime/renderer-v2-props.json --frame=38
           test -s /tmp/zodiac-scorpio-v2/frame.png
+      - name: Render Job5 publish cover PNG using actual Remotion
+        run: |
+          mkdir -p /tmp/zodiac-scorpio-v2/publish
+          cp tests/fixtures/scorpio-two-versions/package/publish/publish.json /tmp/zodiac-scorpio-v2/publish/publish.json
+          node runtime/zodiac-renderer/2.0.0/renderer/scripts/render-cover.mjs /tmp/zodiac-scorpio-v2 /tmp/zodiac-scorpio-v2/cover.png
+          test -s /tmp/zodiac-scorpio-v2/cover.png
+          file /tmp/zodiac-scorpio-v2/cover.png | grep -q "1080 x 1920"
       - name: P0 renderer-faithful 3-scene smoke
         run: node runtime/zodiac-renderer/2.0.0/renderer/scripts/smoke-p0.mjs
       - name: Upload P0 smoke frames
