@@ -19,7 +19,7 @@ class RenderPlanValidatorTests(unittest.TestCase):
         self.ir = load("production.ir.json")
         self.plan = compile_render_plan(
             self.ir,
-            load("timing.json"),
+            load(".runtime/timing.json"),
             load("design-token.json"),
         )
 
@@ -38,7 +38,7 @@ class RenderPlanValidatorTests(unittest.TestCase):
         self.ir["scenes"][0]["events"].append(duplicate)
         plan = compile_render_plan(
             self.ir,
-            load("timing.json"),
+            load(".runtime/timing.json"),
             load("design-token.json"),
         )
         merged = plan["scenes"][0]["events"][0]
@@ -96,3 +96,4 @@ class RenderPlanValidatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
