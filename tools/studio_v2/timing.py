@@ -284,7 +284,7 @@ def _align_cached_scenes(
         production,
         durations,
         aligned_words,
-        scene_gap_ms=float(settings.get("scene_gap_ms", 0.0)),
+        scene_gap_ms=float(settings.get("scene_gap_ms", 180.0)),
         sentence_pause_ms=0.0,
     )
 
