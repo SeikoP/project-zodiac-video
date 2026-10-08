@@ -7,6 +7,7 @@ from pathlib import Path
 from tools.control_plane.contracts import canonical_contract_hash
 from tools.studio_v2.pipeline import DONE, FAILED, PENDING, PipelineStateV2
 from tools.tui.v2_adapter import (
+    V2TuiSession,
     detect_job5_manifest,
     job5_workspace_path,
     v2_pipeline_rows,
@@ -78,6 +79,80 @@ class TuiV2AdapterTests(unittest.TestCase):
         self.assertEqual(rows[1]["detail"], "Dùng lại")
         self.assertEqual(rows[0]["detail"], "Tạo mới")
         self.assertEqual(rows[2]["status"], PENDING)
+
+
+    def test_v2_session_keeps_same_workspace_across_patch_zip_names(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            source.mkdir()
+            (source / "production.ir.json").write_text(
+                json.dumps({
+                    "format": "zodiac-authoring-ir@1",
+                    "fps": 24,
+                    "video": {"width": 1080, "height": 1920},
+                    "assets": {},
+                    "scenes": [{
+                        "id": "S01",
+                        "voice": "xin chao",
+                        "duration_hint_frames": 48,
+                        "entities": [],
+                        "events": [],
+                    }],
+                }),
+                encoding="utf-8",
+            )
+            (source / "design-token.json").write_text(
+                json.dumps({
+                    "id": "zodiac-paper-doodle-meme-v4",
+                    "version": "4.0",
+                    "style_family": "paper-doodle-chibi-meme",
+                    "handmade_profile": "human-stroke-v2",
+                    "motion_defaults": {},
+                }),
+                encoding="utf-8",
+            )
+            (source / "narration.txt").write_text("xin chao\n", encoding="utf-8")
+
+            (source / "package-manifest.json").write_text(
+                json.dumps(manifest(revision="1.0.0")),
+                encoding="utf-8",
+            )
+            first_zip = root / "zodiac-bocap-hai-phien-ban.zip"
+            with zipfile.ZipFile(first_zip, "w") as handle:
+                for path in source.iterdir():
+                    handle.write(path, path.name)
+
+            session = V2TuiSession(root / "workspace")
+            session.import_archive(first_zip)
+            first_workspace = session.job
+            self.assertEqual(first_workspace.name, "scorpio-two-versions")
+            self.assertEqual(session.package_revision, "1.0.0")
+
+            (source / "package-manifest.json").write_text(
+                json.dumps(manifest(revision="1.0.1")),
+                encoding="utf-8",
+            )
+            second_zip = root / "renamed-patch-v1.zip"
+            with zipfile.ZipFile(second_zip, "w") as handle:
+                for path in source.iterdir():
+                    handle.write(path, path.name)
+
+            session.import_archive(second_zip)
+            self.assertEqual(session.job, first_workspace)
+            self.assertEqual(session.package_revision, "1.0.1")
+            self.assertEqual(session.archive.name, "renamed-patch-v1.zip")
+            self.assertEqual(len(session.pipeline_rows()), 7)
+
+    def test_v2_session_exposes_output_path_inside_stable_workspace(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            session = V2TuiSession(root)
+            session._job = root / "v2" / "jobs" / "scorpio-two-versions"
+            self.assertEqual(
+                session.video_path,
+                session._job / "out" / "zodiac-story.mp4",
+            )
 
     def test_structured_error_detail_is_presented_directly(self):
         state = PipelineStateV2(workspace_id="scorpio-two-versions")
