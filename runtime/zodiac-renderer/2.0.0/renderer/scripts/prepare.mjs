@@ -43,6 +43,48 @@ export const validateExecutablePlan = (plan) => {
   return plan;
 };
 
+const rectsOverlap = (a, b) =>
+  a.x < b.x + b.width && b.x < a.x + a.width &&
+  a.y < b.y + b.height && b.y < a.y + a.height;
+
+const transformedBounds = (transform) => {
+  const x = Number(transform?.x ?? 0), y = Number(transform?.y ?? 0);
+  const width = Number(transform?.width ?? 520), height = Number(transform?.height ?? 520);
+  const scale = Math.abs(Number(transform?.scale ?? 1));
+  const rad = Number(transform?.rotation ?? 0) * Math.PI / 180;
+  const w = scale * (Math.abs(width * Math.cos(rad)) + Math.abs(height * Math.sin(rad))) + 12;
+  const h = scale * (Math.abs(width * Math.sin(rad)) + Math.abs(height * Math.cos(rad))) + 12;
+  return {x: x + width / 2 - w / 2, y: y + height / 2 - h / 2, width: w, height: h};
+};
+
+export const validateSceneLayout = (plan) => {
+  for (const scene of plan.scenes) {
+    const layout = scene.layout_contract;
+    if (!layout) continue; // Legacy render plans use their original layout.
+    const caption = layout.caption_safe_zone;
+    let actors = 0, props = 0, effects = 0;
+    for (const entity of scene.entities ?? []) {
+      if (entity.id.startsWith("env__")) continue;
+      if (entity.id === "story_effect") effects++;
+      else if (entity.id === "story_prop") props++;
+      else actors++;
+      for (const [name, state] of Object.entries(entity.states ?? {})) {
+        if (state.visible === false || !state.transform) continue;
+        const bounds = transformedBounds(state.transform);
+        if (rectsOverlap(caption, bounds)) {
+          throw new Error(`LAYOUT_OVERLAP scene=${scene.id} entity=${entity.id} state=${name} caption_safe_zone`);
+        }
+      }
+    }
+    const budget = scene.render_density_budget ?? {max_characters:3,max_prominent_props:2,max_prominent_effects:2};
+    if (actors > budget.max_characters || props > budget.max_prominent_props || effects > budget.max_prominent_effects ||
+        (actors >= 3 && (props > 1 || effects > 1))) {
+      throw new Error(`DENSITY_EXCEEDED scene=${scene.id} actors=${actors} props=${props} effects=${effects}`);
+    }
+  }
+  return plan;
+};
+
 const hydrateAssets = async (root, assets) => {
   const output = {};
   for (const [assetId, raw] of Object.entries(assets ?? {})) {
@@ -73,7 +115,7 @@ export const prepareRendererProps = async (packageRoot) => {
   } catch (error) {
     throw new Error(`cannot read render-plan.json: ${error.message}`);
   }
-  validateExecutablePlan(plan);
+  validateSceneLayout(validateExecutablePlan(plan));
   const presentation = structuredClone(plan.presentation ?? {});
   const requestedFont = String(presentation.caption?.font_family ?? "sans-serif");
   if (requestedFont === "Patrick Hand") {
