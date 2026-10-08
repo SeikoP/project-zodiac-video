@@ -57,6 +57,28 @@ const transformedBounds = (transform) => {
   return {x: x + width / 2 - w / 2, y: y + height / 2 - h / 2, width: w, height: h};
 };
 
+const classifyVisualRole = (entity, assets = {}) => {
+  if (entity.id.startsWith("env__")) return "environment";
+  const kind = String(entity.kind ?? "").toLowerCase();
+  if (kind === "character") return "character";
+  if (["prop", "object"].includes(kind)) return "prop";
+  if (kind === "effect") return "effect";
+  if (kind === "environment") return "environment";
+  const state = entity.states?.[entity.initial_state] ?? Object.values(entity.states ?? {})[0];
+  const asset = assets[state?.asset] ?? {};
+  const category = String(asset.category ?? "").toLowerCase();
+  if (["character", "character_pose"].includes(category)) return "character";
+  if (["prop", "object", "story_prop"].includes(category)) return "prop";
+  if (["effect", "story_effect"].includes(category)) return "effect";
+  if (["environment", "environment_cue"].includes(category)) return "environment";
+  const path = String(asset.path ?? "").replaceAll("\\", "/").toLowerCase();
+  if (/(^|\/)effects\//.test(path)) return "effect";
+  if (/(^|\/)props\//.test(path)) return "prop";
+  if (/(^|\/)environments?\//.test(path)) return "environment";
+  if (/(^|\/)characters\//.test(path)) return "character";
+  return entity.id === "story_effect" ? "effect" : entity.id === "story_prop" ? "prop" : "character";
+};
+
 export const validateSceneLayout = (plan) => {
   for (const scene of plan.scenes) {
     const layout = scene.layout_contract;
@@ -86,9 +108,10 @@ export const validateSceneLayout = (plan) => {
 
     let actors = 0, props = 0, effects = 0;
     for (const entity of scene.entities ?? []) {
-      if (entity.id.startsWith("env__")) continue;
-      if (entity.id === "story_effect") effects++;
-      else if (entity.id === "story_prop") props++;
+      const role = classifyVisualRole(entity, plan.assets);
+      if (role === "environment") continue;
+      if (role === "effect") effects++;
+      else if (role === "prop") props++;
       else actors++;
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
@@ -144,15 +167,16 @@ export const prepareRendererProps = async (packageRoot) => {
     const ids = new Set((scene.entities ?? []).map((e) => e.id));
     const declared = new Set();
     for (const entity of scene.entities ?? []) {
-      if (entity.id === "story_prop" || entity.id === "story_effect") declared.add(entity.id);
+      const role = classifyVisualRole(entity, plan.assets);
+      if (role === "prop" || role === "effect") declared.add(role);
       if (!(entity.initial_state in (entity.states ?? {}))) throw new Error(`STATE_MISSING scene=${scene.id} entity=${entity.id}`);
       for (const [stateId, state] of Object.entries(entity.states ?? {})) {
-        if (scene.layout_contract && state.visible !== false && (entity.id === "story_prop" || entity.id === "story_effect")) {
+        if (scene.layout_contract && state.visible !== false && (role === "prop" || role === "effect")) {
           const width = Number(state.transform?.width ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
           const height = Number(state.transform?.height ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
           // Tall phone props are legitimate; require useful visible area, not
           // the aspect ratio of a landscape card.
-          const minimumArea = entity.id === "story_effect" ? 30000 : 43000;
+          const minimumArea = role === "effect" ? 30000 : 43000;
           if (width * height < minimumArea || Math.min(width, height) < 110) {
             throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum_area=${minimumArea}`);
           }
@@ -165,7 +189,7 @@ export const prepareRendererProps = async (packageRoot) => {
     }
     // Count presence as an authoring integrity check; visibility remains
     // under the actual scene timeline and is never faked by the renderer.
-    if (declared.has("story_prop") !== declared.has("story_effect")) {
+    if (declared.has("prop") !== declared.has("effect")) {
       process.stdout.write(`VISUAL_ROLE_PARTIAL scene=${scene.id} roles=${[...declared].join(",")}\n`);
     }
   }
