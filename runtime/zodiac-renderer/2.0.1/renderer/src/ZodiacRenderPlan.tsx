@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
+import {resolveSemanticMotion} from "./semantic-motion.mjs";
+
 import type {
   RenderPlanEntity,
   RenderPlanPresentation,
@@ -106,37 +108,19 @@ const SceneLayer: React.FC<{
             : entity.id === "story_prop" || Boolean(binding)
             ? "prop"
             : "other";
-          // Animate explicitly referenced targets only; keep authored x/y stable.
-          const focusTargets = new Set([
-            entity.id,
-            ...(scene.spatial_bindings ?? [])
-              .filter((item) => item.anchor === entity.id && (item.relation === "held_by" || item.relation === "emitted_by"))
-              .map((item) => item.entity),
-          ]);
-          const active = scene.events.find(
-            (item) => focusTargets.has(item.target) && frame >= item.start_frame && frame < item.end_frame,
-          );
-          const local = active ? frame - active.start_frame : 0;
-          const structural = entity.id.startsWith("env__");
-          const character = !structural && role === "other";
-          const phase = active
-            ? Math.min(1, Math.max(0, (frame - active.start_frame) / Math.max(1, active.end_frame - active.start_frame)))
-            : 0;
-          const focusEnvelope = active ? Math.sin(Math.PI * phase) ** 2 : 0;
-          const focusScale = character ? 1 + 0.012 * focusEnvelope : 1;
-          const focusRotate = character ? 1.3 * focusEnvelope : 0;
-          const effectPulse = role === "effect" ? 1 + 0.055 * focusEnvelope : 1;
-          const fraction = Math.min(1, Math.max(0, (active ? local : relativeFrame) / (role === "effect" ? 9 : 7)));
-          const eased = 1 - Math.pow(1 - fraction, 3);
-          const revealScale = role === "effect" ? 0.94 + 0.06 * eased : role === "prop" ? 0.97 + 0.03 * eased : 1;
-          const revealOpacity = role === "effect" ? eased : role === "prop" ? 0.4 + 0.6 * eased : 1;
+          // Explicit semantic motion only. No ambient idle motion for unrelated actors.
+          const active=scene.events.find(item=>
+            item.target===entity.id && frame>=item.start_frame && frame<item.end_frame);
+          const resolved=resolveSemanticMotion(active,scene,entity,frame);
+          const revealScale=1;
+          const revealOpacity=1;
           const style: React.CSSProperties = {
             position: "absolute",
             left: transform.x ?? 0,
             top: transform.y ?? 0,
             width: transform.width ?? 520,
             height: transform.height ?? 520,
-            transform: `scale(${(transform.scale ?? 1) * revealScale * focusScale * effectPulse}) rotate(${(transform.rotation ?? 0) + focusRotate}deg)`,
+            transform: `translate(${resolved.translateX}px, ${resolved.translateY}px) scale(${(transform.scale ?? 1) * revealScale * resolved.scale}) rotate(${(transform.rotation ?? 0) + resolved.rotateDeg}deg)`,
             opacity: revealOpacity,
             zIndex: state.layer ?? 0,
             objectFit: "contain",
@@ -149,7 +133,9 @@ const SceneLayer: React.FC<{
               data-entity-id={entity.id}
               data-asset-id={assetId}
               data-visual-role={role}
-              data-narrative-focus={active && character ? "active" : "inactive"}
+              data-narrative-focus={active ? "active" : "inactive"}
+              data-motion-preset={active?.motion ?? "none"}
+              data-motion-peak={resolved.peak.toFixed(3)}
               style={style}
             />
           );        })}
