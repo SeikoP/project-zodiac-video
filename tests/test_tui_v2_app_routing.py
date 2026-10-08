@@ -49,6 +49,11 @@ def make_job5_zip(root: Path) -> Path:
         handle.writestr("production.ir.json", json.dumps(production))
         handle.writestr("design-token.json", json.dumps(design))
         handle.writestr("narration.txt", "xin chao\n")
+        handle.writestr(
+            "publish/publish.json",
+            json.dumps({"format": "zodiac-publish@1", "source": {"narration": "narration.txt", "production": "production.ir.json"}}),
+        )
+        handle.writestr("publish/publish-copy.txt", "xin chao\n")
     return archive
 
 
@@ -103,3 +108,4 @@ class TuiV2AppRoutingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

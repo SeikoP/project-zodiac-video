@@ -17,6 +17,7 @@ _REQUIRED_ROOT_FILES = {
 }
 _ALLOWED_ROOT_FILES = _REQUIRED_ROOT_FILES
 _ALLOWED_ROOT_DIRECTORIES = {"assets", "publish"}
+_REQUIRED_ROOT_DIRECTORIES = {"publish"}
 _REQUIRED_PUBLISH_FILES = {"publish.json", "publish-copy.txt"}
 
 
@@ -83,8 +84,15 @@ def _walk_asset_files(asset_root: Path) -> set[str]:
 
 def _validate_asset_files(root: Path, ir: dict[str, Any]) -> None:
     asset_root = root / "assets"
-    if not asset_root.is_dir() or asset_root.is_symlink():
-        _fail("PACKAGE_CONTENT_INVALID", "Job@5 package is missing a regular assets/ directory")
+    if asset_root.is_symlink() or (asset_root.exists() and not asset_root.is_dir()):
+        _fail("PACKAGE_CONTENT_INVALID", "Job@5 assets path must be a regular directory")
+    if not asset_root.exists():
+        if ir["assets"]:
+            _fail(
+                "PACKAGE_CONTENT_INVALID",
+                "Job@5 package is missing assets/ referenced by the Authoring IR",
+            )
+        return
 
     resolved_asset_root = asset_root.resolve()
     referenced: set[str] = set()
@@ -172,7 +180,7 @@ def validate_job5_package_root(root: Path) -> dict[str, Any]:
                 f"Job@5 package is missing required file {name}",
                 detail={"path": name},
             )
-    for name in _ALLOWED_ROOT_DIRECTORIES:
+    for name in _REQUIRED_ROOT_DIRECTORIES:
         path = root / name
         if not path.is_dir() or path.is_symlink():
             _fail(

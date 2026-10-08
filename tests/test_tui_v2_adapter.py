@@ -113,6 +113,13 @@ class TuiV2AdapterTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (source / "narration.txt").write_text("xin chao\n", encoding="utf-8")
+            publish = source / "publish"
+            publish.mkdir()
+            (publish / "publish.json").write_text(
+                json.dumps({"format": "zodiac-publish@1", "source": {"narration": "narration.txt", "production": "production.ir.json"}}),
+                encoding="utf-8",
+            )
+            (publish / "publish-copy.txt").write_text("xin chao\n", encoding="utf-8")
 
             (source / "package-manifest.json").write_text(
                 json.dumps(manifest(revision="1.0.0")),
@@ -120,8 +127,9 @@ class TuiV2AdapterTests(unittest.TestCase):
             )
             first_zip = root / "zodiac-bocap-hai-phien-ban.zip"
             with zipfile.ZipFile(first_zip, "w") as handle:
-                for path in source.iterdir():
-                    handle.write(path, path.name)
+                for path in source.rglob("*"):
+                    if path.is_file():
+                        handle.write(path, path.relative_to(source).as_posix())
 
             session = V2TuiSession(root / "workspace")
             session.import_archive(first_zip)
@@ -135,8 +143,9 @@ class TuiV2AdapterTests(unittest.TestCase):
             )
             second_zip = root / "renamed-patch-v1.zip"
             with zipfile.ZipFile(second_zip, "w") as handle:
-                for path in source.iterdir():
-                    handle.write(path, path.name)
+                for path in source.rglob("*"):
+                    if path.is_file():
+                        handle.write(path, path.relative_to(source).as_posix())
 
             session.import_archive(second_zip)
             self.assertEqual(session.job, first_workspace)
@@ -178,3 +187,4 @@ class TuiV2AdapterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

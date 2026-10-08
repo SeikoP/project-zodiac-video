@@ -57,6 +57,23 @@ def zip_source(source: Path, archive: Path, wrapper: str | None = None) -> None:
 
 
 class StudioV2ZipImportTests(unittest.TestCase):
+    def test_import_accepts_no_assets_when_ir_has_no_asset_references(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = make_source(root)
+            ir_path = source / "production.ir.json"
+            ir = json.loads(ir_path.read_text(encoding="utf-8"))
+            ir["assets"] = {}
+            ir["scenes"][0]["entities"] = []
+            ir["scenes"][0]["events"] = []
+            ir_path.write_text(json.dumps(ir), encoding="utf-8")
+            shutil.rmtree(source / "assets")
+
+            controller = StudioV2Controller(root / "workspace")
+            controller.import_package(source)
+            self.assertTrue((controller.workspace / "publish" / "publish.json").is_file())
+            self.assertFalse((controller.workspace / "assets").exists())
+
     def test_imports_job5_zip_and_records_zip_display_name(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

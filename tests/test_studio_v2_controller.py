@@ -17,6 +17,7 @@ FIXTURE = ROOT / "tests" / "fixtures" / "control-plane-v2" / "minimal"
 def make_job(root: Path) -> Path:
     source = root / "source"
     shutil.copytree(FIXTURE, source)
+    shutil.rmtree(source / ".runtime", ignore_errors=True)
     (source / "narration.txt").write_text("xin chao\n", encoding="utf-8")
     manifest = {
         "format": "zodiac-job@5",
@@ -33,7 +34,20 @@ def make_job(root: Path) -> Path:
         json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
     )
+    publish = source / "publish"
+    publish.mkdir()
+    (publish / "publish.json").write_text(
+        json.dumps({"format": "zodiac-publish@1", "source": {"narration": "narration.txt", "production": "production.ir.json"}}),
+        encoding="utf-8",
+    )
+    (publish / "publish-copy.txt").write_text("xin chao\n", encoding="utf-8")
     return source
+
+
+def add_fixture_timing(controller: StudioV2Controller) -> None:
+    runtime = controller.workspace / ".runtime"
+    runtime.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(FIXTURE / ".runtime" / "timing.json", runtime / "timing.json")
 
 
 class StudioV2ControllerTests(unittest.TestCase):
@@ -66,6 +80,7 @@ class StudioV2ControllerTests(unittest.TestCase):
             root = Path(temp)
             controller = StudioV2Controller(root / "workspace")
             controller.import_package(make_job(root))
+            add_fixture_timing(controller)
             plan_path = controller.build_plan()
             plan = json.loads(plan_path.read_text(encoding="utf-8"))
             self.assertEqual(controller.state.steps[PLAN].status, DONE)
@@ -77,6 +92,7 @@ class StudioV2ControllerTests(unittest.TestCase):
             root = Path(temp)
             controller = StudioV2Controller(root / "workspace")
             controller.import_package(make_job(root))
+            add_fixture_timing(controller)
             controller.build_plan()
             props = controller.prepare_renderer()
             self.assertTrue(props.is_file())
@@ -92,3 +108,4 @@ class StudioV2ControllerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
