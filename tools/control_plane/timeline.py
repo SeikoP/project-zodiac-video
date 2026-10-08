@@ -70,6 +70,7 @@ def compile_render_plan(
 
         lane_last: dict[str, dict[str, Any]] = {}
         outputs: list[dict[str, Any]] = []
+        entities = {entity["id"]: entity for entity in scene["entities"]}
 
         for authored_index, event in enumerate(scene["events"]):
             event_id = event["id"]
@@ -148,10 +149,15 @@ def compile_render_plan(
                     },
                 )
 
+            entity = entities[target]
+            asset_before = entity["states"][event["state_before"]]["asset"]
+            asset_after = entity["states"][event["state_after"]]["asset"]
             output = {
                 "event_id": event_id,
                 "scene_id": scene_id,
                 "target": target,
+                "asset_before": asset_before,
+                "asset_after": asset_after,
                 "preferred_start_frame": preferred,
                 "start_frame": start,
                 "end_frame": end,
