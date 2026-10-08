@@ -12,7 +12,7 @@ CHECKS = (
 )
 ARTIFACTS = ("video", "cover", "publish_json", "publish_copy")
 
-def verify(receipt_path: Path):
+def verify(receipt_path: Path, expected_scenes: int | None = None):
     errors = []
     try:
         doc = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -26,6 +26,8 @@ def verify(receipt_path: Path):
     if not isinstance(scene_rows, list) or not scene_rows:
         errors.append("SCENES_MISSING")
     else:
+        if expected_scenes is not None and len(scene_rows) != expected_scenes:
+            errors.append(f"SCENE_COUNT_MISMATCH: expected {expected_scenes}, got {len(scene_rows)}")
         seen = set()
         for index, row in enumerate(scene_rows):
             if not isinstance(row, dict):
@@ -70,8 +72,9 @@ def verify(receipt_path: Path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("receipt", type=Path, help="JSON human/E2E evidence receipt")
+    parser.add_argument("--expected-scenes", type=int, default=None)
     args = parser.parse_args()
-    failures = verify(args.receipt)
+    failures = verify(args.receipt, args.expected_scenes)
     if failures:
         print("UNVERIFIED: acceptance gate failed")
         for item in failures:
