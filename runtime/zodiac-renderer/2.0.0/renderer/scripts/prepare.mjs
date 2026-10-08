@@ -150,9 +150,11 @@ export const prepareRendererProps = async (packageRoot) => {
         if (scene.layout_contract && state.visible !== false && (entity.id === "story_prop" || entity.id === "story_effect")) {
           const width = Number(state.transform?.width ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
           const height = Number(state.transform?.height ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
-          const minimum = entity.id === "story_effect" ? {width:230,height:170} : {width:300,height:225};
-          if (width < minimum.width || height < minimum.height) {
-            throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum=${minimum.width}x${minimum.height}`);
+          // Tall phone props are legitimate; require useful visible area, not
+          // the aspect ratio of a landscape card.
+          const minimumArea = entity.id === "story_effect" ? 30000 : 43000;
+          if (width * height < minimumArea || Math.min(width, height) < 110) {
+            throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum_area=${minimumArea}`);
           }
         }
         if (!(state.asset in (plan.assets ?? {}))) throw new Error(`ASSET_MISSING scene=${scene.id} entity=${entity.id} state=${stateId} asset=${state.asset}`);
