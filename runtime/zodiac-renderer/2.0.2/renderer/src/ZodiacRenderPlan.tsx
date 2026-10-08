@@ -145,7 +145,7 @@ const SceneLayer: React.FC<{
               data-entity-id={entity.id}
               data-asset-id={assetId}
               data-visual-role={role}
-              data-narrative-focus={active && character ? "active" : "inactive"}
+              data-narrative-focus={active && role === "character" ? "active" : "inactive"}
               style={style}
             />
           );        })}
