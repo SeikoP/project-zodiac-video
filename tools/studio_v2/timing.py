@@ -165,6 +165,7 @@ def _align_cached_scenes(
     voice: VoiceArtifact,
     settings: dict[str, Any],
     aligner_version: str,
+    force: bool = False,
 ) -> dict[str, Any]:
     paths = scene_voice_files(workspace, production)
     scene_settings = {
@@ -196,6 +197,8 @@ def _align_cached_scenes(
             wav_hash=wav_hash,
             text_hash=text_hash,
         )
+        if force:
+            cached = None
         if cached is None:
             if model is None:
                 require_word_aligner_installed()
@@ -413,6 +416,7 @@ def ensure_timing_artifact(
     aligner_settings: dict[str, Any],
     aligner_version: str,
     aligner: TimingAligner | None = None,
+    force: bool = False,
 ) -> TimingArtifact:
     workspace = Path(workspace).resolve()
     sentence_pause_ms = float(aligner_settings.get("sentence_pause_ms", 0.0))
@@ -456,7 +460,7 @@ def ensure_timing_artifact(
         assembly_settings,
         aligner_version,
     )
-    cached = _cached_timing(workspace, input_key)
+    cached = None if force else _cached_timing(workspace, input_key)
     if cached is not None:
         _record_global_cache_scene_reuse(
             workspace,
@@ -476,6 +480,7 @@ def ensure_timing_artifact(
                 voice,
                 dict(aligner_settings),
                 aligner_version,
+                force=force,
             )
             if aligner is None
             else aligner(

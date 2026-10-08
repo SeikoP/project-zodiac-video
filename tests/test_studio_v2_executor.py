@@ -2,6 +2,7 @@ import copy
 import json
 import shutil
 import tempfile
+from threading import Event
 import unittest
 import wave
 from pathlib import Path
@@ -9,6 +10,7 @@ from unittest.mock import patch
 
 from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.contracts import canonical_contract_hash
+from tools.control_plane.errors import ControlPlaneError
 from tools.studio_v2.controller import StudioV2Controller
 from tools.studio_v2.executor import (
     ExecutorConfig,
@@ -218,6 +220,48 @@ class StudioV2ExecutorTests(unittest.TestCase):
             self.assertEqual((counters.voice, counters.timing, counters.render, counters.audio, counters.output), (1, 1, 1, 1, 1))
             for step in (VOICE, TIMING, PLAN, RENDER, AUDIO, OUTPUT):
                 self.assertTrue(state.steps[step].reused, step)
+
+    def test_explicit_rerun_bypasses_stage_and_scene_caches(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            counters = StageCounters()
+            controller, executor = self._executor(root, counters)
+            controller.import_package(make_source(root))
+            config = self._config(root)
+            executor.run(config)
+            executor.run(config, rerun_from=RENDER)
+            self.assertEqual((counters.voice, counters.timing, counters.render,
+                              counters.audio, counters.output), (1, 1, 2, 2, 2))
+            executor.run(config, rerun_from=VOICE)
+            self.assertEqual((counters.voice, counters.timing, counters.render,
+                              counters.audio, counters.output), (2, 2, 3, 3, 3))
+
+    def test_cancel_preserves_completed_stage_and_pending_rerun_after_restart(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            counters = StageCounters()
+            controller, executor = self._executor(root, counters)
+            controller.import_package(make_source(root))
+            config = self._config(root)
+            executor.run(config)
+            cancel = Event()
+            original = executor.audio_handler
+            def stop_after_audio(*args):
+                result = original(*args)
+                cancel.set()
+                return result
+            executor.audio_handler = stop_after_audio
+            with self.assertRaises(ControlPlaneError) as caught:
+                executor.run(config, rerun_from=AUDIO, cancel_event=cancel)
+            self.assertEqual(caught.exception.code, "PIPELINE_CANCELLED")
+            self.assertEqual(load_state(controller.workspace).steps[AUDIO].status, DONE)
+            request = controller.workspace / ".runtime" / "rerun-request.json"
+            self.assertEqual(json.loads(request.read_text())["from"], OUTPUT)
+            new_controller, resumed = self._executor(root, counters)
+            resumed.run(config)
+            self.assertEqual((counters.audio, counters.output), (2, 2))
+            self.assertEqual(new_controller.state.steps[OUTPUT].status, DONE)
+            self.assertFalse(request.exists())
 
     def test_valid_cached_segment_skips_full_frame_decode(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -197,6 +197,7 @@ def ensure_voice_artifact(
     tts_settings: dict[str, Any],
     engine_version: str,
     generator: VoiceGenerator | None = None,
+    force: bool = False,
 ) -> VoiceArtifact:
     workspace = Path(workspace).resolve()
     narration_path = workspace / "narration.txt"
@@ -301,7 +302,7 @@ def ensure_voice_artifact(
                 },
             )
 
-    cached = _cached_artifact(workspace, input_key, scene_ids)
+    cached = None if force else _cached_artifact(workspace, input_key, scene_ids)
     if cached is not None:
         record_scene_artifacts(cached.scene_hashes)
         meta = _read_meta(_meta_path(workspace))
@@ -319,6 +320,9 @@ def ensure_voice_artifact(
     dirty_scene_ids = []
     for scene_id in scene_ids:
         path = scene_wav_path(workspace, scene_id)
+        if force:
+            dirty_scene_ids.append(scene_id)
+            continue
         text_hash = canonical_hash(_normalized_words(scene_by_id[scene_id]["voice"]))
         approved = voice_store.restore_approved(
             scene_id,

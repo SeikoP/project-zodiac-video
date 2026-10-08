@@ -132,6 +132,7 @@ class PreflightChecker:
             "NODE": "Node.js",
             "NPM": "npm",
             "FFMPEG": "FFmpeg",
+            "FFPROBE": "ffprobe",
         }
         return Check(
             code=code,
@@ -200,6 +201,49 @@ class PreflightChecker:
             message="Đã chọn nhạc nền." if ok else "Chưa chọn nhạc nền.",
             error_code=None if ok else "PACKAGE_INVALID",
         )
+
+
+class Job5PreflightChecker(PreflightChecker):
+    """Use the imported Job@5 contract and Renderer 2 for GUI checks."""
+
+    def _package(self, _validate_package) -> Check:
+        from tools.control_plane.package_validation import validate_job5_package_root
+
+        if self.package_root is None:
+            return Check("PACKAGE", "Gói Job@5", False, "Chưa chọn job.")
+        try:
+            validate_job5_package_root(self.package_root, local_workspace=True)
+        except Exception as exc:
+            return Check("PACKAGE", "Gói Job@5", False, str(exc),
+                         "Kiểm tra nội dung gói hoặc nhập lại ZIP nguồn.")
+        return Check("PACKAGE", "Gói Job@5", True, "Contract và tài nguyên hợp lệ.")
+
+    def run(self) -> list[Check]:
+        checks = super().run()
+        checks.append(self._executable("ffprobe", "FFPROBE"))
+        renderer = ROOT / "runtime" / "zodiac-renderer" / "2.0.0" / "renderer"
+        missing = [name for name in ("package.json", "scripts/prepare.mjs", "src/index.ts",
+                                      "node_modules/@remotion/cli/package.json")
+                   if not (renderer / name).is_file()]
+        checks.append(Check(
+            "RENDERER", "Renderer 2", not missing,
+            "Sẵn sàng." if not missing else "Thiếu: " + ", ".join(missing),
+            f'Khôi phục runtime nếu thiếu mã nguồn; cài dependency: npm install --prefix "{renderer}"',
+        ))
+        for check in checks:
+            if check.ok:
+                continue
+            if check.code == "FASTER_WHISPER":
+                check.details = self.install_command_text()
+            elif check.code in {"NODE", "NPM"}:
+                check.details = "Cài Node.js kèm npm, sau đó mở lại GUI."
+            elif check.code in {"FFMPEG", "FFPROBE"}:
+                check.details = "Cài FFmpeg gồm ffprobe và thêm thư mục bin vào PATH."
+            elif check.code == "VIENEU":
+                check.details = f"Khởi động VieNeu tại {self.vieneu_url}; kiểm tra thư mục {self.tts_root}."
+            elif check.code == "MUSIC":
+                check.details = "Chọn lại file nhạc nền còn tồn tại hoặc bỏ chọn nhạc."
+        return checks
 
 
 def environment_status(checks: list[Check]) -> str:

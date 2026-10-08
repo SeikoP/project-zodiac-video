@@ -8,9 +8,7 @@ version = "0.1.0"
 description = "Local Zodiac video production control plane and Remotion runtime"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = [
-  "textual>=1",
-]
+dependencies = []
 
 [project.optional-dependencies]
 local = [
@@ -19,7 +17,7 @@ local = [
 ]
 
 [project.scripts]
-zodiac = "tools.zodiac_tui:main"
+zodiac = "tools.zodiac_gui:main"
 zodiac-control = "tools.control_plane.cli:main"
 
 [tool.setuptools.packages.find]

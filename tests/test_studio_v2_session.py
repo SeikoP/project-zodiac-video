@@ -6,8 +6,8 @@ from pathlib import Path
 
 from tools.control_plane.contracts import canonical_contract_hash
 from tools.studio_v2.pipeline import DONE, FAILED, PENDING, PipelineStateV2
-from tools.tui.v2_adapter import (
-    V2TuiSession,
+from tools.studio_v2.session import (
+    StudioV2Session,
     detect_job5_manifest,
     job5_workspace_path,
     v2_pipeline_rows,
@@ -28,7 +28,7 @@ def manifest(*, job_id="scorpio-two-versions", revision="1.0.0"):
     }
 
 
-class TuiV2AdapterTests(unittest.TestCase):
+class StudioV2SessionTests(unittest.TestCase):
     def test_detects_job5_manifest_inside_wrapper_zip(self):
         with tempfile.TemporaryDirectory() as temp:
             archive = Path(temp) / "renamed-anything.zip"
@@ -131,7 +131,7 @@ class TuiV2AdapterTests(unittest.TestCase):
                     if path.is_file():
                         handle.write(path, path.relative_to(source).as_posix())
 
-            session = V2TuiSession(root / "workspace")
+            session = StudioV2Session(root / "workspace")
             session.import_archive(first_zip)
             first_workspace = session.job
             self.assertEqual(first_workspace.name, "scorpio-two-versions")
@@ -156,7 +156,7 @@ class TuiV2AdapterTests(unittest.TestCase):
     def test_v2_session_exposes_output_path_inside_stable_workspace(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
-            session = V2TuiSession(root)
+            session = StudioV2Session(root)
             session._job = root / "v2" / "jobs" / "scorpio-two-versions"
             self.assertEqual(
                 session.video_path,

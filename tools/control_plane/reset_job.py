@@ -16,7 +16,7 @@ import tempfile
 from tools.control_plane.package_io import extract_package_archive
 from tools.control_plane.package_validation import validate_job5_package_root
 from tools.studio_v2.controller import StudioV2Controller
-from tools.tui.v2_adapter import job5_workspace_path
+from tools.studio_v2.session import job5_workspace_path
 
 
 ROOT = Path(__file__).resolve().parents[2]

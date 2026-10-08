@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -260,6 +261,190 @@ class StudioAppTests(unittest.TestCase):
                 app.update()
                 time.sleep(0.05)
             self.assertIn("dòng nhật ký", app.log.text.get("1.0", "end"))
+
+    def test_job5_archive_uses_v2_pipeline_and_output(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            package = Path(__file__).parent / "fixtures" / "scorpio-two-versions" / "package"
+            archive = Path(temp) / "job5.zip"
+            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as handle:
+                for item in package.rglob("*"):
+                    if item.is_file():
+                        handle.write(item, item.relative_to(package).as_posix())
+
+            app.project.archive.set(str(archive))
+            app.controller.select_archive(archive)
+            app._project_changed()
+            deadline = time.time() + 10
+            while time.time() < deadline and app._v2_importing:
+                app.update()
+                time.sleep(0.01)
+            app.update()
+
+            self.assertEqual(app._pipeline_mode, "v2")
+            self.assertEqual(app.project.job_name.get(), "bocap-hai-phien-ban")
+            self.assertEqual(app.pipeline.mode, "v2")
+            self.assertEqual(app.output.video_path_provider(), app.v2_session.job / "out" / "zodiac-story.mp4")
+            self.assertEqual(str(app.studio_button.cget("state")), "disabled")
+            app.audio.music.set("")
+            app.audio.volume.set(0.73)
+            with patch("tools.studio.app.threading.Thread") as worker:
+                app._start_v2()
+            config = worker.call_args.kwargs["args"][0]
+            self.assertEqual(config.voice_profile, app.audio.voice.get())
+            self.assertEqual(config.mix_settings, {"volume": 0.73})
+            self.assertIsNone(config.music_path)
+
+    def test_refresh_keeps_action_status_for_loaded_legacy_job(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            app.controller.use_job(write_multi_scene_job(Path(temp)))
+            app.project.refresh()
+            app.status_text.set("Bản nghe thử đã tạo.")
+            app._refresh_buttons()
+            self.assertEqual(app.status_text.get(), "Bản nghe thử đã tạo.")
+
+    def test_job5_reopens_without_source_zip_and_restores_settings(self):
+        import tempfile
+        import shutil
+        from tools.studio_v2.state import save_state
+        from tools.control_plane.package_validation import validate_job5_package_root
+
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = Path(temp) / "ws"
+            job = workspace / "v2" / "jobs" / "bocap-hai-phien-ban"
+            source = Path(__file__).parent / "fixtures" / "scorpio-two-versions" / "package"
+            shutil.copytree(source, job)
+            app = self._app(workspace)
+            app.v2_session.open_workspace(job)
+            app._pipeline_mode = "v2"
+            app.v2_session.controller.state.steps["TIMING"].status = "RUNNING"
+            save_state(job, app.v2_session.controller.state)
+            app.audio.voice.set("saved-voice")
+            app.audio.volume.set(0.67)
+            app._save_gui_session()
+            app.v2_session._job = None
+            app.audio.voice.set("different-voice")
+            app.audio.volume.set(0.11)
+            app._pipeline_mode = "legacy"
+            app._resume_unfinished_job()
+            deadline = time.time() + 5
+            while time.time() < deadline and app._v2_importing:
+                app.update()
+                time.sleep(0.01)
+            self.assertEqual(app._pipeline_mode, "v2")
+            self.assertEqual(app.audio.voice.get(), "saved-voice")
+            self.assertAlmostEqual(app.audio.volume.get(), 0.67)
+            self.assertEqual(app.v2_session.controller.state.steps["TIMING"].status, "PENDING")
+            validate_job5_package_root(job, local_workspace=True)
+            self.assertIn("Job@5 · bocap-hai-phien-ban", app.project.job_choices())
+            app.pipeline._select("AUDIO")
+            self.assertEqual(str(app.pipeline.rerun_button.cget("state")), "normal")
+            with patch("tools.studio.app.threading.Thread") as worker:
+                app._run_all()
+            self.assertEqual(worker.call_args.kwargs["args"][1], "VOICE")
+            app._v2_running = False
+
+    def test_job5_close_waits_for_safe_stop(self):
+        import tempfile
+        from tools.control_plane.errors import ControlPlaneError
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            app._pipeline_mode = "v2"
+            app.v2_session._job = Path(temp) / "ws" / "v2" / "jobs" / "test-job"
+            app.audio.music.set("")
+            started = threading.Event()
+            finish_step = threading.Event()
+            def run(config, **kwargs):
+                started.set()
+                finish_step.wait(3)
+                raise ControlPlaneError(code="PIPELINE_CANCELLED", stage="TIMING",
+                                        message="Đã dừng an toàn.")
+            with patch.object(app.v2_session, "run", side_effect=run):
+                app._continue()
+                self.assertTrue(started.wait(2))
+                app._close_requested()
+                self.assertTrue(app.v2_session.cancel_event.is_set())
+                self.assertTrue(app.winfo_exists())
+                finish_step.set()
+                deadline = time.time() + 5
+                while time.time() < deadline and not app._closing:
+                    app.update()
+                    time.sleep(0.01)
+                self.assertTrue(app._closing)
+
+    def test_music_dropdown_selects_library_file_and_can_disable_music(self):
+        import tempfile
+        from tools.studio.views.audio_panel import NO_MUSIC
+
+        with tempfile.TemporaryDirectory() as temp:
+            library = Path(temp) / "assets" / "music"
+            library.mkdir(parents=True)
+            track = library / "comedy.mp3"
+            track.write_bytes(b"track")
+            (library / "notes.txt").write_text("not audio")
+            with patch("tools.studio.views.audio_panel.MUSIC_DIRECTORIES", (library,)):
+                app = self._app(Path(temp) / "ws")
+                self.assertIn("comedy.mp3", app.audio.music_picker.cget("values"))
+                self.assertNotIn("notes.txt", app.audio.music_picker.cget("values"))
+                app.audio.music_selection.set("comedy.mp3")
+                app.audio._select_music()
+                self.assertEqual(Path(app.audio.values()["music"]), track.resolve())
+                app.audio.music_selection.set(NO_MUSIC)
+                app.audio._select_music()
+                self.assertEqual(app.audio.values()["music"], "")
+
+    def test_music_audition_works_without_job_and_recovers_button(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            track = Path(temp) / "chosen.mp3"
+            track.write_bytes(b"track")
+            app.audio.music.set(str(track))
+            app.audio.volume.set(0.35)
+            self.assertIsNone(app._active_job_path())
+            with patch("tools.studio.app.threading.Thread") as worker:
+                app.audio._listen()
+                app.audio._listen()
+            self.assertEqual(worker.call_count, 1)
+            audition, source, volume = worker.call_args.kwargs["args"]
+            self.assertEqual(audition, app.v2_session.workspace_root / ".runtime" / "music-audition")
+            self.assertEqual(source, track)
+            self.assertEqual(volume, 0.35)
+            preview = audition / ".runtime" / "audio-preview.wav"
+            app.events.put(("listen_ready", (preview,)))
+            with patch.object(app, "_play_preview") as play:
+                app._pump()
+            play.assert_called_once_with(preview)
+            self.assertFalse(app._listen_running)
+            self.assertEqual(str(app.audio.listen_button.cget("state")), "normal")
+
+    def test_job5_check_reports_real_failure_and_keeps_status(self):
+        import tempfile
+        from tools.studio.preflight import Check
+
+        with tempfile.TemporaryDirectory() as temp:
+            app = self._app(Path(temp) / "ws")
+            app._pipeline_mode = "v2"
+            app.v2_session._job = Path(temp) / "ws" / "v2" / "jobs" / "test-job"
+            failure = Check("PACKAGE", "Gói Job@5", False, "Narration sai", "Nhập lại gói.")
+            with patch("tools.studio.app.Job5PreflightChecker.run", return_value=[failure]), \
+                 patch("tools.studio.app.messagebox.showwarning") as warning:
+                app._check()
+                deadline = time.time() + 5
+                while time.time() < deadline and app._environment_refresh_running:
+                    app.update()
+                    time.sleep(0.01)
+                self.assertTrue(warning.called)
+                self.assertIn("Nhập lại gói", warning.call_args.args[1])
+                app._refresh_buttons()
+                self.assertIn("phát hiện lỗi", app.status_text.get())
 
 
 def _all_text(widget) -> str:

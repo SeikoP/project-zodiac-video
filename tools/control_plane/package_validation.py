@@ -163,7 +163,7 @@ def _validate_narration(root: Path, ir: dict[str, Any]) -> None:
         )
 
 
-def validate_job5_package_root(root: Path) -> dict[str, Any]:
+def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> dict[str, Any]:
     """Validate the exact Job@5 package boundary before importing it into a workspace."""
     source = Path(root).expanduser()
     if source.is_symlink():
@@ -196,14 +196,14 @@ def validate_job5_package_root(root: Path) -> dict[str, Any]:
                 "Job@5 package must not contain symbolic links",
                 detail={"path": entry.name},
             )
-        if entry.name in _ALLOWED_ROOT_FILES:
+        if entry.name in _ALLOWED_ROOT_FILES or (local_workspace and entry.name == "voice.wav"):
             if not entry.is_file():
                 _fail(
                     "PACKAGE_CONTENT_INVALID",
                     "Job@5 root file has an unexpected type",
                     detail={"path": entry.name},
                 )
-        elif entry.name in _ALLOWED_ROOT_DIRECTORIES:
+        elif entry.name in _ALLOWED_ROOT_DIRECTORIES or (local_workspace and entry.name in {".runtime", "out"}):
             if not entry.is_dir():
                 _fail(
                     "PACKAGE_CONTENT_INVALID",

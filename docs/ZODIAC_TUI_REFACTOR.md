@@ -1,4 +1,7 @@
-# Zodiac TUI Control Plane
+# Zodiac TUI Control Plane (archived)
+
+The Textual TUI was removed on 2026-10-09. Use `uv run zodiac` or
+`python tools/zodiac_gui.py` to launch the GUI. This document records the old design.
 
 Status: **Phase 1 implemented alongside the existing Tkinter GUI**
 

@@ -2,6 +2,3 @@
 faster-whisper>=1,<2
 # faster-whisper 1.2.1 passes metadata_errors to av.open; PyAV 19 removed it.
 av>=11,<19
-
-# Terminal control plane. Remotion Studio remains the visual workspace.
-textual>=1

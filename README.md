@@ -43,11 +43,23 @@ narration, publish references, and exact asset references before writing the
 workspace. Measured timing lives at `.runtime/timing.json`; it is created or
 attached after import.
 
-Use the Textual app to import and run Job@5 packages:
+Use Zodiac Studio GUI to import and run Job@5 packages:
 
 ```bash
 uv run zodiac
 ```
+
+Or launch directly with `python tools/zodiac_gui.py`. The Textual TUI has been removed.
+
+For Job@5, **Tiếp tục** reuses validated artifacts, while **Chạy toàn bộ**
+regenerates voice and every following stage. Select a pipeline row and use
+**Chạy lại từ bước** to regenerate that stage and its downstream outputs.
+**Dừng** waits for the current stage to finish, saves progress, and stops before
+the next stage; closing the window during a run follows the same safe stop.
+The last job and its voice/music settings reopen automatically, and imported
+Job@5 workspaces are also available in the job picker without the source ZIP.
+Use **Kiểm tra** to validate the current package and check VieNeu, alignment,
+Renderer 2, Node/npm, FFmpeg and ffprobe, with suggested fixes for failures.
 
 The direct compiler uses the same canonical timing path:
 

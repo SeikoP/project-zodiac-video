@@ -9,6 +9,7 @@ import shutil
 import tempfile
 from datetime import datetime, timezone
 import time
+from threading import Event
 import uuid
 from typing import Any, Callable
 
@@ -26,6 +27,7 @@ from .pipeline import (
     PACKAGE,
     PLAN,
     RENDER,
+    RUNNING,
     STEP_ORDER,
     TIMING,
     VOICE,
@@ -154,6 +156,7 @@ def _reuse_file(
     *,
     input_hash: str,
     path: Path,
+    force: bool = False,
 ) -> bool:
     state = controller.state.steps[step]
     decision = graph.decide(step.casefold(), input_hash)
@@ -174,7 +177,7 @@ def _reuse_file(
             provenance={"cache_reason": "MIGRATED_STATE"},
         )
         decision = graph.decide(step.casefold(), input_hash)
-    if decision.reusable and (
+    if not force and decision.reusable and (
         path.resolve()
         == (controller.workspace / graph.records[step.casefold()]["path"]).resolve()
     ):
@@ -188,6 +191,7 @@ def _reuse_file(
         save_state(controller.workspace, controller.state)
         return True
     _reset_from(controller, step)
+    controller.state.steps[step].status = RUNNING
     save_state(controller.workspace, controller.state)
     return False
 
@@ -298,6 +302,7 @@ def _render_segmented(
     renderer_hash: str,
     target_seconds: float,
     render_fingerprint: str,
+    force: bool = False,
 ) -> tuple[Path, dict[str, str], str]:
     props = _read_json(props_path, code="RENDERER_PROPS_INVALID", stage="RENDER")
     dependencies: dict[str, str] = {}
@@ -342,7 +347,7 @@ def _render_segmented(
         frames = int(segment["end_frame"]) - int(segment["start_frame"])
         graph.refresh()
         decision = graph.decide(artifact_id, fingerprint)
-        if not decision.reusable:
+        if force or not decision.reusable:
             asset_dependencies = {
                 f"asset:{asset_id}": hashlib.sha256(
                     json.dumps(
@@ -514,9 +519,50 @@ class StudioV2Executor:
         self.controller.state.mark_failed(step, error=error.to_dict())
         save_state(self.controller.workspace, self.controller.state)
 
-    def run(self, config: ExecutorConfig):
+    def _begin_step(self, step: str, cancel_event: Event | None) -> None:
+        if cancel_event is not None and cancel_event.is_set():
+            raise ControlPlaneError(
+                code="PIPELINE_CANCELLED", stage=step,
+                message="Đã dừng an toàn sau bước trước. Có thể tiếp tục.",
+            )
+        if step in (VOICE, TIMING):
+            state = self.controller.state.steps[step]
+            state.status = RUNNING
+            state.error = None
+            state.reused = False
+            state.cache_reason = None
+            save_state(self.controller.workspace, self.controller.state)
+
+    def run(self, config: ExecutorConfig, *, rerun_from: str | None = None,
+            cancel_event: Event | None = None):
         controller = self.controller
         workspace = controller.workspace
+        request_path = workspace / ".runtime" / "rerun-request.json"
+        if rerun_from is None and request_path.exists():
+            try:
+                rerun_from = json.loads(request_path.read_text(encoding="utf-8"))["from"]
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                raise ControlPlaneError(code="RERUN_REQUEST_INVALID", stage="PACKAGE",
+                                        message="Không đọc được yêu cầu chạy lại đã lưu.") from exc
+        if rerun_from is not None and rerun_from not in STEP_ORDER[1:]:
+            raise ValueError(f"Cannot rerun stage: {rerun_from}")
+        forced = set(STEP_ORDER[STEP_ORDER.index(rerun_from):]) if rerun_from else set()
+        def complete_forced_stage(step: str | None = None) -> None:
+            if step is not None:
+                forced.discard(step)
+            remaining = [name for name in STEP_ORDER if name in forced]
+            if remaining:
+                request_path.parent.mkdir(parents=True, exist_ok=True)
+                temp = request_path.with_suffix(".json.tmp")
+                temp.write_text(json.dumps({"from": remaining[0]}), encoding="utf-8")
+                os.replace(temp, request_path)
+            else:
+                request_path.unlink(missing_ok=True)
+
+        if forced:
+            complete_forced_stage()
+            _reset_from(controller, rerun_from)
+            save_state(workspace, controller.state)
         graph = ArtifactGraph(workspace)
         run_id = uuid.uuid4().hex
         if controller.state.steps[PACKAGE].status != DONE:
@@ -541,6 +587,7 @@ class StudioV2Executor:
             stage="PACKAGE",
         )
 
+        self._begin_step(VOICE, cancel_event)
         try:
             stage_started = time.perf_counter()
             voice = self.voice_service(
@@ -549,6 +596,7 @@ class StudioV2Executor:
                 voice_profile=config.voice_profile,
                 tts_settings=config.tts_settings,
                 engine_version=config.tts_engine_version,
+                **({"force": True} if VOICE in forced else {}),
             )
             controller.state.mark_done(
                 VOICE,
@@ -591,6 +639,8 @@ class StudioV2Executor:
             self._mark_failed(VOICE, exc)
             raise
 
+        complete_forced_stage(VOICE)
+        self._begin_step(TIMING, cancel_event)
         try:
             stage_started = time.perf_counter()
             timing = self.timing_service(
@@ -599,6 +649,7 @@ class StudioV2Executor:
                 voice,
                 aligner_settings=config.aligner_settings,
                 aligner_version=config.aligner_version,
+                **({"force": True} if TIMING in forced else {}),
             )
             controller.state.mark_done(
                 TIMING,
@@ -640,6 +691,8 @@ class StudioV2Executor:
             self._mark_failed(TIMING, exc)
             raise
 
+        complete_forced_stage(TIMING)
+        self._begin_step(PLAN, cancel_event)
         plan_path = workspace / ".runtime" / "render-plan.json"
         plan_input = plan_key(
             _sha256_file(workspace / "production.ir.json"),
@@ -654,6 +707,7 @@ class StudioV2Executor:
             PLAN,
             input_hash=plan_input,
             path=plan_path,
+            force=PLAN in forced,
         ):
             try:
                 plan_path = controller.build_plan()
@@ -693,6 +747,8 @@ class StudioV2Executor:
             profile={"compiler_version": config.compiler_version, "resource": resource_profile},
         )
 
+        complete_forced_stage(PLAN)
+        self._begin_step(RENDER, cancel_event)
         rendered_path = workspace / ".runtime" / "rendered-v2.mp4"
         render_input = render_key(
             plan_hash,
@@ -707,6 +763,7 @@ class StudioV2Executor:
             RENDER,
             input_hash=render_input,
             path=rendered_path,
+            force=RENDER in forced,
         ):
             try:
                 props = controller.prepare_renderer()
@@ -720,6 +777,7 @@ class StudioV2Executor:
                     renderer_hash=config.renderer_hash,
                     target_seconds=config.segment_target_seconds,
                     render_fingerprint=render_input,
+                    force=RENDER in forced,
                 )
                 _require_output(produced, stage="RENDER", code="RENDER_FAILED")
                 if produced.resolve() != rendered_path.resolve():
@@ -773,6 +831,8 @@ class StudioV2Executor:
             },
         )
 
+        complete_forced_stage(RENDER)
+        self._begin_step(AUDIO, cancel_event)
         music_path = Path(config.music_path).resolve() if config.music_path is not None else None
         if music_path is not None and not music_path.is_file():
             error = ControlPlaneError(
@@ -798,6 +858,7 @@ class StudioV2Executor:
             AUDIO,
             input_hash=audio_input,
             path=audio_path,
+            force=AUDIO in forced,
         ):
             try:
                 produced = Path(
@@ -856,6 +917,8 @@ class StudioV2Executor:
             },
         )
 
+        complete_forced_stage(AUDIO)
+        self._begin_step(OUTPUT, cancel_event)
         output_path = workspace / "out" / "zodiac-story.mp4"
         output_input = audio_hash
         stage_started = time.perf_counter()
@@ -865,6 +928,7 @@ class StudioV2Executor:
             OUTPUT,
             input_hash=output_input,
             path=output_path,
+            force=OUTPUT in forced,
         ):
             try:
                 produced = Path(
@@ -917,4 +981,5 @@ class StudioV2Executor:
             profile={},
         )
 
+        complete_forced_stage(OUTPUT)
         return controller.state
