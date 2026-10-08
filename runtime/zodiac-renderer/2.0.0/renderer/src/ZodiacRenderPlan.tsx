@@ -20,18 +20,22 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({scenes, assets}) =>
               fontSize: 48,
             }}
           >
-            {assets[event.asset_after]?.src ? (
-              <Img
-                src={assets[event.asset_after].src}
-                data-event-id={event.event_id}
-                data-asset-id={event.asset_after}
-                style={{width: 520, height: 520, objectFit: "contain"}}
-              />
-            ) : (
-              <div data-event-id={event.event_id} data-asset-id={event.asset_after}>
-                {event.target}
-              </div>
-            )}
+            {(() => {
+              const asset = assets[event.asset_after];
+              const src = asset?.src;
+              return src ? (
+                <Img
+                  src={src}
+                  data-event-id={event.event_id}
+                  data-asset-id={event.asset_after}
+                  style={{width: 520, height: 520, objectFit: "contain"}}
+                />
+              ) : (
+                <div data-event-id={event.event_id} data-asset-id={event.asset_after}>
+                  {event.target}
+                </div>
+              );
+            })()}
           </AbsoluteFill>
         </Sequence>
       )),
