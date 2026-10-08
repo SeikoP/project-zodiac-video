@@ -136,9 +136,11 @@ class StudioV2VoiceTests(unittest.TestCase):
                 generator=fake,
             )
             narration.write_text("xin chao\nbo cap thay doi\n", encoding="utf-8")
+            changed = ir_document()
+            changed["scenes"][1]["voice"] = "bo cap thay doi"
             regenerated = ensure_voice_artifact(
                 root,
-                ir_document(),
+                changed,
                 voice_profile="Hai Dang",
                 tts_settings={"mode": "v3turbo"},
                 engine_version="vieneu-test-1",
