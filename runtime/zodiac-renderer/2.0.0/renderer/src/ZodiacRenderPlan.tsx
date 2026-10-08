@@ -108,8 +108,14 @@ const SceneLayer: React.FC<{
             : "other";
           // Job@5 already resolves voice anchors to event frames. Only animate the
           // explicitly authored event target: never guess narrative focus from text.
+          const focusTargets = new Set([
+            entity.id,
+            ...(scene.spatial_bindings ?? [])
+              .filter((item) => item.anchor === entity.id && (item.relation === "held_by" || item.relation === "emitted_by"))
+              .map((item) => item.entity),
+          ]);
           const active = scene.events.find(
-            (item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame,
+            (item) => focusTargets.has(item.target) && frame >= item.start_frame && frame < item.end_frame,
           );
           const local = active ? frame - active.start_frame : 0;
           const structural = entity.id.startsWith("env__");
