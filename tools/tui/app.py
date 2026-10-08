@@ -1525,7 +1525,6 @@ class ZodiacTui(App):
         rerun = RENDER_VIDEO if self._final_pipeline_settled() else None
         self._start_pipeline(rerun=rerun)
 
-    @work(thread=True, group="v2-pipeline", exclusive=True)
     def _v2_process_line(self, line: str, channel: str) -> None:
         """Receive live child output on the UI thread."""
         line = str(line).strip()
@@ -1541,6 +1540,7 @@ class ZodiacTui(App):
         self._write_log(f"[VOICE / {channel}] {line}", error=channel == "stderr")
         self._refresh_view()
 
+    @work(thread=True, group="v2-pipeline", exclusive=True)
     def _run_v2_full(self) -> None:
         try:
             voice, align_model, volume = self.call_from_thread(self._pipeline_settings)
