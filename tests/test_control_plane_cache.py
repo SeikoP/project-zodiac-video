@@ -44,10 +44,17 @@ class ControlPlaneCacheKeyTests(unittest.TestCase):
     def test_music_change_only_changes_audio_key(self):
         render = render_key("plan", "assets", "2.0.0", "renderer")
         self.assertNotEqual(
-            audio_key(render, "music-a", {"volume": 0.2}),
-            audio_key(render, "music-b", {"volume": 0.2}),
+            audio_key(render, "voice-a", "music-a", {"volume": 0.2}),
+            audio_key(render, "voice-a", "music-b", {"volume": 0.2}),
         )
         self.assertEqual(render, render_key("plan", "assets", "2.0.0", "renderer"))
+
+    def test_voice_change_invalidates_audio_even_when_visual_render_is_same(self):
+        render = render_key("plan", "assets", "2.0.0", "renderer")
+        self.assertNotEqual(
+            audio_key(render, "voice-a", "music-a", {"volume": 0.2}),
+            audio_key(render, "voice-b", "music-a", {"volume": 0.2}),
+        )
 
     def test_all_keys_are_sha256_hex(self):
         keys = [
@@ -55,7 +62,7 @@ class ControlPlaneCacheKeyTests(unittest.TestCase):
             timing_key("v", "x", {}, "a"),
             plan_key("i", "t", "d", "c"),
             render_key("p", "a", "2", "h"),
-            audio_key("v", "m", {}),
+            audio_key("v", "voice", "m", {}),
         ]
         for value in keys:
             self.assertRegex(value, r"^[0-9a-f]{64}$")
