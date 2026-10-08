@@ -28,7 +28,7 @@ class StudioV2CacheScenarioTests(unittest.TestCase):
         self.timing = timing_key(self.voice, "narration", {}, "align-1")
         self.plan = plan_key("ir-a", self.timing, "design", "compiler-1")
         self.render = render_key(self.plan, "assets-a", "2.0.0", "renderer-a")
-        self.audio = audio_key(self.render, "music-a", {"volume": 0.2})
+        self.audio = audio_key(self.render, self.voice, "music-a", {"volume": 0.2})
         inputs = {
             PACKAGE: "package-a",
             VOICE: self.voice,
@@ -66,7 +66,7 @@ class StudioV2CacheScenarioTests(unittest.TestCase):
             self.assertEqual(self.state.steps[step].status, PENDING)
 
     def test_music_only_patch_reuses_through_render(self):
-        next_audio = audio_key(self.render, "music-b", {"volume": 0.2})
+        next_audio = audio_key(self.render, self.voice, "music-b", {"volume": 0.2})
         for step, value in (
             (VOICE, self.voice),
             (TIMING, self.timing),
