@@ -337,6 +337,10 @@ def compile_render_plan(
                  )),
                 "events": outputs,
             }
+        if scene.get("layout_contract"):
+            plan_scene["layout_contract"] = deepcopy(scene["layout_contract"])
+        if scene.get("render_density_budget"):
+            plan_scene["render_density_budget"] = deepcopy(scene["render_density_budget"])
         continuity_group = (scene.get("performance_context") or {}).get("continuity_group")
         if continuity_group:
             plan_scene["continuity_group"] = continuity_group
