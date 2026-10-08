@@ -8,16 +8,13 @@ import tempfile
 from typing import Any
 
 from tools.control_plane.cache import plan_key
-from tools.control_plane.contracts import (
-    canonical_contract_hash,
-    validate_contract_shape,
-)
 from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.package_io import extract_package_archive
+from tools.control_plane.package_validation import validate_job5_package_root
 from tools.control_plane.render_plan import validate_render_plan
 from tools.control_plane.timeline import compile_render_plan
 
-from .pipeline import DONE, PACKAGE, PLAN, TIMING, PipelineStateV2
+from .pipeline import PACKAGE, PLAN, PipelineStateV2
 from .runner import run_structured_command
 from .state import load_state, save_state
 
@@ -64,6 +61,8 @@ def _package_hash(root: Path) -> str:
         "production.ir.json",
         "design-token.json",
         "narration.txt",
+        "publish/publish.json",
+        "publish/publish-copy.txt",
     ):
         path = root / relative
         if path.is_file():
@@ -85,7 +84,15 @@ class StudioV2Controller:
         )
 
     def import_package(self, source: Path) -> Path:
-        source = Path(source).resolve()
+        source = Path(source).expanduser()
+        if source.is_symlink():
+            raise ControlPlaneError(
+                code="PACKAGE_CONTENT_INVALID",
+                stage="PACKAGE",
+                message="package source must not be a symbolic link",
+                detail={"path": str(source)},
+            )
+        source = source.resolve()
         if source.is_dir():
             return self._import_package_root(source, display_name=source.name)
         if source.is_file() and source.suffix.casefold() == ".zip":
@@ -106,49 +113,14 @@ class StudioV2Controller:
         )
 
     def _import_package_root(self, source: Path, *, display_name: str) -> Path:
-        manifest = _read_json(
-            source / "package-manifest.json",
-            code="PACKAGE_INVALID",
-            stage="PACKAGE",
-        )
-        issues = validate_contract_shape("zodiac-job-v5", manifest)
-        if issues:
-            raise ControlPlaneError(
-                code="PACKAGE_INVALID",
-                stage="PACKAGE",
-                message="package manifest does not match zodiac-job@5",
-                detail={"issues": [{"path": item.path, "message": item.message} for item in issues]},
-            )
-
-        expected_hash = canonical_contract_hash("authoring-ir-v1")
-        contract = manifest["contract"]
-        if contract["sha256"] != expected_hash:
-            raise ControlPlaneError(
-                code="PACKAGE_CONTRACT_MISMATCH",
-                stage="PACKAGE",
-                message="package authoring contract hash does not match canonical local contract",
-                detail={"expected": expected_hash, "actual": contract["sha256"]},
-            )
-        renderer = manifest["renderer"]
-        if renderer != {"id": "zodiac-renderer", "version": "2.0.0"}:
-            raise ControlPlaneError(
-                code="PACKAGE_RENDERER_MISMATCH",
-                stage="PACKAGE",
-                message="package requires an unsupported renderer",
-                detail={"renderer": renderer},
-            )
-
-        required = ("production.ir.json", "design-token.json", "narration.txt")
-        for relative in required:
-            if not (source / relative).is_file():
-                raise ControlPlaneError(
-                    code="PACKAGE_INVALID",
-                    stage="PACKAGE",
-                    message=f"package is missing {relative}",
-                    detail={"path": relative},
-                )
-
-        for relative in ("package-manifest.json", *required):
+        package = validate_job5_package_root(source)
+        manifest = package["manifest"]
+        for relative in (
+            "package-manifest.json",
+            "production.ir.json",
+            "design-token.json",
+            "narration.txt",
+        ):
             shutil.copy2(source / relative, self.workspace / relative)
 
         target_assets = self.workspace / "assets"
@@ -158,19 +130,10 @@ class StudioV2Controller:
         if source_assets.is_dir():
             shutil.copytree(source_assets, target_assets)
 
-        runtime = self.workspace / ".runtime"
-        runtime.mkdir(parents=True, exist_ok=True)
-        source_timing = source / "timing.json"
-        if source_timing.is_file():
-            timing_target = runtime / "timing.json"
-            shutil.copy2(source_timing, timing_target)
-            timing_hash = _sha256_file(timing_target)
-            self.state.mark_done(
-                TIMING,
-                input_hash=timing_hash,
-                output_hash=timing_hash,
-                reused=True,
-            )
+        target_publish = self.workspace / "publish"
+        if target_publish.exists():
+            shutil.rmtree(target_publish)
+        shutil.copytree(source / "publish", target_publish)
 
         package_hash = _package_hash(self.workspace)
         producer_version = str(manifest["producer"]["version"])

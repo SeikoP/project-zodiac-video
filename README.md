@@ -1,8 +1,13 @@
 # Zodiac Video local runner
 
-Local runtime for current **zodiac-video-pipeline production contract v2.0**.
+Local runtime for **zodiac-video-pipeline v2.1**, whose default handoff is
+`zodiac-job@5` for `zodiac-renderer@2.0.0`.
 
-The plugin owns evidence, story, narration, visual compile, `design.md`, `production.json` and video-specific SVG assets. This repository owns local voice generation/attachment, measured word timing, Remotion preview/render, background-music audition and final audio mix.
+For Job@5, the plugin owns evidence, story, narration, semantic Authoring IR,
+design tokens and referenced assets. This repository owns local voice
+generation/attachment, measured timing, render-plan compilation, rendering and
+final audio mix. Legacy Job@2–4 packages remain supported through the older
+`tools/zodiac_local.py` workflow.
 
 ## Requirements
 
@@ -18,9 +23,44 @@ python -m pip install -r requirements-local.txt
 
 The first alignment run may download the selected Whisper model. Default alignment is `small` on CPU/int8.
 
-## Accepted package
+## Current package: Job@5
 
-New exports use **thin package v4**. A v4 ZIP is creative data only:
+The Job@5 ZIP contains exactly:
+
+```text
+package-manifest.json
+production.ir.json
+design-token.json
+narration.txt
+assets/**                 # only assets referenced by production.ir.json
+publish/publish.json
+publish/publish-copy.txt
+```
+
+The incoming ZIP must not contain timing or other local runtime state. Import
+checks the package schema, canonical contract hash, renderer version, ordered
+narration, publish references, and exact asset references before writing the
+workspace. Measured timing lives at `.runtime/timing.json`; it is created or
+attached after import.
+
+Use the Textual app to import and run Job@5 packages:
+
+```bash
+uv run zodiac
+```
+
+The direct compiler uses the same canonical timing path:
+
+```bash
+zodiac-control build "/path/to/imported-job"
+```
+
+### Legacy Job@2–4 package compatibility
+
+The legacy runner below accepts older Job@2–4 exports. New plugin exports use
+Job@5.
+
+A thin package v4 ZIP is creative data only:
 
 ```text
 package-manifest.json     # zodiac-job@4, runtime id/version only
@@ -48,17 +88,19 @@ package. After local TTS, measured alignment, runtime checks, video and cover
 exist, Studio writes `out/FINAL_VALIDATION.json` and includes it in the publish
 bundle.
 
-Compatibility remains unchanged:
+Compatibility:
 - legacy v2 ZIPs without `package-manifest.json` continue to use package-local `renderer/`;
 - `zodiac-job@3` remains accepted with its existing runtime/design hashes and
   semantic `FINAL_VALIDATION.json` receipt;
-- new plugin exports default to `zodiac-job@4`.
+- `zodiac-job@4` remains accepted for older plugin exports;
+- current plugin v2.1 exports default to `zodiac-job@5`.
 
 Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
-See `docs/THIN_PACKAGE_V4_SPEC.md` for the current boundary and
-`docs/THIN_PACKAGE_V3_SPEC.md` for the compatibility contract.
+See `docs/THIN_PACKAGE_V4_SPEC.md` and `docs/THIN_PACKAGE_V3_SPEC.md` for the
+legacy compatibility contracts. The Job@5 package contract is defined by the
+`zodiac-video-pipeline` v2.1 handoff.
 
-## Quick start
+## Legacy quick start (Job@2–4)
 
 Import:
 
@@ -391,7 +433,7 @@ FFmpeg/npm calls pass validated executables and arguments as argv with `shell=Fa
 Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.
 
 
-## Runtime 1.20.0 — production
+## Legacy Runtime 1.20.0 — production
 
 New jobs use `zodiac-remotion@1.20.0`. It keeps the 1.19.1 deterministic animation/caption behavior and adds scene-level layer safety: runtime evaluates the declared active state sequence, blocks materially overlapping visible entities that share the same layer, and uses deterministic z-index ordering.
 
