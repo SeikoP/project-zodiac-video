@@ -49,7 +49,7 @@ def load_resource_profile(workspace: Path) -> dict[str, Any]:
             "tts_slots": 1,
             "whisper_workers": 1,
             "whisper_cpu_threads": min(4, logical_cpu),
-            "remotion_concurrency": min(2, logical_cpu),
+            "remotion_concurrency": min(4, logical_cpu),
         }
         path.parent.mkdir(parents=True, exist_ok=True)
         temp = path.with_suffix(".json.tmp")
