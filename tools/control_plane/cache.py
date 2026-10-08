@@ -95,6 +95,7 @@ def render_key(
 
 def audio_key(
     video_hash: str,
+    voice_hash: str,
     music_hash: str,
     mix_settings: dict[str, Any],
 ) -> str:
@@ -102,6 +103,7 @@ def audio_key(
         "audio",
         {
             "video_hash": video_hash,
+            "voice_hash": voice_hash,
             "music_hash": music_hash,
             "mix_settings": mix_settings,
         },
