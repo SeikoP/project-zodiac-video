@@ -16,7 +16,7 @@ export const ZodiacCover: React.FC<RendererV2Props> = ({scenes, assets, presenta
   const visualsResolved = visuals.map((visual) => {
     const entity = scene.entities?.find((item) => item.id === visual.entity_id);
     const state = entity?.states[visual.state_id];
-    const asset = state?.asset && assets[state.asset];
+    const asset = state?.asset ? assets[state.asset] : undefined;
     if (!entity || !state || !asset?.src) {
       throw new Error(`COVER_VISUAL_MISSING: ${visual.entity_id}.${visual.state_id}`);
     }
