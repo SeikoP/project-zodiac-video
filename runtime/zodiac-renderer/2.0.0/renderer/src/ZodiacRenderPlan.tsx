@@ -99,10 +99,11 @@ const SceneLayer: React.FC<{
           const src = asset?.src;
           if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
-          const relation = (scene.spatial_bindings ?? []).find((binding) => binding.entity === entity.id)?.relation;
+          const binding = (scene.spatial_bindings ?? []).find((item) => item.entity === entity.id);
+          const relation = binding?.relation;
           const role = entity.id === "story_effect" || relation === "emitted_by"
             ? "effect"
-            : entity.id === "story_prop" || relation === "held_by" || relation === "on_surface"
+            : entity.id === "story_prop" || Boolean(binding)
             ? "prop"
             : "other";
           const active = scene.events.find((item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame);
