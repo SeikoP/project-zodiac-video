@@ -129,6 +129,27 @@ class PackageIoTests(unittest.TestCase):
                 extract_package_archive(archive, root / "out")
             self.assertEqual(caught.exception.code, "PACKAGE_ARCHIVE_UNSAFE")
 
+    def test_rejects_malformed_deflate_stream(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            archive = self._zip(
+                root,
+                [
+                    ("package-manifest.json", b"{}"),
+                    ("assets/repeated.txt", b"A" * 20_000),
+                ],
+            )
+            with zipfile.ZipFile(archive) as handle:
+                info = handle.getinfo("assets/repeated.txt")
+            data_offset = info.header_offset + 30 + len(info.filename.encode()) + len(info.extra)
+            payload = bytearray(archive.read_bytes())
+            payload[data_offset] = 0
+            archive.write_bytes(payload)
+
+            with self.assertRaises(ControlPlaneError) as caught:
+                extract_package_archive(archive, root / "out")
+            self.assertEqual(caught.exception.code, "PACKAGE_ARCHIVE_UNSAFE")
+
     def test_rejects_too_many_archive_entries(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

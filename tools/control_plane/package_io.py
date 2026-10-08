@@ -7,6 +7,7 @@ import stat
 import tempfile
 from pathlib import Path, PurePosixPath
 import zipfile
+import zlib
 
 from .errors import ControlPlaneError
 
@@ -216,7 +217,15 @@ def extract_package_archive(archive: Path, destination: Path) -> Path:
         return destination
     except ControlPlaneError:
         raise
-    except (OSError, RuntimeError, zipfile.BadZipFile, EOFError, NotImplementedError, ValueError) as exc:
+    except (
+        OSError,
+        RuntimeError,
+        zipfile.BadZipFile,
+        EOFError,
+        NotImplementedError,
+        ValueError,
+        zlib.error,
+    ) as exc:
         raise _unsafe("cannot safely extract package archive", detail={"error": str(exc)}) from exc
     finally:
         if staging is not None:
