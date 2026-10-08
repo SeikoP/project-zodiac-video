@@ -264,6 +264,12 @@
               "maximum": 2
             }
           }
+        },
+        "spatial_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spatial_binding"
+          }
         }
       }
     },
@@ -371,6 +377,40 @@
         },
         "effect_zone": {
           "$ref": "#/$defs/zone"
+        }
+      }
+    },
+    "spatial_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entity",
+        "anchor",
+        "relation"
+      ],
+      "properties": {
+        "entity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "anchor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "near",
+            "held_by",
+            "on_surface",
+            "emitted_by",
+            "points_to"
+          ]
+        },
+        "max_distance_px": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1200
         }
       }
     }
