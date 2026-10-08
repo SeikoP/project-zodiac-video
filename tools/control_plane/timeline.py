@@ -57,6 +57,52 @@ def _caption_rows(
     return rows
 
 
+def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], *, fps: int) -> list[dict[str, Any]]:
+    """Map authored semantic phrase boundaries onto *measured* timing caption spans.
+
+    The handoff timestamps are advisory (TTS has not yet run). Only measured
+    timing determines runtime frames. Each measured caption may contain several
+    words; interpolate inside it, never use a one-frame duration hint.
+    """
+    import re
+
+    def words(text: str) -> list[str]:
+        return re.findall(r"\\w+", text.casefold(), flags=re.UNICODE)
+
+    raw = timing_scene.get("captions", [])
+    if not raw:
+        raise ControlPlaneError(code="CAPTION_TIMING_MISSING", stage="PLAN",
+            message="measured captions are required for semantic caption alignment", scene_id=scene["id"])
+    tokens: list[tuple[str, float, float]] = []
+    for item in raw:
+        parts = words(str(item.get("text") or ""))
+        if not parts:
+            continue
+        a = float(item.get("startMs", item.get("timestampMs", 0)))
+        b = float(item.get("endMs", a))
+        if b <= a:
+            raise ControlPlaneError(code="CAPTION_TIMING_INVALID", stage="PLAN",
+                message="measured caption duration must be positive", scene_id=scene["id"])
+        for i, token in enumerate(parts):
+            tokens.append((token, a + (b - a) * i / len(parts), a + (b - a) * (i + 1) / len(parts)))
+    segments = scene["caption_segments"]
+    wanted = [w for segment in segments for w in words(segment["text"])]
+    if wanted != [token[0] for token in tokens]:
+        raise ControlPlaneError(code="CAPTION_ALIGNMENT_MISMATCH", stage="PLAN",
+            message="authored caption phrases do not match measured narration tokens", scene_id=scene["id"],
+            detail={"expected_words": len(wanted), "measured_words": len(tokens)})
+    rows: list[dict[str, Any]] = []
+    offset = 0
+    for segment in segments:
+        length = len(words(segment["text"]))
+        first, last = tokens[offset], tokens[offset + length - 1]
+        start = round(first[1] * fps / 1000)
+        end = max(start + 1, round(last[2] * fps / 1000))
+        rows.append({"text": segment["text"], "start_frame": start, "end_frame": end})
+        offset += length
+    return rows
+
+
 def _presentation(design_token: dict[str, Any]) -> dict[str, Any]:
     palette = design_token.get("palette_roles")
     if not isinstance(palette, dict):
@@ -285,11 +331,10 @@ def compile_render_plan(
                 "duration_frames": executable_duration,
                 "measured_duration_frames": measured_duration,
                 "entities": deepcopy(scene["entities"]),
-                "captions": _caption_rows(
-                    timing_scene,
-                    fps=fps,
-                    scene_start=scene_start,
-                ),
+                "captions": (_semantic_caption_rows(scene, timing_scene, fps=fps)
+                 if scene.get("caption_segments") else _caption_rows(
+                    timing_scene, fps=fps, scene_start=scene_start,
+                 )),
                 "events": outputs,
             }
         continuity_group = (scene.get("performance_context") or {}).get("continuity_group")
