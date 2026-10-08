@@ -26,6 +26,15 @@ def timing_scene(words):
 
 
 class TimelineAnchorTests(unittest.TestCase):
+    def test_scene_start_trigger_resolves_to_measured_scene_start(self):
+        scene = {"id": "S01", "voice": "Xin chào"}
+        frame = resolve_voice_anchor(
+            scene,
+            timing_scene(["Xin", "chào"]),
+            {"type": "scene_start"},
+        )
+        self.assertEqual(frame, 48)
+
     def test_resolves_unique_phrase_to_measured_frame(self):
         scene = {"id": "S01", "voice": "Bọ Cạp bắt đầu mở lòng"}
         frame = resolve_voice_anchor(
