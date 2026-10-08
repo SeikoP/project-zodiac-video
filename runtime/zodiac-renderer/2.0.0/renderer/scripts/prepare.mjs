@@ -60,8 +60,8 @@ const transformedBounds = (transform) => {
 export const validateSceneLayout = (plan) => {
   for (const scene of plan.scenes) {
     const layout = scene.layout_contract;
-    if (!layout) continue; // Legacy render plans use their original layout.
-    const caption = layout.caption_safe_zone;
+    if (!layout && !(scene.spatial_bindings?.length)) continue; // Only legacy plans without spatial intent bypass spatial validation.
+    const caption = layout?.caption_safe_zone;
     const sceneEntities = new Map((scene.entities ?? []).map(e => [e.id, e]));
     const bindingEntities = new Set();
     for (const binding of scene.spatial_bindings ?? []) {
@@ -93,7 +93,7 @@ export const validateSceneLayout = (plan) => {
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
         const bounds = transformedBounds(state.transform);
-        if (rectsOverlap(caption, bounds)) {
+        if (caption && rectsOverlap(caption, bounds)) {
           throw new Error(`LAYOUT_OVERLAP scene=${scene.id} entity=${entity.id} state=${name} caption_safe_zone`);
         }
       }
