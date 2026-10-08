@@ -387,6 +387,8 @@ jobs:
           cp ../../../../tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-semantic-v2/.runtime/render-plan.json
           cp ../../../../tests/fixtures/scorpio-two-versions/package/assets/char-scorpio.svg /tmp/zodiac-semantic-v2/assets/char-scorpio.svg
           node scripts/prepare.mjs /tmp/zodiac-semantic-v2
+      - name: Render semantic effect event lifecycle frames
+        run: node scripts/smoke-semantic-motion.mjs
       - name: Render actual golden still using 2.0.2
         run: |
           npx remotion still src/index.ts ZodiacRenderPlan /tmp/zodiac-semantic-v2/frame.png --props=/tmp/zodiac-semantic-v2/.runtime/renderer-v2-props.json --frame=38
