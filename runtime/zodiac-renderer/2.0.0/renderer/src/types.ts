@@ -90,7 +90,10 @@ export type RenderPlanPresentation = {
   };
 };
 
+export type CoverPublish = {cover?: {source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
+
 export type RendererV2Props = {
+  publish?: CoverPublish;
   contract: "zodiac-render-plan@1";
   fps: number;
   video: {width: number; height: number};
