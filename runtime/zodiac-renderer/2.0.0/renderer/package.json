@@ -7,7 +7,8 @@
     "typecheck": "tsc --noEmit",
     "prepare:renderer": "node scripts/prepare.mjs",
     "preview:faithful": "node scripts/preview.mjs",
-    "cover:render": "node scripts/render-cover.mjs"
+    "cover:render": "node scripts/render-cover.mjs",
+    "audit:payload": "node scripts/audit-payload.mjs"
   },
   "engines": {
     "node": ">=22"
