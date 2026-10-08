@@ -1,10 +1,12 @@
 import React from "react";
 import {AbsoluteFill, Img} from "remotion";
 import type {RendererV2Props} from "./types";
+import {useVerifiedCaptionFont} from "./ZodiacRenderPlan";
 
 // Job@5 cover consumes the same hydrated SVG assets, caption font and
 // authored entity state as the video. Never generate an AI image here.
 export const ZodiacCover: React.FC<RendererV2Props> = ({scenes, assets, presentation = {}, publish}) => {
+  useVerifiedCaptionFont(presentation);
   const cover = publish?.cover;
   if (!cover) throw new Error("COVER_METADATA_MISSING: publish.cover");
   const scene = scenes.find((item) => item.id === cover.source_scene_id);
