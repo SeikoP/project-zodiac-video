@@ -33,3 +33,10 @@ test("renderer 2 types require resolved asset ids", async () => {
   assert.match(source, /asset_before:\s*string/);
   assert.match(source, /asset_after:\s*string/);
 });
+
+
+test("renderer 2 draws the resolved asset_after directly", async () => {
+  const source = await read("../src/ZodiacRenderPlan.tsx");
+  assert.match(source, /<Img/);
+  assert.match(source, /assets\[event\.asset_after\]/);
+});
