@@ -1,0 +1,8 @@
+{
+  "id": "zodiac-renderer",
+  "version": "2.0.2",
+  "input_contract": "zodiac-render-plan@1",
+  "immutable": true,
+  "renderer_contract": "executable-plan-only",
+  "notes": "Semantic event-local props/effects motion; old runtime snapshots remain unchanged"
+}

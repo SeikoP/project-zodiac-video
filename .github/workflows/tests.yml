@@ -364,6 +364,36 @@ jobs:
       - name: Typecheck renderer 2.0.1
         run: npm run typecheck
 
+  renderer-v2-0-2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-renderer/2.0.2/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install renderer 2.0.2 dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test event-local motion and prior renderer boundaries
+        run: npm test
+      - name: Typecheck renderer 2.0.2
+        run: npm run typecheck
+      - name: Prepare golden render plan
+        run: |
+          mkdir -p /tmp/zodiac-semantic-v2/.runtime /tmp/zodiac-semantic-v2/assets
+          cp ../../../../tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-semantic-v2/.runtime/render-plan.json
+          cp ../../../../tests/fixtures/scorpio-two-versions/package/assets/char-scorpio.svg /tmp/zodiac-semantic-v2/assets/char-scorpio.svg
+          node scripts/prepare.mjs /tmp/zodiac-semantic-v2
+      - name: Render semantic effect event lifecycle frames
+        run: node scripts/smoke-semantic-motion.mjs
+      - name: Render actual golden still using 2.0.2
+        run: |
+          npx remotion still src/index.ts ZodiacRenderPlan /tmp/zodiac-semantic-v2/frame.png --props=/tmp/zodiac-semantic-v2/.runtime/renderer-v2-props.json --frame=38
+          file /tmp/zodiac-semantic-v2/frame.png | grep -q '1080 x 1920'
+
   renderer-v2-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
