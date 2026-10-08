@@ -155,6 +155,11 @@ class StudioV2ExecutorTests(unittest.TestCase):
             mix_settings={"volume": 0.2},
         )
 
+    def test_default_audio_assembly_does_not_cut_renderer_landing_tail(self):
+        source = (ROOT / "tools" / "studio_v2" / "executor.py").read_text(encoding="utf-8")
+        audio_block = source[source.index("def _default_audio_handler"):source.index("def _default_output_handler")]
+        self.assertNotIn("-shortest", audio_block)
+
     def test_clean_run_marks_all_stages_done_and_persists_state(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
