@@ -3598,6 +3598,7 @@ def run_tts_batch(
         "    if isinstance(audio, dict): audio = audio.get('path') or audio.get('name')\n"
         "    if not audio or not Path(str(audio)).is_file(): raise RuntimeError('VieNeu API không trả về file WAV: ' + str(audio))\n"
         "    shutil.copy2(audio, row['output'])\n"
+        "    print('VieNeu DONE:', row['scene_id'], flush=True)\n"
     )
     if vieneu_url:
         _emit_tts_log("Đang tạo giọng đọc qua VieNeu Gradio…")
