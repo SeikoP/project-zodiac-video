@@ -747,6 +747,20 @@ class StudioV2Executor:
             profile={"compiler_version": config.compiler_version, "resource": resource_profile},
         )
 
+        # Production gate: never treat ZIP validity as evidence of rendered visual
+        # parity. Evaluate the exact Authoring IR and executable render plan, even
+        # when the cached PLAN step is reused. Fail before expensive video render.
+        run_structured_command(
+            [
+                "node",
+                str(_ROOT / "runtime" / "zodiac-renderer" / "2.0.0"
+                    / "renderer" / "scripts" / "audit-payload.mjs"),
+                str(workspace),
+            ],
+            stage="PLAN",
+            fallback_code="RENDER_PLAN_PAYLOAD_MISMATCH",
+        )
+
         complete_forced_stage(PLAN)
         self._begin_step(RENDER, cancel_event)
         rendered_path = workspace / ".runtime" / "rendered-v2.mp4"
