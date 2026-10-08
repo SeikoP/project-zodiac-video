@@ -17,7 +17,7 @@ from tools.studio_v2.voice import ensure_voice_artifact
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_ROOT = ROOT / "tests" / "fixtures" / "scorpio-two-versions"
 PACKAGE = FIXTURE_ROOT / "package"
-TIMING = json.loads((FIXTURE_ROOT / "timing.json").read_text(encoding="utf-8"))
+TIMING_FIXTURE = json.loads((FIXTURE_ROOT / "timing.json").read_text(encoding="utf-8"))
 
 
 def write_pcm(path: Path, *, frames: int = 800) -> None:
@@ -47,7 +47,7 @@ class ScorpioCounters:
 
     def aligner(self, workspace, production, voice, settings):
         self.timing += 1
-        return copy.deepcopy(TIMING)
+        return copy.deepcopy(TIMING_FIXTURE)
 
     def render_handler(self, workspace, props_path, output_path):
         self.render += 1
