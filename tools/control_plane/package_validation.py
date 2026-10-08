@@ -298,7 +298,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     # lifecycle, asset taxonomy or authored spatial constraints are broken.
     producer_version = str(manifest.get("producer", {}).get("version", ""))
     import re
-    match = re.match(r"^(\\d+)\\.(\\d+)\\.(\\d+)(?:$|[-+])", producer_version)
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:$|[-+])", producer_version)
     if match and tuple(map(int, match.groups())) >= (2, 2, 3):
         semantic_errors = strict_errors(ir)
         if semantic_errors:
