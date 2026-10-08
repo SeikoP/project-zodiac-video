@@ -80,7 +80,7 @@ const SceneLayer: React.FC<{
     (item) => frame >= item.start_frame && frame < item.end_frame,
   );
   const captionStyle = presentation.caption ?? {};
-  const safe = captionStyle.safe_zone ?? {};
+  const safe = scene.layout_contract?.caption_safe_zone ?? captionStyle.safe_zone ?? {};
 
   return (
     <AbsoluteFill>
@@ -130,6 +130,11 @@ const SceneLayer: React.FC<{
             top: safe.y ?? 960,
             width: safe.width ?? 936,
             minHeight: safe.height ?? 160,
+            maxHeight: safe.height ?? 160,
+            overflow: "hidden",
+            lineHeight: 1.15,
+            overflowWrap: "normal",
+            wordBreak: "normal",
             fontFamily: presentation.caption?.font_family ?? "sans-serif",
             fontSize: presentation.caption?.font_size_px ?? 84,
             fontWeight: presentation.caption?.font_weight ?? 400,
