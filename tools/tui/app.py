@@ -1605,11 +1605,11 @@ class ZodiacTui(App):
     def _check_environment(self) -> None:
         try:
             if self._pipeline_mode == "v2" and self.v2_session.job is not None:
-                from tools.control_plane.package_validation import validate_job5_package_root
+                from tools.control_plane.authoring import load_authoring_ir
                 from tools.control_plane.contracts import canonical_contract_hash
                 import importlib.util
                 job = self.v2_session.job
-                validate_job5_package_root(job)
+                load_authoring_ir(job / "production.ir.json")
                 checks = [
                     ("Gói Job@5", f"Hợp lệ · {job.name}"),
                     ("Authoring contract", canonical_contract_hash("authoring-ir-v1")[:16]),
