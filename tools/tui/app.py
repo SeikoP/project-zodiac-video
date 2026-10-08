@@ -630,6 +630,8 @@ class ZodiacTui(App):
         self.pipeline_groups: list[dict] = []
         self._pipeline_table_key: tuple | None = None
         self._v2_last_stage_snapshot: tuple | None = None
+        self._v2_voice_done: set[str] = set()
+        self._v2_voice_active: str | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -1071,6 +1073,19 @@ class ZodiacTui(App):
         )
         self._refresh_health_from_checks()
 
+        if worker_running:
+            for row in rows:
+                if row["step"] == "VOICE" and row["status"] != DONE:
+                    total = 0
+                    ir_path = job / "production.ir.json"
+                    try:
+                        total = len(json.loads(ir_path.read_text(encoding="utf-8"))["scenes"])
+                    except (OSError, ValueError, KeyError, TypeError):
+                        pass
+                    if total:
+                        complete = len(self._v2_voice_done)
+                        row["progress"] = min(complete / total, 0.99)
+                        row["detail"] = f"{complete}/{total} scene" + (f" · {self._v2_voice_active}" if self._v2_voice_active else "")
         self.pipeline_groups = rows
         table_key = tuple(
             (
@@ -1498,6 +1513,8 @@ class ZodiacTui(App):
                 self.notify("Pipeline đang chạy.", severity="warning")
                 return
             self._v2_last_stage_snapshot = None
+            self._v2_voice_done.clear()
+            self._v2_voice_active = None
             self._write_log("START  Studio v2 · khởi chạy pipeline")
             self.query_one("#workflow-task", Static).update("Đang khởi chạy…")
             self._run_v2_full()
@@ -1509,6 +1526,21 @@ class ZodiacTui(App):
         self._start_pipeline(rerun=rerun)
 
     @work(thread=True, group="v2-pipeline", exclusive=True)
+    def _v2_process_line(self, line: str, channel: str) -> None:
+        """Receive live child output on the UI thread."""
+        line = str(line).strip()
+        if not line:
+            return
+        started = re.search(r"VieNeu API:\\s*(S\\d+)", line)
+        completed = re.search(r"VieNeu DONE:\\s*(S\\d+)", line)
+        if started:
+            self._v2_voice_active = started.group(1)
+        if completed:
+            self._v2_voice_done.add(completed.group(1))
+            self._v2_voice_active = None
+        self._write_log(f"[VOICE / {channel}] {line}", error=channel == "stderr")
+        self._refresh_view()
+
     def _run_v2_full(self) -> None:
         try:
             voice, align_model, volume = self.call_from_thread(self._pipeline_settings)
@@ -1535,7 +1567,11 @@ class ZodiacTui(App):
                 music_path=Path(self.music_path) if self.music_path is not None else None,
                 mix_settings={"volume": volume},
             )
-            self.v2_session.run(config)
+            def emit_line(line: str, channel: str = "stdout") -> None:
+                self.call_from_thread(self._v2_process_line, line, channel)
+
+            with observe_subprocess_output(emit_line):
+                self.v2_session.run(config)
             self.call_from_thread(self._write_log, "DONE  Studio v2 hoàn tất.")
             self.call_from_thread(self.notify, "Studio v2 hoàn tất.")
         except ControlPlaneError as exc:
