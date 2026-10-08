@@ -36,6 +36,8 @@ export const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => 
   }, [handle, needsFont, fontUri]);
 };
 
+// Keep a single entity coordinate space while blending states; do not shift the
+// subject or create additional authored SVGs to hide a hard pose cut.
 const stateForFrame = (
   scene: RenderPlanScene,
   entity: RenderPlanEntity,
@@ -43,29 +45,23 @@ const stateForFrame = (
   assets: RendererV2Props["assets"],
 ) => {
   let stateId = entity.initial_state;
-  let fallbackAsset: string | undefined;
-
-  for (const event of scene.events) {
-    if (event.target !== entity.id) continue;
-    const transitionDuration = event.end_frame - event.start_frame;
-    const resolvedAfterAsset = assets[event.asset_after];
-    if (frame >= event.end_frame) {
-      stateId = event.state_after;
-      fallbackAsset = resolvedAfterAsset ? event.asset_after : fallbackAsset;
-    } else if (
-      frame >= event.start_frame
-      && transitionDuration > 0
-      && resolvedAfterAsset
-    ) {
-      fallbackAsset = event.asset_before;
+  let blend: {fromAsset: string; progress: number} | undefined;
+  for (const event of [...scene.events].filter((e) => e.target === entity.id).sort(
+    (a, b) => a.end_frame - b.end_frame,
+  )) {
+    if (frame < event.end_frame) break;
+    stateId = event.state_after;
+    const before = entity.states[event.state_before]?.asset ?? event.asset_before;
+    const after = entity.states[event.state_after]?.asset ?? event.asset_after;
+    const frames = Math.min(5, Math.max(1, event.end_frame - event.start_frame));
+    if (frame < event.end_frame + frames && before !== after && assets[before]) {
+      blend = {fromAsset: before, progress: Math.min(1, (frame - event.end_frame + 1) / frames)};
+    } else {
+      blend = undefined;
     }
   }
-
   const state = entity.states[stateId] ?? entity.states[entity.initial_state];
-  return {
-    state,
-    assetId: state?.asset ?? fallbackAsset,
-  };
+  return {state, assetId: state?.asset, blend};
 };
 
 const SceneLayer: React.FC<{
@@ -91,7 +87,7 @@ const SceneLayer: React.FC<{
           return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
         })
         .map((entity) => {
-          const {state, assetId} = stateForFrame(scene, entity, frame, assets);
+          const {state, assetId, blend} = stateForFrame(scene, entity, frame, assets);
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
           const src = asset?.src;
@@ -115,15 +111,24 @@ const SceneLayer: React.FC<{
             zIndex: state.layer ?? 0,
             objectFit: "contain",
           };
+          const previousSrc = blend ? assets[blend.fromAsset]?.src : undefined;
           return (
-            <Img
-              key={entity.id}
-              src={src}
-              data-entity-id={entity.id}
-              data-asset-id={assetId}
-              data-visual-role={role}
-              style={style}
-            />
+            <React.Fragment key={entity.id}>
+              {previousSrc ? (
+                <Img
+                  src={previousSrc}
+                  data-transition-from={blend?.fromAsset}
+                  style={{...style, opacity: (1 - blend!.progress) * revealOpacity}}
+                />
+              ) : null}
+              <Img
+                src={src}
+                data-entity-id={entity.id}
+                data-asset-id={assetId}
+                data-visual-role={role}
+                style={{...style, opacity: blend ? blend.progress * revealOpacity : revealOpacity}}
+              />
+            </React.Fragment>
           );        })}
 
       {caption ? (
