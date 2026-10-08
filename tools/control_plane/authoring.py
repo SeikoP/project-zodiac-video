@@ -117,6 +117,9 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
                     )
 
             trigger = event["trigger"]
+            if trigger["type"] == "scene_start":
+                continue
+
             count = _phrase_occurrences(scene["voice"], trigger["text"])
             occurrence = trigger.get("occurrence")
             if count == 0:
