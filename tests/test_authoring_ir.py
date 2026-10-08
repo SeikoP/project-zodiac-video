@@ -53,6 +53,11 @@ class AuthoringIrTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "AUTHORING_IR_INVALID")
         self.assertIn("state", caught.exception.message)
 
+    def test_scene_start_trigger_does_not_require_anchor_text(self):
+        document = fixture_ir()
+        document["scenes"][0]["events"][0]["trigger"] = {"type": "scene_start"}
+        validate_authoring_ir(document)
+
     def test_repeated_voice_anchor_requires_occurrence(self):
         document = fixture_ir()
         document["scenes"][0]["voice"] = "xin mot lan, xin hai lan"
