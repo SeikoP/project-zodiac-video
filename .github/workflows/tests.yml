@@ -384,8 +384,8 @@ jobs:
       - name: Prepare golden render plan
         run: |
           mkdir -p /tmp/zodiac-semantic-v2/.runtime /tmp/zodiac-semantic-v2/assets
-          cp ../../../tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-semantic-v2/.runtime/render-plan.json
-          cp ../../../tests/fixtures/scorpio-two-versions/package/assets/char-scorpio.svg /tmp/zodiac-semantic-v2/assets/char-scorpio.svg
+          cp ../../../../tests/fixtures/scorpio-two-versions/expected/render-plan.json /tmp/zodiac-semantic-v2/.runtime/render-plan.json
+          cp ../../../../tests/fixtures/scorpio-two-versions/package/assets/char-scorpio.svg /tmp/zodiac-semantic-v2/assets/char-scorpio.svg
           node scripts/prepare.mjs /tmp/zodiac-semantic-v2
       - name: Render actual golden still using 2.0.2
         run: |
