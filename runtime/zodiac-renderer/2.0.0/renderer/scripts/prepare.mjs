@@ -116,6 +116,28 @@ export const prepareRendererProps = async (packageRoot) => {
     throw new Error(`cannot read render-plan.json: ${error.message}`);
   }
   validateSceneLayout(validateExecutablePlan(plan));
+  // Before rendering, enforce declared visual role assets rather than hiding
+  // absent sprites behind placeholder labels.
+  for (const scene of plan.scenes) {
+    const ids = new Set((scene.entities ?? []).map((e) => e.id));
+    const declared = new Set();
+    for (const entity of scene.entities ?? []) {
+      if (entity.id === "story_prop" || entity.id === "story_effect") declared.add(entity.id);
+      if (!(entity.initial_state in (entity.states ?? {}))) throw new Error(`STATE_MISSING scene=${scene.id} entity=${entity.id}`);
+      for (const [stateId, state] of Object.entries(entity.states ?? {})) {
+        if (!(state.asset in (plan.assets ?? {}))) throw new Error(`ASSET_MISSING scene=${scene.id} entity=${entity.id} state=${stateId} asset=${state.asset}`);
+      }
+    }
+    for (const event of scene.events ?? []) {
+      if (!ids.has(event.target)) throw new Error(`EVENT_TARGET_MISSING scene=${scene.id} target=${event.target}`);
+    }
+    // Count presence as an authoring integrity check; visibility remains
+    // under the actual scene timeline and is never faked by the renderer.
+    if (declared.has("story_prop") !== declared.has("story_effect")) {
+      process.stdout.write(`VISUAL_ROLE_PARTIAL scene=${scene.id} roles=${[...declared].join(",")}\n`);
+    }
+  }
+
   const presentation = structuredClone(plan.presentation ?? {});
   const requestedFont = String(presentation.caption?.font_family ?? "sans-serif");
   if (requestedFont === "Patrick Hand") {
