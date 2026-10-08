@@ -2,7 +2,7 @@
 const bounded = (v) => Math.max(0, Math.min(1, v));
 const smoothstep = (v) => {const t = bounded(v); return t * t * (3 - 2 * t);};
 export const SUPPORTED_MOTIONS = Object.freeze([
-  "state_swap", "effect_pop", "effect_pulse", "effect_wiggle",
+  "state_swap", "open_shift", "reaction_pop", "effect_pop", "effect_pulse", "effect_wiggle",
   "effect_emphasis", "effect_dissolve", "phone_ping",
   "prop_pickup", "prop_offer", "prop_receive", "prop_drop", "prop_shake",
 ]);
@@ -37,6 +37,8 @@ export function semanticMotionAtFrame(event, frame, {role = "character", enterin
     case "prop_receive": motion.dx = -14 * pulse; break;
     case "prop_drop": motion.dy = 14 * pulse; break;
     case "prop_shake": motion.rotate = Math.sin(phase * 6 * Math.PI) * 5 * pulse; break;
+    case "open_shift":
+    case "reaction_pop":
     case "state_swap": break;
   }
   return motion;
