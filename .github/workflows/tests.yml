@@ -326,3 +326,18 @@ jobs:
         run: zodiac-control build tests/fixtures/control-plane-v2/minimal --output /tmp/render-plan.json
       - name: Verify Scorpio E22 golden regression
         run: python -m unittest tests.test_control_plane_scorpio_golden -v
+
+
+  renderer-v2-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: runtime/zodiac-renderer/2.0.0/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test renderer 2 prepare boundary
+        run: npm test
