@@ -670,7 +670,12 @@ class StudioV2Executor:
                 workspace,
                 ir,
                 voice,
-                aligner_settings=config.aligner_settings,
+                # Timing must use the exact pause used when assembling voice.wav.
+                # A different default/override shifts captions after every scene.
+                aligner_settings={
+                    **config.aligner_settings,
+                    "scene_gap_ms": float(config.tts_settings.get("scene_gap_ms", 180.0)),
+                },
                 aligner_version=config.aligner_version,
                 **({"force": True} if TIMING in forced else {}),
             )
