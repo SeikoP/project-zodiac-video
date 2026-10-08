@@ -1012,25 +1012,6 @@ class ZodiacTui(App):
         self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
 
-        # Separate overall workflow progress from the selected table row.
-        completed = sum(float(row["progress"]) for row in rows)
-        overall = round(100.0 * completed / max(1, len(rows)), 1)
-        self.query_one("#workflow-progress", ProgressBar).update(
-            total=100, progress=overall
-        )
-        active = next((row for row in rows if row["status"] == RUNNING), None)
-        if active is None and worker_running:
-            active = next((row for row in rows if row["status"] != DONE), None)
-        if active:
-            detail = active.get("detail") or "Đang xử lý"
-            self.query_one("#workflow-task", Static).update(
-                f"{active['label']} · {detail} · Workflow {overall}%"
-            )
-        else:
-            self.query_one("#workflow-task", Static).update(
-                f"Workflow {overall}% · " + self._command_status()
-            )
-
         blocked = job is None or worker_running or package_changed
         self.query_one("#run-full", Button).disabled = blocked
         self.query_one("#run-full", Button).label = (
@@ -1144,6 +1125,25 @@ class ZodiacTui(App):
         self.query_one("#pipeline-summary", Static).update(self._workflow_summary())
         self.query_one("#command-status", Static).update(self._command_status())
         self._refresh_output_summary()
+
+        # Separate overall workflow progress from the selected table row.
+        completed = sum(float(row["progress"]) for row in rows)
+        overall = round(100.0 * completed / max(1, len(rows)), 1)
+        self.query_one("#workflow-progress", ProgressBar).update(
+            total=100, progress=overall
+        )
+        active = next((row for row in rows if row["status"] == RUNNING), None)
+        if active is None and worker_running:
+            active = next((row for row in rows if row["status"] != DONE), None)
+        if active:
+            detail = active.get("detail") or "Đang xử lý"
+            self.query_one("#workflow-task", Static).update(
+                f"{active['label']} · {detail} · Workflow {overall}%"
+            )
+        else:
+            self.query_one("#workflow-task", Static).update(
+                f"Workflow {overall}% · " + self._command_status()
+            )
 
         blocked = job is None or worker_running
         self.query_one("#run-full", Button).disabled = blocked
