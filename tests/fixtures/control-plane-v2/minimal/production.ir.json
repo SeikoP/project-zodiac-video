@@ -1,0 +1,52 @@
+{
+  "format": "zodiac-authoring-ir@1",
+  "fps": 24,
+  "video": {
+    "width": 1080,
+    "height": 1920
+  },
+  "assets": {
+    "char.scorpio": {
+      "path": "assets/char-scorpio.svg"
+    }
+  },
+  "scenes": [
+    {
+      "id": "S01",
+      "voice": "xin chao",
+      "duration_hint_frames": 72,
+      "entities": [
+        {
+          "id": "scorpio",
+          "initial_state": "guarded",
+          "states": {
+            "guarded": {
+              "asset": "char.scorpio"
+            },
+            "open": {
+              "asset": "char.scorpio"
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E01",
+          "target": "scorpio",
+          "intent": "reaction",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "xin"
+          },
+          "state_before": "guarded",
+          "state_after": "open",
+          "desired_motion": "reaction_pop",
+          "scheduling": {
+            "max_drift_frames": 4,
+            "merge_policy": "never"
+          }
+        }
+      ]
+    }
+  ]
+}

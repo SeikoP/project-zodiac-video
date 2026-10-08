@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zodiac.local/contracts/design-token-v4.schema.json",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "style_family",
+    "handmade_profile",
+    "motion_defaults"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "const": "zodiac-paper-doodle-meme-v4"
+    },
+    "version": {
+      "const": "4.0"
+    },
+    "style_family": {
+      "const": "paper-doodle-chibi-meme"
+    },
+    "handmade_profile": {
+      "const": "human-stroke-v2"
+    },
+    "motion_defaults": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "duration_frames"
+        ],
+        "properties": {
+          "duration_frames": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

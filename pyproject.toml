@@ -19,6 +19,7 @@ local = [
 
 [project.scripts]
 zodiac = "tools.zodiac_tui:main"
+zodiac-control = "tools.control_plane.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["tools*"]

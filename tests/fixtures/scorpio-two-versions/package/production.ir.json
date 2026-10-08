@@ -1,0 +1,71 @@
+{
+  "format": "zodiac-authoring-ir@1",
+  "fps": 24,
+  "video": {
+    "width": 1080,
+    "height": 1920
+  },
+  "assets": {
+    "char.scorpio": {
+      "path": "assets/char-scorpio.svg"
+    }
+  },
+  "scenes": [
+    {
+      "id": "S02",
+      "voice": "Người ngoài thấy Bọ Cạp khó đọc. Vào vòng trong rồi mới biết: ủa alo.",
+      "duration_hint_frames": 120,
+      "entities": [
+        {
+          "id": "scorpio",
+          "initial_state": "guarded",
+          "states": {
+            "guarded": {
+              "asset": "char.scorpio"
+            },
+            "open": {
+              "asset": "char.scorpio"
+            },
+            "side_eye": {
+              "asset": "char.scorpio"
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E21",
+          "target": "scorpio",
+          "intent": "opens_up",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "vòng trong"
+          },
+          "state_before": "guarded",
+          "state_after": "open",
+          "desired_motion": "open_shift",
+          "scheduling": {
+            "max_drift_frames": 0,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E22",
+          "target": "scorpio",
+          "intent": "reaction",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "ủa alo"
+          },
+          "state_before": "open",
+          "state_after": "side_eye",
+          "desired_motion": "reaction_pop",
+          "scheduling": {
+            "max_drift_frames": 6,
+            "merge_policy": "never"
+          }
+        }
+      ]
+    }
+  ]
+}

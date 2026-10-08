@@ -1,0 +1,38 @@
+{
+  "format": "zodiac-timing@1",
+  "fps": 24,
+  "total_duration_frames": 120,
+  "scenes": [
+    {
+      "id": "S02",
+      "start_frame": 0,
+      "duration_frames": 120,
+      "captions": [
+        {
+          "text": "vòng",
+          "startMs": 1250,
+          "endMs": 1290,
+          "timestampMs": 1250
+        },
+        {
+          "text": "trong",
+          "startMs": 1300,
+          "endMs": 1350,
+          "timestampMs": 1300
+        },
+        {
+          "text": "ủa",
+          "startMs": 1400,
+          "endMs": 1440,
+          "timestampMs": 1400
+        },
+        {
+          "text": "alo",
+          "startMs": 1450,
+          "endMs": 1500,
+          "timestampMs": 1450
+        }
+      ]
+    }
+  ]
+}

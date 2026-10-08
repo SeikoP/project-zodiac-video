@@ -1,0 +1,26 @@
+{
+  "format": "zodiac-timing@1",
+  "fps": 24,
+  "total_duration_frames": 72,
+  "scenes": [
+    {
+      "id": "S01",
+      "start_frame": 0,
+      "duration_frames": 72,
+      "captions": [
+        {
+          "text": "xin",
+          "startMs": 0,
+          "endMs": 300,
+          "timestampMs": 0
+        },
+        {
+          "text": "chao",
+          "startMs": 300,
+          "endMs": 650,
+          "timestampMs": 300
+        }
+      ]
+    }
+  ]
+}

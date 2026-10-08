@@ -1,0 +1,120 @@
+{
+  "assets": {
+    "char.scorpio": {
+      "path": "assets/char-scorpio.svg"
+    }
+  },
+  "format": "zodiac-render-plan@1",
+  "fps": 24,
+  "presentation": {
+    "caption": {
+      "color": "#111111",
+      "font_family": "sans-serif",
+      "font_size_px": 84,
+      "font_weight": 400,
+      "highlight_color": "#e97a66",
+      "max_lines": 2,
+      "safe_zone": {
+        "height": 620,
+        "width": 936,
+        "x": 72,
+        "y": 960
+      }
+    },
+    "ink": "#111111",
+    "paper": "#ffffff",
+    "watermark": {
+      "anchor": "top-left",
+      "enabled": false,
+      "font_family": "sans-serif",
+      "font_size_px": 29,
+      "font_weight": 400,
+      "layer": 100,
+      "offset_px": {
+        "x": 68,
+        "y": 40
+      },
+      "opacity": 0.45,
+      "text": ""
+    }
+  },
+  "scenes": [
+    {
+      "captions": [
+        {
+          "end_frame": 31,
+          "start_frame": 30,
+          "text": "vòng"
+        },
+        {
+          "end_frame": 32,
+          "start_frame": 31,
+          "text": "trong"
+        },
+        {
+          "end_frame": 35,
+          "start_frame": 34,
+          "text": "ủa"
+        },
+        {
+          "end_frame": 36,
+          "start_frame": 35,
+          "text": "alo"
+        }
+      ],
+      "duration_frames": 144,
+      "entities": [
+        {
+          "id": "scorpio",
+          "initial_state": "guarded",
+          "states": {
+            "guarded": {
+              "asset": "char.scorpio"
+            },
+            "open": {
+              "asset": "char.scorpio"
+            },
+            "side_eye": {
+              "asset": "char.scorpio"
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "char.scorpio",
+          "asset_before": "char.scorpio",
+          "end_frame": 38,
+          "event_id": "E21",
+          "motion": "open_shift",
+          "preferred_start_frame": 30,
+          "scene_id": "S02",
+          "start_frame": 30,
+          "state_after": "open",
+          "state_before": "guarded",
+          "target": "scorpio"
+        },
+        {
+          "asset_after": "char.scorpio",
+          "asset_before": "char.scorpio",
+          "end_frame": 46,
+          "event_id": "E22",
+          "motion": "reaction_pop",
+          "preferred_start_frame": 34,
+          "scene_id": "S02",
+          "start_frame": 38,
+          "state_after": "side_eye",
+          "state_before": "open",
+          "target": "scorpio"
+        }
+      ],
+      "id": "S02",
+      "measured_duration_frames": 120,
+      "start_frame": 0
+    }
+  ],
+  "video": {
+    "height": 1920,
+    "width": 1080
+  }
+}

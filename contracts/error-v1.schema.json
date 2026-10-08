@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zodiac.local/contracts/error-v1.schema.json",
+  "type": "object",
+  "required": [
+    "ok",
+    "code",
+    "stage",
+    "message",
+    "detail"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ok": {
+      "const": false
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage": {
+      "enum": [
+        "PACKAGE",
+        "VOICE",
+        "TIMING",
+        "PLAN",
+        "RENDER",
+        "AUDIO",
+        "OUTPUT"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scene_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "target": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "detail": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,296 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from typing import Any
+
+from .anchors import resolve_voice_anchor
+from .authoring import validate_authoring_ir
+from .contracts import validate_contract_shape
+from .errors import ControlPlaneError
+
+
+FINAL_LANDING_TAIL_FRAMES = 24
+
+
+def _contract_error(code: str, message: str, issues) -> ControlPlaneError:
+    return ControlPlaneError(
+        code=code,
+        stage="PLAN",
+        message=message,
+        detail={"issues": [{"path": issue.path, "message": issue.message} for issue in issues]},
+    )
+
+
+def _same_merge_semantics(previous: dict[str, Any], current: dict[str, Any]) -> bool:
+    return all(
+        previous.get(key) == current.get(key)
+        for key in ("intent", "state_before", "state_after", "desired_motion", "target")
+    )
+
+
+def _caption_rows(
+    timing_scene: dict[str, Any],
+    *,
+    fps: int,
+    scene_start: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for caption in timing_scene.get("captions", []):
+        text = str(caption.get("text") or "").strip()
+        if not text:
+            continue
+        start_ms = float(caption.get("startMs", caption.get("timestampMs", 0)))
+        end_ms = float(caption.get("endMs", start_ms))
+        start_frame = scene_start + round(start_ms * fps / 1000.0)
+        end_frame = scene_start + round(end_ms * fps / 1000.0)
+        if end_frame <= start_frame:
+            end_frame = start_frame + 1
+        rows.append(
+            {
+                "text": text,
+                "start_frame": start_frame,
+                "end_frame": end_frame,
+            }
+        )
+    return rows
+
+
+def _presentation(design_token: dict[str, Any]) -> dict[str, Any]:
+    palette = design_token.get("palette_roles")
+    if not isinstance(palette, dict):
+        palette = {}
+    caption = design_token.get("caption_emphasis")
+    if not isinstance(caption, dict):
+        caption = {}
+    watermark = design_token.get("brand_overlay")
+    if not isinstance(watermark, dict):
+        watermark = {"enabled": False}
+
+    color_role = str(caption.get("color_role") or "ink")
+    highlight_role = str(caption.get("highlight_role") or "coral")
+    safe_zone = design_token.get("safe_zone")
+    if not isinstance(safe_zone, dict):
+        safe_zone = {"x": 72, "y": 960, "width": 936, "height": 620}
+
+    return {
+        "paper": str(palette.get("paper") or "#ffffff"),
+        "ink": str(palette.get("ink") or "#111111"),
+        "caption": {
+            "font_family": str(caption.get("font_family") or "sans-serif"),
+            "font_size_px": int(caption.get("font_size_px") or 84),
+            "font_weight": int(caption.get("font_weight") or 400),
+            "max_lines": int(caption.get("max_lines") or 2),
+            "color": str(palette.get(color_role) or palette.get("ink") or "#111111"),
+            "highlight_color": str(
+                palette.get(highlight_role) or palette.get("coral") or "#e97a66"
+            ),
+            "safe_zone": deepcopy(safe_zone),
+        },
+        "watermark": {
+            "enabled": bool(watermark.get("enabled", False)),
+            "text": str(watermark.get("text") or ""),
+            "anchor": str(watermark.get("anchor") or "top-left"),
+            "offset_px": deepcopy(
+                watermark.get("offset_px")
+                if isinstance(watermark.get("offset_px"), dict)
+                else {"x": 68, "y": 40}
+            ),
+            "font_family": str(watermark.get("font_family") or "sans-serif"),
+            "font_size_px": int(watermark.get("font_size_px") or 29),
+            "font_weight": int(watermark.get("font_weight") or 400),
+            "opacity": float(watermark.get("opacity", 0.45)),
+            "layer": int(watermark.get("layer") or 100),
+        },
+    }
+
+
+def compile_render_plan(
+    ir: dict[str, Any],
+    timing: dict[str, Any],
+    design_token: dict[str, Any],
+) -> dict[str, Any]:
+    validate_authoring_ir(ir)
+
+    timing_issues = validate_contract_shape("timing-v1", timing)
+    if timing_issues:
+        raise _contract_error("TIMING_INVALID", "timing does not match canonical contract", timing_issues)
+
+    design_issues = validate_contract_shape("design-token-v4", design_token)
+    if design_issues:
+        raise _contract_error("DESIGN_TOKEN_INVALID", "design token does not match canonical contract", design_issues)
+
+    if int(ir["fps"]) != int(timing["fps"]):
+        raise ControlPlaneError(
+            code="TIMING_INVALID",
+            stage="PLAN",
+            message="authoring IR fps does not match measured timing fps",
+            detail={"ir_fps": ir["fps"], "timing_fps": timing["fps"]},
+        )
+
+    fps = int(ir["fps"])
+    timing_by_scene = {scene["id"]: scene for scene in timing["scenes"]}
+    motion_defaults = design_token.get("motion_defaults") or {}
+    plan_scenes: list[dict[str, Any]] = []
+    final_scene_index = len(ir["scenes"]) - 1
+
+    for scene_index, scene in enumerate(ir["scenes"]):
+        scene_id = scene["id"]
+        timing_scene = timing_by_scene.get(scene_id)
+        if timing_scene is None:
+            raise ControlPlaneError(
+                code="TIMING_SCENE_MISSING",
+                stage="PLAN",
+                message=f"measured timing is missing scene {scene_id}",
+                scene_id=scene_id,
+            )
+
+        measured = dict(timing_scene)
+        measured["fps"] = timing["fps"]
+        scene_start = int(measured["start_frame"])
+        measured_duration = int(measured["duration_frames"])
+        measured_end = scene_start + measured_duration
+        executable_duration = measured_duration + (
+            FINAL_LANDING_TAIL_FRAMES if scene_index == final_scene_index else 0
+        )
+
+        lane_last: dict[str, dict[str, Any]] = {}
+        outputs: list[dict[str, Any]] = []
+        entities = {entity["id"]: entity for entity in scene["entities"]}
+
+        for authored_index, event in enumerate(scene["events"]):
+            event_id = event["id"]
+            target = event["target"]
+            motion_id = event["desired_motion"]
+            motion_profile = motion_defaults.get(motion_id)
+            if not isinstance(motion_profile, dict) or not isinstance(
+                motion_profile.get("duration_frames"), int
+            ):
+                raise ControlPlaneError(
+                    code="MOTION_PROFILE_MISSING",
+                    stage="PLAN",
+                    message=f"motion {motion_id!r} has no deterministic duration profile",
+                    scene_id=scene_id,
+                    event_id=event_id,
+                    target=target,
+                    detail={"motion": motion_id},
+                )
+            duration = int(motion_profile["duration_frames"])
+            preferred = resolve_voice_anchor(scene, measured, event["trigger"])
+            start = preferred
+            end = start + duration
+
+            previous = lane_last.get(target)
+            if previous is not None and start < previous["output"]["end_frame"]:
+                policy = event["scheduling"]["merge_policy"]
+                if (
+                    policy == "same_intent_same_state"
+                    and _same_merge_semantics(previous["authored"], event)
+                ):
+                    merged = previous["output"]
+                    merged["end_frame"] = max(merged["end_frame"], end)
+                    merged_ids = merged.setdefault(
+                        "merged_event_ids", [merged["event_id"]]
+                    )
+                    merged_ids.append(event_id)
+                    if merged["end_frame"] > measured_end:
+                        raise ControlPlaneError(
+                            code="TIMELINE_SCENE_BOUNDS",
+                            stage="PLAN",
+                            message=f"merged event {event_id} exceeds measured scene bounds",
+                            scene_id=scene_id,
+                            event_id=event_id,
+                            target=target,
+                            detail={
+                                "scene_end": measured_end,
+                                "end_frame": merged["end_frame"],
+                            },
+                        )
+                    continue
+
+                shifted = previous["output"]["end_frame"]
+                drift = shifted - preferred
+                max_drift = int(event["scheduling"]["max_drift_frames"])
+                if drift > max_drift:
+                    raise ControlPlaneError(
+                        code="TIMELINE_TARGET_CONFLICT",
+                        stage="PLAN",
+                        message=(
+                            f"event {event_id} cannot be scheduled on target "
+                            f"{target!r} within drift allowance"
+                        ),
+                        scene_id=scene_id,
+                        event_id=event_id,
+                        target=target,
+                        detail={
+                            "preferred_start": preferred,
+                            "prior_end": previous["output"]["end_frame"],
+                            "max_drift_frames": max_drift,
+                            "required_drift_frames": drift,
+                        },
+                    )
+                start = shifted
+                end = start + duration
+
+            if start < scene_start or end > measured_end:
+                raise ControlPlaneError(
+                    code="TIMELINE_SCENE_BOUNDS",
+                    stage="PLAN",
+                    message=f"event {event_id} falls outside measured scene bounds",
+                    scene_id=scene_id,
+                    event_id=event_id,
+                    target=target,
+                    detail={
+                        "scene_start": scene_start,
+                        "scene_end": measured_end,
+                        "start_frame": start,
+                        "end_frame": end,
+                    },
+                )
+
+            entity = entities[target]
+            asset_before = entity["states"][event["state_before"]]["asset"]
+            asset_after = entity["states"][event["state_after"]]["asset"]
+            output = {
+                "event_id": event_id,
+                "scene_id": scene_id,
+                "target": target,
+                "asset_before": asset_before,
+                "asset_after": asset_after,
+                "preferred_start_frame": preferred,
+                "start_frame": start,
+                "end_frame": end,
+                "state_before": event["state_before"],
+                "state_after": event["state_after"],
+                "motion": motion_id,
+            }
+            outputs.append(output)
+            lane_last[target] = {
+                "authored": event,
+                "output": output,
+                "authored_index": authored_index,
+            }
+
+        plan_scenes.append(
+            {
+                "id": scene_id,
+                "start_frame": scene_start,
+                "duration_frames": executable_duration,
+                "measured_duration_frames": measured_duration,
+                "entities": deepcopy(scene["entities"]),
+                "captions": _caption_rows(
+                    timing_scene,
+                    fps=fps,
+                    scene_start=scene_start,
+                ),
+                "events": outputs,
+            }
+        )
+
+    return {
+        "format": "zodiac-render-plan@1",
+        "fps": fps,
+        "video": deepcopy(ir["video"]),
+        "presentation": _presentation(design_token),
+        "assets": deepcopy(ir["assets"]),
+        "scenes": plan_scenes,
+    }

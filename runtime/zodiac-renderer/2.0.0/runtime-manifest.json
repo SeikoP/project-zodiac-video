@@ -1,0 +1,7 @@
+{
+  "id": "zodiac-renderer",
+  "version": "2.0.0",
+  "input_contract": "zodiac-render-plan@1",
+  "immutable": true,
+  "renderer_contract": "executable-plan-only"
+}
