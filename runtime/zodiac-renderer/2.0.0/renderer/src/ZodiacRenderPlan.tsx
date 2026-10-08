@@ -154,6 +154,8 @@ const Watermark: React.FC<{presentation: RenderPlanPresentation}> = ({presentati
   const watermark = presentation.watermark;
   if (!watermark?.enabled || !watermark.text) return null;
   const offset = watermark.offset_px ?? {};
+  const hasVectorStar = watermark.text.trim().startsWith("✦");
+  const label = hasVectorStar ? watermark.text.trim().slice(1).trimStart() : watermark.text;
   return (
     <div
       data-watermark="brand"
@@ -167,9 +169,11 @@ const Watermark: React.FC<{presentation: RenderPlanPresentation}> = ({presentati
         opacity: watermark.opacity ?? 0.45,
         color: presentation.ink ?? "#111111",
         zIndex: watermark.layer ?? 100,
+        display: "flex", alignItems: "center", gap: 5,
       }}
     >
-      {watermark.text}
+      {hasVectorStar ? <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0 L15.2 8.8 L24 12 L15.2 15.2 L12 24 L8.8 15.2 L0 12 L8.8 8.8 Z"/></svg> : null}
+      <span>{label}</span>
     </div>
   );
 };
