@@ -1150,7 +1150,8 @@ class ZodiacTui(App):
         self.query_one("#run-full", Button).label = (
             "Kiểm tra lại" if self._final_pipeline_settled() else "Chạy toàn bộ"
         )
-        self.query_one("#rerun-stage", Button).disabled = True
+        self.query_one("#rerun-stage", Button).disabled = blocked
+        self.query_one("#rerun-stage", Button).label = "Tiếp tục từ lỗi"
         self.query_one("#stop", Button).disabled = True
         self.query_one("#open-video", Button).disabled = not video_ready
         self.query_one("#open-folder", Button).disabled = job is None
@@ -1628,10 +1629,11 @@ class ZodiacTui(App):
             return
 
         group = self.pipeline_groups[index]
-        steps = group["steps"]
         if self._pipeline_mode == "v2":
-            self.notify("Chạy lại riêng stage chưa được hỗ trợ cho Job@5; dùng Chạy toàn bộ (có cache).", severity="warning")
+            self._write_log("RESUME  Job@5 · tiếp tục pipeline, giữ cache hợp lệ")
+            self.action_run_full()
             return
+        steps = group["steps"]
         self._start_pipeline(
             rerun=group["rerun_step"],
             stop_after=steps[-1],
