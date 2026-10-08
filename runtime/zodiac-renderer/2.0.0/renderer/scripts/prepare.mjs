@@ -77,6 +77,7 @@ export const prepareRendererProps = async (packageRoot) => {
     contract: "zodiac-render-plan@1",
     fps: plan.fps,
     video: plan.video,
+    presentation: plan.presentation ?? {},
     assets: await hydrateAssets(root, plan.assets),
     scenes: plan.scenes,
   };
