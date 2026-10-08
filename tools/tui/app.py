@@ -42,6 +42,7 @@ from tools.studio.pipeline import (
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.tui.file_picker import ChoiceDialog, FilePicker
 from tools.tui.model import compact_pipeline_rows, status_label
+from tools.studio_v2.pipeline import FAILED
 from tools.tui.v2_adapter import V2TuiSession, detect_job5_manifest
 from tools.zodiac_local import (
     build_audio_preview,
