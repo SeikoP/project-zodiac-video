@@ -339,6 +339,8 @@ def compile_render_plan(
                  )),
                 "events": outputs,
             }
+        if scene.get("spatial_bindings"):
+            plan_scene["spatial_bindings"] = deepcopy(scene["spatial_bindings"])
         if scene.get("layout_contract"):
             plan_scene["layout_contract"] = deepcopy(scene["layout_contract"])
         if scene.get("render_density_budget"):

@@ -97,3 +97,38 @@ test("caption safe zone accepts non-colliding dense layout", () => {
   }));
   assert.doesNotThrow(() => validateSceneLayout(plan));
 });
+
+test("spatial binding rejects a prop anchored to the wrong person", () => {
+  const plan = minimalPlan();
+  const scene = plan.scenes[0];
+  scene.layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+    character_zone:{x:10,y:400,width:1000,height:500},
+    prop_zone:{x:100,y:930,width:880,height:340},
+    effect_zone:{x:20,y:380,width:1040,height:510}
+  };
+  scene.entities = [
+    {id:"scorpio",initial_state:"idle",states:{idle:{asset:"char.scorpio",visible:true,transform:{x:40,y:500,width:250,height:400}}}},
+    {id:"story_prop",initial_state:"idle",states:{idle:{asset:"char.scorpio",visible:true,transform:{x:770,y:850,width:310,height:230}}}}
+  ];
+  scene.spatial_bindings = [{entity:"story_prop",anchor:"scorpio",relation:"held_by",max_distance_px:260}];
+  assert.throws(() => validateSceneLayout(plan), /SPATIAL_SEMANTICS_MISMATCH/);
+  scene.entities[1].states.idle.transform.x = 110;
+  scene.entities[1].states.idle.transform.y = 750;
+  assert.doesNotThrow(() => validateSceneLayout(plan));
+});
+
+test("spatial binding rejects missing anchor identities", () => {
+  const plan = minimalPlan();
+  plan.scenes[0].layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+    character_zone:{x:10,y:400,width:1000,height:500},
+    prop_zone:{x:100,y:930,width:880,height:340},
+    effect_zone:{x:20,y:380,width:1040,height:510}
+  };
+  plan.scenes[0].entities = [{id:"story_effect",initial_state:"idle",states:{idle:{asset:"char.scorpio",visible:true,transform:{x:350,y:580,width:310,height:230}}}}];
+  plan.scenes[0].spatial_bindings = [{entity:"story_effect",anchor:"friend",relation:"emitted_by",max_distance_px:220}];
+  assert.throws(() => validateSceneLayout(plan), /SPATIAL_ANCHOR_MISSING/);
+});

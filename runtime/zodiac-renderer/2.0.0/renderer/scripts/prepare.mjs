@@ -60,8 +60,30 @@ const transformedBounds = (transform) => {
 export const validateSceneLayout = (plan) => {
   for (const scene of plan.scenes) {
     const layout = scene.layout_contract;
-    if (!layout) continue; // Legacy render plans use their original layout.
-    const caption = layout.caption_safe_zone;
+    if (!layout && !(scene.spatial_bindings?.length)) continue; // Only legacy plans without spatial intent bypass spatial validation.
+    const caption = layout?.caption_safe_zone;
+    const sceneEntities = new Map((scene.entities ?? []).map(e => [e.id, e]));
+    const bindingEntities = new Set();
+    for (const binding of scene.spatial_bindings ?? []) {
+      if (bindingEntities.has(binding.entity)) throw new Error(`SPATIAL_DUPLICATE scene=${scene.id} entity=${binding.entity}`);
+      bindingEntities.add(binding.entity);
+      const subject = sceneEntities.get(binding.entity);
+      const anchorEntity = sceneEntities.get(binding.anchor);
+      if (!subject || !anchorEntity || subject.id === anchorEntity.id) throw new Error(`SPATIAL_ANCHOR_MISSING scene=${scene.id} entity=${binding.entity} anchor=${binding.anchor}`);
+      if (!Number.isFinite(binding.max_distance_px) || binding.max_distance_px <= 0) throw new Error(`SPATIAL_LIMIT_MISSING scene=${scene.id} entity=${binding.entity}`);
+      // Compare authored positions, not guessed semantics. Across each visible
+      // state the center must stay near a visible anchor state.
+      const anchorStates = Object.values(anchorEntity.states ?? {}).filter(s => s.visible !== false && s.transform);
+      for (const [stateId, state] of Object.entries(subject.states ?? {})) {
+        if (state.visible === false || !state.transform) continue;
+        const center = t => ({x:Number(t.x ?? 0) + Number(t.width ?? 520)*Number(t.scale ?? 1)/2, y:Number(t.y ?? 0) + Number(t.height ?? 520)*Number(t.scale ?? 1)/2});
+        const a = center(state.transform);
+        const minDistance = Math.min(...anchorStates.map(s => {const b=center(s.transform);return Math.hypot(a.x-b.x,a.y-b.y);}));
+        if (!Number.isFinite(minDistance) || minDistance > binding.max_distance_px)
+          throw new Error(`SPATIAL_SEMANTICS_MISMATCH scene=${scene.id} entity=${binding.entity} anchor=${binding.anchor} state=${stateId} relation=${binding.relation} distance=${Math.round(minDistance)} max=${binding.max_distance_px}`);
+      }
+    }
+
     let actors = 0, props = 0, effects = 0;
     for (const entity of scene.entities ?? []) {
       if (entity.id.startsWith("env__")) continue;
@@ -71,7 +93,7 @@ export const validateSceneLayout = (plan) => {
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
         const bounds = transformedBounds(state.transform);
-        if (rectsOverlap(caption, bounds)) {
+        if (caption && rectsOverlap(caption, bounds)) {
           throw new Error(`LAYOUT_OVERLAP scene=${scene.id} entity=${entity.id} state=${name} caption_safe_zone`);
         }
       }
@@ -116,6 +138,38 @@ export const prepareRendererProps = async (packageRoot) => {
     throw new Error(`cannot read render-plan.json: ${error.message}`);
   }
   validateSceneLayout(validateExecutablePlan(plan));
+  // Before rendering, enforce declared visual role assets rather than hiding
+  // absent sprites behind placeholder labels.
+  for (const scene of plan.scenes) {
+    const ids = new Set((scene.entities ?? []).map((e) => e.id));
+    const declared = new Set();
+    for (const entity of scene.entities ?? []) {
+      if (entity.id === "story_prop" || entity.id === "story_effect") declared.add(entity.id);
+      if (!(entity.initial_state in (entity.states ?? {}))) throw new Error(`STATE_MISSING scene=${scene.id} entity=${entity.id}`);
+      for (const [stateId, state] of Object.entries(entity.states ?? {})) {
+        if (scene.layout_contract && state.visible !== false && (entity.id === "story_prop" || entity.id === "story_effect")) {
+          const width = Number(state.transform?.width ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
+          const height = Number(state.transform?.height ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
+          // Tall phone props are legitimate; require useful visible area, not
+          // the aspect ratio of a landscape card.
+          const minimumArea = entity.id === "story_effect" ? 30000 : 43000;
+          if (width * height < minimumArea || Math.min(width, height) < 110) {
+            throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum_area=${minimumArea}`);
+          }
+        }
+        if (!(state.asset in (plan.assets ?? {}))) throw new Error(`ASSET_MISSING scene=${scene.id} entity=${entity.id} state=${stateId} asset=${state.asset}`);
+      }
+    }
+    for (const event of scene.events ?? []) {
+      if (ids.size && !ids.has(event.target)) throw new Error(`EVENT_TARGET_MISSING scene=${scene.id} target=${event.target}`);
+    }
+    // Count presence as an authoring integrity check; visibility remains
+    // under the actual scene timeline and is never faked by the renderer.
+    if (declared.has("story_prop") !== declared.has("story_effect")) {
+      process.stdout.write(`VISUAL_ROLE_PARTIAL scene=${scene.id} roles=${[...declared].join(",")}\n`);
+    }
+  }
+
   const presentation = structuredClone(plan.presentation ?? {});
   const requestedFont = String(presentation.caption?.font_family ?? "sans-serif");
   if (requestedFont === "Patrick Hand") {

@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "prepare:renderer": "node scripts/prepare.mjs"
+    "prepare:renderer": "node scripts/prepare.mjs",
+    "preview:faithful": "node scripts/preview.mjs"
   },
   "engines": {
     "node": ">=22"

@@ -123,6 +123,19 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
                     )
             entities[entity_id] = entity
 
+        spatial_bindings = scene.get("spatial_bindings", [])
+        seen_bindings = set()
+        for binding in spatial_bindings:
+            entity_id = binding["entity"]
+            anchor_id = binding["anchor"]
+            if entity_id == anchor_id or entity_id not in entities or anchor_id not in entities:
+                raise _invalid("spatial binding references unknown or identical entities", scene_id=scene_id, detail={"entity": entity_id, "anchor": anchor_id})
+            if entity_id in seen_bindings:
+                raise _invalid("duplicate spatial binding", scene_id=scene_id, detail={"entity": entity_id})
+            seen_bindings.add(entity_id)
+            if binding.get("max_distance_px") is None:
+                raise _invalid("spatial binding must explicitly bound its distance", scene_id=scene_id, detail={"entity": entity_id})
+
         for event in scene["events"]:
             event_id = event["id"]
             target = event["target"]
