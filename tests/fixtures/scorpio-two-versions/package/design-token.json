@@ -1,0 +1,14 @@
+{
+  "id": "zodiac-paper-doodle-meme-v4",
+  "version": "4.0",
+  "style_family": "paper-doodle-chibi-meme",
+  "handmade_profile": "human-stroke-v2",
+  "motion_defaults": {
+    "open_shift": {
+      "duration_frames": 8
+    },
+    "reaction_pop": {
+      "duration_frames": 8
+    }
+  }
+}
