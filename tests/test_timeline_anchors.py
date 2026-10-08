@@ -2,6 +2,7 @@ import unittest
 
 from tools.control_plane.anchors import resolve_voice_anchor
 from tools.control_plane.errors import ControlPlaneError
+from tools.control_plane.timeline import _semantic_caption_rows
 
 
 def timing_scene(words):
@@ -27,6 +28,25 @@ def timing_scene(words):
 
 
 class TimelineAnchorTests(unittest.TestCase):
+    def test_semantic_captions_split_measured_words_using_unicode_tokens(self):
+        scene = {
+            "id": "S01",
+            "caption_segments": [
+                {"text": "!"},
+                {"text": "Bọ Cạp vừa quay lại"},
+            ],
+        }
+        measured = {
+            "captions": [
+                {"text": word, "startMs": i * 100, "endMs": (i + 1) * 100}
+                for i, word in enumerate(("Bọ", "Cạp", "vừa", "quay", "lại"))
+            ]
+        }
+        rows = _semantic_caption_rows(scene, measured, fps=24)
+        self.assertEqual([row["text"] for row in rows], ["Bọ Cạp vừa quay lại"])
+        self.assertEqual(rows[0]["start_frame"], 0)
+        self.assertEqual(rows[0]["end_frame"], 12)
+
     def test_scene_start_trigger_resolves_to_measured_scene_start(self):
         scene = {"id": "S01", "voice": "Xin chào"}
         frame = resolve_voice_anchor(

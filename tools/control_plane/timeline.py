@@ -67,7 +67,7 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
     import re
 
     def words(text: str) -> list[str]:
-        return re.findall(r"\\w+", text.casefold(), flags=re.UNICODE)
+        return re.findall(r"\w+", text.casefold(), flags=re.UNICODE)
 
     raw = timing_scene.get("captions", [])
     if not raw:
@@ -95,6 +95,8 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
     offset = 0
     for segment in segments:
         length = len(words(segment["text"]))
+        if length == 0:
+            continue
         first, last = tokens[offset], tokens[offset + length - 1]
         start = round(first[1] * fps / 1000)
         end = max(start + 1, round(last[2] * fps / 1000))
