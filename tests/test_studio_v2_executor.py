@@ -45,6 +45,7 @@ def make_source(root: Path) -> Path:
     (source / "narration.txt").write_text("xin chao\n", encoding="utf-8")
     manifest = {
         "format": "zodiac-job@5",
+        "job": {"id": "scorpio-two-versions", "revision": "1.0.0"},
         "contract": {
             "id": "zodiac-authoring-ir",
             "version": "1.0.0",
