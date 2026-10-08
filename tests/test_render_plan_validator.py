@@ -27,6 +27,24 @@ class RenderPlanValidatorTests(unittest.TestCase):
         validate_render_plan(self.plan, self.ir)
         self.assertEqual(target_overlap_count(self.plan), 0)
 
+    def test_merged_semantic_events_are_valid_render_plan_intervals(self):
+        event = self.ir["scenes"][0]["events"][0]
+        duplicate = copy.deepcopy(event)
+        duplicate["id"] = "E02"
+        duplicate["scheduling"] = {
+            "max_drift_frames": 0,
+            "merge_policy": "same_intent_same_state",
+        }
+        self.ir["scenes"][0]["events"].append(duplicate)
+        plan = compile_render_plan(
+            self.ir,
+            load("timing.json"),
+            load("design-token.json"),
+        )
+        merged = plan["scenes"][0]["events"][0]
+        self.assertEqual(merged["merged_event_ids"], ["E01", "E02"])
+        validate_render_plan(plan, self.ir)
+
     def test_same_target_overlap_is_rejected(self):
         duplicate = copy.deepcopy(self.plan["scenes"][0]["events"][0])
         duplicate["event_id"] = "E02"
