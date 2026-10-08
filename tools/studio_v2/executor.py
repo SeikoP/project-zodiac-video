@@ -195,7 +195,6 @@ def _default_audio_handler(
             "-map", "1:a:0",
             "-c:v", "copy",
             "-c:a", "aac",
-            "-shortest",
             str(output_path),
         ]
     else:
@@ -217,7 +216,6 @@ def _default_audio_handler(
             "-map", "[aout]",
             "-c:v", "copy",
             "-c:a", "aac",
-            "-shortest",
             str(output_path),
         ]
     run_structured_command(
