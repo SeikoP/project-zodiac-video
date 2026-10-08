@@ -1,5 +1,5 @@
-import React from "react";
-import {AbsoluteFill, Img, Sequence, useCurrentFrame} from "remotion";
+import React, {useEffect, useState} from "react";
+import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import type {
   RenderPlanEntity,
@@ -7,6 +7,34 @@ import type {
   RenderPlanScene,
   RendererV2Props,
 } from "./types";
+
+const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => {
+  const needsFont = presentation.caption?.font_family === "Patrick Hand";
+  const fontUri = presentation.caption?.font_data_uri;
+  const [handle] = useState(() => delayRender("Verify caption font", {timeoutInMilliseconds: 30000}));
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      if (needsFont) {
+        if (!fontUri?.startsWith("data:font/ttf;base64,")) {
+          throw new Error("FONT_LOAD_FAILED requested=Patrick Hand actual=missing fallback=false");
+        }
+        const font = new FontFace("Patrick Hand", `url("${fontUri}")`, {weight: "400"});
+        await font.load();
+        document.fonts.add(font);
+        if (!document.fonts.check('400 84px "Patrick Hand"')) {
+          throw new Error("FONT_LOAD_FAILED requested=Patrick Hand actual=unavailable fallback=false");
+        }
+        console.info("Patrick Hand loaded; fallback=false; requested=Patrick Hand; actual=Patrick Hand");
+      }
+      if (active) continueRender(handle);
+    };
+    run().catch((error) => {
+      if (active) cancelRender(error instanceof Error ? error : new Error(String(error)));
+    });
+    return () => {active = false;};
+  }, [handle, needsFont, fontUri]);
+};
 
 const stateForFrame = (
   scene: RenderPlanScene,
@@ -52,7 +80,7 @@ const SceneLayer: React.FC<{
     (item) => frame >= item.start_frame && frame < item.end_frame,
   );
   const captionStyle = presentation.caption ?? {};
-  const safe = captionStyle.safe_zone ?? {};
+  const safe = scene.layout_contract?.caption_safe_zone ?? captionStyle.safe_zone ?? {};
 
   return (
     <AbsoluteFill>
@@ -102,6 +130,11 @@ const SceneLayer: React.FC<{
             top: safe.y ?? 960,
             width: safe.width ?? 936,
             minHeight: safe.height ?? 160,
+            maxHeight: safe.height ?? 160,
+            overflow: "hidden",
+            lineHeight: 1.15,
+            overflowWrap: "normal",
+            wordBreak: "normal",
             fontFamily: presentation.caption?.font_family ?? "sans-serif",
             fontSize: presentation.caption?.font_size_px ?? 84,
             fontWeight: presentation.caption?.font_weight ?? 400,
@@ -121,6 +154,8 @@ const Watermark: React.FC<{presentation: RenderPlanPresentation}> = ({presentati
   const watermark = presentation.watermark;
   if (!watermark?.enabled || !watermark.text) return null;
   const offset = watermark.offset_px ?? {};
+  const hasVectorStar = watermark.text.trim().startsWith("✦");
+  const label = hasVectorStar ? watermark.text.trim().slice(1).trimStart() : watermark.text;
   return (
     <div
       data-watermark="brand"
@@ -134,9 +169,11 @@ const Watermark: React.FC<{presentation: RenderPlanPresentation}> = ({presentati
         opacity: watermark.opacity ?? 0.45,
         color: presentation.ink ?? "#111111",
         zIndex: watermark.layer ?? 100,
+        display: "flex", alignItems: "center", gap: 5,
       }}
     >
-      {watermark.text}
+      {hasVectorStar ? <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0 L15.2 8.8 L24 12 L15.2 15.2 L12 24 L8.8 15.2 L0 12 L8.8 8.8 Z"/></svg> : null}
+      <span>{label}</span>
     </div>
   );
 };
@@ -145,7 +182,9 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
   scenes,
   assets,
   presentation = {},
-}) => (
+}) => {
+  useVerifiedCaptionFont(presentation);
+  return (
   <AbsoluteFill style={{backgroundColor: presentation.paper ?? "#ffffff"}}>
     {scenes.map((scene) => (
       <Sequence
@@ -158,4 +197,5 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
     ))}
     <Watermark presentation={presentation} />
   </AbsoluteFill>
-);
+  );
+};

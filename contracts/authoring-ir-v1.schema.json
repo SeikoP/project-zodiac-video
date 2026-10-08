@@ -146,14 +146,47 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "delivery": {"type": "string", "minLength": 1},
-        "energy": {"type": "number", "minimum": 0, "maximum": 1},
-        "emotion": {"type": "string", "minLength": 1},
-        "pace": {"enum": ["slow", "medium", "fast"]},
-        "emphasis": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "continuity_group": {"type": "string", "minLength": 1},
-        "motion_duration_ms": {"type": "integer", "minimum": 1, "maximum": 10000},
-        "transition_duration_ms": {"type": "integer", "minimum": 1, "maximum": 10000}
+        "delivery": {
+          "type": "string",
+          "minLength": 1
+        },
+        "energy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "emotion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pace": {
+          "enum": [
+            "slow",
+            "medium",
+            "fast"
+          ]
+        },
+        "emphasis": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "continuity_group": {
+          "type": "string",
+          "minLength": 1
+        },
+        "motion_duration_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "transition_duration_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
       }
     },
     "scene": {
@@ -192,6 +225,152 @@
           "items": {
             "$ref": "#/$defs/event"
           }
+        },
+        "caption_segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/caption_segment"
+          }
+        },
+        "caption_timing_status": {
+          "type": "string"
+        },
+        "layout_contract": {
+          "$ref": "#/$defs/layout_contract"
+        },
+        "render_density_budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "max_characters",
+            "max_prominent_props",
+            "max_prominent_effects"
+          ],
+          "properties": {
+            "max_characters": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "max_prominent_props": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "max_prominent_effects": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      }
+    },
+    "caption_segment": {
+      "type": "object",
+      "required": [
+        "text",
+        "start_ms",
+        "end_ms",
+        "max_lines",
+        "preferred_breaks"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_lines": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "preferred_breaks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "zone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "layout_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canvas",
+        "caption_safe_zone",
+        "character_zone",
+        "prop_zone",
+        "effect_zone"
+      ],
+      "properties": {
+        "canvas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "width",
+            "height"
+          ],
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "caption_safe_zone": {
+          "$ref": "#/$defs/zone"
+        },
+        "character_zone": {
+          "$ref": "#/$defs/zone"
+        },
+        "prop_zone": {
+          "$ref": "#/$defs/zone"
+        },
+        "effect_zone": {
+          "$ref": "#/$defs/zone"
         }
       }
     }

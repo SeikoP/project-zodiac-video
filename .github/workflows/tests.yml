@@ -374,3 +374,12 @@ jobs:
         run: |
           npx remotion still src/index.ts ZodiacRenderPlan /tmp/zodiac-scorpio-v2/frame.png --props=/tmp/zodiac-scorpio-v2/.runtime/renderer-v2-props.json --frame=38
           test -s /tmp/zodiac-scorpio-v2/frame.png
+      - name: P0 renderer-faithful 3-scene smoke
+        run: node runtime/zodiac-renderer/2.0.0/renderer/scripts/smoke-p0.mjs
+      - name: Upload P0 smoke frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-caption-layout-smoke
+          path: tests/renderer-smoke/out/p0/
+          if-no-files-found: warn

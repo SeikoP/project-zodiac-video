@@ -4,7 +4,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import test from "node:test";
 
-import {prepareRendererProps, validateExecutablePlan} from "../scripts/prepare.mjs";
+import {prepareRendererProps, validateExecutablePlan, validateSceneLayout} from "../scripts/prepare.mjs";
 
 const minimalPlan = () => ({
   format: "zodiac-render-plan@1",
@@ -66,4 +66,34 @@ test("renderer prepare source has no semantic scheduling hooks", async () => {
   ]) {
     assert.equal(source.includes(forbidden), false, forbidden);
   }
+});
+
+test("caption safe zone blocks transformed visible props", () => {
+  const plan = minimalPlan();
+  plan.scenes[0].layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+    character_zone:{x:10,y:400,width:1000,height:500},
+    prop_zone:{x:100,y:920,width:900,height:350},
+    effect_zone:{x:20,y:380,width:1000,height:400},
+  };
+  plan.scenes[0].entities = [{id:"story_prop",initial_state:"visible",
+    states:{visible:{asset:"char.scorpio",visible:true,transform:{x:200,y:1310,width:300,height:260}}}}];
+  assert.throws(() => validateSceneLayout(plan), /LAYOUT_OVERLAP/);
+});
+
+test("caption safe zone accepts non-colliding dense layout", () => {
+  const plan = minimalPlan();
+  plan.scenes[0].layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+    character_zone:{x:10,y:400,width:1000,height:500},
+    prop_zone:{x:100,y:920,width:900,height:350},
+    effect_zone:{x:20,y:380,width:1000,height:400},
+  };
+  plan.scenes[0].entities = [0,1,2].map(i=>({
+    id:"actor"+i,initial_state:"idle",
+    states:{idle:{asset:"char.scorpio",visible:true,transform:{x:i*300,y:400,width:240,height:400}}}
+  }));
+  assert.doesNotThrow(() => validateSceneLayout(plan));
 });

@@ -52,6 +52,44 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
             raise _invalid(f"duplicate scene id: {scene_id}", scene_id=scene_id)
         scene_ids.add(scene_id)
 
+        segments = scene.get("caption_segments")
+        if segments is not None:
+            if not segments:
+                raise _invalid("caption_segments must not be empty", scene_id=scene_id)
+            last_end = 0
+            combined = []
+            for index, segment in enumerate(segments):
+                start, end = segment["start_ms"], segment["end_ms"]
+                if start < last_end or end <= start:
+                    raise _invalid("caption segments overlap or have invalid bounds", scene_id=scene_id, detail={"index": index})
+                last_end = end
+                phrase = segment["text"].strip()
+                if len(_tokens(phrase)) < 3 and not any(p in phrase for p in "!?…"):
+                    raise _invalid("caption fragment has fewer than three words", scene_id=scene_id, detail={"index": index})
+                combined.extend(_tokens(phrase))
+            if combined != _tokens(scene["voice"]):
+                raise _invalid("caption text does not preserve exact narration token order", scene_id=scene_id)
+        layout = scene.get("layout_contract")
+        if layout is not None:
+            width, height = layout["canvas"]["width"], layout["canvas"]["height"]
+            for zone_name in ("caption_safe_zone", "character_zone", "prop_zone", "effect_zone"):
+                zone = layout[zone_name]
+                if zone["x"] + zone["width"] > width or zone["y"] + zone["height"] > height:
+                    raise _invalid("layout zone exceeds canvas", scene_id=scene_id, detail={"zone": zone_name})
+            def intersects(a, b):
+                return (a["x"] < b["x"] + b["width"] and b["x"] < a["x"] + a["width"] and a["y"] < b["y"] + b["height"] and b["y"] < a["y"] + a["height"])
+            for zone_name in ("character_zone", "prop_zone", "effect_zone"):
+                if intersects(layout["caption_safe_zone"], layout[zone_name]):
+                    raise _invalid("caption safe zone collides with reserved scene zone", scene_id=scene_id, detail={"zone": zone_name})
+        density = scene.get("render_density_budget")
+        if density is not None:
+            # Count all authored entities conservatively; a richer actor/prop classifier
+            # is needed before enforcing category-specific dynamic density limits.
+            if density["max_characters"] > 3:
+                raise _invalid("too many characters in density budget", scene_id=scene_id)
+            # These are upper bounds, not actual per-frame occupancy. Enforce
+            # dynamic counts after asset classification and transform resolution.
+
         entities: dict[str, dict[str, Any]] = {}
         for entity in scene["entities"]:
             entity_id = entity["id"]

@@ -7,7 +7,8 @@ from tools.control_plane.errors import ControlPlaneError
 def timing_scene(words):
     captions = []
     for index, text in enumerate(words):
-        start = index * 250
+        # timing-v1 stores global video ms: this fixture starts at frame 48 (2 s).
+        start = 2000 + index * 250
         captions.append(
             {
                 "text": text,
