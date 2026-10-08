@@ -42,8 +42,9 @@ def _caption_rows(
             continue
         start_ms = float(caption.get("startMs", caption.get("timestampMs", 0)))
         end_ms = float(caption.get("endMs", start_ms))
-        start_frame = scene_start + round(start_ms * fps / 1000.0)
-        end_frame = scene_start + round(end_ms * fps / 1000.0)
+        # Measured caption timestamps are absolute offsets in the entire video.
+        start_frame = round(start_ms * fps / 1000.0)
+        end_frame = round(end_ms * fps / 1000.0)
         if end_frame <= start_frame:
             end_frame = start_frame + 1
         rows.append(
