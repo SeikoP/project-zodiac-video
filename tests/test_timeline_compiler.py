@@ -45,6 +45,12 @@ class TimelineCompilerTests(unittest.TestCase):
         self.assertEqual(event["start_frame"], 0)
         self.assertEqual(event["end_frame"], 8)
 
+    def test_compiler_resolves_state_assets_into_executable_event(self):
+        plan = compile_render_plan(self.ir, self.timing, self.design)
+        event = plan["scenes"][0]["events"][0]
+        self.assertEqual(event["asset_before"], "char.scorpio")
+        self.assertEqual(event["asset_after"], "char.scorpio")
+
     def test_same_target_overlap_is_shifted_within_drift_allowance(self):
         add_second_state_event(self.ir)
         plan = compile_render_plan(self.ir, self.timing, self.design)
