@@ -48,6 +48,9 @@ export type RenderPlanEvent = {
   merged_event_ids?: string[];
 };
 
+export type RenderBox = {x: number; y: number; width: number; height: number};
+export type RenderLayoutContract = {canvas: {width: number; height: number}; caption_safe_zone: RenderBox; character_zone: RenderBox; prop_zone: RenderBox; effect_zone: RenderBox};
+
 export type RenderPlanScene = {
   id: string;
   continuity_group?: string;
@@ -56,6 +59,7 @@ export type RenderPlanScene = {
   duration_frames: number;
   measured_duration_frames?: number;
   entities?: RenderPlanEntity[];
+  layout_contract?: RenderLayoutContract;
   captions?: RenderPlanCaption[];
   events: RenderPlanEvent[];
 };
