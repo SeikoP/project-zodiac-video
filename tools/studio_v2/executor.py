@@ -468,8 +468,31 @@ def _default_audio_handler(
 
 
 def _default_output_handler(workspace: Path, final_path: Path, output_path: Path) -> Path:
+    """Publish the video and the Job@5 cover/copy with one renderer source."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(final_path, output_path)
+    publish_dir = workspace / "publish"
+    metadata_path = publish_dir / "publish.json"
+    if metadata_path.is_file():
+        metadata = _read_json(metadata_path, code="PUBLISH_METADATA_INVALID", stage="OUTPUT")
+        shutil.copy2(metadata_path, output_path.parent / "publish.json")
+        copy_path = publish_dir / "publish-copy.txt"
+        if copy_path.is_file():
+            shutil.copy2(copy_path, output_path.parent / "publish-copy.txt")
+        if metadata.get("cover"):
+            run_structured_command(
+                [
+                    "node",
+                    str(_ROOT / "runtime" / "zodiac-renderer" / "2.0.0"
+                        / "renderer" / "scripts" / "render-cover.mjs"),
+                    str(workspace),
+                    str(output_path.parent / "cover.png"),
+                ],
+                stage="OUTPUT",
+                fallback_code="COVER_RENDER_FAILED",
+            )
+            _require_output(output_path.parent / "cover.png", stage="OUTPUT",
+                            code="COVER_RENDER_FAILED")
     return _require_output(output_path, stage="OUTPUT", code="OUTPUT_WRITE_FAILED")
 
 
@@ -934,7 +957,11 @@ class StudioV2Executor:
         complete_forced_stage(AUDIO)
         self._begin_step(OUTPUT, cancel_event)
         output_path = workspace / "out" / "zodiac-story.mp4"
-        output_input = audio_hash
+        publish_metadata = workspace / "publish" / "publish.json"
+        publish_copy = workspace / "publish" / "publish-copy.txt"
+        publish_hash = _sha256_file(publish_metadata) if publish_metadata.is_file() else "none"
+        copy_hash = _sha256_file(publish_copy) if publish_copy.is_file() else "none"
+        output_input = hashlib.sha256(f"{audio_hash}:{publish_hash}:{copy_hash}".encode("utf-8")).hexdigest()
         stage_started = time.perf_counter()
         if not _reuse_file(
             controller,
@@ -942,7 +969,9 @@ class StudioV2Executor:
             OUTPUT,
             input_hash=output_input,
             path=output_path,
-            force=OUTPUT in forced,
+            force=OUTPUT in forced or (publish_metadata.is_file() and
+                _read_json(publish_metadata, code="PUBLISH_METADATA_INVALID", stage="OUTPUT").get("cover") is not None and
+                not (output_path.parent / "cover.png").is_file()),
         ):
             try:
                 produced = Path(
