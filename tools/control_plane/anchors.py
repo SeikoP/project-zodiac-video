@@ -94,4 +94,16 @@ def resolve_voice_anchor(
     fps = int(timing_scene.get("fps") or 24)
     scene_start = int(timing_scene.get("start_frame") or 0)
     timestamp_ms = rows[selected][1]
-    return scene_start + round(timestamp_ms * fps / 1000.0)
+    # timing-v1 captions carry ABSOLUTE video timestamps (not scene-relative).
+    # build_timing_from_word_alignment has already added the scene offset.
+    frame = round(timestamp_ms * fps / 1000.0)
+    scene_end = scene_start + int(timing_scene.get("duration_frames") or 0)
+    if frame < scene_start or frame >= scene_end:
+        raise ControlPlaneError(
+            code="ANCHOR_OUTSIDE_SCENE",
+            stage="PLAN",
+            message=f"voice anchor {trigger.get('text')!r} falls outside measured scene",
+            scene_id=scene_id or None,
+            detail={"anchor_frame": frame, "scene_start": scene_start, "scene_end": scene_end},
+        )
+    return frame
