@@ -4,6 +4,35 @@ export type RenderPlanAsset = {
   [key: string]: unknown;
 };
 
+export type RenderTransform = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  scale?: number;
+  rotation?: number;
+};
+
+export type RenderPlanState = {
+  asset: string;
+  transform?: RenderTransform;
+  layer?: number;
+  visible?: boolean;
+  [key: string]: unknown;
+};
+
+export type RenderPlanEntity = {
+  id: string;
+  initial_state: string;
+  states: Record<string, RenderPlanState>;
+};
+
+export type RenderPlanCaption = {
+  text: string;
+  start_frame: number;
+  end_frame: number;
+};
+
 export type RenderPlanEvent = {
   event_id: string;
   scene_id: string;
@@ -23,13 +52,42 @@ export type RenderPlanScene = {
   id: string;
   start_frame: number;
   duration_frames: number;
+  measured_duration_frames?: number;
+  entities?: RenderPlanEntity[];
+  captions?: RenderPlanCaption[];
   events: RenderPlanEvent[];
+};
+
+export type RenderPlanPresentation = {
+  paper?: string;
+  ink?: string;
+  caption?: {
+    font_family?: string;
+    font_size_px?: number;
+    font_weight?: number;
+    max_lines?: number;
+    color?: string;
+    highlight_color?: string;
+    safe_zone?: {x?: number; y?: number; width?: number; height?: number};
+  };
+  watermark?: {
+    enabled?: boolean;
+    text?: string;
+    anchor?: string;
+    offset_px?: {x?: number; y?: number};
+    font_family?: string;
+    font_size_px?: number;
+    font_weight?: number;
+    opacity?: number;
+    layer?: number;
+  };
 };
 
 export type RendererV2Props = {
   contract: "zodiac-render-plan@1";
   fps: number;
   video: {width: number; height: number};
+  presentation?: RenderPlanPresentation;
   assets: Record<string, RenderPlanAsset>;
   scenes: RenderPlanScene[];
 };
