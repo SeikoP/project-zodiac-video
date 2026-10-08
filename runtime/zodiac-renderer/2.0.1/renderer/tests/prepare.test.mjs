@@ -132,3 +132,48 @@ test("spatial binding rejects missing anchor identities", () => {
   plan.scenes[0].spatial_bindings = [{entity:"story_effect",anchor:"friend",relation:"emitted_by",max_distance_px:220}];
   assert.throws(() => validateSceneLayout(plan), /SPATIAL_ANCHOR_MISSING/);
 });
+
+test("density classifies named props and effects by asset metadata instead of IDs", () => {
+  const plan = minimalPlan();
+  plan.assets = {
+    "char.scorpio": {path:"assets/characters/scorpio.svg",category:"character"},
+    notebook:{path:"assets/props/notebook.svg",category:"prop"},
+    pen:{path:"assets/props/pen.svg",category:"prop"},
+    question:{path:"assets/effects/question.svg",category:"effect"},
+  };
+  plan.scenes[0].layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+    character_zone:{x:10,y:400,width:1000,height:500},
+    prop_zone:{x:100,y:930,width:880,height:340},
+    effect_zone:{x:20,y:380,width:1000,height:400},
+  };
+  const entity = (id,asset) => ({id,initial_state:"visible",states:{visible:{asset,visible:true,transform:{x:40,y:300,width:260,height:230}}}});
+  plan.scenes[0].entities = [
+    entity("gemini","char.scorpio"),
+    entity("friend","char.scorpio"),
+    entity("notebook","notebook"),
+    entity("pen","pen"),
+    entity("question_effect","question"),
+  ];
+  assert.doesNotThrow(() => validateSceneLayout(plan));
+  plan.scenes[0].entities.push(entity("extra_pen","pen"));
+  assert.throws(() => validateSceneLayout(plan), /DENSITY_EXCEEDED.*props=3/);
+});
+
+test("environment cues are excluded from actor density even with arbitrary IDs", () => {
+  const plan = minimalPlan();
+  plan.assets = {
+    "char.scorpio": {path:"assets/characters/scorpio.svg"},
+    board: {path:"assets/environment/classroom-whiteboard.svg",category:"environment"},
+  };
+  plan.scenes[0].layout_contract = {
+    canvas:{width:1080,height:1920},
+    caption_safe_zone:{x:80,y:1320,width:920,height:340},
+  };
+  plan.scenes[0].entities = [
+    ...[1,2,3].map(i=>({id:"actor"+i,initial_state:"idle",states:{idle:{asset:"char.scorpio",visible:true,transform:{x:40,y:300,width:260,height:230}}}})),
+    {id:"classroom_board",initial_state:"idle",states:{idle:{asset:"board",visible:true,transform:{x:40,y:300,width:260,height:230}}}},
+  ];
+  assert.doesNotThrow(() => validateSceneLayout(plan));
+});
