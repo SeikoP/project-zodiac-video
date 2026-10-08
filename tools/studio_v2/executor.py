@@ -40,7 +40,7 @@ from .voice import VoiceArtifact, ensure_voice_artifact
 
 _ROOT = Path(__file__).resolve().parents[2]
 
-_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1", "2.0.2"}
+_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1"}
 
 
 def _workspace_renderer_version(workspace: Path) -> str:
