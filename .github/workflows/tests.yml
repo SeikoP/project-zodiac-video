@@ -18,10 +18,10 @@ jobs:
           python-version: "3.11"
       - name: Install Zodiac TUI package
         run: python -m pip install -e .
-      - name: Verify zodiac command
+      - name: Verify zodiac command and current Studio launcher
         run: |
           command -v zodiac
-          python -c "from tools.tui.app import ZodiacTui; assert ZodiacTui.TITLE == 'Zodiac'"
+          python -c "from tools.zodiac_gui import main; from tools.studio.app import main as studio_main; assert callable(main) and callable(studio_main)"
       - name: Compile Python
         run: python -m compileall -q tools tests
       - name: Unit tests
