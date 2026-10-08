@@ -7,6 +7,7 @@ from typing import Any
 from .authoring import load_authoring_ir
 from .contracts import canonical_contract_hash, validate_contract_shape
 from .errors import ControlPlaneError
+from .semantic_qc import strict_errors
 
 
 _REQUIRED_ROOT_FILES = {
@@ -291,6 +292,22 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
 
     _validate_narration(root, ir)
     _validate_asset_files(root, ir)
+
+    # Legacy producer 2.1.x and existing 2.2.2 packages must remain readable.
+    # New producers cannot advertise LOCAL_RUNNER_IMPORT_READY when effect
+    # lifecycle, asset taxonomy or authored spatial constraints are broken.
+    producer_version = str(manifest.get("producer", {}).get("version", ""))
+    import re
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:$|[-+])", producer_version)
+    if match and tuple(map(int, match.groups())) >= (2, 2, 3):
+        semantic_errors = strict_errors(ir)
+        if semantic_errors:
+            _fail(
+                "PACKAGE_SEMANTIC_INVALID",
+                "modern Job@5 contains broken visual semantics",
+                detail={"issues": [issue.as_dict() for issue in semantic_errors[:30]],
+                        "issue_count": len(semantic_errors)},
+            )
     return {
         "manifest": manifest,
         "ir": ir,
