@@ -25,6 +25,18 @@ def resolve_voice_anchor(
     trigger: dict[str, Any],
 ) -> int:
     scene_id = str(scene.get("id") or timing_scene.get("id") or "")
+    trigger_type = str(trigger.get("type") or "")
+    if trigger_type == "scene_start":
+        return int(timing_scene.get("start_frame") or 0)
+    if trigger_type != "voice_anchor":
+        raise ControlPlaneError(
+            code="ANCHOR_UNSUPPORTED",
+            stage="PLAN",
+            message=f"unsupported trigger type: {trigger_type!r}",
+            scene_id=scene_id or None,
+            detail={"trigger_type": trigger_type},
+        )
+
     phrase = _tokens(str(trigger.get("text", "")))
     if not phrase:
         raise ControlPlaneError(
