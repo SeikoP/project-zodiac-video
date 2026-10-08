@@ -299,3 +299,30 @@ jobs:
         env:
           ZODIAC_E2E_RUNTIME: "1"
         run: python -m unittest tests.test_zodiac_local.RuntimeV3210StyleContractTests.test_v3210_runtime_prepare_golden_v4_package -v
+
+
+  control-plane-v2-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Zodiac package
+        run: python -m pip install -e .
+      - name: Test Control Plane v2 core
+        run: |
+          python -m unittest \
+            tests.test_control_plane_contracts \
+            tests.test_control_plane_errors \
+            tests.test_authoring_ir \
+            tests.test_timeline_anchors \
+            tests.test_timeline_compiler \
+            tests.test_render_plan_validator \
+            tests.test_control_plane_cli \
+            tests.test_control_plane_scorpio_golden -v
+      - name: Build minimal job through headless compiler
+        run: zodiac-control build tests/fixtures/control-plane-v2/minimal --output /tmp/render-plan.json
+      - name: Verify Scorpio E22 golden regression
+        run: python -m unittest tests.test_control_plane_scorpio_golden -v
