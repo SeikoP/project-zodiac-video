@@ -39,6 +39,7 @@ class ControlPlaneContractTests(unittest.TestCase):
     def test_minimal_job_manifest_is_valid(self):
         document = {
             "format": "zodiac-job@5",
+            "job": {"id": "scorpio-two-versions", "revision": "1.0.0"},
             "contract": {
                 "id": "zodiac-authoring-ir",
                 "version": "1.0.0",
@@ -49,9 +50,24 @@ class ControlPlaneContractTests(unittest.TestCase):
         }
         self.assertEqual(validate_contract_shape("zodiac-job-v5", document), [])
 
+    def test_job_manifest_requires_stable_job_identity(self):
+        document = {
+            "format": "zodiac-job@5",
+            "contract": {
+                "id": "zodiac-authoring-ir",
+                "version": "1.0.0",
+                "sha256": "a" * 64,
+            },
+            "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+            "producer": {"plugin": "zodiac-video-pipeline", "version": "2.0.0"},
+        }
+        issues = validate_contract_shape("zodiac-job-v5", document)
+        self.assertTrue(any(issue.path == "$.job" for issue in issues))
+
     def test_job_manifest_missing_contract_is_rejected(self):
         document = {
             "format": "zodiac-job@5",
+            "job": {"id": "scorpio-two-versions", "revision": "1.0.0"},
             "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
             "producer": {"plugin": "zodiac-video-pipeline", "version": "2.0.0"},
         }
