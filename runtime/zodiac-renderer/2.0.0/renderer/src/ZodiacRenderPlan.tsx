@@ -1,44 +1,161 @@
 import React from "react";
-import {AbsoluteFill, Img, Sequence} from "remotion";
+import {AbsoluteFill, Img, Sequence, useCurrentFrame} from "remotion";
 
-import type {RendererV2Props} from "./types";
+import type {
+  RenderPlanEntity,
+  RenderPlanPresentation,
+  RenderPlanScene,
+  RendererV2Props,
+} from "./types";
 
-export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({scenes, assets}) => (
-  <AbsoluteFill style={{backgroundColor: "#ffffff"}}>
-    {scenes.flatMap((scene) =>
-      scene.events.map((event) => (
-        <Sequence
-          key={event.event_id}
-          from={event.start_frame}
-          durationInFrames={event.end_frame - event.start_frame}
+const stateForFrame = (
+  scene: RenderPlanScene,
+  entity: RenderPlanEntity,
+  frame: number,
+  assets: RendererV2Props["assets"],
+) => {
+  let stateId = entity.initial_state;
+  let fallbackAsset: string | undefined;
+
+  for (const event of scene.events) {
+    if (event.target !== entity.id) continue;
+    const transitionDuration = event.end_frame - event.start_frame;
+    const resolvedAfterAsset = assets[event.asset_after];
+    if (frame >= event.end_frame) {
+      stateId = event.state_after;
+      fallbackAsset = resolvedAfterAsset ? event.asset_after : fallbackAsset;
+    } else if (
+      frame >= event.start_frame
+      && transitionDuration > 0
+      && resolvedAfterAsset
+    ) {
+      fallbackAsset = event.asset_before;
+    }
+  }
+
+  const state = entity.states[stateId] ?? entity.states[entity.initial_state];
+  return {
+    state,
+    assetId: state?.asset ?? fallbackAsset,
+  };
+};
+
+const SceneLayer: React.FC<{
+  scene: RenderPlanScene;
+  assets: RendererV2Props["assets"];
+  presentation: RenderPlanPresentation;
+}> = ({scene, assets, presentation}) => {
+  const relativeFrame = useCurrentFrame();
+  const frame = relativeFrame + scene.start_frame;
+  const captions = scene.captions ?? [];
+  const caption = captions.find(
+    (item) => frame >= item.start_frame && frame < item.end_frame,
+  );
+  const captionStyle = presentation.caption ?? {};
+  const safe = captionStyle.safe_zone ?? {};
+
+  return (
+    <AbsoluteFill>
+      {[...(scene.entities ?? [])]
+        .sort((a, b) => {
+          const aState = a.states[a.initial_state];
+          const bState = b.states[b.initial_state];
+          return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
+        })
+        .map((entity) => {
+          const {state, assetId} = stateForFrame(scene, entity, frame, assets);
+          if (!state || state.visible === false || !assetId) return null;
+          const asset = assets[assetId];
+          const src = asset?.src;
+          const transform = state.transform ?? {};
+          const style: React.CSSProperties = {
+            position: "absolute",
+            left: transform.x ?? 0,
+            top: transform.y ?? 0,
+            width: transform.width ?? 520,
+            height: transform.height ?? 520,
+            transform: `scale(${transform.scale ?? 1}) rotate(${transform.rotation ?? 0}deg)`,
+            zIndex: state.layer ?? 0,
+            objectFit: "contain",
+          };
+          return src ? (
+            <Img
+              key={entity.id}
+              src={src}
+              data-entity-id={entity.id}
+              data-asset-id={assetId}
+              style={style}
+            />
+          ) : (
+            <div key={entity.id} data-entity-id={entity.id} style={style}>
+              {entity.id}
+            </div>
+          );
+        })}
+
+      {caption ? (
+        <div
+          data-caption="active"
+          style={{
+            position: "absolute",
+            left: safe.x ?? 72,
+            top: safe.y ?? 960,
+            width: safe.width ?? 936,
+            minHeight: safe.height ?? 160,
+            fontFamily: presentation.caption?.font_family ?? "sans-serif",
+            fontSize: presentation.caption?.font_size_px ?? 84,
+            fontWeight: presentation.caption?.font_weight ?? 400,
+            color: presentation.caption?.color ?? presentation.ink ?? "#111111",
+            textAlign: "center",
+            zIndex: 90,
+          }}
         >
-          <AbsoluteFill
-            style={{
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "sans-serif",
-              fontSize: 48,
-            }}
-          >
-            {(() => {
-              const asset = assets[event.asset_after];
-              const src = asset?.src;
-              return src ? (
-                <Img
-                  src={src}
-                  data-event-id={event.event_id}
-                  data-asset-id={event.asset_after}
-                  style={{width: 520, height: 520, objectFit: "contain"}}
-                />
-              ) : (
-                <div data-event-id={event.event_id} data-asset-id={event.asset_after}>
-                  {event.target}
-                </div>
-              );
-            })()}
-          </AbsoluteFill>
-        </Sequence>
-      )),
-    )}
+          {caption.text}
+        </div>
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
+const Watermark: React.FC<{presentation: RenderPlanPresentation}> = ({presentation}) => {
+  const watermark = presentation.watermark;
+  if (!watermark?.enabled || !watermark.text) return null;
+  const offset = watermark.offset_px ?? {};
+  return (
+    <div
+      data-watermark="brand"
+      style={{
+        position: "absolute",
+        left: offset.x ?? 68,
+        top: offset.y ?? 40,
+        fontFamily: watermark.font_family ?? "sans-serif",
+        fontSize: watermark.font_size_px ?? 29,
+        fontWeight: watermark.font_weight ?? 400,
+        opacity: watermark.opacity ?? 0.45,
+        color: presentation.ink ?? "#111111",
+        zIndex: watermark.layer ?? 100,
+      }}
+    >
+      {watermark.text}
+    </div>
+  );
+};
+
+export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
+  scenes,
+  assets,
+  presentation = {},
+}) => (
+  <AbsoluteFill style={{backgroundColor: presentation.paper ?? "#ffffff"}}>
+    {scenes.map((scene) => (
+      <Sequence
+        key={scene.id}
+        from={scene.start_frame}
+        durationInFrames={scene.duration_frames}
+      >
+        <SceneLayer scene={scene} assets={assets} presentation={presentation} />
+      </Sequence>
+    ))}
+    <Watermark presentation={presentation} />
   </AbsoluteFill>
 );
