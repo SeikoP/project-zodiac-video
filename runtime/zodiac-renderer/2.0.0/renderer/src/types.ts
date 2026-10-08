@@ -1,5 +1,6 @@
 export type RenderPlanAsset = {
   path?: string;
+  src?: string;
   [key: string]: unknown;
 };
 
