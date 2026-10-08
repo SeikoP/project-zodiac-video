@@ -11,6 +11,8 @@
       "duration_frames": 120,
       "events": [
         {
+          "asset_after": "char.scorpio",
+          "asset_before": "char.scorpio",
           "end_frame": 38,
           "event_id": "E21",
           "motion": "open_shift",
@@ -19,11 +21,11 @@
           "start_frame": 30,
           "state_after": "open",
           "state_before": "guarded",
-          "target": "scorpio",
-          "asset_before": "char.scorpio",
-          "asset_after": "char.scorpio"
+          "target": "scorpio"
         },
         {
+          "asset_after": "char.scorpio",
+          "asset_before": "char.scorpio",
           "end_frame": 46,
           "event_id": "E22",
           "motion": "reaction_pop",
@@ -32,9 +34,7 @@
           "start_frame": 38,
           "state_after": "side_eye",
           "state_before": "open",
-          "target": "scorpio",
-          "asset_before": "char.scorpio",
-          "asset_after": "char.scorpio"
+          "target": "scorpio"
         }
       ],
       "id": "S02",
