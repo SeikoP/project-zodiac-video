@@ -1,4 +1,4 @@
-import {mkdtemp, mkdir, readFile, writeFile} from "node:fs/promises";
+import {mkdtemp, mkdir, readFile, writeFile, copyFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {resolve, join} from "node:path";
 import {spawnSync} from "node:child_process";
@@ -26,13 +26,16 @@ await writeFile(join(root,".runtime/render-plan.json"),JSON.stringify(plan));
 const {output,props}=await prepareRendererProps(root);
 if(!props.presentation.caption.font_data_uri?.startsWith("data:font/ttf;base64,"))throw Error("Patrick Hand not bundled");
 if(props.presentation.watermark.text!=="✦ bungmoto")throw Error("watermark mismatch");
+const artifactDir=resolve("tests/renderer-smoke/out/p0");
+await mkdir(artifactDir,{recursive:true});
 const report={status:"PASS",font_requested:"Patrick Hand",font_embedded:true,watermark:"✦ bungmoto",cases:[]};
 for(const [id,frame] of [["S01",24],["S02",96],["S03",168]]){
  const out=join(root,id+".png");
  const r=spawnSync(process.platform==="win32"?"npx.cmd":"npx",["remotion","still","src/index.ts","ZodiacRenderPlan",out,"--props="+output,"--frame="+frame],{cwd:resolve("runtime/zodiac-renderer/2.0.0/renderer"),stdio:"inherit"});
  if(r.status!==0)throw Error("render failed: "+id);
  const bytes=await readFile(out);if(bytes.length<1000)throw Error("empty smoke frame "+id);
- report.cases.push({scene:id,frame,file:out,size_bytes:bytes.length,caption:plan.scenes.find(s=>s.id===id).captions[0].text});
+ await copyFile(out,join(artifactDir,id+".png"));
+ report.cases.push({scene:id,frame,file:id+".png",size_bytes:bytes.length,caption:plan.scenes.find(s=>s.id===id).captions[0].text});
 }
-await writeFile(join(root,"smoke-report.json"),JSON.stringify(report,null,2));
+await writeFile(join(artifactDir,"smoke-report.json"),JSON.stringify(report,null,2));
 console.log("P0_SMOKE_PASS",JSON.stringify(report));
