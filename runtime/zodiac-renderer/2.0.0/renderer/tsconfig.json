@@ -4,9 +4,14 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
   "include": [
-    "scripts/**/*.mjs"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "remotion.config.ts"
   ]
 }
