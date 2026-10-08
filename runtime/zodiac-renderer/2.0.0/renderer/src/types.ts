@@ -59,6 +59,12 @@ export type RenderPlanScene = {
   duration_frames: number;
   measured_duration_frames?: number;
   entities?: RenderPlanEntity[];
+  spatial_bindings?: Array<{
+    entity: string;
+    anchor: string;
+    relation: "near" | "held_by" | "on_surface" | "emitted_by" | "points_to";
+    max_distance_px: number;
+  }>;
   layout_contract?: RenderLayoutContract;
   captions?: RenderPlanCaption[];
   events: RenderPlanEvent[];
