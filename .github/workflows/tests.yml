@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install Zodiac TUI package
-        run: python -m pip install -e .
+        run: python -m pip install -e . pytest
       - name: Verify zodiac command and current Studio launcher
         run: |
           command -v zodiac
