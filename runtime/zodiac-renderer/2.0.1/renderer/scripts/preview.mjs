@@ -23,13 +23,17 @@ export const resolvePreviewEventPairs = (scene) => {
     const a = event.start_frame, b = event.end_frame;
     if (!Number.isInteger(a) || !Number.isInteger(b) || a < first || b <= a || b > last + 1)
       throw new Error("PREVIEW_EVENT_RANGE_INVALID " + id);
-    const motionOnly = event.state_before === event.state_after &&
+    const sameAssetState = event.state_before === event.state_after &&
       (event.asset_before ?? null) === (event.asset_after ?? null);
+    if (sameAssetState && event.motion === "state_swap")
+      throw new Error("PREVIEW_NOOP_STATE_SWAP "+id);
+    const staticHold = sameAssetState && event.motion === "hold";
+    const motionOnly = sameAssetState && !staticHold;
     const before = Math.max(first,a-1);
     const mid = Math.max(a,Math.min(b-1,Math.floor((a+b-1)/2)));
     const after = Math.min(last,b+Math.min(4,Math.max(1,b-a)));
     const second = motionOnly ? mid : after;
-    return {event_id:id,target:event.target ?? null,motion_only:motionOnly,
+    return {event_id:id,target:event.target ?? null,motion_only:motionOnly,static_hold:staticHold,
       before_frame:before,second_frame:second,second_role:motionOnly?"during":"after",
       fallback:false,distinct_frames:before !== second};
   });
@@ -60,7 +64,7 @@ export const previewFrames = async (workspace,outputDir) => {
         report.scenes.push({id:scene.id,event_id:pair.event_id,frame,file,role});
       }
       report.event_pairs.push({scene_id:scene.id,event_id:pair.event_id,target:pair.target,
-        motion_only:pair.motion_only,distinct_frames:pair.distinct_frames,
+        motion_only:pair.motion_only,static_hold:pair.static_hold??false,distinct_frames:pair.distinct_frames,
         fallback:pair.fallback,frames});
     }
   }
@@ -68,7 +72,7 @@ export const previewFrames = async (workspace,outputDir) => {
   const rows=report.event_pairs.map(pair=>{
     const pics=pair.frames.map(item=>'<figure><img src="'+esc(item.file)+'" alt="'+esc(pair.event_id+" "+item.role)+'"><figcaption>'+item.role.toUpperCase()+' · frame '+item.frame+'</figcaption></figure>').join("");
     return '<section><h2>'+esc(pair.scene_id+" · "+pair.event_id+" · "+(pair.target??"scene"))+'</h2><p>'+
-      (pair.motion_only?"BEFORE/DURING — motion-only":"BEFORE/AFTER — state or visibility change")+
+      (pair.static_hold?"BEFORE/AFTER — static hold (no animation)":pair.motion_only?"BEFORE/DURING — active motion":"BEFORE/AFTER — state or visibility change")+
       (pair.distinct_frames?"":" — WARNING: same sampled frame, temporal check required")+'</p><div class="pair">'+pics+'</div></section>';
   }).join("");
   const html='<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Remotion event preview</title>'+
