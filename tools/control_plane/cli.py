@@ -37,7 +37,10 @@ def build_package(package_root: Path, output: Path | None = None) -> Path:
     ir = load_authoring_ir(root / "production.ir.json")
     print("PACKAGE_VALID")
 
-    timing = _read_json(root / "timing.json", code="TIMING_INVALID")
+    timing = _read_json(
+        root / ".runtime" / "timing.json",
+        code="TIMING_INVALID",
+    )
     design = _read_json(root / "design-token.json", code="DESIGN_TOKEN_INVALID")
 
     plan = compile_render_plan(ir, timing, design)

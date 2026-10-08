@@ -39,9 +39,7 @@ def write_pcm(path: Path, *, frames: int = 800) -> None:
 def make_source(root: Path) -> Path:
     source = root / "source"
     shutil.copytree(FIXTURE, source)
-    timing = source / "timing.json"
-    if timing.exists():
-        timing.unlink()
+    shutil.rmtree(source / ".runtime", ignore_errors=True)
     (source / "narration.txt").write_text("xin chao\n", encoding="utf-8")
     manifest = {
         "format": "zodiac-job@5",
@@ -58,6 +56,13 @@ def make_source(root: Path) -> Path:
         json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
     )
+    publish = source / "publish"
+    publish.mkdir()
+    (publish / "publish.json").write_text(
+        json.dumps({"format": "zodiac-publish@1", "source": {"narration": "narration.txt", "production": "production.ir.json"}}),
+        encoding="utf-8",
+    )
+    (publish / "publish-copy.txt").write_text("xin chao\n", encoding="utf-8")
     return source
 
 
@@ -246,3 +251,4 @@ class StudioV2ExecutorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

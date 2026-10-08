@@ -34,7 +34,7 @@ def add_second_state_event(ir, *, target="scorpio", anchor="chao", max_drift=4, 
 class TimelineCompilerTests(unittest.TestCase):
     def setUp(self):
         self.ir = load("production.ir.json")
-        self.timing = load("timing.json")
+        self.timing = load(".runtime/timing.json")
         self.design = load("design-token.json")
 
     def test_compiles_non_conflicting_event(self):
@@ -144,3 +144,4 @@ class TimelineCompilerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
