@@ -192,6 +192,25 @@ export const prepareRendererProps = async (packageRoot) => {
   } else {
     process.stdout.write(`FONT_REQUESTED=${requestedFont} FONT_SOURCE=system FALLBACK=unspecified\\n`);
   }
+  let publish = null;
+  try {
+    publish = JSON.parse(await readFile(join(root, "publish", "publish.json"), "utf8"));
+  } catch (error) {
+    throw new Error(`PUBLISH_METADATA_MISSING publish/publish.json: ${error.message}`);
+  }
+  if (publish?.format !== "zodiac-publish@1" || publish?.source?.production !== "production.ir.json") {
+    throw new Error("PUBLISH_METADATA_INVALID");
+  }
+  if (publish.cover) {
+    const source = plan.scenes.find(s => s.id === publish.cover.source_scene_id);
+    if (!source) throw new Error(`COVER_SOURCE_SCENE_MISSING ${publish.cover.source_scene_id}`);
+    if (!Array.isArray(publish.cover.visuals) || !publish.cover.visuals.length) throw new Error("COVER_VISUALS_MISSING");
+    for (const v of publish.cover.visuals) {
+      const e = (source.entities ?? []).find(item => item.id === v.entity_id);
+      if (!e?.states?.[v.state_id]) throw new Error(`COVER_STATE_MISSING ${v.entity_id}.${v.state_id}`);
+      if (!plan.assets[e.states[v.state_id].asset]) throw new Error(`COVER_ASSET_MISSING ${v.entity_id}.${v.state_id}`);
+    }
+  }
   const props = {
     contract: "zodiac-render-plan@1",
     fps: plan.fps,
@@ -202,6 +221,7 @@ export const prepareRendererProps = async (packageRoot) => {
       : {}),
     assets: await hydrateAssets(root, plan.assets),
     scenes: plan.scenes,
+    publish,
   };
   await mkdir(runtimeDir, {recursive: true});
   const output = join(runtimeDir, "renderer-v2-props.json");
