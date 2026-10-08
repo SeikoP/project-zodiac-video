@@ -221,7 +221,12 @@ def _align_cached_scenes(
                 # Never turn an ASR mismatch into fabricated word timestamps.
                 primary_model = str(settings.get("model") or "small")
                 if primary_model == "medium":
-                    raise
+                    raise PipelineError(
+                        f"TIMING_REVIEW_REQUIRED: {scene_id}. "
+                        f"Whisper medium could not verify {path.name}. "
+                        f"{first_error} "
+                        "Review the audio before retrying; approved voice is preserved."
+                    ) from first_error
                 from tools.zodiac_local import _emit_tts_log
                 _emit_tts_log(
                     f"TIMING RETRY {scene_id}: {primary_model} mismatch; verifying with medium"
