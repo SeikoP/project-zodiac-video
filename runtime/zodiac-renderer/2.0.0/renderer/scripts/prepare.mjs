@@ -125,6 +125,14 @@ export const prepareRendererProps = async (packageRoot) => {
       if (entity.id === "story_prop" || entity.id === "story_effect") declared.add(entity.id);
       if (!(entity.initial_state in (entity.states ?? {}))) throw new Error(`STATE_MISSING scene=${scene.id} entity=${entity.id}`);
       for (const [stateId, state] of Object.entries(entity.states ?? {})) {
+        if (scene.layout_contract && state.visible !== false && (entity.id === "story_prop" || entity.id === "story_effect")) {
+          const width = Number(state.transform?.width ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
+          const height = Number(state.transform?.height ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
+          const minimum = entity.id === "story_effect" ? {width:230,height:170} : {width:300,height:225};
+          if (width < minimum.width || height < minimum.height) {
+            throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum=${minimum.width}x${minimum.height}`);
+          }
+        }
         if (!(state.asset in (plan.assets ?? {}))) throw new Error(`ASSET_MISSING scene=${scene.id} entity=${entity.id} state=${stateId} asset=${state.asset}`);
       }
     }
