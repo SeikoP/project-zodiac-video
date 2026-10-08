@@ -346,6 +346,24 @@ jobs:
         run: npm test
 
 
+  renderer-v2-0-1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: runtime/zodiac-renderer/2.0.1/renderer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install renderer 2.0.1 dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run renderer 2.0.1 regression
+        run: npm test
+      - name: Typecheck renderer 2.0.1
+        run: npm run typecheck
+
   renderer-v2-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15

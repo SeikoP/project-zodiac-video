@@ -93,21 +93,40 @@ const SceneLayer: React.FC<{
           return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
         })
         .map((entity) => {
-          const {state, assetId, blend} = stateForFrame(scene, entity, frame, assets);
+          const {state, assetId} = stateForFrame(scene, entity, frame, assets);
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
           const src = asset?.src;
           if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
-          const relation = (scene.spatial_bindings ?? []).find((binding) => binding.entity === entity.id)?.relation;
+          const binding = (scene.spatial_bindings ?? []).find((item) => item.entity === entity.id);
+          const relation = binding?.relation;
           const role = entity.id === "story_effect" || relation === "emitted_by"
             ? "effect"
-            : entity.id === "story_prop" || relation === "held_by" || relation === "on_surface"
+            : entity.id === "story_prop" || Boolean(binding)
             ? "prop"
             : "other";
-          const active = scene.events.find((item) => item.target === entity.id && frame >= item.start_frame && frame < item.end_frame);
-          const local = active ? frame - active.start_frame : relativeFrame;
-          const fraction = Math.min(1, Math.max(0, local / (role === "effect" ? 9 : 7)));
+          // Animate explicitly referenced targets only; keep authored x/y stable.
+          const focusTargets = new Set([
+            entity.id,
+            ...(scene.spatial_bindings ?? [])
+              .filter((item) => item.anchor === entity.id && (item.relation === "held_by" || item.relation === "emitted_by"))
+              .map((item) => item.entity),
+          ]);
+          const active = scene.events.find(
+            (item) => focusTargets.has(item.target) && frame >= item.start_frame && frame < item.end_frame,
+          );
+          const local = active ? frame - active.start_frame : 0;
+          const structural = entity.id.startsWith("env__");
+          const character = !structural && role === "other";
+          const phase = active
+            ? Math.min(1, Math.max(0, (frame - active.start_frame) / Math.max(1, active.end_frame - active.start_frame)))
+            : 0;
+          const focusEnvelope = active ? Math.sin(Math.PI * phase) ** 2 : 0;
+          const focusScale = character ? 1 + 0.012 * focusEnvelope : 1;
+          const focusRotate = character ? 1.3 * focusEnvelope : 0;
+          const effectPulse = role === "effect" ? 1 + 0.055 * focusEnvelope : 1;
+          const fraction = Math.min(1, Math.max(0, (active ? local : relativeFrame) / (role === "effect" ? 9 : 7)));
           const eased = 1 - Math.pow(1 - fraction, 3);
           const revealScale = role === "effect" ? 0.94 + 0.06 * eased : role === "prop" ? 0.97 + 0.03 * eased : 1;
           const revealOpacity = role === "effect" ? eased : role === "prop" ? 0.4 + 0.6 * eased : 1;
@@ -117,29 +136,22 @@ const SceneLayer: React.FC<{
             top: transform.y ?? 0,
             width: transform.width ?? 520,
             height: transform.height ?? 520,
-            transform: `scale(${(transform.scale ?? 1) * revealScale}) rotate(${transform.rotation ?? 0}deg)`,
+            transform: `scale(${(transform.scale ?? 1) * revealScale * focusScale * effectPulse}) rotate(${(transform.rotation ?? 0) + focusRotate}deg)`,
             opacity: revealOpacity,
             zIndex: state.layer ?? 0,
             objectFit: "contain",
+            transformOrigin: "center center",
           };
-          const previousSrc = blend ? assets[blend.fromAsset]?.src : undefined;
           return (
-            <React.Fragment key={entity.id}>
-              {previousSrc ? (
-                <Img
-                  src={previousSrc}
-                  data-transition-from={blend?.fromAsset}
-                  style={{...style, opacity: (1 - blend!.progress) * revealOpacity}}
-                />
-              ) : null}
-              <Img
-                src={src}
-                data-entity-id={entity.id}
-                data-asset-id={assetId}
-                data-visual-role={role}
-                style={{...style, opacity: blend ? blend.progress * revealOpacity : revealOpacity}}
-              />
-            </React.Fragment>
+            <Img
+              key={entity.id}
+              src={src}
+              data-entity-id={entity.id}
+              data-asset-id={assetId}
+              data-visual-role={role}
+              data-narrative-focus={active && character ? "active" : "inactive"}
+              style={style}
+            />
           );        })}
 
       {caption ? (

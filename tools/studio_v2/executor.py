@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import hashlib
 import json
 import os
@@ -39,6 +39,37 @@ from .voice import VoiceArtifact, ensure_voice_artifact
 
 
 _ROOT = Path(__file__).resolve().parents[2]
+
+_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1"}
+
+
+def _workspace_renderer_version(workspace: Path) -> str:
+    """Use the imported Job@5 pin; never choose a renderer from global defaults."""
+    manifest_path = Path(workspace) / "package-manifest.json"
+    if not manifest_path.is_file():
+        return "2.0.0"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        renderer = manifest["renderer"]
+        if renderer.get("id") != "zodiac-renderer":
+            raise ValueError("unsupported renderer identity")
+        version = renderer["version"]
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise ControlPlaneError(
+            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
+            message=f"cannot resolve imported renderer: {exc}",
+        ) from exc
+    if version not in _SUPPORTED_RENDERER_VERSIONS:
+        raise ControlPlaneError(
+            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
+            message=f"unsupported renderer version {version!r}",
+        )
+    return version
+
+
+def _renderer_dir(workspace: Path) -> Path:
+    return _ROOT / "runtime" / "zodiac-renderer" / _workspace_renderer_version(workspace) / "renderer"
+
 
 
 @dataclass(frozen=True)
@@ -209,13 +240,13 @@ def _require_output(path: Path, *, stage: str, code: str) -> Path:
 
 
 def _default_render_handler(workspace: Path, props_path: Path, output_path: Path) -> Path:
-    renderer = _ROOT / "runtime" / "zodiac-renderer" / "2.0.0" / "renderer"
+    renderer = _renderer_dir(workspace)
     npx = shutil.which("npx.cmd") or shutil.which("npx")
     if not npx:
         raise ControlPlaneError(
             code="RENDERER_EXECUTABLE_MISSING",
             stage="RENDER",
-            message="npx is required for zodiac-renderer@2.0.0",
+            message=f"npx is required for zodiac-renderer@{_workspace_renderer_version(workspace)}",
         )
     resource_profile = load_resource_profile(workspace)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -483,8 +514,7 @@ def _default_output_handler(workspace: Path, final_path: Path, output_path: Path
             run_structured_command(
                 [
                     "node",
-                    str(_ROOT / "runtime" / "zodiac-renderer" / "2.0.0"
-                        / "renderer" / "scripts" / "render-cover.mjs"),
+                    str(_renderer_dir(workspace) / "scripts" / "render-cover.mjs"),
                     str(workspace),
                     str(output_path.parent / "cover.png"),
                 ],
@@ -560,6 +590,7 @@ class StudioV2Executor:
             cancel_event: Event | None = None):
         controller = self.controller
         workspace = controller.workspace
+        config = replace(config, renderer_version=_workspace_renderer_version(workspace))
         request_path = workspace / ".runtime" / "rerun-request.json"
         if rerun_from is None and request_path.exists():
             try:
@@ -781,8 +812,7 @@ class StudioV2Executor:
         run_structured_command(
             [
                 "node",
-                str(_ROOT / "runtime" / "zodiac-renderer" / "2.0.0"
-                    / "renderer" / "scripts" / "audit-payload.mjs"),
+                str(_renderer_dir(workspace) / "scripts" / "audit-payload.mjs"),
                 str(workspace),
             ],
             stage="PLAN",
