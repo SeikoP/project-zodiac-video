@@ -26,7 +26,7 @@ This is a **separate acceptance receipt**, not proof supplied by ZIP validity, p
 
 ## Receipt gate
 
-Run `python tools/audit_job5_e2e.py /path/to/e2e-receipt.json`. The receipt must contain:
+Run `python tools/audit_job5_e2e.py /path/to/e2e-receipt.json --expected-scenes 12`. The receipt must contain:
 
 ```json
 {
