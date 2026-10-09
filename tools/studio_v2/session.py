@@ -182,11 +182,14 @@ def v2_pipeline_rows(state: PipelineStateV2) -> list[dict[str, Any]]:
                 "label": _LABELS[step],
                 "status": item.status,
                 "glyph": _GLYPHS.get(item.status, "?"),
-                "progress": 1.0 if item.status == DONE else (0.5 if item.status == RUNNING else 0.0),
+                # Job@5 stores stage state, NOT a measured fraction. Never
+                # report 50% just because the executor entered RUNNING.
+                "progress": 1.0 if item.status == DONE else None,
                 "scene_done": 0,
                 "scene_total": 0,
                 "detail": detail,
                 "reused": item.reused,
+                "cache_reason": item.cache_reason,
             }
         )
     return rows
