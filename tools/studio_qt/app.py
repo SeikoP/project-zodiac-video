@@ -88,6 +88,7 @@ class ZodiacQtApp(QMainWindow):
         self._stage_snapshot: dict[str, tuple[str, str]] = {}
         self._preflight_results = []
         self._preflight_origin = ""
+        self._frame_milestones: dict[tuple[str, str], int] = {}
         self.close_when_stopped = False
         self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT}
         self.setWindowTitle("Zodiac Studio · Task Workbench")
@@ -450,6 +451,10 @@ class ZodiacQtApp(QMainWindow):
         if self.workbench is None:
             return
         self.workbench.set_measured_progress(stage, completed, total, unit, label)
+        if stage == "RENDER" and total > 0:
+            # Progress callback fires only after a complete segment (rendered
+            # or cached), so any nested frame value belongs to the old segment.
+            self.workbench.clear_frame_progress()
         if total == 0:
             self.workbench.append_activity(
                 f"Đang chạy chế độ render toàn bộ · không thể dùng tiến độ phân đoạn",
@@ -463,8 +468,18 @@ class ZodiacQtApp(QMainWindow):
 
     @Slot(str, int, int, str)
     def _on_native_frame_progress(self, segment_id: str, done: int, total: int, phase: str) -> None:
-        if self.workbench is not None:
-            self.workbench.set_frame_progress(segment_id, done, total, phase)
+        if self.workbench is None:
+            return
+        self.workbench.set_frame_progress(segment_id, done, total, phase)
+        marker = round(done * 100 / total) // 25 if total > 0 else 0
+        key = (segment_id, phase)
+        previous = self._frame_milestones.get(key, -1)
+        if marker > previous and (done == 0 or marker >= 1):
+            self._frame_milestones[key] = marker
+            self.workbench.append_activity(
+                f"{segment_id} · {phase}: {done}/{total} frame đã ghi nhận",
+                channel="progress", stage="RENDER",
+            )
 
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
@@ -490,6 +505,7 @@ class ZodiacQtApp(QMainWindow):
             self.v2_session.cancel_event.clear()
             if self.workbench:
                 self.workbench.reset_measured_progress()
+            self._frame_milestones.clear()
             config = ExecutorConfig(
                 voice_profile=self.settings["voice"],
                 tts_settings={"mode": "v3turbo", "vieneu_url": TTS_URL, "tts_root": TTS_ROOT, "scene_gap_ms": 0.0},

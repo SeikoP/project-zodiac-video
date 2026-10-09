@@ -414,6 +414,11 @@ class WorkbenchScreen(QWidget):
         self.frame_bar.setVisible(False)
         self.stage_rail.reset_progress()
 
+    def clear_frame_progress(self) -> None:
+        self._frame_status = None
+        self.frame_detail.setVisible(False)
+        self.frame_bar.setVisible(False)
+
     def set_frame_progress(self, segment_id: str, done: int, total: int, phase: str) -> None:
         if not (isinstance(total, int) and total > 0 and isinstance(done, int)
                 and 0 <= done <= total and phase in ("rendering", "encoding")):
@@ -436,9 +441,7 @@ class WorkbenchScreen(QWidget):
             self._measured_progress.pop(stage, None)
             self.stage_rail.reset_progress(stage)
             if stage == "RENDER":
-                self._frame_status = None
-                self.frame_detail.setVisible(False)
-                self.frame_bar.setVisible(False)
+                self.clear_frame_progress()
             return
         if completed < 0 or completed > total:
             return
