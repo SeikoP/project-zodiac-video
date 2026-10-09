@@ -106,3 +106,41 @@ Acceptance includes at least: 6/7 overall = 86%; all done = 100%; 0/7
 = 0%; a failed step has visible diagnostic text; cached stage displays
 cache state; the active step shows actual recent output; and the rail
 remains vertically scrollable in compact windows.
+
+## 2026-10-09: flat operator workspace + tqdm actual-unit telemetry
+
+The UI no longer uses a seven-card rail or a third inspector card. The
+Workbench is a **two-pane, rule-separated operator workspace**:
+
+- Left: flat navigation list of the seven stages, divided by horizontal rules;
+  each row includes purpose, real state, cache/error and latest activity
+  when available. The entire rail scrolls in smaller windows.
+- Right: one continuous surface with clearly separated sections:
+  overall stage completion → active-stage detail/actions → Live Console.
+- No per-step card outlines and no duplicate "video/Media" entry points.
+  Operators can select a stage without triggering re-execution.
+
+**tqdm integration is real measured work, not a cosmetic loading bar:**
+
+- `tqdm>=4.66,<5` is an application dependency. When running in a
+  terminal, tqdm renders its own progress; when running under PySide6, its
+  structured unit-completion observer drives the native Qt progress bar.
+- Currently instrumented: **RENDER segments**. The callback fires only
+  after a segment is rendered **or validated for cache reuse** and joined to
+  the segment output list. Display e.g. `2/5 phân đoạn` and `40%`;
+  this is segment completion, **not elapsed render time**.
+- On full-render fallback, segment telemetry is reset immediately. On a
+  failed or cancelled unit, no phantom completion is emitted.
+- Stage work without known total units retains its last observed activity,
+  never receives a guessed number.
+- Overall progress remains exact integer count of completed (DONE/SKIPPED)
+  stages divided by seven, independent of tqdm segment measurements.
+- Progress events use Qt signals to cross the worker/UI thread boundary;
+  carriage-return terminal bars are not logged as stdout/stderr.
+- Launchers with an older editable installation must run
+  `python -m pip install -e .` (in the same Python environment as Zodiac
+  Studio) after pulling the new dependency.
+
+Acceptance: flat rail has no `stageCard` widgets, two main areas are divided
+by a rule, segments 2/5 show 40%, full-render fallback clears that percentage,
+and exception within unit 2 leaves completion counter at 1/total.
