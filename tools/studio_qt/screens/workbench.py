@@ -107,8 +107,8 @@ class WorkbenchScreen(QWidget):
         self.stage_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.stage_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.stage_scroll.setWidget(self.stage_rail)
-        self.stage_scroll.setMinimumWidth(168)
-        self.stage_scroll.setMaximumWidth(184)
+        self.stage_scroll.setMinimumWidth(208)
+        self.stage_scroll.setMaximumWidth(236)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
@@ -125,6 +125,19 @@ class WorkbenchScreen(QWidget):
         self.environment_status.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.pipeline_summary = QLabel("Chưa có bước nào", objectName="sectionTitle")
         current_layout.addWidget(self.pipeline_summary)
+        pipeline_progress_row = QHBoxLayout()
+        self.pipeline_progress_label = QLabel("0% theo số bước · không phải thời gian", objectName="muted")
+        self.pipeline_progress_label.setAccessibleName("Tiến độ tổng quy trình")
+        pipeline_progress_row.addWidget(self.pipeline_progress_label)
+        pipeline_progress_row.addStretch(1)
+        current_layout.addLayout(pipeline_progress_row)
+        self.pipeline_progress_bar = QProgressBar()
+        self.pipeline_progress_bar.setObjectName("pipelineProgress")
+        self.pipeline_progress_bar.setRange(0, 100)
+        self.pipeline_progress_bar.setValue(0)
+        self.pipeline_progress_bar.setTextVisible(False)
+        self.pipeline_progress_bar.setAccessibleName("Tiến độ tổng theo số bước đã hoàn tất")
+        current_layout.addWidget(self.pipeline_progress_bar)
         status_row = QHBoxLayout()
         status_row.addWidget(self.status_label)
         status_row.addWidget(self.environment_status)
@@ -142,6 +155,10 @@ class WorkbenchScreen(QWidget):
         self.active_detail = QLabel("Trạng thái và hoạt động mới nhất sẽ hiện ở đây.", objectName="muted")
         self.active_detail.setWordWrap(True)
         current_layout.addWidget(self.active_detail)
+        self.active_activity = QLabel("", objectName="activeActivity")
+        self.active_activity.setWordWrap(True)
+        self.active_activity.setVisible(False)
+        current_layout.addWidget(self.active_activity)
         self.progress_text = QLabel("Sẵn sàng")
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -272,6 +289,18 @@ class WorkbenchScreen(QWidget):
         cancelled = statuses.count("CANCELLED")
         skipped = statuses.count("SKIPPED")
         self.pipeline_summary.setText(f"{done}/{total} bước hoàn tất" if total else "Chưa có bước nào")
+        completed = done + skipped
+        fraction = round(completed * 100 / total) if total else 0
+        self.pipeline_progress_bar.setValue(fraction)
+        self.pipeline_progress_label.setText(
+            f"{fraction}% theo số bước hoàn tất"
+            + (f" (gồm {skipped} bỏ qua)" if skipped else "")
+            + " · không ước lượng thời gian"
+        )
+        self.pipeline_progress_bar.setToolTip(
+            f"{completed}/{total} bước kết thúc; {done} hoàn tất, {skipped} bỏ qua."
+            " Tỷ lệ này không dự đoán thời gian hoàn tất."
+        )
         counts = (
             (failed, "bước cần xử lý"),
             (running, "đang chạy"),
@@ -312,17 +341,50 @@ class WorkbenchScreen(QWidget):
             "SKIPPED": "Đã bỏ qua",
             "PENDING": "Đang chờ",
         }.get(status, "Sẵn sàng")
-        if percent is None:
-            self.progress_bar.setRange(0, 0)
-            self.progress_text.setText(f"Đang thực hiện: {STAGE_TITLES.get(step, step)}" if status == "RUNNING" else state_text)
+        activity = self.stage_rail.activities.get(step) if status == "RUNNING" else ""
+        if activity:
+            self.active_activity.setText("Đã ghi nhận: " + self.stage_rail._shorten(activity, 112))
+            self.active_activity.setToolTip(activity)
+            self.active_activity.setVisible(True)
         else:
-            bounded = max(0.0, min(1.0, float(percent)))
+            self.active_activity.setVisible(False)
+
+        measured = (
+            percent is not None and isinstance(percent, (float, int))
+            and 0.0 <= float(percent) <= 1.0
+        )
+        # An indeterminate QProgressBar looks like a measurable progress
+        # indication but provides no useful information. Show it only when
+        # the runner really supplies a numerical fraction.
+        self.progress_bar.setVisible(status == "RUNNING" and measured)
+        if status == "RUNNING" and measured:
             self.progress_bar.setRange(0, 100)
-            self.progress_bar.setValue(round(bounded * 100))
-            self.progress_text.setText(f"{round(bounded * 100)}% · {STAGE_TITLES.get(step, step)}")
+            self.progress_bar.setValue(round(float(percent) * 100))
+            self.progress_text.setText(
+                f"Đang thực hiện: {STAGE_TITLES.get(step, step)} · {round(float(percent)*100)}% đã đo"
+            )
+        elif status == "RUNNING":
+            self.progress_bar.setRange(0, 100)
+            self.progress_bar.setValue(0)
+            self.progress_text.setText(
+                f"Đang thực hiện: {STAGE_TITLES.get(step, step)} · chưa có % đo được"
+            )
+        else:
+            self.progress_bar.setVisible(False)
+            self.progress_text.setText(state_text)
         self.detail_title.setText(STAGE_TITLES.get(step, step))
         self.detail_body.setText(str(row.get("message") or row.get("detail") or row.get("status", "")))
         self.rerun_button.setEnabled(step != "PACKAGE" and row.get("status") != "RUNNING")
+
+    def set_stage_activity(self, stage: str | None, text: str) -> None:
+        """Attach observed output to its stage without guessing a percentage."""
+        if stage not in self.stage_rail.buttons:
+            return
+        self.stage_rail.set_activity(stage, text)
+        if stage == self.stage_rail.selected_step and self.stage_rail.rows.get(stage, {}).get("status") == "RUNNING":
+            self.active_activity.setText("Đã ghi nhận: " + self.stage_rail._shorten(text, 112))
+            self.active_activity.setToolTip(text)
+            self.active_activity.setVisible(True)
 
     def set_running(self, running: bool, *, busy: bool = False) -> None:
         enabled = not running and not busy
