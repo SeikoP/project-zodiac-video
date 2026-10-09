@@ -4,6 +4,23 @@ import json
 from pathlib import Path
 import subprocess
 from typing import Callable, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
+import threading
+
+_COMMAND_OBSERVER: ContextVar[Callable[[str, str], None] | None] = ContextVar(
+    "zodiac_studio_structured_command_observer", default=None
+)
+
+
+@contextmanager
+def observe_structured_command_output(observer: Callable[[str, str], None]):
+    """Connect native renderer stdout/stderr to the GUI without discarding output."""
+    token = _COMMAND_OBSERVER.set(observer)
+    try:
+        yield
+    finally:
+        _COMMAND_OBSERVER.reset(token)
 
 from tools.control_plane.errors import ControlPlaneError
 
@@ -16,13 +33,50 @@ def run_structured_command(
     fallback_code: str,
 ) -> subprocess.CompletedProcess[str]:
     try:
-        result = subprocess.run(
-            list(command),
-            cwd=str(cwd) if cwd is not None else None,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        observer = _COMMAND_OBSERVER.get()
+        if observer is None:
+            result = subprocess.run(
+                list(command),
+                cwd=str(cwd) if cwd is not None else None,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        else:
+            process = subprocess.Popen(
+                list(command),
+                cwd=str(cwd) if cwd is not None else None,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            chunks: dict[str, list[str]] = {"stdout": [], "stderr": []}
+
+            def forward(stream, channel: str) -> None:
+                if stream is None:
+                    return
+                try:
+                    for line in stream:
+                        chunks[channel].append(line)
+                        observer(line.rstrip("\r\n"), channel)
+                finally:
+                    stream.close()
+
+            workers = [
+                threading.Thread(target=forward, args=(process.stdout, "stdout"), daemon=True),
+                threading.Thread(target=forward, args=(process.stderr, "stderr"), daemon=True),
+            ]
+            for worker in workers:
+                worker.start()
+            process.wait()
+            for worker in workers:
+                worker.join()
+            result = subprocess.CompletedProcess(
+                list(command), process.returncode,
+                "".join(chunks["stdout"]), "".join(chunks["stderr"])
+            )
     except FileNotFoundError as exc:
         raise ControlPlaneError(
             code="RENDERER_EXECUTABLE_MISSING",
