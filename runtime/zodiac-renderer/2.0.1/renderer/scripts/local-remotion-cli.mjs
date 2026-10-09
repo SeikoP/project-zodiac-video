@@ -39,6 +39,32 @@ export const findPinnedRemotionCli = async (rendererDir = RENDERER_DIR) => {
   return {entry,version:expected,rendererDir:root};
 };
 
+// A package.json/bin presence check is insufficient: a truncated install may
+// contain @remotion/cli but miss transitive dependencies such as isexe.
+// Running --version loads the exact CLI entry without rendering or TTS.
+export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}) => {
+  const cli = await findPinnedRemotionCli(rendererDir);
+  const spawn = opts.spawn ?? spawnSync;
+  const result = spawn(process.execPath,[cli.entry,"--version"],{
+    cwd:cli.rendererDir,windowsHide:true,encoding:"utf8",
+    timeout:15000,maxBuffer:1024*1024
+  });
+  if(result.error || result.status !== 0) {
+    const trace = [result.stderr,result.stdout,result.error?.message]
+      .filter(Boolean).join("\n").trim().slice(0,1800);
+    const reason = result.error?.code==="ETIMEDOUT" ? "CLI version probe timed out" :
+      /MODULE_NOT_FOUND|Cannot find module|ERR_MODULE_NOT_FOUND/.test(trace) ?
+        "CLI dependency tree is incomplete" : "CLI cannot start";
+    const message=reason+": "+(trace || "no diagnostic output")+
+      '\nRepair local renderer dependencies in Zodiac Studio, or run: npm install --prefix "'+
+      cli.rendererDir+'" --no-audit --no-fund';
+    throw Object.assign(new Error(message),{
+      code:"RENDERER_DEPENDENCY_BROKEN",detail:{entry:cli.entry,version:cli.version}
+    });
+  }
+  return cli;
+};
+
 export const runPinnedRemotionCli = async (args, opts={}) => {
   const cli=await findPinnedRemotionCli(opts.rendererDir);
   const run=opts.spawn??spawnSync;
@@ -53,8 +79,8 @@ if(process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url
   try {
     const args=process.argv.slice(2);
     if(args.length===1 && args[0]==="--check") {
-      const cli=await findPinnedRemotionCli();
-      console.log("RENDERER_CLI_READY version="+cli.version+" entry="+cli.entry);
+      const cli=await probePinnedRemotionCli();
+      console.log("RENDERER_CLI_READY version="+cli.version+" entry="+cli.entry+" health=probed");
     }else{
       if(args.length===0)throw Object.assign(new Error("Usage: node scripts/local-remotion-cli.mjs <render|still|...> [...]"),{code:"RENDERER_CLI_ARGS_INVALID"});
       process.exitCode=await runPinnedRemotionCli(args);
