@@ -10,6 +10,9 @@ import shutil
 import sys
 from pathlib import Path
 
+# Direct script execution from tests/ must still resolve repository package.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from tools.studio_v2.progress import observe_frame_progress, track_render_segment_frames
 from tools.studio_v2.runner import observe_structured_command_output, run_structured_command
 
