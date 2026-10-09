@@ -127,12 +127,9 @@ class WorkbenchScreen(QWidget):
         current_layout.addWidget(self.pipeline_summary)
         status_row = QHBoxLayout()
         status_row.addWidget(self.status_label)
+        status_row.addWidget(self.environment_status)
         status_row.addStretch(1)
         current_layout.addLayout(status_row)
-        environment_row = QHBoxLayout()
-        environment_row.addWidget(self.environment_status)
-        environment_row.addStretch(1)
-        current_layout.addLayout(environment_row)
         self.pipeline_detail = QLabel("Trạng thái các bước sẽ hiện tại đây.", objectName="muted")
         self.pipeline_detail.setWordWrap(True)
         current_layout.addWidget(self.pipeline_detail)
@@ -151,7 +148,6 @@ class WorkbenchScreen(QWidget):
         self.progress_bar.setValue(0)
         current_layout.addWidget(self.progress_text)
         current_layout.addWidget(self.progress_bar)
-        current_layout.addWidget(QLabel("SỰ KIỆN GẦN NHẤT", objectName="eyebrow"))
         self.latest_event = QLabel("Chưa có hoạt động mới.", objectName="muted")
         self.latest_event.setWordWrap(True)
         current_layout.addWidget(self.latest_event)
@@ -165,14 +161,12 @@ class WorkbenchScreen(QWidget):
         self.log_filter.setAccessibleName("Lọc nhật ký theo mức độ")
         for label, value in (("Tất cả", "all"), ("Lỗi", "error"), ("Cảnh báo", "warning"), ("Trạng thái", "state")):
             self.log_filter.addItem(label, value)
-        self.log_filter.currentIndexChanged.connect(self._redraw_log)
         log_row.addWidget(self.log_filter)
         self.stage_log_filter = QComboBox()
         self.stage_log_filter.setObjectName("stageLogFilter")
         self.stage_log_filter.addItem("Mọi bước", "all")
         for code, label in STAGE_TITLES.items():
             self.stage_log_filter.addItem(label, code)
-        self.stage_log_filter.currentIndexChanged.connect(self._redraw_log)
         log_row.addWidget(self.stage_log_filter)
         self.log_copy_button = QPushButton("Sao chép toàn bộ")
         self.log_copy_button.setToolTip("Sao chép toàn bộ nhật ký đã lưu trên đĩa")
@@ -194,6 +188,8 @@ class WorkbenchScreen(QWidget):
         self._highlighter = ConsoleHighlighter(self.log_view.document())
         self._records: list[str] = []
         self._visible_line_cap = 3000
+        self.log_filter.currentIndexChanged.connect(self._redraw_log)
+        self.stage_log_filter.currentIndexChanged.connect(self._redraw_log)
         self.log_view.setVisible(True)
         current_layout.addWidget(self.log_view, 2)
         self._log_file: Path | None = None
