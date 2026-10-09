@@ -46,7 +46,9 @@ def stylesheet() -> str:
         QPushButton#danger {{ color: {c['danger']}; background: {c['surface']}; border-color: {c['danger']}; font-weight: 650; }}
         QPushButton#danger:hover {{ background: #332625; }}
         QFrame#stageRailFlat {{ background: transparent; border: 0; }}
-        QWidget#stageLine {{ background: transparent; border: 0; }}
+        QWidget#stageLine {{ background: transparent; border: 0; border-radius: 5px; }}
+        QWidget#stageLine:hover {{ background: {c['surface_hover']}; }}
+        QWidget#stageLine:focus {{ border: 1px solid {c['focus']}; }}
         QWidget#stageLine[selected="true"] {{ background: #242B2A; border-left: 2px solid {c['primary']}; }}
         QFrame#stageDivider {{ color: {c['border']}; background: {c['border']}; max-height: 1px; border: 0; }}
         QFrame#workspaceDivider {{ background: {c['border']}; color: {c['border']}; max-height: 1px; border: 0; }}
