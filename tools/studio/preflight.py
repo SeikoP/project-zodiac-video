@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from tools.zodiac_local import PipelineError
 
@@ -64,16 +65,29 @@ class PreflightChecker:
         return " ".join(f'"{part}"' if " " in part else part for part in self.install_command())
 
     # ---- checks ------------------------------------------------------
-    def run(self) -> list[Check]:
+    def run(self, *, on_check: Callable[[Check], None] | None = None,
+            on_start: Callable[[str], None] | None = None) -> list[Check]:
+        """Run in order and publish each *observed* check result, even on fail."""
         from tools.zodiac_local import validate_package
 
-        checks = [self._python(), self._faster_whisper()]
+        checks: list[Check] = []
+
+        def take(label: str, callback) -> None:
+            if on_start is not None:
+                on_start(label)
+            result = callback()
+            checks.append(result)
+            if on_check is not None:
+                on_check(result)
+
+        take("Python", self._python)
+        take("faster-whisper", self._faster_whisper)
         for name, code in (("node", "NODE"), ("npm", "NPM"), ("ffmpeg", "FFMPEG")):
-            checks.append(self._executable(name, code))
-        checks.append(self._package(validate_package))
-        checks.append(self._vieneu())
+            take(code, lambda n=name, c=code: self._executable(n, c))
+        take("PACKAGE", lambda: self._package(validate_package))
+        take("VieNeu", self._vieneu)
         if self.require_music:
-            checks.append(self._music())
+            take("Nhạc nền", self._music)
         return checks
 
     @staticmethod
@@ -306,23 +320,34 @@ class Job5PreflightChecker(PreflightChecker):
                                  "--no-audit", "--no-fund"])
         return commands
 
-    def run(self) -> list[Check]:
-        checks = super().run()
-        checks.append(self._executable("ffprobe", "FFPROBE"))
-        checks.append(self.renderer_check())
-        for check in checks:
-            if check.ok:
-                continue
-            if check.code == "FASTER_WHISPER":
-                check.details = self.install_command_text()
-            elif check.code in {"NODE", "NPM"}:
-                check.details = "Cài Node.js kèm npm, sau đó mở lại GUI."
-            elif check.code in {"FFMPEG", "FFPROBE"}:
-                check.details = "Cài FFmpeg gồm ffprobe và thêm thư mục bin vào PATH."
-            elif check.code == "VIENEU":
-                check.details = f"Khởi động VieNeu tại {self.vieneu_url}; kiểm tra thư mục {self.tts_root}."
-            elif check.code == "MUSIC":
-                check.details = "Chọn lại file nhạc nền còn tồn tại hoặc bỏ chọn nhạc."
+    def run(self, *, on_check: Callable[[Check], None] | None = None,
+            on_start: Callable[[str], None] | None = None) -> list[Check]:
+        def report(check: Check) -> None:
+            if not check.ok:
+                if check.code == "FASTER_WHISPER":
+                    check.details = self.install_command_text()
+                elif check.code in {"NODE", "NPM"}:
+                    check.details = "Cài Node.js kèm npm, sau đó mở lại GUI."
+                elif check.code in {"FFMPEG", "FFPROBE"}:
+                    check.details = "Cài FFmpeg gồm ffprobe và thêm thư mục bin vào PATH."
+                elif check.code == "VIENEU":
+                    check.details = f"Khởi động VieNeu tại {self.vieneu_url}; kiểm tra thư mục {self.tts_root}."
+                elif check.code == "MUSIC":
+                    check.details = "Chọn lại file nhạc nền còn tồn tại hoặc bỏ chọn nhạc."
+            if on_check is not None:
+                on_check(check)
+
+        checks = super().run(on_check=report, on_start=on_start)
+        if on_start is not None:
+            on_start("FFPROBE")
+        check = self._executable("ffprobe", "FFPROBE")
+        checks.append(check)
+        report(check)
+        if on_start is not None:
+            on_start("RENDERER")
+        check = self.renderer_check()
+        checks.append(check)
+        report(check)
         return checks
 
 
