@@ -590,34 +590,58 @@ class ZodiacStudioApp(tk.Tk):
             )
 
     def _install_dependencies(self) -> None:
+        # Only the user-clicked install action may modify the environment.
+        # Job@5 can require both Python and pinned npm renderer dependencies.
         if self._pipeline_mode == "v2":
-            missing = "\n".join(check.message for check in self._environment_checks
-                                if check.error_code == "DEPENDENCY_MISSING")
+            checker = Job5PreflightChecker(self._active_job_path(), tts_root=TTS_ROOT,
+                                           vieneu_url=TTS_URL)
+            missing_checks = [check for check in self._environment_checks
+                              if check.error_code == "DEPENDENCY_MISSING"]
+            if not missing_checks:
+                self.status_text.set(DEPS_ALREADY_OK_MESSAGE)
+                return
+            try:
+                commands = checker.install_commands(missing_checks)
+            except Exception as exc:
+                messagebox.showerror("Thiếu công cụ cài đặt", str(exc), parent=self)
+                return
+            missing = "\n".join(check.message for check in missing_checks)
         else:
+            checker = PreflightChecker(self._active_job_path(), tts_root=TTS_ROOT,
+                                       vieneu_url=TTS_URL)
             missing = self.controller.dependencies_missing()
-        if not missing:
+            if not missing:
+                self.status_text.set(DEPS_ALREADY_OK_MESSAGE)
+                return
+            commands = [checker.install_command()]
+        if not commands:
             self.status_text.set(DEPS_ALREADY_OK_MESSAGE)
             return
-        checker = PreflightChecker(self._active_job_path(), tts_root=TTS_ROOT, vieneu_url=TTS_URL)
+        command_text = "\n".join(" ".join(f'"{part}"' if " " in part else part for part in cmd)
+                                 for cmd in commands)
+        # Display exact commands and request explicit approval before install.
         answer = messagebox.askyesno(
             "Môi trường chưa sẵn sàng",
-            f"Thiếu:\n{missing}\n\nChạy lệnh này?\n{checker.install_command_text()}",
+            f"Thiếu:\n{missing}\n\nChạy các lệnh sau?\n{command_text}",
             parent=self,
         )
         if not answer:
             return
 
         def install() -> None:
-            result = subprocess.run(
-                checker.install_command(),
-                cwd=str(ROOT),
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                shell=False,
-            )
-            self.events.put(("install", (result.returncode, result.stdout[-2000:], result.stderr[-2000:])))
+            out, err = [], []
+            code = 0
+            for cmd in commands:
+                result = subprocess.run(
+                    cmd, cwd=str(ROOT), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", shell=False,
+                )
+                out.append(result.stdout[-3000:])
+                err.append(result.stderr[-3000:])
+                code = result.returncode
+                if code:
+                    break
+            self.events.put(("install", (code, "\n".join(out), "\n".join(err))))
 
         threading.Thread(target=install, daemon=True).start()
         self.status_text.set("Đang cài dependency…")
