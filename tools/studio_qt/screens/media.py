@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFileSystemModel,
-    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -81,7 +80,7 @@ class MediaWorkspace(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         root = QVBoxLayout(self)
-        root.setContentsMargins(16, 10, 16, 10)
+        root.setContentsMargins(16, 12, 16, 12)
         root.setSpacing(8)
 
         header = QHBoxLayout()
@@ -100,10 +99,10 @@ class MediaWorkspace(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
-        files_panel = QFrame(objectName="surface")
+        files_panel = QWidget(objectName="workspaceMain")
         files_layout = QVBoxLayout(files_panel)
-        files_layout.setContentsMargins(14, 14, 14, 14)
-        files_layout.setSpacing(9)
+        files_layout.setContentsMargins(20, 10, 12, 8)
+        files_layout.setSpacing(8)
         files_layout.addWidget(QLabel("ĐẦU RA THEO CÔNG VIỆC", objectName="eyebrow"))
         self.job_picker = QComboBox()
         self.job_picker.setAccessibleName("Chọn nhóm và công việc Media")
@@ -149,10 +148,10 @@ class MediaWorkspace(QWidget):
         files_layout.addWidget(self.files, 1)
         splitter.addWidget(files_panel)
 
-        preview_panel = QFrame(objectName="surface")
+        preview_panel = QWidget(objectName="workspaceMain")
         preview_layout = QVBoxLayout(preview_panel)
-        preview_layout.setContentsMargins(16, 14, 16, 14)
-        preview_layout.setSpacing(10)
+        preview_layout.setContentsMargins(20, 10, 12, 8)
+        preview_layout.setSpacing(8)
         self.preview_stack = QStackedWidget()
         self.video_widget = QVideoWidget()
         self.video_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
