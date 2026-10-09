@@ -33,7 +33,7 @@ class PublishV231ParityTests(unittest.TestCase):
                 encoding="utf-8",
             )
             video = root / "final.mp4"
-            video.write_bytes(b"test-only—not a real video")
+            video.write_bytes(b"test-only-not-a-real-video")
             target = root / "out" / "zodiac-story.mp4"
 
             def cover_stub(args, **kwargs):
