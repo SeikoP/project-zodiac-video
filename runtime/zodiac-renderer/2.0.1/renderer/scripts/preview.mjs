@@ -55,9 +55,9 @@ export const previewFrames = async (workspace,outputDir) => {
       const frames=[];
       for (const [role,frame] of [["before",pair.before_frame],[pair.second_role,pair.second_frame]]) {
         const file=scene.id+"-"+pair.event_id+"-"+role+"-f"+frame+".png";
-        const command=process.platform==="win32"?"npx.cmd":"npx";
-        const result=spawnSync(command,["remotion","still","src/index.ts","ZodiacRenderPlan",
-          join(out,file),"--props="+output,"--frame="+frame],{cwd:rendererDir,stdio:"inherit"});
+        const result=spawnSync(process.execPath,[join(rendererDir,"scripts","local-remotion-cli.mjs"),
+          "still","src/index.ts","ZodiacRenderPlan",join(out,file),
+          "--props="+output,"--frame="+frame],{cwd:rendererDir,stdio:"inherit"});
         if (result.error || result.status!==0)
           throw new Error("PREVIEW_RENDER_FAILED scene="+scene.id+" event="+pair.event_id+" frame="+frame+" status="+result.status+": "+(result.error ?? ""));
         frames.push({role,frame,file});
