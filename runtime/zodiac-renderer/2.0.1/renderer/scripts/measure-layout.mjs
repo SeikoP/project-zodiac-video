@@ -47,7 +47,8 @@ export async function measurePlanLayout(plan) {
       try {caption.resolved_layout=resolveCaptionLayout(scene,plan.presentation,plan.video,caption.text,text=>measurements.widths[text]??0);}
       catch(error) {throw new Error(`${error.message} frame=${caption.start_frame}`);}
       const {zone,lines}=caption.resolved_layout;
-      if(measurements.inkHeights[caption.text]>zone.fontSize*zone.lineHeight)
+      // Accented glyphs can extend past the CSS line box; collision QC includes this padding.
+      if(measurements.inkHeights[caption.text]>zone.fontSize*zone.lineHeight+2*zone.padding)
         throw new Error(`CAPTION_OVERFLOW scene=${scene.id} frame=${caption.start_frame} actual_lines=${lines.length} max_lines=${zone.maxLines} ink_height=${measurements.inkHeights[caption.text]} line_height_px=${zone.fontSize*zone.lineHeight}`);
     }
     return plan;
