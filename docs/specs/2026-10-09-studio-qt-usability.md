@@ -24,3 +24,48 @@ UI references: two Stitch ZIPs provided by the user, both using the Obsidian Pro
 - Workbench: stage statuses, progress, log visible by default, log collapse, copy complete per-job log, no output overlay.
 - Media: video/audio/image still work; text preview, non-text fallback, >2 MiB truncation, select/copy caption, no cross-job leakage.
 - Preserve Windows layout readability at 1024×680 and 1280×800; no new runtime requirements.
+
+
+## 2026-10-09 UI refactor — operational console and Publish
+
+The Workbench was refactored from separate small summary/log areas into a
+**prominent, unified pipeline monitor** with a central console and slim stage
+inspector. The stage rail remains the single navigation surface.
+
+### Operational console
+- Displays local receipt timestamp, observed pipeline step, and source channel
+  (STATE / STDOUT / STDERR / EVENT / ERROR / DIAGNOSTIC).
+- Uses independent filters: severity/source and stage; the filters do not erase
+  the job's log file.
+- Captures real-time stdout/stderr from both `run_managed_subprocess` and
+  Job@5 `run_structured_command`; control-plane errors preserve their full
+  structured `to_dict()` payload in the log.
+- RUNNING / DONE / FAILED events reflect **observed changes to the actual
+  persisted pipeline state**; do not fabricate percentages or missing events.
+- `.runtime/studio-gui.log` is append-only per job. Qt only displays the last
+  3,000 rows to remain responsive, labels visible/total counts, and copies the
+  full file via **Sao chép toàn bộ**. Received timestamps are not interpreted
+  as the subprocess's own wall clock.
+- STDERR is a stream, **not necessarily an error**: ffmpeg's routine progress
+  on stderr is not highlighted as an ERROR; it can be filtered separately.
+
+### Single Media and publishing flow
+- The Workbench has one **Mở Media / Xem đầu ra** entry point.
+- Media hides root-level `out/publish.json` and `out/publish-copy.txt` as
+  duplicate technical files **without deleting them** (Job@5 still requires
+  both for backwards compatible import).
+- The selected job's **Nội dung đăng** panel reads the structured JSON first,
+  then fallback TXT for older packages. It shows and copies the actual
+  caption + hashtags **without field labels**. COVER IDENTITY and HOOK are
+  technical cover metadata and are excluded from publishing clipboard payload.
+- Other JSON/TXT/SRT/Markdown/log outputs remain browseable and read-only.
+
+### Diagnostics and boundaries
+- Console log completeness means all messages emitted by the two observed
+  subprocess routes and GUI state events are recorded; tools that emit no
+  stdout/stderr cannot have output invented.
+- A success result from CLI, schema, or CI is not equivalent to a visually
+  approved Remotion video.
+- PySide6 tests include filter/provenance, subprocess stream, hidden publish
+  duplicates, value-only clipboard, workspace ready dropdown, and legacy
+  media/job import regressions.
