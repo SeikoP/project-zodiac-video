@@ -238,6 +238,41 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         self.assertEqual(rail.selected_step, "RENDER")
         rail.close()
 
+    def test_flat_workbench_uses_separators_not_step_cards(self):
+        from PySide6.QtWidgets import QFrame, QWidget
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        window = WorkbenchScreen()
+        self.assertEqual(window.stage_rail.objectName(), "stageRailFlat")
+        self.assertFalse(hasattr(window.stage_rail, "cards"))
+        self.assertEqual(len(window.stage_rail.findChildren(QFrame, "stageDivider")), 7)
+        self.assertIsNotNone(window.findChild(QFrame, "workspaceVerticalDivider"))
+        self.assertGreaterEqual(len(window.findChildren(QFrame, "workspaceDivider")), 2)
+        self.assertIsNotNone(window.findChild(QWidget, "workspaceMain"))
+        self.assertIsNone(window.findChild(QFrame, "stageCard"))
+        window.close()
+
+    def test_tqdm_render_units_display_measured_progress_only_when_present(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        from tools.studio_qt.widgets.stage_rail import STAGES
+        window = WorkbenchScreen()
+        rows = [{"step": step, "status": "RUNNING" if step == "RENDER" else "PENDING"}
+                for step, *_ in STAGES]
+        window.set_rows(rows)
+        window.set_active_stage("RENDER", rows[4], percent=None)
+        self.assertIn("chưa có % đo được", window.progress_text.text())
+        self.assertEqual(window.pipeline_progress_bar.value(), 0)
+        window.set_measured_progress("RENDER", 2, 5, "phân đoạn", "Render phân đoạn")
+        self.assertEqual(window.progress_bar.value(), 40)
+        self.assertIn("2/5 phân đoạn", window.progress_text.text())
+        self.assertIn("2/5 phân đoạn", window.stage_rail.status_labels["RENDER"].text())
+        window.set_active_stage("RENDER", rows[4], percent=None)
+        self.assertIn("2/5 phân đoạn", window.progress_text.text())
+        window.set_measured_progress("RENDER", 0, 0, "phân đoạn", "Fallback")
+        window.set_active_stage("RENDER", rows[4], percent=None)
+        self.assertIn("chưa có % đo được", window.progress_text.text())
+        self.assertNotIn("phân đoạn", window.stage_rail.status_labels["RENDER"].text())
+        window.close()
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
