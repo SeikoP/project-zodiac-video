@@ -188,6 +188,7 @@ class WorkbenchScreen(QWidget):
         self._highlighter = ConsoleHighlighter(self.log_view.document())
         self._records: list[str] = []
         self._visible_line_cap = 3000
+        self._total_lines = 0
         self.log_filter.currentIndexChanged.connect(self._redraw_log)
         self.stage_log_filter.currentIndexChanged.connect(self._redraw_log)
         self.log_view.setVisible(True)
@@ -349,11 +350,16 @@ class WorkbenchScreen(QWidget):
         """Load last visible lines; full append-only log lives on disk."""
         self._log_file = Path(location)
         self._records = []
+        self._total_lines = 0
         try:
             if self._log_file.is_file():
                 from collections import deque
                 with self._log_file.open("r", encoding="utf-8", errors="replace") as stream:
-                    self._records = [line.rstrip("\r\n") for line in deque(stream, maxlen=self._visible_line_cap)]
+                    tail = deque(maxlen=self._visible_line_cap)
+                    for line in stream:
+                        self._total_lines += 1
+                        tail.append(line)
+                    self._records = [line.rstrip("\r\n") for line in tail]
                 if self._records:
                     self.latest_event.setText(self._records[-1])
         except OSError as exc:
@@ -368,6 +374,7 @@ class WorkbenchScreen(QWidget):
             entry = self._format_entry(raw, channel, stage)
             self.latest_event.setText(entry)
             self._records.append(entry)
+            self._total_lines += 1
             if len(self._records) > self._visible_line_cap:
                 del self._records[:len(self._records) - self._visible_line_cap]
             if self._log_file is not None:
@@ -379,7 +386,7 @@ class WorkbenchScreen(QWidget):
                     self.latest_event.setToolTip(f"Không lưu được nhật ký: {exc}")
             if self._matches_filter(entry):
                 self.log_view.appendPlainText(entry)
-        self.log_count.setText(f"{len(self._records)} dòng gần nhất")
+        self.log_count.setText(f"{len(self._records)}/{self._total_lines} dòng gần nhất")
 
     def _matches_filter(self, entry: str) -> bool:
         level = self.log_filter.currentData()
@@ -400,7 +407,7 @@ class WorkbenchScreen(QWidget):
         self.log_view.setPlainText("\n".join(displayed))
         bar = self.log_view.verticalScrollBar()
         bar.setValue(bar.maximum())
-        self.log_count.setText(f"{len(displayed)}/{len(self._records)} dòng")
+        self.log_count.setText(f"{len(displayed)} hiện / {self._total_lines} tổng")
 
     def _copy_log(self) -> None:
         content = "\n".join(self._records)
