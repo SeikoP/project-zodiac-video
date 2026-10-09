@@ -1,5 +1,7 @@
 # Zodiac Studio Refactor Architecture Spec
 
+> Update 2026-10-09: The standalone Tkinter Studio was retired by a later user decision, and PySide6 is now the default GUI. This document remains a future architecture target; its Tkinter parity gate is superseded.
+
 Status: **PLANNED — specification only; no implementation in this change**  
 Target repository: `SeikoP/project-zodiac-video`  
 Target branch for implementation: feature branches derived from `main`  

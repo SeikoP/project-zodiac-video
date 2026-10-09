@@ -80,6 +80,30 @@ class _ReadyPreflight:
         return self._checks
 
 
+class ControllerEventCallbackTests(unittest.TestCase):
+    def test_start_pipeline_forwards_events_to_an_additional_ui_callback(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary) / "workspace"
+            job = write_multi_scene_job(Path(temporary) / "source")
+            controller = StudioController(workspace)
+            controller.use_job(job)
+            received = []
+
+            class FakeWorker:
+                def __init__(self, package_root, *, plan, on_event, **_kwargs):
+                    self.plan = plan
+                    self.on_event = on_event
+
+                def start(self, *_args, **_kwargs):
+                    pass
+
+            with patch("tools.studio.worker.PipelineWorker", FakeWorker):
+                self.assertTrue(controller.start_pipeline(on_event=lambda kind, payload: received.append((kind, payload))))
+                controller.worker.on_event("LOG_LINE", {"text": "render segment"})
+
+            self.assertEqual(received, [("LOG_LINE", {"text": "render segment"})])
+
+
 def write_scene_wav(path: Path, seconds: float = 0.5) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(path), "wb") as wav:

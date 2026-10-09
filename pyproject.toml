@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "Local Zodiac video production control plane and Remotion runtime"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+  "PySide6-Essentials>=6.10,<7; python_version >= '3.10'",
+  "PySide6-Addons>=6.10,<7; python_version >= '3.10'",
+]
 
 [project.optional-dependencies]
 local = [
@@ -17,7 +20,7 @@ local = [
 ]
 
 [project.scripts]
-zodiac = "tools.zodiac_gui:main"
+zodiac = "tools.zodiac_qt:main"
 zodiac-control = "tools.control_plane.cli:main"
 
 [tool.setuptools.packages.find]

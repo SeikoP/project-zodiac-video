@@ -574,6 +574,7 @@ class StudioController:
         volume: float | None = None,
         align_model: str | None = None,
         stop_after: str | None = None,
+        on_event=None,
     ) -> bool:
         if self.job is None:
             self.status_text = "Chưa có job. Hãy chọn gói video trước."
@@ -602,6 +603,7 @@ class StudioController:
             volume=volume,
             align_model=align_model,
             stop_after=stop_after,
+            on_event=on_event,
         )
 
     def _start_worker(
@@ -613,6 +615,7 @@ class StudioController:
         volume: float | None = None,
         align_model: str | None = None,
         stop_after: str | None = None,
+        on_event=None,
     ) -> bool:
         from tools.studio.worker import PipelineWorker
 
@@ -621,10 +624,15 @@ class StudioController:
             return False
         from tools.studio.worker import DEFAULT_TTS_MODE, DEFAULT_VOICE
 
+        def forward_event(kind: str, payload: dict) -> None:
+            self.handle_event(kind, payload)
+            if on_event is not None:
+                on_event(kind, payload)
+
         self.worker = PipelineWorker(
             self.job,
             plan=self.plan,
-            on_event=self.handle_event,
+            on_event=forward_event,
             voice=voice or DEFAULT_VOICE,
             tts_mode=DEFAULT_TTS_MODE,
             align_model=align_model or ALIGN_MODEL_DEFAULT,

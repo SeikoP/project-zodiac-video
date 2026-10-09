@@ -76,12 +76,10 @@ class MusicOnlyPreviewTests(unittest.TestCase):
 
 
 class DefaultVolumeTests(unittest.TestCase):
-    def test_gui_defaults_to_full_volume_without_creating_tk(self):
-        from tools.studio.views.audio_panel import DEFAULT_PANEL_VOLUME
+    def test_default_volume_is_full(self):
         from tools.zodiac_local import DEFAULT_MUSIC_VOLUME
 
-        self.assertEqual(DEFAULT_PANEL_VOLUME, DEFAULT_MUSIC_VOLUME)
-        self.assertEqual(DEFAULT_PANEL_VOLUME, 1.0)
+        self.assertEqual(DEFAULT_MUSIC_VOLUME, 1.0)
 
     def test_controller_defaults_to_full_volume(self):
         from tools.studio.worker import PipelineWorker
@@ -119,15 +117,6 @@ class DefaultVolumeTests(unittest.TestCase):
         self.assertEqual(default_music_path(), expected)
         if expected is not None:
             self.assertIn(expected.suffix.lower(), {".mp3", ".wav", ".m4a", ".aac", ".ogg"})
-
-    def test_gui_starts_with_the_bundled_track_selected(self):
-        import inspect
-
-        from tools.studio.views import audio_panel
-
-        source = inspect.getsource(audio_panel)
-        self.assertIn("default_music_path()", source)
-        self.assertIn("self.music = tk.StringVar(value=str(", source)
 
     def test_render_and_mix_paths_default_to_full_volume(self):
         import inspect

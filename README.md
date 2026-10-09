@@ -11,7 +11,7 @@ final audio mix. Legacy Job@2–4 packages remain supported through the older
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.9+ for local tools; Python 3.10+ for the desktop GUI
 - Node.js + npm
 - FFmpeg on `PATH` for background-music preview/final mix
 - VieNeu-TTS at `E:\\projects\\VieNeu-TTS` for the built-in local voice flow, or attach your own `voice.wav`
@@ -43,13 +43,11 @@ narration, publish references, and exact asset references before writing the
 workspace. Measured timing lives at `.runtime/timing.json`; it is created or
 attached after import.
 
-Use Zodiac Studio GUI to import and run Job@5 packages:
+The PySide6 Task Workbench is the default GUI:
 
 ```bash
 uv run zodiac
 ```
-
-Or launch directly with `python tools/zodiac_gui.py`. The Textual TUI has been removed.
 
 For Job@5, **Tiếp tục** reuses validated artifacts, while **Chạy toàn bộ**
 regenerates voice and every following stage. Select a pipeline row and use
@@ -220,99 +218,10 @@ python tools/zodiac_local.py render zodiac-sun-gemini --no-music
 
 ### Nghe thử
 
-The GUI has **Nghe thử**. It creates a 10-second `voice.wav + music` mix at the current slider value.
+Settings includes **Nghe thử**, which plays a 10-second `voice.wav + music`
+mix at the selected volume directly in the app.
 
-If `voice.wav` is shorter than 10 seconds, silence is padded so the preview still lasts exactly 10 seconds. The file is opened with the native launcher:
-
-- Windows: `startfile`
-- macOS: `open`
-- Linux: `xdg-open`
-
-## Zodiac TUI (khuyến nghị)
-
-TUI là control plane mặc định cho local workflow. **Remotion Studio hiện tạm tắt
-trong workflow TUI** vì runtime hiện chỉ cung cấp preview/debug, chưa có authoring
-/save-back đủ hữu ích. TUI hiện chạy thẳng package → voice/timing → render → audio
-→ output. Backend/CLI Remotion Studio vẫn được giữ để bật lại sau.
-
-### Chạy nhanh với uv
-
-```powershell
-uv run zodiac
-```
-
-### Hoặc cài command một lần
-
-```powershell
-python -m pip install -e .
-zodiac
-```
-
-Dependency cho full local voice/alignment vẫn có thể cài bằng:
-
-```powershell
-python -m pip install -r requirements-local.txt
-```
-
-TUI hiện có:
-
-- nút **Nạp ZIP** với file browser ngay trong terminal;
-- chọn lại job đã import;
-- status strip gọn cho Job / Environment / VieNeu / Output;
-- dashboard 5 stage trên pipeline nội bộ 9 node: **GÓI / GIỌNG / TIMING / RENDER / ÂM THANH**;
-- khối **QUY TRÌNH** chia hai cột: pipeline bên trái, toàn bộ thao tác **Chạy lại / Hiện log / Chạy toàn bộ / Dừng** bên phải;
-- status compact phía trên pipeline dùng đèn xanh/đỏ/xám cho Job / Environment / VieNeu / Output;
-- chọn trực tiếp một hàng pipeline rồi bấm **Chạy lại** — không có dropdown bước riêng;
-- voice dropdown lấy preset VieNeu đã lưu, align model, music, volume và **Nghe thử**;
-- nút **Chạy toàn bộ** chạy/resume pipeline thẳng tới final output;
-- `VALIDATE_RUNTIME` và `PREPARE_RENDERER` vẫn chạy nội bộ trong stage **RENDER**;
-- nếu final đã hoàn tất, nút chính chuyển thành **Render lại**;
-- layout responsive: desktop hai cột, cửa sổ hẹp tự chuyển thành một cột;
-- log mặc định ẩn, tự mở khi pipeline lỗi.
-
-Phím tắt:
-
-```text
-I  Nạp ZIP
-R  Chạy toàn bộ / render lại
-L  Ẩn / hiện log
-X  Dừng
-Q  Thoát
-```
-
-Tkinter GUI phía dưới hiện chỉ còn là fallback trong giai đoạn migration.
-
-### Workflow TUI hiện tại
-
-```text
-Import / Preflight
-        ↓
-Voice / Concatenate
-        ↓
-Timing
-        ↓
-Validate / Prepare Renderer / Render
-        ↓
-Mix music
-        ↓
-final.mp4
-```
-
-Remotion Studio **không còn là checkpoint bắt buộc**. Lệnh preview/Studio ở local
-runtime vẫn được giữ cho debug thủ công, nhưng TUI không mở hoặc yêu cầu Studio
-trong luồng production cho đến khi authoring/save-back được thiết kế lại.
-
-## Zodiac Studio (legacy fallback)
-
-```powershell
-python tools/zodiac_gui.py
-```
-
-Bố cục theo workflow: **DỰ ÁN** (chọn gói ZIP) → **THIẾT LẬP** (giọng đọc, nhạc nền, âm lượng, Nghe thử) → **QUY TRÌNH** (10 bước có trạng thái) → **KẾT QUẢ** → **NHẬT KÝ** (thu gọn được). Thanh đầu hiển thị trạng thái VieNeu và môi trường.
-
-![Zodiac Studio v2](docs/studio-v2.png)
-
-### Pipeline và resume
+## Pipeline and resume
 
 ```text
 IMPORT_PACKAGE → PREFLIGHT → VOICE_SCENES → CONCAT_VOICE → ALIGN_TIMING
@@ -380,61 +289,17 @@ Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZI
 
 Studio không tạo ZIP publish thứ hai và không giữ `zodiac-story.with-music.mp4`; các tên legacy này được dọn nếu còn sót. Nhạc bundled trong repo là tùy chọn; nếu không có file mặc định, Studio bắt đầu ở trạng thái chưa chọn nhạc thay vì coi đó là lỗi môi trường.
 
-## Editor Workspace (v1)
+## PySide6 Task Workbench (default GUI)
 
-**Mở Editor** in the desktop GUI opens a separate window over one imported v2 job. It edits only the v2 scene model — `scene.entities[].states[].transform/layer/visible` — and never touches `design.md`, `visual_system.style_token` or the compiled `source_hash`.
-
-```text
-tools/editor/
-  document.py     EditorDocument: load, dirty tracking, edits, validate, atomic save, revert
-  geometry.py     CanvasTransform: 1080x1920 production <-> fitted 9:16 display
-  commands.py     StateCommand + History for undo/redo (in memory only)
-  runtime.py      invalidate_runtime_for(edit_type): SAFE edits drop render-props only
-  scene_list.py   scene navigator with a short voice preview
-  canvas.py       layer-ordered items, hit test, drag, corner resize, safe-zone overlay
-  inspector.py    read-only identity + editable X/Y/W/H/Layer/Visible, two-way sync
-  workspace.py    window shell: Save / Revert / Validate / Undo / Redo
-```
-
-Behaviour:
-
-- drag updates the working copy only; `production.json` is written on **Save**;
-- **Save** runs the canonical v2 validator first and writes atomically (temp file + `os.replace`), so an invalid edit never overwrites the file;
-- **Revert** re-reads the file from disk (no Git);
-- `Ctrl+Z` / `Ctrl+Shift+Z` cover move, resize, layer and visibility;
-- the window title shows `Zodiac Editor — S03 *` while dirty, and closing while dirty asks Save / Discard / Cancel;
-- if `production.json` changed on disk, Save asks Reload / Overwrite / Cancel and never silently overwrites;
-- `voice.wav` and `.runtime/timing.json` survive every edit; only `.runtime/render-props.json` is invalidated.
-
-Canvas artwork is a best-effort vector preview of the same SVG/primitive data Remotion renders; geometry is exact, fidelity is not pixel-identical.
-
-### Voice Anchor Timeline
-
-The panel below the canvas shows the **active scene** only: measured word tokens from `.runtime/timing.json` plus one marker per event. Markers are placed at resolved frames; they are never draggable, because the event contract is semantic (`voice_anchor` text + occurrence), not a manual timestamp.
-
-```text
-tools/editor/timing.py    RuntimeTimingDocument (read-only) + anchor resolution + time mapping
-tools/editor/timeline.py  TimelineView + selection_for_event()
-tools/editor/inspector.py EventInspector: read-only event fields, editable voice anchor
-```
-
-Runtime states:
-
-| state | behaviour |
-| --- | --- |
-| `NO_TIMING` | events and anchor text are listed, badge `Timing chưa có`, no timeline position is invented |
-| `TIMING_VALID` | every marker resolves to a measured frame; `scene_start` sits on frame 0 of the scene |
-| `TIMING_STALE_OR_INVALID` | the specific validator error is shown, unresolved anchors are flagged, the editor stays usable |
-
-Anchor resolution reuses the package's canonical timing validator plus the measured word tokens: contiguous normalized word runs, `occurrence` is 1-based, and ambiguous anchors are refused instead of silently taking the first match:
-
-```text
-ANCHOR_NOT_FOUND / ANCHOR_AMBIGUOUS / ANCHOR_OCCURRENCE_INVALID
-```
-
-Editing `trigger.text` / `trigger.occurrence` never writes a timestamp. Save runs the v2 validator plus anchor resolution, so an unresolvable anchor blocks the write and leaves disk untouched. Selecting an event or a marker is pure selection: `dirty` stays false, no file changes.
-
-`.runtime/timing.json` is derived runtime data and is read-only for the editor. Anchor edits preserve `voice.wav` and `timing.json` byte-for-byte and only invalidate `.runtime/render-props.json`.
+This is a dark workstation with two top-level tabs: **Công việc / Workspace**
+combines recent-job selection with the seven-step production workbench, and
+**Media** manages the active job's video, audio, and image outputs. Video and
+music previews play inside the Qt app. It provides environment checks, audio
+settings, Remotion actions for supported legacy jobs, resume/run-all, rerun, safe
+stop, and output navigation. It adds keyboard shortcuts: `Ctrl+O` import,
+`Ctrl+R` continue, `Ctrl+Shift+R` run all, `Ctrl+L` logs, `Esc` back to jobs.
+Run `uv run zodiac` to open this GUI. PySide6 installs with the project's default
+dependencies.
 
 ## Safety
 
