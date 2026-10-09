@@ -59,10 +59,10 @@ import time
 
 _ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _RENDER_COUNTER = re.compile(
-    r"\b(Rendering|Rendered)\s+frames?\b[^\r\n]{0,180}?\b(\d{1,8})/(\d{1,8})\b", re.I,
+    r"\b(Rendering\s+frames?|Rendered(?:\s+frames?)?)\b[^\r\n]{0,180}?\b(\d{1,8})/(\d{1,8})\b", re.I,
 )
 _ENCODE_COUNTER = re.compile(
-    r"\b(Encoding|Encoded|Muxing|Muxed)\s+(?:video|audio)\b[^\r\n]{0,180}?\b(\d{1,8})/(\d{1,8})\b", re.I,
+    r"\b((?:Encoding|Encoded|Muxing|Muxed)(?:\s+(?:video|audio))?)\b[^\r\n]{0,180}?\b(\d{1,8})/(\d{1,8})\b", re.I,
 )
 
 FrameObserver = Callable[[str, int, int, str], None]

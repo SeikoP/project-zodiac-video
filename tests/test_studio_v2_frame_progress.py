@@ -33,6 +33,17 @@ class RenderFrameParserTests(unittest.TestCase):
             ("seg01", 120, 120, "encoding"),
         ])
 
+    def test_actual_non_interactive_remotion_cli_counters(self):
+        """Captured from real renderer 2.0.1 smoke (Remotion CLI 4.0.530)."""
+        seen = []
+        parser = RemotionFrameParser(FrameScope("seg01", 12, lambda *args: seen.append(args)))
+        parser.feed("Rendered 0/12\nRendered 1/12, time remaining: 3s\n")
+        parser.feed("Rendered 12/12\nEncoded 10/12\nEncoded 12/12\n")
+        self.assertIn(("seg01", 12, 12, "rendering"), seen)
+        self.assertIn(("seg01", 12, 12, "encoding"), seen)
+        self.assertTrue(RemotionFrameParser.is_terminal_progress_line("Rendered 12/12"))
+        self.assertTrue(RemotionFrameParser.is_terminal_progress_line("Encoded 12/12"))
+
     def test_chunk_split_and_untrusted_totals_are_rejected(self):
         seen = []
         parser = RemotionFrameParser(FrameScope("seg02", 90, lambda *args: seen.append(args)))
