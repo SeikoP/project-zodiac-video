@@ -373,7 +373,9 @@ class ZodiacQtApp(QMainWindow):
                         self.workbench.append_activity(summary, channel="state", stage=step)
         self._stage_snapshot = current_state
         active = next((row for row in rows if row.get("status") in (RUNNING, FAILED, PENDING)), rows[-1])
-        if not self.pipeline_running and self.selected_stage:
+        # Respect an explicit stage selection even while the pipeline runs.
+        # Live progress keeps updating its source stage without hijacking focus.
+        if self.selected_stage:
             active = next((row for row in rows if row.get("step") == self.selected_stage), active)
         percent = None
         if self.mode == "legacy" and active.get("status") == RUNNING and float(active.get("progress", 0.0)) > 0:

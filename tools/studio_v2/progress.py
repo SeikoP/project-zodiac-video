@@ -55,6 +55,7 @@ def tracked_units(items: Sequence[T], *, stage: str, label: str, unit: str) -> I
 # and "Encoding video" x/y counters; it rewrites terminal lines using ANSI.
 from dataclasses import dataclass
 import re
+import time
 
 _ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 _RENDER_COUNTER = re.compile(
@@ -110,6 +111,7 @@ class RemotionFrameParser:
         self.scope = scope
         self.tail = ""
         self.last: dict[str, int] = {}
+        self.last_emit: dict[str, float] = {}
 
     def feed(self, chunk: str) -> None:
         if self.scope.observer is None or self.scope.expected_frames <= 0:
@@ -125,7 +127,11 @@ class RemotionFrameParser:
                 if done <= previous:
                     continue
                 self.last[phase] = done
-                self.scope.observer(self.scope.segment_id, done, total, phase)
+                now = time.monotonic()
+                previous_emit = self.last_emit.get(phase, 0.0)
+                if done in (0, total) or now - previous_emit >= 0.18:
+                    self.last_emit[phase] = now
+                    self.scope.observer(self.scope.segment_id, done, total, phase)
 
     @staticmethod
     def is_terminal_progress_line(line: str) -> bool:

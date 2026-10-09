@@ -72,9 +72,10 @@ def run_structured_command(
                     # Remotion overwrites progress in-place with CR and ANSI.
                     # Do not log every frame bar; emit meaningful full lines.
                     lines = re.split(r"[\r\n]", buffer)
-                    buffer = lines.pop() if not final else ""
+                    buffer = lines.pop()
                     if final:
                         lines.append(buffer)
+                        buffer = ""
                     for item in lines:
                         cleaned = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", item).strip()
                         if cleaned and not RemotionFrameParser.is_terminal_progress_line(cleaned):
