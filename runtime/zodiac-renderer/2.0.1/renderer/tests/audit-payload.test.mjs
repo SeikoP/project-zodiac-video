@@ -34,7 +34,7 @@ test("real CLI writes report and structured stderr on audit mismatch",async()=>{
       fileURLToPath(new URL("../scripts/audit-payload.mjs",import.meta.url)),root
     ],{encoding:"utf8"});
     assert.equal(result.status,2);
-    const diagnostic=JSON.parse(result.stderr.trim().split("\\n").at(-1));
+    const diagnostic=JSON.parse(result.stderr.trim());
     assert.equal(diagnostic.code,"RENDER_PLAN_PAYLOAD_MISMATCH");
     assert.equal(diagnostic.stage,"PLAN");
     assert.match(diagnostic.message,/S01 story_prop/);
