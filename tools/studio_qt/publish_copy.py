@@ -47,7 +47,9 @@ def _publish_from_copy(path: Path) -> str:
             hashtags = right.strip()
     if caption or hashtags:
         return "\n\n".join(part for part in (caption, hashtags) if part)
-    return content
+    # Unknown legacy key:value formats must not leak technical cover metadata
+    # into the user's publish clipboard. Require recognized fields.
+    return ""
 
 
 def publish_text_for_job(job_root: Path) -> str:
