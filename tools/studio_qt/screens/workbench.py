@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
+from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -33,6 +36,30 @@ STAGE_TITLES = {
 
 def _surface() -> QFrame:
     return QFrame(objectName="surface")
+
+
+class ConsoleHighlighter(QSyntaxHighlighter):
+    """Highlight source-reported severity, not inferred success."""
+    def highlightBlock(self, text: str) -> None:
+        upper = text.upper()
+        level = None
+        if any(tag in upper for tag in ("[STDERR]", "[ERROR]", "[FAILED]")):
+            level = "#E08A82"
+        elif any(tag in upper for tag in ("[WARNING]", "[WARN]", "[CANCELLED]")):
+            level = "#D7B36A"
+        elif "[DONE]" in upper or "[SUCCESS]" in upper:
+            level = "#86B89A"
+        elif "[RUNNING]" in upper or "[START]" in upper:
+            level = "#C6A76A"
+        if level:
+            fmt = QTextCharFormat()
+            fmt.setForeground(QColor(level))
+            self.setFormat(0, len(text), fmt)
+        sep = text.find(" [")
+        if sep > 0:
+            fmt = QTextCharFormat()
+            fmt.setForeground(QColor("#84908B"))
+            self.setFormat(0, sep, fmt)
 
 
 class WorkbenchScreen(QWidget):
@@ -89,7 +116,7 @@ class WorkbenchScreen(QWidget):
         current_layout = QVBoxLayout(current)
         current_layout.setContentsMargins(16, 14, 16, 14)
         current_layout.setSpacing(8)
-        current_layout.addWidget(QLabel("TỔNG QUAN QUY TRÌNH", objectName="eyebrow"))
+        current_layout.addWidget(QLabel("GIÁM SÁT QUY TRÌNH · TRẠNG THÁI THỰC", objectName="eyebrow"))
         self.status_label = QLabel("Sẵn sàng", objectName="status")
         self.status_label.setMinimumWidth(102)
         self.status_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
@@ -124,14 +151,29 @@ class WorkbenchScreen(QWidget):
         self.progress_bar.setValue(0)
         current_layout.addWidget(self.progress_text)
         current_layout.addWidget(self.progress_bar)
-        current_layout.addStretch(1)
-        current_layout.addWidget(QLabel("HOẠT ĐỘNG MỚI NHẤT", objectName="eyebrow"))
+        current_layout.addWidget(QLabel("SỰ KIỆN GẦN NHẤT", objectName="eyebrow"))
         self.latest_event = QLabel("Chưa có hoạt động mới.", objectName="muted")
         self.latest_event.setWordWrap(True)
         current_layout.addWidget(self.latest_event)
         log_row = QHBoxLayout()
-        log_row.addWidget(QLabel("NHẬT KÝ QUY TRÌNH / BƯỚC", objectName="eyebrow"))
+        log_row.addWidget(QLabel("LIVE CONSOLE", objectName="consoleHeading"))
+        self.log_count = QLabel("0 dòng", objectName="muted")
+        log_row.addWidget(self.log_count)
         log_row.addStretch(1)
+        self.log_filter = QComboBox()
+        self.log_filter.setObjectName("logFilter")
+        self.log_filter.setAccessibleName("Lọc nhật ký theo mức độ")
+        for label, value in (("Tất cả", "all"), ("Lỗi", "error"), ("Cảnh báo", "warning"), ("Trạng thái", "state")):
+            self.log_filter.addItem(label, value)
+        self.log_filter.currentIndexChanged.connect(self._redraw_log)
+        log_row.addWidget(self.log_filter)
+        self.stage_log_filter = QComboBox()
+        self.stage_log_filter.setObjectName("stageLogFilter")
+        self.stage_log_filter.addItem("Mọi bước", "all")
+        for code, label in STAGE_TITLES.items():
+            self.stage_log_filter.addItem(label, code)
+        self.stage_log_filter.currentIndexChanged.connect(self._redraw_log)
+        log_row.addWidget(self.stage_log_filter)
         self.log_copy_button = QPushButton("Sao chép toàn bộ")
         self.log_copy_button.setToolTip("Sao chép toàn bộ nhật ký đã lưu trên đĩa")
         self.log_copy_button.clicked.connect(self._copy_log)
@@ -146,9 +188,12 @@ class WorkbenchScreen(QWidget):
         current_layout.addLayout(log_row)
         self.log_view = QPlainTextEdit(objectName="activityLog")
         self.log_view.setReadOnly(True)
-        self.log_view.setMaximumBlockCount(0)
-        self.log_view.setMinimumHeight(140)
-        self.log_view.setToolTip("Nhật ký đầy đủ được lưu theo từng job; có thể chọn/copy văn bản")
+        self.log_view.setMaximumBlockCount(3000)
+        self.log_view.setMinimumHeight(280)
+        self.log_view.setToolTip("Xem 3.000 dòng gần nhất; tất cả dòng được lưu trong studio-gui.log")
+        self._highlighter = ConsoleHighlighter(self.log_view.document())
+        self._records: list[str] = []
+        self._visible_line_cap = 3000
         self.log_view.setVisible(True)
         current_layout.addWidget(self.log_view, 2)
         self._log_file: Path | None = None
@@ -157,8 +202,9 @@ class WorkbenchScreen(QWidget):
         detail_layout = QVBoxLayout(detail)
         detail_layout.setContentsMargins(14, 12, 14, 12)
         detail_layout.setSpacing(8)
-        detail.setMinimumWidth(270)
-        detail_layout.addWidget(QLabel("CHI TIẾT BƯỚC", objectName="eyebrow"))
+        detail.setMinimumWidth(240)
+        detail.setMaximumWidth(300)
+        detail_layout.addWidget(QLabel("BƯỚC ĐƯỢC CHỌN", objectName="eyebrow"))
         self.detail_title = QLabel("Chưa chọn", objectName="sectionTitle")
         detail_layout.addWidget(self.detail_title)
         self.detail_body = QLabel("Chọn một bước để xem trạng thái và đầu ra liên quan.", objectName="muted")
@@ -173,21 +219,16 @@ class WorkbenchScreen(QWidget):
         self.rerun_button.clicked.connect(lambda: self.rerun_requested.emit(self.stage_rail.selected_step or ""))
         detail_layout.addWidget(self.rerun_button, 0)
         detail_layout.addStretch(1)
-        self.output_button = QPushButton("Xem video")
-        self.output_button.setEnabled(False)
-        self.output_button.clicked.connect(lambda: self.output_requested.emit("video"))
-        self.folder_button = QPushButton("Duyệt Media")
-        self.folder_button.setEnabled(False)
-        self.folder_button.clicked.connect(lambda: self.output_requested.emit("folder"))
-        media_actions = QHBoxLayout()
-        media_actions.setSpacing(6)
-        media_actions.addWidget(self.output_button, 1)
-        media_actions.addWidget(self.folder_button, 1)
-        detail_layout.addLayout(media_actions)
+        self.media_button = QPushButton("Mở Media / Xem đầu ra  →")
+        self.media_button.setObjectName("primary")
+        self.media_button.setEnabled(False)
+        self.media_button.setToolTip("Một nơi để xem video, ảnh, âm thanh và tài liệu")
+        self.media_button.clicked.connect(lambda: self.output_requested.emit("media"))
+        detail_layout.addWidget(self.media_button)
 
         splitter.addWidget(current)
         splitter.addWidget(detail)
-        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(0, 5)
         splitter.setStretchFactor(1, 2)
 
         workspace = QHBoxLayout()
@@ -345,14 +386,16 @@ class WorkbenchScreen(QWidget):
         self.output_path_label.setToolTip(video_path or folder_path or "Chưa có tệp đầu ra")
         self.output_summary.setText(f"Video đầu ra · {Path(video_path).name}" if video_path else "Chưa có video đầu ra")
         self.output_summary.setToolTip(video_path or "Chưa có video đầu ra")
-        self.output_button.setEnabled(bool(video_path))
-        self.folder_button.setEnabled(bool(folder_path))
+        self.media_button.setEnabled(bool(video_path or folder_path))
 
     def output_path(self, kind: str) -> str | None:
         return getattr(self, "_video_path" if kind == "video" else "_folder_path", None)
 
     def _toggle_logs(self, open_: bool) -> None:
         self.log_view.setVisible(open_)
+        self.log_filter.setVisible(open_)
+        self.stage_log_filter.setVisible(open_)
+        self.log_copy_button.setVisible(open_)
         self.log_toggle.setText("Ẩn nhật ký" if open_ else "Hiện nhật ký")
         self.logs_toggled.emit(open_)
 
