@@ -27,7 +27,7 @@ class PinnedRendererPreflightTests(unittest.TestCase):
 
     def make_cli(self,renderer:Path,version="4.0.530"):
         d=renderer/"node_modules"/"@remotion"/"cli"
-        (d/"dist").mkdir(parents=True)
+        (d/"dist").mkdir(parents=True,exist_ok=True)
         (d/"package.json").write_text(
             json.dumps({"version":version,"bin":{"remotion":"dist/cli.js"}}),encoding="utf-8")
         (d/"dist"/"cli.js").write_text("console.log('render')",encoding="utf-8")
