@@ -148,6 +148,16 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             self.assertNotIn("progress 50%", w.log_view.toPlainText())
             w.close()
 
+    def test_unknown_publish_technical_keys_do_not_leak_to_clipboard(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "publish").mkdir()
+            (root / "publish" / "publish-copy.txt").write_text(
+                "COVER IDENTITY: NHÂN MÃ\nHOOK: Chấm nhỏ ấy có gì?\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(publish_text_for_job(root), "")
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
