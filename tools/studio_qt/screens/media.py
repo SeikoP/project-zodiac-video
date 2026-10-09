@@ -448,12 +448,12 @@ class MediaWorkspace(QWidget):
             try:
                 with path.open("rb") as stream:
                     data = stream.read(TEXT_PREVIEW_LIMIT_BYTES + 1)
-                if b"\\x00" in data:
+                if b"\x00" in data:
                     raise ValueError("binary file")
                 clipped = len(data) > TEXT_PREVIEW_LIMIT_BYTES
                 content = data[:TEXT_PREVIEW_LIMIT_BYTES].decode("utf-8", errors="replace")
                 if clipped:
-                    content += "\\n\\n[Đã giới hạn xem trước ở 2 MiB; mở bằng trình soạn thảo để xem hết.]"
+                    content += "\n\n[Đã giới hạn xem trước ở 2 MiB; mở bằng trình soạn thảo để xem hết.]"
                 self.text_preview.setPlainText(content)
                 self.preview_stack.setCurrentWidget(self.text_preview)
                 self.status_label.setText("Văn bản đã mở trong Media" + (" · bản xem trước" if clipped else ""))
@@ -462,7 +462,7 @@ class MediaWorkspace(QWidget):
                 self.preview_stack.setCurrentWidget(self.preview_label)
                 self.status_label.setText("Không thể xem nội dung tệp này.")
         else:
-            self.preview_label.setText(f"{extension}\\nKhông hỗ trợ xem trước nội dung tệp này.")
+            self.preview_label.setText(f"{extension}\nKhông hỗ trợ xem trước nội dung tệp này.")
             self.preview_stack.setCurrentWidget(self.preview_label)
             self.status_label.setText(f"Tệp đầu ra · {extension}")
 
