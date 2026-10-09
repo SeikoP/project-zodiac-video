@@ -43,7 +43,7 @@ class ConsoleHighlighter(QSyntaxHighlighter):
     def highlightBlock(self, text: str) -> None:
         upper = text.upper()
         level = None
-        if any(tag in upper for tag in ("[STDERR]", "[ERROR]", "[FAILED]")):
+        if any(tag in upper for tag in ("[ERROR]", "[FAILED]")):
             level = "#E08A82"
         elif any(tag in upper for tag in ("[WARNING]", "[WARN]", "[CANCELLED]")):
             level = "#D7B36A"
@@ -159,7 +159,7 @@ class WorkbenchScreen(QWidget):
         self.log_filter = QComboBox()
         self.log_filter.setObjectName("logFilter")
         self.log_filter.setAccessibleName("Lọc nhật ký theo mức độ")
-        for label, value in (("Tất cả", "all"), ("Lỗi", "error"), ("Cảnh báo", "warning"), ("Trạng thái", "state")):
+        for label, value in (("Tất cả", "all"), ("Lỗi", "error"), ("Cảnh báo", "warning"), ("Trạng thái", "state"), ("stderr", "stderr")):
             self.log_filter.addItem(label, value)
         log_row.addWidget(self.log_filter)
         self.stage_log_filter = QComboBox()
@@ -384,11 +384,13 @@ class WorkbenchScreen(QWidget):
     def _matches_filter(self, entry: str) -> bool:
         level = self.log_filter.currentData()
         upper = entry.upper()
-        if level == "error" and not any(tag in upper for tag in ("[ERROR]", "[STDERR]", "[FAILED]")):
+        if level == "error" and not any(tag in upper for tag in ("[ERROR]", "[FAILED]")):
             return False
         if level == "warning" and not any(tag in upper for tag in ("[WARNING]", "[WARN]", "[CANCELLED]")):
             return False
         if level == "state" and "[STATE]" not in upper:
+            return False
+        if level == "stderr" and "[STDERR]" not in upper:
             return False
         stage = self.stage_log_filter.currentData()
         return stage in (None, "all") or f"[{stage}]" in entry
