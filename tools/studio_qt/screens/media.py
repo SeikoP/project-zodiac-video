@@ -7,6 +7,7 @@ from PySide6.QtGui import QPixmap, QStandardItem
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtWidgets import (
+    QApplication,
     QComboBox,
     QFileSystemModel,
     QFrame,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QPlainTextEdit,
     QPushButton,
     QSlider,
     QSizePolicy,
@@ -25,9 +27,12 @@ from PySide6.QtWidgets import (
 )
 
 from tools.zodiac_local import SUPPORTED_MUSIC_EXTENSIONS
+from tools.studio_qt.publish_copy import publish_text_for_job
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
+TEXT_EXTENSIONS = {".txt", ".log", ".json", ".md", ".srt", ".vtt", ".ass", ".csv", ".yaml", ".yml", ".xml", ".html"}
+TEXT_PREVIEW_LIMIT_BYTES = 2 * 1024 * 1024
 
 
 def media_kind(path: Path) -> str | None:
@@ -161,6 +166,11 @@ class MediaWorkspace(QWidget):
         self.preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.preview_stack.setMinimumHeight(180)
         self.preview_stack.addWidget(self.preview_label)
+        self.text_preview = QPlainTextEdit(objectName="mediaTextPreview")
+        self.text_preview.setReadOnly(True)
+        self.text_preview.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        self.text_preview.setAccessibleName("Nội dung tệp văn bản đầu ra")
+        self.preview_stack.addWidget(self.text_preview)
         preview_layout.addWidget(self.preview_stack, 1)
 
         self.selected_label = QLabel("Chưa chọn tệp", objectName="sectionTitle")
@@ -171,6 +181,12 @@ class MediaWorkspace(QWidget):
         self.path_label.setWordWrap(True)
         self.path_label.setToolTip("Đường dẫn đầy đủ của tệp media")
         preview_layout.addWidget(self.path_label)
+        self.copy_publish_button = QPushButton("Sao chép nội dung đăng")
+        self.copy_publish_button.setObjectName("copyPublish")
+        self.copy_publish_button.setEnabled(False)
+        self.copy_publish_button.setToolTip("Copy caption và hashtags vào clipboard, không cần mở ZIP publish")
+        self.copy_publish_button.clicked.connect(self._copy_publish)
+        preview_layout.addWidget(self.copy_publish_button)
 
         controls = QHBoxLayout()
         self.play_button = QPushButton("Phát")
@@ -264,6 +280,7 @@ class MediaWorkspace(QWidget):
         if selected_index >= 0:
             self._job_changed(selected_index)
         else:
+            self.copy_publish_button.setEnabled(False)
             self._current_job_path = None
             self.root_label.setText("Chưa có job nào có thư mục out/")
             self.root_label.setToolTip("Media chỉ hiển thị các job có thư mục out/")
@@ -383,6 +400,18 @@ class MediaWorkspace(QWidget):
         self.root_label.setText(f"{job['name']} · out/")
         self.root_label.setToolTip(job["out_path"])
         self.set_root_path(job["out_path"])
+        self.copy_publish_button.setEnabled(bool(publish_text_for_job(Path(job["path"]))))
+
+    def _copy_publish(self) -> None:
+        """Copy a single publishing payload, without bundling duplicate files."""
+        job = self._jobs.get(str(self._current_job_path)) if self._current_job_path else None
+        content = publish_text_for_job(Path(job["path"])) if job else ""
+        if not content:
+            self.status_label.setText("Job chưa có caption/hashtag để sao chép.")
+            self.copy_publish_button.setEnabled(False)
+            return
+        QApplication.clipboard().setText(content)
+        self.status_label.setText("Đã sao chép caption và hashtags để đăng video.")
 
     def _filter_files(self, text: str) -> None:
         self.proxy.query = text.strip().casefold()
@@ -415,9 +444,27 @@ class MediaWorkspace(QWidget):
         self.play_button.setEnabled(False)
         self.play_button.setText("Phát")
         self.preview_label.setPixmap(QPixmap())
-        self.preview_label.setText(f"{extension}\nTệp đầu ra thuộc job · chỉ xem metadata")
-        self.preview_stack.setCurrentWidget(self.preview_label)
-        self.status_label.setText(f"Tệp đầu ra · {extension}")
+        if path.suffix.casefold() in TEXT_EXTENSIONS:
+            try:
+                with path.open("rb") as stream:
+                    data = stream.read(TEXT_PREVIEW_LIMIT_BYTES + 1)
+                if b"\\x00" in data:
+                    raise ValueError("binary file")
+                clipped = len(data) > TEXT_PREVIEW_LIMIT_BYTES
+                content = data[:TEXT_PREVIEW_LIMIT_BYTES].decode("utf-8", errors="replace")
+                if clipped:
+                    content += "\\n\\n[Đã giới hạn xem trước ở 2 MiB; mở bằng trình soạn thảo để xem hết.]"
+                self.text_preview.setPlainText(content)
+                self.preview_stack.setCurrentWidget(self.text_preview)
+                self.status_label.setText("Văn bản đã mở trong Media" + (" · bản xem trước" if clipped else ""))
+            except (OSError, ValueError):
+                self.preview_label.setText("Không đọc được tệp dưới dạng UTF-8.")
+                self.preview_stack.setCurrentWidget(self.preview_label)
+                self.status_label.setText("Không thể xem nội dung tệp này.")
+        else:
+            self.preview_label.setText(f"{extension}\\nKhông hỗ trợ xem trước nội dung tệp này.")
+            self.preview_stack.setCurrentWidget(self.preview_label)
+            self.status_label.setText(f"Tệp đầu ra · {extension}")
 
     def _clear_selection(self) -> None:
         self.player.stop()
@@ -435,6 +482,7 @@ class MediaWorkspace(QWidget):
         self.play_button.setText("Phát")
         self.preview_label.setPixmap(QPixmap())
         self.preview_label.setText("Chọn video, âm thanh, hình ảnh hoặc tệp đầu ra để xem trong ứng dụng.")
+        self.text_preview.clear()
         self.preview_stack.setCurrentWidget(self.preview_label)
         self.status_label.setText("Sẵn sàng")
 
