@@ -392,17 +392,18 @@ class TaskWorkbenchTests(unittest.TestCase):
                     media.proxy.data(media.proxy.index(row, 0, root_index))
                     for row in range(media.proxy.rowCount(root_index))
                 ]
-                if len(names) == 6:
+                if len(names) == 4:
                     break
                 time.sleep(0.01)
-            self.assertEqual(set(names), {"final.mp4", "music.wav", "cover.png", "publish.json", "publish-copy.txt", "metadata"})
+            self.assertEqual(set(names), {"final.mp4", "music.wav", "cover.png", "metadata"})
             type_by_name = {
                 media.proxy.data(media.proxy.index(row, 0, root_index)):
                 media.proxy.data(media.proxy.index(row, 2, root_index))
                 for row in range(media.proxy.rowCount(root_index))
             }
             self.assertEqual(type_by_name["final.mp4"], "Video")
-            self.assertEqual(type_by_name["publish.json"], "JSON")
+            self.assertNotIn("publish.json", type_by_name)
+            self.assertNotIn("publish-copy.txt", type_by_name)
             nested_source = media.file_model.index(str(root / "metadata"))
             nested = media.proxy.mapFromSource(nested_source)
             media.files.expand(nested)

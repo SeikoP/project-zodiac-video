@@ -104,10 +104,44 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             media.open_media(out / "publish-copy.txt")
             self.assertIn("#NhanMa", media.text_preview.toPlainText())
             self.assertTrue(media.copy_publish_button.isEnabled())
+            self.assertEqual(media.publish_preview.toPlainText(), "Nội dung mẫu\n\n#NhanMa")
+            self.assertNotIn("TIKTOK CAPTION", media.publish_preview.toPlainText())
             media._copy_publish()
             self.assertEqual(QApplication.clipboard().text(), "Nội dung mẫu\n\n#NhanMa")
             media.player.stop()
             media.close()
+
+    def test_structured_runner_native_command_lines_keep_stdout_and_stderr(self):
+        import sys
+        from tools.studio_v2.runner import run_structured_command, observe_structured_command_output
+        received = []
+        with observe_structured_command_output(lambda line, channel: received.append((line, channel))):
+            result = run_structured_command(
+                [sys.executable, "-c", "import sys; print('native start', flush=True); print('native error', file=sys.stderr, flush=True)"],
+                stage="RENDER", fallback_code="RENDER_FAILED",
+            )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(("native start", "stdout"), received)
+        self.assertIn(("native error", "stderr"), received)
+
+    def test_console_shows_state_and_severity_filters_without_dropping_disk_log(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        with tempfile.TemporaryDirectory() as temp:
+            w = WorkbenchScreen()
+            logfile = Path(temp) / "log.txt"
+            w.set_log_file(logfile)
+            w.append_activity("[RUNNING] Giọng đọc", channel="state", stage="VOICE")
+            w.append_activity("ffmpeg: invalid source", channel="stderr", stage="RENDER")
+            w.append_activity("[DONE] Gói", channel="state", stage="PACKAGE")
+            w.log_filter.setCurrentIndex(w.log_filter.findData("error"))
+            self.assertIn("invalid source", w.log_view.toPlainText())
+            self.assertNotIn("Giọng đọc", w.log_view.toPlainText())
+            self.assertIn("Giọng đọc", logfile.read_text(encoding="utf-8"))
+            w.log_filter.setCurrentIndex(w.log_filter.findData("all"))
+            w.stage_log_filter.setCurrentIndex(w.stage_log_filter.findData("VOICE"))
+            self.assertIn("Giọng đọc", w.log_view.toPlainText())
+            self.assertNotIn("invalid source", w.log_view.toPlainText())
+            w.close()
 
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
