@@ -359,6 +359,8 @@ jobs:
           node-version: "22"
       - name: Install renderer 2.0.1 dependencies
         run: npm install --no-audit --no-fund
+      - name: Probe real pinned Remotion 2.0.1 CLI
+        run: node scripts/local-remotion-cli.mjs --check
       - name: Run renderer 2.0.1 regression
         run: npm test
       - name: Typecheck renderer 2.0.1
