@@ -643,9 +643,21 @@ class ZodiacQtApp(QMainWindow):
             self.pipeline_running = False
             self._refresh_timer.stop()
             if name == "run_error" and result[2] is not None:
-                self.workbench.append_activity(str(result[2]))
-                QMessageBox.critical(self, "Quy trình chưa hoàn tất", str(result[2]))
+                exc = result[2]
+                step = getattr(exc, "stage", None)
+                self.workbench.append_activity(str(exc), channel="error", stage=step)
+                if callable(getattr(exc, "to_dict", None)):
+                    # Record the original error code, event, target and full
+                    # diagnostics. Do not lose them behind a 180-char label.
+                    detail = json.dumps(exc.to_dict(), ensure_ascii=False, indent=2)
+                    self.workbench.append_activity(detail, channel="error", stage=step)
+                QMessageBox.critical(self, "Quy trình chưa hoàn tất", str(exc))
             self._refresh_workbench()
+            if name == "run_done":
+                rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+                fully_done = bool(rows) and all(row.get("status") in (DONE, SKIPPED) for row in rows)
+                note = "Executor kết thúc; trạng thái các bước đã hoàn tất." if fully_done else "Executor kết thúc, còn bước chưa hoàn tất; xem trạng thái pipeline."
+                self.workbench.append_activity(note, channel="state")
             if self.close_when_stopped:
                 self.close()
             return
