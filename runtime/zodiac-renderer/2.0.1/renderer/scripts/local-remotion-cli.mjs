@@ -54,7 +54,7 @@ export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}
   // A successful process exit alone is not proof that the CLI accepted the
   // command: verify that the documented help lists the render/still commands.
   const output = [result.stdout,result.stderr].filter(Boolean).join("\n");
-  const validHelp = /remotion\\s+render\\b/i.test(output) && /remotion\\s+still\\b/i.test(output);
+  const validHelp = /remotion\s+render\b/i.test(output) && /remotion\s+still\b/i.test(output);
   if(result.error || result.status !== 0 || !validHelp) {
     const trace = [result.stderr,result.stdout,result.error?.message]
       .filter(Boolean).join("\n").trim().slice(0,1800);
