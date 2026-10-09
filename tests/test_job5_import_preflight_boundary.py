@@ -47,7 +47,7 @@ class PreflightPackageIntegration(unittest.TestCase):
             }),encoding="utf-8")
             with self.assertRaises(ControlPlaneError) as caught:
                 validate_job5_package_root(pkg)
-            self.assertEqual(caught.exception.code,"PACKAGE_AUTHORING_PREFLIGHT_FAILED")
+            self.assertEqual(caught.exception.code,"PACKAGE_AUTHORING_PREFLIGHT_FAILED",\n                             msg=str(caught.exception.to_dict()))
             self.assertEqual(caught.exception.detail["issue_count"],2)
             self.assertEqual({x["event_id"] for x in caught.exception.detail["issues"]},{"E01","E02"})
 
