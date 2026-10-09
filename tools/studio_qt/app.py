@@ -90,7 +90,10 @@ class ZodiacQtApp(QMainWindow):
         self.stack = QStackedWidget()
         self.home = HomeScreen(self._recent_jobs())
         self.home.import_requested.connect(self._choose_archive)
+        self.home.ready_import_requested.connect(self._import_ready_archive)
+        self.home.ready_refresh_requested.connect(self._refresh_ready_archives)
         self.home.job_requested.connect(self._open_recent)
+        self._refresh_ready_archives()
         self.stack.addWidget(self.home)
         self.media = MediaWorkspace()
         self.media.set_jobs(self._media_jobs())
@@ -211,8 +214,30 @@ class ZodiacQtApp(QMainWindow):
         except (OSError, ValueError, TypeError):
             pass
 
+    def _ready_archives(self) -> list[str]:
+        """Only regular ZIP files directly under this workspace's ready/ folder."""
+        ready = self.workspace / "ready"
+        try:
+            paths = (p for p in ready.iterdir() if p.is_file() and not p.is_symlink() and p.suffix.casefold() == ".zip")
+            return [str(p.resolve()) for p in sorted(paths, key=lambda p: (-p.stat().st_mtime, p.name.casefold()))]
+        except OSError:
+            return []
+
+    def _refresh_ready_archives(self) -> None:
+        self.home.set_ready_packages(self._ready_archives())
+
+    def _import_ready_archive(self, raw_path: str) -> None:
+        path = Path(raw_path).resolve()
+        ready = (self.workspace / "ready").resolve()
+        if not path.is_file() or path.parent != ready or path.suffix.casefold() != ".zip":
+            QMessageBox.warning(self, "Gói không hợp lệ", "Chỉ chọn ZIP hiện có trong thư mục ready/ của workspace.")
+            self._refresh_ready_archives()
+            return
+        self._run_operation("import", path)
+
     def _choose_archive(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(self, "Nhập gói video", "", "Gói video (*.zip);;Tất cả tệp (*)")
+        ready = self.workspace / "ready"
+        filename, _ = QFileDialog.getOpenFileName(self, "Nhập gói video", str(ready if ready.is_dir() else self.workspace), "Gói video (*.zip);;Tất cả tệp (*)")
         if not filename:
             return
         self._run_operation("import", Path(filename))
@@ -229,6 +254,7 @@ class ZodiacQtApp(QMainWindow):
             return
         self.busy = True
         self.home.import_button.setEnabled(False)
+        self.home.ready_import_button.setEnabled(False)
 
         def run() -> None:
             try:
@@ -506,6 +532,7 @@ class ZodiacQtApp(QMainWindow):
         if name in ("import", "open"):
             self.busy = False
             self.home.import_button.setEnabled(True)
+            self._refresh_ready_archives()
             mode, path, error = result
             if error is not None:
                 QMessageBox.critical(self, "Không mở được gói video", str(error))
@@ -515,6 +542,7 @@ class ZodiacQtApp(QMainWindow):
             self.mode = mode
             self.selected_stage = None
             self.home.set_recent_jobs(self._recent_jobs())
+            self._refresh_ready_archives()
             self._load_settings(path)
             self._save_session(path)
             self.header_job.setText(f"{Path(path).name}  ·  {'Job@5' if mode == 'job5' else 'Job local'}")
@@ -614,6 +642,7 @@ class ZodiacQtApp(QMainWindow):
 
     def _show_home(self) -> None:
         self.home.set_recent_jobs(self._recent_jobs())
+        self._refresh_ready_archives()
         self.main_tabs.setCurrentWidget(self.stack)
         self.stack.setCurrentWidget(self.home)
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -15,6 +16,8 @@ from PySide6.QtWidgets import (
 
 class HomeScreen(QWidget):
     import_requested = Signal()
+    ready_import_requested = Signal(str)
+    ready_refresh_requested = Signal()
     job_requested = Signal(str)
 
     def __init__(self, recent_jobs: list[dict] | None = None, parent=None) -> None:
@@ -34,6 +37,30 @@ class HomeScreen(QWidget):
         title_row.addWidget(self.import_button)
         layout.addLayout(title_row)
         layout.addWidget(QLabel("Mở lại job hoặc nhập một gói mới.", objectName="muted"))
+
+        self.ready_frame = QFrame(objectName="surface")
+        ready_layout = QVBoxLayout(self.ready_frame)
+        ready_layout.setContentsMargins(18, 12, 18, 12)
+        ready_layout.setSpacing(8)
+        ready_layout.addWidget(QLabel("GÓI SẴN SÀNG · ready/", objectName="eyebrow"))
+        ready_row = QHBoxLayout()
+        self.ready_picker = QComboBox()
+        self.ready_picker.setObjectName("readyArchivePicker")
+        self.ready_picker.setAccessibleName("Chọn ZIP trong thư mục ready")
+        self.ready_picker.setMinimumWidth(180)
+        self.ready_picker.currentIndexChanged.connect(self._update_ready_button)
+        ready_row.addWidget(self.ready_picker, 1)
+        self.ready_refresh_button = QPushButton("Làm mới")
+        self.ready_refresh_button.clicked.connect(self.ready_refresh_requested)
+        ready_row.addWidget(self.ready_refresh_button)
+        self.ready_import_button = QPushButton("Nhập ZIP đã chọn")
+        self.ready_import_button.setObjectName("primary")
+        self.ready_import_button.clicked.connect(self._import_ready)
+        ready_row.addWidget(self.ready_import_button)
+        ready_layout.addLayout(ready_row)
+        ready_layout.addWidget(QLabel("Chọn ZIP trong ready/ hoặc dùng Nhập gói video để duyệt vị trí khác.", objectName="muted"))
+        layout.addWidget(self.ready_frame)
+        self.set_ready_packages([])
 
         self.recent_frame = QFrame(objectName="surface")
         recent_layout = QVBoxLayout(self.recent_frame)
@@ -94,3 +121,30 @@ class HomeScreen(QWidget):
 
     def _activate_item(self, item: QListWidgetItem) -> None:
         self.job_requested.emit(item.data(256))
+
+    def set_ready_packages(self, paths: list[str]) -> None:
+        previous = self.ready_picker.currentData()
+        self.ready_picker.blockSignals(True)
+        self.ready_picker.clear()
+        for path in paths:
+            from pathlib import Path
+            file_path = Path(path)
+            self.ready_picker.addItem(file_path.name, str(file_path))
+            self.ready_picker.setItemData(self.ready_picker.count() - 1, str(file_path), 3)
+        if not paths:
+            self.ready_picker.addItem("Chưa có ZIP trong ready/", None)
+        elif previous:
+            selected = self.ready_picker.findData(previous)
+            if selected >= 0:
+                self.ready_picker.setCurrentIndex(selected)
+        self.ready_picker.blockSignals(False)
+        self.ready_picker.setEnabled(bool(paths))
+        self._update_ready_button()
+
+    def _update_ready_button(self, _index: int = -1) -> None:
+        self.ready_import_button.setEnabled(bool(self.ready_picker.currentData()))
+
+    def _import_ready(self) -> None:
+        path = self.ready_picker.currentData()
+        if path:
+            self.ready_import_requested.emit(str(path))
