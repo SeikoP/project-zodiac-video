@@ -280,7 +280,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     # their historical import behavior.
     producer_version = str(manifest.get("producer", {}).get("version", ""))
     import re
-    match = re.match(r"^(\\d+)\\.(\\d+)\\.(\\d+)(?:$|[-+])", producer_version)
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:$|[-+])", producer_version)
     modern = bool(match and tuple(map(int, match.groups())) >= (2, 2, 14))
     if modern:
         candidate_ir = _read_object(root / "production.ir.json", code="AUTHORING_IR_INVALID")
