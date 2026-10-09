@@ -85,22 +85,46 @@ test("deep CLI check catches actual MODULE_NOT_FOUND isexe despite installed ent
   }finally{await rm(dir,{recursive:true,force:true})}
 });
 
-test("deep probe requires CLI to boot and checks --version, not file presence",async()=>{
+test("deep probe uses supported help command and refuses unrelated output",async()=>{
   const {dir,local}=await setup({bin:"dist/cli.cjs"});
   await mkdir(join(local,"dist"),{recursive:true});
   await writeFile(join(local,"dist","cli.cjs"),
-    'process.stdout.write("4.0.530");');
+    'if (process.argv[2] !== "help") process.exit(1); process.stdout.write("remotion render\\nremotion still");');
   try{
     const cli=await probePinnedRemotionCli(dir);
     assert.equal(cli.version,"4.0.530");
     let invoked;
     const checked=await probePinnedRemotionCli(dir,{spawn:(node,args,options)=>{
       invoked={node,args,options};
-      return {status:0,stdout:"4.0.530",stderr:""};
+      return {status:0,stdout:"remotion render\nremotion still",stderr:""};
     }});
     assert.equal(checked.entry,cli.entry);
     assert.equal(invoked.node,process.execPath);
-    assert.deepEqual(invoked.args.slice(1),["--version"]);
+    assert.deepEqual(invoked.args.slice(1),["help"]);
     assert.equal(invoked.options.cwd,dir);
   }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test("health probe rejects nonzero process status even when usage text looks like help",async()=>{
+  const {dir}=await setup({bin:"dist/cli.cjs"});
+  const local=join(dir,"node_modules","@remotion","cli");
+  await mkdir(join(local,"dist"),{recursive:true});
+  await writeFile(join(local,"dist","cli.cjs"),
+    'process.stdout.write("remotion render\\nremotion still");');
+  try{
+    await assert.rejects(probePinnedRemotionCli(dir,{
+      spawn:()=>({status:1,stdout:"remotion render\nremotion still",stderr:"Unknown option --version"})
+    }),error=>error.code==="RENDERER_DEPENDENCY_BROKEN");
+    await assert.rejects(probePinnedRemotionCli(dir,{
+      spawn:()=>({status:0,stdout:"Other CLI, no Remotion commands",stderr:""})
+    }),error=>error.code==="RENDERER_DEPENDENCY_BROKEN");
+  }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test("real locally installed Remotion CLI supports the documented help probe",async(t)=>{
+  try{
+    await readFile(new URL("../node_modules/@remotion/cli/package.json",import.meta.url),"utf8");
+  }catch{t.skip("Local npm dependencies unavailable; CI installs them before npm test");return;}
+  const cli=await probePinnedRemotionCli();
+  assert.equal(cli.version,"4.0.530");
 });
