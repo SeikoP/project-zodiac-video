@@ -29,6 +29,7 @@ from tools.studio.pipeline import DONE, FAILED, PENDING, RUNNING, SKIPPED, CANCE
 from tools.studio.preflight import Job5PreflightChecker, PreflightChecker
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.studio_v2.executor import ExecutorConfig
+from tools.studio_v2.runner import observe_structured_command_output
 from tools.studio_v2.session import StudioV2Session, detect_job5_manifest
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio_qt.events import WorkerEventBridge
@@ -80,6 +81,7 @@ class ZodiacQtApp(QMainWindow):
         self.busy = False
         self.pipeline_running = False
         self.selected_stage: str | None = None
+        self._stage_snapshot: dict[str, tuple[str, str]] = {}
         self.close_when_stopped = False
         self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT}
         self.setWindowTitle("Zodiac Studio · Task Workbench")
@@ -346,6 +348,24 @@ class ZodiacQtApp(QMainWindow):
             return
         rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
         self.workbench.set_rows(rows)
+        current_state = {
+            row["step"]: (str(row.get("status", "")), str(row.get("detail", "")))
+            for row in rows
+        }
+        if self._stage_snapshot:
+            for row in rows:
+                step = row["step"]
+                current = current_state[step]
+                previous = self._stage_snapshot.get(step)
+                if previous is not None and current != previous:
+                    status, detail = current
+                    if status in (RUNNING, FAILED, DONE, CANCELLED, SKIPPED):
+                        # These are observed runner states, not invented progress.
+                        summary = f"[{status}] {STAGE_TITLES.get(step, step)}"
+                        if detail:
+                            summary += f" · {detail}"
+                        self.workbench.append_activity(summary, channel="state", stage=step)
+        self._stage_snapshot = current_state
         active = next((row for row in rows if row.get("status") in (RUNNING, FAILED, PENDING)), rows[-1])
         if not self.pipeline_running and self.selected_stage:
             active = next((row for row in rows if row.get("step") == self.selected_stage), active)
@@ -391,14 +411,23 @@ class ZodiacQtApp(QMainWindow):
     @Slot(str, dict)
     def _on_legacy_event(self, kind: str, payload: dict) -> None:
         if self.workbench:
-            self.workbench.append_activity(payload.get("text") or payload.get("message") or kind)
+            self.workbench.append_activity(
+                payload.get("text") or payload.get("message") or kind,
+                channel="event", stage=self._running_stage(),
+            )
         self._refresh_workbench()
+
+    def _running_stage(self) -> str | None:
+        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        return next((row["step"] for row in rows if row.get("status") == RUNNING), None)
 
     @Slot(str, str)
     def _on_log(self, line: str, channel: str) -> None:
         if self.workbench:
-            self.workbench.append_activity(f"[{channel}] {line}")
-        self._refresh_workbench()
+            self.workbench.append_activity(line, channel=channel, stage=self._running_stage())
+        # The existing 250ms timer owns stage refresh while running; updating
+        # the entire workbench for each subprocess line can freeze Qt.
+
 
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
@@ -436,7 +465,8 @@ class ZodiacQtApp(QMainWindow):
             def run_v2() -> None:
                 try:
                     from tools.zodiac_local import observe_subprocess_output
-                    with observe_subprocess_output(lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)):
+                    observer = lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)
+                    with observe_subprocess_output(observer), observe_structured_command_output(observer):
                         self.v2_session.run(config, rerun_from=rerun_from)
                     self.bridge.operation_finished.emit("run_done", (None, None, None))
                 except Exception as exc:
@@ -567,6 +597,7 @@ class ZodiacQtApp(QMainWindow):
                 self.stack.removeWidget(self.workbench)
                 self.workbench.deleteLater()
             self.workbench = WorkbenchScreen()
+            self._stage_snapshot = {}
             self.workbench.home_requested.connect(self._show_home)
             self.workbench.set_job(
                 Path(path).name,
@@ -575,6 +606,10 @@ class ZodiacQtApp(QMainWindow):
                 rows=self._v2_rows() if mode == "job5" else self._legacy_rows(),
             )
             self.workbench.set_log_file(Path(path) / ".runtime" / "studio-gui.log")
+            self._stage_snapshot = {
+                row["step"]: (str(row.get("status", "")), str(row.get("detail", "")))
+                for row in (self._v2_rows() if mode == "job5" else self._legacy_rows())
+            }
             self.workbench.continue_requested.connect(lambda: self._start(resume=True))
             self.workbench.run_all_requested.connect(lambda: self._start(resume=False))
             self.workbench.cancel_requested.connect(self._cancel)
@@ -620,14 +655,11 @@ class ZodiacQtApp(QMainWindow):
             return
         self._refresh_media_jobs()
         path = Path(raw_path)
-        if kind == "video":
-            if not path.is_file():
-                QMessageBox.warning(self, "Không tìm thấy video", "Tệp đầu ra đã bị di chuyển hoặc xóa.")
-                return
+        if kind == "video" and path.is_file():
             self.media.open_media(path)
         else:
             if not path.is_dir():
-                QMessageBox.warning(self, "Không tìm thấy thư mục", "Thư mục đầu ra đã bị di chuyển hoặc xóa.")
+                QMessageBox.warning(self, "Không tìm thấy Media", "Thư mục đầu ra đã bị di chuyển hoặc xóa.")
                 return
             self.media.open_folder(path)
         self.main_tabs.setCurrentWidget(self.media)
