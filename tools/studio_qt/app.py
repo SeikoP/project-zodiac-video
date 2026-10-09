@@ -76,6 +76,7 @@ class ZodiacQtApp(QMainWindow):
         self.bridge = WorkerEventBridge(self)
         self.bridge.event_received.connect(self._on_legacy_event)
         self.bridge.log_received.connect(self._on_log)
+        self.bridge.native_log_received.connect(self._on_native_log)
         self.bridge.operation_finished.connect(self._on_operation_finished)
         self.mode = "legacy"
         self.busy = False
@@ -429,6 +430,11 @@ class ZodiacQtApp(QMainWindow):
         # the entire workbench for each subprocess line can freeze Qt.
 
 
+    @Slot(str, str, str)
+    def _on_native_log(self, line: str, channel: str, stage: str) -> None:
+        if self.workbench:
+            self.workbench.append_activity(line, channel=channel, stage=stage)
+
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
         if job is None or self.busy or self.pipeline_running:
@@ -465,8 +471,9 @@ class ZodiacQtApp(QMainWindow):
             def run_v2() -> None:
                 try:
                     from tools.zodiac_local import observe_subprocess_output
-                    observer = lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)
-                    with observe_subprocess_output(observer), observe_structured_command_output(observer):
+                    subprocess_observer = lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)
+                    native_observer = lambda line, channel, stage: self.bridge.native_log_received.emit(line, channel, stage)
+                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer):
                         self.v2_session.run(config, rerun_from=rerun_from)
                     self.bridge.operation_finished.emit("run_done", (None, None, None))
                 except Exception as exc:

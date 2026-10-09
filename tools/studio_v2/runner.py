@@ -8,13 +8,13 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 import threading
 
-_COMMAND_OBSERVER: ContextVar[Callable[[str, str], None] | None] = ContextVar(
+_COMMAND_OBSERVER: ContextVar[Callable[[str, str, str], None] | None] = ContextVar(
     "zodiac_studio_structured_command_observer", default=None
 )
 
 
 @contextmanager
-def observe_structured_command_output(observer: Callable[[str, str], None]):
+def observe_structured_command_output(observer: Callable[[str, str, str], None]):
     """Connect native renderer stdout/stderr to the GUI without discarding output."""
     token = _COMMAND_OBSERVER.set(observer)
     try:
@@ -60,7 +60,7 @@ def run_structured_command(
                 try:
                     for line in stream:
                         chunks[channel].append(line)
-                        observer(line.rstrip("\r\n"), channel)
+                        observer(line.rstrip("\r\n"), channel, stage)
                 finally:
                     stream.close()
 

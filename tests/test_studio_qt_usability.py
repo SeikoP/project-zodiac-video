@@ -115,14 +115,14 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         import sys
         from tools.studio_v2.runner import run_structured_command, observe_structured_command_output
         received = []
-        with observe_structured_command_output(lambda line, channel: received.append((line, channel))):
+        with observe_structured_command_output(lambda line, channel, stage: received.append((line, channel, stage))):
             result = run_structured_command(
                 [sys.executable, "-c", "import sys; print('native start', flush=True); print('native error', file=sys.stderr, flush=True)"],
                 stage="RENDER", fallback_code="RENDER_FAILED",
             )
         self.assertEqual(result.returncode, 0)
-        self.assertIn(("native start", "stdout"), received)
-        self.assertIn(("native error", "stderr"), received)
+        self.assertIn(("native start", "stdout", "RENDER"), received)
+        self.assertIn(("native error", "stderr", "RENDER"), received)
 
     def test_console_shows_state_and_severity_filters_without_dropping_disk_log(self):
         from tools.studio_qt.screens.workbench import WorkbenchScreen
