@@ -48,6 +48,20 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const report=auditJob5Payload(ir,plan);
   await mkdir(join(root,".runtime"),{recursive:true});
   await writeFile(join(root,".runtime","payload-parity-report.json"),JSON.stringify(report,null,2)+"\n");
-  console.log(JSON.stringify({ok:report.ok,scenes:report.scenes.length,errors:report.errors}));
-  if(!report.ok)process.exitCode=2;
+  if(report.ok){
+    console.log(JSON.stringify({ok:true,scenes:report.scenes.length,errors:[]}));
+  }else{
+    // A structured error must be visible to Studio; stdout-only JSON was lost
+    // by run_structured_command, producing the opaque "exit code 2" dialog.
+    const first=report.errors[0]??"payload parity audit failed";
+    console.error(JSON.stringify({
+      ok:false,code:"RENDER_PLAN_PAYLOAD_MISMATCH",stage:"PLAN",
+      message:"Render plan không khớp Job@5: "+first+
+        " ("+report.errors.length+" lỗi; xem .runtime/payload-parity-report.json)",
+      detail:{errors:report.errors,issue_count:report.errors.length,
+        report_path:join(root,".runtime","payload-parity-report.json"),
+        affected_scenes:[...new Set(report.errors.map(e=>e.split(" ")[1]).filter(Boolean))]},
+    }));
+    process.exitCode=2;
+  }
 }
