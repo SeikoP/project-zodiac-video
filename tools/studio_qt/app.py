@@ -78,11 +78,14 @@ class ZodiacQtApp(QMainWindow):
         self.bridge.log_received.connect(self._on_log)
         self.bridge.native_log_received.connect(self._on_native_log)
         self.bridge.operation_finished.connect(self._on_operation_finished)
+        self.bridge.preflight_update.connect(self._on_preflight_update)
         self.mode = "legacy"
         self.busy = False
         self.pipeline_running = False
         self.selected_stage: str | None = None
         self._stage_snapshot: dict[str, tuple[str, str]] = {}
+        self._preflight_results = []
+        self._preflight_origin = ""
         self.close_when_stopped = False
         self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT}
         self.setWindowTitle("Zodiac Studio · Task Workbench")
@@ -634,13 +637,35 @@ class ZodiacQtApp(QMainWindow):
             return
         if name == "preflight":
             self.busy = False
-            ready, failure, show_result = result
-            self.workbench.set_environment_state(ready, failure or "")
+            ready, detail, show_result = result
+            observed = list(self._preflight_results)
+            failed = sum(not item.ok for item in observed)
+            passed = len(observed) - failed
+            label = (
+                f"[DONE] Kiểm tra môi trường {self._preflight_origin}: {passed}/{len(observed)} PASS"
+                if ready else
+                f"[FAILED] Kiểm tra môi trường {self._preflight_origin}: {passed}/{len(observed)} PASS, {failed} chưa đạt"
+            )
+            if not observed:
+                label = f"[ERROR] Kiểm tra môi trường không hoàn tất: {detail or 'Không nhận được kết quả.'}"
+            self.workbench.append_activity(label, channel="state" if observed else "error", stage="ENV")
+            self.workbench.set_environment_state(
+                ready, detail or label,
+                completed=len(observed) if observed else None, failed=failed,
+            )
             if show_result:
-                if failure:
-                    QMessageBox.warning(self, "Môi trường chưa sẵn sàng", failure)
+                overview = "\n".join(
+                    f"{'✓' if item.ok else '✕'} {item.label}: {item.message}"
+                    for item in observed
+                )
+                if not overview:
+                    overview = detail or "Không có kết quả kiểm tra."
+                if not ready and detail:
+                    overview += "\n\nChi tiết cần xử lý:\n" + detail
+                if ready:
+                    QMessageBox.information(self, "Kiểm tra môi trường — hoàn tất", overview)
                 else:
-                    QMessageBox.information(self, "Môi trường sẵn sàng", "Các thành phần cần thiết đã sẵn sàng.")
+                    QMessageBox.warning(self, "Kiểm tra môi trường — cần xử lý", overview)
             self._refresh_workbench()
             if self.close_when_stopped:
                 self.close()
@@ -714,27 +739,61 @@ class ZodiacQtApp(QMainWindow):
         if self.workbench and self.main_tabs.currentWidget() is self.stack and self.stack.currentWidget() is self.workbench:
             self.workbench.log_toggle.toggle()
 
+    @Slot(str, object)
+    def _on_preflight_update(self, kind: str, payload: object) -> None:
+        if self.workbench is None:
+            return
+        if kind == "start":
+            label = str(payload)
+            self.workbench.set_environment_progress(label, len(self._preflight_results))
+            self.workbench.append_activity(f"Đang kiểm tra: {label}", channel="preflight", stage="ENV")
+        elif kind == "result":
+            check = payload
+            self._preflight_results.append(check)
+            state = "DONE" if check.ok else "FAILED"
+            text = f"[{state}] {check.label}: {check.message}"
+            self.workbench.append_activity(text, channel="preflight", stage="ENV")
+            if not check.ok and check.details:
+                self.workbench.append_activity(f"Chi tiết {check.label}: {check.details}", channel="preflight", stage="ENV")
+
     def _check_environment(self, _checked: bool = False, *, show_result: bool = True) -> None:
         job = self._active_job()
-        if not job:
+        if not job or self.busy or self.pipeline_running:
             return
-        if self.busy or self.pipeline_running:
-            return
+        # The auto-check on job open is deliberately visible but non-modal.
+        self._preflight_results = []
+        self._preflight_origin = "thủ công" if show_result else "tự động"
+        self.busy = True
+        self.workbench.set_environment_progress("khởi tạo", 0)
+        self.workbench.append_activity(
+            f"Bắt đầu kiểm tra môi trường ({self._preflight_origin})…",
+            channel="preflight", stage="ENV",
+        )
+        self._refresh_workbench()
+
         def check() -> None:
             try:
-                checker = Job5PreflightChecker(job, tts_root=TTS_ROOT, vieneu_url=TTS_URL) if self.mode == "job5" else self.controller.preflight()
+                checker = (
+                    Job5PreflightChecker(job, tts_root=TTS_ROOT, vieneu_url=TTS_URL)
+                    if self.mode == "job5" else self.controller.preflight()
+                )
                 music_raw = str(self.settings.get("music", "")).strip()
                 checker.require_music = bool(music_raw)
                 checker.music_path = Path(music_raw).expanduser() if music_raw else None
-                checks = checker.run()
-                failures = [f"{item.label}: {item.message}" for item in checks if not item.ok]
-                detail = "\n".join(f"{item.label}: {item.message}\n{item.details}" for item in checks if not item.ok)
-                self.bridge.operation_finished.emit("preflight", (not failures, detail, show_result))
+                checks = checker.run(
+                    on_start=lambda label: self.bridge.preflight_update.emit("start", label),
+                    on_check=lambda item: self.bridge.preflight_update.emit("result", item),
+                )
+                detail = "\n".join(
+                    f"{item.label}: {item.message}\n{item.details}"
+                    for item in checks if not item.ok
+                )
+                self.bridge.operation_finished.emit(
+                    "preflight", (all(item.ok for item in checks), detail, show_result)
+                )
             except Exception as exc:
                 self.bridge.operation_finished.emit("preflight", (False, str(exc), show_result))
-        self.busy = True
-        self.workbench.append_activity("Đang kiểm tra môi trường…")
-        self._refresh_workbench()
+
         threading.Thread(target=check, daemon=True).start()
 
     def _install_dependencies(self) -> None:

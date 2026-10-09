@@ -332,8 +332,22 @@ class WorkbenchScreen(QWidget):
         self.cancel_button.setEnabled(running)
         self.rerun_button.setEnabled(enabled and self.stage_rail.selected_step not in (None, "PACKAGE"))
 
-    def set_environment_state(self, ready: bool | None, detail: str = "") -> None:
-        label = "Môi trường sẵn sàng" if ready else "Môi trường cần kiểm tra" if ready is False else "Môi trường chưa kiểm tra"
+    def set_environment_progress(self, component: str, finished: int) -> None:
+        label = f"Đang kiểm tra · {finished} mục"
+        self.environment_status.setText(label)
+        self.environment_status.setToolTip(f"Đang kiểm tra {component}. Các kết quả đã hoàn thành có trong Live Console.")
+        self.environment_status.setProperty("severity", "warning")
+        self.environment_status.style().unpolish(self.environment_status)
+        self.environment_status.style().polish(self.environment_status)
+
+    def set_environment_state(self, ready: bool | None, detail: str = "", *, completed: int | None = None,
+                              failed: int = 0) -> None:
+        if completed is None:
+            label = "Môi trường sẵn sàng" if ready else "Môi trường cần kiểm tra" if ready is False else "Môi trường chưa kiểm tra"
+        elif ready:
+            label = f"Môi trường: {completed}/{completed} PASS"
+        else:
+            label = f"Môi trường: {failed}/{completed} lỗi"
         self.environment_status.setText(label)
         self.environment_status.setToolTip(detail or label)
         self.environment_status.setProperty("severity", "success" if ready else "error" if ready is False else "")
