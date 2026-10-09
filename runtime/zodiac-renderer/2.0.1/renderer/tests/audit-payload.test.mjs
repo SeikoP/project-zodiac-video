@@ -38,7 +38,9 @@ test("real CLI writes report and structured stderr on audit mismatch",async()=>{
     assert.equal(diagnostic.code,"RENDER_PLAN_PAYLOAD_MISMATCH");
     assert.equal(diagnostic.stage,"PLAN");
     assert.match(diagnostic.message,/S01 story_prop/);
-    assert.equal(diagnostic.detail.issue_count,1);
+    assert.equal(diagnostic.detail.issue_count,2);
+    assert.ok(diagnostic.detail.errors.some(x=>x.includes("ENTITY_DROPPED S01 story_prop")));
+    assert.ok(diagnostic.detail.errors.some(x=>x.includes("VISUAL_ROLE_INVISIBLE S01 story_prop")));
     const report=JSON.parse(await readFile(join(root,".runtime","payload-parity-report.json"),"utf8"));
     assert.equal(report.ok,false);
     assert.deepEqual(report.errors,diagnostic.detail.errors);
