@@ -52,6 +52,8 @@ def stylesheet() -> str:
         QWidget#stageLine[selected="true"] {{ background: #242B2A; border-left: 2px solid {c['primary']}; }}
         QFrame#stageDivider {{ color: {c['border']}; background: {c['border']}; max-height: 1px; border: 0; }}
         QFrame#workspaceDivider {{ background: {c['border']}; color: {c['border']}; max-height: 1px; border: 0; }}
+        QSplitter#detailConsoleSplitter::handle:vertical {{ background: {TOKENS['border']}; border-radius: 2px; }}
+        QSplitter#detailConsoleSplitter::handle:vertical:hover {{ background: {TOKENS['primary']}; }}
         QFrame#workspaceVerticalDivider {{ background: {c['border']}; color: {c['border']}; max-width: 1px; border: 0; }}
         QWidget#workspaceMain {{ background: transparent; border: 0; }}
         QWidget#workspaceMain QLabel#status {{ padding: 2px 0; border: 0; background: transparent; }}
