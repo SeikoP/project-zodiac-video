@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -258,7 +259,27 @@ class Job5PreflightChecker(PreflightChecker):
                 raise ValueError("Installed @remotion/cli version differs from pinned " + expected)
             if entry is None or not entry.is_relative_to(cli_dir.resolve()) or not entry.is_file():
                 raise ValueError("Pinned local Remotion CLI executable is missing")
-        except (OSError, KeyError, TypeError, ValueError) as exc:
+            # Probe actual CLI boot, not just package.json and bin presence.
+            # Broken nested node_modules/which/isexe installs pass the old check.
+            if renderer.parent.name == "2.0.1":
+                node = shutil.which("node")
+                if not node:
+                    raise ValueError("Node.js is missing")
+                result = subprocess.run(
+                    [node, str(renderer / "scripts" / "local-remotion-cli.mjs"), "--check"],
+                    cwd=str(renderer), capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=25, check=False,
+                )
+                if result.returncode:
+                    message = result.stderr.strip() or result.stdout.strip()
+                    try:
+                        import json as _json
+                        detail = _json.loads(result.stderr.strip().splitlines()[-1])
+                        message = detail.get("message", message)
+                    except (ValueError, IndexError, TypeError, AttributeError):
+                        pass
+                    raise ValueError("Remotion CLI không khởi chạy được: " + message[:1300])
+        except (OSError, KeyError, TypeError, ValueError, subprocess.TimeoutExpired) as exc:
             return Check("RENDERER", "Renderer " + renderer.parent.name, False,
                          "Thiếu hoặc sai Remotion CLI cục bộ: " + str(exc),
                          "Cài đúng renderer: " + install_command, error_code="DEPENDENCY_MISSING")
@@ -271,11 +292,18 @@ class Job5PreflightChecker(PreflightChecker):
         if "FASTER_WHISPER" in missing:
             commands.append(self.install_command())
         if "RENDERER" in missing:
-            npm = shutil.which("npm.cmd") or shutil.which("npm")
-            if npm is None:
-                raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
-            commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
-                             "--no-audit", "--no-fund"])
+            if self.renderer_directory().parent.name == "2.0.1":
+                # Broken transitive installs (e.g. missing isexe) cannot be
+                # reliably repaired by npm install over the old node_modules.
+                # Use atomic backup/rebuild/CLI smoke verification instead.
+                commands.append([sys.executable,"-m","tools.studio.renderer_repair",
+                                 "--version","2.0.1"])
+            else:
+                npm = shutil.which("npm.cmd") or shutil.which("npm")
+                if npm is None:
+                    raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
+                commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
+                                 "--no-audit", "--no-fund"])
         return commands
 
     def run(self) -> list[Check]:
