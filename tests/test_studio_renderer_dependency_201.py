@@ -1,6 +1,8 @@
 import json
 import tempfile
 import unittest
+import sys
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -63,7 +65,8 @@ class PinnedRendererPreflightTests(unittest.TestCase):
             job=self.make_job(root,"2.0.1")
             renderer=self.make_source(root,"2.0.1")
             self.make_cli(renderer,version="4.0.529")
-            with patch("tools.studio.preflight.ROOT",root):
+            with patch("tools.studio.preflight.ROOT",root),\
+                 patch("tools.studio.preflight.subprocess.run",return_value=SimpleNamespace(returncode=0,stdout="RENDERER_CLI_READY",stderr="")):
                 checker=Job5PreflightChecker(job)
                 self.assertFalse(checker.renderer_check().ok)
                 self.make_cli(renderer,version="4.0.530")
@@ -82,10 +85,27 @@ class PinnedRendererPreflightTests(unittest.TestCase):
                 checks=[checker.renderer_check()]
                 commands=checker.install_commands(checks)
                 self.assertEqual(len(commands),1)
-                self.assertEqual(commands[0][0],"/usr/bin/npm")
-                self.assertEqual(commands[0][1:3],["install","--prefix"])
-                self.assertIn("2.0.1",commands[0][3])
-                self.assertNotIn("2.0.0",commands[0][3])
+                self.assertEqual(commands[0][0],sys.executable)
+                self.assertEqual(commands[0][1:3],["-m","tools.studio.renderer_repair"])
+                self.assertEqual(commands[0][3:],["--version","2.0.1"])
+
+    def test_broken_transitive_isexe_does_not_pass_environment_check(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            job=self.make_job(root,"2.0.1")
+            renderer=self.make_source(root,"2.0.1")
+            self.make_cli(renderer)
+            failed=SimpleNamespace(returncode=2, stdout="",
+                stderr='{"code":"RENDERER_DEPENDENCY_BROKEN","message":"Cannot find module isexe"}')
+            with patch("tools.studio.preflight.ROOT",root),\
+                 patch("tools.studio.preflight.shutil.which",return_value="/fake/node"),\
+                 patch("tools.studio.preflight.subprocess.run",return_value=failed) as invoke:
+                status=Job5PreflightChecker(job).renderer_check()
+                self.assertFalse(status.ok)
+                self.assertEqual(status.error_code,"DEPENDENCY_MISSING")
+                self.assertIn("isexe",status.message)
+                self.assertIn("npm install --prefix",status.details)
+                self.assertEqual(invoke.call_args.args[0][-1],"--check")
 
     def test_renderer_200_remains_backward_compatible(self):
         with tempfile.TemporaryDirectory() as d:
