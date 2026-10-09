@@ -645,12 +645,12 @@ class ZodiacQtApp(QMainWindow):
             if name == "run_error" and result[2] is not None:
                 exc = result[2]
                 step = getattr(exc, "stage", None)
-                self.workbench.append_activity(str(exc), channel="error", stage=step)
                 if callable(getattr(exc, "to_dict", None)):
-                    # Record the original error code, event, target and full
-                    # diagnostics. Do not lose them behind a 180-char label.
+                    # The original code, scene/event target and full diagnostics
+                    # remain in the file, not just a shortened GUI toast.
                     detail = json.dumps(exc.to_dict(), ensure_ascii=False, indent=2)
-                    self.workbench.append_activity(detail, channel="error", stage=step)
+                    self.workbench.append_activity(detail, channel="diagnostic", stage=step)
+                self.workbench.append_activity(str(exc), channel="error", stage=step)
                 QMessageBox.critical(self, "Quy trình chưa hoàn tất", str(exc))
             self._refresh_workbench()
             if name == "run_done":
