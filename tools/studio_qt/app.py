@@ -415,10 +415,10 @@ class ZodiacQtApp(QMainWindow):
     @Slot(str, dict)
     def _on_legacy_event(self, kind: str, payload: dict) -> None:
         if self.workbench:
-            self.workbench.append_activity(
-                payload.get("text") or payload.get("message") or kind,
-                channel="event", stage=self._running_stage(),
-            )
+            message = payload.get("text") or payload.get("message") or kind
+            stage = self._running_stage()
+            self.workbench.append_activity(message, channel="event", stage=stage)
+            self.workbench.set_stage_activity(stage, message)
         self._refresh_workbench()
 
     def _running_stage(self) -> str | None:
@@ -428,7 +428,9 @@ class ZodiacQtApp(QMainWindow):
     @Slot(str, str)
     def _on_log(self, line: str, channel: str) -> None:
         if self.workbench:
-            self.workbench.append_activity(line, channel=channel, stage=self._running_stage())
+            stage = self._running_stage()
+            self.workbench.append_activity(line, channel=channel, stage=stage)
+            self.workbench.set_stage_activity(stage, line)
         # The existing 250ms timer owns stage refresh while running; updating
         # the entire workbench for each subprocess line can freeze Qt.
 
@@ -437,6 +439,7 @@ class ZodiacQtApp(QMainWindow):
     def _on_native_log(self, line: str, channel: str, stage: str) -> None:
         if self.workbench:
             self.workbench.append_activity(line, channel=channel, stage=stage)
+            self.workbench.set_stage_activity(stage, line)
 
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
