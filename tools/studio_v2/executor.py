@@ -626,6 +626,21 @@ class StudioV2Executor:
                 message="import a valid zodiac-job@5 package before running Studio v2",
             )
 
+        # Check the pinned CLI BEFORE expensive voice/TTS or alignment. The
+        # GUI preflight is advisory; the executor also enforces this guarantee.
+        if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+            node = shutil.which("node")
+            if node is None:
+                raise ControlPlaneError(
+                    code="RENDERER_EXECUTABLE_MISSING", stage="RENDER",
+                    message="Node.js is required for renderer 2.0.1",
+                )
+            run_structured_command(
+                [node, str(_renderer_dir(workspace) / "scripts" / "local-remotion-cli.mjs"), "--check"],
+                stage="RENDER",
+                fallback_code="RENDERER_DEPENDENCY_MISSING",
+            )
+
         try:
             resource_profile = load_resource_profile(workspace)
         except ValueError as exc:
