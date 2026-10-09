@@ -299,6 +299,33 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         self.assertIsNone(window._frame_status)
         window.close()
 
+    def test_qt_signal_e2e_measured_segment_and_frame_progress(self):
+        """WorkerEventBridge signals -> app slots -> visible Workbench widgets."""
+        from tools.studio_qt.app import ZodiacQtApp
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        from tools.studio_qt.widgets.stage_rail import STAGES
+        with tempfile.TemporaryDirectory() as temp:
+            window = ZodiacQtApp(workspace=Path(temp))
+            window.workbench = WorkbenchScreen()
+            rows = [{"step": step, "status": "RUNNING" if step == "RENDER" else "PENDING"}
+                    for step, *_ in STAGES]
+            window.workbench.set_rows(rows)
+            window.workbench.set_active_stage("RENDER", rows[4], percent=None)
+            window.bridge.native_progress.emit("RENDER", 1, 3, "phân đoạn", "Render phân đoạn")
+            window.bridge.native_frame_progress.emit("seg01", 6, 12, "rendering")
+            self.app.processEvents()
+            self.assertEqual(window.workbench.progress_bar.value(), 33)
+            self.assertEqual(window.workbench.frame_bar.value(), 50)
+            self.assertIn("6/12", window.workbench.frame_detail.text())
+            window.bridge.native_frame_progress.emit("seg01", 12, 12, "encoding")
+            self.app.processEvents()
+            self.assertIn("Mã hóa", window.workbench.frame_detail.text())
+            window.bridge.native_progress.emit("RENDER", 2, 3, "phân đoạn", "Render phân đoạn")
+            self.app.processEvents()
+            self.assertIsNone(window.workbench._frame_status)
+            self.assertEqual(window.workbench.progress_bar.value(), 67)
+            window.close()
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
