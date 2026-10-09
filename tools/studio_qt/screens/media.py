@@ -50,6 +50,7 @@ class MediaFilterProxy(QSortFilterProxyModel):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.query = ""
+        self.publish_root: Path | None = None
 
     def filterAcceptsRow(self, row: int, parent: QModelIndex) -> bool:
         model = self.sourceModel()
@@ -57,6 +58,9 @@ class MediaFilterProxy(QSortFilterProxyModel):
         if model.isDir(index):
             return True
         path = Path(model.filePath(index))
+        if (self.publish_root is not None and path.parent == self.publish_root
+                and path.name.casefold() in {"publish.json", "publish-copy.txt"}):
+            return False
         return self.query in path.name.casefold()
 
     def data(self, index: QModelIndex, role=Qt.ItemDataRole.DisplayRole):
@@ -181,12 +185,23 @@ class MediaWorkspace(QWidget):
         self.path_label.setWordWrap(True)
         self.path_label.setToolTip("Đường dẫn đầy đủ của tệp media")
         preview_layout.addWidget(self.path_label)
-        self.copy_publish_button = QPushButton("Sao chép nội dung đăng")
+        publish_header = QHBoxLayout()
+        publish_header.addWidget(QLabel("NỘI DUNG ĐĂNG · SẴN SÀNG COPY", objectName="eyebrow"))
+        publish_header.addStretch(1)
+        self.copy_publish_button = QPushButton("Copy caption + hashtags")
         self.copy_publish_button.setObjectName("copyPublish")
         self.copy_publish_button.setEnabled(False)
         self.copy_publish_button.setToolTip("Copy caption và hashtags vào clipboard, không cần mở ZIP publish")
         self.copy_publish_button.clicked.connect(self._copy_publish)
-        preview_layout.addWidget(self.copy_publish_button)
+        publish_header.addWidget(self.copy_publish_button)
+        preview_layout.addLayout(publish_header)
+        self.publish_preview = QPlainTextEdit(objectName="publishValuePreview")
+        self.publish_preview.setReadOnly(True)
+        self.publish_preview.setMaximumHeight(116)
+        self.publish_preview.setMinimumHeight(74)
+        self.publish_preview.setPlaceholderText("Nội dung đăng sẽ xuất hiện khi chọn job có Publish.")
+        self.publish_preview.setAccessibleName("Caption và hashtags không có nhãn kỹ thuật")
+        preview_layout.addWidget(self.publish_preview)
 
         controls = QHBoxLayout()
         self.play_button = QPushButton("Phát")
@@ -281,6 +296,7 @@ class MediaWorkspace(QWidget):
             self._job_changed(selected_index)
         else:
             self.copy_publish_button.setEnabled(False)
+            self.publish_preview.clear()
             self._current_job_path = None
             self.root_label.setText("Chưa có job nào có thư mục out/")
             self.root_label.setToolTip("Media chỉ hiển thị các job có thư mục out/")
@@ -370,6 +386,8 @@ class MediaWorkspace(QWidget):
         if root == self._root_path:
             return
         self._root_path = root
+        self.proxy.publish_root = root
+        self.proxy.invalidateFilter()
         source_index = self.file_model.setRootPath(str(root))
         self.files.setRootIndex(self.proxy.mapFromSource(source_index))
         if self._selected_path is not None and not self._selected_path.is_relative_to(root):
@@ -400,7 +418,9 @@ class MediaWorkspace(QWidget):
         self.root_label.setText(f"{job['name']} · out/")
         self.root_label.setToolTip(job["out_path"])
         self.set_root_path(job["out_path"])
-        self.copy_publish_button.setEnabled(bool(publish_text_for_job(Path(job["path"]))))
+        publish_text = publish_text_for_job(Path(job["path"]))
+        self.publish_preview.setPlainText(publish_text)
+        self.copy_publish_button.setEnabled(bool(publish_text))
 
     def _copy_publish(self) -> None:
         """Copy a single publishing payload, without bundling duplicate files."""
@@ -411,7 +431,7 @@ class MediaWorkspace(QWidget):
             self.copy_publish_button.setEnabled(False)
             return
         QApplication.clipboard().setText(content)
-        self.status_label.setText("Đã sao chép caption và hashtags để đăng video.")
+        self.status_label.setText("Đã sao chép nội dung đăng — chỉ có caption và hashtags, không kèm nhãn.")
 
     def _filter_files(self, text: str) -> None:
         self.proxy.query = text.strip().casefold()
