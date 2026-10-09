@@ -372,6 +372,37 @@ jobs:
       - name: Typecheck renderer 2.0.1
         run: npm run typecheck
 
+  renderer-v2-frame-progress-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install pinned Remotion and tqdm
+        run: |
+          npm install --prefix runtime/zodiac-renderer/2.0.1/renderer --no-audit --no-fund
+          python -m pip install "tqdm>=4.66,<5"
+      - name: Prepare actual fixture through Renderer 2.0.1
+        run: |
+          mkdir -p /tmp/zodiac-remotion-progress/.runtime /tmp/zodiac-remotion-progress/assets
+          cp -r runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/assets/. /tmp/zodiac-remotion-progress/assets/
+          cp runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/render-plan.json /tmp/zodiac-remotion-progress/.runtime/render-plan.json
+          node runtime/zodiac-renderer/2.0.1/renderer/scripts/prepare.mjs /tmp/zodiac-remotion-progress
+      - name: E2E pinned CLI MP4 and observed frame counters
+        run: python tests/real_remotion_progress_smoke.py /tmp/zodiac-remotion-progress
+      - name: Upload actual smoke MP4 for debugging
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer201-frame-progress-smoke
+          path: /tmp/zodiac-remotion-progress/frame-progress-smoke.mp4
+          if-no-files-found: warn
+
   renderer-v2-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
