@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Any
 
 from .anchors import resolve_voice_anchor
@@ -318,7 +319,9 @@ def compile_render_plan(
                 "end_frame": end,
                 "state_before": event["state_before"],
                 "state_after": event["state_after"],
-                "motion": motion_id,
+                # Job@5 legacy duration-named state swaps retain their measured
+                # duration from motion_defaults, but Renderer 2 only accepts state_swap.
+                "motion": "state_swap" if re.fullmatch(r"state_swap_[1-9][0-9]*f", motion_id) else motion_id,
             }
             outputs.append(output)
             lane_last[target] = {
