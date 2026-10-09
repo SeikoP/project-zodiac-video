@@ -33,6 +33,7 @@ from .pipeline import (
     VOICE,
 )
 from .runner import run_structured_command, run_payload_audit_with_cache_recovery
+from .progress import tracked_units
 from .state import save_state
 from .timing import TimingArtifact, ensure_timing_artifact
 from .voice import VoiceArtifact, ensure_voice_artifact
@@ -341,7 +342,7 @@ def _render_segmented(
 
     outputs: list[tuple[Path, int]] = []
     dependencies: dict[str, str] = {}
-    for segment in segments:
+    for segment in tracked_units(segments, stage="RENDER", label="Phân đoạn render", unit="phân đoạn"):
         artifact_id = f"render.segment.{segment['segment_id']}"
         fingerprint = segment["input_fingerprint"]
         artifact_path = (
