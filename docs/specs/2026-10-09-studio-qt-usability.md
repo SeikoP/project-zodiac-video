@@ -69,3 +69,40 @@ inspector. The stage rail remains the single navigation surface.
 - PySide6 tests include filter/provenance, subprocess stream, hidden publish
   duplicates, value-only clipboard, workspace ready dropdown, and legacy
   media/job import regressions.
+
+
+## Stage rail and progress semantics
+
+The seven Job@5 stage cards are **navigation plus state evidence**:
+- Stage title and purpose stay stable: PACKAGE, VOICE, TIMING, PLAN,
+  RENDER, AUDIO, OUTPUT.
+- Cards show the actual `PENDING / RUNNING / DONE / FAILED / SKIPPED /
+  CANCELLED` status. When present, cache reuse or verified diagnostics
+  are displayed; the latest observed runtime output is shown for a running
+  step, with the full line available as a tooltip.
+- Clicking a card selects its detailed inspector; it does not re-execute it.
+
+**Two fundamentally different progress metrics must not be confused:**
+
+1. Overall progress = 100 × (DONE + SKIPPED) / total stages. For example,
+   six DONE and one RUNNING = **86% by completed stage count (6/7)**.
+   This is *not* a wall-clock percentage, estimated time or render percentage.
+   The overall QProgressBar is always determinate.
+2. Step progress = a real measured fractional progress value, only when
+   supplied by the runner (currently legacy stage progress). Job@5's stage
+   state schema does not yet store a measured fraction, therefore Job@5
+   RUNNING must display **"chưa có % đo được"**, recent observed events,
+   and no animated indeterminate QProgressBar.
+
+The placeholder `0.5` progress for every RUNNING Job@5 stage has been
+removed from `v2_pipeline_rows()`. Future per-scene or per-segment progress
+should be added by extending the runner's event contract with a concrete
+`completed_units/total_units` measurement; never synthesize 50% or infer
+seconds remaining from step count. Running logs can include validation
+receipts such as `SPATIAL_BINDINGS_VALID` without pretending they are a
+percentage of all OUTPUT work.
+
+Acceptance includes at least: 6/7 overall = 86%; all done = 100%; 0/7
+= 0%; a failed step has visible diagnostic text; cached stage displays
+cache state; the active step shows actual recent output; and the rail
+remains vertically scrollable in compact windows.
