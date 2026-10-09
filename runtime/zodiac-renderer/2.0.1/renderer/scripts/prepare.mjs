@@ -79,6 +79,47 @@ const classifyVisualRole = (entity, assets = {}) => {
   return entity.id === "story_effect" ? "effect" : entity.id === "story_prop" ? "prop" : "character";
 };
 
+// Distinguish a deliberately slim native writing instrument from a card/board.
+// Generic props and effects retain their stricter visual prominence budgets.
+export const visualRoleSizeLimit = (role, asset={}) => {
+  const path=String(asset?.path??"").replaceAll("\\","/").toLowerCase();
+  const master=String(asset?.lineage?.source_master??"").replaceAll("\\","/").toLowerCase();
+  const nativePen = role==="prop" &&
+    /(^|\/)props\/pen\.svg$/.test(path) &&
+    /(^|\/)props\/pen\.svg$/.test(master) &&
+    String(asset?.category??"").toLowerCase()==="prop";
+  return nativePen
+    ? {minimumArea:24000,minimumShortEdge:110,minimumLongEdge:200,profile:"writing-pen"}
+    : {minimumArea:role==="effect"?30000:43000,minimumShortEdge:110,minimumLongEdge:0,
+       profile:role==="effect"?"effect":"standard-prop"};
+};
+
+export const validateVisualRoleSizes = (plan) => {
+  for(const scene of plan.scenes??[]){
+    if(!scene.layout_contract)continue;
+    for(const entity of scene.entities??[]){
+      const role=classifyVisualRole(entity,plan.assets);
+      if(role!=="prop"&&role!=="effect")continue;
+      for(const [stateId,state] of Object.entries(entity.states??{})){
+        if(state.visible===false)continue;
+        const limit=visualRoleSizeLimit(role,plan.assets?.[state.asset]);
+        const scale=Math.abs(Number(state.transform?.scale??1));
+        const width=Number(state.transform?.width??0)*scale;
+        const height=Number(state.transform?.height??0)*scale;
+        const area=width*height;
+        if(!Number.isFinite(area)||!Number.isFinite(width)||!Number.isFinite(height)||
+           area<limit.minimumArea||Math.min(width,height)<limit.minimumShortEdge||
+           Math.max(width,height)<limit.minimumLongEdge){
+          throw new Error("VISUAL_ROLE_TOO_SMALL scene="+scene.id+" entity="+entity.id+
+            " state="+stateId+" actual="+Math.round(width)+"x"+Math.round(height)+
+            " minimum_area="+limit.minimumArea+" profile="+limit.profile);
+        }
+      }
+    }
+  }
+  return plan;
+};
+
 export const validateSceneLayout = (plan) => {
   for (const scene of plan.scenes) {
     const layout = scene.layout_contract;
@@ -160,7 +201,7 @@ export const prepareRendererProps = async (packageRoot) => {
   } catch (error) {
     throw new Error(`cannot read render-plan.json: ${error.message}`);
   }
-  validateSceneLayout(validateExecutablePlan(plan));
+  validateVisualRoleSizes(validateSceneLayout(validateExecutablePlan(plan)));
   // Before rendering, enforce declared visual role assets rather than hiding
   // absent sprites behind placeholder labels.
   for (const scene of plan.scenes) {
@@ -171,16 +212,6 @@ export const prepareRendererProps = async (packageRoot) => {
       if (role === "prop" || role === "effect") declared.add(role);
       if (!(entity.initial_state in (entity.states ?? {}))) throw new Error(`STATE_MISSING scene=${scene.id} entity=${entity.id}`);
       for (const [stateId, state] of Object.entries(entity.states ?? {})) {
-        if (scene.layout_contract && state.visible !== false && (role === "prop" || role === "effect")) {
-          const width = Number(state.transform?.width ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
-          const height = Number(state.transform?.height ?? 0) * Math.abs(Number(state.transform?.scale ?? 1));
-          // Tall phone props are legitimate; require useful visible area, not
-          // the aspect ratio of a landscape card.
-          const minimumArea = role === "effect" ? 30000 : 43000;
-          if (width * height < minimumArea || Math.min(width, height) < 110) {
-            throw new Error(`VISUAL_ROLE_TOO_SMALL scene=${scene.id} entity=${entity.id} state=${stateId} actual=${Math.round(width)}x${Math.round(height)} minimum_area=${minimumArea}`);
-          }
-        }
         if (!(state.asset in (plan.assets ?? {}))) throw new Error(`ASSET_MISSING scene=${scene.id} entity=${entity.id} state=${stateId} asset=${state.asset}`);
       }
     }

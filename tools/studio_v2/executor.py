@@ -857,6 +857,20 @@ class StudioV2Executor:
 
         complete_forced_stage(PLAN)
         self._begin_step(RENDER, cancel_event)
+        # Validate the *full* Job@5 visual payload before expensive segmented
+        # video rendering. Previously this quality gate ran only at cover
+        # publishing, so a valid MP4 could fail on the final OUTPUT step.
+        # Includes cached renders: covers must never encounter surprise QC.
+        if config.renderer_version == "2.0.1" and self.render_handler is _default_render_handler:
+            try:
+                run_structured_command(
+                    ["node", str(_renderer_dir(workspace) / "scripts" / "prepare.mjs"),
+                     str(workspace)],
+                    stage="RENDER", fallback_code="RENDER_VISUAL_QC_FAILED",
+                )
+            except ControlPlaneError as exc:
+                self._mark_failed(RENDER, exc)
+                raise
         rendered_path = workspace / ".runtime" / "rendered-v2.mp4"
         render_input = render_key(
             plan_hash,
