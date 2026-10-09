@@ -54,6 +54,14 @@ def stylesheet() -> str:
         QProgressBar {{ min-height: 9px; max-height: 9px; border: 0; border-radius: 4px; background: {c['surface_alt']}; text-visible: false; }}
         QProgressBar::chunk {{ border-radius: 4px; background: {c['primary']}; }}
         QPlainTextEdit {{ background: #15191A; color: #D9DED9; border: 1px solid {c['border']}; border-radius: 7px; font-family: Consolas, monospace; font-size: 9pt; selection-background-color: {c['primary']}; selection-color: {c['primary_text']}; }}
+        QLabel#consoleHeading {{ color: {c['success']}; font-size: 10pt; font-weight: 750; letter-spacing: 0.7px; }}
+        QPlainTextEdit#activityLog {{ background: #0C1112; border: 1px solid #475653; border-left: 3px solid {c['primary']}; border-radius: 8px; color: #DBE4DD; font-family: Consolas, 'Cascadia Mono', monospace; font-size: 10pt; padding: 10px; }}
+        QPlainTextEdit#activityLog:focus {{ border: 1px solid {c['primary']}; border-left: 3px solid {c['primary']}; }}
+        QComboBox#logFilter, QComboBox#stageLogFilter {{ min-width: 100px; max-width: 160px; min-height: 29px; background: #222A29; }}
+        QPlainTextEdit#publishValuePreview {{ background: #171E1D; border: 1px solid #536155; border-left: 3px solid {c['success']}; border-radius: 7px; font-family: 'Segoe UI', sans-serif; font-size: 11pt; color: {c['text']}; padding: 10px; }}
+        QPushButton#copyPublish {{ background: {c['primary']}; color: {c['primary_text']}; border-color: {c['primary']}; font-weight: 700; }}
+        QPushButton#copyPublish:hover {{ background: {c['primary_hover']}; }}
+
         QPushButton#logToggle {{ min-height: 28px; padding: 0 8px; color: {c['muted']}; background: transparent; border-color: transparent; }}
         QPushButton#logToggle:hover {{ color: {c['text']}; background: {c['surface_hover']}; border-color: {c['border']}; }}
         QListWidget {{ background: {c['surface']}; border: 1px solid {c['border']}; border-radius: 8px; padding: 4px; outline: none; }}
