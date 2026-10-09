@@ -273,6 +273,28 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         self.assertNotIn("phân đoạn", window.stage_rail.activity_labels["RENDER"].text())
         window.close()
 
+    def test_nested_frames_progress_and_fallback_resets_both_levels(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        from tools.studio_qt.widgets.stage_rail import STAGES
+        window = WorkbenchScreen()
+        rows = [{"step": step, "status": "RUNNING" if step == "RENDER" else "PENDING"}
+                for step, *_ in STAGES]
+        window.set_rows(rows)
+        window.set_active_stage("RENDER", rows[4], percent=None)
+        window.set_measured_progress("RENDER", 2, 5, "phân đoạn", "Render")
+        window.set_frame_progress("seg03", 90, 180, "rendering")
+        self.assertEqual(window.progress_bar.value(), 40)
+        self.assertEqual(window.frame_bar.value(), 50)
+        self.assertIn("90/180", window.frame_detail.text())
+        window.set_frame_progress("seg03", 180, 180, "encoding")
+        self.assertIn("Mã hóa", window.frame_detail.text())
+        window.set_measured_progress("RENDER", 0, 0, "phân đoạn", "Fallback")
+        window.set_active_stage("RENDER", rows[4], percent=None)
+        self.assertIn("chưa có % đo được", window.progress_text.text())
+        self.assertFalse(window.frame_detail.isVisibleTo(window))
+        self.assertIsNone(window._frame_status)
+        window.close()
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
