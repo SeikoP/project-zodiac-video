@@ -164,8 +164,17 @@ class WorkbenchScreen(QWidget):
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self._frame_status: tuple[str, int, int, str] | None = None
+        self.frame_detail = QLabel("", objectName="frameProgressDetail")
+        self.frame_detail.setVisible(False)
+        self.frame_bar = QProgressBar(objectName="frameProgress")
+        self.frame_bar.setRange(0, 100)
+        self.frame_bar.setTextVisible(False)
+        self.frame_bar.setVisible(False)
         current_layout.addWidget(self.progress_text)
         current_layout.addWidget(self.progress_bar)
+        current_layout.addWidget(self.frame_detail)
+        current_layout.addWidget(self.frame_bar)
         self.latest_event = QLabel("Chưa có hoạt động mới.", objectName="muted")
         self.latest_event.setWordWrap(True)
         current_layout.addWidget(self.latest_event)
@@ -363,6 +372,17 @@ class WorkbenchScreen(QWidget):
         # indication but provides no useful information. Show it only when
         # the runner really supplies a numerical fraction.
         self.progress_bar.setVisible(status == "RUNNING" and measured)
+        frame = self._frame_status if status == "RUNNING" and step == "RENDER" else None
+        self.frame_detail.setVisible(bool(frame))
+        self.frame_bar.setVisible(bool(frame))
+        if frame is not None:
+            segment, current, total, phase = frame
+            self.frame_detail.setText(
+                f"Phân đoạn {segment} · "
+                + ("Render frame" if phase == "rendering" else "Mã hóa frame")
+                + f" {current}/{total} ({round(current * 100 / total)}%)"
+            )
+            self.frame_bar.setValue(round(current * 100 / total))
         if status == "RUNNING" and measured:
             self.progress_bar.setRange(0, 100)
             self.progress_bar.setValue(round(float(percent) * 100))
@@ -389,7 +409,23 @@ class WorkbenchScreen(QWidget):
 
     def reset_measured_progress(self) -> None:
         self._measured_progress.clear()
+        self._frame_status = None
+        self.frame_detail.setVisible(False)
+        self.frame_bar.setVisible(False)
         self.stage_rail.reset_progress()
+
+    def set_frame_progress(self, segment_id: str, done: int, total: int, phase: str) -> None:
+        if not (isinstance(total, int) and total > 0 and isinstance(done, int)
+                and 0 <= done <= total and phase in ("rendering", "encoding")):
+            return
+        if self._frame_status and self._frame_status[0] == segment_id:
+            old_phase = self._frame_status[3]
+            if phase == old_phase and done < self._frame_status[1]:
+                return
+        self._frame_status = (segment_id, done, total, phase)
+        row = self.stage_rail.rows.get("RENDER", {})
+        if self.stage_rail.selected_step == "RENDER" and row.get("status") == "RUNNING":
+            self.set_active_stage("RENDER", row, percent=None)
 
     def set_measured_progress(self, stage: str, completed: int, total: int,
                               unit: str, label: str) -> None:
@@ -399,6 +435,10 @@ class WorkbenchScreen(QWidget):
         if total <= 0:
             self._measured_progress.pop(stage, None)
             self.stage_rail.reset_progress(stage)
+            if stage == "RENDER":
+                self._frame_status = None
+                self.frame_detail.setVisible(False)
+                self.frame_bar.setVisible(False)
             return
         if completed < 0 or completed > total:
             return

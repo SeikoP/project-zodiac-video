@@ -33,7 +33,7 @@ from .pipeline import (
     VOICE,
 )
 from .runner import run_structured_command, run_payload_audit_with_cache_recovery
-from .progress import tracked_units, reset_unit_progress
+from .progress import tracked_units, reset_unit_progress, track_render_segment_frames
 from .state import save_state
 from .timing import TimingArtifact, ensure_timing_artifact
 from .voice import VoiceArtifact, ensure_voice_artifact
@@ -377,7 +377,8 @@ def _render_segmented(
             )
             temp_output = segment_dir / "rendered.tmp.mp4"
             try:
-                produced = Path(render_handler(workspace, segment_props_path, temp_output))
+                with track_render_segment_frames(segment["segment_id"], frames):
+                    produced = Path(render_handler(workspace, segment_props_path, temp_output))
                 _require_output(produced, stage="RENDER", code="SEGMENT_RENDER_FAILED")
                 if _probe_frames(produced) != frames:
                     raise RuntimeError(f"frame count mismatch in {produced.name}")

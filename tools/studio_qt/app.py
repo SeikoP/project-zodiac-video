@@ -78,6 +78,7 @@ class ZodiacQtApp(QMainWindow):
         self.bridge.log_received.connect(self._on_log)
         self.bridge.native_log_received.connect(self._on_native_log)
         self.bridge.native_progress.connect(self._on_native_progress)
+        self.bridge.native_frame_progress.connect(self._on_native_frame_progress)
         self.bridge.operation_finished.connect(self._on_operation_finished)
         self.bridge.preflight_update.connect(self._on_preflight_update)
         self.mode = "legacy"
@@ -458,6 +459,11 @@ class ZodiacQtApp(QMainWindow):
                 channel="progress", stage=stage,
             )
 
+    @Slot(str, int, int, str)
+    def _on_native_frame_progress(self, segment_id: str, done: int, total: int, phase: str) -> None:
+        if self.workbench is not None:
+            self.workbench.set_frame_progress(segment_id, done, total, phase)
+
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
         if job is None or self.busy or self.pipeline_running:
@@ -501,8 +507,11 @@ class ZodiacQtApp(QMainWindow):
                     unit_observer = lambda stage, complete, total, unit, label: self.bridge.native_progress.emit(
                         stage, complete, total, unit, label
                     )
-                    from tools.studio_v2.progress import observe_unit_progress
-                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer), observe_unit_progress(unit_observer):
+                    from tools.studio_v2.progress import observe_unit_progress, observe_frame_progress
+                    frame_observer = lambda segment, done, total, phase: self.bridge.native_frame_progress.emit(
+                        segment, done, total, phase
+                    )
+                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer), observe_unit_progress(unit_observer), observe_frame_progress(frame_observer):
                         self.v2_session.run(config, rerun_from=rerun_from)
                     self.bridge.operation_finished.emit("run_done", (None, None, None))
                 except Exception as exc:

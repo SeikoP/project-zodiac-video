@@ -7,6 +7,9 @@ from typing import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 import threading
+import codecs
+import re
+from tools.studio_v2.progress import RemotionFrameParser, current_frame_scope
 
 _COMMAND_OBSERVER: ContextVar[Callable[[str, str, str], None] | None] = ContextVar(
     "zodiac_studio_structured_command_observer", default=None
@@ -48,19 +51,43 @@ def run_structured_command(
                 cwd=str(cwd) if cwd is not None else None,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
             )
             chunks: dict[str, list[str]] = {"stdout": [], "stderr": []}
+            frame_scope = current_frame_scope()
 
             def forward(stream, channel: str) -> None:
                 if stream is None:
                     return
+                decoder = codecs.getincrementaldecoder("utf-8")("replace")
+                parser = RemotionFrameParser(frame_scope) if frame_scope else None
+                buffer = ""
+                def consume(text: str, *, final: bool = False) -> None:
+                    nonlocal buffer
+                    if not text and not final:
+                        return
+                    chunks[channel].append(text)
+                    if parser:
+                        parser.feed(text)
+                    buffer += text
+                    # Remotion overwrites progress in-place with CR and ANSI.
+                    # Do not log every frame bar; emit meaningful full lines.
+                    lines = re.split(r"[\r\n]", buffer)
+                    buffer = lines.pop() if not final else ""
+                    if final:
+                        lines.append(buffer)
+                    for item in lines:
+                        cleaned = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", item).strip()
+                        if cleaned and not RemotionFrameParser.is_terminal_progress_line(cleaned):
+                            observer(cleaned, channel, stage)
+                    if len(buffer) > 8192:
+                        buffer = buffer[-512:]
                 try:
-                    for line in stream:
-                        chunks[channel].append(line)
-                        observer(line.rstrip("\r\n"), channel, stage)
+                    while True:
+                        data = stream.read1(4096)
+                        if not data:
+                            break
+                        consume(decoder.decode(data))
+                    consume(decoder.decode(b"", final=True), final=True)
                 finally:
                     stream.close()
 
