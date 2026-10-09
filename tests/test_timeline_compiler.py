@@ -45,6 +45,20 @@ class TimelineCompilerTests(unittest.TestCase):
         self.assertEqual(event["start_frame"], 0)
         self.assertEqual(event["end_frame"], 8)
 
+    def test_legacy_state_swap_alias_uses_canonical_renderer_motion_without_losing_duration(self):
+        for frames in (8, 10, 12):
+            with self.subTest(frames=frames):
+                ir = copy.deepcopy(self.ir)
+                design = copy.deepcopy(self.design)
+                alias = f"state_swap_{frames}f"
+                ir["scenes"][0]["events"][0]["desired_motion"] = alias
+                design["motion_defaults"][alias] = {"duration_frames": frames}
+                plan = compile_render_plan(ir, self.timing, design)
+                event = plan["scenes"][0]["events"][0]
+                self.assertEqual(event["motion"], "state_swap")
+                self.assertEqual(event["end_frame"] - event["start_frame"], frames)
+                self.assertEqual(ir["scenes"][0]["events"][0]["desired_motion"], alias)
+
     def test_compiler_resolves_state_assets_into_executable_event(self):
         plan = compile_render_plan(self.ir, self.timing, self.design)
         event = plan["scenes"][0]["events"][0]
