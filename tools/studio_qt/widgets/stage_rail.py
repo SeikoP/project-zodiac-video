@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton, QVBoxLayout
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton, QVBoxLayout, QWidget
 
 STAGES = (
     ("PACKAGE", "01", "Gói", "Kiểm tra gói và tài nguyên"),
@@ -23,68 +23,71 @@ STATUS_TEXT = {
 
 
 class StageRail(QFrame):
-    """Navigation with actual state, stable purpose and latest observed activity."""
+    """Flat, separated step list. No enclosing card around individual steps."""
 
     stage_selected = Signal(str)
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setObjectName("stageRail")
-        self.setMinimumWidth(205)
-        self.setMaximumWidth(230)
+        self.setObjectName("stageRailFlat")
+        self.setMinimumWidth(204)
+        self.setMaximumWidth(235)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 10, 8, 10)
-        layout.setSpacing(7)
-        layout.addWidget(QLabel("TIẾN TRÌNH · 7 BƯỚC", objectName="eyebrow"))
+        layout.setContentsMargins(10, 12, 10, 8)
+        layout.setSpacing(4)
+        layout.addWidget(QLabel("QUY TRÌNH · 7 BƯỚC", objectName="eyebrow"))
 
         self.buttons: dict[str, QToolButton] = {}
-        self.cards: dict[str, QFrame] = {}
+        self.row_widgets: dict[str, QWidget] = {}
         self.descriptions: dict[str, QLabel] = {}
         self.status_labels: dict[str, QLabel] = {}
         self.activity_labels: dict[str, QLabel] = {}
         self.rows: dict[str, dict] = {}
         self.activities: dict[str, str] = {}
+        self.progress_units: dict[str, tuple[int, int, str]] = {}
         self.selected_step: str | None = None
+
         for step, number, title, purpose in STAGES:
-            card = QFrame()
-            card.setObjectName("stageCard")
-            card.setProperty("stageStatus", "PENDING")
-            card_layout = QVBoxLayout(card)
-            card_layout.setContentsMargins(9, 8, 9, 8)
-            card_layout.setSpacing(3)
+            row = QWidget()
+            row.setObjectName("stageLine")
+            row.setProperty("selected", False)
+            row_layout = QVBoxLayout(row)
+            row_layout.setContentsMargins(4, 9, 4, 9)
+            row_layout.setSpacing(3)
 
             heading = QHBoxLayout()
-            heading.setSpacing(4)
+            heading.setSpacing(5)
             button = QToolButton()
             button.setObjectName("stage")
-            button.setText(f"{number}   {title}")
+            button.setText(f"{number}  {title}")
             button.setCheckable(True)
             button.setToolTip(purpose)
-            button.setSizePolicy(button.sizePolicy().horizontalPolicy(), button.sizePolicy().verticalPolicy())
             button.clicked.connect(lambda _checked=False, s=step: self.select_step(s, emit=True))
             heading.addWidget(button, 1)
-            card_layout.addLayout(heading)
-
-            description = QLabel(purpose)
-            description.setObjectName("stagePurpose")
-            description.setWordWrap(True)
-            card_layout.addWidget(description)
-
             status_label = QLabel(STATUS_TEXT["PENDING"])
             status_label.setObjectName("stageState")
             status_label.setProperty("stageStatus", "PENDING")
-            card_layout.addWidget(status_label)
+            heading.addWidget(status_label)
+            row_layout.addLayout(heading)
 
+            purpose_label = QLabel(purpose)
+            purpose_label.setObjectName("stagePurpose")
+            purpose_label.setWordWrap(True)
+            row_layout.addWidget(purpose_label)
             activity = QLabel("")
             activity.setObjectName("stageActivity")
             activity.setWordWrap(False)
             activity.setVisible(False)
-            card_layout.addWidget(activity)
+            row_layout.addWidget(activity)
 
-            layout.addWidget(card)
+            layout.addWidget(row)
+            separator = QFrame()
+            separator.setObjectName("stageDivider")
+            separator.setFrameShape(QFrame.Shape.HLine)
+            layout.addWidget(separator)
             self.buttons[step] = button
-            self.cards[step] = card
-            self.descriptions[step] = description
+            self.row_widgets[step] = row
+            self.descriptions[step] = purpose_label
             self.status_labels[step] = status_label
             self.activity_labels[step] = activity
         layout.addStretch(1)
@@ -94,18 +97,33 @@ class StageRail(QFrame):
 
     @staticmethod
     def _shorten(value: str, limit: int = 43) -> str:
-        text = " ".join(str(value).split())
-        return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+        value = " ".join(str(value).split())
+        return value if len(value) <= limit else value[:limit - 1].rstrip() + "…"
 
     def set_activity(self, step: str, message: str) -> None:
         if step not in self.buttons:
             return
-        clean = " ".join(str(message).split())
-        if not clean:
+        message = " ".join(str(message).split())
+        if not message:
             return
-        self.activities[step] = clean
+        self.activities[step] = message
         if self.rows.get(step, {}).get("status") == "RUNNING":
-            self._show_activity(step, clean)
+            self._show_activity(step, message)
+
+    def set_progress(self, step: str, completed: int, total: int, unit: str) -> None:
+        if step not in self.buttons or total <= 0 or completed < 0 or completed > total:
+            return
+        previous = self.progress_units.get(step)
+        if previous is not None and previous[1] == total and completed < previous[0]:
+            return
+        self.progress_units[step] = (completed, total, unit)
+        self.set_rows(list(self.rows.values()))
+
+    def reset_progress(self, step: str | None = None) -> None:
+        if step is None:
+            self.progress_units.clear()
+        else:
+            self.progress_units.pop(step, None)
 
     def _show_activity(self, step: str, message: str) -> None:
         label = self.activity_labels[step]
@@ -118,23 +136,19 @@ class StageRail(QFrame):
         for step, number, title, purpose in STAGES:
             row = self.rows.get(step, {})
             status = str(row.get("status", "PENDING"))
-            text = STATUS_TEXT.get(status, status)
+            state_label = STATUS_TEXT.get(status, status)
             if status == "DONE":
                 if row.get("reused"):
-                    text += " · cache"
+                    state_label += " · cache"
                 elif row.get("cache_reason") == "REBUILT":
-                    text += " · dựng mới"
-            elif status == "RUNNING":
-                done = row.get("scene_done")
-                total = row.get("scene_total")
-                if isinstance(done, int) and isinstance(total, int) and total > 0:
-                    text += f" · {done}/{total} cảnh"
-            self.status_labels[step].setText(text)
+                    state_label += " · mới"
+            elif status == "RUNNING" and step in self.progress_units:
+                done, total, unit = self.progress_units[step]
+                state_label += f" · {done}/{total} {unit}"
+            self.status_labels[step].setText(state_label)
             self.status_labels[step].setProperty("stageStatus", status)
-            self.cards[step].setProperty("stageStatus", status)
-            for widget in (self.status_labels[step], self.cards[step]):
-                widget.style().unpolish(widget)
-                widget.style().polish(widget)
+            self.status_labels[step].style().unpolish(self.status_labels[step])
+            self.status_labels[step].style().polish(self.status_labels[step])
             detail = str(row.get("detail") or row.get("message") or "")
             if status == "FAILED" and detail:
                 self._show_activity(step, detail)
@@ -142,17 +156,18 @@ class StageRail(QFrame):
                 self._show_activity(step, self.activities.get(step) or detail)
             else:
                 self._show_activity(step, "")
-            self.buttons[step].setToolTip(f"{number} {title}\n{purpose}\n{text}\n{detail}")
-            self.buttons[step].setAccessibleName(f"Bước {number}, {title}, {text}")
+            self.buttons[step].setToolTip(f"{number} {title}\n{purpose}\n{state_label}\n{detail}")
+            self.buttons[step].setAccessibleName(f"Bước {number}, {title}, {state_label}")
 
     def select_step(self, step: str, *, emit: bool = False) -> None:
         if step not in self.buttons:
             return
         self.selected_step = step
-        for name, button in self.buttons.items():
-            button.setChecked(name == step)
-            self.cards[name].setProperty("selected", name == step)
-            self.cards[name].style().unpolish(self.cards[name])
-            self.cards[name].style().polish(self.cards[name])
+        for key, button in self.buttons.items():
+            button.setChecked(key == step)
+            row = self.row_widgets[key]
+            row.setProperty("selected", key == step)
+            row.style().unpolish(row)
+            row.style().polish(row)
         if emit:
             self.stage_selected.emit(step)
