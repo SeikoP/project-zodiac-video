@@ -4,7 +4,7 @@ import {mkdtemp,rm,mkdir,writeFile,readFile} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {spawnSync} from "node:child_process";
-import {findPinnedRemotionCli,runPinnedRemotionCli} from "../scripts/local-remotion-cli.mjs";
+import {findPinnedRemotionCli,probePinnedRemotionCli,runPinnedRemotionCli} from "../scripts/local-remotion-cli.mjs";
 
 const setup = async ({installed=true,installedVersion="4.0.530",bin="../dist/cli.cjs"}={})=>{
   const dir=await mkdtemp(join(tmpdir(),"zodiac-local-cli-"));
@@ -68,4 +68,39 @@ test("preview and cover must use same pinned CLI launcher as full render",async(
     assert.match(content,/local-remotion-cli\.mjs/);
     assert.doesNotMatch(content,/npx\.cmd|["']npx["']/);
   }
+});
+
+test("deep CLI check catches actual MODULE_NOT_FOUND isexe despite installed entry",async()=>{
+  const {dir,local}=await setup({bin:"dist/cli.cjs"});
+  await mkdir(join(local,"dist"),{recursive:true});
+  await writeFile(join(local,"dist","cli.cjs"),
+    'require("isexe");console.log("4.0.530");');
+  try {
+    const cli=await findPinnedRemotionCli(dir);
+    assert.ok(cli.entry.endsWith("cli.cjs")); // old --check would wrongly PASS here
+    await assert.rejects(probePinnedRemotionCli(dir),error=>
+      error.code==="RENDERER_DEPENDENCY_BROKEN" &&
+      /isexe/.test(error.message) &&
+      /npm install --prefix/.test(error.message));
+  }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test("deep probe requires CLI to boot and checks --version, not file presence",async()=>{
+  const {dir,local}=await setup({bin:"dist/cli.cjs"});
+  await mkdir(join(local,"dist"),{recursive:true});
+  await writeFile(join(local,"dist","cli.cjs"),
+    'process.stdout.write("4.0.530");');
+  try{
+    const cli=await probePinnedRemotionCli(dir);
+    assert.equal(cli.version,"4.0.530");
+    let invoked;
+    const checked=await probePinnedRemotionCli(dir,{spawn:(node,args,options)=>{
+      invoked={node,args,options};
+      return {status:0,stdout:"4.0.530",stderr:""};
+    }});
+    assert.equal(checked.entry,cli.entry);
+    assert.equal(invoked.node,process.execPath);
+    assert.deepEqual(invoked.args.slice(1),["--version"]);
+    assert.equal(invoked.options.cwd,dir);
+  }finally{await rm(dir,{recursive:true,force:true})}
 });
