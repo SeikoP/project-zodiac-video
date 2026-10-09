@@ -4,6 +4,7 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -128,6 +129,29 @@ class WorkbenchScreen(QWidget):
         self.latest_event = QLabel("Chưa có hoạt động mới.", objectName="muted")
         self.latest_event.setWordWrap(True)
         current_layout.addWidget(self.latest_event)
+        log_row = QHBoxLayout()
+        log_row.addWidget(QLabel("NHẬT KÝ QUY TRÌNH / BƯỚC", objectName="eyebrow"))
+        log_row.addStretch(1)
+        self.log_copy_button = QPushButton("Sao chép toàn bộ")
+        self.log_copy_button.setToolTip("Sao chép toàn bộ nhật ký đã lưu trên đĩa")
+        self.log_copy_button.clicked.connect(self._copy_log)
+        log_row.addWidget(self.log_copy_button)
+        self.log_toggle = QPushButton("Ẩn nhật ký")
+        self.log_toggle.setObjectName("logToggle")
+        self.log_toggle.setCheckable(True)
+        self.log_toggle.setChecked(True)
+        self.log_toggle.setToolTip("Hiện/ẩn nhật ký trong tổng quan (Ctrl+L)")
+        self.log_toggle.toggled.connect(self._toggle_logs)
+        log_row.addWidget(self.log_toggle)
+        current_layout.addLayout(log_row)
+        self.log_view = QPlainTextEdit(objectName="activityLog")
+        self.log_view.setReadOnly(True)
+        self.log_view.setMaximumBlockCount(0)
+        self.log_view.setMinimumHeight(140)
+        self.log_view.setToolTip("Nhật ký đầy đủ được lưu theo từng job; có thể chọn/copy văn bản")
+        self.log_view.setVisible(True)
+        current_layout.addWidget(self.log_view, 2)
+        self._log_file: Path | None = None
 
         detail = _surface()
         detail_layout = QVBoxLayout(detail)
@@ -171,25 +195,6 @@ class WorkbenchScreen(QWidget):
         workspace.addWidget(self.stage_scroll)
         workspace.addWidget(splitter, 1)
         root.addLayout(workspace, 1)
-
-        log_row = QHBoxLayout()
-        log_row.addWidget(QLabel("NHẬT KÝ", objectName="eyebrow"))
-        log_row.addStretch(1)
-        self.log_toggle = QPushButton("Mở nhật ký đầy đủ")
-        self.log_toggle.setObjectName("logToggle")
-        self.log_toggle.setMinimumWidth(150)
-        self.log_toggle.setCheckable(True)
-        self.log_toggle.setToolTip("Mở hoặc ẩn nhật ký đầy đủ (Ctrl+L)")
-        self.log_toggle.toggled.connect(self._toggle_logs)
-        log_row.addWidget(self.log_toggle)
-        root.addLayout(log_row)
-        self.log_view = QPlainTextEdit(objectName="activityLog")
-        self.log_view.setReadOnly(True)
-        self.log_view.setMaximumBlockCount(3000)
-        self.log_view.setMinimumHeight(96)
-        self.log_view.setMaximumHeight(156)
-        self.log_view.setVisible(False)
-        root.addWidget(self.log_view)
 
         footer = QHBoxLayout()
         footer.addStretch(1)
@@ -297,9 +302,41 @@ class WorkbenchScreen(QWidget):
         self.environment_status.style().unpolish(self.environment_status)
         self.environment_status.style().polish(self.environment_status)
 
+    def set_log_file(self, location: Path) -> None:
+        """Use one durable UTF-8 log per job; never mix different jobs."""
+        self._log_file = Path(location)
+        self.log_view.clear()
+        try:
+            if self._log_file.is_file():
+                # Older logs can be large; the complete bytes remain on disk and
+                # copy comes from that file, not from the visible widget.
+                with self._log_file.open("r", encoding="utf-8", errors="replace") as stream:
+                    content = stream.read()
+                self.log_view.setPlainText(content)
+                if content:
+                    self.latest_event.setText(content.splitlines()[-1])
+        except OSError as exc:
+            self.latest_event.setText(f"Không đọc được nhật ký: {exc}")
+
     def append_activity(self, text: str) -> None:
         self.latest_event.setText(text)
         self.log_view.appendPlainText(text)
+        if self._log_file is not None:
+            try:
+                self._log_file.parent.mkdir(parents=True, exist_ok=True)
+                with self._log_file.open("a", encoding="utf-8", newline="\n") as stream:
+                    stream.write(text + "\n")
+            except OSError as exc:
+                self.latest_event.setToolTip(f"Không lưu được nhật ký: {exc}")
+
+    def _copy_log(self) -> None:
+        content = self.log_view.toPlainText()
+        if self._log_file is not None and self._log_file.is_file():
+            try:
+                content = self._log_file.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                pass
+        QApplication.clipboard().setText(content)
 
     def set_output(self, video_path: str | None, folder_path: str | None = None) -> None:
         self._video_path = video_path
@@ -316,7 +353,7 @@ class WorkbenchScreen(QWidget):
 
     def _toggle_logs(self, open_: bool) -> None:
         self.log_view.setVisible(open_)
-        self.log_toggle.setText("Ẩn nhật ký đầy đủ" if open_ else "Mở nhật ký đầy đủ")
+        self.log_toggle.setText("Ẩn nhật ký" if open_ else "Hiện nhật ký")
         self.logs_toggled.emit(open_)
 
     def resizeEvent(self, event) -> None:

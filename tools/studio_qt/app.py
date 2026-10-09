@@ -562,6 +562,7 @@ class ZodiacQtApp(QMainWindow):
                 mode="job5" if mode == "job5" else "Job local",
                 rows=self._v2_rows() if mode == "job5" else self._legacy_rows(),
             )
+            self.workbench.set_log_file(Path(path) / ".runtime" / "studio-gui.log")
             self.workbench.continue_requested.connect(lambda: self._start(resume=True))
             self.workbench.run_all_requested.connect(lambda: self._start(resume=False))
             self.workbench.cancel_requested.connect(self._cancel)
