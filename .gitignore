@@ -16,3 +16,4 @@ zodiac_video_local.egg-info/dependency_links.txt
 /zodiac_video_local.egg-info
 /checklist
 ready/runtime-watermark-config.json
+/runtime/zodiac-renderer/2.0.1/renderer/.zodiac-node_modules-backup-*/
