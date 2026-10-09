@@ -79,7 +79,40 @@ def semantic_diagnostics(ir: dict[str, Any]) -> list[Diagnostic]:
                                for e in events if e.get("target") == entity_id):
                         out.append(Diagnostic("EFFECT_NO_RELEASE", "P1", sid, entity_id))
             elif category == "prop" and entity_id not in targets:
-                if bindings.get(entity_id, {}).get("relation") in {"held_by", "points_to"}:
+                binding = bindings.get(entity_id, {})
+                relation = binding.get("relation")
+                anchor_id = binding.get("anchor")
+                owner = entities.get(anchor_id)
+                owner_categories = (
+                    {
+                        asset_category_from_path(str(assets.get(st.get("asset"), {}).get("path", "")))
+                        for st in owner.get("states", {}).values()
+                    } - {None}
+                    if owner else set()
+                )
+                # Producer v2.2.27 parity: a single, visible, held prop may
+                # follow a real owning-character gesture without a duplicate
+                # prop event. Complex/unowned interactive props still block.
+                static_visible = (
+                    len(states) == 1
+                    and next(iter(states.values())).get("visible") is not False
+                )
+                owner_gestures = any(
+                    event.get("target") == anchor_id
+                    and event.get("state_before") != event.get("state_after")
+                    for event in events
+                )
+                if (
+                    relation == "held_by"
+                    and static_visible
+                    and owner_categories == {"character"}
+                    and owner_gestures
+                ):
+                    out.append(Diagnostic(
+                        "STATIC_HELD_PROP_OWNER_GESTURE", "P2", sid, entity_id,
+                        "static held prop follows the character gesture; verify spatial timing",
+                    ))
+                elif relation in {"held_by", "points_to"}:
                     out.append(Diagnostic("INTERACTIVE_PROP_UNSCHEDULED", "P1", sid, entity_id))
                 else:
                     out.append(Diagnostic("PROP_STATIC_REVIEW", "P2", sid, entity_id))
