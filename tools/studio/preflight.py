@@ -292,11 +292,18 @@ class Job5PreflightChecker(PreflightChecker):
         if "FASTER_WHISPER" in missing:
             commands.append(self.install_command())
         if "RENDERER" in missing:
-            npm = shutil.which("npm.cmd") or shutil.which("npm")
-            if npm is None:
-                raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
-            commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
-                             "--no-audit", "--no-fund"])
+            if self.renderer_directory().parent.name == "2.0.1":
+                # Broken transitive installs (e.g. missing isexe) cannot be
+                # reliably repaired by npm install over the old node_modules.
+                # Use atomic backup/rebuild/CLI smoke verification instead.
+                commands.append([sys.executable,"-m","tools.studio.renderer_repair",
+                                 "--version","2.0.1"])
+            else:
+                npm = shutil.which("npm.cmd") or shutil.which("npm")
+                if npm is None:
+                    raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
+                commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
+                                 "--no-audit", "--no-fund"])
         return commands
 
     def run(self) -> list[Check]:
