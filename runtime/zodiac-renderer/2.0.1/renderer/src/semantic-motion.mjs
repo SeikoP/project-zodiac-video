@@ -19,6 +19,25 @@ export function resolveSemanticMotion(event,scene,entity,frame){
     case 'small-bounce':result.translateY=-20*peak;break;
     case 'focus-shift':result.scale=1+0.06*peak;break;
     case 'slide':{
+      // Character/object motion with authored start/end geometry and a spatial anchor.
+      // Keep the original pen-to-notebook slide profile below for same-state gestures.
+      const from=entity.states?.[event.state_before]?.transform;
+      const to=entity.states?.[event.state_after]?.transform;
+      const near=(scene.spatial_bindings??[]).find(b=>b.entity===entity.id&&b.relation==='near');
+      if(event.state_before!==event.state_after && near){
+        if(!(scene.entities??[]).some(e=>e.id===near.anchor))throw new Error('SLIDE_CONTACT_BINDING_REQUIRED '+event.event_id);
+        const valid=t=>t&&['x','y','width','height'].every(k=>Number.isFinite(t[k]))&&t.width>0&&t.height>0;
+        if(!valid(from)||!valid(to)||from.width!==to.width||from.height!==to.height||
+           (from.scale??1)!==(to.scale??1)||(from.rotation??0)!==(to.rotation??0))
+          throw new Error('SLIDE_CONTACT_GEOMETRY_MISSING '+event.event_id);
+        const dx=to.x-from.x,dy=to.y-from.y,travel=Math.hypot(dx,dy);
+        if(travel<24||travel>360||[from,to].some(t=>t.x<0||t.y<0||t.x+t.width>1080||t.y+t.height>1920))
+          throw new Error('SLIDE_CONTACT_OUT_OF_BOUNDS '+event.event_id);
+        // Starts at old state, finishes exactly at new state before the SVG swap.
+        const eased=(1-Math.cos(Math.PI*progress))/2;
+        result.translateX=dx*eased;result.translateY=dy*eased;result.peak=eased;
+        break;
+      }
       const binding=(scene.spatial_bindings??[]).find(b=>b.entity===entity.id&&b.relation==='points_to');
       const anchor=(scene.entities??[]).find(e=>e.id===binding?.anchor);
       if(!binding||!anchor||!entity.id.toLowerCase().includes('pen')||!anchor.id.toLowerCase().includes('notebook'))throw new Error('SLIDE_CONTACT_BINDING_REQUIRED '+String(event.event_id));
