@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {resolveSemanticMotion} from '../src/semantic-motion.mjs';
-import {resolvePreviewEventPairs} from '../scripts/preview.mjs';
+import {resolvePreviewEventPairs,findPreviewClipPair} from '../scripts/preview.mjs';
 const pen={id:'pen',initial_state:'visible',states:{visible:{transform:{x:620,y:745,width:220,height:115}}}};
 const notebook={id:'notebook',initial_state:'visible',states:{visible:{transform:{x:280,y:356,width:520,height:488}}}};
 const scene={id:'s07',start_frame:0,duration_frames:40,spatial_bindings:[{entity:'pen',anchor:'notebook',relation:'points_to'}],entities:[pen,notebook]};
@@ -12,3 +12,28 @@ test('hold does not animate or count as motion only',()=>{const m=resolveSemanti
 test('identical state_swap is rejected in preview',()=>{assert.throws(()=>resolvePreviewEventPairs({...scene,events:[event('state_swap')]}),/PREVIEW_NOOP_STATE_SWAP/);});
 test('slide requires points_to anchor, no fallback',()=>{assert.throws(()=>resolveSemanticMotion(event('slide'),{entities:[pen]},pen,15),/SLIDE_CONTACT_BINDING_REQUIRED/);});
 test('active motions are sampled at during frame',()=>{const p=resolvePreviewEventPairs({...scene,events:[event('slide')]})[0];assert.equal(p.second_role,'during');assert.equal(p.second_frame,15);});
+
+const departingFriend={id:'friend',initial_state:'wait',states:{wait:{transform:{x:625,y:500,width:300,height:420}},withdraw:{transform:{x:775,y:500,width:300,height:420}}}};
+const door={id:'door',initial_state:'bolted',states:{bolted:{transform:{x:420,y:320,width:280,height:610}}}};
+const s05={id:'S05',start_frame:0,duration_frames:50,entities:[departingFriend,door],spatial_bindings:[{entity:'friend',anchor:'door',relation:'near',max_distance_px:850}],events:[{event_id:'S05_friend_leaves',target:'friend',state_before:'wait',state_after:'withdraw',motion:'slide',start_frame:20,end_frame:32}]};
+test('author-approved S05 slide uses 150px smooth state-to-state movement',()=>{
+ const ev=s05.events[0];
+ assert.equal(resolveSemanticMotion(ev,s05,departingFriend,19).translateX,0);
+ assert.equal(resolveSemanticMotion(ev,s05,departingFriend,20).translateX,0);
+ const mid=resolveSemanticMotion(ev,s05,departingFriend,25).translateX;
+ assert.ok(mid>40&&mid<100);
+ assert.equal(resolveSemanticMotion(ev,s05,departingFriend,31).translateX,150);
+ assert.equal(resolveSemanticMotion(ev,s05,departingFriend,32).translateX,0);
+});
+test('state slide requires an authored near anchor and bounded state transforms',()=>{
+ const ev=s05.events[0];
+ assert.throws(()=>resolveSemanticMotion(ev,{...s05,spatial_bindings:[]},departingFriend,25),/SLIDE_CONTACT_BINDING_REQUIRED/);
+ const bad=structuredClone(departingFriend);bad.states.withdraw.transform.x=1500;
+ assert.throws(()=>resolveSemanticMotion(ev,s05,bad,25),/SLIDE_CONTACT_OUT_OF_BOUNDS/);
+});
+test('state slide is selected for a Remotion animation clip even when not motion-only',()=>{
+ const pair=resolvePreviewEventPairs(s05)[0];
+ assert.equal(pair.motion_only,false);
+ assert.equal(pair.second_role,'after');
+ assert.equal(findPreviewClipPair({event_pairs:[{...pair,scene_id:'S05'}]},{scenes:[s05]}).event_id,'S05_friend_leaves');
+});

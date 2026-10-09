@@ -39,6 +39,11 @@ export const resolvePreviewEventPairs = (scene) => {
   });
 };
 
+// Include state-changing slides in animation clips; a before/after still alone
+// cannot demonstrate frame-continuous travel.
+export const findPreviewClipPair=(report,props)=>report.event_pairs.find(pair=>
+  props.scenes.find(s=>s.id===pair.scene_id)?.events.find(e=>e.event_id===pair.event_id)?.motion==='slide') ?? report.event_pairs.find(pair=>pair.motion_only);
+
 export const previewFrames = async (workspace,outputDir) => {
   const {output,props} = await prepareRendererProps(workspace);
   const out = resolve(outputDir);
@@ -77,7 +82,7 @@ export const previewFrames = async (workspace,outputDir) => {
       report.caption_samples.push({scene_id:scene.id,frame,text:caption.text,layout:caption.resolved_layout,file});
     }
   }
-  const moving=report.event_pairs.find(pair=>pair.motion_only && props.scenes.find(s=>s.id===pair.scene_id)?.events.find(e=>e.event_id===pair.event_id)?.motion==='slide') ?? report.event_pairs.find(pair=>pair.motion_only);
+  const moving=findPreviewClipPair(report,props);
   if(moving) {
     const scene=props.scenes.find(s=>s.id===moving.scene_id),event=scene.events.find(e=>e.event_id===moving.event_id);
     const first=Math.max(scene.start_frame,event.start_frame-2),last=Math.min(scene.start_frame+scene.duration_frames-1,event.end_frame+5);
