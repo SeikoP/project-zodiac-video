@@ -762,10 +762,24 @@ class ZodiacStudioApp(tk.Tk):
                 archive, error = payload
                 self._v2_importing = False
                 self.log.append(str(error))
-                messagebox.showerror("Không nhập được gói Job@5", str(error), parent=self)
+                # Import failure does not replace the active job; make that
+                # explicit instead of leaving green results from the old job
+                # next to a failed new-archive selection.
+                previous = self._active_job_path()
+                previous_label = previous.name if previous is not None else "không có"
+                self.status_text.set(
+                    f"Không nhập được Job@5. Job hiện tại vẫn là: {previous_label}."
+                )
                 if self.project.archive.get().strip() == str(archive):
                     self.project.archive.set("")
                     self.controller.select_archive(None)
+                self.project.refresh()
+                self._refresh_buttons()
+                messagebox.showerror(
+                    "Không nhập được gói Job@5",
+                    f"{error}\\n\\nJob hiện tại không thay đổi: {previous_label}.",
+                    parent=self,
+                )
             elif channel == "v2_done":
                 self._v2_running = False
                 self.status_text.set(self.v2_session.status_text)
