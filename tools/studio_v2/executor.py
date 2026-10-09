@@ -241,19 +241,19 @@ def _require_output(path: Path, *, stage: str, code: str) -> Path:
 
 def _default_render_handler(workspace: Path, props_path: Path, output_path: Path) -> Path:
     renderer = _renderer_dir(workspace)
-    npx = shutil.which("npx.cmd") or shutil.which("npx")
-    if not npx:
+    node = shutil.which("node")
+    if not node:
         raise ControlPlaneError(
             code="RENDERER_EXECUTABLE_MISSING",
             stage="RENDER",
-            message=f"npx is required for zodiac-renderer@{_workspace_renderer_version(workspace)}",
+            message="Node.js is required to run the pinned local Remotion CLI",
         )
     resource_profile = load_resource_profile(workspace)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     run_structured_command(
         [
-            npx,
-            "remotion",
+            node,
+            str(renderer / "scripts" / "local-remotion-cli.mjs"),
             "render",
             "src/index.ts",
             "ZodiacRenderPlan",
