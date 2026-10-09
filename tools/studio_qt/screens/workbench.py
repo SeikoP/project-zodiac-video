@@ -343,35 +343,69 @@ class WorkbenchScreen(QWidget):
         self.environment_status.style().unpolish(self.environment_status)
         self.environment_status.style().polish(self.environment_status)
 
+    @staticmethod
+    def _format_entry(text: str, channel: str, stage: str | None) -> str:
+        timestamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        step = f"[{stage}]" if stage else "[JOB]"
+        return f"{timestamp} {step} [{channel.upper()}] {text}"
+
     def set_log_file(self, location: Path) -> None:
-        """Use one durable UTF-8 log per job; never mix different jobs."""
+        """Load last visible lines; full append-only log lives on disk."""
         self._log_file = Path(location)
-        self.log_view.clear()
+        self._records = []
         try:
             if self._log_file.is_file():
-                # Older logs can be large; the complete bytes remain on disk and
-                # copy comes from that file, not from the visible widget.
+                from collections import deque
                 with self._log_file.open("r", encoding="utf-8", errors="replace") as stream:
-                    content = stream.read()
-                self.log_view.setPlainText(content)
-                if content:
-                    self.latest_event.setText(content.splitlines()[-1])
+                    self._records = [line.rstrip("\r\n") for line in deque(stream, maxlen=self._visible_line_cap)]
+                if self._records:
+                    self.latest_event.setText(self._records[-1])
         except OSError as exc:
             self.latest_event.setText(f"Không đọc được nhật ký: {exc}")
+        self._redraw_log()
 
-    def append_activity(self, text: str) -> None:
-        self.latest_event.setText(text)
-        self.log_view.appendPlainText(text)
-        if self._log_file is not None:
-            try:
-                self._log_file.parent.mkdir(parents=True, exist_ok=True)
-                with self._log_file.open("a", encoding="utf-8", newline="\n") as stream:
-                    stream.write(text + "\n")
-            except OSError as exc:
-                self.latest_event.setToolTip(f"Không lưu được nhật ký: {exc}")
+    def append_activity(self, text: str, *, channel: str = "info", stage: str | None = None) -> None:
+        """Each received line gets one source, job step and local timestamp."""
+        for raw in str(text).splitlines() or [""]:
+            if not raw.strip():
+                continue
+            entry = self._format_entry(raw, channel, stage)
+            self.latest_event.setText(entry)
+            self._records.append(entry)
+            if len(self._records) > self._visible_line_cap:
+                del self._records[:len(self._records) - self._visible_line_cap]
+            if self._log_file is not None:
+                try:
+                    self._log_file.parent.mkdir(parents=True, exist_ok=True)
+                    with self._log_file.open("a", encoding="utf-8", newline="\n") as stream:
+                        stream.write(entry + "\n")
+                except OSError as exc:
+                    self.latest_event.setToolTip(f"Không lưu được nhật ký: {exc}")
+            if self._matches_filter(entry):
+                self.log_view.appendPlainText(entry)
+        self.log_count.setText(f"{len(self._records)} dòng gần nhất")
+
+    def _matches_filter(self, entry: str) -> bool:
+        level = self.log_filter.currentData()
+        upper = entry.upper()
+        if level == "error" and not any(tag in upper for tag in ("[ERROR]", "[STDERR]", "[FAILED]")):
+            return False
+        if level == "warning" and not any(tag in upper for tag in ("[WARNING]", "[WARN]", "[CANCELLED]")):
+            return False
+        if level == "state" and "[STATE]" not in upper:
+            return False
+        stage = self.stage_log_filter.currentData()
+        return stage in (None, "all") or f"[{stage}]" in entry
+
+    def _redraw_log(self, _value: int = -1) -> None:
+        displayed = [line for line in self._records if self._matches_filter(line)]
+        self.log_view.setPlainText("\n".join(displayed))
+        bar = self.log_view.verticalScrollBar()
+        bar.setValue(bar.maximum())
+        self.log_count.setText(f"{len(displayed)}/{len(self._records)} dòng")
 
     def _copy_log(self) -> None:
-        content = self.log_view.toPlainText()
+        content = "\n".join(self._records)
         if self._log_file is not None and self._log_file.is_file():
             try:
                 content = self._log_file.read_text(encoding="utf-8", errors="replace")
