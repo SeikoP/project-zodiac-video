@@ -17,6 +17,15 @@ class WorkbenchUsabilityTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    def tearDown(self):
+        """Flush queued Qt multimedia deletion before QApplication teardown."""
+        from PySide6.QtCore import QCoreApplication, QEvent
+        for widget in list(self.app.topLevelWidgets()):
+            widget.close()
+            widget.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+
     def test_ready_dropdown_emits_selected_zip(self):
         from tools.studio_qt.screens.home import HomeScreen
         home = HomeScreen()
