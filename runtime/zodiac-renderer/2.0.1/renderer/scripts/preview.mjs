@@ -1,5 +1,5 @@
 // Exact Remotion event preview, owned by local runner (not plugin).
-import {mkdir,writeFile} from "node:fs/promises";
+import {mkdir,writeFile,readFile} from "node:fs/promises";
 import {resolve,dirname,join} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
@@ -47,7 +47,7 @@ export const previewFrames = async (workspace,outputDir) => {
   const report={contract:"renderer-faithful-preview@2",source:"zodiac-render-plan@1",
     font:props.presentation?.caption?.font_family ?? "sans-serif",
     sampling:"two-real-remotion-frames-per-event",
-    frames_per_event:2,scenes:[],event_pairs:[]};
+    frames_per_event:2,scenes:[],event_pairs:[],caption_samples:[],clips:[]};
   for (const scene of props.scenes) {
     if (!/^[A-Za-z0-9_-]{1,100}$/.test(String(scene.id ?? "")))
       throw new Error("PREVIEW_SCENE_ID_INVALID " + String(scene.id));
@@ -67,7 +67,28 @@ export const previewFrames = async (workspace,outputDir) => {
         motion_only:pair.motion_only,static_hold:pair.static_hold??false,distinct_frames:pair.distinct_frames,
         fallback:pair.fallback,frames});
     }
+    for(const caption of [scene.captions?.[0],scene.captions?.at(-1)].filter(Boolean)) {
+      const frame=Math.floor((caption.start_frame+caption.end_frame-1)/2);
+      const file=scene.id+"-caption-f"+frame+".png";
+      const result=spawnSync(process.execPath,[join(rendererDir,"scripts","local-remotion-cli.mjs"),
+        "still","src/index.ts","ZodiacRenderPlan",join(out,file),"--props="+output,"--frame="+frame],
+        {cwd:rendererDir,stdio:"inherit"});
+      if(result.error || result.status!==0) throw new Error("PREVIEW_CAPTION_FAILED scene="+scene.id+" frame="+frame);
+      report.caption_samples.push({scene_id:scene.id,frame,text:caption.text,layout:caption.resolved_layout,file});
+    }
   }
+  const moving=report.event_pairs.find(pair=>pair.motion_only && props.scenes.find(s=>s.id===pair.scene_id)?.events.find(e=>e.event_id===pair.event_id)?.motion==='slide') ?? report.event_pairs.find(pair=>pair.motion_only);
+  if(moving) {
+    const scene=props.scenes.find(s=>s.id===moving.scene_id),event=scene.events.find(e=>e.event_id===moving.event_id);
+    const first=Math.max(scene.start_frame,event.start_frame-2),last=Math.min(scene.start_frame+scene.duration_frames-1,event.end_frame+5);
+    const file=scene.id+"-"+moving.event_id+"-animation.mp4";
+    const result=spawnSync(process.execPath,[join(rendererDir,"scripts","local-remotion-cli.mjs"),
+      "render","src/index.ts","ZodiacRenderPlan",join(out,file),"--props="+output,"--frames="+first+"-"+last,"--concurrency=2"],
+      {cwd:rendererDir,stdio:"inherit"});
+    if(result.error || result.status!==0) throw new Error("PREVIEW_ANIMATION_FAILED "+moving.event_id);
+    report.clips.push({scene_id:scene.id,event_id:moving.event_id,first_frame:first,last_frame:last,file});
+  }
+  report.spatial_qc=JSON.parse(await readFile(join(resolve(workspace),'.runtime','spatial-qc-report.json'),'utf8'));
   const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
   const rows=report.event_pairs.map(pair=>{
     const pics=pair.frames.map(item=>'<figure><img src="'+esc(item.file)+'" alt="'+esc(pair.event_id+" "+item.role)+'"><figcaption>'+item.role.toUpperCase()+' · frame '+item.frame+'</figcaption></figure>').join("");
@@ -78,7 +99,9 @@ export const previewFrames = async (workspace,outputDir) => {
   const html='<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Remotion event preview</title>'+
     '<style>body{font:16px system-ui;background:#eee9e0;color:#29363d;margin:24px}section{border-top:1px solid #bbb;padding:12px 0}.pair{display:flex;flex-wrap:wrap;gap:16px}figure{margin:0;background:white;padding:10px;border-radius:8px;max-width:280px}img{width:100%;aspect-ratio:9/16;object-fit:contain}figcaption{padding:6px 0;font-weight:600}</style>'+
     '<h1>Two actual Remotion frames per event</h1><p>Source: render-plan.json · Font: '+esc(report.font)+
-    ' · Same composition as final video. Motion-only events sample BEFORE/DURING; visibility/state events sample BEFORE/AFTER.</p>'+rows+'</html>';
+    ' · Same composition as final video. Motion-only events sample BEFORE/DURING; visibility/state events sample BEFORE/AFTER.</p>'+rows+
+    '<h2>Active captions</h2><div class="pair">'+report.caption_samples.map(c=>'<figure><img src="'+esc(c.file)+'"><figcaption>'+esc(c.scene_id+' · '+c.text)+' · frame '+c.frame+'</figcaption></figure>').join('')+'</div>'+
+    '<h2>Animation</h2>'+report.clips.map(c=>'<video controls loop muted width="320" src="'+esc(c.file)+'"></video>').join('')+'</html>';
   await writeFile(join(out,"index.html"),html);
   await writeFile(join(out,"preview-report.json"),JSON.stringify(report,null,2)+"\n");
   return report;

@@ -1,0 +1,3308 @@
+{
+  "source_job": "songtu-bi-tuong-doi-phe Job@5",
+  "protected_hashes_verified": {
+    "production.ir.json": "57656d55aae145360104867f2412d8c5687ea5742a70bdc299ae8d347926a15f",
+    "voice.wav": "eec058b311b58edc498ab921c8583f8a0054293b954e0da3905d8b36f633cd48",
+    ".runtime\\timing.json": "c903ae0b5db85e600223b8e1d528a7c65e409c5124f8ee486a5e5c36c08ed314",
+    ".runtime\\render-plan.json": "983bd60925c8f1036bb8fdc517558af8f69f81b17018786c9909a9af8c703ea4",
+    "publish\\publish.json": "236e14ef2dbd6482eb1be8dcd39b8ccaec81c492c251fb80dab312a2c3c9e46e"
+  },
+  "before": {
+    "entities": [
+      {
+        "scene": "s01",
+        "entity": "gemini",
+        "state": "surprised",
+        "asset": "CHAR_GEMINI_SURPRISED",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 800,
+          "width": 578,
+          "x": 251,
+          "y": 190
+        },
+        "bounding_box": {
+          "x": 360,
+          "y": 337.77777777777777,
+          "width": 375.55555555555554,
+          "height": 634.4444444444443
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_SURPRISED",
+            "asset_before": "CHAR_GEMINI_SURPRISED",
+            "end_frame": 80,
+            "event_id": "s01_e01",
+            "motion": "small-bounce",
+            "preferred_start_frame": 72,
+            "scene_id": "s01",
+            "start_frame": 72,
+            "state_after": "surprised",
+            "state_before": "surprised",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s01",
+        "entity": "question_effect",
+        "state": "active",
+        "asset": "EFFECT_QUESTION",
+        "category": "effect",
+        "kind": null,
+        "prepare_role": "effect",
+        "renderer_role": "effect",
+        "layer": 0,
+        "transform": {
+          "height": 205,
+          "width": 270,
+          "x": 640,
+          "y": 275
+        },
+        "bounding_box": {
+          "x": 664.5454545454545,
+          "y": 305.75,
+          "width": 163.63636363636374,
+          "height": 147.60000000000002
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "EFFECT_QUESTION",
+            "asset_before": "EFFECT_QUESTION",
+            "end_frame": 37,
+            "event_id": "s01_e02",
+            "motion": "pop-in",
+            "preferred_start_frame": 30,
+            "scene_id": "s01",
+            "start_frame": 30,
+            "state_after": "active",
+            "state_before": "hidden",
+            "target": "question_effect"
+          },
+          {
+            "asset_after": "EFFECT_QUESTION",
+            "asset_before": "EFFECT_QUESTION",
+            "end_frame": 81,
+            "event_id": "s01_e03",
+            "motion": "fade-out",
+            "preferred_start_frame": 72,
+            "scene_id": "s01",
+            "start_frame": 72,
+            "state_after": "hidden",
+            "state_before": "active",
+            "target": "question_effect"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "effect"
+      },
+      {
+        "scene": "s01",
+        "entity": "question_effect",
+        "state": "hidden",
+        "asset": "EFFECT_QUESTION",
+        "category": "effect",
+        "kind": null,
+        "prepare_role": "effect",
+        "renderer_role": "effect",
+        "layer": 0,
+        "transform": {
+          "height": 205,
+          "width": 270,
+          "x": 640,
+          "y": 275
+        },
+        "bounding_box": {
+          "x": 664.5454545454545,
+          "y": 305.75,
+          "width": 163.63636363636374,
+          "height": 147.60000000000002
+        },
+        "visible": false,
+        "animation": [
+          {
+            "asset_after": "EFFECT_QUESTION",
+            "asset_before": "EFFECT_QUESTION",
+            "end_frame": 37,
+            "event_id": "s01_e02",
+            "motion": "pop-in",
+            "preferred_start_frame": 30,
+            "scene_id": "s01",
+            "start_frame": 30,
+            "state_after": "active",
+            "state_before": "hidden",
+            "target": "question_effect"
+          },
+          {
+            "asset_after": "EFFECT_QUESTION",
+            "asset_before": "EFFECT_QUESTION",
+            "end_frame": 81,
+            "event_id": "s01_e03",
+            "motion": "fade-out",
+            "preferred_start_frame": 72,
+            "scene_id": "s01",
+            "start_frame": 72,
+            "state_after": "hidden",
+            "state_before": "active",
+            "target": "question_effect"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "effect"
+      },
+      {
+        "scene": "s01",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 283,
+          "width": 458,
+          "x": 126,
+          "y": 278
+        },
+        "bounding_box": {
+          "x": 149.57352941176467,
+          "y": 309.04117647058825,
+          "width": 418.26176470588246,
+          "height": 237.08235294117645
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s01",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 270,
+          "width": 257,
+          "x": 764,
+          "y": 238
+        },
+        "bounding_box": {
+          "x": 781.99,
+          "y": 256.065,
+          "width": 221.66250000000002,
+          "height": 220.3775
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s01",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 306,
+          "width": 736,
+          "x": 102,
+          "y": 1148
+        },
+        "bounding_box": {
+          "x": 137.48000000000002,
+          "y": 1216.34,
+          "width": 660.9599999999999,
+          "height": 213.18000000000006
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 72389,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s02",
+        "entity": "gemini",
+        "state": "listen",
+        "asset": "CHAR_GEMINI_LISTEN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 457,
+          "width": 330,
+          "x": 140,
+          "y": 462
+        },
+        "bounding_box": {
+          "x": 198.38461538461542,
+          "y": 546.4423076923077,
+          "width": 220.8461538461538,
+          "height": 372.5192307692307
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_LISTEN",
+            "asset_before": "CHAR_GEMINI_LISTEN",
+            "end_frame": 118,
+            "event_id": "s02_e02",
+            "motion": "subtle-tilt",
+            "preferred_start_frame": 108,
+            "scene_id": "s02",
+            "start_frame": 108,
+            "state_after": "listen",
+            "state_before": "listen",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s02",
+        "entity": "classmate",
+        "state": "listen",
+        "asset": "CHAR_CLASSMATE_LISTEN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 457,
+          "width": 330,
+          "x": 610,
+          "y": 462
+        },
+        "bounding_box": {
+          "x": 649.9807692307693,
+          "y": 544.5384615384615,
+          "width": 257.0192307692307,
+          "height": 374.4230769230769
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s02",
+        "entity": "notebook",
+        "state": "hidden",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 244,
+          "width": 260,
+          "x": 410,
+          "y": 623
+        },
+        "bounding_box": {
+          "x": 458.75,
+          "y": 652.375,
+          "width": 162.5,
+          "height": 188.5
+        },
+        "visible": false,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 93,
+            "event_id": "s02_e01",
+            "motion": "fade-in",
+            "preferred_start_frame": 84,
+            "scene_id": "s02",
+            "start_frame": 84,
+            "state_after": "visible",
+            "state_before": "hidden",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s02",
+        "entity": "notebook",
+        "state": "visible",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 244,
+          "width": 260,
+          "x": 410,
+          "y": 623
+        },
+        "bounding_box": {
+          "x": 458.75,
+          "y": 652.375,
+          "width": 162.5,
+          "height": 188.5
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 93,
+            "event_id": "s02_e01",
+            "motion": "fade-in",
+            "preferred_start_frame": 84,
+            "scene_id": "s02",
+            "start_frame": 84,
+            "state_after": "visible",
+            "state_before": "hidden",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s02",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 306,
+          "width": 494,
+          "x": 112,
+          "y": 300
+        },
+        "bounding_box": {
+          "x": 137.42647058823528,
+          "y": 333.8588235294118,
+          "width": 451.13823529411764,
+          "height": 255.71764705882345
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s02",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 292,
+          "width": 277,
+          "x": 750,
+          "y": 260
+        },
+        "bounding_box": {
+          "x": 769.39,
+          "y": 279.965,
+          "width": 238.91250000000002,
+          "height": 237.5275000000001
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s02",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 326,
+          "width": 784,
+          "x": 128,
+          "y": 1136
+        },
+        "bounding_box": {
+          "x": 165.74666666666667,
+          "y": 1208.8066666666666,
+          "width": 704.16,
+          "height": 227.11333333333346
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 81627,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s03",
+        "entity": "gemini",
+        "state": "explain",
+        "asset": "CHAR_GEMINI_EXPLAIN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 346,
+          "width": 250,
+          "x": 735,
+          "y": 617
+        },
+        "bounding_box": {
+          "x": 753.3166666666667,
+          "y": 680.9138888888889,
+          "width": 209.52222222222213,
+          "height": 282.0861111111111
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_EXPLAIN",
+            "asset_before": "CHAR_GEMINI_EXPLAIN",
+            "end_frame": 308,
+            "event_id": "s03_e02",
+            "motion": "subtle-tilt",
+            "preferred_start_frame": 298,
+            "scene_id": "s03",
+            "start_frame": 298,
+            "state_after": "explain",
+            "state_before": "explain",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s03",
+        "entity": "classmate",
+        "state": "listen",
+        "asset": "CHAR_CLASSMATE_LISTEN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 360,
+          "width": 250,
+          "x": 220,
+          "y": 790
+        },
+        "bounding_box": {
+          "x": 250.28846153846155,
+          "y": 859.4230769230769,
+          "width": 194.71153846153845,
+          "height": 283.6538461538462
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s03",
+        "entity": "notebook",
+        "state": "visible",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 488,
+          "width": 520,
+          "x": 280,
+          "y": 356
+        },
+        "bounding_box": {
+          "x": 377.5,
+          "y": 414.75,
+          "width": 325,
+          "height": 377
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 308,
+            "event_id": "s03_e01",
+            "motion": "focus-shift",
+            "preferred_start_frame": 298,
+            "scene_id": "s03",
+            "start_frame": 298,
+            "state_after": "visible",
+            "state_before": "visible",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s03",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 296,
+          "width": 478,
+          "x": 66,
+          "y": 292
+        },
+        "bounding_box": {
+          "x": 90.60294117647061,
+          "y": 324.71764705882356,
+          "width": 436.52647058823527,
+          "height": 247.435294117647
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s03",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 282,
+          "width": 269,
+          "x": 704,
+          "y": 252
+        },
+        "bounding_box": {
+          "x": 723.0142857142857,
+          "y": 270.8,
+          "width": 231.6428571428571,
+          "height": 230.3
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s03",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 320,
+          "width": 768,
+          "x": 180,
+          "y": 1140
+        },
+        "bounding_box": {
+          "x": 216.26666666666665,
+          "y": 1211.4666666666667,
+          "width": 691.2,
+          "height": 222.9333333333334
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 79074,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s04",
+        "entity": "gemini",
+        "state": "surprised",
+        "asset": "CHAR_GEMINI_SURPRISED",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 457,
+          "width": 330,
+          "x": 610,
+          "y": 462
+        },
+        "bounding_box": {
+          "x": 672.1923076923077,
+          "y": 546.4423076923077,
+          "width": 214.5,
+          "height": 362.3653846153845
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s04",
+        "entity": "classmate",
+        "state": "confront",
+        "asset": "CHAR_CLASSMATE_CONFRONT",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 457,
+          "width": 330,
+          "x": 140,
+          "y": 462
+        },
+        "bounding_box": {
+          "x": 149.51923076923077,
+          "y": 544.5384615384615,
+          "width": 309.0576923076923,
+          "height": 374.4230769230769
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_CLASSMATE_CONFRONT",
+            "asset_before": "CHAR_CLASSMATE_CONFRONT",
+            "end_frame": 404,
+            "event_id": "s04_e01",
+            "motion": "small-bounce",
+            "preferred_start_frame": 396,
+            "scene_id": "s04",
+            "start_frame": 396,
+            "state_after": "confront",
+            "state_before": "confront",
+            "target": "classmate"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s04",
+        "entity": "notebook",
+        "state": "visible",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 244,
+          "width": 260,
+          "x": 410,
+          "y": 623
+        },
+        "bounding_box": {
+          "x": 458.75,
+          "y": 652.375,
+          "width": 162.5,
+          "height": 188.5
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s04",
+        "entity": "story_effect",
+        "state": "active",
+        "asset": "EFFECT_EXCLAMATION",
+        "category": "effect",
+        "kind": null,
+        "prepare_role": "effect",
+        "renderer_role": "effect",
+        "layer": 0,
+        "transform": {
+          "height": 200,
+          "width": 260,
+          "x": 430,
+          "y": 375
+        },
+        "bounding_box": {
+          "x": 454,
+          "y": 385,
+          "width": 214,
+          "height": 182
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "EFFECT_EXCLAMATION",
+            "asset_before": "EFFECT_EXCLAMATION",
+            "end_frame": 507,
+            "event_id": "s04_e02",
+            "motion": "pop-in",
+            "preferred_start_frame": 500,
+            "scene_id": "s04",
+            "start_frame": 500,
+            "state_after": "active",
+            "state_before": "hidden",
+            "target": "story_effect"
+          },
+          {
+            "asset_after": "EFFECT_EXCLAMATION",
+            "asset_before": "EFFECT_EXCLAMATION",
+            "end_frame": 536,
+            "event_id": "s04_e03",
+            "motion": "fade-out",
+            "preferred_start_frame": 527,
+            "scene_id": "s04",
+            "start_frame": 527,
+            "state_after": "hidden",
+            "state_before": "active",
+            "target": "story_effect"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "effect"
+      },
+      {
+        "scene": "s04",
+        "entity": "story_effect",
+        "state": "hidden",
+        "asset": "EFFECT_EXCLAMATION",
+        "category": "effect",
+        "kind": null,
+        "prepare_role": "effect",
+        "renderer_role": "effect",
+        "layer": 0,
+        "transform": {
+          "height": 200,
+          "width": 260,
+          "x": 430,
+          "y": 375
+        },
+        "bounding_box": {
+          "x": 454,
+          "y": 385,
+          "width": 214,
+          "height": 182
+        },
+        "visible": false,
+        "animation": [
+          {
+            "asset_after": "EFFECT_EXCLAMATION",
+            "asset_before": "EFFECT_EXCLAMATION",
+            "end_frame": 507,
+            "event_id": "s04_e02",
+            "motion": "pop-in",
+            "preferred_start_frame": 500,
+            "scene_id": "s04",
+            "start_frame": 500,
+            "state_after": "active",
+            "state_before": "hidden",
+            "target": "story_effect"
+          },
+          {
+            "asset_after": "EFFECT_EXCLAMATION",
+            "asset_before": "EFFECT_EXCLAMATION",
+            "end_frame": 536,
+            "event_id": "s04_e03",
+            "motion": "fade-out",
+            "preferred_start_frame": 527,
+            "scene_id": "s04",
+            "start_frame": 527,
+            "state_after": "hidden",
+            "state_before": "active",
+            "target": "story_effect"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "effect"
+      },
+      {
+        "scene": "s04",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 306,
+          "width": 494,
+          "x": 102,
+          "y": 300
+        },
+        "bounding_box": {
+          "x": 127.42647058823528,
+          "y": 333.8588235294118,
+          "width": 451.13823529411764,
+          "height": 255.71764705882345
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s04",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 292,
+          "width": 277,
+          "x": 740,
+          "y": 260
+        },
+        "bounding_box": {
+          "x": 759.39,
+          "y": 279.965,
+          "width": 238.91250000000002,
+          "height": 237.5275000000001
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s04",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 326,
+          "width": 784,
+          "x": 118,
+          "y": 1136
+        },
+        "bounding_box": {
+          "x": 155.74666666666667,
+          "y": 1208.8066666666666,
+          "width": 704.16,
+          "height": 227.11333333333346
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 81627,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s05",
+        "entity": "gemini",
+        "state": "explain",
+        "asset": "CHAR_GEMINI_EXPLAIN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 582,
+          "width": 420,
+          "x": 530,
+          "y": 399
+        },
+        "bounding_box": {
+          "x": 560.6923076923077,
+          "y": 506.6538461538462,
+          "width": 352.1538461538461,
+          "height": 474.1153846153845
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_EXPLAIN",
+            "asset_before": "CHAR_GEMINI_EXPLAIN",
+            "end_frame": 553,
+            "event_id": "s05_e01",
+            "motion": "subtle-tilt",
+            "preferred_start_frame": 543,
+            "scene_id": "s05",
+            "start_frame": 543,
+            "state_after": "explain",
+            "state_before": "explain",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s05",
+        "entity": "notebook",
+        "state": "visible",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 265,
+          "width": 250,
+          "x": 670,
+          "y": 865
+        },
+        "bounding_box": {
+          "x": 716.875,
+          "y": 908.4375,
+          "width": 156.25,
+          "height": 181.25
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 630,
+            "event_id": "s05_e02",
+            "motion": "focus-shift",
+            "preferred_start_frame": 620,
+            "scene_id": "s05",
+            "start_frame": 620,
+            "state_after": "visible",
+            "state_before": "visible",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s05",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 322,
+          "width": 520,
+          "x": 66,
+          "y": 300
+        },
+        "bounding_box": {
+          "x": 92.76470588235293,
+          "y": 335.5882352941177,
+          "width": 474.88235294117646,
+          "height": 269.17647058823525
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s05",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 307,
+          "width": 292,
+          "x": 704,
+          "y": 260
+        },
+        "bounding_box": {
+          "x": 724.44,
+          "y": 280.64,
+          "width": 251.85000000000002,
+          "height": 250.39
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s05",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 333,
+          "width": 800,
+          "x": 116,
+          "y": 1118
+        },
+        "bounding_box": {
+          "x": 154.14,
+          "y": 1192.37,
+          "width": 719.2800000000001,
+          "height": 231.99000000000024
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 75065,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s06",
+        "entity": "gemini",
+        "state": "surprised",
+        "asset": "CHAR_GEMINI_SURPRISED",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 800,
+          "width": 578,
+          "x": 251,
+          "y": 190
+        },
+        "bounding_box": {
+          "x": 360,
+          "y": 337.77777777777777,
+          "width": 375.55555555555554,
+          "height": 634.4444444444443
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_SURPRISED",
+            "asset_before": "CHAR_GEMINI_SURPRISED",
+            "end_frame": 874,
+            "event_id": "s06_e01",
+            "motion": "hold",
+            "preferred_start_frame": 862,
+            "scene_id": "s06",
+            "start_frame": 862,
+            "state_after": "surprised",
+            "state_before": "surprised",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s06",
+        "entity": "classmate",
+        "state": "confront",
+        "asset": "CHAR_CLASSMATE_CONFRONT",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 400,
+          "width": 260,
+          "x": 790,
+          "y": 795
+        },
+        "bounding_box": {
+          "x": 797.5,
+          "y": 880,
+          "width": 243.5,
+          "height": 295
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s06",
+        "entity": "pen",
+        "state": "hidden",
+        "asset": "PROP_PEN",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 125,
+          "width": 250,
+          "x": 545,
+          "y": 1030
+        },
+        "bounding_box": {
+          "x": 556.71875,
+          "y": 1033.90625,
+          "width": 212.5,
+          "height": 116.40625
+        },
+        "visible": false,
+        "animation": [
+          {
+            "asset_after": "PROP_PEN",
+            "asset_before": "PROP_PEN",
+            "end_frame": 881,
+            "event_id": "s06_e02",
+            "motion": "fade-in",
+            "preferred_start_frame": 872,
+            "scene_id": "s06",
+            "start_frame": 872,
+            "state_after": "visible",
+            "state_before": "hidden",
+            "target": "pen"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s06",
+        "entity": "pen",
+        "state": "visible",
+        "asset": "PROP_PEN",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 125,
+          "width": 250,
+          "x": 545,
+          "y": 1030
+        },
+        "bounding_box": {
+          "x": 556.71875,
+          "y": 1033.90625,
+          "width": 212.5,
+          "height": 116.40625
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_PEN",
+            "asset_before": "PROP_PEN",
+            "end_frame": 881,
+            "event_id": "s06_e02",
+            "motion": "fade-in",
+            "preferred_start_frame": 872,
+            "scene_id": "s06",
+            "start_frame": 872,
+            "state_after": "visible",
+            "state_before": "hidden",
+            "target": "pen"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s06",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 283,
+          "width": 458,
+          "x": 146,
+          "y": 278
+        },
+        "bounding_box": {
+          "x": 169.57352941176467,
+          "y": 309.04117647058825,
+          "width": 418.26176470588246,
+          "height": 237.08235294117645
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s06",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 270,
+          "width": 257,
+          "x": 784,
+          "y": 238
+        },
+        "bounding_box": {
+          "x": 801.99,
+          "y": 256.065,
+          "width": 221.66250000000002,
+          "height": 220.3775
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s06",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 306,
+          "width": 736,
+          "x": 122,
+          "y": 1148
+        },
+        "bounding_box": {
+          "x": 157.48000000000002,
+          "y": 1216.34,
+          "width": 660.9599999999999,
+          "height": 213.18000000000006
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 72389,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s07",
+        "entity": "gemini",
+        "state": "write",
+        "asset": "CHAR_GEMINI_WRITE",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 346,
+          "width": 250,
+          "x": 735,
+          "y": 617
+        },
+        "bounding_box": {
+          "x": 779.2666666666667,
+          "y": 680.9138888888889,
+          "width": 165.31111111111113,
+          "height": 282.0861111111111
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s07",
+        "entity": "notebook",
+        "state": "marked",
+        "asset": "PROP_NOTEBOOK_MARKED",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 488,
+          "width": 520,
+          "x": 280,
+          "y": 356
+        },
+        "bounding_box": {
+          "x": 377.5,
+          "y": 414.75,
+          "width": 325,
+          "height": 377
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK_MARKED",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 943,
+            "event_id": "s07_e02",
+            "motion": "state_swap",
+            "preferred_start_frame": 934,
+            "scene_id": "s07",
+            "start_frame": 934,
+            "state_after": "marked",
+            "state_before": "visible",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s07",
+        "entity": "notebook",
+        "state": "visible",
+        "asset": "PROP_NOTEBOOK",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 488,
+          "width": 520,
+          "x": 280,
+          "y": 356
+        },
+        "bounding_box": {
+          "x": 377.5,
+          "y": 414.75,
+          "width": 325,
+          "height": 377
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_NOTEBOOK_MARKED",
+            "asset_before": "PROP_NOTEBOOK",
+            "end_frame": 943,
+            "event_id": "s07_e02",
+            "motion": "state_swap",
+            "preferred_start_frame": 934,
+            "scene_id": "s07",
+            "start_frame": 934,
+            "state_after": "marked",
+            "state_before": "visible",
+            "target": "notebook"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s07",
+        "entity": "pen",
+        "state": "visible",
+        "asset": "PROP_PEN",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 0,
+        "transform": {
+          "height": 115,
+          "width": 220,
+          "x": 620,
+          "y": 745
+        },
+        "bounding_box": {
+          "x": 630.3125,
+          "y": 750.9375,
+          "width": 187,
+          "height": 102.4375
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "PROP_PEN",
+            "asset_before": "PROP_PEN",
+            "end_frame": 922,
+            "event_id": "s07_e01",
+            "motion": "slide",
+            "preferred_start_frame": 911,
+            "scene_id": "s07",
+            "start_frame": 911,
+            "state_after": "visible",
+            "state_before": "visible",
+            "target": "pen"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      },
+      {
+        "scene": "s07",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 296,
+          "width": 478,
+          "x": 46,
+          "y": 292
+        },
+        "bounding_box": {
+          "x": 70.60294117647061,
+          "y": 324.71764705882356,
+          "width": 436.52647058823527,
+          "height": 247.435294117647
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s07",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 282,
+          "width": 269,
+          "x": 684,
+          "y": 252
+        },
+        "bounding_box": {
+          "x": 703.0142857142857,
+          "y": 270.8,
+          "width": 231.6428571428571,
+          "height": 230.3
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s07",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 320,
+          "width": 768,
+          "x": 160,
+          "y": 1140
+        },
+        "bounding_box": {
+          "x": 196.26666666666665,
+          "y": 1211.4666666666667,
+          "width": 691.2,
+          "height": 222.9333333333334
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 79074,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s08",
+        "entity": "gemini",
+        "state": "listen",
+        "asset": "CHAR_GEMINI_LISTEN",
+        "category": "character",
+        "kind": null,
+        "prepare_role": "character",
+        "renderer_role": "other",
+        "layer": 0,
+        "transform": {
+          "height": 429,
+          "width": 310,
+          "x": 190,
+          "y": 295
+        },
+        "bounding_box": {
+          "x": 244.90000000000003,
+          "y": 374.24583333333334,
+          "width": 207.34999999999997,
+          "height": 349.75416666666666
+        },
+        "visible": true,
+        "animation": [
+          {
+            "asset_after": "CHAR_GEMINI_LISTEN",
+            "asset_before": "CHAR_GEMINI_LISTEN",
+            "end_frame": 1133,
+            "event_id": "s08_e01",
+            "motion": "hold",
+            "preferred_start_frame": 1121,
+            "scene_id": "s08",
+            "start_frame": 1121,
+            "state_after": "listen",
+            "state_before": "listen",
+            "target": "gemini"
+          }
+        ],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "character"
+      },
+      {
+        "scene": "s08",
+        "entity": "env__classroom-whiteboard",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 2,
+        "transform": {
+          "height": 274,
+          "width": 442,
+          "x": 168,
+          "y": 272
+        },
+        "bounding_box": {
+          "x": 190.75,
+          "y": 302.4,
+          "width": 403.65,
+          "height": 228.80000000000007
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s08",
+        "entity": "env__classroom-window",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 1,
+        "transform": {
+          "height": 261,
+          "width": 248,
+          "x": 806,
+          "y": 232
+        },
+        "bounding_box": {
+          "x": 823.36,
+          "y": 249.66000000000003,
+          "width": 213.89999999999998,
+          "height": 212.65999999999997
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "background"
+      },
+      {
+        "scene": "s08",
+        "entity": "env__classroom-desk-edge",
+        "state": "visible",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "kind": null,
+        "prepare_role": "environment",
+        "renderer_role": "other",
+        "layer": 5,
+        "transform": {
+          "height": 300,
+          "width": 720,
+          "x": 130,
+          "y": 1156
+        },
+        "bounding_box": {
+          "x": 164,
+          "y": 1223,
+          "width": 648,
+          "height": 209
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 72576,
+        "resolved_role": "foreground_environment"
+      },
+      {
+        "scene": "s08",
+        "entity": "notebook",
+        "state": "marked",
+        "asset": "PROP_NOTEBOOK_MARKED",
+        "category": "prop",
+        "kind": null,
+        "prepare_role": "prop",
+        "renderer_role": "prop",
+        "layer": 24,
+        "transform": {
+          "height": 323,
+          "width": 345,
+          "x": 560,
+          "y": 535
+        },
+        "bounding_box": {
+          "x": 624.8333333333334,
+          "y": 573.76,
+          "width": 215.33333333333326,
+          "height": 249.78666666666663
+        },
+        "visible": true,
+        "animation": [],
+        "caption_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "overlap_px": 0,
+        "resolved_role": "interactive_prop"
+      }
+    ],
+    "fps": 24,
+    "protected_hashes": {
+      "production.ir.json": "57656d55aae145360104867f2412d8c5687ea5742a70bdc299ae8d347926a15f",
+      "voice.wav": "eec058b311b58edc498ab921c8583f8a0054293b954e0da3905d8b36f633cd48",
+      ".runtime\\timing.json": "c903ae0b5db85e600223b8e1d528a7c65e409c5124f8ee486a5e5c36c08ed314",
+      ".runtime\\render-plan.json": "983bd60925c8f1036bb8fdc517558af8f69f81b17018786c9909a9af8c703ea4",
+      "publish\\publish.json": "236e14ef2dbd6482eb1be8dcd39b8ccaec81c492c251fb80dab312a2c3c9e46e"
+    }
+  },
+  "after_frame_1150": {
+    "scene": "s08",
+    "frame": 1150,
+    "entities": [
+      {
+        "entity": "env__classroom-window",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "category": "environment",
+        "role": "background",
+        "layer": 1,
+        "order": 0,
+        "transform": {
+          "height": 261,
+          "width": 248,
+          "x": 806,
+          "y": 232
+        },
+        "animation": [],
+        "bounds": {
+          "x": 823.36,
+          "y": 249.66000000000003,
+          "width": 213.89999999999998,
+          "height": 212.65999999999997
+        }
+      },
+      {
+        "entity": "env__classroom-whiteboard",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "category": "environment",
+        "role": "background",
+        "layer": 2,
+        "order": 1,
+        "transform": {
+          "height": 274,
+          "width": 442,
+          "x": 168,
+          "y": 272
+        },
+        "animation": [],
+        "bounds": {
+          "x": 190.75,
+          "y": 302.4,
+          "width": 403.65,
+          "height": 228.80000000000007
+        }
+      },
+      {
+        "entity": "gemini",
+        "asset": "CHAR_GEMINI_LISTEN",
+        "category": "character",
+        "role": "character",
+        "layer": 3,
+        "order": 2,
+        "transform": {
+          "height": 429,
+          "width": 310,
+          "x": 190,
+          "y": 295
+        },
+        "animation": [],
+        "bounds": {
+          "x": 244.90000000000003,
+          "y": 374.24583333333334,
+          "width": 207.34999999999997,
+          "height": 349.75416666666666
+        },
+        "caption_overlap_px": 0
+      },
+      {
+        "entity": "env__classroom-desk-edge",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "category": "environment",
+        "role": "foreground_environment",
+        "layer": 5,
+        "order": 3,
+        "transform": {
+          "height": 300,
+          "width": 720,
+          "x": 130,
+          "y": 1156
+        },
+        "animation": [],
+        "bounds": {
+          "x": 164,
+          "y": 1223,
+          "width": 648,
+          "height": 209
+        },
+        "caption_overlap_px": 0
+      },
+      {
+        "entity": "notebook",
+        "asset": "PROP_NOTEBOOK_MARKED",
+        "category": "prop",
+        "role": "interactive_prop",
+        "layer": 24,
+        "order": 4,
+        "transform": {
+          "height": 323,
+          "width": 345,
+          "x": 560,
+          "y": 535
+        },
+        "animation": [],
+        "bounds": {
+          "x": 624.8333333333334,
+          "y": 573.76,
+          "width": 215.33333333333326,
+          "height": 249.78666666666663
+        },
+        "caption_overlap_px": 0
+      }
+    ],
+    "caption_zone": {
+      "height": 350,
+      "width": 920,
+      "x": 80,
+      "y": 1320,
+      "padding": 12,
+      "fontSize": 84,
+      "lineHeight": 1.15,
+      "maxLines": 2,
+      "source": "scene"
+    },
+    "caption_bounds": {
+      "x": 92,
+      "y": 1561.4,
+      "width": 896,
+      "height": 96.6
+    }
+  },
+  "gates": [
+    "ROLE_RESOLUTION_VALID",
+    "LAYER_ORDER_VALID",
+    "OCCLUSION_VALID",
+    "CAPTION_SAFE_ZONE_VALID",
+    "CAPTION_TEXT_FIT_VALID",
+    "SPATIAL_BINDINGS_VALID"
+  ],
+  "frame_count": 1189,
+  "caption_adjustments": [
+    {
+      "scene": "s01",
+      "frame": 0,
+      "text": "Song Tử đúng là có cái tài...",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử đúng là có cái tài..."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s01",
+      "frame": 30,
+      "text": "mới nói một câu mà cả nhóm tưởng",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "mới nói một câu mà cả nhóm",
+          "tưởng"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s01",
+      "frame": 67,
+      "text": "vừa đổi phe.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "vừa đổi phe."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 84,
+      "text": "Đang bàn thuyết trình,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Đang bàn thuyết trình,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 108,
+      "text": "cả nhóm chọn phương án A.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "cả nhóm chọn phương án A."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 140,
+      "text": "Song Tử gật đầu:",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử gật đầu:"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 156,
+      "text": "“Ừ, nghe ổn đó.” Năm phút sau,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Ừ, nghe ổn đó.” Năm phút",
+          "sau,"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 199,
+      "text": "có đứa đưa thêm thông tin.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "có đứa đưa thêm thông tin."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 226,
+      "text": "Song Tử nhìn lại tờ giấy:",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử nhìn lại tờ giấy:"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s02",
+      "frame": 249,
+      "text": "“Khoan, vậy phương án B có vẻ hợp hơn.”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Khoan, vậy phương án B có",
+          "vẻ hợp hơn.”"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s03",
+      "frame": 298,
+      "text": "Cả bàn quay phắt sang.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Cả bàn quay phắt sang."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s03",
+      "frame": 319,
+      "text": "“Ủa? Mới nãy mày còn theo A mà!”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Ủa? Mới nãy mày còn theo A",
+          "mà!”"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s03",
+      "frame": 358,
+      "text": "“Mới nãy tao chưa nghe phần này!”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Mới nãy tao chưa nghe phần",
+          "này!”"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s04",
+      "frame": 396,
+      "text": "Ngỡ thế là xong.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Ngỡ thế là xong."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s04",
+      "frame": 418,
+      "text": "Nhưng không. Song Tử lại tự chỉ vào",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Nhưng không. Song Tử lại tự",
+          "chỉ vào"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s04",
+      "frame": 453,
+      "text": "phương án B: “Mà B cũng có một",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "phương án B: “Mà B cũng có",
+          "một"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s04",
+      "frame": 485,
+      "text": "chỗ hơi cấn.” “Trời ơi!",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "chỗ hơi cấn.” “Trời ơi!"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s04",
+      "frame": 516,
+      "text": "Rốt cuộc mày đứng bên nào?”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Rốt cuộc mày đứng bên nào?”"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 543,
+      "text": "Song Tử đứng hình mất một nhịp.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử đứng hình mất một",
+          "nhịp."
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 579,
+      "text": "“Tao đang thử xem chỗ nào chưa ổn",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Tao đang thử xem chỗ nào",
+          "chưa ổn"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 608,
+      "text": "thôi mà.” Song Tử ấy mà,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "thôi mà.” Song Tử ấy mà,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 641,
+      "text": "nghe được thêm một góc là lại muốn",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "nghe được thêm một góc là",
+          "lại muốn"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 669,
+      "text": "thử xem có gì khác.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "thử xem có gì khác."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 696,
+      "text": "Nói chuyện đang vui,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Nói chuyện đang vui,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s05",
+      "frame": 717,
+      "text": "não đã mở thêm ba cửa sổ.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "não đã mở thêm ba cửa sổ."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s06",
+      "frame": 749,
+      "text": "Nhưng đến lúc cả nhóm cần chốt,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Nhưng đến lúc cả nhóm cần",
+          "chốt,"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s06",
+      "frame": 780,
+      "text": "cũng không thể cứ đổi qua đổi lại",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "cũng không thể cứ đổi qua đổi",
+          "lại"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s06",
+      "frame": 812,
+      "text": "mãi. Có đứa đẩy tờ giấy về phía",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "mãi. Có đứa đẩy tờ giấy về",
+          "phía"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s06",
+      "frame": 849,
+      "text": "Song Tử: “Rồi, chọn một cái đi!”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử: “Rồi, chọn một cái",
+          "đi!”"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s07",
+      "frame": 893,
+      "text": "Song Tử cầm bút,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Song Tử cầm bút,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s07",
+      "frame": 911,
+      "text": "gạch hai chỗ cần sửa,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "gạch hai chỗ cần sửa,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s07",
+      "frame": 934,
+      "text": "khoanh phương án B.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "khoanh phương án B."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s07",
+      "frame": 949,
+      "text": "“Chọn cái này. Nhưng sửa đoạn đầu nhé.”",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "“Chọn cái này. Nhưng sửa",
+          "đoạn đầu nhé.”"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 996,
+      "text": "Hóa ra nãy giờ mọi người tưởng Song",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Hóa ra nãy giờ mọi người",
+          "tưởng Song"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 1032,
+      "text": "Tử đang đổi phe.",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Tử đang đổi phe."
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 1055,
+      "text": "Còn bạn ấy cứ tưởng cả nhóm vẫn",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "Còn bạn ấy cứ tưởng cả nhóm",
+          "vẫn"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 1084,
+      "text": "đang... làm nháp. Mà này,",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "đang... làm nháp. Mà này,"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 1113,
+      "text": "ai bắt bản nháp đầu tiên phải là",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "ai bắt bản nháp đầu tiên phải",
+          "là"
+        ],
+        "x": 92,
+        "y": 1464.8,
+        "width": 896,
+        "height": 193.2
+      }
+    },
+    {
+      "scene": "s08",
+      "frame": 1144,
+      "text": "bản đem nộp đâu?",
+      "strategy": "bottom-align-with-padding-inside-resolved-zone",
+      "layout": {
+        "zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320,
+          "padding": 12,
+          "fontSize": 84,
+          "lineHeight": 1.15,
+          "maxLines": 2,
+          "source": "scene"
+        },
+        "lines": [
+          "bản đem nộp đâu?"
+        ],
+        "x": 92,
+        "y": 1561.4,
+        "width": 896,
+        "height": 96.6
+      }
+    }
+  ],
+  "root_causes": [
+    "Authored environment layers 1/2/5 were painted above characters defaulting to zero.",
+    "Prepare ignored environment overlap; render ignored text fit and clipped captions.",
+    "Cover replaced every authored X/Y with the same center.",
+    "Studio controller called Prepare 2.0.0 after preflight 2.0.1, overwriting prepared props."
+  ],
+  "before_frame_1150": {
+    "scene": "s08",
+    "frame": 1150,
+    "caption": "bản đem nộp đâu?",
+    "caption_bounds": {
+      "x": 80,
+      "y": 1320,
+      "width": 920,
+      "height": 96.6
+    },
+    "entities": [
+      {
+        "entity": "gemini",
+        "asset": "CHAR_GEMINI_LISTEN",
+        "layer": 0,
+        "role": "character",
+        "bounds": {
+          "x": 244.90000000000003,
+          "y": 374.24583333333334,
+          "width": 207.34999999999997,
+          "height": 349.75416666666666
+        },
+        "caption_overlap_px": 0
+      },
+      {
+        "entity": "env__classroom-whiteboard",
+        "asset": "ENV_CLASSROOM_WHITEBOARD",
+        "layer": 2,
+        "role": "background",
+        "bounds": {
+          "x": 190.75,
+          "y": 302.4,
+          "width": 403.65,
+          "height": 228.80000000000007
+        },
+        "caption_overlap_px": 0
+      },
+      {
+        "entity": "env__classroom-window",
+        "asset": "ENV_CLASSROOM_WINDOW",
+        "layer": 1,
+        "role": "background",
+        "bounds": {
+          "x": 823.36,
+          "y": 249.66000000000003,
+          "width": 213.89999999999998,
+          "height": 212.65999999999997
+        },
+        "caption_overlap_px": 0
+      },
+      {
+        "entity": "env__classroom-desk-edge",
+        "asset": "ENV_CLASSROOM_DESK_EDGE",
+        "layer": 5,
+        "role": "foreground_environment",
+        "bounds": {
+          "x": 164,
+          "y": 1223,
+          "width": 648,
+          "height": 209
+        },
+        "caption_overlap_px": 62597
+      },
+      {
+        "entity": "notebook",
+        "asset": "PROP_NOTEBOOK_MARKED",
+        "layer": 24,
+        "role": "interactive_prop",
+        "bounds": {
+          "x": 624.8333333333334,
+          "y": 573.76,
+          "width": 215.33333333333326,
+          "height": 249.78666666666663
+        },
+        "caption_overlap_px": 0
+      }
+    ]
+  },
+  "validation": {
+    "renderer_tests": 64,
+    "python_tests": 537,
+    "python_skipped": 11,
+    "python_subtests": 18,
+    "typecheck": "pass",
+    "compileall": "pass",
+    "event_pairs": 17,
+    "caption_frames": 16,
+    "animation_clip_frames": 19,
+    "audio_sha256": "adc9f75082f2611e4c46051c2f32b6260f22bc2deff1b64276b8be3b05ccfe8b",
+    "studio_preview_equals_full_frame_sha256": "c254219a6b7fc80a93c14d4a3c3ea33a72c1276eec5388ca76737f59385c5373"
+  }
+}

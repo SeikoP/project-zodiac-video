@@ -3,6 +3,7 @@ jobs/
 __pycache__/
 *.py[cod]
 node_modules/
+.remotion/
 renderer/generated/sfx/
 voice.wav
 .runtime/

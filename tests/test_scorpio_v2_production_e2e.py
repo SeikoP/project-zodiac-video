@@ -3,6 +3,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 import wave
 from pathlib import Path
 
@@ -83,6 +84,13 @@ class ScorpioCounters:
 class ScorpioProductionE2ETests(unittest.TestCase):
     # Fake MP4 fixture deliberately lacks decodable media. Segmented preflight
     # falls back to one full render; test cache invalidation, not segment count.
+    def setUp(self):
+        which = shutil.which
+        executable = patch("tools.studio_v2.executor.shutil.which", side_effect=lambda name:
+                           None if name in {"ffmpeg", "ffprobe", "ffprobe.exe"} else which(name))
+        executable.start()
+        self.addCleanup(executable.stop)
+
     def make_source(self, root: Path) -> Path:
         source = root / "source"
         shutil.copytree(PACKAGE, source)

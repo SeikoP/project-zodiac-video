@@ -23,6 +23,33 @@ from .state import load_state, save_state
 _ROOT = Path(__file__).resolve().parents[2]
 
 
+_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1"}
+
+
+def workspace_renderer_version(workspace: Path) -> str:
+    """Use the imported Job@5 pin; never choose a renderer from global defaults."""
+    manifest_path = Path(workspace) / "package-manifest.json"
+    if not manifest_path.is_file():
+        return "2.0.0"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        renderer = manifest["renderer"]
+        if renderer.get("id") != "zodiac-renderer":
+            raise ValueError("unsupported renderer identity")
+        version = renderer["version"]
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        raise ControlPlaneError(
+            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
+            message=f"cannot resolve imported renderer: {exc}",
+        ) from exc
+    if version not in _SUPPORTED_RENDERER_VERSIONS:
+        raise ControlPlaneError(
+            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
+            message=f"unsupported renderer version {version!r}",
+        )
+    return version
+
+
 def _read_json(path: Path, *, code: str, stage: str) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -203,7 +230,7 @@ class StudioV2Controller:
             _ROOT
             / "runtime"
             / "zodiac-renderer"
-            / "2.0.0"
+            / workspace_renderer_version(self.workspace)
             / "renderer"
             / "scripts"
             / "prepare.mjs"
@@ -257,10 +284,11 @@ class StudioV2Controller:
             code="RENDERER_PROPS_INVALID",
             stage="RENDER",
         )
+        version = workspace_renderer_version(self.workspace)
         segments = plan_segments(
             props,
-            renderer_version="2.0.0",
-            renderer_hash="zodiac-renderer@2.0.0",
+            renderer_version=version,
+            renderer_hash=f"zodiac-renderer@{version}",
         )
         segment = next((item for item in segments if item["segment_id"] == segment_id), None)
         if segment is None:

@@ -19,7 +19,7 @@ from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.resource_budget import load_resource_profile
 from tools.control_plane.segments import plan_segments, props_for_segment
 
-from .controller import StudioV2Controller
+from .controller import StudioV2Controller, workspace_renderer_version as _workspace_renderer_version
 from .pipeline import (
     AUDIO,
     DONE,
@@ -39,33 +39,6 @@ from .voice import VoiceArtifact, ensure_voice_artifact
 
 
 _ROOT = Path(__file__).resolve().parents[2]
-
-_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1"}
-
-
-def _workspace_renderer_version(workspace: Path) -> str:
-    """Use the imported Job@5 pin; never choose a renderer from global defaults."""
-    manifest_path = Path(workspace) / "package-manifest.json"
-    if not manifest_path.is_file():
-        return "2.0.0"
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        renderer = manifest["renderer"]
-        if renderer.get("id") != "zodiac-renderer":
-            raise ValueError("unsupported renderer identity")
-        version = renderer["version"]
-    except (OSError, UnicodeError, ValueError, KeyError, TypeError, AttributeError) as exc:
-        raise ControlPlaneError(
-            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
-            message=f"cannot resolve imported renderer: {exc}",
-        ) from exc
-    if version not in _SUPPORTED_RENDERER_VERSIONS:
-        raise ControlPlaneError(
-            code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
-            message=f"unsupported renderer version {version!r}",
-        )
-    return version
-
 
 def _renderer_dir(workspace: Path) -> Path:
     return _ROOT / "runtime" / "zodiac-renderer" / _workspace_renderer_version(workspace) / "renderer"
@@ -871,6 +844,12 @@ class StudioV2Executor:
             except ControlPlaneError as exc:
                 self._mark_failed(RENDER, exc)
                 raise
+        if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+            renderer = _renderer_dir(workspace)
+            config = replace(config, renderer_hash=hashlib.sha256(
+                (config.renderer_hash + _tree_hash(renderer / "src")
+                 + _tree_hash(renderer / "scripts") + _tree_hash(renderer / "fonts")).encode()
+            ).hexdigest())
         rendered_path = workspace / ".runtime" / "rendered-v2.mp4"
         render_input = render_key(
             plan_hash,

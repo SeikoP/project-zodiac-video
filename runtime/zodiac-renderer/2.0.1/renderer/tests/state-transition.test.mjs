@@ -3,8 +3,8 @@ import {readFile} from "node:fs/promises";
 import test from "node:test";
 import {resolveSemanticMotion} from "../src/semantic-motion.mjs";
 test("state transition uses one SVG entity, preserving authored transforms",async()=>{
- const src=await readFile(new URL("../src/ZodiacRenderPlan.tsx",import.meta.url),"utf8");
- assert.match(src,/state = entity\.states\[stateId\]/);
+ const src=await readFile(new URL("../src/ZodiacRenderPlan.tsx",import.meta.url),"utf8") + await readFile(new URL("../src/spatial-layout.mjs",import.meta.url),"utf8");
+ assert.match(src,/state\s*=\s*entity\.states\[stateId\]/);
  assert.match(src,/data-entity-id=\{entity\.id\}/);
  assert.doesNotMatch(src,/data-transition-from/);
  assert.doesNotMatch(src,/blend!\.progress/);
