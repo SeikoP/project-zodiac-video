@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QToolButton, QVBoxLayout, QWidget
 
 STAGES = (
@@ -22,6 +22,32 @@ STATUS_TEXT = {
 }
 
 
+class _ClickableStageRow(QWidget):
+    """The full row, not only its title, selects its stage."""
+
+    clicked = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleDescription("Nhấn Enter hoặc Space để xem chi tiết bước")
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.clicked.emit()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space):
+            self.clicked.emit()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
 class StageRail(QFrame):
     """Flat, separated step list. No enclosing card around individual steps."""
 
@@ -30,8 +56,8 @@ class StageRail(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("stageRailFlat")
-        self.setMinimumWidth(204)
-        self.setMaximumWidth(235)
+        self.setMinimumWidth(252)
+        self.setMaximumWidth(292)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 12, 10, 8)
         layout.setSpacing(4)
@@ -48,11 +74,12 @@ class StageRail(QFrame):
         self.selected_step: str | None = None
 
         for step, number, title, purpose in STAGES:
-            row = QWidget()
+            row = _ClickableStageRow()
+            row.clicked.connect(lambda s=step: self.select_step(s, emit=True))
             row.setObjectName("stageLine")
             row.setProperty("selected", False)
             row_layout = QVBoxLayout(row)
-            row_layout.setContentsMargins(4, 9, 4, 9)
+            row_layout.setContentsMargins(10, 10, 10, 10)
             row_layout.setSpacing(3)
 
             heading = QHBoxLayout()
@@ -66,16 +93,19 @@ class StageRail(QFrame):
             heading.addWidget(button, 1)
             status_label = QLabel(STATUS_TEXT["PENDING"])
             status_label.setObjectName("stageState")
+            status_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             status_label.setProperty("stageStatus", "PENDING")
             heading.addWidget(status_label)
             row_layout.addLayout(heading)
 
             purpose_label = QLabel(purpose)
             purpose_label.setObjectName("stagePurpose")
+            purpose_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             purpose_label.setWordWrap(True)
             row_layout.addWidget(purpose_label)
             activity = QLabel("")
             activity.setObjectName("stageActivity")
+            activity.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             activity.setWordWrap(False)
             activity.setVisible(False)
             row_layout.addWidget(activity)
@@ -159,6 +189,7 @@ class StageRail(QFrame):
                 self._show_activity(step, recent)
             else:
                 self._show_activity(step, "")
+            self.row_widgets[step].setToolTip(f"{number} {title}\n{purpose}\n{state_label}\n{detail}")
             self.buttons[step].setToolTip(f"{number} {title}\n{purpose}\n{state_label}\n{detail}")
             self.buttons[step].setAccessibleName(f"Bước {number}, {title}, {state_label}")
 

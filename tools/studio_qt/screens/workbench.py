@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSplitter,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -107,19 +108,23 @@ class WorkbenchScreen(QWidget):
         self.stage_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.stage_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.stage_scroll.setWidget(self.stage_rail)
-        self.stage_scroll.setMinimumWidth(205)
-        self.stage_scroll.setMaximumWidth(239)
+        self.stage_scroll.setMinimumWidth(262)
+        self.stage_scroll.setMaximumWidth(302)
 
         current = QWidget(objectName="workspaceMain")
-        current_layout = QVBoxLayout(current)
-        current_layout.setContentsMargins(18, 12, 12, 8)
+        outer_layout = QVBoxLayout(current)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+        details_panel = QWidget()
+        current_layout = QVBoxLayout(details_panel)
+        current_layout.setContentsMargins(20, 10, 12, 8)
         current_layout.setSpacing(8)
         current_layout.addWidget(QLabel("GIÁM SÁT QUY TRÌNH · TRẠNG THÁI THỰC", objectName="eyebrow"))
         self.status_label = QLabel("Sẵn sàng", objectName="status")
-        self.status_label.setMinimumWidth(102)
+        self.status_label.setMinimumWidth(115)
         self.status_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.environment_status = QLabel("Môi trường chưa kiểm tra", objectName="status")
-        self.environment_status.setMinimumWidth(170)
+        self.environment_status.setMinimumWidth(190)
         self.environment_status.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.pipeline_summary = QLabel("Chưa có bước nào", objectName="sectionTitle")
         current_layout.addWidget(self.pipeline_summary)
@@ -138,6 +143,7 @@ class WorkbenchScreen(QWidget):
         current_layout.addWidget(self.pipeline_progress_bar)
         status_row = QHBoxLayout()
         status_row.addWidget(self.status_label)
+        status_row.addSpacing(16)
         status_row.addWidget(self.environment_status)
         status_row.addStretch(1)
         current_layout.addLayout(status_row)
@@ -209,11 +215,16 @@ class WorkbenchScreen(QWidget):
         self.log_toggle.setToolTip("Hiện/ẩn nhật ký trong tổng quan (Ctrl+L)")
         self.log_toggle.toggled.connect(self._toggle_logs)
         log_row.addWidget(self.log_toggle)
-        current_layout.addLayout(log_row)
+        console_panel = QWidget()
+        console_layout = QVBoxLayout(console_panel)
+        console_layout.setContentsMargins(20, 10, 12, 8)
+        console_layout.setSpacing(8)
+        console_layout.addLayout(log_row)
         self.log_view = QPlainTextEdit(objectName="activityLog")
         self.log_view.setReadOnly(True)
         self.log_view.setMaximumBlockCount(3000)
-        self.log_view.setMinimumHeight(200)
+        self.log_view.setMinimumHeight(130)
+        self.log_view.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.log_view.setToolTip("Xem 3.000 dòng gần nhất; tất cả dòng được lưu trong studio-gui.log")
         self._highlighter = ConsoleHighlighter(self.log_view.document())
         self._records: list[str] = []
@@ -222,7 +233,7 @@ class WorkbenchScreen(QWidget):
         self.log_filter.currentIndexChanged.connect(self._redraw_log)
         self.stage_log_filter.currentIndexChanged.connect(self._redraw_log)
         self.log_view.setVisible(True)
-        current_layout.addWidget(self.log_view, 2)
+        console_layout.addWidget(self.log_view, 1)
         self._log_file: Path | None = None
 
         # Flat inspector/action strip: no third bordered card competing with console.
@@ -251,6 +262,21 @@ class WorkbenchScreen(QWidget):
         current_layout.insertLayout(current_layout.indexOf(step_divider), inspector_row)
         current_layout.insertWidget(current_layout.indexOf(step_divider), self.detail_body)
         current_layout.insertWidget(current_layout.indexOf(step_divider), self.output_path_label)
+        current_layout.addStretch(1)
+
+        # The inspector and console are independent resizable panels.  Keep
+        # log controls with the console so hiding logs never steals inspector space.
+        self.detail_console_splitter = QSplitter(Qt.Orientation.Vertical)
+        self.detail_console_splitter.setObjectName("detailConsoleSplitter")
+        self.detail_console_splitter.setChildrenCollapsible(False)
+        self.detail_console_splitter.setHandleWidth(7)
+        self.detail_console_splitter.addWidget(details_panel)
+        self.detail_console_splitter.addWidget(console_panel)
+        self.detail_console_splitter.setStretchFactor(0, 3)
+        self.detail_console_splitter.setStretchFactor(1, 2)
+        self.detail_console_splitter.setSizes([520, 270])
+        outer_layout.addWidget(self.detail_console_splitter, 1)
+        self.console_panel = console_panel
 
         workspace = QHBoxLayout()
         workspace.setSpacing(0)
