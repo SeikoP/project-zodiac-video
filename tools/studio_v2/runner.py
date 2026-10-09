@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
-from typing import Sequence
+from typing import Callable, Sequence
 
 from tools.control_plane.errors import ControlPlaneError
 
@@ -35,7 +35,9 @@ def run_structured_command(
         return result
 
     payload = None
-    for line in reversed(result.stderr.splitlines()):
+    # Structured tools may write diagnostics to stderr or stdout. Never lose
+    # JSON details when subprocess returns a non-zero status.
+    for line in reversed((result.stderr + "\n" + result.stdout).splitlines()):
         try:
             candidate = json.loads(line)
         except json.JSONDecodeError:
@@ -63,5 +65,29 @@ def run_structured_command(
             "command": list(command),
             "returncode": result.returncode,
             "stderr": result.stderr[-4000:],
+            "stdout": result.stdout[-4000:],
         },
     )
+
+
+def run_payload_audit_with_cache_recovery(
+    command: Sequence[str], *, cached_plan: bool,
+    rebuild_plan: Callable[[], object],
+) -> bool:
+    """Audit once; rebuild only a mismatched *cached* plan, then audit once more.
+
+    Returns whether a cache repair was performed. Does not mutate Job@5 or
+    rerun voice/timing; a freshly compiled plan must pass without intervention.
+    """
+    def verify() -> None:
+        run_structured_command(command,stage="PLAN",fallback_code="RENDER_PLAN_PAYLOAD_MISMATCH")
+
+    try:
+        verify()
+    except ControlPlaneError as exc:
+        if not cached_plan or exc.code != "RENDER_PLAN_PAYLOAD_MISMATCH":
+            raise
+        rebuild_plan()
+        verify()  # fail closed; never auto-approve a second mismatch
+        return True
+    return False

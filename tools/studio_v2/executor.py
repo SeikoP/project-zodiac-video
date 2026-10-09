@@ -32,7 +32,7 @@ from .pipeline import (
     TIMING,
     VOICE,
 )
-from .runner import run_structured_command
+from .runner import run_structured_command, run_payload_audit_with_cache_recovery
 from .state import save_state
 from .timing import TimingArtifact, ensure_timing_artifact
 from .voice import VoiceArtifact, ensure_voice_artifact
@@ -809,15 +809,36 @@ class StudioV2Executor:
         # Production gate: never treat ZIP validity as evidence of rendered visual
         # parity. Evaluate the exact Authoring IR and executable render plan, even
         # when the cached PLAN step is reused. Fail before expensive video render.
-        run_structured_command(
-            [
-                "node",
-                str(_renderer_dir(workspace) / "scripts" / "audit-payload.mjs"),
-                str(workspace),
-            ],
-            stage="PLAN",
-            fallback_code="RENDER_PLAN_PAYLOAD_MISMATCH",
+        audit_command = [
+            "node",
+            str(_renderer_dir(workspace) / "scripts" / "audit-payload.mjs"),
+            str(workspace),
+        ]
+        recovered_cached_plan = run_payload_audit_with_cache_recovery(
+            audit_command,
+            cached_plan=bool(controller.state.steps[PLAN].reused),
+            rebuild_plan=controller.build_plan,
         )
+        if recovered_cached_plan:
+            plan_hash = _sha256_file(plan_path)
+            graph.record(
+                PLAN.casefold(), PLAN.casefold(), plan_input, plan_path,
+                producer="studio-v2-compiler",
+                producer_version=config.compiler_version,
+                dependencies={
+                    "timing.assembled": timing.output_hash,
+                    "authoring-ir": _sha256_file(workspace / "production.ir.json"),
+                    "design-token": _sha256_file(workspace / "design-token.json"),
+                },
+            )
+            controller.state.mark_done(
+                PLAN,
+                input_hash=plan_input,
+                output_hash=plan_hash,
+                reused=False,
+                cache_reason="PARITY_CACHE_REBUILT",
+            )
+            save_state(workspace, controller.state)
 
         complete_forced_stage(PLAN)
         self._begin_step(RENDER, cancel_event)
