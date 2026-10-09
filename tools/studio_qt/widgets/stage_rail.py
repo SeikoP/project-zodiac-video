@@ -142,9 +142,6 @@ class StageRail(QFrame):
                     state_label += " · cache"
                 elif row.get("cache_reason") == "REBUILT":
                     state_label += " · mới"
-            elif status == "RUNNING" and step in self.progress_units:
-                done, total, unit = self.progress_units[step]
-                state_label += f" · {done}/{total} {unit}"
             self.status_labels[step].setText(state_label)
             self.status_labels[step].setProperty("stageStatus", status)
             self.status_labels[step].style().unpolish(self.status_labels[step])
@@ -153,7 +150,11 @@ class StageRail(QFrame):
             if status == "FAILED" and detail:
                 self._show_activity(step, detail)
             elif status == "RUNNING":
-                self._show_activity(step, self.activities.get(step) or detail)
+                recent = self.activities.get(step) or detail
+                if step in self.progress_units:
+                    done, total, unit = self.progress_units[step]
+                    recent = f"{done}/{total} {unit}" + (f" · {recent}" if recent else "")
+                self._show_activity(step, recent)
             else:
                 self._show_activity(step, "")
             self.buttons[step].setToolTip(f"{number} {title}\n{purpose}\n{state_label}\n{detail}")

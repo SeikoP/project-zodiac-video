@@ -264,13 +264,13 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         window.set_measured_progress("RENDER", 2, 5, "phân đoạn", "Render phân đoạn")
         self.assertEqual(window.progress_bar.value(), 40)
         self.assertIn("2/5 phân đoạn", window.progress_text.text())
-        self.assertIn("2/5 phân đoạn", window.stage_rail.status_labels["RENDER"].text())
+        self.assertIn("2/5 phân đoạn", window.stage_rail.activity_labels["RENDER"].text())
         window.set_active_stage("RENDER", rows[4], percent=None)
         self.assertIn("2/5 phân đoạn", window.progress_text.text())
         window.set_measured_progress("RENDER", 0, 0, "phân đoạn", "Fallback")
         window.set_active_stage("RENDER", rows[4], percent=None)
         self.assertIn("chưa có % đo được", window.progress_text.text())
-        self.assertNotIn("phân đoạn", window.stage_rail.status_labels["RENDER"].text())
+        self.assertNotIn("phân đoạn", window.stage_rail.activity_labels["RENDER"].text())
         window.close()
 
     def test_single_publish_source_preferred_over_legacy_copy(self):

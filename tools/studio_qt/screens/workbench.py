@@ -204,7 +204,7 @@ class WorkbenchScreen(QWidget):
         self.log_view = QPlainTextEdit(objectName="activityLog")
         self.log_view.setReadOnly(True)
         self.log_view.setMaximumBlockCount(3000)
-        self.log_view.setMinimumHeight(280)
+        self.log_view.setMinimumHeight(200)
         self.log_view.setToolTip("Xem 3.000 dòng gần nhất; tất cả dòng được lưu trong studio-gui.log")
         self._highlighter = ConsoleHighlighter(self.log_view.document())
         self._records: list[str] = []
@@ -239,9 +239,9 @@ class WorkbenchScreen(QWidget):
         inspector_row.addStretch(1)
         inspector_row.addWidget(self.rerun_button)
         inspector_row.addWidget(self.media_button)
-        current_layout.insertLayout(current_layout.indexOf(self.log_view), inspector_row)
-        current_layout.insertWidget(current_layout.indexOf(self.log_view), self.detail_body)
-        current_layout.insertWidget(current_layout.indexOf(self.log_view), self.output_path_label)
+        current_layout.insertLayout(current_layout.indexOf(step_divider), inspector_row)
+        current_layout.insertWidget(current_layout.indexOf(step_divider), self.detail_body)
+        current_layout.insertWidget(current_layout.indexOf(step_divider), self.output_path_label)
 
         workspace = QHBoxLayout()
         workspace.setSpacing(0)
