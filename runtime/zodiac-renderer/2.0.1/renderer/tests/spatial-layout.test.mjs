@@ -108,5 +108,8 @@ test('actual eight-scene Job@5 prepares with real font metrics, unchanged timing
     assert.ok(s.entities.find(e=>e.id==='notebook').states.marked.asset.includes('MARKED'));
     const b=entityBounds(s,pen,pen.states.visible,pair.before_frame,props.assets.PROP_PEN),during=entityBounds(s,pen,pen.states.visible,pair.second_frame,props.assets.PROP_PEN);
     assert.ok(Math.hypot(b.x-during.x,b.y-during.y)>24);
+    original.presentation.caption.line_height=.2;
+    await writeFile(join(root,'.runtime/render-plan.json'),JSON.stringify(original));
+    await assert.rejects(()=>prepareRendererProps(root),/CAPTION_OVERFLOW.*ink_height=.*line_height_px=/);
   } finally {await rm(root,{recursive:true,force:true});}
 });
