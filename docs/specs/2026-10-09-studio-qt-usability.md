@@ -6,7 +6,7 @@ UI references: two Stitch ZIPs provided by the user, both using the Obsidian Pro
 
 ## Implemented user journeys
 
-1. **Ready ZIPs** — Home scans `<workspace>/ready/*.zip` (direct children only, excludes symlinks). Select a ZIP in the dropdown, refresh, then click **Nhập ZIP đã chọn**. Ordinary file picker remains a fallback for ZIPs elsewhere. Never import arbitrary folders or silently choose a ZIP.
+1. **Ready ZIPs** — Home scans repository `<repo>/ready/*.zip` and `<workspace>/ready/*.zip` (direct children only, excludes symlinks), preferring the repository path when browsing. Select a ZIP in the dropdown, refresh, then click **Nhập ZIP đã chọn**. Ordinary file picker remains a fallback for ZIPs elsewhere. Never import arbitrary folders or silently choose a ZIP.
 2. **Overview + activity** — Current stage summary and log occupy one Workbench view. Log panel is visible by default, collapsible with Ctrl+L. A per-job UTF-8 append-only `.runtime/studio-gui.log` stores every message delivered to the UI and can be copied in full. Existing CLI/worker messages are still surfaced by the EventBridge.
 3. **Media text** — Files under a job's `out/` can preview UTF-8 `.txt`, `.json`, `.md`, `.log`, `.srt`, `.vtt`, `.ass`, `.csv`, `.yaml`, `.yml`, `.xml`, `.html`. Preview is read-only, text is selectable, and individual previews are limited to 2 MiB to protect the GUI. Files are never edited.
 4. **Single Publish action** — **Sao chép nội dung đăng** provides only caption and hashtags, preferring `out/publish.json` then `publish/publish.json`, with fallback to `publish-copy.txt`. The copied text is ready to paste into TikTok/YouTube; no extra ZIP is required to copy it.

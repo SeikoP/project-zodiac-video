@@ -214,30 +214,42 @@ class ZodiacQtApp(QMainWindow):
         except (OSError, ValueError, TypeError):
             pass
 
+    def _ready_directories(self) -> tuple[Path, ...]:
+        """Repository ready/ is canonical; workspace ready/ is also supported."""
+        directories = (ROOT / "ready", self.workspace / "ready")
+        return tuple(dict.fromkeys(path.resolve() for path in directories))
+
     def _ready_archives(self) -> list[str]:
-        """Only regular ZIP files directly under this workspace's ready/ folder."""
-        ready = self.workspace / "ready"
-        try:
-            paths = (p for p in ready.iterdir() if p.is_file() and not p.is_symlink() and p.suffix.casefold() == ".zip")
-            return [str(p.resolve()) for p in sorted(paths, key=lambda p: (-p.stat().st_mtime, p.name.casefold()))]
-        except OSError:
-            return []
+        """Only regular ZIP files directly inside an approved ready/ directory."""
+        matches: list[Path] = []
+        for ready in self._ready_directories():
+            try:
+                matches.extend(
+                    p for p in ready.iterdir()
+                    if p.is_file() and not p.is_symlink() and p.suffix.casefold() == ".zip"
+                )
+            except OSError:
+                continue
+        return [str(p.resolve()) for p in sorted(matches, key=lambda p: (-p.stat().st_mtime, p.name.casefold()))]
 
     def _refresh_ready_archives(self) -> None:
         self.home.set_ready_packages(self._ready_archives())
 
     def _import_ready_archive(self, raw_path: str) -> None:
-        path = Path(raw_path).resolve()
-        ready = (self.workspace / "ready").resolve()
-        if not path.is_file() or path.parent != ready or path.suffix.casefold() != ".zip":
-            QMessageBox.warning(self, "Gói không hợp lệ", "Chỉ chọn ZIP hiện có trong thư mục ready/ của workspace.")
+        path = Path(raw_path)
+        if (
+            not path.is_file() or path.is_symlink()
+            or path.suffix.casefold() != ".zip"
+            or path.resolve().parent not in self._ready_directories()
+        ):
+            QMessageBox.warning(self, "Gói không hợp lệ", "Chỉ chọn ZIP hiện có trong thư mục ready/ của dự án hoặc workspace.")
             self._refresh_ready_archives()
             return
-        self._run_operation("import", path)
+        self._run_operation("import", path.resolve())
 
     def _choose_archive(self) -> None:
-        ready = self.workspace / "ready"
-        filename, _ = QFileDialog.getOpenFileName(self, "Nhập gói video", str(ready if ready.is_dir() else self.workspace), "Gói video (*.zip);;Tất cả tệp (*)")
+        ready = next((p for p in self._ready_directories() if p.is_dir()), self.workspace)
+        filename, _ = QFileDialog.getOpenFileName(self, "Nhập gói video", str(ready), "Gói video (*.zip);;Tất cả tệp (*)")
         if not filename:
             return
         self._run_operation("import", Path(filename))

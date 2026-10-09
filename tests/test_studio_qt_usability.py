@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication
@@ -53,6 +54,23 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             self.assertEqual({Path(p).name for p in app._ready_archives()}, {"a.zip", "B.ZIP"})
             self.assertEqual(app.home.ready_picker.count(), 2)
             app.close()
+
+    def test_repo_ready_folder_is_also_discovered(self):
+        from tools.studio_qt.app import ZodiacQtApp
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            repo_ready = base / "ready"
+            repo_ready.mkdir()
+            (repo_ready / "repo.zip").write_bytes(b"zip-marker")
+            (base / "workspace" / "ready").mkdir(parents=True)
+            (base / "workspace" / "ready" / "local.zip").write_bytes(b"zip-marker")
+            with patch("tools.studio_qt.app.ROOT", base):
+                window = ZodiacQtApp(workspace=base / "workspace")
+                self.assertEqual(
+                    {Path(x).name for x in window._ready_archives()},
+                    {"repo.zip", "local.zip"}
+                )
+                window.close()
 
     def test_log_is_visible_inside_overview_and_preserved_per_job(self):
         from tools.studio_qt.screens.workbench import WorkbenchScreen
