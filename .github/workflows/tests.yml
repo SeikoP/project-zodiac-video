@@ -18,16 +18,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install Qt Linux runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libegl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0
       - name: Install Zodiac and test dependencies
         run: python -m pip install -e . pytest
-      - name: Verify the GUI launcher
-        run: |
-          command -v zodiac
-          python -c "from tools.zodiac_qt import main; from tools.studio_qt.app import ZodiacQtApp; assert callable(main) and ZodiacQtApp"
       - name: Compile Python
         run: python -m compileall -q tools tests
       - name: Unit tests
         run: python -m unittest discover -s tests -v
+      - name: Verify the GUI launcher
+        run: |
+          command -v zodiac
+          python -c "from tools.zodiac_qt import main; from tools.studio_qt.app import ZodiacQtApp; assert callable(main) and ZodiacQtApp"
 
   renderer-smoke:
     runs-on: ubuntu-latest
