@@ -7,5 +7,6 @@ class WorkerEventBridge(QObject):
     event_received = Signal(str, dict)
     log_received = Signal(str, str)
     native_log_received = Signal(str, str, str)
+    native_progress = Signal(str, int, int, str, str)
     operation_finished = Signal(str, object)
     preflight_update = Signal(str, object)

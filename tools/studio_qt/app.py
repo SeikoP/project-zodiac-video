@@ -77,6 +77,7 @@ class ZodiacQtApp(QMainWindow):
         self.bridge.event_received.connect(self._on_legacy_event)
         self.bridge.log_received.connect(self._on_log)
         self.bridge.native_log_received.connect(self._on_native_log)
+        self.bridge.native_progress.connect(self._on_native_progress)
         self.bridge.operation_finished.connect(self._on_operation_finished)
         self.bridge.preflight_update.connect(self._on_preflight_update)
         self.mode = "legacy"
@@ -441,6 +442,22 @@ class ZodiacQtApp(QMainWindow):
             self.workbench.append_activity(line, channel=channel, stage=stage)
             self.workbench.set_stage_activity(stage, line)
 
+    @Slot(str, int, int, str, str)
+    def _on_native_progress(self, stage: str, completed: int, total: int, unit: str, label: str) -> None:
+        if self.workbench is None:
+            return
+        self.workbench.set_measured_progress(stage, completed, total, unit, label)
+        if total == 0:
+            self.workbench.append_activity(
+                f"Đang chạy chế độ render toàn bộ · không thể dùng tiến độ phân đoạn",
+                channel="progress", stage=stage,
+            )
+        elif completed == total or completed == 1:
+            self.workbench.append_activity(
+                f"{label}: {completed}/{total} {unit} đã xử lý",
+                channel="progress", stage=stage,
+            )
+
     def _start(self, *, resume: bool, rerun: str | None = None) -> None:
         job = self._active_job()
         if job is None or self.busy or self.pipeline_running:
@@ -463,6 +480,8 @@ class ZodiacQtApp(QMainWindow):
             self.pipeline_running = True
         else:
             self.v2_session.cancel_event.clear()
+            if self.workbench:
+                self.workbench.reset_measured_progress()
             config = ExecutorConfig(
                 voice_profile=self.settings["voice"],
                 tts_settings={"mode": "v3turbo", "vieneu_url": TTS_URL, "tts_root": TTS_ROOT, "scene_gap_ms": 0.0},
@@ -479,7 +498,11 @@ class ZodiacQtApp(QMainWindow):
                     from tools.zodiac_local import observe_subprocess_output
                     subprocess_observer = lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)
                     native_observer = lambda line, channel, stage: self.bridge.native_log_received.emit(line, channel, stage)
-                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer):
+                    unit_observer = lambda stage, complete, total, unit, label: self.bridge.native_progress.emit(
+                        stage, complete, total, unit, label
+                    )
+                    from tools.studio_v2.progress import observe_unit_progress
+                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer), observe_unit_progress(unit_observer):
                         self.v2_session.run(config, rerun_from=rerun_from)
                     self.bridge.operation_finished.emit("run_done", (None, None, None))
                 except Exception as exc:

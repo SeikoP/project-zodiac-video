@@ -27,6 +27,12 @@ def observe_unit_progress(callback: Observer) -> Iterator[None]:
         _OBSERVER.reset(token)
 
 
+def reset_unit_progress(stage: str, *, unit: str, label: str) -> None:
+    observer = _OBSERVER.get()
+    if observer is not None:
+        observer(stage, 0, 0, unit, label)
+
+
 def tracked_units(items: Sequence[T], *, stage: str, label: str, unit: str) -> Iterator[T]:
     """Update only after the work performed for each yielded unit succeeds.
 

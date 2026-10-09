@@ -97,6 +97,7 @@ class WorkbenchScreen(QWidget):
         header.addWidget(self.more_button)
         root.addLayout(header)
 
+        self._measured_progress: dict[str, tuple[int, int, str, str]] = {}
         self.stage_rail = StageRail()
         self.stage_rail.stage_selected.connect(self.stage_selected)
         self.stage_rail.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
@@ -349,6 +350,11 @@ class WorkbenchScreen(QWidget):
         else:
             self.active_activity.setVisible(False)
 
+        unit_progress = self._measured_progress.get(step) if status == "RUNNING" else None
+        if percent is None and unit_progress is not None:
+            count, total, _unit, _label = unit_progress
+            if total > 0:
+                percent = count / total
         measured = (
             percent is not None and isinstance(percent, (float, int))
             and 0.0 <= float(percent) <= 1.0
@@ -360,8 +366,13 @@ class WorkbenchScreen(QWidget):
         if status == "RUNNING" and measured:
             self.progress_bar.setRange(0, 100)
             self.progress_bar.setValue(round(float(percent) * 100))
+            progress_info = (
+                f" · {unit_progress[0]}/{unit_progress[1]} {unit_progress[2]} đã xử lý"
+                if unit_progress else ""
+            )
             self.progress_text.setText(
-                f"Đang thực hiện: {STAGE_TITLES.get(step, step)} · {round(float(percent)*100)}% đã đo"
+                f"Đang thực hiện: {STAGE_TITLES.get(step, step)} · {round(float(percent)*100)}%"
+                + progress_info
             )
         elif status == "RUNNING":
             self.progress_bar.setRange(0, 100)
@@ -375,6 +386,30 @@ class WorkbenchScreen(QWidget):
         self.detail_title.setText(STAGE_TITLES.get(step, step))
         self.detail_body.setText(str(row.get("message") or row.get("detail") or row.get("status", "")))
         self.rerun_button.setEnabled(step != "PACKAGE" and row.get("status") != "RUNNING")
+
+    def reset_measured_progress(self) -> None:
+        self._measured_progress.clear()
+        self.stage_rail.reset_progress()
+
+    def set_measured_progress(self, stage: str, completed: int, total: int,
+                              unit: str, label: str) -> None:
+        """Only completed real work units supplied by tqdm, never synthetic %."""
+        if stage not in self.stage_rail.buttons:
+            return
+        if total <= 0:
+            self._measured_progress.pop(stage, None)
+            self.stage_rail.reset_progress(stage)
+            return
+        if completed < 0 or completed > total:
+            return
+        old = self._measured_progress.get(stage)
+        if old and old[1] == total and completed < old[0]:
+            return
+        self._measured_progress[stage] = (completed, total, unit, label)
+        self.stage_rail.set_progress(stage, completed, total, unit)
+        row = self.stage_rail.rows.get(stage, {})
+        if self.stage_rail.selected_step == stage and row.get("status") == "RUNNING":
+            self.set_active_stage(stage, row, percent=completed / total)
 
     def set_stage_activity(self, stage: str | None, text: str) -> None:
         """Attach observed output to its stage without guessing a percentage."""

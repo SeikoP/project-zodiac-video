@@ -33,7 +33,7 @@ from .pipeline import (
     VOICE,
 )
 from .runner import run_structured_command, run_payload_audit_with_cache_recovery
-from .progress import tracked_units
+from .progress import tracked_units, reset_unit_progress
 from .state import save_state
 from .timing import TimingArtifact, ensure_timing_artifact
 from .voice import VoiceArtifact, ensure_voice_artifact
@@ -313,6 +313,7 @@ def _render_segmented(
     dependencies: dict[str, str] = {}
 
     def full_render_fallback() -> tuple[Path, dict[str, str], str]:
+        reset_unit_progress("RENDER", unit="phân đoạn", label="Render")
         produced = Path(render_handler(workspace, props_path, output_path))
         if produced.resolve() != output_path.resolve():
             shutil.copy2(produced, output_path)
