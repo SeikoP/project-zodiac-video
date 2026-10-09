@@ -4,6 +4,7 @@
 import {readFile,writeFile,mkdir} from "node:fs/promises";
 import {resolve,join} from "node:path";
 import {fileURLToPath} from "node:url";
+import {isDeepStrictEqual} from "node:util";
 const read = async path => JSON.parse(await readFile(path,"utf8"));
 
 export const auditJob5Payload = (ir, plan) => {
@@ -29,7 +30,11 @@ export const auditJob5Payload = (ir, plan) => {
     }
     for(const id of beforeEvents)if(!afterEvents.has(id))errors.push(`EVENT_DROPPED ${authored.id} ${id}`);
     const prior=authored.spatial_bindings??[],next=rendered.spatial_bindings??[];
-    if(JSON.stringify(prior)!==JSON.stringify(next))errors.push(`SPATIAL_BINDINGS_CHANGED ${authored.id}`);
+    // Python serializes render-plan.json with sort_keys=True. Comparing JSON
+    // strings flags equal bindings as different if field insertion order varies.
+    // Deep structural equality ignores object key order but preserves array order
+    // and rejects actual changes in entity, anchor, relation or distance.
+    if(!isDeepStrictEqual(prior,next))errors.push(`SPATIAL_BINDINGS_CHANGED ${authored.id}`);
     const roles=["story_prop","story_effect"].map(id=>({
       id,authored:inputEntities.has(id),rendered:outputEntities.has(id),
       visibleStates:Object.values(outputEntities.get(id)?.states??{}).filter(x=>x.visible!==false).length,
