@@ -41,20 +41,27 @@ export const findPinnedRemotionCli = async (rendererDir = RENDERER_DIR) => {
 
 // A package.json/bin presence check is insufficient: a truncated install may
 // contain @remotion/cli but miss transitive dependencies such as isexe.
-// Running --version loads the exact CLI entry without rendering or TTS.
+// The CLI's documented "help" subcommand bootstraps all dependencies without rendering.
+// "--version" is an *upgrade* flag, not a general CLI version command; it can
+// print help and return 1 even with healthy dependencies.
 export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}) => {
   const cli = await findPinnedRemotionCli(rendererDir);
   const spawn = opts.spawn ?? spawnSync;
-  const result = spawn(process.execPath,[cli.entry,"--version"],{
+  const result = spawn(process.execPath,[cli.entry,"help"],{
     cwd:cli.rendererDir,windowsHide:true,encoding:"utf8",
     timeout:15000,maxBuffer:1024*1024
   });
-  if(result.error || result.status !== 0) {
+  // A successful process exit alone is not proof that the CLI accepted the
+  // command: verify that the documented help lists the render/still commands.
+  const output = [result.stdout,result.stderr].filter(Boolean).join("\n");
+  const validHelp = /remotion\\s+render\\b/i.test(output) && /remotion\\s+still\\b/i.test(output);
+  if(result.error || result.status !== 0 || !validHelp) {
     const trace = [result.stderr,result.stdout,result.error?.message]
       .filter(Boolean).join("\n").trim().slice(0,1800);
-    const reason = result.error?.code==="ETIMEDOUT" ? "CLI version probe timed out" :
+    const reason = result.error?.code==="ETIMEDOUT" ? "CLI help probe timed out" :
       /MODULE_NOT_FOUND|Cannot find module|ERR_MODULE_NOT_FOUND/.test(trace) ?
-        "CLI dependency tree is incomplete" : "CLI cannot start";
+        "CLI dependency tree is incomplete" : !validHelp && result.status === 0 ?
+      "CLI help output not recognized" : "CLI cannot start";
     const message=reason+": "+(trace || "no diagnostic output")+
       '\nRepair local renderer dependencies in Zodiac Studio, or run: npm install --prefix "'+
       cli.rendererDir+'" --no-audit --no-fund';
