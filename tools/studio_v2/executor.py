@@ -241,19 +241,19 @@ def _require_output(path: Path, *, stage: str, code: str) -> Path:
 
 def _default_render_handler(workspace: Path, props_path: Path, output_path: Path) -> Path:
     renderer = _renderer_dir(workspace)
-    npx = shutil.which("npx.cmd") or shutil.which("npx")
-    if not npx:
+    node = shutil.which("node")
+    if not node:
         raise ControlPlaneError(
             code="RENDERER_EXECUTABLE_MISSING",
             stage="RENDER",
-            message=f"npx is required for zodiac-renderer@{_workspace_renderer_version(workspace)}",
+            message="Node.js is required to run the pinned local Remotion CLI",
         )
     resource_profile = load_resource_profile(workspace)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     run_structured_command(
         [
-            npx,
-            "remotion",
+            node,
+            str(renderer / "scripts" / "local-remotion-cli.mjs"),
             "render",
             "src/index.ts",
             "ZodiacRenderPlan",
@@ -624,6 +624,21 @@ class StudioV2Executor:
                 code="PACKAGE_NOT_READY",
                 stage="PACKAGE",
                 message="import a valid zodiac-job@5 package before running Studio v2",
+            )
+
+        # Check the pinned CLI BEFORE expensive voice/TTS or alignment. The
+        # GUI preflight is advisory; the executor also enforces this guarantee.
+        if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+            node = shutil.which("node")
+            if node is None:
+                raise ControlPlaneError(
+                    code="RENDERER_EXECUTABLE_MISSING", stage="RENDER",
+                    message="Node.js is required for renderer 2.0.1",
+                )
+            run_structured_command(
+                [node, str(_renderer_dir(workspace) / "scripts" / "local-remotion-cli.mjs"), "--check"],
+                stage="RENDER",
+                fallback_code="RENDERER_DEPENDENCY_MISSING",
             )
 
         try:

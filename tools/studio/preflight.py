@@ -218,18 +218,70 @@ class Job5PreflightChecker(PreflightChecker):
                          "Kiểm tra nội dung gói hoặc nhập lại ZIP nguồn.")
         return Check("PACKAGE", "Gói Job@5", True, "Contract và tài nguyên hợp lệ.")
 
+    def renderer_directory(self) -> Path:
+        import json
+        version = "2.0.1"
+        manifest = (self.package_root / "package-manifest.json") if self.package_root else None
+        if manifest and manifest.is_file():
+            try:
+                payload = json.loads(manifest.read_text(encoding="utf-8"))
+                candidate = payload["renderer"]["version"]
+                if candidate in {"2.0.0", "2.0.1"}:
+                    version = candidate
+            except (KeyError, ValueError, OSError, TypeError):
+                pass  # PACKAGE validator handles invalid manifest contents.
+        return ROOT / "runtime" / "zodiac-renderer" / version / "renderer"
+
+    def renderer_check(self) -> Check:
+        import json
+        renderer = self.renderer_directory()
+        source = ("package.json", "scripts/prepare.mjs", "src/index.ts",
+                  "scripts/local-remotion-cli.mjs")
+        # v2.0.0 predates the pinned launcher and remains backward compatible.
+        if renderer.parent.name == "2.0.0":
+            source = source[:-1]
+        missing = [name for name in source if not (renderer / name).is_file()]
+        install_command = f'npm install --prefix "{renderer}"'
+        if missing:
+            return Check("RENDERER", "Renderer " + renderer.parent.name, False,
+                         "Thiếu mã nguồn renderer: " + ", ".join(missing),
+                         "Cập nhật repository rồi kiểm tra lại.", error_code="RENDERER_SOURCE_MISSING")
+        try:
+            configured = json.loads((renderer / "package.json").read_text(encoding="utf-8"))
+            expected = configured["dependencies"]["@remotion/cli"]
+            cli_dir = renderer / "node_modules" / "@remotion" / "cli"
+            installed = json.loads((cli_dir / "package.json").read_text(encoding="utf-8"))
+            bin_value = installed.get("bin")
+            bin_relative = bin_value if isinstance(bin_value,str) else bin_value.get("remotion") if isinstance(bin_value,dict) else None
+            entry = (cli_dir / str(bin_relative)).resolve() if bin_relative else None
+            if installed.get("version") != expected:
+                raise ValueError("Installed @remotion/cli version differs from pinned " + expected)
+            if entry is None or not entry.is_relative_to(cli_dir.resolve()) or not entry.is_file():
+                raise ValueError("Pinned local Remotion CLI executable is missing")
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            return Check("RENDERER", "Renderer " + renderer.parent.name, False,
+                         "Thiếu hoặc sai Remotion CLI cục bộ: " + str(exc),
+                         "Cài đúng renderer: " + install_command, error_code="DEPENDENCY_MISSING")
+        return Check("RENDERER", "Renderer " + renderer.parent.name, True,
+                     "Remotion CLI " + expected + " đã sẵn sàng.")
+
+    def install_commands(self, checks: list[Check]) -> list[list[str]]:
+        commands = []
+        missing = {check.code for check in checks if check.error_code == "DEPENDENCY_MISSING"}
+        if "FASTER_WHISPER" in missing:
+            commands.append(self.install_command())
+        if "RENDERER" in missing:
+            npm = shutil.which("npm.cmd") or shutil.which("npm")
+            if npm is None:
+                raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
+            commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
+                             "--no-audit", "--no-fund"])
+        return commands
+
     def run(self) -> list[Check]:
         checks = super().run()
         checks.append(self._executable("ffprobe", "FFPROBE"))
-        renderer = ROOT / "runtime" / "zodiac-renderer" / "2.0.0" / "renderer"
-        missing = [name for name in ("package.json", "scripts/prepare.mjs", "src/index.ts",
-                                      "node_modules/@remotion/cli/package.json")
-                   if not (renderer / name).is_file()]
-        checks.append(Check(
-            "RENDERER", "Renderer 2", not missing,
-            "Sẵn sàng." if not missing else "Thiếu: " + ", ".join(missing),
-            f'Khôi phục runtime nếu thiếu mã nguồn; cài dependency: npm install --prefix "{renderer}"',
-        ))
+        checks.append(self.renderer_check())
         for check in checks:
             if check.ok:
                 continue

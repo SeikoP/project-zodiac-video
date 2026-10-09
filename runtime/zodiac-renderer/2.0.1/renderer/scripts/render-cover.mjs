@@ -10,8 +10,8 @@ export const renderCover = async (workspace, target) => {
   const dst = resolve(target);
   await mkdir(dirname(dst),{recursive:true});
   const runtime = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-  const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
-  const result = spawnSync(cmd,["remotion","still","src/index.ts","ZodiacCover",dst,`--props=${output}`],{cwd:runtime,stdio:"inherit"});
+  const result = spawnSync(process.execPath,[resolve(runtime,"scripts","local-remotion-cli.mjs"),
+    "still","src/index.ts","ZodiacCover",dst,`--props=${output}`],{cwd:runtime,stdio:"inherit"});
   if (result.error || result.status !== 0) throw new Error(`COVER_RENDER_FAILED status=${result.status} ${result.error??""}`);
   console.info("COVER_RENDER_PASS " + dst);
   return dst;
