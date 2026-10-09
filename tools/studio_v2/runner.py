@@ -35,7 +35,9 @@ def run_structured_command(
         return result
 
     payload = None
-    for line in reversed(result.stderr.splitlines()):
+    # Structured tools may write diagnostics to stderr or stdout. Never lose
+    # JSON details when subprocess returns a non-zero status.
+    for line in reversed((result.stderr + "\n" + result.stdout).splitlines()):
         try:
             candidate = json.loads(line)
         except json.JSONDecodeError:
@@ -63,5 +65,6 @@ def run_structured_command(
             "command": list(command),
             "returncode": result.returncode,
             "stderr": result.stderr[-4000:],
+            "stdout": result.stdout[-4000:],
         },
     )
