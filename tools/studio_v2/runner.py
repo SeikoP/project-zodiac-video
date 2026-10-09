@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
-from typing import Sequence
+from typing import Callable, Sequence
 
 from tools.control_plane.errors import ControlPlaneError
 
@@ -68,3 +68,26 @@ def run_structured_command(
             "stdout": result.stdout[-4000:],
         },
     )
+
+
+def run_payload_audit_with_cache_recovery(
+    command: Sequence[str], *, cached_plan: bool,
+    rebuild_plan: Callable[[], object],
+) -> bool:
+    """Audit once; rebuild only a mismatched *cached* plan, then audit once more.
+
+    Returns whether a cache repair was performed. Does not mutate Job@5 or
+    rerun voice/timing; a freshly compiled plan must pass without intervention.
+    """
+    def verify() -> None:
+        run_structured_command(command,stage="PLAN",fallback_code="RENDER_PLAN_PAYLOAD_MISMATCH")
+
+    try:
+        verify()
+    except ControlPlaneError as exc:
+        if not cached_plan or exc.code != "RENDER_PLAN_PAYLOAD_MISMATCH":
+            raise
+        rebuild_plan()
+        verify()  # fail closed; never auto-approve a second mismatch
+        return True
+    return False
