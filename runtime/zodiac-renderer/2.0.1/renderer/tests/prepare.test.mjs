@@ -232,14 +232,17 @@ test("normal notebook and effect roles still fail if too small",()=>{
 });
 
 test("pen exemption requires trusted asset path, lineage and real visible size",()=>{
-  for(const mutation of [
-    a=>delete a.lineage,
-    a=>a.path="assets/props/notebook.svg",
-    a=>a.category="effect"
+  for(const [mutation,scene] of [
+    [a=>delete a.lineage,"s06"],
+    [a=>a.path="assets/props/notebook.svg","s06"],
+    // Misclassifying the pen as an effect lets S06 (31,250 px²) clear
+    // the 30k effect gate, but S07 (25,300 px²) still gets rejected.
+    [a=>a.category="effect","s07"],
   ]){
     const plan=songTuEightScenes();
     mutation(plan.assets.PROP_PEN);
-    assert.throws(()=>validateVisualRoleSizes(plan),/VISUAL_ROLE_TOO_SMALL scene=s06 entity=pen/);
+    assert.throws(()=>validateVisualRoleSizes(plan),
+      new RegExp("VISUAL_ROLE_TOO_SMALL scene="+scene+" entity=pen"));
   }
   for(const size of [{width:190,height:125},{width:220,height:105},{width:200,height:110}]){
     const plan=songTuEightScenes();
