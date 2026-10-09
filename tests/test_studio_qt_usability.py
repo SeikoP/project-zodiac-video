@@ -199,6 +199,45 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             self.assertIn("Renderer timeout", window.workbench.log_view.toPlainText())
             window.close()
 
+    def test_real_seven_step_progress_is_measured_by_completed_steps(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        from tools.studio_qt.widgets.stage_rail import STAGES
+        w = WorkbenchScreen()
+        rows = [{"step": step, "status": "DONE", "reused": step == "RENDER"}
+                for step, *_ in STAGES[:6]]
+        rows.append({"step": "OUTPUT", "status": "RUNNING", "progress": None})
+        w.set_rows(rows)
+        self.assertEqual(w.pipeline_progress_bar.value(), 86)
+        self.assertIn("86%", w.pipeline_progress_label.text())
+        self.assertIn("không ước lượng thời gian", w.pipeline_progress_label.text())
+        self.assertIn("cache", w.stage_rail.status_labels["RENDER"].text())
+        w.set_active_stage("OUTPUT", rows[-1], percent=None)
+        self.assertFalse(w.progress_bar.isVisibleTo(w))
+        self.assertNotIn("50%", w.progress_text.text())
+        self.assertIn("chưa có % đo được", w.progress_text.text())
+        w.set_stage_activity("OUTPUT", "SPATIAL_BINDINGS_VALID")
+        self.assertIn("SPATIAL_BINDINGS_VALID", w.stage_rail.activity_labels["OUTPUT"].text())
+        self.assertIn("SPATIAL_BINDINGS_VALID", w.active_activity.text())
+        w.close()
+
+    def test_stage_cards_are_actionable_and_show_true_failure_reason(self):
+        from tools.studio_qt.widgets.stage_rail import StageRail
+        rail = StageRail()
+        selected = []
+        rail.stage_selected.connect(selected.append)
+        rail.set_rows([
+            {"step": "RENDER", "status": "FAILED", "detail": "RENDER_FAILED: segment S04"},
+            {"step": "VOICE", "status": "DONE", "reused": True},
+        ])
+        self.assertIn("Có lỗi", rail.status_labels["RENDER"].text())
+        self.assertIn("RENDER_FAILED", rail.activity_labels["RENDER"].toolTip())
+        self.assertIn("cache", rail.status_labels["VOICE"].text())
+        self.assertIn("Tạo lời đọc", rail.descriptions["VOICE"].text())
+        rail.buttons["RENDER"].click()
+        self.assertEqual(selected, ["RENDER"])
+        self.assertEqual(rail.selected_step, "RENDER")
+        rail.close()
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

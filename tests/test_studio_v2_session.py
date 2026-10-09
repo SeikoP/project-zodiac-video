@@ -163,6 +163,15 @@ class StudioV2SessionTests(unittest.TestCase):
                 session._job / "out" / "zodiac-story.mp4",
             )
 
+    def test_running_job5_stage_does_not_fabricate_half_complete_progress(self):
+        state = PipelineStateV2(workspace_id="staged")
+        state.steps["OUTPUT"].status = "RUNNING"
+        rows = v2_pipeline_rows(state)
+        running = next(r for r in rows if r["step"] == "OUTPUT")
+        self.assertIsNone(running["progress"])
+        self.assertEqual(running["status"], "RUNNING")
+        self.assertEqual(sum(r["status"] == "DONE" for r in rows), 0)
+
     def test_structured_error_detail_is_presented_directly(self):
         state = PipelineStateV2(workspace_id="scorpio-two-versions")
         state.mark_failed(
