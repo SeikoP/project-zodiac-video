@@ -124,6 +124,8 @@ class StageRail(QFrame):
             self.progress_units.clear()
         else:
             self.progress_units.pop(step, None)
+        # A fallback must also remove stale x/y text from the visible stage row.
+        self.set_rows(list(self.rows.values()))
 
     def _show_activity(self, step: str, message: str) -> None:
         label = self.activity_labels[step]
