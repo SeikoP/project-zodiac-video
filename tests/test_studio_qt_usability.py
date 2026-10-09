@@ -158,6 +158,47 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             )
             self.assertEqual(publish_text_for_job(root), "")
 
+    def test_auto_preflight_always_writes_a_final_summary(self):
+        from tools.studio.preflight import Check
+        from tools.studio_qt.app import ZodiacQtApp
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        with tempfile.TemporaryDirectory() as folder:
+            window = ZodiacQtApp(workspace=Path(folder))
+            window.workbench = WorkbenchScreen()
+            window.workbench.set_log_file(Path(folder) / "studio-gui.log")
+            window._preflight_origin = "tự động"
+            window._on_preflight_update("start", "RENDERER")
+            self.assertIn("RENDERER", window.workbench.environment_status.toolTip())
+            window._on_preflight_update("result", Check("RENDERER", "Renderer", True, "CLI sẵn sàng"))
+            window._on_operation_finished("preflight", (True, "", False, True))
+            self.assertIn("1/1 PASS", window.workbench.log_view.toPlainText())
+            self.assertIn("1/1 PASS", window.workbench.environment_status.text())
+            self.assertFalse(window.busy)
+            window.close()
+
+    def test_manual_preflight_returns_all_failures_and_interrupted_check_is_reported(self):
+        from tools.studio.preflight import Check
+        from tools.studio_qt.app import ZodiacQtApp
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        with tempfile.TemporaryDirectory() as folder:
+            window = ZodiacQtApp(workspace=Path(folder))
+            window.workbench = WorkbenchScreen()
+            window.workbench.set_log_file(Path(folder) / "studio-gui.log")
+            window._preflight_origin = "thủ công"
+            window._on_preflight_update("result", Check("NODE", "Node.js", True, "Đã có"))
+            window._on_preflight_update("result", Check("VIENEU", "VieNeu", False, "Không kết nối", "Mở cổng 7860"))
+            with patch("tools.studio_qt.app.QMessageBox.warning") as warning:
+                window._on_operation_finished("preflight", (False, "VieNeu: Không kết nối\nMở cổng 7860", True, True))
+            self.assertEqual(warning.call_count, 1)
+            self.assertIn("VieNeu", warning.call_args.args[2])
+            self.assertIn("1/2 PASS", window.workbench.log_view.toPlainText())
+            window._preflight_results = []
+            window._on_preflight_update("result", Check("PYTHON", "Python", True, "Có"))
+            window._on_operation_finished("preflight", (False, "Renderer timeout", False, False))
+            self.assertIn("bị gián đoạn", window.workbench.log_view.toPlainText())
+            self.assertIn("Renderer timeout", window.workbench.log_view.toPlainText())
+            window.close()
+
     def test_single_publish_source_preferred_over_legacy_copy(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

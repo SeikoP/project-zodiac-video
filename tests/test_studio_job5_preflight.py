@@ -28,6 +28,24 @@ class Job5PreflightTests(unittest.TestCase):
             self.assertIn("narration", result.message)
             self.assertIn("nhập lại", result.details)
 
+    def test_environment_progress_reports_each_real_check_before_completion(self):
+        checker = Job5PreflightChecker(FIXTURE)
+        starts = []
+        results = []
+        with patch.object(checker, "_python", return_value=Check("PYTHON", "Python", True)), \
+             patch.object(checker, "_faster_whisper", return_value=Check("FASTER_WHISPER", "ASR", True)), \
+             patch.object(checker, "_executable", side_effect=lambda name, code: Check(code, name, True)), \
+             patch.object(checker, "_package", return_value=Check("PACKAGE", "Gói video", True)), \
+             patch.object(checker, "_vieneu", return_value=Check("VIENEU", "VieNeu", False, "Chưa kết nối")), \
+             patch.object(checker, "renderer_check", return_value=Check("RENDERER", "Renderer", True)):
+            checks = checker.run(on_start=starts.append, on_check=results.append)
+        self.assertEqual(len(checks), 9)
+        self.assertEqual([item.code for item in results], [item.code for item in checks])
+        self.assertEqual(len(starts), 9)
+        self.assertEqual(starts[-1], "RENDERER")
+        self.assertFalse(all(item.ok for item in checks))
+        self.assertEqual(next(item for item in checks if item.code == "VIENEU").message, "Chưa kết nối")
+
     def test_dependency_failure_has_install_command_for_current_python(self):
         checker = Job5PreflightChecker(FIXTURE)
         with patch.object(checker, "_module_available", return_value=False), \
