@@ -637,21 +637,30 @@ class ZodiacQtApp(QMainWindow):
             return
         if name == "preflight":
             self.busy = False
-            ready, detail, show_result = result
+            ready, detail, show_result, *extras = result
+            completed = bool(extras[0]) if extras else True
             observed = list(self._preflight_results)
             failed = sum(not item.ok for item in observed)
             passed = len(observed) - failed
-            label = (
-                f"[DONE] Kiểm tra môi trường {self._preflight_origin}: {passed}/{len(observed)} PASS"
-                if ready else
-                f"[FAILED] Kiểm tra môi trường {self._preflight_origin}: {passed}/{len(observed)} PASS, {failed} chưa đạt"
-            )
-            if not observed:
-                label = f"[ERROR] Kiểm tra môi trường không hoàn tất: {detail or 'Không nhận được kết quả.'}"
-            self.workbench.append_activity(label, channel="state" if observed else "error", stage="ENV")
+            if not completed or not observed:
+                label = (
+                    f"[ERROR] Kiểm tra môi trường {self._preflight_origin} bị gián đoạn "
+                    f"sau {len(observed)} mục: {detail or 'Không nhận được kết quả.'}"
+                )
+                channel = "error"
+            else:
+                label = (
+                    f"[DONE] Kiểm tra môi trường {self._preflight_origin}: {passed}/{len(observed)} PASS"
+                    if ready else
+                    f"[FAILED] Kiểm tra môi trường {self._preflight_origin}: "
+                    f"{passed}/{len(observed)} PASS, {failed} chưa đạt"
+                )
+                channel = "state"
+            self.workbench.append_activity(label, channel=channel, stage="ENV")
             self.workbench.set_environment_state(
                 ready, detail or label,
-                completed=len(observed) if observed else None, failed=failed,
+                completed=len(observed) if observed and completed else None,
+                failed=failed,
             )
             if show_result:
                 overview = "\n".join(
@@ -789,10 +798,10 @@ class ZodiacQtApp(QMainWindow):
                     for item in checks if not item.ok
                 )
                 self.bridge.operation_finished.emit(
-                    "preflight", (all(item.ok for item in checks), detail, show_result)
+                    "preflight", (all(item.ok for item in checks), detail, show_result, True)
                 )
             except Exception as exc:
-                self.bridge.operation_finished.emit("preflight", (False, str(exc), show_result))
+                self.bridge.operation_finished.emit("preflight", (False, str(exc), show_result, False))
 
         threading.Thread(target=check, daemon=True).start()
 
