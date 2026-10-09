@@ -45,24 +45,27 @@ def stylesheet() -> str:
         QPushButton#primary:hover {{ background: {c['primary_hover']}; border-color: {c['primary_hover']}; }}
         QPushButton#danger {{ color: {c['danger']}; background: {c['surface']}; border-color: {c['danger']}; font-weight: 650; }}
         QPushButton#danger:hover {{ background: #332625; }}
-        QFrame#stageRail {{ background: {c['surface']}; border: 1px solid {c['border']}; border-radius: 9px; }}
-        QFrame#stageCard {{ border-radius: 8px; border: 1px solid #323B3B; background: #1A2121; }}
-        QFrame#stageCard:hover {{ background: {c['surface_hover']}; }}
-        QFrame#stageCard[selected="true"] {{ background: #242B2A; border: 1px solid {c['primary']}; border-left: 3px solid {c['primary']}; }}
-        QFrame#stageCard[stageStatus="RUNNING"] {{ border-left: 3px solid {c['primary']}; }}
-        QFrame#stageCard[stageStatus="FAILED"] {{ border-left: 3px solid {c['danger']}; }}
-        QFrame#stageCard[stageStatus="DONE"] {{ border-left: 2px solid {c['success']}; }}
-        QToolButton#stage {{ min-height: 19px; max-height: 25px; padding: 1px 2px; text-align: left; background: transparent; border: 0; color: {c['text']}; font-weight: 650; font-size: 10pt; }}
-        QToolButton#stage:hover, QToolButton#stage:checked {{ background: transparent; border: 0; color: {c['primary']}; }}
+        QFrame#stageRailFlat {{ background: transparent; border: 0; }}
+        QWidget#stageLine {{ background: transparent; border: 0; }}
+        QWidget#stageLine[selected="true"] {{ background: #242B2A; border-left: 2px solid {c['primary']}; }}
+        QFrame#stageDivider {{ color: {c['border']}; background: {c['border']}; max-height: 1px; border: 0; }}
+        QFrame#workspaceDivider {{ background: {c['border']}; color: {c['border']}; max-height: 1px; border: 0; }}
+        QFrame#workspaceVerticalDivider {{ background: {c['border']}; color: {c['border']}; max-width: 1px; border: 0; }}
+        QWidget#workspaceMain {{ background: transparent; border: 0; }}
+        QWidget#workspaceMain QLabel#status {{ padding: 2px 0; border: 0; background: transparent; }}
+        QToolButton#stage {{ min-height: 26px; max-height: 30px; padding: 0; border: 0; text-align: left; background: transparent; color: {c['text']}; font-weight: 650; }}
+        QToolButton#stage:hover, QToolButton#stage:checked {{ border: 0; background: transparent; color: {c['primary']}; }}
         QLabel#stagePurpose {{ color: {c['muted']}; font-size: 8pt; }}
-        QLabel#stageActivity {{ color: {c['muted']}; font-size: 8pt; font-family: Consolas, monospace; }}
-        QLabel#stageState {{ color: {c['muted']}; font-weight: 650; font-size: 9pt; }}
+        QLabel#stageActivity {{ color: {c['muted']}; font-size: 8pt; }}
+        QLabel#stageState {{ color: {c['muted']}; font-size: 8pt; }}
         QLabel#stageState[stageStatus="DONE"] {{ color: {c['success']}; }}
         QLabel#stageState[stageStatus="RUNNING"] {{ color: {c['primary']}; }}
         QLabel#stageState[stageStatus="FAILED"] {{ color: {c['danger']}; }}
-        QLabel#activeActivity {{ background: #202926; color: {c['success']}; border-left: 2px solid {c['success']}; padding: 5px 8px; font-size: 9pt; }}
-        QProgressBar#pipelineProgress {{ min-height: 13px; max-height: 13px; background: #303737; border: 1px solid #465351; border-radius: 6px; }}
-        QProgressBar#pipelineProgress::chunk {{ background: {c['success']}; border-radius: 5px; }}
+        QLabel#activeActivity {{ color: {c['success']}; background: transparent; border: 0; border-left: 2px solid {c['success']}; padding: 2px 6px; }}
+        QLabel#detailSubheading {{ color: {c['text']}; font-weight: 650; }}
+        QLabel#outputPathFlat {{ color: {c['muted']}; font-family: Consolas, monospace; font-size: 8pt; }}
+        QProgressBar#pipelineProgress {{ min-height: 13px; max-height: 13px; background: #303737; border: 0; }}
+        QProgressBar#pipelineProgress::chunk {{ background: {c['success']}; }}
         QProgressBar {{ min-height: 9px; max-height: 9px; border: 0; border-radius: 4px; background: {c['surface_alt']}; text-visible: false; }}
         QProgressBar::chunk {{ border-radius: 4px; background: {c['primary']}; }}
         QPlainTextEdit {{ background: #15191A; color: #D9DED9; border: 1px solid {c['border']}; border-radius: 7px; font-family: Consolas, monospace; font-size: 9pt; selection-background-color: {c['primary']}; selection-color: {c['primary_text']}; }}
