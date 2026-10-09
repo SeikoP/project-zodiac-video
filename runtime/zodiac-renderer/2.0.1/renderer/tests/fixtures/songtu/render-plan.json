@@ -1,0 +1,1961 @@
+{
+  "assets": {
+    "CHAR_CLASSMATE_CONFRONT": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "round_soft",
+        "crop_id": null,
+        "expression_id": "exasperated",
+        "face_profile_id": "freckled",
+        "hair_id": "high-ponytail",
+        "identity_id": "classmate-songtu-v4",
+        "identity_signature": "962fbeead081f616",
+        "outfit_id": "generic-soft-stripes",
+        "pose_id": "confront",
+        "shirt_color": "#E97A66",
+        "shirt_color_id": "coral"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "classmate confront confront exasperated",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "chubby-round"
+      },
+      "path": "assets/characters/classmate-confront.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "CHAR_CLASSMATE_LISTEN": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "round_soft",
+        "crop_id": null,
+        "expression_id": "deadpan",
+        "face_profile_id": "freckled",
+        "hair_id": "high-ponytail",
+        "identity_id": "classmate-songtu-v4",
+        "identity_signature": "962fbeead081f616",
+        "outfit_id": "generic-soft-stripes",
+        "pose_id": "neutral",
+        "shirt_color": "#E97A66",
+        "shirt_color_id": "coral"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "classmate listen neutral deadpan",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "chubby-round"
+      },
+      "path": "assets/characters/classmate-listen.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "CHAR_GEMINI_EXPLAIN": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "standard_compact",
+        "crop_id": null,
+        "expression_id": "side-eye",
+        "face_profile_id": "wide-set",
+        "hair_id": "asym-bang",
+        "identity_id": "gemini-songtu-v4",
+        "identity_signature": "21ad2fe83fdf41a3",
+        "outfit_id": "gemini-basic-clean",
+        "pose_id": "explain",
+        "shirt_color": "#8EC0B9",
+        "shirt_color_id": "teal"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "gemini explain explain side-eye",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "female-messy-bun"
+      },
+      "path": "assets/characters/gemini-explain.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "CHAR_GEMINI_LISTEN": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "standard_compact",
+        "crop_id": null,
+        "expression_id": "neutral",
+        "face_profile_id": "wide-set",
+        "hair_id": "asym-bang",
+        "identity_id": "gemini-songtu-v4",
+        "identity_signature": "21ad2fe83fdf41a3",
+        "outfit_id": "gemini-basic-clean",
+        "pose_id": "neutral",
+        "shirt_color": "#8EC0B9",
+        "shirt_color_id": "teal"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "gemini listen neutral neutral",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "female-messy-bun"
+      },
+      "path": "assets/characters/gemini-listen.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "CHAR_GEMINI_SURPRISED": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "standard_compact",
+        "crop_id": null,
+        "expression_id": "panic",
+        "face_profile_id": "wide-set",
+        "hair_id": "asym-bang",
+        "identity_id": "gemini-songtu-v4",
+        "identity_signature": "21ad2fe83fdf41a3",
+        "outfit_id": "gemini-basic-clean",
+        "pose_id": "recoil",
+        "shirt_color": "#8EC0B9",
+        "shirt_color_id": "teal"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "gemini surprised recoil panic",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "female-messy-bun"
+      },
+      "path": "assets/characters/gemini-surprised.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "CHAR_GEMINI_WRITE": {
+      "category": "character",
+      "character_blueprint": {
+        "accessory_id": "none",
+        "body_profile": "standard_compact",
+        "crop_id": null,
+        "expression_id": "relieved",
+        "face_profile_id": "wide-set",
+        "hair_id": "asym-bang",
+        "identity_id": "gemini-songtu-v4",
+        "identity_signature": "21ad2fe83fdf41a3",
+        "outfit_id": "gemini-basic-clean",
+        "pose_id": "write",
+        "shirt_color": "#8EC0B9",
+        "shirt_color_id": "teal"
+      },
+      "lineage": {
+        "mode": "composite",
+        "semantic_intent": "gemini write write relieved",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "female-messy-bun"
+      },
+      "path": "assets/characters/gemini-write.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "EFFECT_EXCLAMATION": {
+      "category": "effect",
+      "lineage": {
+        "mode": "semantic_variant",
+        "semantic_intent": "classmate surprise impact",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "offer-impact"
+      },
+      "path": "assets/effects/exclamation.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "EFFECT_QUESTION": {
+      "category": "effect",
+      "lineage": {
+        "mode": "semantic_variant",
+        "semantic_intent": "Gemini confusion reaction",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "question-accent"
+      },
+      "path": "assets/effects/question.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "ENV_CLASSROOM_DESK_EDGE": {
+      "category": "environment",
+      "lineage": {
+        "mode": "direct_copy",
+        "semantic_intent": "bedroom structural grounding cue",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "classroom-desk-edge"
+      },
+      "path": "assets/environment/classroom-desk-edge.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "ENV_CLASSROOM_WHITEBOARD": {
+      "category": "environment",
+      "lineage": {
+        "mode": "direct_copy",
+        "semantic_intent": "bedroom structural rear cue",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "classroom-whiteboard"
+      },
+      "path": "assets/environment/classroom-whiteboard.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "ENV_CLASSROOM_WINDOW": {
+      "category": "environment",
+      "lineage": {
+        "mode": "direct_copy",
+        "semantic_intent": "bedroom structural rear cue",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "classroom-window"
+      },
+      "path": "assets/environment/classroom-window.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "PROP_NOTEBOOK": {
+      "category": "prop",
+      "lineage": {
+        "mode": "native-library",
+        "semantic_intent": "notebook story prop",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "props/notebook.svg"
+      },
+      "path": "assets/props/notebook.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "PROP_NOTEBOOK_MARKED": {
+      "category": "prop",
+      "lineage": {
+        "mode": "semantic_variant",
+        "semantic_intent": "two handwritten edits and circled option B, derived from existing native notebook; original silhouette preserved",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "notebook"
+      },
+      "path": "assets/props/notebook-marked.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    },
+    "PROP_PEN": {
+      "category": "prop",
+      "lineage": {
+        "mode": "native-library",
+        "semantic_intent": "pen story prop",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "props/pen.svg"
+      },
+      "path": "assets/props/pen.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4"
+    }
+  },
+  "format": "zodiac-render-plan@1",
+  "fps": 24,
+  "presentation": {
+    "caption": {
+      "color": "#2F3C44",
+      "font_family": "Patrick Hand",
+      "font_size_px": 84,
+      "font_weight": 400,
+      "highlight_color": "#E97A66",
+      "max_lines": 2,
+      "safe_zone": {
+        "height": 360,
+        "width": 920,
+        "x": 80,
+        "y": 1470
+      }
+    },
+    "ink": "#2F3C44",
+    "paper": "#F6F0E6",
+    "watermark": {
+      "anchor": "top-left",
+      "enabled": true,
+      "font_family": "sans-serif",
+      "font_size_px": 29,
+      "font_weight": 400,
+      "layer": 30,
+      "offset_px": {
+        "x": 68,
+        "y": 40
+      },
+      "opacity": 0.45,
+      "text": "✦ bungmoto"
+    }
+  },
+  "scenes": [
+    {
+      "captions": [
+        {
+          "end_frame": 30,
+          "start_frame": 0,
+          "text": "Song Tử đúng là có cái tài..."
+        },
+        {
+          "end_frame": 67,
+          "start_frame": 30,
+          "text": "mới nói một câu mà cả nhóm tưởng"
+        },
+        {
+          "end_frame": 79,
+          "start_frame": 67,
+          "text": "vừa đổi phe."
+        }
+      ],
+      "duration_frames": 84,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "surprised",
+          "states": {
+            "surprised": {
+              "asset": "CHAR_GEMINI_SURPRISED",
+              "transform": {
+                "height": 800,
+                "width": 578,
+                "x": 251,
+                "y": 190
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "question_effect",
+          "initial_state": "hidden",
+          "states": {
+            "active": {
+              "asset": "EFFECT_QUESTION",
+              "transform": {
+                "height": 205,
+                "width": 270,
+                "x": 640,
+                "y": 275
+              },
+              "visible": true
+            },
+            "hidden": {
+              "asset": "EFFECT_QUESTION",
+              "transform": {
+                "height": 205,
+                "width": 270,
+                "x": 640,
+                "y": 275
+              },
+              "visible": false
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 283,
+                "width": 458,
+                "x": 126,
+                "y": 278
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 270,
+                "width": 257,
+                "x": 764,
+                "y": 238
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 306,
+                "width": 736,
+                "x": 102,
+                "y": 1148
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "CHAR_GEMINI_SURPRISED",
+          "asset_before": "CHAR_GEMINI_SURPRISED",
+          "end_frame": 80,
+          "event_id": "s01_e01",
+          "motion": "small-bounce",
+          "preferred_start_frame": 72,
+          "scene_id": "s01",
+          "start_frame": 72,
+          "state_after": "surprised",
+          "state_before": "surprised",
+          "target": "gemini"
+        },
+        {
+          "asset_after": "EFFECT_QUESTION",
+          "asset_before": "EFFECT_QUESTION",
+          "end_frame": 37,
+          "event_id": "s01_e02",
+          "motion": "pop-in",
+          "preferred_start_frame": 30,
+          "scene_id": "s01",
+          "start_frame": 30,
+          "state_after": "active",
+          "state_before": "hidden",
+          "target": "question_effect"
+        },
+        {
+          "asset_after": "EFFECT_QUESTION",
+          "asset_before": "EFFECT_QUESTION",
+          "end_frame": 81,
+          "event_id": "s01_e03",
+          "motion": "fade-out",
+          "preferred_start_frame": 72,
+          "scene_id": "s01",
+          "start_frame": 72,
+          "state_after": "hidden",
+          "state_before": "active",
+          "target": "question_effect"
+        }
+      ],
+      "id": "s01",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 84,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "question_effect",
+          "max_distance_px": 410,
+          "relation": "emitted_by"
+        }
+      ],
+      "start_frame": 0
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 103,
+          "start_frame": 84,
+          "text": "Đang bàn thuyết trình,"
+        },
+        {
+          "end_frame": 132,
+          "start_frame": 108,
+          "text": "cả nhóm chọn phương án A."
+        },
+        {
+          "end_frame": 156,
+          "start_frame": 140,
+          "text": "Song Tử gật đầu:"
+        },
+        {
+          "end_frame": 193,
+          "start_frame": 156,
+          "text": "“Ừ, nghe ổn đó.” Năm phút sau,"
+        },
+        {
+          "end_frame": 220,
+          "start_frame": 199,
+          "text": "có đứa đưa thêm thông tin."
+        },
+        {
+          "end_frame": 249,
+          "start_frame": 226,
+          "text": "Song Tử nhìn lại tờ giấy:"
+        },
+        {
+          "end_frame": 289,
+          "start_frame": 249,
+          "text": "“Khoan, vậy phương án B có vẻ hợp hơn.”"
+        }
+      ],
+      "duration_frames": 214,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "listen",
+          "states": {
+            "listen": {
+              "asset": "CHAR_GEMINI_LISTEN",
+              "transform": {
+                "height": 457,
+                "width": 330,
+                "x": 140,
+                "y": 462
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "classmate",
+          "initial_state": "listen",
+          "states": {
+            "listen": {
+              "asset": "CHAR_CLASSMATE_LISTEN",
+              "transform": {
+                "height": 457,
+                "width": 330,
+                "x": 610,
+                "y": 462
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "hidden",
+          "states": {
+            "hidden": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 244,
+                "width": 260,
+                "x": 410,
+                "y": 623
+              },
+              "visible": false
+            },
+            "visible": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 244,
+                "width": 260,
+                "x": 410,
+                "y": 623
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 306,
+                "width": 494,
+                "x": 112,
+                "y": 300
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 292,
+                "width": 277,
+                "x": 750,
+                "y": 260
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 326,
+                "width": 784,
+                "x": 128,
+                "y": 1136
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "PROP_NOTEBOOK",
+          "asset_before": "PROP_NOTEBOOK",
+          "end_frame": 93,
+          "event_id": "s02_e01",
+          "motion": "fade-in",
+          "preferred_start_frame": 84,
+          "scene_id": "s02",
+          "start_frame": 84,
+          "state_after": "visible",
+          "state_before": "hidden",
+          "target": "notebook"
+        },
+        {
+          "asset_after": "CHAR_GEMINI_LISTEN",
+          "asset_before": "CHAR_GEMINI_LISTEN",
+          "end_frame": 118,
+          "event_id": "s02_e02",
+          "motion": "subtle-tilt",
+          "preferred_start_frame": 108,
+          "scene_id": "s02",
+          "start_frame": 108,
+          "state_after": "listen",
+          "state_before": "listen",
+          "target": "gemini"
+        }
+      ],
+      "id": "s02",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 214,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "notebook",
+          "max_distance_px": 310,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 84
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 319,
+          "start_frame": 298,
+          "text": "Cả bàn quay phắt sang."
+        },
+        {
+          "end_frame": 358,
+          "start_frame": 319,
+          "text": "“Ủa? Mới nãy mày còn theo A mà!”"
+        },
+        {
+          "end_frame": 389,
+          "start_frame": 358,
+          "text": "“Mới nãy tao chưa nghe phần này!”"
+        }
+      ],
+      "duration_frames": 98,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "explain",
+          "states": {
+            "explain": {
+              "asset": "CHAR_GEMINI_EXPLAIN",
+              "transform": {
+                "height": 346,
+                "width": 250,
+                "x": 735,
+                "y": 617
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "classmate",
+          "initial_state": "listen",
+          "states": {
+            "listen": {
+              "asset": "CHAR_CLASSMATE_LISTEN",
+              "transform": {
+                "height": 360,
+                "width": 250,
+                "x": 220,
+                "y": 790
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 488,
+                "width": 520,
+                "x": 280,
+                "y": 356
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 296,
+                "width": 478,
+                "x": 66,
+                "y": 292
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 282,
+                "width": 269,
+                "x": 704,
+                "y": 252
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 320,
+                "width": 768,
+                "x": 180,
+                "y": 1140
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "PROP_NOTEBOOK",
+          "asset_before": "PROP_NOTEBOOK",
+          "end_frame": 308,
+          "event_id": "s03_e01",
+          "motion": "focus-shift",
+          "preferred_start_frame": 298,
+          "scene_id": "s03",
+          "start_frame": 298,
+          "state_after": "visible",
+          "state_before": "visible",
+          "target": "notebook"
+        },
+        {
+          "asset_after": "CHAR_GEMINI_EXPLAIN",
+          "asset_before": "CHAR_GEMINI_EXPLAIN",
+          "end_frame": 308,
+          "event_id": "s03_e02",
+          "motion": "subtle-tilt",
+          "preferred_start_frame": 298,
+          "scene_id": "s03",
+          "start_frame": 298,
+          "state_after": "explain",
+          "state_before": "explain",
+          "target": "gemini"
+        }
+      ],
+      "id": "s03",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 98,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "notebook",
+          "max_distance_px": 455,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 298
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 413,
+          "start_frame": 396,
+          "text": "Ngỡ thế là xong."
+        },
+        {
+          "end_frame": 453,
+          "start_frame": 418,
+          "text": "Nhưng không. Song Tử lại tự chỉ vào"
+        },
+        {
+          "end_frame": 485,
+          "start_frame": 453,
+          "text": "phương án B: “Mà B cũng có một"
+        },
+        {
+          "end_frame": 509,
+          "start_frame": 485,
+          "text": "chỗ hơi cấn.” “Trời ơi!"
+        },
+        {
+          "end_frame": 538,
+          "start_frame": 516,
+          "text": "Rốt cuộc mày đứng bên nào?”"
+        }
+      ],
+      "duration_frames": 147,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "surprised",
+          "states": {
+            "surprised": {
+              "asset": "CHAR_GEMINI_SURPRISED",
+              "transform": {
+                "height": 457,
+                "width": 330,
+                "x": 610,
+                "y": 462
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "classmate",
+          "initial_state": "confront",
+          "states": {
+            "confront": {
+              "asset": "CHAR_CLASSMATE_CONFRONT",
+              "transform": {
+                "height": 457,
+                "width": 330,
+                "x": 140,
+                "y": 462
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 244,
+                "width": 260,
+                "x": 410,
+                "y": 623
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "story_effect",
+          "initial_state": "hidden",
+          "states": {
+            "active": {
+              "asset": "EFFECT_EXCLAMATION",
+              "transform": {
+                "height": 200,
+                "width": 260,
+                "x": 430,
+                "y": 375
+              },
+              "visible": true
+            },
+            "hidden": {
+              "asset": "EFFECT_EXCLAMATION",
+              "transform": {
+                "height": 200,
+                "width": 260,
+                "x": 430,
+                "y": 375
+              },
+              "visible": false
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 306,
+                "width": 494,
+                "x": 102,
+                "y": 300
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 292,
+                "width": 277,
+                "x": 740,
+                "y": 260
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 326,
+                "width": 784,
+                "x": 118,
+                "y": 1136
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "CHAR_CLASSMATE_CONFRONT",
+          "asset_before": "CHAR_CLASSMATE_CONFRONT",
+          "end_frame": 404,
+          "event_id": "s04_e01",
+          "motion": "small-bounce",
+          "preferred_start_frame": 396,
+          "scene_id": "s04",
+          "start_frame": 396,
+          "state_after": "confront",
+          "state_before": "confront",
+          "target": "classmate"
+        },
+        {
+          "asset_after": "EFFECT_EXCLAMATION",
+          "asset_before": "EFFECT_EXCLAMATION",
+          "end_frame": 507,
+          "event_id": "s04_e02",
+          "motion": "pop-in",
+          "preferred_start_frame": 500,
+          "scene_id": "s04",
+          "start_frame": 500,
+          "state_after": "active",
+          "state_before": "hidden",
+          "target": "story_effect"
+        },
+        {
+          "asset_after": "EFFECT_EXCLAMATION",
+          "asset_before": "EFFECT_EXCLAMATION",
+          "end_frame": 536,
+          "event_id": "s04_e03",
+          "motion": "fade-out",
+          "preferred_start_frame": 527,
+          "scene_id": "s04",
+          "start_frame": 527,
+          "state_after": "hidden",
+          "state_before": "active",
+          "target": "story_effect"
+        }
+      ],
+      "id": "s04",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 147,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "classmate",
+          "entity": "story_effect",
+          "max_distance_px": 430,
+          "relation": "emitted_by"
+        },
+        {
+          "anchor": "classmate",
+          "entity": "notebook",
+          "max_distance_px": 310,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 396
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 576,
+          "start_frame": 543,
+          "text": "Song Tử đứng hình mất một nhịp."
+        },
+        {
+          "end_frame": 608,
+          "start_frame": 579,
+          "text": "“Tao đang thử xem chỗ nào chưa ổn"
+        },
+        {
+          "end_frame": 635,
+          "start_frame": 608,
+          "text": "thôi mà.” Song Tử ấy mà,"
+        },
+        {
+          "end_frame": 669,
+          "start_frame": 641,
+          "text": "nghe được thêm một góc là lại muốn"
+        },
+        {
+          "end_frame": 690,
+          "start_frame": 669,
+          "text": "thử xem có gì khác."
+        },
+        {
+          "end_frame": 714,
+          "start_frame": 696,
+          "text": "Nói chuyện đang vui,"
+        },
+        {
+          "end_frame": 744,
+          "start_frame": 717,
+          "text": "não đã mở thêm ba cửa sổ."
+        }
+      ],
+      "duration_frames": 206,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "explain",
+          "states": {
+            "explain": {
+              "asset": "CHAR_GEMINI_EXPLAIN",
+              "transform": {
+                "height": 582,
+                "width": 420,
+                "x": 530,
+                "y": 399
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 265,
+                "width": 250,
+                "x": 670,
+                "y": 865
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 322,
+                "width": 520,
+                "x": 66,
+                "y": 300
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 307,
+                "width": 292,
+                "x": 704,
+                "y": 260
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 333,
+                "width": 800,
+                "x": 116,
+                "y": 1118
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "CHAR_GEMINI_EXPLAIN",
+          "asset_before": "CHAR_GEMINI_EXPLAIN",
+          "end_frame": 553,
+          "event_id": "s05_e01",
+          "motion": "subtle-tilt",
+          "preferred_start_frame": 543,
+          "scene_id": "s05",
+          "start_frame": 543,
+          "state_after": "explain",
+          "state_before": "explain",
+          "target": "gemini"
+        },
+        {
+          "asset_after": "PROP_NOTEBOOK",
+          "asset_before": "PROP_NOTEBOOK",
+          "end_frame": 630,
+          "event_id": "s05_e02",
+          "motion": "focus-shift",
+          "preferred_start_frame": 620,
+          "scene_id": "s05",
+          "start_frame": 620,
+          "state_after": "visible",
+          "state_before": "visible",
+          "target": "notebook"
+        }
+      ],
+      "id": "s05",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 206,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "notebook",
+          "max_distance_px": 490,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 543
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 780,
+          "start_frame": 749,
+          "text": "Nhưng đến lúc cả nhóm cần chốt,"
+        },
+        {
+          "end_frame": 812,
+          "start_frame": 780,
+          "text": "cũng không thể cứ đổi qua đổi lại"
+        },
+        {
+          "end_frame": 849,
+          "start_frame": 812,
+          "text": "mãi. Có đứa đẩy tờ giấy về phía"
+        },
+        {
+          "end_frame": 886,
+          "start_frame": 849,
+          "text": "Song Tử: “Rồi, chọn một cái đi!”"
+        }
+      ],
+      "duration_frames": 144,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "surprised",
+          "states": {
+            "surprised": {
+              "asset": "CHAR_GEMINI_SURPRISED",
+              "transform": {
+                "height": 800,
+                "width": 578,
+                "x": 251,
+                "y": 190
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "classmate",
+          "initial_state": "confront",
+          "states": {
+            "confront": {
+              "asset": "CHAR_CLASSMATE_CONFRONT",
+              "transform": {
+                "height": 400,
+                "width": 260,
+                "x": 790,
+                "y": 795
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "pen",
+          "initial_state": "hidden",
+          "states": {
+            "hidden": {
+              "asset": "PROP_PEN",
+              "transform": {
+                "height": 125,
+                "width": 250,
+                "x": 545,
+                "y": 1030
+              },
+              "visible": false
+            },
+            "visible": {
+              "asset": "PROP_PEN",
+              "transform": {
+                "height": 125,
+                "width": 250,
+                "x": 545,
+                "y": 1030
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 283,
+                "width": 458,
+                "x": 146,
+                "y": 278
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 270,
+                "width": 257,
+                "x": 784,
+                "y": 238
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 306,
+                "width": 736,
+                "x": 122,
+                "y": 1148
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "CHAR_GEMINI_SURPRISED",
+          "asset_before": "CHAR_GEMINI_SURPRISED",
+          "end_frame": 874,
+          "event_id": "s06_e01",
+          "motion": "hold",
+          "preferred_start_frame": 862,
+          "scene_id": "s06",
+          "start_frame": 862,
+          "state_after": "surprised",
+          "state_before": "surprised",
+          "target": "gemini"
+        },
+        {
+          "asset_after": "PROP_PEN",
+          "asset_before": "PROP_PEN",
+          "end_frame": 881,
+          "event_id": "s06_e02",
+          "motion": "fade-in",
+          "preferred_start_frame": 872,
+          "scene_id": "s06",
+          "start_frame": 872,
+          "state_after": "visible",
+          "state_before": "hidden",
+          "target": "pen"
+        }
+      ],
+      "id": "s06",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 144,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "classmate",
+          "entity": "pen",
+          "max_distance_px": 450,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 749
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 911,
+          "start_frame": 893,
+          "text": "Song Tử cầm bút,"
+        },
+        {
+          "end_frame": 934,
+          "start_frame": 911,
+          "text": "gạch hai chỗ cần sửa,"
+        },
+        {
+          "end_frame": 949,
+          "start_frame": 934,
+          "text": "khoanh phương án B."
+        },
+        {
+          "end_frame": 993,
+          "start_frame": 949,
+          "text": "“Chọn cái này. Nhưng sửa đoạn đầu nhé.”"
+        }
+      ],
+      "duration_frames": 103,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "write",
+          "states": {
+            "write": {
+              "asset": "CHAR_GEMINI_WRITE",
+              "transform": {
+                "height": 346,
+                "width": 250,
+                "x": 735,
+                "y": 617
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "visible",
+          "states": {
+            "marked": {
+              "asset": "PROP_NOTEBOOK_MARKED",
+              "transform": {
+                "height": 488,
+                "width": 520,
+                "x": 280,
+                "y": 356
+              },
+              "visible": true
+            },
+            "visible": {
+              "asset": "PROP_NOTEBOOK",
+              "transform": {
+                "height": 488,
+                "width": 520,
+                "x": 280,
+                "y": 356
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "pen",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "PROP_PEN",
+              "transform": {
+                "height": 115,
+                "width": 220,
+                "x": 620,
+                "y": 745
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 296,
+                "width": 478,
+                "x": 46,
+                "y": 292
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 282,
+                "width": 269,
+                "x": 684,
+                "y": 252
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 320,
+                "width": 768,
+                "x": 160,
+                "y": 1140
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "PROP_PEN",
+          "asset_before": "PROP_PEN",
+          "end_frame": 922,
+          "event_id": "s07_e01",
+          "motion": "slide",
+          "preferred_start_frame": 911,
+          "scene_id": "s07",
+          "start_frame": 911,
+          "state_after": "visible",
+          "state_before": "visible",
+          "target": "pen"
+        },
+        {
+          "asset_after": "PROP_NOTEBOOK_MARKED",
+          "asset_before": "PROP_NOTEBOOK",
+          "end_frame": 943,
+          "event_id": "s07_e02",
+          "motion": "state_swap",
+          "preferred_start_frame": 934,
+          "scene_id": "s07",
+          "start_frame": 934,
+          "state_after": "marked",
+          "state_before": "visible",
+          "target": "notebook"
+        }
+      ],
+      "id": "s07",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 103,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "notebook",
+          "max_distance_px": 455,
+          "relation": "near"
+        },
+        {
+          "anchor": "notebook",
+          "entity": "pen",
+          "max_distance_px": 360,
+          "relation": "points_to"
+        }
+      ],
+      "start_frame": 893
+    },
+    {
+      "captions": [
+        {
+          "end_frame": 1032,
+          "start_frame": 996,
+          "text": "Hóa ra nãy giờ mọi người tưởng Song"
+        },
+        {
+          "end_frame": 1051,
+          "start_frame": 1032,
+          "text": "Tử đang đổi phe."
+        },
+        {
+          "end_frame": 1084,
+          "start_frame": 1055,
+          "text": "Còn bạn ấy cứ tưởng cả nhóm vẫn"
+        },
+        {
+          "end_frame": 1113,
+          "start_frame": 1084,
+          "text": "đang... làm nháp. Mà này,"
+        },
+        {
+          "end_frame": 1144,
+          "start_frame": 1113,
+          "text": "ai bắt bản nháp đầu tiên phải là"
+        },
+        {
+          "end_frame": 1161,
+          "start_frame": 1144,
+          "text": "bản đem nộp đâu?"
+        }
+      ],
+      "duration_frames": 193,
+      "entities": [
+        {
+          "id": "gemini",
+          "initial_state": "listen",
+          "states": {
+            "listen": {
+              "asset": "CHAR_GEMINI_LISTEN",
+              "transform": {
+                "height": 429,
+                "width": 310,
+                "x": 190,
+                "y": 295
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-whiteboard",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WHITEBOARD",
+              "layer": 2,
+              "transform": {
+                "height": 274,
+                "width": 442,
+                "x": 168,
+                "y": 272
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-window",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_WINDOW",
+              "layer": 1,
+              "transform": {
+                "height": 261,
+                "width": 248,
+                "x": 806,
+                "y": 232
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "env__classroom-desk-edge",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_CLASSROOM_DESK_EDGE",
+              "layer": 5,
+              "transform": {
+                "height": 300,
+                "width": 720,
+                "x": 130,
+                "y": 1156
+              },
+              "visible": true
+            }
+          }
+        },
+        {
+          "id": "notebook",
+          "initial_state": "marked",
+          "states": {
+            "marked": {
+              "asset": "PROP_NOTEBOOK_MARKED",
+              "layer": 24,
+              "transform": {
+                "height": 323,
+                "width": 345,
+                "x": 560,
+                "y": 535
+              },
+              "visible": true
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "asset_after": "CHAR_GEMINI_LISTEN",
+          "asset_before": "CHAR_GEMINI_LISTEN",
+          "end_frame": 1133,
+          "event_id": "s08_e01",
+          "motion": "hold",
+          "preferred_start_frame": 1121,
+          "scene_id": "s08",
+          "start_frame": 1121,
+          "state_after": "listen",
+          "state_before": "listen",
+          "target": "gemini"
+        }
+      ],
+      "id": "s08",
+      "layout_contract": {
+        "canvas": {
+          "height": 1920,
+          "width": 1080
+        },
+        "caption_safe_zone": {
+          "height": 350,
+          "width": 920,
+          "x": 80,
+          "y": 1320
+        },
+        "character_zone": {
+          "height": 545,
+          "width": 1032,
+          "x": 24,
+          "y": 360
+        },
+        "effect_zone": {
+          "height": 510,
+          "width": 1040,
+          "x": 20,
+          "y": 380
+        },
+        "prop_zone": {
+          "height": 340,
+          "width": 880,
+          "x": 100,
+          "y": 930
+        }
+      },
+      "measured_duration_frames": 169,
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_effects": 2,
+        "max_prominent_props": 2
+      },
+      "spatial_bindings": [
+        {
+          "anchor": "gemini",
+          "entity": "notebook",
+          "max_distance_px": 590,
+          "relation": "near"
+        }
+      ],
+      "start_frame": 996
+    }
+  ],
+  "video": {
+    "height": 1920,
+    "width": 1080
+  }
+}

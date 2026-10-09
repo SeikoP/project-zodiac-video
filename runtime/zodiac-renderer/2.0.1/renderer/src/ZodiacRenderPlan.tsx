@@ -1,10 +1,12 @@
+import {resolveVisualRole, resolveLayerOrder} from './visual-role.mjs';
+import {resolveCaptionZone} from './caption-layout.mjs';
+import {resolveEntityState} from './spatial-layout.mjs';
 import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import {resolveSemanticMotion} from "./semantic-motion.mjs";
 
 import type {
-  RenderPlanEntity,
   RenderPlanPresentation,
   RenderPlanScene,
   RendererV2Props,
@@ -38,91 +40,47 @@ export const useVerifiedCaptionFont = (presentation: RenderPlanPresentation) => 
   }, [handle, needsFont, fontUri]);
 };
 
-// Keep a single entity coordinate space while blending states; do not shift the
-// subject or create additional authored SVGs to hide a hard pose cut.
-const stateForFrame = (
-  scene: RenderPlanScene,
-  entity: RenderPlanEntity,
-  frame: number,
-  assets: RendererV2Props["assets"],
-) => {
-  let stateId = entity.initial_state;
-  let lastResolvedAfterAsset: string | undefined;
-  let blend: {fromAsset: string; progress: number} | undefined;
-  for (const event of [...scene.events].filter((e) => e.target === entity.id).sort(
-    (a, b) => a.end_frame - b.end_frame,
-  )) {
-    if (frame >= event.end_frame) {
-      stateId = event.state_after;
-      // Runtime resolves the exact authored after-asset, rather than inventing one.
-      lastResolvedAfterAsset = assets[event.asset_after] ? event.asset_after : undefined;
-    } else {
-      break;
-    }
-    const before = entity.states[event.state_before]?.asset ?? event.asset_before;
-    const after = entity.states[event.state_after]?.asset ?? event.asset_after;
-    const frames = Math.min(5, Math.max(1, event.end_frame - event.start_frame));
-    if (frame < event.end_frame + frames && before !== after && assets[before]) {
-      blend = {fromAsset: before, progress: Math.min(1, (frame - event.end_frame + 1) / frames)};
-    } else {
-      blend = undefined;
-    }
-  }
-  const state = entity.states[stateId] ?? entity.states[entity.initial_state];
-  return {state, assetId: state?.asset ?? lastResolvedAfterAsset, blend};
-};
-
 const SceneLayer: React.FC<{
   scene: RenderPlanScene;
   assets: RendererV2Props["assets"];
   presentation: RenderPlanPresentation;
-}> = ({scene, assets, presentation}) => {
+  video: RendererV2Props["video"];
+}> = ({scene, assets, presentation, video}) => {
   const relativeFrame = useCurrentFrame();
   const frame = relativeFrame + scene.start_frame;
   const captions = scene.captions ?? [];
   const caption = captions.find(
     (item) => frame >= item.start_frame && frame < item.end_frame,
   );
-  const captionStyle = presentation.caption ?? {};
-  const safe = scene.layout_contract?.caption_safe_zone ?? captionStyle.safe_zone ?? {};
+  const safe = resolveCaptionZone(scene, presentation, video);
+  const textLayout = caption?.resolved_layout;
+  if (caption && !textLayout) throw new Error(`CAPTION_LAYOUT_MISSING scene=${scene.id} frame=${frame}`);
+  const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,resolveEntityState(scene,entity,frame)]));
 
   return (
     <AbsoluteFill>
-      {[...(scene.entities ?? [])]
-        .sort((a, b) => {
-          const aState = stateForFrame(scene, a, frame, assets).state;
-          const bState = stateForFrame(scene, b, frame, assets).state;
-          return Number(aState?.layer ?? 0) - Number(bState?.layer ?? 0);
-        })
-        .map((entity) => {
-          const {state, assetId} = stateForFrame(scene, entity, frame, assets);
+      {resolveLayerOrder(scene, assets, states)
+        .map((entity, index) => {
+          const state = resolveEntityState(scene, entity, frame);
+          const assetId = state?.asset;
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
           const src = asset?.src;
           if (!src) throw new Error(`RENDER_ASSET_MISSING scene=${scene.id} entity=${entity.id} asset=${assetId}`);
           const transform = state.transform ?? {};
-          const binding = (scene.spatial_bindings ?? []).find((item) => item.entity === entity.id);
-          const relation = binding?.relation;
-          const role = entity.id === "story_effect" || relation === "emitted_by"
-            ? "effect"
-            : entity.id === "story_prop" || Boolean(binding)
-            ? "prop"
-            : "other";
+          const role = resolveVisualRole(entity, assets);
           // Explicit semantic motion only. No ambient idle motion for unrelated actors.
           const active=scene.events.find(item=>
             item.target===entity.id && frame>=item.start_frame && frame<item.end_frame);
           const resolved=resolveSemanticMotion(active,scene,entity,frame);
-          const revealScale=1;
-          const revealOpacity=1;
           const style: React.CSSProperties = {
             position: "absolute",
             left: transform.x ?? 0,
             top: transform.y ?? 0,
             width: transform.width ?? 520,
             height: transform.height ?? 520,
-            transform: `translate(${resolved.translateX}px, ${resolved.translateY}px) scale(${(transform.scale ?? 1) * revealScale * resolved.scale}) rotate(${(transform.rotation ?? 0) + resolved.rotateDeg}deg)`,
-            opacity: revealOpacity,
-            zIndex: state.layer ?? 0,
+            transform: `translate(${resolved.translateX}px, ${resolved.translateY}px) scale(${(transform.scale ?? 1) * resolved.scale}) rotate(${(transform.rotation ?? 0) + resolved.rotateDeg}deg)`,
+            zIndex: index,
             objectFit: "contain",
             transformOrigin: "center center",
           };
@@ -145,13 +103,13 @@ const SceneLayer: React.FC<{
           data-caption="active"
           style={{
             position: "absolute",
-            left: safe.x ?? 72,
-            top: safe.y ?? 960,
-            width: safe.width ?? 936,
-            minHeight: safe.height ?? 160,
-            maxHeight: safe.height ?? 160,
-            overflow: "hidden",
-            lineHeight: 1.15,
+            left: textLayout!.x,
+            top: textLayout!.y,
+            width: textLayout!.width,
+            minHeight: textLayout!.height,
+            overflow: "visible",
+            lineHeight: safe.lineHeight,
+            whiteSpace: "pre",
             overflowWrap: "normal",
             wordBreak: "normal",
             fontFamily: presentation.caption?.font_family ?? "sans-serif",
@@ -162,7 +120,7 @@ const SceneLayer: React.FC<{
             zIndex: 90,
           }}
         >
-          {caption.text}
+          {textLayout!.lines.join("\n")}
         </div>
       ) : null}
     </AbsoluteFill>
@@ -201,6 +159,7 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
   scenes,
   assets,
   presentation = {},
+  video,
 }) => {
   useVerifiedCaptionFont(presentation);
   return (
@@ -211,7 +170,7 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
         from={scene.start_frame}
         durationInFrames={scene.duration_frames}
       >
-        <SceneLayer scene={scene} assets={assets} presentation={presentation} />
+        <SceneLayer scene={scene} assets={assets} presentation={presentation} video={video} />
       </Sequence>
     ))}
     <Watermark presentation={presentation} />

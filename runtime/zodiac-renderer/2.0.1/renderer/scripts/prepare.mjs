@@ -1,3 +1,7 @@
+import {resolveVisualRole} from '../src/visual-role.mjs';
+import {resolveCaptionZone} from '../src/caption-layout.mjs';
+import {auditSpatialLayout} from '../src/spatial-layout.mjs';
+import {measurePlanLayout} from './measure-layout.mjs';
 import {readFile, writeFile, mkdir} from "node:fs/promises";
 import {resolve, join, extname, sep, dirname} from "node:path";
 import {fileURLToPath} from "node:url";
@@ -8,9 +12,9 @@ const fail = (code, message, detail = {}) => {
     code,
     stage: "RENDER",
     message,
-    scene_id: null,
+    scene_id: /\bscene=([^\s]+)/.exec(message)?.[1] ?? null,
     event_id: null,
-    target: null,
+    target: /\bentity=([^\s]+)/.exec(message)?.[1] ?? null,
     detail,
   };
   process.stderr.write(JSON.stringify(payload) + "\n");
@@ -57,27 +61,7 @@ const transformedBounds = (transform) => {
   return {x: x + width / 2 - w / 2, y: y + height / 2 - h / 2, width: w, height: h};
 };
 
-const classifyVisualRole = (entity, assets = {}) => {
-  if (entity.id.startsWith("env__")) return "environment";
-  const kind = String(entity.kind ?? "").toLowerCase();
-  if (kind === "character") return "character";
-  if (["prop", "object"].includes(kind)) return "prop";
-  if (kind === "effect") return "effect";
-  if (kind === "environment") return "environment";
-  const state = entity.states?.[entity.initial_state] ?? Object.values(entity.states ?? {})[0];
-  const asset = assets[state?.asset] ?? {};
-  const category = String(asset.category ?? "").toLowerCase();
-  if (["character", "character_pose"].includes(category)) return "character";
-  if (["prop", "object", "story_prop"].includes(category)) return "prop";
-  if (["effect", "story_effect"].includes(category)) return "effect";
-  if (["environment", "environment_cue"].includes(category)) return "environment";
-  const path = String(asset.path ?? "").replaceAll("\\", "/").toLowerCase();
-  if (/(^|\/)effects\//.test(path)) return "effect";
-  if (/(^|\/)props\//.test(path)) return "prop";
-  if (/(^|\/)environments?\//.test(path)) return "environment";
-  if (/(^|\/)characters\//.test(path)) return "character";
-  return entity.id === "story_effect" ? "effect" : entity.id === "story_prop" ? "prop" : "character";
-};
+const classifyVisualRole=(entity,assets)=>{const role=resolveVisualRole(entity,assets);return role==='interactive_prop'?'prop':role==='background'?'environment':role;};
 
 // Distinguish a deliberately slim native writing instrument from a card/board.
 // Generic props and effects retain their stricter visual prominence budgets.
@@ -124,7 +108,7 @@ export const validateSceneLayout = (plan) => {
   for (const scene of plan.scenes) {
     const layout = scene.layout_contract;
     if (!layout && !(scene.spatial_bindings?.length)) continue; // Only legacy plans without spatial intent bypass spatial validation.
-    const caption = layout?.caption_safe_zone;
+    const caption = resolveCaptionZone(scene, plan.presentation, plan.video);
     const sceneEntities = new Map((scene.entities ?? []).map(e => [e.id, e]));
     const bindingEntities = new Set();
     for (const binding of scene.spatial_bindings ?? []) {
@@ -150,14 +134,14 @@ export const validateSceneLayout = (plan) => {
     let actors = 0, props = 0, effects = 0;
     for (const entity of scene.entities ?? []) {
       const role = classifyVisualRole(entity, plan.assets);
-      if (role === "environment") continue;
+      if (role === "environment" || role === "foreground_environment") continue;
       if (role === "effect") effects++;
       else if (role === "prop") props++;
       else actors++;
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
         const bounds = transformedBounds(state.transform);
-        if (caption && rectsOverlap(caption, bounds)) {
+        if (!(scene.captions?.length) && caption && rectsOverlap(caption, bounds)) {
           throw new Error(`LAYOUT_OVERLAP scene=${scene.id} entity=${entity.id} state=${name} caption_safe_zone`);
         }
       }
@@ -267,6 +251,14 @@ export const prepareRendererProps = async (packageRoot) => {
       if (!plan.assets[e.states[v.state_id].asset]) throw new Error(`COVER_ASSET_MISSING ${v.entity_id}.${v.state_id}`);
     }
   }
+  const measuredPlan = await measurePlanLayout({...plan, presentation, assets: await hydrateAssets(root, plan.assets)});
+  const spatialReport = auditSpatialLayout(measuredPlan);
+  spatialReport.caption_adjustments = measuredPlan.scenes.flatMap(scene=>(scene.captions??[]).map(caption=>({
+    scene:scene.id,frame:caption.start_frame,text:caption.text,
+    strategy:"bottom-align-with-padding-inside-resolved-zone",layout:caption.resolved_layout,
+  })));
+  await writeFile(join(runtimeDir, "spatial-qc-report.json"), JSON.stringify(spatialReport, null, 2) + "\n");
+  process.stdout.write(spatialReport.gates.join("\n") + "\n");
   const props = {
     contract: "zodiac-render-plan@1",
     fps: plan.fps,
@@ -275,7 +267,7 @@ export const prepareRendererProps = async (packageRoot) => {
     ...(plan.performance_context_hash
       ? {performance_context_hash: plan.performance_context_hash}
       : {}),
-    assets: await hydrateAssets(root, plan.assets),
+    assets: measuredPlan.assets,
     scenes: plan.scenes,
     publish,
   };
@@ -295,7 +287,8 @@ const main = async () => {
     const {output} = await prepareRendererProps(root);
     process.stdout.write(`RENDERER_V2_PREPARED ${output}\n`);
   } catch (error) {
-    fail("RENDER_PLAN_INVALID", error instanceof Error ? error.message : String(error));
+    const message = error instanceof Error ? error.message : String(error);
+    fail(/^(ROLE_|LAYER_|OCCLUSION_|CAPTION_|SPATIAL_)/.test(message) ? message.split(" ")[0] : "RENDER_PLAN_INVALID", message);
   }
 };
 

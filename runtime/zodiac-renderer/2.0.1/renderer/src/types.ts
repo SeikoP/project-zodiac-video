@@ -23,12 +23,17 @@ export type RenderPlanState = {
 
 export type RenderPlanEntity = {
   id: string;
+  role?: string;
+  visual_role?: string;
+  kind?: string;
+  layer?: number;
   initial_state: string;
   states: Record<string, RenderPlanState>;
 };
 
 export type RenderPlanCaption = {
   text: string;
+  resolved_layout?: {zone: RenderBox & {padding:number}; lines:string[]; x:number; y:number; width:number; height:number};
   start_frame: number;
   end_frame: number;
 };
@@ -59,6 +64,7 @@ export type RenderPlanScene = {
   duration_frames: number;
   measured_duration_frames?: number;
   entities?: RenderPlanEntity[];
+  occlusion_relations?: Array<{front:string;back:string}>;
   spatial_bindings?: Array<{
     entity: string;
     anchor: string;
@@ -79,6 +85,8 @@ export type RenderPlanPresentation = {
     font_size_px?: number;
     font_weight?: number;
     max_lines?: number;
+    padding_px?: number;
+    line_height?: number;
     color?: string;
     highlight_color?: string;
     safe_zone?: {x?: number; y?: number; width?: number; height?: number};

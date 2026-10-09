@@ -1,0 +1,40 @@
+{
+  "version": "1.5",
+  "platform": "tiktok",
+  "cover": {
+    "layout": "tilted_top_hook",
+    "identity": {
+      "sign_id": "gemini",
+      "label": "SONG TỬ",
+      "glyph": "♊"
+    },
+    "hook": "SONG TỬ ĐỔI PHE?",
+    "source_scene_id": "s04",
+    "visuals": [
+      {
+        "entity_id": "gemini",
+        "state_id": "surprised"
+      },
+      {
+        "entity_id": "classmate",
+        "state_id": "confront"
+      },
+      {
+        "entity_id": "notebook",
+        "state_id": "visible"
+      }
+    ]
+  },
+  "caption": "Song Tử vừa đồng ý phương án A, nghe thêm một ý đã muốn thử phương án B. Đổi phe thật hay chỉ đang sửa bản nháp?",
+  "hashtags": [
+    "#SongTu",
+    "#CungSongTu",
+    "#12CungHoangDao",
+    "#ZodiacStory"
+  ],
+  "source": {
+    "narration": "narration.txt",
+    "production": "production.ir.json"
+  },
+  "format": "zodiac-publish@1"
+}

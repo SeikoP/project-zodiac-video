@@ -2,6 +2,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from tools.control_plane.contracts import canonical_contract_hash
@@ -99,6 +100,26 @@ class StudioV2ControllerTests(unittest.TestCase):
             payload = json.loads(props.read_text(encoding="utf-8"))
             self.assertEqual(payload["contract"], "zodiac-render-plan@1")
 
+    def test_prepare_and_scene_preview_use_imported_renderer_pin_and_keep_caption_layout(self):
+        for version in ("2.0.0", "2.0.1"):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as temp:
+                controller = StudioV2Controller(Path(temp))
+                (controller.workspace / "package-manifest.json").write_text(json.dumps({
+                    "renderer": {"id": "zodiac-renderer", "version": version}}), encoding="utf-8")
+                layout = {"x": 92, "y": 1500, "width": 896, "height": 193.2, "lines": ["one", "two"]}
+                def prepare(command, **kwargs):
+                    self.assertIn(f"zodiac-renderer/{version}/renderer/scripts/prepare.mjs", Path(command[1]).as_posix())
+                    output = controller.workspace / ".runtime" / "renderer-v2-props.json"
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    output.write_text(json.dumps({"assets": {}, "scenes": [{"id": "s01",
+                        "start_frame": 100, "events": [], "entities": [], "captions": [{
+                            "start_frame": 101, "end_frame": 110, "resolved_layout": layout}]}]}), encoding="utf-8")
+                with patch("tools.studio_v2.controller.run_structured_command", side_effect=prepare):
+                    preview = controller.prepare_scene_preview("s01")
+                caption = json.loads(preview.read_text(encoding="utf-8"))["scenes"][0]["captions"][0]
+                self.assertEqual(caption["resolved_layout"], layout)
+                self.assertEqual(caption["start_frame"], 1)
+
     def test_controller_source_does_not_use_legacy_string_classifier(self):
         source = (ROOT / "tools" / "studio_v2" / "controller.py").read_text(encoding="utf-8")
         self.assertNotIn("_classify", source)
@@ -108,4 +129,3 @@ class StudioV2ControllerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
