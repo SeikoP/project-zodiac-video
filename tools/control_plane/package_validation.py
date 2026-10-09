@@ -8,6 +8,7 @@ from .authoring import load_authoring_ir
 from .contracts import canonical_contract_hash, validate_contract_shape
 from .errors import ControlPlaneError
 from .semantic_qc import strict_errors
+from .import_preflight import blocking_import_issues
 
 
 _REQUIRED_ROOT_FILES = {
@@ -274,6 +275,22 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
             detail={"renderer": renderer},
         )
 
+    # Preflight ALL triggers and related actions before fail-fast Authoring IR validation.
+    # This avoids a costly fix → re-import → next-error loop. Legacy jobs retain
+    # their historical import behavior.
+    producer_version = str(manifest.get("producer", {}).get("version", ""))
+    import re
+    match = re.match(r"^(\\d+)\\.(\\d+)\\.(\\d+)(?:$|[-+])", producer_version)
+    modern = bool(match and tuple(map(int, match.groups())) >= (2, 2, 14))
+    if modern:
+        candidate_ir = _read_object(root / "production.ir.json", code="AUTHORING_IR_INVALID")
+        _validate_schema("authoring-ir-v1", candidate_ir, code="AUTHORING_IR_INVALID")
+        import_issues = blocking_import_issues(candidate_ir)
+        if import_issues:
+            names = ", ".join(item["event_id"] + ":" + item["code"] for item in import_issues[:12])
+            _fail("PACKAGE_AUTHORING_PREFLIGHT_FAILED",
+                  f"{len(import_issues)} authored trigger/semantic errors: {names}",
+                  detail={"issues": import_issues, "issue_count": len(import_issues)})
     ir = load_authoring_ir(root / "production.ir.json")
     design = _read_object(root / "design-token.json", code="DESIGN_TOKEN_INVALID")
     _validate_schema("design-token-v4", design, code="DESIGN_TOKEN_INVALID")
