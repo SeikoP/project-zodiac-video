@@ -4,3 +4,5 @@ export function resolveCoverVisuals(visuals:NonNullable<CoverPublish['cover']>['
 export function resolveEntityState(scene:RenderPlanScene,entity:RenderPlanEntity,frame:number):RenderPlanState|undefined;
 
 export function resolveDisplayedEntityState(scene:RenderPlanScene,entity:RenderPlanEntity,frame:number):RenderPlanState|undefined;
+
+export function auditNativeDepthEntities(scene:RenderPlanScene,assets:Record<string,RenderPlanAsset>):{count:number;roles:string[]};
