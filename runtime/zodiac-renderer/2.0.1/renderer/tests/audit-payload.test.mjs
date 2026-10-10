@@ -137,3 +137,19 @@ test("real CLI accepts an authoring IR and sorted render plan for all eight scen
     assert.equal(report.scenes.length,8);
   }finally{await rm(root,{recursive:true,force:true})}
 });
+
+
+test("event ID parity cannot conceal altered motion/target/state",()=>{
+ const {ir,plan}=fixture();
+ Object.assign(ir.scenes[0].events[0],{target:"story_prop",state_before:"idle",state_after:"thinking",desired_motion:"focus-shift"});
+ Object.assign(plan.scenes[0].events[0],{target:"scorpio",state_before:"idle",state_after:"hidden",motion:"hold",start_frame:20,end_frame:30});
+ const report=auditJob5Payload(ir,plan);
+ assert.equal(report.ok,false);
+ assert.equal(report.errors.filter(e=>e.includes("EVENT_SEMANTICS_CHANGED")).length,3);
+});
+test("event with empty executable interval is rejected",()=>{
+ const {ir,plan}=fixture();
+ plan.scenes[0].events[0].start_frame=15;
+ plan.scenes[0].events[0].end_frame=15;
+ assert.match(auditJob5Payload(ir,plan).errors.join(" "),/EVENT_INTERVAL_INVALID/);
+});
