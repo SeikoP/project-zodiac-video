@@ -34,7 +34,7 @@ export const resolvePreviewEventPairs = (scene) => {
     const after = Math.min(last,b+Math.min(4,Math.max(1,b-a)));
     const second = motionOnly ? mid : after;
     return {event_id:id,target:event.target ?? null,motion_only:motionOnly,static_hold:staticHold,
-      before_frame:before,second_frame:second,second_role:motionOnly?"during":"after",
+      before_frame:before,peak_frame:mid,after_frame:after,second_frame:second,second_role:motionOnly?"during":"after",
       fallback:false,distinct_frames:before !== second};
   });
 };
@@ -51,14 +51,15 @@ export const previewFrames = async (workspace,outputDir) => {
   const rendererDir = resolve(dirname(fileURLToPath(import.meta.url)),"..");
   const report={contract:"renderer-faithful-preview@2",source:"zodiac-render-plan@1",
     font:props.presentation?.caption?.font_family ?? "sans-serif",
-    sampling:"two-real-remotion-frames-per-event",
-    frames_per_event:2,scenes:[],event_pairs:[],caption_samples:[],clips:[]};
+    sampling:"before-peak-after-real-remotion-frames-per-event",
+    frames_per_event:3,scenes:[],event_pairs:[],caption_samples:[],clips:[]};
   for (const scene of props.scenes) {
     if (!/^[A-Za-z0-9_-]{1,100}$/.test(String(scene.id ?? "")))
       throw new Error("PREVIEW_SCENE_ID_INVALID " + String(scene.id));
     for (const pair of resolvePreviewEventPairs(scene)) {
       const frames=[];
-      for (const [role,frame] of [["before",pair.before_frame],[pair.second_role,pair.second_frame]]) {
+      const samples = pair.fallback ? [["before",pair.before_frame],["after",pair.second_frame]] : [["before",pair.before_frame],["peak",pair.peak_frame],["after",pair.after_frame]];
+      for (const [role,frame] of samples) {
         const file=scene.id+"-"+pair.event_id+"-"+role+"-f"+frame+".png";
         const result=spawnSync(process.execPath,[join(rendererDir,"scripts","local-remotion-cli.mjs"),
           "still","src/index.ts","ZodiacRenderPlan",join(out,file),
@@ -103,8 +104,8 @@ export const previewFrames = async (workspace,outputDir) => {
   }).join("");
   const html='<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Remotion event preview</title>'+
     '<style>body{font:16px system-ui;background:#eee9e0;color:#29363d;margin:24px}section{border-top:1px solid #bbb;padding:12px 0}.pair{display:flex;flex-wrap:wrap;gap:16px}figure{margin:0;background:white;padding:10px;border-radius:8px;max-width:280px}img{width:100%;aspect-ratio:9/16;object-fit:contain}figcaption{padding:6px 0;font-weight:600}</style>'+
-    '<h1>Two actual Remotion frames per event</h1><p>Source: render-plan.json · Font: '+esc(report.font)+
-    ' · Same composition as final video. Motion-only events sample BEFORE/DURING; visibility/state events sample BEFORE/AFTER.</p>'+rows+
+    '<h1>Before / peak / after actual Remotion frames per event</h1><p>Source: render-plan.json · Font: '+esc(report.font)+
+    ' · Same composition as final video. Events sample BEFORE/PEAK/AFTER; actual motion clips are reviewed separately.</p>'+rows+
     '<h2>Active captions</h2><div class="pair">'+report.caption_samples.map(c=>'<figure><img src="'+esc(c.file)+'"><figcaption>'+esc(c.scene_id+' · '+c.text)+' · frame '+c.frame+'</figcaption></figure>').join('')+'</div>'+
     '<h2>Animation</h2>'+report.clips.map(c=>'<video controls loop muted width="320" src="'+esc(c.file)+'"></video>').join('')+'</html>';
   await writeFile(join(out,"index.html"),html);
