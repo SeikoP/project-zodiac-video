@@ -43,3 +43,14 @@ test("invalid frame ranges and duplicate ids are rejected",()=>{
   assert.throws(()=>resolvePreviewEventPairs(scene([{event_id:"E1",start_frame:110,end_frame:130}])),/PREVIEW_EVENT_RANGE_INVALID/);
   assert.throws(()=>resolvePreviewEventPairs(scene([{event_id:"E1",start_frame:130,end_frame:134},{event_id:"E1",start_frame:142,end_frame:151}])),/PREVIEW_EVENT_ID_INVALID/);
 });
+
+test("semantic events expose before, peak and after sampling frames",()=>{
+  const out=resolvePreviewEventPairs(scene([{event_id:"E04",target:"thought",
+    state_before:"closed",state_after:"open",asset_before:"A",asset_after:"B",
+    motion:"state_swap",start_frame:135,end_frame:145}]));
+  assert.equal(out[0].before_frame,134);
+  assert.equal(out[0].peak_frame,139);
+  assert.equal(out[0].after_frame,149);
+  assert.ok(out[0].before_frame<out[0].peak_frame);
+  assert.ok(out[0].peak_frame<out[0].after_frame);
+});
