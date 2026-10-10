@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QDir, QModelIndex, QSortFilterProxyModel, Qt, QUrl, Signal
+from PySide6.QtCore import QDir, QModelIndex, QSignalBlocker, QSortFilterProxyModel, Qt, QUrl, Signal
 from PySide6.QtGui import QPixmap, QStandardItem
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
@@ -17,6 +17,8 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QSlider,
+    QStyle,
+    QStyleOptionSlider,
     QSizePolicy,
     QSplitter,
     QStackedWidget,
@@ -32,6 +34,25 @@ VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
 TEXT_EXTENSIONS = {".txt", ".log", ".json", ".md", ".srt", ".vtt", ".ass", ".csv", ".yaml", ".yml", ".xml", ".html"}
 TEXT_PREVIEW_LIMIT_BYTES = 2 * 1024 * 1024
+
+
+class SeekSlider(QSlider):
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self.isEnabled():
+            option = QStyleOptionSlider()
+            self.initStyleOption(option)
+            handle = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, option,
+                                                QStyle.SubControl.SC_SliderHandle, self)
+            if not handle.contains(event.position().toPoint()):
+                groove = self.style().subControlRect(QStyle.ComplexControl.CC_Slider, option,
+                                                    QStyle.SubControl.SC_SliderGroove, self)
+                value = QStyle.sliderValueFromPosition(
+                    self.minimum(), self.maximum(),
+                    round(event.position().x()) - groove.x() - handle.width() // 2,
+                    max(1, groove.width() - handle.width()), option.upsideDown,
+                )
+                self.setValue(value)
+        super().mousePressEvent(event)
 
 
 def media_kind(path: Path) -> str | None:
@@ -76,6 +97,7 @@ class MediaFilterProxy(QSortFilterProxyModel):
 
 class MediaWorkspace(QWidget):
     refresh_jobs_requested = Signal()
+    workspace_requested = Signal(str)
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -109,6 +131,16 @@ class MediaWorkspace(QWidget):
         self.job_picker.setMaxVisibleItems(16)
         self.job_picker.currentIndexChanged.connect(self._job_changed)
         files_layout.addWidget(self.job_picker)
+        job_actions = QHBoxLayout()
+        self.workspace_button = QPushButton("Mở Workspace")
+        self.workspace_button.setEnabled(False)
+        self.workspace_button.clicked.connect(self._open_workspace)
+        job_actions.addWidget(self.workspace_button)
+        self.video_button = QPushButton("Video đầu ra")
+        self.video_button.setEnabled(False)
+        self.video_button.clicked.connect(self._open_video)
+        job_actions.addWidget(self.video_button)
+        files_layout.addLayout(job_actions)
         self.search = QLineEdit()
         self.search.setPlaceholderText("Lọc tên tệp đầu ra…")
         self.search.setClearButtonEnabled(True)
@@ -208,10 +240,11 @@ class MediaWorkspace(QWidget):
         self.play_button.setEnabled(False)
         self.play_button.clicked.connect(self._toggle_playback)
         controls.addWidget(self.play_button)
-        self.position_slider = QSlider(Qt.Orientation.Horizontal)
+        self.position_slider = SeekSlider(Qt.Orientation.Horizontal)
         self.position_slider.setRange(0, 0)
+        self.position_slider.setEnabled(False)
         self.position_slider.setAccessibleName("Vị trí phát media")
-        self.position_slider.sliderMoved.connect(self.player.setPosition)
+        self.position_slider.valueChanged.connect(self._seek)
         self.position_label = QLabel("00:00 / 00:00", objectName="muted")
         self.position_label.setMinimumWidth(82)
         controls.addWidget(self.position_slider, 1)
@@ -234,6 +267,7 @@ class MediaWorkspace(QWidget):
         self.file_model.directoryLoaded.connect(self._select_pending_file)
         self.player.positionChanged.connect(self._position_changed)
         self.player.durationChanged.connect(self._duration_changed)
+        self.player.seekableChanged.connect(self._seekable_changed)
         self.player.playbackStateChanged.connect(self._playback_state_changed)
         self.player.errorOccurred.connect(self._player_error)
         self._root_path: Path | None = None
@@ -294,6 +328,8 @@ class MediaWorkspace(QWidget):
         if selected_index >= 0:
             self._job_changed(selected_index)
         else:
+            self.workspace_button.setEnabled(False)
+            self.video_button.setEnabled(False)
             self.copy_publish_button.setEnabled(False)
             self.publish_preview.clear()
             self._current_job_path = None
@@ -350,8 +386,11 @@ class MediaWorkspace(QWidget):
         self._selected_path = file_path
         self._image_path = file_path if kind == "image" else None
         self.player.stop()
+        # Force metadata signals even when reopening the same URL.
+        self.player.setSource(QUrl())
         self._duration = 0
         self.position_slider.setRange(0, 0)
+        self.position_slider.setEnabled(False)
         self.position_label.setText("00:00 / 00:00")
         self.selected_label.setText(f"{file_path.name}  ·  {self._format_size(file_path)}")
         self.selected_label.setToolTip(file_path.name)
@@ -414,12 +453,26 @@ class MediaWorkspace(QWidget):
         if new_path != self._current_job_path:
             self._clear_selection()
         self._current_job_path = new_path
+        self.workspace_button.setEnabled(True)
+        self.video_button.setEnabled((new_path / "out" / "zodiac-story.mp4").is_file())
         self.root_label.setText(f"{job['name']} · out/")
         self.root_label.setToolTip(job["out_path"])
         self.set_root_path(job["out_path"])
         publish_text = publish_text_for_job(Path(job["path"]))
         self.publish_preview.setPlainText(publish_text)
         self.copy_publish_button.setEnabled(bool(publish_text))
+        if self._selected_path is None:
+            self._open_video()
+
+    def _open_workspace(self) -> None:
+        if self._current_job_path:
+            self.workspace_requested.emit(str(self._current_job_path))
+
+    def _open_video(self) -> None:
+        if self._current_job_path:
+            video = self._current_job_path / "out" / "zodiac-story.mp4"
+            if video.is_file():
+                self.open_media(video)
 
     def _copy_publish(self) -> None:
         """Copy a single publishing payload, without bundling duplicate files."""
@@ -456,6 +509,7 @@ class MediaWorkspace(QWidget):
         self._image_path = None
         self._duration = 0
         self.position_slider.setRange(0, 0)
+        self.position_slider.setEnabled(False)
         self.position_label.setText("00:00 / 00:00")
         self.selected_label.setText(f"{path.name}  ·  {self._format_size(path)}")
         self.selected_label.setToolTip(path.name)
@@ -495,6 +549,7 @@ class MediaWorkspace(QWidget):
         self.position_slider.setRange(0, 0)
         self.position_label.setText("00:00 / 00:00")
         self.selected_label.setText("Chưa chọn tệp")
+        self.position_slider.setEnabled(False)
         self.selected_label.setToolTip("")
         self.path_label.clear()
         self.play_button.setEnabled(False)
@@ -530,12 +585,28 @@ class MediaWorkspace(QWidget):
 
     def _position_changed(self, position: int) -> None:
         if not self.position_slider.isSliderDown():
-            self.position_slider.setValue(position)
-        self.position_label.setText(f"{self._format_time(position)} / {self._format_time(self._duration)}")
+            with QSignalBlocker(self.position_slider):
+                self.position_slider.setValue(position)
+            self.position_label.setText(f"{self._format_time(position)} / {self._format_time(self._duration)}")
+
+    def _seek(self, position: int) -> None:
+        if self._duration > 0 and self.player.isSeekable():
+            position = min(max(0, position), self._duration)
+            self.player.setPosition(position)
+            self.position_label.setText(f"{self._format_time(position)} / {self._format_time(self._duration)}")
+
+    def _seekable_changed(self, seekable: bool) -> None:
+        self.position_slider.setEnabled(self._duration > 0 and seekable)
 
     def _duration_changed(self, duration: int) -> None:
         self._duration = duration
-        self.position_slider.setRange(0, duration)
+        with QSignalBlocker(self.position_slider):
+            self.position_slider.setRange(0, duration)
+            self.position_slider.setSingleStep(1000)
+            self.position_slider.setPageStep(max(1000, duration // 10))
+            if not self.position_slider.isSliderDown():
+                self.position_slider.setValue(self.player.position())
+        self._seekable_changed(self.player.isSeekable())
         self.position_label.setText(f"{self._format_time(self.player.position())} / {self._format_time(duration)}")
 
     def _player_error(self, _error, message: str) -> None:

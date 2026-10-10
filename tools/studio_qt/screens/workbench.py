@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import datetime
+from time import monotonic
 from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -99,6 +100,9 @@ class WorkbenchScreen(QWidget):
         root.addLayout(header)
 
         self._measured_progress: dict[str, tuple[int, int, str, str]] = {}
+        self._voice_feedback: dict | None = None
+        self._running_step: str | None = None
+        self._running_since: float | None = None
         self.stage_rail = StageRail()
         self.stage_rail.stage_selected.connect(self.stage_selected)
         self.stage_rail.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
@@ -108,8 +112,8 @@ class WorkbenchScreen(QWidget):
         self.stage_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.stage_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.stage_scroll.setWidget(self.stage_rail)
-        self.stage_scroll.setMinimumWidth(262)
-        self.stage_scroll.setMaximumWidth(302)
+        self.stage_scroll.setMinimumWidth(248)
+        self.stage_scroll.setMaximumWidth(268)
 
         current = QWidget(objectName="workspaceMain")
         outer_layout = QVBoxLayout(current)
@@ -117,44 +121,42 @@ class WorkbenchScreen(QWidget):
         outer_layout.setSpacing(0)
         details_panel = QWidget()
         current_layout = QVBoxLayout(details_panel)
-        current_layout.setContentsMargins(20, 10, 12, 8)
-        current_layout.setSpacing(8)
-        current_layout.addWidget(QLabel("GIÁM SÁT QUY TRÌNH · TRẠNG THÁI THỰC", objectName="eyebrow"))
+        current_layout.setContentsMargins(16, 8, 12, 8)
+        current_layout.setSpacing(6)
         self.status_label = QLabel("Sẵn sàng", objectName="status")
         self.environment_status = QLabel("Môi trường chưa kiểm tra", objectName="status")
         self.pipeline_summary = QLabel("Chưa có bước nào", objectName="sectionTitle")
-        current_layout.addWidget(self.pipeline_summary)
-        pipeline_progress_row = QHBoxLayout()
-        self.pipeline_progress_label = QLabel("0% theo số bước · không phải thời gian", objectName="muted")
+        overview_row = QHBoxLayout()
+        overview_row.addWidget(self.pipeline_summary)
+        overview_row.addWidget(self.status_label)
+        overview_row.addStretch(1)
+        self.elapsed_label = QLabel("", objectName="muted")
+        overview_row.addWidget(self.elapsed_label)
+        overview_row.addWidget(self.environment_status)
+        current_layout.addLayout(overview_row)
+        self.next_action = QLabel("Kiểm tra môi trường trước khi chạy.", objectName="muted")
+        self.next_action.setWordWrap(True)
+        current_layout.addWidget(self.next_action)
+        self.pipeline_progress_label = QLabel("0% theo số bước · không phải thời gian", details_panel, objectName="muted")
         self.pipeline_progress_label.setAccessibleName("Tiến độ tổng quy trình")
-        pipeline_progress_row.addWidget(self.pipeline_progress_label)
-        pipeline_progress_row.addStretch(1)
-        current_layout.addLayout(pipeline_progress_row)
-        self.pipeline_progress_bar = QProgressBar()
+        self.pipeline_progress_label.hide()
+        self.pipeline_progress_bar = QProgressBar(details_panel)
         self.pipeline_progress_bar.setObjectName("pipelineProgress")
         self.pipeline_progress_bar.setRange(0, 100)
         self.pipeline_progress_bar.setValue(0)
         self.pipeline_progress_bar.setTextVisible(False)
         self.pipeline_progress_bar.setAccessibleName("Tiến độ tổng theo số bước đã hoàn tất")
-        current_layout.addWidget(self.pipeline_progress_bar)
-        status_row = QHBoxLayout()
-        status_row.addWidget(self.status_label)
-        status_row.addSpacing(16)
-        status_row.addWidget(self.environment_status)
-        status_row.addStretch(1)
-        current_layout.addLayout(status_row)
-        self.pipeline_detail = QLabel("Trạng thái các bước sẽ hiện tại đây.", objectName="muted")
+        self.pipeline_progress_bar.hide()
+        self.pipeline_detail = QLabel("Trạng thái các bước sẽ hiện tại đây.", details_panel, objectName="muted")
         self.pipeline_detail.setWordWrap(True)
-        current_layout.addWidget(self.pipeline_detail)
-        self.output_summary = QLabel("Chưa có video đầu ra", objectName="muted")
+        self.pipeline_detail.hide()
+        self.output_summary = QLabel("Chưa có video đầu ra", details_panel, objectName="muted")
         self.output_summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        current_layout.addWidget(self.output_summary)
+        self.output_summary.hide()
         overview_divider = QFrame(objectName="workspaceDivider")
         overview_divider.setFrameShape(QFrame.Shape.HLine)
         current_layout.addWidget(overview_divider)
-        current_layout.addWidget(QLabel("BƯỚC ĐANG XEM", objectName="eyebrow"))
         self.active_title = QLabel("Chọn một bước", objectName="sectionTitle")
-        current_layout.addWidget(self.active_title)
         self.active_detail = QLabel("Trạng thái và hoạt động mới nhất sẽ hiện ở đây.", objectName="muted")
         self.active_detail.setWordWrap(True)
         current_layout.addWidget(self.active_detail)
@@ -162,8 +164,17 @@ class WorkbenchScreen(QWidget):
         self.active_activity.setWordWrap(True)
         self.active_activity.setVisible(False)
         current_layout.addWidget(self.active_activity)
+        self.voice_detail = QLabel("", objectName="activeActivity")
+        self.voice_detail.setWordWrap(True)
+        self.voice_detail.hide()
+        self.voice_bar = QProgressBar()
+        self.voice_bar.setRange(0, 100)
+        self.voice_bar.setTextVisible(False)
+        self.voice_bar.setAccessibleName("Tiến độ đoạn giọng đã hoàn tất trong cảnh hiện tại")
+        self.voice_bar.hide()
         self.progress_text = QLabel("Sẵn sàng")
         self.progress_bar = QProgressBar()
+        self.progress_bar.setTextVisible(False)
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self._frame_status: tuple[str, int, int, str] | None = None
@@ -175,11 +186,13 @@ class WorkbenchScreen(QWidget):
         self.frame_bar.setVisible(False)
         current_layout.addWidget(self.progress_text)
         current_layout.addWidget(self.progress_bar)
+        current_layout.addWidget(self.voice_detail)
+        current_layout.addWidget(self.voice_bar)
         current_layout.addWidget(self.frame_detail)
         current_layout.addWidget(self.frame_bar)
-        self.latest_event = QLabel("Chưa có hoạt động mới.", objectName="muted")
+        self.latest_event = QLabel("Chưa có hoạt động mới.", details_panel, objectName="muted")
         self.latest_event.setWordWrap(True)
-        current_layout.addWidget(self.latest_event)
+        self.latest_event.hide()
         step_divider = QFrame(objectName="workspaceDivider")
         step_divider.setFrameShape(QFrame.Shape.HLine)
         current_layout.addWidget(step_divider)
@@ -233,8 +246,10 @@ class WorkbenchScreen(QWidget):
         self._log_file: Path | None = None
 
         # Flat inspector/action strip: no third bordered card competing with console.
-        self.detail_title = QLabel("Chưa chọn", objectName="detailSubheading")
-        self.detail_body = QLabel("Chọn một bước để xem trạng thái và đầu ra liên quan.", objectName="muted")
+        self.detail_title = QLabel("Chưa chọn", details_panel)
+        self.detail_title.hide()
+        self.detail_body = QLabel("", details_panel)
+        self.detail_body.hide()
         self.detail_body.setWordWrap(True)
         self.output_path_label = QLabel("", objectName="outputPathFlat")
         self.output_path_label.setWordWrap(True)
@@ -243,20 +258,17 @@ class WorkbenchScreen(QWidget):
         self.rerun_button.setEnabled(False)
         self.rerun_button.clicked.connect(lambda: self.rerun_requested.emit(self.stage_rail.selected_step or ""))
         self.media_button = QPushButton("Mở Media / Xem đầu ra  →")
-        self.media_button.setObjectName("primary")
         self.media_button.setEnabled(False)
         self.media_button.setToolTip("Xem video, ảnh, âm thanh và tài liệu")
         self.media_button.clicked.connect(lambda: self.output_requested.emit("media"))
 
         inspector_row = QHBoxLayout()
         inspector_row.setSpacing(10)
-        inspector_row.addWidget(QLabel("CHI TIẾT BƯỚC", objectName="eyebrow"))
-        inspector_row.addWidget(self.detail_title)
+        inspector_row.addWidget(self.active_title)
         inspector_row.addStretch(1)
         inspector_row.addWidget(self.rerun_button)
         inspector_row.addWidget(self.media_button)
-        current_layout.insertLayout(current_layout.indexOf(step_divider), inspector_row)
-        current_layout.insertWidget(current_layout.indexOf(step_divider), self.detail_body)
+        current_layout.insertLayout(current_layout.indexOf(self.active_detail), inspector_row)
         current_layout.insertWidget(current_layout.indexOf(step_divider), self.output_path_label)
         current_layout.addStretch(1)
 
@@ -268,9 +280,9 @@ class WorkbenchScreen(QWidget):
         self.detail_console_splitter.setHandleWidth(7)
         self.detail_console_splitter.addWidget(details_panel)
         self.detail_console_splitter.addWidget(console_panel)
-        self.detail_console_splitter.setStretchFactor(0, 3)
-        self.detail_console_splitter.setStretchFactor(1, 2)
-        self.detail_console_splitter.setSizes([520, 270])
+        self.detail_console_splitter.setStretchFactor(0, 1)
+        self.detail_console_splitter.setStretchFactor(1, 1)
+        self.detail_console_splitter.setSizes([310, 240])
         outer_layout.addWidget(self.detail_console_splitter, 1)
         self.console_panel = console_panel
 
@@ -285,7 +297,7 @@ class WorkbenchScreen(QWidget):
 
         footer = QHBoxLayout()
         footer.addStretch(1)
-        self.continue_button = QPushButton("Tiếp tục")
+        self.continue_button = QPushButton("Tiếp tục quy trình")
         self.continue_button.setObjectName("primary")
         self.continue_button.setToolTip("Tiếp tục từ bước chưa hoàn tất (Ctrl+R)")
         self.continue_button.clicked.connect(self.continue_requested)
@@ -301,6 +313,16 @@ class WorkbenchScreen(QWidget):
         self.cancel_button.setVisible(False)
         footer.addWidget(self.cancel_button)
         root.addLayout(footer)
+        self.elapsed_timer = QTimer(self)
+        self.elapsed_timer.timeout.connect(self._update_elapsed)
+        self.elapsed_timer.start(1000)
+
+    def _update_elapsed(self) -> None:
+        if self._running_since is None:
+            self.elapsed_label.clear()
+        else:
+            seconds = int(monotonic() - self._running_since)
+            self.elapsed_label.setText(f"Đã chạy {seconds // 60:02d}:{seconds % 60:02d}")
 
     def set_job(self, name: str, *, revision: str | None, mode: str, rows: list[dict]) -> None:
         self._full_job_title = name
@@ -312,6 +334,11 @@ class WorkbenchScreen(QWidget):
 
     def set_rows(self, rows: list[dict]) -> None:
         self.stage_rail.set_rows(rows)
+        active_step = next((row["step"] for row in rows if row.get("status") == "RUNNING"), None)
+        if active_step != self._running_step:
+            self._running_step = active_step
+            self._running_since = monotonic() if active_step else None
+        self._update_elapsed()
         statuses = [str(row.get("status", "PENDING")) for row in rows]
         total = len(statuses)
         done = statuses.count("DONE")
@@ -345,7 +372,7 @@ class WorkbenchScreen(QWidget):
         if failed:
             status, severity = "! Cần xử lý", "error"
         elif running:
-            status, severity = "● Đang chạy", "warning"
+            status, severity = "● Đang chạy · " + STAGE_TITLES.get(active_step, active_step), "warning"
         elif total and done + skipped == total:
             status, severity = "✓ Hoàn tất", "success"
         elif total:
@@ -360,10 +387,10 @@ class WorkbenchScreen(QWidget):
 
     def set_active_stage(self, step: str, row: dict, *, percent: float | None = None) -> None:
         self.stage_rail.select_step(step)
-        self.active_title.setText(STAGE_TITLES.get(step, step))
         detail = row.get("message") or row.get("detail") or row.get("status", "")
         self.active_detail.setText(str(detail))
         status = str(row.get("status", ""))
+        self.active_detail.setVisible(bool(detail) and detail != status)
         self.progress_bar.setVisible(row.get("status") == "RUNNING")
         state_text = {
             "DONE": "Hoàn tất",
@@ -373,8 +400,11 @@ class WorkbenchScreen(QWidget):
             "SKIPPED": "Đã bỏ qua",
             "PENDING": "Đang chờ",
         }.get(status, "Sẵn sàng")
+        self.active_title.setText(f"{STAGE_TITLES.get(step, step)} · {state_text}")
+        self.active_title.setToolTip("Bước đang xem; trạng thái bước đang chạy nằm ở thanh tổng quan.")
+        self.progress_text.setVisible(status == "RUNNING")
         activity = self.stage_rail.activities.get(step) if status == "RUNNING" else ""
-        if activity:
+        if activity and not (step == "VOICE" and self._voice_feedback):
             self.active_activity.setText("Đã ghi nhận: " + self.stage_rail._shorten(activity, 112))
             self.active_activity.setToolTip(activity)
             self.active_activity.setVisible(True)
@@ -425,16 +455,45 @@ class WorkbenchScreen(QWidget):
         else:
             self.progress_bar.setVisible(False)
             self.progress_text.setText(state_text)
+        self.voice_detail.setVisible(step == "VOICE" and status == "RUNNING" and bool(self._voice_feedback))
+        self.voice_bar.hide()
+        if step == "VOICE" and status == "RUNNING" and self._voice_feedback:
+            event = self._voice_feedback
+            text = f"Cảnh {event['scene_id']} · {event['scene_index']}/{event['scene_total']} cảnh cần tạo"
+            if event.get("voice"):
+                text += f" · Giọng: {event['voice']}"
+            chunk_total = event.get("chunk_total", 0)
+            chunk_done = event.get("chunk_done", 0)
+            if isinstance(chunk_total, int) and isinstance(chunk_done, int) and 0 <= chunk_done <= chunk_total and chunk_total > 0:
+                text += f"\n{chunk_done}/{chunk_total} đoạn đã hoàn tất · {event['message']}"
+                self.voice_bar.setValue(round(chunk_done * 100 / chunk_total))
+                self.voice_bar.show()
+            else:
+                text += "\n" + event["message"]
+            self.voice_detail.setText(text)
         self.detail_title.setText(STAGE_TITLES.get(step, step))
         self.detail_body.setText(str(row.get("message") or row.get("detail") or row.get("status", "")))
         self.rerun_button.setEnabled(step != "PACKAGE" and row.get("status") != "RUNNING")
 
     def reset_measured_progress(self) -> None:
         self._measured_progress.clear()
+        self._voice_feedback = None
+        self.voice_detail.hide()
+        self.voice_bar.hide()
         self._frame_status = None
         self.frame_detail.setVisible(False)
         self.frame_bar.setVisible(False)
         self.stage_rail.reset_progress()
+
+    def set_voice_progress(self, event: dict) -> None:
+        completed, total, index = (event.get(key) for key in ("completed_scenes", "scene_total", "scene_index"))
+        if not all(isinstance(value, int) for value in (completed, total, index)):
+            return
+        if not (0 <= completed <= total and 1 <= index <= total) or not isinstance(event.get("message"), str) or not isinstance(event.get("scene_id"), str):
+            return
+        self._voice_feedback = event
+        self.set_measured_progress("VOICE", completed, total, "cảnh", "Tạo giọng")
+        self.set_stage_activity("VOICE", event["message"])
 
     def clear_frame_progress(self) -> None:
         self._frame_status = None
@@ -481,7 +540,7 @@ class WorkbenchScreen(QWidget):
         if stage not in self.stage_rail.buttons:
             return
         self.stage_rail.set_activity(stage, text)
-        if stage == self.stage_rail.selected_step and self.stage_rail.rows.get(stage, {}).get("status") == "RUNNING":
+        if stage == self.stage_rail.selected_step and self.stage_rail.rows.get(stage, {}).get("status") == "RUNNING" and not (stage == "VOICE" and self._voice_feedback):
             self.active_activity.setText("Đã ghi nhận: " + self.stage_rail._shorten(text, 112))
             self.active_activity.setToolTip(text)
             self.active_activity.setVisible(True)
@@ -598,6 +657,7 @@ class WorkbenchScreen(QWidget):
         self._video_path = video_path
         self._folder_path = folder_path
         self.output_path_label.setText(video_path or folder_path or "Chưa có tệp đầu ra")
+        self.output_path_label.setVisible(bool(video_path or folder_path))
         self.output_path_label.setToolTip(video_path or folder_path or "Chưa có tệp đầu ra")
         self.output_summary.setText(f"Video đầu ra · {Path(video_path).name}" if video_path else "Chưa có video đầu ra")
         self.output_summary.setToolTip(video_path or "Chưa có video đầu ra")

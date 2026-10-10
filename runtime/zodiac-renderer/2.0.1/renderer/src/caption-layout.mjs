@@ -1,3 +1,5 @@
+import {CAPTION_STROKE_PX, CAPTION_BOUNCE_PX} from './caption-karaoke.mjs';
+
 export function resolveCaptionZone(scene, presentation={}, video={width:1080,height:1920}) {
   const typography=presentation.caption ?? {};
   const fontSize=typography.font_size_px ?? 84, lineHeight=typography.line_height ?? 1.15;
@@ -10,7 +12,8 @@ export function resolveCaptionZone(scene, presentation={}, video={width:1080,hei
 }
 
 export function resolveCaptionLayout(scene,presentation,video,text,measure) {
-  const zone=resolveCaptionZone(scene,presentation,video), lines=[];
+  const source=resolveCaptionZone(scene,presentation,video);
+  const zone={...source,padding:Math.max(source.padding,CAPTION_STROKE_PX+CAPTION_BOUNCE_PX)}, lines=[];
   for (const paragraph of text.split('\n')) {
     let line='';
     for (const word of paragraph.split(/\s+/).filter(Boolean)) {

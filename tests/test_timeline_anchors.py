@@ -28,6 +28,21 @@ def timing_scene(words):
 
 
 class TimelineAnchorTests(unittest.TestCase):
+    def test_semantic_caption_preserves_exact_word_timing_and_segment_offset(self):
+        from tools.control_plane.segments import _local_scene
+        scene = {"id": "S01", "caption_segments": [{"text": "Bọ Cạp!"}]}
+        rows = _semantic_caption_rows(scene, timing_scene(["Bọ", "Cạp"]), fps=24)
+        self.assertEqual([word["text"] for word in rows[0]["words"]], ["Bọ", "Cạp"])
+        self.assertAlmostEqual(rows[0]["words"][0]["end_frame"], 52.8)
+        local = _local_scene({"start_frame": 48, "captions": rows, "events": []}, 48)
+        self.assertAlmostEqual(local["captions"][0]["words"][0]["end_frame"], 4.8)
+        self.assertEqual(rows[0]["words"][0]["start_frame"], 48)
+
+    def test_grouped_timing_does_not_invent_karaoke_word_timestamps(self):
+        scene = {"id": "S01", "caption_segments": [{"text": "Bọ Cạp!"}]}
+        rows = _semantic_caption_rows(scene, timing_scene(["Bọ Cạp"]), fps=24)
+        self.assertNotIn("words", rows[0])
+
     def test_semantic_captions_split_measured_words_using_unicode_tokens(self):
         scene = {
             "id": "S01",

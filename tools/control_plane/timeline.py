@@ -53,6 +53,10 @@ def _caption_rows(
                 "text": text,
                 "start_frame": start_frame,
                 "end_frame": end_frame,
+                **({"words": [{"text": re.findall(r"\w+", text)[0],
+                    "start_frame": start_ms * fps / 1000,
+                    "end_frame": end_ms * fps / 1000}]}
+                   if len(re.findall(r"\w+", text)) == 1 and end_ms > start_ms else {}),
             }
         )
     return rows
@@ -74,7 +78,7 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
     if not raw:
         raise ControlPlaneError(code="CAPTION_TIMING_MISSING", stage="PLAN",
             message="measured captions are required for semantic caption alignment", scene_id=scene["id"])
-    tokens: list[tuple[str, float, float]] = []
+    tokens: list[tuple[str, float, float, bool]] = []
     for item in raw:
         parts = words(str(item.get("text") or ""))
         if not parts:
@@ -85,7 +89,7 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
             raise ControlPlaneError(code="CAPTION_TIMING_INVALID", stage="PLAN",
                 message="measured caption duration must be positive", scene_id=scene["id"])
         for i, token in enumerate(parts):
-            tokens.append((token, a + (b - a) * i / len(parts), a + (b - a) * (i + 1) / len(parts)))
+            tokens.append((token, a + (b - a) * i / len(parts), a + (b - a) * (i + 1) / len(parts), len(parts) == 1))
     segments = scene["caption_segments"]
     wanted = [w for segment in segments for w in words(segment["text"])]
     if wanted != [token[0] for token in tokens]:
@@ -101,7 +105,16 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
         first, last = tokens[offset], tokens[offset + length - 1]
         start = round(first[1] * fps / 1000)
         end = max(start + 1, round(last[2] * fps / 1000))
-        rows.append({"text": segment["text"], "start_frame": start, "end_frame": end})
+        row = {"text": segment["text"], "start_frame": start, "end_frame": end}
+        measured = tokens[offset:offset + length]
+        # Group timestamps cannot prove when individual words were spoken.
+        if all(token[3] for token in measured):
+            row["words"] = [
+                {"text": text, "start_frame": token[1] * fps / 1000,
+                 "end_frame": token[2] * fps / 1000}
+                for text, token in zip(re.findall(r"\w+", segment["text"]), measured)
+            ]
+        rows.append(row)
         offset += length
     return rows
 

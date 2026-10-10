@@ -1,5 +1,6 @@
 import {resolveVisualRole} from '../src/visual-role.mjs';
 import {resolveCaptionZone} from '../src/caption-layout.mjs';
+import {validateCaptionWords} from '../src/caption-karaoke.mjs';
 import {auditSpatialLayout} from '../src/spatial-layout.mjs';
 import {measurePlanLayout} from './measure-layout.mjs';
 import {readFile, writeFile, mkdir} from "node:fs/promises";
@@ -38,6 +39,7 @@ export const validateExecutablePlan = (plan) => {
       throw new Error(`scene ${scene.id ?? "?"} has invalid executable frame bounds`);
     }
     if (!Array.isArray(scene.events)) throw new Error(`scene ${scene.id ?? "?"} events must be an array`);
+    for (const caption of scene.captions ?? []) validateCaptionWords(caption);
     for (const event of scene.events) {
       if (!validInt(event.start_frame) || !Number.isInteger(event.end_frame) || event.end_frame <= event.start_frame) {
         throw new Error(`event ${event.event_id ?? "?"} has invalid resolved frame range`);

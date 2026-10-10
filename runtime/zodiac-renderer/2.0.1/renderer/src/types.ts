@@ -33,6 +33,7 @@ export type RenderPlanEntity = {
 
 export type RenderPlanCaption = {
   text: string;
+  words?: Array<{text: string; start_frame: number; end_frame: number}>;
   resolved_layout?: {zone: RenderBox & {padding:number}; lines:string[]; x:number; y:number; width:number; height:number};
   start_frame: number;
   end_frame: number;

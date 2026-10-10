@@ -59,6 +59,13 @@ Job@5 workspaces are also available in the job picker without the source ZIP.
 Use **Kiểm tra** to validate the current package and check VieNeu, alignment,
 Renderer 2, Node/npm, FFmpeg and ffprobe, with suggested fixes for failures.
 
+In **Thiết lập**, the voice dropdown refreshes from the running VieNeu service
+and shows each voice's description. **Nghe thử giọng** generates a short sample
+and plays it inside the app; **Dừng nghe thử giọng** stops playback.
+The workbench shows completed scenes separately from VieNeu's current chunk
+updates. Queue/reference/model-loading states have no invented percentage.
+Drag the divider above **LIVE CONSOLE** to resize the persistent log panel.
+
 The direct compiler uses the same canonical timing path:
 
 ```bash
@@ -300,6 +307,24 @@ stop, and output navigation. It adds keyboard shortcuts: `Ctrl+O` import,
 `Ctrl+R` continue, `Ctrl+Shift+R` run all, `Ctrl+L` logs, `Esc` back to jobs.
 Run `uv run zodiac` to open this GUI. PySide6 installs with the project's default
 dependencies.
+
+Luồng GUI: chọn ZIP trong `ready/` hoặc **Chọn ZIP từ máy…** → nhập và kiểm tra
+gói → Workspace tự kiểm tra môi trường → **Thiết lập** giọng/nhạc →
+**Tiếp tục quy trình**. Khi hoàn tất, nút chính chuyển thành **Xem video đầu ra**.
+Màn nhập hiện trạng thái/lỗi và giữ lựa chọn job khi làm mới. Media ưu tiên
+`zodiac-story.mp4` khi chưa chọn tệp, giữ tệp đang xem khi làm mới, và có
+**Mở Workspace** để quay về đúng job.
+
+Job@5 ghi thời gian các bước thành công vào `.runtime/performance.jsonl`.
+PLAN bao gồm audit payload và phục hồi cache; RENDER bao gồm QC và kiểm tra
+đầu vào. Kiểm tra Remotion CLI trước TTS có dòng riêng với `stage=RENDER`,
+`substage=CLI_CHECK`; cộng cả dòng này khi tổng hợp thời gian backend.
+
+Renderer 2.0.1 thêm viền phụ đề đen 2px. Từ đang đọc dùng màu nhấn của job
+và nảy nhẹ theo timing Whisper; các từ còn lại giữ màu gốc. Render plan giữ
+timing từng từ và điều chỉnh offset khi render theo phân đoạn. Nếu chỉ có
+timing cả cụm, phụ đề giữ dạng tĩnh. Chạy lại bước **Render** để cập nhật MP4;
+cache giọng và timing được dùng lại nếu còn hợp lệ.
 
 ## Safety
 

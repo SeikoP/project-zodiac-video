@@ -176,6 +176,7 @@ def _align_cached_scenes(
     durations: dict[str, float] = {}
     aligned_words: dict[str, list[dict[str, Any]]] = {}
     model = None
+    fallback_model = None
     resource_profile: dict[str, Any] | None = None
     graph = ArtifactGraph(workspace)
 
@@ -235,13 +236,14 @@ def _align_cached_scenes(
                     f"TIMING RETRY {scene_id}: {primary_model} mismatch; verifying with medium"
                 )
                 try:
-                    fallback_model = load_word_aligner(
-                        "medium",
-                        str(settings.get("device") or "cpu"),
-                        str(settings.get("compute_type") or "int8"),
-                        cpu_threads=int(settings.get("cpu_threads") or resource_profile["whisper_cpu_threads"]),
-                        num_workers=int(settings.get("num_workers") or resource_profile["whisper_workers"]),
-                    )
+                    if fallback_model is None:
+                        fallback_model = load_word_aligner(
+                            "medium",
+                            str(settings.get("device") or "cpu"),
+                            str(settings.get("compute_type") or "int8"),
+                            cpu_threads=int(settings.get("cpu_threads") or resource_profile["whisper_cpu_threads"]),
+                            num_workers=int(settings.get("num_workers") or resource_profile["whisper_workers"]),
+                        )
                     words = _align_scene_words(fallback_model, path, scene["voice"])
                 except (AlignmentMismatchError, PipelineError) as retry_error:
                     raise PipelineError(

@@ -60,6 +60,10 @@ def _local_scene(scene: dict[str, Any], offset: int) -> dict[str, Any]:
             **caption,
             "start_frame": int(caption["start_frame"]) - offset,
             "end_frame": int(caption["end_frame"]) - offset,
+            **({"words": [{**word,
+                "start_frame": word["start_frame"] - offset,
+                "end_frame": word["end_frame"] - offset}
+                for word in caption["words"]]} if "words" in caption else {}),
         }
         for caption in row.get("captions", [])
     ]

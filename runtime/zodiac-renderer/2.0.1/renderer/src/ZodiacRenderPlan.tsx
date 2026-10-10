@@ -1,5 +1,6 @@
 import {resolveVisualRole, resolveLayerOrder} from './visual-role.mjs';
 import {resolveCaptionZone} from './caption-layout.mjs';
+import {CAPTION_STROKE_PX, resolveCaptionWordLines} from './caption-karaoke.mjs';
 import {resolveEntityState} from './spatial-layout.mjs';
 import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
@@ -55,6 +56,8 @@ const SceneLayer: React.FC<{
   const safe = resolveCaptionZone(scene, presentation, video);
   const textLayout = caption?.resolved_layout;
   if (caption && !textLayout) throw new Error(`CAPTION_LAYOUT_MISSING scene=${scene.id} frame=${frame}`);
+  const wordLines: Array<Array<{text: string; active: boolean; lift: number}>> = caption
+    ? resolveCaptionWordLines(caption, frame) : [];
   const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,resolveEntityState(scene,entity,frame)]));
 
   return (
@@ -116,11 +119,24 @@ const SceneLayer: React.FC<{
             fontSize: presentation.caption?.font_size_px ?? 84,
             fontWeight: presentation.caption?.font_weight ?? 400,
             color: presentation.caption?.color ?? presentation.ink ?? "#111111",
+            WebkitTextStroke: `${CAPTION_STROKE_PX}px #000000`,
+            paintOrder: "stroke fill",
             textAlign: "center",
             zIndex: 90,
           }}
         >
-          {textLayout!.lines.join("\n")}
+          {wordLines.map((line, lineIndex) => (
+            <React.Fragment key={lineIndex}>
+              {lineIndex > 0 ? "\n" : null}
+              {line.map((part, partIndex) => (
+                <span key={partIndex} data-caption-word={part.active ? "active" : undefined}
+                  style={{position: "relative", top: -part.lift,
+                    color: part.active ? (presentation.caption?.highlight_color ?? "#e97a66") : undefined}}>
+                  {part.text}
+                </span>
+              ))}
+            </React.Fragment>
+          ))}
         </div>
       ) : null}
     </AbsoluteFill>

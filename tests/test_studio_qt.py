@@ -550,6 +550,7 @@ class TaskWorkbenchTests(unittest.TestCase):
             self.assertEqual(window.workbench.job_title.text(), "bocap-hai-phien-ban")
             self.assertEqual(window.workbench.stage_rail.count(), 7)
 
+            window._environment_ready = True
             with patch.object(window.v2_session, "run") as run:
                 window.workbench.continue_button.click()
                 deadline = time.monotonic() + 5

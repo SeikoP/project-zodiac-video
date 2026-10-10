@@ -56,11 +56,11 @@ class StageRail(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("stageRailFlat")
-        self.setMinimumWidth(252)
-        self.setMaximumWidth(292)
+        self.setMinimumWidth(238)
+        self.setMaximumWidth(258)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 12, 10, 8)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
         layout.addWidget(QLabel("QUY TRÌNH · 7 BƯỚC", objectName="eyebrow"))
 
         self.buttons: dict[str, QToolButton] = {}
@@ -79,8 +79,8 @@ class StageRail(QFrame):
             row.setObjectName("stageLine")
             row.setProperty("selected", False)
             row_layout = QVBoxLayout(row)
-            row_layout.setContentsMargins(10, 10, 10, 10)
-            row_layout.setSpacing(3)
+            row_layout.setContentsMargins(8, 5, 8, 5)
+            row_layout.setSpacing(2)
 
             heading = QHBoxLayout()
             heading.setSpacing(5)
@@ -103,6 +103,7 @@ class StageRail(QFrame):
             purpose_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             purpose_label.setWordWrap(True)
             row_layout.addWidget(purpose_label)
+            purpose_label.hide()
             activity = QLabel("")
             activity.setObjectName("stageActivity")
             activity.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -199,6 +200,7 @@ class StageRail(QFrame):
         self.selected_step = step
         for key, button in self.buttons.items():
             button.setChecked(key == step)
+            self.descriptions[key].setVisible(key == step)
             row = self.row_widgets[key]
             row.setProperty("selected", key == step)
             row.style().unpolish(row)

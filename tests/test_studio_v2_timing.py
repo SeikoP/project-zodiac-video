@@ -4,6 +4,7 @@ import tempfile
 import unittest
 import wave
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.control_plane.errors import ControlPlaneError
 from tools.studio_v2.timing import ensure_timing_artifact
@@ -72,6 +73,32 @@ class FakeAligner:
 
 
 class StudioV2TimingTests(unittest.TestCase):
+    def test_medium_retry_model_loads_once_per_run_for_multiple_scenes(self):
+        from tools.studio_v2.timing import _align_cached_scenes
+        from tools.zodiac_local import AlignmentMismatchError
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            voice = voice_artifact(root)
+            paths = [root / ".runtime" / "tts-scenes" / f"{scene_id}.wav" for scene_id in ("S01", "S02")]
+            write_pcm(paths[1])
+            production = {"scenes": [{"id": scene_id, "voice": "xin chao"} for scene_id in ("S01", "S02")]}
+            primary, medium = object(), object()
+            def load(name, *args, **kwargs):
+                return primary if name == "small" else medium
+            def align(model, *args):
+                if model is primary:
+                    raise AlignmentMismatchError("primary mismatch")
+                return [{"word": "xin", "start": 0.0, "end": 0.05}]
+            with patch("tools.studio_v2.timing.scene_voice_files", return_value=paths), \
+                 patch("tools.studio_v2.timing.require_word_aligner_installed"), \
+                 patch("tools.studio_v2.timing.load_word_aligner", side_effect=load) as loaded, \
+                 patch("tools.studio_v2.timing._align_scene_words", side_effect=align), \
+                 patch("tools.studio_v2.timing.build_timing_from_word_alignment", return_value={}), \
+                 patch("tools.zodiac_local._emit_tts_log"):
+                for _ in range(2):
+                    _align_cached_scenes(root, production, voice, {"model": "small"}, "test", force=True)
+                self.assertEqual([call.args[0] for call in loaded.call_args_list], ["small", "medium", "small", "medium"])
+
     def _root(self, temp):
         root = Path(temp)
         (root / "narration.txt").write_text("xin chao\n", encoding="utf-8")

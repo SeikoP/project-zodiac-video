@@ -14,6 +14,54 @@ from tools.studio_qt.publish_copy import publish_text_for_job
 
 
 class WorkbenchUsabilityTests(unittest.TestCase):
+    def test_media_position_updates_do_not_seek_and_keyboard_changes_do(self):
+        from tools.studio_qt.screens.media import MediaWorkspace
+        media = MediaWorkspace()
+        with patch.object(media.player, "isSeekable", return_value=True), \
+             patch.object(media.player, "position", return_value=0), \
+             patch.object(media.player, "setPosition") as seek:
+            media._duration_changed(60000)
+            media._position_changed(12000)
+            self.assertEqual(media.position_slider.value(), 12000)
+            seek.assert_not_called()
+            media.position_slider.setValue(30000)
+            seek.assert_called_once_with(30000)
+            self.assertEqual(media.position_label.text(), "00:30 / 01:00")
+            media._seekable_changed(False)
+            self.assertFalse(media.position_slider.isEnabled())
+            media._duration_changed(0)
+            seek.assert_called_once_with(30000)
+
+    def test_media_track_click_seeks_to_clicked_position(self):
+        from PySide6.QtCore import QPoint, Qt
+        from PySide6.QtTest import QTest
+        from tools.studio_qt.screens.media import SeekSlider
+        slider = SeekSlider(Qt.Orientation.Horizontal)
+        slider.setRange(0, 60000)
+        slider.resize(400, 30)
+        slider.show()
+        self.app.processEvents()
+        QTest.mouseClick(slider, Qt.MouseButton.LeftButton, pos=QPoint(300, 15))
+        self.assertGreater(slider.value(), 40000)
+        self.assertLess(slider.value(), 50000)
+
+    def test_reopening_same_media_clears_source_before_loading(self):
+        from PySide6.QtCore import QUrl
+        from tools.studio_qt.screens.media import MediaWorkspace
+        with tempfile.TemporaryDirectory() as temp:
+            job = Path(temp).resolve()
+            out = job / "out"
+            out.mkdir()
+            audio = out / "voice.wav"
+            audio.touch()
+            media = MediaWorkspace()
+            media.set_jobs([{"group": "Job local", "name": job.name, "path": str(job), "out_path": str(out)}])
+            with patch.object(media.player, "setSource") as source:
+                media.open_media(audio)
+                media.open_media(audio)
+                self.assertEqual([call.args[0] for call in source.call_args_list],
+                                 [QUrl(), QUrl.fromLocalFile(str(audio))] * 2)
+
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
@@ -36,10 +84,78 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         home.set_ready_packages(["/workspace/ready/b.zip", "/workspace/ready/a.zip"])
         home.ready_picker.setCurrentIndex(1)
         home.ready_import_button.click()
-        self.assertEqual(picked, ["/workspace/ready/a.zip"])
+        self.assertEqual([Path(p) for p in picked], [Path("/workspace/ready/a.zip")])
         home.set_ready_packages([])
         self.assertFalse(home.ready_import_button.isEnabled())
         home.close()
+
+    def test_home_refresh_preserves_selection_and_busy_blocks_actions(self):
+        from tools.studio_qt.screens.home import HomeScreen
+        jobs = [{"name": name, "path": name} for name in ("first", "second")]
+        home = HomeScreen(jobs)
+        home.set_ready_packages(["ready/first.zip"])
+        home.recent_list.setCurrentRow(1)
+        home.set_recent_jobs(jobs)
+        self.assertEqual(home.recent_list.currentItem().data(256), "second")
+        self.assertTrue(home.open_job_button.isEnabled())
+        home.set_busy(True, "Đang nhập…")
+        home.set_ready_packages(["ready/first.zip"])
+        self.assertFalse(home.ready_import_button.isEnabled())
+        self.assertFalse(home.import_button.isEnabled())
+        self.assertFalse(home.open_job_button.isEnabled())
+        home.set_busy(False)
+        self.assertTrue(home.ready_import_button.isEnabled())
+        self.assertTrue(home.open_job_button.isEnabled())
+
+    def test_media_prioritizes_output_and_preserves_file_on_refresh(self):
+        from tools.studio_qt.screens.media import MediaWorkspace
+        with tempfile.TemporaryDirectory() as temp:
+            job = Path(temp).resolve()
+            out = job / "out"
+            out.mkdir()
+            (out / "zodiac-story.mp4").touch()
+            details = out / "details.txt"
+            details.write_text("details", encoding="utf-8")
+            jobs = [{"group": "Job@5", "name": job.name, "path": str(job), "out_path": str(out)}]
+            media = MediaWorkspace()
+            # Avoid decoding a synthetic MP4; exercise the real selection logic.
+            with patch.object(media.player, "setSource"):
+                media.set_jobs(jobs)
+                self.assertEqual(media._selected_path, out / "zodiac-story.mp4")
+                media.open_media(details)
+                media.set_jobs(jobs)
+                self.assertEqual(media._selected_path, details)
+                self.assertEqual(media.text_preview.toPlainText(), "details")
+            opened = []
+            media.workspace_requested.connect(opened.append)
+            media.workspace_button.click()
+            self.assertEqual(opened, [str(job)])
+            media.set_jobs([])
+            self.assertFalse(media.workspace_button.isEnabled())
+            self.assertFalse(media.video_button.isEnabled())
+
+    def test_primary_action_checks_environment_before_continue(self):
+        from tools.studio_qt.app import ZodiacQtApp
+        with tempfile.TemporaryDirectory() as temp:
+            window = ZodiacQtApp(workspace=Path(temp))
+            with patch.object(window, "_legacy_rows", return_value=[{"status": "PENDING"}]), \
+                 patch.object(window, "_check_environment") as check, \
+                 patch.object(window, "_start") as start:
+                window._continue_workflow()
+                check.assert_called_once_with(show_result=False)
+                start.assert_not_called()
+                window._environment_ready = True
+                window._continue_workflow()
+                start.assert_called_once_with(resume=True)
+            video = Path(temp) / "output.mp4"
+            video.touch()
+            with patch.object(window, "_legacy_rows", return_value=[{"status": "DONE"}]), \
+                 patch.object(window, "_active_video", return_value=video), \
+                 patch.object(window, "_open_output") as opened, \
+                 patch.object(window, "_start") as start:
+                window._continue_workflow()
+                opened.assert_called_once_with("video")
+                start.assert_not_called()
 
     def test_ready_scanner_is_workspace_scoped_and_ignores_non_zip(self):
         from tools.studio_qt.app import ZodiacQtApp
@@ -50,9 +166,10 @@ class WorkbenchUsabilityTests(unittest.TestCase):
             (ready / "a.zip").write_bytes(b"zip-marker")
             (ready / "B.ZIP").write_bytes(b"zip-marker")
             (ready / "ignore.txt").write_text("no")
-            app = ZodiacQtApp(workspace=ws)
-            self.assertEqual({Path(p).name for p in app._ready_archives()}, {"a.zip", "B.ZIP"})
-            self.assertEqual(app.home.ready_picker.count(), 2)
+            with patch("tools.studio_qt.app.ROOT", ws):
+                app = ZodiacQtApp(workspace=ws)
+                self.assertEqual({Path(p).name for p in app._ready_archives()}, {"a.zip", "B.ZIP"})
+                self.assertEqual(app.home.ready_picker.count(), 2)
             app.close()
 
     def test_repo_ready_folder_is_also_discovered(self):

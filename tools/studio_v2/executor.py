@@ -89,6 +89,7 @@ def _record_stage_performance(
     cache_hit: bool,
     cache_reason: str,
     profile: dict[str, Any],
+    substage: str | None = None,
 ) -> None:
     path = workspace / ".runtime" / "performance.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,7 +98,7 @@ def _record_stage_performance(
         "run_id": run_id,
         "run_label": run_label,
         "stage": stage,
-        "substage": stage,
+        "substage": substage or stage,
         "elapsed_ms": round((time.perf_counter() - started) * 1000, 3),
         "cache_hit": cache_hit,
         "cache_reason": cache_reason,
@@ -605,6 +606,7 @@ class StudioV2Executor:
         # Check the pinned CLI BEFORE expensive voice/TTS or alignment. The
         # GUI preflight is advisory; the executor also enforces this guarantee.
         if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+            cli_started = time.perf_counter()
             node = shutil.which("node")
             if node is None:
                 raise ControlPlaneError(
@@ -615,6 +617,13 @@ class StudioV2Executor:
                 [node, str(_renderer_dir(workspace) / "scripts" / "local-remotion-cli.mjs"), "--check"],
                 stage="RENDER",
                 fallback_code="RENDERER_DEPENDENCY_MISSING",
+            )
+            _record_stage_performance(
+                workspace, stage=RENDER, substage="CLI_CHECK", run_id=run_id,
+                run_label=config.run_label, started=cli_started,
+                input_fingerprint=config.renderer_version, output_hash="none",
+                cache_hit=False, cache_reason="CHECKED",
+                profile={"renderer_version": config.renderer_version},
             )
 
         try:
@@ -742,6 +751,7 @@ class StudioV2Executor:
             raise
 
         complete_forced_stage(TIMING)
+        stage_started = time.perf_counter()
         self._begin_step(PLAN, cancel_event)
         plan_path = workspace / ".runtime" / "render-plan.json"
         plan_input = plan_key(
@@ -750,7 +760,6 @@ class StudioV2Executor:
             _sha256_file(workspace / "design-token.json"),
             config.compiler_version,
         )
-        stage_started = time.perf_counter()
         if not _reuse_file(
             controller,
             graph,
@@ -761,8 +770,7 @@ class StudioV2Executor:
         ):
             try:
                 plan_path = controller.build_plan()
-                plan_hash = _sha256_file(plan_path)
-                graph.record(
+                plan_hash = graph.record(
                     PLAN.casefold(), PLAN.casefold(), plan_input, plan_path,
                     producer="studio-v2-compiler",
                     producer_version=config.compiler_version,
@@ -783,19 +791,7 @@ class StudioV2Executor:
             except ControlPlaneError as exc:
                 self._mark_failed(PLAN, exc)
                 raise
-        plan_hash = _sha256_file(plan_path)
-        _record_stage_performance(
-            workspace,
-            stage=PLAN,
-            run_id=run_id,
-            run_label=config.run_label,
-            started=stage_started,
-            input_fingerprint=plan_input,
-            output_hash=plan_hash,
-            cache_hit=controller.state.steps[PLAN].reused,
-            cache_reason=controller.state.steps[PLAN].cache_reason or "REBUILT",
-            profile={"compiler_version": config.compiler_version, "resource": resource_profile},
-        )
+        plan_hash = controller.state.steps[PLAN].output_hash
 
         # Production gate: never treat ZIP validity as evidence of rendered visual
         # parity. Evaluate the exact Authoring IR and executable render plan, even
@@ -811,8 +807,7 @@ class StudioV2Executor:
             rebuild_plan=controller.build_plan,
         )
         if recovered_cached_plan:
-            plan_hash = _sha256_file(plan_path)
-            graph.record(
+            plan_hash = graph.record(
                 PLAN.casefold(), PLAN.casefold(), plan_input, plan_path,
                 producer="studio-v2-compiler",
                 producer_version=config.compiler_version,
@@ -831,7 +826,15 @@ class StudioV2Executor:
             )
             save_state(workspace, controller.state)
 
+        _record_stage_performance(
+            workspace, stage=PLAN, run_id=run_id, run_label=config.run_label,
+            started=stage_started, input_fingerprint=plan_input, output_hash=plan_hash,
+            cache_hit=controller.state.steps[PLAN].reused,
+            cache_reason=controller.state.steps[PLAN].cache_reason or "REBUILT",
+            profile={"compiler_version": config.compiler_version, "resource": resource_profile},
+        )
         complete_forced_stage(PLAN)
+        stage_started = time.perf_counter()
         self._begin_step(RENDER, cancel_event)
         # Validate the *full* Job@5 visual payload before expensive segmented
         # video rendering. Previously this quality gate ran only at cover
@@ -860,7 +863,6 @@ class StudioV2Executor:
             config.renderer_version,
             config.renderer_hash,
         )
-        stage_started = time.perf_counter()
         if not _reuse_file(
             controller,
             graph,
@@ -886,8 +888,7 @@ class StudioV2Executor:
                 _require_output(produced, stage="RENDER", code="RENDER_FAILED")
                 if produced.resolve() != rendered_path.resolve():
                     shutil.copy2(produced, rendered_path)
-                render_hash = _sha256_file(rendered_path)
-                graph.record(
+                render_hash = graph.record(
                     RENDER.casefold(), RENDER.casefold(), render_input, rendered_path,
                     producer="zodiac-renderer",
                     producer_version=config.renderer_version,
@@ -917,7 +918,7 @@ class StudioV2Executor:
                 )
                 self._mark_failed(RENDER, wrapped)
                 raise wrapped from exc
-        render_hash = _sha256_file(rendered_path)
+        render_hash = controller.state.steps[RENDER].output_hash
         _record_stage_performance(
             workspace,
             stage=RENDER,
@@ -936,6 +937,7 @@ class StudioV2Executor:
         )
 
         complete_forced_stage(RENDER)
+        stage_started = time.perf_counter()
         self._begin_step(AUDIO, cancel_event)
         music_path = Path(config.music_path).resolve() if config.music_path is not None else None
         if music_path is not None and not music_path.is_file():
@@ -955,7 +957,6 @@ class StudioV2Executor:
             config.mix_settings,
         )
         audio_path = workspace / ".runtime" / "final-v2.mp4"
-        stage_started = time.perf_counter()
         if not _reuse_file(
             controller,
             graph,
@@ -977,8 +978,7 @@ class StudioV2Executor:
                 _require_output(produced, stage="AUDIO", code="AUDIO_MIX_FAILED")
                 if produced.resolve() != audio_path.resolve():
                     shutil.copy2(produced, audio_path)
-                audio_hash = _sha256_file(audio_path)
-                graph.record(
+                audio_hash = graph.record(
                     AUDIO.casefold(), AUDIO.casefold(), audio_input, audio_path,
                     producer="ffmpeg-audio-assembler",
                     producer_version="1",
@@ -1003,7 +1003,7 @@ class StudioV2Executor:
                 )
                 self._mark_failed(AUDIO, wrapped)
                 raise wrapped from exc
-        audio_hash = _sha256_file(audio_path)
+        audio_hash = controller.state.steps[AUDIO].output_hash
         _record_stage_performance(
             workspace,
             stage=AUDIO,
@@ -1022,6 +1022,7 @@ class StudioV2Executor:
         )
 
         complete_forced_stage(AUDIO)
+        stage_started = time.perf_counter()
         self._begin_step(OUTPUT, cancel_event)
         output_path = workspace / "out" / "zodiac-story.mp4"
         publish_metadata = workspace / "publish" / "publish.json"
@@ -1029,7 +1030,6 @@ class StudioV2Executor:
         publish_hash = _sha256_file(publish_metadata) if publish_metadata.is_file() else "none"
         copy_hash = _sha256_file(publish_copy) if publish_copy.is_file() else "none"
         output_input = hashlib.sha256(f"{audio_hash}:{publish_hash}:{copy_hash}".encode("utf-8")).hexdigest()
-        stage_started = time.perf_counter()
         if not _reuse_file(
             controller,
             graph,
@@ -1051,8 +1051,7 @@ class StudioV2Executor:
                 _require_output(produced, stage="OUTPUT", code="OUTPUT_WRITE_FAILED")
                 if produced.resolve() != output_path.resolve():
                     shutil.copy2(produced, output_path)
-                output_hash = _sha256_file(output_path)
-                graph.record(
+                output_hash = graph.record(
                     OUTPUT.casefold(), OUTPUT.casefold(), output_input, output_path,
                     producer="studio-v2-output",
                     producer_version="1",
@@ -1085,7 +1084,7 @@ class StudioV2Executor:
             run_label=config.run_label,
             started=stage_started,
             input_fingerprint=output_input,
-            output_hash=_sha256_file(output_path),
+            output_hash=controller.state.steps[OUTPUT].output_hash,
             cache_hit=controller.state.steps[OUTPUT].reused,
             cache_reason=controller.state.steps[OUTPUT].cache_reason or "REBUILT",
             profile={},

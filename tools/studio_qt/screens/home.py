@@ -22,23 +22,27 @@ class HomeScreen(QWidget):
 
     def __init__(self, recent_jobs: list[dict] | None = None, parent=None) -> None:
         super().__init__(parent)
+        self._busy = False
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(56, 40, 56, 40)
+        layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(12)
 
         layout.addWidget(QLabel("ZODIAC STUDIO  /  WORKSPACE", objectName="eyebrow"))
         title_row = QHBoxLayout()
         title_row.addWidget(QLabel("Công việc video", objectName="pageTitle"), 1)
-        self.import_button = QPushButton("Nhập gói video")
-        self.import_button.setObjectName("primary")
+        self.import_button = QPushButton("Chọn ZIP từ máy…")
         self.import_button.setMinimumWidth(190)
         self.import_button.setMinimumHeight(42)
         self.import_button.clicked.connect(self.import_requested)
         title_row.addWidget(self.import_button)
         layout.addLayout(title_row)
-        layout.addWidget(QLabel("Mở lại job hoặc nhập một gói mới.", objectName="muted"))
+        layout.addWidget(QLabel("Nhập gói → Thiết lập → Chạy quy trình → Xem Media", objectName="muted"))
+        self.operation_status = QLabel("Chọn gói sẵn sàng hoặc mở lại job bên dưới.", objectName="muted")
+        self.operation_status.setWordWrap(True)
+        self.operation_status.setTextFormat(Qt.TextFormat.PlainText)
+        layout.addWidget(self.operation_status)
 
-        self.ready_frame = QFrame(objectName="surface")
+        self.ready_frame = QFrame(objectName="workspaceMain")
         ready_layout = QVBoxLayout(self.ready_frame)
         ready_layout.setContentsMargins(18, 12, 18, 12)
         ready_layout.setSpacing(8)
@@ -58,11 +62,11 @@ class HomeScreen(QWidget):
         self.ready_import_button.clicked.connect(self._import_ready)
         ready_row.addWidget(self.ready_import_button)
         ready_layout.addLayout(ready_row)
-        ready_layout.addWidget(QLabel("Chọn ZIP trong ready/ hoặc dùng Nhập gói video để duyệt vị trí khác.", objectName="muted"))
+        ready_layout.addWidget(QLabel("Nhập xong sẽ mở Workspace và tự kiểm tra môi trường.", objectName="muted"))
         layout.addWidget(self.ready_frame)
         self.set_ready_packages([])
 
-        self.recent_frame = QFrame(objectName="surface")
+        self.recent_frame = QFrame(objectName="workspaceMain")
         recent_layout = QVBoxLayout(self.recent_frame)
         recent_layout.setContentsMargins(18, 14, 18, 14)
         recent_header = QHBoxLayout()
@@ -86,7 +90,7 @@ class HomeScreen(QWidget):
         recent_layout.addLayout(actions)
         layout.addWidget(self.recent_frame, 1)
 
-        self.empty_state = QFrame(objectName="surface")
+        self.empty_state = QFrame(objectName="workspaceMain")
         empty_layout = QVBoxLayout(self.empty_state)
         empty_layout.setContentsMargins(24, 24, 24, 24)
         empty_layout.addStretch(1)
@@ -97,6 +101,9 @@ class HomeScreen(QWidget):
         self.set_recent_jobs(recent_jobs or [])
 
     def set_recent_jobs(self, jobs: list[dict]) -> None:
+        previous = self.recent_list.currentItem()
+        previous_path = previous.data(256) if previous else None
+        scroll = self.recent_list.verticalScrollBar().value()
         self.recent_list.clear()
         count = len(jobs)
         self.job_count.setText(f"{count} công việc")
@@ -107,12 +114,26 @@ class HomeScreen(QWidget):
             item.setData(256, str(job.get("path", name)))
             item.setToolTip(str(job.get("path", name)))
             self.recent_list.addItem(item)
+            if item.data(256) == previous_path:
+                self.recent_list.setCurrentItem(item)
         self.recent_frame.setVisible(bool(jobs))
         self.empty_state.setVisible(not jobs)
-        self.open_job_button.setEnabled(False)
+        self.recent_list.verticalScrollBar().setValue(scroll)
+        self._update_open_button()
+
+    def set_busy(self, busy: bool, message: str = "") -> None:
+        self._busy = busy
+        self.import_button.setEnabled(not busy)
+        self.ready_picker.setEnabled(not busy and bool(self.ready_picker.currentData()))
+        self.ready_refresh_button.setEnabled(not busy)
+        self.recent_list.setEnabled(not busy)
+        self._update_open_button()
+        self._update_ready_button()
+        if message:
+            self.operation_status.setText(message)
 
     def _update_open_button(self) -> None:
-        self.open_job_button.setEnabled(bool(self.recent_list.selectedItems()))
+        self.open_job_button.setEnabled(not self._busy and bool(self.recent_list.selectedItems()))
 
     def _open_selected(self) -> None:
         selected = self.recent_list.selectedItems()
@@ -120,7 +141,8 @@ class HomeScreen(QWidget):
             self._activate_item(selected[0])
 
     def _activate_item(self, item: QListWidgetItem) -> None:
-        self.job_requested.emit(item.data(256))
+        if not self._busy:
+            self.job_requested.emit(item.data(256))
 
     def set_ready_packages(self, paths: list[str]) -> None:
         previous = self.ready_picker.currentData()
@@ -138,13 +160,13 @@ class HomeScreen(QWidget):
             if selected >= 0:
                 self.ready_picker.setCurrentIndex(selected)
         self.ready_picker.blockSignals(False)
-        self.ready_picker.setEnabled(bool(paths))
+        self.ready_picker.setEnabled(bool(paths) and not self._busy)
         self._update_ready_button()
 
     def _update_ready_button(self, _index: int = -1) -> None:
-        self.ready_import_button.setEnabled(bool(self.ready_picker.currentData()))
+        self.ready_import_button.setEnabled(not self._busy and bool(self.ready_picker.currentData()))
 
     def _import_ready(self) -> None:
         path = self.ready_picker.currentData()
-        if path:
+        if path and not self._busy:
             self.ready_import_requested.emit(str(path))

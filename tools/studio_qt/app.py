@@ -88,6 +88,7 @@ class ZodiacQtApp(QMainWindow):
         self._stage_snapshot: dict[str, tuple[str, str]] = {}
         self._preflight_results = []
         self._preflight_origin = ""
+        self._environment_ready: bool | None = None
         self._frame_milestones: dict[tuple[str, str], int] = {}
         self.close_when_stopped = False
         self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT}
@@ -107,6 +108,7 @@ class ZodiacQtApp(QMainWindow):
         self.media = MediaWorkspace()
         self.media.set_jobs(self._media_jobs())
         self.media.refresh_jobs_requested.connect(self._refresh_media_jobs)
+        self.media.workspace_requested.connect(self._open_media_workspace)
         self._media_output: tuple[str | None, str | None] | None = None
         self.main_tabs = QTabWidget()
         self.main_tabs.setDocumentMode(True)
@@ -257,6 +259,8 @@ class ZodiacQtApp(QMainWindow):
         self._run_operation("import", path.resolve())
 
     def _choose_archive(self) -> None:
+        if self.busy or self.pipeline_running:
+            return
         ready = next((p for p in self._ready_directories() if p.is_dir()), self.workspace)
         filename, _ = QFileDialog.getOpenFileName(self, "Nhập gói video", str(ready), "Gói video (*.zip);;Tất cả tệp (*)")
         if not filename:
@@ -270,12 +274,22 @@ class ZodiacQtApp(QMainWindow):
             return
         self._run_operation("open", path)
 
+    def _open_media_workspace(self, raw_path: str) -> None:
+        if self._active_job() == Path(raw_path).resolve() and self.workbench:
+            self.main_tabs.setCurrentWidget(self.stack)
+            self.stack.setCurrentWidget(self.workbench)
+        elif self.busy or self.pipeline_running:
+            self.media.status_label.setText("Đợi thao tác hiện tại kết thúc trước khi mở job khác.")
+        else:
+            self._open_recent(raw_path)
+
     def _run_operation(self, name: str, value: Path) -> None:
         if self.busy or self.pipeline_running:
             return
         self.busy = True
-        self.home.import_button.setEnabled(False)
-        self.home.ready_import_button.setEnabled(False)
+        self.home.set_busy(True, f"{'Đang nhập và kiểm tra ZIP' if name == 'import' else 'Đang mở job'} · {value.name}…")
+        self.main_tabs.setCurrentWidget(self.stack)
+        self.stack.setCurrentWidget(self.home)
 
         def run() -> None:
             try:
@@ -383,6 +397,7 @@ class ZodiacQtApp(QMainWindow):
             percent = float(active["progress"])
         self.workbench.set_active_stage(active["step"], active, percent=percent)
         pipeline_active = self.pipeline_running or bool(self.v2_session.running) or bool(self.controller.worker and self.controller.worker.is_alive())
+        self.home.set_busy(pipeline_active or self.busy)
         self.workbench.set_running(pipeline_active, busy=self.busy and not pipeline_active)
         self.header_settings_button.setEnabled(not pipeline_active and not self.busy)
         video = self._active_video()
@@ -401,6 +416,22 @@ class ZodiacQtApp(QMainWindow):
             video = None
         output = (str(video.resolve()) if video else None, str(output_dir.resolve()) if output_dir else None)
         self.workbench.set_output(*output)
+        fully_done = bool(rows) and all(row.get("status") in (DONE, SKIPPED) for row in rows)
+        if pipeline_active:
+            label, note = "Đang chạy…", "Theo dõi bước đang chạy; có thể xem Media đã tạo."
+        elif self.busy:
+            checking = self.workbench.environment_status.text().startswith("Đang kiểm tra")
+            label = "Đang kiểm tra môi trường…" if checking else "Đang xử lý…"
+            note = "Đợi thao tác hiện tại kết thúc; kết quả có trong nhật ký."
+        elif fully_done and video:
+            label, note = "Xem video đầu ra", "Đã hoàn tất. Xem video và copy nội dung đăng trong Media."
+        elif self._environment_ready is not True:
+            label, note = "Kiểm tra môi trường", "Mở Thiết lập hoặc xem lỗi môi trường, rồi kiểm tra lại trước khi chạy."
+        else:
+            label, note = "Tiếp tục quy trình", "Có thể chọn giọng và nhạc trong Thiết lập, rồi tiếp tục các bước còn lại."
+        self.workbench.continue_button.setText(label)
+        self.workbench.continue_button.setToolTip(note)
+        self.workbench.next_action.setText(note)
         if output != self._media_output:
             self.media.set_jobs(self._media_jobs())
             self.media.set_output(*output, job_path=job)
@@ -434,6 +465,17 @@ class ZodiacQtApp(QMainWindow):
     def _on_log(self, line: str, channel: str) -> None:
         if self.workbench:
             stage = self._running_stage()
+            from tools.studio.vieneu_client import EVENT_PREFIX
+            if line.startswith(EVENT_PREFIX):
+                try:
+                    event = json.loads(line[len(EVENT_PREFIX):])
+                    if not isinstance(event, dict):
+                        raise ValueError("VieNeu event must be an object")
+                    self.workbench.set_voice_progress(event)
+                    line = str(event.get("message", ""))
+                    stage = "VOICE"
+                except (ValueError, TypeError):
+                    channel = "warning"
             self.workbench.append_activity(line, channel=channel, stage=stage)
             self.workbench.set_stage_activity(stage, line)
         # The existing 250ms timer owns stage refresh while running; updating
@@ -552,6 +594,18 @@ class ZodiacQtApp(QMainWindow):
     def _rerun(self, stage: str) -> None:
         self._start(resume=True, rerun=stage)
 
+    def _continue_workflow(self) -> None:
+        if self.busy or self.pipeline_running:
+            return
+        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        video = self._active_video()
+        if rows and all(row.get("status") in (DONE, SKIPPED) for row in rows) and video and video.is_file():
+            self._open_output("video")
+        elif self._environment_ready is not True:
+            self._check_environment(show_result=False)
+        else:
+            self._start(resume=True)
+
     def _cancel(self) -> None:
         if self.mode == "job5":
             self.v2_session.cancel()
@@ -562,7 +616,7 @@ class ZodiacQtApp(QMainWindow):
     def _on_operation_finished(self, name: str, result: object) -> None:
         if name == "package_conflict":
             self.busy = False
-            self.home.import_button.setEnabled(True)
+            self.home.set_busy(False, "Gói đã thay đổi; chọn cách xử lý trong hộp thoại.")
             answer = QMessageBox.question(
                 self,
                 "Gói video đã thay đổi",
@@ -574,7 +628,7 @@ class ZodiacQtApp(QMainWindow):
             )
             if answer == QMessageBox.StandardButton.Yes:
                 self.busy = True
-                self.home.import_button.setEnabled(False)
+                self.home.set_busy(True, "Đang cập nhật gói và kiểm tra cache…")
 
                 def resolve() -> None:
                     try:
@@ -586,6 +640,7 @@ class ZodiacQtApp(QMainWindow):
                 threading.Thread(target=resolve, daemon=True).start()
             else:
                 self.controller.accept_package_conflict("keep")
+                self.home.set_busy(False, "Đã giữ lại job hiện tại.")
                 if self.close_when_stopped:
                     self.close()
             return
@@ -636,15 +691,18 @@ class ZodiacQtApp(QMainWindow):
             return
         if name in ("import", "open"):
             self.busy = False
-            self.home.import_button.setEnabled(True)
+            self.home.set_busy(False)
             self._refresh_ready_archives()
             mode, path, error = result
             if error is not None:
+                self.home.operation_status.setText(f"Không mở được gói: {error}")
                 QMessageBox.critical(self, "Không mở được gói video", str(error))
                 if self.close_when_stopped:
                     self.close()
                 return
             self.mode = mode
+            self._environment_ready = None
+            self.home.operation_status.setText(f"Đã mở {Path(path).name}. Tiếp tục trong Workspace.")
             self.selected_stage = None
             self.home.set_recent_jobs(self._recent_jobs())
             self._refresh_ready_archives()
@@ -673,7 +731,7 @@ class ZodiacQtApp(QMainWindow):
                 row["step"]: (str(row.get("status", "")), str(row.get("detail", "")))
                 for row in (self._v2_rows() if mode == "job5" else self._legacy_rows())
             }
-            self.workbench.continue_requested.connect(lambda: self._start(resume=True))
+            self.workbench.continue_requested.connect(self._continue_workflow)
             self.workbench.run_all_requested.connect(lambda: self._start(resume=False))
             self.workbench.cancel_requested.connect(self._cancel)
             self.workbench.rerun_requested.connect(self._rerun)
@@ -692,6 +750,7 @@ class ZodiacQtApp(QMainWindow):
             self.busy = False
             ready, detail, show_result, *extras = result
             completed = bool(extras[0]) if extras else True
+            self._environment_ready = bool(ready and completed and self._preflight_results)
             observed = list(self._preflight_results)
             failed = sum(not item.ok for item in observed)
             passed = len(observed) - failed
@@ -794,6 +853,9 @@ class ZodiacQtApp(QMainWindow):
     def _show_home(self) -> None:
         self.home.set_recent_jobs(self._recent_jobs())
         self._refresh_ready_archives()
+        self.home.set_busy(self.busy or self.pipeline_running,
+                           "Đợi thao tác hiện tại kết thúc trước khi mở job khác."
+                           if self.busy or self.pipeline_running else "Chọn gói sẵn sàng hoặc mở lại job bên dưới.")
         self.main_tabs.setCurrentWidget(self.stack)
         self.stack.setCurrentWidget(self.home)
 
@@ -825,6 +887,7 @@ class ZodiacQtApp(QMainWindow):
         # The auto-check on job open is deliberately visible but non-modal.
         self._preflight_results = []
         self._preflight_origin = "thủ công" if show_result else "tự động"
+        self._environment_ready = None
         self.busy = True
         self.workbench.set_environment_progress("khởi tạo", 0)
         self.workbench.append_activity(
@@ -919,7 +982,7 @@ class ZodiacQtApp(QMainWindow):
         if self.busy or self.pipeline_running:
             return
         from tools.studio_qt.dialogs.settings import SettingsDialog
-        dialog = SettingsDialog(self.settings, self)
+        dialog = SettingsDialog(self.settings, self, vieneu_url=TTS_URL, tts_root=TTS_ROOT)
         saved = dialog.exec()
         values = dialog.values() if saved else None
         dialog.deleteLater()

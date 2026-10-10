@@ -128,6 +128,53 @@ class StageCounters:
 
 
 class StudioV2ExecutorTests(unittest.TestCase):
+    def test_stage_hashes_are_not_recomputed_after_graph_validation(self):
+        from tools.studio_v2.executor import _sha256_file
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            controller, executor = self._executor(root, StageCounters())
+            controller.import_package(make_source(root))
+            config = self._config(root)
+            with patch("tools.studio_v2.executor._sha256_file", wraps=_sha256_file) as hashed:
+                executor.run(config)
+                executor.run(config)
+            duplicated_outputs = {"rendered-v2.mp4", "final-v2.mp4", "zodiac-story.mp4"}
+            self.assertFalse(any(Path(call.args[0]).name in duplicated_outputs for call in hashed.call_args_list))
+            graph = ArtifactGraph(controller.workspace)
+            for step in (PLAN, RENDER, AUDIO, OUTPUT):
+                self.assertEqual(controller.state.steps[step].output_hash, graph.records[step.casefold()]["content_hash"])
+
+    def test_plan_telemetry_includes_payload_audit(self):
+        from tools.studio_v2.executor import run_payload_audit_with_cache_recovery
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            controller, executor = self._executor(root, StageCounters())
+            controller.import_package(make_source(root))
+            clock = [0.0]
+            def audit(*args, **kwargs):
+                result = run_payload_audit_with_cache_recovery(*args, **kwargs)
+                clock[0] += 2.0
+                return result
+            with patch("tools.studio_v2.executor.time.perf_counter", side_effect=lambda: clock[0]), \
+                 patch("tools.studio_v2.executor.run_payload_audit_with_cache_recovery", side_effect=audit):
+                executor.run(self._config(root))
+            rows = [json.loads(line) for line in (controller.workspace / ".runtime" / "performance.jsonl").read_text(encoding="utf-8").splitlines()]
+            plan = next(row for row in rows if row["stage"] == PLAN)
+            self.assertEqual(plan["elapsed_ms"], 2000.0)
+
+    def test_cli_check_has_a_separate_performance_substage(self):
+        from tools.studio_v2.executor import _record_stage_performance
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with patch("tools.studio_v2.executor.time.perf_counter", return_value=3.0):
+                _record_stage_performance(
+                    root, stage=RENDER, substage="CLI_CHECK", run_id="test",
+                    run_label="test", started=1.0, input_fingerprint="2.0.1",
+                    output_hash="none", cache_hit=False, cache_reason="CHECKED", profile={},
+                )
+            row = json.loads((root / ".runtime" / "performance.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual((row["stage"], row["substage"], row["elapsed_ms"]), (RENDER, "CLI_CHECK", 2000.0))
+
     def _executor(self, root: Path, counters: StageCounters):
         def probe(path):
             props_path = Path(path).parent / "props.json"
