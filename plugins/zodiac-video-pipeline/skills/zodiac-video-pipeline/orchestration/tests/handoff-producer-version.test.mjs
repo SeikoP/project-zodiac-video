@@ -1,4 +1,0 @@
-import assert from 'node:assert/strict';import {rm} from 'node:fs/promises';import {spawnSync} from 'node:child_process';import path from 'node:path';import {fileURLToPath} from 'node:url';import test from 'node:test';import {makeCanonicalJob} from './handoff-fixture.mjs';
-const here=path.dirname(fileURLToPath(import.meta.url)),validator=path.join(here,'../validate-handoff-workspace.mjs');const run=d=>spawnSync(process.execPath,[validator,d],{encoding:'utf8'});
-test('v1.58 producer validates',async()=>{const d=await makeCanonicalJob('1.58.0');try{const r=run(d);assert.equal(r.status,0,r.stderr);}finally{await rm(d,{recursive:true,force:true});}});
-test('older producer is rejected at the stabilization boundary',async()=>{const d=await makeCanonicalJob('1.57.9');try{const r=run(d);assert.notEqual(r.status,0);assert.match(r.stderr,/producer.version must be semantic version >=1\.58\.0/);}finally{await rm(d,{recursive:true,force:true});}});

@@ -1,8 +1,0 @@
-{
-  "format": "zodiac-phase-index@2",
-  "phases": [
-    {"id":"01-content","manifest":"phases/01-content.json","guide":"phases/01-content.md"},
-    {"id":"02-visual-production","manifest":"phases/02-visual-production.json","guide":"phases/02-visual-production.md"},
-    {"id":"03-handoff","manifest":"phases/03-handoff.json","guide":"phases/03-handoff.md"}
-  ]
-}
