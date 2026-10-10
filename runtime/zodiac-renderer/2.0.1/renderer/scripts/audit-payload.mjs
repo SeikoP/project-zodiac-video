@@ -29,6 +29,23 @@ export const auditJob5Payload = (ir, plan) => {
       }
     }
     for(const id of beforeEvents)if(!afterEvents.has(id))errors.push(`EVENT_DROPPED ${authored.id} ${id}`);
+    // Event identities existing on both sides are insufficient: the target,
+    // states and motion must retain the author's actual semantic intent.
+    for(const event of authored.events??[]){
+      const compiled=(rendered.events??[]).find(e=>e.event_id===event.id || (e.merged_event_ids??[]).includes(event.id));
+      if(!compiled)continue;
+      for(const [input,output] of [['target','target'],['state_before','state_before'],
+          ['state_after','state_after'],['desired_motion','motion']]){
+        if(event[input]!==compiled[output])errors.push(`EVENT_SEMANTICS_CHANGED ${authored.id} ${event.id} ${input}`);
+      }
+      if(!(Number.isInteger(compiled.start_frame)&&Number.isInteger(compiled.end_frame)
+          &&compiled.start_frame<compiled.end_frame))
+        errors.push(`EVENT_INTERVAL_INVALID ${authored.id} ${event.id}`);
+    }
+    for(const output of rendered.events??[])if(!beforeEvents.has(output.event_id)&&
+       !(output.merged_event_ids??[]).some(id=>beforeEvents.has(id)))
+      errors.push(`EVENT_UNEXPECTED ${authored.id} ${output.event_id}`);
+
     const prior=authored.spatial_bindings??[],next=rendered.spatial_bindings??[];
     // Python serializes render-plan.json with sort_keys=True. Comparing JSON
     // strings flags equal bindings as different if field insertion order varies.
