@@ -12,7 +12,7 @@ export interface KaraokeCaption {
   start_frame: number;
   end_frame: number;
   words?: CaptionWord[];
-  resolved_layout: {lines: string[]};
+  resolved_layout?: {lines: string[]};
 }
 export interface KaraokePart {
   text: string;

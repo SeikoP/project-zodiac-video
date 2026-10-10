@@ -90,5 +90,5 @@ export function resolveCoverVisuals(visuals,scene,assets,region) {
   const width=Math.max(...boxes.map(b=>b.x+b.width))-x,height=Math.max(...boxes.map(b=>b.y+b.height))-y;
   const scale=Math.min(region.width/width,region.height/height);
   const ordered=resolveLayerOrder({...scene,entities:selected.map(v=>v.entity),occlusion_relations:[]},assets,Object.fromEntries(selected.map(v=>[v.entity.id,v.state])));
-  return selected.map((v,i)=>({...v,box:{x:(region.width-width*scale)/2+(boxes[i].x-x)*scale,y:(region.height-height*scale)/2+(boxes[i].y-y)*scale,width:boxes[i].width*scale,height:boxes[i].height*scale},order:ordered.findIndex(e=>e.id===v.entity.id)}));
+  return selected.map((v,i)=>({...v,role:resolveVisualRole(v.entity,assets),box:{x:(region.width-width*scale)/2+(boxes[i].x-x)*scale,y:(region.height-height*scale)/2+(boxes[i].y-y)*scale,width:boxes[i].width*scale,height:boxes[i].height*scale},order:ordered.findIndex(e=>e.id===v.entity.id)}));
 }
