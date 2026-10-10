@@ -1,7 +1,7 @@
 import {resolveVisualRole, resolveLayerOrder} from './visual-role.mjs';
 import {resolveCaptionZone} from './caption-layout.mjs';
 import {CAPTION_STROKE_PX, CAPTION_STROKE_COLOR, resolveCaptionWordLines} from './caption-karaoke.mjs';
-import {resolveEntityState} from './spatial-layout.mjs';
+import {resolveDisplayedEntityState} from './spatial-layout.mjs';
 import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
@@ -10,7 +10,6 @@ import {resolveSemanticMotion} from "./semantic-motion.mjs";
 import type {
   RenderPlanPresentation,
   RenderPlanScene,
-  RenderPlanEntity,
   RendererV2Props,
 } from "./types";
 
@@ -61,15 +60,7 @@ const SceneLayer: React.FC<{
     ? resolveCaptionWordLines(caption, frame) : [];
   const activeFor = (entityId: string) => scene.events.find(item =>
     item.target === entityId && frame >= item.start_frame && frame < item.end_frame);
-  const stateFor = (entity: RenderPlanEntity) => {
-    const base = resolveEntityState(scene,entity,frame);
-    const event = activeFor(entity.id);
-    if (base?.visible === false && (event?.motion === "fade-in" || event?.motion === "pop-in")) {
-      return entity.states[event.state_after] ?? base;
-    }
-    return base;
-  };
-  const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,stateFor(entity)]));
+  const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,resolveDisplayedEntityState(scene,entity,frame)]));
 
   return (
     <AbsoluteFill>
