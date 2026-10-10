@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSlider,
+    QSpinBox,
     QVBoxLayout,
     QDialogButtonBox,
 )
@@ -86,6 +87,17 @@ class SettingsDialog(QDialog):
         self.align_model.setCurrentText(str(values.get("align_model") or ALIGN_MODEL_DEFAULT))
         form.addRow("Model căn từ", self.align_model)
 
+        self.scene_gap_ms = QSpinBox()
+        self.scene_gap_ms.setRange(0, 600)
+        self.scene_gap_ms.setSingleStep(20)
+        self.scene_gap_ms.setSuffix(" ms")
+        self.scene_gap_ms.setValue(round(float(values.get("scene_gap_ms", 180.0))))
+        self.scene_gap_ms.setAccessibleName("Khoảng nghỉ giữa các cảnh")
+        self.scene_gap_ms.setToolTip(
+            "Khoảng nghỉ được chèn vào voice.wav và đo lại trong timeline; không đổi tốc độ nói VieNeu."
+        )
+        form.addRow("Nghỉ giữa cảnh", self.scene_gap_ms)
+
         music_row = QHBoxLayout()
         self.music = QLineEdit(str(values.get("music", "")))
         self.music.setPlaceholderText("Không dùng nhạc nền")
@@ -138,6 +150,7 @@ class SettingsDialog(QDialog):
             "music": self.music.text().strip(),
             "volume": self.volume.value() / 100,
             "align_model": self.align_model.currentText(),
+            "scene_gap_ms": float(self.scene_gap_ms.value()),
         }
 
     def done(self, result: int) -> None:
