@@ -34,9 +34,32 @@ export function entityBounds(scene,entity,state,frame,asset={}) {
   const x=Math.min(...points.map(p=>p.x)),y=Math.min(...points.map(p=>p.y));
   return {x,y,width:Math.max(...points.map(p=>p.x))-x,height:Math.max(...points.map(p=>p.y))-y};
 }
+export function auditNativeDepthEntities(scene,assets) {
+  const cues=(scene.entities??[]).filter(e=>String(e.id??'').startsWith('depth__'));
+  if(cues.length>3)throw new Error(`DEPTH_DENSITY_INVALID scene=${scene.id}`);
+  const seen=new Set();
+  for(const cue of cues){
+    const role=cue.id.split('__').at(-1);
+    const layer={rear:-12,divider:-7,front:15}[role];
+    if(layer===undefined||seen.has(role))throw new Error(`DEPTH_ROLE_INVALID scene=${scene.id} entity=${cue.id}`);
+    seen.add(role);
+    if(Object.keys(cue.states??{}).length!==1||!cue.states?.visible?.asset || cue.states.visible.visible===false || cue.states.visible.layer!==layer)
+      throw new Error(`DEPTH_STATE_INVALID scene=${scene.id} entity=${cue.id}`);
+    const asset=assets[cue.states.visible.asset];
+    if(asset?.category!=='environment' || !String(asset.path??'').startsWith('assets/environment/depth-'))
+      throw new Error(`DEPTH_ASSET_INVALID scene=${scene.id} entity=${cue.id}`);
+    const box=cue.states.visible.transform??{};
+    if(![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.y<0||box.y+box.height>1400 ||
+       box.x<0||box.width<=0||box.height<=0||box.x+box.width>1080)
+      throw new Error(`DEPTH_CAPTION_OR_CANVAS_INVALID scene=${scene.id} entity=${cue.id}`);
+  }
+  return {count:cues.length,roles:[...seen]};
+}
+
 export function auditSpatialLayout(plan) {
   const rows=[];
   for (const scene of plan.scenes) {
+    auditNativeDepthEntities(scene,plan.assets);
     for(const entity of scene.entities??[]) for(const state of Object.values(entity.states??{})) {
       resolveLayer(entity,state,plan.assets);
       entityBounds({...scene,events:[]},entity,state,scene.start_frame,plan.assets[state.asset]);
