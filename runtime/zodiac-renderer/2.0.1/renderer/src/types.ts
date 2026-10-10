@@ -105,7 +105,16 @@ export type RenderPlanPresentation = {
   };
 };
 
-export type CoverPublish = {cover?: {source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
+export type CoverDesignV2 = {
+  version: "zodiac-cover-design@2";
+  style_token: "zodiac-paper-doodle-meme-v4";
+  canvas: {width:number; height:number};
+  title_frame: {shape:string;fill_role:string;stroke_role:string;shadow_role:string;
+    shadow_dx_px:number;shadow_dy_px:number;shadow_opacity:number;font_family:string;max_lines:number};
+  composition: {hero_scale:number;supporting_prop_scale:number;read_order:string[];
+    max_supporting_accents:number;min_side_margin_px:number;background_policy:string};
+};
+export type CoverPublish = {cover?: {design?:CoverDesignV2;source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
 
 export type RendererV2Props = {
   publish?: CoverPublish;
