@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -972,7 +973,54 @@ class ZodiacQtApp(QMainWindow):
 
     def _open_remotion(self) -> None:
         if self.mode == "job5":
-            self.workbench.append_activity("Remotion Studio riêng hiện chưa hỗ trợ Job@5.")
+            job = self._active_job()
+            if not job or self.busy or self.pipeline_running:
+                return
+            if not (job / ".runtime" / "render-plan.json").is_file():
+                self.workbench.append_activity(
+                    "[WARNING] Chạy bước PLAN trước khi mở Remotion Studio.",
+                    channel="warning", stage="PLAN",
+                )
+                return
+            from tools.studio_v2.controller import workspace_renderer_version
+            renderer = ROOT / "runtime" / "zodiac-renderer" / workspace_renderer_version(job) / "renderer"
+            script = renderer / "scripts" / "open-studio.mjs"
+            node = shutil.which("node")
+            if not node or not script.is_file():
+                self.workbench.append_activity(
+                    "[ERROR] Thiếu Node hoặc trình khởi chạy Remotion Studio Job@5.",
+                    channel="error", stage="PLAN",
+                )
+                return
+            try:
+                process = subprocess.Popen(
+                    [node, str(script), str(job)],
+                    cwd=renderer, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                    text=True, encoding="utf-8", errors="replace", shell=False,
+                )
+            except OSError as exc:
+                self.workbench.append_activity(
+                    f"[ERROR] Không mở được Remotion Studio: {exc}",
+                    channel="error", stage="PLAN",
+                )
+                return
+            self.workbench.append_activity(
+                "Đang mở Remotion Studio với render plan và asset thật của Job@5.",
+                channel="studio", stage="PLAN",
+            )
+
+            def stream_studio_logs() -> None:
+                if process.stdout is not None:
+                    for line in process.stdout:
+                        if line.strip():
+                            self.bridge.log_received.emit(line.rstrip(), "studio")
+                code = process.wait()
+                self.bridge.log_received.emit(
+                    f"[{'DONE' if code == 0 else 'ERROR'}] Remotion Studio kết thúc (exit={code}).",
+                    "studio",
+                )
+
+            threading.Thread(target=stream_studio_logs, daemon=True).start()
             return
         job = self.controller.job
         if job:
