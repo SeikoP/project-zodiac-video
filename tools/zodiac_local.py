@@ -1165,7 +1165,3278 @@ _STRONG_ARTICULATION_ACTION = re.compile(
     r"(?:^|_)(open|close|fold|unfold|zip|unzip|insert|remove|pick|place|hold|release|turn_page|drawer|curtain|door|lid|flap|wear|remove_mask)(?:_|$)",
     re.IGNORECASE,
 )
-_SEMANTIC_CLOSE_ACTION = r…33188 tokens truncated…ses(observer):
+_SEMANTIC_CLOSE_ACTION = re.compile(
+    r"(?:^|_)(?:are|feel|feels|felt|grow|grows|grew|become|becomes|became|stay|stays|stayed|remain|remains|remained|get|gets|got)_close(?:_|$)",
+    re.IGNORECASE,
+)
+
+
+def _requires_semantic_mechanism(action: str) -> bool:
+    matches = [match.group(1).lower() for match in _MECHANICAL_ACTION.finditer(action)]
+    if not matches:
+        return False
+    if set(matches) == {"close"} and _SEMANTIC_CLOSE_ACTION.search(action):
+        return False
+    return True
+
+
+def _validate_asset_lineage(
+    asset_id: str,
+    entry: dict,
+    *,
+    allow_visual_grammar_v4: bool = False,
+) -> None:
+    lineage = entry.get("lineage")
+    if not isinstance(lineage, dict):
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} requires lineage metadata."
+        )
+    allowed = {
+        "mode",
+        "source_library",
+        "source_master",
+        "semantic_intent",
+        "mutated_groups",
+        "preserved_groups",
+    }
+    if set(lineage) - allowed:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} has unsupported lineage fields."
+        )
+    if lineage.get("mode") not in {
+        "direct_copy",
+        "derived_copy",
+        "semantic_variant",
+        "composite",
+    }:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} has invalid lineage mode."
+        )
+    source_library = lineage.get("source_library")
+    allowed_libraries = {"zodiac-paper-doodle-asset-library-v3"}
+    if allow_visual_grammar_v4:
+        allowed_libraries.add("zodiac-visual-grammar-v4")
+    if source_library not in allowed_libraries:
+        expected = "canonical v3 or native visual-grammar v4 library" if allow_visual_grammar_v4 else "canonical v3 library"
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} must derive from the {expected}."
+        )
+    source_master = lineage.get("source_master")
+    valid_master = (
+        isinstance(source_master, str)
+        and bool(source_master.strip())
+    ) or (
+        isinstance(source_master, list)
+        and bool(source_master)
+        and all(isinstance(value, str) and value.strip() for value in source_master)
+    )
+    if not valid_master:
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} needs source_master provenance."
+        )
+    if not isinstance(lineage.get("semantic_intent"), str) or not lineage["semantic_intent"].strip():
+        raise PipelineError(
+            f"ASSET_LINEAGE_INVALID: asset {asset_id!r} needs semantic_intent."
+        )
+    for key in ("mutated_groups", "preserved_groups"):
+        value = lineage.get(key)
+        if value is not None and (
+            not isinstance(value, list)
+            or any(not isinstance(item, str) or not item.strip() for item in value)
+        ):
+            raise PipelineError(
+                f"ASSET_LINEAGE_INVALID: asset {asset_id!r} {key} must be a string list."
+            )
+
+
+def _validate_semantic_animation_scene(scene: dict, entity_map: dict[str, dict]) -> None:
+    for event in scene.get("events", []):
+        if event.get("target") == "camera":
+            continue
+        action = str(event.get("action", ""))
+        if not _requires_semantic_mechanism(action):
+            continue
+        mechanism = event.get("mechanism")
+        if not isinstance(mechanism, dict):
+            raise PipelineError(
+                f"SEMANTIC_ANIMATION_GATE: mechanical event requires mechanism declaration: {event.get('id')}"
+            )
+        mode = mechanism.get("mode")
+        if mode == "child_entities":
+            parts = mechanism.get("parts")
+            if (
+                not isinstance(parts, list)
+                or not parts
+                or any(not isinstance(part, str) or part not in entity_map for part in parts)
+            ):
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: child_entities must reference scene entities: {event.get('id')}"
+                )
+        elif mode == "whole_asset":
+            if _STRONG_ARTICULATION_ACTION.search(action):
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: strong articulation action cannot use whole_asset: {event.get('id')}"
+                )
+            justification = mechanism.get("justification")
+            if not isinstance(justification, str) or len(justification.strip()) < 20:
+                raise PipelineError(
+                    f"SEMANTIC_ANIMATION_GATE: whole_asset needs a concrete justification: {event.get('id')}"
+                )
+        else:
+            raise PipelineError(
+                f"SEMANTIC_ANIMATION_GATE: unsupported mechanism mode: {event.get('id')}"
+            )
+
+
+_PERFORMANCE_PHASES = {"anticipation", "action", "reaction", "hold", "settle"}
+_PERFORMANCE_RESERVED_FOCUS = {"audience", "self", "offscreen_left", "offscreen_right"}
+
+
+def _validate_performance_animation_scene(
+    scene: dict,
+    entity_map: dict[str, dict],
+    *,
+    allow_runtime_defaults: bool = False,
+) -> None:
+    prior_event_ids: set[str] = set()
+    for event in scene.get("events", []):
+        event_id = event.get("id")
+        performance = event.get("performance")
+        if performance is None and allow_runtime_defaults:
+            if isinstance(event_id, str):
+                prior_event_ids.add(event_id)
+            continue
+        if not isinstance(performance, dict):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: event requires performance metadata: {event_id}"
+            )
+        allowed = {
+            "intent",
+            "phase",
+            "energy",
+            "focus",
+            "anticipation_frames",
+            "hold_frames",
+            "settle_frames",
+            "cause_event_id",
+        }
+        if set(performance) - allowed:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: unsupported performance fields: {event_id}"
+            )
+
+        intent = performance.get("intent")
+        if allow_runtime_defaults:
+            if intent is not None and (
+                not isinstance(intent, str) or not intent.strip()
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: performance intent must be non-empty when provided: {event_id}"
+                )
+        elif not isinstance(intent, str) or not intent.strip():
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: performance intent is required: {event_id}"
+            )
+
+        phase = performance.get("phase")
+        if allow_runtime_defaults:
+            if phase is not None and phase not in _PERFORMANCE_PHASES:
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: unsupported performance phase: {event_id}"
+                )
+        elif phase not in _PERFORMANCE_PHASES:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: unsupported performance phase: {event_id}"
+            )
+
+        energy = performance.get("energy")
+        if allow_runtime_defaults:
+            if energy is not None and (
+                not isinstance(energy, (int, float))
+                or isinstance(energy, bool)
+                or not 0 <= energy <= 1
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: energy must be within 0..1: {event_id}"
+                )
+        elif (
+            not isinstance(energy, (int, float))
+            or isinstance(energy, bool)
+            or not 0 <= energy <= 1
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: energy must be within 0..1: {event_id}"
+            )
+
+        timing_fields = (
+            ("anticipation_frames", 24),
+            ("hold_frames", 90),
+            ("settle_frames", 45),
+        )
+        for key, maximum in timing_fields:
+            value = performance.get(key)
+            if allow_runtime_defaults and value is None:
+                continue
+            if (
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value < 0
+                or value > maximum
+            ):
+                raise PipelineError(
+                    f"PERFORMANCE_ANIMATION_GATE: invalid {key}: {event_id}"
+                )
+
+        focus = performance.get("focus")
+        if focus is not None and (
+            not isinstance(focus, str)
+            or (
+                focus not in _PERFORMANCE_RESERVED_FOCUS
+                and focus not in entity_map
+            )
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: invalid focus target: {event_id}"
+            )
+        if focus == event.get("target"):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: use focus=self for the acting entity: {event_id}"
+            )
+
+        cause = performance.get("cause_event_id")
+        effective_phase = phase or ("reaction" if cause else "action")
+        if effective_phase == "reaction" and not cause:
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: reaction needs cause_event_id: {event_id}"
+            )
+        if cause is not None and (
+            not isinstance(cause, str) or cause not in prior_event_ids
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: cause_event_id must reference an earlier event: {event_id}"
+            )
+
+        authored_timing = [
+            performance.get(key)
+            for key, _maximum in timing_fields
+        ]
+        timing_is_complete = all(value is not None for value in authored_timing)
+        if (
+            event.get("target") != "camera"
+            and event.get("state_before") != event.get("state_after")
+            and timing_is_complete
+            and sum(authored_timing) == 0
+        ):
+            raise PipelineError(
+                f"PERFORMANCE_ANIMATION_GATE: story-changing event needs anticipation, hold, or settle timing: {event_id}"
+            )
+        if isinstance(event_id, str):
+            prior_event_ids.add(event_id)
+
+
+def _validate_performance_renderer_contract(renderer_root: Path) -> None:
+    required = (
+        "src/performance-animation.mjs",
+        "src/performance-animation.d.mts",
+        "tests/performance-animation-gate.test.mjs",
+        "tests/caption-semantic.test.mjs",
+    )
+    for relative in required:
+        if not (renderer_root / relative).is_file():
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: performance runtime is missing renderer/{relative}."
+            )
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    composition = _read_renderer_source(renderer_root, "src/ZodiacComposition.tsx")
+    schema_text = _read_renderer_source(renderer_root, "schemas/production.schema.json")
+    if "validatePerformanceAnimation" not in render_script or "validatePerformanceTiming" not in render_script:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime does not execute Performance Animation Gate."
+        )
+    if '"performance"' not in schema_text or '"segmentation"' not in schema_text:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime schema is incomplete."
+        )
+    if "performanceMotionValues" not in composition:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: composition does not consume performance metadata."
+        )
+    if "targetWords:" in composition or "maxWords:" in composition:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: performance runtime still uses fixed-word caption slicing."
+        )
+
+
+def _validate_semantic_validation_receipt(root: Path) -> None:
+    path = root / "FINAL_VALIDATION.json"
+    if not path.is_file():
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: semantic runtime packages require FINAL_VALIDATION.json."
+        )
+    receipt = _load_json(path, "FINAL_VALIDATION.json")
+    expected_pass = (
+        "package_compatibility_gate",
+        "narration_scene_voice_identity",
+        "caption_design_lock",
+        "handoff_boundary",
+        "asset_lineage",
+        "semantic_animation_gate",
+    )
+    if receipt.get("status") != "PASS" or any(receipt.get(key) != "PASS" for key in expected_pass):
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: semantic package gates are not all PASS."
+        )
+    if receipt.get("interaction_choreography") not in {"PASS", "NOT_APPLICABLE"}:
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: interaction_choreography must be PASS or NOT_APPLICABLE."
+        )
+    production_path = root / "production.json"
+    if receipt.get("production_sha256") != file_sha256(production_path):
+        raise PipelineError(
+            "FINAL_VALIDATION_STALE: production_sha256 does not match production.json."
+        )
+
+
+def _validate_semantic_renderer_contract(renderer_root: Path) -> None:
+    required = (
+        "src/semantic-animation.mjs",
+        "tests/semantic-animation-gate.test.mjs",
+    )
+    for relative in required:
+        if not (renderer_root / relative).is_file():
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: semantic runtime is missing renderer/{relative}."
+            )
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    schema_text = _read_renderer_source(renderer_root, "schemas/production.schema.json")
+    type_text = _read_renderer_source(renderer_root, "src/types.ts")
+    if "validateSemanticAnimation" not in render_script:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: semantic runtime does not execute Semantic Animation Gate."
+        )
+    for marker in ('"mechanism"', '"lineage"'):
+        if marker not in schema_text:
+            raise PipelineError(
+                f"PACKAGE_RENDERER_STALE: semantic runtime schema is missing {marker}."
+            )
+    if "EventMechanism" not in type_text or "AssetLineage" not in type_text:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: semantic runtime TypeScript contract is incomplete."
+        )
+
+
+def validate_production_document(root: Path, production: dict) -> dict:
+    """Validate an in-memory v2 production document against its package root."""
+    root = Path(root).resolve()
+    if production.get("version") != "2.0":
+        raise PipelineError("production.json must use Zodiac production contract version 2.0.")
+
+    video = production.get("video")
+    if (
+        not isinstance(video, dict)
+        or video.get("width") != 1080
+        or video.get("height") != 1920
+        or not isinstance(video.get("fps"), int)
+        or isinstance(video.get("fps"), bool)
+        or video["fps"] <= 0
+    ):
+        raise PipelineError("production.json video must be 1080x1920 with a positive integer fps.")
+
+    visual = production.get("visual_system")
+    caption_style = production.get("caption_style")
+    assets = production.get("assets")
+    primitives = production.get("primitives")
+    scenes = production.get("scenes")
+    if not isinstance(visual, dict) or not isinstance(caption_style, dict):
+        raise PipelineError("production.json needs visual_system and caption_style.")
+    if not isinstance(assets, dict) or not isinstance(primitives, dict):
+        raise PipelineError("production.json must contain assets and primitives registries.")
+    if not isinstance(scenes, list) or not scenes:
+        raise PipelineError("production.json must contain at least one scene.")
+
+    token, source_hash = _design_token(root)
+    package_manifest = _load_package_manifest(root)
+    _validate_package_manifest_design(package_manifest, token, source_hash)
+    semantic_runtime = _uses_semantic_runtime(package_manifest)
+    performance_runtime = _uses_performance_runtime(package_manifest)
+    runtime_owned_animation_defaults = _uses_runtime_owned_animation_defaults(package_manifest)
+    compiled = visual.get("style_token")
+    if not isinstance(compiled, dict) or compiled.get("id") != token.get("id"):
+        raise PipelineError("production.json style_token must match design.md.")
+    if compiled.get("source_hash") != source_hash:
+        raise PipelineError("production.json style token is stale; run npm run compile:style in renderer/.")
+    font_family = caption_style.get("font_family")
+    font_weight = caption_style.get("font_weight")
+    legacy_caption = font_family == "Be Vietnam Pro" and font_weight == 500
+    overlay_caption = font_family == "Patrick Hand" and font_weight == 400
+    if package_manifest is not None and not overlay_caption:
+        raise PipelineError(
+            "PACKAGE_MANIFEST_INVALID: zodiac-job@3 requires the canonical Patrick Hand overlay caption contract."
+        )
+    if (
+        not (legacy_caption or overlay_caption)
+        or not isinstance(caption_style.get("font_size_px"), int)
+        or not isinstance(caption_style.get("min_font_size_px"), int)
+    ):
+        raise PipelineError(
+            "caption_style must use either legacy Be Vietnam Pro 500 or "
+            "canonical Patrick Hand 400 with a declared size range."
+        )
+    safe_area = caption_style.get("safe_area")
+    safe_area_numeric = (
+        isinstance(safe_area, dict)
+        and all(
+            isinstance(safe_area.get(key), (int, float))
+            and not isinstance(safe_area.get(key), bool)
+            for key in ("x", "y", "width", "height")
+        )
+    )
+    if legacy_caption:
+        if (
+            caption_style["font_size_px"] > 64
+            or caption_style["min_font_size_px"] > 48
+            or not safe_area_numeric
+            or safe_area["x"] < 80
+            or safe_area["y"] < 1280
+            or safe_area["width"] > 900
+            or safe_area["height"] > 220
+            or safe_area["y"] + safe_area["height"] > 1620
+        ):
+            raise PipelineError(
+                "legacy caption_style must use the compact lower-third contract "
+                "(font <=64px, y>=1280, width<=900, height<=220)."
+            )
+    else:
+        if (
+            caption_style["font_size_px"] < 72
+            or caption_style["font_size_px"] > 96
+            or caption_style["min_font_size_px"] < 56
+            or caption_style["min_font_size_px"] > caption_style["font_size_px"]
+            or not safe_area_numeric
+            or safe_area["x"] < 56
+            or safe_area["y"] < 900
+            or safe_area["width"] > 968
+            or safe_area["height"] > 640
+            or safe_area["y"] + safe_area["height"] > 1680
+        ):
+            raise PipelineError(
+                "canonical caption_style must use the large collision-aware overlay "
+                "(Patrick Hand 72-96px default range, min >=56px, overlay envelope "
+                "inside the TikTok-safe canvas)."
+            )
+
+    caption_token = token.get("caption_emphasis")
+    if (
+        not isinstance(caption_token, dict)
+        or caption_style.get("font_family") != caption_token.get("font_family")
+        or caption_style.get("font_weight") != caption_token.get("font_weight")
+        or caption_style.get("font_size_px") != caption_token.get("font_size_px")
+        or caption_style.get("min_font_size_px") != caption_token.get("min_font_size_px")
+        or caption_style.get("max_lines") != caption_token.get("max_lines")
+        or safe_area != token.get("safe_zone")
+        or (
+            caption_token.get("ghost_frame") is True
+            and caption_style.get("background") != "transparent"
+        )
+    ):
+        raise PipelineError(
+            "caption_style must match design.md caption_emphasis/safe_zone, "
+            "including transparent background for ghost-frame captions."
+        )
+
+    layout_zones = compiled.get("layout_zones")
+    isolated_layout = legacy_caption and isinstance(layout_zones, dict)
+    overlay_layout = overlay_caption and not isinstance(layout_zones, dict)
+    if isolated_layout:
+        content_zone = layout_zones.get("content")
+        caption_zone = layout_zones.get("caption")
+        if (
+            not isinstance(content_zone, dict)
+            or not isinstance(caption_zone, dict)
+            or not all(
+                isinstance(content_zone.get(key), (int, float))
+                and not isinstance(content_zone.get(key), bool)
+                for key in ("x", "y", "width", "height")
+            )
+            or not all(
+                isinstance(caption_zone.get(key), (int, float))
+                and not isinstance(caption_zone.get(key), bool)
+                for key in ("x", "y", "width", "height")
+            )
+        ):
+            raise PipelineError("layout_zones must define numeric content and caption frames.")
+        content_bottom = content_zone["y"] + content_zone["height"]
+        if (
+            content_zone["x"] < 0
+            or content_zone["y"] < 0
+            or content_zone["x"] + content_zone["width"] > video["width"]
+            or content_bottom > video["height"]
+            or caption_zone != safe_area
+            or caption_zone["y"] - content_bottom < 80
+        ):
+            raise PipelineError(
+                "layout_zones content/caption frames overlap or do not match caption_style.safe_area."
+            )
+
+    style_id = compiled.get("id")
+    referenced_asset_paths: set[str] = set()
+    for asset_id, entry in assets.items():
+        if not isinstance(entry, dict):
+            raise PipelineError(f"asset registry entry {asset_id!r} must be an object.")
+        asset_path = _asset_file(root, asset_id, entry)
+        referenced_asset_paths.add(asset_path.relative_to(root).as_posix())
+        if entry.get("style_id") != style_id:
+            raise PipelineError(
+                f"asset {asset_id!r} style_id does not match the compiled design token."
+            )
+        if semantic_runtime:
+            _validate_asset_lineage(
+                asset_id,
+                entry,
+                allow_visual_grammar_v4=(
+                    package_manifest is not None
+                    and package_manifest.get("format") == PACKAGE_FORMAT_V4
+                ),
+            )
+
+    voices = []
+    scene_ids: set[str] = set()
+    event_ids: set[str] = set()
+    motion_presets = visual.get("motion_presets", {})
+    transition_presets = visual.get("transition_presets", {})
+    sfx_profiles = visual.get("sfx_profiles", {})
+
+    for scene in scenes:
+        if not isinstance(scene, dict):
+            raise PipelineError("every production scene must be an object.")
+        scene_id = scene.get("id")
+        if not isinstance(scene_id, str) or not scene_id or scene_id in scene_ids:
+            raise PipelineError(f"invalid or duplicate scene id: {scene_id!r}")
+        scene_ids.add(scene_id)
+
+        voice = scene.get("voice")
+        if not isinstance(voice, str) or not voice.strip():
+            raise PipelineError(f"scene {scene_id} has no voice text.")
+        voices.append(voice)
+
+        if scene.get("timing") != {"mode": "from_voice"}:
+            raise PipelineError(f"scene {scene_id} must use timing.mode=from_voice.")
+
+        entities = scene.get("entities")
+        events = scene.get("events")
+        if not isinstance(entities, list) or not isinstance(events, list) or not events:
+            raise PipelineError(
+                f"scene {scene_id} needs entities and at least one visual event."
+            )
+
+        entity_map = {}
+        for entity in entities:
+            if not isinstance(entity, dict) or not isinstance(entity.get("id"), str):
+                raise PipelineError(f"scene {scene_id} contains an invalid entity.")
+            entity_id = entity["id"]
+            if entity_id in entity_map:
+                raise PipelineError(f"scene {scene_id} has duplicate entity {entity_id}.")
+
+            states = entity.get("states")
+            initial_state = entity.get("initial_state")
+            if not isinstance(states, dict) or initial_state not in states:
+                raise PipelineError(f"entity {entity_id} has no valid initial_state.")
+
+            for state_id, state in states.items():
+                if not isinstance(state, dict):
+                    raise PipelineError(f"state {entity_id}.{state_id} must be an object.")
+                has_asset = bool(state.get("asset"))
+                has_primitive = bool(state.get("primitive"))
+                if has_asset == has_primitive:
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} must reference exactly one asset or primitive."
+                    )
+
+                if has_asset:
+                    if state["asset"] not in assets:
+                        raise PipelineError(
+                            f"state {entity_id}.{state_id} refers to missing asset {state['asset']!r}."
+                        )
+                elif state["primitive"] not in primitives:
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} refers to missing primitive {state['primitive']!r}."
+                    )
+
+                transform = state.get("transform")
+                if (
+                    not isinstance(transform, dict)
+                    or not all(
+                        isinstance(transform.get(key), (int, float))
+                        for key in ("x", "y", "width", "height")
+                    )
+                    or transform["width"] <= 0
+                    or transform["height"] <= 0
+                    or not isinstance(state.get("layer"), (int, float))
+                    or not isinstance(state.get("visible"), bool)
+                ):
+                    raise PipelineError(
+                        f"state {entity_id}.{state_id} has an invalid transform/layer/visible value."
+                    )
+            entity_map[entity_id] = entity
+
+        current_states = {
+            entity_id: entity["initial_state"]
+            for entity_id, entity in entity_map.items()
+        }
+        meaningful_change = False
+        if semantic_runtime:
+            _validate_semantic_animation_scene(scene, entity_map)
+        if performance_runtime:
+            _validate_performance_animation_scene(
+                scene,
+                entity_map,
+                allow_runtime_defaults=runtime_owned_animation_defaults,
+            )
+
+        for event in events:
+            if not isinstance(event, dict):
+                raise PipelineError(f"scene {scene_id} contains an invalid event.")
+
+            event_id = event.get("id")
+            if not isinstance(event_id, str) or not event_id or event_id in event_ids:
+                raise PipelineError(
+                    f"event IDs must be unique and non-empty: {event_id!r}"
+                )
+            event_ids.add(event_id)
+
+            target = event.get("target")
+            trigger = event.get("trigger")
+            motion = event.get("motion")
+            if (
+                not isinstance(trigger, dict)
+                or trigger.get("source") not in {"scene_start", "voice_anchor"}
+                or (
+                    trigger.get("source") == "voice_anchor"
+                    and not str(trigger.get("text", "")).strip()
+                )
+            ):
+                raise PipelineError(f"event {event_id} has an invalid trigger.")
+
+            if motion is None and runtime_owned_animation_defaults:
+                pass
+            elif (
+                not isinstance(motion, dict)
+                or motion.get("preset") not in motion_presets
+                or not isinstance(motion.get("duration_frames"), int)
+                or isinstance(motion.get("duration_frames"), bool)
+                or motion["duration_frames"] < 1
+            ):
+                raise PipelineError(
+                    f"event {event_id} has an invalid motion preset/duration."
+                )
+
+            if event.get("sfx") and event["sfx"] not in sfx_profiles:
+                raise PipelineError(
+                    f"event {event_id} refers to missing SFX profile {event['sfx']!r}."
+                )
+
+            if target == "camera":
+                continue
+            if target not in entity_map:
+                raise PipelineError(
+                    f"event {event_id} targets missing entity {target!r}."
+                )
+            if event.get("state_before") != current_states[target]:
+                raise PipelineError(
+                    f"event {event_id} state_before does not follow prior state."
+                )
+
+            after = event.get("state_after")
+            if after not in entity_map[target]["states"]:
+                raise PipelineError(f"event {event_id} state_after is not declared.")
+            if after != current_states[target]:
+                meaningful_change = True
+            current_states[target] = after
+
+        if not meaningful_change:
+            raise PipelineError(
+                f"scene {scene_id} needs a non-camera story-changing state event."
+            )
+
+        transition = scene.get("transition")
+        if (
+            not isinstance(transition, dict)
+            or transition.get("type") not in transition_presets
+            or not isinstance(transition.get("duration_frames"), int)
+            or transition["duration_frames"] < 0
+        ):
+            raise PipelineError(f"scene {scene_id} has an invalid transition.")
+
+        captions = scene.get("captions")
+        if performance_runtime:
+            valid_captions = (
+                isinstance(captions, dict)
+                and captions.get("source") == "voice"
+                and captions.get("segmentation") == "semantic"
+                and isinstance(captions.get("max_lines"), int)
+                and not isinstance(captions.get("max_lines"), bool)
+                and 1 <= captions["max_lines"] <= 2
+                and all(
+                    key not in captions
+                    or (
+                        isinstance(captions[key], int)
+                        and not isinstance(captions[key], bool)
+                        and 1 <= captions[key] <= 32
+                    )
+                    for key in ("page_target_words", "max_words")
+                )
+            )
+        else:
+            valid_captions = (
+                isinstance(captions, dict)
+                and captions.get("source") == "voice"
+                and all(
+                    isinstance(captions.get(key), int)
+                    and not isinstance(captions.get(key), bool)
+                    for key in ("page_target_words", "max_words", "max_lines")
+                )
+                and 3 <= captions["page_target_words"] <= 7
+                and 3 <= captions["max_words"] <= 7
+                and 1 <= captions["max_lines"] <= 2
+            )
+        if not valid_captions:
+            raise PipelineError(f"scene {scene_id} has an invalid v2 caption policy.")
+
+        _validate_visual_progression_proxy(scene)
+
+    narration_path = root / "narration.txt"
+    try:
+        narration = narration_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read narration.txt: {exc}") from exc
+
+    if narration.endswith("\n"):
+        narration = narration[:-1]
+    if narration != canonical_narration_text(production):
+        raise PipelineError(
+            "narration.txt must exactly match canonical ordered scene.voice serialization."
+        )
+
+    local_first_v4 = package_manifest is not None and package_manifest.get("format") == PACKAGE_FORMAT_V4
+    if not local_first_v4:
+        _validate_handoff_boundary(root)
+        if semantic_runtime:
+            _validate_semantic_validation_receipt(root)
+
+    if package_manifest is not None:
+        actual_assets = {
+            path.relative_to(root).as_posix()
+            for path in _tree_files(root, "assets")
+        }
+        extra_assets = sorted(actual_assets - referenced_asset_paths)
+        if extra_assets:
+            raise PipelineError(
+                "PACKAGE_V3_BLOAT: assets/ contains files not referenced by production.assets: "
+                + ", ".join(extra_assets[:8])
+            )
+        renderer_root = resolve_renderer_root(root, materialize=False)
+        _validate_renderer_package_contract(
+            renderer_root,
+            expected_scripts=EXPECTED_SCRIPTS,
+            accepted_dependencies=(EXPECTED_DEPENDENCIES,),
+            required_test="tests/shared-runtime.test.mjs",
+            require_overlay_layout=True,
+        )
+        if semantic_runtime:
+            _validate_semantic_renderer_contract(renderer_root)
+        if performance_runtime:
+            _validate_performance_renderer_contract(renderer_root)
+    else:
+        renderer_root = root / "renderer"
+        _validate_renderer_package_contract(
+            renderer_root,
+            expected_scripts=LEGACY_EXPECTED_SCRIPTS,
+            accepted_dependencies=(LEGACY_EXPECTED_DEPENDENCIES, EXPECTED_DEPENDENCIES),
+            required_test="tests/pipeline-contract.test.mjs",
+            require_isolated_layout=isolated_layout,
+            require_overlay_layout=overlay_layout,
+        )
+    return production
+
+
+def validate_timing(
+    package_root: Path,
+    timing: dict | Path,
+    *,
+    check_visual_progression: bool = True,
+) -> dict:
+    """Validate measured timing; visual progression may be deferred to runtime validation."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    if isinstance(timing, Path):
+        timing = _load_json(timing, "timing.json")
+
+    if timing.get("fps") != production["video"]["fps"]:
+        raise PipelineError("timing.json fps must match production.json.")
+
+    rows = timing.get("scenes")
+    scenes = production["scenes"]
+    if not isinstance(rows, list) or len(rows) != len(scenes):
+        raise PipelineError(
+            "timing.json must contain one ordered row per production scene."
+        )
+
+    cursor = 0
+    fps = timing["fps"]
+    for scene, row in zip(scenes, rows):
+        if not isinstance(row, dict) or row.get("scene_id") != scene["id"]:
+            raise PipelineError(
+                f"timing.json scene order/id mismatch at {scene['id']}."
+            )
+
+        start_frame = row.get("start_frame")
+        duration_frames = row.get("duration_frames")
+        if (
+            not isinstance(start_frame, int)
+            or isinstance(start_frame, bool)
+            or start_frame < 0
+            or not isinstance(duration_frames, int)
+            or isinstance(duration_frames, bool)
+            or duration_frames < 1
+        ):
+            raise PipelineError(
+                f"scene {scene['id']} needs non-negative start_frame and positive duration_frames."
+            )
+
+        if start_frame != cursor:
+            raise PipelineError(
+                "scene frame ranges must be continuous and ordered from measured voice timing."
+            )
+        cursor = start_frame + duration_frames
+
+        captions = row.get("captions")
+        if not isinstance(captions, list) or not captions:
+            raise PipelineError(
+                f"word-level measured caption tokens are required for {scene['id']}."
+            )
+
+        prior_end = -1.0
+        caption_text = []
+        for cue in captions:
+            if not isinstance(cue, dict):
+                raise PipelineError(f"invalid caption token in {scene['id']}.")
+            text_value = cue.get("text")
+            begin = cue.get("startMs")
+            end_value = cue.get("endMs")
+            if (
+                not isinstance(text_value, str)
+                or not text_value.strip()
+                or re.search(r"\s", text_value.strip())
+                or not isinstance(begin, (int, float))
+                or isinstance(begin, bool)
+                or not math.isfinite(begin)
+                or not isinstance(end_value, (int, float))
+                or isinstance(end_value, bool)
+                or not math.isfinite(end_value)
+                or end_value <= begin
+            ):
+                raise PipelineError(
+                    f"invalid word-level caption token in {scene['id']}."
+                )
+
+            if begin < prior_end:
+                raise PipelineError(
+                    f"caption word timings overlap or are out of order in {scene['id']}."
+                )
+            if (
+                begin < (start_frame * 1000 / fps) - 100
+                or end_value > (cursor * 1000 / fps) + 100
+            ):
+                raise PipelineError(
+                    f"caption word falls outside measured scene timing in {scene['id']}."
+                )
+            prior_end = end_value
+            caption_text.append(text_value)
+
+        if _normalize_words(" ".join(caption_text)) != _normalize_words(scene["voice"]):
+            raise PipelineError(
+                f"caption word tokens do not exactly cover scene.voice in {scene['id']}."
+            )
+
+        if check_visual_progression:
+            _validate_measured_visual_progression(scene, row, fps)
+
+    if timing.get("total_duration_frames") != cursor:
+        raise PipelineError(
+            "total_duration_frames must equal the final measured scene boundary."
+        )
+    return timing
+
+
+def validate_voice(path: Path) -> None:
+    path = Path(path)
+    if not path.is_file():
+        raise PipelineError(f"voice WAV is missing: {path}")
+    try:
+        with wave.open(str(path), "rb") as wav:
+            if wav.getcomptype() != "NONE" or wav.getnframes() < 1 or wav.getframerate() < 1 or wav.getnchannels() < 1:
+                raise PipelineError("voice.wav must contain non-empty uncompressed PCM audio.")
+    except (wave.Error, EOFError, OSError) as exc:
+        raise PipelineError(f"voice.wav is not a readable PCM WAV file: {exc}") from exc
+
+
+def concatenate_wavs(
+    inputs: list[Path],
+    output: Path,
+    *,
+    gap_ms: float = 0.0,
+) -> None:
+    """Concatenate PCM WAV files and optionally insert silence between items."""
+    if not inputs:
+        raise PipelineError("no scene WAV files were generated.")
+    try:
+        gap_ms = float(gap_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("scene gap must be a finite non-negative number.") from None
+    if not math.isfinite(gap_ms) or gap_ms < 0 or gap_ms > 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    params = None
+    with wave.open(str(output), "wb") as destination:
+        for index, source_path in enumerate(inputs):
+            try:
+                with wave.open(str(source_path), "rb") as source:
+                    if source.getcomptype() != "NONE":
+                        raise PipelineError(f"scene WAV is compressed: {source_path}")
+                    current = source.getparams()
+                    if params is None:
+                        params = current
+                        destination.setnchannels(current.nchannels)
+                        destination.setsampwidth(current.sampwidth)
+                        destination.setframerate(current.framerate)
+                        destination.setcomptype("NONE", "not compressed")
+                    elif current[:3] != params[:3]:
+                        raise PipelineError("scene WAV files do not share one PCM format.")
+                    destination.writeframes(source.readframes(source.getnframes()))
+                    if index < len(inputs) - 1 and gap_ms > 0:
+                        silent_frames = round(current.framerate * gap_ms / 1000.0)
+                        if current.sampwidth == 1:
+                            silent_sample = b"\x80"
+                        else:
+                            silent_sample = b"\x00" * current.sampwidth
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
+            except (wave.Error, EOFError, OSError) as exc:
+                raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
+
+
+def _expected_caption_tokens(text: str) -> list[str]:
+    tokens: list[str] = []
+    for raw in text.split():
+        if _normalize_token(raw):
+            tokens.append(raw)
+        elif tokens:
+            tokens[-1] += raw
+    return tokens
+
+
+def _sentence_pause_after_indices(text: str) -> set[int]:
+    """Token indices after which Studio inserts an explicit sentence pause."""
+    tokens = _expected_caption_tokens(text)
+    pauses: set[int] = set()
+    for index, token in enumerate(tokens[:-1]):
+        visible = token.rstrip('”"’\'»)]}')
+        if re.search(r"(?:[.!?…]+)$", visible):
+            pauses.add(index)
+    return pauses
+
+
+_VI_DIGIT_WORDS = {
+    "0": "không",
+    "1": "một",
+    "2": "hai",
+    "3": "ba",
+    "4": "bốn",
+    "5": "năm",
+    "6": "sáu",
+    "7": "bảy",
+    "8": "tám",
+    "9": "chín",
+}
+
+
+def _vi_under_thousand_words(value: int, *, force_hundreds: bool = False) -> list[str]:
+    if value < 0 or value >= 1000:
+        raise ValueError("value must be between 0 and 999")
+    if value == 0:
+        return ["không"] if not force_hundreds else []
+
+    words: list[str] = []
+    hundreds, remainder = divmod(value, 100)
+    tens, ones = divmod(remainder, 10)
+
+    if hundreds:
+        words.extend([_VI_DIGIT_WORDS[str(hundreds)], "trăm"])
+    elif force_hundreds and remainder:
+        words.extend(["không", "trăm"])
+
+    if tens == 0:
+        if ones:
+            if hundreds or force_hundreds:
+                words.append("linh")
+            words.append(_VI_DIGIT_WORDS[str(ones)])
+        return words
+
+    if tens == 1:
+        words.append("mười")
+    else:
+        words.extend([_VI_DIGIT_WORDS[str(tens)], "mươi"])
+
+    if ones:
+        if tens >= 2 and ones == 1:
+            words.append("mốt")
+        elif tens >= 2 and ones == 4:
+            words.append("tư")
+        elif tens >= 1 and ones == 5:
+            words.append("lăm")
+        else:
+            words.append(_VI_DIGIT_WORDS[str(ones)])
+    return words
+
+
+def _vi_integer_words(raw_digits: str) -> list[str]:
+    """Canonical Vietnamese reading for an unsigned integer token."""
+    digits = str(raw_digits).lstrip("0") or "0"
+    if digits == "0":
+        return ["không"]
+
+    groups: list[int] = []
+    while digits:
+        groups.append(int(digits[-3:]))
+        digits = digits[:-3]
+
+    scale_names = {
+        0: [],
+        1: ["nghìn"],
+        2: ["triệu"],
+        3: ["tỷ"],
+        4: ["nghìn", "tỷ"],
+        5: ["triệu", "tỷ"],
+        6: ["tỷ", "tỷ"],
+    }
+    if len(groups) - 1 > max(scale_names):
+        # Very large identifiers are safer as individual digits than guessed
+        # Vietnamese large-number grammar.
+        return [_VI_DIGIT_WORDS[ch] for ch in raw_digits]
+
+    words: list[str] = []
+    highest = len(groups) - 1
+    for index in range(highest, -1, -1):
+        group = groups[index]
+        if group == 0:
+            continue
+        force_hundreds = bool(words) and group < 100
+        words.extend(
+            _vi_under_thousand_words(
+                group,
+                force_hundreds=force_hundreds,
+            )
+        )
+        words.extend(scale_names[index])
+    return words
+
+
+def _alignment_units(raw_token: str) -> list[str]:
+    """Canonical comparison units; preserves Whisper numeric compaction."""
+    raw = unicodedata.normalize("NFC", str(raw_token)).strip().lower()
+    numeric = re.fullmatch(r"([0-9]+)\s*(%)?", raw)
+    if numeric:
+        units = _vi_integer_words(numeric.group(1))
+        if numeric.group(2):
+            units.extend(["phần", "trăm"])
+        return units
+    normalized = _normalize_token(raw)
+    return [normalized] if normalized else []
+
+
+def _alignment_coverage_gap(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> bool:
+    """True only when ASR evidence suggests approved words have no counterpart.
+
+    Substitutions of the same/greater heard span are treated as transcription
+    variants, not as proof that TTS omitted audio. This prevents expensive TTS
+    regeneration for cases such as Xử/Sử, 8%/tám phần trăm, or word splitting.
+    """
+    expected_units = [
+        unit
+        for token in expected_tokens
+        for unit in _alignment_units(token)
+    ]
+    heard_units = [
+        unit
+        for item in measured_words
+        for unit in _alignment_units(item.get("heard", ""))
+    ]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    for tag, _i1, _i2, _j1, _j2 in matcher.get_opcodes():
+        # A replacement is ambiguous ASR evidence: Whisper may substitute,
+        # merge, or split spoken words. Only an actual delete proves that an
+        # approved unit has no measured counterpart at all.
+        if tag == "delete":
+            return True
+    return False
+
+
+def _expanded_measured_alignment_words(measured_words: list[dict]) -> list[dict]:
+    """Expand compact ASR forms while retaining a measured time span."""
+    expanded: list[dict] = []
+    for item in measured_words:
+        units = _alignment_units(item.get("heard", ""))
+        if not units:
+            continue
+        start_ms = float(item["startMs"])
+        end_ms = float(item["endMs"])
+        width = (end_ms - start_ms) / len(units)
+        for index, unit in enumerate(units):
+            begin = start_ms + width * index
+            end = end_ms if index == len(units) - 1 else start_ms + width * (index + 1)
+            expanded.append(
+                {
+                    "heard": unit,
+                    "startMs": begin,
+                    "endMs": end,
+                    "confidence": item.get("confidence"),
+                }
+            )
+    return expanded
+
+
+def _reconcile_asr_variant(
+    expected_tokens: list[str],
+    measured_words: list[dict],
+) -> list[dict] | None:
+    """Map transcription variants back to approved tokens without hiding omissions.
+
+    Reconciliation is allowed only when every approved token has measured audio
+    coverage. Equal-length substitutions reuse measured word spans; one-to-many
+    ASR splits share the measured replacement span. Missing approved words and
+    standalone ASR insertions are rejected.
+    """
+    expected_units: list[str] = []
+    for token in expected_tokens:
+        units = _alignment_units(token)
+        if len(units) != 1:
+            return None
+        expected_units.append(units[0])
+
+    measured = _expanded_measured_alignment_words(measured_words)
+    heard_units = [str(item["heard"]) for item in measured]
+    matcher = difflib.SequenceMatcher(
+        a=expected_units,
+        b=heard_units,
+        autojunk=False,
+    )
+    output: list[dict | None] = [None] * len(expected_tokens)
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        expected_count = i2 - i1
+        heard_count = j2 - j1
+        if tag == "equal":
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_exact",
+                }
+            continue
+
+        if tag != "replace" or expected_count < 1 or heard_count < 1:
+            return None
+
+        if expected_count == heard_count:
+            for offset in range(expected_count):
+                source = measured[j1 + offset]
+                output[i1 + offset] = {
+                    "text": expected_tokens[i1 + offset],
+                    "startMs": source["startMs"],
+                    "endMs": source["endMs"],
+                    "timestampMs": source["startMs"],
+                    "confidence": source.get("confidence"),
+                    "alignment_source": "asr_variant",
+                }
+            continue
+
+        span_start = float(measured[j1]["startMs"])
+        span_end = float(measured[j2 - 1]["endMs"])
+        weights = [
+            max(1, len(_normalize_token(expected_tokens[index])))
+            for index in range(i1, i2)
+        ]
+        total_weight = sum(weights)
+        cursor = span_start
+        confidences = [
+            item.get("confidence")
+            for item in measured[j1:j2]
+            if item.get("confidence") is not None
+        ]
+        confidence = min(confidences) if confidences else None
+        for relative, weight in enumerate(weights):
+            fraction = weight / total_weight
+            end = span_end if relative == len(weights) - 1 else cursor + (
+                (span_end - span_start) * fraction
+            )
+            index = i1 + relative
+            output[index] = {
+                "text": expected_tokens[index],
+                "startMs": cursor,
+                "endMs": end,
+                "timestampMs": cursor,
+                "confidence": confidence,
+                "alignment_source": "asr_variant_split",
+            }
+            cursor = end
+
+    if any(item is None for item in output):
+        return None
+    return [item for item in output if item is not None]
+
+
+def load_word_aligner(
+    model_name: str,
+    device: str,
+    compute_type: str,
+    *,
+    cpu_threads: int | None = None,
+    num_workers: int = 1,
+):
+    require_word_aligner_installed()
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError as exc:
+        raise PipelineError(
+            "Automatic word-level timing requires faster-whisper. "
+            f"Install it with:\n{aligner_install_command()}"
+        ) from exc
+
+    try:
+        options = {"cpu_threads": cpu_threads} if cpu_threads is not None else {}
+        return WhisperModel(
+            model_name,
+            device=device,
+            compute_type=compute_type,
+            num_workers=num_workers,
+            **options,
+        )
+    except Exception as exc:
+        raise PipelineError(
+            f"cannot load faster-whisper model {model_name!r}: {exc}"
+        ) from exc
+
+
+def _repair_aligner_word_timestamps(
+    raw_words: list[dict],
+    audio_path: Path,
+    *,
+    tolerance_ms: float = ASR_SCENE_BOUNDARY_TOLERANCE_MS,
+) -> list[dict]:
+    """Repair only zero-duration ASR tokens from adjacent measured boundaries."""
+    repaired: list[dict] = []
+    tolerance_seconds = float(tolerance_ms) / 1000.0
+    adjusted_next_start = None
+
+    for index, raw in enumerate(raw_words):
+        start = adjusted_next_start if adjusted_next_start is not None else raw.get("start")
+        adjusted_next_start = None
+        end = raw.get("end")
+
+        def invalid(reason: str) -> InvalidAlignmentTimestampError:
+            return InvalidAlignmentTimestampError(
+                f"aligner returned an invalid word timestamp for {audio_path.name} "
+                f"at word {index + 1} ({raw.get('heard')!r}): {reason}; "
+                f"start={start!r}, end={end!r}."
+            )
+
+        if start is None or end is None:
+            raise invalid("timestamp is missing")
+        try:
+            start = float(start)
+            end = float(end)
+        except (TypeError, ValueError) as exc:
+            raise invalid("timestamp is not numeric") from exc
+        if not math.isfinite(start) or not math.isfinite(end) or end < start:
+            raise invalid("timestamp is non-finite or end precedes start")
+
+        if math.isclose(end, start, rel_tol=0.0, abs_tol=1e-9):
+            next_start = None
+            next_end = None
+            if index + 1 < len(raw_words):
+                next_raw = raw_words[index + 1]
+                try:
+                    next_start = (
+                        float(next_raw["start"])
+                        if next_raw.get("start") is not None
+                        else None
+                    )
+                    next_end = (
+                        float(next_raw["end"])
+                        if next_raw.get("end") is not None
+                        else None
+                    )
+                except (TypeError, ValueError):
+                    next_start = next_end = None
+
+            previous_end = float(repaired[-1]["end"]) if repaired else None
+
+            if (
+                next_start is not None
+                and next_start > start
+                and next_start - start <= tolerance_seconds
+            ):
+                end = next_start
+            elif (
+                next_start == start
+                and next_end is not None
+                and math.isfinite(next_end)
+                and next_end > start
+                and (previous_end is None or math.isclose(previous_end, start, abs_tol=1e-9))
+                and len(_alignment_units(raw.get("heard", ""))) == 1
+                and len(_alignment_units(raw_words[index + 1].get("heard", ""))) == 1
+            ):
+                # shortcut: split the neighbor span by token length; phoneme timing could improve this estimate.
+                current_weight = len(_normalize_token(raw["heard"]))
+                next_weight = len(_normalize_token(raw_words[index + 1]["heard"]))
+                end = start + (next_end - start) * current_weight / (current_weight + next_weight)
+                adjusted_next_start = end
+            else:
+                if (
+                    previous_end is None
+                    or previous_end >= start
+                    or start - previous_end > tolerance_seconds
+                ):
+                    raise invalid("zero-duration word cannot be repaired from adjacent boundaries")
+                start = previous_end
+
+        item = dict(raw)
+        item["start"] = start
+        item["end"] = end
+        repaired.append(item)
+
+    return repaired
+
+
+def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict]:
+    expected = _expected_caption_tokens(approved_text)
+    try:
+        segments, _info = model.transcribe(
+            str(audio_path),
+            language="vi",
+            word_timestamps=True,
+            vad_filter=False,
+            condition_on_previous_text=False,
+        )
+        raw_words = []
+        for segment in segments:
+            for word in segment.words or []:
+                heard = str(word.word).strip()
+                if not _normalize_token(heard):
+                    continue
+                raw_words.append(
+                    {
+                        "heard": heard,
+                        "start": word.start,
+                        "end": word.end,
+                        "confidence": (
+                            float(word.probability)
+                            if word.probability is not None
+                            else None
+                        ),
+                    }
+                )
+
+        measured = []
+        for word in _repair_aligner_word_timestamps(
+            raw_words,
+            audio_path,
+        ):
+            measured.append(
+                {
+                    "heard": word["heard"],
+                    "startMs": float(word["start"]) * 1000,
+                    "endMs": float(word["end"]) * 1000,
+                    "confidence": word["confidence"],
+                }
+            )
+    except PipelineError:
+        raise
+    except Exception as exc:
+        raise PipelineError(
+            f"word alignment failed for {audio_path.name}: {exc}"
+        ) from exc
+
+    expected_norm = [_normalize_token(token) for token in expected]
+    heard_norm = [_normalize_token(item["heard"]) for item in measured]
+    if expected_norm != heard_norm:
+        coverage_gap = _alignment_coverage_gap(expected, measured)
+        if not coverage_gap:
+            reconciled = _reconcile_asr_variant(expected, measured)
+            if reconciled is not None:
+                return reconciled
+        mismatch_kind = (
+            "coverage_gap"
+            if coverage_gap
+            else "unreconciled_asr_variant"
+        )
+        matcher = difflib.SequenceMatcher(a=expected_norm, b=heard_norm, autojunk=False)
+        differences = [
+            {
+                "expected": " ".join(expected_norm[i1:i2]),
+                "heard": " ".join(heard_norm[j1:j2]),
+            }
+            for tag, i1, i2, j1, j2 in matcher.get_opcodes()
+            if tag != "equal"
+        ]
+        preview = "; ".join(
+            f"expected [{row['expected']}] / heard [{row['heard']}]"
+            for row in differences[:4]
+        )
+        raise AlignmentMismatchError(
+            "ALIGNMENT_MISMATCH: "
+            f"{audio_path.name}: {mismatch_kind}. {preview}. "
+            "Audio/ASR needs verification; no inferred timestamps were written.",
+            expected=expected_norm,
+            heard=heard_norm,
+            coverage_gap=coverage_gap,
+        )
+
+    return [
+        {
+            "text": display,
+            "startMs": item["startMs"],
+            "endMs": item["endMs"],
+            "timestampMs": item["startMs"],
+            "confidence": item["confidence"],
+            "alignment_source": "asr_exact",
+        }
+        for display, item in zip(expected, measured)
+    ]
+
+
+def _clamp_aligned_words_to_wav_boundary(
+    scene_id: str,
+    words: list[dict],
+    seconds: float,
+    *,
+    tolerance_ms: float = ASR_SCENE_BOUNDARY_TOLERANCE_MS,
+) -> list[dict]:
+    """Clamp only small ASR boundary drift; reject timestamps outside real audio."""
+    duration_ms = float(seconds) * 1000.0
+    normalized: list[dict] = []
+    prior_end = 0.0
+
+    for index, word in enumerate(words):
+        item = dict(word)
+        try:
+            start_ms = float(item["startMs"])
+            end_ms = float(item["endMs"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise PipelineError(
+                f"invalid measured word timing in {scene_id}."
+            ) from exc
+
+        if not math.isfinite(start_ms) or not math.isfinite(end_ms) or end_ms <= start_ms:
+            raise PipelineError(f"invalid measured word timing in {scene_id}.")
+
+        if start_ms < 0:
+            if start_ms < -tolerance_ms:
+                raise PipelineError(
+                    f"caption word falls outside measured WAV boundary in {scene_id}."
+                )
+            start_ms = 0.0
+            if item.get("timestampMs") is not None:
+                item["timestampMs"] = 0.0
+
+        if start_ms + 1e-6 < prior_end:
+            raise PipelineError(
+                f"measured caption timings overlap or are out of order in {scene_id}."
+            )
+
+        if end_ms > duration_ms:
+            overrun = end_ms - duration_ms
+            is_last = index == len(words) - 1
+            if not is_last or overrun > tolerance_ms or start_ms >= duration_ms:
+                raise PipelineError(
+                    f"caption word falls outside measured WAV boundary in {scene_id}."
+                )
+            end_ms = duration_ms
+
+        item["startMs"] = start_ms
+        item["endMs"] = end_ms
+        if item.get("timestampMs") is not None:
+            timestamp = float(item["timestampMs"])
+            if timestamp < 0 and timestamp >= -tolerance_ms:
+                timestamp = 0.0
+            item["timestampMs"] = min(max(timestamp, start_ms), end_ms)
+
+        prior_end = end_ms
+        normalized.append(item)
+
+    return normalized
+
+
+def build_timing_from_word_alignment(
+    production: dict,
+    durations: dict[str, float],
+    aligned_words: dict[str, list[dict]],
+    *,
+    scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
+) -> dict:
+    """Build scene frames from measured WAV duration plus explicit breathing pauses."""
+    try:
+        scene_gap_ms = float(scene_gap_ms)
+        sentence_pause_ms = float(sentence_pause_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("pacing pauses must be finite non-negative numbers.") from None
+    if not math.isfinite(scene_gap_ms) or scene_gap_ms < 0 or scene_gap_ms > 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+    if (
+        not math.isfinite(sentence_pause_ms)
+        or sentence_pause_ms < 0
+        or sentence_pause_ms > 3000
+    ):
+        raise PipelineError("sentence pause must be between 0 and 3000 ms.")
+
+    fps = production["video"]["fps"]
+    rows = []
+    elapsed_seconds = 0.0
+    scenes = production["scenes"]
+
+    for scene_index, scene in enumerate(scenes):
+        scene_id = scene["id"]
+        seconds = durations.get(scene_id)
+        words = aligned_words.get(scene_id)
+        if not isinstance(seconds, (int, float)) or seconds <= 0:
+            raise PipelineError(
+                f"missing measured duration for scene {scene_id}."
+            )
+        if not isinstance(words, list) or not words:
+            raise PipelineError(
+                f"missing measured word timing for scene {scene_id}."
+            )
+
+        words = _clamp_aligned_words_to_wav_boundary(
+            scene_id,
+            words,
+            float(seconds),
+        )
+
+        pause_after = _sentence_pause_after_indices(scene["voice"])
+        start_frame = round(elapsed_seconds * fps)
+        offset_ms = elapsed_seconds * 1000
+        elapsed_seconds += float(seconds) + (
+            len(pause_after) * sentence_pause_ms / 1000.0
+        )
+        if scene_index < len(scenes) - 1:
+            elapsed_seconds += scene_gap_ms / 1000.0
+        end_frame = max(start_frame + 1, round(elapsed_seconds * fps))
+
+        global_words = []
+        pauses_before = 0
+        for word_index, word in enumerate(words):
+            shift_ms = pauses_before * sentence_pause_ms
+            global_words.append(
+                {
+                    **word,
+                    "startMs": offset_ms + shift_ms + float(word["startMs"]),
+                    "endMs": offset_ms + shift_ms + float(word["endMs"]),
+                    "timestampMs": (
+                        None
+                        if word.get("timestampMs") is None
+                        else offset_ms + shift_ms + float(word["timestampMs"])
+                    ),
+                }
+            )
+            if word_index in pause_after:
+                pauses_before += 1
+
+        rows.append(
+            {
+                "scene_id": scene_id,
+                "start_frame": start_frame,
+                "duration_frames": end_frame - start_frame,
+                "captions": global_words,
+            }
+        )
+
+    return {
+        "fps": fps,
+        "total_duration_frames": (
+            rows[-1]["start_frame"] + rows[-1]["duration_frames"]
+        ),
+        "scenes": rows,
+    }
+
+
+def _tts_python(tts_root: Path, requested: Path | None) -> Path:
+    candidate = Path(requested).expanduser() if requested else Path(tts_root) / ".venv" / "Scripts" / "python.exe"
+    if not candidate.is_file():
+        raise PipelineError(f"VieNeu Python environment not found: {candidate}")
+    return candidate.resolve()
+
+
+def file_sha256(path: Path) -> str:
+    """Content fingerprint used for package and per-scene voice reuse."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _fingerprint_files(root: Path, files: list[Path]) -> str:
+    """Hash file names + bytes deterministically; missing optional files are omitted."""
+    import hashlib
+
+    root = Path(root).resolve()
+    digest = hashlib.sha256()
+    unique = {
+        Path(path).resolve()
+        for path in files
+        if Path(path).is_file()
+    }
+    for path in sorted(
+        unique,
+        key=lambda item: item.relative_to(root).as_posix(),
+    ):
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _fingerprint_value(value) -> str:
+    import hashlib
+
+    canonical = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _tree_files(root: Path, relative: str, *, exclude: set[str] | None = None) -> list[Path]:
+    base = Path(root) / relative
+    if not base.is_dir():
+        return []
+    excluded = exclude or set()
+    return [
+        path
+        for path in base.rglob("*")
+        if path.is_file()
+        and not any(part in excluded for part in path.relative_to(base).parts)
+    ]
+
+
+def artifact_fingerprints(package_root: Path) -> dict[str, str]:
+    """Describe exact input groups for render, cover, mix, and publish outputs."""
+    root = Path(package_root).resolve()
+    package_manifest = _load_package_manifest(root)
+    local_first_v4 = package_manifest is not None and package_manifest.get("format") == PACKAGE_FORMAT_V4
+
+    creative_files = [
+        root / "production.json",
+        root / "narration.txt",
+        root / "design.md",
+        root / "package-manifest.json",
+        *_tree_files(root, "assets"),
+    ]
+    if not local_first_v4:
+        creative_files.extend([
+            root / "handoff-manifest.json",
+            root / "FINAL_VALIDATION.json",
+        ])
+    renderer_files = (
+        []
+        if package_manifest is not None
+        else [
+            *_tree_files(
+                root,
+                "renderer",
+                exclude={"node_modules", "generated", ".cache"},
+            ),
+        ]
+    )
+    runtime_files = [
+        root / "voice.wav",
+        root / ".runtime" / "timing.json",
+    ]
+    publish_copy_files = [
+        root / "publish" / "publish-copy.txt",
+    ]
+    music_files = [root / ".runtime" / "audio.json"]
+
+    audio_config = root / ".runtime" / "audio.json"
+    if audio_config.is_file():
+        try:
+            raw = json.loads(audio_config.read_text(encoding="utf-8")).get(
+                "background_music"
+            )
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            raw = None
+        if isinstance(raw, str):
+            music_files.append(root / raw)
+
+    production = {}
+    production_path = root / "production.json"
+    if production_path.is_file():
+        try:
+            production = json.loads(production_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            production = {}
+
+    publish_document = {}
+    publish_path = root / "publish" / "publish.json"
+    if publish_path.is_file():
+        try:
+            publish_document = json.loads(publish_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            publish_document = {}
+
+    creative = _fingerprint_files(root, creative_files)
+    if package_manifest is None:
+        renderer = _fingerprint_files(root, renderer_files)
+    else:
+        runtime_ref = package_manifest["runtime"]
+        renderer = runtime_ref.get("sha256")
+        if not isinstance(renderer, str) or not renderer:
+            runtime_manifest = _load_json(
+                _bundled_runtime_root(runtime_ref) / "runtime-manifest.json",
+                "runtime-manifest.json",
+            )
+            renderer = str(runtime_manifest.get("sha256") or "")
+    runtime = _fingerprint_files(root, runtime_files)
+    publish_metadata = _fingerprint_value(publish_document)
+    publish_copy = _fingerprint_files(root, publish_copy_files)
+    publish = _fingerprint_value(
+        {
+            "metadata": publish_metadata,
+            "copy": publish_copy,
+        }
+    )
+    cover_spec = _fingerprint_value(
+        publish_document.get("cover", {})
+        if isinstance(publish_document, dict)
+        else {}
+    )
+    music = _fingerprint_files(root, music_files)
+    render_profile = _fingerprint_value(production.get("video", {}))
+
+    video = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "runtime": runtime,
+            "render_profile": render_profile,
+        }
+    )
+    cover = _fingerprint_value(
+        {
+            "creative": creative,
+            "renderer": renderer,
+            "cover_spec": cover_spec,
+            "render_profile": render_profile,
+        }
+    )
+    mix = _fingerprint_value(
+        {
+            "video": video,
+            "music": music,
+        }
+    )
+    final = _fingerprint_value(
+        {
+            "mix": mix,
+            "cover": cover,
+            "publish": publish,
+        }
+    )
+    return {
+        "creative": creative,
+        "renderer": renderer,
+        "runtime": runtime,
+        "publish_metadata": publish_metadata,
+        "publish_copy": publish_copy,
+        "publish": publish,
+        "cover_spec": cover_spec,
+        "music": music,
+        "render_profile": render_profile,
+        "video": video,
+        "cover": cover,
+        "mix": mix,
+        "final": final,
+    }
+
+
+def _performance_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "performance.json"
+
+
+def _write_performance_stage(
+    root: Path,
+    stage: str,
+    *,
+    elapsed_ms: int,
+    status: str,
+    cache_hit: bool,
+    input_fingerprint: str | None,
+) -> None:
+    path = _performance_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        payload = {}
+    stages = payload.get("stages")
+    if not isinstance(stages, dict):
+        stages = {}
+    stages[stage] = {
+        "elapsed_ms": int(elapsed_ms),
+        "status": status,
+        "cache_hit": bool(cache_hit),
+        "input_fingerprint": input_fingerprint,
+    }
+    payload = {
+        "version": 1,
+        "fingerprints": artifact_fingerprints(root),
+        "stages": stages,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def _prepare_cache_path(root: Path) -> Path:
+    return Path(root) / ".runtime" / "prepare-cache.json"
+
+
+def _load_prepare_cache(root: Path) -> dict:
+    path = _prepare_cache_path(root)
+    if not path.is_file():
+        return {"version": 1, "stages": {}}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {"version": 1, "stages": {}}
+    if payload.get("version") != 1 or not isinstance(payload.get("stages"), dict):
+        return {"version": 1, "stages": {}}
+    return payload
+
+
+def _prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> bool:
+    payload = _load_prepare_cache(root)
+    entry = payload["stages"].get(stage)
+    return (
+        isinstance(entry, dict)
+        and entry.get("status") == "PASS"
+        and entry.get("fingerprint") == fingerprint
+    )
+
+
+def _mark_prepare_stage_cached(root: Path, stage: str, fingerprint: str) -> None:
+    path = _prepare_cache_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = _load_prepare_cache(root)
+    stages = dict(payload.get("stages") or {})
+    stages[stage] = {
+        "status": "PASS",
+        "fingerprint": fingerprint,
+    }
+    temp = path.with_name(path.name + ".tmp")
+    temp.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "stages": stages,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    os.replace(temp, path)
+
+
+def renderer_dependency_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    renderer = resolve_renderer_root(root, materialize=True)
+    package = _load_json(renderer / "package.json", "renderer/package.json")
+    lock_path = renderer / "package-lock.json"
+    lock = file_sha256(lock_path) if lock_path.is_file() else ""
+    return _fingerprint_value(
+        {
+            "dependencies": package.get("dependencies") or {},
+            "devDependencies": package.get("devDependencies") or {},
+            "package_lock": lock,
+        }
+    )
+
+
+def _renderer_dependencies_installed(renderer: Path) -> bool:
+    renderer = Path(renderer).resolve()
+    try:
+        package = _load_json(renderer / "package.json", "renderer/package.json")
+    except PipelineError:
+        return False
+
+    expected = {}
+    for field in ("dependencies", "devDependencies"):
+        values = package.get(field)
+        if not isinstance(values, dict):
+            return False
+        expected.update(values)
+
+    for name, version in expected.items():
+        parts = name.split("/")
+        installed_path = renderer / "node_modules"
+        for part in parts:
+            installed_path /= part
+        installed_path /= "package.json"
+        try:
+            installed = json.loads(installed_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        installed_version = installed.get("version")
+        if (
+            name == "typescript"
+            and version == "5.8.0"
+            and installed_version in SUPPORTED_TYPESCRIPT_VERSIONS
+        ):
+            continue
+        if installed_version != version:
+            return False
+
+    bin_dir = renderer / "node_modules" / ".bin"
+    remotion_bin = bin_dir / ("remotion.cmd" if os.name == "nt" else "remotion")
+    tsc_bin = bin_dir / ("tsc.cmd" if os.name == "nt" else "tsc")
+    return remotion_bin.is_file() and tsc_bin.is_file()
+
+
+def _package_runtime_sha256(manifest: dict) -> str:
+    """Resolve the exact runtime hash for both v3 and local-first v4 packages."""
+    runtime_ref = manifest["runtime"]
+    runtime_sha = runtime_ref.get("sha256")
+    if isinstance(runtime_sha, str) and re.fullmatch(r"[0-9a-f]{64}", runtime_sha):
+        return runtime_sha
+
+    runtime_manifest = _load_json(
+        _bundled_runtime_root(runtime_ref) / "runtime-manifest.json",
+        "runtime-manifest.json",
+    )
+    runtime_sha = runtime_manifest.get("sha256")
+    if not isinstance(runtime_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", runtime_sha):
+        raise PipelineError(
+            "BUNDLED_RUNTIME_CORRUPT: runtime manifest is missing a valid sha256."
+        )
+    return runtime_sha
+
+
+def style_compile_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    _token, source_hash = _design_token(root)
+    manifest = _load_package_manifest(root)
+    if manifest is not None:
+        compiler = _package_runtime_sha256(manifest)
+    else:
+        compiler = _fingerprint_files(
+            root,
+            [
+                root / "renderer" / "scripts" / "style-token.mjs",
+                root / "renderer" / "scripts" / "compile-style-token.mjs",
+            ],
+        )
+    return _fingerprint_value({"design_source_hash": source_hash, "compiler": compiler})
+
+
+def _style_compilation_current(package_root: Path) -> bool:
+    root = Path(package_root).resolve()
+    try:
+        token, source_hash = _design_token(root)
+        production = _load_json(root / "production.json", "production.json")
+    except PipelineError:
+        return False
+    visual = production.get("visual_system")
+    compiled = visual.get("style_token") if isinstance(visual, dict) else None
+    return (
+        isinstance(compiled, dict)
+        and compiled.get("id") == token.get("id")
+        and compiled.get("source_hash") == source_hash
+    )
+
+
+def renderer_check_fingerprint(package_root: Path) -> str:
+    root = Path(package_root).resolve()
+    manifest = _load_package_manifest(root)
+    if manifest is not None:
+        return _package_runtime_sha256(manifest)
+    fingerprints = artifact_fingerprints(root)
+    production = _fingerprint_files(root, [root / "production.json"])
+    return _fingerprint_value(
+        {
+            "renderer": fingerprints["renderer"],
+            "production": production,
+            "publish_metadata": fingerprints["publish_metadata"],
+        }
+    )
+
+
+def _shared_runtime_check_cache_path(package_root: Path) -> Path:
+    return resolve_renderer_root(package_root, materialize=True).parent / ".checks.json"
+
+
+def renderer_checks_cached(package_root: Path, fingerprint: str) -> bool:
+    root = Path(package_root).resolve()
+    if _load_package_manifest(root) is None:
+        return _prepare_stage_cached(root, "renderer_checks", fingerprint)
+    path = _shared_runtime_check_cache_path(root)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return payload.get("status") == "PASS" and payload.get("fingerprint") == fingerprint
+
+
+def mark_renderer_checks_cached(package_root: Path, fingerprint: str) -> None:
+    root = Path(package_root).resolve()
+    if _load_package_manifest(root) is None:
+        _mark_prepare_stage_cached(root, "renderer_checks", fingerprint)
+        return
+    path = _shared_runtime_check_cache_path(root)
+    path.write_text(
+        json.dumps({"status": "PASS", "fingerprint": fingerprint}, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+@contextlib.contextmanager
+def measure_performance_stage(
+    package_root: Path,
+    stage: str,
+    *,
+    input_fingerprint: str | None = None,
+    cache_hit: bool = False,
+):
+    """Persist the latest elapsed time for a measurable runtime stage."""
+    root = Path(package_root).resolve()
+    started = time.perf_counter()
+    status = "PASS"
+    try:
+        yield
+    except Exception:
+        status = "FAIL"
+        raise
+    finally:
+        elapsed_ms = round((time.perf_counter() - started) * 1000)
+        _write_performance_stage(
+            root,
+            stage,
+            elapsed_ms=elapsed_ms,
+            status=status,
+            cache_hit=cache_hit,
+            input_fingerprint=input_fingerprint,
+        )
+
+
+def aligner_install_command() -> str:
+    """The only supported install command: the interpreter running this runner."""
+    return f'"{sys.executable}" -m pip install -r requirements-local.txt'
+
+
+def require_word_aligner_installed() -> None:
+    """Fail before any expensive TTS work when measured timing cannot be produced."""
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError as exc:
+        raise PipelineError(
+            "Automatic word-level timing requires faster-whisper, which is missing from the "
+            f"Python running Zodiac Studio ({sys.executable}).\n"
+            f"Install it with:\n{aligner_install_command()}"
+        ) from exc
+
+
+def scene_wav_path(root: Path, scene_id: str) -> Path:
+    return Path(root) / ".runtime" / "tts-scenes" / f"{scene_id}.wav"
+
+
+def tts_manifest_rows(production: dict, scene_ids: list[str] | None = None) -> list[dict]:
+    from tools.studio_v2.voice_performance import speech_context
+    wanted = set(scene_ids) if scene_ids is not None else None
+    return [
+        {
+            "scene_id": scene["id"],
+            "text": scene["voice"],
+            "output": str(scene_wav_path(".", scene["id"])),
+            **({"performance_context": speech_context(scene)} if speech_context(scene) else {}),
+        }
+        for scene in production["scenes"]
+        if wanted is None or scene["id"] in wanted
+    ]
+
+
+def _validate_speech_rate_warning_wps(value: float) -> float:
+    try:
+        threshold = float(value)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("speech-rate warning threshold must be a finite number greater than zero.") from None
+    if not math.isfinite(threshold) or threshold <= 0:
+        raise PipelineError("speech-rate warning threshold must be a finite number greater than zero.")
+    return threshold
+
+
+def effective_tts_generation_config(
+    *,
+    mode: str,
+    vieneu_url: str | None,
+    backend: str,
+    precision: str,
+    frame_cap: str,
+    max_chars: int,
+) -> dict:
+    """Describe settings that actually affect the generated audio."""
+    if vieneu_url:
+        return {
+            "transport": "gradio",
+            "backend": "server-managed",
+            "precision": "server-managed",
+            "frame_cap": None,
+            "max_chars": max_chars,
+        }
+    if mode == "v3turbo":
+        return {
+            "transport": "local",
+            "backend": backend,
+            "precision": precision,
+            "frame_cap": frame_cap == "on",
+            "max_chars": max_chars,
+        }
+    return {
+        "transport": "local",
+        "backend": None,
+        "precision": None,
+        "frame_cap": None,
+        "max_chars": max_chars,
+    }
+
+
+def _component_label(component: dict) -> str:
+    return str((component.get("props") or {}).get("label") or "").strip().casefold()
+
+
+def _select_vieneu_gradio_dependency(config: dict) -> dict:
+    """Return the verified single-speaker synthesis dependency or fail closed."""
+    components = {
+        item.get("id"): item
+        for item in config.get("components", [])
+        if isinstance(item, dict) and "id" in item
+    }
+    trusted_name = re.compile(
+        r"^(?:wrapper(?:_\d+)?|synthesize_speech(?:_with_estimate)?(?:_\d+)?)$"
+    )
+    matches = []
+    seen_api_names = []
+    for dependency in config.get("dependencies", []):
+        if not isinstance(dependency, dict):
+            continue
+        api_name = str(dependency.get("api_name") or "").strip().lstrip("/")
+        if not api_name:
+            continue
+        seen_api_names.append(api_name)
+        if not trusted_name.fullmatch(api_name):
+            continue
+
+        input_ids = [
+            component_id
+            for component_id in dependency.get("inputs", [])
+            if (components.get(component_id) or {}).get("type") != "state"
+        ]
+        labels = [_component_label(components.get(component_id) or {}) for component_id in input_ids]
+        text_positions = [
+            index for index, label in enumerate(labels)
+            if label == "văn bản" or label == "text"
+        ]
+        voice_positions = [
+            index for index, label in enumerate(labels)
+            if label == "giọng mẫu" or label in {"voice", "preset voice"}
+        ]
+        output_types = {
+            str((components.get(component_id) or {}).get("type") or "").casefold()
+            for component_id in dependency.get("outputs", [])
+        }
+        if len(text_positions) != 1 or len(voice_positions) != 1 or "audio" not in output_types:
+            continue
+
+        max_chars_positions = [
+            index for index, label in enumerate(labels)
+            if "max chars" in label
+            or ("ký tự" in label and ("chunk" in label or "đoạn" in label))
+        ]
+        verified = dict(dependency)
+        verified["_input_ids"] = input_ids
+        verified["_text_position"] = text_positions[0]
+        verified["_voice_position"] = voice_positions[0]
+        verified["_max_chars_position"] = (
+            max_chars_positions[0] if len(max_chars_positions) == 1 else None
+        )
+        matches.append(verified)
+
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        names = ", ".join(str(item.get("api_name")) for item in matches)
+        raise PipelineError(
+            "Không thể xác định duy nhất endpoint tạo giọng VieNeu Gradio; "
+            f"các endpoint phù hợp: {names}."
+        )
+    discovered = ", ".join(sorted(set(seen_api_names))) or "không có"
+    raise PipelineError(
+        "Không xác định được endpoint tạo giọng VieNeu Gradio từ metadata đáng tin cậy. "
+        f"Endpoint phát hiện được: {discovered}."
+    )
+
+
+def build_tts_diagnostics(
+    production: dict,
+    durations: dict[str, float],
+    *,
+    warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    transport: str = "local",
+    backend: str | None = None,
+    precision: str | None = None,
+    frame_cap: bool | None = None,
+    max_chars: int | None = None,
+    scene_configs: dict[str, dict] | None = None,
+) -> dict:
+    """Measure narration density immediately after TTS, before ASR alignment."""
+    warning_wps = _validate_speech_rate_warning_wps(warning_wps)
+    base_config = {
+        "transport": transport,
+        "backend": backend,
+        "precision": precision,
+        "frame_cap": frame_cap,
+        "max_chars": max_chars,
+    }
+    scene_configs = scene_configs or {}
+
+    scenes = []
+    total_words = 0
+    total_seconds = 0.0
+    for scene in production.get("scenes", []):
+        scene_id = str(scene.get("id", ""))
+        seconds = durations.get(scene_id)
+        if (
+            not isinstance(seconds, (int, float))
+            or not math.isfinite(float(seconds))
+            or float(seconds) <= 0
+        ):
+            raise PipelineError(f"missing measured duration for scene {scene_id}.")
+        words = len(_expected_caption_tokens(str(scene.get("voice", ""))))
+        wps = words / float(seconds)
+        warning = wps > warning_wps
+        scenes.append(
+            {
+                "scene_id": scene_id,
+                "word_count": words,
+                "duration_seconds": round(float(seconds), 6),
+                "words_per_second": round(wps, 6),
+                "speech_rate_warning": warning,
+                "generation": dict(scene_configs.get(scene_id) or base_config),
+            }
+        )
+        total_words += words
+        total_seconds += float(seconds)
+
+    total_wps = total_words / total_seconds if total_seconds > 0 else 0.0
+    return {
+        "version": 1,
+        "config": {
+            **base_config,
+            "warning_wps": warning_wps,
+        },
+        "summary": {
+            "word_count": total_words,
+            "duration_seconds": round(total_seconds, 6),
+            "words_per_second": round(total_wps, 6),
+            "speech_rate_warning": total_wps > warning_wps
+            or any(item["speech_rate_warning"] for item in scenes),
+        },
+        "scenes": scenes,
+    }
+
+
+def write_tts_diagnostics(
+    runtime: Path,
+    diagnostics: dict,
+    filename: str = "tts-diagnostics.json",
+) -> Path:
+    path = Path(runtime) / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(diagnostics, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _emit_tts_log(text: str, log_callback=None) -> None:
+    if log_callback is not None:
+        log_callback(str(text))
+    elif _PROCESS_LOG_OBSERVER.get() is not None:
+        _PROCESS_LOG_OBSERVER.get()(str(text), channel="stdout")
+    else:
+        print(str(text), flush=True)
+
+
+def _print_tts_diagnostics(diagnostics: dict, log_callback=None) -> None:
+    threshold = diagnostics["config"]["warning_wps"]
+    for scene in diagnostics["scenes"]:
+        status = "TTS_RATE_WARNING" if scene["speech_rate_warning"] else "TTS_RATE"
+        _emit_tts_log(
+            f"{status}: {scene['scene_id']} "
+            f"{scene['duration_seconds']:.1f}s / {scene['word_count']} từ = "
+            f"{scene['words_per_second']:.2f} từ/giây"
+            + (
+                f" > ngưỡng {threshold:.2f}"
+                if scene["speech_rate_warning"]
+                else ""
+            ),
+            log_callback,
+        )
+    summary = diagnostics["summary"]
+    _emit_tts_log(
+        f"TTS_RATE_TOTAL: {summary['duration_seconds']:.1f}s / "
+        f"{summary['word_count']} từ = {summary['words_per_second']:.2f} từ/giây",
+        log_callback,
+    )
+
+
+def run_tts_batch(
+    runtime: Path,
+    rows: list[dict],
+    *,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+    backend: str = DEFAULT_TTS_BACKEND,
+    precision: str = DEFAULT_TTS_PRECISION,
+    frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    frame_cap_scale: float = 1.0,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
+) -> None:
+    """Generate the given scene WAVs with VieNeu, in one subprocess call."""
+    if not rows:
+        return
+    if max_chars < 32:
+        raise PipelineError("--tts-max-chars must be at least 32.")
+    if backend not in {"auto", "onnx", "pytorch"}:
+        raise PipelineError("--tts-backend must be auto, onnx, or pytorch.")
+    if precision not in {"fp32", "int8"}:
+        raise PipelineError("--tts-precision must be fp32 or int8.")
+    if frame_cap not in {"on", "off"}:
+        raise PipelineError("--tts-frame-cap must be 'on' or 'off'.")
+    try:
+        frame_cap_scale = float(frame_cap_scale)
+    except (TypeError, ValueError) as exc:
+        raise PipelineError("frame_cap_scale must be a positive finite number.") from exc
+    if not math.isfinite(frame_cap_scale) or frame_cap_scale <= 0:
+        raise PipelineError("frame_cap_scale must be a positive finite number.")
+    if frame_cap == "off" and not math.isclose(frame_cap_scale, 1.0):
+        raise PipelineError("frame_cap_scale cannot be combined with frame-cap off.")
+    if mode != "v3turbo" and (
+        backend != DEFAULT_TTS_BACKEND
+        or precision != DEFAULT_TTS_PRECISION
+        or frame_cap != DEFAULT_TTS_FRAME_CAP
+    ):
+        raise PipelineError(
+            "--tts-backend/--tts-precision/--tts-frame-cap chỉ áp dụng cho v3turbo."
+        )
+    if vieneu_url and (frame_cap == "off" or not math.isclose(frame_cap_scale, 1.0)):
+        raise PipelineError(
+            "frame-cap overrides cannot control an already-running Gradio server. "
+            "Run VieNeu directly (omit --vieneu-url) for frame-cap diagnostics."
+        )
+    if mode != "v3turbo" and not math.isclose(frame_cap_scale, 1.0):
+        raise PipelineError("frame_cap_scale only applies to v3turbo.")
+    runtime = Path(runtime)
+    scene_dir = runtime / "tts-scenes"
+    scene_dir.mkdir(parents=True, exist_ok=True)
+    for row in rows:
+        row["output"] = str(scene_dir / f"{row['scene_id']}.wav")
+    manifest = runtime / "tts-manifest.json"
+    manifest.write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    python = _tts_python(Path(tts_root).expanduser().resolve(), tts_python)
+
+    gradio_endpoint = None
+    if vieneu_url:
+        import urllib.request
+
+        try:
+            with urllib.request.urlopen(vieneu_url.rstrip("/") + "/config", timeout=10) as response:
+                gradio_config = json.load(response)
+        except Exception as exc:
+            raise PipelineError(f"Không đọc được metadata VieNeu Gradio: {exc}") from exc
+        gradio_endpoint = _select_vieneu_gradio_dependency(gradio_config)
+
+    script = (
+        "import json, shutil, sys, urllib.request\n"
+        "from pathlib import Path\n"
+        "from gradio_client import Client\n"
+        "from runpy import run_path\n"
+        "sys.path.insert(0, " + repr(str(Path(__file__).resolve().parents[1])) + ")\n"
+        "from tools.zodiac_local import validate_voice\n"
+        "feedback = run_path(" + repr(str(Path(__file__).resolve().parent / "studio" / "vieneu_client.py")) + ")\n"
+        "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
+        "url, voice, max_chars = sys.argv[2].rstrip('/'), sys.argv[3], int(sys.argv[4])\n"
+        "api_name, text_pos, voice_pos, max_chars_pos = sys.argv[5], int(sys.argv[6]), int(sys.argv[7]), int(sys.argv[8])\n"
+        "config = json.load(urllib.request.urlopen(url + '/config', timeout=10))\n"
+        "components = {item['id']: item for item in config.get('components', [])}\n"
+        "dep = next((d for d in config.get('dependencies', []) if str(d.get('api_name') or '').lstrip('/') == api_name), None)\n"
+        "if dep is None: raise RuntimeError('Endpoint VieNeu đã thay đổi sau khi xác thực metadata: ' + api_name)\n"
+        "client = Client(url, verbose=False)\n"
+        "for scene_index, row in enumerate(rows, 1):\n"
+        "    print('VieNeu API:', row['scene_id'], flush=True)\n"
+        "    scene = dict(scene_id=row['scene_id'], scene_index=scene_index, scene_total=len(rows), completed_scenes=scene_index-1, voice=voice)\n"
+        "    report = lambda message: feedback['emit_progress'](message, **scene)\n"
+        "    report('Đang tạo giọng cảnh ' + row['scene_id'])\n"
+        "    input_ids = [i for i in dep['inputs'] if components.get(i, {}).get('type') != 'state']\n"
+        "    args = [components.get(i, {}).get('props', {}).get('value') for i in input_ids]\n"
+        "    if max(text_pos, voice_pos, max_chars_pos) >= len(args): raise RuntimeError('Schema endpoint VieNeu đã thay đổi sau khi xác thực.')\n"
+        "    args[text_pos], args[voice_pos] = row['text'], voice\n"
+        "    if max_chars_pos >= 0: args[max_chars_pos] = max_chars\n"
+        "    result = feedback['stream_speech'](client, args, api_name, report)\n"
+        "    audio = result[0] if isinstance(result, (tuple, list)) else result\n"
+        "    if isinstance(result, (tuple, list)) and result[0] is None: raise RuntimeError(str(result[1]))\n"
+        "    if isinstance(audio, dict): audio = audio.get('path') or audio.get('name')\n"
+        "    if not audio or not Path(str(audio)).is_file(): raise RuntimeError('VieNeu API không trả về file WAV: ' + str(audio))\n"
+        "    validate_voice(Path(str(audio)))\n"
+        "    shutil.copy2(audio, row['output'])\n"
+        "    scene['completed_scenes'] = scene_index\n"
+        "    report('Đã lưu WAV cảnh ' + row['scene_id'])\n"
+        "    print('VieNeu DONE:', row['scene_id'], flush=True)\n"
+    )
+    if vieneu_url:
+        _emit_tts_log("Đang tạo giọng đọc qua VieNeu Gradio…")
+        _emit_tts_log("VieNeu Gradio đang quản lý backend/precision/frame-cap; "
+            "các cờ đó chỉ áp dụng khi chạy direct local SDK.")
+        run_args = [
+            str(python), "-X", "utf8", "-c", script, str(manifest),
+            vieneu_url, voice, str(max_chars),
+            str(gradio_endpoint["api_name"]).lstrip("/"),
+            str(gradio_endpoint["_text_position"]),
+            str(gradio_endpoint["_voice_position"]),
+            str(
+                gradio_endpoint["_max_chars_position"]
+                if gradio_endpoint["_max_chars_position"] is not None
+                else -1
+            ),
+        ]
+    else:
+        script = (
+            "import json, sys\n"
+            "from pathlib import Path\n"
+            "from vieneu import Vieneu\n"
+            "from apps.user_voices import load_user_voices\n"
+            "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
+            "mode, voice, backend, precision, frame_cap, frame_cap_scale, max_chars = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], float(sys.argv[7]), int(sys.argv[8])\n"
+            "kwargs = {}\n"
+            "if mode == 'v3turbo': kwargs.update(backend=backend, precision=precision)\n"
+            "tts = Vieneu(mode=mode, **kwargs)\n"
+            "load_user_voices(tts)\n"
+            "if voice not in tts._preset_voices: raise ValueError('VieNeu voice not found: ' + voice)\n"
+            "if mode == 'v3turbo' and frame_cap == 'off':\n"
+            "    if getattr(tts, 'backend', None) != 'onnx': raise RuntimeError('frame-cap off diagnostic is supported only on v3turbo ONNX/CPU')\n"
+            "    import vieneu.v3turbo as turbo_module\n"
+            "    turbo_module._cap_frames = lambda sampling, cap: dict(sampling)\n"
+            "    original_engine_infer = tts.engine.infer\n"
+            "    def uncapped_engine_infer(*args, **kwargs):\n"
+            "        kwargs['frame_cap'] = False\n"
+            "        return original_engine_infer(*args, **kwargs)\n"
+            "    tts.engine.infer = uncapped_engine_infer\n"
+            "elif mode == 'v3turbo' and frame_cap_scale != 1.0:\n"
+            "    if getattr(tts, 'backend', None) != 'onnx': raise RuntimeError('scaled frame-cap diagnostic is supported only on v3turbo ONNX/CPU')\n"
+            "    import math as _math\n"
+            "    import vieneu.v3turbo as turbo_module\n"
+            "    import vieneu_utils.core_utils as core_utils\n"
+            "    _base_max_expected_frames = core_utils.max_expected_frames\n"
+            "    def _scaled_max_expected_frames(phonemes):\n"
+            "        base = _base_max_expected_frames(phonemes)\n"
+            "        return min(300, max(1, int(_math.ceil(base * frame_cap_scale))))\n"
+            "    core_utils.max_expected_frames = _scaled_max_expected_frames\n"
+            "    turbo_module.max_expected_frames = _scaled_max_expected_frames\n"
+            "for row in rows:\n"
+            "    print('VieNeu:', row['scene_id'], flush=True)\n"
+            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars), row['output'])\n"
+        )
+        actual = effective_tts_generation_config(
+            mode=mode,
+            vieneu_url=None,
+            backend=backend,
+            precision=precision,
+            frame_cap=frame_cap,
+            max_chars=max_chars,
+        )
+        _emit_tts_log(f"Đang tạo giọng bằng VieNeu direct: mode={mode}, "
+            f"backend={actual['backend'] or 'n/a'}, "
+            f"precision={actual['precision'] or 'n/a'}, "
+            f"frame_cap={actual['frame_cap'] if actual['frame_cap'] is not None else 'n/a'}, "
+            f"frame_cap_scale={frame_cap_scale:.2f}, "
+            f"max_chars={max_chars}…")
+        run_args = [
+            str(python), "-X", "utf8", "-c", script, str(manifest),
+            mode, voice, backend, precision, frame_cap, str(frame_cap_scale), str(max_chars),
+        ]
+    try:
+        run_managed_subprocess(run_args, cwd=tts_root, check=True)
+    except FileNotFoundError as exc:
+        raise PipelineError(f"cannot start VieNeu Python: {exc}") from exc
+    except subprocess.CalledProcessError as exc:
+        raise PipelineError(f"VieNeu synthesis failed with exit code {exc.returncode}.")
+
+
+def generate_scene_voices(
+    package_root: Path,
+    production: dict,
+    scene_ids: list[str] | None = None,
+    *,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+    backend: str = DEFAULT_TTS_BACKEND,
+    precision: str = DEFAULT_TTS_PRECISION,
+    frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    fp32_fallback_on_rate_warning: bool = True,
+    log_callback=None,
+) -> dict[str, float]:
+    """Generate selected WAVs once; WPS is diagnostic, never a batch retry trigger."""
+    speech_rate_warning_wps = _validate_speech_rate_warning_wps(
+        speech_rate_warning_wps
+    )
+    root = Path(package_root).resolve()
+    rows = tts_manifest_rows(production, scene_ids)
+    if any(row.get("performance_context") for row in rows):
+        from tools.studio_v2.voice_performance import performance_report
+        runtime = root / ".runtime"
+        runtime.mkdir(parents=True, exist_ok=True)
+        (runtime / "voice-performance.json").write_text(
+            json.dumps(performance_report(production), ensure_ascii=False, indent=2)+"\n",
+            encoding="utf-8",
+        )
+        _emit_tts_log("VOICE_DIRECTION_REVIEW_REQUIRED: VieNeu hiện chỉ nhận text/voice; "
+                      "chỉ dẫn nhịp chưa được kiểm chứng bằng âm thanh. Nghe các take thực tế.", log_callback)
+    run_tts_batch(
+        root / ".runtime",
+        rows,
+        tts_root=tts_root,
+        tts_python=tts_python,
+        voice=voice,
+        mode=mode,
+        vieneu_url=vieneu_url,
+        backend=backend,
+        precision=precision,
+        frame_cap=frame_cap,
+        max_chars=max_chars,
+    )
+
+    durations: dict[str, float] = {}
+    for scene in production["scenes"]:
+        scene_id = scene["id"]
+        path = scene_wav_path(root, scene_id)
+        try:
+            validate_voice(path)
+        except PipelineError as exc:
+            raise PipelineError(f"Scene {scene_id}: {exc}") from exc
+        durations[scene_id] = _wav_duration_seconds(path)
+
+    applied_config = effective_tts_generation_config(
+        mode=mode,
+        vieneu_url=vieneu_url,
+        backend=backend,
+        precision=precision,
+        frame_cap=frame_cap,
+        max_chars=max_chars,
+    )
+    diagnostics = build_tts_diagnostics(
+        production,
+        durations,
+        warning_wps=speech_rate_warning_wps,
+        **applied_config,
+    )
+    warning_ids = [
+        item["scene_id"]
+        for item in diagnostics["scenes"]
+        if item["speech_rate_warning"]
+        and item["scene_id"] in {row["scene_id"] for row in rows}
+    ]
+    if warning_ids:
+        diagnostics["rate_policy"] = {
+            "action": "warning_only",
+            "reason": (
+                "speech rate alone is not evidence of missing narration; "
+                "alignment decides whether a scene-level retry is justified"
+            ),
+            "scene_ids": warning_ids,
+        }
+    write_tts_diagnostics(root / ".runtime", diagnostics)
+    _print_tts_diagnostics(diagnostics, log_callback)
+    if warning_ids and fp32_fallback_on_rate_warning:
+        _emit_tts_log(
+            "TTS_RATE_NOTICE: tốc độ cao chỉ được ghi cảnh báo; "
+            "không sinh lại cả batch. Alignment sẽ quyết định retry theo từng scene.",
+            log_callback,
+        )
+    return durations
+
+
+def scene_voice_files(package_root: Path, production: dict) -> list[Path]:
+    return [scene_wav_path(package_root, scene["id"]) for scene in production["scenes"]]
+
+
+def concatenate_scene_voices(
+    package_root: Path,
+    production: dict,
+    *,
+    scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
+    timing: dict | None = None,
+) -> Path:
+    """Compose final voice.wav from cached scene WAVs with explicit breathing pauses."""
+    root = Path(package_root).resolve()
+    inputs = scene_voice_files(root, production)
+    output = root / "voice.wav"
+
+    if sentence_pause_ms <= 0 or timing is None:
+        concatenate_wavs(inputs, output, gap_ms=scene_gap_ms)
+        return output
+
+    try:
+        sentence_pause_ms = float(sentence_pause_ms)
+        scene_gap_ms = float(scene_gap_ms)
+    except (TypeError, ValueError, OverflowError):
+        raise PipelineError("pacing pauses must be finite non-negative numbers.") from None
+    if not math.isfinite(sentence_pause_ms) or not 0 <= sentence_pause_ms <= 3000:
+        raise PipelineError("sentence pause must be between 0 and 3000 ms.")
+    if not math.isfinite(scene_gap_ms) or not 0 <= scene_gap_ms <= 5000:
+        raise PipelineError("scene gap must be between 0 and 5000 ms.")
+
+    rows = timing.get("scenes") if isinstance(timing, dict) else None
+    if not isinstance(rows, list) or len(rows) != len(production.get("scenes", [])):
+        raise PipelineError("timing rows are required to compose sentence pauses.")
+    fps = timing.get("fps")
+    if not isinstance(fps, (int, float)) or fps <= 0:
+        raise PipelineError("timing fps is invalid for sentence pause composition.")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    params = None
+    with wave.open(str(output), "wb") as destination:
+        for scene_index, (scene, source_path, row) in enumerate(
+            zip(production["scenes"], inputs, rows)
+        ):
+            try:
+                with wave.open(str(source_path), "rb") as source:
+                    if source.getcomptype() != "NONE":
+                        raise PipelineError(f"scene WAV is compressed: {source_path}")
+                    current = source.getparams()
+                    if params is None:
+                        params = current
+                        destination.setnchannels(current.nchannels)
+                        destination.setsampwidth(current.sampwidth)
+                        destination.setframerate(current.framerate)
+                        destination.setcomptype("NONE", "not compressed")
+                    elif current[:3] != params[:3]:
+                        raise PipelineError("scene WAV files do not share one PCM format.")
+
+                    frame_bytes = current.sampwidth * current.nchannels
+                    raw = source.readframes(source.getnframes())
+                    pause_after = sorted(_sentence_pause_after_indices(scene["voice"]))
+                    captions = row.get("captions")
+                    if not isinstance(captions, list):
+                        raise PipelineError(f"timing captions missing for {scene['id']}.")
+                    expected = _expected_caption_tokens(scene["voice"])
+                    if len(captions) != len(expected):
+                        raise PipelineError(
+                            f"timing captions do not cover sentence pauses for {scene['id']}."
+                        )
+
+                    scene_start_ms = float(row["start_frame"]) * 1000.0 / float(fps)
+                    cursor_frame = 0
+                    for pause_number, token_index in enumerate(pause_after):
+                        adjusted_end_ms = float(captions[token_index]["endMs"]) - scene_start_ms
+                        source_end_ms = adjusted_end_ms - (
+                            pause_number * sentence_pause_ms
+                        )
+                        boundary_frame = round(
+                            source_end_ms * current.framerate / 1000.0
+                        )
+                        boundary_frame = min(
+                            max(boundary_frame, cursor_frame),
+                            source.getnframes(),
+                        )
+                        destination.writeframes(
+                            raw[cursor_frame * frame_bytes : boundary_frame * frame_bytes]
+                        )
+                        silent_frames = round(
+                            current.framerate * sentence_pause_ms / 1000.0
+                        )
+                        silent_sample = (
+                            b"\x80"
+                            if current.sampwidth == 1
+                            else b"\x00" * current.sampwidth
+                        )
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
+                        cursor_frame = boundary_frame
+
+                    destination.writeframes(raw[cursor_frame * frame_bytes :])
+
+                    if scene_index < len(inputs) - 1 and scene_gap_ms > 0:
+                        silent_frames = round(
+                            current.framerate * scene_gap_ms / 1000.0
+                        )
+                        silent_sample = (
+                            b"\x80"
+                            if current.sampwidth == 1
+                            else b"\x00" * current.sampwidth
+                        )
+                        destination.writeframes(
+                            silent_sample * current.nchannels * silent_frames
+                        )
+            except (wave.Error, EOFError, OSError) as exc:
+                raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
+    return output
+
+
+def _wav_duration_seconds(path: Path) -> float:
+    with wave.open(str(path), "rb") as wav:
+        return wav.getnframes() / wav.getframerate()
+
+
+def tts_scene_frame_cap_retry_eligible(
+    package_root: Path,
+    scene_id: str,
+    *,
+    selected_mode: str,
+    allow_fp32_fallback: bool,
+) -> bool:
+    """Whether a coverage-gap retry can preserve the selected TTS policy."""
+    if not allow_fp32_fallback or selected_mode != "v3turbo":
+        return False
+
+    diagnostics_path = Path(package_root) / ".runtime" / "tts-diagnostics.json"
+    try:
+        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    for scene in diagnostics.get("scenes", []):
+        if scene.get("scene_id") != scene_id:
+            continue
+        generation = scene.get("generation") or {}
+        transport = generation.get("transport")
+        direct_fp32 = (
+            transport == "local"
+            and generation.get("backend") == "onnx"
+            and generation.get("precision") == "fp32"
+            and generation.get("frame_cap") is True
+        )
+        return transport == "gradio" or direct_fp32
+    return False
+
+
+def _record_frame_cap_recovery_diagnostics(
+    package_root: Path,
+    scene_id: str,
+    duration: float,
+    *,
+    max_chars: int,
+    frame_cap_scale: float,
+) -> None:
+    runtime = Path(package_root) / ".runtime"
+    path = runtime / "tts-diagnostics.json"
+    try:
+        diagnostics = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return
+
+    if not (runtime / "tts-diagnostics.pre-frame-cap-retry.json").exists():
+        write_tts_diagnostics(
+            runtime,
+            diagnostics,
+            "tts-diagnostics.pre-frame-cap-retry.json",
+        )
+
+    threshold = _validate_speech_rate_warning_wps(
+        (diagnostics.get("config") or {}).get(
+            "warning_wps",
+            DEFAULT_SPEECH_RATE_WARNING_WPS,
+        )
+    )
+    recovery_entry = None
+    for scene in diagnostics.get("scenes", []):
+        if scene.get("scene_id") != scene_id:
+            continue
+        words = int(scene.get("word_count") or 0)
+        wps = words / duration if duration > 0 else 0.0
+        scene["duration_seconds"] = round(duration, 6)
+        scene["words_per_second"] = round(wps, 6)
+        scene["speech_rate_warning"] = wps > threshold
+        generation = effective_tts_generation_config(
+            mode="v3turbo",
+            vieneu_url=None,
+            backend="onnx",
+            precision="fp32",
+            frame_cap="on",
+            max_chars=max_chars,
+        )
+        generation["frame_cap_scale"] = frame_cap_scale
+        scene["generation"] = generation
+        scene["recovery"] = {
+            "reason": "alignment_mismatch_after_capped_fp32",
+            "strategy": "adaptive_frame_cap",
+            "frame_cap_scale": frame_cap_scale,
+        }
+        recovery_entry = {
+            "scene_id": scene_id,
+            "duration_seconds": round(duration, 6),
+            "words_per_second": round(wps, 6),
+            "frame_cap_scale": frame_cap_scale,
+        }
+        break
+
+    scenes = diagnostics.get("scenes", [])
+    total_words = sum(int(item.get("word_count") or 0) for item in scenes)
+    total_seconds = sum(float(item.get("duration_seconds") or 0.0) for item in scenes)
+    total_wps = total_words / total_seconds if total_seconds > 0 else 0.0
+    diagnostics["summary"] = {
+        "word_count": total_words,
+        "duration_seconds": round(total_seconds, 6),
+        "words_per_second": round(total_wps, 6),
+        "speech_rate_warning": (
+            total_wps > threshold
+            or any(bool(item.get("speech_rate_warning")) for item in scenes)
+        ),
+    }
+    if recovery_entry is not None:
+        diagnostics.setdefault("frame_cap_recoveries", []).append(recovery_entry)
+    write_tts_diagnostics(runtime, diagnostics)
+
+
+def recover_scene_alignment_with_adaptive_frame_cap(
+    package_root: Path,
+    production: dict,
+    scene_id: str,
+    aligner,
+    *,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    frame_cap_scales: tuple[float, ...] = (1.25, 1.50),
+    selected_mode: str = "v3turbo",
+    allow_fp32_fallback: bool = True,
+    log_callback=None,
+) -> tuple[list[dict], float]:
+    """Retry one proven coverage gap without changing the selected TTS model."""
+    if not allow_fp32_fallback:
+        raise PipelineError(
+            "TTS_RECOVERY_DISABLED: direct ONNX/fp32 fallback was disabled by the caller."
+        )
+    if selected_mode != "v3turbo":
+        raise PipelineError(
+            "TTS_RECOVERY_UNSUPPORTED_MODE: adaptive frame-cap recovery "
+            f"cannot preserve selected mode {selected_mode!r}."
+        )
+    root = Path(package_root).resolve()
+    scene = next(
+        (item for item in production.get("scenes", []) if item.get("id") == scene_id),
+        None,
+    )
+    if scene is None:
+        raise PipelineError(f"unknown scene for adaptive frame-cap retry: {scene_id}")
+
+    configured_scales = tuple(float(value) for value in frame_cap_scales)
+    if not configured_scales or any(
+        not math.isfinite(value) or value <= 1.0
+        for value in configured_scales
+    ) or any(
+        right <= left
+        for left, right in zip(configured_scales, configured_scales[1:])
+    ):
+        raise PipelineError(
+            "frame_cap_scales must be an increasing sequence of finite values > 1."
+        )
+
+    baseline_scale = 1.0
+    baseline_transport = "local"
+    diagnostics_path = root / ".runtime" / "tts-diagnostics.json"
+    try:
+        current_diagnostics = json.loads(
+            diagnostics_path.read_text(encoding="utf-8")
+        )
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        current_diagnostics = {}
+    for item in current_diagnostics.get("scenes", []):
+        if item.get("scene_id") != scene_id:
+            continue
+        generation = item.get("generation") or {}
+        baseline_transport = str(generation.get("transport") or "local")
+        try:
+            baseline_scale = float(generation.get("frame_cap_scale", 1.0))
+        except (TypeError, ValueError):
+            baseline_scale = 1.0
+        break
+
+    scales = tuple(
+        ([1.0] if baseline_transport == "gradio" else [])
+        + [
+            value
+            for value in configured_scales
+            if value > baseline_scale + 1e-9
+        ]
+    )
+    if not scales:
+        raise PipelineError(
+            "ADAPTIVE_FRAME_CAP_RETRY_EXHAUSTED: "
+            f"{scene_id} already used frame-cap x{baseline_scale:.2f}; "
+            "no wider bounded retry remains."
+        )
+
+    current = scene_wav_path(root, scene_id)
+    validate_voice(current)
+    evidence_dir = root / ".runtime" / "tts-diagnostics"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    baseline = evidence_dir / f"{scene_id}.frame-cap-{baseline_scale:.2f}.wav"
+    shutil.copy2(current, baseline)
+    baseline_duration = _wav_duration_seconds(current)
+    last_mismatch: Exception | None = None
+
+    for scale in scales:
+        _emit_tts_log(
+            (
+                f"TTS_SCENE_FP32_RETRY: {scene_id} Gradio mismatch có coverage gap; "
+                "thử riêng scene bằng direct ONNX/fp32 cap x1.00."
+                if baseline_transport == "gradio" and math.isclose(scale, 1.0)
+                else
+                f"TTS_FRAME_CAP_RETRY: {scene_id} direct ONNX/fp32 vẫn mismatch; "
+                f"thử nới frame-cap x{scale:.2f}."
+            ),
+            log_callback,
+        )
+        generated = False
+        try:
+            run_tts_batch(
+                root / ".runtime",
+                [{"scene_id": scene_id, "text": scene["voice"]}],
+                tts_root=tts_root,
+                tts_python=tts_python,
+                voice=voice,
+                mode=selected_mode,
+                vieneu_url=None,
+                backend="onnx",
+                precision="fp32",
+                frame_cap="on",
+                frame_cap_scale=scale,
+                max_chars=max_chars,
+            )
+            generated = True
+            validate_voice(current)
+            duration = _wav_duration_seconds(current)
+            aligned = _align_scene_words(aligner, current, scene["voice"])
+        except AlignmentMismatchError as exc:
+            if generated and current.is_file():
+                failed = evidence_dir / f"{scene_id}.frame-cap-{scale:.2f}.failed.wav"
+                shutil.copy2(current, failed)
+            if exc.coverage_gap:
+                last_mismatch = exc
+                continue
+            shutil.copy2(baseline, current)
+            _emit_tts_log(
+                f"TTS_FRAME_CAP_RETRY_STOP: {scene_id} retry chỉ còn ASR variant; "
+                "dừng nới frame và khôi phục WAV baseline.",
+                log_callback,
+            )
+            raise
+        except PipelineError:
+            if generated and current.is_file():
+                failed = evidence_dir / f"{scene_id}.frame-cap-{scale:.2f}.failed.wav"
+                shutil.copy2(current, failed)
+            shutil.copy2(baseline, current)
+            raise
+        except Exception:
+            if generated and current.is_file():
+                failed = evidence_dir / f"{scene_id}.frame-cap-{scale:.2f}.failed.wav"
+                shutil.copy2(current, failed)
+            shutil.copy2(baseline, current)
+            raise
+
+        _record_frame_cap_recovery_diagnostics(
+            root,
+            scene_id,
+            duration,
+            max_chars=max_chars,
+            frame_cap_scale=scale,
+        )
+        _emit_tts_log(
+            f"TTS_FRAME_CAP_RECOVERED: {scene_id} align PASS với cap x{scale:.2f}; "
+            f"{baseline_duration:.1f}s -> {duration:.1f}s.",
+            log_callback,
+        )
+        return aligned, duration
+
+    shutil.copy2(baseline, current)
+    _emit_tts_log(
+        f"TTS_FRAME_CAP_RETRY_FAILED: {scene_id}; cap x"
+        + ", x".join(f"{value:.2f}" for value in scales)
+        + f" vẫn không align đúng, đã khôi phục WAV cap x{baseline_scale:.2f}.",
+        log_callback,
+    )
+    raise PipelineError(
+        "ADAPTIVE_FRAME_CAP_RETRY_FAILED: widened frame caps still do not match "
+        f"approved narration for {scene_id}. Baseline={baseline_duration:.3f}s. "
+        f"{last_mismatch or ''}"
+    )
+
+
+def align_scene_timings(
+    production: dict,
+    durations: dict[str, float],
+    aligner,
+    scene_wavs: list[Path] | None = None,
+    mismatch_recovery=None,
+    *,
+    scene_gap_ms: float = 0.0,
+    sentence_pause_ms: float = 0.0,
+) -> dict:
+    """Align every scene; optionally recover exact mismatches scene-by-scene."""
+    paths = list(scene_wavs or [])
+    if len(paths) != len(production.get("scenes", [])):
+        raise PipelineError("scene WAV count does not match production scene count.")
+
+    aligned_words: dict[str, list[dict]] = {}
+    for scene, path in zip(production["scenes"], paths):
+        scene_id = scene["id"]
+        try:
+            aligned_words[scene_id] = _align_scene_words(
+                aligner,
+                path,
+                scene["voice"],
+            )
+        except AlignmentMismatchError as exc:
+            if mismatch_recovery is None or not exc.coverage_gap:
+                raise
+            recovered = mismatch_recovery(scene, path, aligner, exc)
+            if recovered is None:
+                raise
+            words, seconds = recovered
+            aligned_words[scene_id] = words
+            durations[scene_id] = float(seconds)
+
+    return build_timing_from_word_alignment(
+        production,
+        durations,
+        aligned_words,
+        scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
+    )
+
+
+def build_and_write_timing(
+    package_root: Path,
+    timing: dict,
+    *,
+    check_visual_progression: bool = True,
+) -> dict:
+    root = Path(package_root).resolve()
+    validate_timing(
+        root,
+        timing,
+        check_visual_progression=check_visual_progression,
+    )
+    path = root / ".runtime" / "timing.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return timing
+
+
+def synthesize_voice(
+    package_root: Path,
+    tts_root: Path = DEFAULT_TTS_ROOT,
+    tts_python: Path | None = None,
+    voice: str = DEFAULT_TTS_VOICE,
+    mode: str = "v3turbo",
+    vieneu_url: str | None = None,
+    align_model: str = "small",
+    align_device: str = "cpu",
+    align_compute_type: str = "int8",
+    tts_backend: str = DEFAULT_TTS_BACKEND,
+    tts_precision: str = DEFAULT_TTS_PRECISION,
+    tts_frame_cap: str = DEFAULT_TTS_FRAME_CAP,
+    tts_max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    speech_rate_warning_wps: float = DEFAULT_SPEECH_RATE_WARNING_WPS,
+    tts_fp32_fallback: bool = True,
+    scene_gap_ms: float = DEFAULT_SCENE_GAP_MS,
+    sentence_pause_ms: float = DEFAULT_SENTENCE_PAUSE_MS,
+) -> dict:
+    """Compatibility wrapper over the granular voice/timing operations."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+
+    # Root-cause guard: the aligner dependency is checked before any TTS work,
+    # so a missing faster-whisper never costs a full voice generation pass.
+    require_word_aligner_installed()
+
+    durations = generate_scene_voices(
+        root,
+        production,
+        None,
+        tts_root=tts_root,
+        tts_python=tts_python,
+        voice=voice,
+        mode=mode,
+        vieneu_url=vieneu_url,
+        backend=tts_backend,
+        precision=tts_precision,
+        frame_cap=tts_frame_cap,
+        max_chars=tts_max_chars,
+        speech_rate_warning_wps=speech_rate_warning_wps,
+        fp32_fallback_on_rate_warning=tts_fp32_fallback,
+    )
+    concatenate_scene_voices(root, production, scene_gap_ms=scene_gap_ms)
+
+    _emit_tts_log(f"Đang đo căn thời gian từng từ với faster-whisper/{align_model}…")
+    aligner = load_word_aligner(align_model, align_device, align_compute_type)
+    def recover_mismatch(scene, _path, active_aligner, _error):
+        scene_id = scene["id"]
+        if not bool(getattr(_error, "coverage_gap", False)):
+            return None
+        if not tts_scene_frame_cap_retry_eligible(
+            root,
+            scene_id,
+            selected_mode=mode,
+            allow_fp32_fallback=tts_fp32_fallback,
+        ):
+            return None
+        return recover_scene_alignment_with_adaptive_frame_cap(
+            root,
+            production,
+            scene_id,
+            active_aligner,
+            tts_root=tts_root,
+            tts_python=tts_python,
+            voice=voice,
+            max_chars=tts_max_chars,
+            selected_mode=mode,
+            allow_fp32_fallback=tts_fp32_fallback,
+        )
+
+    timing = align_scene_timings(
+        production,
+        durations,
+        aligner,
+        scene_voice_files(root, production),
+        mismatch_recovery=recover_mismatch,
+        scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
+    )
+    concatenate_scene_voices(
+        root,
+        production,
+        scene_gap_ms=scene_gap_ms,
+        sentence_pause_ms=sentence_pause_ms,
+        timing=timing,
+    )
+    return build_and_write_timing(root, timing)
+
+def import_package(archive_path: Path, jobs_dir: Path, name: str | None = None) -> Path:
+    """Safely import one RENDER_READY video package and return its job directory."""
+    archive_path = Path(archive_path).expanduser().resolve()
+    jobs_dir = Path(jobs_dir).expanduser().resolve()
+    if not archive_path.is_file():
+        raise PipelineError(f"ZIP file does not exist: {archive_path}")
+    jobs_dir.parent.mkdir(parents=True, exist_ok=True)
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".zodiac-import-", dir=jobs_dir.parent) as scratch:
+        extracted = Path(scratch) / "extracted"
+        safe_extract_zip(archive_path, extracted)
+        package_root = _package_root(extracted)
+        _validate_import_boundary(package_root)
+        validate_package(package_root)
+        requested = name or (package_root.name if package_root != extracted else archive_path.stem)
+        slug = re.sub(r"[^a-zA-Z0-9._-]+", "-", requested.strip()).strip("-.").lower()
+        if not slug or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,69}", slug):
+            raise PipelineError("job name must reduce to a 1–70 character slug.")
+        destination = jobs_dir / slug
+        if destination.exists():
+            raise PipelineError(f"job already exists: {destination} (choose another name with --name).")
+        shutil.move(str(package_root), destination)
+    return destination
+
+
+def attach_runtime(package_root: Path, voice_path: Path, timing_path: Path) -> None:
+    root = Path(package_root).resolve()
+    voice_path = Path(voice_path).expanduser().resolve()
+    timing_path = Path(timing_path).expanduser().resolve()
+    validate_package(root)
+    validate_voice(voice_path)
+    timing = _load_json(timing_path, "timing.json")
+    validate_timing(root, timing)
+    runtime_dir = root / ".runtime"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(voice_path, root / "voice.wav")
+    (runtime_dir / "timing.json").write_text(json.dumps(timing, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def validate_runtime(package_root: Path) -> tuple[dict, dict]:
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    validate_voice(root / "voice.wav")
+    timing = validate_timing(root, root / ".runtime" / "timing.json")
+    validate_background_music(root)
+    return production, timing
+
+
+_PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
+_PROCESS_LOG_OBSERVER = contextvars.ContextVar(
+    "zodiac_process_log_observer",
+    default=None,
+)
+
+
+@contextlib.contextmanager
+def observe_subprocesses(observer):
     """Expose the currently running child process to the Studio worker."""
     token = _PROCESS_OBSERVER.set(observer)
     try:
