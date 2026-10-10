@@ -51,36 +51,46 @@ export const ZodiacCover: React.FC<RendererV2Props> = ({scenes, assets, presenta
     design.title_frame.max_lines < 2 || design.title_frame.max_lines > 3 ||
     design.title_frame.font_family !== "Patrick Hand"))
     throw new Error("COVER_DESIGN_UNSUPPORTED: title_frame");
-  const crooked = "polygon(1% 1%, 99% 0%, 100% 96%, 96% 100%, 1% 99%, 0% 5%)";
+  const paperOutline = "M14 10 C157 4 280 14 433 7 S698 8 862 5 Q870 5 870 15 C874 86 865 152 873 227 Q873 264 878 292 Q864 304 844 307 C701 301 572 312 430 305 S164 310 17 303 Q9 302 9 291 C5 214 13 137 7 57 Q4 26 14 10 Z";
+  const identityOutline = "M24 7 C211 3 333 10 482 6 S716 8 834 5 Q852 7 851 24 C847 51 855 82 850 105 Q848 124 829 123 C649 128 460 120 277 125 S95 121 25 124 Q8 122 9 106 C12 82 5 48 10 25 Q11 10 24 7 Z";
+  const paperTilt = design ? "rotate(-2deg)" : "rotate(-1deg)";
   const titleWidth = 1080 - 2*minSideMargin;
   const titleLeft = minSideMargin;
   return (
     <AbsoluteFill style={{backgroundColor:paper,color:ink,fontFamily:captionFont}}>
+      {design ? <svg aria-hidden viewBox="0 0 860 130" preserveAspectRatio="none"
+        style={{position:"absolute",top:266,left:110,width:860,height:130,overflow:"visible"}}>
+        <path d={identityOutline} fill={warmShadow} transform="translate(5 8)"/>
+        <path d={identityOutline} fill={ochre} stroke={ink} strokeWidth={6}
+          strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+      </svg> : null}
       <div style={{position:"absolute",top:266,left:110,width:860,minHeight:130,
         display:"flex",alignItems:"center",justifyContent:"center",fontSize:67,
-        border:`5px solid ${ink}`,borderRadius:23,background:ochre,
-        boxShadow:design?`3px 5px 0px ${warmShadow}`:undefined,
+        border:design?undefined:`5px solid ${ink}`,borderRadius:design?undefined:23,
+        background:design?undefined:ochre,
         fontWeight:400,textAlign:"center",padding:15,boxSizing:"border-box"}}>
         {cover.identity.label} {cover.identity.glyph}
       </div>
-      {design ? <div aria-hidden style={{position:"absolute",top:450+dy,left:titleLeft+dx,
-        width:titleWidth,height:312,background:warmShadow,opacity,
-        clipPath:crooked,transform:"rotate(-1deg)"}}/> : null}
+      {design ? <svg aria-hidden viewBox="0 0 880 312" preserveAspectRatio="none"
+        style={{position:"absolute",top:450,left:titleLeft,width:titleWidth,height:312,
+          overflow:"visible",transform:paperTilt}}>
+        {/* Flat warm paper relief must remain visible at phone thumbnail size. */}
+        <path d={paperOutline} fill={warmShadow}
+          transform={`translate(${Math.max(dx,16)} ${Math.max(dy,24)})`}/>
+        <path d={paperOutline} fill={card} stroke={ink} strokeWidth={6}
+          strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>
+      </svg> : null}
       <div style={{position:"absolute",top:450,left:titleLeft,width:titleWidth,minHeight:312,
         display:"flex",alignItems:"center",justifyContent:"center",
         fontSize:cover.hook.length>64?66:76,lineHeight:1.08,textAlign:"center",
         padding:"24px 38px",boxSizing:"border-box",overflow:"hidden",
         border:design?undefined:`6px solid ${ink}`,
-        outline:design?undefined:undefined,borderRadius:design?0:30,
-        background:card,clipPath:design?crooked:undefined,
-        transform:"rotate(-1deg)",fontWeight:400,
-        boxShadow:design?undefined:undefined,
+        borderRadius:design?0:30,
+        background:design?undefined:card,
+        transform:paperTilt,fontWeight:400,
         WebkitTextStroke:design?"0.2px transparent":undefined}}>
-        {cover.hook}
+        <span style={{width:"100%",textWrap:design?"balance":undefined}}>{cover.hook}</span>
       </div>
-      {design ? <div aria-hidden style={{position:"absolute",top:453,left:titleLeft+4,width:titleWidth-8,
-        height:301,border:`4px solid ${ink}`,pointerEvents:"none",
-        clipPath:crooked,transform:"rotate(-1deg)",boxSizing:"border-box"}}/> : null}
       <div style={{position:"absolute",left:90,top:790,width:900,height:720,overflow:"visible"}}>
         {visualsResolved.map(({visual,state,src,box,order,role}) => {
           const roleScale=design?(role==="character"?heroScale:role==="interactive_prop"||role==="effect"?propScale:1):1;

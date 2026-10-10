@@ -47,9 +47,11 @@ export const findPinnedRemotionCli = async (rendererDir = RENDERER_DIR) => {
 export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}) => {
   const cli = await findPinnedRemotionCli(rendererDir);
   const spawn = opts.spawn ?? spawnSync;
+  // Cold local CLI startup can exceed 15s on Windows.
+  const timeout = 60000;
   const result = spawn(process.execPath,[cli.entry,"help"],{
     cwd:cli.rendererDir,windowsHide:true,encoding:"utf8",
-    timeout:15000,maxBuffer:1024*1024
+    timeout,maxBuffer:1024*1024
   });
   // A successful process exit alone is not proof that the CLI accepted the
   // command: verify that the documented help lists the render/still commands.
@@ -58,8 +60,12 @@ export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}
   if(result.error || result.status !== 0 || !validHelp) {
     const trace = [result.stderr,result.stdout,result.error?.message]
       .filter(Boolean).join("\n").trim().slice(0,1800);
-    const reason = result.error?.code==="ETIMEDOUT" ? "CLI help probe timed out" :
-      /MODULE_NOT_FOUND|Cannot find module|ERR_MODULE_NOT_FOUND/.test(trace) ?
+    if(result.error?.code==="ETIMEDOUT")
+      throw Object.assign(new Error("CLI help probe timed out after "+timeout+"ms: "+trace+
+        "\nRetry the environment check; a timeout does not establish missing dependencies."),{
+        code:"RENDERER_CLI_TIMEOUT",detail:{entry:cli.entry,version:cli.version}
+      });
+    const reason = /MODULE_NOT_FOUND|Cannot find module|ERR_MODULE_NOT_FOUND/.test(trace) ?
         "CLI dependency tree is incomplete" : !validHelp && result.status === 0 ?
       "CLI help output not recognized" : "CLI cannot start";
     const message=reason+": "+(trace || "no diagnostic output")+

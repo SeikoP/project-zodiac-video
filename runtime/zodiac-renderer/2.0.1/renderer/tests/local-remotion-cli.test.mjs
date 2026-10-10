@@ -128,3 +128,33 @@ test("real locally installed Remotion CLI supports the documented help probe",as
   const cli=await probePinnedRemotionCli();
   assert.equal(cli.version,"4.0.530");
 });
+
+test("health probe allows a slow local CLI startup beyond 15 seconds",async()=>{
+  const {dir}=await setup({bin:"dist/cli.cjs"});
+  await mkdir(join(dir,"node_modules","@remotion","cli","dist"));
+  await writeFile(join(dir,"node_modules","@remotion","cli","dist","cli.cjs"),"");
+  try{
+    const cli=await probePinnedRemotionCli(dir,{spawn:(_node,_args,options)=>
+      options.timeout < 20000
+        ? {status:null,error:Object.assign(new Error("timed out"),{code:"ETIMEDOUT"})}
+        : {status:0,stdout:"remotion render\nremotion still"}
+    });
+    assert.equal(cli.version,"4.0.530");
+  }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test("health probe timeout remains a failure without suggesting dependency repair",async()=>{
+  const {dir}=await setup({bin:"dist/cli.cjs"});
+  await mkdir(join(dir,"node_modules","@remotion","cli","dist"));
+  await writeFile(join(dir,"node_modules","@remotion","cli","dist","cli.cjs"),"");
+  try{
+    await assert.rejects(probePinnedRemotionCli(dir,{spawn:()=>({status:null,
+      error:Object.assign(new Error("spawnSync ETIMEDOUT"),{code:"ETIMEDOUT"})
+    })}),error=>{
+      assert.equal(error.code,"RENDERER_CLI_TIMEOUT");
+      assert.match(error.message,/60000ms/);
+      assert.doesNotMatch(error.message,/npm install|Repair local renderer dependencies/);
+      return true;
+    });
+  }finally{await rm(dir,{recursive:true,force:true})}
+});

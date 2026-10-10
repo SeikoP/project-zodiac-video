@@ -6,7 +6,7 @@ test("Cover v2 honors producer design metadata and native V4 tokens", async () =
   const source = await readFile(new URL("../src/ZodiacCover.tsx",import.meta.url),"utf8");
   for (const expected of ["zodiac-cover-design@2","zodiac-paper-doodle-meme-v4",
     "COVER_DESIGN_UNSUPPORTED","cover.design","soft_shadow","preserve-native-environment",
-    "hero_scale","supporting_prop_scale","max_supporting_accents","warmShadow","clipPath",
+    "hero_scale","supporting_prop_scale","max_supporting_accents","warmShadow",
     "shadow_opacity","min_side_margin_px"]) {
     // Title tokens are implemented as literal V4 palette roles in the renderer.
     if (expected==="soft_shadow") continue;

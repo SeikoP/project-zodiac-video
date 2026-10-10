@@ -282,7 +282,8 @@ class Job5PreflightChecker(PreflightChecker):
                 result = subprocess.run(
                     [node, str(renderer / "scripts" / "local-remotion-cli.mjs"), "--check"],
                     cwd=str(renderer), capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", timeout=25, check=False,
+                    # Allow the launcher's 60s help probe to report its own failure.
+                    encoding="utf-8", errors="replace", timeout=75, check=False,
                 )
                 if result.returncode:
                     message = result.stderr.strip() or result.stdout.strip()
@@ -290,10 +291,17 @@ class Job5PreflightChecker(PreflightChecker):
                         import json as _json
                         detail = _json.loads(result.stderr.strip().splitlines()[-1])
                         message = detail.get("message", message)
+                        if detail.get("code") == "RENDERER_CLI_TIMEOUT":
+                            raise subprocess.TimeoutExpired(node, 60, stderr=message)
                     except (ValueError, IndexError, TypeError, AttributeError):
                         pass
                     raise ValueError("Remotion CLI không khởi chạy được: " + message[:1300])
-        except (OSError, KeyError, TypeError, ValueError, subprocess.TimeoutExpired) as exc:
+        except subprocess.TimeoutExpired as exc:
+            return Check("RENDERER", "Renderer " + renderer.parent.name, False,
+                         f"Remotion CLI khởi động quá thời gian chờ {exc.timeout} giây.",
+                         "Thử kiểm tra môi trường lại. Timeout chưa chứng minh dependency bị thiếu hoặc hỏng.",
+                         error_code="RENDERER_CLI_TIMEOUT")
+        except (OSError, KeyError, TypeError, ValueError) as exc:
             return Check("RENDERER", "Renderer " + renderer.parent.name, False,
                          "Thiếu hoặc sai Remotion CLI cục bộ: " + str(exc),
                          "Cài đúng renderer: " + install_command, error_code="DEPENDENCY_MISSING")

@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 import unittest
 import sys
@@ -116,6 +117,31 @@ class PinnedRendererPreflightTests(unittest.TestCase):
             self.make_cli(renderer)
             with patch("tools.studio.preflight.ROOT",root):
                 self.assertTrue(Job5PreflightChecker(job).renderer_check().ok)
+
+    def test_cli_timeout_is_not_a_missing_dependency_or_install_action(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            job=self.make_job(root,"2.0.1")
+            renderer=self.make_source(root,"2.0.1")
+            self.make_cli(renderer)
+            failed=SimpleNamespace(returncode=2,stdout="",stderr=json.dumps({
+                "code":"RENDERER_CLI_TIMEOUT","message":"CLI help probe timed out after 60000ms"}))
+            for outcome in (failed,subprocess.TimeoutExpired("node",75)):
+                with self.subTest(outcome=outcome), \
+                     patch("tools.studio.preflight.ROOT",root), \
+                     patch("tools.studio.preflight.shutil.which",return_value="/fake/node"), \
+                     patch("tools.studio.preflight.subprocess.run") as invoke:
+                    if isinstance(outcome,Exception):
+                        invoke.side_effect=outcome
+                    else:
+                        invoke.return_value=outcome
+                    checker=Job5PreflightChecker(job)
+                    status=checker.renderer_check()
+                    self.assertFalse(status.ok)
+                    self.assertEqual(status.error_code,"RENDERER_CLI_TIMEOUT")
+                    self.assertNotIn("npm install",status.details)
+                    self.assertEqual(checker.install_commands([status]),[])
+                    self.assertGreater(invoke.call_args.kwargs["timeout"],60)
 
 
 if __name__=="__main__":
