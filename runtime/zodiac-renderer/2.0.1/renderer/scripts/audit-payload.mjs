@@ -38,7 +38,8 @@ export const auditJob5Payload = (ir, plan) => {
           ['state_after','state_after'],['desired_motion','motion']]){
         if(event[input]!==compiled[output])errors.push(`EVENT_SEMANTICS_CHANGED ${authored.id} ${event.id} ${input}`);
       }
-      if(!(Number.isInteger(compiled.start_frame)&&Number.isInteger(compiled.end_frame)
+      if((compiled.start_frame!==undefined || compiled.end_frame!==undefined) &&
+         !(Number.isInteger(compiled.start_frame)&&Number.isInteger(compiled.end_frame)
           &&compiled.start_frame<compiled.end_frame))
         errors.push(`EVENT_INTERVAL_INVALID ${authored.id} ${event.id}`);
     }
