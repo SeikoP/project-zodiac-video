@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Any, Callable
 
+from tools.studio_v2.voice_performance import speech_hash, performance_report
 from tools.control_plane.cache import scene_voice_key, voice_key
 from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.errors import ControlPlaneError
@@ -82,6 +83,7 @@ def _production_from_ir(ir: dict[str, Any]) -> dict[str, Any]:
             {
                 "id": str(scene["id"]),
                 "voice": str(scene["voice"]),
+                **({"performance_context": scene["performance_context"]} if "performance_context" in scene else {}),
             }
             for scene in ir.get("scenes", [])
         ]
@@ -224,10 +226,16 @@ def ensure_voice_artifact(
         )
 
     safe_settings = _json_safe(tts_settings)
+    try:
+        speech_hashes = {str(s["id"]): speech_hash(s) for s in production["scenes"]}
+        _write_json_atomic(workspace / ".runtime" / "voice-performance.json", performance_report(production))
+    except (ValueError, TypeError) as exc:
+        raise ControlPlaneError(code="VOICE_PERFORMANCE_INVALID", stage="VOICE", message=str(exc)) from exc
+    global_settings = {**safe_settings, **({"speech_context_hashes": speech_hashes} if any(speech_hashes.values()) else {})}
     input_key = voice_key(
         narration,
         voice_profile,
-        safe_settings,
+        global_settings,
         engine_version,
     )
     scene_ids = [str(scene["id"]) for scene in production["scenes"]]
@@ -238,7 +246,7 @@ def ensure_voice_artifact(
         str(scene["id"]): scene_voice_key(
             _normalized_words(scene["voice"]),
             voice_profile,
-            scene_settings,
+            {**scene_settings, **({"speech_context_hash": speech_hashes[str(scene["id"])]} if speech_hashes[str(scene["id"])] else {})},
             engine_version,
         )
         for scene in production["scenes"]
@@ -269,6 +277,7 @@ def ensure_voice_artifact(
                 or take.get("wav_sha256") != scene_hashes.get(scene_id)
                 or take.get("text_hash") != text_hash
                 or take.get("voice_profile_hash") != profile_hash
+                or take.get("performance_context_hash") != speech_hashes[scene_id]
             ):
                 take = voice_store.register_approved(
                     scene_id,
@@ -277,7 +286,7 @@ def ensure_voice_artifact(
                         text_hash=text_hash,
                         voice_profile_hash=profile_hash,
                         generation_profile_hash=generation_profile_hash,
-                        performance_context_hash=None,
+                        performance_context_hash=speech_hashes[scene_id],
                     ),
                     approval_source="studio-v2-compatibility",
                     migrated_from_checkpoint=True,
@@ -285,7 +294,7 @@ def ensure_voice_artifact(
             graph.record(
                 f"voice.scene.{scene_id}",
                 "voice.scene",
-                canonical_hash({"text_hash": text_hash, "voice_profile_hash": profile_hash}),
+                canonical_hash({"text_hash": text_hash, "voice_profile_hash": profile_hash, **({"speech_context_hash": speech_hashes[scene_id]} if speech_hashes[scene_id] else {})}),
                 workspace / take["path"],
                 producer="voice-artifact-store",
                 producer_version=str(take.get("generation_profile_hash") or engine_version),
@@ -329,7 +338,7 @@ def ensure_voice_artifact(
             path,
             text_hash=text_hash,
             voice_profile_hash=profile_hash,
-            performance_context_hash=None,
+            performance_context_hash=speech_hashes[scene_id],
         )
         if approved is not None:
             try:
@@ -378,7 +387,7 @@ def ensure_voice_artifact(
                         text_hash=canonical_hash(_normalized_words(scene["voice"])),
                         voice_profile_hash=profile_hash,
                         generation_profile_hash=generation_profile_hash,
-                        performance_context_hash=None,
+                        performance_context_hash=speech_hashes[scene_id],
                     ),
                     approval_source="studio-v2-compatibility",
                     migrated_from_checkpoint=scene_id not in dirty_scene_ids,
@@ -408,7 +417,8 @@ def ensure_voice_artifact(
     output_hash = file_sha256(output)
     record_scene_artifacts(scene_hashes, set(dirty_scene_ids))
     meta = {
-        "version": 3,
+        "version": 4,
+        "speech_context_hashes": speech_hashes,
         "input_key": input_key,
         "output_hash": output_hash,
         "scene_hashes": scene_hashes,
