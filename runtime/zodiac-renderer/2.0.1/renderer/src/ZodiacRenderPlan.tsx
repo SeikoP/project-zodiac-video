@@ -58,13 +58,23 @@ const SceneLayer: React.FC<{
   if (caption && !textLayout) throw new Error(`CAPTION_LAYOUT_MISSING scene=${scene.id} frame=${frame}`);
   const wordLines: Array<Array<{text: string; active: boolean; lift: number}>> = caption
     ? resolveCaptionWordLines(caption, frame) : [];
-  const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,resolveEntityState(scene,entity,frame)]));
+  const activeFor = (entityId: string) => scene.events.find(item =>
+    item.target === entityId && frame >= item.start_frame && frame < item.end_frame);
+  const stateFor = (entity: RenderPlanScene["entities"][number]) => {
+    const base = resolveEntityState(scene,entity,frame);
+    const event = activeFor(entity.id);
+    if (base?.visible === false && (event?.motion === "fade-in" || event?.motion === "pop-in")) {
+      return entity.states[event.state_after] ?? base;
+    }
+    return base;
+  };
+  const states = Object.fromEntries((scene.entities ?? []).map(entity=>[entity.id,stateFor(entity)]));
 
   return (
     <AbsoluteFill>
       {resolveLayerOrder(scene, assets, states)
         .map((entity, index) => {
-          const state = resolveEntityState(scene, entity, frame);
+          const state = states[entity.id];
           const assetId = state?.asset;
           if (!state || state.visible === false || !assetId) return null;
           const asset = assets[assetId];
@@ -73,8 +83,7 @@ const SceneLayer: React.FC<{
           const transform = state.transform ?? {};
           const role = resolveVisualRole(entity, assets);
           // Explicit semantic motion only. No ambient idle motion for unrelated actors.
-          const active=scene.events.find(item=>
-            item.target===entity.id && frame>=item.start_frame && frame<item.end_frame);
+          const active=activeFor(entity.id);
           const resolved=resolveSemanticMotion(active,scene,entity,frame);
           const style: React.CSSProperties = {
             position: "absolute",
@@ -84,6 +93,7 @@ const SceneLayer: React.FC<{
             height: transform.height ?? 520,
             transform: `translate(${resolved.translateX}px, ${resolved.translateY}px) scale(${(transform.scale ?? 1) * resolved.scale}) rotate(${(transform.rotation ?? 0) + resolved.rotateDeg}deg)`,
             zIndex: index,
+            opacity: resolved.opacity,
             objectFit: "contain",
             transformOrigin: "center center",
           };
