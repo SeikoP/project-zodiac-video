@@ -193,6 +193,24 @@ class StudioV2SessionTests(unittest.TestCase):
         self.assertIn("E22 cannot fit", row["detail"])
         self.assertNotIn("NODE_MISSING", row["detail"])
 
+    def test_invalid_alignment_timestamp_is_not_reported_as_text_mismatch(self):
+        state = PipelineStateV2(workspace_id="kimnguu")
+        state.mark_failed(
+            "TIMING",
+            error={
+                "ok": False,
+                "code": "TIMING_ALIGNMENT_FAILED",
+                "stage": "TIMING",
+                "message": (
+                    "TIMING_REVIEW_REQUIRED: S03. Whisper medium could not verify "
+                    "S03.wav. aligner returned an invalid word timestamp."
+                ),
+            },
+        )
+        row = next(item for item in v2_pipeline_rows(state) if item["step"] == "TIMING")
+        self.assertIn("timestamp", row["detail"])
+        self.assertNotIn("ASR chưa khớp", row["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -45,6 +45,10 @@ class AlignmentMismatchError(PipelineError):
         self.coverage_gap = bool(coverage_gap)
 
 
+class InvalidAlignmentTimestampError(PipelineError):
+    """ASR returned word timing that cannot safely be repaired from neighbors."""
+
+
 MAX_ZIP_ENTRIES = 5000
 MAX_FILE_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 512 * 1024 * 1024
@@ -2446,36 +2450,50 @@ def _repair_aligner_word_timestamps(
     """Repair only zero-duration ASR tokens from adjacent measured boundaries."""
     repaired: list[dict] = []
     tolerance_seconds = float(tolerance_ms) / 1000.0
+    adjusted_next_start = None
 
     for index, raw in enumerate(raw_words):
-        start = raw.get("start")
+        start = adjusted_next_start if adjusted_next_start is not None else raw.get("start")
+        adjusted_next_start = None
         end = raw.get("end")
-        if start is None or end is None:
-            raise PipelineError(
-                f"aligner returned an invalid word timestamp for {audio_path.name}."
+
+        def invalid(reason: str) -> InvalidAlignmentTimestampError:
+            return InvalidAlignmentTimestampError(
+                f"aligner returned an invalid word timestamp for {audio_path.name} "
+                f"at word {index + 1} ({raw.get('heard')!r}): {reason}; "
+                f"start={start!r}, end={end!r}."
             )
+
+        if start is None or end is None:
+            raise invalid("timestamp is missing")
         try:
             start = float(start)
             end = float(end)
         except (TypeError, ValueError) as exc:
-            raise PipelineError(
-                f"aligner returned an invalid word timestamp for {audio_path.name}."
-            ) from exc
+            raise invalid("timestamp is not numeric") from exc
         if not math.isfinite(start) or not math.isfinite(end) or end < start:
-            raise PipelineError(
-                f"aligner returned an invalid word timestamp for {audio_path.name}."
-            )
+            raise invalid("timestamp is non-finite or end precedes start")
 
         if math.isclose(end, start, rel_tol=0.0, abs_tol=1e-9):
             next_start = None
+            next_end = None
             if index + 1 < len(raw_words):
-                candidate = raw_words[index + 1].get("start")
+                next_raw = raw_words[index + 1]
                 try:
-                    candidate = float(candidate) if candidate is not None else None
+                    next_start = (
+                        float(next_raw["start"])
+                        if next_raw.get("start") is not None
+                        else None
+                    )
+                    next_end = (
+                        float(next_raw["end"])
+                        if next_raw.get("end") is not None
+                        else None
+                    )
                 except (TypeError, ValueError):
-                    candidate = None
-                if candidate is not None and math.isfinite(candidate):
-                    next_start = candidate
+                    next_start = next_end = None
+
+            previous_end = float(repaired[-1]["end"]) if repaired else None
 
             if (
                 next_start is not None
@@ -2483,20 +2501,27 @@ def _repair_aligner_word_timestamps(
                 and next_start - start <= tolerance_seconds
             ):
                 end = next_start
+            elif (
+                next_start == start
+                and next_end is not None
+                and math.isfinite(next_end)
+                and next_end > start
+                and (previous_end is None or math.isclose(previous_end, start, abs_tol=1e-9))
+                and len(_alignment_units(raw.get("heard", ""))) == 1
+                and len(_alignment_units(raw_words[index + 1].get("heard", ""))) == 1
+            ):
+                # shortcut: split the neighbor span by token length; phoneme timing could improve this estimate.
+                current_weight = len(_normalize_token(raw["heard"]))
+                next_weight = len(_normalize_token(raw_words[index + 1]["heard"]))
+                end = start + (next_end - start) * current_weight / (current_weight + next_weight)
+                adjusted_next_start = end
             else:
-                previous_end = (
-                    float(repaired[-1]["end"])
-                    if repaired
-                    else None
-                )
                 if (
                     previous_end is None
                     or previous_end >= start
                     or start - previous_end > tolerance_seconds
                 ):
-                    raise PipelineError(
-                        f"aligner returned an invalid word timestamp for {audio_path.name}."
-                    )
+                    raise invalid("zero-duration word cannot be repaired from adjacent boundaries")
                 start = previous_end
 
         item = dict(raw)

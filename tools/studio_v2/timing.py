@@ -17,6 +17,7 @@ from tools.control_plane.resource_budget import load_resource_profile
 from tools.zodiac_local import (
     PipelineError,
     AlignmentMismatchError,
+    InvalidAlignmentTimestampError,
     _align_scene_words,
     build_timing_from_word_alignment,
     file_sha256,
@@ -220,9 +221,8 @@ def _align_cached_scenes(
             duration = _wav_seconds(path)
             try:
                 words = _align_scene_words(model, path, scene["voice"])
-            except AlignmentMismatchError as first_error:
-                # Only the failed scene is retried with a more accurate ASR model.
-                # Never turn an ASR mismatch into fabricated word timestamps.
+            except (AlignmentMismatchError, InvalidAlignmentTimestampError) as first_error:
+                # Retry only this scene with a more accurate ASR model; never infer timestamps.
                 primary_model = str(settings.get("model") or "small")
                 if primary_model == "medium":
                     raise PipelineError(
@@ -233,7 +233,7 @@ def _align_cached_scenes(
                     ) from first_error
                 from tools.zodiac_local import _emit_tts_log
                 _emit_tts_log(
-                    f"TIMING RETRY {scene_id}: {primary_model} mismatch; verifying with medium"
+                    f"TIMING RETRY {scene_id}: {primary_model} alignment issue; verifying with medium"
                 )
                 try:
                     if fallback_model is None:

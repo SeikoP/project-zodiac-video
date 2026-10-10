@@ -2549,6 +2549,32 @@ class TtsDurationGuardTests(unittest.TestCase):
         self.assertGreater(aligned[1]["endMs"], aligned[1]["startMs"])
         self.assertLessEqual(aligned[1]["endMs"], aligned[2]["startMs"])
 
+    def test_repairs_zero_duration_token_sharing_neighbor_boundary(self):
+        class Word:
+            def __init__(self, word, start, end):
+                self.word = word
+                self.start = start
+                self.end = end
+                self.probability = 0.9
+
+        class Segment:
+            words = [
+                Word("cũ", 6.58, 6.90),
+                Word("có", 6.90, 6.90),
+                Word("vấn", 6.90, 7.04),
+            ]
+
+        class Model:
+            def transcribe(self, *args, **kwargs):
+                return [Segment()], object()
+
+        aligned = _align_scene_words(Model(), Path("S03.wav"), "cũ có vấn")
+        self.assertEqual([item["text"] for item in aligned], ["cũ", "có", "vấn"])
+        self.assertAlmostEqual(aligned[1]["startMs"], 6900.0)
+        self.assertAlmostEqual(aligned[1]["endMs"], 6956.0)
+        self.assertAlmostEqual(aligned[2]["startMs"], 6956.0)
+        self.assertAlmostEqual(aligned[2]["endMs"], 7040.0)
+
     def test_rejects_unrepairable_zero_duration_aligner_token(self):
         class Word:
             def __init__(self, word, start, end):
