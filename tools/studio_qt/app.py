@@ -92,7 +92,7 @@ class ZodiacQtApp(QMainWindow):
         self._environment_ready: bool | None = None
         self._frame_milestones: dict[tuple[str, str], int] = {}
         self.close_when_stopped = False
-        self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT}
+        self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT, "scene_gap_ms": 180.0}
         self.setWindowTitle("Zodiac Studio · Task Workbench")
         self.resize(1260, 860)
         self.setMinimumSize(1024, 680)
@@ -551,9 +551,9 @@ class ZodiacQtApp(QMainWindow):
             self._frame_milestones.clear()
             config = ExecutorConfig(
                 voice_profile=self.settings["voice"],
-                tts_settings={"mode": "v3turbo", "vieneu_url": TTS_URL, "tts_root": TTS_ROOT, "scene_gap_ms": 0.0},
+                tts_settings={"mode": "v3turbo", "vieneu_url": TTS_URL, "tts_root": TTS_ROOT, "scene_gap_ms": float(self.settings["scene_gap_ms"])},
                 tts_engine_version="vieneu-v3turbo@local-v1",
-                aligner_settings={"model": self.settings["align_model"], "device": "cpu", "compute_type": "int8", "scene_gap_ms": 0.0, "sentence_pause_ms": 0.0},
+                aligner_settings={"model": self.settings["align_model"], "device": "cpu", "compute_type": "int8", "scene_gap_ms": float(self.settings["scene_gap_ms"]), "sentence_pause_ms": 0.0},
                 aligner_version="faster-whisper@local-v1",
                 renderer_version="2.0.0", renderer_hash="zodiac-renderer@2.0.0",
                 music_path=music, mix_settings={"volume": float(self.settings["volume"])},
