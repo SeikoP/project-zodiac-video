@@ -7,7 +7,7 @@ export const MOTION_EXPECTED={
   'slide':{min_travel_px:24,max_travel_px:360},
 };
 export function resolveSemanticMotion(event,scene,entity,frame){
-  const result={translateX:0,translateY:0,scale:1,rotateDeg:0,active:false,peak:0,motion:event?.motion??null};
+  const result={translateX:0,translateY:0,scale:1,rotateDeg:0,opacity:1,active:false,peak:0,motion:event?.motion??null};
   if(!event||frame<event.start_frame||frame>=event.end_frame)return result;
   const duration=event.end_frame-event.start_frame;
   if(!Number.isInteger(duration)||duration<1)throw new Error('MOTION_EVENT_RANGE_INVALID '+event.event_id);
@@ -49,7 +49,13 @@ export function resolveSemanticMotion(event,scene,entity,frame){
       if(travel<24||travel>360||b.x+dx<0||b.y+dy<0||b.x+dx+b.width>1080||b.y+dy+b.height>1920)throw new Error('SLIDE_CONTACT_OUT_OF_BOUNDS '+event.event_id);
       result.translateX=dx*peak;result.translateY=dy*peak;break;
     }
-    case 'hold':case 'state_swap':case 'pop-in':case 'fade-out':case 'fade-in':break;
+    case 'fade-in':result.opacity=(1-Math.cos(Math.PI*progress))/2;break;
+    case 'fade-out':result.opacity=(1+Math.cos(Math.PI*progress))/2;break;
+    case 'pop-in':{
+      const eased=(1-Math.cos(Math.PI*progress))/2;
+      result.scale=0.82+0.18*eased;result.opacity=eased;break;
+    }
+    case 'hold':case 'state_swap':break;
     default:break;
   }
   return result;
