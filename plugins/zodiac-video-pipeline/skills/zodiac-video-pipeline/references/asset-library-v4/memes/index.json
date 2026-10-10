@@ -1,0 +1,801 @@
+{
+  "format": "zodiac-v4-meme-adapters@1",
+  "version": "4.0",
+  "style_token": "zodiac-paper-doodle-meme-v4",
+  "handmade_profile": "human-stroke-v2",
+  "source_policy": "v4-owned-semantic-template-contracts; historical-source-only; no-legacy-artwork",
+  "canvas": {
+    "width": 1080,
+    "height": 1920
+  },
+  "compositions": [
+    {
+      "id": "absurd-offer",
+      "source": "./templates/absurd-offer.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "offer-prop",
+      "roles": {
+        "giver": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "offer",
+            "expression_id": "smug"
+          }
+        },
+        "target": {
+          "slot": null,
+          "kind": "character",
+          "required": false,
+          "acting": {
+            "pose_id": "recoil",
+            "expression_id": "panic"
+          }
+        },
+        "prop": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "giver": [
+          390,
+          760,
+          500,
+          780
+        ],
+        "target": [
+          820,
+          770,
+          390,
+          700
+        ],
+        "prop": [
+          590,
+          530,
+          300,
+          310
+        ]
+      },
+      "required_contacts": [
+        "giver.hand→prop",
+        "giver.gaze→target"
+      ],
+      "caption_slot": null,
+      "effect": {
+        "id": "offer-swish",
+        "anchor": {
+          "role": "prop",
+          "point": [
+            0.5,
+            0.35
+          ],
+          "offset_px": [
+            0,
+            -30
+          ]
+        },
+        "size_px": [
+          170,
+          150
+        ],
+        "layer": 72,
+        "locus": "between giver hand and offered prop"
+      }
+    },
+    {
+      "id": "cry-closeup",
+      "source": "./templates/cry-closeup.json",
+      "frame_id": "reaction-closeup",
+      "mechanic_id": "react",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "cry-hug",
+            "expression_id": "cry",
+            "crop_id": "face-closeup"
+          }
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          570,
+          780,
+          780
+        ]
+      },
+      "required_contacts": [
+        "tears→actor.eyes"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "tear-trails",
+        "anchor": {
+          "role": "actor",
+          "point": [
+            0.52,
+            0.44
+          ],
+          "offset_px": [
+            0,
+            15
+          ]
+        },
+        "size_px": [
+          170,
+          260
+        ],
+        "layer": 72,
+        "locus": "eyes down across both cheeks"
+      }
+    },
+    {
+      "id": "cry-hug-object",
+      "source": "./templates/cry-hug-object.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "hug-object",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "cry-hug",
+            "expression_id": "cry"
+          }
+        },
+        "prop": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          430,
+          760,
+          600,
+          840
+        ],
+        "prop": [
+          510,
+          780,
+          260,
+          260
+        ]
+      },
+      "required_contacts": [
+        "actor.left_arm→prop",
+        "actor.right_arm→prop",
+        "tears→actor.eyes"
+      ],
+      "caption_slot": null,
+      "effect": {
+        "id": "tear-squeeze",
+        "anchor": {
+          "role": "actor",
+          "point": [
+            0.52,
+            0.4
+          ],
+          "offset_px": [
+            0,
+            40
+          ]
+        },
+        "size_px": [
+          180,
+          220
+        ],
+        "layer": 72,
+        "locus": "eyes toward cheeks while arms squeeze prop"
+      }
+    },
+    {
+      "id": "equip-this",
+      "source": "./templates/equip-this.json",
+      "frame_id": "two-person-offset",
+      "mechanic_id": "offer-pants-for-embarrassment",
+      "roles": {
+        "giver": {
+          "slot": "speaker",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "offer-pants",
+            "expression_id": "smug"
+          }
+        },
+        "embarrassed_target": {
+          "slot": "listener",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "receive-pants",
+            "expression_id": "embarrassed"
+          }
+        },
+        "pants": {
+          "slot": "shared_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "giver": [
+          310,
+          760,
+          520,
+          760
+        ],
+        "embarrassed_target": [
+          570,
+          760,
+          520,
+          760
+        ],
+        "pants": [
+          320,
+          835,
+          160,
+          160
+        ]
+      },
+      "required_contacts": [
+        "giver.left_hand→pants.left_waistband",
+        "giver.right_hand→pants.right_waistband",
+        "pants→target.handoff_zone",
+        "pants.right_waistband→embarrassed_target.left_hand"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "offer-impact",
+        "anchor": {
+          "role": "pants",
+          "point": [
+            0.5,
+            0.35
+          ],
+          "offset_px": [
+            0,
+            -20
+          ]
+        },
+        "size_px": [
+          190,
+          150
+        ],
+        "layer": 72,
+        "locus": "pants waistband at the handoff"
+      },
+      "contact_geometry": {
+        "max_distance_px": 32,
+        "view_boxes": {
+          "giver": [
+            520,
+            720
+          ],
+          "pants": [
+            300,
+            300
+          ],
+          "embarrassed_target": [
+            520,
+            720
+          ]
+        },
+        "contacts": [
+          {
+            "from": {
+              "role": "giver",
+              "point": [
+                220,
+                380
+              ]
+            },
+            "to": {
+              "role": "pants",
+              "point": [
+                60,
+                60
+              ]
+            }
+          },
+          {
+            "from": {
+              "role": "giver",
+              "point": [
+                300,
+                380
+              ]
+            },
+            "to": {
+              "role": "pants",
+              "point": [
+                240,
+                60
+              ]
+            }
+          },
+          {
+            "from": {
+              "role": "embarrassed_target",
+              "point": [
+                75,
+                370
+              ]
+            },
+            "to": {
+              "role": "pants",
+              "point": [
+                240,
+                60
+              ]
+            }
+          }
+        ]
+      },
+      "asset_requirements": [
+        {
+          "role": "pants",
+          "asset_id": "PROP_OFFERED_PANTS",
+          "source_path": "../props/pants.svg",
+          "output_path": "assets/props/offered-pants.svg",
+          "category": "prop"
+        }
+      ]
+    },
+    {
+      "id": "facepalm-closeup",
+      "source": "./templates/facepalm-closeup.json",
+      "frame_id": "reaction-closeup",
+      "mechanic_id": "facepalm",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "facepalm",
+            "expression_id": "exasperated",
+            "crop_id": "face-closeup"
+          }
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          560,
+          700,
+          760
+        ]
+      },
+      "required_contacts": [
+        "actor.hand→actor.face"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "facepalm-impact",
+        "anchor": {
+          "role": "actor",
+          "point": [
+            0.55,
+            0.36
+          ],
+          "offset_px": [
+            0,
+            0
+          ]
+        },
+        "size_px": [
+          175,
+          150
+        ],
+        "layer": 72,
+        "locus": "hand meeting forehead"
+      }
+    },
+    {
+      "id": "heart-offer-overkill",
+      "source": "./templates/heart-offer-overkill.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "offer-prop",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "offer",
+            "expression_id": "smug"
+          }
+        },
+        "heart": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          700,
+          620,
+          840
+        ],
+        "heart": [
+          540,
+          620,
+          300,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.left_hand→heart",
+        "actor.right_hand→heart"
+      ],
+      "caption_slot": null,
+      "effect": {
+        "id": "sparkle-burst",
+        "anchor": {
+          "role": "heart",
+          "point": [
+            0.5,
+            0.5
+          ],
+          "offset_px": [
+            0,
+            0
+          ]
+        },
+        "size_px": [
+          210,
+          210
+        ],
+        "layer": 72,
+        "locus": "around the heart"
+      }
+    },
+    {
+      "id": "mirror-self-check",
+      "source": "./templates/mirror-self-check.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "inspect-prop",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "inspect-prop",
+            "expression_id": "side-eye"
+          }
+        },
+        "mirror": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          365,
+          750,
+          520,
+          820
+        ],
+        "mirror": [
+          735,
+          570,
+          230,
+          360
+        ]
+      },
+      "required_contacts": [
+        "actor.gaze→mirror",
+        "actor.hand→mirror"
+      ],
+      "caption_slot": null,
+      "effect": {
+        "id": "mirror-glint",
+        "anchor": {
+          "role": "mirror",
+          "point": [
+            0.48,
+            0.32
+          ],
+          "offset_px": [
+            0,
+            0
+          ]
+        },
+        "size_px": [
+          145,
+          180
+        ],
+        "layer": 72,
+        "locus": "reflection upper edge"
+      }
+    },
+    {
+      "id": "prop-pressure",
+      "source": "./templates/prop-pressure.json",
+      "frame_id": "two-person-offset",
+      "mechanic_id": "press-prop",
+      "roles": {
+        "evidence_actor": {
+          "slot": "speaker",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "confront",
+            "expression_id": "deadpan"
+          }
+        },
+        "target": {
+          "slot": "listener",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "recoil",
+            "expression_id": "panic"
+          }
+        },
+        "prop": {
+          "slot": "shared_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "evidence_actor": [
+          310,
+          750,
+          450,
+          780
+        ],
+        "target": [
+          780,
+          780,
+          430,
+          730
+        ],
+        "prop": [
+          555,
+          610,
+          260,
+          270
+        ]
+      },
+      "required_contacts": [
+        "evidence_actor.hand→prop",
+        "prop→target.space"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "contact-fan-pressure",
+        "anchor": {
+          "role": "prop",
+          "point": [
+            0.85,
+            0.5
+          ],
+          "offset_px": [
+            35,
+            0
+          ]
+        },
+        "size_px": [
+          190,
+          160
+        ],
+        "layer": 72,
+        "locus": "fan from prop into target space"
+      }
+    },
+    {
+      "id": "receipt-in-face",
+      "source": "./templates/receipt-in-face.json",
+      "frame_id": "two-person-offset",
+      "mechanic_id": "show-object",
+      "roles": {
+        "evidence_actor": {
+          "slot": "speaker",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "raise-evidence",
+            "expression_id": "deadpan"
+          }
+        },
+        "target": {
+          "slot": "listener",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "recoil",
+            "expression_id": "panic"
+          }
+        },
+        "receipt": {
+          "slot": "shared_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "evidence_actor": [
+          305,
+          750,
+          430,
+          780
+        ],
+        "target": [
+          785,
+          780,
+          420,
+          730
+        ],
+        "receipt": [
+          550,
+          640,
+          230,
+          330
+        ]
+      },
+      "required_contacts": [
+        "evidence_actor.hand→receipt.bottom_center",
+        "receipt→target.space"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "contact-fan-receipt",
+        "anchor": {
+          "role": "receipt",
+          "point": [
+            0.82,
+            0.48
+          ],
+          "offset_px": [
+            30,
+            0
+          ]
+        },
+        "size_px": [
+          190,
+          160
+        ],
+        "layer": 72,
+        "locus": "receipt toward target space"
+      }
+    },
+    {
+      "id": "side-eye-object",
+      "source": "./templates/side-eye-object.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "inspect-prop",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "inspect-prop",
+            "expression_id": "side-eye"
+          }
+        },
+        "prop": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          390,
+          750,
+          540,
+          820
+        ],
+        "prop": [
+          760,
+          630,
+          230,
+          270
+        ]
+      },
+      "required_contacts": [
+        "actor.gaze→prop",
+        "actor.hand→prop"
+      ],
+      "caption_slot": null,
+      "effect": {
+        "id": "question-accent",
+        "anchor": {
+          "role": "prop",
+          "point": [
+            0.5,
+            0.3
+          ],
+          "offset_px": [
+            0,
+            -10
+          ]
+        },
+        "size_px": [
+          140,
+          170
+        ],
+        "layer": 72,
+        "locus": "gaze endpoint near prop"
+      }
+    },
+    {
+      "id": "wallet-flex",
+      "source": "./templates/wallet-flex.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "flex-prop",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "flex-prop",
+            "expression_id": "smug"
+          }
+        },
+        "wallet": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          430,
+          740,
+          560,
+          830
+        ],
+        "wallet": [
+          665,
+          690,
+          240,
+          210
+        ]
+      },
+      "required_contacts": [
+        "actor.hand→wallet",
+        "actor.gaze→wallet"
+      ],
+      "caption_slot": "bottom",
+      "effect": {
+        "id": "wallet-shine",
+        "anchor": {
+          "role": "wallet",
+          "point": [
+            0.58,
+            0.25
+          ],
+          "offset_px": [
+            0,
+            -10
+          ]
+        },
+        "size_px": [
+          150,
+          140
+        ],
+        "layer": 72,
+        "locus": "wallet upper edge"
+      }
+    }
+  ]
+}

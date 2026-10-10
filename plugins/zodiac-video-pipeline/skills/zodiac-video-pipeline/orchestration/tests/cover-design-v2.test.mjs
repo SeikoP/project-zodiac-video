@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
+const script=fileURLToPath(new URL('../validate-cover-design.mjs',import.meta.url));
+const design={version:'zodiac-cover-design@2',style_token:'zodiac-paper-doodle-meme-v4',canvas:{width:1080,height:1920},title_frame:{shape:'crooked-paper-note',fill_role:'card',stroke_role:'ink',shadow_role:'soft_shadow',shadow_dx_px:3,shadow_dy_px:6,shadow_opacity:0.3,font_family:'Patrick Hand',max_lines:3},composition:{hero_scale:0.86,supporting_prop_scale:0.80,read_order:['hook','identity','character_story_object'],max_supporting_accents:2,min_side_margin_px:72,background_policy:'preserve-native-environment'}};
+async function run(update){const root=await mkdtemp(path.join(tmpdir(),'cover-v2-'));try{await mkdir(path.join(root,'publish'));const obj={cover:{layout:'tilted_top_hook',design:structuredClone(design)}};update?.(obj);await writeFile(path.join(root,'publish','publish.json'),JSON.stringify(obj));return spawnSync(process.execPath,[script,root],{encoding:'utf8'});}finally{await rm(root,{recursive:true,force:true})}}
+test('valid cover token and scale pass metadata gate',async()=>assert.equal((await run()).status,0));
+test('generic border shadow invalid',async()=>assert.notEqual((await run(p=>p.cover.design.title_frame.shadow_role='black')).status,0));
+test('oversized hero invalid',async()=>assert.notEqual((await run(p=>p.cover.design.composition.hero_scale=1.1)).status,0));
+test('object replacing background invalid',async()=>assert.notEqual((await run(p=>p.cover.design.composition.background_policy='replace-with-object')).status,0));
+test('missing design blocked for fresh run',async()=>assert.notEqual((await run(p=>delete p.cover.design)).status,0));

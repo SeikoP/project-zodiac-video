@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import test from 'node:test';
+const here=path.dirname(fileURLToPath(import.meta.url));
+const validator=path.join(here,'validate-library.mjs');
+test('v4 library validates grammar, exemplars and migration lock',()=>{const r=spawnSync(process.execPath,[validator],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);});
+test('phone notification states from the asset store are registered as reusable props',async()=>{const catalog=JSON.parse(await readFile(path.resolve(here,'../props/index.json'),'utf8'));for(const id of ['phone-busy','phone-ping','phone-quiet','phone-silent']){const entry=catalog.assets.find(item=>item.id===id);assert.ok(entry,id);assert.equal(entry.role,'story_prop');const svg=await readFile(path.resolve(here,'..',entry.path),'utf8');assert.match(svg,/source_library=zodiac-visual-grammar-v4/);assert.match(svg,/source_master=phone/);}});

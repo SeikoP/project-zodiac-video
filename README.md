@@ -340,3 +340,9 @@ Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the 
 New jobs use `zodiac-remotion@1.20.0`. It keeps the 1.19.1 deterministic animation/caption behavior and adds scene-level layer safety: runtime evaluates the declared active state sequence, blocks materially overlapping visible entities that share the same layer, and uses deterministic z-index ordering.
 
 Runtime deliberately does not auto-move meaningful props or characters because overlap may represent holding, hugging or offering. Internal SVG groups such as torso, outfit decoration, arms and baked props remain a Semantic Assets compile-time concern. Whole-pose choreography is still not skeletal morphing.
+
+## Zodiac plugin source
+
+The complete ChatGPT plugin source lives in `plugins/zodiac-video-pipeline/` (version 2.4.44, release `pluginrel_6aca94231d648191ad99c19837287790`). This replaces the partial release overlay; native V4 assets, contracts, orchestration and tests are included. The files were copied byte-for-byte from the published plugin archive.
+
+GitHub commits do not automatically update the installed ChatGPT plugin. Future edits must be tested and published through Plugin Creator; a sync back to GitHub must retain the same source/version. Run native commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the skill root.

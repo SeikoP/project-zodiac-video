@@ -1,0 +1,59 @@
+{
+  "id": "zodiac-paper-doodle-meme-v4",
+  "version": "4.0",
+  "family": "paper-doodle-chibi-meme",
+  "handmade_profile": "human-stroke-v2",
+  "palette": [
+    "#F6F0E6",
+    "#FFFDF9",
+    "#2F3C44",
+    "#5C6B75",
+    "#4B5B61",
+    "#F1C6A0",
+    "#D0C1B3",
+    "#8EC0B9",
+    "#E97A66",
+    "#F2C45C",
+    "#435064"
+  ],
+  "stroke_width": {
+    "min": 4,
+    "max": 9
+  },
+  "principle": "intentional asymmetry and authored contour rhythm; never runtime noise",
+  "palette_roles": {
+    "paper": "#F6F0E6",
+    "card": "#FFFDF9",
+    "ink": "#2F3C44",
+    "soft_ink": "#5C6B75",
+    "hair_ink": "#4B5B61",
+    "skin": "#F1C6A0",
+    "sticker_edge": "#FFFDF9",
+    "soft_shadow": "#D0C1B3",
+    "teal": "#8EC0B9",
+    "coral": "#E97A66",
+    "ochre": "#F2C45C",
+    "slate": "#435064"
+  },
+  "character_identity_fields": [
+    "body_profile",
+    "hair_id",
+    "outfit_id",
+    "shirt_color_id"
+  ],
+  "identity_rule": "body_profile + hair silhouette + outfit cue + shirt color; pose, expression, and crop are state only; outfit alone never defines identity",
+  "body_variation": "authored_geometry_not_scale_transform",
+  "character_outline_px_at_1080": [
+    5,
+    8
+  ],
+  "sticker_edge_px_at_1080": [
+    6,
+    12
+  ],
+  "prop_effect_source_stroke_px": [
+    4,
+    9
+  ],
+  "effects_path_first": true
+}

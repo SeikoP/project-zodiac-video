@@ -1,0 +1,24 @@
+{
+  "format":"zodiac-contract-ownership@1",
+  "owner":"zodiac-video-pipeline",
+  "paths":{
+    "narration":"plugin",
+    "approval":"plugin",
+    "scenes":"plugin",
+    "characters":"plugin",
+    "assets":"plugin",
+    "spatial":"plugin",
+    "actions":"plugin",
+    "motion_intent":"plugin",
+    "effects":"plugin",
+    "memes":"plugin",
+    "caption_intent":"plugin",
+    "brand":"plugin",
+    "publish":"plugin",
+    "measured_timing":"runner",
+    "render_plan":"runner",
+    "tts_waveform":"runner",
+    "rendered_media":"runner",
+    "runtime_qa":"runner"
+  }
+}

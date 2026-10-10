@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zodiac.local/contracts/production-model-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "narration",
+    "scenes",
+    "assets",
+    "design",
+    "publish",
+    "source"
+  ],
+  "properties": {
+    "format": {
+      "const": "zodiac-production-model@1"
+    },
+    "narration": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "voice",
+          "actions",
+          "entities"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "voice": {
+            "type": "string"
+          },
+          "actions": {
+            "type": "array"
+          },
+          "entities": {
+            "type": "array"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "assets": {
+      "type": "object"
+    },
+    "design": {
+      "type": "object"
+    },
+    "publish": {
+      "type": "object"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "origin",
+        "narration_sha256",
+        "legacy_ir_sha256"
+      ],
+      "properties": {
+        "origin": {
+          "enum": [
+            "native",
+            "reconstructed"
+          ]
+        },
+        "narration_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "legacy_ir_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "projections": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {spawnSync} from 'node:child_process';import path from 'node:path';
+test('All native meme/effect pair references valid',()=>{const p=path.resolve(import.meta.dirname,'../validate-meme-effect-pairs.mjs');const r=spawnSync(process.execPath,[p],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);assert.match(r.stdout,/"pairs": 11/)});

@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {deriveSceneContext} from '../derive-scene-context.mjs';
+const docs=()=>({production:{scenes:[{id:'s01',voice:'Xử Nữ suy nghĩ',entities:[{id:'girl',kind:'character'},{id:'scale',kind:'object'}],events:[{id:'e1',target:'scale',motion:'focus-shift',trigger:{type:'voice_anchor',text:'suy nghĩ'}}]}]},visual_grammar:{scenes:[{scene_id:'s01',frame_id:'f01',mechanic_id:'m01'}]},character_assembly:{characters:[{entity_id:'girl',design_intent:{rationale:'school tension'}}]},depth:{scenes:[{scene_id:'s01',profile:'bedroom-clean',palette:'cool-reflective'}]}});
+test('derive compact references without repeating narration or design prose',()=>{const c=deriveSceneContext(docs(),'s01');assert.equal(c.event_count,1);assert.deepEqual(c.story_object_ids,['scale']);assert.equal(c.decisions.depth.palette,'cool-reflective');assert.equal(c.decisions.cast[0].design_intent_ref,'.authoring/character-assembly-plan.json#girl');assert.ok(!JSON.stringify(c).includes('school tension'));assert.ok(!JSON.stringify(c).includes('Xử Nữ suy nghĩ'));});
+test('missing scene blocks, never invents scene',()=>assert.throws(()=>deriveSceneContext(docs(),'s02'),/SCENE_CONTEXT_SCENE_UNKNOWN/));
+test('orphan plan block prevents silent mismatch',()=>{const d=docs();d.depth.scenes[0].scene_id='s99';assert.throws(()=>deriveSceneContext(d,'s01'),/SCENE_CONTEXT_PLAN_ORPHAN/);});
+test('duplicate production scene is blocked',()=>{const d=docs();d.production.scenes.push(d.production.scenes[0]);assert.throws(()=>deriveSceneContext(d,'s01'),/SCENE_CONTEXT_DUPLICATE_SCENE/);});
+test('bounded event preview retains total count',()=>{const d=docs();d.production.scenes[0].events.push({id:'e2',target:'girl',motion:'hold'});const c=deriveSceneContext(d,'s01',{budget:1});assert.equal(c.event_count,2);assert.equal(c.event_preview.length,1);assert.equal(c.truncated_events,1);});

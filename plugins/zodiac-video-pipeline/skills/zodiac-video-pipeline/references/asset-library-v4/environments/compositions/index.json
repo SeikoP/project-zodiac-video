@@ -1,0 +1,282 @@
+{
+  "format": "zodiac-environment-compositions@1",
+  "version": "1.0.0",
+  "policy": {
+    "composition_only": true,
+    "full_scene_backgrounds": false,
+    "default_mode": "micro_environment",
+    "fallback_mode": "minimal",
+    "runtime_contract": "ordinary_scene_entities_only",
+    "max_decorative_only_props": 2,
+    "subject_priority": "character_and_story_action",
+    "required_depth_order": [
+      "rear",
+      "subject",
+      "front"
+    ],
+    "grounding_required_for_micro": true
+  },
+  "modes": {
+    "micro_environment": {
+      "requires_profile": true,
+      "min_semantic_props": 3,
+      "requires_cross_depth": true,
+      "requires_grounding": true
+    },
+    "minimal": {
+      "requires_profile": false,
+      "min_semantic_props": 0,
+      "requires_cross_depth": false,
+      "requires_grounding": false
+    },
+    "none": {
+      "requires_profile": false,
+      "min_semantic_props": 0,
+      "requires_cross_depth": false,
+      "requires_grounding": false
+    }
+  },
+  "structural_cues": [
+    {
+      "id": "contact-shadow",
+      "role": "grounding",
+      "ownership": "package_owned_derivative"
+    },
+    {
+      "id": "floor-patch",
+      "role": "grounding",
+      "ownership": "package_owned_derivative"
+    },
+    {
+      "id": "depth-rail",
+      "role": "directional_depth",
+      "ownership": "package_owned_derivative"
+    },
+    {
+      "id": "paper-zone",
+      "role": "rear_cluster",
+      "ownership": "package_owned_derivative"
+    },
+    {
+      "id": "edge-accent",
+      "role": "edge_balance",
+      "ownership": "package_owned_derivative"
+    },
+    {
+      "id": "paper-strip",
+      "role": "micro_structure",
+      "ownership": "package_owned_derivative"
+    }
+  ],
+  "presets": [
+    {
+      "id": "study-corner",
+      "contexts": [
+        "study",
+        "planning",
+        "deadline",
+        "overthinking",
+        "school"
+      ],
+      "source_kits": [
+        "work-study"
+      ],
+      "prop_pool": [
+        "notebook",
+        "book",
+        "pen",
+        "water-bottle",
+        "backpack"
+      ],
+      "density": {
+        "min": 4,
+        "preferred": 6,
+        "max": 8
+      },
+      "roles": {
+        "rear": [
+          "notebook",
+          "book"
+        ],
+        "front": [
+          "pen",
+          "water-bottle",
+          "backpack"
+        ]
+      },
+      "foreground_occlusion": {
+        "allowed": true,
+        "max_subject_bbox_ratio": 0.18
+      },
+      "caption_open_zone": "lower_center_or_open_side"
+    },
+    {
+      "id": "messy-desk",
+      "contexts": [
+        "overthinking",
+        "deadline",
+        "chaos",
+        "self-check",
+        "study"
+      ],
+      "source_kits": [
+        "work-study",
+        "daily-routine"
+      ],
+      "prop_pool": [
+        "notebook",
+        "book",
+        "pen",
+        "water-bottle",
+        "tissue-box",
+        "headset",
+        "phone"
+      ],
+      "density": {
+        "min": 5,
+        "preferred": 7,
+        "max": 9
+      },
+      "roles": {
+        "rear": [
+          "notebook",
+          "book"
+        ],
+        "front": [
+          "pen",
+          "water-bottle",
+          "tissue-box",
+          "headset",
+          "phone"
+        ]
+      },
+      "foreground_occlusion": {
+        "allowed": true,
+        "max_subject_bbox_ratio": 0.2
+      },
+      "caption_open_zone": "lower_center"
+    },
+    {
+      "id": "social-chat",
+      "contexts": [
+        "chat",
+        "friendship",
+        "relationship",
+        "misunderstanding",
+        "debate"
+      ],
+      "source_kits": [
+        "social-chat",
+        "relationship-story"
+      ],
+      "prop_pool": [
+        "phone",
+        "headset",
+        "notebook",
+        "book"
+      ],
+      "density": {
+        "min": 3,
+        "preferred": 4,
+        "max": 6
+      },
+      "roles": {
+        "rear": [
+          "notebook",
+          "book"
+        ],
+        "front": [
+          "phone",
+          "headset"
+        ]
+      },
+      "foreground_occlusion": {
+        "allowed": true,
+        "max_subject_bbox_ratio": 0.14
+      },
+      "caption_open_zone": "lower_center"
+    },
+    {
+      "id": "outing-corridor",
+      "contexts": [
+        "school-transit",
+        "leaving-home",
+        "outing",
+        "commute",
+        "arrival"
+      ],
+      "source_kits": [
+        "outing-transit",
+        "daily-routine"
+      ],
+      "prop_pool": [
+        "backpack",
+        "water-bottle",
+        "phone",
+        "book",
+        "pen"
+      ],
+      "density": {
+        "min": 4,
+        "preferred": 5,
+        "max": 7
+      },
+      "roles": {
+        "rear": [
+          "backpack",
+          "book"
+        ],
+        "front": [
+          "water-bottle",
+          "phone",
+          "pen"
+        ]
+      },
+      "foreground_occlusion": {
+        "allowed": true,
+        "max_subject_bbox_ratio": 0.16
+      },
+      "caption_open_zone": "lower_center_or_open_side"
+    },
+    {
+      "id": "neutral-grounded",
+      "contexts": [
+        "generic",
+        "explanation",
+        "reaction",
+        "narration"
+      ],
+      "source_kits": [
+        "daily-routine"
+      ],
+      "prop_pool": [
+        "phone",
+        "book",
+        "notebook",
+        "mirror",
+        "tissue-box"
+      ],
+      "density": {
+        "min": 3,
+        "preferred": 4,
+        "max": 5
+      },
+      "roles": {
+        "rear": [
+          "notebook",
+          "book"
+        ],
+        "front": [
+          "phone",
+          "mirror",
+          "tissue-box"
+        ]
+      },
+      "foreground_occlusion": {
+        "allowed": true,
+        "max_subject_bbox_ratio": 0.12
+      },
+      "caption_open_zone": "lower_center_or_open_side"
+    }
+  ]
+}

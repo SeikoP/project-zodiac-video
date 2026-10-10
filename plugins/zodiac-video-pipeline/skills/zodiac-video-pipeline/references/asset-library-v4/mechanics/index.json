@@ -1,0 +1,118 @@
+{
+  "format": "zodiac-visual-mechanics@1",
+  "version": "4.0",
+  "mechanics": [
+    {
+      "id": "explain",
+      "family": "state",
+      "requires": [
+        "actor"
+      ]
+    },
+    {
+      "id": "react",
+      "family": "state",
+      "requires": [
+        "reaction_subject"
+      ]
+    },
+    {
+      "id": "show-object",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "offer-object",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "confront",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target"
+      ]
+    },
+    {
+      "id": "reveal",
+      "family": "narrative",
+      "requires": [
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "payoff",
+      "family": "narrative",
+      "requires": [
+        "payoff_subject"
+      ]
+    },
+    {
+      "id": "facepalm",
+      "family": "state",
+      "requires": [
+        "actor"
+      ]
+    },
+    {
+      "id": "hug-object",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "offer-prop",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "inspect-prop",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "press-prop",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "flex-prop",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "offer-pants-for-embarrassment",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ],
+      "intent": "giver hands pants to an embarrassed receiver; receiver holds the other waistband edge"
+    }
+  ]
+}

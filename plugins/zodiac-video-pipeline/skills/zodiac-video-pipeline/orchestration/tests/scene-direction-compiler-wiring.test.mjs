@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import test from 'node:test';
+const here=path.dirname(fileURLToPath(import.meta.url));const root=path.resolve(here,'../..');
+const read=async p=>readFile(path.join(root,p),'utf8');const json=async p=>JSON.parse(await read(p));
+test('Semantic Assets wires deterministic scene-direction compiler before validation',async()=>{const phase=await json('orchestration/phases/02-visual-production.json');const a=phase.steps.find(x=>x.id==='assets');const comp=a.required_capabilities.find(x=>x.id==='scene_direction_compiler');const val=a.required_capabilities.find(x=>x.id==='scene_direction_compile_validation');assert.equal(comp.kind,'internal_compiler');assert.equal(comp.stage,'exit');assert.equal(val.kind,'internal_validator');assert.ok(a.allowed_operations.includes('write_production'));assert.ok(a.required_outputs.includes('.authoring/scene-direction-compile-receipt.json'));for(const g of ['scene_direction_compiled_geometry','shot_geometry_distinctness','scene_direction_compile_receipt'])assert.ok(a.gate_checks.includes(g));});
+test('orchestrator accepts compiler_result proof',async()=>{const router=await read('orchestration/router.md');const validator=await read('orchestration/validate-pipeline-state.mjs');assert.match(router,/internal compiler → `compiler_result`/);assert.match(validator,/cap\.kind==='internal_compiler'.*compiler_result/s);});
+test('runtime contract targets renderer 2.0 state assets',async()=>{const b=await read('references/runtime-authoring-boundary.md');const skill=await read('SKILL.md');assert.match(b,/zodiac-renderer@2\.0\.1/);assert.match(b,/complete SVG asset/);assert.match(b,/does not rig-animate limb groups/);assert.match(skill,/zodiac-renderer@2\.0\.1/);assert.match(skill,/does not animate limb groups/i);assert.ok(skill.split(/\r?\n/).length<=80);});
