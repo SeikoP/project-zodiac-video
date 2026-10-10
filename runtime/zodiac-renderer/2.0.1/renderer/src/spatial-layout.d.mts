@@ -5,4 +5,4 @@ export function resolveEntityState(scene:RenderPlanScene,entity:RenderPlanEntity
 
 export function resolveDisplayedEntityState(scene:RenderPlanScene,entity:RenderPlanEntity,frame:number):RenderPlanState|undefined;
 
-export function auditNativeDepthEntities(scene:RenderPlanScene,assets:Record<string,RenderAsset>):{count:number;roles:string[]};
+export function auditNativeDepthEntities(scene:RenderPlanScene,assets:Record<string,RenderPlanAsset>):{count:number;roles:string[]};
