@@ -220,7 +220,13 @@ def _align_cached_scenes(
             duration = _wav_seconds(path)
             try:
                 words = _align_scene_words(model, path, scene["voice"])
-            except AlignmentMismatchError as first_error:
+            except (AlignmentMismatchError, PipelineError) as first_error:
+                # Retry only a recognized ASR timestamp failure or text mismatch.
+                # Other PipelineErrors remain fatal; never invent word timestamps.
+                if not isinstance(first_error, AlignmentMismatchError) and (
+                    "aligner returned an invalid word timestamp" not in str(first_error)
+                ):
+                    raise
                 # Only the failed scene is retried with a more accurate ASR model.
                 # Never turn an ASR mismatch into fabricated word timestamps.
                 primary_model = str(settings.get("model") or "small")
@@ -233,7 +239,7 @@ def _align_cached_scenes(
                     ) from first_error
                 from tools.zodiac_local import _emit_tts_log
                 _emit_tts_log(
-                    f"TIMING RETRY {scene_id}: {primary_model} mismatch; verifying with medium"
+                    f"TIMING RETRY {scene_id}: {primary_model} alignment mismatch/invalid timestamp; verifying with medium"
                 )
                 try:
                     if fallback_model is None:

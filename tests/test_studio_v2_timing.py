@@ -99,6 +99,51 @@ class StudioV2TimingTests(unittest.TestCase):
                     _align_cached_scenes(root, production, voice, {"model": "small"}, "test", force=True)
                 self.assertEqual([call.args[0] for call in loaded.call_args_list], ["small", "medium", "small", "medium"])
 
+    def test_invalid_word_timestamps_retry_only_failed_scene_with_medium(self):
+        from tools.studio_v2.timing import _align_cached_scenes
+        from tools.zodiac_local import PipelineError
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            voice = voice_artifact(root)
+            wav = root / ".runtime" / "tts-scenes" / "S01.wav"
+            production = {"video": {"fps": 24}, "scenes": [{"id": "S01", "voice": "xin chao"}]}
+            primary, medium = object(), object()
+            attempts = []
+            def load(name, *args, **kwargs):
+                return primary if name == "small" else medium
+            def align(model, *args):
+                attempts.append(model)
+                if model is primary:
+                    raise PipelineError("aligner returned an invalid word timestamp for S01.wav.")
+                return [
+                    {"text": "xin", "startMs": 0, "endMs": 40, "timestampMs": 0},
+                    {"text": "chao", "startMs": 40, "endMs": 90, "timestampMs": 40},
+                ]
+            with patch("tools.studio_v2.timing.scene_voice_files", return_value=[wav]), \
+                 patch("tools.studio_v2.timing.require_word_aligner_installed"), \
+                 patch("tools.studio_v2.timing.load_word_aligner", side_effect=load), \
+                 patch("tools.studio_v2.timing._align_scene_words", side_effect=align), \
+                 patch("tools.studio_v2.timing.build_timing_from_word_alignment", return_value={}), \
+                 patch("tools.zodiac_local._emit_tts_log"):
+                _align_cached_scenes(root, production, voice, {"model": "small"}, "test", force=True)
+            self.assertEqual(attempts, [primary, medium])
+
+    def test_other_pipeline_errors_do_not_retry_medium(self):
+        from tools.studio_v2.timing import _align_cached_scenes
+        from tools.zodiac_local import PipelineError
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            voice = voice_artifact(root)
+            wav = root / ".runtime" / "tts-scenes" / "S01.wav"
+            production = {"video": {"fps": 24}, "scenes": [{"id": "S01", "voice": "xin chao"}]}
+            with patch("tools.studio_v2.timing.scene_voice_files", return_value=[wav]), \
+                 patch("tools.studio_v2.timing.require_word_aligner_installed"), \
+                 patch("tools.studio_v2.timing.load_word_aligner", return_value=object()) as loaded, \
+                 patch("tools.studio_v2.timing._align_scene_words", side_effect=PipelineError("audio file unreadable")):
+                with self.assertRaisesRegex(PipelineError, "audio file unreadable"):
+                    _align_cached_scenes(root, production, voice, {"model": "small"}, "test", force=True)
+            self.assertEqual(loaded.call_count, 1)
+
     def _root(self, temp):
         root = Path(temp)
         (root / "narration.txt").write_text("xin chao\n", encoding="utf-8")
