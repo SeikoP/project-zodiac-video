@@ -606,7 +606,566 @@ def canonical_narration_text(production: dict) -> str:
 def _find_anchor_word_index_for_progression(
     words: list[str],
     anchor_text: str,
-    occurrence: int…38717 tokens truncated…ses(observer):
+    occurrence: int | None = None,
+) -> tuple[int | None, bool]:
+    """Best-effort anchor lookup for density only; semantic validation lives elsewhere."""
+    anchor = _normalized_word_tokens(anchor_text)
+    if not anchor:
+        return None, False
+    matches = [
+        index
+        for index in range(len(words) - len(anchor) + 1)
+        if words[index:index + len(anchor)] == anchor
+    ]
+    if not matches:
+        return None, False
+    if occurrence is None:
+        return matches[0], True
+    if (
+        not isinstance(occurrence, int)
+        or isinstance(occurrence, bool)
+        or occurrence < 1
+        or occurrence > len(matches)
+    ):
+        return None, False
+    return matches[occurrence - 1], True
+
+
+def _story_change_positions_words(scene: dict) -> tuple[list[int], bool]:
+    words = _normalized_word_tokens(scene.get("voice", ""))
+    positions: list[int] = []
+    complete = True
+    for event in scene.get("events", []):
+        if (
+            event.get("target") == "camera"
+            or event.get("state_before") == event.get("state_after")
+        ):
+            continue
+        trigger = event.get("trigger", {})
+        if trigger.get("source") == "scene_start":
+            positions.append(0)
+        elif trigger.get("source") == "voice_anchor":
+            position, resolved = _find_anchor_word_index_for_progression(
+                words,
+                str(trigger.get("text", "")),
+                trigger.get("occurrence"),
+            )
+            if resolved and position is not None:
+                positions.append(position)
+            else:
+                complete = False
+    return sorted(set(positions)), complete
+
+
+def _validate_visual_progression_proxy(scene: dict) -> None:
+    words = _normalized_word_tokens(scene.get("voice", ""))
+    if not words:
+        return
+    positions, complete = _story_change_positions_words(scene)
+    if not complete:
+        # Anchor semantics are owned by the editor/renderer. Do not replace their
+        # stable missing/ambiguous/occurrence error codes with a density error.
+        return
+    if not positions:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_DENSITY: scene {scene.get('id')} has no meaningful visual change."
+        )
+    checkpoints = [0, *positions, len(words)]
+    max_gap = max(
+        right - left
+        for left, right in zip(checkpoints, checkpoints[1:])
+    )
+    if max_gap > MAX_VISUAL_GAP_WORDS:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_DENSITY: scene {scene.get('id')} has "
+            f"{max_gap} words without a meaningful visual change; "
+            f"max {MAX_VISUAL_GAP_WORDS} words before local timing."
+        )
+
+
+def _validate_measured_visual_progression(scene: dict, row: dict, fps: int) -> None:
+    captions = row["captions"]
+    caption_words = [_normalize_token(cue["text"]) for cue in captions]
+    positions: list[int] = []
+    for event in scene.get("events", []):
+        if (
+            event.get("target") == "camera"
+            or event.get("state_before") == event.get("state_after")
+        ):
+            continue
+        trigger = event.get("trigger", {})
+        if trigger.get("source") == "scene_start":
+            positions.append(row["start_frame"])
+            continue
+        if trigger.get("source") != "voice_anchor":
+            continue
+        anchor = _normalized_word_tokens(str(trigger.get("text", "")))
+        matches = [
+            index
+            for index in range(len(caption_words) - len(anchor) + 1)
+            if caption_words[index:index + len(anchor)] == anchor
+        ]
+        if not matches:
+            # Runtime/editor anchor validation owns this semantic error. Keeping
+            # timing loadable lets the editor present and repair the bad anchor.
+            return
+        occurrence = trigger.get("occurrence")
+        if occurrence is None:
+            match_index = matches[0]
+        elif (
+            not isinstance(occurrence, int)
+            or isinstance(occurrence, bool)
+            or occurrence < 1
+            or occurrence > len(matches)
+        ):
+            return
+        else:
+            match_index = matches[occurrence - 1]
+        positions.append(math.floor(captions[match_index]["startMs"] * fps / 1000))
+
+    if not positions:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_TIMING: scene {scene.get('id')} has no measured visual changes."
+        )
+    points = [row["start_frame"], *sorted(set(positions)), row["start_frame"] + row["duration_frames"]]
+    max_gap_frames = max(
+        right - left
+        for left, right in zip(points, points[1:])
+    )
+    limit = MAX_VISUAL_GAP_SECONDS * fps
+    if max_gap_frames > limit:
+        raise PipelineError(
+            f"VISUAL_PROGRESSION_TIMING: scene {scene.get('id')} has a "
+            f"{max_gap_frames / fps:.2f}s gap without a meaningful visual change; "
+            f"max {MAX_VISUAL_GAP_SECONDS:.1f}s."
+        )
+
+
+def _design_token(root: Path) -> tuple[dict, str]:
+    import hashlib
+
+    path = root / "design.md"
+    try:
+        markdown = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read design.md: {exc}") from exc
+
+    fence = chr(96) * 3
+    match = re.search(
+        r"<!-- STYLE_TOKEN_BEGIN -->\s*"
+        + re.escape(fence)
+        + r"json\s*([\s\S]*?)\s*"
+        + re.escape(fence)
+        + r"\s*<!-- STYLE_TOKEN_END -->",
+        markdown,
+    )
+    if not match:
+        raise PipelineError("design.md is missing the marked STYLE_TOKEN JSON block.")
+    try:
+        token = json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        raise PipelineError(f"design.md STYLE_TOKEN JSON is invalid: {exc}") from exc
+
+    required = {
+        "id",
+        "version",
+        "palette_roles",
+        "character_construction",
+        "shape_language",
+        "caption_emphasis",
+        "safe_zone",
+        "motion_grammar",
+    }
+    if not isinstance(token, dict) or not required.issubset(token):
+        raise PipelineError("design.md STYLE_TOKEN is missing required v2 fields.")
+
+    canonical = json.dumps(token, ensure_ascii=False, separators=(",", ":"))
+    return token, hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _read_renderer_source(renderer_root: Path, relative: str) -> str:
+    path = renderer_root / relative
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(
+            f"PACKAGE_RENDERER_STALE: cannot read renderer/{relative}: {exc}"
+        ) from exc
+    if not text.strip():
+        raise PipelineError(
+            f"PACKAGE_RENDERER_STALE: renderer/{relative} is empty."
+        )
+    return text
+
+
+def _validate_renderer_source_contract(
+    renderer_root: Path,
+    *,
+    require_isolated_layout: bool = False,
+    require_overlay_layout: bool = False,
+) -> None:
+    """Reject placeholder/stale renderer trees before local runtime work."""
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    render_requirements = {
+        "render-props.json": r"render-props\.json",
+        "runtime props write": r"\bwriteFile\b",
+        "Remotion invocation": r"\bspawnSync\b",
+        "composition id": r"ZodiacVideo",
+        "MP4 output": r"zodiac-story\.mp4",
+    }
+    missing = [
+        label
+        for label, pattern in render_requirements.items()
+        if re.search(pattern, render_script) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/scripts/render.mjs is not the "
+            "canonical local renderer; missing " + ", ".join(missing) + "."
+        )
+
+    root_source = _read_renderer_source(renderer_root, "src/Root.tsx")
+    if (
+        "calculateMetadata" not in root_source
+        or "total_duration_frames" not in root_source
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/Root.tsx must derive "
+            "duration from runtime total_duration_frames via calculateMetadata."
+        )
+
+    composition = _read_renderer_source(
+        renderer_root,
+        "src/ZodiacComposition.tsx",
+    )
+    composition_requirements = {
+        "all production scenes": r"production\.scenes\.map",
+        "runtime scene timing": r"timing\.scenes",
+        "scene Sequence": r"\bSequence\b",
+        "local voice": r"voice\.wav",
+        "entity rendering": r"scene\.entities",
+        "event rendering": r"scene\.events",
+    }
+    missing = [
+        label
+        for label, pattern in composition_requirements.items()
+        if re.search(pattern, composition) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx is "
+            "a reduced/stale renderer; missing " + ", ".join(missing) + "."
+        )
+    if not all(
+        token in composition
+        for token in ('width: "fit-content"', "maxWidth", 'translateX(-50%)')
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+            "must use the compact caption box contract."
+        )
+    if require_isolated_layout and not all(
+        token in composition
+        for token in ("canonicalContentZone", "contentFrameStyle", 'overflow: "hidden"')
+    ):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+            "must implement the legacy isolated content frame contract."
+        )
+    if require_overlay_layout:
+        required_overlay = (
+            "captionOverlayTop",
+            "fullCanvasContentStyle",
+            'overflow: "visible"',
+        )
+        if not all(token in composition for token in required_overlay):
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: renderer/src/ZodiacComposition.tsx "
+                "must implement the full-canvas collision-aware caption overlay contract."
+            )
+        if "contentFrameStyle()" in composition:
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: canonical overlay packages must not clip "
+                "visuals into the legacy content frame."
+            )
+
+    types_source = _read_renderer_source(renderer_root, "src/types.ts")
+    if re.search(r"\bProduction\s*=\s*any\b", types_source):
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/types.ts uses Production = any."
+        )
+    for required_type in ("Production", "ProductionScene", "RuntimeTiming"):
+        if re.search(
+            rf"\b(?:export\s+)?type\s+{required_type}\b",
+            types_source,
+        ) is None:
+            raise PipelineError(
+                "PACKAGE_RENDERER_STALE: renderer/src/types.ts is missing "
+                f"{required_type}."
+            )
+
+    runtime_contract = _read_renderer_source(
+        renderer_root,
+        "src/runtime-contract.mjs",
+    )
+    if "resolveProductionEvents" not in runtime_contract:
+        raise PipelineError(
+            "PACKAGE_RENDERER_STALE: renderer/src/runtime-contract.mjs "
+            "cannot resolve production events."
+        )
+
+
+def _validate_publish_document(root: Path, production: dict) -> dict:
+    publish_dir = root / "publish"
+    copy_path = publish_dir / "publish-copy.txt"
+    json_path = publish_dir / "publish.json"
+    if not copy_path.is_file():
+        raise PipelineError("publish/publish-copy.txt is required.")
+    if not json_path.is_file():
+        raise PipelineError("publish/publish.json is required.")
+
+    try:
+        copy_text = copy_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise PipelineError(f"cannot read publish-copy.txt: {exc}") from exc
+
+    for heading in ("COVER IDENTITY:", "HOOK:", "TIKTOK CAPTION:", "HASHTAGS:"):
+        if heading not in copy_text:
+            raise PipelineError(
+                f"publish-copy.txt is missing required section {heading}"
+            )
+
+    publish = _load_json(json_path, "publish/publish.json")
+    cover = publish.get("cover")
+    identity = cover.get("identity") if isinstance(cover, dict) else None
+    if (
+        not isinstance(cover, dict)
+        or cover.get("layout") != "tilted_top_hook"
+        or not isinstance(identity, dict)
+        or not all(
+            isinstance(identity.get(key), str) and identity[key].strip()
+            for key in ("sign_id", "label", "glyph")
+        )
+        or not isinstance(cover.get("hook"), str)
+        or not cover["hook"].strip()
+    ):
+        raise PipelineError(
+            "COVER_IDENTITY_MISSING: publish cover needs sign_id, label, "
+            "glyph, hook, and layout=tilted_top_hook."
+        )
+
+    scene_id = cover.get("source_scene_id")
+    scene = next(
+        (
+            item
+            for item in production.get("scenes", [])
+            if item.get("id") == scene_id
+        ),
+        None,
+    )
+    if scene is None:
+        raise PipelineError(
+            f"publish cover source_scene_id does not resolve: {scene_id!r}."
+        )
+    entities = {
+        entity.get("id"): entity
+        for entity in scene.get("entities", [])
+        if isinstance(entity, dict)
+    }
+    visuals = cover.get("visuals")
+    if not isinstance(visuals, list) or not visuals:
+        raise PipelineError("publish cover must reuse at least one production visual.")
+    for visual in visuals:
+        if not isinstance(visual, dict):
+            raise PipelineError("publish cover visuals must be objects.")
+        entity_id = visual.get("entity_id")
+        state_id = visual.get("state_id")
+        entity = entities.get(entity_id)
+        if not isinstance(entity, dict) or state_id not in entity.get("states", {}):
+            raise PipelineError(
+                f"publish cover visual does not resolve: {entity_id}.{state_id}."
+            )
+
+    if not isinstance(publish.get("caption"), str) or not publish["caption"].strip():
+        raise PipelineError("publish.json caption must be non-empty.")
+    hashtags = publish.get("hashtags")
+    if (
+        not isinstance(hashtags, list)
+        or not hashtags
+        or not all(isinstance(tag, str) and tag.startswith("#") for tag in hashtags)
+    ):
+        raise PipelineError("publish.json hashtags must be a non-empty hashtag list.")
+
+    if identity["label"] not in copy_text or cover["hook"] not in copy_text:
+        raise PipelineError(
+            "publish-copy.txt must contain the selected cover identity and hook."
+        )
+    return publish
+
+
+def _validate_renderer_package_contract(
+    renderer_root: Path,
+    *,
+    expected_scripts: dict,
+    accepted_dependencies: tuple[dict, ...],
+    required_test: str,
+    require_isolated_layout: bool = False,
+    require_overlay_layout: bool = False,
+) -> None:
+    renderer = _load_json(renderer_root / "package.json", "renderer/package.json")
+    if renderer.get("name") != "zodiac-remotion-renderer":
+        raise PipelineError("renderer/package.json is not the Zodiac Remotion renderer scaffold.")
+    if renderer.get("dependencies") not in accepted_dependencies:
+        raise PipelineError("renderer dependencies do not match the pinned Zodiac renderer contract.")
+    dev_dependencies = renderer.get("devDependencies")
+    expected_dev = dict(EXPECTED_DEV_DEPENDENCIES)
+    if (
+        isinstance(dev_dependencies, dict)
+        and dev_dependencies.get("typescript") in SUPPORTED_TYPESCRIPT_VERSIONS
+    ):
+        expected_dev["typescript"] = dev_dependencies["typescript"]
+    if dev_dependencies != expected_dev:
+        raise PipelineError("renderer development dependencies do not match the Zodiac renderer contract.")
+    if renderer.get("scripts") != expected_scripts:
+        raise PipelineError("renderer scripts do not match the Zodiac renderer contract.")
+
+    required_renderer = (
+        "src/index.ts",
+        "src/Root.tsx",
+        "src/ZodiacComposition.tsx",
+        "src/PrimitiveSvg.tsx",
+        "src/types.ts",
+        "src/runtime-contract.mjs",
+        "scripts/render.mjs",
+        "scripts/generate-sfx.mjs",
+        "scripts/style-token.mjs",
+        "scripts/compile-style-token.mjs",
+        "schemas/production.schema.json",
+        required_test,
+    )
+    for required in required_renderer:
+        if not (renderer_root / required).is_file():
+            raise PipelineError(f"renderer source is incomplete: missing renderer/{required}.")
+    _validate_renderer_source_contract(
+        renderer_root,
+        require_isolated_layout=require_isolated_layout,
+        require_overlay_layout=require_overlay_layout,
+    )
+
+
+def _validate_publish_renderer_contract(renderer_root: Path) -> None:
+    """Require cover rendering only at final publish/renderer readiness."""
+    render_script = _read_renderer_source(renderer_root, "scripts/render.mjs")
+    render_requirements = {
+        "cover composition id": r"ZodiacCover",
+        "cover PNG output": r"cover\.png",
+        "publish copy output": r"publish-copy\.txt",
+        "publish metadata output": r"publish\.json",
+    }
+    missing = [
+        label
+        for label, pattern in render_requirements.items()
+        if re.search(pattern, render_script) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/scripts/render.mjs "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+    root_source = _read_renderer_source(renderer_root, "src/Root.tsx")
+    if "Still" not in root_source or "ZodiacCover" not in root_source:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/Root.tsx "
+            "must register the ZodiacCover Still."
+        )
+
+    cover_source = _read_renderer_source(renderer_root, "src/ZodiacCover.tsx")
+    cover_requirements = {
+        "tilted hook card": r"rotate\(-?\d+(?:\.\d+)?deg\)",
+        "cover identity": r"publish\.cover\.identity",
+        "cover hook": r"publish\.cover\.hook",
+        "scene reuse": r"production\.scenes\.find",
+        "state reuse": r"entity\.states",
+    }
+    missing = [
+        label
+        for label, pattern in cover_requirements.items()
+        if re.search(pattern, cover_source) is None
+    ]
+    if missing:
+        raise PipelineError(
+            "PACKAGE_PUBLISH_RENDERER_STALE: renderer/src/ZodiacCover.tsx "
+            "is missing " + ", ".join(missing) + "."
+        )
+
+
+def validate_package(package_root: Path) -> dict:
+    """Validate the creative package without requiring final publish metadata."""
+    root = Path(package_root).resolve()
+    return validate_production_document(
+        root,
+        _load_json(root / "production.json", "production.json"),
+    )
+
+
+def validate_publish_contract(package_root: Path) -> dict:
+    """Validate final publish metadata, cover identity, and cover renderer."""
+    root = Path(package_root).resolve()
+    production = validate_package(root)
+    publish = _validate_publish_document(root, production)
+    _validate_publish_renderer_contract(resolve_renderer_root(root, materialize=False))
+    return publish
+
+
+def _runtime_semver(runtime_ref: dict) -> tuple[int, int, int]:
+    raw = runtime_ref.get("version", "")
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", raw)
+    if not match:
+        raise PipelineError(f"PACKAGE_MANIFEST_INVALID: runtime version is not semver: {raw!r}")
+    return tuple(int(part) for part in match.groups())
+
+
+def _uses_semantic_runtime(package_manifest: dict | None) -> bool:
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 15, 0)
+    )
+
+
+def _uses_performance_runtime(package_manifest: dict | None) -> bool:
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 16, 0)
+    )
+
+
+def _uses_runtime_owned_animation_defaults(package_manifest: dict | None) -> bool:
+    """Runtime >=1.18 materializes omitted motion/performance fields after schema validation."""
+    if package_manifest is None:
+        return False
+    runtime_ref = package_manifest["runtime"]
+    return (
+        runtime_ref.get("id") == RUNTIME_ID
+        and _runtime_semver(runtime_ref) >= (1, 18, 0)
+    )
+
+
+_MECHANICAL_ACTION = re.compile(
+    r"(?:^|_)(open|close|fold|unfold|zip|unzip|unlock|lock|insert|remove|pick|place|hold|release|hand|turn_page|drawer|curtain|door|lid|flap|notify|notification|screen_change|lamp_on|lamp_off|light_on|light_off|wear|remove_mask)(?:_|$)",
+    re.IGNORECASE,
+)
+_STRONG_ARTICULATION_ACTION = re.compile(
+    r"(?:^|_)(open|close|fold|unfold|zip|unzip|insert|remove|pick|place|hold|release|turn_page|drawer|curtain|door|lid|flap|wear|remove_mask)(?:_|$)",
+    re.IGNORECASE,
+)
+_SEMANTIC_CLOSE_ACTION = r…33188 tokens truncated…ses(observer):
     """Expose the currently running child process to the Studio worker."""
     token = _PROCESS_OBSERVER.set(observer)
     try:
