@@ -10,6 +10,7 @@ import {resolveSemanticMotion} from "./semantic-motion.mjs";
 import type {
   RenderPlanPresentation,
   RenderPlanScene,
+  RenderPlanEntity,
   RendererV2Props,
 } from "./types";
 
@@ -60,7 +61,7 @@ const SceneLayer: React.FC<{
     ? resolveCaptionWordLines(caption, frame) : [];
   const activeFor = (entityId: string) => scene.events.find(item =>
     item.target === entityId && frame >= item.start_frame && frame < item.end_frame);
-  const stateFor = (entity: RenderPlanScene["entities"][number]) => {
+  const stateFor = (entity: RenderPlanEntity) => {
     const base = resolveEntityState(scene,entity,frame);
     const event = activeFor(entity.id);
     if (base?.visible === false && (event?.motion === "fade-in" || event?.motion === "pop-in")) {
