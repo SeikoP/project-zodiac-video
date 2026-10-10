@@ -36,6 +36,28 @@
           "additionalProperties": {
             "$ref": "#/$defs/state"
           }
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visual_role": {
+          "enum": [
+            "background",
+            "character",
+            "interactive_prop",
+            "foreground_environment",
+            "effect",
+            "caption",
+            "overlay"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer": {
+          "type": "integer"
         }
       }
     },
@@ -269,6 +291,27 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/spatial_binding"
+          }
+        },
+        "occlusion_relations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "front",
+              "back"
+            ],
+            "properties": {
+              "front": {
+                "type": "string",
+                "minLength": 1
+              },
+              "back": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
           }
         }
       }

@@ -355,6 +355,8 @@ def compile_render_plan(
                  )),
                 "events": outputs,
             }
+        if scene.get("occlusion_relations"):
+            plan_scene["occlusion_relations"] = deepcopy(scene["occlusion_relations"])
         if scene.get("spatial_bindings"):
             plan_scene["spatial_bindings"] = deepcopy(scene["spatial_bindings"])
         if scene.get("layout_contract"):

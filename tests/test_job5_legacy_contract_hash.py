@@ -46,9 +46,10 @@ def _validate_mocked_downstream(root: Path):
         return validate_job5_package_root(root)
 
 
-def test_legacy_fingerprint_is_recognized(tmp_path):
-    package = _minimal_package(tmp_path, LEGACY)
-    assert _validate_mocked_downstream(package)["manifest"]["contract"]["sha256"] == LEGACY
+@pytest.mark.parametrize("digest", [LEGACY, "787bd1c4addd6cf3ec187b4019b5c988555df870563f75989d0ef6b5dfd52f21"])
+def test_legacy_fingerprint_is_recognized(tmp_path, digest):
+    package = _minimal_package(tmp_path, digest)
+    assert _validate_mocked_downstream(package)["manifest"]["contract"]["sha256"] == digest
 
 
 def test_unknown_fingerprint_is_rejected(tmp_path):
