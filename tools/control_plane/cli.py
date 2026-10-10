@@ -10,6 +10,7 @@ from .authoring import load_authoring_ir
 from .errors import ControlPlaneError
 from .render_plan import target_overlap_count, validate_render_plan
 from .timeline import compile_render_plan
+from .lineage_audit import inspect_lineage
 
 
 def _read_json(path: Path, *, code: str) -> dict:
@@ -47,6 +48,10 @@ def build_package(package_root: Path, output: Path | None = None) -> Path:
     print("PLAN_COMPILED")
     validate_render_plan(plan, ir)
     print("PLAN_VALID")
+    lineage = inspect_lineage(ir, plan)
+    if lineage["status"] != "PASS":
+        raise ControlPlaneError(code="PLAN_LINEAGE_DRIFT", stage="PLAN", message="authored event/asset lineage was lost during plan compilation", detail={"issues": lineage["issues"]})
+    print(f"LINEAGE_VERIFIED_EVENTS={lineage['events']}")
     print(f"TARGET_OVERLAP_COUNT={target_overlap_count(plan)}")
 
     destination = Path(output).resolve() if output is not None else root / ".runtime" / "render-plan.json"
