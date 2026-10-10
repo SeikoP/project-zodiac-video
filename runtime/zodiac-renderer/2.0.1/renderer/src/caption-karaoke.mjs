@@ -1,4 +1,5 @@
-export const CAPTION_STROKE_PX = 2;
+export const CAPTION_STROKE_PX = 1.5;
+export const CAPTION_STROKE_COLOR = '#FFFDF9'; // V4 sticker_edge: warm paper halo, not black ink
 export const CAPTION_BOUNCE_PX = 2;
 
 export function validateCaptionWords(caption) {

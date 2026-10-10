@@ -1,6 +1,6 @@
 import {resolveVisualRole, resolveLayerOrder} from './visual-role.mjs';
 import {resolveCaptionZone} from './caption-layout.mjs';
-import {CAPTION_STROKE_PX, resolveCaptionWordLines} from './caption-karaoke.mjs';
+import {CAPTION_STROKE_PX, CAPTION_STROKE_COLOR, resolveCaptionWordLines} from './caption-karaoke.mjs';
 import {resolveEntityState} from './spatial-layout.mjs';
 import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
@@ -119,7 +119,8 @@ const SceneLayer: React.FC<{
             fontSize: presentation.caption?.font_size_px ?? 84,
             fontWeight: presentation.caption?.font_weight ?? 400,
             color: presentation.caption?.color ?? presentation.ink ?? "#111111",
-            WebkitTextStroke: `${CAPTION_STROKE_PX}px #000000`,
+            WebkitTextStroke: `${CAPTION_STROKE_PX}px ${CAPTION_STROKE_COLOR}`,
+            textShadow: "0px 2px 3px rgba(47, 60, 68, 0.18)",
             paintOrder: "stroke fill",
             textAlign: "center",
             zIndex: 90,

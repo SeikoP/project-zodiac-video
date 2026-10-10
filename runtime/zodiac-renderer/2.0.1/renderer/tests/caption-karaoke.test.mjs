@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveCaptionWordLines, validateCaptionWords} from '../src/caption-karaoke.mjs';
+import {CAPTION_STROKE_PX, CAPTION_STROKE_COLOR, resolveCaptionWordLines, validateCaptionWords} from '../src/caption-karaoke.mjs';
 import {resolveCaptionLayout} from '../src/caption-layout.mjs';
 
 const caption = () => ({text:'Bọ Cạp, xin chào!',start_frame:10,end_frame:30,
@@ -34,4 +34,10 @@ test('layout reserves room for stroke and bounce even with zero authored padding
   assert.equal(layout.zone.padding,4);
   assert.ok(layout.y-4>=layout.zone.y);
   assert.ok(layout.y+layout.height+2<=layout.zone.y+layout.zone.height);
+});
+
+
+test('caption halo follows V4 token and avoids thick black outlines',()=>{
+  assert.equal(CAPTION_STROKE_COLOR,'#FFFDF9');
+  assert.ok(CAPTION_STROKE_PX>0 && CAPTION_STROKE_PX<=1.5);
 });
