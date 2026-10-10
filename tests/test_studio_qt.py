@@ -92,7 +92,7 @@ class TaskWorkbenchTests(unittest.TestCase):
 
         screen = HomeScreen(recent_jobs=[])
 
-        self.assertEqual(screen.import_button.text(), "Nhập gói video")
+        self.assertEqual(screen.import_button.text(), "Chọn ZIP từ máy…")
         self.assertEqual(screen.recent_list.count(), 0)
         self.assertTrue(screen.recent_frame.isHidden())
         self.assertFalse(screen.empty_state.isHidden())

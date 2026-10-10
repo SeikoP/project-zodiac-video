@@ -87,7 +87,7 @@ class StudioV2TimingTests(unittest.TestCase):
                 return primary if name == "small" else medium
             def align(model, *args):
                 if model is primary:
-                    raise AlignmentMismatchError("primary mismatch")
+                    raise AlignmentMismatchError("primary mismatch", expected="xin chao", heard="", coverage_gap=1.0)
                 return [{"word": "xin", "start": 0.0, "end": 0.05}]
             with patch("tools.studio_v2.timing.scene_voice_files", return_value=paths), \
                  patch("tools.studio_v2.timing.require_word_aligner_installed"), \

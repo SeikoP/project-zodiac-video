@@ -31,7 +31,7 @@ test('invalid, overlapping or mismatched timing fails validation',()=>{
 test('layout reserves room for stroke and bounce even with zero authored padding',()=>{
   const layout=resolveCaptionLayout({id:'test'}, {caption:{padding_px:0,
     safe_zone:{x:0,y:0,width:200,height:120}}},{width:200,height:120},'Bọ',()=>80);
-  assert.equal(layout.zone.padding,4);
+  assert.equal(layout.zone.padding,CAPTION_STROKE_PX+2);
   assert.ok(layout.y-4>=layout.zone.y);
   assert.ok(layout.y+layout.height+2<=layout.zone.y+layout.zone.height);
 });
