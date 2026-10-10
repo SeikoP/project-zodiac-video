@@ -6,6 +6,8 @@ import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import {resolveSemanticMotion} from "./semantic-motion.mjs";
+import {resolveCoverOpening, coverOpeningOpacity} from './cover-opening.mjs';
+import {ZodiacCover} from './ZodiacCover';
 
 import type {
   RenderPlanPresentation,
@@ -179,8 +181,13 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
   assets,
   presentation = {},
   video,
+  publish,
+  fps,
 }) => {
   useVerifiedCaptionFont(presentation);
+  const frame=useCurrentFrame();
+  const opening=resolveCoverOpening(publish,fps,scenes);
+  const openingOpacity=coverOpeningOpacity(opening,frame);
   return (
   <AbsoluteFill style={{backgroundColor: presentation.paper ?? "#ffffff"}}>
     {scenes.map((scene) => (
@@ -192,6 +199,10 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
         <SceneLayer scene={scene} assets={assets} presentation={presentation} video={video} />
       </Sequence>
     ))}
+    {openingOpacity>0 ? <AbsoluteFill data-cover-opening="active" style={{zIndex:80,opacity:openingOpacity,pointerEvents:'none'}}>
+      <ZodiacCover scenes={scenes} assets={assets} presentation={presentation} video={video}
+        publish={publish} fps={fps} contract="zodiac-render-plan@1" hideWatermark />
+    </AbsoluteFill> : null}
     <Watermark presentation={presentation} />
   </AbsoluteFill>
   );

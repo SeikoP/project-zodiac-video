@@ -6,7 +6,7 @@ import {useVerifiedCaptionFont} from "./ZodiacRenderPlan";
 
 // Local-runner rendering is the only authority for final cover pixels.
 // Legacy publish payloads are intentionally compatible with the old composition.
-export const ZodiacCover: React.FC<RendererV2Props> = ({scenes, assets, presentation = {}, publish}) => {
+export const ZodiacCover: React.FC<RendererV2Props & {hideWatermark?:boolean}> = ({scenes, assets, presentation = {}, publish, hideWatermark=false}) => {
   useVerifiedCaptionFont(presentation);
   const cover = publish?.cover;
   if (!cover) throw new Error("COVER_METADATA_MISSING: publish.cover");
@@ -102,9 +102,9 @@ export const ZodiacCover: React.FC<RendererV2Props> = ({scenes, assets, presenta
               zIndex:order,objectFit:"contain",opacity:fadedBackground?0.40:1}}/>;
         })}
       </div>
-      <div style={{position:"absolute",left:82,top:1550,fontSize:35,opacity:.5}}>
+      {!hideWatermark && <div style={{position:"absolute",left:82,top:1550,fontSize:35,opacity:.5}}>
         ✦ bungmoto
-      </div>
+      </div>}
     </AbsoluteFill>
   );
 };

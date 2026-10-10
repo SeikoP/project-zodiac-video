@@ -1,4 +1,5 @@
 import {resolveVisualRole} from '../src/visual-role.mjs';
+import {resolveCoverOpening} from '../src/cover-opening.mjs';
 import {resolveCaptionZone} from '../src/caption-layout.mjs';
 import {validateCaptionWords} from '../src/caption-karaoke.mjs';
 import {auditSpatialLayout} from '../src/spatial-layout.mjs';
@@ -244,6 +245,7 @@ export const prepareRendererProps = async (packageRoot) => {
     throw new Error("PUBLISH_METADATA_INVALID");
   }
   if (publish?.cover) {
+    resolveCoverOpening(publish, plan.fps, plan.scenes);
     const source = plan.scenes.find(s => s.id === publish.cover.source_scene_id);
     if (!source) throw new Error(`COVER_SOURCE_SCENE_MISSING ${publish.cover.source_scene_id}`);
     if (!Array.isArray(publish.cover.visuals) || !publish.cover.visuals.length) throw new Error("COVER_VISUALS_MISSING");

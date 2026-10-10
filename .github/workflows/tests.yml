@@ -371,6 +371,15 @@ jobs:
         run: npm test
       - name: Typecheck renderer 2.0.1
         run: npm run typecheck
+      - name: Render actual cover opening, dissolve and story frames
+        run: node scripts/smoke-cover-opening.mjs
+      - name: Upload cover opening review frames
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cover-opening-review-frames
+          path: /tmp/cover-opening-smoke-*/*.png
+          if-no-files-found: warn
 
   renderer-v2-frame-progress-smoke:
     runs-on: ubuntu-latest
