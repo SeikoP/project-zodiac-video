@@ -944,13 +944,17 @@ def _validate_publish_document(root: Path, production: dict) -> dict:
         or not isinstance(identity, dict)
         or not all(
             isinstance(identity.get(key), str) and identity[key].strip()
-            for key in ("sign_id", "label", "glyph")
+            for key in ("label", "glyph")
+        )
+        or not (
+            (isinstance(identity.get("sign_id"), str) and identity["sign_id"].strip() and "episode_id" not in identity)
+            or (isinstance(identity.get("episode_id"), str) and identity["episode_id"].strip() and "sign_id" not in identity)
         )
         or not isinstance(cover.get("hook"), str)
         or not cover["hook"].strip()
     ):
         raise PipelineError(
-            "COVER_IDENTITY_MISSING: publish cover needs sign_id, label, "
+            "COVER_IDENTITY_MISSING: publish cover needs sign_id or episode_id, label, "
             "glyph, hook, and layout=tilted_top_hook."
         )
 
