@@ -20,6 +20,7 @@ export function validateCaptionWords(caption) {
 
 export function resolveCaptionWordLines(caption, frame) {
   validateCaptionWords(caption);
+  if (!caption.resolved_layout) throw new Error('CAPTION_LAYOUT_MISSING');
   let index = 0;
   return caption.resolved_layout.lines.map(line =>
     line.split(/([\p{L}\p{N}_]+)/u).map(text => {
