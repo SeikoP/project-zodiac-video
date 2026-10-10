@@ -94,7 +94,9 @@ def inspect(workspace: Path, video: Path, cover: Path) -> dict:
             visual = [stream for stream in streams if stream.get("codec_type") == "video"]
             if not visual: errors.append("FINAL_VIDEO_TRACK_MISSING")
             if not audio: errors.append("FINAL_AUDIO_TRACK_MISSING")
-            audio_seconds = float(audio[0].get("duration") or video_seconds) if audio else 0.0
+            if audio and audio[0].get("duration") is None:
+                errors.append("FINAL_AUDIO_DURATION_UNAVAILABLE")
+            audio_seconds = float(audio[0].get("duration") or 0) if audio else 0.0
             timing_path = workspace / ".runtime/timing.json"
             fps = 24
             if timing_path.is_file():
