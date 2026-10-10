@@ -9,7 +9,7 @@ test("authored x/y stay the baseline; animation is a temporary CSS transform",as
  const src=await source();assert.match(src,/left: transform\.x \?\? 0/);assert.match(src,/top: transform\.y \?\? 0/);assert.match(src,/resolveSemanticMotion\(active,scene,entity,frame\)/);assert.doesNotMatch(src,/idleY|idleScale/);
 });
 test("only explicitly targeted entities animate; no inherited generic jiggle",async()=>{
- const src=await source();assert.match(src,/item\.target===entity\.id/);
+ const src=await source();assert.match(src,/item\.target\s*===\s*entityId/);
  assert.equal(resolveSemanticMotion(undefined,scene,actor,15).scale,1);
  assert.equal(resolveSemanticMotion(undefined,scene,actor,15).rotateDeg,0);
 });

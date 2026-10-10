@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {resolveSemanticMotion} from '../src/semantic-motion.mjs';
+import {resolveDisplayedEntityState} from '../src/spatial-layout.mjs';
 import {resolvePreviewEventPairs,findPreviewClipPair} from '../scripts/preview.mjs';
 const pen={id:'pen',initial_state:'visible',states:{visible:{transform:{x:620,y:745,width:220,height:115}}}};
 const notebook={id:'notebook',initial_state:'visible',states:{visible:{transform:{x:280,y:356,width:520,height:488}}}};
@@ -36,4 +37,29 @@ test('state slide is selected for a Remotion animation clip even when not motion
  assert.equal(pair.motion_only,false);
  assert.equal(pair.second_role,'after');
  assert.equal(findPreviewClipPair({event_pairs:[{...pair,scene_id:'S05'}]},{scenes:[s05]}).event_id,'S05_friend_leaves');
+});
+
+
+test('fade-in/pop-in animate hidden-to-visible objects without duplicating SVG actors',()=>{
+ const object={id:'thought',initial_state:'hidden',states:{hidden:{asset:'a',visible:false},shown:{asset:'b',visible:true}}};
+ const action={event_id:'enter',target:'thought',state_before:'hidden',state_after:'shown',motion:'fade-in',start_frame:10,end_frame:21};
+ const sc={id:'s',entities:[object],events:[action]};
+ assert.equal(resolveDisplayedEntityState(sc,object,9).visible,false);
+ assert.equal(resolveDisplayedEntityState(sc,object,10).asset,'b');
+ assert.equal(resolveSemanticMotion(action,sc,object,10).opacity,0);
+ assert.ok(resolveSemanticMotion(action,sc,object,15).opacity>0.49);
+ assert.equal(resolveSemanticMotion(action,sc,object,20).opacity,1);
+ assert.equal(resolveDisplayedEntityState(sc,object,21).asset,'b');
+ const pop={...action,motion:'pop-in'};
+ assert.equal(resolveSemanticMotion(pop,sc,object,10).scale,0.82);
+ assert.equal(resolveSemanticMotion(pop,sc,object,20).scale,1);
+});
+test('fade-out fades to transparent before state changes to hidden',()=>{
+ const obj={id:'effect',initial_state:'on',states:{on:{asset:'a',visible:true},off:{asset:'a',visible:false}}};
+ const action={event_id:'exit',target:'effect',state_before:'on',state_after:'off',motion:'fade-out',start_frame:10,end_frame:21};
+ const sc={id:'s',entities:[obj],events:[action]};
+ assert.equal(resolveDisplayedEntityState(sc,obj,15).visible,true);
+ assert.ok(resolveSemanticMotion(action,sc,obj,15).opacity<0.51);
+ assert.equal(resolveSemanticMotion(action,sc,obj,20).opacity,0);
+ assert.equal(resolveDisplayedEntityState(sc,obj,21).visible,false);
 });

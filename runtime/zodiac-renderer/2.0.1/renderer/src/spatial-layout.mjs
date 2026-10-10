@@ -10,6 +10,13 @@ export function resolveEntityState(scene,entity,frame) {
   const state=entity.states[stateId] ?? entity.states[entity.initial_state];
   return state ? {...state,layer:state.layer ?? layer}:state;
 }
+export function resolveDisplayedEntityState(scene,entity,frame) {
+  const original=resolveEntityState(scene,entity,frame);
+  const event=scene.events.find(e=>e.target===entity.id&&frame>=e.start_frame&&frame<e.end_frame);
+  if(original?.visible===false && ['fade-in','pop-in'].includes(event?.motion))
+    return entity.states[event.state_after] ?? original;
+  return original;
+}
 export function entityBounds(scene,entity,state,frame,asset={}) {
   const t=state.transform ?? {}, w=t.width ?? 520,h=t.height ?? 520;
   if(![t.x??0,t.y??0,w,h,t.scale??1,t.rotation??0].every(Number.isFinite) || w<=0 || h<=0 || (t.scale??1)<=0)
@@ -35,7 +42,7 @@ export function auditSpatialLayout(plan) {
       entityBounds({...scene,events:[]},entity,state,scene.start_frame,plan.assets[state.asset]);
     }
     for(let frame=scene.start_frame;frame<scene.start_frame+scene.duration_frames;frame++) {
-      const states=Object.fromEntries((scene.entities ?? []).map(e=>[e.id,resolveEntityState(scene,e,frame)]));
+      const states=Object.fromEntries((scene.entities ?? []).map(e=>[e.id,resolveDisplayedEntityState(scene,e,frame)]));
       const ordered=resolveLayerOrder(scene,plan.assets,states);
       const visible=ordered.filter(e=>states[e.id]?.visible!==false).map((entity,index)=>{
         const state=states[entity.id],role=resolveVisualRole(entity,plan.assets),asset=plan.assets[state.asset];
