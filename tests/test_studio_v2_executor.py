@@ -128,6 +128,18 @@ class StageCounters:
 
 
 class StudioV2ExecutorTests(unittest.TestCase):
+    def test_plan_running_is_saved_without_invalidating_done_cache(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            controller, executor = self._executor(root, StageCounters())
+            controller.import_package(make_source(root))
+            executor._begin_step(PLAN, None)
+            self.assertEqual(load_state(controller.workspace).steps[PLAN].status, "RUNNING")
+            controller.state.mark_done(PLAN, input_hash="same", output_hash="output", reused=True, cache_reason="CACHE")
+            executor._begin_step(PLAN, None)
+            self.assertEqual(controller.state.steps[PLAN].status, DONE)
+            self.assertEqual(controller.state.steps[PLAN].output_hash, "output")
+
     def test_stage_hashes_are_not_recomputed_after_graph_validation(self):
         from tools.studio_v2.executor import _sha256_file
         with tempfile.TemporaryDirectory() as temp:

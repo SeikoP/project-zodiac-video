@@ -805,6 +805,8 @@ class ZodiacQtApp(QMainWindow):
                     detail = json.dumps(exc.to_dict(), ensure_ascii=False, indent=2)
                     self.workbench.append_activity(detail, channel="diagnostic", stage=step)
                 self.workbench.append_activity(str(exc), channel="error", stage=step)
+                self.selected_stage = step or self.selected_stage
+                self._refresh_workbench()
                 QMessageBox.critical(self, "Quy trình chưa hoàn tất", str(exc))
             self._refresh_workbench()
             if name == "run_done":
