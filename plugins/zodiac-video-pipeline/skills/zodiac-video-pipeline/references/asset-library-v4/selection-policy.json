@@ -562,5 +562,26 @@
     "sparkle-burst",
     "tear-trails",
     "offer-impact"
-  ]
+  ],
+  "fresh_defaults": {
+    "environment_mode": "archive_frame",
+    "automatic_environment_entities": false,
+    "automatic_accessories": false,
+    "preferred_hair_ids": [
+      "antenna-short",
+      "asym-bang",
+      "blocky-cut",
+      "lopsided-bob",
+      "spiky-overthink"
+    ],
+    "compatibility_hair_ids": [
+      "soft-wave",
+      "side-part",
+      "clean-bun",
+      "high-ponytail",
+      "twin-tail"
+    ],
+    "state_budget": "authored_actions",
+    "physical_deletion": "none; dependency-safe compatibility retained"
+  }
 }

@@ -11,3 +11,5 @@ The gate has no side effects; it prints hashes for review and must run again whe
 
 ## Phase02 evidence reconciliation (v2.4.22)
 After native steps and manifest recording, run `node orchestration/phase02-evidence-audit.mjs --workspace <workspace>` BEFORE `seal-phase02-review.mjs`. The read-only audit reports missing manifest steps, capability receipts, operations, outputs, gate results, version-drifted native checkpoints and genuine Visual Review approval. An `EVIDENCE_READY_FOR_STRICT_VALIDATOR` result is only a precondition: independently run `validate-pipeline-state.mjs` and existing seal/lock checks; never turn audit readiness into PASS or manufacture evidence. If files or approvals are missing, perform real manifest steps and record actual outputs, not placeholders. This makes H32 defects observable but does not claim autonomous receipt generation.
+
+Read the emitted handoff_context at every Phase1 → Phase2 entry. It carries the contract so a smaller model need not reconstruct it from repository docs. Its hashes must be recomputed after edits; it cannot approve anything.

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {assertPremiseSelection,assertViralDecision} from '../orchestration/creative-policy.mjs';
 import {access,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {validateBeatPerformance} from './narration-rhythm.mjs';
@@ -36,7 +37,7 @@ try{const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-st
 if(requireQuality){
  const candidates=await readJson('concept-candidates.json');
  if(candidates.format!=='zodiac-concept-competition@1')fail('invalid concept-candidates format');
- if(!Array.isArray(candidates.candidates)||candidates.candidates.length!==3)fail('concept competition requires exactly 3 candidates');
+ assertPremiseSelection(candidates);
  const ids=new Set(),premises=new Set();
  for(const c of candidates.candidates){
   const id=nonEmptyString(c?.id,'candidate id');if(ids.has(id))fail('duplicate concept id '+id);ids.add(id);
@@ -48,7 +49,7 @@ if(requireQuality){
  if(!ids.has(winner))fail('selected candidate does not exist');
  nonEmptyString(candidates.selection_rationale,'concept selection_rationale');
  if(plan.selected_concept_id!==winner)fail('plan.selected_concept_id does not match selected candidate');
- if(!Array.isArray(candidates.rejected_or_reserved_ids)||candidates.rejected_or_reserved_ids.length!==2||candidates.rejected_or_reserved_ids.some(x=>!ids.has(x)||x===winner)||new Set(candidates.rejected_or_reserved_ids).size!==2)fail('two distinct candidates must be rejected or reserved');
+ if(!Array.isArray(candidates.rejected_or_reserved_ids)||candidates.rejected_or_reserved_ids.length!==candidates.candidates.length-1||candidates.rejected_or_reserved_ids.some(x=>!ids.has(x)||x===winner)||new Set(candidates.rejected_or_reserved_ids).size!==candidates.candidates.length-1)fail('two distinct candidates must be rejected or reserved');
  const evidenceIds=collectEvidenceIds(ledger);
  for(const c of candidates.candidates)for(const e of c.evidence_refs)if(!evidenceIds.has(e))fail('candidate evidence reference not resolvable: '+e);
 }
@@ -57,7 +58,7 @@ if(requireQuality){
 if(plan.version==='2.1')assertEpisodeConcept(await episodeConceptInput(root));
 if(requireBrief||plan.version==='2.1'){await compileWriterBriefWorkspace(root);validatePluginUse(await readJson('plugin-use-decisions.json'));if(!['editorial_local','plugin_guidance'].includes(viral.origin))fail('viral origin required');if(viral.origin==='plugin_guidance'&&(!viral.skill_read_ref?.trim()||!viral.guidance_uri?.trim()))fail('actual viral guidance read required');}
 if(viral.version!=='1.0')fail('viral-analysis.version must be 1.0');
-if(!Array.isArray(viral.mechanics)||!viral.mechanics.length)fail('viral-analysis.mechanics must be non-empty');
+assertViralDecision(viral);
 const writerEffects=new Map(),viralIds=new Set();
 for(const [i,m] of viral.mechanics.entries()){
   if(!m||typeof m!=='object'||Array.isArray(m))fail(`viral mechanic ${i+1} must be an object`);
@@ -70,7 +71,7 @@ if(!Array.isArray(viral.rejected_moves))fail('viral-analysis.rejected_moves must
 for(const key of [...(plan.version==='2.1'?[]:['sign']),'topic','thesis','identity_tension','progression_intent','payoff_target'])nonEmptyString(brief[key],`writer brief ${key}`);
 if(!Array.isArray(brief.evidence_safe_behaviors)||!brief.evidence_safe_behaviors.length||brief.evidence_safe_behaviors.some(x=>typeof x!=='string'||!x.trim()))fail('writer brief evidence_safe_behaviors must contain at least one non-empty item');
 if(!Array.isArray(brief.forbidden_claims))fail('writer brief forbidden_claims must be an array');
-if(!Array.isArray(brief.viral_mechanics)||brief.viral_mechanics.length<1||brief.viral_mechanics.length>3)fail('writer brief viral_mechanics must contain 1..3 items');
+if(!Array.isArray(brief.viral_mechanics)||brief.viral_mechanics.length>3)fail('writer brief viral_mechanics must contain at most 3 selected items; omission is explicit upstream');
 for(const item of brief.viral_mechanics){const sourceId=typeof item==='object'&&item?item.source_id:null;const instruction=typeof item==='object'&&item?item.instruction:item;if(sourceId){if(!writerEffects.has(sourceId))fail('writer brief viral mechanic source_id does not resolve: '+sourceId);if(!same(writerEffects.get(sourceId),instruction))fail('writer brief viral mechanic instruction drifted from '+sourceId);}else if(![...writerEffects.values()].some(x=>same(x,instruction)))fail('writer brief viral mechanic does not originate exactly in viral-analysis: '+instruction);}
 
 const forbidden=['beats','devices','full_research','asset_rules','renderer_rules','runtime_rules','package_rules','full_qc','raw_srt','raw_reference'];

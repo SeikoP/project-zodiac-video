@@ -1,4 +1,5 @@
 // Presentation only: never prepend time or reschedule narration/events.
+export const coverCaptionVisible = (opening, frame) => !opening || frame >= opening.duration_frames;
 export const resolveCoverOpening = (publish, fps, scenes) => {
   const o=publish?.cover?.opening;
   if(o===undefined)return null;

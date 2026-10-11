@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {compileCharacterSvg} from '../compile-character-assembly.mjs';
+const identity={entity_id:'taurus',body_profile:'lean_tall',hair_id:'antenna-short',face_profile_id:'balanced',outfit_id:'taurus-basic-clean',shirt_color_id:'teal',accessory_id:'none',variant_seed:'taurus-kimnguu-r3'};
+test('lean tall sitting feet and their outline remain inside authored viewport',()=>{const r=compileCharacterSvg(identity,{pose_id:'rest_sitting',expression_id:'relieved'});const b=r.svg.match(/viewBox="([^"]+)"/)[1].split(' ').map(Number);assert.ok(b[3]>=788);assert.deepEqual(r.sockets.seat,[267.5,662.5]);});

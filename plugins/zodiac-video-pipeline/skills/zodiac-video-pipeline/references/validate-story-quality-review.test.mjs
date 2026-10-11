@@ -18,3 +18,5 @@ test('grounded independent editorial artifact can pass structural integrity',asy
 test('stale narration fingerprint is rejected',async()=>{const q=await verify(x=>x.source.narration_sha256='0'.repeat(64));assert.notEqual(q.status,0);assert.match(q.stderr,/fingerprints/);});
 test('unresolved critique blocks content review',async()=>{const q=await verify(x=>{x.criteria.sign_irreplaceability.result='REVIEW';});assert.notEqual(q.status,0);assert.match(q.stderr,/unresolved editorial objections/);});
 test('copy-pasted generic objections are rejected',async()=>{const q=await verify(x=>{for(const k of keys)x.criteria[k].objection='Nội dung có vẻ hay nhưng chưa chắc vì thiếu yếu tố khó đoán rõ ràng.';});assert.notEqual(q.status,0);assert.match(q.stderr,/recycled generic/);});
+
+test('PASS assessment does not require invented objections',async()=>{const q=await verify(x=>{for(const k of keys)x.criteria[k].objection='';});assert.equal(q.status,0,q.stderr);});

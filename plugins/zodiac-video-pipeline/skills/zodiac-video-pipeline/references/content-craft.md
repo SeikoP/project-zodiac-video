@@ -40,11 +40,11 @@ With no reference, still emit `reference_present:false` with empty mechanics/map
 
 New Zodiac uses only `character_deconstruction` as Story Shape; `hybrid_deconstruction` and `micro_story` are forbidden as shapes. Mini-scenes remain illustration devices. Delivery is `direct` or `conversational`.
 
-Character deconstruction unfolds distinct facets around one evidence-bounded identity tension. Hybrid deconstruction uses compact examples without repeating the same trait. Micro story is for scene-led material where interactions genuinely change the situation.
+Character deconstruction unfolds a source-bounded identity lens. Mini-scenes illustrate the lens; their length and order follow the premise. Historical hybrid/micro templates are not current selectable shapes.
 
 ## Story Spine
 
-Every `narrative-plan.json` contains `identity_tension`, `starting_read`, `progression_intent`, and `payoff_target`. Every beat has a real `semantic_delta`; a synonym/restatement is not a delta.
+Every `narrative-plan.json` contains `identity_tension`, `starting_read`, `progression_intent`, and `payoff_target`. Every beat describes its real semantic_delta, including an intentional bridge, comic hold or delivery landing. Review the whole piece for progression; do not force a new trait into every beat.
 
 Each beat is `SOURCE-SUPPORTED`, `EDITORIAL EXAGGERATION`, or `FICTIONAL MICRO-EXAMPLE` and maps to evidence refs. Editorial/fictional treatment may intensify presentation but cannot invent motive, cause, consequence, frequency, outcome, or psychological explanation.
 
@@ -52,7 +52,7 @@ Create intensity through identity framing, contrast, diction, rhythm, recognitio
 
 ## Writer context
 
-Compile only creative essentials into `phase3-writer-brief.json`: story shape/delivery, Story Spine direction, evidence-safe behaviors, 1–3 Viral writer effects, compact reference mechanics, audience/narrator vibe and forbidden claims.
+Compile only creative essentials into `phase3-writer-brief.json`: story shape/delivery, Story Spine direction, evidence-safe behaviors, selected Viral writer effects (possibly empty with an explicit omission decision), compact reference mechanics, audience/narrator vibe and forbidden claims.
 
 Prefer lineage-bearing entries:
 
@@ -66,4 +66,5 @@ Planner logic stays invisible in spoken narration. Write natural Vietnamese for 
 
 
 ## Creative ordering lock (v2.4.15)
-The Story Spine starts from sign-specific `identity_mechanism` and `misread_vs_reframe`, not a generic situation. The beat sequence must deliver three different facets of that mechanism; if the cast or setting takes control, return to the sign lens. Viral and visual object mechanics follow (never decide) the theme. See `zodiac-identity-first.md`.
+The Story Spine preserves identity_mechanism and misread_vs_reframe as recognition context; it does not force a misreading or twist. The beat sequence uses meaningful facets without a count quota; if the cast or setting takes control, return to the sign lens. Viral and visual object mechanics follow (never decide) the theme. See `zodiac-identity-first.md`.
+A Viral omission writes mechanics: [] and decision: {mode: "omitted", reason: "<actual editorial reason>"}. Do not invent a mechanic to fill an artifact.

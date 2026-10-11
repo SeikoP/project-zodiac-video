@@ -217,4 +217,18 @@ Nếu một nhiệm vụ đã PASS regression trên upstream mới, giữ chứn
 
 ## Tự review kế hoạch
 
+## Kế hoạch kế tiếp đã bổ sung
+
+Ngày 11/10/2026: người dùng làm rõ cần tinh giản thành phần không cần thiết trong kho, và tóc phải trở về hướng ngố/meme ban đầu. Xem [Kế hoạch tinh giản thành phần và tóc](2026-10-11-asset-pruning-next.md). Tách việc rút background tự thêm, biến thể trùng, trang trí và prop không có vai trò khỏi các sửa contact/viewport/runtime. Chưa sửa plugin ở bước bổ sung kế hoạch này.
+
 Phủ đủ A01–A33; không bỏ nguyên nhân hoặc thực hiện lại hướng đã hủy. Interfaces T3→T4→T5 và T2→T10 nhất quán. Ownership rõ giữa intent/projections/receipts. Tests nhằm regression và contract, không chỉ mirror body implementation. Giữ asset/authoring, orchestration, content là ba nhóm có thể nghiệm thu riêng nhưng một release cuối. Trạng thái thực thi 2026-10-11 xem docs/zodiac-simplification-acceptance.md. Checklist giữ mở các dòng có phần nghiệm thu chưa hoàn tất; không lấy producer/static PASS thay creative/audio PASS.
+
+## Cập nhật thực thi — release 2.4.54
+
+Đã triển khai: candidate/facet thích ứng; giữ creative_direction; PASS không cần bịa objection; identity xuất hiện trong lời kể, opening 40 từ là diagnostic. Asset chọn theo hành động thực, mặc định tóc ngố/meme, không tự thêm environment/accessory; không xóa master tương thích. Sửa viewport rest_sitting, socket ghế, actor_state_slide preview và compiler đường dẫn tương đối chạy trong staging để không ghi vào nguồn. Cover .75s/.2s và captions chờ cover release; timeline voice giữ nguyên.
+
+Bổ sung theo phản hồi cuối: Phase01→02 có handoff_context gồm authority, hash, scope/Spine, creative direction, review refs và next action. GitHub SeikoP/project-zodiac-video là transport version-pinned; repository prose không thay plugin đang dùng hoặc quyết định tập. Repo giữ implementation + contract/schema/catalog/assets/tests/provenance; không chỉ mã chạy.
+
+Review bản Leo v2.4.53: unsupported accent_only/optional_callback/attached; Story Object thiếu friction/payoff relation; preview hash cũ; density S02/S05 chưa hợp lệ; state Phase1 READY/Phase2 LOCKED/review receipts rỗng. Giữ nguyên ZIP được gửi. Không suy approval từ tên gói hay version, không thêm beat vô nghĩa để đủ quota. Rà source plugin các file core đã chạm không thấy thay đổi logic chuyển phase ở 2.4.53; kết luận giới hạn trong phạm vi đã đọc.
+
+Kim Ngưu revision03: 8 cảnh/17 events/23 assets/34 endpoints, native projection/assembly/identity/outfit/story/composition/preview/preflight PASS. Giữ nguyên narration và SVG khung ZIP; tóc antenna-short, ghế mọc rễ có contact. Đây là bản review đầy đủ, chưa có user approval cho toàn revision nên chưa seal official Phase03. TTS/prosody/MP4 là runner QA còn mở; Chrome download bị network proxy chặn, không claim motion/frame parity.

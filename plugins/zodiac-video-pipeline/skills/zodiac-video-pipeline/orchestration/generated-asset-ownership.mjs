@@ -46,7 +46,7 @@ export async function runGeneratedCompile(root,script,args,{compiler_id,prune=fa
   const sourceHashes=new Map();for(const rel of await walk(stage))sourceHashes.set(rel,hash(await readFile(path.join(stage,rel))));
   const previous=await json(path.join(root,'.authoring/generated-assets.json')).catch(e=>{if(e.code==='ENOENT')return {entries:[]};throw e;});
   const rewritten=args.map(arg=>arg===root?stage:arg.startsWith(root+path.sep)?stage+arg.slice(root.length):arg);
-  const result=spawnSync(process.execPath,[script,...rewritten,'--transaction-stage'],{encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000});if(result.status!==0)fail('COMPILE_FAILED '+(result.stderr||result.error?.message||result.stdout));
+  const result=spawnSync(process.execPath,[script,...rewritten,'--transaction-stage'],{cwd:stage,encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000});if(result.status!==0)fail('COMPILE_FAILED '+(result.stderr||result.error?.message||result.stdout));
   const production=await json(path.join(stage,'production.json')),publish=await json(path.join(stage,'publish/publish.json')).catch(e=>{if(e.code==='ENOENT')return {};throw e;});
   const statePlan=await json(path.join(stage,'.authoring/character-state-asset-plan.json')).catch(()=>null),ids=generatedIds(production,compiler_id,statePlan),entries=[];
   for(const id of ids){const a=production.assets?.[id];if(!a?.path)fail('OUTPUT_ASSET_MISSING '+id);const abs=await confined(stage,a.path,{assets:true});entries.push({asset_id:id,path:a.path,sha256:hash(await readFile(abs)),compiler_id,source_key:hash(JSON.stringify(a.character_blueprint??a.lineage??a))});}

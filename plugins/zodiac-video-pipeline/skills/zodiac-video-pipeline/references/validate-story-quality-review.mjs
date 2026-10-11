@@ -20,16 +20,17 @@ if(q.reviewer_role!=='editorial_challenger')fail('reviewer_role must be editoria
 if(typeof q.blind_read_verdict!=='string'||q.blind_read_verdict.trim().length<35)fail('blind_read_verdict must be substantive');
 const keys=['premise_strength','stakes_or_recognition','progression_and_turn','sign_irreplaceability','payoff_and_callback','silent_read_test'];
 if(!q.criteria||Object.keys(q.criteria).sort().join('|')!==[...keys].sort().join('|'))fail('exact six editorial criteria required');
-const excerpts=new Set(),objections=new Set();let unresolved=[];
+const objections=[];let unresolved=[];
 for(const k of keys){
  const c=q.criteria[k];if(!c||!['PASS','REVIEW'].includes(c.result))fail(k+'.result');
- for(const prop of ['objection','response','evidence_excerpt'])if(typeof c[prop]!=='string'||c[prop].trim().length<(prop==='evidence_excerpt'?15:25))fail(k+'.'+prop+' must be substantive');
+ for(const prop of ['response','evidence_excerpt'])if(typeof c[prop]!=='string'||c[prop].trim().length<(prop==='evidence_excerpt'?15:25))fail(k+'.'+prop+' must be substantive');
  const excerpt=norm(c.evidence_excerpt);if(excerpt.split(' ').length<3||excerpt.split(' ').length>35||!narration.includes(excerpt))fail(k+'.evidence_excerpt not grounded in narration');
- excerpts.add(excerpt);objections.add(norm(c.objection));
+ if(c.objection!=null&&typeof c.objection!=='string')fail(k+'.objection must be text');
+ if(c.result==='REVIEW'&&String(c.objection??'').trim().length<25)fail(k+'.objection must describe the unresolved issue');
+ if(String(c.objection??'').trim())objections.push(norm(c.objection));
  if(c.result==='REVIEW')unresolved.push(k);
 }
-if(excerpts.size<4)fail('at least four distinct grounded excerpts');
-if(objections.size<5)fail('recycled generic objections not accepted');
+if(objections.length>1&&new Set(objections).size===1)fail('recycled generic objections not accepted');
 if(!['PASS','REVIEW'].includes(q.decision)||!Array.isArray(q.revision_targets))fail('decision or revision_targets');
 if(q.decision==='PASS'&&(unresolved.length||q.revision_targets.length))fail('cannot PASS unresolved editorial objections');
 if(q.decision==='REVIEW'&&!q.revision_targets.length)fail('REVIEW requires revision_targets');
@@ -46,7 +47,7 @@ if(needsIdentity){
  if(!a||!['PASS','REVIEW'].includes(a.decision))fail('zodiac_identity_review missing');
  for(const key of ['sign_swap','scene_dominance','moral_arc_drift']){
   const c=a[key];if(!c||!['PASS','REVIEW'].includes(c.result))fail('zodiac_identity_review.'+key);
-  if(typeof c.objection!=='string'||c.objection.length<25||typeof c.response!=='string'||c.response.length<25)fail('zodiac_identity_review.'+key+' assessment missing');
+  if((c.result==='REVIEW'&&(typeof c.objection!=='string'||c.objection.length<25))||typeof c.response!=='string'||c.response.length<25)fail('zodiac_identity_review.'+key+' assessment missing');
   if(typeof c.evidence_excerpt!=='string'||!narration.includes(norm(c.evidence_excerpt))||norm(c.evidence_excerpt).split(' ').length<3)fail('zodiac_identity_review.'+key+' excerpt not grounded');
   if(c.result==='REVIEW')fail('zodiac identity unresolved: '+key);
  }

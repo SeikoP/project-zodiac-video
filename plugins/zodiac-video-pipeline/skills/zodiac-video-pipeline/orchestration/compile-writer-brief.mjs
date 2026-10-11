@@ -1,3 +1,4 @@
+import {assertViralDecision} from './creative-policy.mjs';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 import {compositionHash} from './phase02-composition.mjs';import {readArtifact,writeArtifact} from './phase01-artifacts.mjs';import {compileEvidenceBrief} from './compile-evidence-brief.mjs';
 import {compileEpisodeWriterBrief} from './episode-writer-brief.mjs';import {compileEpisodeEvidenceView} from './episode-evidence.mjs';
@@ -6,12 +7,12 @@ export function compileWriterBrief(input){
  if(input.narrativePlan?.version==='2.1')return compileEpisodeWriterBrief(input);
  const {selectedCandidate:c,narrativePlan:p,evidenceBrief:e,viral:v,referenceMechanics:r,authoredBriefExtras:a}=input;
  if(c?.id!==p?.selected_concept_id||p.version!=='2.0')fail('SELECTED_CONCEPT');
- const permitted=new Set(['rhythm_direction','forbidden_claims','audience_vibe','narrator_vibe','situation_territories','motif_candidates']);for(const k of Object.keys(a??{}))if(!permitted.has(k))fail('FORBIDDEN '+k);
+ const permitted=new Set(['rhythm_direction','forbidden_claims','audience_vibe','narrator_vibe','situation_territories','motif_candidates','creative_direction']);for(const k of Object.keys(a??{}))if(!permitted.has(k))fail('FORBIDDEN '+k);
  if(e.format!=='zodiac-evidence-brief@1'||e.unresolved?.length||e.conflicts?.length)fail('EVIDENCE');
  const ids=new Set(e.claims.map(x=>x.id));for(const id of [...c.evidence_refs??[],...(p.beats??[]).flatMap(b=>b.evidence_refs??[])])if(!ids.has(id))fail('EVIDENCE_REF '+id);
  const brief={...a,sign:text(p.sign?.label??p.sign,'sign'),topic:text(p.topic?.focus??p.topic,'topic'),thesis:text(c.premise,'premise'),content_engine:'character_deconstruction',delivery_mode:p.delivery_mode??'conversational',...Object.fromEntries(['identity_tension','progression_intent','payoff_target'].map(k=>[k,text(p.story_spine?.[k],k)])),evidence_safe_behaviors:e.claims.filter(x=>x.claim_class==='astrology_interpretation'||x.claim_class==='editorial_inference').map(x=>x.claim),forbidden_claims:a?.forbidden_claims??[],rhythm_direction:text(a?.rhythm_direction,'rhythm_direction'),viral_mechanics:(v.mechanics??[]).slice(0,3).map(m=>({source_id:m.id,instruction:text(m.writer_effect,'writer_effect')})),reference_mechanics:r.reference_present?(r.application_map??[]).map(m=>({source_id:m.mechanic_id,instruction:text(m.concept_application,'reference application')})):[],sign_identity_mechanism:text(c.identity_mechanism,'identity_mechanism'),misread_vs_reframe:text(c.misread_vs_reframe,'misread_vs_reframe'),three_facets:c.archetype_facets,sign_swap_counterfactual:c.sign_swap_test,scene_usage_limit:text(c.scene_dependence_risk,'scene_dependence_risk'),non_moral_payoff:text(p.story_spine?.payoff_target,'payoff_target')};
- if(!brief.evidence_safe_behaviors.length||!brief.viral_mechanics.length)fail('SOURCE_INSTRUCTIONS');
- if(!Array.isArray(brief.three_facets)||brief.three_facets.length!==3||brief.three_facets.some(x=>typeof x!=='string'||!x.trim()))fail('THREE_FACETS');
+ assertViralDecision(v);if(!brief.evidence_safe_behaviors.length)fail('SOURCE_INSTRUCTIONS');
+ if(!Array.isArray(brief.three_facets)||!brief.three_facets.length||brief.three_facets.some(x=>typeof x!=='string'||!x.trim()))fail('THREE_FACETS');
  if(!brief.sign_swap_counterfactual||!Array.isArray(brief.forbidden_claims))fail('IDENTITY_CONSTRAINTS');
  const output_bytes=Buffer.byteLength(JSON.stringify(brief));if(output_bytes>10000)fail('BUDGET_EXCEEDED');
  return {brief,receipt:{format:'zodiac-writer-brief-compile@1',source_sha256:compositionHash(input),output_sha256:compositionHash(brief),source_bytes:Buffer.byteLength(JSON.stringify(input)),output_bytes,not_an_approval:true}};

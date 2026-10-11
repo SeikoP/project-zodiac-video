@@ -1,3 +1,4 @@
+import {assertPremiseSelection} from './creative-policy.mjs';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 import {assertEpisodeScope,validateResearchScope,MEMBER_LABELS} from './episode-scope.mjs';
 import {compositionHash} from './phase02-composition.mjs';
@@ -7,7 +8,7 @@ const text=v=>typeof v==='string'&&Boolean(v.trim());
 export function assertMemberLenses(lenses,scope,evidenceView){
  if(!Array.isArray(lenses)||lenses.length!==scope.member_ids.length||new Set(lenses.map(l=>l?.member_id)).size!==lenses.length)throw Error('EPISODE_MEMBER_LENSES');
  for(const l of lenses){
-  if(!scope.member_ids.includes(l?.member_id)||!text(l.identity_mechanism)||!text(l.misread_vs_reframe)||!Array.isArray(l.archetype_facets)||l.archetype_facets.length!==3||new Set(l.archetype_facets).size!==3||l.archetype_facets.some(x=>!text(x)))throw Error('EPISODE_MEMBER_IDENTITY');
+  if(!scope.member_ids.includes(l?.member_id)||!text(l.identity_mechanism)||!text(l.misread_vs_reframe)||!Array.isArray(l.archetype_facets)||!l.archetype_facets.length||new Set(l.archetype_facets).size!==l.archetype_facets.length||l.archetype_facets.some(x=>!text(x)))throw Error('EPISODE_MEMBER_IDENTITY');
   if(!Object.hasOwn(MEMBER_LABELS,l.sign_swap_test?.alternate_sign)||l.sign_swap_test.alternate_sign===l.member_id||!text(l.sign_swap_test.irreplaceable_difference))throw Error('EPISODE_MEMBER_SIGN_SWAP');
   const own=evidenceView?.member_claims?.[l.member_id]??[];
   if(!Array.isArray(l.evidence_refs)||!l.evidence_refs.length||new Set(l.evidence_refs).size!==l.evidence_refs.length||l.evidence_refs.some(id=>!own.find(c=>c.id===id)))throw Error('EPISODE_MEMBER_EVIDENCE_REF '+l.member_id);
@@ -19,7 +20,7 @@ export function validateEpisodeConcept({scope,candidates,narrativePlan:p,evidenc
  try{
   const s=assertEpisodeScope(scope,researchScope);
   if(p?.version!=='2.1'||compositionHash(assertEpisodeScope(p.episode_scope))!==compositionHash(s)||e?.scope_sha256!==compositionHash(s))throw Error('EPISODE_SCOPE_LINEAGE');
-  if(candidates?.format!=='zodiac-concept-competition@1'||candidates.candidates?.length!==3)throw Error('EPISODE_THREE_PREMISES');
+  if(candidates?.format!=='zodiac-concept-competition@1')throw Error('EPISODE_CONCEPT_FORMAT');assertPremiseSelection(candidates);
   const ids=new Set(),premises=new Set();
   for(const c of candidates.candidates){
    if(!text(c.id)||ids.has(c.id)||!text(c.premise)||premises.has(c.premise.trim().toLowerCase()))throw Error('EPISODE_DUPLICATE_PREMISE');ids.add(c.id);premises.add(c.premise.trim().toLowerCase());
@@ -28,7 +29,7 @@ export function validateEpisodeConcept({scope,candidates,narrativePlan:p,evidenc
    if(!Array.isArray(c.evidence_refs)||c.evidence_refs.some(id=>!e.selected_refs.includes(id))||c.member_lenses.some(l=>l.evidence_refs.some(id=>!c.evidence_refs.includes(id))))throw Error('EPISODE_PREMISE_REFS');
   }
   const winner=candidates.candidates.find(c=>c.id===candidates.selected_candidate_id);
-  if(!winner||p.selected_concept_id!==winner.id||!text(candidates.selection_rationale)||candidates.rejected_or_reserved_ids?.length!==2||new Set(candidates.rejected_or_reserved_ids).size!==2||candidates.rejected_or_reserved_ids.some(id=>!ids.has(id)||id===winner.id))throw Error('EPISODE_WINNER');
+  if(!winner||p.selected_concept_id!==winner.id||!text(candidates.selection_rationale)||candidates.rejected_or_reserved_ids?.length!==candidates.candidates.length-1||new Set(candidates.rejected_or_reserved_ids).size!==candidates.candidates.length-1||candidates.rejected_or_reserved_ids.some(id=>!ids.has(id)||id===winner.id))throw Error('EPISODE_WINNER');
   validateEpisodeBeatEvidence(p,s,e);
   if(compositionHash(p.member_lenses)!==compositionHash(winner.member_lenses))throw Error('EPISODE_LENS_DRIFT');
   return {status:'VALID',issues:[],creative_quality_verified:false};

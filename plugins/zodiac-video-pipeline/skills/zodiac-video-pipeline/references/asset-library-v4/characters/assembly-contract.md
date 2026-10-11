@@ -11,7 +11,7 @@ Canonical component catalog: `components/catalog.json`.
 Plan: `.authoring/character-assembly-plan.json` using `zodiac-character-assembly-plan@2` for new work (requires intentional character design from Story Spine). Legacy @1 remains supported for existing packages.
 
 ## Plan state assets before SVG creation
-The default budget is three unique character assets per short clip: one base state and up to two standout variants. The budget counts unique `identity_signature + pose_id + expression_id + crop_id` keys, so repeated state names with the same planned components share one asset before compilation. Finished SVG bytes are never compared to merge assets. If a plot-critical character needs more than three unique keys, set `asset_budget.max_unique_states` and provide an `exception_reason` in that character's assembly spec.
+Plan only performed actions and expressive changes before compilation. There is no universal state count. Repeated names with the same planned identity/pose/expression/crop share one key before SVG creation; no byte dedupe after generation. Optional asset_budget.max_unique_states enforces the authored limit and needs no invented exception narrative.
 
 Semantic Assets must create and verify `.authoring/character-state-asset-plan.json` before writing character SVGs, in this order:
 
@@ -37,4 +37,4 @@ Historical character/hair/outfit lineage is provenance only. Ordinary character 
 Profile must alter actual native geometry, not renderer scale. `lean_tall` / `lanky_slouch` have visibly longer legs than `standard_compact`; `petite_compact` / `stocky_short` shorter legs; `round_soft` has broader shoulders and torso. Keep hands/prop anchors and leg endpoints coherent across poses; validate before visual review. Vary profile by roles, not at random. Approved character identities must be reopened for visual review if body profile changes.
 
 ## Minimal resting geometry
-rest_sitting uses authored bent knees; rest_lying uses a horizontal torso and extended limb paths in 900×760 viewBox. Neither rotates the full SVG. Preserve identity fields and plan state budget before compile. Compiler exposes left_grip/right_grip/prop_slot sockets matching hand geometry, including write. Placement must honor intrinsic ratio and sofa support behind the actor; catalog integrity is separate from episode contact pixels and runner motion checks. New resting assets require visual review.
+rest_sitting uses authored bent knees in a 520×800 viewport; rest_lying uses a horizontal torso and extended limb paths in 900×760 viewBox. Neither rotates the full SVG. Preserve identity fields and plan state budget before compile. Compiler exposes left_grip/right_grip/prop_slot/seat sockets matching hand geometry, including write. Placement must honor intrinsic ratio and sofa support behind the actor; catalog integrity is separate from episode contact pixels and runner motion checks. New resting assets require visual review.

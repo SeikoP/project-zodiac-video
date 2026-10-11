@@ -55,14 +55,14 @@ test('semantic states with identical character geometry reuse one baked SVG asse
   assert.equal(Object.keys(out.assets).length,1);
 });
 
-test('default state asset budget is checked before any character SVG is written',async()=>{
+test('explicit state asset budget is checked before any character SVG is written',async()=>{
   const {compileCharacterAssembly}=await import(pathToFileURL(compilerPath).href);
   const root=await mkdtemp(path.join(os.tmpdir(),'character-state-budget-'));
   const states={base:{},explain:{},reach:{},offer:{}};
   const production={version:'2.0',assets:{},scenes:[{id:'S01',entities:[{id:'hero',kind:'character',initial_state:'base',states}]}]};
   const plan={format:'zodiac-character-assembly-plan@1',characters:[{
     entity_id:'hero',body_profile:'standard_compact',hair_id:'asym-bang',outfit_id:'generic-soft-stripes',
-    states:{base:{pose_id:'neutral',expression_id:'neutral'},explain:{pose_id:'explain',expression_id:'neutral'},reach:{pose_id:'reach',expression_id:'neutral'},offer:{pose_id:'offer',expression_id:'neutral'}}
+    asset_budget:{max_unique_states:3},states:{base:{pose_id:'neutral',expression_id:'neutral'},explain:{pose_id:'explain',expression_id:'neutral'},reach:{pose_id:'reach',expression_id:'neutral'},offer:{pose_id:'offer',expression_id:'neutral'}}
   }]};
   try{
     await assert.rejects(()=>compileCharacterAssembly(production,plan,{root,writeAssets:true}),/has 4 unique character assets; budget is 3/u);
@@ -70,12 +70,12 @@ test('default state asset budget is checked before any character SVG is written'
   }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('plot-critical state budget exceptions require a reason and permit only the declared count',async()=>{
+test('authored state budget permits the declared count without a forced exception story',async()=>{
   const {compileCharacterAssembly}=await import(pathToFileURL(compilerPath).href);
   const states={base:{},explain:{},reach:{},offer:{}};
   const production={version:'2.0',assets:{},scenes:[{id:'S01',entities:[{id:'hero',kind:'character',initial_state:'base',states}]}]};
   const character={entity_id:'hero',body_profile:'standard_compact',hair_id:'asym-bang',outfit_id:'generic-soft-stripes',states:{base:{pose_id:'neutral',expression_id:'neutral'},explain:{pose_id:'explain',expression_id:'neutral'},reach:{pose_id:'reach',expression_id:'neutral'},offer:{pose_id:'offer',expression_id:'neutral'}}};
-  await assert.rejects(()=>compileCharacterAssembly(production,{format:'zodiac-character-assembly-plan@1',characters:[{...character,asset_budget:{max_unique_states:4}}]}),/asset_budget above 3 requires exception_reason/u);
+  await compileCharacterAssembly(production,{format:'zodiac-character-assembly-plan@1',characters:[{...character,asset_budget:{max_unique_states:4}}]});
   const out=await compileCharacterAssembly(production,{format:'zodiac-character-assembly-plan@1',characters:[{...character,asset_budget:{max_unique_states:4,exception_reason:'Four distinct actions are required for the plot payoff.'}}]});
   assert.equal(Object.keys(out.assets).length,4);
 });

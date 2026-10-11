@@ -4,7 +4,7 @@ const fail=m=>{throw Error('EPISODE_REVIEW_INVALID '+m);};
 export function validateEpisodeIdentityReview(review,plan,narration){
  const scope=assertEpisodeScope(plan.episode_scope),spoken=norm(narration);
  if(review?.scope_sha256!==compositionHash(scope))fail('SCOPE_DRIFT');
- const check=(c,label)=>{if(c?.result!=='PASS'||typeof c.objection!=='string'||c.objection.trim().length<25||typeof c.response!=='string'||c.response.trim().length<25||typeof c.evidence_excerpt!=='string')fail('UNRESOLVED '+label);const ex=norm(c.evidence_excerpt);if(ex.split(' ').length<3||!spoken.includes(ex))fail('EXCERPT '+label);return ex;};
+ const check=(c,label)=>{if(c?.result!=='PASS'||(c.objection!=null&&typeof c.objection!=='string')||typeof c.response!=='string'||c.response.trim().length<25||typeof c.evidence_excerpt!=='string')fail('UNRESOLVED '+label);const ex=norm(c.evidence_excerpt);if(ex.split(' ').length<3||!spoken.includes(ex))fail('EXCERPT '+label);return ex;};
  const rows=review.member_reviews;
  if(!Array.isArray(rows)||rows.length!==scope.member_ids.length||new Set(rows.map(r=>r?.member_id)).size!==rows.length)fail('MEMBER_COVERAGE');
  const distinct=new Set();

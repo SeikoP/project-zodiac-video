@@ -4,6 +4,7 @@ import {readFile,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {buildPhase02HandoffContext} from './phase02-handoff-context.mjs';
 import {assertContentApprovalSources} from './approval-source-hashes.mjs';
 const args=process.argv.slice(2), option=k=>{const i=args.indexOf(k);return i<0?null:args[i+1]??null};
 const workspace=option('--workspace');
@@ -28,5 +29,6 @@ if(!missing.includes('production.json')){const p=await readJson(path.join(root,'
 if(missing.length)issues.push({code:'AUTHORING_INPUT_MISSING',paths:missing});
 const blocked=issues.some(x=>x.code!=='AUTHORING_INPUT_MISSING');
 const status=blocked?'BLOCKED':missing.length?'AUTHORING_REQUIRED':'AUTHORING_READY';
-console.log(JSON.stringify({format:'zodiac-phase02-transition@1',status,workspace:root,source_version:manifest?.version??null,source_ready:Boolean(manifest&&state&&state.plugin_version===manifest.version),authoring_ready:status==='AUTHORING_READY',hashes,issues,next:status==='AUTHORING_REQUIRED'?'Create the missing Phase-02 authoring inputs from approved narration; do not create placeholders or receipts.':status==='AUTHORING_READY'?'Run strict execution-preflight then phase02-execute --run; this is not native PASS.':'Resolve blockers using genuine source/state evidence.'},null,2));
+const handoff_context=await buildPhase02HandoffContext(root,{status,issues,pluginVersion:manifest?.version??null});
+console.log(JSON.stringify({handoff_context,format:'zodiac-phase02-transition@1',status,workspace:root,source_version:manifest?.version??null,source_ready:Boolean(manifest&&state&&state.plugin_version===manifest.version),authoring_ready:status==='AUTHORING_READY',hashes,issues,next:status==='AUTHORING_REQUIRED'?'Create the missing Phase-02 authoring inputs from approved narration; do not create placeholders or receipts.':status==='AUTHORING_READY'?'Run strict execution-preflight then phase02-execute --run; this is not native PASS.':'Resolve blockers using genuine source/state evidence.'},null,2));
 process.exit(blocked?2:0);

@@ -20,11 +20,12 @@
       "crop_id"
     ],
     "runtime_output": "one_baked_svg_per_planned_identity_state_asset",
-    "default_unique_state_asset_budget_per_character": 3,
+    "default_unique_state_asset_budget_per_character": null,
     "svg_content_dedupe": false,
     "body_variation": "authored_geometry_not_scale_transform",
     "same_entity_identity_lock": true,
-    "body_height_width_contract": "independent authored silhouette width and profile-specific leg reach; no whole-SVG scale; preserve identity across states"
+    "body_height_width_contract": "independent authored silhouette width and profile-specific leg reach; no whole-SVG scale; preserve identity across states",
+    "state_budget_basis": "authored performed actions before SVG compilation"
   },
   "body_profiles": [
     {
@@ -61,43 +62,63 @@
   "hair": [
     {
       "id": "asym-bang",
-      "source_master": "asym-bang"
+      "source_master": "asym-bang",
+      "selection_tier": "preferred_meme",
+      "style_intent": "simple uneven silhouette; review on the selected face"
     },
     {
       "id": "lopsided-bob",
-      "source_master": "lopsided-bob"
+      "source_master": "lopsided-bob",
+      "selection_tier": "preferred_meme",
+      "style_intent": "simple uneven silhouette; review on the selected face"
     },
     {
       "id": "spiky-overthink",
-      "source_master": "spiky-overthink"
+      "source_master": "spiky-overthink",
+      "selection_tier": "preferred_meme",
+      "style_intent": "simple uneven silhouette; review on the selected face"
     },
     {
       "id": "antenna-short",
-      "source_master": "antenna-short"
+      "source_master": "antenna-short",
+      "selection_tier": "preferred_meme",
+      "style_intent": "simple uneven silhouette; review on the selected face"
     },
     {
       "id": "blocky-cut",
-      "source_master": "blocky-cut"
+      "source_master": "blocky-cut",
+      "selection_tier": "preferred_meme",
+      "style_intent": "simple uneven silhouette; review on the selected face"
     },
     {
       "id": "soft-wave",
-      "source_master": "soft-wave"
+      "source_master": "soft-wave",
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "side-part",
-      "source_master": "side-part"
+      "source_master": "side-part",
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "clean-bun",
-      "source_master": "female-messy-bun"
+      "source_master": "female-messy-bun",
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "high-ponytail",
-      "source_master": "female-high-ponytail"
+      "source_master": "female-high-ponytail",
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "twin-tail",
-      "source_master": "female-twin-tail"
+      "source_master": "female-twin-tail",
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     }
   ],
   "outfits": [

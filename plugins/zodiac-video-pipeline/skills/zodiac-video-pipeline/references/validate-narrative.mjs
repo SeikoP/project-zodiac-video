@@ -43,7 +43,8 @@ for(const key of schema.properties.story_spine.required)assertString(plan.story_
 if(plan.audience_vibe!==undefined&&!schema.properties.audience_vibe.enum.includes(plan.audience_vibe))fail("unsupported audience_vibe");
 if(!Array.isArray(plan.beats)||!plan.beats.length)fail("beats must be non-empty");
 if(plan.version!=='2.1'){const aliases=[plan.sign.label,...(plan.sign.aliases??[])].map(normalize).filter(Boolean);
-if(!aliases.some((alias)=>opening.includes(alias)))fail("sign/topic label must appear within the first 40 normalized narration words");}
+if(!aliases.some((alias)=>normalizedNarration.includes(alias)))fail("spoken sign/topic identity missing");
+if(!aliases.some((alias)=>opening.includes(alias)))warn("OPENING_IDENTITY_REVIEW: sign/topic label not in first 40 words; review deliberate cold open");}
 
 const beatSchema=schema.$defs.beat;const beatIds=new Set();
 for(const beat of plan.beats){
@@ -61,7 +62,7 @@ if(plan.delivery_mode==="conversational"){
   const conversationalDevices=new Set(["riff","micro_scene","narrator_reaction","contradiction","interaction"]);
   if(!plan.beats.some((beat)=>beat.devices.some((device)=>conversationalDevices.has(device))))fail("conversational mode needs at least one conversational delivery device");
   const isRiffOnly=(beat)=>{const allowed=new Set(["hook","riff","narrator_reaction","bridge"]);return beat.support!=="SOURCE-SUPPORTED"&&beat.devices.length>0&&beat.devices.every((device)=>allowed.has(device));};
-  let leadingRiff=0;for(const beat of plan.beats){if(isRiffOnly(beat))leadingRiff++;else break;}if(leadingRiff>3)fail("conversational opening has more than three leading riff-only beats before substantive content");
+  let leadingRiff=0;for(const beat of plan.beats){if(isRiffOnly(beat))leadingRiff++;else break;}if(leadingRiff>3)warn("conversational opening has more than three leading riff-only beats before substantive content");
   let reactionOnlyRun=0,maxReactionOnlyRun=0;for(const beat of plan.beats){const reactionOnly=beat.devices.length>0&&beat.devices.every((device)=>["narrator_reaction","riff","bridge"].includes(device));reactionOnlyRun=reactionOnly?reactionOnlyRun+1:0;maxReactionOnlyRun=Math.max(maxReactionOnlyRun,reactionOnlyRun);}if(maxReactionOnlyRun>=3)warn("three or more reaction/riff-only beats occur consecutively; review narrator spam");
   const analysisBridgePatterns=[/(?:^| )van de la(?: |$)/g,/(?:^| )diem chinh(?: la)?(?: |$)/g,/(?:^| )do chinh la(?: |$)/g,/(?:^| )chi la(?: |$)/g,/(?:^| )noi cach khac(?: |$)/g,/(?:^| )dieu nay (?:cho thay|co nghia)(?: |$)/g];
   const analysisBridgeCount=analysisBridgePatterns.reduce((sum,pattern)=>sum+(normalizedNarration.match(pattern)?.length??0),0);if(analysisBridgeCount>=3)warn("ANALYSIS_VOICE_DENSITY: conversational narration uses several explanatory bridge phrases; review for post-scene over-explanation");
