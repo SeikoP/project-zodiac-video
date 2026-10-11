@@ -997,7 +997,8 @@ index d2a9a85..10c94a3 100644
        "kind": "environment",
        "refs": [
          "references/asset-library-v4/environments/composition-index.json"
-+      ],+      "availability": [
++      ],
++      "availability": [
 +        "selected_cues",
 +        "legacy"
        ]
