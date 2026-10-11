@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">
+<metadata>asset_role=prop;id=offered-pants;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;source_library=zodiac-visual-grammar-v4;semantic_intent=handed-from-giver-to-receiver;left_waistband=60,60;right_waistband=240,60;production_safe=true</metadata>
+<g id="pants_silhouette">
+  <path d="M48 58 Q105 63 151 60 Q205 63 252 56 L244 121 Q237 164 238 208 Q248 240 266 268 Q225 280 184 273 L153 178 Q142 222 118 274 Q76 281 34 267 L55 212 Q68 168 61 123Z" fill="#435064" stroke="#2F3C44" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M51 64 Q106 70 151 66 Q206 69 249 62" fill="none" stroke="#FFFDF9" stroke-width="5" stroke-linecap="round"/>
+  <path d="M151 68 Q147 100 153 132 Q161 152 153 177" fill="none" stroke="#5C6B75" stroke-width="5" stroke-linecap="round"/>
+  <path d="M69 125 Q102 132 136 127 M170 128 Q205 134 237 126" fill="none" stroke="#5C6B75" stroke-width="4.5" stroke-linecap="round"/>
+</g>
+</svg>

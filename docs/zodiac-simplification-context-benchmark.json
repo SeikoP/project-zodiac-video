@@ -1,0 +1,1009 @@
+{
+  "baseline": "installed-2.4.50",
+  "measurement": "actual guidance file bytes; external providers excluded; not total prompt tokens",
+  "rows": [
+    {
+      "scenario": "archive-no-extension",
+      "before": {
+        "local_guidance_bytes": 123497,
+        "local_ref_count": 25,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1048,
+            "sha256": "e57afa4ea560c5abbee461c28b0be301ef87147317727fd67a89d0c460d57ecc"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6023,
+            "sha256": "25a58509b7a2979e6637491dbc564e90130932978f12063e0fafbb45b44244f8"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4459,
+            "sha256": "8cb21715dc21055c68d9cd70eb968b52815c1a8c50a04280847bb8c5856563cb"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/environments/compositions/index.json",
+            "bytes": 5728,
+            "sha256": "d7a53f232673ad5d7edde73a0035736a8652270d3280508fc8c208e3ce836a46"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          },
+          {
+            "path": "references/asset-library-v4/environments/README.md",
+            "bytes": 1958,
+            "sha256": "bdcc62bbcba46f820720ac2367742e8cccb92f72b6c5cc2d32bde2c5c5c57ad1"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/recipes/state-recipes.json",
+            "bytes": 11746,
+            "sha256": "58abafe2aae87b8df32ab88785328bf531fcf20d0a7ded4b2a924436625986f9"
+          },
+          {
+            "path": "references/asset-library-v4/memes/templates/index.json",
+            "bytes": 2337,
+            "sha256": "f8299f47da1f1d4d97077e795bc532bbc0a19ac3d98c4c38c7fdc3e7ea53f1e1"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6475,
+            "sha256": "3de7119259bfb27a078475acd539f8b00b741ca1ff3593afd3c152838f9a58a1"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5130,
+            "sha256": "e608319d2d26193122bd307bfb7750a63aa3a4c9ddb88a1e31587f3be6653eb5"
+          }
+        ]
+      },
+      "after": {
+        "local_guidance_bytes": 68916,
+        "local_ref_count": 20,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1993,
+            "sha256": "a34b6d03c0e4c77eb5fd6b8329aac8cffb55f3a478d406ddabf5d62fb6d7a8de"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6411,
+            "sha256": "93a019dd88eec5b16f8b96698039d78b3500e29f9d56b9042321203c36ed984f"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4995,
+            "sha256": "8572e5313e58b11a8d22d3bb0a3a139dbf5541b082c9159eb5b3b21d821b444a"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6929,
+            "sha256": "ce13b2e223343d1d904247c1c7875f9a858bc5ad81ff8a08335f49548886d22d"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5584,
+            "sha256": "08cab290725ce0a8b94afe69496a825eeacb0cb652d77e67108973c50b162ddb"
+          },
+          {
+            "path": "references/asset-library-v4/foundations/human-stroke-profile.json",
+            "bytes": 1098,
+            "sha256": "dedda99942dfa4c2d558d77ad808c368b87f861c05b9ecfa93b30bd4c13a2e44"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "cafe-no-meme",
+      "before": {
+        "local_guidance_bytes": 123497,
+        "local_ref_count": 25,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1048,
+            "sha256": "e57afa4ea560c5abbee461c28b0be301ef87147317727fd67a89d0c460d57ecc"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6023,
+            "sha256": "25a58509b7a2979e6637491dbc564e90130932978f12063e0fafbb45b44244f8"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4459,
+            "sha256": "8cb21715dc21055c68d9cd70eb968b52815c1a8c50a04280847bb8c5856563cb"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/environments/compositions/index.json",
+            "bytes": 5728,
+            "sha256": "d7a53f232673ad5d7edde73a0035736a8652270d3280508fc8c208e3ce836a46"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          },
+          {
+            "path": "references/asset-library-v4/environments/README.md",
+            "bytes": 1958,
+            "sha256": "bdcc62bbcba46f820720ac2367742e8cccb92f72b6c5cc2d32bde2c5c5c57ad1"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/recipes/state-recipes.json",
+            "bytes": 11746,
+            "sha256": "58abafe2aae87b8df32ab88785328bf531fcf20d0a7ded4b2a924436625986f9"
+          },
+          {
+            "path": "references/asset-library-v4/memes/templates/index.json",
+            "bytes": 2337,
+            "sha256": "f8299f47da1f1d4d97077e795bc532bbc0a19ac3d98c4c38c7fdc3e7ea53f1e1"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6475,
+            "sha256": "3de7119259bfb27a078475acd539f8b00b741ca1ff3593afd3c152838f9a58a1"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5130,
+            "sha256": "e608319d2d26193122bd307bfb7750a63aa3a4c9ddb88a1e31587f3be6653eb5"
+          }
+        ]
+      },
+      "after": {
+        "local_guidance_bytes": 88754,
+        "local_ref_count": 21,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1993,
+            "sha256": "a34b6d03c0e4c77eb5fd6b8329aac8cffb55f3a478d406ddabf5d62fb6d7a8de"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6411,
+            "sha256": "93a019dd88eec5b16f8b96698039d78b3500e29f9d56b9042321203c36ed984f"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4995,
+            "sha256": "8572e5313e58b11a8d22d3bb0a3a139dbf5541b082c9159eb5b3b21d821b444a"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6929,
+            "sha256": "ce13b2e223343d1d904247c1c7875f9a858bc5ad81ff8a08335f49548886d22d"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5584,
+            "sha256": "08cab290725ce0a8b94afe69496a825eeacb0cb652d77e67108973c50b162ddb"
+          },
+          {
+            "path": "references/asset-library-v4/foundations/human-stroke-profile.json",
+            "bytes": 1098,
+            "sha256": "dedda99942dfa4c2d558d77ad808c368b87f861c05b9ecfa93b30bd4c13a2e44"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "selected-meme",
+      "before": {
+        "local_guidance_bytes": 123497,
+        "local_ref_count": 25,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1048,
+            "sha256": "e57afa4ea560c5abbee461c28b0be301ef87147317727fd67a89d0c460d57ecc"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6023,
+            "sha256": "25a58509b7a2979e6637491dbc564e90130932978f12063e0fafbb45b44244f8"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4459,
+            "sha256": "8cb21715dc21055c68d9cd70eb968b52815c1a8c50a04280847bb8c5856563cb"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/environments/compositions/index.json",
+            "bytes": 5728,
+            "sha256": "d7a53f232673ad5d7edde73a0035736a8652270d3280508fc8c208e3ce836a46"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          },
+          {
+            "path": "references/asset-library-v4/environments/README.md",
+            "bytes": 1958,
+            "sha256": "bdcc62bbcba46f820720ac2367742e8cccb92f72b6c5cc2d32bde2c5c5c57ad1"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/recipes/state-recipes.json",
+            "bytes": 11746,
+            "sha256": "58abafe2aae87b8df32ab88785328bf531fcf20d0a7ded4b2a924436625986f9"
+          },
+          {
+            "path": "references/asset-library-v4/memes/templates/index.json",
+            "bytes": 2337,
+            "sha256": "f8299f47da1f1d4d97077e795bc532bbc0a19ac3d98c4c38c7fdc3e7ea53f1e1"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6475,
+            "sha256": "3de7119259bfb27a078475acd539f8b00b741ca1ff3593afd3c152838f9a58a1"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5130,
+            "sha256": "e608319d2d26193122bd307bfb7750a63aa3a4c9ddb88a1e31587f3be6653eb5"
+          }
+        ]
+      },
+      "after": {
+        "local_guidance_bytes": 85765,
+        "local_ref_count": 21,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1993,
+            "sha256": "a34b6d03c0e4c77eb5fd6b8329aac8cffb55f3a478d406ddabf5d62fb6d7a8de"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6411,
+            "sha256": "93a019dd88eec5b16f8b96698039d78b3500e29f9d56b9042321203c36ed984f"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4995,
+            "sha256": "8572e5313e58b11a8d22d3bb0a3a139dbf5541b082c9159eb5b3b21d821b444a"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6929,
+            "sha256": "ce13b2e223343d1d904247c1c7875f9a858bc5ad81ff8a08335f49548886d22d"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5584,
+            "sha256": "08cab290725ce0a8b94afe69496a825eeacb0cb652d77e67108973c50b162ddb"
+          },
+          {
+            "path": "references/asset-library-v4/foundations/human-stroke-profile.json",
+            "bytes": 1098,
+            "sha256": "dedda99942dfa4c2d558d77ad808c368b87f861c05b9ecfa93b30bd4c13a2e44"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "legacy",
+      "before": {
+        "local_guidance_bytes": 123497,
+        "local_ref_count": 25,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1048,
+            "sha256": "e57afa4ea560c5abbee461c28b0be301ef87147317727fd67a89d0c460d57ecc"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6023,
+            "sha256": "25a58509b7a2979e6637491dbc564e90130932978f12063e0fafbb45b44244f8"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4459,
+            "sha256": "8cb21715dc21055c68d9cd70eb968b52815c1a8c50a04280847bb8c5856563cb"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/environments/compositions/index.json",
+            "bytes": 5728,
+            "sha256": "d7a53f232673ad5d7edde73a0035736a8652270d3280508fc8c208e3ce836a46"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          },
+          {
+            "path": "references/asset-library-v4/environments/README.md",
+            "bytes": 1958,
+            "sha256": "bdcc62bbcba46f820720ac2367742e8cccb92f72b6c5cc2d32bde2c5c5c57ad1"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/recipes/state-recipes.json",
+            "bytes": 11746,
+            "sha256": "58abafe2aae87b8df32ab88785328bf531fcf20d0a7ded4b2a924436625986f9"
+          },
+          {
+            "path": "references/asset-library-v4/memes/templates/index.json",
+            "bytes": 2337,
+            "sha256": "f8299f47da1f1d4d97077e795bc532bbc0a19ac3d98c4c38c7fdc3e7ea53f1e1"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6475,
+            "sha256": "3de7119259bfb27a078475acd539f8b00b741ca1ff3593afd3c152838f9a58a1"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5130,
+            "sha256": "e608319d2d26193122bd307bfb7750a63aa3a4c9ddb88a1e31587f3be6653eb5"
+          }
+        ]
+      },
+      "after": {
+        "local_guidance_bytes": 126274,
+        "local_ref_count": 25,
+        "external_unmeasured": [],
+        "files": [
+          {
+            "path": "references/asset-library-v4/selection-guide.md",
+            "bytes": 1993,
+            "sha256": "a34b6d03c0e4c77eb5fd6b8329aac8cffb55f3a478d406ddabf5d62fb6d7a8de"
+          },
+          {
+            "path": "references/asset-library-v4/characters/components/catalog.json",
+            "bytes": 6411,
+            "sha256": "93a019dd88eec5b16f8b96698039d78b3500e29f9d56b9042321203c36ed984f"
+          },
+          {
+            "path": "references/asset-library-v4/characters/assembly-contract.md",
+            "bytes": 4995,
+            "sha256": "8572e5313e58b11a8d22d3bb0a3a139dbf5541b082c9159eb5b3b21d821b444a"
+          },
+          {
+            "path": "references/sticker-storytelling.md",
+            "bytes": 2405,
+            "sha256": "5699c20fb1f6db5c8b82d43f4acd73c252ce3f45dde765beec25e6ddf951e5ec"
+          },
+          {
+            "path": "references/runtime-authoring-boundary.md",
+            "bytes": 2400,
+            "sha256": "9acba3ecb82bec43a1ecc50fc7a84796fbbfadec4fc33c3782141a404312c15f"
+          },
+          {
+            "path": "references/scene-direction.md",
+            "bytes": 2611,
+            "sha256": "b85a5248f4200f7d53bfc0bfa5be7ac0d7ab920e89ab6f5ada2f323095061d14"
+          },
+          {
+            "path": "references/director-performance-v2.md",
+            "bytes": 5973,
+            "sha256": "0273a07f20a82c1c57a59698cee748e83e120f9a12cdeab9d218d2dbaf662e19"
+          },
+          {
+            "path": "references/asset-library-v4/scene-direction/index.json",
+            "bytes": 3960,
+            "sha256": "027a17a184a1a4aad62ee34adaf8883496847a190bc2f624b07a3143b5d16fed"
+          },
+          {
+            "path": "references/environment-composition.md",
+            "bytes": 3437,
+            "sha256": "670f0acb231ae11d7c113442d36e8a8c1c96d68807a53ec0f078381f1683690e"
+          },
+          {
+            "path": "references/asset-library-v4/environments/compositions/index.json",
+            "bytes": 5728,
+            "sha256": "d7a53f232673ad5d7edde73a0035736a8652270d3280508fc8c208e3ce836a46"
+          },
+          {
+            "path": "references/asset-library-v4/environments/composition-index.json",
+            "bytes": 19838,
+            "sha256": "531b7decf2518877bad78ce114794e6fde3d186313299c404c4b187c9c6d2aeb"
+          },
+          {
+            "path": "references/asset-library-v4/environments/README.md",
+            "bytes": 1958,
+            "sha256": "bdcc62bbcba46f820720ac2367742e8cccb92f72b6c5cc2d32bde2c5c5c57ad1"
+          },
+          {
+            "path": "references/asset-library-v4/characters/cast-routing.md",
+            "bytes": 916,
+            "sha256": "d83340f9fc3adbf29339643dfd1e6cf50ac0bf48a8dc17fe240f6a251869e197"
+          },
+          {
+            "path": "references/asset-library-v4/contracts/visual-intent-contract.json",
+            "bytes": 8525,
+            "sha256": "83965832b7eeb6765be8fa430d3d4039e5179944344144e99eb15aa22fc364e3"
+          },
+          {
+            "path": "references/asset-library-v4/recipes/state-recipes.json",
+            "bytes": 11746,
+            "sha256": "58abafe2aae87b8df32ab88785328bf531fcf20d0a7ded4b2a924436625986f9"
+          },
+          {
+            "path": "references/asset-library-v4/memes/templates/index.json",
+            "bytes": 2337,
+            "sha256": "f8299f47da1f1d4d97077e795bc532bbc0a19ac3d98c4c38c7fdc3e7ea53f1e1"
+          },
+          {
+            "path": "references/asset-library-v4/memes/index.json",
+            "bytes": 16849,
+            "sha256": "bf90e904f1e08fa11f4a7273bf04029e92a762e086a3aaa0faf71fbd5366c920"
+          },
+          {
+            "path": "references/asset-library-v4/characters/outfit-contract.md",
+            "bytes": 1316,
+            "sha256": "a4cf080a483ea0b63544266fc336eebdcfdd12087939559254e610e05ffeb010"
+          },
+          {
+            "path": "references/caption-timing.md",
+            "bytes": 1336,
+            "sha256": "0c30f3eaf1a38c3f0f8121345a55fa59d8acb344ce870bb58e1ebbae3f0ebc87"
+          },
+          {
+            "path": "references/story-object-effects.md",
+            "bytes": 6929,
+            "sha256": "ce13b2e223343d1d904247c1c7875f9a858bc5ad81ff8a08335f49548886d22d"
+          },
+          {
+            "path": "references/visual-direction.md",
+            "bytes": 1571,
+            "sha256": "c0a71e4a96a0888249588f0f522a009e5473db1203a30c64ed5a789388d6e332"
+          },
+          {
+            "path": "references/visual-quality.md",
+            "bytes": 2017,
+            "sha256": "b284611dca7895070d3120be9a90280d6e3cb0d8b289019b2eb95e3712c5acc8"
+          },
+          {
+            "path": "references/asset-library.md",
+            "bytes": 1342,
+            "sha256": "3bd429c55f09db89a2d725c487f591f56c5575119e4261bec11682c9de8ff6ee"
+          },
+          {
+            "path": "orchestration/phase02-composition-contract.md",
+            "bytes": 4097,
+            "sha256": "ca73c80097a4938658125623cc3a53f4c0ebd052d81677dfc8aa68ca6c955092"
+          },
+          {
+            "path": "references/story-object-composition-v2.md",
+            "bytes": 5584,
+            "sha256": "08cab290725ce0a8b94afe69496a825eeacb0cb652d77e67108973c50b162ddb"
+          }
+        ]
+      }
+    }
+  ]
+}

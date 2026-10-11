@@ -167,6 +167,27 @@
           "items": {
             "$ref": "#/$defs/spatial_binding"
           }
+        },
+        "occlusion_relations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "front",
+              "back"
+            ],
+            "properties": {
+              "front": {
+                "type": "string",
+                "minLength": 1
+              },
+              "back": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
         }
       }
     },
@@ -215,6 +236,28 @@
           "additionalProperties": {
             "$ref": "#/$defs/state"
           }
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visual_role": {
+          "enum": [
+            "background",
+            "character",
+            "interactive_prop",
+            "foreground_environment",
+            "effect",
+            "caption",
+            "overlay"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layer": {
+          "type": "integer"
         }
       }
     },
@@ -233,11 +276,24 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["text", "start_frame", "end_frame"],
+            "required": [
+              "text",
+              "start_frame",
+              "end_frame"
+            ],
             "properties": {
-              "text": {"type": "string", "minLength": 1},
-              "start_frame": {"type": "number", "minimum": 0},
-              "end_frame": {"type": "number", "exclusiveMinimum": 0}
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "start_frame": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end_frame": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
             }
           }
         },

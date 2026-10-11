@@ -24,5 +24,5 @@ def test_voice_anchor_does_not_double_count_scene_offset():
 def test_caption_frames_are_absolute():
     measured = {"captions": [{"text": "tới", "startMs": 19940, "endMs": 20160}]}
     assert _caption_rows(measured, fps=24, scene_start=333) == [
-        {"text": "tới", "start_frame": 479, "end_frame": 484}
+        {"text": "tới", "start_frame": 479, "end_frame": 484, "words": [{"text": "tới", "start_frame": 478.56, "end_frame": 483.84}]}
     ]

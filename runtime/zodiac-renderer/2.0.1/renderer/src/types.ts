@@ -114,7 +114,7 @@ export type CoverDesignV2 = {
   composition: {hero_scale:number;supporting_prop_scale:number;read_order:string[];
     max_supporting_accents:number;min_side_margin_px:number;background_policy:string};
 };
-export type CoverPublish = {cover?: {design?:CoverDesignV2;source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
+export type CoverPublish = {cover?: {opening?:{enabled:boolean;duration_sec?:number;transition_sec?:number};design?:CoverDesignV2;source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
 
 export type RendererV2Props = {
   publish?: CoverPublish;

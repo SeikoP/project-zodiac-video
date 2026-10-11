@@ -1,0 +1,56 @@
+{
+  "library_id": "zodiac-visual-grammar-v4",
+  "environment_composition_contract": "v4-owned-semantic-presets",
+  "prop_masters": [
+    {
+      "id": "phone",
+      "path": "props/phone.svg",
+      "production_safe": true
+    },
+    {
+      "id": "offered-pants",
+      "path": "props/pants.svg",
+      "production_safe": true
+    },
+    {
+      "id": "notebook",
+      "path": "props/notebook.svg",
+      "production_safe": true
+    },
+    {
+      "id": "book",
+      "path": "props/book.svg",
+      "production_safe": true
+    },
+    {
+      "id": "water-bottle",
+      "path": "props/water-bottle.svg",
+      "production_safe": true
+    },
+    {
+      "id": "tissue-box",
+      "path": "props/tissue-box.svg",
+      "production_safe": true
+    },
+    {
+      "id": "headset",
+      "path": "props/headset.svg",
+      "production_safe": true
+    },
+    {
+      "id": "mirror",
+      "path": "props/mirror.svg",
+      "production_safe": true
+    },
+    {
+      "id": "backpack",
+      "path": "props/backpack.svg",
+      "production_safe": true
+    },
+    {
+      "id": "pen",
+      "path": "props/pen.svg",
+      "production_safe": true
+    }
+  ]
+}

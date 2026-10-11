@@ -1,0 +1,8 @@
+{
+  "format":"zodiac-semantic-asset-fit@2",
+  "version":"2.0.0",
+  "style_token":"zodiac-paper-doodle-meme-v4",
+  "policy":{"primary_story_reuse_min_fit":0.8,"supporting_reuse_min_fit":0.55,"forbidden_resolution":["reuse_near_match"],"low_fit_resolution":"derive_new","derivative_required_fields":["output_asset_id","semantic_tags","style_token"],"generic_master_repeat_limit":2,"rule":"availability_never_overrides_semantic_fit","legacy_v3_direct_copy":false},
+  "constrained_generic_masters":{"checklist-card":["checklist","task_status","planning","completion"],"calendar":["date","deadline","schedule","appointment"],"note-card":["note","reminder","short_written_note"],"notification-card":["notification","access_status","system_notice","permission"]},
+  "approved_derivative_templates":[]
+}

@@ -1,0 +1,65 @@
+{
+  "format": "zodiac-v4-meme-templates@1",
+  "version": "4.0",
+  "policy": {
+    "semantic_contracts_only": true,
+    "legacy_svg_artwork_copied": false
+  },
+  "templates": [
+    {
+      "id": "absurd-offer",
+      "path": "templates/absurd-offer.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/absurd-offer/composition.json"
+    },
+    {
+      "id": "cry-closeup",
+      "path": "templates/cry-closeup.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/cry-closeup/composition.json"
+    },
+    {
+      "id": "cry-hug-object",
+      "path": "templates/cry-hug-object.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/cry-hug-object/composition.json"
+    },
+    {
+      "id": "equip-this",
+      "path": "templates/equip-this.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/equip-this/composition.json"
+    },
+    {
+      "id": "facepalm-closeup",
+      "path": "templates/facepalm-closeup.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/facepalm-closeup/composition.json"
+    },
+    {
+      "id": "heart-offer-overkill",
+      "path": "templates/heart-offer-overkill.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/heart-offer-overkill/composition.json"
+    },
+    {
+      "id": "mirror-self-check",
+      "path": "templates/mirror-self-check.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/mirror-self-check/composition.json"
+    },
+    {
+      "id": "prop-pressure",
+      "path": "templates/prop-pressure.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/prop-pressure/composition.json"
+    },
+    {
+      "id": "receipt-in-face",
+      "path": "templates/receipt-in-face.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/receipt-in-face/composition.json"
+    },
+    {
+      "id": "side-eye-object",
+      "path": "templates/side-eye-object.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/side-eye-object/composition.json"
+    },
+    {
+      "id": "wallet-flex",
+      "path": "templates/wallet-flex.json",
+      "historical_source": "asset-library-v3/meme-compositions/templates/wallet-flex/composition.json"
+    }
+  ]
+}

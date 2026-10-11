@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {validateZipFile} from './zip-core.mjs';
+import {canonicalPackageZipName} from './export-zodiac-job.mjs';
+const arg=name=>{const i=process.argv.indexOf(name);return i>=0?process.argv[i+1]:undefined;};
+const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
+if(direct){
+  const zip=process.argv[2],root=process.argv[3],sign=arg('--sign'),concept=arg('--concept'),patchVersion=arg('--patch-version');
+  if(!zip||sign===undefined||concept===undefined){
+    console.error('Usage: node validate-zodiac-job-zip.mjs <zip> [package-root] --sign <sign> --concept <concept> [--patch-version <version>]');
+    process.exit(2);
+  }
+  try{
+    const expected=canonicalPackageZipName({sign,concept,patchVersion});
+    if(path.basename(zip)!==expected)throw new Error(`ZIP_QC_INVALID: delivery filename must be ${expected}`);
+    const r=await validateZipFile(zip,root);
+    console.log(`ZIP_ROUNDTRIP_PASS: name=${path.basename(zip)} entries=${r.entries} bytes=${r.bytes}`);
+    console.log('ZIP_CANONICAL_FILENAME_PASS');
+    console.log('ZIP_ROOT_LAYOUT_PASS');
+    console.log('ZIP_WINDOWS_PATH_SAFETY_PASS');
+    console.log('ZIP_CRC_PASS');
+    console.log('LOCAL_RUNNER_IMPORT_READY');
+  }catch(e){console.error(e.message);process.exit(1);}
+}

@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import path from 'node:path';import test from 'node:test';import {fileURLToPath} from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url));const skillRoot=path.resolve(here,'../..');
+test('V4 is canonical and historical migration data has no runtime dependency',async()=>{const m=JSON.parse(await readFile(path.join(skillRoot,'references/asset-library-v4/manifest.json'),'utf8'));assert.equal(m.library_id,'zodiac-visual-grammar-v4');assert.equal(m.version,'4.0');assert.equal(m.historical_migration_source.policy,'provenance-only');assert.equal(m.historical_migration_source.runtime_dependency,false);assert.equal(m.historical_migration_source.direct_copy_to_v4,false);});

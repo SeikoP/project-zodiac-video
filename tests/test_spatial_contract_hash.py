@@ -3,7 +3,7 @@ import unittest
 
 from tools.control_plane.contracts import canonical_contract_hash
 
-PINNED_SPATIAL_SHA256 = "787bd1c4addd6cf3ec187b4019b5c988555df870563f75989d0ef6b5dfd52f21"
+PINNED_SPATIAL_SHA256 = "2ca8394b51a9b95174ee407731f309ec3cfd44b03f5f98f25655f46cbb625b85"
 
 
 class SpatialSchemaSyncTests(unittest.TestCase):

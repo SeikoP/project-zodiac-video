@@ -1,0 +1,482 @@
+{
+  "format": "zodiac-phase-manifest@2",
+  "id": "01-content",
+  "order": 1,
+  "title": "Content",
+  "review_boundary": "required",
+  "steps": [
+    {
+      "id": "evidence",
+      "title": "Evidence",
+      "required_capabilities": [
+        {
+          "id": "current_entry_identity",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "orchestration/verify-entry-freshness.mjs",
+          "required_arg_suffixes": [
+            "loaded-entry-identity.json"
+          ],
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "exa_discovery",
+          "kind": "external_tool",
+          "when": "fresh",
+          "guidance_uri": "skills://plugins/app-69ea4ed2cf7c8191b742ef3622479ddd/Search",
+          "tool_locator": "mcp__Exa__web_search_exa",
+          "unavailable_policy": "fallback",
+          "fallback_providers": [
+            "tavily"
+          ],
+          "stage": "entry",
+          "provider": "exa"
+        },
+        {
+          "id": "parallel_verify",
+          "kind": "external_tool",
+          "when": "fresh",
+          "tool_locator": "mcp__Parallel_Search__web_search",
+          "unavailable_policy": "fallback",
+          "stage": "entry",
+          "provider": "parallel",
+          "fallback_providers": [
+            "tavily",
+            "built_in"
+          ]
+        },
+        {
+          "id": "evidence_brief_compile",
+          "kind": "internal_compiler",
+          "when": "fresh",
+          "tool_locator": "orchestration/compile-evidence-brief.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "evidence_contract_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-evidence-contract.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
+      "conditional_capabilities": [
+        {
+          "id": "firecrawl_extract",
+          "kind": "external_tool",
+          "when": "flag:hard_to_extract",
+          "tool_locator": "mcp__Firecrawl__firecrawl_scrape",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "series_tracker_contract",
+          "kind": "internal_reference",
+          "when": "flag:series_tracker",
+          "guidance_uri": "references/series-tracker.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "episode_research_scope_validation",
+          "kind": "internal_validator",
+          "when": "flag:episode_selected",
+          "tool_locator": "orchestration/validate-episode-scope.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit",
+          "required_arg_suffixes": [
+            "--research"
+          ]
+        }
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "current_attachment",
+        "canonical_contract",
+        "live_research",
+        "series_selection",
+        "series_candidate_screen",
+        "episode_scope"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "old_package",
+        "continuity_snapshot",
+        "sign_example",
+        "series_tracker_raw",
+        "asset_rules",
+        "renderer_rules",
+        "writer_qc",
+        "unselected_member_profiles"
+      ],
+      "required_outputs": [
+        "evidence-ledger.json",
+        "evidence-summary.md"
+      ],
+      "conditional_outputs": [
+        {
+          "name": "series-candidate-screen.json",
+          "when": "flag:series_auto_select"
+        },
+        {
+          "name": "evidence-brief.json",
+          "when": "fresh"
+        },
+        {
+          "name": "research-scope.json",
+          "when": "flag:episode_selected"
+        }
+      ],
+      "gate_checks": [
+        "evidence_boundary",
+        "source_coverage",
+        "evidence_contract"
+      ],
+      "conditional_gate_checks": [
+        {
+          "name": "series_candidate_screen",
+          "when": "flag:series_auto_select"
+        },
+        {
+          "name": "series_selection_resolved",
+          "when": "flag:series_tracker"
+        }
+      ],
+      "allowed_operations": [
+        "read_context",
+        "external_tool_call",
+        "write_authoring"
+      ],
+      "load_references": [
+        "references/context-isolation.md",
+        "references/research-and-viral-tools.md",
+        "references/episode-formats.md"
+      ]
+    },
+    {
+      "id": "concept",
+      "title": "Concept + Story Engine",
+      "required_capabilities": [
+        {
+          "id": "writer_brief_compile",
+          "kind": "internal_compiler",
+          "when": "fresh",
+          "tool_locator": "orchestration/compile-writer-brief.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "content_contract_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-content-contract.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "plugin_use_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "orchestration/plan-plugin-use.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
+      "conditional_capabilities": [
+        {
+          "id": "viral_analysis",
+          "kind": "guidance_skill",
+          "when": "flag:viral_support_needed",
+          "guidance_uri": "skills://plugins/gpt-36cbaf94d3de76ac0e1999fdc4fb0b22/instructions",
+          "unavailable_policy": "block",
+          "stage": "entry",
+          "require_application_summary": true
+        },
+        {
+          "id": "vidiq_reference_analysis",
+          "kind": "external_tool",
+          "when": "flag:reference_analysis",
+          "guidance_uri": "skills://plugins/app-69dd11f3e50c8191b1ca48d03cf7e2ad/vidiq-shorts-inspiration",
+          "tool_locator": "mcp__vidIQ__vidiq_watch_shortform_content",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "episode_scope_validation",
+          "kind": "internal_validator",
+          "when": "flag:episode_selected",
+          "tool_locator": "orchestration/validate-episode-scope.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "current_attachment",
+        "evidence_summary",
+        "canonical_contract",
+        "explicit_reference",
+        "capability_output",
+        "series_selection",
+        "episode_scope"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "old_package",
+        "sign_example",
+        "series_tracker_raw",
+        "full_research",
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules",
+        "unselected_member_profiles"
+      ],
+      "required_outputs": [
+        "concept-candidates.json",
+        "viral-analysis.json",
+        "reference-mechanics.json",
+        "narrative-plan.json",
+        "phase3-writer-brief.json"
+      ],
+      "gate_checks": [
+        "premise_competition",
+        "concept_fit",
+        "evidence_mapping",
+        "viral_application",
+        "reference_mechanics_compiled",
+        "story_spine",
+        "semantic_progression",
+        "content_lineage"
+      ],
+      "allowed_operations": [
+        "read_context",
+        "external_tool_call",
+        "write_authoring"
+      ],
+      "load_references": [
+        "references/viral-routing-policy.md",
+        "references/content-craft.md",
+        "references/narrative-modes.md",
+        "references/narration-writer-brief.md",
+        "references/character-viral-performance.md",
+        "references/content-quality-engine.md",
+        "references/narration-rhythm.md",
+        "references/plugin-use-playbook.md",
+        "references/phase01-briefing.md",
+        "references/episode-formats.md"
+      ],
+      "conditional_outputs": [
+        {
+          "name": "writer-brief-extras.json",
+          "when": "fresh"
+        },
+        {
+          "name": "writer-brief-receipt.json",
+          "when": "fresh"
+        },
+        {
+          "name": "plugin-use-decisions.json",
+          "when": "fresh"
+        },
+        {
+          "name": "episode-scope.json",
+          "when": "flag:episode_selected"
+        }
+      ]
+    },
+    {
+      "id": "narration",
+      "title": "Narration",
+      "required_capabilities": [
+        {
+          "id": "phase3_writer_contract",
+          "kind": "internal_reference",
+          "when": "always",
+          "guidance_uri": "references/narrator-performance.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "narrative_qc",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-narrative.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "narrative_qc_decision_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-narrative-qc.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit",
+          "required_arg_suffixes": [
+            "narrative-qc.json",
+            "narration.txt"
+          ]
+        },
+        {
+          "id": "story_spine_realization_review",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-story-spine-performance.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit",
+          "required_arg_suffixes": [
+            "narrative-plan.json",
+            "narration.txt",
+            "story-spine-performance.json"
+          ]
+        },
+        {
+          "id": "story_quality_review_validation",
+          "kind": "internal_validator",
+          "when": "flag:content_quality_engine",
+          "tool_locator": "references/validate-story-quality-review.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
+      "conditional_capabilities": [
+        {
+          "id": "tts_text_readiness",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "references/short-form-duration.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "phase3_writer_brief",
+        "minimal_evidence",
+        "reference_mechanics"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "old_package",
+        "sign_example",
+        "series_tracker_raw",
+        "series_selection",
+        "full_research",
+        "narrative_plan",
+        "current_attachment",
+        "explicit_reference",
+        "asset_rules",
+        "renderer_rules",
+        "package_rules",
+        "runtime_rules",
+        "interaction_rules",
+        "full_qc"
+      ],
+      "required_outputs": [
+        "narration.txt",
+        "narrative-qc.json",
+        "story-spine-performance.json",
+        "story-quality-review.json"
+      ],
+      "gate_checks": [
+        "narration_ready_for_review",
+        "narrative_qc",
+        "narrative_qc_decision",
+        "narrative_qc_grounding",
+        "story_spine_performance",
+        "story_quality_review",
+        "tts_text_readiness_reviewed",
+        "duration_estimated_not_measured"
+      ],
+      "allowed_operations": [
+        "read_context",
+        "write_authoring"
+      ],
+      "load_references": [
+        "references/narration-writer-brief.md",
+        "references/story-spine-performance.md",
+        "references/content-quality-engine.md",
+        "references/narration-rhythm.md",
+        "references/short-form-duration.mjs"
+      ],
+      "context_scopes": {
+        "draft": {
+          "allowed_context_categories": [
+            "current_request",
+            "phase3_writer_brief",
+            "minimal_evidence",
+            "reference_mechanics",
+            "episode_scope",
+            "selected_member_lenses"
+          ],
+          "forbidden_context_categories": [
+            "memory",
+            "prior_chat",
+            "old_package",
+            "sign_example",
+            "series_tracker_raw",
+            "series_selection",
+            "full_research",
+            "narrative_plan",
+            "current_attachment",
+            "explicit_reference",
+            "asset_rules",
+            "renderer_rules",
+            "package_rules",
+            "runtime_rules",
+            "interaction_rules",
+            "full_qc",
+            "research_pool",
+            "unselected_member_profiles"
+          ],
+          "load_references": [
+            "references/narration-writer-brief.md",
+            "references/story-spine-performance.md",
+            "references/content-quality-engine.md",
+            "references/plugin-use-playbook.md"
+          ]
+        },
+        "review": {
+          "allowed_context_categories": [
+            "current_request",
+            "actual_narration",
+            "narrative_plan",
+            "selected_concept",
+            "evidence_summary",
+            "reference_mechanics",
+            "full_qc",
+            "episode_scope",
+            "selected_member_lenses"
+          ],
+          "forbidden_context_categories": [
+            "memory",
+            "prior_chat",
+            "old_package",
+            "full_research",
+            "asset_rules",
+            "renderer_rules",
+            "research_pool",
+            "unselected_member_profiles"
+          ],
+          "load_references": [
+            "references/content-quality-engine.md",
+            "references/story-spine-performance.md",
+            "references/narration-rhythm.md",
+            "references/plugin-use-playbook.md"
+          ]
+        }
+      }
+    }
+  ]
+}

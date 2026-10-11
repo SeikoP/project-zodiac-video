@@ -1,0 +1,57 @@
+{
+  "id": "human-stroke-v2",
+  "version": "2.0",
+  "render_time_randomness": false,
+  "thresholds": {
+    "character": {
+      "min_curved_paths": 6,
+      "max_primitive_ratio": 0.35,
+      "stroke_width_max": 12
+    },
+    "focal": {
+      "min_curved_paths": 2,
+      "max_primitive_ratio": 0.45,
+      "stroke_width_max": 9
+    },
+    "support": {
+      "min_curved_paths": 1,
+      "max_primitive_ratio": 0.65,
+      "stroke_width_max": 9
+    }
+  },
+  "character_required_groups": [
+    "sticker_edge",
+    "head_outline",
+    "hair_back",
+    "face_eyes",
+    "face_mouth",
+    "torso",
+    "left_arm",
+    "right_arm",
+    "left_leg",
+    "right_leg"
+  ],
+  "bilateral_curve_groups": [
+    [
+      "left_arm",
+      "right_arm"
+    ],
+    [
+      "left_leg",
+      "right_leg"
+    ]
+  ],
+  "forbidden_svg_elements": [
+    "linearGradient",
+    "radialGradient",
+    "filter",
+    "text"
+  ],
+  "rules": [
+    "path-first focal silhouettes",
+    "independent bilateral curves",
+    "non-identical paired geometry",
+    "palette and literal stroke bounds",
+    "no random/noise filters"
+  ]
+}

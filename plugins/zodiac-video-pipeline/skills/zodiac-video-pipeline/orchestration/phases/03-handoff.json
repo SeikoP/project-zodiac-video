@@ -1,0 +1,257 @@
+{
+  "format": "zodiac-phase-manifest@2",
+  "id": "03-handoff",
+  "order": 3,
+  "title": "Handoff",
+  "review_boundary": "none",
+  "steps": [
+    {
+      "id": "assemble",
+      "title": "Assemble Job v5",
+      "required_capabilities": [
+        {
+          "id": "job5_package_contract",
+          "kind": "internal_reference",
+          "when": "always",
+          "guidance_uri": "references/package-format-v5.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "job5_authoring_compiler",
+          "kind": "internal_compiler",
+          "when": "always",
+          "guidance_uri": "references/production-handoff-v2.md",
+          "tool_locator": "orchestration/compile-job-v5.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit",
+          "invocation_policy": "owned_substage_of_production_entrypoint"
+        }
+      ],
+      "conditional_capabilities": [],
+      "allowed_context_categories": [
+        "current_request",
+        "production",
+        "narration",
+        "design",
+        "used_assets",
+        "publish_metadata",
+        "publish_copy",
+        "package_contract",
+        "delivery_identity",
+        "approved_source",
+        "review_lock",
+        "actual_review_receipts",
+        "handoff_receipt"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "sign_example",
+        "series_tracker_raw",
+        "full_research",
+        "writer_prompt",
+        "narrative_brainstorm",
+        "reusable_library",
+        "renderer_runtime_defaults"
+      ],
+      "required_outputs": [
+        "package-manifest.json",
+        "production.ir.json",
+        "design-token.json"
+      ],
+      "gate_checks": [
+        "job5_manifest",
+        "stable_job_identity",
+        "authoring_ir_compile",
+        "explicit_motion_contract",
+        "no_runtime_frame_scheduling"
+      ],
+      "allowed_operations": [
+        "read_context",
+        "write_package_workspace"
+      ],
+      "load_references": [
+        "references/contracts/authoring-ir-v1.schema.json",
+        "references/contracts/zodiac-job-v5.schema.json",
+        "references/contracts/design-token-v4.schema.json"
+      ]
+    },
+    {
+      "id": "validate",
+      "title": "Validate Job v5",
+      "required_capabilities": [
+        {
+          "id": "handoff_v2_workspace_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "orchestration/validate-handoff-workspace-v2.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry",
+          "invocation_policy": "owned_substage_of_production_entrypoint"
+        }
+      ],
+      "conditional_capabilities": [],
+      "allowed_context_categories": [
+        "package_workspace",
+        "package_contract",
+        "delivery_identity",
+        "approved_source",
+        "review_lock",
+        "actual_review_receipts",
+        "handoff_receipt"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "full_research",
+        "writer_prompt",
+        "asset_rules",
+        "reusable_library",
+        "runtime_hash",
+        "series_tracker_raw"
+      ],
+      "required_outputs": [],
+      "gate_checks": [
+        "job5_schema",
+        "authoring_ir_schema",
+        "design_token_schema",
+        "publish_schema",
+        "asset_references",
+        "narration_identity",
+        "runtime_fields_absent"
+      ],
+      "allowed_operations": [
+        "read_package_workspace"
+      ],
+      "load_references": [
+        "references/package-format-v5.md",
+        "references/production-handoff-v2.md"
+      ]
+    },
+    {
+      "id": "export",
+      "title": "Export",
+      "required_capabilities": [
+        {
+          "id": "job5_package_contract",
+          "kind": "internal_reference",
+          "when": "always",
+          "guidance_uri": "references/package-format-v5.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "pre_export_v2_workspace_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "orchestration/validate-handoff-workspace-v2.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry",
+          "invocation_policy": "owned_substage_of_production_entrypoint"
+        },
+        {
+          "id": "deterministic_job5_zip_exporter",
+          "kind": "internal_compiler",
+          "when": "always",
+          "tool_locator": "orchestration/run-phase03-production.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "job5_zip_roundtrip_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "orchestration/validate-zodiac-job-zip-v2.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit",
+          "invocation_policy": "owned_substage_of_production_entrypoint"
+        }
+      ],
+      "conditional_capabilities": [
+        {
+          "id": "series_tracker_update_contract",
+          "kind": "internal_reference",
+          "when": "flag:series_tracker",
+          "guidance_uri": "references/series-tracker.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        }
+      ],
+      "allowed_context_categories": [
+        "package_workspace",
+        "package_contract",
+        "series_tracker",
+        "delivery_identity",
+        "approved_source",
+        "review_lock",
+        "actual_review_receipts",
+        "handoff_receipt"
+      ],
+      "forbidden_context_categories": [
+        "memory",
+        "prior_chat",
+        "full_research",
+        "writer_prompt",
+        "asset_rules",
+        "renderer_rules",
+        "reusable_library",
+        "final_validation"
+      ],
+      "required_outputs": [
+        "zodiac-job.zip"
+      ],
+      "conditional_outputs": [
+        {
+          "name": "zodiac-series-checklist.json",
+          "when": "flag:series_tracker"
+        }
+      ],
+      "gate_checks": [
+        "handoff_ready",
+        "pre_export_workspace_revalidated",
+        "canonical_delivery_filename",
+        "stable_job_identity",
+        "zip_root_layout",
+        "zip_windows_path_safety",
+        "zip_crc_integrity",
+        "zip_workspace_roundtrip",
+        "local_runner_import_ready",
+        "zip_ready",
+        "approved_source_digest",
+        "phase01_phase02_user_review_receipts",
+        "production_model_roundtrip",
+        "approved_source_projection_parity",
+        "effect_spatial_lifecycle",
+        "brand_watermark_font",
+        "publish_cover_integrity",
+        "semantic_p1_zero_before_zip",
+        "atomic_single_zip_release"
+      ],
+      "conditional_gate_checks": [
+        {
+          "name": "series_tracker_updated",
+          "when": "flag:series_tracker"
+        }
+      ],
+      "allowed_operations": [
+        "read_package_workspace",
+        "create_zip",
+        "write_series_tracker",
+        "write_authoring_receipt"
+      ],
+      "max_zip_outputs": 1,
+      "zip_output_name_pattern": "^zodiac-[a-z0-9]+-[a-z0-9]+(?:-[a-z0-9]+)*(?:-v\\d+(?:\\.\\d+)*)?\\.zip$",
+      "filename_contract": {
+        "base": "zodiac-<sign>-<concept>.zip",
+        "patch": "zodiac-<sign>-<concept>-v<patch-version>.zip",
+        "sign_slug": "compact ASCII lowercase without separators; e.g. Bọ Cạp -> bocap",
+        "concept_slug": "ASCII lowercase kebab-case; e.g. Hai phiên bản -> hai-phien-ban",
+        "patch_suffix_policy": "append -v<version> only for patch/re-export; stable job.id never includes patch version"
+      },
+      "load_references": []
+    }
+  ],
+  "production_entrypoint": "orchestration/run-phase03-production.mjs",
+  "invocation_policy": "one_shot_with_owned_substages"
+}

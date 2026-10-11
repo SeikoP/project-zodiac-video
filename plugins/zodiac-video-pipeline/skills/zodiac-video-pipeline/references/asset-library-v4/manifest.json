@@ -1,0 +1,58 @@
+{
+  "library_id": "zodiac-visual-grammar-v4",
+  "version": "4.0",
+  "style_token": "zodiac-paper-doodle-meme-v4",
+  "handmade_profile": "human-stroke-v2",
+  "authoritative": true,
+  "architecture": "visual-grammar",
+  "pipeline": [
+    "frame_skeleton",
+    "mechanic",
+    "character_assembly",
+    "meme_prop_and_effect_compile",
+    "skin_binding",
+    "environment_composition",
+    "scene_direction_compile",
+    "meme_effect_receipt_finalize"
+  ],
+  "canonical_roots": [
+    "frames/",
+    "mechanics/",
+    "foundations/",
+    "characters/",
+    "props/",
+    "effects/",
+    "environments/",
+    "memes/"
+  ],
+  "contracts": {
+    "frames": "frames/index.json",
+    "mechanics": "mechanics/index.json",
+    "recipe": "recipes/visual-grammar.json",
+    "human_stroke": "foundations/human-stroke-profile.json",
+    "bedroom_environment": "environments/composition-index.json",
+    "character_components": "characters/components/catalog.json",
+    "character_assembly": "characters/assembly-contract.md",
+    "meme_adapters": "memes/index.json",
+    "meme_effect_catalog": "effects/meme-effect-catalog.json",
+    "meme_effect_compiler": "memes/compile-meme-effects.mjs",
+    "meme_contact_validation": "memes/validate-meme-contacts.mjs",
+    "meme_effect_validation": "memes/validate-meme-effects.mjs",
+    "meme_effect_receipt": "memes/finalize-meme-effect-receipt.mjs",
+    "props": "props/index.json",
+    "accessories": "characters/accessories/index.json",
+    "scene_direction": "scene-direction/index.json",
+    "environment_composition_examples": "environments/compositions/index.json",
+    "meme_templates": "memes/templates/index.json",
+    "state_recipes": "recipes/state-recipes.json",
+    "contracts": "contracts/validation-contract.md",
+    "ornaments": "effects/ornament-index.json",
+    "selection_policy": "selection-policy.json"
+  },
+  "historical_migration_source": {
+    "id": "zodiac-paper-doodle-asset-library-v3",
+    "policy": "provenance-only",
+    "direct_copy_to_v4": false,
+    "runtime_dependency": false
+  }
+}

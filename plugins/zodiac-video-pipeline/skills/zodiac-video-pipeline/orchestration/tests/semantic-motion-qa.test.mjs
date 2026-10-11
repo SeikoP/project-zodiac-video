@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {assessSemanticEvent} from '../semantic-motion-qa.mjs';
+const entity=(id,x,y,width,height)=>({id,kind:'object',initial_state:'visible',states:{visible:{asset:id,visible:true,transform:{x,y,width,height}}}});
+const fixture=()=>({id:'s07',entities:[entity('pen',620,745,220,115),entity('notebook',280,356,520,488)],spatial_bindings:[{entity:'pen',anchor:'notebook',relation:'points_to',max_distance_px:360}]});
+const e=(preset,target='pen')=>({id:'test',target,state_before:'visible',state_after:'visible',motion:{preset,duration_frames:11}});
+test('hold is a static hold not a motion event',()=>{assert.deepEqual(assessSemanticEvent(fixture(),e('hold')).kind,'static_hold');});
+test('identical state_swap fails as visually ineffective',()=>{assert.throws(()=>assessSemanticEvent(fixture(),e('state_swap')),/NOOP_STATE_SWAP/);});
+test('slide reaches notebook contact with meaningful bounded travel',()=>{const a=assessSemanticEvent(fixture(),e('slide'));assert.equal(a.kind,'motion_only');assert.equal(a.expected_motion.contact_profile,'pen-to-notebook-mark-v1');assert.ok(a.expected_motion.travel_px>100);assert.ok(a.expected_motion.travel_px<250);assert.ok(Math.abs(a.expected_motion.contact_target.x-592)<1);});
+test('slide without a points_to anchor is blocked',()=>{const s=fixture();s.spatial_bindings=[];assert.throws(()=>assessSemanticEvent(s,e('slide')),/SLIDE_CONTACT_BINDING_REQUIRED/);});
+test('tilt, bounce and focus retain explicit measurable amplitudes',()=>{for(const id of ['small-bounce','subtle-tilt','focus-shift']){const q=assessSemanticEvent(fixture(),e(id));assert.equal(q.kind,'motion_only');assert.ok(Math.abs(q.expected_motion.peak)>=3);}});
+test('hold with changed state cannot silently change appearance',()=>{const s=fixture();s.entities[0].states.changed={...s.entities[0].states.visible,visible:false};const ev=e('hold');ev.state_after='changed';assert.throws(()=>assessSemanticEvent(s,ev),/HOLD_STATE_CHANGE/);});

@@ -1,0 +1,25 @@
+import {readFile} from "node:fs/promises";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+const root=path.dirname(fileURLToPath(import.meta.url));
+const read=async p=>JSON.parse(await readFile(path.join(root,p),"utf8"));
+const fail=m=>{throw new Error("VISUAL_INTENT_INVALID: "+m);};
+const x=await read("visual-intent-contract.json"),q=await read("visual-qa-matrix.json");
+const ids=["fake_flex","awkward","emotional_damage","heart_offer","damage_run","banner_bonk","rose_peek","receipt_shame"];
+if(x.version!=="1.0-visual-intent-v1")fail("version");
+if(x.precedence?.conflict_rule!=="visual_intent_wins_for_side_direction_locus_facial_origin")fail("precedence");
+for(const id of ids)if(!x.recipes?.[id])fail(`missing recipe intent ${id}`);
+const rose=x.recipes.rose_peek;
+if(rose.occluder_side!=="left"||rose.reveal_side!=="right")fail("rose reveal sides");
+if(rose.effect?.side!=="right"||rose.effect?.direction!=="outward"||rose.effect?.locus!=="reveal_side")fail("rose accent intent");
+const damage=x.recipes.damage_run;
+if(damage.motion_direction!=="left"||damage.trail_side!=="right")fail("damage motion grammar");
+if(JSON.stringify(damage.facial_origin)!==JSON.stringify(["left_eye","right_eye"]))fail("damage tear origin");
+if(damage.effect?.side!=="right"||damage.effect?.locus!=="trail_side")fail("damage speed-line intent");
+for(const a of ["left_eye","right_eye","face_core","body_rear","reveal_right","trail_right"])if(!x.derived_semantic_anchors?.[a])fail(`missing derived anchor ${a}`);
+const assets=x.compatibility_matrix?.assets??[], recipes=x.compatibility_matrix?.recipes??[];
+if(assets.length!==15||recipes.length!==8||assets.length*recipes.length!==120)fail("120 compatibility matrix");
+if(q.cases?.length!==40||q.representatives?.length!==5)fail("40 QA matrix");
+const uniq=new Set(q.cases.map(c=>`${c.asset}:${c.recipe}`));if(uniq.size!==40)fail("QA duplicates");
+for(const c of q.cases){const r=x.recipes[c.recipe];if(!r)fail(`QA unknown recipe ${c.recipe}`);const fx=r.effect;if((fx?.id??null)!==c.expected_effect)fail(`QA effect ${c.asset}:${c.recipe}`);if((fx?.side??null)!==c.expected_side)fail(`QA side ${c.asset}:${c.recipe}`);if((fx?.direction??null)!==c.expected_direction)fail(`QA direction ${c.asset}:${c.recipe}`);}
+console.log(`VISUAL_INTENT_PASS: recipes=${ids.length} compatibility=${assets.length*recipes.length} qa=${q.cases.length}`);

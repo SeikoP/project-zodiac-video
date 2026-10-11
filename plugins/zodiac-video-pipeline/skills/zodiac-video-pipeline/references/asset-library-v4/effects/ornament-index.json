@@ -1,0 +1,51 @@
+{
+  "format": "zodiac-v4-ornament-index@1",
+  "version": "4.0",
+  "policy": {
+    "native_effect_catalog_only": true,
+    "runtime_randomness": false,
+    "source_svg_masters": false
+  },
+  "ornaments": [
+    {
+      "id": "stress-ticks",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "motion-dash",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "blush-marks",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "question-pop",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "tiny-sparkle",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "sparkle-burst",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "tear-trails",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    },
+    {
+      "id": "offer-impact",
+      "catalog": "effects/meme-effect-catalog.json",
+      "kind": "effect"
+    }
+  ]
+}

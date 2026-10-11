@@ -1,0 +1,29 @@
+{
+  "format": "zodiac-simplification-reference@1",
+  "references": [
+    {
+      "asset_path": "assets/environment/sets/S03-cafe-school-warm.svg",
+      "asset_sha256": "081abe8b09e865c5f137100291f7ad28a94d8b39a604d5912e3fbb6d41d8edc4",
+      "source_zip_sha256": "80424731aa46026937ad8d1b6bddaa98f0db1ce069dd812f98e1e358ba3c600e",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 900
+      },
+      "narration_sha256": "a596290328980cab88801ccf612cdcd87b75c7c4ebf7d869a00e20f21310ea6f"
+    },
+    {
+      "asset_path": "assets/environment/living-room-home-space.svg",
+      "asset_sha256": "dc7e7ef67fd7f0d2409dd7a5557a2a2b32438045975d36f2a603499a0a94f3b8",
+      "source_zip_sha256": "fb3f145e078b9e5f46b8e4a82d0490c9e251dda7c06da99f8a9c42cb0a036693",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 950
+      },
+      "narration_sha256": "a596290328980cab88801ccf612cdcd87b75c7c4ebf7d869a00e20f21310ea6f"
+    }
+  ]
+}

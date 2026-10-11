@@ -1,0 +1,566 @@
+{
+  "format": "zodiac-asset-selection-policy@1",
+  "core_refs": [
+    "references/asset-library-v4/selection-guide.md",
+    "references/asset-library-v4/foundations/human-stroke-profile.json",
+    "references/asset-library-v4/characters/assembly-contract.md"
+  ],
+  "core_ids": [],
+  "extensions": [
+    {
+      "ids": [
+        "absurd-offer",
+        "cry-closeup",
+        "cry-hug-object",
+        "equip-this",
+        "facepalm-closeup",
+        "heart-offer-overkill",
+        "mirror-self-check",
+        "prop-pressure",
+        "receipt-in-face",
+        "side-eye-object",
+        "wallet-flex"
+      ],
+      "kind": "meme",
+      "refs": [
+        "references/asset-library-v4/memes/index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-study-base"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "classroom-study"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "school-hallway"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "living-room-home"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "kitchen-home"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "front-door-entry"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "cafe-chat"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "outdoor-street-soft"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "library-study"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "school-yard"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-window-curtain"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-headboard-bed-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-desk-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-pillow-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "bedroom-blanket-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "classroom-whiteboard"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "classroom-window"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "classroom-desk-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "hallway-lockers"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "hallway-floor-edge"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "living-sofa"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "living-window"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "kitchen-counter"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "kitchen-cabinet"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "entry-door"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "entry-mat"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "cafe-window"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "cafe-table"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "street-tree"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "street-curb"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "library-shelf"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "library-table"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "schoolyard-fence"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "schoolyard-ground"
+      ],
+      "kind": "environment",
+      "refs": [
+        "references/asset-library-v4/environments/composition-index.json"
+      ]
+    },
+    {
+      "ids": [
+        "standard_compact",
+        "round_soft",
+        "lean_tall",
+        "stocky_short",
+        "petite_compact",
+        "lanky_slouch",
+        "asym-bang",
+        "lopsided-bob",
+        "spiky-overthink",
+        "antenna-short",
+        "blocky-cut",
+        "soft-wave",
+        "side-part",
+        "clean-bun",
+        "high-ponytail",
+        "twin-tail",
+        "aries-basic-clean",
+        "taurus-basic-clean",
+        "gemini-basic-clean",
+        "cancer-basic-clean",
+        "leo-basic-clean",
+        "virgo-basic-clean",
+        "libra-basic-clean",
+        "scorpio-basic-clean",
+        "sagittarius-basic-clean",
+        "capricorn-basic-clean",
+        "aquarius-basic-clean",
+        "pisces-basic-clean",
+        "generic-cosmic-light",
+        "generic-soft-stripes",
+        "generic-doodle-dots",
+        "generic-wave-stitch",
+        "generic-check-spark",
+        "neutral",
+        "deadpan",
+        "panic",
+        "smug",
+        "side-eye",
+        "relieved",
+        "cry",
+        "exasperated",
+        "embarrassed",
+        "neutral",
+        "explain",
+        "reach",
+        "offer",
+        "confront",
+        "run",
+        "scratch-head",
+        "raise-evidence",
+        "facepalm",
+        "cry-hug",
+        "offer-pants",
+        "receive-pants",
+        "recoil",
+        "inspect-prop",
+        "flex-prop",
+        "write",
+        "read",
+        "carry-backpack",
+        "text-phone",
+        "face-closeup",
+        "teal",
+        "coral",
+        "ochre",
+        "slate",
+        "balanced",
+        "wide-set",
+        "close-set",
+        "freckled",
+        "round-glasses",
+        "star-hair-clip"
+      ],
+      "kind": "character",
+      "refs": [
+        "references/asset-library-v4/characters/components/catalog.json"
+      ]
+    },
+    {
+      "ids": [],
+      "kind": "prop",
+      "refs": [
+        "references/asset-library-v4/props/index.json"
+      ]
+    },
+    {
+      "ids": [
+        "stress-ticks",
+        "motion-dash",
+        "blush-marks",
+        "question-pop",
+        "tiny-sparkle",
+        "sparkle-burst",
+        "tear-trails",
+        "offer-impact"
+      ],
+      "kind": "effect",
+      "refs": [
+        "references/asset-library-v4/effects/ornament-index.json"
+      ]
+    }
+  ],
+  "compatibility_ids": [
+    "absurd-offer",
+    "cry-closeup",
+    "cry-hug-object",
+    "equip-this",
+    "facepalm-closeup",
+    "heart-offer-overkill",
+    "mirror-self-check",
+    "prop-pressure",
+    "receipt-in-face",
+    "side-eye-object",
+    "wallet-flex",
+    "bedroom-study-base",
+    "classroom-study",
+    "school-hallway",
+    "living-room-home",
+    "kitchen-home",
+    "front-door-entry",
+    "cafe-chat",
+    "outdoor-street-soft",
+    "library-study",
+    "school-yard",
+    "bedroom-window-curtain",
+    "bedroom-headboard-bed-edge",
+    "bedroom-desk-edge",
+    "bedroom-pillow-edge",
+    "bedroom-blanket-edge",
+    "classroom-whiteboard",
+    "classroom-window",
+    "classroom-desk-edge",
+    "hallway-lockers",
+    "hallway-floor-edge",
+    "living-sofa",
+    "living-window",
+    "kitchen-counter",
+    "kitchen-cabinet",
+    "entry-door",
+    "entry-mat",
+    "cafe-window",
+    "cafe-table",
+    "street-tree",
+    "street-curb",
+    "library-shelf",
+    "library-table",
+    "schoolyard-fence",
+    "schoolyard-ground",
+    "standard_compact",
+    "round_soft",
+    "lean_tall",
+    "stocky_short",
+    "petite_compact",
+    "lanky_slouch",
+    "asym-bang",
+    "lopsided-bob",
+    "spiky-overthink",
+    "antenna-short",
+    "blocky-cut",
+    "soft-wave",
+    "side-part",
+    "clean-bun",
+    "high-ponytail",
+    "twin-tail",
+    "aries-basic-clean",
+    "taurus-basic-clean",
+    "gemini-basic-clean",
+    "cancer-basic-clean",
+    "leo-basic-clean",
+    "virgo-basic-clean",
+    "libra-basic-clean",
+    "scorpio-basic-clean",
+    "sagittarius-basic-clean",
+    "capricorn-basic-clean",
+    "aquarius-basic-clean",
+    "pisces-basic-clean",
+    "generic-cosmic-light",
+    "generic-soft-stripes",
+    "generic-doodle-dots",
+    "generic-wave-stitch",
+    "generic-check-spark",
+    "neutral",
+    "deadpan",
+    "panic",
+    "smug",
+    "side-eye",
+    "relieved",
+    "cry",
+    "exasperated",
+    "embarrassed",
+    "neutral",
+    "explain",
+    "reach",
+    "offer",
+    "confront",
+    "run",
+    "scratch-head",
+    "raise-evidence",
+    "facepalm",
+    "cry-hug",
+    "offer-pants",
+    "receive-pants",
+    "recoil",
+    "inspect-prop",
+    "flex-prop",
+    "write",
+    "read",
+    "carry-backpack",
+    "text-phone",
+    "face-closeup",
+    "teal",
+    "coral",
+    "ochre",
+    "slate",
+    "balanced",
+    "wide-set",
+    "close-set",
+    "freckled",
+    "round-glasses",
+    "star-hair-clip",
+    "stress-ticks",
+    "motion-dash",
+    "blush-marks",
+    "question-pop",
+    "tiny-sparkle",
+    "sparkle-burst",
+    "tear-trails",
+    "offer-impact"
+  ]
+}

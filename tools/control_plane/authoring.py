@@ -123,6 +123,21 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
                     )
             entities[entity_id] = entity
 
+        # Validate directed depth independently of numeric layers. The renderer
+        # uses this same back -> front order, so a cycle is never executable.
+        remaining = set(entities)
+        edges = scene.get("occlusion_relations", [])
+        for edge in edges:
+            if edge["front"] == edge["back"] or not {edge["front"], edge["back"]} <= remaining:
+                raise _invalid("occlusion relation references unknown or identical entities", scene_id=scene_id)
+        while remaining:
+            ready = {eid for eid in remaining if not any(
+                edge["front"] == eid and edge["back"] in remaining for edge in edges
+            )}
+            if not ready:
+                raise _invalid("occlusion relation cycle", scene_id=scene_id)
+            remaining -= ready
+
         spatial_bindings = scene.get("spatial_bindings", [])
         seen_bindings = set()
         for binding in spatial_bindings:

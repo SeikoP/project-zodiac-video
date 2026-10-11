@@ -944,13 +944,17 @@ def _validate_publish_document(root: Path, production: dict) -> dict:
         or not isinstance(identity, dict)
         or not all(
             isinstance(identity.get(key), str) and identity[key].strip()
-            for key in ("sign_id", "label", "glyph")
+            for key in ("label", "glyph")
+        )
+        or not (
+            (isinstance(identity.get("sign_id"), str) and identity["sign_id"].strip() and "episode_id" not in identity)
+            or (isinstance(identity.get("episode_id"), str) and identity["episode_id"].strip() and "sign_id" not in identity)
         )
         or not isinstance(cover.get("hook"), str)
         or not cover["hook"].strip()
     ):
         raise PipelineError(
-            "COVER_IDENTITY_MISSING: publish cover needs sign_id, label, "
+            "COVER_IDENTITY_MISSING: publish cover needs sign_id or episode_id, label, "
             "glyph, hook, and layout=tilted_top_hook."
         )
 
@@ -3288,12 +3292,14 @@ def scene_wav_path(root: Path, scene_id: str) -> Path:
 
 
 def tts_manifest_rows(production: dict, scene_ids: list[str] | None = None) -> list[dict]:
+    from tools.studio_v2.voice_performance import speech_context
     wanted = set(scene_ids) if scene_ids is not None else None
     return [
         {
             "scene_id": scene["id"],
             "text": scene["voice"],
             "output": str(scene_wav_path(".", scene["id"])),
+            **({"performance_context": speech_context(scene)} if speech_context(scene) else {}),
         }
         for scene in production["scenes"]
         if wanted is None or scene["id"] in wanted
@@ -3745,6 +3751,16 @@ def generate_scene_voices(
     )
     root = Path(package_root).resolve()
     rows = tts_manifest_rows(production, scene_ids)
+    if any(row.get("performance_context") for row in rows):
+        from tools.studio_v2.voice_performance import performance_report
+        runtime = root / ".runtime"
+        runtime.mkdir(parents=True, exist_ok=True)
+        (runtime / "voice-performance.json").write_text(
+            json.dumps(performance_report(production), ensure_ascii=False, indent=2)+"\n",
+            encoding="utf-8",
+        )
+        _emit_tts_log("VOICE_DIRECTION_REVIEW_REQUIRED: VieNeu hiện chỉ nhận text/voice; "
+                      "chỉ dẫn nhịp chưa được kiểm chứng bằng âm thanh. Nghe các take thực tế.", log_callback)
     run_tts_batch(
         root / ".runtime",
         rows,
