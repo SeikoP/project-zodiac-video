@@ -10,6 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {acquireAuthoringLease} from './authoring-lease.mjs';
 import os from 'node:os';
 import {verifyIntentWorkspace} from './compile-visual-intent.mjs';
+import {selectedPhase02Dependencies} from './phase02-selected-dependencies.mjs';
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
 const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
@@ -45,6 +46,11 @@ const sourcePaths=[
  'references/design.md',
  'orchestration/validate-phase02-art-direction.mjs',
  'orchestration/validate-scene-set-identity.mjs',
+ 'orchestration/scene-set-detection.mjs',
+ 'references/asset-library-v4/scene-set/index.json',
+ 'orchestration/phase02-selected-dependencies.mjs',
+ 'orchestration/validate-motion-consistency.mjs',
+ 'orchestration/validate-scene-set-accents.mjs',
  'art-direction/palette-registry.json',
  'art-direction/environment-registry.json',
  'orchestration/validate-publish-prep.mjs',
@@ -72,8 +78,10 @@ const steps=[
  {id:'environment_binding',src:'references/asset-library-v4/environments/validate-environment-binding.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_direction',src:'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',args:[workspace,'--write'],required:['.authoring/scene-direction-compile-receipt.json']},
  {id:'scene_set_identity',src:'orchestration/validate-scene-set-identity.mjs',args:[workspace],required:[],validator:true},
+ {id:'scene_accent_containment',src:'orchestration/validate-scene-set-accents.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_direction_validation',src:'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_events',src:'orchestration/validate-authoring-scene-events.mjs',args:[workspace],required:[],validator:true},
+ {id:'motion_consistency',src:'orchestration/validate-motion-consistency.mjs',args:[workspace],required:[],validator:true},
  {id:'visual_quality',src:'orchestration/validate-visual-quality.mjs',args:[workspace],required:[],validator:true},
  {id:'publish_prep',src:'orchestration/validate-publish-prep.mjs',args:[workspace],required:[],validator:true},
 ];
@@ -155,7 +163,8 @@ if(!(await exists(statePath)))fail('PIPELINE_STATE_MISSING_NO_AUTO_APPROVAL');
 else if(manifest){
  try{const state=JSON.parse(await readFile(statePath,'utf8'));if(state.plugin_version!==manifest.version)fail('PIPELINE_STATE_VERSION_REQUIRES_EVIDENCED_MIGRATION',{state:state.plugin_version,plugin:manifest.version});}catch(e){fail('PIPELINE_STATE_INVALID',{detail:e.message});}
 }
-const nativeDependencies=manifest?.version&&missingSource.length===0?await collectNativeDependencies(source.skillRoot):[];
+const dependencySelection=manifest?.version&&missingSource.length===0?await selectedPhase02Dependencies(source.skillRoot,workspace):{mode:'legacy-full',files:[]};
+const nativeDependencies=manifest?.version&&missingSource.length===0?(dependencySelection.mode==='selected'?dependencySelection.files:await collectNativeDependencies(source.skillRoot)):[];
 const stamp=manifest?.version&&missingSource.length===0?await signature([...new Set([path.join(source.pluginRoot,'plugin.json'),...sourcePaths.map(p=>path.join(source.skillRoot,p)),...nativeDependencies])]):null;
 const releaseParts=String(manifest?.version??'0.0.0').split('.').map(Number);const modernComposition=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=46)));
 const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=47)));
@@ -163,7 +172,7 @@ if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readF
 if(modernComposition&&running&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.flags?.meme_selected){coreInputPaths.push('.authoring/story-beat-choreography.json');steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_effects',src:'references/asset-library-v4/memes/compile-meme-effects.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-effect-compile-receipt.json','.authoring/generated-assets.json']});}}
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'orchestration/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
 if(finalizeManifest)steps.push({id:'director_final_review',src:'orchestration/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
-report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;
+report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
 if(running&&report.issues.length===0){
  const validity=nodeRun(path.join(source.skillRoot,'orchestration/validate-pipeline-state.mjs'),[statePath]);
  report.state_validation=validity;

@@ -1,3 +1,4 @@
+// LEGACY COMPATIBILITY VALIDATOR: historical Kim Nguu fixture only. Fresh Phase02 uses validate-phase02-art-direction.mjs.
 #!/usr/bin/env node
 // Creative coverage gate: reviews semantic art direction before Phase-02 compilation.
 // Does not impersonate existing native validators or user Visual Review.

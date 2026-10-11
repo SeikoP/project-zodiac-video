@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generic authoring-only gate; no sign-specific entity, shot quotas or forced story objects.
-import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
+import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from './scene-set-detection.mjs';
 const normalize=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normalize(s).replace(/\s+/gu,'');
 export function validatePhase02ArtDirection(production,plan,narration,palettes,environments){
@@ -15,12 +15,13 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   if(!source||source.id!==d?.id)fail('ART_SCENE_ORDER_MISMATCH',scene_id);
   if(normalize(source?.voice)!==normalize(d?.voice))fail('ART_VOICE_MISMATCH',scene_id);
   if(!Object.prototype.hasOwnProperty.call(palettes?.palettes??{},d?.palette_id))fail('PALETTE_UNKNOWN',scene_id);
-  if(!(environments?.profiles??[]).includes(d?.environment_profile))fail('ENVIRONMENT_UNKNOWN',scene_id);
+  const archiveSceneSet=source?.environment?.mode==='archive_frame'||hasPrimarySceneSet(source,production);
+  if(!archiveSceneSet&&!(environments?.profiles??[]).includes(d?.environment_profile))fail('ENVIRONMENT_UNKNOWN',scene_id);
   if(source?.environment?.profile!==d?.environment_profile)fail('ENVIRONMENT_PROFILE_MISMATCH',scene_id);
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||!String(d?.environment_reason??'').trim())fail('ART_REASON_MISSING',scene_id);
   const story=d?.story_object;
-  if(story && (story.render_layer!=='prop'||story.replaces_environment===true))fail('STORY_OBJECT_BACKGROUND_FORBIDDEN',scene_id);
+  if(story && (!['prop','symbolic','story_object'].includes(story.render_layer)||story.replaces_environment===true))fail('STORY_OBJECT_BACKGROUND_FORBIDDEN',scene_id);
   if(story && (!String(story.id??'').trim()||!String(story.voice_anchor??'').trim()||!String(d.voice??'').includes(story.voice_anchor)))fail('STORY_OBJECT_VOICE_ANCHOR_MISSING',scene_id);
  }
  if(compact(scenes.map(s=>s.voice).join(''))!==compact(narration))fail('APPROVED_NARRATION_MISMATCH');

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Static semantic QA: do actual native props/effects carry the story, or are
+// Static semantic QA: do actual native symbolic/physical entities carry the story, or are
 // they generic decorative reactions? This is NOT a Remotion temporal proof.
 import {createHash} from 'node:crypto';
 import {readFile,writeFile} from 'node:fs/promises';
@@ -68,7 +68,8 @@ export function validateStoryObjectPlan(plan, production, narration){
   const object=entities.get(beat.object_entity);
   const objectStates=Object.values(object?.states??{});
   const objectAssets=objectStates.map(s=>({id:s.asset,meta:production?.assets?.[s.asset]}));
-  if(!object||!['object','prop','interactive_prop'].includes(object.kind)||!objectAssets.length||objectAssets.some(a=>a.meta?.category!=='prop'))issue(issues,'OBJECT_ENTITY_INVALID',key);
+  const symbolicMode=beat.presentation_mode==='thought_metaphor'||beat.presentation_mode==='visual_cutaway';const allowedCategories=symbolicMode?new Set(['prop','effect']):new Set(['prop']);
+  if(!object||!['object','prop','interactive_prop','effect'].includes(object.kind)||!objectAssets.length||objectAssets.some(a=>!allowedCategories.has(a.meta?.category)))issue(issues,'OBJECT_ENTITY_INVALID',key);
   else if(objectAssets.some(a=>a.meta?.style_id!==TOKEN))issue(issues,'ASSET_STYLE_TOKEN_MISMATCH',key);
   if(!Array.isArray(beat.object_event_ids)||!beat.object_event_ids.length)issue(issues,'OBJECT_EVENT_MISSING',key);
   let material=false;

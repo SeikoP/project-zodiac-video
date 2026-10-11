@@ -10,7 +10,13 @@
     "render_time_randomness": false,
     "story_prop_priority": "narration",
     "max_structural_assets": 24,
-    "max_structural_assets_per_profile": 5
+    "max_structural_assets_per_profile": 5,
+    "fresh_default": false,
+    "availability": [
+      "selected_cues",
+      "legacy"
+    ],
+    "scene_set_relation": "optional_context_cues_inside_or_around_selected_stage_only"
   },
   "structural_assets": [
     {

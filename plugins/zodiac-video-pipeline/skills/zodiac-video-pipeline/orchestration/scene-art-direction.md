@@ -1,12 +1,15 @@
-# Scene art direction gate — Phase 02 (proposed extension)
+# Scene art direction — Phase 02
 
-Before authoring `production.json`, split the approved Narration into voiced performance segments. Preserve exact narration order and content. Each segment declares what the audience **must see**, its real performing subject, required concrete props, environment profile, semantic palette, shot, and asset/event cost justification. This is authoring guidance and does not add fields to `zodiac-job@5`.
+Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-art-direction@2` and validates it with `validate-phase02-art-direction.mjs`. The older `validate-scene-art-direction.mjs` is a retained compatibility probe for historical fixtures and is **not** a fresh authoring entrypoint.
 
-Use `art-direction/palette-registry.json` (canonical colors only) and `art-direction/environment-registry.json` (profiles from the installed V4 composition index). Palettes represent **accents and distribution of existing token colors**, not repainting V4 assets, creating full-background SVGs, or modifying hardcoded renderer fields.
+## Visual layers
 
-Story Objects are **optional semantic highlights**. Never require one in each scene or depict its SVG as a full background. A Story Object appears only when an explicit voice anchor benefits from metaphor, never in place of physical actions and reaction objects. Preserve explicit effect enter/release events in native production, and enforce visual roles and spatial contact via existing validators.
+1. `scene-set` — primary wall/floor/frame stage. It may remain consistent across scenes and does not require characters to be contained inside its outer frame.
+2. `shot-layout` — actor/prop composition skeleton. It is not a background frame.
+3. `scene accent` — optional simple context cue such as a few hanging strips; it must stay inside the scene-set wall region.
+4. `Story Object` — independent symbolic narrative element with setup → friction → payoff when selected. A thought metaphor may float near/above an actor; physical contact is required only for `physical_interaction`.
+5. `prop` / `effect` — ordinary physical objects and reaction emphasis. Neither may substitute for the Story Object premise or the scene-set.
 
-Run `node orchestration/validate-scene-art-direction.mjs <workspace>` before authoring; then native V4 compilers, full Phase-02 manifest, Director V2, preview pairs, and human Visual Review. **This extension is a design-time gate only. PASS does not mean native execution PASS.**
+Use `art-direction/palette-registry.json` for token colors. `art-direction/environment-registry.json` contains compatibility selected-cue/legacy profiles; fresh scene-set authoring does not need a room profile from that registry. Do not auto-add windows, boards, tables, lamps, shadows, gradients or perspective.
 
-## Bounded Phase2 guidance
-Persist selected_asset_ids, meme_selected and environment_mode in the current context request. plan-step-context loads core plus selected extension references and hashes exact bytes; missing reference blocks. For archive_frame, retain exact wall/floor frame, use separate semantic props, and do not add automatic architecture. Do not invoke the depth wrapper unless a depth composition plan is explicitly selected. Capability/validator/approval requirements remain intact; applicability receipts refer to the bounded selection index.
+Run `node orchestration/validate-phase02-art-direction.mjs <workspace>` before native compilation. Then run native compilers, Director V2, preview pairs and human Visual Review. Structural PASS never implies aesthetic or runtime-media PASS.

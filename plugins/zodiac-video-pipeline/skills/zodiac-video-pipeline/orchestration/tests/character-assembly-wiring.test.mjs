@@ -29,7 +29,9 @@ test('Phase 2 selected capability catalogs are unique; bounded guidance may be s
  }
 });
 
-test('visual grammar recipe includes character assembly before skin/environment/geometry',async()=>{
+test('visual grammar recipe is scene-set first and keeps character assembly before context cues/geometry',async()=>{
  const recipe=await readJson(path.join(skillRoot,'references/asset-library-v4/recipes/visual-grammar.json'));
- assert.deepEqual(recipe.selection_order,['frame_skeleton','mechanic','character_assembly','skin_binding','environment_composition','scene_direction_compile']);
+ assert.deepEqual(recipe.selection_order,['scene_set','shot_layout','mechanic','character_assembly','skin_binding','selected_context_cues','scene_direction_compile']);
+ assert.equal(recipe.policy.frames_are,'shot_layout_skeletons_not_scene_sets');
+ assert.equal(recipe.policy.scene_set,'primary_visual_stage_separate_from_frame_skeleton');
 });

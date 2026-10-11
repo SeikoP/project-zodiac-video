@@ -1,5 +1,5 @@
 {
-  "format": "zodiac-native-environments@1",
+  "format": "zodiac-native-environments@2",
   "profiles": [
     "bedroom-study-base",
     "classroom-study",
@@ -13,5 +13,11 @@
     "school-yard"
   ],
   "source": "references/asset-library-v4/environments/composition-index.json",
-  "constraint": "structural-cues-only"
+  "constraint": "compatibility-selected-cues-only",
+  "fresh_default": false,
+  "availability": [
+    "selected_cues",
+    "legacy"
+  ],
+  "scene_set_source": "references/asset-library-v4/scene-set/index.json"
 }

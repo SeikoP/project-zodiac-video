@@ -1,5 +1,7 @@
 # Phase 02 composition contract — 2.4.44
 
+**Scene-set-first rule (2.4.60 source):** fresh authoring treats `scene-set` as the persistent visual stage, `shot-layout` as actor/prop placement, `scene accent` as optional contained context detail, and Story Object as an independent narrative symbol. Compatibility room profiles never auto-materialize behind a primary scene-set.
+
 Keep the existing phases. Phase 02 executes four responsibilities in order:
 1. Read approved narration and canonical `references/design.md`; copy its complete STYLE_TOKEN to workspace `design.md`. Choose cast identity, environment and action.
 2. Before SVG writes, inventory each scene's narrative components in the existing `.authoring/scene-art-direction.json`. Set `design_token_sha256` to `compositionHash(designToken(designMarkdown))` exported by `phase02-composition.mjs`. The hash uses sorted object keys; it is not the raw file hash. Compare workspace token to canonical source on entry; choosing an arbitrary locally edited token is not a design decision.

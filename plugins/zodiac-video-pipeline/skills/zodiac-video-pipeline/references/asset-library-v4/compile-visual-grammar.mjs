@@ -5,11 +5,12 @@ import {fileURLToPath} from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
-const framesDoc=JSON.parse(await readFile(path.join(here,'frames/index.json'),'utf8'));
+const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
+const frameRows=shotLayoutsDoc.layouts??shotLayoutsDoc.frames??[];
 const mechanicsDoc=JSON.parse(await readFile(path.join(here,'mechanics/index.json'),'utf8'));
 const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));
 const memesDoc=JSON.parse(await readFile(path.join(here,'memes/index.json'),'utf8'));
-const frames=new Map(framesDoc.frames.map(x=>[x.id,x]));
+const frames=new Map(frameRows.map(x=>[x.id,x]));
 const mechanics=new Map(mechanicsDoc.mechanics.map(x=>[x.id,x]));
 const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));
 const memes=new Map((memesDoc.compositions??[]).map(x=>[x.id,x]));

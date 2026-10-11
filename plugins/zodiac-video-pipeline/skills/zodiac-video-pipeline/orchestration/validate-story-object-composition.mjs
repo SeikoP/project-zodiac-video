@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Story Object Composition v2: authored metaphor remains a prop, never a backdrop.
+// Story Object Composition v2: authored metaphor is a symbolic narrative entity, never a backdrop.
 // Operates on V4 production source; emits no new Job@5/runtime fields.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';
@@ -35,7 +35,9 @@ export function validateStoryObjectComposition(plan,production,{required=true}={
   const scene=entry.scene,entities=new Map((scene.entities??[]).map(e=>[e.id,e]));
   const story=entities.get(beat.object_entity);
   if(!story){issue(issues,'STORY_OBJECT_ENTITY_MISSING',at);continue;}
-  if(!['prop','object','interactive_prop'].includes(story.kind))issue(issues,'STORY_OBJECT_KIND_INVALID',at);
+  const categories=new Set(Object.values(story.states??{}).map(s=>production.assets?.[s.asset]?.category).filter(Boolean));
+  if(mode==='physical_interaction'&&[...categories].some(c=>c!=='prop'))issue(issues,'STORY_OBJECT_PHYSICAL_ASSET_INVALID',at);
+  if(!['prop','object','interactive_prop','effect'].includes(story.kind))issue(issues,'STORY_OBJECT_KIND_INVALID',at);
   const environmentRole=envIds(scene).get(story.id);
   if(environmentRole)issue(issues,'STORY_OBJECT_USED_AS_ENVIRONMENT',`${at}/${environmentRole}`);
   const slot=(scene.environment?.frame?.slots??[]).find(s=>s.entity===story.id);
