@@ -32,3 +32,7 @@ Existing zodiac-plugin-source-snapshot@1 restoration remains supported: actual p
 ### Final native source binding
 
 After all three Phase 02 manifest steps have actually committed PASS, run `phase02-execute.mjs --workspace <episode> --source-root <plugin-root> --run --finalize-manifest` before sealing. This mode requires the same visual-intent source as the genuine prior native core receipt and all completed manifest steps; it verifies every non-production projection, validates strict state, forces native compilers/validators and Director review, then binds the final production hash. It returns `REVALIDATION_REQUIRED` at entry rather than granting PASS to compiler drift. Normal entry and seal still reject an unbound production hash. Do not edit receipts or adopt generated files merely to silence a drift gate.
+
+## Unified repository and release mapping
+
+SeikoP/project-zodiac-video owns both plugin and runner development source. The former plugin repository is retired. Publish the installed plugin from a reviewed commit, then record its plugin_version, plugin_release_id and source_commit in docs/zodiac-plugin-release.json. The archive's commit identifies the exact checked-out transport; the release record identifies the plugin source commit. They need not be the same commit when only documentation or release metadata changed. Require release version parity and retain both identifiers. The installed plugin and approved episode still govern execution; a repository download never imports approvals.
