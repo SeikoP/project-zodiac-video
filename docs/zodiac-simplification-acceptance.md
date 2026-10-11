@@ -84,3 +84,5 @@ Preview pose nằm trong zodiac-simplification-preview/. Họa tiết áo nổi 
 ## Source và phát hành
 
 Source triển khai ở branch codex/zodiac-simplification. Git HTTP CLI thiếu credential; đã đồng bộ branch qua GitHub connector, kiểm tree hash bằng đúng local tree đã test, không merge main. Giữ toàn baseline đã kiểm vì local base 5de4473 chưa có trên remote. Bản plugin update là overlay so với source cài 2.4.50; không xóa file hoặc đổi audience. Manifest version 2.4.51 đồng bộ template; defaultPrompt lịch sử được giữ và bổ sung clarification có precedence. Xác nhận backend release được ghi ở zodiac-simplification-release-receipt.json sau publish.
+
+Đã publish và readback release `pluginrel_6acb91edeca881918c90f297559ad3a7`, version **2.4.51**, scope USER/PRIVATE giữ nguyên. 83 file overlay được kiểm: 82 exact byte, nested manifest được backend escape Unicode và JSON-equivalent. Git source branch đã sync qua connector; tree hash `e48561dcb5892d6868918eb64f84cfb8a18fd060` khớp local source đã kiểm. Chi tiết identity/checksum trong release receipt.

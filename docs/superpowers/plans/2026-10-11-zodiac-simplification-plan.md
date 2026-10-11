@@ -169,7 +169,7 @@ Ba nhóm: asset/authoring T1–T7; orchestration T8; content/context T9–T10. T
 - [x] Implement regression matrix: fresh single_sign/element_group/ranked/comparison và approved legacy2.0; positive + stale approval/source/projection/contract/frame/lease negatives. Chỉ parity-required edits, không đổi Job/renderer version.
 - [ ] Replay Kim Ngưu revised workspace riêng: giữ narration, giảm phụ nền theo intent, Story Object review thật, pose/contact pixels, native state/compilers/pairs. Sau Visual Review thật mới seal/export một ZIP; không overwrite release hiện tại.
 - [ ] Runner import + actual TTS/word timing + ba frame quanh transition/contact/reveal, cover/caption/watermark, SFX/end-tail và MP4 khi môi trường runner có. Thiếu runner thì đánh PENDING, release chỉ PRODUCTION_READY_ZIP; không bịa video-ready.
-- [ ] Self-review diff/spec/backlog; chạy relevant test suites một lần sau các fixes; commit `test: verify simplified zodiac producer runner parity`. Sync plugin theo plugin update workflow và ghi installed version/source identity thật; GitHub commit không tự coi đã cập nhật ChatGPT plugin.
+- [x] Self-review diff/spec/backlog; chạy relevant test suites một lần sau các fixes; commit `test: verify simplified zodiac producer runner parity`. Sync plugin theo plugin update workflow và ghi installed version/source identity thật; GitHub commit không tự coi đã cập nhật ChatGPT plugin.
 
 ## Thứ tự và điều kiện dừng
 
