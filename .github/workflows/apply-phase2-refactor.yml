@@ -1,0 +1,27 @@
+name: Apply Phase2 Asset Refactor
+on:
+  push:
+    branches:
+      - codex/phase2-asset-framework-refactor
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.event.head_commit.message == 'Bootstrap Phase2 asset refactor'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply reviewed patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/refactor/phase2.patch.part-* > /tmp/phase2-refactor.patch
+          git apply --check /tmp/phase2-refactor.patch
+          git apply /tmp/phase2-refactor.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: make scene-set the phase2 asset framework"
+          git push origin HEAD:codex/phase2-asset-framework-refactor
