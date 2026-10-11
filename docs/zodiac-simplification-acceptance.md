@@ -11,15 +11,15 @@ Ngày 2026-10-11. Triển khai native tuần tự theo kế hoạch Superpowers;
 | T4 preview | Before/after giữ state của mọi entity theo author order; phân biệt visual/motion-only/no-op | Static endpoints chưa chứng minh motion/timing |
 | T5 object | required/optional/omitted rõ lý do; conflict flags bị chặn; repeated reveal trả NEEDS_REVISION | Flags phải được cấu hình minh thị trước authoring; compiler không tự approve hoặc thay metaphor |
 | T6 pose/contact | Hai pose nghỉ; socket tay viết lấy geometry; clip họa tiết áo pose nằm | Qt SVG đã xem; contact với sofa/bút trong tập và Remotion cần review |
-| T7 handoff | Dùng chung density/layout preflight trước Visual Review và export; voice range giữ UTF8 bytes | Preflight sớm bao phủ layout/density. Full schema/native compilation vẫn có gates riêng; chưa gom toàn bộ export checks vào preflight |
-| T8 điều phối | Source-bound approvals, lease không takeover theo thời gian, restore loại lock/tmp, capsule, dependency impact, Phase3 state commit từ receipt validator chạy thật | Recovery CLI dùng lại ZIP và kiểm CRC/root, lock, receipts/CAS. Crash ngay sau publish nhưng trước ghi handoff receipt vẫn cần khôi phục bằng chứng thực, không suy ra PASS |
+| T7 handoff | Dùng chung density/layout và chạy real Job5 compiler/schema/motion boundary trước Visual Review; voice range giữ UTF8 bytes ở workspace export | Preflight là read-only, không tạo lock/approval. Asset/publish byte validators và runner checks vẫn có gates riêng |
+| T8 điều phối | Source-bound approvals, lease không takeover theo thời gian, restore loại lock/tmp, capsule, dependency impact, Phase3 state commit từ receipt validator chạy thật | Receipt được ghi trước atomic publication; recovery CLI dùng lại ZIP và kiểm CRC/root, lock, receipts/CAS. Lỗi ghi receipt chặn publication |
 | T9 TTS | Ước lượng duration có nhãn estimated; diagnostic có span; manifest trước Content Review; Narrative 2.1 current, 2.0 legacy | Không sửa narration đã duyệt. Chưa có nghe TTS/prosody thật |
 | T10 context | Guide ngắn dùng chung, catalogs đầy đủ theo selection; legacy giữ nguyên full catalogs | Không miễn compiler, validator hoặc user approval |
 | T11 parity/release | JS/Python canonical schema hash khớp; actual ZIP import, audited legacy hash và unknown rejection; CI bổ sung | Native producer/import PASS riêng; creative và runner media PENDING |
 
 ## Bằng chứng chạy thật
 
-- Native orchestration + reference tests: **551 passed**, 0 failed.
+- Native orchestration + reference tests: **555 passed**, 0 failed.
 - Character/validation tests bổ sung: **10 passed**, 0 failed.
 - Python toàn repo: **634 passed, 11 skipped, 23 subtests passed**; 7 Qt deprecation warnings.
 - Fresh Phase1 fixture E2E: single_sign, element_group, ranked_shortlist, comparison và ranked Top5 chạy đến IN_REVIEW qua commit native. Không tạo user approval giả.
@@ -65,24 +65,22 @@ Preview pose nằm trong zodiac-simplification-preview/. Họa tiết áo nổi 
 
 1. Chuyển tập Kim Ngưu sang intent trong revision workspace riêng; chọn required/optional/omitted object bằng review thật. Sửa progression có nghĩa hoặc bỏ rõ lý do, rồi render đúng frame và duyệt hình.
 2. Kiểm lean_tall, pose nghỉ và socket tay–bút trong layout thật: intrinsic ratio, layer, caption/face clearance và seat contact. Chỉ seal/export revision sau Visual Review thật.
-3. Hoàn thiện parity preflight sớm cho toàn schema/compiler checks, vượt phạm vi layout/density hiện đã chung.
-4. Bổ sung recovery cho cửa sổ crash publish-ZIP trước handoff-receipt; không tái tạo chứng cứ đã mất bằng metadata tự khai.
-5. Runner thực: TTS/voice-performance và nghe prosody; measured word timing; ba frame quanh transition/contact/reveal; cover/caption/watermark; SFX/end-tail; MP4. Các mục này **PENDING**, không VIDEO_READY.
+3. Runner thực: TTS/voice-performance và nghe prosody; measured word timing; ba frame quanh transition/contact/reveal; cover/caption/watermark; SFX/end-tail; MP4. Các mục này **PENDING**, không VIDEO_READY.
 
 ## Backlog A01–A33
 
 | IDs | Xử lý |
 |---|---|
-| A01, A03, A04, A10–A12, A23 | Source policy, exact hashes, dependency impact, lease/capsule/restore và Phase3 receipts/state; residual crash window ở kế hoạch mở |
+| A01, A03, A04, A10–A12, A23 | Source policy, exact hashes, dependency impact, lease/capsule/restore và Phase3 receipts/state; write-ahead receipt trước publish |
 | A02, A05, A07, A08 | Duration/TTS readiness và Narrative policy; semantic negatives/Phase1 E2E; audio/human review pending |
 | A06, A13–A15, A18–A20, A26, A28, A33 | Bounded guidance, single intent, cumulative preview, archive frame và flat depth |
 | A09, A27 | Object policy đã sửa; Kim Ngưu vẫn NEEDS_REVISION, chưa creative PASS |
 | A16, A17 | Native poses/sockets và lean_tall; episode contact/render pending |
 | A21, A24 | Native/import parity và diagnostic runner; media pending |
-| A22 | Layout/density/range parity đã sửa; full preflight parity còn mở |
+| A22 | Compiler/schema/motion/layout/density/range preflight parity đã sửa |
 | A25, A32 | SUPERSEDED bởi quyết định giữ tường/sàn và exact ZIP |
 | A29–A31 | CANCELLED; không triển khai lại |
 
 ## Source và phát hành
 
-Source triển khai ở branch codex/zodiac-simplification. Git HTTP CLI thiếu credential; đồng bộ branch qua GitHub connector khi có quyền, không merge main. Giữ toàn baseline đã kiểm vì local base 5de4473 chưa có trên remote. Bản plugin update là overlay so với source cài 2.4.50; không xóa file hoặc đổi audience. Manifest version 2.4.51 đồng bộ template; defaultPrompt lịch sử được giữ và bổ sung clarification có precedence. Xác nhận backend release được ghi ở zodiac-simplification-release-receipt.json sau publish.
+Source triển khai ở branch codex/zodiac-simplification. Git HTTP CLI thiếu credential; đã đồng bộ branch qua GitHub connector, kiểm tree hash bằng đúng local tree đã test, không merge main. Giữ toàn baseline đã kiểm vì local base 5de4473 chưa có trên remote. Bản plugin update là overlay so với source cài 2.4.50; không xóa file hoặc đổi audience. Manifest version 2.4.51 đồng bộ template; defaultPrompt lịch sử được giữ và bổ sung clarification có precedence. Xác nhận backend release được ghi ở zodiac-simplification-release-receipt.json sau publish.

@@ -128,7 +128,7 @@ Ba nhóm: asset/authoring T1–T7; orchestration T8; content/context T9–T10. T
 **Interfaces:** `approvalSourceHashes(workspace) -> {narration,plan,scope,brief,visual_intent,production}` hashes exact bytes; `acquireAuthoringLease(path,{run_id,owner_pid,host_id,now}) -> lease` chỉ recovery với stale evidence; `reconcilePhase03Release(workspace, receipt, zipPath) -> {state_status,recovery_action}` kiểm ZIP SHA/bytes và native substages evidence.
 
 - [x] Test local/restored source root; stale source block; narration/scope một byte drift invalid approval; performance-only/evidence/scope invalidation khác nhau; không research lại khi inputs không đổi.
-- [ ] Thêm test live lease không bị xóa; expired lease với owner unavailable cần diagnostic; snapshot không lock/tmp; exact restore và capsule phản ánh revision hiện tại. Crash sau ZIP publish reconcile state, không export ZIP thứ hai.
+- [x] Thêm test live lease không bị xóa; expired lease với owner unavailable cần diagnostic; snapshot không lock/tmp; exact restore và capsule phản ánh revision hiện tại. Crash sau ZIP publish reconcile state, không export ZIP thứ hai.
 - [x] Chạy `node --test $O/tests/orchestration-recovery.test.mjs` trước sửa, ghi fail cụ thể.
 - [x] Implement một source policy; resolve root bằng manifest; source ownership graph; native operations/substage receipts và commit Phase3 có expected-state hash. Review lock hoặc source bytes đổi phải invalid, không carry approval im lặng.
 - [x] Chạy tests và strict state validator. Đảm bảo ZIP-ready receipt không tự set runner_media_verified.

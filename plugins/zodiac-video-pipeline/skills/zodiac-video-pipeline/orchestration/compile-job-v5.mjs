@@ -189,6 +189,9 @@ export async function compileWorkspace(root,{sign,concept,episodeIdentity,revisi
   const {ir,designToken,manifest}=compileJobV5(source,design,{sign,concept,episodeIdentity,revision,contractSchema:schema});
   // Do not rewrite the approved narration for formatting differences at scene seams.
   // Preserve its bytes, and attach the additional separator newlines to IR scene voices.
+  if(source.voice_partition==='utf8_ranges'){
+    const narration=await readFile(path.join(root,'narration.txt'));if(!Buffer.from(ir.scenes.map(s=>s.voice).join(''),'utf8').equals(narration))fail('approved narration differs from UTF8 source ranges');
+  }else{
   const narration=(await readFile(path.join(root,'narration.txt'),'utf8')).replace(/\r\n/g,'\n').replace(/\n$/,'');
   let pos=0;
   for (let i=0;i<ir.scenes.length;i++) {
@@ -204,6 +207,7 @@ export async function compileWorkspace(root,{sign,concept,episodeIdentity,revisi
   }
   if(pos!==narration.length)fail('approved narration contains unaligned trailing content');
   if(ir.scenes.map(s=>s.voice).join('\n')!==narration)fail('approved narration differs after scene-boundary normalization');
+  }
   const motionBoundary=validateRunnerMotionBoundary(ir);
   if(!motionBoundary.ok)fail('RUNNER_MOTION_BOUNDARY: '+JSON.stringify(motionBoundary.issues.slice(0,12)));
   await writeFile(path.join(root,'production.ir.json'),JSON.stringify(ir,null,2)+'\n');

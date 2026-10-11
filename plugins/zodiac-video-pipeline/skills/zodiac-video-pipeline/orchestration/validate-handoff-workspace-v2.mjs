@@ -28,7 +28,7 @@ export async function validateHandoffV2(root){
  if(manifest.renderer.id!=='zodiac-renderer'||manifest.renderer.version!=='2.0.1')fail('renderer must pin zodiac-renderer@2.0.1');
  if(manifest.producer.plugin!=='zodiac-video-pipeline'||manifest.producer.version!==installedPluginVersion)fail(`producer must match installed plugin version ${installedPluginVersion}`);
  if(ir.fps!==24||ir.video.width!==1080||ir.video.height!==1920)fail('authoring IR must be 1080x1920 at 24fps');
- const narration=(await readFile(path.join(root,'narration.txt'),'utf8')).replace(/\r\n/g,'\n').replace(/\n$/,'');if(!voicesMatchNarration(ir.scenes.map(s=>s.voice),narration))fail('narration.txt must exactly match ordered IR scene voice');
+ const narration=await readFile(path.join(root,'narration.txt'),'utf8');if(!voicesMatchNarration(ir.scenes.map(s=>s.voice),narration))fail('narration.txt must exactly match ordered IR scene voice');
  const assetRoot=path.resolve(root,'assets'),referenced=new Set();
  for(const [id,a] of Object.entries(ir.assets)){if(!isObj(a)||typeof a.path!=='string'||!a.path.startsWith('assets/'))fail('asset '+id+' requires assets/ path');const p=path.resolve(root,a.path);if(!p.startsWith(assetRoot+path.sep)||!(await exists(p)))fail('asset '+id+' missing/escaping file');referenced.add(path.relative(root,p).split(path.sep).join('/'));}
  const actual=new Set((await walk(assetRoot)).map(p=>path.relative(root,p).split(path.sep).join('/')));for(const rel of actual)if(!referenced.has(rel))fail('unreferenced asset file '+rel);for(const rel of referenced)if(!actual.has(rel))fail('referenced asset missing '+rel);

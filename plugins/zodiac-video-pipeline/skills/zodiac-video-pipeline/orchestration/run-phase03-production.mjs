@@ -23,6 +23,8 @@ import {lintSemanticAnimation,validateSemanticZip} from './validate-animation-se
 import {exportZodiacJobV2,canonicalPackageZipName} from './export-zodiac-job-v2.mjs';
 import {validateZipFile} from './zip-core-v2.mjs';
 
+export async function publishCheckedZip(tempZip,target,persistReceipt){await persistReceipt();try{await link(tempZip,target);}catch(e){if(e.code==='EEXIST')throw new Error('PRODUCTION_ZIP_ALREADY_EXISTS '+target);throw e;}}
+
 export async function runPhase03Production({sourceRoot,outputDir,sign,concept,episodeScope,revision='1.0',patchVersion,reviewLock}={}){
  if(!sourceRoot||!outputDir||(!sign&&!episodeScope)||!concept)throw new Error('PHASE03_ARGUMENTS_REQUIRED');
  const approved=path.resolve(sourceRoot),dest=path.resolve(outputDir);
@@ -63,13 +65,13 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
   const semantic=await validateSemanticZip(tempZip);
   if(semantic.errors.length)throw new Error('PRODUCTION_ZIP_SEMANTIC_P1 '+semantic.errors.length);
   const target=path.join(dest,filename);
-  // Same-volume hard link publishes the checked ZIP atomically without overwriting.
-  try{await link(tempZip,target);}catch(e){if(e.code==='EEXIST')throw new Error('PRODUCTION_ZIP_ALREADY_EXISTS '+target);throw e;}
-  const handoff=await buildHandoffReceipt({zip:target,source_sha256:lock.source_sha256??lock.source?.sha256??lock.fingerprint?.sha256,scenes:ir.scenes.length,events:ir.scenes.reduce((n,s)=>n+s.events.length,0),assets:Object.keys(ir.assets).length});
+  const handoff=await buildHandoffReceipt({zip:tempZip,source_sha256:lock.source_sha256??lock.source?.sha256??lock.fingerprint?.sha256,scenes:ir.scenes.length,events:ir.scenes.reduce((n,s)=>n+s.events.length,0),assets:Object.keys(ir.assets).length});
   handoff.validator_receipts=nativeReceipts;
   handoff.native_substages=['compile','handoff','import_gate','export','roundtrip','semantic'].map(id=>({id,status:'PASS',zip_sha256:handoff.zip_sha256}));
   const receiptName='phase03-handoff-'+handoff.zip_sha256+'.json';
-  let receiptStatus='WRITTEN';try{await writeArtifact(approved,receiptName,handoff);}catch{receiptStatus='WRITE_FAILED';}
+  // Write-ahead receipt survives a crash immediately after atomic ZIP publication.
+  await publishCheckedZip(tempZip,target,()=>writeArtifact(approved,receiptName,handoff));
+  const receiptStatus='WRITTEN';
   let stateCommit={status:'PENDING'};if(receiptStatus==='WRITTEN'){try{stateCommit=await commitPhase03Release(approved,handoff,target,{expected_state_sha256:expectedStateHash});}catch(e){stateCommit={status:'RECOVERY_REQUIRED',reason:e.message};}}
   return {state_commit:stateCommit,handoff,handoff_receipt_status:receiptStatus,handoff_receipt:receiptStatus==='WRITTEN'?path.join(approved,'.authoring',receiptName):null,ok:true,release_level:'PRODUCTION_READY_ZIP',zip:target,scenes:ir.scenes.length,events:ir.scenes.reduce((n,s)=>n+s.events.length,0),assets:Object.keys(ir.assets).length,archive_entries:zipQc.entries,post_zip_semantic_p1:0,runner_media_verified:false};
  }finally{await rm(scratch,{recursive:true,force:true});}
