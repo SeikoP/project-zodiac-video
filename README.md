@@ -1,13 +1,28 @@
-# Zodiac Video local runner
+# Zodiac Video — plugin and local runner
 
-Local runtime for **zodiac-video-pipeline v2.1**, whose default handoff is
-`zodiac-job@5` for `zodiac-renderer@2.0.0`.
+This is the single development repository for the Zodiac video plugin and local
+runner. The former plugin repository is retired; do not fetch source from it.
 
-For Job@5, the plugin owns evidence, story, narration, semantic Authoring IR,
-design tokens and referenced assets. This repository owns local voice
-generation/attachment, measured timing, render-plan compilation, rendering and
-final audio mix. Legacy Job@2–4 packages remain supported through the older
-`tools/zodiac_local.py` workflow.
+- `plugins/zodiac-video-pipeline/`: plugin manifests, skills, orchestration,
+  contracts, asset registries, native assets and producer tests.
+- `runtime/` and local application/tools: pinned rendering, voice attachment or
+  generation, measured timing, final rendering and audio mix.
+- `.github/workflows/zodiac-source-bundle.yml`: commit-pinned execution source
+  archive, with file hashes and installed-plugin release provenance.
+- `docs/zodiac-plugin-release.json`: installed release mapping. Plugin version,
+  plugin release ID and source commit are separate identifiers.
+
+Development flows from a reviewed repository commit to an installed plugin
+release. GitHub commits do not automatically update ChatGPT's installed plugin.
+During episode work, the active installed plugin governs workflow and the user's
+approved narration, scope and reviews govern the episode. Downloaded source must
+match the installed version and integrity checks; repository examples and prose
+never substitute for an approved episode or a genuine review.
+
+The current handoff is `zodiac-job@5`. Its manifest selects the exact renderer
+version; do not infer it from this README or fall back to latest. Executable-source
+archives include contracts, registries and native assets as well as code. Episode
+ZIPs, generated voice/timing and rendered media remain separate deliverables.
 
 ## Requirements
 
@@ -110,12 +125,12 @@ Compatibility:
 - `zodiac-job@3` remains accepted with its existing runtime/design hashes and
   semantic `FINAL_VALIDATION.json` receipt;
 - `zodiac-job@4` remains accepted for older plugin exports;
-- current plugin v2.1 exports default to `zodiac-job@5`.
+- current plugin exports default to `zodiac-job@5`.
 
 Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
 See `docs/THIN_PACKAGE_V4_SPEC.md` and `docs/THIN_PACKAGE_V3_SPEC.md` for the
 legacy compatibility contracts. The Job@5 package contract is defined by the
-`zodiac-video-pipeline` v2.1 handoff.
+`zodiac-video-pipeline` handoff.
 
 ## Legacy quick start (Job@2–4)
 
@@ -340,3 +355,9 @@ Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the 
 New jobs use `zodiac-remotion@1.20.0`. It keeps the 1.19.1 deterministic animation/caption behavior and adds scene-level layer safety: runtime evaluates the declared active state sequence, blocks materially overlapping visible entities that share the same layer, and uses deterministic z-index ordering.
 
 Runtime deliberately does not auto-move meaningful props or characters because overlap may represent holding, hugging or offering. Internal SVG groups such as torso, outfit decoration, arms and baked props remain a Semantic Assets compile-time concern. Whole-pose choreography is still not skeletal morphing.
+
+## Zodiac plugin source
+
+The complete ChatGPT plugin source lives in `plugins/zodiac-video-pipeline/` (version 2.4.44, release `pluginrel_6aca94231d648191ad99c19837287790`). This replaces the partial release overlay; native V4 assets, contracts, orchestration and tests are included. The files were copied byte-for-byte from the published plugin archive.
+
+GitHub commits do not automatically update the installed ChatGPT plugin. Future edits must be tested and published through Plugin Creator; a sync back to GitHub must retain the same source/version. Run native commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the skill root.

@@ -5,7 +5,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .authoring import load_authoring_ir
-from .contracts import canonical_contract_hash, validate_contract_shape
+from .contracts import canonical_contract_hash, validate_contract_shape, contract_path
 from .errors import ControlPlaneError
 from .semantic_qc import strict_errors
 from .import_preflight import blocking_import_issues
@@ -147,13 +147,17 @@ def _validate_asset_files(root: Path, ir: dict[str, Any]) -> None:
 
 def _validate_narration(root: Path, ir: dict[str, Any]) -> None:
     try:
-        narration = (root / "narration.txt").read_text(encoding="utf-8")
+        narration = (root / "narration.txt").read_bytes().decode("utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         _fail(
             "PACKAGE_CONTENT_INVALID",
             f"cannot read narration.txt: {exc}",
             detail={"path": str(root / "narration.txt")},
         )
+    exact_narration = narration
+    voices = [scene["voice"] for scene in ir["scenes"]]
+    if "".join(voices) == exact_narration:
+        return
     narration = narration.replace("\r\n", "\n")
     if narration.endswith("\n"):
         narration = narration[:-1]
@@ -265,8 +269,8 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     if contract["sha256"] not in {expected_hash, *legacy_hashes}:
         _fail(
             "PACKAGE_CONTRACT_MISMATCH",
-            "package authoring contract hash is not a supported canonical contract",
-            detail={"expected": expected_hash, "accepted_legacy": sorted(legacy_hashes), "actual": contract["sha256"]},
+            f"Unsupported authoring contract {contract['sha256']}; runner expects {expected_hash}. Update the local runner from the matching producer release.",
+            detail={"expected": expected_hash, "accepted_legacy": sorted(legacy_hashes), "actual": contract["sha256"], "contract_path": str(contract_path("authoring-ir-v1"))},
         )
     renderer = manifest["renderer"]
     if renderer not in ({"id": "zodiac-renderer", "version": "2.0.0"}, {"id": "zodiac-renderer", "version": "2.0.1"}):

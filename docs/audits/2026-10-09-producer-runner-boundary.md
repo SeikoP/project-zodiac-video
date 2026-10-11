@@ -1,6 +1,6 @@
 # Producer / Runner Boundary Audit — 2026-10-09
 
-Source of truth for producer: SeikoP/video-pipelines v2.3.1 + S0/S1/S3 cleanup PR #17.
+Historical audit baseline: the retired SeikoP/video-pipelines v2.3.1 + S0/S1/S3 cleanup PR #17. Current plugin and runner source lives in SeikoP/project-zodiac-video; this historical baseline is not a source download instruction.
 Runner baseline: main at 39d8932849463f01fe8d6ba8f3ef0dbd27bc520b.
 No Plugin Creator sync before completed E2E release criteria.
 

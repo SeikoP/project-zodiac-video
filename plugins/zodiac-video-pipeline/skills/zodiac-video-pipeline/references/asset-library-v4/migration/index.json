@@ -1,0 +1,140 @@
+{
+  "format": "zodiac-v4-migration-record@1",
+  "target_library": "zodiac-visual-grammar-v4",
+  "policy": {
+    "direct_copy": false,
+    "selected_asset_action": "derive_v4",
+    "lazy_migration": false,
+    "ordinary_character_strategy": "native_component_assembly",
+    "specialist_character_strategy": "semantic_source_then_v4_derivative",
+    "prop_effect_strategy": "lazy_semantic_derivation",
+    "runtime_dependency": false
+  },
+  "ready_exemplars": [
+    {
+      "id": "female-messy-bun",
+      "kind": "character",
+      "v4_path": "characters/masters/female-messy-bun.svg"
+    },
+    {
+      "id": "phone",
+      "kind": "prop",
+      "v4_path": "props/phone.svg"
+    },
+    {
+      "id": "reaction-accent",
+      "kind": "effect",
+      "source_master": "reaction-pack",
+      "v4_path": "effects/reaction-accent.svg"
+    }
+  ],
+  "ported_contracts": [
+    {
+      "id": "scene-direction",
+      "from": "asset-library-v3/scene-direction",
+      "to": "scene-direction"
+    },
+    {
+      "id": "environment-compositions",
+      "from": "asset-library-v3/environment-compositions",
+      "to": "environments/compositions"
+    },
+    {
+      "id": "visual-intent-interactions-pose-attachment",
+      "from": "asset-library-v3/contracts",
+      "to": "contracts"
+    },
+    {
+      "id": "meme-composition-semantics",
+      "from": "asset-library-v3/meme-compositions/templates",
+      "to": "memes/templates",
+      "artwork_copied": false
+    },
+    {
+      "id": "state-recipes",
+      "from": "asset-library-v3/recipes/state-recipes.json",
+      "to": "recipes/state-recipes.json"
+    }
+  ],
+  "derived_assets": [
+    {
+      "id": "notebook",
+      "category": "story_prop",
+      "path": "props/notebook.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "book",
+      "category": "story_prop",
+      "path": "props/book.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "water-bottle",
+      "category": "story_prop",
+      "path": "props/water-bottle.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "tissue-box",
+      "category": "story_prop",
+      "path": "props/tissue-box.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "headset",
+      "category": "story_prop",
+      "path": "props/headset.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "mirror",
+      "category": "story_prop",
+      "path": "props/mirror.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "backpack",
+      "category": "story_prop",
+      "path": "props/backpack.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "pen",
+      "category": "story_prop",
+      "path": "props/pen.svg",
+      "origin_semantic": "study-and-school-use"
+    },
+    {
+      "id": "classroom-whiteboard",
+      "category": "environment_cue",
+      "path": "environments/structural/classroom-whiteboard.svg",
+      "origin_semantic": "school-place-composition"
+    },
+    {
+      "id": "classroom-window",
+      "category": "environment_cue",
+      "path": "environments/structural/classroom-window.svg",
+      "origin_semantic": "school-place-composition"
+    },
+    {
+      "id": "classroom-desk-edge",
+      "category": "environment_cue",
+      "path": "environments/structural/classroom-desk-edge.svg",
+      "origin_semantic": "school-place-composition"
+    },
+    {
+      "id": "hallway-lockers",
+      "category": "environment_cue",
+      "path": "environments/structural/hallway-lockers.svg",
+      "origin_semantic": "school-place-composition"
+    },
+    {
+      "id": "hallway-floor-edge",
+      "category": "environment_cue",
+      "path": "environments/structural/hallway-floor-edge.svg",
+      "origin_semantic": "school-place-composition"
+    }
+  ],
+  "historical_origin_library": "zodiac-paper-doodle-asset-library-v3"
+}

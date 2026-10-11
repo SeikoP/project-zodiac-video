@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360">
+<metadata>asset_role=prop_master;id=phone-busy;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;source_library=zodiac-visual-grammar-v4;source_master=phone;production_safe=true</metadata>
+<g id="body"><path d="M86 40 Q158 27 234 42 Q239 179 236 316 Q158 332 80 315 Q84 177 86 40Z" fill="#435064" stroke="#2F3C44" stroke-width="7" stroke-linejoin="round"/></g>
+<g id="screen"><path d="M102 75 Q159 66 220 78 Q221 165 216 258 Q159 267 100 255 Q99 165 102 75Z" fill="#8EC0B9" stroke="#2F3C44" stroke-width="4.5"/></g>
+<g id="notification_card" opacity="1"><path d="M114 105 Q160 96 208 107 Q209 136 204 165 Q160 173 113 163 Q111 134 114 105Z" fill="#FFFDF9" stroke="#2F3C44" stroke-width="4"/></g>
+<g id="badge" opacity="1"><path d="M203 80 Q216 77 221 90 Q219 104 206 106 Q194 101 196 89 Q198 82 203 80Z" fill="#E97A66" stroke="#2F3C44" stroke-width="4"/></g>
+<path d="M123 194 Q158 183 198 193" fill="none" stroke="#FFFDF9" stroke-width="5" stroke-linecap="round"/><path d="M122 218 Q151 208 184 216" fill="none" stroke="#FFFDF9" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M137 292 Q160 296 184 291" fill="none" stroke="#FFFDF9" stroke-width="5" stroke-linecap="round"/>
+</svg>

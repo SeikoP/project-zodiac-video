@@ -1,0 +1,84 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "side-eye-object",
+  "kind": "primary_meme_composition",
+  "approved_reference": "v11",
+  "layout_family": "single-object-cause",
+  "roles": {
+    "actor": "reactor"
+  },
+  "trigger_hints": [
+    "suspicious message",
+    "seen-zone",
+    "object caused reaction"
+  ],
+  "mechanic": "side-eye-at-prop",
+  "caption_slot": null,
+  "required_contact": "hand→prop / gaze→prop",
+  "body_orientation": "gaze follows prop",
+  "reviewed_visual_note": "Giữ phone trong tay và trục nhìn khớp với object.",
+  "reuse_state_recipe": "side_eye",
+  "routing": null,
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_source_master": true,
+    "preserve_body_profile": true,
+    "preserve_silhouette_family": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true,
+    "allowed_mutations": [
+      "face_eyes",
+      "face_mouth",
+      "left_arm",
+      "right_arm",
+      "left_leg",
+      "right_leg",
+      "reaction_marks",
+      "prop_slot",
+      "pose_transform",
+      "layout_transform"
+    ],
+    "forbidden_mutations": [
+      "swap_character_master_from_template_reference",
+      "recolor_identity_groups_to_match_demo",
+      "replace_hair_identity",
+      "replace_torso_identity"
+    ]
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "reuse": [
+      "relative_layout",
+      "crop",
+      "role_order",
+      "role_spacing",
+      "prop_to_character_scale",
+      "contact_topology",
+      "effect_locus"
+    ],
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion",
+      "role_positions_for_current_body_profiles"
+    ],
+    "forbid": [
+      "absolute_cross_profile_coordinate_copy",
+      "character_master_swap",
+      "hair_swap",
+      "skin_recolor",
+      "outfit_recolor",
+      "torso_identity_replacement"
+    ],
+    "caption_free_readability_required": true
+  }
+}

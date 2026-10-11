@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
+import test from "node:test";
+const root=path.dirname(fileURLToPath(import.meta.url));
+const read=(name)=>readFile(path.join(root,name),"utf8");
+const readSkill=async()=>{for(const candidate of ["../skill.md","../SKILL.md"]){try{return await read(candidate);}catch(error){if(error?.code!=="ENOENT")throw error;}}throw new Error("Missing skill entrypoint: expected ../skill.md or ../SKILL.md");};
+test("fresh-run isolation is explicit in skill and router",async()=>{const [skill,router]=await Promise.all([readSkill(),read("../orchestration/router.md")]);assert.match(skill,/Fresh Run Isolation/);assert.match(skill,/do NOT use account\/personal memory/i);assert.match(skill,/do NOT auto-load old approved packages/i);assert.match(router,/context_manifest/);});
+test("series tracker is a narrow non-creative exception",async()=>{const [contract,series]=await Promise.all([read("context-isolation.md"),read("series-tracker.md")]);assert.match(contract,/does not switch `run_mode` to continuity/i);assert.match(contract,/series_tracker_raw/);assert.match(series,/completion ledger/i);assert.match(series,/Only after Handoff Validate PASS/i);});
+test("reference mechanics cannot seed fresh creative content",async()=>{const contract=await read("context-isolation.md");assert.match(contract,/sign-specific examples/);assert.match(contract,/do not provide Zodiac evidence, sign selection, claims, jokes, situations, progression, or reusable wording/i);assert.match(contract,/This separation is mandatory to prevent example anchoring/);});

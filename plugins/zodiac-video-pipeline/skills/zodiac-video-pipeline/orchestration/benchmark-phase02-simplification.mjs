@@ -1,0 +1,11 @@
+import {readFile,readdir} from 'node:fs/promises';import path from 'node:path';import {createHash} from 'node:crypto';
+const sha=x=>createHash('sha256').update(x).digest('hex');
+export function verifyArchiveFrame(expected,actual){const issues=['asset_sha256','transform','source_zip_sha256'].filter(k=>JSON.stringify(expected[k])!==JSON.stringify(actual[k])).map(k=>({code:'ARCHIVE_FRAME_DRIFT',path:k}));return {status:issues.length?'BLOCKED':'PASS',issues};}
+export async function measurePhase02(workspace,contextReceipts=[]){
+ const production=JSON.parse(await readFile(path.join(workspace,'production.json'),'utf8'));
+ const candidates=['production.json','asset-plan.json','visual-grammar-plan.json','.authoring/asset-plan.json','.authoring/character-assembly-plan.json','.authoring/director-plan.json','.authoring/scene-art-direction.json','.authoring/episode-cast-plan.json','.authoring/story-object-plan.json','.authoring/story-beat-choreography.json','.authoring/depth-composition-plan.json'];
+ let names=[],authored=[];let intent;try{intent=await readFile(path.join(workspace,'.authoring/visual-intent.json'));}catch(e){if(e.code!=='ENOENT')throw e;}if(intent){names=['.authoring/visual-intent.json'];authored=[intent];}else for(const rel of candidates){try{authored.push(await readFile(path.join(workspace,rel)));names.push(rel);}catch(e){if(e.code!=='ENOENT')throw e;}}
+ const svgs=await Promise.all([...new Set(Object.values(production.assets??{}).map(x=>x.path).filter(x=>x?.endsWith('.svg')))].map(x=>readFile(path.join(workspace,x))));
+ let duplicates=0,frames=0;for(const scene of production.scenes??[]){if(scene.environment?.scene_set||scene.frame_ref)frames++;for(const entity of scene.entities??[]){const values=Object.values(entity.states??{}).map(x=>JSON.stringify(x));duplicates+=values.length-new Set(values).size;}}
+ return {guidance_bytes:contextReceipts.reduce((n,r)=>n+(r.bytes??r.guidance_bytes??0),0),authored_bytes:authored.reduce((n,b)=>n+b.length,0),manual_source_files:names.length,manual_source_paths:names,ownership:intent?'intent; projections excluded':'legacy native plans; derived receipts excluded',unique_svg_count:new Set(svgs.map(sha)).size,duplicate_state_count:duplicates,frame_count:frames};
+}

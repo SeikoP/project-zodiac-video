@@ -6,7 +6,7 @@ import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import {resolveSemanticMotion} from "./semantic-motion.mjs";
-import {resolveCoverOpening, coverOpeningOpacity} from './cover-opening.mjs';
+import {resolveCoverOpening, coverOpeningOpacity, coverCaptionVisible} from './cover-opening.mjs';
 import {ZodiacCover} from './ZodiacCover';
 
 import type {
@@ -48,7 +48,8 @@ const SceneLayer: React.FC<{
   assets: RendererV2Props["assets"];
   presentation: RenderPlanPresentation;
   video: RendererV2Props["video"];
-}> = ({scene, assets, presentation, video}) => {
+  showCaptions: boolean;
+}> = ({scene, assets, presentation, video, showCaptions}) => {
   const relativeFrame = useCurrentFrame();
   const frame = relativeFrame + scene.start_frame;
   const captions = scene.captions ?? [];
@@ -105,7 +106,7 @@ const SceneLayer: React.FC<{
             />
           );        })}
 
-      {caption ? (
+      {caption && showCaptions ? (
         <div
           data-caption="active"
           style={{
@@ -196,7 +197,7 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
         from={scene.start_frame}
         durationInFrames={scene.duration_frames}
       >
-        <SceneLayer scene={scene} assets={assets} presentation={presentation} video={video} />
+        <SceneLayer scene={scene} assets={assets} presentation={presentation} video={video} showCaptions={coverCaptionVisible(opening,frame)} />
       </Sequence>
     ))}
     {openingOpacity>0 ? <AbsoluteFill data-cover-opening="active" style={{zIndex:80,opacity:openingOpacity,pointerEvents:'none'}}>

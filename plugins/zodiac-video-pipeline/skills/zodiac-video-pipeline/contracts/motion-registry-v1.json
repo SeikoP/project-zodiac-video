@@ -1,0 +1,51 @@
+{
+  "format": "zodiac-motion-registry@1",
+  "version": "1.0.0",
+  "motions": {
+    "state_swap": {
+      "renderer_motion": "state_swap",
+      "default_duration_frames": 10,
+      "kind": "transition"
+    },
+    "hold": {
+      "renderer_motion": "hold",
+      "default_duration_frames": 12,
+      "kind": "static"
+    },
+    "pop-in": {
+      "renderer_motion": "pop-in",
+      "default_duration_frames": 10,
+      "kind": "transition"
+    },
+    "fade-in": {
+      "renderer_motion": "fade-in",
+      "default_duration_frames": 10,
+      "kind": "transition"
+    },
+    "fade-out": {
+      "renderer_motion": "fade-out",
+      "default_duration_frames": 10,
+      "kind": "transition"
+    },
+    "subtle-tilt": {
+      "renderer_motion": "subtle-tilt",
+      "default_duration_frames": 12,
+      "kind": "transform"
+    },
+    "small-bounce": {
+      "renderer_motion": "small-bounce",
+      "default_duration_frames": 12,
+      "kind": "transform"
+    },
+    "focus-shift": {
+      "renderer_motion": "focus-shift",
+      "default_duration_frames": 12,
+      "kind": "transform"
+    },
+    "slide": {
+      "renderer_motion": "slide",
+      "default_duration_frames": 12,
+      "kind": "contact"
+    }
+  }
+}

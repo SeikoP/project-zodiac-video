@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import path from 'node:path';import test from 'node:test';import {fileURLToPath} from 'node:url';
+const here=path.dirname(fileURLToPath(import.meta.url));const root=path.resolve(here,'..');
+test('visual structure validator owns frame-composition gates',async()=>{const src=await readFile(path.join(root,'validate-visual-structure.mjs'),'utf8');for(const marker of ['FRAME_CANVAS_BOUNDS','FRAME_CAPTION_COLLISION','FRAME_CAPTION_LED_BLOCKED','FRAME_ENVIRONMENT_WALLPAPER','FRAME_TWO_PERSON_BLOCKING'])assert.match(src,new RegExp(marker));});

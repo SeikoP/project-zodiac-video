@@ -1,0 +1,25 @@
+{
+  "baseline": "protected Taurus source, before asset revision",
+  "measurement_definition": "authored native plans only, not generated receipts or Phase1 evidence",
+  "taurus": {
+    "guidance_bytes": 0,
+    "authored_bytes": 195004,
+    "manual_source_files": 9,
+    "manual_source_paths": [
+      "production.json",
+      "asset-plan.json",
+      "visual-grammar-plan.json",
+      ".authoring/character-assembly-plan.json",
+      ".authoring/director-plan.json",
+      ".authoring/scene-art-direction.json",
+      ".authoring/episode-cast-plan.json",
+      ".authoring/story-object-plan.json",
+      ".authoring/story-beat-choreography.json"
+    ],
+    "ownership": "legacy native plans; derived receipts excluded",
+    "unique_svg_count": 30,
+    "duplicate_state_count": 7,
+    "frame_count": 8
+  },
+  "creative_review": "NOT_MEASURED"
+}

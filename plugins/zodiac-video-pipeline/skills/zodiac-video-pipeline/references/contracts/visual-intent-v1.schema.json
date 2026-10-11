@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "format",
+    "narration_sha256",
+    "cast",
+    "frames",
+    "assets",
+    "video",
+    "scenes",
+    "story_object_decision"
+  ],
+  "properties": {
+    "format": {
+      "const": "zodiac-visual-intent@1"
+    },
+    "narration_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "cast": {
+      "type": "array"
+    },
+    "frames": {
+      "type": "array"
+    },
+    "assets": {
+      "type": "object"
+    },
+    "video": {
+      "type": "object"
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "narration_range",
+          "semantic_goal",
+          "grammar",
+          "entities",
+          "events"
+        ]
+      }
+    },
+    "story_object_decision": {
+      "type": "object",
+      "required": [
+        "mode",
+        "reason",
+        "review_ref"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "optional",
+            "omitted"
+          ]
+        }
+      }
+    }
+  }
+}
