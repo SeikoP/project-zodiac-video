@@ -1,0 +1,23 @@
+name: Zodiac executable source bundle
+on:
+  push:
+    branches: [main, codex/zodiac-simplification]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Package pinned source, contracts, assets and provenance
+        run: python tools/build_source_bundle.py --output /tmp/zodiac-execution-source.zip --commit "$GITHUB_SHA"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-execution-source-${{ github.sha }}
+          path: /tmp/zodiac-execution-source.zip
+          if-no-files-found: error
+          retention-days: 30

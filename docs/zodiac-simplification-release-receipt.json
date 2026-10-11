@@ -1,49 +1,18 @@
 {
-  "verified_files": 83,
-  "exact_byte_files": 82,
-  "manifest_serialization_normalized": [
-    ".codex-plugin/plugin.json"
-  ],
-  "overlay_sha256": "fd166dc45889b34271bb33fd41809ca5e2a103888c1872910a11163f0231861d",
-  "source_commit": "0c48c613313c1843c06b17dcc96ced8791207a6c",
-  "remote_commit": "25e5999fa3b4583d748c24bdc274b68556c43e4d",
-  "git_tree": "e48561dcb5892d6868918eb64f84cfb8a18fd060",
-  "plugin": {
-    "plugin_id": "plugins_6ac25a87d8d481919c5ef654596144e3",
-    "name": "zodiac-video-pipeline",
-    "description": "Zodiac native visual pipeline with Story Object Composition v2 and Job@5 compatibility.",
-    "version": "2.4.51",
-    "current_release_id": "pluginrel_6acb91edeca881918c90f297559ad3a7",
-    "scope": "USER",
-    "discoverability": "PRIVATE",
-    "plugin_url": "https://chatgpt.com/plugins/plugins_6ac25a87d8d481919c5ef654596144e3",
-    "release_id": "pluginrel_6acb91edeca881918c90f297559ad3a7",
-    "latest_release_id": "pluginrel_6acb91edeca881918c90f297559ad3a7",
-    "status": "updated"
+  "plugin_version": "2.4.54",
+  "plugin_release_id": "pluginrel_6acbd1dfb3bc8191ad01e31e4cda840e",
+  "source_commit": "2672bd8",
+  "remote_source_commit": "b53f12aea1962c2ed60cd9d49d83434dfa230a69",
+  "branch": "codex/zodiac-simplification",
+  "source_transport_workflow": "zodiac-source-bundle.yml",
+  "artifact_name": "zodiac-execution-source-<commit>",
+  "workflow_status": "NOT_OBSERVED_YET",
+  "native_regression": {
+    "pass": 612,
+    "fail": 1,
+    "isolated_phase03_pass": 5
   },
-  "validation": {
-    "native_tests": {
-      "passed": 555,
-      "failed": 0
-    },
-    "asset_tests": {
-      "passed": 10,
-      "failed": 0
-    },
-    "python_tests": {
-      "passed": 634,
-      "skipped": 11,
-      "subtests_passed": 23
-    },
-    "producer_static": "PASS",
-    "runner_import": "PASS_ACTUAL_ZIP_PYTHON_VALIDATION_FIXTURE",
-    "creative_review": "PENDING_TAURUS_OBJECT_REVISION",
-    "runner_media": "PENDING",
-    "prosody_verified": false
-  },
-  "plugin_commit": "0c48c613313c1843c06b17dcc96ced8791207a6c",
-  "runner_commit": "0c48c613313c1843c06b17dcc96ced8791207a6c",
-  "zip_sha256": "fb3f145e078b9e5f46b8e4a82d0490c9e251dda7c06da99f8a9c42cb0a036693",
-  "approved_narration_sha256": "a596290328980cab88801ccf612cdcd87b75c7c4ebf7d869a00e20f21310ea6f",
-  "contract_sha256": "2ca8394b51a9b95174ee407731f309ec3cfd44b03f5f98f25655f46cbb625b85"
+  "runner_media": "BLOCKED_CHROME_DOWNLOAD",
+  "kimnguu_full_visual_review": "PENDING",
+  "not_an_approval": true
 }
