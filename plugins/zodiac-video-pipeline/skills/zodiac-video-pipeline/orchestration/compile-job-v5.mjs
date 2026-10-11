@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {validateAnchorLanes} from './validate-anchor-lanes.mjs';
 import {assertEpisodeIdentity} from './episode-handoff.mjs';
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,rm} from 'node:fs/promises';
@@ -173,6 +174,8 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
     caption_emphasis:{...(isObj(token.caption_emphasis)?token.caption_emphasis:{}),font_family:'Patrick Hand'},
     brand_overlay:token.brand_overlay??{enabled:true,text:'✦ bungmoto',anchor:'top-left',offset_px:{x:68,y:40},font_family:'Patrick Hand',font_size_px:29,font_weight:400,opacity:0.45,layer:100},
     motion_defaults:motionDefaults};
+  const anchorLanes=validateAnchorLanes(ir,designToken);
+  if(anchorLanes.status!=='PASS')fail('JOB_V5_ANCHOR_LANE_CONFLICT: '+JSON.stringify(anchorLanes.issues));
   const identity=episodeIdentity?assertEpisodeIdentity(episodeIdentity):null;
   const s=signSlug(sign),c=conceptSlug(concept);if(!identity&&(!s||!c))fail('sign and concept are required for stable job identity');
   const jobId=identity?.job_id??`${s}-${c}`;

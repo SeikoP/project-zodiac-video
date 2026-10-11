@@ -555,7 +555,7 @@ class StudioV2Executor:
                 code="PIPELINE_CANCELLED", stage=step,
                 message="Đã dừng an toàn sau bước trước. Có thể tiếp tục.",
             )
-        if step in (VOICE, TIMING):
+        if step in (VOICE, TIMING) or self.controller.state.steps[step].status != DONE:
             state = self.controller.state.steps[step]
             state.status = RUNNING
             state.error = None
