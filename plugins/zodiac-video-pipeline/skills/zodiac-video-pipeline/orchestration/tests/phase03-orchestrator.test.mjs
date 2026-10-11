@@ -15,6 +15,7 @@ async function fixture(){
  const src={version:'2.0',video:{width:1080,height:1920,fps:24},assets:{HERO:{category:'character',path:'assets/characters/hero.svg'}},scenes:[{id:'S01',voice,entities:[{id:'hero',kind:'character',visual_role:'character',role:'lead',layer:3,initial_state:'idle',states:{idle:{asset:'HERO',visible:true,transform:{x:250,y:230,width:480,height:570}},open:{asset:'HERO',visible:true,transform:{x:250,y:230,width:480,height:570}}}}],events:[{id:'E01',target:'hero',action:'reaction',state_before:'idle',state_after:'open',trigger:{type:'scene_start'},motion:{preset:'state_swap',duration_frames:8}}]}]};
  await writeFile(path.join(root,'production.json'),JSON.stringify(src));await writeFile(path.join(root,'design.md'),style);await writeFile(path.join(root,'narration.txt'),voice+'\n');
  await writeFile(path.join(root,'assets/characters/hero.svg'),'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 720"><path d="M0 0H520V720H0Z"/></svg>');
+ await writeFile(path.join(root,'assets/unused-legacy.svg'),'<svg><!-- unregistered legacy file retained in source --></svg>');
  await writeFile(path.join(root,'publish','publish.json'),JSON.stringify({version:'1.5',platform:'tiktok',source:{narration:'narration.txt',production:'production.json'},caption:'Bọ Cạp nói không sao',hashtags:['#bocap','#bungmoto'],cover:{layout:'tilted_top_hook',identity:{sign_id:'bocap',label:'BỌ CẠP',glyph:'♏'},hook:'Bọ Cạp thật sự nói không sao?',source_scene_id:'S01',visuals:[{entity_id:'hero',state_id:'idle'}]}}));
  await writeFile(path.join(root,'publish','publish-copy.txt'),'COVER IDENTITY: BỌ CẠP\nHOOK: Bọ Cạp thật sự nói không sao?\nTIKTOK CAPTION: Bọ Cạp nói không sao\nHASHTAGS: #bocap #bungmoto');
  const state=await writeStateFixture(root,{run_mode:'continuity'});
@@ -27,6 +28,7 @@ test('production Phase03 executes preflight through archive QC as one sealed job
   const result=await runPhase03Production({sourceRoot,outputDir:dest,sign:'Bọ Cạp',concept:'Không sao',revision:'1.0'});
   assert.equal(result.ok,true);assert.equal(result.release_level,'PRODUCTION_READY_ZIP');
   assert.ok(result.zip.endsWith('zodiac-bocap-khong-sao.zip'));await access(result.zip);
+  assert.match(await readFile(path.join(sourceRoot,'assets/unused-legacy.svg'),'utf8'),/retained in source/);
   const files=await import('node:fs/promises');const names=await files.readdir(dest);
   assert.deepEqual(names,['zodiac-bocap-khong-sao.zip']);
  }finally{await rm(sourceRoot,{recursive:true,force:true});await rm(dest,{recursive:true,force:true});}

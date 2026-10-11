@@ -28,3 +28,7 @@ TTS, word timing, Remotion temporal preview, MP4/audio and rendered cover checks
 
 ## Checksummed snapshot compatibility
 Existing zodiac-plugin-source-snapshot@1 restoration remains supported: actual path/base64/sha256 entries, no reconstructed native assets; run build-source-snapshot.mjs then restore-plugin-source.mjs and preflight. A restore receipt proves transferred bytes only. If no host transport can stage them, stop with SOURCE_TRANSPORT_UNAVAILABLE. This maintenance route never changes episode approvals or active guidance authority.
+
+### Final native source binding
+
+After all three Phase 02 manifest steps have actually committed PASS, run `phase02-execute.mjs --workspace <episode> --source-root <plugin-root> --run --finalize-manifest` before sealing. This mode requires the same visual-intent source as the genuine prior native core receipt and all completed manifest steps; it verifies every non-production projection, validates strict state, forces native compilers/validators and Director review, then binds the final production hash. It returns `REVALIDATION_REQUIRED` at entry rather than granting PASS to compiler drift. Normal entry and seal still reject an unbound production hash. Do not edit receipts or adopt generated files merely to silence a drift gate.

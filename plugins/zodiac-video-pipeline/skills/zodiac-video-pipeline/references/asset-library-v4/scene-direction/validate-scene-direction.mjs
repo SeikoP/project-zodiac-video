@@ -57,16 +57,18 @@ if(prod){
    }
    dirs.push(d);
   }
+  const authoredContinuity=scenes.every(s=>s.environment?.frame?.version==='zodiac-environment-frame@1'&&String(s.environment.frame.intent??'').trim().length>=8&&s.environment.frame.slots?.length);
+  const reviewOrFail=message=>{if(authoredContinuity)console.warn('AUTHORED_FRAME_CONTINUITY_REVIEW: '+message);else fail(message);};
   let shotRun=1,sigRun=1;
   for(let i=1;i<dirs.length;i++){
    shotRun=dirs[i].shot===dirs[i-1].shot?shotRun+1:1;
    const sig=x=>[x.shot,x.focus,x.subject_placement].join('|');
    sigRun=sig(dirs[i])===sig(dirs[i-1])?sigRun+1:1;
-   if(shotRun>p.max_same_shot_streak)fail(`shot streak > ${p.max_same_shot_streak} at scene ${i+1}`);
-   if(sigRun>p.max_same_signature_streak)fail(`same shot/focus/placement streak > ${p.max_same_signature_streak} at scene ${i+1}`);
+   if(shotRun>p.max_same_shot_streak)reviewOrFail(`shot streak > ${p.max_same_shot_streak} at scene ${i+1}`);
+   if(sigRun>p.max_same_signature_streak)reviewOrFail(`same shot/focus/placement streak > ${p.max_same_signature_streak} at scene ${i+1}`);
   }
   for(let i=0;i+p.window_size<=dirs.length;i++){
-   const w=dirs.slice(i,i+p.window_size);if(new Set(w.map(x=>x.shot)).size<p.min_distinct_shots_per_window)fail(`scenes ${i+1}-${i+p.window_size} need >=${p.min_distinct_shots_per_window} shot profiles`);
+   const w=dirs.slice(i,i+p.window_size);if(new Set(w.map(x=>x.shot)).size<p.min_distinct_shots_per_window)reviewOrFail(`scenes ${i+1}-${i+p.window_size} need >=${p.min_distinct_shots_per_window} shot profiles`);
   }
  }
 }

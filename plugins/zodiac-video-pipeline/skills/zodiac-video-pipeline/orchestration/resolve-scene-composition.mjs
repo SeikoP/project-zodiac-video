@@ -1,6 +1,6 @@
 // Validate authored intent separately from compiler-resolved geometry. No approval synthesis.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
-import {validateComposition,compositionHash,designToken} from './phase02-composition.mjs';
+import {validateComposition,compositionHash,designToken} from './phase02-composition-core.mjs';
 import {materializeEnvironment} from '../references/asset-library-v4/environments/compile-environment.mjs';
 const load=async relative=>JSON.parse(await readFile(new URL(relative,import.meta.url),'utf8'));
 const environmentIndex=await load('../references/asset-library-v4/environments/composition-index.json');

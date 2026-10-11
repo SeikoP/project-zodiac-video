@@ -27,7 +27,9 @@ let objectEnabled=(await Promise.all(objectFiles.map(rel=>access(path.join(root,
 try { const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json'),'utf8'));
   const v=/^(\d+)\.(\d+)\.(\d+)/.exec(String(state.plugin_version??''));
   const modern=v&&(Number(v[1])>2||(Number(v[1])===2&&(Number(v[2])>4||(Number(v[2])===4&&Number(v[3])>=46))));
-  if(modern&&state.run_mode==='fresh')stages.splice(1,0,{id:'scene_composition_resolved',script:'resolve-scene-composition.mjs',args:[root,'--write'],validator:true});
+  let authoredIntent=false;
+  try{authoredIntent=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8')).composition_stage==='intent';}catch(e){if(e.code!=='ENOENT')throw e;}
+  if((modern&&state.run_mode==='fresh')||authoredIntent)stages.splice(1,0,{id:'scene_composition_resolved',script:'resolve-scene-composition.mjs',args:[root,'--write'],validator:true});
   else if(v && (Number(v[1])>2||(Number(v[1])===2&&(Number(v[2])>4||(Number(v[2])===4&&Number(v[3])>=44)))))stages.splice(1,0,{id:'scene_composition_v1',script:'phase02-composition.mjs',args:[root],validator:true});
   if(state.flags?.story_object_required===true || (v && Number(v[1])===2 && Number(v[2])===4 && Number(v[3])>=4 && state.run_mode==='fresh'))objectEnabled=true;
 } catch(e) { if(e?.code!=='ENOENT')throw e; }

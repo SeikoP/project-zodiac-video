@@ -47,7 +47,16 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
  try{
   await mkdir(stage);
   for(const rel of ['production.json','design.md','narration.txt'])await cp(path.join(approved,rel),path.join(stage,rel));
-  for(const rel of ['assets','publish'])await cp(path.join(approved,rel),path.join(stage,rel),{recursive:true});
+  await cp(path.join(approved,'publish'),path.join(stage,'publish'),{recursive:true});
+  // Stage the reviewed registry, not stale unregistered SVGs left by older runs.
+  // Source files stay intact; compileWorkspace subsequently prunes unused registered assets.
+  const sourceProduction=JSON.parse(await readFile(path.join(approved,'production.json'),'utf8'));
+  for(const asset of Object.values(sourceProduction.assets??{})){
+   const rel=asset.path;
+   if(typeof rel!=='string'||!rel.startsWith('assets/')||rel.includes('\\')||rel.split('/').some(p=>p==='..'||p===''))throw Error('PHASE03_ASSET_PATH_INVALID');
+   await mkdir(path.dirname(path.join(stage,rel)),{recursive:true});
+   await cp(path.join(approved,rel),path.join(stage,rel));
+  }
   const nativeReceipts=[];const releaseRun=randomUUID();
   const recordValidator=(capability_id,tool,args)=>{const rel='phase03-validator-'+releaseRun+'-'+capability_id+'.json',receipt=path.join(approved,'.authoring',rel);const run=spawnSync(process.execPath,[fileURLToPath(new URL('./run-validator-with-receipt.mjs',import.meta.url)),capability_id,receipt,fileURLToPath(new URL('./'+tool,import.meta.url)),...args],{encoding:'utf8',timeout:60000});if(run.status!==0)throw Error('PHASE03_NATIVE_VALIDATOR_FAILED '+capability_id+' '+run.stderr);nativeReceipts.push({capability_id,receipt_path:rel});};
   const identityFile=path.join(scratch,'episode-identity.json');if(episodeIdentity){const {writeFile}=await import('node:fs/promises');await writeFile(identityFile,JSON.stringify(episodeIdentity));}

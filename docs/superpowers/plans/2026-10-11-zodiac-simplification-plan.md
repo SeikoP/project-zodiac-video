@@ -232,3 +232,12 @@ Bổ sung theo phản hồi cuối: Phase01→02 có handoff_context gồm autho
 Review bản Leo v2.4.53: unsupported accent_only/optional_callback/attached; Story Object thiếu friction/payoff relation; preview hash cũ; density S02/S05 chưa hợp lệ; state Phase1 READY/Phase2 LOCKED/review receipts rỗng. Giữ nguyên ZIP được gửi. Không suy approval từ tên gói hay version, không thêm beat vô nghĩa để đủ quota. Rà source plugin các file core đã chạm không thấy thay đổi logic chuyển phase ở 2.4.53; kết luận giới hạn trong phạm vi đã đọc.
 
 Kim Ngưu revision03: 8 cảnh/17 events/23 assets/34 endpoints, native projection/assembly/identity/outfit/story/composition/preview/preflight PASS. Giữ nguyên narration và SVG khung ZIP; tóc antenna-short, ghế mọc rễ có contact. Đây là bản review đầy đủ, chưa có user approval cho toàn revision nên chưa seal official Phase03. TTS/prosody/MP4 là runner QA còn mở; Chrome download bị network proxy chặn, không claim motion/frame parity.
+
+
+## Closure — 2026-10-12, plugin 2.4.57
+
+Native E2E Phase 2 completed for both approved episode directions; official Phase 3 exports and Python package-import checks PASS. Kim Ngưu geometry/frame/narration unchanged; Leo narration unchanged, small accent readability and native metadata repaired. See docs/zodiac-simplification-release-receipt.json for the two ZIP hashes and exact counts.
+
+Added authored-frame idempotence, continuity diagnostics without relaxing frame/contact validation, cycle-free composition CLI, post-compiler Director resolution, forced final native hash binding, schema/semantic preflight parity, and registered-only asset staging. 527 orchestration tests and 45 Phase03/release tests PASS; mixed-aspect regression 2/2 PASS. The installed plugin release is pluginrel_6acbddbbaaa88191ab40b367141dcddf.
+
+Pending: measured runner TTS/prosody/timing and video pixel/audio/MP4 QA; actual GitHub Actions source-artifact upload observation. Historical discarded frame/shadow demos are superseded by the exact approved archive. Repo prose is development documentation, not authority over the plugin or the approved episode contract.

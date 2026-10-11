@@ -22,10 +22,16 @@ export function compileVisualIntent(intent,{narration,token,catalog}={}){
  result.receipt={format:'zodiac-visual-intent-projection@1',owner:'visual-intent',source_sha256:hash(intent),narration_sha256:intent.narration_sha256,projection_hashes:Object.fromEntries(Object.entries(result).map(([k,v])=>[k,hash(v)]))};return result;
 }
 export function verifyIntentProjections(outputs,receipt){const issues=Object.entries(receipt.projection_hashes).filter(([k,h])=>hash(outputs[k])!==h).map(([path])=>({code:'VISUAL_INTENT_PROJECTION_DRIFT',path}));return {status:issues.length?'BLOCKED':'PASS',issues};}
-export async function verifyIntentWorkspace(root){const intentPath=path.join(root,'.authoring/visual-intent.json');let raw;try{raw=await readFile(intentPath,'utf8')}catch(e){if(e.code==='ENOENT')return {status:'LEGACY'};throw e;}
+export async function verifyIntentWorkspace(root,{revalidateNativeOutput=false}={}){const intentPath=path.join(root,'.authoring/visual-intent.json');let raw;try{raw=await readFile(intentPath,'utf8')}catch(e){if(e.code==='ENOENT')return {status:'LEGACY'};throw e;}
  const receipt=JSON.parse(await readFile(path.join(root,'.authoring/visual-intent-projection-receipt.json'),'utf8'));const intent=JSON.parse(raw);if(hash(intent)!==receipt.source_sha256||hash(await readFile(path.join(root,'narration.txt')))!==receipt.narration_sha256)fail('SOURCE_DRIFT');
  const outputs={};for(const [k,rel]of Object.entries(projectionPaths)){outputs[k]=await readFile(path.join(root,rel),'utf8').then(JSON.parse).catch(e=>{if(e.code==='ENOENT'&&receipt.projection_hashes[k]===hash(null))return null;throw e;});}
  // Production is a mutable native compiler output after its first compile; its drift is checked by native-source-fingerprint.
  const check={...receipt,projection_hashes:{...receipt.projection_hashes}};try{const execution=JSON.parse(await readFile(path.join(root,'.authoring/phase02-execution-receipt.json')));if(execution.mode==='run'&&execution.compiled_production_sha256===hash(await readFile(path.join(root,'production.json')))&&execution.projection_source_sha256===receipt.source_sha256)delete check.projection_hashes.production;}catch(e){if(e.code!=='ENOENT')throw e;}
- const verdict=verifyIntentProjections(outputs,check);if(verdict.status==='BLOCKED')fail('PROJECTION_DRIFT '+JSON.stringify(verdict.issues));return verdict;
+ if(revalidateNativeOutput){
+  const execution=JSON.parse(await readFile(path.join(root,'.authoring/phase02-execution-receipt.json'))),state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json')));
+  if(execution.mode!=='run'||execution.status!=='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'||execution.projection_source_sha256!==receipt.source_sha256||!['visual_compile','assets','publish_prep'].every(id=>state.phases?.['02-visual-production']?.steps?.[id]?.status==='PASS'))fail('FINALIZATION_REQUIRES_COMPLETED_NATIVE_MANIFEST');
+  // Entry for a forced native revalidation only. Normal seals still require the executed final hash.
+  delete check.projection_hashes.production;
+ }
+ const verdict=verifyIntentProjections(outputs,check);if(verdict.status==='BLOCKED')fail('PROJECTION_DRIFT '+JSON.stringify(verdict.issues));return revalidateNativeOutput?{status:'REVALIDATION_REQUIRED',issues:[]}:verdict;
 }

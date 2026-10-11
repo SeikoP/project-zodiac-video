@@ -28,3 +28,7 @@ Same shot streak ≤2; rolling four-scene windows contain ≥2 shot profiles; sa
 - **Visual Compile:** semantic shot/focus/placement/continuity only; no exact coordinates.
 - **Semantic Assets:** final geometry + compiler execution + frame-composition validation.
 - **Runtime:** consumes materialized transforms and performs timing/interpolation/choreography; it does not auto-fix framing.
+
+## Authored frame continuity (2.4.55)
+
+When every scene supplies a complete `zodiac-environment-frame@1` with intent and slots, the frame owns entity geometry. Skip generic per-state aspect fitting for entities owned by its slots; fit and validate the explicit frame once. Repeated shot labels and similar camera geometry are human review diagnostics in this mode, not a mandate to add decoration or change approved blocking. Unknown shots, invalid slots, bounds, contacts, occlusion, actual state transitions and native output receipt validation remain required. Without a complete authored frame, existing camera diversity gates remain hard failures.

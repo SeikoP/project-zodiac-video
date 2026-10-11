@@ -38,6 +38,7 @@ const makeSource=async()=>{
  await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'orchestration',name),await readFile(new URL('../'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/phase02-composition.mjs'),await readFile(new URL('../phase02-composition.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'orchestration/phase02-composition-core.mjs'),await readFile(new URL('../phase02-composition-core.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/validate-phase02-precompile-boundary.mjs'),await readFile(new URL('../validate-phase02-precompile-boundary.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/validate-phase02-art-direction.mjs'),await readFile(new URL('../validate-phase02-art-direction.mjs',import.meta.url),'utf8'));
  for(const f of ['palette-registry.json','environment-registry.json']) await write(path.join(skill,'art-direction',f),await readFile(new URL('../../art-direction/'+f,import.meta.url),'utf8'));

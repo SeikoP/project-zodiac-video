@@ -16,8 +16,9 @@ const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
 const requestedWorkspace=arg('--workspace');
 if(!requestedWorkspace){console.error('Usage: node phase02-execute.mjs --workspace <dir> [--source-root <plugin-root|skill-root>] [--snapshot <snapshot.json> --restore-target <plugin-root>] [--run] [--force]');process.exit(2);}
 const workspace=path.resolve(requestedWorkspace);
-await verifyIntentWorkspace(workspace);
-const running=argv.includes('--run'),force=argv.includes('--force');
+const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),force=argv.includes('--force')||finalizeManifest;
+if(finalizeManifest&&!running)throw Error('FINALIZE_MANIFEST_REQUIRES_RUN');
+await verifyIntentWorkspace(workspace,{revalidateNativeOutput:finalizeManifest});
 await mkdir(path.join(workspace,'.authoring'),{recursive:true});const nativeLease=running?await acquireAuthoringLease(path.join(workspace,'.authoring/.phase02-native.lock'),{run_id:'phase02-native',host_id:os.hostname()}):null;
 const reportedAt=new Date().toISOString();
 const exists=p=>access(p).then(()=>true).catch(()=>false);
@@ -161,6 +162,7 @@ const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4|
 if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.run_mode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'orchestration/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}}
 if(modernComposition&&running&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.flags?.meme_selected){coreInputPaths.push('.authoring/story-beat-choreography.json');steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_effects',src:'references/asset-library-v4/memes/compile-meme-effects.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-effect-compile-receipt.json','.authoring/generated-assets.json']});}}
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'orchestration/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
+if(finalizeManifest)steps.push({id:'director_final_review',src:'orchestration/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;
 if(running&&report.issues.length===0){
  const validity=nodeRun(path.join(source.skillRoot,'orchestration/validate-pipeline-state.mjs'),[statePath]);

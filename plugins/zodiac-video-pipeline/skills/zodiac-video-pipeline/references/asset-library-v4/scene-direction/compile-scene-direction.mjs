@@ -36,6 +36,17 @@ export async function compileProduction(production,{root='.',profile=profileDefa
     }
     const requireEntity=(id,label)=>{const e=em.get(id);if(!e)fail(`${scene.id} ${label} ${id} is not a scene entity`);return e;};
     const assign=async(id,role,box)=>{const e=requireEntity(id,role);const resolvedBox=memeEntities?.[id]??box;
+      // Explicit frame slots own actor geometry. Fitting each state aspect to
+      // the generic shot first changes relative positions and is not idempotent.
+      if(scene.environment?.frame?.slots?.some(slot=>slot.entity===id)){
+        for(const [stateId,state] of stateEntries(e)){
+          if(!state?.asset)fail(`${scene.id}/${id}/${stateId} missing asset`);
+          await aspectOf(state.asset);
+        }
+        roles.push({role,entity_id:id,transform:e.states?.[e.initial_state]?.transform??null});
+        if(memeEntities?.[id])assignedMemeEntities.add(id);
+        return;
+      }
       const originalBase=e.states?.[e.initial_state]?.transform;
       for(const [stateId,state] of stateEntries(e)){
         if(!state?.asset)fail(`${scene.id}/${id}/${stateId} missing asset`);

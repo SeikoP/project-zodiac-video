@@ -1,0 +1,18 @@
+{
+  "plugin_version": "2.4.54",
+  "plugin_release_id": "pluginrel_6acbd1dfb3bc8191ad01e31e4cda840e",
+  "source_commit": "2672bd8",
+  "remote_source_commit": "b53f12aea1962c2ed60cd9d49d83434dfa230a69",
+  "branch": "codex/zodiac-simplification",
+  "source_transport_workflow": "zodiac-source-bundle.yml",
+  "artifact_name": "zodiac-execution-source-<commit>",
+  "workflow_status": "NOT_OBSERVED_YET",
+  "native_regression": {
+    "pass": 612,
+    "fail": 1,
+    "isolated_phase03_pass": 5
+  },
+  "runner_media": "BLOCKED_CHROME_DOWNLOAD",
+  "kimnguu_full_visual_review": "PENDING",
+  "not_an_approval": true
+}

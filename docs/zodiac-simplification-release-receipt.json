@@ -1,18 +1,116 @@
 {
-  "plugin_version": "2.4.54",
-  "plugin_release_id": "pluginrel_6acbd1dfb3bc8191ad01e31e4cda840e",
-  "source_commit": "2672bd8",
-  "remote_source_commit": "b53f12aea1962c2ed60cd9d49d83434dfa230a69",
-  "branch": "codex/zodiac-simplification",
-  "source_transport_workflow": "zodiac-source-bundle.yml",
-  "artifact_name": "zodiac-execution-source-<commit>",
-  "workflow_status": "NOT_OBSERVED_YET",
-  "native_regression": {
-    "pass": 612,
-    "fail": 1,
-    "isolated_phase03_pass": 5
+  "format": "zodiac-simplification-release@2",
+  "plugin_version": "2.4.57",
+  "plugin_id": "plugins_6ac25a87d8d481919c5ef654596144e3",
+  "plugin_release_id": "pluginrel_6acbddbbaaa88191ab40b367141dcddf",
+  "plugin_readback": "6 critical files match source; shadow manifest matches parsed JSON",
+  "native_suite": {
+    "tests": 527,
+    "pass": 527,
+    "fail": 0
   },
-  "runner_media": "BLOCKED_CHROME_DOWNLOAD",
-  "kimnguu_full_visual_review": "PENDING",
-  "not_an_approval": true
+  "phase03_targeted_tests": {
+    "tests": 45,
+    "pass": 45,
+    "fail": 0
+  },
+  "mixed_aspect_frame_regression": "2/2 PASS",
+  "kimnguu_approved_geometry_differences": [],
+  "approved_frame_sha256": "dc7e7ef67fd7f0d2409dd7a5557a2a2b32438045975d36f2a603499a0a94f3b8",
+  "narration_preserved": true,
+  "episodes": [
+    {
+      "name": "Kim Ngưu",
+      "zip": "zodiac-kimnguu-quan-cu-dang-ngon-hay-tung-ngon.zip",
+      "sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d",
+      "bytes": 36070,
+      "scenes": 8,
+      "events": 17,
+      "assets": 23,
+      "phase03_status": "PASS",
+      "native_substages": [
+        {
+          "id": "compile",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        },
+        {
+          "id": "handoff",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        },
+        {
+          "id": "import_gate",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        },
+        {
+          "id": "export",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        },
+        {
+          "id": "roundtrip",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        },
+        {
+          "id": "semantic",
+          "status": "PASS",
+          "zip_sha256": "bb9763b1473f1950c26d10b26151460b1dd50dc0110c914770418b8dd1ade76d"
+        }
+      ],
+      "python_runner_package_import": "PASS",
+      "runner_media_verified": false
+    },
+    {
+      "name": "Sư Tử",
+      "zip": "zodiac-sutu-muon-duoc-nhin-thay.zip",
+      "sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7",
+      "bytes": 20842,
+      "scenes": 7,
+      "events": 11,
+      "assets": 9,
+      "phase03_status": "PASS",
+      "native_substages": [
+        {
+          "id": "compile",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        },
+        {
+          "id": "handoff",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        },
+        {
+          "id": "import_gate",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        },
+        {
+          "id": "export",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        },
+        {
+          "id": "roundtrip",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        },
+        {
+          "id": "semantic",
+          "status": "PASS",
+          "zip_sha256": "7ce519561992c712ed05d3f101db4b8a6bd246d1d199f036e17b0396204c97b7"
+        }
+      ],
+      "python_runner_package_import": "PASS",
+      "runner_media_verified": false
+    }
+  ],
+  "pending": [
+    "Actual TTS/prosody/word timing and MP4/media QA on runner",
+    "GitHub Actions source-artifact upload has not been observed; workflow code and local source builder verified"
+  ],
+  "source_authority": "Installed plugin guides workflow; approved episode inputs guide content/visuals; pinned GitHub supplies code/contracts. Repository prose is not episode approval."
 }
