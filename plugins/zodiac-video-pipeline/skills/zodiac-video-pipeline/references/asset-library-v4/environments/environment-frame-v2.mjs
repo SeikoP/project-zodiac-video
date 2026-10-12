@@ -35,9 +35,11 @@ export function validateEnvironmentFrame(scene,assets,{styleToken=STYLE}={}){
    const asset=assets?.[state.asset];if(!asset||asset.style_id!==styleToken)fail('FRAME_TOKEN_MISMATCH',scene,`${e.id} asset=${state.asset}`);
   }
  }
- const sceneSetPrimary=Boolean(scene.environment?.scene_set_id||scene.environment?.scene_set?.id);\n if(charCount<1||(!sceneSetPrimary&&fixtureCount<1))fail('FRAME_NO_ACTING_SPACE',scene);
+ const sceneSetPrimary=Boolean(scene.environment?.scene_set_id||scene.environment?.scene_set?.id);
+ if(charCount<1||(!sceneSetPrimary&&fixtureCount<1))fail('FRAME_NO_ACTING_SPACE',scene);
  const contacts=frame.contacts??[];
- if(!Array.isArray(contacts))fail('FRAME_CONTACT_INVALID',scene);\n if(!sceneSetPrimary&&!contacts.some(c=>(ids.has(c.entity)&&ids.has(c.anchor)&&entities.get(c.entity).kind==='character')||(ids.has(c.entity)&&ids.has(c.anchor)&&entities.get(c.anchor).kind==='character')))fail('FRAME_NO_STORY_CONTACT',scene);
+ if(!Array.isArray(contacts))fail('FRAME_CONTACT_INVALID',scene);
+ if(!sceneSetPrimary&&!contacts.some(c=>(ids.has(c.entity)&&ids.has(c.anchor)&&entities.get(c.entity).kind==='character')||(ids.has(c.entity)&&ids.has(c.anchor)&&entities.get(c.anchor).kind==='character')))fail('FRAME_NO_STORY_CONTACT',scene);
  const expected=[];
  for(const contact of contacts){
   const e=entities.get(contact?.entity),anchor=entities.get(contact?.anchor);
