@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-from tools.application.compat import LegacyCompatibilityAdapter
 from tools.studio_v2.executor import ExecutorConfig
 from tools.studio_v2.session import StudioV2Session, detect_job5_manifest
 from tools.runtime.registry import current_runtime
@@ -68,7 +67,7 @@ class ApplicationService:
         tts_root: Path | None = None,
         vieneu_url: str | None = "http://127.0.0.1:7860",
         current_factory=StudioV2Session,
-        compat_factory=LegacyCompatibilityAdapter,
+        compat_factory=None,
         detector=detect_job5_manifest,
     ) -> None:
         self.workspace_root = Path(workspace_root).resolve()
@@ -76,12 +75,24 @@ class ApplicationService:
         self.vieneu_url = vieneu_url
         self.detector = detector
         self.current = current_factory(self.workspace_root)
-        self.compat = compat_factory(
-            self.workspace_root,
-            tts_root=self.tts_root,
-            vieneu_url=self.vieneu_url,
-        )
+        self._compat_factory = compat_factory
+        self._compat = None
         self.mode = MODE_NONE
+
+    @property
+    def compat(self):
+        if self._compat is None:
+            factory = self._compat_factory
+            if factory is None:
+                from tools.application.compat import LegacyCompatibilityAdapter
+
+                factory = LegacyCompatibilityAdapter
+            self._compat = factory(
+                self.workspace_root,
+                tts_root=self.tts_root,
+                vieneu_url=self.vieneu_url,
+            )
+        return self._compat
 
     @property
     def active(self):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 from pathlib import Path
 
@@ -52,11 +53,39 @@ def test_current_paths_do_not_hardcode_runtime_defaults() -> None:
     service = Path('tools/application/service.py').read_text(encoding='utf-8')
     controller = Path('tools/studio_v2/controller.py').read_text(encoding='utf-8')
     local = Path('tools/zodiac_local.py').read_text(encoding='utf-8')
+    executor = Path('tools/studio_v2/executor.py').read_text(encoding='utf-8')
 
     assert 'renderer_version="2.0.0"' not in service
     assert '_SUPPORTED_RENDERER_VERSIONS' not in controller
     assert 'RUNTIME_VERSION = "1.20.0"' not in local
+    assert 'renderer_version: str = "2.0.0"' not in executor
 
+
+
+
+
+def test_executor_default_hash_avoids_python313_only_fstring_quote_reuse() -> None:
+    source = Path('tools/studio_v2/executor.py').read_text(encoding='utf-8')
+    assert 'current_runtime("zodiac-renderer").version}")' not in source
+
+def test_executor_source_stays_python311_parseable() -> None:
+    source = Path('tools/studio_v2/executor.py').read_text(encoding='utf-8')
+    ast.parse(source, filename='tools/studio_v2/executor.py', feature_version=(3, 11))
+
+def test_executor_defaults_are_registry_backed() -> None:
+    from tools.runtime.registry import current_runtime
+    from tools.studio_v2.executor import ExecutorConfig
+
+    current = current_runtime('zodiac-renderer')
+    config = ExecutorConfig(
+        voice_profile='voice',
+        tts_settings={},
+        tts_engine_version='tts',
+        aligner_settings={},
+        aligner_version='aligner',
+    )
+    assert config.renderer_version == current.version
+    assert config.renderer_hash == f'{current.runtime_id}@{current.version}'
 
 def test_legacy_runner_default_is_registry_backed() -> None:
     from tools.runtime.registry import default_runtime
@@ -75,3 +104,28 @@ def test_reverse_dependency_audit_blocks_referenced_runtime_versions() -> None:
     assert by_key[('zodiac-remotion', '1.20.0')].references
     assert by_key[('zodiac-remotion', '1.21.0')].references
     assert by_key[('zodiac-renderer', '2.0.0')].safe_to_archive is False
+
+
+def test_renderer_binding_retargets_default_identity_but_preserves_custom_hash(tmp_path: Path) -> None:
+    from tools.studio_v2.executor import ExecutorConfig, _bind_renderer_config
+
+    workspace = tmp_path / 'job'
+    workspace.mkdir()
+    (workspace / 'package-manifest.json').write_text(json.dumps({
+        'renderer': {'id': 'zodiac-renderer', 'version': '2.0.0'}
+    }), encoding='utf-8')
+    default = ExecutorConfig(
+        voice_profile='voice', tts_settings={}, tts_engine_version='tts',
+        aligner_settings={}, aligner_version='aligner',
+    )
+    bound = _bind_renderer_config(default, workspace)
+    assert bound.renderer_version == '2.0.0'
+    assert bound.renderer_hash == 'zodiac-renderer@2.0.0'
+
+    custom = ExecutorConfig(
+        voice_profile='voice', tts_settings={}, tts_engine_version='tts',
+        aligner_settings={}, aligner_version='aligner', renderer_hash='source-tree-hash-a',
+    )
+    bound_custom = _bind_renderer_config(custom, workspace)
+    assert bound_custom.renderer_version == '2.0.0'
+    assert bound_custom.renderer_hash == 'source-tree-hash-a'

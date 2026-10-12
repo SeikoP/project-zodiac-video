@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -80,6 +82,15 @@ def make_service(tmp_path: Path, *, current_manifest=True):
         detector=detector,
     )
 
+
+
+def test_importing_current_application_service_does_not_load_legacy_controller() -> None:
+    probe = (
+        "import sys; import tools.application.service; "
+        "raise SystemExit(1 if 'tools.studio.controller' in sys.modules else 0)"
+    )
+    result = subprocess.run([sys.executable, '-c', probe], check=False)
+    assert result.returncode == 0
 
 def test_job5_import_is_primary_and_common_state_routes_to_current(tmp_path: Path) -> None:
     from tools.application.service import MODE_CURRENT
