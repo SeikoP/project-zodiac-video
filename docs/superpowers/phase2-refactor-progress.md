@@ -20,3 +20,6 @@ Final: fixed omitted accent generated ownership — real transactional compiler 
 Final: fixed omitted selected meme source — global/meme-step pants.svg lineage regression RED→GREEN.
 Final: fixed declared/inferred canonical identity fail-open — missing materialization and bad master bytes regression RED→GREEN.
 Final review limits: rendered appearance, voice, temporal media behavior and full Python/Remotion compatibility require separate evidence; structural tests do not approve these.
+
+Final validation: orchestration 550/550, library 138/138, targeted Python 14/14. Remote tests run 38230644496 on code commit 91f0cb3: all 18 jobs PASS, including full Python and actual renderer smoke. No episode media/voice/creative approval claimed.
+Task G: plugin 2.4.61 published as pluginrel_6acca9f0d5b88191b4509a7c5295502a from verified source commit 91f0cb3ee249ccda784c897c69652cd2b907137d. Readback confirms version/release and changed source. Release-record update enables source artifact cutover.
