@@ -25,3 +25,5 @@ Final validation: orchestration 550/550, library 138/138, targeted Python 14/14.
 Task G: plugin 2.4.61 published as pluginrel_6acca9f0d5b88191b4509a7c5295502a from verified source commit 91f0cb3ee249ccda784c897c69652cd2b907137d. Readback confirms version/release and changed source. Release-record update enables source artifact cutover.
 
 Closeout audit: selected-context loading exposed missing scene-set/README.md. Real loadStepContext regression observed ENOENT then GREEN after adding canonical entrypoint. Added historical guidance index and clause-by-clause closeout record; version 2.4.62 prepared with unchanged effective configuration. Physical deletion remains unsafe for all referenced compatibility cues. Real episode media/creative QA remains separately gated.
+
+Closeout verification: orchestration 551/551, nested library 59/59, Gemini/framework 11/11. Plugin 2.4.62 published with unchanged identity/configuration; readback confirms canonical scene-set entrypoint. Source changes tracked by PR #103; distribution record pins source 3e9cb13 and release pluginrel_6accbe88a8f48191b59ec0ec8029c207.
