@@ -5,6 +5,8 @@ description: Use when producing or resuming Vietnamese Zodiac sticker-story vide
 
 # Zodiac Video Pipeline
 
+Load `bootstrap/current-policy.json` as the effective current policy. Release-history notes are provenance only and are not active behavior; current behavior is defined by this skill, active phase manifests and selected capability guidance.
+
 Follow orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Fresh Run Isolation: do NOT use account/personal memory; do NOT auto-load old approved packages. Preserve actual user direction and evidenced approvals.
 
 Read orchestration/execution-bootstrap.md and verify-entry-freshness.mjs before execution. GitHub Actions source-artifact fallback supplies version-pinned code from SeikoP/project-zodiac-video; repository prose never replaces this plugin or the episode contract. Plugin Creator maintains plugin source, not runtime transport.
