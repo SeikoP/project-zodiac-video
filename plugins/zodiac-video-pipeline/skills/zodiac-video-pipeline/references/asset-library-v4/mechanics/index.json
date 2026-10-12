@@ -135,6 +135,39 @@
         "actor",
         "target"
       ]
+    },
+    {
+      "id": "compare-two-props",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "point-choice",
+      "family": "state",
+      "requires": [
+        "actor",
+        "target"
+      ]
+    },
+    {
+      "id": "open-barrier",
+      "family": "narrative",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "focus-shift",
+      "family": "narrative",
+      "requires": [
+        "actor",
+        "target"
+      ]
     }
   ]
 }
