@@ -20,7 +20,7 @@ function bindingApplies(binding,phase,step,{run_mode='fresh',environment_mode='a
  if(!Array.isArray(binding.steps)||!binding.steps.includes(step))return false;
  if(Array.isArray(binding.run_modes)&&!binding.run_modes.includes(run_mode))return false;
  if(Array.isArray(binding.environment_modes)&&!binding.environment_modes.includes(environment_mode))return false;
- if(binding.when&&!conditionApplies(binding.when,{run_mode,flags}))return false;
+ if(binding.when){const flag=String(binding.when).startsWith('flag:')?String(binding.when).slice(5):null;if(flag&&!(flag in flags))return false;if(!conditionApplies(binding.when,{run_mode,flags}))return false;}
  return true;
 }
 
