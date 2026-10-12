@@ -468,6 +468,6 @@ Verification on the implemented tree:
 - Python non-Qt suite: 599 PASS, 11 skipped, 23 subtests PASS;
 - architecture/runtime/contract subset: 25/25 PASS;
 - Python compileall: PASS;
-- local Qt runtime suite: not executed because the local verification environment lacks PySide6; CI retains the Qt dependency/install and launcher gate.
+- Qt-dependent suite: **64/64 PASS** on GitHub Actions run `38255784302` with PySide6 6.12 and Linux Qt runtime libraries; the temporary feature-validation workflow was removed after verification.
 
 No plugin publication, merge, or installed-ChatGPT-plugin update is implied by this status.
