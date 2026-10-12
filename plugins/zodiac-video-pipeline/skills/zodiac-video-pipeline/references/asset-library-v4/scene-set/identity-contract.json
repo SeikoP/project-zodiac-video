@@ -1,0 +1,75 @@
+{
+  "format": "zodiac-scene-set-identity@1",
+  "policy": {
+    "palette_is_identity": false,
+    "minimum_cues_per_scene_set": 2,
+    "heavy_background_detail": false
+  },
+  "cues": {
+    "wall-shelf": {
+      "kind": "accent",
+      "asset_id": "scene-accent-shelf",
+      "scene_sets": [
+        "scene-set-home",
+        "scene-set-study"
+      ],
+      "meaning": "small storage/read context"
+    },
+    "wall-clock": {
+      "kind": "accent",
+      "asset_id": "scene-accent-clock",
+      "scene_sets": [
+        "scene-set-home",
+        "scene-set-classroom"
+      ],
+      "meaning": "time/routine context"
+    },
+    "cafe-counter-line": {
+      "kind": "accent",
+      "asset_id": "scene-accent-cafe",
+      "scene_sets": [
+        "scene-set-cafe"
+      ],
+      "meaning": "minimal cafe service/conversation cue"
+    },
+    "sign-menu": {
+      "kind": "accent",
+      "asset_id": "scene-accent-sign",
+      "scene_sets": [
+        "scene-set-cafe",
+        "scene-set-street"
+      ],
+      "meaning": "public sign/menu cue"
+    },
+    "board-plane": {
+      "kind": "accent",
+      "asset_id": "scene-accent-board",
+      "scene_sets": [
+        "scene-set-classroom",
+        "scene-set-study"
+      ],
+      "meaning": "learning/work surface cue"
+    },
+    "open-horizon": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-street"
+      ],
+      "meaning": "open lateral negative space implying outside movement"
+    },
+    "quiet-negative-space": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "intentionally sparse wall area"
+    },
+    "single-anchor-zone": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "one focal wall anchor without room identity"
+    }
+  }
+}

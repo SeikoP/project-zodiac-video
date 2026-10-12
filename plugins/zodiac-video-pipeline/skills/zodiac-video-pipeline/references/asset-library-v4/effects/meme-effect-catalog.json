@@ -101,7 +101,10 @@
           "stroke": "#E97A66",
           "width": 6
         }
-      ]
+      ],
+      "semantic_family": "impact-radial",
+      "locus": "event_impact",
+      "intent": "brief event emphasis at offer/contact moment"
     },
     "facepalm-impact": {
       "paths": [
@@ -150,7 +153,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "surprise-radiance",
+      "locus": "subject_perimeter",
+      "intent": "surprise radiates outward"
     },
     "mirror-glint": {
       "paths": [
@@ -193,7 +199,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "inward-pressure",
+      "locus": "contact_axis",
+      "intent": "pressure converges toward contact"
     },
     "contact-fan-receipt": {
       "paths": [
@@ -279,7 +288,10 @@
           "stroke": "#2F3C44",
           "width": 6
         }
-      ]
+      ],
+      "semantic_family": "stress-perimeter",
+      "locus": "subject_edge",
+      "intent": "tension marks sit around subject edge"
     },
     "motion-dash": {
       "paths": [
@@ -298,7 +310,10 @@
           "stroke": "#F2C45C",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "motion-trail",
+      "locus": "trailing_edge",
+      "intent": "trail follows movement direction"
     },
     "blush-marks": {
       "paths": [
@@ -322,7 +337,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "embarrassment-face",
+      "locus": "face_region",
+      "intent": "embarrassment stays localized to face"
     },
     "question-pop": {
       "paths": [
@@ -337,7 +355,10 @@
           "fill": "#E97A66",
           "width": 4
         }
-      ]
+      ],
+      "semantic_family": "confusion-mark",
+      "locus": "thought_locus",
+      "intent": "question mark emitted at thought locus"
     },
     "tiny-sparkle": {
       "paths": [
