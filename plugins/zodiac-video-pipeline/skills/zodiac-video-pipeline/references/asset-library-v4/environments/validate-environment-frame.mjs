@@ -14,7 +14,7 @@ export async function validateWorkspace(root){
   requireFrame=state.run_mode==='fresh'&&m&&Number(m[1])===2&&Number(m[2])===4&&Number(m[3])>=7;
  }catch(e){if(e.code!=='ENOENT')throw e;}
  for(const scene of prod.scenes??[]){
-  if(requireFrame&&scene.environment?.profile&&!scene.environment.frame&&(scene.entities??[]).some(e=>e.kind==='character'))
+  if(requireFrame&&(scene.environment?.scene_set_id||scene.environment?.profile)&&!scene.environment.frame&&(scene.entities??[]).some(e=>e.kind==='character'))
    throw Error(`FRAME_REQUIRED_FOR_ACTED_ENVIRONMENT scene=${scene.id}`);
   const v=validateEnvironmentFrame(scene,prod.assets,{styleToken:prod.visual_system?.style_token?.id});
   if(v.skipped)continue;
