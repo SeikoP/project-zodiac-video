@@ -104,9 +104,10 @@ test('identical metaphor visual change repeated as a decorative claim blocks',()
  assert.ok(fail(p).includes('STORY_VISUAL_REPETITION'));
 });
 
-test('new Phase-02 source template enables story-object mode for fresh content',async()=>{
+test('new Phase-02 source template keeps Visual Metaphor opt-in for fresh content',async()=>{
  const template=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url),'utf8'));
- assert.equal(template.flags.story_object_required,true);
+ assert.equal('story_object_required' in template.flags,false);
+ assert.equal(template.flags.visual_metaphor_selected,false);
 });
 test('new fresh run blocks absent story object plan by release policy',async()=>{
  const tmp=await mkdtemp(path.join(os.tmpdir(),'zodiac-object-fresh-'));
