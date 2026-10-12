@@ -70,6 +70,62 @@
         "scene-set-neutral"
       ],
       "meaning": "one focal wall anchor without room identity"
+    },
+    "home-lamp": {
+      "kind": "accent",
+      "asset_id": "scene-accent-home-lamp",
+      "scene_sets": [
+        "scene-set-home"
+      ],
+      "meaning": "small home lamp cue"
+    },
+    "cafe-window": {
+      "kind": "accent",
+      "asset_id": "scene-accent-cafe-window",
+      "scene_sets": [
+        "scene-set-cafe"
+      ],
+      "meaning": "cafe window cue"
+    },
+    "class-window": {
+      "kind": "accent",
+      "asset_id": "scene-accent-class-window",
+      "scene_sets": [
+        "scene-set-classroom"
+      ],
+      "meaning": "classroom window cue"
+    },
+    "study-note": {
+      "kind": "accent",
+      "asset_id": "scene-accent-study-note",
+      "scene_sets": [
+        "scene-set-study"
+      ],
+      "meaning": "study note cue"
+    },
+    "street-tree": {
+      "kind": "accent",
+      "asset_id": "scene-accent-street-tree",
+      "scene_sets": [
+        "scene-set-street"
+      ],
+      "meaning": "outdoor tree cue"
+    },
+    "neutral-dot": {
+      "kind": "accent",
+      "asset_id": "scene-accent-neutral-dot",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "minimal dot anchor"
+    },
+    "neutral-line": {
+      "kind": "accent",
+      "asset_id": "scene-accent-neutral-line",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "minimal line anchor"
     }
   }
 }
