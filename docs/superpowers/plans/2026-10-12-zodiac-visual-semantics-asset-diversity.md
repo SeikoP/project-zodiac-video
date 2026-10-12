@@ -91,7 +91,7 @@ Fresh routing flag:
 
 ### Steps
 
-- [ ] **1.1 RED — write Visual Metaphor contract tests**
+- [x] **1.1 RED — write Visual Metaphor contract tests**
   - one-state metaphor passes;
   - Libra `tilt_left → balanced → tilt_right` passes;
   - cue references unknown state fails;
@@ -100,24 +100,24 @@ Fresh routing flag:
   - no setup/friction/payoff requirement exists.
   - Expected: tests fail because current system only has Story Object validators.
 
-- [ ] **1.2 GREEN — implement compiler + validators**
+- [x] **1.2 GREEN — implement compiler + validators**
   - Keep validation semantic and authoring-only.
   - Compile to existing native object/effect/state/event primitives.
   - Do not add a new Job@5 entity kind.
   - Expected: targeted Visual Metaphor tests pass.
 
-- [ ] **1.3 RED→GREEN — change fresh capability/manifests**
+- [x] **1.3 RED→GREEN — change fresh capability/manifests**
   - capability ID becomes `visual_metaphor`;
   - fresh required outputs use `.authoring/visual-metaphor-plan.json` only when selected;
   - fresh docs stop describing Story Object as current.
   - Expected: fresh-context tests show no current Story Object requirement.
 
-- [ ] **1.4 Regression gate**
+- [x] **1.4 Regression gate**
   - Run:
     `node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-metaphor.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/current-policy.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs`
   - Expected: all pass.
 
-- [ ] **1.5 Commit**
+- [x] **1.5 Commit**
   - `refactor(plugin): replace fresh story object with visual metaphor`
 
 ---
@@ -155,27 +155,27 @@ Modify:
 
 ### Steps
 
-- [ ] **2.1 RED — compatibility fixture**
+- [x] **2.1 RED — compatibility fixture**
   - Existing Story Object fixture must validate through projection.
   - Hash of original legacy file must be unchanged.
   - Fresh context must contain zero `story-object-*.md` refs.
 
-- [ ] **2.2 GREEN — implement adapter and capability routing**
+- [x] **2.2 GREEN — implement adapter and capability routing**
   - Explicit legacy detection only.
   - No auto-loading legacy Story Object references on fresh path.
 
-- [ ] **2.3 RED→GREEN — context budget**
+- [x] **2.3 RED→GREEN — context budget**
   - Measure default fresh `02-visual-production / visual_compile`.
   - Acceptance:
     - no metaphor selected: **≤ 70,000 bytes**;
     - metaphor selected: bounded and no legacy Story Object docs;
     - explicit continuity/legacy retains required old guidance.
 
-- [ ] **2.4 Regression gate**
+- [x] **2.4 Regression gate**
   - Run full orchestration context tests plus Visual Metaphor/compat tests.
   - Expected: green; fresh and legacy behavior both explicit.
 
-- [ ] **2.5 Commit**
+- [x] **2.5 Commit**
   - `refactor(plugin): isolate story object compatibility and bound metaphor context`
 
 ---
@@ -238,27 +238,27 @@ Receipt records:
 
 ### Steps
 
-- [ ] **3.1 RED — palette compiler tests**
+- [x] **3.1 RED — palette compiler tests**
   - same master + different palette → different SVG bytes;
   - path `d=` geometry and viewBox remain identical;
   - unknown palette fails closed;
   - same pair deduplicates;
   - different pairs cannot collide on asset ID/path.
 
-- [ ] **3.2 GREEN — implement role-token recoloring**
+- [x] **3.2 GREEN — implement role-token recoloring**
   - Only approved source color tokens may change.
   - Scene accents use the same palette mapping.
   - Do not edit canonical master SVGs.
 
-- [ ] **3.3 RED→GREEN — palette quality validator**
+- [x] **3.3 RED→GREEN — palette quality validator**
   - Validate required roles and basic luminance/contrast separation.
   - Do not add dark/night palette in this task.
 
-- [ ] **3.4 Asset-library gate**
+- [x] **3.4 Asset-library gate**
   - Run palette tests + scene-set tests + V4 validator.
   - Expected: all six packs valid; current warm-paper output remains visually backwards-compatible.
 
-- [ ] **3.5 Commit**
+- [x] **3.5 Commit**
   - `feat(assets): compile scene-set background palette variants`
 
 ---
@@ -294,25 +294,25 @@ Modify:
 
 ### Steps
 
-- [ ] **4.1 RED — snapshot existing character compiler output**
+- [x] **4.1 RED — snapshot existing character compiler output**
   - Pin SVG SHA/normalized geometry for representative combinations covering all body profiles, several hair/outfit/pose/expression cases.
   - Expected: baseline fixtures captured before module extraction.
 
-- [ ] **4.2 GREEN — extract geometry owners**
+- [x] **4.2 GREEN — extract geometry owners**
   - `compile-character-assembly.mjs` becomes orchestrator/composer.
   - Geometry implementation lives in focused modules.
   - Expected: representative outputs byte-identical or normalized-geometry-identical per the pinned contract.
 
-- [ ] **4.3 RED→GREEN — fresh routing**
+- [x] **4.3 RED→GREEN — fresh routing**
   - Auto-selection must not choose `lopsided-bob`.
   - Explicit request for `lopsided-bob` still works.
   - Showcase uses `blocky-cut`.
 
-- [ ] **4.4 Full character gate**
+- [x] **4.4 Full character gate**
   - Run character assembly, identity, pose readability, outfit bake, visual intent tests.
   - Expected: no output drift outside explicitly approved routing/showcase selection.
 
-- [ ] **4.5 Commit**
+- [x] **4.5 Commit**
   - `refactor(assets): modularize character geometry and fresh hair routing`
 
 ---
@@ -358,24 +358,24 @@ Effects:
 
 ### Steps
 
-- [ ] **5.1 RED — scene identity contract**
+- [x] **5.1 RED — scene identity contract**
   - Each of six scene sets must declare at least two allowed identity cues.
   - Cues must stay in scene-set/scene-accent ownership.
   - Palette changes alone cannot satisfy identity coverage.
 
-- [ ] **5.2 RED→GREEN — normalize contact mechanics**
+- [x] **5.2 RED→GREEN — normalize contact mechanics**
   - Fix `pass-object` / `offer-object` mismatch.
   - Validate giver/receiver/contact slots.
   - Keep meme pants behavior “giver hands pants to receiver”; never face-cover semantics.
 
-- [ ] **5.3 RED→GREEN — effect semantic families**
+- [x] **5.3 RED→GREEN — effect semantic families**
   - Existing effects get family/intent/locus metadata.
   - Pressure/tension/emphasis must resolve to different semantic families with distinct authored geometry signatures.
 
-- [ ] **5.4 Regression gate**
+- [x] **5.4 Regression gate**
   - Scene direction, interaction, meme contact, effect and V4 validation all green.
 
-- [ ] **5.5 Commit**
+- [x] **5.5 Commit**
   - `refactor(assets): clarify scene contact and effect semantics`
 
 ---
@@ -398,32 +398,32 @@ Modify/delete:
 
 ### Steps
 
-- [ ] **6.1 RED — reverse dependency inventory**
+- [x] **6.1 RED — reverse dependency inventory**
   - Every orchestration wrapper must have either:
     - at least one current external/compat consumer, or
     - a deprecation/removal classification.
   - Fail on unclassified wrapper.
 
-- [ ] **6.2 GREEN — remove only proven-zero-consumer wrappers**
+- [x] **6.2 GREEN — remove only proven-zero-consumer wrappers**
   - Update internal callers to canonical owner paths first.
   - Keep compatibility wrappers that are genuinely externally referenced.
 
-- [ ] **6.3 Context budget audit**
+- [x] **6.3 Context budget audit**
   - Default fresh visual compile target remains **≤70 KB** after Tasks 1–5.
   - Top refs must be current canonical guidance, not compatibility/history.
 
-- [ ] **6.4 Runtime history audit**
+- [x] **6.4 Runtime history audit**
   - Run `tools/runtime/audit.py`.
   - If a version becomes `safe_to_archive`, archive/prune according to the runtime registry contract.
   - If none is safe, do **not** force deletion; write exact registered consumers/retention reasons to the audit doc.
   - This closes the ambiguity without lying about support.
 
-- [ ] **6.5 Full architecture gate**
+- [x] **6.5 Full architecture gate**
   - plugin tests;
   - Python architecture/runtime/contract tests;
   - no fresh `compat/` imports.
 
-- [ ] **6.6 Commit**
+- [x] **6.6 Commit**
   - `chore(architecture): close visual workstream dependency debt`
 
 ---
@@ -496,32 +496,32 @@ These are **minimum distinct-capability targets**, not quotas for duplicate art:
 
 ### Steps
 
-- [ ] **7.1 RED — coverage-gap test first**
+- [x] **7.1 RED — coverage-gap test first**
   - Encode the uncovered needs in `coverage-matrix.json`.
   - Test fails until each need resolves to a real, validated capability.
 
-- [ ] **7.2 Implement Visual Metaphor assets**
+- [x] **7.2 Implement Visual Metaphor assets**
   - Start with Libra scale as the reference implementation.
   - Validate visible state differences.
 
-- [ ] **7.3 Expand character diversity**
+- [x] **7.3 Expand character diversity**
   - Use modular geometry owners from Task 4.
   - Run silhouette/identity uniqueness checks.
 
-- [ ] **7.4 Expand props/contact + scene identity cues**
+- [x] **7.4 Expand props/contact + scene identity cues**
   - Add only items tied to explicit coverage needs.
 
-- [ ] **7.5 Expand semantic effects/mechanics**
+- [x] **7.5 Expand semantic effects/mechanics**
   - Preserve family differentiation from Task 5.
 
-- [ ] **7.6 V4 integrity gate**
+- [x] **7.6 V4 integrity gate**
   - `validate-library.mjs` PASS;
   - no asset ID/path/hash collisions;
   - no unused generated assets;
   - no generate-many-dedupe artifacts;
   - capability index and coverage matrix resolve every new need.
 
-- [ ] **7.7 Commit**
+- [x] **7.7 Commit**
   - `feat(assets): expand V4 semantic and visual diversity`
 
 ---
@@ -558,31 +558,31 @@ Full-frame diagnostic must show:
 
 ### Steps
 
-- [ ] **8.1 RED — preview manifest assertions**
+- [x] **8.1 RED — preview manifest assertions**
   - no `Story Object` label;
   - no red-shirt `lopsided-bob`;
   - all six palettes represented;
   - all three scale states represented;
   - counts pulled from catalogs, not hard-coded.
 
-- [ ] **8.2 Render previews using actual compilers/assets**
+- [x] **8.2 Render previews using actual compilers/assets**
   - Rasterize through the same SVG toolchain used by the existing showcase workflow.
 
-- [ ] **8.3 Full plugin gate**
+- [x] **8.3 Full plugin gate**
   - Run complete orchestration/reference suite.
   - Run Asset V4 validator.
 
-- [ ] **8.4 Runner/runtime non-regression gate**
+- [x] **8.4 Runner/runtime non-regression gate**
   - Python compile + architecture/runtime/contract tests.
   - Qt/current renderer smoke through CI if required by the existing workflow.
   - Confirm Job@5 schema/version unchanged.
 
-- [ ] **8.5 Final review**
+- [x] **8.5 Final review**
   - Use Superpowers requesting-code-review.
   - Explicitly review every item in **Review focus**.
   - Important/Critical findings get one TDD fix pass; minors are ledgered.
 
-- [ ] **8.6 Commit**
+- [x] **8.6 Commit**
   - `docs(preview): regenerate V4 visual system diagnostic`
 
 ---
@@ -620,3 +620,45 @@ Expected semantic commits:
 7. `feat(assets): expand V4 semantic and visual diversity`
 8. `docs(preview): regenerate V4 visual system diagnostic`
 
+
+## Completion record
+
+Completed on branch `codex/zodiac-visual-semantics-palettes`.
+
+Verified production head before documentation/workflow cleanup:
+`dc33c27c1985f81287003f65bec84f93aa2a0946`
+
+Final verification — GitHub Actions run `38291678808`:
+- targeted Visual Metaphor/current-policy/context suite: **15/15 PASS**
+- full plugin orchestration/reference suite: **653/653 PASS**
+- Asset V4 validator: **PASS**
+- selected Python runtime/contract/application/runner architecture gate: **24/24 PASS**
+- runtime retention audit: **12 registered versions, safe_to_archive=[]**
+- fresh visual-compile context: **19 refs / 68,522 bytes**
+- final preview builder: **PASS**
+
+Final Asset V4 inventory:
+- 6 scene sets
+- 12 scene accents
+- 6 background palettes
+- 6 body profiles
+- 14 hairstyles
+- 7 face profiles
+- 17 outfits
+- 25 poses
+- 22 props
+- 6 accessories
+- 20 mechanics
+- 20 effects / 11 indexed effect capabilities
+- 6 stateful Visual Metaphor mechanisms
+- 11 meme templates
+
+Visual review confirmed:
+- red-shirt diagnostic character uses `blocky-cut`, not `lopsided-bob`;
+- Visual Metaphor balance scale exposes `tilt_left / balanced / tilt_right`;
+- Story Object is absent from the fresh authoring model and retained only through compatibility;
+- six background palettes produce visibly different baked scene-set output with the same geometry;
+- Prop/Contact, Visual Metaphor and semantic effects are shown as separate systems;
+- diagnostic previews are generated from current compilers/catalogs.
+
+No Job@5 or renderer contract migration was introduced.
