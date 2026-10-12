@@ -6,7 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
-const script=fileURLToPath(new URL('../phase02-execute.mjs',import.meta.url));
+const script=fileURLToPath(new URL('../../phases/phase02/phase02-execute.mjs',import.meta.url));
 const write=async(p,s)=>{await mkdir(path.dirname(p),{recursive:true});await writeFile(p,s);};
 const run=(ws,root,extra=[])=>spawnSync(process.execPath,[script,'--workspace',ws,'--source-root',root,...extra],{encoding:'utf8',timeout:12000});
 const makeWorkspace=async()=>{
@@ -38,6 +38,11 @@ const makeSource=async()=>{
  await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/forward-cli.mjs'),await readFile(new URL('../forward-cli.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/state/authoring-lease.mjs'),await readFile(new URL('../../core/state/authoring-lease.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'phases/phase02/finalize-phase02-workspace.mjs'),await readFile(new URL('../../phases/phase02/finalize-phase02-workspace.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'phases/phase02/phase02-selected-dependencies.mjs'),await readFile(new URL('../../phases/phase02/phase02-selected-dependencies.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/compile-visual-intent.mjs'),await readFile(new URL('../../features/visual-composition/compile-visual-intent.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/episode/episode-handoff.mjs'),await readFile(new URL('../../features/episode/episode-handoff.mjs',import.meta.url),'utf8'));
  for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'orchestration',name),await readFile(new URL('../'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/episode/episode-scope.mjs'),await readFile(new URL('../../features/episode/episode-scope.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/phase02-composition.mjs'),await readFile(new URL('../phase02-composition.mjs',import.meta.url),'utf8'));
@@ -171,8 +176,13 @@ test('precompile and art direction preflights each execute once with genuine rec
   await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/forward-cli.mjs'),await readFile(new URL('../forward-cli.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/state/authoring-lease.mjs'),await readFile(new URL('../../core/state/authoring-lease.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'phases/phase02/finalize-phase02-workspace.mjs'),await readFile(new URL('../../phases/phase02/finalize-phase02-workspace.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'phases/phase02/phase02-selected-dependencies.mjs'),await readFile(new URL('../../phases/phase02/phase02-selected-dependencies.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/compile-visual-intent.mjs'),await readFile(new URL('../../features/visual-composition/compile-visual-intent.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/episode/episode-handoff.mjs'),await readFile(new URL('../../features/episode/episode-handoff.mjs',import.meta.url),'utf8'));
   for(const [scriptName,counter] of [['validate-phase02-precompile-boundary.mjs','seam'],['validate-phase02-art-direction.mjs','art']]){
-   await write(path.join(skill,'orchestration',scriptName),`import {appendFile} from 'node:fs/promises';import path from 'node:path';await appendFile(path.join(process.argv[2],'.authoring/${counter}-calls'),'1\\n');console.log('PREFLIGHT_OK');`);
+   await write(path.join(skill,'features/visual-composition',scriptName),`import {appendFile} from 'node:fs/promises';import path from 'node:path';await appendFile(path.join(process.argv[2],'.authoring/${counter}-calls'),'1\\n');console.log('PREFLIGHT_OK');`);
   }
   const result=run(ws,src,['--run']);assert.equal(result.status,0,result.stderr);
   for(const counter of ['seam','art'])assert.equal((await readFile(path.join(ws,'.authoring',counter+'-calls'),'utf8')).trim().split('\n').length,1,counter);

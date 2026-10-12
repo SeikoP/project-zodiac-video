@@ -1,0 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {readFile,writeFile,mkdir,rename,rm} from 'node:fs/promises';import path from 'node:path';
+export async function readArtifact(root,name){try{return JSON.parse(await readFile(path.join(root,'.authoring',name),'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;return JSON.parse(await readFile(path.join(root,name),'utf8'));}}
+export async function writeArtifact(root,name,value){const dir=path.join(root,'.authoring');await mkdir(dir,{recursive:true});const file=path.join(dir,name),tmp=file+'.tmp-'+process.pid+'-'+randomUUID();try{await writeFile(tmp,JSON.stringify(value,null,2)+'\n');await rename(tmp,file);}finally{await rm(tmp,{force:true});}}
+export function newFresh(state,patch=48){const v=String(state?.plugin_version??'0').split('.').map(Number);return state?.run_mode==='fresh'&&(v[0]>2||v[0]===2&&(v[1]>4||v[1]===4&&v[2]>=patch));}

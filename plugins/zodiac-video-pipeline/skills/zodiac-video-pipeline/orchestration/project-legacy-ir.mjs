@@ -1,1 +1,1 @@
-export * from '../compat/migrations/project-legacy-ir.mjs';
+export * from '../core/model/project-legacy-ir.mjs';

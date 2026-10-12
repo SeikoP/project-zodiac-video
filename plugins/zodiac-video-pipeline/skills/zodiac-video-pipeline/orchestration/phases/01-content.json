@@ -50,7 +50,7 @@
           "id": "evidence_brief_compile",
           "kind": "internal_compiler",
           "when": "fresh",
-          "tool_locator": "orchestration/compile-evidence-brief.mjs",
+          "tool_locator": "core/evidence/compile-evidence-brief.mjs",
           "required_arg_suffixes": [
             "--write"
           ],
@@ -87,7 +87,7 @@
           "id": "episode_research_scope_validation",
           "kind": "internal_validator",
           "when": "flag:episode_selected",
-          "tool_locator": "orchestration/validate-episode-scope.mjs",
+          "tool_locator": "features/episode/validate-episode-scope.mjs",
           "unavailable_policy": "block",
           "stage": "exit",
           "required_arg_suffixes": [
@@ -168,7 +168,7 @@
           "id": "writer_brief_compile",
           "kind": "internal_compiler",
           "when": "fresh",
-          "tool_locator": "orchestration/compile-writer-brief.mjs",
+          "tool_locator": "features/episode/compile-writer-brief.mjs",
           "required_arg_suffixes": [
             "--write"
           ],
@@ -215,7 +215,7 @@
           "id": "episode_scope_validation",
           "kind": "internal_validator",
           "when": "flag:episode_selected",
-          "tool_locator": "orchestration/validate-episode-scope.mjs",
+          "tool_locator": "features/episode/validate-episode-scope.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }

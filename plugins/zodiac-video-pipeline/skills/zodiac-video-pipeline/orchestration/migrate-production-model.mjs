@@ -1,1 +1,1 @@
-export * from '../compat/migrations/migrate-production-model.mjs';
+export * from '../core/model/migrate-production-model.mjs';

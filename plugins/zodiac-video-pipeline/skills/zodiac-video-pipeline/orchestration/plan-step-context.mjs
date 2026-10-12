@@ -3,11 +3,11 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {selectAssetGuidance} from './select-asset-guidance.mjs';
+import {selectAssetGuidance} from '../core/policy/select-asset-guidance.mjs';
 import {createHash} from 'node:crypto';
-import {conditionApplies} from './resolve-capability-route.mjs';
-import {loadCurrentPolicy} from './current-policy.mjs';
-import {capabilitiesForStep} from './capability-registry.mjs';
+import {conditionApplies} from '../core/policy/resolve-capability-route.mjs';
+import {loadCurrentPolicy} from '../core/policy/current-policy.mjs';
+import {capabilitiesForStep} from '../core/policy/capability-registry.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02-visual-production.json','03-handoff':'03-handoff.json'};
 export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',role='draft',selected_asset_ids=null,meme_selected=flags.meme_selected??false,environment_mode='archive_frame',policy=null,asset_needs=[],capabilityIndex=null,coverageMatrix=null}={}) {

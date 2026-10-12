@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-const script=fileURLToPath(new URL('../phase02-execute.mjs',import.meta.url));
+const script=fileURLToPath(new URL('../../phases/phase02/phase02-execute.mjs',import.meta.url));
 const write=async(p,c)=>{await mkdir(path.dirname(p),{recursive:true});await writeFile(p,c)};
 const execute=(ws,root,...flags)=>spawnSync(process.execPath,[script,'--workspace',ws,'--source-root',root,...flags],{encoding:'utf8',timeout:14000});
 const sandbox=async()=>{
@@ -22,8 +22,8 @@ const sandbox=async()=>{
  const fakeReceipt=p=>`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const d=process.argv[2];await mkdir(path.join(d,'.authoring'),{recursive:true});await writeFile(path.join(d,'.authoring/${p}'),'{}');`;
  await write(path.join(root,'references/asset-library-v4/environments/compile-environment.mjs'),fakeReceipt('environment-compile-receipt.json'));
  await write(path.join(root,'references/asset-library-v4/scene-direction/compile-scene-direction.mjs'),fakeReceipt('scene-direction-compile-receipt.json'));
- await write(path.join(root,'orchestration/run-validator-with-receipt.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const [id,r,v]=process.argv.slice(2);await mkdir(path.dirname(r),{recursive:true});await writeFile(r,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:id,status:'PASS',exit_code:0,validator:v}));`);
- await write(path.join(root,'orchestration/validate-pipeline-state.mjs'),`import {readFile} from 'node:fs/promises';const x=JSON.parse(await readFile(process.argv[2]));if(x.plugin_version!=='2.2.22')process.exit(1);`);
+ await write(path.join(root,'core/evidence/run-validator-with-receipt.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const [id,r,v]=process.argv.slice(2);await mkdir(path.dirname(r),{recursive:true});await writeFile(r,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:id,status:'PASS',exit_code:0,validator:v}));`);
+ await write(path.join(root,'core/state/validate-pipeline-state.mjs'),`import {readFile} from 'node:fs/promises';const x=JSON.parse(await readFile(process.argv[2]));if(x.plugin_version!=='2.2.22')process.exit(1);`);
  await write(path.join(ws,'production.json'),JSON.stringify({assets:{},scenes:[{id:'s1',voice:'Demo',entities:[{id:'hero',kind:'character',initial_state:'neutral',states:{neutral:{asset:null}}}]}]}));
  await write(path.join(ws,'narration.txt'),'Demo');
  await write(path.join(ws,'.authoring/character-assembly-plan.json'),'{}');

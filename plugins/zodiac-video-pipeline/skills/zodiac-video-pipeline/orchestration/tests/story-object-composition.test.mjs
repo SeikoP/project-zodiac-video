@@ -53,7 +53,7 @@ test('older source plan can remain explicitly legacy; new plans require mode',()
 test('runtime remains stable: review and Phase03 both gate composition before preview/zip',async()=>{
  const here=new URL('../',import.meta.url);
  const review=await readFile(new URL('../features/visual-composition/run-director-v2-review.mjs',here),'utf8');
- const release=await readFile(new URL('run-phase03-production.mjs',here),'utf8');
+ const release=await readFile(new URL('../phases/phase03/run-phase03-production.mjs',here),'utf8');
  assert.match(review,/story_object_composition_v2/);
  assert.match(review,/stages\.splice\(before,0,[\s\S]*story_object_composition_v2/);
  assert.match(release,/validateStoryObjectCompositionWorkspace\(approved\)/);
