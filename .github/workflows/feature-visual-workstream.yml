@@ -17,9 +17,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
       - name: Visual Metaphor contract
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-metaphor.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/current-policy.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs
       - name: Full plugin suite
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/*.test.mjs
       - name: Validate Asset V4
-        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/validation/validate-library.mjs
+        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/validation/validate-library.mjs      - name: Runtime and contract architecture
+        run: pytest -q tests/test_runtime_registry.py tests/test_contract_bundle.py tests/test_application_service.py tests/test_runner_modules.py tests/test_test_layout.py
+      - name: Runtime retention audit
+        run: |
+          python - <<'PY'
+          from tools.runtime.audit import audit_runtime_references
+          rows=audit_runtime_references()
+          safe=[(r.runtime_id,r.version) for r in rows if r.safe_to_archive]
+          print("RUNTIME_AUDIT rows="+str(len(rows))+" safe_to_archive="+repr(safe))
+          for r in rows:
+              print(r.runtime_id, r.version, "refs="+str(len(r.references)))
+          PY
+      - name: Fresh context budget report
+        run: |
+          node --input-type=module <<'NODE'
+          import {loadStepContext} from './plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/plan-step-context.mjs';
+          import {readFile} from 'node:fs/promises';
+          const root='./plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration';
+          const state=JSON.parse(await readFile(root+'/pipeline-state.template.json','utf8'));
+          const r=await loadStepContext('02-visual-production','visual_compile',state.flags,{environment_mode:'scene_set'});
+          console.log('FRESH_CONTEXT refs='+r.required_references.length+' bytes='+(r.context_manifest??[]).reduce((n,x)=>n+(x.bytes??0),0));
+          NODE

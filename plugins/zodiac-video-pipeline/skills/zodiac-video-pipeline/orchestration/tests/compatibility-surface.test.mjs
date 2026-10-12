@@ -13,19 +13,22 @@ const thin=/^export \* from ['"]([^'"]+)['"];\n(?:import \{forwardCliIfMain\} fr
 test('every thin orchestration wrapper is classified with a real canonical owner',async()=>{
  const manifest=JSON.parse(await readFile(path.join(orchestration,'compatibility-surface.json'),'utf8'));
  assert.equal(manifest.format,'zodiac-orchestration-compatibility-surface@1');
- const wrappers={};
+ const wrappers=[];
  for(const e of await readdir(orchestration,{withFileTypes:true})){
   if(!e.isFile()||!e.name.endsWith('.mjs'))continue;
   const source=await readFile(path.join(orchestration,e.name),'utf8'),m=thin.exec(source);
-  if(m)wrappers[e.name]={owner_import:m[1],cli:source.includes('forwardCliIfMain')};
+  if(m)wrappers.push({name:e.name,owner_import:m[1],cli:source.includes('forwardCliIfMain')});
  }
- assert.deepEqual(Object.keys(manifest.wrappers).sort(),Object.keys(wrappers).sort());
- for(const [name,row] of Object.entries(manifest.wrappers)){
-  assert.ok(['retained_module_compat','retained_cli_compat','repo_consumer'].includes(row.classification),name+' classification');
-  assert.ok(typeof row.owner==='string'&&row.owner.length>0,name+' owner');
-  assert.equal(await exists(path.join(skill,row.owner)),true,name+' owner missing');
-  assert.equal(row.fresh_import_allowed,false,name+' must not be a fresh import target');
-  if(row.classification!=='repo_consumer')assert.ok(row.retention_reason?.length>=12,name+' needs retention reason');
-  if(row.classification==='retained_cli_compat')assert.equal(wrappers[name].cli,true,name+' is not a CLI wrapper');
+ assert.ok(wrappers.length>80,'expected the preserved pre-F3 compatibility surface');
+ const cliRule=manifest.rules?.cli_forwarder,moduleRule=manifest.rules?.module_forwarder;
+ for(const wrapper of wrappers){
+  const rule=wrapper.cli?cliRule:moduleRule;
+  assert.ok(rule,wrapper.name+' has no classification rule');
+  assert.ok(['retained_module_compat','retained_cli_compat'].includes(rule.classification),wrapper.name+' classification');
+  assert.equal(rule.fresh_import_allowed,false,wrapper.name+' must not be a fresh import target');
+  assert.ok(rule.retention_reason?.length>=12,wrapper.name+' needs retention reason');
+  const owner=path.resolve(orchestration,wrapper.owner_import);
+  assert.equal(await exists(owner),true,wrapper.name+' owner missing '+owner);
+  assert.equal(owner.startsWith(orchestration+path.sep),false,wrapper.name+' must forward to a canonical owner outside orchestration');
  }
 });
