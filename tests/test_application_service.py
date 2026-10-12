@@ -164,6 +164,8 @@ def test_run_request_uses_one_service_interface_for_current_and_legacy(tmp_path:
     assert current.run(request) is True
     config, rerun_from = current.current.run_calls[-1]
     assert config.voice_profile == "voice-a"
+    assert config.tts_settings["scene_gap_ms"] == 180.0
+    assert config.aligner_settings["scene_gap_ms"] == 180.0
     assert rerun_from == "RENDER"
 
     legacy = make_service(tmp_path / "legacy", current_manifest=False)
