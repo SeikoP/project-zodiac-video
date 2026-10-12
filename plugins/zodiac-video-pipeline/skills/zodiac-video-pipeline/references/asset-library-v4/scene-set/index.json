@@ -36,7 +36,8 @@
       "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame.",
       "identity_cues": [
         "wall-shelf",
-        "wall-clock"
+        "wall-clock",
+        "home-lamp"
       ]
     },
     {
@@ -74,7 +75,8 @@
       "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame.",
       "identity_cues": [
         "cafe-counter-line",
-        "sign-menu"
+        "sign-menu",
+        "cafe-window"
       ]
     },
     {
@@ -112,7 +114,8 @@
       "semantic_intent": "Classroom-neutral continuous wall/floor/frame stage; context remains optional accents.",
       "identity_cues": [
         "board-plane",
-        "wall-clock"
+        "wall-clock",
+        "class-window"
       ]
     },
     {
@@ -150,7 +153,8 @@
       "semantic_intent": "Study/work continuous wall/floor/frame stage; no automatic desk or furniture.",
       "identity_cues": [
         "wall-shelf",
-        "board-plane"
+        "board-plane",
+        "study-note"
       ]
     },
     {
@@ -188,6 +192,7 @@
       "semantic_intent": "Outdoor/street-toned continuous wall/floor/frame stage without structural scenery.",
       "identity_cues": [
         "sign-menu",
+        "street-tree",
         "open-horizon"
       ]
     },
@@ -225,8 +230,9 @@
       "output_path": "assets/environment/scene-set-neutral.svg",
       "semantic_intent": "Minimal neutral continuous wall/floor/frame stage for object- or cast-led scenes.",
       "identity_cues": [
-        "quiet-negative-space",
-        "single-anchor-zone"
+        "neutral-dot",
+        "neutral-line",
+        "quiet-negative-space"
       ]
     }
   ]
