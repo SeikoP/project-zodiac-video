@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-12-zodiac-maintainability-refactor-design.md`
 
+**Status:** IMPLEMENTED on `codex/zodiac-maintainability-refactor`; pending integration/release.
+
 ## Global Constraints
 
 - `zodiac-job@5` remains the Phase 3 producer/runner handoff.
@@ -214,3 +216,24 @@
 - Compare final dependency audit against baseline.
 - Verify plugin release metadata and source hashes are coherent if a release is prepared.
 - Do not publish/merge without explicit user action.
+
+## Completion record
+
+All five implementation phases have been executed on the feature branch.
+
+- **Phase A — Plugin/control plane:** current-policy routing, fail-closed capability registry, bounded step capability selection and compatibility-free fresh defaults.
+- **Phase B — Asset system/coverage:** metadata-driven narrative need resolution, six fresh scene-set families, bounded accents, three-person comparison and semantic capability coverage.
+- **Phase C — Runner unification:** ApplicationService current path, lazy legacy adapter, focused runner process/package/audio ownership, Qt shell decoupled from dual controllers.
+- **Phase D — Runtime/contracts:** runtime registry, Job@5 renderer pin preservation, root canonical contract manifest and generated plugin contract bundle. Reverse audit blocks physical runtime pruning because all registered versions still have consumers.
+- **Phase E — Tests/CI/cleanup:** domain-split runner regressions, compatibility matrix, tiered job display names with stable job IDs, current architecture document and historical-guidance boundary.
+
+Final local verification:
+
+- `node --test ...orchestration/tests/*.test.mjs ...references/*.test.mjs` → **608 PASS**.
+- V4 `validation/validate-library.mjs` → **PASS**.
+- broad Python non-Qt suite → **599 PASS, 11 skipped, 23 subtests PASS**.
+- architecture/runtime/contract subset → **25 PASS**.
+- `python -m compileall -q tools tests` → **PASS**.
+- Qt runtime tests remain CI-gated because PySide6 is unavailable in the local verification environment.
+
+Historical runtime source was deliberately retained; no source tree passed the reverse-dependency deletion gate.
