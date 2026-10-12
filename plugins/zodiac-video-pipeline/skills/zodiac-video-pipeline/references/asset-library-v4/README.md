@@ -5,9 +5,9 @@ Follow `selection-guide.md` and the current registries. The native selection
 surface lives at `features/asset-selection/build-current-asset-review.mjs`.
 
 Authoring order: Scene-set → shot layout/action → fixed character identity →
-planned pose/expression states → explicit props/effects/accents → Scene Direction.
+planned pose/expression states → explicit props/accents → Scene Direction.
 Character geometry is baked per planned state; no post-generation deduplication.
-State budget follows performed actions. Faces, shirt and accessories remain fixed.
+State budget follows performed actions. The native face is fixed, shirts are plain and shirt colors remain stable. No face variants, accessories or separate effect assets are selectable.
 
 Scene-set provides wall/floor/frame depth. Characters are composed independently in the foreground; the backdrop provides no physical actor support.
 Accents stay inside the wall. Physical props require physical contacts only when

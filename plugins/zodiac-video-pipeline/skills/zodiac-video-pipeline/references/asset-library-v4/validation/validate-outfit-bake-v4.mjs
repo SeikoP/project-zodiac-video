@@ -20,7 +20,7 @@ const outfitAsset=async(a,label)=>{
  if(!a?.character_blueprint)fail(label+' missing character_blueprint');
  const file=path.resolve(root,a.path??'');if(!(await exists(file)))fail(label+' missing SVG');
  const svg=await readFile(file,'utf8');
- const group=svg.match(/<g id="outfit_decoration">([\s\S]*?)<\/g>/u)?.[1];if(!group)fail(label+' missing outfit_decoration group');
+ if(svg.includes('outfit_decoration'))fail(label+' forbidden shirt decoration');const group='plain-shirt';
  const fill=svg.match(/<g id="torso">[\s\S]*?<path\b[^>]*\bfill="([^"]+)"/u)?.[1];if(!fill)fail(label+' missing torso shirt fill');
  return {group,fill};
 };
@@ -44,7 +44,7 @@ for(const scene of prod.scenes??[]){
    checked++;
   }
   if(initialSignature!==null){
-   const prior=visibleOutfits.get(initialSignature);if(prior&&prior!==e.id)fail(`duplicate visible outfit geometry in ${scene.id}: ${prior} and ${e.id}`);visibleOutfits.set(initialSignature,e.id);
+
    if(visibleCharacters.size<=shirtColorById.size){const priorColor=visibleColors.get(initialColor);if(priorColor&&priorColor!==e.id)fail(`duplicate visible shirt color in ${scene.id}: ${priorColor} and ${e.id}`);visibleColors.set(initialColor,e.id);}
   }
  }

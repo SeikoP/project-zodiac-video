@@ -410,14 +410,6 @@
           "stage": "entry"
         },
         {
-          "id": "character_accessory_catalog",
-          "kind": "internal_reference",
-          "when": "always",
-          "guidance_uri": "references/asset-library-v4/characters/accessories/index.json",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
           "id": "scene_direction_contract",
           "kind": "internal_reference",
           "when": "always",
@@ -458,18 +450,10 @@
           "stage": "exit"
         },
         {
-          "id": "meme_effect_compiler",
+          "id": "meme_prop_compiler",
           "kind": "internal_compiler",
           "when": "always",
           "tool_locator": "references/asset-library-v4/memes/compile-meme-effects.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "meme_contact_validation",
-          "kind": "internal_validator",
-          "when": "always",
-          "tool_locator": "references/asset-library-v4/memes/validate-meme-contacts.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -504,22 +488,6 @@
           "unavailable_policy": "block",
           "stage": "exit",
           "tool_locator": "references/asset-library-v4/scene-direction/compile-scene-direction.mjs"
-        },
-        {
-          "id": "meme_effect_receipt_finalizer",
-          "kind": "internal_compiler",
-          "when": "always",
-          "tool_locator": "references/asset-library-v4/memes/finalize-meme-effect-receipt.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "meme_effect_validation",
-          "kind": "internal_validator",
-          "when": "always",
-          "tool_locator": "references/asset-library-v4/memes/validate-meme-effects.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
         },
         {
           "id": "scene_direction_compile_validation",
@@ -775,9 +743,7 @@
         "asset_lineage",
         "semantic_animation",
         "style_token_conformance",
-        "outfit_pattern_integrity",
         "outfit_bake_layering",
-        "outfit_variant_uniqueness",
         "handmade_geometry",
         "environment_depth_staging",
         "environment_contact_cues",
@@ -793,15 +759,9 @@
         "two_person_blocking",
         "anchor_attachment",
         "selected_demo_socket_attachment",
-        "geometry_relative_effects",
         "prop_endpoint_contact",
-        "directional_effect_visibility",
-        "tear_origin_semantics",
-        "edge_effect_locus",
-        "motion_trail_gap",
         "semantic_side_direction",
         "forbidden_overlap",
-        "effect_subject_distance",
         "cross_character_normalization",
         "pose_readability",
         "expression_intent_match",
@@ -815,8 +775,6 @@
         "pose_expression_component_fit",
         "environment_compiled_binding",
         "environment_compile_receipt",
-        "meme_effects_compiled",
-        "meme_contact_geometry",
         "director_v2_native_review_verified"
       ],
       "conditional_gate_checks": [
@@ -843,8 +801,7 @@
         "references/asset-library-v4/scene-direction/index.json",
         "references/asset-library-v4/contracts/anatomy-contract.md",
         "references/asset-library-v4/contracts/validation-contract.md",
-        "references/asset-library-v4/recipes/state-recipes.json",
-        "references/asset-library-v4/effects/ornament-index.json"
+        "references/asset-library-v4/recipes/state-recipes.json"
       ],
       "conditional_outputs": [
         {

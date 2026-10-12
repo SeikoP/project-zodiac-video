@@ -16,6 +16,8 @@ export function validateFreshAssetSelection({intent,production,policy}){
  for(const c of intent?.cast??[])if(hair.has(c.hair_id))fail('RETIRED_HAIR',c.entity_id);
  for(const [id,a] of [...Object.entries(production?.assets??{}),...Object.entries(intent?.assets??{})]){
   if(hair.has(a.character_blueprint?.hair_id))fail('RETIRED_HAIR',id);
+  const bp=a.character_blueprint;if(bp&&(bp.outfit_id!=='plain-shirt'||(bp.face_profile_id??'balanced')!=='balanced'||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
+  if(a.category==='effect')fail('EFFECTS_REMOVED',id);
   const masters=[a.lineage?.source_master].flat(),p=String(a.path??'');
   if(retired.has(id)||masters.some(m=>retired.has(m))||/(?:^|\/)environments\/structural\//u.test(p)||/(?:^|\/)assets\/environment\/(?:bedroom-|cafe-window|cafe-table)/u.test(p))fail('RETIRED_SOURCE',id);
  }
@@ -31,6 +33,7 @@ export async function validateFreshAssetWorkspace(root){
   if(!a.path?.endsWith('.svg'))continue;
   const abs=path.resolve(root,a.path);if(!abs.startsWith(path.resolve(root)+path.sep))fail('ASSET_PATH_UNSAFE',id);
   let raw;try{raw=await readFile(abs,'utf8');}catch(e){if(e.code==='ENOENT')continue;throw e;}
+  if(raw.includes('outfit_decoration')||/<g[^>]*id=["']accessory_/u.test(raw))fail('REMOVED_CHARACTER_FEATURE',id);
   const hair=raw.match(/hair_id=([^;<\s]+)/u)?.[1];if(policy.retired_hair_ids.includes(hair))fail('RETIRED_HAIR',id);
  }
  return result;

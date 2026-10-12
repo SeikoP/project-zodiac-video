@@ -7,13 +7,12 @@ job recovery uses a separately pinned snapshot outside this package.
 ## Select by responsibility
 - Scene-set: stable wall/floor/frame stage from `scene-set/index.json`.
 - Shot layout: actor composition from `shot-layouts/index.json`.
-- Character: body, hair, face, outfit, shirt and optional accessory from
+- Character: body, hair and shirt color from
   `characters/components/catalog.json`; identity is selected once per actor.
 - State: performed pose and expression; plan before SVG generation.
 - Prop: explicit narrated physical object from `props/index.json`.
 - Story Object: symbolic progression, independently authored per
   `../story-object-contract.md`; not a background or forced physical interaction.
-- Effect: selected semantic consequence, subject and enter/release lifecycle.
 - Scene accent: optional context detail from `scene-set/accents/index.json`,
   contained by the wall. No automatic room decoration.
 
@@ -24,7 +23,7 @@ entities. Scene Direction owns coordinates; the runner owns measured timing.
 ## Native selection surface
 Run `features/asset-selection/build-current-asset-review.mjs <output-directory>`
 from the skill root. Optional `--selection <asset-selection.json>` renders only
-selected IDs. The surface groups components, stages, props and effects; clicking
+selected IDs. The surface groups components, backdrops and props; clicking
 a whole card selects it and exports `zodiac-asset-selection@1` JSON. Selection is
 not an approval or compiler receipt. Identity review still precedes full scenes.
 
@@ -42,3 +41,5 @@ Preserve face/caption readability and physical contact when the action needs it.
 Load core guidance and only selected extension registries via
 `selection-policy.json`. Required compiler/validator/review gates remain active.
 Do not read migration records, historical episodes or old assets for inspiration.
+
+Current selection has no face-profile, accessory or effect group. Shirts are plain; expressions and actor motion remain native acting.

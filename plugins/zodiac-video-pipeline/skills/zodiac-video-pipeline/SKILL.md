@@ -18,3 +18,5 @@ Phase 02: read orchestration/phases/02-visual-production.md and references/asset
 Phase 03: use orchestration/run-phase03-production.mjs or its verified current target. Preserve zodiac-job@5 and zodiac-renderer@2.0.1. Package one validated ZIP per revision. Local runner owns voice, timing, Remotion, captions, cover, audio and MP4 acceptance. ZIP-ready never means video-ready.
 
 Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Missing choices block; no legacy/selected-cues fallback. Historical job recovery requires its separately pinned external snapshot. The scene-set is a supporting rear picture/wall, not the actor stage or a physical surface. Foreground character composition is independent; only backdrop accents are wall-contained.
+
+Current visual selection is minimal: fixed native face, plain shirts with selected colors, no accessories and no separate reaction/effect assets. Preserve pose/expression acting, props, symbolic story objects and supporting backdrops. Do not recreate removed decoration or effects as custom SVGs.

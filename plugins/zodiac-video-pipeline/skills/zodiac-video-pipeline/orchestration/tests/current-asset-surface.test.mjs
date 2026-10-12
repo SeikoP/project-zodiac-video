@@ -61,18 +61,6 @@ test('catalog review renders compiled characters and exact current native stage 
  assert.equal(createHash('sha256').update(result.html).digest('hex'),result.receipt.html_sha256);
  await assert.rejects(()=>buildCurrentAssetReview({selected_ids:['cafe-window']}),/ASSET_RETIRED/);
 });
-test('current effect vocabulary renders semantic marks without an artificial path-count quota',async()=>{
- const {buildEffectSvg}=await import('../../references/asset-library-v4/memes/compile-meme-effects.mjs');
- for(const id of ['focus-halo-mark','comparison-bracket-mark','relief-wave-mark','alarm-zigzag-mark'])
-  assert.ok(buildEffectSvg(id).includes('id='+id));
-});
-test('every advertised identity accessory is visibly baked into character output',async()=>{
- const {compileCharacterSvg}=await import('../../references/asset-library-v4/characters/compile-character-assembly.mjs');
- for(const id of ['small-hoop','headband','neck-scarf','square-glasses']){
-  const result=compileCharacterSvg({entity_id:'hero',body_profile:'standard_compact',hair_id:'asym-bang',outfit_id:'generic-cosmic-light',accessory_id:id},{pose_id:'explain',expression_id:'neutral'});
-  assert.ok(result.svg.includes('id="accessory_'+id.replaceAll('-','_')+'"'),id);
- }
-});
 test('intent IDs cannot mask retired native production identity',async()=>{
  const {validateFreshAssetSelection}=await import('../../features/visual-composition/validate-fresh-asset-selection.mjs');
  const intent={assets:{hero:{path:'assets/current.svg'}},scenes:[{id:'s',grammar:{environment:{scene_set_id:'scene-set-home'}}}]};

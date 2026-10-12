@@ -4,39 +4,8 @@
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
-    "identity_stable_across_states": true,
-    "compile_time_only": true
+    "current_selection": false,
+    "status": "REMOVED"
   },
-  "assets": [
-    {
-      "id": "round-glasses",
-      "path": "characters/accessories/round-glasses.svg",
-      "slot": "face"
-    },
-    {
-      "id": "star-hair-clip",
-      "path": "characters/accessories/star-hair-clip.svg",
-      "slot": "hair"
-    },
-    {
-      "id": "small-hoop",
-      "path": "characters/accessories/small-hoop.svg",
-      "slot": "ear"
-    },
-    {
-      "id": "headband",
-      "path": "characters/accessories/headband.svg",
-      "slot": "hair"
-    },
-    {
-      "id": "neck-scarf",
-      "path": "characters/accessories/neck-scarf.svg",
-      "slot": "neck"
-    },
-    {
-      "id": "square-glasses",
-      "path": "characters/accessories/square-glasses.svg",
-      "slot": "face"
-    }
-  ]
+  "assets": []
 }

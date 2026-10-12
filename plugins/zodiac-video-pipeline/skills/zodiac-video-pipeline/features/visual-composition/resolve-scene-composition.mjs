@@ -3,7 +3,6 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';import path from 'node
 import {validateComposition,compositionHash,designToken} from './phase02-composition-core.mjs';
 const load=async relative=>JSON.parse(await readFile(new URL(relative,import.meta.url),'utf8'));
 const sceneSetRegistry=await load('../../references/asset-library-v4/scene-set/index.json');
-const effectCatalog=await load('../../references/asset-library-v4/effects/meme-effect-catalog.json');
 const roles=new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
 const result=issues=>({status:issues.length?'BLOCKED':'PASS',issues});
 function compilerEntity(production,scene,c){
@@ -14,12 +13,6 @@ function compilerEntity(production,scene,c){
   return {id:c.id,kind:'object',visual_role:'background',initial_state:'visible',states:{visible:{asset:master.asset_id,visible:true,layer:master.layer,transform:structuredClone(master.transform)}}};
  }
  if(kind==='character')return key===c.id&&scene.entities?.find(e=>e.id===key&&e.kind==='character')?{...scene.entities.find(e=>e.id===key),visual_role:'character'}:null;
- if(kind==='meme-effect'){
-  const spec=scene.visual_grammar?.meme_composition?.effects?.find(e=>e.id===key&&e.entity_id===c.id);
-  const known=Object.hasOwn(effectCatalog.effects??{},key);
-  if(!spec||!known)return null;const [cx,cy,width,height]=spec.box,state={transform:{x:cx-width/2,y:cy-height/2,width,height},layer:spec.layer};
-  return {id:c.id,kind:'effect',visual_role:'effect',initial_state:'off',states:{off:{...state,visible:false},on:{...state,visible:true}}};
- }
  if(kind==='meme-prop')return scene.visual_grammar?.meme_composition?.asset_requirements?.some(r=>r.asset_id===key&&r.entity_id===c.id)&&scene.entities?.find(e=>e.id===c.id)?{...scene.entities.find(e=>e.id===c.id),visual_role:'interactive_prop'}:null;
  return null;
 }

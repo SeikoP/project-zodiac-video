@@ -3,7 +3,7 @@
 New ordinary characters are compile-time assemblies, not copied character SVG variants.
 
 Identity is chosen once per `entity_id`:
-`body_profile + hair_id + face_profile_id + outfit_id + shirt_color_id + accessory_id + stable variant_seed`. Face profile controls stable eye geometry and identity marks; accessories are baked into every state.
+`body_profile + hair_id + face_profile_id + outfit_id + shirt_color_id + accessory_id + stable variant_seed`. The native face is fixed and expressive; no face-profile menu or identity marks/accessories are available.
 If omitted, `face_profile_id` resolves to `balanced` and `accessory_id` resolves to `none`.
 When the plan omits `shirt_color_id`, Character Assembly deterministically assigns a native palette color and avoids duplicate colors among characters visible in the same scene while palette capacity allows. The chosen color is stored in the character blueprint and remains fixed across all states. State may change `pose_id + expression_id` and an optional compile-time `crop_id` for reaction shots. Crop does not alter identity.
 
@@ -28,7 +28,7 @@ The write step rejects a missing or stale asset plan and checks the full budget 
 ## Motion before asset expansion
 Do not add a new pose or prop just to decorate every narration beat. Keep the same character asset when a beat can be carried by the existing event motion, entity transform, camera focus, caption timing, or one sparse reaction mark. Compile another character SVG only when a readable pose, expression, or crop change materially changes the picture. Keep each scene near the token's density target: one focal interaction and one supporting story prop; add more only when the narration requires them.
 
-Body profiles use authored path geometry, never `scale()` to fake height/weight. Hair, face profile, accessory and outfit are identity components. Pose/expression/crop are state components. Every pose has visible hand contours; `prop_slot` is a hidden pose-aware anchor. Meme recipes can require a specific pose, expression, and crop on the initial state; the compiler checks those values before baking. Outfit accents are deterministic from `variant_seed`; there is no render-time randomness.
+Body profiles use authored path geometry, never `scale()` to fake height/weight. Body, hair and shirt color are selectable identity components. The shirt is plain and the native face is fixed. Pose/expression/crop are state components. Every pose has visible hand contours; `prop_slot` is a hidden pose-aware anchor. Meme recipes can require a specific pose, expression, and crop on the initial state; the compiler checks those values before baking. Outfit accents are deterministic from `variant_seed`; there is no render-time randomness.
 
 Historical character/hair/outfit lineage is provenance only. Ordinary character production uses native assembly. Specialist references supplied for a new job must be separately re-authored as V4 derivatives; direct-copy/relabel remains forbidden.
 

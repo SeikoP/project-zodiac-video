@@ -22,7 +22,6 @@
     "foundations/",
     "characters/",
     "props/",
-    "effects/",
     "memes/",
     "shot-layouts/"
   ],
@@ -45,7 +44,6 @@
     "meme_templates": "memes/templates/index.json",
     "state_recipes": "recipes/state-recipes.json",
     "contracts": "contracts/validation-contract.md",
-    "ornaments": "effects/ornament-index.json",
     "selection_policy": "selection-policy.json",
     "scene_set": "scene-set/index.json",
     "scene_accents": "scene-set/accents/index.json",

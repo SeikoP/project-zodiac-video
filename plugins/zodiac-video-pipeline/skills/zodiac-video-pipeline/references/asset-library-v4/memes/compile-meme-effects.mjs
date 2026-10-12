@@ -3,7 +3,6 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {materializeEffectLifecycle} from './effect-lifecycle.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const catalog=JSON.parse(await readFile(path.join(here,'../effects/meme-effect-catalog.json'),'utf8'));
 const fail=m=>{throw new Error('MEME_EFFECT_COMPILE_INVALID: '+m);};
@@ -15,16 +14,10 @@ const confinedPath=(base,file,code)=>{
  if(!rel||rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel))fail(code);
  return full;
 };
-export function buildEffectSvg(id,aspect=1){
- const effect=catalog.effects[id];if(!effect)fail(`unknown effect primitive ${id}`);
- if(!Array.isArray(effect.paths)||effect.paths.length<1)fail(`${id} needs an authored path`);
- for(const p of effect.paths){if(typeof p.d!=='string'||!/[QqCcSsTt]/u.test(p.d))fail(`${id} has a non-handmade path`);if(!catalog.palette.includes(p.stroke)||p.fill&&!catalog.palette.includes(p.fill))fail(`${id} has a noncanonical color`);if(!(p.width>=4&&p.width<=9))fail(`${id} has invalid stroke width`);}
- const body=effect.paths.map(p=>`<path d="${esc(p.d)}" fill="${p.fill??'none'}" stroke="${p.stroke}" stroke-width="${p.width}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
- const ratio=Math.max(0.5,Math.min(2,aspect));
- return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${100*ratio} 100"><metadata>asset_role=meme-effect;id=${id};style=${catalog.style_token};handmade=${catalog.handmade_profile};production_safe=true</metadata><g id="effect_${id}" transform="scale(${ratio} 1)">${body}</g></svg>`;
-}
+export function buildEffectSvg(){fail('EFFECTS_REMOVED');}
 export async function compileMemeEffects(production,{root='.',writeAssets=true,choreography,legacy=false}={}){
  if(production?.version!=='2.0')fail('production.version must be 2.0');
+ for(const scene of production.scenes??[])if(scene.entities?.some(e=>e.kind==='effect')||scene.visual_grammar?.meme_composition?.effects?.length)fail('EFFECTS_REMOVED');
  const out=clone(production);out.assets??={};const emittedEffects=new Set(),writes=[];
  for(const scene of out.scenes??[]){
   const requirements=scene.visual_grammar?.meme_composition?.asset_requirements??[];
@@ -37,17 +30,7 @@ export async function compileMemeEffects(production,{root='.',writeAssets=true,c
    for(const state of Object.values(target.states??{}))state.asset=assetId;
    if(writeAssets)writes.push([dest,svg]);
   }
-  const specs=scene.visual_grammar?.meme_composition?.effects??[];
-  const generated=new Set(specs.map(x=>x.entity_id));
-  scene.entities=(scene.entities??[]).filter(e=>!generated.has(e.id));
-  for(const spec of specs){
-   const svg=buildEffectSvg(spec.id,spec.box[2]/spec.box[3]);const contentHash=createHash('sha256').update(svg).digest('hex').slice(0,16);const assetId=`FX_ASSET_${contentHash.toUpperCase()}`,rel=`assets/effects/${contentHash}.svg`;
-   out.assets[assetId]={path:rel,style_id:catalog.style_token,category:'effect',lineage:{mode:'semantic_variant',source_library:'zodiac-visual-grammar-v4',source_master:spec.id,semantic_intent:spec.locus}};
-   const [cx,cy,width,height]=spec.box;
-   if(legacy){scene.entities.push({id:spec.entity_id,kind:'effect',visual_role:'effect',initial_state:'effect',states:{effect:{asset:assetId,transform:{x:cx-width/2,y:cy-height/2,width,height},layer:spec.layer,visible:true}},metadata:{effect_id:spec.id,locus:spec.locus}});}
-   else {const beats=(choreography?.beats??[]).filter(b=>b.scene_id===scene.id&&b.entity_id===spec.entity_id);if(beats.length!==1)fail('CHOREOGRAPHY_MISSING_OR_DUPLICATE '+spec.entity_id);const result=materializeEffectLifecycle(scene,spec,beats[0],assetId);scene.entities.push(result.entity);scene.events=[...(scene.events??[]).filter(e=>e.target!==spec.entity_id),...result.events];scene.spatial_bindings=[...(scene.spatial_bindings??[]).filter(b=>b.entity!==spec.entity_id),result.binding];} 
-   if(writeAssets&&!emittedEffects.has(rel)){const abs=path.resolve(root,rel);writes.push([abs,svg+'\n']);emittedEffects.add(rel);}
-  }
+
  }
  for(const [dest,svg] of writes){await mkdir(path.dirname(dest),{recursive:true});await writeFile(dest,svg);}
  return out;
