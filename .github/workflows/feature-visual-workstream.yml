@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install Python architecture dependencies
+        run: python -m pip install -e . pytest
       - name: Visual Metaphor contract
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-metaphor.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/current-policy.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs
       - name: Full plugin suite
