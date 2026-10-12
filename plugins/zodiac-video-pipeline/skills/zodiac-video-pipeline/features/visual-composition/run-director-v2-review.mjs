@@ -31,7 +31,7 @@ try { const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-
   try{authoredIntent=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8')).composition_stage==='intent';}catch(e){if(e.code!=='ENOENT')throw e;}
   if((modern&&state.run_mode==='fresh')||authoredIntent)stages.splice(1,0,{id:'scene_composition_resolved',script:'features/visual-composition/resolve-scene-composition.mjs',args:[root,'--write'],validator:true});
   else if(v && (Number(v[1])>2||(Number(v[1])===2&&(Number(v[2])>4||(Number(v[2])===4&&Number(v[3])>=44)))))stages.splice(1,0,{id:'scene_composition_v1',script:'features/visual-composition/phase02-composition.mjs',args:[root],validator:true});
-  if(state.flags?.story_object_required===true || (v && Number(v[1])===2 && Number(v[2])===4 && Number(v[3])>=4 && state.run_mode==='fresh'))objectEnabled=true;
+  if(state.flags?.story_object_required===true)objectEnabled=true;
 } catch(e) { if(e?.code!=='ENOENT')throw e; }
 if(objectEnabled){
  const before=stages.findIndex(x=>x.id==='native_preview_build_v2');
