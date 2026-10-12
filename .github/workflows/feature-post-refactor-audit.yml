@@ -11,7 +11,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,6 +19,10 @@ jobs:
           node-version: "22"
       - name: Run post-refactor regression tests
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/post-refactor-audit.test.mjs
+      - name: Run full plugin suite
+        run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/*.test.mjs
+      - name: Validate V4 asset library
+        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/validation/validate-library.mjs
       - name: Measure fresh visual-compile context
         if: always()
         run: |
@@ -28,10 +32,11 @@ jobs:
           const root='./plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration';
           const state=JSON.parse(await readFile(root+'/pipeline-state.template.json','utf8'));
           const result=await loadStepContext('02-visual-production','visual_compile',state.flags);
+          const rows=(result.context_manifest??[]).filter(row=>row.bytes).sort((a,b)=>b.bytes-a.bytes);
           console.log(JSON.stringify({
             refs:result.required_references.length,
-            bytes:(result.context_manifest??[]).reduce((sum,row)=>sum+(row.bytes??0),0),
+            bytes:rows.reduce((sum,row)=>sum+row.bytes,0),
             selected_capabilities:result.selected_capabilities,
-            references:result.required_references
+            top_refs:rows.slice(0,10).map(row=>({path:row.path,bytes:row.bytes}))
           },null,2));
           NODE
