@@ -13,6 +13,6 @@ Phase 01: use references/episode-formats.md and references/phase01-briefing.md. 
 
 At Phase 01 → Phase 02, run the transition gate until AUTHORING_READY, then run orchestration/activate-phase02.mjs before Phase 02 step commits. Activation changes orchestration state only and creates no approval or native PASS. Inspect source hashes/approvals; AUTHORING_READY is not PASS.
 
-Phase 02: use approved cast, scene set, V4 native assets and stateful visual metaphors without replacing backgrounds. Compile actual native previews, run Visual Review and bind provenance. Scene accents stay inside the scene wall.
+Phase 02: use approved cast, scene set, V4 native assets and stateful visual metaphors without replacing backgrounds. Compile scene-complete native review frames for every scene plus event endpoint pairs; Visual Review must use the clean Phase-02 review surface produced by orchestration/prepare-phase02-review.mjs. Do not copy historical Phase-01 README or migration prose into the review surface. Scene accents stay inside the scene wall.
 
 Phase 03: use orchestration/run-phase03-production.mjs or its verified current target. Preserve zodiac-job@5 and zodiac-renderer@2.0.1. Package one validated ZIP per revision. Local runner owns voice, timing, Remotion, captions, cover, audio and MP4 acceptance. ZIP-ready never means video-ready.

@@ -15,9 +15,14 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   if(!source||source.id!==d?.id)fail('ART_SCENE_ORDER_MISMATCH',scene_id);
   if(normalize(source?.voice)!==normalize(d?.voice))fail('ART_VOICE_MISMATCH',scene_id);
   if(!Object.prototype.hasOwnProperty.call(palettes?.palettes??{},d?.palette_id))fail('PALETTE_UNKNOWN',scene_id);
-  const archiveSceneSet=source?.environment?.mode==='archive_frame'||hasPrimarySceneSet(source,production);
-  if(!archiveSceneSet&&!(environments?.profiles??[]).includes(d?.environment_profile))fail('ENVIRONMENT_UNKNOWN',scene_id);
-  if(source?.environment?.profile!==d?.environment_profile)fail('ENVIRONMENT_PROFILE_MISMATCH',scene_id);
+  const archiveFrame=source?.environment?.mode==='archive_frame',primarySceneSet=hasPrimarySceneSet(source,production),sceneSetId=source?.environment?.scene_set_id??source?.environment?.scene_set?.id;
+  if(primarySceneSet){
+   if(!sceneSetId||d?.scene_set_id!==sceneSetId)fail('SCENE_SET_ID_MISMATCH',scene_id);
+   if(d?.environment_profile!==undefined&&d?.environment_profile!==null)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET',scene_id);
+  }else if(!archiveFrame){
+   if(!(environments?.profiles??[]).includes(d?.environment_profile))fail('ENVIRONMENT_UNKNOWN',scene_id);
+   if(source?.environment?.profile!==d?.environment_profile)fail('ENVIRONMENT_PROFILE_MISMATCH',scene_id);
+  }
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||!String(d?.environment_reason??'').trim())fail('ART_REASON_MISSING',scene_id);
   const story=d?.story_object;

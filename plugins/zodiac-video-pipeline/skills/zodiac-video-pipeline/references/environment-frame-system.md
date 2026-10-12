@@ -25,7 +25,7 @@ The frame only reuses native V4 assets. It preserves meaningful relative state
 movements and item identity, and refuses to overwrite conflicting spatial edges.
 Source asset IDs, actual SVG palette and the channel token must remain V4.
 
-For a physical foreground fixture (e.g. cafe table), author a separate foreground
+On a primary scene-set, actor-only frames are valid: use performer/listener slots to stage the cast, and add contacts only when a real spatial relation matters. Do not invent furniture merely to satisfy the frame contract.\n\nFor a physical foreground fixture (e.g. cafe table), author a separate foreground
 asset/entity, with `role: foreground_fixture`, `layer: 27`, and `occlusions:
 [{"fixture":"table","actors":["scorpio","friend"]]`. Its geometry
 **must intersect the lower body, not the face**. A single whole-wall SVG cannot
