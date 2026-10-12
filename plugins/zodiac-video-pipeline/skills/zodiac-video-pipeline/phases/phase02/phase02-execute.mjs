@@ -110,6 +110,7 @@ const nodeRun=(file,args)=>{
 const collectNativeDependencies=async(base)=>{
  const out=[];
  const walk=async dir=>{
+  if(!await exists(dir))return;
   for(const e of await readdir(dir,{withFileTypes:true})){
    if(e.isSymbolicLink())continue;
    const full=path.join(dir,e.name);
