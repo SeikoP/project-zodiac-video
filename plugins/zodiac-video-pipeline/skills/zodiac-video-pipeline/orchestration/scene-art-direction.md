@@ -4,7 +4,7 @@ Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-a
 
 ## Visual layers
 
-1. `scene-set` — primary wall/floor/frame stage. It may remain consistent across scenes and does not require characters to be contained inside its outer frame.
+1. `scene-set` — supporting rear picture/wall for depth. It may remain consistent across scenes; foreground characters own independent composition and physical support.
 2. `shot-layout` — actor/prop composition skeleton. It is not a background frame.
 3. `scene accent` — optional simple context cue such as a few hanging strips; it must stay inside the scene-set wall region.
 4. `Story Object` — independent symbolic narrative element with setup → friction → payoff when selected. A thought metaphor may float near/above an actor; physical contact is required only for `physical_interaction`.

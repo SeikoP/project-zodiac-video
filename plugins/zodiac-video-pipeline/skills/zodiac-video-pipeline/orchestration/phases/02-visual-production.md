@@ -11,8 +11,7 @@ handoff context; preserve exact narration, scope and genuine Content Review.
    identity is fixed across states. Use performed actions to plan state assets
    before generation; never create duplicates then merge finished SVGs.
 3. Run native compilers and manifest validators. Scene-set, shot layout, props,
-   symbolic objects and effects have separate roles. Character staging may exceed
-   the scene-set frame. Accents stay inside the wall. No height-safe containment
+   symbolic objects and effects have separate roles. Character composition is independent in the foreground; the scene-set remains a supporting backdrop. Accents stay inside the wall. No height-safe containment
    rule is implied for the scene-set. Physical contact applies to physical action;
    thought metaphors use actor-relative spatial binding.
 4. Validate actual scene events, state transitions, source/identity, token,

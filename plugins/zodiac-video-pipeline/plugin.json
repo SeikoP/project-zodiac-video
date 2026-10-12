@@ -1,6 +1,6 @@
 {
   "name": "zodiac-video-pipeline",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"

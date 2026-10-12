@@ -17,7 +17,7 @@ export async function buildCurrentAssetReview({selected_ids=null,outDir=null}={}
  const add=(id,group,spec)=>{if(!rows.some(r=>r.id===id))rows.push({id,group,...spec});};
  for(const [group,key,field] of [['body','body_profiles','body_profile'],['hair','hair','hair_id'],['face','face_profiles','face_profile_id'],['outfit','outfits','outfit_id'],['accessory','accessories','accessory_id'],['shirt_color','shirt_colors','shirt_color_id'],['expression','expressions','expression_id'],['pose','poses','pose_id']])
   for(const row of characters[key]??[])add(row.id,group,{field,value:row.id});
- for(const row of sets.scene_sets)add(row.id,'scene_set',{path:'scene-set/'+row.path,expected_sha256:row.asset_sha256,meaning:'Khung tạo chiều sâu; nhân vật được phép vượt khung.'});
+ for(const row of sets.scene_sets)add(row.id,'scene_set',{path:'scene-set/'+row.path,expected_sha256:row.asset_sha256,meaning:'Mảng tranh/tường phụ trợ phía sau; nhân vật có bố cục tiền cảnh độc lập.'});
  for(const row of accents.accents)add(row.id,'scene_accent',{path:'scene-set/'+row.path,expected_sha256:row.asset_sha256,meaning:'Chi tiết bối cảnh, nằm trong wall.'});
  for(const row of props.assets)add(row.id,'prop',{path:row.path,meaning:row.role});
  for(const row of policy.extensions.filter(r=>r.kind==='effect'))for(const id of row.ids)add(id,'effect',{effect:capabilities.effects?.[id]?.effect_id??id,meaning:'Chọn subject và enter/release trước khi dùng.'});

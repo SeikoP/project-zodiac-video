@@ -1,7 +1,7 @@
 # Environment Frame V1 — Story-Integrated Staging
 
 ## Scene-set-first clarification
-For fresh Phase 02, the selected `scene-set` is the primary visual stage. `environment.frame` is staging metadata for actors/fixtures **inside or in front of that stage**; it does not own or replace the scene-set. Retired room profiles require an external recovery snapshot; current authoring chooses explicit scene accents or narrated props. Scene accents are minimal context cues and must remain inside the scene-set wall region. Characters may overlap in front of the scene-set and are not required to be contained by its outer frame.
+For fresh Phase 02, the selected `scene-set` is a supporting rear pictorial backdrop. `environment.frame` is staging metadata for actors/fixtures in an independent foreground composition; it does not own or replace the scene-set. Retired room profiles require an external recovery snapshot; current authoring chooses explicit scene accents or narrated props. Scene accents are minimal context cues and must remain inside the scene-set wall region. Foreground characters are composed independently of the backdrop; they do not stand, sit or hang on its decorative wall/floor.
 
 The environment is **an acting scaffold**, not a fixed wallpaper image. Decide
 scene action + Story Object first. Then define `scene.environment.frame` on the
@@ -25,7 +25,9 @@ The frame only reuses native V4 assets. It preserves meaningful relative state
 movements and item identity, and refuses to overwrite conflicting spatial edges.
 Source asset IDs, actual SVG palette and the channel token must remain V4.
 
-On a primary scene-set, actor-only frames are valid: use performer/listener slots to stage the cast, and add contacts only when a real spatial relation matters. Do not invent furniture merely to satisfy the frame contract.\n\nFor a physical foreground fixture (e.g. cafe table), author a separate foreground
+With a supporting backdrop, independent actor-only compositions are valid: use performer/listener slots to stage the cast, and add contacts only when a real spatial relation matters. Do not invent furniture merely to satisfy the frame contract.
+
+For a physical foreground fixture (e.g. cafe table), author a separate foreground
 asset/entity, with `role: foreground_fixture`, `layer: 27`, and `occlusions:
 [{"fixture":"table","actors":["scorpio","friend"]]`. Its geometry
 **must intersect the lower body, not the face**. A single whole-wall SVG cannot

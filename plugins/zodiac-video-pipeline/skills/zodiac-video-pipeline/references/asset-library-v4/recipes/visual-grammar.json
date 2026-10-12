@@ -1,1 +1,25 @@
-{"format":"zodiac-visual-grammar@1","version":"4.0","selection_order":["scene_set","shot_layout","mechanic","character_assembly","skin_binding","selected_context_cues","scene_direction_compile"],"policy":{"frames_are":"shot_layout_skeletons_not_scene_sets","mechanics_are":"semantic_actions_not_geometry","skin_binding":"existing_scene_entities_and_assets","environment_composition":"selected_cues_only_for_fresh_scene_set","geometry_owner":"scene_direction_compiler","one_primary_mechanic_per_beat":true,"render_time_randomness":false,"scene_set":"primary_visual_stage_separate_from_frame_skeleton","legacy_frames_path":"frames/index.json","shot_layout_registry":"shot-layouts/index.json"}}
+{
+  "format": "zodiac-visual-grammar@1",
+  "version": "4.0",
+  "selection_order": [
+    "scene_set",
+    "shot_layout",
+    "mechanic",
+    "character_assembly",
+    "skin_binding",
+    "selected_context_cues",
+    "scene_direction_compile"
+  ],
+  "policy": {
+    "frames_are": "shot_layout_skeletons_not_scene_sets",
+    "mechanics_are": "semantic_actions_not_geometry",
+    "skin_binding": "existing_scene_entities_and_assets",
+    "environment_composition": "selected_cues_only_for_fresh_scene_set",
+    "geometry_owner": "scene_direction_compiler",
+    "one_primary_mechanic_per_beat": true,
+    "render_time_randomness": false,
+    "scene_set": "supporting_rear_pictorial_backdrop_no_actor_geometry_or_physical_support",
+    "legacy_frames_path": "frames/index.json",
+    "shot_layout_registry": "shot-layouts/index.json"
+  }
+}

@@ -34,8 +34,8 @@ retired idea may return only through re-authoring, a new ID and visual review.
 Do not transfer visual references between actors.
 
 ## Geometry and context
-Characters may overlap and extend beyond the outer scene-set; the stage supplies
-depth and does not contain the performer. Accents fit the transformed wall.
+The scene-set is a supporting picture/wall behind the action. Foreground
+characters own their composition and support cues independently of that artwork. Accents fit the transformed wall.
 Scene-set masters own their dimensions; no universal full-safe-height rule.
 Preserve face/caption readability and physical contact when the action needs it.
 

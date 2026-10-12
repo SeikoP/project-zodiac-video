@@ -9,7 +9,7 @@ planned pose/expression states → explicit props/effects/accents → Scene Dire
 Character geometry is baked per planned state; no post-generation deduplication.
 State budget follows performed actions. Faces, shirt and accessories remain fixed.
 
-Scene-set provides wall/floor/frame depth. Characters may overlap the frame.
+Scene-set provides wall/floor/frame depth. Characters are composed independently in the foreground; the backdrop provides no physical actor support.
 Accents stay inside the wall. Physical props require physical contacts only when
 a physical action is authored; symbolic objects follow their presentation mode.
 

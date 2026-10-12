@@ -54,7 +54,7 @@ No old package, sign example, identity or environment is an automatic default.
 Author Visual Intent and the actual episode cast plan. Select character identity
 once; state changes only pose/expression. Plan actions and state assets before
 SVG generation. No post-generation deduplication. Scene-set provides depth;
-character staging is independent and may overlap the outer frame. Accents stay
+foreground characters have independent composition and physical support; the scene-set supplies only rear pictorial depth. Accents stay
 inside the selected wall; story objects do not replace the background.
 
 Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
