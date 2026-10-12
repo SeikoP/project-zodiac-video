@@ -118,3 +118,15 @@ if 'phase execution implementation has explicit owners' not in text:
 p.write_text(text)
 
 print('F3_MIGRATION_APPLIED')
+
+# Final parity patches found by clean-branch verification.
+p=skill/'orchestration/tests/execution-bootstrap.test.mjs'
+text=p.read_text()
+text=text.replace("path.join(orch,'execution-preflight.mjs')","path.resolve(orch,'../phases/phase01/execution-preflight.mjs')")
+p.write_text(text)
+
+p=skill/'phases/phase03/commit-phase03-release.mjs'
+text=p.read_text()
+text=text.replace("path.join(here,'phases/03-handoff.json')","path.join(skill,'orchestration/phases/03-handoff.json')")
+p.write_text(text)
+
