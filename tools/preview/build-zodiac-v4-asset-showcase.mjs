@@ -57,7 +57,7 @@ const lead=compileCharacterSvg({
 const peerA=compileCharacterSvg({
   entity_id:'peer-a',body_profile:'round_soft',hair_id:'lopsided-bob',face_profile_id:'wide-set',
   outfit_id:'taurus-basic-clean',shirt_color_id:'coral',accessory_id:'none',variant_seed:'showcase-a'
-},{pose_id:'offer-pants',expression_id:'embarrassed'}).svg;
+},{pose_id:'offer',expression_id:'embarrassed'}).svg;
 const peerB=compileCharacterSvg({
   entity_id:'peer-b',body_profile:'stocky_short',hair_id:'antenna-short',face_profile_id:'close-set',
   outfit_id:'leo-basic-clean',shirt_color_id:'ochre',accessory_id:'star-hair-clip',variant_seed:'showcase-b'
@@ -92,13 +92,13 @@ ${nestedSvg(classroom,{x:0,y:140,width:1080,height:1240})}
 ${nestedSvg(board,{x:280,y:315,width:520,height:210})}
 ${nestedSvg(shelf,{x:70,y:360,width:165,height:76,opacity:.9})}
 ${nestedSvg(clock,{x:855,y:338,width:105,height:105,opacity:.95})}
-<text x="540" y="505" class="tiny" text-anchor="middle">SCENE ACCENTS · wall-contained (board / shelf / clock)</text>
+<g><rect x="330" y="482" width="420" height="34" rx="15" fill="#FFFDF9" fill-opacity=".86"/><text x="540" y="505" class="tiny" text-anchor="middle">SCENE ACCENTS · wall-contained (board / shelf / clock)</text></g>
 
 <!-- Scene direction diagnostic slots -->
 <rect x="58" y="615" width="315" height="500" rx="30" class="diag"/>
 <rect x="382" y="535" width="330" height="520" rx="30" class="diag"/>
 <rect x="706" y="620" width="315" height="500" rx="30" class="diag"/>
-${chip(74,640,'peer_a · offer-pants')}
+${chip(74,640,'peer_a · offer-object')}
 ${chip(405,560,'lead · explain')}
 ${chip(727,645,'peer_b · text-phone')}
 ${nestedSvg(peerA,{x:72,y:650,width:300,height:438})}
@@ -106,8 +106,6 @@ ${nestedSvg(lead,{x:390,y:570,width:315,height:460})}
 ${nestedSvg(peerB,{x:712,y:655,width:300,height:438})}
 
 <!-- Contact / prop / meme -->
-${nestedSvg(pants,{x:186,y:835,width:126,height:142})}
-<text x="248" y="1000" class="tiny" text-anchor="middle">MEME PROP · contact</text>
 ${nestedSvg(phonePing,{x:825,y:892,width:82,height:92})}
 ${nestedSvg(reaction,{x:820,y:520,width:160,height:180,opacity:.95})}
 
@@ -126,8 +124,8 @@ ${rounded(62,1058,285,175,'#F2C45C')}
 <text x="205" y="1088" class="h2" text-anchor="middle">PROP / CONTACT</text>
 ${nestedSvg(notebook,{x:84,y:1110,width:92,height:86})}
 ${nestedSvg(pen,{x:166,y:1120,width:62,height:74})}
-${nestedSvg(backpack,{x:238,y:1103,width:82,height:95})}
-<text x="205" y="1217" class="tiny" text-anchor="middle">notebook · pen · backpack</text>
+${nestedSvg(pants,{x:238,y:1103,width:82,height:95})}
+<text x="205" y="1217" class="tiny" text-anchor="middle">notebook · pen · meme/contact</text>
 
 <!-- Main semantic effects -->
 ${effectIcon(effects,'question-pop',{x:730,y:1075,size:84,label:'confusion'})}
@@ -150,7 +148,7 @@ ${semanticEffects.map(([id,label],i)=>effectIcon(effects,id,{x:72+i*138,y:1792,s
 <!-- Footer inventory -->
 <line x1="48" y1="1892" x2="1032" y2="1892" stroke="#D0C1B3" stroke-width="3"/>
 <text x="48" y="1917" class="tiny">6 body · 10 hair · 4 face · 17 outfits · 21 poses · 9 expressions · ${props.assets.length} props · ${ornaments.ornaments.length} ornaments · ${accents.accents.length} accents · ${layouts.frames.length} layouts · ${mechanics.mechanics.length} mechanics · ${memes.compositions?.length??memes.templates?.length??11} memes</text>
-<text x="1032" y="1880" class="tiny" text-anchor="end">DIAGNOSTIC ONLY · density intentionally exceeds production caps</text>
+<text x="1032" y="1778" class="tiny" text-anchor="end">DIAGNOSTIC ONLY · density intentionally exceeds production caps</text>
 </svg>`;
 
 const manifest={
