@@ -10,7 +10,7 @@ import {loadCurrentPolicy} from '../core/policy/current-policy.mjs';
 import {capabilitiesForStep} from '../core/policy/capability-registry.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02-visual-production.json','03-handoff':'03-handoff.json'};
-export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',role='draft',selected_asset_ids=null,meme_selected=flags.meme_selected??false,environment_mode='archive_frame',policy=null,asset_needs=[],capabilityIndex=null,coverageMatrix=null}={}) {
+export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',role='draft',selected_asset_ids=null,meme_selected=flags.meme_selected??false,environment_mode='scene_set',policy=null,asset_needs=[],capabilityIndex=null,coverageMatrix=null}={}) {
  const step=manifest?.steps?.find(s=>s.id===stepId);
  if(!step)throw new Error('CONTEXT_STEP_NOT_FOUND '+stepId);
  if(!['draft','review'].includes(role))throw Error('CONTEXT_ROLE_INVALID');
@@ -18,8 +18,11 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
  const caps=[...(step.required_capabilities??[]),...(step.conditional_capabilities??[])].filter(c=>conditionApplies(c.when,{run_mode,flags}));
  const entry=caps.filter(c=>c.stage==='entry');
  const selectedCapabilities=capabilitiesForStep(manifest.id,step.id,{run_mode,environment_mode,flags});
- let refs=[...new Set([...entry.flatMap(c=>selected_asset_ids===null?[c.guidance_uri,c.selected_guidance_uri]:[c.guidance_uri]).filter(Boolean),...(scope.load_references??step.load_references??[])])];
- let assetSelection=null;if(selected_asset_ids!==null||asset_needs.length){if(!policy)throw Error('CONTEXT_SELECTION_POLICY_MISSING');assetSelection=selectAssetGuidance({selected_asset_ids:selected_asset_ids??[],asset_needs,meme_selected,environment_mode},policy,{capabilityIndex,coverageMatrix});if(assetSelection.unresolved_ids.length)throw Error('CONTEXT_ASSET_UNRESOLVED '+assetSelection.unresolved_ids.join(','));selected_asset_ids=assetSelection.selected_asset_ids??selected_asset_ids??[];const selected=new Set(selected_asset_ids);refs=refs.filter(ref=>{const rule=step.guidance_selection?.[ref];if(!rule)return true;if(rule==='meme')return meme_selected;if(rule==='bedroom')return selected_asset_ids.some(id=>id.startsWith('bedroom'));if(rule==='environment')return ['selected_cues','legacy'].includes(environment_mode);return true;});refs=[...new Set([...refs,...assetSelection.core_refs,...assetSelection.extension_refs])];}
+ let refs=[...new Set([...entry.flatMap(c=>[c.guidance_uri,c.selected_guidance_uri]).filter(Boolean),...(scope.load_references??step.load_references??[])])];
+ const guidanceSelected=new Set(selected_asset_ids??[]);
+ const guidanceAllowed=ref=>{const rule=step.guidance_selection?.[ref];if(!rule)return true;if(rule==='meme')return meme_selected;if(rule==='bedroom')return [...guidanceSelected].some(id=>id.startsWith('bedroom'));if(rule==='environment')return ['selected_cues','legacy'].includes(environment_mode);return true;};
+ refs=refs.filter(guidanceAllowed);
+ let assetSelection=null;if(selected_asset_ids!==null||asset_needs.length){if(!policy)throw Error('CONTEXT_SELECTION_POLICY_MISSING');assetSelection=selectAssetGuidance({selected_asset_ids:selected_asset_ids??[],asset_needs,meme_selected,environment_mode},policy,{capabilityIndex,coverageMatrix});if(assetSelection.unresolved_ids.length)throw Error('CONTEXT_ASSET_UNRESOLVED '+assetSelection.unresolved_ids.join(','));selected_asset_ids=assetSelection.selected_asset_ids??selected_asset_ids??[];refs=[...new Set([...refs,...assetSelection.core_refs,...assetSelection.extension_refs])];}
  refs=[...new Set([...refs,...selectedCapabilities.flatMap(item=>item.refs??[])])];
  const output={production_entrypoint:manifest.production_entrypoint??null,invocation_policy:manifest.invocation_policy??'step_capabilities',format:'zodiac-step-context-plan@1',phase:manifest.id,step:step.id,run_mode,role,
    required_references:refs,required_entry_capabilities:entry.map(c=>c.id),
@@ -45,5 +48,5 @@ if(self){try{
  if(!phase||!step)throw new Error('Usage: node plan-step-context.mjs <phase> <step> [--flags <flags.json>]');
  const rawFlags=at>=0?JSON.parse(await readFile(path.resolve(args[at+1]),'utf8')):{};
  const flags=rawFlags.flags??rawFlags;
- console.log(JSON.stringify(await loadStepContext(phase,step,flags,{run_mode:rawFlags.run_mode??'fresh',role:rawFlags.context_role??'draft',selected_asset_ids:rawFlags.selected_asset_ids??null,asset_needs:rawFlags.asset_needs??[],environment_mode:rawFlags.environment_mode??'archive_frame',meme_selected:flags.meme_selected??false}),null,2));
+ console.log(JSON.stringify(await loadStepContext(phase,step,flags,{run_mode:rawFlags.run_mode??'fresh',role:rawFlags.context_role??'draft',selected_asset_ids:rawFlags.selected_asset_ids??null,asset_needs:rawFlags.asset_needs??[],environment_mode:rawFlags.environment_mode??'scene_set',meme_selected:flags.meme_selected??false}),null,2));
 }catch(e){console.error('CONTEXT_PLAN_BLOCKED '+e.message);process.exitCode=2;}}

@@ -252,6 +252,6 @@
       "load_references": []
     }
   ],
-  "production_entrypoint": "orchestration/run-phase03-production.mjs",
+  "production_entrypoint": "phases/phase03/run-phase03-production.mjs",
   "invocation_policy": "one_shot_with_owned_substages"
 }

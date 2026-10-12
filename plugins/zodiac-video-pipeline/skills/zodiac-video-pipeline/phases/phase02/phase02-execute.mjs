@@ -118,6 +118,7 @@ const collectNativeDependencies=async(base)=>{
   }
  };
  await walk(path.join(base,'references/asset-library-v4'));
+ for(const ownerRoot of ['core','features','phases','bootstrap','art-direction'])await walk(path.join(base,ownerRoot));
  await walk(path.join(base,'orchestration'));
  return out.sort();
 };
@@ -140,7 +141,7 @@ const snapshot=arg('--snapshot');
 if(snapshot){
  const target=arg('--restore-target');
  if(!target){fail('RESTORE_TARGET_REQUIRED');await finish();}else{
-  const script=path.join(HERE,'restore-plugin-source.mjs');
+  const script=path.resolve(HERE,'../../core/release/restore-plugin-source.mjs');
   if(!(await exists(snapshot))||!(await exists(script))){fail('SOURCE_SNAPSHOT_OR_RESTORE_TOOL_MISSING',{snapshot,script});await finish();}
   else{
    const restored=nodeRun(script,['--source',path.resolve(snapshot),'--target',path.resolve(target)]);
