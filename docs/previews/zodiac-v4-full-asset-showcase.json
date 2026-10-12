@@ -1,0 +1,50 @@
+{
+  "format": "zodiac-v4-full-asset-showcase@1",
+  "canvas": {
+    "width": 1080,
+    "height": 1920
+  },
+  "diagnostic_only": true,
+  "production_density_valid": false,
+  "style_token": "zodiac-paper-doodle-meme-v4",
+  "font": "Patrick Hand",
+  "watermark": "✦ bungmoto",
+  "active_example": {
+    "scene_set": "scene-set-classroom",
+    "layout": "three-person-comparison",
+    "mechanics": [
+      "compare-group",
+      "offer-pants-for-embarrassment"
+    ],
+    "story_object": "phone ping → silent"
+  },
+  "counts": {
+    "scene_sets": 6,
+    "scene_accents": 5,
+    "body_profiles": 6,
+    "hair": 10,
+    "face_profiles": 4,
+    "outfits": 17,
+    "poses": 21,
+    "expressions": 9,
+    "props": 14,
+    "ornaments": 8,
+    "layouts": 6,
+    "mechanics": 15,
+    "memes": 11
+  },
+  "rendered_categories": [
+    "scene-set",
+    "scene-accent",
+    "cover-first-frame",
+    "three-character-layout",
+    "character-assembly",
+    "story-object",
+    "story-prop",
+    "contact-prop",
+    "meme-prop",
+    "semantic-effect",
+    "caption-safe-zone",
+    "watermark"
+  ]
+}
