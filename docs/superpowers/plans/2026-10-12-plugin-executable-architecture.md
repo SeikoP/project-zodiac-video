@@ -1,6 +1,6 @@
 # Plugin Executable Architecture Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Move executable plugin implementation out of the flat `orchestration/` directory into explicit `core/`, `features/`, `phases/`, and `compat/` owners while preserving current CLI/public paths and Job@5 behavior.
 
@@ -9,6 +9,8 @@
 **Tech Stack:** Node.js 22 ESM, JSON phase/capability manifests, node:test.
 
 **Spec:** `docs/superpowers/specs/2026-10-12-zodiac-maintainability-refactor-design.md`
+
+**Status:** IMPLEMENTED on `codex/zodiac-maintainability-refactor`.
 
 ## Global Constraints
 
@@ -43,19 +45,19 @@
 - Produces owner modules under `core/` and `compat/`.
 - Public wrappers use `forwardCliIfMain(import.meta.url, targetUrl)` and `export * from <owner>`.
 
-- [ ] **Step 1: Write RED architecture tests**
+- [x] **Step 1: Write RED architecture tests**
   Assert owner directories exist; legacy projection/export modules live under `compat/`; current Job@5 modules are not in compat; wrappers contain no implementation beyond forwarding; fresh dependency graph cannot reach compat.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
   Run targeted architecture test; expect failure because owner modules do not exist and implementation is still flat.
 
-- [ ] **Step 3: Move core and true compatibility modules**
+- [x] **Step 3: Move core and true compatibility modules**
   Rewrite relative imports to their owner paths. Keep wrappers only for active public paths. Add one shared CLI forwarding helper.
 
-- [ ] **Step 4: Verify GREEN + full plugin suite**
+- [x] **Step 4: Verify GREEN + full plugin suite**
   Run targeted architecture tests and all orchestration/reference tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   `refactor(plugin): establish core and compatibility owners`
 
 ### Task 2 — Feature-owned compilers and validators
@@ -74,19 +76,19 @@
 - Current feature callers import owner modules directly.
 - Public orchestration validator/compiler paths remain wrappers only when active references still require them.
 
-- [ ] **Step 1: Write RED ownership tests**
+- [x] **Step 1: Write RED ownership tests**
   Assert Story Object, Scene Set, Cover, Narration Performance and Visual Composition compiler/validators resolve from feature owners; capability registry owner metadata points to real modules; no feature owner imports compat.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
   Expected failure on missing feature owner files/owner metadata.
 
-- [ ] **Step 3: Move feature implementation and rewrite imports**
+- [x] **Step 3: Move feature implementation and rewrite imports**
   Preserve CLI behavior through wrappers for manifest/documented entrypoints.
 
-- [ ] **Step 4: Verify GREEN + full plugin suite**
+- [x] **Step 4: Verify GREEN + full plugin suite**
   Run feature architecture tests, V4 library validator and full plugin tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   `refactor(plugin): move compilers and validators to feature owners`
 
 ### Task 3 — Phase ownership and orchestration root cleanup
@@ -103,19 +105,19 @@
 - Phase implementations may not depend on `compat/` in fresh mode.
 - `orchestration/plan-step-context.mjs` remains a public routing entrypoint.
 
-- [ ] **Step 1: Write RED root-cleanup tests**
+- [x] **Step 1: Write RED root-cleanup tests**
   Assert orchestration top-level implementation count is below 40; remaining `.mjs` files are allowlisted public/router wrappers; wrappers forward to owner modules; fresh phase dependency graph is compat-free.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
   Expected failure because orchestration currently contains more than 100 implementation modules.
 
-- [ ] **Step 3: Move phase implementation, update active references, delete internal-only old paths**
+- [x] **Step 3: Move phase implementation, update active references, delete internal-only old paths**
   Retain wrappers only for active public/CLI contracts.
 
-- [ ] **Step 4: Final verification**
+- [x] **Step 4: Final verification**
   Run full plugin suite, V4 validation, current Phase 1→2→3 structural fixtures, CLI parity checks, and static dependency audit.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
   `refactor(plugin): make orchestration a thin public routing layer`
 
 ## Completion Gate
@@ -128,3 +130,23 @@ Phase F is complete only when:
 - fresh dependency graph has zero `compat/` imports;
 - `orchestration/` top-level implementation surface is below 40 `.mjs` files and remaining files are entry/router/wrappers;
 - no moved module has a duplicate implementation at the old path.
+
+## Completion Record
+
+Phase F completed on the feature branch.
+
+- **F1 — Core + compatibility ownership:** implementation moved into `core/` and true pre-Job5 compatibility into `compat/`; current Job@5 v2-named code remains current-path code. Commit: `33a3ac6`.
+- **F2 — Feature ownership:** episode, narration-performance, Story Object, scene-set, visual-composition, cover, ending, meme and publish implementation moved under `features/`; capability owner metadata resolves to the canonical feature modules. Commit: `be01c60`.
+- **F3 — Phase ownership:** current Phase 1/2/3 execution, commit, seal and Job@5 handoff implementation moved under `phases/phase01|02|03/`; active phase manifests point at canonical owner modules. Commit: `6db0d76`.
+- `orchestration/` remains the public routing/compatibility-wrapper layer. Architecture tests reject fresh `compat/` imports and reject phase implementation leaking back into the root.
+- Current Job@5 round-trip model helpers were corrected to `core/model/`; only the true state-v1 migration remains compatibility-owned.
+
+Final verification on GitHub Actions run `38270203347`:
+
+- executable architecture gate: PASS;
+- full plugin orchestration/reference suite: **619/619 PASS**;
+- V4 asset library validator: **PASS** (`scene_sets=6`, `shot_layouts=6`, `mechanics=15`);
+- active CLI compatibility paths preserve forwarding semantics;
+- temporary migration workflows/scripts were removed after verification in cleanup commit `3f9be44`.
+
+No merge to `main` and no installed-ChatGPT-plugin publication is implied by this completion record.
