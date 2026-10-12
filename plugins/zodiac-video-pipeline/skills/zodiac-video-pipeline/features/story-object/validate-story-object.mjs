@@ -123,7 +123,7 @@ export async function validateStoryObjectWorkspace(root,{writeReceipt=false}={})
   let state;try{state=JSON.parse(stateBytes)}catch{throw Error('STORY_OBJECT_STATE_INVALID')}
   const v=/^(\d+)\.(\d+)\.(\d+)(?:$|[-+])/.exec(String(state.plugin_version??''));
   const modern=v&&(Number(v[1])>2||Number(v[1])===2&&(Number(v[2])>4||Number(v[2])===4&&Number(v[3])>=4));
-  if(state.flags?.story_object_required===true||(modern&&state.run_mode==='fresh'))mandatory=true;
+  if(state.flags?.story_object_required===true)mandatory=true;
  }
  if(decision){const ruling=evaluateObjectProgression({decision},[]);if(decision.mode==='omitted'){const state=stateBytes?JSON.parse(stateBytes):{};if(state.flags?.story_object_required===true||required&&JSON.parse(required).required===true)throw Error('STORY_OBJECT_DECISION_FLAG_CONFLICT');if(ruling.structural_status!=='OMITTED_EXPLICIT')throw Error('STORY_OBJECT_DECISION_INVALID');return {format:'zodiac-story-object-qc@1',status:'OMITTED_EXPLICIT',creative_quality_verified:false,issues:[]};}}
  if(!spec){if(mandatory)throw Error('STORY_OBJECT_PLAN_MISSING');return {format:'zodiac-story-object-qc@1',status:'LEGACY_NOT_APPLICABLE',beats:0,issues:[]};}
