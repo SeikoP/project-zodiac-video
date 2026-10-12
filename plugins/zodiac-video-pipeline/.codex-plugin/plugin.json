@@ -11,7 +11,7 @@
     "defaultPrompt": "Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md. Three editorial phases: 01-content, 02-visual-production, 03-handoff. Fresh episodes use character_deconstruction as story engine with episode formats single_sign, element_group, ranked_shortlist and comparison. Preserve sourced evidence, approved narration and genuine user reviews. For execution source, use only verified phase-scoped bundles; never download or treat the full GitHub repository as runtime context, and never let repository transport replace plugin routing or phase manifests. Preserve zodiac-job@5 producer/runner boundary; measured TTS, timing, Remotion, audio and MP4 QA stay with local runner."
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.4.65",
+  "version": "2.4.66",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"
