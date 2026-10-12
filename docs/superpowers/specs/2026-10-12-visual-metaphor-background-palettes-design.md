@@ -21,8 +21,9 @@ Also capture nearby debt found during the audit without expanding this implement
 ## User-visible success criteria
 
 - Fresh authoring no longer asks for, requires or describes a `Story Object`.
-- A Libra-style scale can appear *inside the existing scene* as a readable visual expression of “weighing two directions” without becoming the background, a physical prop, or a mandatory three-stage story entity.
-- Visual metaphor use is optional and narration-driven. One-off metaphors are valid; recurrence/progression is optional.
+- A Libra-style scale can appear *inside the existing scene* as a readable visual expression of “weighing two directions” without becoming the background or a physical prop.
+- Visual Metaphors may be **stateful**. For example, a Libra scale can expose `tilt_left`, `balanced`, and `tilt_right` visual states and transition between them at narration anchors.
+- Visual metaphor use is optional and narration-driven. A metaphor may have one state, several states, or a repeated state sequence; the system does **not** force every metaphor into a universal setup → friction → payoff lifecycle.
 - Physical props, meme/contact props, scene accents, effects and visual metaphors remain distinct concepts.
 - The red-shirt showcase character no longer uses `lopsided-bob`; that hairstyle is not selected by fresh preferred routing.
 - Scene-set backgrounds can be rendered in several visibly different approved palette packs.
@@ -55,11 +56,13 @@ Canonical names:
 - Plan: `.authoring/visual-metaphor-plan.json`
 - Validators: `features/visual-metaphor/*`
 
-A Visual Metaphor is **a scene-contained visual expression of an idea from narration**. It may use an object silhouette, symbol, relation, repeated mark or simple state change, but its semantic identity is “what idea does this communicate?”, not “what physical object exists?”.
+A Visual Metaphor is **a scene-contained visual expression of an idea from narration**. It may use an object silhouette, symbol, relation, repeated mark or a multi-state visual mechanism, but its semantic identity is “what idea does this communicate?”, not “what physical object exists?”.
+
+A Visual Metaphor may therefore have a stable identity plus authored **visual states**. The states belong to the metaphor concept, not to a physical-prop contract. For example, the same Libra scale metaphor can render as left-heavy, balanced, or right-heavy while remaining one conceptual metaphor.
 
 Examples:
 
-- Libra: a scale tilts left/right while the character considers two directions.
+- Libra: the same scale exposes `tilt_left`, `balanced`, and `tilt_right`; narration anchors switch between them while the character considers competing directions.
 - Gemini: two opposing speech/idea marks show conflicting readings.
 - indecision: two directional arrows diverge from a thought locus.
 - pressure: a narrowing visual relation can communicate constraint without becoming a physical prop.
@@ -112,17 +115,37 @@ Conceptual shape:
   "metaphors": [
     {
       "id": "libra-two-directions",
-      "meaning": "weighing two opposing choices",
-      "scene_ids": ["S03"],
+      "meaning": "weighing competing choices",
+      "visual_states": {
+        "tilt_left": {
+          "visual_read": "left dish visibly lower than right"
+        },
+        "balanced": {
+          "visual_read": "both dishes level"
+        },
+        "tilt_right": {
+          "visual_read": "right dish visibly lower than left"
+        }
+      },
       "cues": [
         {
           "scene_id": "S03",
           "voice_anchor": "...",
-          "visual_read": "scale tilts left, then right",
+          "state": "tilt_left",
           "relation": {
             "mode": "near|emitted_by|anchored_to_scene",
             "anchor": "character.lead"
           }
+        },
+        {
+          "scene_id": "S03",
+          "voice_anchor": "...",
+          "state": "balanced"
+        },
+        {
+          "scene_id": "S03",
+          "voice_anchor": "...",
+          "state": "tilt_right"
         }
       ]
     }
@@ -134,9 +157,11 @@ Rules:
 
 - one cue is valid;
 - multiple cues may recur if narration justifies recurrence;
+- a metaphor may declare multiple named `visual_states` and switch states at real narration anchors;
+- state changes must be visibly distinct when authored (for example `tilt_left` / `balanced` / `tilt_right`), not renamed duplicates;
 - no setup/friction/payoff minimum;
 - no fake progression requirement;
-- no “same object must change twice” requirement;
+- no requirement that every metaphor must change state a fixed number of times;
 - metaphor must remain legible with audio muted;
 - metaphor cannot occupy the environment/background role;
 - physical contact is validated only when the selected transport is a physical prop;
@@ -316,6 +341,8 @@ This addresses a remaining context bottleneck identified in the previous audit: 
 
 - RED: fresh pipeline no longer requires `story_object_required`;
 - RED: a single Libra metaphor cue is valid without setup/friction/payoff;
+- RED: a stateful Libra metaphor can expose `tilt_left`, `balanced`, and `tilt_right` and bind each state to narration anchors;
+- RED: duplicate/visually unchanged named states are rejected when a state transition is authored;
 - RED: metaphor used as background/environment is blocked;
 - RED: physical prop contact rules remain separate;
 - RED: legacy Story Object fixture still validates through compatibility projection;
