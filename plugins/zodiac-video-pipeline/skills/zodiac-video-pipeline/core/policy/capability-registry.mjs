@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {conditionApplies} from './resolve-capability-route.mjs';
 
 const orchestrationDir=path.dirname(fileURLToPath(import.meta.url));
 const skillRoot=path.resolve(orchestrationDir,'../..');
@@ -14,11 +15,12 @@ function loadRegistry(){
  return registry;
 }
 
-function bindingApplies(binding,phase,step,{run_mode='fresh',environment_mode='archive_frame'}={}){
+function bindingApplies(binding,phase,step,{run_mode='fresh',environment_mode='archive_frame',flags={}}={}){
  if(binding?.phase!==phase)return false;
  if(!Array.isArray(binding.steps)||!binding.steps.includes(step))return false;
  if(Array.isArray(binding.run_modes)&&!binding.run_modes.includes(run_mode))return false;
  if(Array.isArray(binding.environment_modes)&&!binding.environment_modes.includes(environment_mode))return false;
+ if(binding.when&&!conditionApplies(binding.when,{run_mode,flags}))return false;
  return true;
 }
 

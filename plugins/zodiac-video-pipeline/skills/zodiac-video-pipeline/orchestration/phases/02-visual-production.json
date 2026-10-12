@@ -291,12 +291,12 @@
           "when": "flag:relational_beats"
         },
         {
-          "name": ".authoring/story-object-plan.json",
-          "when": "fresh"
-        },
-        {
           "name": ".authoring/episode-cast-plan.json",
           "when": "flag:episode_selected"
+        },
+        {
+          "name": ".authoring/visual-metaphor-plan.json",
+          "when": "flag:visual_metaphor_selected"
         }
       ],
       "gate_checks": [
@@ -347,8 +347,7 @@
         "references/visual-direction.md",
         "references/visual-quality.md",
         "references/asset-library.md",
-        "orchestration/phase02-composition-contract.md",
-        "references/story-object-contract.md"
+        "orchestration/phase02-composition-contract.md"
       ],
       "guidance_selection": {
         "references/asset-library-v4/environments/compositions/index.json": "environment",
