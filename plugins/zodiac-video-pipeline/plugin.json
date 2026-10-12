@@ -17,7 +17,7 @@
         "capabilities": [
           "Interactive"
         ],
-        "defaultPrompt": "Use skills/zodiac-video-pipeline/SKILL.md, bootstrap/current-policy.json and active phase manifests. Exactly three phases: 01-content → 02-visual-production → 03-handoff. Preserve genuine evidence, receipts, user approvals and approved Narration; structural validation never implies creative, runtime or media PASS. Fresh Phase 02 loads selected current guidance only; compatibility environment/depth paths are explicit opt-in. Preserve the zodiac-job@5 producer/runner boundary; the local runner owns measured TTS, timing, audio, Remotion, MP4 and media QA. Use orchestration/plan-step-context.mjs for step-scoped context and never waive required validators, receipts or approvals. GitHub source changes do not auto-sync the installed ChatGPT plugin."
+        "defaultPrompt": "Use skills/zodiac-video-pipeline/SKILL.md, bootstrap/current-policy.json and active phase manifests. Exactly three phases: 01-content → 02-visual-production → 03-handoff. New Zodiac uses ONLY character_deconstruction as Story Shape. Preserve genuine evidence, receipts, user approvals and approved Narration; structural validation never implies creative, runtime or media PASS. Fresh Phase 02 loads selected current guidance only; compatibility environment/depth paths are explicit opt-in. Preserve the zodiac-job@5 producer/runner boundary; the local runner owns measured TTS, timing, audio, Remotion, MP4 and media QA. Use orchestration/plan-step-context.mjs for step-scoped context and never waive required validators, receipts or approvals. GitHub source changes do not auto-sync the installed ChatGPT plugin."
       }
     }
   }
