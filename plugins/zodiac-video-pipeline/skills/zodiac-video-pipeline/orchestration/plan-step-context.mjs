@@ -20,7 +20,7 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
  const selectedCapabilities=capabilitiesForStep(manifest.id,step.id,{run_mode,environment_mode,flags});
  let refs=[...new Set([...entry.flatMap(c=>[c.guidance_uri,c.selected_guidance_uri]).filter(Boolean),...(scope.load_references??step.load_references??[])])];
  const guidanceSelected=new Set(selected_asset_ids??[]);
- const guidanceAllowed=ref=>{const rule=step.guidance_selection?.[ref];if(!rule)return true;if(rule==='meme')return meme_selected;if(rule==='bedroom')return [...guidanceSelected].some(id=>id.startsWith('bedroom'));if(rule==='environment')return ['selected_cues','legacy'].includes(environment_mode);return true;};
+ const guidanceAllowed=ref=>{const rule=step.guidance_selection?.[ref];if(!rule)return true;if(environment_mode==='legacy')return true;if(rule==='meme')return meme_selected;if(rule==='bedroom')return [...guidanceSelected].some(id=>id.startsWith('bedroom'));if(rule==='environment')return environment_mode==='selected_cues';return true;};
  refs=refs.filter(guidanceAllowed);
  let assetSelection=null;if(selected_asset_ids!==null||asset_needs.length){if(!policy)throw Error('CONTEXT_SELECTION_POLICY_MISSING');assetSelection=selectAssetGuidance({selected_asset_ids:selected_asset_ids??[],asset_needs,meme_selected,environment_mode},policy,{capabilityIndex,coverageMatrix});if(assetSelection.unresolved_ids.length)throw Error('CONTEXT_ASSET_UNRESOLVED '+assetSelection.unresolved_ids.join(','));selected_asset_ids=assetSelection.selected_asset_ids??selected_asset_ids??[];refs=[...new Set([...refs,...assetSelection.core_refs,...assetSelection.extension_refs])];}
  refs=[...new Set([...refs,...selectedCapabilities.flatMap(item=>item.refs??[])])];
