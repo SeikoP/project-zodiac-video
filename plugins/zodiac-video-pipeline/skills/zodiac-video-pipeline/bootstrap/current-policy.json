@@ -1,0 +1,10 @@
+{
+  "format": "zodiac-current-policy@1",
+  "narrative": "2.1",
+  "story_object": "v2",
+  "visual_grammar": "v4",
+  "scene_system": "scene-set@1",
+  "character_assembly": "v2",
+  "handoff": "zodiac-job@5",
+  "renderer": "zodiac-renderer@2.0.1"
+}
