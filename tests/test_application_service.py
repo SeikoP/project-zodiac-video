@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 
 class FakeCurrent:
     def __init__(self, workspace_root: Path, **_: object) -> None:
@@ -143,10 +145,9 @@ def test_run_request_uses_one_service_interface_for_current_and_legacy(tmp_path:
         scene_gap_ms=180.0,
     )
 
-    current_root = tmp_path / "current"
-    current_root.mkdir()
-    current = make_service(current_root, current_manifest=True)
-    source = current_root / "job.zip"
+    current = make_service(tmp_path / "current", current_manifest=True)
+    (tmp_path / "current").mkdir()
+    source = tmp_path / "current" / "job.zip"
     source.write_bytes(b"x")
     current.open("import", source)
     assert current.run(request) is True
@@ -154,10 +155,9 @@ def test_run_request_uses_one_service_interface_for_current_and_legacy(tmp_path:
     assert config.voice_profile == "voice-a"
     assert rerun_from == "RENDER"
 
-    legacy_root = tmp_path / "legacy"
-    legacy_root.mkdir()
-    legacy = make_service(legacy_root, current_manifest=False)
-    old = legacy_root / "old.zip"
+    legacy = make_service(tmp_path / "legacy", current_manifest=False)
+    (tmp_path / "legacy").mkdir()
+    old = tmp_path / "legacy" / "old.zip"
     old.write_bytes(b"x")
     legacy.open("import", old)
     assert legacy.run(request) is True
@@ -174,3 +174,13 @@ def test_qt_shell_depends_on_application_service_not_two_pipeline_controllers() 
     assert "self.v2_session" not in source
     assert "LEGACY_STAGES" not in source
     assert "LEGACY_RERUN" not in source
+
+
+def test_managed_process_helpers_have_runner_owner_and_legacy_reexports() -> None:
+    from tools.runner.process import observe_subprocess_output as owned_observer
+    from tools.runner.process import run_managed_subprocess as owned_runner
+    from tools.zodiac_local import observe_subprocess_output as legacy_observer
+    from tools.zodiac_local import run_managed_subprocess as legacy_runner
+
+    assert legacy_observer is owned_observer
+    assert legacy_runner is owned_runner

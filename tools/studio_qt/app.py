@@ -24,14 +24,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from tools.studio.controller import StudioController
+from tools.application.service import (
+    ApplicationObservers,
+    ApplicationRunRequest,
+    ApplicationService,
+    MODE_CURRENT,
+    MODE_LEGACY,
+)
 from tools.studio.job_state import JobStateStore
 from tools.studio.pipeline import DONE, FAILED, PENDING, RUNNING, SKIPPED, CANCELLED
-from tools.studio.preflight import Job5PreflightChecker, PreflightChecker
 from tools.studio.voice_catalog import preferred_voice, saved_voices
-from tools.studio_v2.executor import ExecutorConfig
-from tools.studio_v2.runner import observe_structured_command_output
-from tools.studio_v2.session import StudioV2Session, detect_job5_manifest
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio_qt.events import WorkerEventBridge
 from tools.studio_qt.screens.home import HomeScreen
@@ -48,32 +50,13 @@ WORKSPACE = ROOT / ".zodiac-work"
 TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
 TTS_URL = "http://127.0.0.1:7860"
 MUSIC_DIRECTORIES = (ROOT / "asset" / "music", ROOT / "assets" / "music")
-LEGACY_STAGES = {
-    "PACKAGE": ("IMPORT_PACKAGE",),
-    "VOICE": ("VOICE_SCENES", "CONCAT_VOICE"),
-    "TIMING": ("ALIGN_TIMING", "VALIDATE_RUNTIME"),
-    "PLAN": ("PREPARE_RENDERER",),
-    "RENDER": ("RENDER_VIDEO",),
-    "AUDIO": ("MIX_MUSIC",),
-    "OUTPUT": ("MIX_MUSIC",),
-}
-LEGACY_RERUN = {
-    "PACKAGE": "IMPORT_PACKAGE",
-    "VOICE": "VOICE_SCENES",
-    "TIMING": "ALIGN_TIMING",
-    "PLAN": "PREPARE_RENDERER",
-    "RENDER": "RENDER_VIDEO",
-    "AUDIO": "MIX_MUSIC",
-}
-
 
 class ZodiacQtApp(QMainWindow):
     def __init__(self, workspace: Path | None = None, parent=None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.workspace = Path(workspace or WORKSPACE).resolve()
-        self.controller = StudioController(self.workspace, tts_root=TTS_ROOT, vieneu_url=TTS_URL)
-        self.v2_session = StudioV2Session(self.workspace)
+        self.application = ApplicationService(self.workspace, tts_root=TTS_ROOT, vieneu_url=TTS_URL)
         self.bridge = WorkerEventBridge(self)
         self.bridge.event_received.connect(self._on_legacy_event)
         self.bridge.log_received.connect(self._on_log)
@@ -82,7 +65,6 @@ class ZodiacQtApp(QMainWindow):
         self.bridge.native_frame_progress.connect(self._on_native_frame_progress)
         self.bridge.operation_finished.connect(self._on_operation_finished)
         self.bridge.preflight_update.connect(self._on_preflight_update)
-        self.mode = "legacy"
         self.busy = False
         self.pipeline_running = False
         self.selected_stage: str | None = None
@@ -294,34 +276,21 @@ class ZodiacQtApp(QMainWindow):
 
         def run() -> None:
             try:
-                if name == "import" and detect_job5_manifest(value) is not None:
-                    path = self.v2_session.import_archive(value)
-                    mode = "job5"
-                elif name == "open" and value.parent == self.workspace / "v2" / "jobs":
-                    path = self.v2_session.open_workspace(value)
-                    mode = "job5"
-                else:
-                    if name == "import":
-                        self.controller.select_archive(value)
-                        if self.controller.package_changed:
-                            self.bridge.operation_finished.emit("package_conflict", (None, value, None))
-                            return
-                        self.controller.sync_package()
-                    else:
-                        self.controller.use_job(value)
-                    path = self.controller.job
-                    mode = "legacy"
-                self.bridge.operation_finished.emit(name, (mode, path, None))
+                opened = self.application.open(name, value)
+                if opened.package_conflict:
+                    self.bridge.operation_finished.emit("package_conflict", (None, value, None))
+                    return
+                self.bridge.operation_finished.emit(name, (opened.mode, opened.path, None))
             except Exception as exc:
                 self.bridge.operation_finished.emit(name, (None, None, exc))
 
         threading.Thread(target=run, daemon=True).start()
 
     def _active_job(self) -> Path | None:
-        return self.v2_session.job if self.mode == "job5" else self.controller.job
+        return self.application.job
 
     def _active_video(self) -> Path | None:
-        return self.v2_session.video_path if self.mode == "job5" else self.controller.video_path
+        return self.application.video_path
 
     def _load_settings(self, job: Path) -> None:
         path = job / ".runtime" / "gui-settings.json"
@@ -337,7 +306,7 @@ class ZodiacQtApp(QMainWindow):
             self.workspace.mkdir(parents=True, exist_ok=True)
             path = self.workspace / "gui-session.json"
             temp = path.with_suffix(".json.tmp")
-            temp.write_text(json.dumps({"mode": "v2" if self.mode == "job5" else "legacy", "job": job.resolve().relative_to(self.workspace).as_posix()}), encoding="utf-8")
+            temp.write_text(json.dumps({"mode": "v2" if self.application.mode == MODE_CURRENT else "legacy", "job": job.resolve().relative_to(self.workspace).as_posix()}), encoding="utf-8")
             os.replace(temp, path)
             settings_path = job / ".runtime" / "gui-settings.json"
             settings_path.parent.mkdir(parents=True, exist_ok=True)
@@ -347,28 +316,17 @@ class ZodiacQtApp(QMainWindow):
         except (OSError, ValueError):
             pass
 
-    def _v2_rows(self) -> list[dict]:
-        return self.v2_session.pipeline_rows()
+    @property
+    def mode(self) -> str:
+        return self.application.mode
 
-    def _legacy_rows(self) -> list[dict]:
-        source = {row["step"]: row for row in self.controller.pipeline_rows()}
-        rows = []
-        rank = {FAILED: 5, RUNNING: 4, PENDING: 3, CANCELLED: 2, SKIPPED: 1, DONE: 0}
-        for stage, steps in LEGACY_STAGES.items():
-            candidates = [source[step] for step in steps if step in source]
-            active = max(candidates, key=lambda row: rank.get(row["status"], 0), default={})
-            states = [row["status"] for row in candidates]
-            if states and all(state in (DONE, SKIPPED) for state in states):
-                status = DONE
-            else:
-                status = active.get("status", PENDING)
-            rows.append({"step": stage, "status": status, "detail": active.get("message", ""), "progress": active.get("progress", 0.0)})
-        return rows
+    def _pipeline_rows(self) -> list[dict]:
+        return self.application.pipeline_rows()
 
     def _refresh_workbench(self) -> None:
         if self.workbench is None or self._active_job() is None:
             return
-        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        rows = self._pipeline_rows()
         self.workbench.set_rows(rows)
         current_state = {
             row["step"]: (str(row.get("status", "")), str(row.get("detail", "")))
@@ -397,7 +355,7 @@ class ZodiacQtApp(QMainWindow):
         if self.mode == "legacy" and active.get("status") == RUNNING and float(active.get("progress", 0.0)) > 0:
             percent = float(active["progress"])
         self.workbench.set_active_stage(active["step"], active, percent=percent)
-        pipeline_active = self.pipeline_running or bool(self.v2_session.running) or bool(self.controller.worker and self.controller.worker.is_alive())
+        pipeline_active = self.pipeline_running or self.application.running
         self.home.set_busy(pipeline_active or self.busy)
         self.workbench.set_running(pipeline_active, busy=self.busy and not pipeline_active)
         self.header_settings_button.setEnabled(not pipeline_active and not self.busy)
@@ -437,11 +395,6 @@ class ZodiacQtApp(QMainWindow):
             self.media.set_jobs(self._media_jobs())
             self.media.set_output(*output, job_path=job)
             self._media_output = output
-        if self.pipeline_running and self.mode == "legacy" and not (self.controller.worker and self.controller.worker.is_alive()):
-            self.pipeline_running = False
-            self._refresh_timer.stop()
-            if self.close_when_stopped:
-                self.close()
 
     def _main_tab_changed(self, index: int) -> None:
         if self.main_tabs.widget(index) is self.media:
@@ -459,7 +412,7 @@ class ZodiacQtApp(QMainWindow):
         self._refresh_workbench()
 
     def _running_stage(self) -> str | None:
-        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        rows = self._pipeline_rows()
         return next((row["step"] for row in rows if row.get("status") == RUNNING), None)
 
     @Slot(str, str)
@@ -533,61 +486,53 @@ class ZodiacQtApp(QMainWindow):
         if music and not music.is_file():
             QMessageBox.warning(self, "Không tìm thấy nhạc", "Chọn lại file nhạc nền trong Thiết lập.")
             return
-        if self.mode == "legacy":
-            rerun_step = LEGACY_RERUN.get(rerun) if rerun else None
-            started = self.controller.start_pipeline(
-                resume=resume, rerun=rerun_step, voice=self.settings["voice"], music=music,
-                volume=float(self.settings["volume"]), align_model=self.settings["align_model"],
-                on_event=lambda kind, payload: self.bridge.event_received.emit(kind, payload),
-            )
-            if not started:
-                self.workbench.append_activity(self.controller.status_text)
-                return
-            self.pipeline_running = True
-        else:
-            self.v2_session.cancel_event.clear()
-            if self.workbench:
-                self.workbench.reset_measured_progress()
-            self._frame_milestones.clear()
-            config = ExecutorConfig(
-                voice_profile=self.settings["voice"],
-                tts_settings={"mode": "v3turbo", "vieneu_url": TTS_URL, "tts_root": TTS_ROOT, "scene_gap_ms": float(self.settings["scene_gap_ms"])},
-                tts_engine_version="vieneu-v3turbo@local-v1",
-                aligner_settings={"model": self.settings["align_model"], "device": "cpu", "compute_type": "int8", "scene_gap_ms": float(self.settings["scene_gap_ms"]), "sentence_pause_ms": 0.0},
-                aligner_version="faster-whisper@local-v1",
-                renderer_version="2.0.0", renderer_hash="zodiac-renderer@2.0.0",
-                music_path=music, mix_settings={"volume": float(self.settings["volume"])},
-            )
-            rerun_from = rerun if rerun else (None if resume else "VOICE")
 
-            def run_v2() -> None:
-                try:
-                    from tools.zodiac_local import observe_subprocess_output
-                    subprocess_observer = lambda line, channel="stdout": self.bridge.log_received.emit(line, channel)
-                    native_observer = lambda line, channel, stage: self.bridge.native_log_received.emit(line, channel, stage)
-                    unit_observer = lambda stage, complete, total, unit, label: self.bridge.native_progress.emit(
-                        stage, complete, total, unit, label
-                    )
-                    from tools.studio_v2.progress import observe_unit_progress, observe_frame_progress
-                    frame_observer = lambda segment, done, total, phase: self.bridge.native_frame_progress.emit(
-                        segment, done, total, phase
-                    )
-                    with observe_subprocess_output(subprocess_observer), observe_structured_command_output(native_observer), observe_unit_progress(unit_observer), observe_frame_progress(frame_observer):
-                        self.v2_session.run(config, rerun_from=rerun_from)
-                    self.bridge.operation_finished.emit("run_done", (None, None, None))
-                except Exception as exc:
-                    self.bridge.operation_finished.emit("run_error", (None, None, exc))
+        request = ApplicationRunRequest(
+            resume=resume,
+            rerun=rerun,
+            voice=self.settings["voice"],
+            music=music,
+            volume=float(self.settings["volume"]),
+            align_model=self.settings["align_model"],
+            scene_gap_ms=float(self.settings["scene_gap_ms"]),
+        )
+        if self.workbench:
+            self.workbench.reset_measured_progress()
+        self._frame_milestones.clear()
+        observers = ApplicationObservers(
+            legacy_event=lambda kind, payload: self.bridge.event_received.emit(kind, payload),
+            subprocess=lambda line, channel="stdout": self.bridge.log_received.emit(line, channel),
+            native=lambda line, channel, stage: self.bridge.native_log_received.emit(line, channel, stage),
+            unit=lambda stage, complete, total, unit, label: self.bridge.native_progress.emit(
+                stage, complete, total, unit, label
+            ),
+            frame=lambda segment, done, total, phase: self.bridge.native_frame_progress.emit(
+                segment, done, total, phase
+            ),
+        )
 
-            self.busy = True
-            self.pipeline_running = True
-            threading.Thread(target=run_v2, daemon=True).start()
+        def run_application() -> None:
+            try:
+                started = self.application.run(request, observers)
+                if not started:
+                    self.bridge.operation_finished.emit(
+                        "run_rejected", (None, None, self.application.status_text)
+                    )
+                    return
+                self.bridge.operation_finished.emit("run_done", (None, None, None))
+            except Exception as exc:
+                self.bridge.operation_finished.emit("run_error", (None, None, exc))
+
+        self.busy = True
+        self.pipeline_running = True
+        threading.Thread(target=run_application, daemon=True).start()
         self._save_session(job)
         self._refresh_timer.start()
         self._refresh_workbench()
 
     def _select_stage(self, stage: str) -> None:
         self.selected_stage = stage
-        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        rows = self._pipeline_rows()
         row = next((row for row in rows if row["step"] == stage), {"status": PENDING})
         percent = float(row.get("progress", 0.0)) if self.mode == "legacy" and row.get("status") == RUNNING and float(row.get("progress", 0)) > 0 else None
         self.workbench.set_active_stage(stage, row, percent=percent)
@@ -598,7 +543,7 @@ class ZodiacQtApp(QMainWindow):
     def _continue_workflow(self) -> None:
         if self.busy or self.pipeline_running:
             return
-        rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+        rows = self._pipeline_rows()
         video = self._active_video()
         if rows and all(row.get("status") in (DONE, SKIPPED) for row in rows) and video and video.is_file():
             self._open_output("video")
@@ -608,10 +553,7 @@ class ZodiacQtApp(QMainWindow):
             self._start(resume=True)
 
     def _cancel(self) -> None:
-        if self.mode == "job5":
-            self.v2_session.cancel()
-        else:
-            self.controller.cancel()
+        self.application.cancel()
         self.workbench.append_activity("Đang chờ bước hiện tại dừng an toàn…")
 
     def _on_operation_finished(self, name: str, result: object) -> None:
@@ -633,14 +575,14 @@ class ZodiacQtApp(QMainWindow):
 
                 def resolve() -> None:
                     try:
-                        self.controller.accept_package_conflict("import")
-                        self.bridge.operation_finished.emit("import", ("legacy", self.controller.job, None))
+                        opened = self.application.resolve_package_conflict("import")
+                        self.bridge.operation_finished.emit("import", (opened.mode, opened.path, None))
                     except Exception as exc:
                         self.bridge.operation_finished.emit("import", (None, None, exc))
 
                 threading.Thread(target=resolve, daemon=True).start()
             else:
-                self.controller.accept_package_conflict("keep")
+                self.application.resolve_package_conflict("keep")
                 self.home.set_busy(False, "Đã giữ lại job hiện tại.")
                 if self.close_when_stopped:
                     self.close()
@@ -701,7 +643,6 @@ class ZodiacQtApp(QMainWindow):
                 if self.close_when_stopped:
                     self.close()
                 return
-            self.mode = mode
             self._environment_ready = None
             self.home.operation_status.setText(f"Đã mở {Path(path).name}. Tiếp tục trong Workspace.")
             self.selected_stage = None
@@ -723,14 +664,14 @@ class ZodiacQtApp(QMainWindow):
             self.workbench.home_requested.connect(self._show_home)
             self.workbench.set_job(
                 Path(path).name,
-                revision=self.v2_session.package_revision if mode == "job5" else None,
-                mode="job5" if mode == "job5" else "Job local",
-                rows=self._v2_rows() if mode == "job5" else self._legacy_rows(),
+                revision=self.application.package_revision if mode == MODE_CURRENT else None,
+                mode="job5" if mode == MODE_CURRENT else "Job local",
+                rows=self._pipeline_rows(),
             )
             self.workbench.set_log_file(Path(path) / ".runtime" / "studio-gui.log")
             self._stage_snapshot = {
                 row["step"]: (str(row.get("status", "")), str(row.get("detail", "")))
-                for row in (self._v2_rows() if mode == "job5" else self._legacy_rows())
+                for row in (self._pipeline_rows())
             }
             self.workbench.continue_requested.connect(self._continue_workflow)
             self.workbench.run_all_requested.connect(lambda: self._start(resume=False))
@@ -792,6 +733,17 @@ class ZodiacQtApp(QMainWindow):
             if self.close_when_stopped:
                 self.close()
             return
+        if name == "run_rejected":
+            self.busy = False
+            self.pipeline_running = False
+            self._refresh_timer.stop()
+            message = str(result[2] or "Quy trình chưa thể bắt đầu.")
+            if self.workbench:
+                self.workbench.append_activity(message, channel="state")
+            self._refresh_workbench()
+            if self.close_when_stopped:
+                self.close()
+            return
         if name in ("run_done", "run_error"):
             self.busy = False
             self.pipeline_running = False
@@ -810,7 +762,7 @@ class ZodiacQtApp(QMainWindow):
                 QMessageBox.critical(self, "Quy trình chưa hoàn tất", str(exc))
             self._refresh_workbench()
             if name == "run_done":
-                rows = self._v2_rows() if self.mode == "job5" else self._legacy_rows()
+                rows = self._pipeline_rows()
                 fully_done = bool(rows) and all(row.get("status") in (DONE, SKIPPED) for row in rows)
                 note = "Executor kết thúc; trạng thái các bước đã hoàn tất." if fully_done else "Executor kết thúc, còn bước chưa hoàn tất; xem trạng thái pipeline."
                 self.workbench.append_activity(note, channel="state")
@@ -901,10 +853,7 @@ class ZodiacQtApp(QMainWindow):
 
         def check() -> None:
             try:
-                checker = (
-                    Job5PreflightChecker(job, tts_root=TTS_ROOT, vieneu_url=TTS_URL)
-                    if self.mode == "job5" else self.controller.preflight()
-                )
+                checker = self.application.preflight_checker()
                 music_raw = str(self.settings.get("music", "")).strip()
                 checker.require_music = bool(music_raw)
                 checker.music_path = Path(music_raw).expanduser() if music_raw else None
@@ -930,10 +879,7 @@ class ZodiacQtApp(QMainWindow):
 
         def inspect() -> None:
             try:
-                checker = Job5PreflightChecker(self._active_job(), tts_root=TTS_ROOT, vieneu_url=TTS_URL) if self.mode == "job5" else PreflightChecker(self._active_job(), tts_root=TTS_ROOT, vieneu_url=TTS_URL)
-                checks = checker.run()
-                missing = [f"{check.label}: {check.message}" for check in checks if check.error_code == "DEPENDENCY_MISSING"]
-                commands = checker.install_commands([check for check in checks if check.error_code == "DEPENDENCY_MISSING"]) if isinstance(checker, Job5PreflightChecker) else ([checker.install_command()] if missing else [])
+                commands, missing = self.application.dependency_install_plan()
                 self.bridge.operation_finished.emit("install_plan", (commands, missing, None))
             except Exception as exc:
                 self.bridge.operation_finished.emit("install_plan", ([], [], str(exc)))
@@ -944,89 +890,41 @@ class ZodiacQtApp(QMainWindow):
         threading.Thread(target=inspect, daemon=True).start()
 
     def _execute_install(self, commands: list[list[str]]) -> None:
-        if self.mode == "legacy":
-            try:
-                self.controller.install_dependencies(
-                    log_callback=lambda line: self.bridge.log_received.emit(line, "install")
-                )
-                status = self.controller.status_text
-                code = 0 if status.startswith("Đã cài") else 1
-                self.bridge.operation_finished.emit("install_done", (code, None if code == 0 else status))
-            except Exception as exc:
-                self.bridge.operation_finished.emit("install_done", (1, str(exc)))
-            return
-        try:
-            code = 0
-            for command in commands:
-                self.bridge.log_received.emit("$ " + " ".join(command), "install")
-                process = subprocess.Popen(
-                    command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    text=True, encoding="utf-8", errors="replace", shell=False,
-                )
-                if process.stdout is not None:
-                    for line in process.stdout:
-                        self.bridge.log_received.emit(line.rstrip(), "install")
-                code = process.wait()
-                if code:
-                    break
-            self.bridge.operation_finished.emit("install_done", (code, None))
-        except Exception as exc:
-            self.bridge.operation_finished.emit("install_done", (1, str(exc)))
+        code, error = self.application.execute_install(
+            commands, log_callback=lambda line: self.bridge.log_received.emit(line, "install")
+        )
+        self.bridge.operation_finished.emit("install_done", (code, error))
 
     def _open_remotion(self) -> None:
-        if self.mode == "job5":
-            job = self._active_job()
-            if not job or self.busy or self.pipeline_running:
-                return
-            if not (job / ".runtime" / "render-plan.json").is_file():
-                self.workbench.append_activity(
-                    "[WARNING] Chạy bước PLAN trước khi mở Remotion Studio.",
-                    channel="warning", stage="PLAN",
-                )
-                return
-            from tools.studio_v2.controller import workspace_renderer_version
-            renderer = ROOT / "runtime" / "zodiac-renderer" / workspace_renderer_version(job) / "renderer"
-            script = renderer / "scripts" / "open-studio.mjs"
-            node = shutil.which("node")
-            if not node or not script.is_file():
-                self.workbench.append_activity(
-                    "[ERROR] Thiếu Node hoặc trình khởi chạy Remotion Studio Job@5.",
-                    channel="error", stage="PLAN",
-                )
-                return
-            try:
-                process = subprocess.Popen(
-                    [node, str(script), str(job)],
-                    cwd=renderer, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                    text=True, encoding="utf-8", errors="replace", shell=False,
-                )
-            except OSError as exc:
-                self.workbench.append_activity(
-                    f"[ERROR] Không mở được Remotion Studio: {exc}",
-                    channel="error", stage="PLAN",
-                )
-                return
+        job = self._active_job()
+        if not job or self.busy or self.pipeline_running:
+            return
+        try:
+            spec = self.application.remotion_launch_spec(ROOT)
+            process = subprocess.Popen(
+                list(spec.command), cwd=spec.cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace", shell=False,
+            )
+        except (OSError, RuntimeError) as exc:
             self.workbench.append_activity(
-                "Đang mở Remotion Studio với render plan và asset thật của Job@5.",
-                channel="studio", stage="PLAN",
+                f"[ERROR] Không mở được Remotion Studio: {exc}",
+                channel="error", stage="PLAN",
+            )
+            return
+        self.workbench.append_activity(spec.message, channel="studio", stage="PLAN")
+
+        def stream_studio_logs() -> None:
+            if process.stdout is not None:
+                for line in process.stdout:
+                    if line.strip():
+                        self.bridge.log_received.emit(line.rstrip(), "studio")
+            code = process.wait()
+            self.bridge.log_received.emit(
+                f"[{'DONE' if code == 0 else 'ERROR'}] Remotion Studio kết thúc (exit={code}).",
+                "studio",
             )
 
-            def stream_studio_logs() -> None:
-                if process.stdout is not None:
-                    for line in process.stdout:
-                        if line.strip():
-                            self.bridge.log_received.emit(line.rstrip(), "studio")
-                code = process.wait()
-                self.bridge.log_received.emit(
-                    f"[{'DONE' if code == 0 else 'ERROR'}] Remotion Studio kết thúc (exit={code}).",
-                    "studio",
-                )
-
-            threading.Thread(target=stream_studio_logs, daemon=True).start()
-            return
-        job = self.controller.job
-        if job:
-            subprocess.Popen([sys.executable, "tools/zodiac_local.py", "preview", job.name, "--workspace", str(self.workspace)], cwd=ROOT, shell=False)
+        threading.Thread(target=stream_studio_logs, daemon=True).start()
 
     def _open_settings(self) -> None:
         if self.busy or self.pipeline_running:
@@ -1043,7 +941,7 @@ class ZodiacQtApp(QMainWindow):
                 self._save_session(job)
 
     def closeEvent(self, event) -> None:
-        if self.pipeline_running or (self.controller.worker and self.controller.worker.is_alive()):
+        if self.pipeline_running or self.application.running:
             self.close_when_stopped = True
             self._cancel()
             event.ignore()
