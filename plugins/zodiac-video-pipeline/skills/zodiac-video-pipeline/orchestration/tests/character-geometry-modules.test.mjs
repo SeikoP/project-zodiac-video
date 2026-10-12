@@ -23,7 +23,12 @@ test('character compiler baseline is observable before geometry extraction',asyn
  const {compileCharacterSvg}=await import(pathToFileURL(compiler));
  const hashes=Object.fromEntries(cases.map(row=>[row.name,sha(compileCharacterSvg(row.identity,row.state).svg)]));
  console.log('CHARACTER_BASELINE_SHA '+JSON.stringify(hashes));
- assert.equal(Object.keys(hashes).length,4);
+ assert.deepEqual(hashes,{
+  'lean-explain':'f29d82eda6b75a78c1f95e318efbbdc43e2ab4d7ce06a1345c485255cd366641',
+  'round-offer':'811571d01715e0181fbe678e093059cdd428f9922ac7a5e3342cef379d933b07',
+  'stocky-phone':'9629f1a488e497e422f0dadd4f724e8628c5d45675255e2739c7024a50e249f2',
+  'petite-run':'e98e7c4fbe150a73a0f455ab961eeea665755ac5c64461aee8351ee0de3a78fa'
+ });
 });
 
 test('character geometry has focused owner modules',async()=>{

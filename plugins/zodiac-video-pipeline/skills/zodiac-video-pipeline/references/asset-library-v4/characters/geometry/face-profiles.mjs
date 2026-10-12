@@ -1,0 +1,1 @@
+export const transformEyePath=(d,profile)=>{let i=0;return d.replace(/-?\d+(?:\.\d+)?/gu,raw=>{const n=Number(raw),x=i++%2===0;const center=x?261.5:286,scale=x?(profile.eye_scale_x??1):(profile.eye_scale_y??1),offset=x?(profile.eye_offset_x??0):0;return String(Math.round((center+(n-center)*scale+offset)*10)/10);});};

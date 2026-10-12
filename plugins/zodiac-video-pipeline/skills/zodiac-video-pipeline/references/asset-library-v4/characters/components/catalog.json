@@ -69,8 +69,8 @@
     {
       "id": "lopsided-bob",
       "source_master": "lopsided-bob",
-      "selection_tier": "preferred_meme",
-      "style_intent": "simple uneven silhouette; review on the selected face"
+      "selection_tier": "compatibility_opt_in",
+      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "spiky-overthink",
@@ -324,29 +324,29 @@
   "face_profiles": [
     {
       "id": "balanced",
-      "eye_scale_x": 1.0,
-      "eye_scale_y": 1.0,
+      "eye_scale_x": 1,
+      "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "none"
     },
     {
       "id": "wide-set",
       "eye_scale_x": 1.08,
-      "eye_scale_y": 1.0,
+      "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "none"
     },
     {
       "id": "close-set",
       "eye_scale_x": 0.94,
-      "eye_scale_y": 1.0,
+      "eye_scale_y": 1,
       "eye_offset_x": -5,
       "mark_style": "none"
     },
     {
       "id": "freckled",
-      "eye_scale_x": 1.0,
-      "eye_scale_y": 1.0,
+      "eye_scale_x": 1,
+      "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "freckles"
     }
