@@ -119,6 +119,30 @@
       "source_master": "female-twin-tail",
       "selection_tier": "compatibility_opt_in",
       "style_intent": "preserve old identity; explicit selection only"
+    },
+    {
+      "id": "curtain-bang",
+      "source_master": "curtain-bang",
+      "selection_tier": "preferred_meme",
+      "style_intent": "center-part curtain silhouette"
+    },
+    {
+      "id": "short-curl",
+      "source_master": "short-curl",
+      "selection_tier": "preferred_meme",
+      "style_intent": "compact rounded curl silhouette"
+    },
+    {
+      "id": "low-ponytail",
+      "source_master": "low-ponytail",
+      "selection_tier": "preferred_meme",
+      "style_intent": "low rear ponytail silhouette"
+    },
+    {
+      "id": "soft-mohawk",
+      "source_master": "soft-mohawk",
+      "selection_tier": "preferred_meme",
+      "style_intent": "soft lifted center silhouette"
     }
   ],
   "outfits": [
@@ -289,6 +313,18 @@
       "semantic_action": "recline along sofa",
       "readability": "horizontal torso and extended legs",
       "required_review": "episode_contact_pixels"
+    },
+    {
+      "id": "point-choice"
+    },
+    {
+      "id": "receive-object"
+    },
+    {
+      "id": "hold-two-props"
+    },
+    {
+      "id": "open-barrier"
     }
   ],
   "crops": [
@@ -349,6 +385,27 @@
       "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "freckles"
+    },
+    {
+      "id": "brow-marked",
+      "eye_scale_x": 1,
+      "eye_scale_y": 1,
+      "eye_offset_x": 0,
+      "mark_style": "brow_mark"
+    },
+    {
+      "id": "beauty-mark",
+      "eye_scale_x": 1,
+      "eye_scale_y": 1,
+      "eye_offset_x": 0,
+      "mark_style": "beauty_mark"
+    },
+    {
+      "id": "rosy-cheeks",
+      "eye_scale_x": 1,
+      "eye_scale_y": 1,
+      "eye_offset_x": 0,
+      "mark_style": "rosy_cheeks"
     }
   ],
   "accessories": [
@@ -361,6 +418,26 @@
       "id": "star-hair-clip",
       "path": "accessories/star-hair-clip.svg",
       "slot": "hair"
+    },
+    {
+      "id": "small-hoop",
+      "path": "accessories/small-hoop.svg",
+      "slot": "ear"
+    },
+    {
+      "id": "headband",
+      "path": "accessories/headband.svg",
+      "slot": "hair"
+    },
+    {
+      "id": "neck-scarf",
+      "path": "accessories/neck-scarf.svg",
+      "slot": "neck"
+    },
+    {
+      "id": "square-glasses",
+      "path": "accessories/square-glasses.svg",
+      "slot": "face"
     }
   ]
 }
