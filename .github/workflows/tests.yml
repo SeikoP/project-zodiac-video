@@ -201,7 +201,7 @@ jobs:
           if-no-files-found: warn
 
   renderer-v2-frame-progress-smoke:
-    name: integration / renderer-v2-frame-progress-smoke
+    name: integration / frame-progress
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
