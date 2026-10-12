@@ -247,6 +247,23 @@
           "guidance_uri": "references/asset-library-v4/scene-set/background-palettes.json",
           "unavailable_policy": "block",
           "stage": "entry"
+        },
+        {
+          "id": "fresh_asset_selection_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-fresh-asset-selection.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "prop_symbol_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-prop-symbol.mjs",
+          "guidance_uri": "references/prop-symbol-contract.md",
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "conditional_capabilities": [
@@ -356,7 +373,9 @@
         "character_identity_blueprint",
         "body_hair_outfit_binding",
         "pose_expression_state_binding",
-        "director_beat_plan_complete"
+        "director_beat_plan_complete",
+        "retired_asset_exclusion",
+        "prop_symbol_semantics"
       ],
       "conditional_gate_checks": [
         {
