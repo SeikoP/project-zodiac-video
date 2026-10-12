@@ -127,9 +127,10 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
       const motion=event.motion;
       if(!isObj(motion)||typeof motion.preset!=='string'||!motion.preset||!Number.isInteger(motion.duration_frames)||motion.duration_frames<1)fail(`event ${id} requires explicit motion.preset + duration_frames; runtime defaults are forbidden in job@5`);
       const runtimeDuration=toRuntimeFrames(motion.duration_frames);
-      const prior=motionDefaults[motion.preset];
+      const motionId=motion.duration_override===true&&motion.preset==='state_swap'?`state_swap_${runtimeDuration}f`:motion.preset;
+      const prior=motionDefaults[motionId];
       if(prior&&prior.duration_frames!==runtimeDuration)fail(`motion preset ${motion.preset} has conflicting duration_frames; use distinct motion ids`);
-      motionDefaults[motion.preset]={duration_frames:runtimeDuration};
+      motionDefaults[motionId]={duration_frames:runtimeDuration};
       const intent=event.action??event.intent;
       if(typeof intent!=='string'||!intent.trim())fail(`event ${id} requires semantic action/intent`);
       for(const key of ['target','state_before','state_after'])if(typeof event[key]!=='string'||!event[key])fail(`event ${id} missing ${key}`);
@@ -140,7 +141,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
         trigger:triggerToIr(event.trigger,id),
         state_before:event.state_before,
         state_after:event.state_after,
-        desired_motion:motion.preset,
+        desired_motion:motionId,
         scheduling:(()=>{const r=schedulingToIr(event.scheduling,id);return event.scheduling===undefined?r:{...r,max_drift_frames:toRuntimeFrames(r.max_drift_frames,0)};})()
       };
     });

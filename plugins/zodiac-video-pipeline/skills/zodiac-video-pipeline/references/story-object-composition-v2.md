@@ -1,3 +1,5 @@
+> Fresh authoring: read [story-object-contract.md](story-object-contract.md). The details below are compatibility reference; physical-prop/contact/effect defaults apply only to their declared mode and plan version.
+
 # Story Object Composition v2 — visual identity over wallpaper
 
 This is an authoring/QC enhancement within Phase 02, **not** a Story Shape, renderer feature, fourth phase or new Job@5 field. The Libra scale on warm paper is the acceptance reference: **the scale visibly models both directions of thinking while the chibi character reacts**. Do not replace the scene with a large scale illustration, or turn the scale into the environment's `rear` or `background` entity. Blank paper is an intentional minimal environment when the idea needs no literal room.

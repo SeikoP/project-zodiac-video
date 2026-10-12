@@ -1,5 +1,5 @@
 export function selectAssetGuidance({selected_asset_ids=[],meme_selected=false,environment_mode='archive_frame'},policy){
- if(!['archive_frame','selected_cues','legacy'].includes(environment_mode))throw new Error('ASSET_ENVIRONMENT_MODE_INVALID');
+ if(!['scene_set','archive_frame','selected_cues','legacy'].includes(environment_mode))throw new Error('ASSET_ENVIRONMENT_MODE_INVALID');
  const extensions=policy.extensions??[],known=new Set([...(policy.core_ids??[]),...(policy.compatibility_ids??[]),...extensions.flatMap(x=>x.ids)]);
  const selected=new Set(selected_asset_ids);
  const allowed=ext=>{

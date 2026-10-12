@@ -1,0 +1,73 @@
+{
+  "format": "zodiac-scene-set-registry@1",
+  "scene_sets": [
+    {
+      "id": "scene-set-home",
+      "asset_id": "ENV_SCENE_SET_HOME",
+      "path": "frames/scene-set-home.svg",
+      "asset_sha256": "054814410ec5a5b8fc7158a0cc4cb59d354f6454833cb084f607269fde55883b",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-home.svg",
+      "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame."
+    },
+    {
+      "id": "scene-set-cafe",
+      "asset_id": "ENV_SCENE_SET_CAFE",
+      "path": "frames/scene-set-cafe.svg",
+      "asset_sha256": "6f8dd4191dd1af995cab7623bd27e753cc97007743339b6066eed4126b7f06bc",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-cafe.svg",
+      "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame."
+    }
+  ]
+}

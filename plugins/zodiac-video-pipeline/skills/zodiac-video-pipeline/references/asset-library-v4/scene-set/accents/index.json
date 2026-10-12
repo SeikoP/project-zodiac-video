@@ -1,0 +1,21 @@
+{
+  "format": "zodiac-scene-accent-registry@1",
+  "accents": [
+    {
+      "id": "scene-accent-cafe",
+      "asset_id": "ENV_ACCENT_CAFE",
+      "path": "accents/scene-accent-cafe.svg",
+      "asset_sha256": "c278335ebd4e7249008ee5d91fe0859c4d4d6b87c1951c455b5f78ef58f937c1",
+      "output_path": "assets/environment/scene-accent-cafe.svg",
+      "transform": {
+        "x": 220,
+        "y": 390,
+        "width": 640,
+        "height": 130
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional minimal cafe conversation context cue."
+    }
+  ]
+}

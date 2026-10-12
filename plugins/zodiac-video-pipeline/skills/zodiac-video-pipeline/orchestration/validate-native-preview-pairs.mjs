@@ -6,11 +6,13 @@ import {fileURLToPath} from 'node:url';
 import {traceSceneStates} from './scene-state-trace.mjs';
 import {isDeepStrictEqual} from 'node:util';
 import {assessSemanticEvent} from './semantic-motion-qa.mjs';
+import {previewLineage} from './preview-lineage.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=(m)=>{throw new Error('NATIVE_PAIR_PREVIEW_INVALID: '+m)};
 export async function validateNativePairPreview(root){
  const folder=path.join(root,'.authoring','preview-pairs');
  const receipt=JSON.parse(await readFile(path.join(folder,'preview-report.json'),'utf8'));
+ const lineage=await previewLineage(root);if(lineage&&!isDeepStrictEqual(lineage,receipt.authoring_lineage))fail('stale intent/projection lineage');
  if(receipt.format!=='zodiac-native-preview-pairs@1'||receipt.renderer_faithful!==false||receipt.scope!=='native_visual_review_only')fail('receipt format and scope');
  const sourcePath=path.resolve(root,receipt.source);
  if(!sourcePath.startsWith(path.resolve(root)+path.sep))fail('unsafe source path');

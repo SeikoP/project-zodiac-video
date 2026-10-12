@@ -37,7 +37,7 @@ export function validateStoryObjectComposition(plan,production,{required=true}={
   if(!story){issue(issues,'STORY_OBJECT_ENTITY_MISSING',at);continue;}
   const categories=new Set(Object.values(story.states??{}).map(s=>production.assets?.[s.asset]?.category).filter(Boolean));
   if(mode==='physical_interaction'&&[...categories].some(c=>c!=='prop'))issue(issues,'STORY_OBJECT_PHYSICAL_ASSET_INVALID',at);
-  if(!['prop','object','interactive_prop','effect'].includes(story.kind))issue(issues,'STORY_OBJECT_KIND_INVALID',at);
+  if(!['story_object','prop','object','interactive_prop','effect'].includes(story.kind))issue(issues,'STORY_OBJECT_KIND_INVALID',at);
   const environmentRole=envIds(scene).get(story.id);
   if(environmentRole)issue(issues,'STORY_OBJECT_USED_AS_ENVIRONMENT',`${at}/${environmentRole}`);
   const slot=(scene.environment?.frame?.slots??[]).find(s=>s.entity===story.id);
@@ -56,7 +56,7 @@ export function validateStoryObjectComposition(plan,production,{required=true}={
     const anchor=entities.get(b.anchor);
     if(!anchor||b.anchor===story.id)return false;
     if(mode==='thought_metaphor')return actor(anchor)&&['near','emitted_by'].includes(b.relation);
-    return ['held_by','on_surface','near','points_to'].includes(b.relation);
+    return ['held_by','on_surface'].includes(b.relation);
    });
    if(!validLinks.length)issue(issues,'STORY_OBJECT_RELATION_MISSING',at);
    for(const {name,rect} of states){

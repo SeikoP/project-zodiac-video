@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const normal=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normal(s).replace(/\s+/gu,'');
-const furniture=/(?:desk|table|bed|chair|sofa|pillow|blanket|cabinet|headboard|bàn|ghế|giường|gối|chăn)/iu;
+const furniture=/(?:^|[^\p{L}\p{N}])(?:desk|table|bed|chair|sofa|pillow|blanket|cabinet|headboard|bàn|ghế|giường|gối|chăn)(?=$|[^\p{L}\p{N}])/iu;
 export function validatePrecompileBoundary(production,narration){
  const issues=[];
  const scenes=production?.scenes??[];

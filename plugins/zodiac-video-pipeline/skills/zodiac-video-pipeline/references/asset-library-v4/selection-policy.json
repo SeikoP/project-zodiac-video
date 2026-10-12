@@ -574,6 +574,37 @@
       "refs": [
         "references/asset-library-v4/effects/ornament-index.json"
       ]
+    },
+    {
+      "kind": "scene_set",
+      "ids": [
+        "scene-set-home",
+        "scene-set-cafe"
+      ],
+      "refs": [
+        "references/asset-library-v4/scene-set/index.json"
+      ],
+      "availability": [
+        "scene_set",
+        "archive_frame",
+        "selected_cues",
+        "legacy"
+      ]
+    },
+    {
+      "kind": "scene_accent",
+      "ids": [
+        "scene-accent-cafe"
+      ],
+      "refs": [
+        "references/asset-library-v4/scene-set/accents/index.json"
+      ],
+      "availability": [
+        "scene_set",
+        "archive_frame",
+        "selected_cues",
+        "legacy"
+      ]
     }
   ],
   "compatibility_ids": [
@@ -664,7 +695,6 @@
     "cry",
     "exasperated",
     "embarrassed",
-    "neutral",
     "explain",
     "reach",
     "offer",
@@ -701,10 +731,31 @@
     "tiny-sparkle",
     "sparkle-burst",
     "tear-trails",
-    "offer-impact"
+    "offer-impact",
+    "scene-set-home",
+    "scene-set-cafe",
+    "scene-accent-cafe"
   ],
   "fresh_defaults": {
-    "environment_mode": "archive_frame",
+    "environment_mode": "scene_set",
+    "automatic_environment_entities": false,
+    "automatic_accessories": false,
+    "preferred_hair_ids": [
+      "antenna-short",
+      "asym-bang",
+      "blocky-cut",
+      "lopsided-bob",
+      "spiky-overthink"
+    ],
+    "compatibility_hair_ids": [
+      "soft-wave",
+      "side-part",
+      "clean-bun",
+      "high-ponytail",
+      "twin-tail"
+    ],
+    "state_budget": "authored_actions",
+    "physical_deletion": "none; dependency-safe compatibility retained",
     "automatic_environment_cues": false,
     "scene_set_required_when_authored": true
   }

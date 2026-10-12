@@ -1,0 +1,447 @@
+{
+  "scene_staging": {
+    "s01": {
+      "gemini": {
+        "neutral": {
+          "asset": "CHAR_GEMINI_NEUTRAL",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 245,
+            "y": 565,
+            "width": 405,
+            "height": 590
+          }
+        },
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 245,
+            "y": 565,
+            "width": 405,
+            "height": 590
+          }
+        }
+      },
+      "phone": {
+        "shown": {
+          "asset": "PHONE",
+          "visible": true,
+          "layer": 25,
+          "transform": {
+            "x": 660,
+            "y": 640,
+            "width": 184,
+            "height": 255
+          }
+        }
+      },
+      "env__scene-set-home": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_HOME",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      }
+    },
+    "s02": {
+      "gemini": {
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 150,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        }
+      },
+      "friend": {
+        "neutral": {
+          "asset": "CHAR_FRIEND_NEUTRAL",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        }
+      },
+      "env__scene-set-home": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_HOME",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      },
+      "gemini_story_object": {
+        "hidden": {
+          "asset": "STORY_GEMINI_SETUP",
+          "visible": false,
+          "layer": 24,
+          "transform": {
+            "x": 350,
+            "y": 250,
+            "width": 380,
+            "height": 260
+          }
+        },
+        "setup": {
+          "asset": "STORY_GEMINI_SETUP",
+          "visible": true,
+          "layer": 24,
+          "transform": {
+            "x": 350,
+            "y": 250,
+            "width": 380,
+            "height": 260
+          }
+        }
+      }
+    },
+    "s03": {
+      "gemini": {
+        "neutral": {
+          "asset": "CHAR_GEMINI_NEUTRAL",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 155,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        },
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 155,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        }
+      },
+      "friend": {
+        "neutral": {
+          "asset": "CHAR_FRIEND_NEUTRAL",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        },
+        "hurt": {
+          "asset": "CHAR_FRIEND_HURT",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        }
+      },
+      "env__scene-set-home": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_HOME",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      }
+    },
+    "s04": {
+      "gemini": {
+        "neutral": {
+          "asset": "CHAR_GEMINI_NEUTRAL",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 245,
+            "y": 500,
+            "width": 470,
+            "height": 655
+          }
+        },
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 245,
+            "y": 500,
+            "width": 470,
+            "height": 655
+          }
+        }
+      },
+      "env__scene-set-home": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_HOME",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      }
+    },
+    "s05": {
+      "gemini": {
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 150,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        },
+        "neutral": {
+          "asset": "CHAR_GEMINI_NEUTRAL",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 150,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        }
+      },
+      "friend": {
+        "neutral": {
+          "asset": "CHAR_FRIEND_NEUTRAL",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        },
+        "hurt": {
+          "asset": "CHAR_FRIEND_HURT",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        }
+      },
+      "env__scene-set-home": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_HOME",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      },
+      "gemini_story_object": {
+        "setup": {
+          "asset": "STORY_GEMINI_SETUP",
+          "visible": true,
+          "layer": 24,
+          "transform": {
+            "x": 430,
+            "y": 250,
+            "width": 390,
+            "height": 270
+          }
+        },
+        "friction": {
+          "asset": "STORY_GEMINI_FRICTION",
+          "visible": true,
+          "layer": 24,
+          "transform": {
+            "x": 410,
+            "y": 230,
+            "width": 430,
+            "height": 300
+          }
+        }
+      }
+    },
+    "s06": {
+      "gemini": {
+        "asking": {
+          "asset": "CHAR_GEMINI_ASKING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 150,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        },
+        "realizing": {
+          "asset": "CHAR_GEMINI_REALIZING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 150,
+            "y": 540,
+            "width": 405,
+            "height": 600
+          }
+        }
+      },
+      "friend": {
+        "neutral": {
+          "asset": "CHAR_FRIEND_NEUTRAL",
+          "visible": true,
+          "layer": 18,
+          "transform": {
+            "x": 630,
+            "y": 600,
+            "width": 350,
+            "height": 535
+          }
+        }
+      },
+      "env__scene-set-cafe": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_CAFE",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      },
+      "gemini_story_object": {
+        "friction": {
+          "asset": "STORY_GEMINI_FRICTION",
+          "visible": true,
+          "layer": 24,
+          "transform": {
+            "x": 400,
+            "y": 235,
+            "width": 420,
+            "height": 295
+          }
+        },
+        "payoff": {
+          "asset": "STORY_GEMINI_PAYOFF",
+          "visible": true,
+          "layer": 24,
+          "transform": {
+            "x": 390,
+            "y": 245,
+            "width": 390,
+            "height": 270
+          }
+        }
+      },
+      "decor_cafe_accent": {
+        "visible": {
+          "asset": "ENV_ACCENT_CAFE",
+          "visible": true,
+          "layer": 3,
+          "transform": {
+            "x": 220,
+            "y": 390,
+            "width": 640,
+            "height": 130
+          }
+        }
+      }
+    },
+    "s07": {
+      "gemini": {
+        "realizing": {
+          "asset": "CHAR_GEMINI_REALIZING",
+          "visible": true,
+          "layer": 20,
+          "transform": {
+            "x": 255,
+            "y": 470,
+            "width": 485,
+            "height": 690
+          }
+        }
+      },
+      "env__scene-set-cafe": {
+        "visible": {
+          "asset": "ENV_SCENE_SET_CAFE",
+          "visible": true,
+          "layer": 1,
+          "transform": {
+            "x": 0,
+            "y": 140,
+            "width": 1080,
+            "height": 1240
+          }
+        }
+      },
+      "decor_cafe_accent": {
+        "visible": {
+          "asset": "ENV_ACCENT_CAFE",
+          "visible": true,
+          "layer": 3,
+          "transform": {
+            "x": 220,
+            "y": 390,
+            "width": 640,
+            "height": 130
+          }
+        }
+      }
+    }
+  },
+  "native_character_sha256": {
+    "assets/characters/gemini-realizing.svg": "c1d7c715398c7876c2e75858fd2a0dee2aefe13ac05c5f97e48536ebdc3fc16b",
+    "assets/characters/gemini-neutral.svg": "b36463d1683fa9afe941fe745b3c24111bfb321900c8abeb2a49974da38f53a7",
+    "assets/characters/friend-neutral.svg": "74d3bd18668007bb70cbdf140d464662cfc590728a32c58231eab1987340ee75",
+    "assets/characters/friend-hurt.svg": "5da0655756baada58646b83b5ccf689c4becc7e1db69454fefeb899154d125c9",
+    "assets/characters/gemini-asking.svg": "5b07b3baeb2b8bf35a080e3b617a856dc2590064ab874db52d9cbaecad171748"
+  }
+}

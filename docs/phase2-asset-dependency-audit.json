@@ -1,0 +1,317 @@
+{
+  "format": "zodiac-phase2-reverse-dependency-audit@1",
+  "scan_roots": [
+    "plugins",
+    "runtime",
+    "tests",
+    "docs"
+  ],
+  "scanned_text_files": 975,
+  "compatibility_assets": [
+    {
+      "id": "bedroom-window-curtain",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/environment-compiler.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/window-curtain.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "bedroom-headboard-bed-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/environment-compiler.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/headboard-bed-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "bedroom-desk-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/environment-compiler.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/desk-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "bedroom-pillow-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/environment-compiler.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/pillow-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "bedroom-blanket-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/environment-compiler.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/blanket-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "classroom-whiteboard",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/migration/index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/background-style-coherence.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/classroom-whiteboard.svg",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-agent-e2e.test.mjs",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/prepare.test.mjs",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/render-plan.json",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/assets/environment/classroom-whiteboard.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "classroom-window",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/migration/index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/background-style-coherence.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/classroom-window.svg",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-agent-e2e.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/composition-stages.test.mjs",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/render-plan.json",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/assets/environment/classroom-window.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "classroom-desk-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/migration/index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/background-style-coherence.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/classroom-desk-edge.svg",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/spatial-layout.test.mjs",
+        "runtime/zodiac-renderer/2.0.1/renderer/src/visual-role.mjs",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/render-plan.json",
+        "runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/assets/environment/classroom-desk-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "hallway-lockers",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/migration/index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/hallway-lockers.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "hallway-floor-edge",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/migration/index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/hallway-floor-edge.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "living-sofa",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/living-sofa.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "living-window",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/living-window.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "kitchen-counter",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/kitchen-counter.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "kitchen-cabinet",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/kitchen-cabinet.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "entry-door",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/entry-door.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "entry-mat",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/entry-mat.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "cafe-window",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/cafe-window.svg",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-selection-policy.test.mjs"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "cafe-table",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/cafe-table.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "street-tree",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/street-tree.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "street-curb",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/street-curb.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "library-shelf",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/background-style-coherence.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/library-shelf.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "library-table",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/background-style-coherence.test.mjs",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/library-table.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "schoolyard-fence",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/schoolyard-fence.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    },
+    {
+      "id": "schoolyard-ground",
+      "classification": "compatibility",
+      "references": [
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/selection-policy.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/composition-index.json",
+        "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/structural/schoolyard-ground.svg"
+      ],
+      "physical_delete_allowed": false,
+      "reason": "Referenced by compatibility index/profile graph; old ZIP/render support retained."
+    }
+  ],
+  "deleted_assets": [],
+  "runtime_version_pruning": "separate repository-size change; not part of this cutover",
+  "old_runtime_fixtures": "contract/schema regression fixtures; never a fresh visual reference"
+}

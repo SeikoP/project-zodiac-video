@@ -1,3 +1,5 @@
+> Fresh authoring: read [story-object-contract.md](story-object-contract.md). The details below are compatibility reference; physical-prop/contact/effect defaults apply only to their declared mode and plan version.
+
 # Story Object & Semantic Effects — channel visual contract v1
 
 ## Why

@@ -11,6 +11,12 @@ export function validateCharacterDesignIntent(production,plan,{requireV2=false}=
  for(const spec of plan.characters??[]){
   const id=spec.entity_id,design=spec.design_intent;
   if(!design||typeof design!=='object')fail('CHARACTER_INTENT_MISSING',id);
+  const visual=spec.visual_identity_intent;
+  if(visual){
+   if(visual.role!==design.role||visual.reference_entity_id&&visual.reference_entity_id!==id)fail('CHARACTER_REFERENCE_SCOPE',id);
+   if(typeof visual.silhouette_priority!=='string'||!visual.silhouette_priority.trim()||typeof visual.reference_notes!=='string'||!visual.reference_notes.trim())fail('CHARACTER_VISUAL_INTENT_INVALID',id);
+   for(const [field,value] of Object.entries(visual.identity_lock??{}))if(!['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id','accessory_id'].includes(field)||spec[field]!==value)fail('CHARACTER_IDENTITY_LOCK',id+'/'+field);
+  }
   if(design.selection_basis!=='story_first')fail('CHARACTER_INTENT_STORY_FIRST_REQUIRED',id);
   if(!['lead','support'].includes(design.role)||!meaningful(design.identity_tension)||!meaningful(design.audience_read))fail('CHARACTER_INTENT_ROLE_MISSING',id);
   for(const field of ['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id']){

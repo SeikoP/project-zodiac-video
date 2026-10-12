@@ -4,12 +4,17 @@ import {validateComposition,compositionHash,designToken} from './phase02-composi
 import {materializeEnvironment} from '../references/asset-library-v4/environments/compile-environment.mjs';
 const load=async relative=>JSON.parse(await readFile(new URL(relative,import.meta.url),'utf8'));
 const environmentIndex=await load('../references/asset-library-v4/environments/composition-index.json');
+const sceneSetRegistry=await load('../references/asset-library-v4/scene-set/index.json');
 const effectCatalog=await load('../references/asset-library-v4/effects/meme-effect-catalog.json');
 const roles=new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
 const result=issues=>({status:issues.length?'BLOCKED':'PASS',issues});
 function compilerEntity(production,scene,c){
  const locator=c.ownership?.locator;if(typeof locator!=='string')return null;
  const [kind,key,...extra]=locator.split(':');if(extra.length||!key)return null;
+ if(kind==='scene-set'){
+  const master=sceneSetRegistry.scene_sets.find(s=>s.id===key);if(!master||c.id!=='env__'+key)return null;
+  return {id:c.id,kind:'object',visual_role:'background',initial_state:'visible',states:{visible:{asset:master.asset_id,visible:true,layer:master.layer,transform:structuredClone(master.transform)}}};
+ }
  if(kind==='environment'){
   const expected=materializeEnvironment({version:'2.0',assets:{},scenes:[scene]},environmentIndex).scenes[0];
   return c.id==='env__'+key?expected.entities.find(e=>e.id===c.id)??null:null;
