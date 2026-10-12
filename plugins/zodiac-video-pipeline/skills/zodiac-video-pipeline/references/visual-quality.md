@@ -19,6 +19,6 @@ Primary story reuse requires fit >=0.80; supporting reuse >=0.55; `reuse_near_ma
 Different recurring visible people should differ by body/silhouette when practical. Hair/outfit differences do not replace silhouette diversity. Identity cannot drift across states.
 
 ## Environment + frame
-V4 includes `bedroom-study-base`, `classroom-study` and `school-hallway` micro-environments. Structural cues are separate reusable assets, never a full-scene image. Keep caption-safe space, canvas bounds and relational two-person separation.
+Current scene-sets provide spatial depth. Optional scene accents are separately selected and wall-contained; actor geometry is not wall-contained. Keep caption/face readability and relational two-person separation.
 
 Run declared Phase 2 validators before VISUAL REVIEW. Failures repair the loose workspace; newly produced assets must pass V4 validation.

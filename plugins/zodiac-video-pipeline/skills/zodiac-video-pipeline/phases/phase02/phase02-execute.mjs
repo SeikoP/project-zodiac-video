@@ -66,7 +66,7 @@ const sourcePaths=[
  'references/asset-library-v4/validation/validate-outfit-bake-v4.mjs',
  'references/asset-library-v4/environments/compile-environment.mjs',
  'references/asset-library-v4/environments/validate-environment-binding.mjs',
- 'references/asset-library-v4/environments/composition-index.json',
+ 'references/asset-library-v4/scene-set/index.json',
  'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',
  'references/asset-library-v4/scene-direction/compiler-profile.json',
  'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',

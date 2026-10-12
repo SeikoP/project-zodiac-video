@@ -82,41 +82,6 @@
           "guidance_uri": "references/asset-library-v4/scene-direction/index.json"
         },
         {
-          "id": "environment_composition_contract",
-          "kind": "internal_reference",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "entry",
-          "guidance_uri": "references/environment-composition.md"
-        },
-        {
-          "id": "environment_composition_index",
-          "kind": "internal_reference",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "entry",
-          "guidance_uri": "references/asset-library-v4/selection-guide.md",
-          "selected_guidance_uri": "references/asset-library-v4/environments/compositions/index.json"
-        },
-        {
-          "id": "native_environment_profile_catalog",
-          "kind": "internal_reference",
-          "when": "continuity",
-          "guidance_uri": "references/asset-library-v4/selection-guide.md",
-          "unavailable_policy": "block",
-          "stage": "entry",
-          "selected_guidance_uri": "references/asset-library-v4/environments/composition-index.json"
-        },
-        {
-          "id": "environment_profile_contract",
-          "kind": "internal_reference",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "entry",
-          "guidance_uri": "references/asset-library-v4/selection-guide.md",
-          "selected_guidance_uri": "references/asset-library-v4/environments/README.md"
-        },
-        {
           "id": "cast_library_contract",
           "kind": "internal_reference",
           "when": "always",
@@ -387,18 +352,6 @@
           "when": "flag:art_direction_required"
         },
         {
-          "name": "environment_composition_selection",
-          "when": "continuity"
-        },
-        {
-          "name": "environment_base_selection",
-          "when": "continuity"
-        },
-        {
-          "name": "environment_modifier_policy",
-          "when": "continuity"
-        },
-        {
           "name": "scene_set_selection",
           "when": "fresh"
         },
@@ -427,9 +380,6 @@
         "orchestration/phase02-composition-contract.md"
       ],
       "guidance_selection": {
-        "references/asset-library-v4/environments/compositions/index.json": "environment",
-        "references/asset-library-v4/environments/composition-index.json": "environment",
-        "references/asset-library-v4/environments/README.md": "environment_profile",
         "references/asset-library-v4/recipes/state-recipes.json": "meme",
         "references/asset-library-v4/memes/templates/index.json": "meme",
         "references/asset-library-v4/memes/index.json": "meme",
@@ -580,36 +530,12 @@
           "tool_locator": "references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs"
         },
         {
-          "id": "environment_composition_contract",
-          "kind": "internal_reference",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "entry",
-          "guidance_uri": "references/environment-composition.md"
-        },
-        {
           "id": "story_prop_catalog",
           "kind": "internal_reference",
           "when": "always",
           "guidance_uri": "references/asset-library-v4/props/index.json",
           "unavailable_policy": "block",
           "stage": "entry"
-        },
-        {
-          "id": "environment_composition_validation",
-          "kind": "internal_validator",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "exit",
-          "tool_locator": "references/asset-library-v4/environments/compositions/validate-environment-compositions.mjs"
-        },
-        {
-          "id": "environment_profile_validation",
-          "kind": "internal_validator",
-          "when": "continuity",
-          "unavailable_policy": "block",
-          "stage": "exit",
-          "tool_locator": "references/asset-library-v4/environments/validate-environment.mjs"
         },
         {
           "id": "cross_asset_anchor_contract",
@@ -915,12 +841,10 @@
       ],
       "load_references": [
         "references/asset-library-v4/scene-direction/index.json",
-        "references/asset-library-v4/environments/compositions/index.json",
         "references/asset-library-v4/contracts/anatomy-contract.md",
         "references/asset-library-v4/contracts/validation-contract.md",
         "references/asset-library-v4/recipes/state-recipes.json",
-        "references/asset-library-v4/effects/ornament-index.json",
-        "references/asset-library-v4/migration/semantic-derivation.md"
+        "references/asset-library-v4/effects/ornament-index.json"
       ],
       "conditional_outputs": [
         {
@@ -937,7 +861,6 @@
         }
       ],
       "guidance_selection": {
-        "references/asset-library-v4/environments/compositions/index.json": "environment",
         "references/asset-library-v4/recipes/state-recipes.json": "meme"
       },
       "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable."
@@ -1016,7 +939,8 @@
         "references/publish-virality.md"
       ],
       "guidance_selection": {},
-      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable."
+      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable.",
+      "conditional_gate_checks": []
     }
   ]
 }

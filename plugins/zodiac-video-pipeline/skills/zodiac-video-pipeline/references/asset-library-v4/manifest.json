@@ -23,7 +23,6 @@
     "characters/",
     "props/",
     "effects/",
-    "environments/",
     "memes/",
     "shot-layouts/"
   ],
@@ -32,7 +31,6 @@
     "mechanics": "mechanics/index.json",
     "recipe": "recipes/visual-grammar.json",
     "human_stroke": "foundations/human-stroke-profile.json",
-    "bedroom_environment": "environments/composition-index.json",
     "character_components": "characters/components/catalog.json",
     "character_assembly": "characters/assembly-contract.md",
     "meme_adapters": "memes/index.json",
@@ -44,7 +42,6 @@
     "props": "props/index.json",
     "accessories": "characters/accessories/index.json",
     "scene_direction": "scene-direction/index.json",
-    "environment_composition_examples": "environments/compositions/index.json",
     "meme_templates": "memes/templates/index.json",
     "state_recipes": "recipes/state-recipes.json",
     "contracts": "contracts/validation-contract.md",
@@ -53,16 +50,8 @@
     "scene_set": "scene-set/index.json",
     "scene_accents": "scene-set/accents/index.json",
     "shot_layouts": "shot-layouts/index.json",
-    "compatibility_environment_profiles": "environments/composition-index.json",
-    "legacy_frame_skeletons": "frames/index.json",
     "scene_set_provenance": "scene-set/provenance.json",
     "asset_capabilities": "capability-index.json",
     "coverage_matrix": "coverage-matrix.json"
-  },
-  "historical_migration_source": {
-    "id": "zodiac-paper-doodle-asset-library-v3",
-    "policy": "provenance-only",
-    "direct_copy_to_v4": false,
-    "runtime_dependency": false
   }
 }

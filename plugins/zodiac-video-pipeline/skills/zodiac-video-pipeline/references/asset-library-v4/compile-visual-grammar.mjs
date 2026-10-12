@@ -9,12 +9,10 @@ const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
 const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
 const frameRows=shotLayoutsDoc.layouts??shotLayoutsDoc.frames??[];
 const mechanicsDoc=JSON.parse(await readFile(path.join(here,'mechanics/index.json'),'utf8'));
-const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));
 const sceneSetDoc=JSON.parse(await readFile(path.join(here,'scene-set/index.json'),'utf8'));
 const memesDoc=JSON.parse(await readFile(path.join(here,'memes/index.json'),'utf8'));
 const frames=new Map(frameRows.map(x=>[x.id,x]));
 const mechanics=new Map(mechanicsDoc.mechanics.map(x=>[x.id,x]));
-const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));
 const sceneSets=new Map((sceneSetDoc.scene_sets??[]).map(x=>[x.id,x]));
 const memes=new Map((memesDoc.compositions??[]).map(x=>[x.id,x]));
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -128,12 +126,7 @@ export function compileVisualGrammar(production,plan){
         if(spec.environment.scene_accents!==undefined&&!Array.isArray(spec.environment.scene_accents))fail(`${spec.scene_id} scene_accents must be an array`);
         scene.environment={...scene.environment,mode:'scene_set',scene_set_id:set.id,background_palette_id:spec.environment.background_palette_id??'warm-paper',scene_accents:clone(spec.environment.scene_accents??[])};
       }else if(!hasPrimarySceneSet(scene,out)){
-        const env=environments.get(spec.environment.profile);
-        if(!env)fail(`${spec.scene_id} unknown environment profile ${spec.environment.profile}`);
-        const modifier=spec.environment.modifier??env.default_modifier;
-        if(!env.modifiers?.[modifier])fail(`${spec.scene_id} unknown environment modifier ${modifier}`);
-        if(env.modifiers[modifier].payoff_only===true&&mechanic.id!=='payoff')fail(`${spec.scene_id} environment modifier ${modifier} requires payoff mechanic`);
-        scene.environment={...scene.environment,mode:scene.environment?.mode==='archive_frame'?'archive_frame':'micro_environment',profile:env.id,modifier};
+        fail(`${spec.scene_id} RECOVERY_SNAPSHOT_REQUIRED`);
       }
     }
   }

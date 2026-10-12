@@ -4,7 +4,7 @@ export function conditionApplies(when,{run_mode='fresh',flags={}}={}){
  if(!when||when==='always')return true;
  if(['fresh','continuity'].includes(when))return run_mode===when;
  if(!String(when).startsWith('flag:'))throw Error('CONTEXT_CONDITION_UNSUPPORTED '+when);
- const key=when.slice(5);if(key==='episode_selected'&&!(key in flags))return false; // reviewed pre-episode states retain their original route
+ const key=when.slice(5);if(['episode_selected','visual_metaphor_selected'].includes(key)&&!(key in flags))return false; // optional routes remain off in pre-feature states
  if(!(key in flags))throw Error('CONTEXT_FLAG_UNKNOWN '+key);
  if(typeof flags[key]!=='boolean')throw Error('CONTEXT_FLAG_INVALID '+key);return flags[key];
 }

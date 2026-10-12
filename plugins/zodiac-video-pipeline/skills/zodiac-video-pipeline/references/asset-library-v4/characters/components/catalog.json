@@ -30,32 +30,32 @@
   "body_profiles": [
     {
       "id": "standard_compact",
-      "source_master": "female-messy-bun",
+      "source_master": "body:standard_compact",
       "silhouette_family": "standard_chibi"
     },
     {
       "id": "round_soft",
-      "source_master": "chubby-round",
+      "source_master": "body:round_soft",
       "silhouette_family": "round_body"
     },
     {
       "id": "lean_tall",
-      "source_master": "lean-tall",
+      "source_master": "body:lean_tall",
       "silhouette_family": "tall_narrow"
     },
     {
       "id": "stocky_short",
-      "source_master": "stocky-short",
+      "source_master": "body:stocky_short",
       "silhouette_family": "short_broad"
     },
     {
       "id": "petite_compact",
-      "source_master": "petite-compact",
+      "source_master": "body:petite_compact",
       "silhouette_family": "small_compact"
     },
     {
       "id": "lanky_slouch",
-      "source_master": "lanky-slouch",
+      "source_master": "body:lanky_slouch",
       "silhouette_family": "slouched_narrow"
     }
   ],
@@ -65,12 +65,6 @@
       "source_master": "asym-bang",
       "selection_tier": "preferred_meme",
       "style_intent": "simple uneven silhouette; review on the selected face"
-    },
-    {
-      "id": "lopsided-bob",
-      "source_master": "lopsided-bob",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "spiky-overthink",
@@ -89,36 +83,6 @@
       "source_master": "blocky-cut",
       "selection_tier": "preferred_meme",
       "style_intent": "simple uneven silhouette; review on the selected face"
-    },
-    {
-      "id": "soft-wave",
-      "source_master": "soft-wave",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "side-part",
-      "source_master": "side-part",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "clean-bun",
-      "source_master": "female-messy-bun",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "high-ponytail",
-      "source_master": "female-high-ponytail",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "twin-tail",
-      "source_master": "female-twin-tail",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "curtain-bang",

@@ -12,7 +12,7 @@ For ordinary characters choose body silhouette first, then hair, face profile, a
 Do not center every beat. Use semantic shot/focus/continuity; shot changes never substitute for story progression. Two-person blocking binds existing cast only.
 
 ## Environments
-Use `bedroom-study-base`, `classroom-study` or `school-hallway` when the story location calls for it. Structural cues remain separate from story props; no monolithic scene background.
+Select a current scene-set when the story needs spatial context. Explicit scene accents remain wall-contained; physical furniture is a narrated prop. Character staging may exceed the outer frame.
 
 ## Handmade + contact
 Characters, props/effects and structural cues use v4/Human Stroke v2. Native character poses include visible hand contours and a hidden pose-aware prop anchor; grip/contact still follows post-pose semantic anchors and readability contracts.

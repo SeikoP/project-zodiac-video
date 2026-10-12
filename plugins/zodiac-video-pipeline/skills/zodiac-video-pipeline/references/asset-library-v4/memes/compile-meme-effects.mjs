@@ -15,9 +15,9 @@ const confinedPath=(base,file,code)=>{
  if(!rel||rel==='..'||rel.startsWith('..'+path.sep)||path.isAbsolute(rel))fail(code);
  return full;
 };
-function svgFor(id,aspect=1){
+export function buildEffectSvg(id,aspect=1){
  const effect=catalog.effects[id];if(!effect)fail(`unknown effect primitive ${id}`);
- if(!Array.isArray(effect.paths)||effect.paths.length<2)fail(`${id} needs at least two authored paths`);
+ if(!Array.isArray(effect.paths)||effect.paths.length<1)fail(`${id} needs an authored path`);
  for(const p of effect.paths){if(typeof p.d!=='string'||!/[QqCcSsTt]/u.test(p.d))fail(`${id} has a non-handmade path`);if(!catalog.palette.includes(p.stroke)||p.fill&&!catalog.palette.includes(p.fill))fail(`${id} has a noncanonical color`);if(!(p.width>=4&&p.width<=9))fail(`${id} has invalid stroke width`);}
  const body=effect.paths.map(p=>`<path d="${esc(p.d)}" fill="${p.fill??'none'}" stroke="${p.stroke}" stroke-width="${p.width}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
  const ratio=Math.max(0.5,Math.min(2,aspect));
@@ -41,7 +41,7 @@ export async function compileMemeEffects(production,{root='.',writeAssets=true,c
   const generated=new Set(specs.map(x=>x.entity_id));
   scene.entities=(scene.entities??[]).filter(e=>!generated.has(e.id));
   for(const spec of specs){
-   const svg=svgFor(spec.id,spec.box[2]/spec.box[3]);const contentHash=createHash('sha256').update(svg).digest('hex').slice(0,16);const assetId=`FX_ASSET_${contentHash.toUpperCase()}`,rel=`assets/effects/${contentHash}.svg`;
+   const svg=buildEffectSvg(spec.id,spec.box[2]/spec.box[3]);const contentHash=createHash('sha256').update(svg).digest('hex').slice(0,16);const assetId=`FX_ASSET_${contentHash.toUpperCase()}`,rel=`assets/effects/${contentHash}.svg`;
    out.assets[assetId]={path:rel,style_id:catalog.style_token,category:'effect',lineage:{mode:'semantic_variant',source_library:'zodiac-visual-grammar-v4',source_master:spec.id,semantic_intent:spec.locus}};
    const [cx,cy,width,height]=spec.box;
    if(legacy){scene.entities.push({id:spec.entity_id,kind:'effect',visual_role:'effect',initial_state:'effect',states:{effect:{asset:assetId,transform:{x:cx-width/2,y:cy-height/2,width,height},layer:spec.layer,visible:true}},metadata:{effect_id:spec.id,locus:spec.locus}});}

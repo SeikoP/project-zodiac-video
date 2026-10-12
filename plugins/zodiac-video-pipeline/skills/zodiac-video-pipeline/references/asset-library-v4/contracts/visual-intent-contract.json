@@ -1,6 +1,6 @@
 {
-  "version": "1.0-visual-intent-v1",
-  "source": "Final Selected Demo v2 + v1.36 review regressions",
+  "version": "2.0-current-native",
+  "source": "current native component assembly and authored scene events",
   "precedence": {
     "recipe_identity": "../recipes/state-recipes.json",
     "visual_semantics": "visual-intent-contract.json",
@@ -327,33 +327,15 @@
   "compatibility_matrix": {
     "assets": [
       "asym-bang",
-      "lopsided-bob",
       "spiky-overthink",
       "antenna-short",
       "blocky-cut",
-      "soft-wave",
-      "side-part",
-      "round-crop",
-      "chubby-round",
-      "lean-tall",
-      "stocky-short",
-      "petite-compact",
-      "lanky-slouch",
-      "masked-thief",
-      "black-culprit"
+      "curtain-bang",
+      "short-curl",
+      "low-ponytail",
+      "soft-mohawk"
     ],
-    "recipes": [
-      "fake_flex",
-      "awkward",
-      "emotional_damage",
-      "heart_offer",
-      "damage_run",
-      "banner_bonk",
-      "rose_peek",
-      "receipt_shame"
-    ],
-    "expected_cases": 120,
-    "expectation": "PASS_WITH_DERIVED_SEMANTICS"
+    "expectation": "Current compiled assets only; no static historical geometry."
   },
   "runtime_recipe_ids": false
 }

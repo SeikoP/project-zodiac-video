@@ -1,0 +1,292 @@
+[
+  {
+    "test": "✖ V4 is canonical and historical migration data has no runtime dependency (3.565295ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/architecture-v4.test.mjs:3:1",
+    "error": "  TypeError: Cannot read properties of undefined (reading 'policy')\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/architecture-v4.test.mjs:3:325)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-selection-policy.test.mjs (90.975666ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-selection-policy.test.mjs:1:1",
+    "error": "  'test failed'"
+  },
+  {
+    "test": "✖ full diagnostic manifest reflects current visual semantics and live catalog counts (11.259757ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/asset-showcase-preview.test.mjs:14:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  14 !== 8"
+  },
+  {
+    "test": "✖ Study Bedroom stays inside the three-step Visual Production phase (11.93047ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/bedroom-v153-wiring.test.mjs:3:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n  \n    assert.ok(v.required_capabilities.some(x=>x.id==='bedroom_environment_contract'))"
+  },
+  {
+    "test": "✖ router remains thin and points to Visual Grammar rather than embedding bedroom-specific rules (1.66822ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/bedroom-v153-wiring.test.mjs:6:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Visual Grammar v4/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ channel follows semantic beat rhythm without mandatory intensity (2.638906ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/channel-voice-default.test.mjs:7:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /TONE_RHYTHM_DEFAULT/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ fresh automatic hair routing excludes lopsided-bob while compatibility can request it (4.655903ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/character-geometry-modules.test.mjs:40:1",
+    "error": "  Error: HAIR_UNKNOWN lopsided-bob\n      at selectHairId (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/select-character-components.mjs:8:40)\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/character-geometry-modules.test.mjs:48:15)"
+  },
+  {
+    "test": "✖ character-only guidance is registered (1.273654ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/character-only-v230.test.mjs:16:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /character-viral-performance.md/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ Character single policy in both manifests (1.937636ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/character-publish-audit.test.mjs:3:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /ONLY character_deconstruction/. Input:\n  \n  'Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md. Three editorial phases: 01-content, 02-visual-production, 03-handoff. Fresh episodes use character_deconstruction as story engine with episode formats single_sign, element_group, ranked_shortlist and comparison. Preserve sourced evidence, approved narration and genuine user reviews. For execution source, use only verified phase-scoped bundles; never download or treat the full GitHub repository as runtime context, and never let repository transport replace plugin routing or phase manifests. Preserve zodiac-job@5 producer/runner boundary; measured TTS, timing, Remotion, audio and MP4 QA stay with local runner.'"
+  },
+  {
+    "test": "✖ plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/classroom-caption-safety.test.mjs (70.810366ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/classroom-caption-safety.test.mjs:1:1",
+    "error": "  'test failed'"
+  },
+  {
+    "test": "✖ intent permits registered compiler component before materialization, never authored missing (2.571304ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/composition-stages.test.mjs:25:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  'BLOCKED' !== 'PASS'"
+  },
+  {
+    "test": "✖ no-meme cafe omits unselected registry guidance but retains exit validators (3.437708ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs:3:1",
+    "error": "  Error: ASSET_RETIRED cafe-chat\n      at selectAssetGuidance (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/policy/select-asset-guidance.mjs:28:61)\n      at planStepContext (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/plan-step-context.mjs:25:150)"
+  },
+  {
+    "test": "✖ an explicitly requested legacy selection retains full catalog guidance (0.22522ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs:6:1",
+    "error": "  Error: RECOVERY_SNAPSHOT_REQUIRED\n      at planStepContext (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/plan-step-context.mjs:17:103)\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/conditional-context.test.mjs:6:97)"
+  },
+  {
+    "test": "✖ environment system remains wired through v4 Visual Production (7.923849ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/environment-composition-wiring.test.mjs:2:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n  \n    assert.ok(visual.required_capabilities.some(x=>x.id==='environment_composition_contract'))"
+  },
+  {
+    "test": "✖ V4 environment examples remain composition-only metadata (2.707089ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/environment-composition-wiring.test.mjs:3:1",
+    "error": "  Error: ENOENT: no such file or directory, open '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compositions/index.json'\n      at async open (node:internal/fs/promises:697:25)\n      at async readFile (node:internal/fs/promises:1348:14)"
+  },
+  {
+    "test": "✖ phase execution implementation has explicit owners (10.057945ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/executable-architecture.test.mjs:63:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  false !== true"
+  },
+  {
+    "test": "✖ router invokes execution preflight before phase execution (5.480714ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/execution-bootstrap.test.mjs:12:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /no fabricated receipts/i. Input:\n  \n  '# Three-phase router\\n' +"
+  },
+  {
+    "test": "✖ female-messy-bun stable id uses a bounded V4 hair silhouette (3.108953ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/female-clean-bun.test.mjs:3:1",
+    "error": "  Error: ENOENT: no such file or directory, open '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg'\n      at async open (node:internal/fs/promises:697:25)\n      at async readFile (node:internal/fs/promises:1348:14)"
+  },
+  {
+    "test": "✖ female-messy-bun has a v4 human-stroke exemplar and remains stable id (3.439463ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/female-extension-visual-quality.test.mjs:3:1",
+    "error": "  Error: ENOENT: no such file or directory, open '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg'\n      at async open (node:internal/fs/promises:697:25)\n      at async readFile (node:internal/fs/promises:1348:14)"
+  },
+  {
+    "test": "✖ approved Gemini reproduces cast, staging, symbolic progression, preview and Job5 from a clean workspace (99.140478ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/gemini-clean-repro.test.mjs:17:1",
+    "error": "  Error: CHARACTER_ASSEMBLY_INVALID: unknown hair high-ponytail\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:15:22)\n      at validate (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:69:203)"
+  },
+  {
+    "test": "✖ GitHub transport fallback requires version+integrity and does not certify failed CI (4.096665ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/github-source-fallback-guide.test.mjs:5:1",
+    "error": "  AssertionError [ERR_ASSERTION]: GitHub Actions source-artifact fallback\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/github-source-fallback-guide.test.mjs:7:212)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ skill references exact optional fallback (8.443227ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/github-source-fallback-guide.test.mjs:9:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n  \n    assert.ok(s.includes('GitHub Actions source-artifact fallback'))"
+  },
+  {
+    "test": "✖ plugin 2.1 manifests and skill pin job5 renderer2 with preplanned sparse character states (8.062352ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/job-v5-phase-wiring.test.mjs:5:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /state count by action/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/native-composition-contract.test.mjs (92.096744ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/native-composition-contract.test.mjs:1:1",
+    "error": "  'test failed'"
+  },
+  {
+    "test": "✖ two authored endpoints per event with explicit motion-only limitation (20.503404ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/native-preview-pairs.test.mjs:13:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n  + actual - expected\n  "
+  },
+  {
+    "test": "✖ standalone index displays every event without iframe or data URLs (8.284027ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/native-preview-pairs.test.mjs:21:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  6 !== 4"
+  },
+  {
+    "test": "✖ v2.1 metadata and semantic renderer boundary are current (4.083745ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase-audit-v156.test.mjs:4:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /zodiac-<sign>-<concept>/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ symbolic authoring kind projects to existing Job5 transport only at intent boundary (10.216403ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs:34:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s unknown frame undefined\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:91:15)"
+  },
+  {
+    "test": "✖ selected dependency graph excludes unselected library bytes and includes selected master bytes (950.343832ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs:37:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n  \n    assert.ok(!r.files.some(p=>p.endsWith('scene-set-cafe.svg')||p.includes('/memes/')))"
+  },
+  {
+    "test": "✖ scene-set validation binds declared identity, geometry and exact master hash (4.237707ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs:40:1",
+    "error": "  TypeError: validateSceneSetIdentity is not a function\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs:41:543)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ producer review requires source-backed two endpoints/event, not Remotion (7.510949ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/preview-ownership-contract.test.mjs:8:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /build-native-preview-pairs\\.mjs/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ native rest poses preserve identity and use authored bent or horizontal limbs (1.385681ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/rest-pose-contact.test.mjs:3:1",
+    "error": "  Error: CHARACTER_ASSEMBLY_INVALID: unknown hair soft-wave\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:15:22)\n      at validate (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:69:203)"
+  },
+  {
+    "test": "✖ writing socket is the actual authored hand rather than a generic contact point (0.208064ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/rest-pose-contact.test.mjs:4:1",
+    "error": "  Error: CHARACTER_ASSEMBLY_INVALID: unknown hair soft-wave\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:15:22)\n      at validate (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:69:203)"
+  },
+  {
+    "test": "✖ lying outfit is clipped to its torso and has no floating standing shadow (0.168775ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/rest-pose-contact.test.mjs:6:1",
+    "error": "  Error: CHARACTER_ASSEMBLY_INVALID: unknown hair soft-wave\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:15:22)\n      at validate (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs:69:203)"
+  },
+  {
+    "test": "✖ producer and local-runner review scopes are explicit (18.331665ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/review-ownership-boundary.test.mjs:5:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Remotion/i. Input:\n  \n  '# Phase 2 — current visual authoring\\n' +"
+  },
+  {
+    "test": "✖ Phase 02 native gates are preserved, without a Remotion gate (5.490569ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/review-ownership-boundary.test.mjs:18:1",
+    "error": "  AssertionError [ERR_ASSERTION]: native requirement missing: Character State Asset Planning\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/review-ownership-boundary.test.mjs:21:11)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ Job@5 export is Phase 03 only; no extra phase (2.074101ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/review-ownership-boundary.test.mjs:27:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Phase 3 converts the approved Phase-2 authoring payload/. Input:\n  \n  '# Three-phase router\\n' +"
+  },
+  {
+    "test": "✖ orchestrator accepts compiler_result proof (4.003955ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-direction-compiler-wiring.test.mjs:9:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /internal compiler → `compiler_result`/. Input:\n  \n  '# Three-phase router\\n' +"
+  },
+  {
+    "test": "✖ runtime contract targets renderer 2.0 state assets (2.788069ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-direction-compiler-wiring.test.mjs:10:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /does not animate limb groups/i. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ v4 remains compile-time and the package targets renderer 2.0 (4.286003ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-direction-wiring.test.mjs:4:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Visual Grammar v4/. Input:\n  \n  '---\\n' +"
+  },
+  {
+    "test": "✖ plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-set-identity.test.mjs (74.814982ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-set-identity.test.mjs:1:1",
+    "error": "  'test failed'"
+  },
+  {
+    "test": "✖ plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-set-regressions.test.mjs (95.140893ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-set-regressions.test.mjs:1:1",
+    "error": "  'test failed'"
+  },
+  {
+    "test": "✖ one intent projects native composition grammar and handoff without adding background cues (12.041978ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/simplification-release.test.mjs:4:1",
+    "error": "  Error: ENVIRONMENT_COMPILE_INVALID: RECOVERY_SNAPSHOT_REQUIRED s\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs:8:22)\n      at materializeEnvironment (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/environments/compile-environment.mjs:13:73)"
+  },
+  {
+    "test": "✖ new Phase-02 source template keeps Visual Metaphor opt-in for fresh content (2.60821ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/story-object-system.test.mjs:107:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  true !== false"
+  },
+  {
+    "test": "✖ new fresh run blocks absent story object plan by release policy (4.020858ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/story-object-system.test.mjs:112:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Missing expected rejection.\n      at async TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/story-object-system.test.mjs:117:3)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ one authored entity change reaches native projections deterministically (3.76096ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-intent-projection.test.mjs:4:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s/single-character-focus missing required binding subject\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:98:63)"
+  },
+  {
+    "test": "✖ tampering a derived projection invalidates ownership receipt (0.466555ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-intent-projection.test.mjs:5:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s/single-character-focus missing required binding subject\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:98:63)"
+  },
+  {
+    "test": "✖ scene art direction is projected to the native intent contract (0.436719ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-intent-projection.test.mjs:6:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s/single-character-focus missing required binding subject\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:98:63)"
+  },
+  {
+    "test": "✖ an empty execution receipt cannot hide production drift (14.231836ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-intent-projection.test.mjs:7:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s/single-character-focus missing required binding subject\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:98:63)"
+  },
+  {
+    "test": "✖ manifest finalization permits forced native revalidation only after genuine source-bound core and completed steps (6.079472ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-intent-projection.test.mjs:9:1",
+    "error": "  Error: VISUAL_GRAMMAR_COMPILE_INVALID: s/single-character-focus missing required binding subject\n      at fail (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:8:22)\n      at compileVisualGrammar (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/compile-visual-grammar.mjs:98:63)"
+  },
+  {
+    "test": "✖ fresh template no longer requires Story Object and exposes lightweight metaphor routing flag (2.460016ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-metaphor.test.mjs:93:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n  \n  true !== false"
+  },
+  {
+    "test": "✖ v4 visual-quality pipeline runs structure + style + semantic gates (6.809566ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:5:1",
+    "error": "  Error: ENOENT: no such file or directory, copyfile '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg' -> '/tmp/zodiac-vq4-nJNSho/assets/a.svg'\n      at async copyFile (node:internal/fs/promises:679:10)\n      at async ws (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:4:151)"
+  },
+  {
+    "test": "✖ wrapper blocks legacy style through v4 production gate (2.512235ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:6:1",
+    "error": "  Error: ENOENT: no such file or directory, copyfile '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg' -> '/tmp/zodiac-vq4-38hlZ8/assets/a.svg'\n      at async copyFile (node:internal/fs/promises:679:10)\n      at async ws (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:4:151)"
+  },
+  {
+    "test": "✖ two characters using one body profile fail cast diversity (98.101144ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-structure-v4.test.mjs:8:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to: 0\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-structure-v4.test.mjs:8:209)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ v4 visual-quality pipeline runs structure + style + semantic gates (1.837365ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:5:1",
+    "error": "  Error: ENOENT: no such file or directory, copyfile '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg' -> '/tmp/zodiac-vq4-IzXU1m/assets/a.svg'\n      at async copyFile (node:internal/fs/promises:679:10)\n      at async ws (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:4:151)"
+  },
+  {
+    "test": "✖ wrapper blocks legacy style through v4 production gate (1.271741ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:6:1",
+    "error": "  Error: ENOENT: no such file or directory, copyfile '/workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/masters/female-messy-bun.svg' -> '/tmp/zodiac-vq4-xBrohw/assets/a.svg'\n      at async copyFile (node:internal/fs/promises:679:10)\n      at async ws (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-quality-v4-integration.test.mjs:4:151)"
+  },
+  {
+    "test": "✖ two characters using one body profile fail cast diversity (96.011909ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-structure-v4.test.mjs:8:1",
+    "error": "  AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to: 0\n      at TestContext.<anonymous> (file:///workspace/scratch/0daf52511ff9/zodiac-source/plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/visual-structure-v4.test.mjs:8:209)\n      at async Test.run (node:internal/test_runner/test:1389:7)"
+  },
+  {
+    "test": "✖ fresh-run isolation is explicit in skill and router (6.912291ms)",
+    "source": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/context-isolation.test.mjs:9:1",
+    "error": "  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /do NOT use account\\/personal memory/i. Input:\n  \n  '---\\n' +"
+  }
+]

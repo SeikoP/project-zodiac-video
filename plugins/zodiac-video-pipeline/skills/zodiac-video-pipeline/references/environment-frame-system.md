@@ -1,7 +1,7 @@
 # Environment Frame V1 — Story-Integrated Staging
 
 ## Scene-set-first clarification
-For fresh Phase 02, the selected `scene-set` is the primary visual stage. `environment.frame` is staging metadata for actors/fixtures **inside or in front of that stage**; it does not own or replace the scene-set. Old room/window/furniture profiles are explicit selected-cue or legacy compatibility paths. Scene accents are minimal context cues and must remain inside the scene-set wall region. Characters may overlap in front of the scene-set and are not required to be contained by its outer frame.
+For fresh Phase 02, the selected `scene-set` is the primary visual stage. `environment.frame` is staging metadata for actors/fixtures **inside or in front of that stage**; it does not own or replace the scene-set. Retired room profiles require an external recovery snapshot; current authoring chooses explicit scene accents or narrated props. Scene accents are minimal context cues and must remain inside the scene-set wall region. Characters may overlap in front of the scene-set and are not required to be contained by its outer frame.
 
 The environment is **an acting scaffold**, not a fixed wallpaper image. Decide
 scene action + Story Object first. Then define `scene.environment.frame` on the

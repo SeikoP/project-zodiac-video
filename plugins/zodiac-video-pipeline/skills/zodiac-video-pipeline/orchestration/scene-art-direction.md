@@ -1,6 +1,6 @@
 # Scene art direction — Phase 02
 
-Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-art-direction@2` and validates it with `validate-phase02-art-direction.mjs`. The older `validate-scene-art-direction.mjs` is a retained compatibility probe for historical fixtures and is **not** a fresh authoring entrypoint.
+Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-art-direction@2` and validates it with `validate-phase02-art-direction.mjs`. Historical probes are absent from this package; old jobs use an external pinned snapshot.
 
 ## Visual layers
 

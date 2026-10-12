@@ -1,24 +1,44 @@
-# Visual Grammar v4 selection guide
+# Current asset selection
 
-Start with the selected **scene-set** (the stable wall/floor/frame stage). Use `capability-index.json` to resolve current scene/layout/interaction/effect capabilities before authoring; `coverage-matrix.json` is the audit view of supported narrative needs. Per beat, choose one shot-layout (historically `Frame Skeleton`) + one primary Mechanic, then bind existing entities. Scene Direction owns coordinates. `frames/` remains the compatibility path for shot-layout metadata; it is not the scene-set library.
+Use only this library's current registries. Retired IDs fail before authoring;
+missing IDs do not trigger a historical example, alias or fallback. Historical
+job recovery uses a separately pinned snapshot outside this package.
 
-For each ordinary character, choose identity once in `.authoring/character-assembly-plan.json`:
-`body_profile + hair_id + face_profile_id + outfit_id + accessory_id + stable variant_seed`.
-Each character state chooses only `pose_id + expression_id`. State-level identity changes are invalid.
+## Select by responsibility
+- Scene-set: stable wall/floor/frame stage from `scene-set/index.json`.
+- Shot layout: actor composition from `shot-layouts/index.json`.
+- Character: body, hair, face, outfit, shirt and optional accessory from
+  `characters/components/catalog.json`; identity is selected once per actor.
+- State: performed pose and expression; plan before SVG generation.
+- Prop: explicit narrated physical object from `props/index.json`.
+- Story Object: symbolic progression, independently authored per
+  `../story-object-contract.md`; not a background or forced physical interaction.
+- Effect: selected semantic consequence, subject and enter/release lifecycle.
+- Scene accent: optional context detail from `scene-set/accents/index.json`,
+  contained by the wall. No automatic room decoration.
 
-Frame families: `single-character-focus`, `two-person-offset`, `prop-focus`, `reaction-closeup`, `caption-payoff`.
-Mechanics: `explain`, `react`, `show-object`, `offer-object`, `confront`, `reveal`, `payoff`.
+Use `capability-index.json` for supported needs and `coverage-matrix.json` for
+coverage. Per beat, select one shot-layout and primary action, then bind actual
+entities. Scene Direction owns coordinates; the runner owns measured timing.
 
-Choose structural cues only when the authored intent explicitly selects `selected_cues`. Fresh archive-frame/scene-set shots retain the selected outer frame with wall/floor and do not instantiate window/sofa/table/room cues. Optional `scene_accent` details stay inside the scene-set `wall_region`. Structural cues stay separate from story props. Select a notebook, book, water bottle, backpack, pen, headset, tissue box or mirror only when narration calls for it.
+## Native selection surface
+Run `features/asset-selection/build-current-asset-review.mjs <output-directory>`
+from the skill root. Optional `--selection <asset-selection.json>` renders only
+selected IDs. The surface groups components, stages, props and effects; clicking
+a whole card selects it and exports `zodiac-asset-selection@1` JSON. Selection is
+not an approval or compiler receipt. Identity review still precedes full scenes.
 
-Visual Grammar and Character Assembly plans are compile-time only and never cross the runtime boundary.
+All comparisons use a stable face/body/outfit canvas, native compiler geometry
+or hash-verified SVG bytes. Current hair has no compatibility tier. A useful
+retired idea may return only through re-authoring, a new ID and visual review.
+Do not transfer visual references between actors.
 
-## Minimal selection
-Use selection-policy.json to load core guidance and only selected extensions. Archive frame means exact SVG bytes, transform and viewport clipping from the referenced ZIP; wall and floor stay. No automatic window, board, lamp, shadow, perspective or gradient. Derivatives need a new identity and visual review. Legacy assets remain resolvable. Furniture is an authored semantic prop.
+## Geometry and context
+Characters may overlap and extend beyond the outer scene-set; the stage supplies
+depth and does not contain the performer. Accents fit the transformed wall.
+Scene-set masters own their dimensions; no universal full-safe-height rule.
+Preserve face/caption readability and physical contact when the action needs it.
 
-## Required bounded guidance and selected catalogs
-The entry capabilities for environment indexes, bedroom and meme adapters read this bounded guide and record a genuine read/application summary. Their `selected_guidance_uri` identifies the complete registry required when that extension is selected; `selection-policy.json` resolves all selected IDs to the complete references. With no selection bound, fresh runs retain core guidance only. Complete extension indexes load only when the corresponding extension is explicitly selected or when `selected_cues` / `legacy` compatibility mode is requested. No context filtering can waive compiler, style, contact, lifecycle or approval validators.
-
-Fresh hair selection starts with the preferred_meme tier: asym-bang, lopsided-bob, spiky-overthink, antenna-short, blocky-cut. Render a comparison on the same face/body/outfit before selecting. soft-wave, side-part, clean-bun, high-ponytail and twin-tail remain explicit compatibility choices, never automatic variety. No default accessory. Use actual performed actions to plan states; an explicit authored budget is enforced, without a universal cap.
-
-For a fresh scene-set select environment.scene_set_id and explicit scene_accents only. Role-specific visual_identity_intent records silhouette_priority, reference_notes, reference_entity_id and identity_lock; references never transfer between cast members. Review .authoring/character-identity-preview/index.html before assembling full scenes. preferred_meme is a default tier, not a ban on explicitly reviewed high-ponytail or other compatibility hair.
+Load core guidance and only selected extension registries via
+`selection-policy.json`. Required compiler/validator/review gates remain active.
+Do not read migration records, historical episodes or old assets for inspiration.
