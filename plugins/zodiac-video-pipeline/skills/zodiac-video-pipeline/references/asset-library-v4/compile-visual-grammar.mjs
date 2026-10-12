@@ -9,11 +9,13 @@ const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
 const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
 const frameRows=shotLayoutsDoc.layouts??shotLayoutsDoc.frames??[];
 const mechanicsDoc=JSON.parse(await readFile(path.join(here,'mechanics/index.json'),'utf8'));
-const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));\nconst sceneSetDoc=JSON.parse(await readFile(path.join(here,'scene-set/index.json'),'utf8'));
+const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));
+const sceneSetDoc=JSON.parse(await readFile(path.join(here,'scene-set/index.json'),'utf8'));
 const memesDoc=JSON.parse(await readFile(path.join(here,'memes/index.json'),'utf8'));
 const frames=new Map(frameRows.map(x=>[x.id,x]));
 const mechanics=new Map(mechanicsDoc.mechanics.map(x=>[x.id,x]));
-const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));\nconst sceneSets=new Map((sceneSetDoc.scene_sets??[]).map(x=>[x.id,x]));
+const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));
+const sceneSets=new Map((sceneSetDoc.scene_sets??[]).map(x=>[x.id,x]));
 const memes=new Map((memesDoc.compositions??[]).map(x=>[x.id,x]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 
@@ -143,5 +145,6 @@ if(direct){
   const productionPath=process.argv[2],planPath=process.argv[3];
   if(!productionPath||!planPath){console.error('Usage: node compile-visual-grammar.mjs <production.json> <visual-grammar-plan.json> --write');process.exit(2);}
   const production=JSON.parse(await readFile(productionPath,'utf8')),plan=JSON.parse(await readFile(planPath,'utf8')),out=compileVisualGrammar(production,plan);
-  if(process.argv.includes('--write')){await writeFile(productionPath,JSON.stringify(out,null,2)+'\n');console.log(`VISUAL_GRAMMAR_COMPILE_PASS: scenes=${plan.scenes.length}`);}else console.log(JSON.stringify(out,null,2));
+  if(process.argv.includes('--write')){await writeFile(productionPath,JSON.stringify(out,null,2)+'
+');console.log(`VISUAL_GRAMMAR_COMPILE_PASS: scenes=${plan.scenes.length}`);}else console.log(JSON.stringify(out,null,2));
 }
