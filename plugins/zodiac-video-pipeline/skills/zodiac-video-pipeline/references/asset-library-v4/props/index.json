@@ -150,6 +150,158 @@
         "reaction"
       ],
       "state_of": "phone"
+    },
+    {
+      "id": "coffee-cup",
+      "path": "props/coffee-cup.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "keycard",
+      "path": "props/keycard.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "gift-box",
+      "path": "props/gift-box.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "umbrella",
+      "path": "props/umbrella.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "sticky-note",
+      "path": "props/sticky-note.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "wallet",
+      "path": "props/wallet.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "photo-card",
+      "path": "props/photo-card.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
+    },
+    {
+      "id": "small-bag",
+      "path": "props/small-bag.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ]
     }
   ]
 }

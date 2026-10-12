@@ -101,7 +101,10 @@
           "stroke": "#E97A66",
           "width": 6
         }
-      ]
+      ],
+      "semantic_family": "impact-radial",
+      "locus": "event_impact",
+      "intent": "brief event emphasis at offer/contact moment"
     },
     "facepalm-impact": {
       "paths": [
@@ -150,7 +153,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "surprise-radiance",
+      "locus": "subject_perimeter",
+      "intent": "surprise radiates outward"
     },
     "mirror-glint": {
       "paths": [
@@ -193,7 +199,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "inward-pressure",
+      "locus": "contact_axis",
+      "intent": "pressure converges toward contact"
     },
     "contact-fan-receipt": {
       "paths": [
@@ -279,7 +288,10 @@
           "stroke": "#2F3C44",
           "width": 6
         }
-      ]
+      ],
+      "semantic_family": "stress-perimeter",
+      "locus": "subject_edge",
+      "intent": "tension marks sit around subject edge"
     },
     "motion-dash": {
       "paths": [
@@ -298,7 +310,10 @@
           "stroke": "#F2C45C",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "motion-trail",
+      "locus": "trailing_edge",
+      "intent": "trail follows movement direction"
     },
     "blush-marks": {
       "paths": [
@@ -322,7 +337,10 @@
           "stroke": "#E97A66",
           "width": 5
         }
-      ]
+      ],
+      "semantic_family": "embarrassment-face",
+      "locus": "face_region",
+      "intent": "embarrassment stays localized to face"
     },
     "question-pop": {
       "paths": [
@@ -337,7 +355,10 @@
           "fill": "#E97A66",
           "width": 4
         }
-      ]
+      ],
+      "semantic_family": "confusion-mark",
+      "locus": "thought_locus",
+      "intent": "question mark emitted at thought locus"
     },
     "tiny-sparkle": {
       "paths": [
@@ -355,6 +376,54 @@
           "d": "M73 56 Q77 68 73 77 Q69 67 73 56Z",
           "stroke": "#E97A66",
           "width": 5
+        }
+      ]
+    },
+    "focus-halo-mark": {
+      "semantic_family": "focus-halo-family",
+      "locus": "focus_subject",
+      "intent": "focus halo",
+      "paths": [
+        {
+          "d": "M18 50 Q50 14 83 50 Q51 87 18 50Z",
+          "stroke": "#8EC0B9",
+          "width": 6
+        }
+      ]
+    },
+    "comparison-bracket-mark": {
+      "semantic_family": "comparison-bracket-family",
+      "locus": "comparison_axis",
+      "intent": "comparison bracket",
+      "paths": [
+        {
+          "d": "M18 18 L10 18 L10 82 L18 82 M82 18 L90 18 L90 82 L82 82",
+          "stroke": "#2F3C44",
+          "width": 6
+        }
+      ]
+    },
+    "relief-wave-mark": {
+      "semantic_family": "relief-wave-family",
+      "locus": "release_edge",
+      "intent": "relief release",
+      "paths": [
+        {
+          "d": "M8 38 Q25 20 42 38 Q59 56 76 38 Q86 29 94 33",
+          "stroke": "#8EC0B9",
+          "width": 6
+        }
+      ]
+    },
+    "alarm-zigzag-mark": {
+      "semantic_family": "alarm-zigzag-family",
+      "locus": "alert_corner",
+      "intent": "alarm alert",
+      "paths": [
+        {
+          "d": "M19 80 L35 50 L48 63 L61 29 L78 43 L89 16",
+          "stroke": "#E97A66",
+          "width": 7
         }
       ]
     }

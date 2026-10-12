@@ -1,0 +1,24 @@
+{
+  "format": "zodiac-orchestration-compatibility-surface@1",
+  "policy": {
+    "fresh_internal_imports": "canonical_owner_only",
+    "wrapper_deletion_requires": "explicit external deprecation evidence",
+    "repository_zero_consumers_is_not_external_zero": true
+  },
+  "rules": {
+    "cli_forwarder": {
+      "match": "thin_wrapper_with_forwardCliIfMain",
+      "classification": "retained_cli_compat",
+      "fresh_import_allowed": false,
+      "owner_source": "wrapper_export",
+      "retention_reason": "Pre-F3 CLI path is retained until an explicit external deprecation gate proves removal safe."
+    },
+    "module_forwarder": {
+      "match": "thin_reexport_wrapper",
+      "classification": "retained_module_compat",
+      "fresh_import_allowed": false,
+      "owner_source": "wrapper_export",
+      "retention_reason": "Pre-F3 module import path is retained until an explicit external deprecation gate proves removal safe."
+    }
+  }
+}

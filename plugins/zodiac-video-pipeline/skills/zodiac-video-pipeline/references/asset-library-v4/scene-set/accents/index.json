@@ -80,6 +80,111 @@
       "layer": 3,
       "containment": "inside_scene_set_wall",
       "semantic_intent": "Optional sign/menu cue for cafe/street context."
+    },
+    {
+      "id": "scene-accent-home-lamp",
+      "asset_id": "ENV_SCENE_ACCENT_HOME_LAMP",
+      "path": "accents/scene-accent-home-lamp.svg",
+      "output_path": "assets/environment/scene-accent-home-lamp.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-home-lamp identity cue."
+    },
+    {
+      "id": "scene-accent-cafe-window",
+      "asset_id": "ENV_SCENE_ACCENT_CAFE_WINDOW",
+      "path": "accents/scene-accent-cafe-window.svg",
+      "output_path": "assets/environment/scene-accent-cafe-window.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-cafe-window identity cue."
+    },
+    {
+      "id": "scene-accent-class-window",
+      "asset_id": "ENV_SCENE_ACCENT_CLASS_WINDOW",
+      "path": "accents/scene-accent-class-window.svg",
+      "output_path": "assets/environment/scene-accent-class-window.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-class-window identity cue."
+    },
+    {
+      "id": "scene-accent-study-note",
+      "asset_id": "ENV_SCENE_ACCENT_STUDY_NOTE",
+      "path": "accents/scene-accent-study-note.svg",
+      "output_path": "assets/environment/scene-accent-study-note.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-study-note identity cue."
+    },
+    {
+      "id": "scene-accent-street-tree",
+      "asset_id": "ENV_SCENE_ACCENT_STREET_TREE",
+      "path": "accents/scene-accent-street-tree.svg",
+      "output_path": "assets/environment/scene-accent-street-tree.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-street-tree identity cue."
+    },
+    {
+      "id": "scene-accent-neutral-dot",
+      "asset_id": "ENV_SCENE_ACCENT_NEUTRAL_DOT",
+      "path": "accents/scene-accent-neutral-dot.svg",
+      "output_path": "assets/environment/scene-accent-neutral-dot.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-neutral-dot identity cue."
+    },
+    {
+      "id": "scene-accent-neutral-line",
+      "asset_id": "ENV_SCENE_ACCENT_NEUTRAL_LINE",
+      "path": "accents/scene-accent-neutral-line.svg",
+      "output_path": "assets/environment/scene-accent-neutral-line.svg",
+      "transform": {
+        "x": 280,
+        "y": 390,
+        "width": 520,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sparse scene-accent-neutral-line identity cue."
     }
   ]
 }

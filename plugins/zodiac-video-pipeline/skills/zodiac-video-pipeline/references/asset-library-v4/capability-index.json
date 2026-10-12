@@ -1,30 +1,196 @@
 {
   "format": "zodiac-asset-capability-index@1",
   "scene_sets": {
-    "scene-set-home": {"fresh": true, "cast": [1, 2, 3], "tags": ["home"]},
-    "scene-set-cafe": {"fresh": true, "cast": [1, 2, 3], "tags": ["cafe"]},
-    "scene-set-classroom": {"fresh": true, "cast": [1, 2, 3], "tags": ["classroom"]},
-    "scene-set-study": {"fresh": true, "cast": [1, 2, 3], "tags": ["study"]},
-    "scene-set-street": {"fresh": true, "cast": [1, 2, 3], "tags": ["street"]},
-    "scene-set-neutral": {"fresh": true, "cast": [1, 2, 3], "tags": ["neutral"]}
+    "scene-set-home": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "home"
+      ]
+    },
+    "scene-set-cafe": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "cafe"
+      ]
+    },
+    "scene-set-classroom": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "classroom"
+      ]
+    },
+    "scene-set-study": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "study"
+      ]
+    },
+    "scene-set-street": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "street"
+      ]
+    },
+    "scene-set-neutral": {
+      "fresh": true,
+      "cast": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "neutral"
+      ]
+    }
   },
   "layouts": {
-    "single-character-focus": {"cast": [1]},
-    "two-person-offset": {"cast": [2]},
-    "three-person-comparison": {"cast": [3]}
+    "single-character-focus": {
+      "cast": [
+        1
+      ]
+    },
+    "two-person-offset": {
+      "cast": [
+        2
+      ]
+    },
+    "three-person-comparison": {
+      "cast": [
+        3
+      ]
+    }
   },
   "interactions": {
-    "pass-object": {"layout_id": "two-person-offset", "mechanic_id": "offer-object", "contact": true},
-    "hold-show": {"layout_id": "single-character-focus", "mechanic_id": "show-object", "contact": true},
-    "compare-group": {"layout_id": "three-person-comparison", "mechanic_id": "compare-group", "contact": false}
+    "pass-object": {
+      "layout_id": "two-person-offset",
+      "mechanic_id": "pass-object",
+      "contact": true
+    },
+    "hold-show": {
+      "layout_id": "single-character-focus",
+      "mechanic_id": "show-object",
+      "contact": true
+    },
+    "compare-group": {
+      "layout_id": "three-person-comparison",
+      "mechanic_id": "compare-group",
+      "contact": false
+    }
   },
   "effects": {
-    "surprise": {"effect_id": "sparkle-burst", "lifecycle": "bounded_enter_release"},
-    "pressure": {"effect_id": "contact-fan-pressure", "lifecycle": "bounded_enter_release"},
-    "confusion": {"effect_id": "question-pop", "lifecycle": "bounded_enter_release"},
-    "embarrassment": {"effect_id": "blush-marks", "lifecycle": "bounded_enter_release"},
-    "tension": {"effect_id": "stress-ticks", "lifecycle": "bounded_enter_release"},
-    "emphasis": {"effect_id": "offer-impact", "lifecycle": "bounded_enter_release"},
-    "motion": {"effect_id": "motion-dash", "lifecycle": "bounded_enter_release"}
+    "surprise": {
+      "effect_id": "sparkle-burst",
+      "lifecycle": "bounded_enter_release"
+    },
+    "pressure": {
+      "effect_id": "contact-fan-pressure",
+      "lifecycle": "bounded_enter_release"
+    },
+    "confusion": {
+      "effect_id": "question-pop",
+      "lifecycle": "bounded_enter_release"
+    },
+    "embarrassment": {
+      "effect_id": "blush-marks",
+      "lifecycle": "bounded_enter_release"
+    },
+    "tension": {
+      "effect_id": "stress-ticks",
+      "lifecycle": "bounded_enter_release"
+    },
+    "emphasis": {
+      "effect_id": "offer-impact",
+      "lifecycle": "bounded_enter_release"
+    },
+    "motion": {
+      "effect_id": "motion-dash",
+      "lifecycle": "bounded_enter_release"
+    },
+    "focus-halo": {
+      "effect_id": "focus-halo-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "comparison-bracket": {
+      "effect_id": "comparison-bracket-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "relief-wave": {
+      "effect_id": "relief-wave-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "alarm-zigzag": {
+      "effect_id": "alarm-zigzag-mark",
+      "lifecycle": "bounded_enter_release"
+    }
+  },
+  "visual_metaphors": {
+    "balance-scale": {
+      "index_id": "balance-scale",
+      "states": [
+        "tilt_left",
+        "balanced",
+        "tilt_right"
+      ]
+    },
+    "split-direction": {
+      "index_id": "split-direction",
+      "states": [
+        "left",
+        "right"
+      ]
+    },
+    "push-pull": {
+      "index_id": "push-pull",
+      "states": [
+        "attract",
+        "repel"
+      ]
+    },
+    "focus-shift-metaphor": {
+      "index_id": "focus-shift",
+      "states": [
+        "left",
+        "right"
+      ]
+    },
+    "barrier-opening": {
+      "index_id": "barrier-opening",
+      "states": [
+        "closed",
+        "open"
+      ]
+    },
+    "comparison-level": {
+      "index_id": "comparison-level",
+      "states": [
+        "low-high",
+        "high-low"
+      ]
+    }
   }
 }

@@ -1,0 +1,131 @@
+{
+  "format": "zodiac-scene-set-identity@1",
+  "policy": {
+    "palette_is_identity": false,
+    "minimum_cues_per_scene_set": 2,
+    "heavy_background_detail": false
+  },
+  "cues": {
+    "wall-shelf": {
+      "kind": "accent",
+      "asset_id": "scene-accent-shelf",
+      "scene_sets": [
+        "scene-set-home",
+        "scene-set-study"
+      ],
+      "meaning": "small storage/read context"
+    },
+    "wall-clock": {
+      "kind": "accent",
+      "asset_id": "scene-accent-clock",
+      "scene_sets": [
+        "scene-set-home",
+        "scene-set-classroom"
+      ],
+      "meaning": "time/routine context"
+    },
+    "cafe-counter-line": {
+      "kind": "accent",
+      "asset_id": "scene-accent-cafe",
+      "scene_sets": [
+        "scene-set-cafe"
+      ],
+      "meaning": "minimal cafe service/conversation cue"
+    },
+    "sign-menu": {
+      "kind": "accent",
+      "asset_id": "scene-accent-sign",
+      "scene_sets": [
+        "scene-set-cafe",
+        "scene-set-street"
+      ],
+      "meaning": "public sign/menu cue"
+    },
+    "board-plane": {
+      "kind": "accent",
+      "asset_id": "scene-accent-board",
+      "scene_sets": [
+        "scene-set-classroom",
+        "scene-set-study"
+      ],
+      "meaning": "learning/work surface cue"
+    },
+    "open-horizon": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-street"
+      ],
+      "meaning": "open lateral negative space implying outside movement"
+    },
+    "quiet-negative-space": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "intentionally sparse wall area"
+    },
+    "single-anchor-zone": {
+      "kind": "composition",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "one focal wall anchor without room identity"
+    },
+    "home-lamp": {
+      "kind": "accent",
+      "asset_id": "scene-accent-home-lamp",
+      "scene_sets": [
+        "scene-set-home"
+      ],
+      "meaning": "small home lamp cue"
+    },
+    "cafe-window": {
+      "kind": "accent",
+      "asset_id": "scene-accent-cafe-window",
+      "scene_sets": [
+        "scene-set-cafe"
+      ],
+      "meaning": "cafe window cue"
+    },
+    "class-window": {
+      "kind": "accent",
+      "asset_id": "scene-accent-class-window",
+      "scene_sets": [
+        "scene-set-classroom"
+      ],
+      "meaning": "classroom window cue"
+    },
+    "study-note": {
+      "kind": "accent",
+      "asset_id": "scene-accent-study-note",
+      "scene_sets": [
+        "scene-set-study"
+      ],
+      "meaning": "study note cue"
+    },
+    "street-tree": {
+      "kind": "accent",
+      "asset_id": "scene-accent-street-tree",
+      "scene_sets": [
+        "scene-set-street"
+      ],
+      "meaning": "outdoor tree cue"
+    },
+    "neutral-dot": {
+      "kind": "accent",
+      "asset_id": "scene-accent-neutral-dot",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "minimal dot anchor"
+    },
+    "neutral-line": {
+      "kind": "accent",
+      "asset_id": "scene-accent-neutral-line",
+      "scene_sets": [
+        "scene-set-neutral"
+      ],
+      "meaning": "minimal line anchor"
+    }
+  }
+}

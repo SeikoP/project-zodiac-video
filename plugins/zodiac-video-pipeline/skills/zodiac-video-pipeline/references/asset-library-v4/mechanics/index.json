@@ -26,13 +26,26 @@
       ]
     },
     {
+      "id": "pass-object",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ],
+      "contact_contract": "pass-object",
+      "fresh": true
+    },
+    {
       "id": "offer-object",
       "family": "interaction",
       "requires": [
         "actor",
         "target",
         "focus_prop"
-      ]
+      ],
+      "fresh": false,
+      "compatibility_alias_of": "pass-object"
     },
     {
       "id": "confront",
@@ -112,11 +125,45 @@
         "target",
         "focus_prop"
       ],
-      "intent": "giver hands pants to an embarrassed receiver; receiver holds the other waistband edge"
+      "intent": "giver hands pants to an embarrassed receiver; receiver holds the other waistband edge",
+      "contact_contract": "offer-pants-for-embarrassment"
     },
     {
       "id": "compare-group",
       "family": "interaction",
+      "requires": [
+        "actor",
+        "target"
+      ]
+    },
+    {
+      "id": "compare-two-props",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "point-choice",
+      "family": "state",
+      "requires": [
+        "actor",
+        "target"
+      ]
+    },
+    {
+      "id": "open-barrier",
+      "family": "narrative",
+      "requires": [
+        "actor",
+        "focus_prop"
+      ]
+    },
+    {
+      "id": "focus-shift",
+      "family": "narrative",
       "requires": [
         "actor",
         "target"

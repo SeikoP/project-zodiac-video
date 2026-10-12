@@ -4,7 +4,9 @@
     "token": "zodiac-paper-doodle-meme-v4",
     "no_new_colors": true,
     "no_full_svg_backgrounds": true,
-    "purpose": "Assign existing ink/paper/palette accents by dramatic meaning, not random scene tint"
+    "purpose": "Assign existing ink/paper/palette accents by dramatic meaning, not random scene tint",
+    "background_palette_registry": "../references/asset-library-v4/scene-set/background-palettes.json",
+    "background_variants_compiled": true
   },
   "palettes": {
     "school-warm": {

@@ -1,0 +1,49 @@
+{
+  "format": "zodiac-effect-semantic-families@1",
+  "families": {
+    "surprise-radiance": {
+      "intent": "outward surprise/readability spark",
+      "locus": "subject_perimeter"
+    },
+    "inward-pressure": {
+      "intent": "pressure converging toward a contact axis",
+      "locus": "contact_axis"
+    },
+    "confusion-mark": {
+      "intent": "question/uncertainty emitted from thought locus",
+      "locus": "thought_locus"
+    },
+    "embarrassment-face": {
+      "intent": "localized embarrassment reaction",
+      "locus": "face_region"
+    },
+    "stress-perimeter": {
+      "intent": "stress/tension marks around a subject edge",
+      "locus": "subject_edge"
+    },
+    "impact-radial": {
+      "intent": "brief radial emphasis around an event",
+      "locus": "event_impact"
+    },
+    "motion-trail": {
+      "intent": "directional movement continuation",
+      "locus": "trailing_edge"
+    },
+    "focus-halo-family": {
+      "intent": "soft focus ring around selected subject",
+      "locus": "focus_subject"
+    },
+    "comparison-bracket-family": {
+      "intent": "bracket two values or subjects",
+      "locus": "comparison_axis"
+    },
+    "relief-wave-family": {
+      "intent": "release wave after tension",
+      "locus": "release_edge"
+    },
+    "alarm-zigzag-family": {
+      "intent": "sharp alert signal",
+      "locus": "alert_corner"
+    }
+  }
+}

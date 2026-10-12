@@ -517,7 +517,6 @@
         "cry",
         "exasperated",
         "embarrassed",
-        "neutral",
         "explain",
         "reach",
         "offer",
@@ -546,7 +545,24 @@
         "close-set",
         "freckled",
         "round-glasses",
-        "star-hair-clip"
+        "star-hair-clip",
+        "curtain-bang",
+        "short-curl",
+        "low-ponytail",
+        "soft-mohawk",
+        "brow-marked",
+        "beauty-mark",
+        "rosy-cheeks",
+        "small-hoop",
+        "headband",
+        "neck-scarf",
+        "square-glasses",
+        "rest_sitting",
+        "rest_lying",
+        "point-choice",
+        "receive-object",
+        "hold-two-props",
+        "open-barrier"
       ],
       "kind": "character",
       "refs": [
@@ -554,7 +570,30 @@
       ]
     },
     {
-      "ids": [],
+      "ids": [
+        "phone",
+        "offered-pants",
+        "notebook",
+        "book",
+        "water-bottle",
+        "tissue-box",
+        "headset",
+        "mirror",
+        "backpack",
+        "pen",
+        "phone-busy",
+        "phone-ping",
+        "phone-quiet",
+        "phone-silent",
+        "coffee-cup",
+        "keycard",
+        "gift-box",
+        "umbrella",
+        "sticky-note",
+        "wallet",
+        "photo-card",
+        "small-bag"
+      ],
       "kind": "prop",
       "refs": [
         "references/asset-library-v4/props/index.json"
@@ -603,7 +642,14 @@
         "scene-accent-board",
         "scene-accent-shelf",
         "scene-accent-clock",
-        "scene-accent-sign"
+        "scene-accent-sign",
+        "scene-accent-home-lamp",
+        "scene-accent-cafe-window",
+        "scene-accent-class-window",
+        "scene-accent-study-note",
+        "scene-accent-street-tree",
+        "scene-accent-neutral-dot",
+        "scene-accent-neutral-line"
       ],
       "refs": [
         "references/asset-library-v4/scene-set/accents/index.json"
@@ -613,6 +659,33 @@
         "archive_frame",
         "selected_cues",
         "legacy"
+      ]
+    },
+    {
+      "ids": [
+        "balance-scale",
+        "split-direction",
+        "push-pull",
+        "focus-shift-metaphor",
+        "barrier-opening",
+        "comparison-level"
+      ],
+      "kind": "visual_metaphor",
+      "refs": [
+        "references/asset-library-v4/visual-metaphors/index.json"
+      ]
+    },
+    {
+      "ids": [
+        "focus-halo",
+        "comparison-bracket",
+        "relief-wave",
+        "alarm-zigzag"
+      ],
+      "kind": "effect",
+      "refs": [
+        "references/asset-library-v4/effects/meme-effect-catalog.json",
+        "references/asset-library-v4/effects/semantic-families.json"
       ]
     }
   ],
@@ -743,18 +816,81 @@
     "offer-impact",
     "scene-set-home",
     "scene-set-cafe",
-    "scene-accent-cafe"
+    "scene-accent-cafe",
+    "balance-scale",
+    "split-direction",
+    "push-pull",
+    "focus-shift-metaphor",
+    "barrier-opening",
+    "comparison-level",
+    "focus-halo",
+    "comparison-bracket",
+    "relief-wave",
+    "alarm-zigzag",
+    "curtain-bang",
+    "short-curl",
+    "low-ponytail",
+    "soft-mohawk",
+    "brow-marked",
+    "beauty-mark",
+    "rosy-cheeks",
+    "small-hoop",
+    "headband",
+    "neck-scarf",
+    "square-glasses",
+    "rest_sitting",
+    "rest_lying",
+    "point-choice",
+    "receive-object",
+    "hold-two-props",
+    "open-barrier",
+    "phone",
+    "offered-pants",
+    "notebook",
+    "book",
+    "water-bottle",
+    "tissue-box",
+    "headset",
+    "mirror",
+    "backpack",
+    "pen",
+    "phone-busy",
+    "phone-ping",
+    "phone-quiet",
+    "phone-silent",
+    "coffee-cup",
+    "keycard",
+    "gift-box",
+    "umbrella",
+    "sticky-note",
+    "wallet",
+    "photo-card",
+    "small-bag",
+    "scene-accent-board",
+    "scene-accent-shelf",
+    "scene-accent-clock",
+    "scene-accent-sign",
+    "scene-accent-home-lamp",
+    "scene-accent-cafe-window",
+    "scene-accent-class-window",
+    "scene-accent-study-note",
+    "scene-accent-street-tree",
+    "scene-accent-neutral-dot",
+    "scene-accent-neutral-line"
   ],
   "fresh_defaults": {
     "environment_mode": "scene_set",
     "automatic_environment_entities": false,
     "automatic_accessories": false,
     "preferred_hair_ids": [
-      "antenna-short",
       "asym-bang",
+      "spiky-overthink",
+      "antenna-short",
       "blocky-cut",
-      "lopsided-bob",
-      "spiky-overthink"
+      "curtain-bang",
+      "short-curl",
+      "low-ponytail",
+      "soft-mohawk"
     ],
     "compatibility_hair_ids": [
       "soft-wave",

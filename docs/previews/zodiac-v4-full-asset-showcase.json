@@ -1,5 +1,5 @@
 {
-  "format": "zodiac-v4-full-asset-showcase@1",
+  "format": "zodiac-v4-full-asset-showcase@2",
   "canvas": {
     "width": 1080,
     "height": 1920
@@ -12,35 +12,53 @@
   "active_example": {
     "scene_set": "scene-set-classroom",
     "layout": "three-person-comparison",
+    "red_shirt_hair": "blocky-cut",
     "mechanics": [
       "compare-group",
-      "offer-pants-for-embarrassment"
+      "pass-object"
     ],
-    "story_object": "phone ping → silent"
+    "visual_metaphor": {
+      "id": "balance-scale",
+      "states": [
+        "tilt_left",
+        "balanced",
+        "tilt_right"
+      ]
+    }
   },
+  "background_palettes": [
+    "warm-paper",
+    "mint-air",
+    "blush-paper",
+    "cool-study",
+    "sand-coral",
+    "neutral-graphite"
+  ],
   "counts": {
     "scene_sets": 6,
-    "scene_accents": 5,
+    "scene_accents": 12,
     "body_profiles": 6,
-    "hair": 10,
-    "face_profiles": 4,
+    "hair": 14,
+    "face_profiles": 7,
     "outfits": 17,
-    "poses": 21,
+    "poses": 25,
     "expressions": 9,
-    "props": 14,
+    "props": 22,
     "ornaments": 8,
     "layouts": 6,
-    "mechanics": 15,
+    "mechanics": 20,
+    "visual_metaphors": 6,
+    "effects": 20,
     "memes": 11
   },
   "rendered_categories": [
     "scene-set",
     "scene-accent",
+    "background-palette",
     "cover-first-frame",
     "three-character-layout",
     "character-assembly",
-    "story-object",
-    "story-prop",
+    "visual-metaphor",
     "contact-prop",
     "meme-prop",
     "semantic-effect",

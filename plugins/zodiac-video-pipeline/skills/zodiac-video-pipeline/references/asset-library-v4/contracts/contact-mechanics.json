@@ -1,0 +1,41 @@
+{
+  "format": "zodiac-contact-mechanics@1",
+  "policy": {
+    "fresh_requires_explicit_roles": true,
+    "contact_is_semantic_not_proximity_only": true
+  },
+  "mechanics": {
+    "pass-object": {
+      "giver_role": "actor",
+      "receiver_role": "target",
+      "prop_role": "focus_prop",
+      "required_contacts": [
+        "giver_prop",
+        "receiver_prop"
+      ],
+      "ownership_transition": true,
+      "intent": "giver visibly transfers shared prop to receiver"
+    },
+    "offer-pants-for-embarrassment": {
+      "giver_role": "actor",
+      "receiver_role": "target",
+      "prop_role": "focus_prop",
+      "required_contacts": [
+        "giver_prop",
+        "receiver_prop"
+      ],
+      "ownership_transition": false,
+      "intent": "giver presents pants to receiver; pants remain between hands and never cover face"
+    },
+    "show-object": {
+      "giver_role": "actor",
+      "receiver_role": "target",
+      "prop_role": "focus_prop",
+      "required_contacts": [
+        "giver_prop"
+      ],
+      "ownership_transition": false,
+      "intent": "actor holds prop while target attends"
+    }
+  }
+}
