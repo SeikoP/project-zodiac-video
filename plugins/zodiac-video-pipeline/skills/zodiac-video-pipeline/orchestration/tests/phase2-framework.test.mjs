@@ -41,3 +41,12 @@ test('scene-set validation binds declared identity, geometry and exact master ha
  const {validateSceneSetIdentity}=await import('../validate-scene-set-identity.mjs'),registry=JSON.parse(await readFile(path.join(library,'scene-set/index.json'))),master=registry.scene_sets[0],svg=await readFile(path.join(library,'scene-set',master.path),'utf8');const p={assets:{[master.asset_id]:{path:master.output_path}},scenes:[{id:'s',environment:{scene_set:{id:master.id,asset:master.asset_id}},entities:[{id:'set',states:{a:{asset:master.asset_id,transform:master.transform,layer:1,visible:true}},initial_state:'a'}]}]};assert.equal(validateSceneSetIdentity(p,{[master.output_path]:svg}).status,'PASS');assert.equal(validateSceneSetIdentity(p,{[master.output_path]:svg+' '}).status,'BLOCKED');p.scenes[0].environment.scene_set_id='missing-stage';assert.equal(validateSceneSetIdentity(p,{[master.output_path]:svg}).status,'BLOCKED');
 });
 test('per-step lineage keeps environment masters out of character compiler receipts',async()=>{const api=await import('../phase02-selected-dependencies.mjs');assert.equal(typeof api.selectedStepDependencyFiles,'function');const candidates=[path.join(library,'characters/compile-character-assembly.mjs'),path.join(library,'characters/components/catalog.json'),path.join(library,'characters/character-design-intent.mjs'),path.join(library,'scene-set/frames/scene-set-home.svg')];const r=await api.selectedStepDependencyFiles(root,'references/asset-library-v4/characters/compile-character-assembly.mjs',candidates);assert.ok(r.some(p=>p.endsWith('characters/components/catalog.json')));assert.ok(!r.some(p=>p.endsWith('.svg')));});
+
+test('selected fresh guidance resolves every required file in the packaged source',async()=>{
+ const {loadStepContext}=await import('../plan-step-context.mjs');
+ const template=JSON.parse(await readFile(path.join(root,'orchestration/pipeline-state.template.json')));
+ const plan=await loadStepContext('02-visual-production','assets',template.flags, {selected_asset_ids:['scene-set-home'],environment_mode:'scene_set'});
+ for(const ref of plan.required_references??[])assert.ok(await access(path.join(root,ref)).then(()=>true,()=>false),'Missing selected guidance '+ref);
+ const policy=JSON.parse(await readFile(path.join(library,'selection-policy.json')));
+ for(const ref of policy.core_refs)assert.ok(await access(path.join(root,ref)).then(()=>true,()=>false),'Missing core guidance '+ref);
+});

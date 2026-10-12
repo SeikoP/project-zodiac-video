@@ -1,6 +1,6 @@
 {
   "name": "zodiac-video-pipeline",
-  "version": "2.4.61",
+  "version": "2.4.62",
   "description": "Zodiac native visual pipeline with Story Object Composition v2 and Job@5 compatibility.",
   "author": {
     "name": "Personal"
