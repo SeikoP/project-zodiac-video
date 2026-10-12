@@ -13,10 +13,10 @@ export function validateSceneSetIdentity(production,assetText){
  const issues=[],seen=new Map();
  for(const scene of production?.scenes??[]){
   const profile=scene.environment?.profile,ref=sceneSetRef(scene,production);
-  const canonicalId=scene.environment?.scene_set_id??scene.environment?.scene_set?.id;
+  const canonicalId=inferIdentity(scene,production);
   const master=registry.scene_sets.find(s=>s.id===canonicalId);
   if(scene.environment?.scene_set_id&&!master){issues.push({code:'SCENE_SET_ID_UNKNOWN',scene_id:scene.id});continue;}
-  if(!ref)continue;
+  if(!ref){if(master)issues.push({code:'SCENE_SET_ASSET_MISSING',scene_id:scene.id});continue;}
   const asset=production.assets?.[ref],src=asset?.path?assetText[asset.path]:undefined;
   if(typeof src!=='string'||!src.trim()){issues.push({code:'SCENE_SET_ASSET_MISSING',scene_id:scene.id,asset:ref});continue;}
   const fingerprint=sha(src),identity=sceneSetIdentity(scene,production),previous=seen.get(fingerprint);

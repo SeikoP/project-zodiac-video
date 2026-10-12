@@ -12,3 +12,11 @@ Task D/E: complete — selected/per-step dependency graphs, preview intent/proje
 Task F: dependency audit complete — 975 text files, 24 referenced compatibility assets; no physical deletion permitted.
 Ruling: state_swap per-event overrides use existing state_swap_Nf Job5 IDs — Python timeline already proves interval-preserving lowering and renderer uses end_frame-start_frame — cost if wrong: compatibility with an outdated runner implementation; current renderer stays pinned to 2.0.1.
 Validation limits: local full Python/renderer suites need unavailable pytest/tqdm/PySide6/Remotion dependencies; exact baseline source passes 531 native tests and targeted Python import/hash/timeline suite passes 14. Full remote CI is required before merge.
+
+Final review: independent reviewer, no Critical issues; five Important findings.
+Final: fixed accent transform loss — authored accent transform regression RED→GREEN.
+Final: fixed deselected visible accent/unused registration — deselection regression RED→GREEN.
+Final: fixed omitted accent generated ownership — real transactional compiler ownership regression RED→GREEN.
+Final: fixed omitted selected meme source — global/meme-step pants.svg lineage regression RED→GREEN.
+Final: fixed declared/inferred canonical identity fail-open — missing materialization and bad master bytes regression RED→GREEN.
+Final review limits: rendered appearance, voice, temporal media behavior and full Python/Remotion compatibility require separate evidence; structural tests do not approve these.
