@@ -383,7 +383,9 @@ This addresses a remaining context bottleneck identified in the previous audit: 
 - background palettes that currently do not affect real SVG output;
 - showcase terminology/example mismatch.
 
-### Explicitly deferred
+### Follow-up phases included in the master implementation plan
+
+The user explicitly requested that all remaining issues already identified in the review be planned and resolved before the final asset-diversity expansion. These items are therefore no longer deferred from the overall workstream; they remain later phases so the semantic model is stabilized first.
 
 1. **Character compiler monolith**
    - geometry for body/hair/outfit/pose is still concentrated in `compile-character-assembly.mjs`;
@@ -415,11 +417,13 @@ This addresses a remaining context bottleneck identified in the previous audit: 
    - registered compatibility consumers still block pruning;
    - unrelated to this visual-authoring phase.
 
-## Non-goals
+## Overall workstream non-goals
 
 - no renderer redesign;
 - no Job@5 schema migration;
-- no full scene-set structural redesign;
-- no deletion of legacy Story Object bytes/assets;
-- no character geometry refactor in this phase;
+- no destructive rewrite of approved legacy Story Object bytes/assets;
+- no heavy/full-scene background illustration that replaces the Scene Set framework;
+- no generate-many-then-dedupe asset workflow;
 - no dark/night palette until contrast is separately validated.
+
+The later master-plan phases may modularize character geometry, strengthen scene-set identity, expand interaction/effect semantics, retire proven-unused compatibility wrappers, and expand Asset V4 diversity. Those phases must preserve the producer/runner and Job@5 boundaries defined by the maintainability refactor.
