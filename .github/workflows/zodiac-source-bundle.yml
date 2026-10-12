@@ -10,11 +10,16 @@ on:
           - 01-content
           - 02-visual-production
           - 03-handoff
+  push:
+    paths:
+      - ".github/zodiac-source-trigger"
 permissions:
   contents: read
 jobs:
   source:
     runs-on: ubuntu-latest
+    env:
+      BUNDLE_PHASE: ${{ github.event.inputs.phase || '01-content' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,13 +28,13 @@ jobs:
       - name: Build phase source (release-bound)
         run: |
           python tools/build_source_bundle.py \
-            --phase "${{ inputs.phase }}" \
+            --phase "$BUNDLE_PHASE" \
             --output /tmp/zodiac-execution-source.zip \
             --commit "$GITHUB_SHA" \
             --release-record docs/zodiac-plugin-release.json
       - uses: actions/upload-artifact@v4
         with:
-          name: zodiac-execution-source-${{ inputs.phase }}-${{ github.sha }}
+          name: zodiac-execution-source-${{ env.BUNDLE_PHASE }}-${{ github.sha }}
           path: /tmp/zodiac-execution-source.zip
           if-no-files-found: error
           retention-days: 14
