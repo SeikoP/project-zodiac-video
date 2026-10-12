@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {selectAssetGuidance} from './select-asset-guidance.mjs';
 import {createHash} from 'node:crypto';
 import {conditionApplies} from './resolve-capability-route.mjs';
+import {loadCurrentPolicy} from './current-policy.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02-visual-production.json','03-handoff':'03-handoff.json'};
 export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',role='draft',selected_asset_ids=null,meme_selected=flags.meme_selected??false,environment_mode='legacy',policy=null}={}) {
@@ -31,7 +32,7 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
 export async function loadStepContext(phase,step,flags={},options={}){
  if(!manifestByPhase[phase])throw new Error('CONTEXT_PHASE_UNKNOWN '+phase);
  const manifest=JSON.parse(await readFile(path.join(skill,'orchestration/phases',manifestByPhase[phase]),'utf8'));
- const policy=JSON.parse(await readFile(path.join(skill,'references/asset-library-v4/selection-policy.json'),'utf8'));const result=planStepContext(manifest,step,flags,{...options,policy});result.context_manifest=await Promise.all(result.required_references.map(async ref=>{if(/^[a-z][a-z0-9+.-]*:/iu.test(ref))return {path:ref,provider_required:true,loaded:false};const abs=path.resolve(skill,ref);if(!abs.startsWith(skill+path.sep))throw Error('CONTEXT_PATH_UNSAFE');const raw=await readFile(abs);return {path:ref,bytes:raw.length,sha256:createHash('sha256').update(raw).digest('hex')};}));return result;
+ const policy=JSON.parse(await readFile(path.join(skill,'references/asset-library-v4/selection-policy.json'),'utf8'));const result=planStepContext(manifest,step,flags,{...options,policy});result.effective_policy=await loadCurrentPolicy(skill);result.context_manifest=await Promise.all(result.required_references.map(async ref=>{if(/^[a-z][a-z0-9+.-]*:/iu.test(ref))return {path:ref,provider_required:true,loaded:false};const abs=path.resolve(skill,ref);if(!abs.startsWith(skill+path.sep))throw Error('CONTEXT_PATH_UNSAFE');const raw=await readFile(abs);return {path:ref,bytes:raw.length,sha256:createHash('sha256').update(raw).digest('hex')};}));return result;
 }
 const self=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(self){try{
