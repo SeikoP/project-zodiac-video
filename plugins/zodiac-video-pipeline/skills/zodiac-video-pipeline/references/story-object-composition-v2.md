@@ -1,10 +1,12 @@
+> Fresh authoring: read [story-object-contract.md](story-object-contract.md). The details below are compatibility reference; physical-prop/contact/effect defaults apply only to their declared mode and plan version.
+
 # Story Object Composition v2 — visual identity over wallpaper
 
 This is an authoring/QC enhancement within Phase 02, **not** a Story Shape, renderer feature, fourth phase or new Job@5 field. The Libra scale on warm paper is the acceptance reference: **the scale visibly models both directions of thinking while the chibi character reacts**. Do not replace the scene with a large scale illustration, or turn the scale into the environment's `rear` or `background` entity. Blank paper is an intentional minimal environment when the idea needs no literal room.
 
 ## Editorial separation
 
-1. **Story Object:** What thought, contradiction or action is being communicated? It remains a native V4 prop/entity with consistent identity and real state/events.
+1. **Story Object:** What thought, contradiction or action is being communicated? It remains a native V4 symbolic entity with consistent conceptual identity and real state/events. Transport may use a prop or effect asset; only `physical_interaction` requires physical-prop semantics.
 2. **Character:** Who feels or acts on that thought? Keep readable facial acting and a distinct silhouette when the metaphor is on screen, unless deliberately making an insert cutaway.
 3. **Environment:** Where does it happen? Build location cues only when supported by Narration; `minimal` is the correct environment for symbolic/thought space. Do not draw or choose scenery simply to fill negative space.
 4. **Effect:** Only a semantic consequence of story object or character. Do not substitute generic punctuation or rays for the metaphor.
@@ -35,7 +37,7 @@ To avoid breaking older reviewed jobs, the strict presentation-mode requirement 
 
 ## Runtime boundary
 
-Do not add `presentation_mode`, scene role enum, or an automatic layout algorithm to renderer@2.0.1. Author as normal V4 prop/effect + `spatial_bindings` + scene transform/event; compile and test the actual native preview. If dynamic animation is not in the current supported motion registry, re-author into supported existing state motions, never claim unsupported renderer behavior.
+Do not add `presentation_mode`, scene role enum, or an automatic layout algorithm to renderer@2.0.1. Author as a normal V4 symbolic entity (prop/effect transport as appropriate) + `spatial_bindings` + scene transform/event; compile and test the actual native preview. If dynamic animation is not in the current supported motion registry, re-author into supported existing state motions, never claim unsupported renderer behavior.
 
 ## Scoped episodes
 Narrative 2.1 may keep one central metaphor. Retain `central_metaphor.sign_contradiction` as the shared authored tension for @2 compatibility; `episode-cast-plan.bindings[].story_relation` states how each selected member changes its meaning. Do not copy one generic relation to every member. Recover only scene-local bindings/lenses through derive-scene-context; scope edits invalidate the review lock.

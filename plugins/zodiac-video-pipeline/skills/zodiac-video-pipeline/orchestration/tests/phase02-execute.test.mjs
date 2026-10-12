@@ -65,8 +65,8 @@ test('native run invokes fixture compilers and receipt-wrapped validators in ord
  const ws=await makeWorkspace(),src=await makeSource();await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
  const r=run(ws,src,['--run']);assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
  const e=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
- assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,13);
- assert.deepEqual(e.steps.map(x=>x.id),['character_components','character_plan','character_write','character_identity','outfit_bake','environment','environment_binding','scene_direction','scene_set_identity','scene_direction_validation','scene_events','visual_quality','publish_prep']);
+ assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,15);
+ assert.deepEqual(e.steps.map(x=>x.id),['character_components','character_plan','character_write','character_identity','outfit_bake','environment','environment_binding','scene_direction','scene_set_identity','scene_accent_containment','scene_direction_validation','scene_events','motion_consistency','visual_quality','publish_prep']);
  assert.ok(e.steps.every(x=>x.status==='PASS'));
  const p=JSON.parse(await readFile(path.join(ws,'production.json')));
  assert.equal(p.scenes[0].entities[0].states.neutral.asset,'demo');

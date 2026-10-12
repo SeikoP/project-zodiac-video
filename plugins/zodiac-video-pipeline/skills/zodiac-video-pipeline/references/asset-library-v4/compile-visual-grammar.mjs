@@ -3,13 +3,15 @@ import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+import {hasPrimarySceneSet} from '../../orchestration/scene-set-detection.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
-const framesDoc=JSON.parse(await readFile(path.join(here,'frames/index.json'),'utf8'));
+const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
+const frameRows=shotLayoutsDoc.layouts??shotLayoutsDoc.frames??[];
 const mechanicsDoc=JSON.parse(await readFile(path.join(here,'mechanics/index.json'),'utf8'));
 const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));
 const memesDoc=JSON.parse(await readFile(path.join(here,'memes/index.json'),'utf8'));
-const frames=new Map(framesDoc.frames.map(x=>[x.id,x]));
+const frames=new Map(frameRows.map(x=>[x.id,x]));
 const mechanics=new Map(mechanicsDoc.mechanics.map(x=>[x.id,x]));
 const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));
 const memes=new Map((memesDoc.compositions??[]).map(x=>[x.id,x]));
@@ -116,7 +118,7 @@ export function compileVisualGrammar(production,plan){
       const assetRequirements=(meme.composition.asset_requirements??[]).map(req=>{const binding=meme.roles[req.role];if(!binding)fail(`${scene.id} meme ${meme.id} asset requirement references unbound role ${req.role}`);return {...clone(req),entity_id:binding.entity_id};});
       scene.visual_grammar.meme_composition={id:meme.id,source_library:'zodiac-visual-grammar-v4',source_contract:meme.composition.source,roles:meme.roles,required_contacts:clone(meme.composition.required_contacts??[]),acting_requirements:meme.actingRequirements,effects:meme.effectSpecs,asset_requirements:assetRequirements};
     }
-    if(spec.environment!==undefined){
+    if(spec.environment!==undefined&&!hasPrimarySceneSet(scene,out)){
       if(!spec.environment||typeof spec.environment!=='object'||Array.isArray(spec.environment))fail(`${spec.scene_id} environment must be an object`);
       const env=environments.get(spec.environment.profile);
       if(!env)fail(`${spec.scene_id} unknown environment profile ${spec.environment.profile}`);

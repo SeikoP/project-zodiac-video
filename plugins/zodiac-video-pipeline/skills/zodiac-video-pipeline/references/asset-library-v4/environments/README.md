@@ -1,4 +1,6 @@
-# Bedroom Environment Composition — v4
+# Environment profiles — selected-cue / compatibility extension
+
+Fresh Phase 02 uses the `scene-set` system as the primary visual framework. These room/environment profiles remain available only when the author explicitly selects `environment_mode=selected_cues` or for legacy compatibility. They must not automatically add windows, boards, sofas, tables or other room furniture to an archive-frame scene. Scene accents belong to `scene-set/accents` and stay inside the frame wall region.
 
 For a bedroom location, use `bedroom-study-base` as the canonical micro-environment. It is composition metadata plus separate structural SVG cues, never a monolithic room background.
 

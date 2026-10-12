@@ -1,0 +1,73 @@
+{
+  "format": "zodiac-publish@1",
+  "source": {
+    "narration": "narration.txt",
+    "production": "production.json"
+  },
+  "title": "Song Tử mau chán? Khi câu chuyện cũ có câu hỏi mới",
+  "platform": "tiktok",
+  "cover": {
+    "layout": "tilted_top_hook",
+    "identity": {
+      "sign_id": "gemini",
+      "label": "Song Tử",
+      "glyph": "♊"
+    },
+    "hook": "SONG TỬ CHÁN BẠN RỒI?",
+    "source_scene_id": "s01",
+    "visuals": [
+      {
+        "entity_id": "gemini",
+        "state_id": "neutral"
+      },
+      {
+        "entity_id": "phone",
+        "state_id": "shown"
+      }
+    ],
+    "opening": {
+      "enabled": true,
+      "duration_sec": 0.75,
+      "transition_sec": 0.2
+    },
+    "design": {
+      "version": "zodiac-cover-design@2",
+      "style_token": "zodiac-paper-doodle-meme-v4",
+      "canvas": {
+        "width": 1080,
+        "height": 1920
+      },
+      "title_frame": {
+        "shape": "crooked-paper-note",
+        "fill_role": "card",
+        "stroke_role": "ink",
+        "shadow_role": "soft_shadow",
+        "font_family": "Patrick Hand",
+        "shadow_dx_px": 2,
+        "shadow_dy_px": 5,
+        "shadow_opacity": 0.3,
+        "max_lines": 3
+      },
+      "composition": {
+        "hero_scale": 0.86,
+        "supporting_prop_scale": 0.8,
+        "min_side_margin_px": 100,
+        "max_supporting_accents": 1,
+        "read_order": [
+          "hook",
+          "identity",
+          "character_story_object"
+        ],
+        "background_policy": "preserve-native-environment"
+      }
+    }
+  },
+  "caption": "Hôm qua nói chuyện đến khuya, hôm nay chỉ còn một chữ “Ừ”. Song Tử hết hứng hay chỉ đang chờ một câu hỏi mới?",
+  "hashtags": [
+    "#SongTu",
+    "#CungHoangDao",
+    "#TinhCachSongTu",
+    "#GiaiMaTinhCach",
+    "#bungmoto"
+  ]
+}

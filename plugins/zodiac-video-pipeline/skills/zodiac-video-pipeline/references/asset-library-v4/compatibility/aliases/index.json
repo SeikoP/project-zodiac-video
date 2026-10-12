@@ -1,0 +1,12 @@
+{
+  "format": "zodiac-asset-taxonomy-aliases@1",
+  "aliases": {
+    "frames/index.json": "shot-layouts/index.json",
+    "mechanics/index.json": "actions/index.json",
+    "environments/composition-index.json": "compatibility/environment-profiles/index.json",
+    "migration/index.json": "provenance/v3-migration.json",
+    "memes/index.json": "extensions/memes/index.json"
+  },
+  "physical_moves": false,
+  "resolution": "canonical wrapper points to retained source bytes; legacy paths remain readable"
+}

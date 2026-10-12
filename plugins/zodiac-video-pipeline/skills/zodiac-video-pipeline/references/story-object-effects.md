@@ -1,15 +1,17 @@
+> Fresh authoring: read [story-object-contract.md](story-object-contract.md). The details below are compatibility reference; physical-prop/contact/effect defaults apply only to their declared mode and plan version.
+
 # Story Object & Semantic Effects — channel visual contract v1
 
 ## Why
-The Libra balance scale is a useful reference because **the object itself acts out the thesis**. Our system must not add scattered question marks, rays or generic reaction SVGs to compensate for an absent visual idea. One recognizable prop can communicate multiple turns more effectively than many assets.
+The Libra balance scale is a useful reference because **the object itself acts out the thesis**. Our system must not add scattered question marks, rays or generic reaction SVGs to compensate for an absent visual idea. One recognizable symbolic object can communicate multiple turns more effectively than many assets; it does not need to be a literal physical prop.
 
 ## Upstream creative decision (Phase 01)
-Before visual authoring, Story Spine identifies the **central sign-specific contradiction**, a **physical metaphor** that communicates it, and an **object callback** that changes its interpretation. This is not a second Story Shape: keep `character_deconstruction` and `TONE_RHYTHM_DEFAULT`. Do not pull old examples into a new run, or claim a new approved Narration. Duration follows the active short-form channel brief.
+Before visual authoring, Story Spine identifies the **central sign-specific contradiction**, a **visual metaphor** that communicates it, and an **object callback** that changes its interpretation. This is not a second Story Shape: keep `character_deconstruction` and `TONE_RHYTHM_DEFAULT`. Do not pull old examples into a new run, or claim a new approved Narration. Duration follows the active short-form channel brief.
 
 ## Phase 02 — real authored plan, BEFORE drawing
 Write `.authoring/story-object-plan.json` with `format: zodiac-story-object-plan@1`, `style_token: zodiac-paper-doodle-meme-v4`, SHA-256 of exact approved `narration.txt` bytes, one `central_metaphor` (`id`, `meaning`, `payoff_transformation`), and `beats` with at least `setup` → `friction` → `payoff` across meaningful scenes.
 
-Each beat records: `beat_id`, `scene_id`, `role`, exact `voice_anchor`, `object_entity`, `object_event_ids`, `visual_change`, `narrative_meaning`, and `effect` (`entity_id`, `event_ids`, `semantic_role`, `tier`). `payoff_beat_id` must reference the terminal payoff. Object event IDs MUST target a real native V4 prop entity and show a material change in SVG, transform/visibility, or a runner-supported dynamic motion; a state rename with unchanged visuals is invalid. Effects require authored enter/release and a real spatial binding. Never invent contact geometry or receipts.
+Each beat records: `beat_id`, `scene_id`, `role`, exact `voice_anchor`, `object_entity`, `object_event_ids`, `visual_change`, `narrative_meaning`, and `effect` (`entity_id`, `event_ids`, `semantic_role`, `tier`). `payoff_beat_id` must reference the terminal payoff. Object event IDs MUST target a real native V4 symbolic entity; `thought_metaphor` may use prop/effect transport while `physical_interaction` must use a physical prop and show a material change in SVG, transform/visibility, or a runner-supported dynamic motion; a state rename with unchanged visuals is invalid. Effects require authored enter/release and a real spatial binding. Never invent contact geometry or receipts.
 
 ### Effect tiers — semantic strength, not SVG count
 - **Tier 1, setup:** introduce the metaphor visibly (tilt, point, reveal). Viewer reads the setup even with audio muted.

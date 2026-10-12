@@ -1,0 +1,2569 @@
+{
+  "format": "zodiac-visual-intent@1",
+  "narration_sha256": "46eabba92b524e51da0d5c8232dc6dc869212da174f4026c57c8f421476d4ca4",
+  "cast": [
+    {
+      "entity_id": "gemini",
+      "body_profile": "lean_tall",
+      "hair_id": "high-ponytail",
+      "face_profile_id": "wide-set",
+      "outfit_id": "gemini-basic-clean",
+      "shirt_color_id": "teal",
+      "accessory_id": "none",
+      "variant_seed": "gemini-c-female-lean-v2",
+      "asset_budget": {
+        "max_unique_states": 3
+      },
+      "states": {
+        "neutral": {
+          "pose_id": "neutral",
+          "expression_id": "deadpan"
+        },
+        "asking": {
+          "pose_id": "explain",
+          "expression_id": "smug"
+        },
+        "realizing": {
+          "pose_id": "raise-evidence",
+          "expression_id": "relieved"
+        }
+      },
+      "design_intent": {
+        "selection_basis": "story_first",
+        "role": "lead",
+        "identity_tension": "Tò mò và nhanh chuyển câu hỏi làm người bạn hiểu là Song Tử mau chán.",
+        "audience_read": "Nữ chính cao gầy, nhanh nhẹn, tò mò và đọc ra ngay là Song Tử thích hỏi tiếp.",
+        "decision_reasons": {
+          "body_profile": "Dáng lean_tall ưu tiên cao gầy theo yêu cầu người dùng, giúp lead nổi bật và đọc động tác nhanh trong khung đôi.",
+          "hair_id": "High-ponytail giữ lead là nữ rõ ràng nhưng không chạm tham chiếu thief.",
+          "face_profile_id": "Wide-set giữ mắt mở và cảm giác tò mò của Song Tử.",
+          "outfit_id": "Trang phục Gemini basic sạch và cùng hệ token của nhân vật chính.",
+          "shirt_color_id": "Teal dùng để định danh lead xuyên cảnh, không đổi màu mỗi trạng thái."
+        },
+        "rejected_alternative": {
+          "choice": "standard_compact",
+          "reason": "Đã dùng ở bản trước để tăng độ nữ nhưng chưa đáp ứng ưu tiên cao gầy."
+        },
+        "reuse_strategy": "native_assembly_after_story",
+        "scene_anchor": {
+          "scene_id": "s02",
+          "excerpt": "Bạn kể vừa đổi chỗ làm",
+          "meaning": "Song Tử đặt câu hỏi liên tục ngay khi bạn giới thiệu chuyện mới."
+        },
+        "state_purposes": {
+          "neutral": "Biểu cảm tỉnh bơ khi câu chuyện bị hiểu lầm là lạnh nhạt.",
+          "asking": "Nâng tay hỏi và ánh mắt tinh nghịch lúc khám phá thông tin mới.",
+          "realizing": "Giơ tay chỉ ra một câu hỏi đúng, dẫn đến phát hiện trong câu chuyện cũ."
+        }
+      }
+    },
+    {
+      "entity_id": "friend",
+      "body_profile": "round_soft",
+      "hair_id": "asym-bang",
+      "face_profile_id": "freckled",
+      "outfit_id": "generic-soft-stripes",
+      "shirt_color_id": "ochre",
+      "accessory_id": "none",
+      "variant_seed": "friend-thief-reference-v2",
+      "asset_budget": {
+        "max_unique_states": 2
+      },
+      "states": {
+        "neutral": {
+          "pose_id": "neutral",
+          "expression_id": "neutral"
+        },
+        "hurt": {
+          "pose_id": "recoil",
+          "expression_id": "exasperated"
+        }
+      },
+      "design_intent": {
+        "selection_basis": "story_first",
+        "role": "support",
+        "identity_tension": "Người bạn cần được lắng nghe trong lúc Song Tử liên tục hỏi thêm.",
+        "audience_read": "Thân thuộc và dễ đọc phản ứng khi đang cần lắng nghe thay vì truy vấn.",
+        "decision_reasons": {
+          "body_profile": "Dáng round_soft nhỏ gọn đối lập Song Tử, đọc nhanh trong khung hai người.",
+          "hair_id": "Asym-bang được dùng như tham chiếu kiểu tóc thief cho nhân vật phụ, giúp tách vai rõ khỏi lead nữ.",
+          "face_profile_id": "Tàn nhang giữ dấu nhận diện một người bạn qua nhiều cảnh khác nhau.",
+          "outfit_id": "Áo kẻ nhẹ tạo một chút nhịp trang phục, vẫn giữ phong cách V4.",
+          "shirt_color_id": "Ochre đối lập teal của nhân vật chính và cố định xuyên cảnh."
+        },
+        "rejected_alternative": {
+          "choice": "lopsided-bob",
+          "reason": "Người dùng xác nhận kiểu tóc tham chiếu thief thuộc về nhân vật phụ, không phải lead."
+        },
+        "reuse_strategy": "native_assembly_after_story",
+        "scene_anchor": {
+          "scene_id": "s05",
+          "excerpt": "Tao không cần giải pháp",
+          "meaning": "Phản ứng khi chỉ cần được lắng nghe, không muốn giải quyết thêm vấn đề."
+        },
+        "state_purposes": {
+          "neutral": "Bạn kể chuyện bình thường và lắng nghe câu hỏi mới từ Song Tử.",
+          "hurt": "Bạn bực nhẹ vì phải trả lời thêm lúc đang muốn chia sẻ nỗi buồn."
+        }
+      }
+    }
+  ],
+  "frames": [],
+  "assets": {
+    "PHONE": {
+      "path": "assets/props/phone.svg",
+      "category": "prop",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "direct_copy",
+        "source_library": "zodiac-asset-library-v4",
+        "source_master": "phone",
+        "semantic_intent": "Actual smartphone in initial text message scene"
+      }
+    },
+    "STORY_GEMINI_SETUP": {
+      "path": "assets/story-object/gemini-dialogue-setup.svg",
+      "category": "prop",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored_derivative",
+        "source_library": "zodiac-asset-library-v4",
+        "source_master": "symbolic-dialogue-object",
+        "semantic_intent": "Floating symbolic Story Object: one conversation bubble opens one new question."
+      }
+    },
+    "STORY_GEMINI_FRICTION": {
+      "path": "assets/story-object/gemini-dialogue-friction.svg",
+      "category": "prop",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored_derivative",
+        "source_library": "zodiac-asset-library-v4",
+        "source_master": "symbolic-dialogue-object",
+        "semantic_intent": "Floating symbolic Story Object: overlapping questions crowd the conversation."
+      }
+    },
+    "STORY_GEMINI_PAYOFF": {
+      "path": "assets/story-object/gemini-dialogue-payoff.svg",
+      "category": "prop",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored_derivative",
+        "source_library": "zodiac-asset-library-v4",
+        "source_master": "symbolic-dialogue-object",
+        "semantic_intent": "Floating symbolic Story Object: one clear question remains and becomes useful."
+      }
+    }
+  },
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "visual_system": {
+    "style_token": {
+      "id": "zodiac-paper-doodle-meme-v4"
+    }
+  },
+  "episode_cast_plan": {
+    "format": "zodiac-episode-cast-plan@1",
+    "scope_sha256": "cfb40803ae4a7f94863135fbe7f17e949da7a2cd54e79362a0dcbbf5fa66bde4",
+    "bindings": [
+      {
+        "member_id": "gemini",
+        "entity_id": "gemini",
+        "scene_ids": [
+          "s01",
+          "s02",
+          "s03",
+          "s04",
+          "s05",
+          "s06",
+          "s07"
+        ],
+        "role": "member",
+        "reason": "Song Tử hiện diện xuyên suốt tập; người kể là voice-over, không phải cast hình.",
+        "story_relation": "Mỗi cảnh bóc tách sự tò mò, phản ứng xã hội và cú lật khi câu chuyện cũ có thêm câu hỏi."
+      }
+    ]
+  },
+  "scenes": [
+    {
+      "id": "s01",
+      "narration_range": [
+        0,
+        410
+      ],
+      "semantic_goal": "Hiểu lầm từ hai tin nhắn",
+      "grammar": {
+        "frame_id": "single-character-focus",
+        "mechanic_id": "explain",
+        "bindings": {
+          "subject": "gemini"
+        },
+        "environment": {
+          "profile": "living-room-home"
+        },
+        "continuity_relation": "start",
+        "composition_goal": "Điện thoại và phản ứng deadpan. Khung nền panel phải đọc được như background system, không phải khung nền."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-home",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 245,
+                "y": 565,
+                "width": 405,
+                "height": 590
+              },
+              "layer": 20
+            },
+            {
+              "entity": "phone",
+              "role": "story_fixture",
+              "box": {
+                "x": 660,
+                "y": 640,
+                "width": 184,
+                "height": 255
+              },
+              "layer": 25
+            },
+            {
+              "entity": "env__scene-set-home",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            },
+            {
+              "entity": "phone",
+              "anchor": "gemini",
+              "relation": "near",
+              "max_distance_px": 850
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-home"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-home",
+        "scene_accents": []
+      },
+      "art_direction": {
+        "palette_id": "social-teal",
+        "environment_profile": "primary-continuous-scene-set-home",
+        "performer": "gemini",
+        "action": "Phản ứng đêm nhắn nhiều nhưng sáng chỉ có một chữ.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền."
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_GEMINI_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 245,
+                "y": 565,
+                "width": 405,
+                "height": 590
+              }
+            },
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 245,
+                "y": 565,
+                "width": 405,
+                "height": 590
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "phone",
+          "kind": "object",
+          "visual_role": "interactive_prop",
+          "initial_state": "shown",
+          "states": {
+            "shown": {
+              "asset": "PHONE",
+              "visible": true,
+              "layer": 25,
+              "transform": {
+                "x": 660,
+                "y": 640,
+                "width": 184,
+                "height": 255
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Điện thoại là đạo cụ tình huống có nhắc trong lời kể",
+            "voice_anchor": "nhắn tin"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        },
+        {
+          "id": "env__scene-set-home",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_HOME",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-home"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s01_phone_ping",
+          "target": "phone",
+          "state_before": "shown",
+          "state_after": "shown",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "họ đáp đúng một chữ"
+          },
+          "motion": {
+            "preset": "small-bounce",
+            "duration_frames": 12
+          },
+          "action": "reaction"
+        },
+        {
+          "id": "s01_gemini_shift",
+          "target": "gemini",
+          "state_before": "neutral",
+          "state_after": "asking",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Khoan. Có khi Song Tử chưa chán bạn"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "phone",
+          "anchor": "gemini",
+          "relation": "near",
+          "max_distance_px": 850
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s01",
+          "beat_id": "s01_director",
+          "voice_anchor": "Đêm qua Song Tử nhắn tin với bạn đến tận hai giờ sáng.",
+          "semantic_purpose": "setup",
+          "performer": "gemini",
+          "action": "Phản ứng đêm nhắn nhiều nhưng sáng chỉ có một chữ.",
+          "reaction": "",
+          "visual_payoff": "Điện thoại và phản ứng deadpan.",
+          "shot_reason": "medium-character tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "state_swap",
+          "static_reason": "Chuyển biểu cảm ở đúng nhịp nói.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [
+        {
+          "scene_id": "s01",
+          "entity_id": "phone",
+          "asset_id": "PHONE",
+          "role": "supporting",
+          "semantic_need": "Phản ứng đêm nhắn nhiều nhưng sáng chỉ có một chữ.",
+          "semantic_tags": [
+            "texting",
+            "phone"
+          ],
+          "fit_score": 0.94,
+          "resolution": "reuse_exact",
+          "selected_master": "phone"
+        }
+      ],
+      "scene_direction": {
+        "shot": "medium-character",
+        "focus": "gemini",
+        "subject_placement": "center",
+        "continuity_relation": "start",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần."
+      },
+      "visual_grammar": {
+        "frame_id": "single-character-focus",
+        "mechanic_id": "explain",
+        "bindings": {
+          "subject": "gemini"
+        }
+      }
+    },
+    {
+      "id": "s02",
+      "narration_range": [
+        410,
+        840
+      ],
+      "semantic_goal": "Động cơ tò mò",
+      "grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        },
+        "environment": {
+          "profile": "living-room-home"
+        },
+        "continuity_relation": "location_change",
+        "composition_goal": "Story Object dạng bong bóng hội thoại xuất hiện nhẹ phía trên vùng trò chuyện; scene-set chỉ làm nền tường/sàn."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-home",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              },
+              "layer": 20
+            },
+            {
+              "entity": "friend",
+              "role": "listener",
+              "box": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              },
+              "layer": 18
+            },
+            {
+              "entity": "env__scene-set-home",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            },
+            {
+              "entity": "friend",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-home"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-home",
+        "scene_accents": []
+      },
+      "art_direction": {
+        "palette_id": "social-teal",
+        "environment_profile": "primary-continuous-scene-set-home",
+        "performer": "gemini",
+        "action": "Một câu hỏi mới bật ra từ câu chuyện vừa kể.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền.",
+        "story_object": {
+          "id": "gemini_story_object",
+          "voice_anchor": "Bạn kể vừa đổi chỗ làm",
+          "render_layer": "prop",
+          "replaces_environment": false
+        }
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "asking",
+          "states": {
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "friend",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_FRIEND_NEUTRAL",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:friend"
+          },
+          "narrative_intent": {
+            "reason": "Người bạn phản ứng để thấy tác động xã hội của việc hỏi liên tục",
+            "voice_anchor": "Trong lối kể về Song Tử, tò mò giống như cái công tắc"
+          }
+        },
+        {
+          "id": "env__scene-set-home",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_HOME",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-home"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        },
+        {
+          "id": "gemini_story_object",
+          "kind": "object",
+          "visual_role": "interactive_prop",
+          "initial_state": "hidden",
+          "states": {
+            "hidden": {
+              "asset": "STORY_GEMINI_SETUP",
+              "visible": false,
+              "layer": 24,
+              "transform": {
+                "x": 350,
+                "y": 250,
+                "width": 380,
+                "height": 260
+              }
+            },
+            "setup": {
+              "asset": "STORY_GEMINI_SETUP",
+              "visible": true,
+              "layer": 24,
+              "transform": {
+                "x": 350,
+                "y": 250,
+                "width": 380,
+                "height": 260
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Story Object dạng biểu tượng hội thoại nổi phía trên vùng trò chuyện, tương tự vai trò cái cân trong ví dụ Thiên Bình.",
+            "voice_anchor": "Trong lối kể về Song Tử, tò mò giống như cái công tắc"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s02_story_object_change",
+          "target": "gemini_story_object",
+          "state_before": "hidden",
+          "state_after": "setup",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Bạn kể vừa đổi chỗ làm"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        },
+        {
+          "id": "s02_gemini_bounce",
+          "target": "gemini",
+          "state_before": "asking",
+          "state_after": "asking",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Bạn kể tiếp, họ hỏi tiếp"
+          },
+          "motion": {
+            "preset": "small-bounce",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "friend",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "gemini_story_object",
+          "anchor": "gemini",
+          "relation": "near",
+          "max_distance_px": 900
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s02",
+          "beat_id": "s02_director",
+          "voice_anchor": "Trong lối kể về Song Tử, tò mò giống như cái công tắc. Một câu hỏi mới là đèn bậ",
+          "semantic_purpose": "noticing",
+          "performer": "gemini",
+          "action": "Một câu hỏi mới bật ra từ câu chuyện vừa kể.",
+          "reaction": "Người bạn thay đổi phản ứng khi câu hỏi xuất hiện.",
+          "visual_payoff": "Một bubble hội thoại sinh thêm bubble câu hỏi nhỏ, không chiếm scene-set.",
+          "shot_reason": "two-person tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "hold",
+          "static_reason": "Giữ biểu cảm để khán giả nhận ra payoff bằng câu kể.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [
+        {
+          "scene_id": "s02",
+          "entity_id": "gemini_story_object",
+          "asset_id": "STORY_GEMINI_SETUP",
+          "role": "primary_story",
+          "semantic_need": "Một câu hỏi mới bật ra từ câu chuyện vừa kể.",
+          "semantic_tags": [
+            "dialogue",
+            "question",
+            "curiosity"
+          ],
+          "fit_score": 0.97,
+          "resolution": "derive_new",
+          "selected_master": "symbolic-dialogue-object",
+          "derivation": {
+            "output_asset_id": "STORY_GEMINI_SETUP",
+            "semantic_tags": [
+              "dialogue",
+              "question",
+              "curiosity"
+            ],
+            "style_token": "zodiac-paper-doodle-meme-v4"
+          }
+        }
+      ],
+      "scene_direction": {
+        "shot": "two-person",
+        "focus": "gemini",
+        "subject_placement": "split",
+        "continuity_relation": "location_change",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần.",
+        "interaction_roles": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      },
+      "visual_grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      }
+    },
+    {
+      "id": "s03",
+      "narration_range": [
+        840,
+        1126
+      ],
+      "semantic_goal": "Hiểu lầm qua câu lặp lại",
+      "grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        },
+        "environment": {
+          "profile": "living-room-home"
+        },
+        "continuity_relation": "continue",
+        "composition_goal": "Hai biểu cảm trái chiều trong cùng khung hình."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-home",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 155,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              },
+              "layer": 20
+            },
+            {
+              "entity": "friend",
+              "role": "listener",
+              "box": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              },
+              "layer": 18
+            },
+            {
+              "entity": "env__scene-set-home",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            },
+            {
+              "entity": "friend",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-home"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-home",
+        "scene_accents": []
+      },
+      "art_direction": {
+        "palette_id": "friction-slate",
+        "environment_profile": "primary-continuous-scene-set-home",
+        "performer": "gemini",
+        "action": "Bình thản của Song Tử đối lập phản ứng bạn bị hụt hẫng.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền."
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_GEMINI_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 155,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            },
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 155,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "friend",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_FRIEND_NEUTRAL",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            },
+            "hurt": {
+              "asset": "CHAR_FRIEND_HURT",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:friend"
+          },
+          "narrative_intent": {
+            "reason": "Người bạn phản ứng để thấy tác động xã hội của việc hỏi liên tục",
+            "voice_anchor": "Nhưng hôm sau, bạn kể lại y nguyên chuyện ấy"
+          }
+        },
+        {
+          "id": "env__scene-set-home",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_HOME",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-home"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s03_friend_hurt",
+          "target": "friend",
+          "state_before": "neutral",
+          "state_after": "hurt",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Song Tử nghe được nửa câu"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "friend",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s03",
+          "beat_id": "s03_director",
+          "voice_anchor": "Nhưng hôm sau, bạn kể lại y nguyên chuyện ấy.",
+          "semantic_purpose": "barrier",
+          "performer": "gemini",
+          "action": "Bình thản của Song Tử đối lập phản ứng bạn bị hụt hẫng.",
+          "reaction": "Người bạn thay đổi phản ứng khi câu hỏi xuất hiện.",
+          "visual_payoff": "Hai biểu cảm trái chiều trong cùng khung hình.",
+          "shot_reason": "two-person tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "state_swap",
+          "static_reason": "Chuyển biểu cảm ở đúng nhịp nói.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [],
+      "scene_direction": {
+        "shot": "two-person",
+        "focus": "gemini",
+        "subject_placement": "split",
+        "continuity_relation": "continue",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần.",
+        "interaction_roles": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      },
+      "visual_grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      }
+    },
+    {
+      "id": "s04",
+      "narration_range": [
+        1126,
+        1339
+      ],
+      "semantic_goal": "Giải mã cách hỏi",
+      "grammar": {
+        "frame_id": "single-character-focus",
+        "mechanic_id": "explain",
+        "bindings": {
+          "subject": "gemini"
+        },
+        "environment": {
+          "profile": "living-room-home"
+        },
+        "continuity_relation": "continue",
+        "composition_goal": "Biểu cảm suy nghĩ; không thêm một đạo cụ vô cớ. Khung nền panel phải đọc được như background system, không phải khung nền."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-home",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 245,
+                "y": 500,
+                "width": 470,
+                "height": 655
+              },
+              "layer": 20
+            },
+            {
+              "entity": "env__scene-set-home",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-home"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-home",
+        "scene_accents": []
+      },
+      "art_direction": {
+        "palette_id": "social-teal",
+        "environment_profile": "primary-continuous-scene-set-home",
+        "performer": "gemini",
+        "action": "Chuyển từ câu hỏi “gì” sang câu hỏi “vì sao”.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền."
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_GEMINI_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 245,
+                "y": 500,
+                "width": 470,
+                "height": 655
+              }
+            },
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 245,
+                "y": 500,
+                "width": 470,
+                "height": 655
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "env__scene-set-home",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_HOME",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-home"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s04_gemini_probe",
+          "target": "gemini",
+          "state_before": "neutral",
+          "state_after": "asking",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Họ còn muốn biết vì sao"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s04",
+          "beat_id": "s04_director",
+          "voice_anchor": "Cái thú vị ở Song Tử là họ không chỉ hỏi chuyện gì xảy ra. Họ còn muốn biết vì s",
+          "semantic_purpose": "explanation",
+          "performer": "gemini",
+          "action": "Chuyển từ câu hỏi “gì” sang câu hỏi “vì sao”.",
+          "reaction": "",
+          "visual_payoff": "Biểu cảm suy nghĩ; không thêm một đạo cụ vô cớ.",
+          "shot_reason": "medium-character tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "state_swap",
+          "static_reason": "Chuyển biểu cảm ở đúng nhịp nói.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [],
+      "scene_direction": {
+        "shot": "medium-character",
+        "focus": "gemini",
+        "subject_placement": "center",
+        "continuity_relation": "continue",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần."
+      },
+      "visual_grammar": {
+        "frame_id": "single-character-focus",
+        "mechanic_id": "explain",
+        "bindings": {
+          "subject": "gemini"
+        }
+      }
+    },
+    {
+      "id": "s05",
+      "narration_range": [
+        1339,
+        1961
+      ],
+      "semantic_goal": "Mặt trái của việc hỏi",
+      "grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        },
+        "environment": {
+          "profile": "living-room-home"
+        },
+        "continuity_relation": "continue",
+        "composition_goal": "Story Object có nhiều bong bóng chen nhau phía trên; người bạn phản ứng, scene-set vẫn tối giản."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-home",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              },
+              "layer": 20
+            },
+            {
+              "entity": "friend",
+              "role": "listener",
+              "box": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              },
+              "layer": 18
+            },
+            {
+              "entity": "env__scene-set-home",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            },
+            {
+              "entity": "friend",
+              "anchor": "env__scene-set-home",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-home"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-home",
+        "scene_accents": []
+      },
+      "art_direction": {
+        "palette_id": "friction-slate",
+        "environment_profile": "primary-continuous-scene-set-home",
+        "performer": "gemini",
+        "action": "Câu hỏi quá nhiều trở thành áp lực lên người chỉ muốn được nghe.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền.",
+        "story_object": {
+          "id": "gemini_story_object",
+          "voice_anchor": "Họ im hai giây",
+          "render_layer": "prop",
+          "replaces_environment": false
+        }
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "asking",
+          "states": {
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            },
+            "neutral": {
+              "asset": "CHAR_GEMINI_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "friend",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_FRIEND_NEUTRAL",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            },
+            "hurt": {
+              "asset": "CHAR_FRIEND_HURT",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:friend"
+          },
+          "narrative_intent": {
+            "reason": "Người bạn phản ứng để thấy tác động xã hội của việc hỏi liên tục",
+            "voice_anchor": "Bạn vừa buồn vì một chuyện, chỉ muốn có người ngồi nghe"
+          }
+        },
+        {
+          "id": "env__scene-set-home",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_HOME",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-home"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        },
+        {
+          "id": "gemini_story_object",
+          "kind": "object",
+          "visual_role": "interactive_prop",
+          "initial_state": "setup",
+          "states": {
+            "setup": {
+              "asset": "STORY_GEMINI_SETUP",
+              "visible": true,
+              "layer": 24,
+              "transform": {
+                "x": 430,
+                "y": 250,
+                "width": 390,
+                "height": 270
+              }
+            },
+            "friction": {
+              "asset": "STORY_GEMINI_FRICTION",
+              "visible": true,
+              "layer": 24,
+              "transform": {
+                "x": 410,
+                "y": 230,
+                "width": 430,
+                "height": 300
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Story Object chuyển từ một câu hỏi thành cụm hội thoại chen nhau, vẫn là biểu tượng nổi chứ không phải đồ vật trong cảnh.",
+            "voice_anchor": "Bạn vừa buồn vì một chuyện, chỉ muốn có người ngồi nghe"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s05_story_object_change",
+          "target": "gemini_story_object",
+          "state_before": "setup",
+          "state_after": "friction",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Họ im hai giây"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        },
+        {
+          "id": "s05_friend_hurt",
+          "target": "friend",
+          "state_before": "neutral",
+          "state_after": "hurt",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Tao không cần giải pháp"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "friend",
+          "anchor": "env__scene-set-home",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "gemini_story_object",
+          "anchor": "friend",
+          "relation": "near",
+          "max_distance_px": 900
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s05",
+          "beat_id": "s05_director",
+          "voice_anchor": "Bạn vừa buồn vì một chuyện, chỉ muốn có người ngồi nghe. Song Tử lại hỏi: “Thế s",
+          "semantic_purpose": "distance",
+          "performer": "gemini",
+          "action": "Câu hỏi quá nhiều trở thành áp lực lên người chỉ muốn được nghe.",
+          "reaction": "Người bạn thay đổi phản ứng khi câu hỏi xuất hiện.",
+          "visual_payoff": "Nhiều bubble hội thoại chen nhau tạo áp lực nhưng vẫn là symbolic cue.",
+          "shot_reason": "two-person tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "state_swap",
+          "static_reason": "Chuyển biểu cảm ở đúng nhịp nói.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [
+        {
+          "scene_id": "s05",
+          "entity_id": "gemini_story_object",
+          "asset_id": "STORY_GEMINI_FRICTION",
+          "role": "primary_story",
+          "semantic_need": "Câu hỏi quá nhiều trở thành áp lực lên người chỉ muốn được nghe.",
+          "semantic_tags": [
+            "dialogue",
+            "pressure",
+            "question"
+          ],
+          "fit_score": 0.97,
+          "resolution": "derive_new",
+          "selected_master": "symbolic-dialogue-object",
+          "derivation": {
+            "output_asset_id": "STORY_GEMINI_FRICTION",
+            "semantic_tags": [
+              "dialogue",
+              "pressure",
+              "question"
+            ],
+            "style_token": "zodiac-paper-doodle-meme-v4"
+          }
+        }
+      ],
+      "scene_direction": {
+        "shot": "two-person",
+        "focus": "gemini",
+        "subject_placement": "split",
+        "continuity_relation": "continue",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần.",
+        "interaction_roles": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      },
+      "visual_grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      }
+    },
+    {
+      "id": "s06",
+      "narration_range": [
+        1961,
+        2279
+      ],
+      "semantic_goal": "Bước ngoặt ở quán cà phê",
+      "grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        },
+        "environment": {
+          "profile": "cafe-chat"
+        },
+        "continuity_relation": "location_change",
+        "composition_goal": "Story Object rút còn một bong bóng câu hỏi rõ; cafe accent chỉ là nét gợi bối cảnh."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-cafe",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              },
+              "layer": 20
+            },
+            {
+              "entity": "friend",
+              "role": "listener",
+              "box": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              },
+              "layer": 18
+            },
+            {
+              "entity": "env__scene-set-cafe",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-cafe",
+              "relation": "near",
+              "max_distance_px": 950
+            },
+            {
+              "entity": "friend",
+              "anchor": "env__scene-set-cafe",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-cafe"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-cafe",
+        "scene_accents": [
+          {
+            "id": "scene-accent-cafe",
+            "entity_id": "decor_cafe_accent"
+          }
+        ]
+      },
+      "art_direction": {
+        "palette_id": "callback-muted",
+        "environment_profile": "primary-continuous-scene-set-cafe",
+        "performer": "gemini",
+        "action": "Một câu hỏi đúng biến câu chuyện cũ thành phát hiện mới.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền.",
+        "story_object": {
+          "id": "gemini_story_object",
+          "voice_anchor": "Song Tử bỗng ngẩng lên",
+          "render_layer": "prop",
+          "replaces_environment": false
+        }
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "asking",
+          "states": {
+            "asking": {
+              "asset": "CHAR_GEMINI_ASKING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            },
+            "realizing": {
+              "asset": "CHAR_GEMINI_REALIZING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 150,
+                "y": 540,
+                "width": 405,
+                "height": 600
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "friend",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_FRIEND_NEUTRAL",
+              "visible": true,
+              "layer": 18,
+              "transform": {
+                "x": 630,
+                "y": 600,
+                "width": 350,
+                "height": 535
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:friend"
+          },
+          "narrative_intent": {
+            "reason": "Người bạn phản ứng để thấy tác động xã hội của việc hỏi liên tục",
+            "voice_anchor": "Vẫn quán cà phê cũ"
+          }
+        },
+        {
+          "id": "env__scene-set-cafe",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_CAFE",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-cafe"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        },
+        {
+          "id": "gemini_story_object",
+          "kind": "object",
+          "visual_role": "interactive_prop",
+          "initial_state": "friction",
+          "states": {
+            "friction": {
+              "asset": "STORY_GEMINI_FRICTION",
+              "visible": true,
+              "layer": 24,
+              "transform": {
+                "x": 400,
+                "y": 235,
+                "width": 420,
+                "height": 295
+              }
+            },
+            "payoff": {
+              "asset": "STORY_GEMINI_PAYOFF",
+              "visible": true,
+              "layer": 24,
+              "transform": {
+                "x": 390,
+                "y": 245,
+                "width": 390,
+                "height": 270
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Story Object rút còn một câu hỏi rõ ở payoff, không can thiệp scene-set hay perspective.",
+            "voice_anchor": "Vẫn quán cà phê cũ"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        },
+        {
+          "id": "decor_cafe_accent",
+          "kind": "object",
+          "visual_role": "effect",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_ACCENT_CAFE",
+              "visible": true,
+              "layer": 3,
+              "transform": {
+                "x": 220,
+                "y": 390,
+                "width": 640,
+                "height": 130
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Scene accent rất nhẹ, nằm hoàn toàn trong vùng tường của scene-set để gợi bối cảnh; không thay đổi khung chính.",
+            "voice_anchor": "Vẫn quán cà phê cũ"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s06_story_object_change",
+          "target": "gemini_story_object",
+          "state_before": "friction",
+          "state_after": "payoff",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Song Tử bỗng ngẩng lên"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        },
+        {
+          "id": "s06_gemini_realize",
+          "target": "gemini",
+          "state_before": "asking",
+          "state_after": "realizing",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Tự nhiên, câu chuyện cũ lại có một trang chưa mở"
+          },
+          "motion": {
+            "preset": "state_swap",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-cafe",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "friend",
+          "anchor": "env__scene-set-cafe",
+          "relation": "near",
+          "max_distance_px": 950
+        },
+        {
+          "entity": "gemini_story_object",
+          "anchor": "gemini",
+          "relation": "near",
+          "max_distance_px": 900
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s06",
+          "beat_id": "s06_director",
+          "voice_anchor": "Vẫn quán cà phê cũ. Vẫn người bạn ấy. Vẫn câu chuyện tưởng đã kể xong.",
+          "semantic_purpose": "realization",
+          "performer": "gemini",
+          "action": "Một câu hỏi đúng biến câu chuyện cũ thành phát hiện mới.",
+          "reaction": "Người bạn thay đổi phản ứng khi câu hỏi xuất hiện.",
+          "visual_payoff": "Các bubble phụ biến mất, còn một câu hỏi rõ ở payoff.",
+          "shot_reason": "two-person tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "state_swap",
+          "static_reason": "Chuyển biểu cảm ở đúng nhịp nói.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [
+        {
+          "scene_id": "s06",
+          "entity_id": "gemini_story_object",
+          "asset_id": "STORY_GEMINI_PAYOFF",
+          "role": "primary_story",
+          "semantic_need": "Một câu hỏi đúng biến câu chuyện cũ thành phát hiện mới.",
+          "semantic_tags": [
+            "dialogue",
+            "insight",
+            "question"
+          ],
+          "fit_score": 0.98,
+          "resolution": "derive_new",
+          "selected_master": "symbolic-dialogue-object",
+          "derivation": {
+            "output_asset_id": "STORY_GEMINI_PAYOFF",
+            "semantic_tags": [
+              "dialogue",
+              "insight",
+              "question"
+            ],
+            "style_token": "zodiac-paper-doodle-meme-v4"
+          }
+        }
+      ],
+      "scene_direction": {
+        "shot": "two-person",
+        "focus": "gemini",
+        "subject_placement": "split",
+        "continuity_relation": "location_change",
+        "composition_goal": "Nhân vật ở trong scene-set, chân chạm đường sàn; story object chỉ xuất hiện giữa nhân vật khi lời kể cần.",
+        "interaction_roles": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      },
+      "visual_grammar": {
+        "frame_id": "two-person-offset",
+        "mechanic_id": "confront",
+        "bindings": {
+          "speaker": "gemini",
+          "listener": "friend"
+        }
+      }
+    },
+    {
+      "id": "s07",
+      "narration_range": [
+        2279,
+        2458
+      ],
+      "semantic_goal": "Payoff nhận diện",
+      "grammar": {
+        "frame_id": "caption-payoff",
+        "mechanic_id": "payoff",
+        "bindings": {
+          "subject": "gemini"
+        },
+        "environment": {
+          "profile": "cafe-chat"
+        },
+        "continuity_relation": "continue",
+        "composition_goal": "Nhân vật dừng phản ứng, dành khoảng trống cho punchline. Khung nền panel phải đọc được như background system, không phải khung nền."
+      },
+      "environment": {
+        "mode": "micro_environment",
+        "profile": "primary-continuous-scene-set-cafe",
+        "frame": {
+          "version": "zodiac-environment-frame@1",
+          "intent": "Spatial staging guide only. Scene-set is the wall/floor behind the action and does not visually contain the characters.",
+          "slots": [
+            {
+              "entity": "gemini",
+              "role": "performer",
+              "box": {
+                "x": 255,
+                "y": 470,
+                "width": 485,
+                "height": 690
+              },
+              "layer": 20
+            },
+            {
+              "entity": "env__scene-set-cafe",
+              "role": "structural_fixture",
+              "box": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              },
+              "layer": 1
+            }
+          ],
+          "contacts": [
+            {
+              "entity": "gemini",
+              "anchor": "env__scene-set-cafe",
+              "relation": "near",
+              "max_distance_px": 950
+            }
+          ],
+          "occlusions": []
+        },
+        "roles": {
+          "rear": [
+            "env__scene-set-cafe"
+          ],
+          "grounding": [],
+          "front": []
+        },
+        "scene_set_id": "scene-set-cafe",
+        "scene_accents": [
+          {
+            "id": "scene-accent-cafe",
+            "entity_id": "decor_cafe_accent"
+          }
+        ]
+      },
+      "art_direction": {
+        "palette_id": "callback-muted",
+        "environment_profile": "primary-continuous-scene-set-cafe",
+        "performer": "gemini",
+        "action": "Câu kết tự trào; giữ nhân vật mà không phát sinh SVG vô nghĩa.",
+        "color_reason": "Teal biểu hiện tò mò, slate cho hiểu lầm, màu muted cho cú kết.",
+        "environment_reason": "Scene-set là lớp tường/sàn phía sau để tạo chiều sâu; không phải khung chứa nhân vật và không ép nhân vật nằm trong viền."
+      },
+      "entities": [
+        {
+          "id": "gemini",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "realizing",
+          "states": {
+            "realizing": {
+              "asset": "CHAR_GEMINI_REALIZING",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 255,
+                "y": 470,
+                "width": 485,
+                "height": 690
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "character:gemini"
+          },
+          "narrative_intent": {
+            "reason": "Song Tử thay đổi sắc thái câu hỏi qua vai chính",
+            "voice_anchor": "Song Tử"
+          }
+        },
+        {
+          "id": "env__scene-set-cafe",
+          "kind": "object",
+          "visual_role": "background",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_SCENE_SET_CAFE",
+              "visible": true,
+              "layer": 1,
+              "transform": {
+                "x": 0,
+                "y": 140,
+                "width": 1080,
+                "height": 1240
+              }
+            }
+          },
+          "ownership": {
+            "kind": "compiler",
+            "locator": "scene-set:scene-set-cafe"
+          },
+          "narrative_intent": {
+            "reason": "Scene-set chính: tường và sàn liên tục trong cùng không gian diễn xuất, không phải bảng treo.",
+            "voice_anchor": "Song"
+          }
+        },
+        {
+          "id": "decor_cafe_accent",
+          "kind": "object",
+          "visual_role": "effect",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ENV_ACCENT_CAFE",
+              "visible": true,
+              "layer": 3,
+              "transform": {
+                "x": 220,
+                "y": 390,
+                "width": 640,
+                "height": 130
+              }
+            }
+          },
+          "narrative_intent": {
+            "reason": "Scene accent rất nhẹ, nằm hoàn toàn trong vùng tường của scene-set để gợi bối cảnh; không thay đổi khung chính.",
+            "voice_anchor": "Có khi Song Tử chưa hết hứng"
+          },
+          "ownership": {
+            "kind": "authored"
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "s07_gemini_hold",
+          "target": "gemini",
+          "state_before": "realizing",
+          "state_after": "realizing",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Và khổ nhất là"
+          },
+          "motion": {
+            "preset": "hold",
+            "duration_frames": 12
+          },
+          "action": "transition"
+        }
+      ],
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 90,
+          "y": 1510,
+          "width": 900,
+          "height": 250
+        },
+        "character_zone": {
+          "x": 70,
+          "y": 500,
+          "width": 940,
+          "height": 810
+        },
+        "prop_zone": {
+          "x": 610,
+          "y": 270,
+          "width": 380,
+          "height": 600
+        },
+        "effect_zone": {
+          "x": 700,
+          "y": 310,
+          "width": 310,
+          "height": 430
+        }
+      },
+      "occlusion_relations": [],
+      "spatial_bindings": [
+        {
+          "entity": "gemini",
+          "anchor": "env__scene-set-cafe",
+          "relation": "near",
+          "max_distance_px": 950
+        }
+      ],
+      "director_beats": [
+        {
+          "scene_id": "s07",
+          "beat_id": "s07_director",
+          "voice_anchor": "Có khi Song Tử chưa hết hứng với người quen. Họ chỉ vừa tìm ra câu hỏi mới trong",
+          "semantic_purpose": "payoff",
+          "performer": "gemini",
+          "action": "Câu kết tự trào; giữ nhân vật mà không phát sinh SVG vô nghĩa.",
+          "reaction": "",
+          "visual_payoff": "Nhân vật dừng phản ứng, dành khoảng trống cho punchline.",
+          "shot_reason": "caption-led tập trung vào cách một câu hỏi làm thay đổi tình huống.",
+          "supported_motion_or_state": "hold",
+          "static_reason": "Giữ biểu cảm để khán giả nhận ra payoff bằng câu kể.",
+          "asset_cost_reason": "Tái sử dụng nhân vật và biểu cảm đã dự trù, không tạo một SVG cho mỗi câu."
+        }
+      ],
+      "semantic_asset_decisions": [],
+      "scene_direction": {
+        "shot": "medium-character",
+        "focus": "gemini",
+        "subject_placement": "center",
+        "continuity_relation": "payoff",
+        "composition_goal": "Payoff bằng cận cảnh nhân vật trong scene-set chính; phụ đề do runtime overlay ở dưới."
+      },
+      "visual_grammar": {
+        "frame_id": "caption-payoff",
+        "mechanic_id": "payoff",
+        "bindings": {
+          "subject": "gemini"
+        }
+      }
+    }
+  ],
+  "story_object_decision": {
+    "mode": "required",
+    "reason": "Song Tử cần một biểu tượng thị giác đơn giản cho cơ chế hỏi tiếp; Story Object là symbolic cue, không phải vật thể vật lý hay scene-set.",
+    "review_ref": "user:2026-10-12:story-object-clarified"
+  },
+  "story_object_plan": {
+    "format": "zodiac-story-object-plan@2",
+    "narration_sha256": "46eabba92b524e51da0d5c8232dc6dc869212da174f4026c57c8f421476d4ca4",
+    "style_token": "zodiac-paper-doodle-meme-v4",
+    "decision": {
+      "mode": "required",
+      "reason": "Story Object là hình tượng hội thoại nổi giống ví dụ cái cân: setup → friction → payoff, không thay scene-set.",
+      "review_ref": "user:2026-10-12:story-object-clarified"
+    },
+    "central_metaphor": {
+      "id": "gemini-dialogue-bubbles",
+      "meaning": "Một cuộc trò chuyện sinh thêm câu hỏi. Hình tượng là cụm bong bóng hội thoại đơn giản, không phải prop thật.",
+      "payoff_transformation": "Một bubble mở thêm câu hỏi → nhiều bubble chen nhau → chỉ còn một câu hỏi rõ và hữu ích.",
+      "sign_contradiction": "Tò mò có thể làm cuộc trò chuyện sống động, nhưng hỏi dồn cũng có thể làm người khác ngợp.",
+      "removal_test": "Bỏ Story Object vẫn hiểu hành động, nhưng mất hình tượng trực quan cho chuyển hóa tò mò → áp lực → insight."
+    },
+    "selection": {
+      "selected_id": "gemini-dialogue-bubbles",
+      "rationale": "Đơn giản như cái cân của Thiên Bình: một symbolic cue nổi trên cảnh, thay đổi qua ba trạng thái mà không cố biến thành vật thể có perspective.",
+      "candidates": [
+        {
+          "id": "gemini-dialogue-bubbles",
+          "object_idea": "Cụm bong bóng hội thoại: một bubble mở nhánh, nhiều bubble chen nhau, một bubble rõ ở payoff.",
+          "sign_specificity": "Gắn trực tiếp với giao tiếp và tò mò của Song Tử.",
+          "removal_test": "Bỏ đi mất lớp biểu tượng nhưng không phá staging."
+        },
+        {
+          "id": "conversation-branch-overlay",
+          "object_idea": "Đường nhánh chạy qua không gian giữa hai người.",
+          "sign_specificity": "Có liên hệ với mở nhánh ý nghĩ.",
+          "removal_test": "Bỏ đi vẫn không ảnh hưởng staging nhiều.",
+          "rejected_reason": "Dễ đọc thành effect graphic và bị ép vào perspective không cần thiết."
+        }
+      ]
+    },
+    "object_instances": [
+      {
+        "scene_id": "s02",
+        "entity_id": "gemini_story_object",
+        "metaphor_id": "gemini-dialogue-bubbles"
+      },
+      {
+        "scene_id": "s05",
+        "entity_id": "gemini_story_object",
+        "metaphor_id": "gemini-dialogue-bubbles"
+      },
+      {
+        "scene_id": "s06",
+        "entity_id": "gemini_story_object",
+        "metaphor_id": "gemini-dialogue-bubbles"
+      }
+    ],
+    "beats": [
+      {
+        "beat_id": "s02_story_setup",
+        "scene_id": "s02",
+        "role": "setup",
+        "object_entity": "gemini_story_object",
+        "object_event_ids": [
+          "s02_story_object_change"
+        ],
+        "voice_anchor": "Bạn kể vừa đổi chỗ làm",
+        "visual_change": "Một bubble hội thoại chính sinh thêm bubble nhỏ có dấu hỏi.",
+        "narrative_meaning": "Song Tử nhận ra còn một điều chưa biết trong câu chuyện.",
+        "presentation_mode": "thought_metaphor",
+        "semantic_delta": {
+          "before_read": "Cuộc trò chuyện bình thường.",
+          "after_read": "Có thêm một câu hỏi mới để mở câu chuyện.",
+          "added_meaning": "Tò mò được biểu diễn bằng một hình tượng nhẹ, không thành prop."
+        }
+      },
+      {
+        "beat_id": "s05_story_friction",
+        "scene_id": "s05",
+        "role": "friction",
+        "object_entity": "gemini_story_object",
+        "object_event_ids": [
+          "s05_story_object_change"
+        ],
+        "voice_anchor": "Họ im hai giây",
+        "visual_change": "Ba bubble chen nhau, nghiêng nhẹ về phía người bạn.",
+        "narrative_meaning": "Câu hỏi dồn dập bắt đầu gây áp lực.",
+        "presentation_mode": "thought_metaphor",
+        "semantic_delta": {
+          "before_read": "Hỏi nhiều có vẻ là quan tâm.",
+          "after_read": "Quá nhiều câu hỏi chiếm chỗ của việc lắng nghe.",
+          "added_meaning": "Biểu tượng chuyển từ tò mò sang ma sát."
+        }
+      },
+      {
+        "beat_id": "s06_story_payoff",
+        "scene_id": "s06",
+        "role": "payoff",
+        "object_entity": "gemini_story_object",
+        "object_event_ids": [
+          "s06_story_object_change"
+        ],
+        "voice_anchor": "Song Tử bỗng ngẩng lên",
+        "visual_change": "Các bubble phụ biến mất, chỉ còn một bubble câu hỏi rõ với điểm nhấn nhỏ.",
+        "narrative_meaning": "Một câu hỏi đúng lúc mở lại câu chuyện cũ.",
+        "presentation_mode": "thought_metaphor",
+        "semantic_delta": {
+          "before_read": "Câu chuyện tưởng đã kể hết.",
+          "after_read": "Một câu hỏi đúng tạo góc nhìn mới.",
+          "added_meaning": "Tò mò trở nên có giá trị khi được chọn lọc."
+        },
+        "relation_transformation": {
+          "from": "Nhiều câu hỏi chen nhau.",
+          "to": "Một câu hỏi đủ rõ và đúng lúc.",
+          "meaning": "Tò mò cần biết chọn điểm dừng."
+        }
+      }
+    ],
+    "payoff_beat_id": "s06_story_payoff"
+  },
+  "authoring_rev": "r8-scene-set-story-object-clarified"
+}

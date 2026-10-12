@@ -9,7 +9,9 @@ import {fileURLToPath} from 'node:url';
 
 import {acquireAuthoringLease} from './authoring-lease.mjs';
 import os from 'node:os';
+import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from './compile-visual-intent.mjs';
+import {selectedPhase02Dependencies,selectedStepDependencyFiles} from './phase02-selected-dependencies.mjs';
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
 const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
@@ -45,6 +47,13 @@ const sourcePaths=[
  'references/design.md',
  'orchestration/validate-phase02-art-direction.mjs',
  'orchestration/validate-scene-set-identity.mjs',
+ 'orchestration/scene-set-detection.mjs',
+ 'references/asset-library-v4/scene-set/index.json',
+ 'references/asset-library-v4/scene-set/compile-scene-set.mjs',
+ 'references/asset-library-v4/scene-set/accents/index.json',
+ 'orchestration/phase02-selected-dependencies.mjs',
+ 'orchestration/validate-motion-consistency.mjs',
+ 'orchestration/validate-scene-set-accents.mjs',
  'art-direction/palette-registry.json',
  'art-direction/environment-registry.json',
  'orchestration/validate-publish-prep.mjs',
@@ -72,8 +81,10 @@ const steps=[
  {id:'environment_binding',src:'references/asset-library-v4/environments/validate-environment-binding.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_direction',src:'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',args:[workspace,'--write'],required:['.authoring/scene-direction-compile-receipt.json']},
  {id:'scene_set_identity',src:'orchestration/validate-scene-set-identity.mjs',args:[workspace],required:[],validator:true},
+ {id:'scene_accent_containment',src:'orchestration/validate-scene-set-accents.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_direction_validation',src:'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',args:[workspace],required:[],validator:true},
  {id:'scene_events',src:'orchestration/validate-authoring-scene-events.mjs',args:[workspace],required:[],validator:true},
+ {id:'motion_consistency',src:'orchestration/validate-motion-consistency.mjs',args:[workspace],required:[],validator:true},
  {id:'visual_quality',src:'orchestration/validate-visual-quality.mjs',args:[workspace],required:[],validator:true},
  {id:'publish_prep',src:'orchestration/validate-publish-prep.mjs',args:[workspace],required:[],validator:true},
 ];
@@ -81,7 +92,7 @@ const report={format:'zodiac-phase02-execution@1',phase:'02-visual-production',a
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
@@ -155,15 +166,19 @@ if(!(await exists(statePath)))fail('PIPELINE_STATE_MISSING_NO_AUTO_APPROVAL');
 else if(manifest){
  try{const state=JSON.parse(await readFile(statePath,'utf8'));if(state.plugin_version!==manifest.version)fail('PIPELINE_STATE_VERSION_REQUIRES_EVIDENCED_MIGRATION',{state:state.plugin_version,plugin:manifest.version});}catch(e){fail('PIPELINE_STATE_INVALID',{detail:e.message});}
 }
-const nativeDependencies=manifest?.version&&missingSource.length===0?await collectNativeDependencies(source.skillRoot):[];
-const stamp=manifest?.version&&missingSource.length===0?await signature([...new Set([path.join(source.pluginRoot,'plugin.json'),...sourcePaths.map(p=>path.join(source.skillRoot,p)),...nativeDependencies])]):null;
+const dependencySelection=manifest?.version&&missingSource.length===0?await selectedPhase02Dependencies(source.skillRoot,workspace):{mode:'legacy-full',files:[]};
+const nativeDependencies=manifest?.version&&missingSource.length===0?(dependencySelection.mode==='selected'?dependencySelection.files:await collectNativeDependencies(source.skillRoot)):[];
+const selectedIntent=dependencySelection.mode==='selected'?JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent.json'))):null;
+const memeUsed=selectedIntent?.scenes?.some(s=>s.grammar?.meme_composition);
+const activeSourcePaths=sourcePaths.filter(p=>dependencySelection.mode!=='selected'||memeUsed||!p.includes('/memes/'));
+const stamp=manifest?.version&&missingSource.length===0?await signature([...new Set([path.join(source.pluginRoot,'plugin.json'),...activeSourcePaths.map(p=>path.join(source.skillRoot,p)),...nativeDependencies])]):null;
 const releaseParts=String(manifest?.version??'0.0.0').split('.').map(Number);const modernComposition=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=46)));
 const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=47)));
 if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.run_mode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'orchestration/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}}
 if(modernComposition&&running&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.flags?.meme_selected){coreInputPaths.push('.authoring/story-beat-choreography.json');steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_effects',src:'references/asset-library-v4/memes/compile-meme-effects.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-effect-compile-receipt.json','.authoring/generated-assets.json']});}}
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'orchestration/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
 if(finalizeManifest)steps.push({id:'director_final_review',src:'orchestration/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
-report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;
+report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
 if(running&&report.issues.length===0){
  const validity=nodeRun(path.join(source.skillRoot,'orchestration/validate-pipeline-state.mjs'),[statePath]);
  report.state_validation=validity;
@@ -196,7 +211,7 @@ if(report.issues.length){report.status='BLOCKED';await finish();}
 else if(!running){report.status='READY';await finish();}
 else{
  let cache={format:'zodiac-phase02-native-checkpoints@1',version:manifest.version,source_fingerprint:stamp,steps:{}};
- try{const old=JSON.parse(await readFile(checkpointPath,'utf8'));if(old.format===cache.format&&old.version===manifest.version&&old.source_fingerprint===stamp)cache=old;}catch{}
+ try{const old=JSON.parse(await readFile(checkpointPath,'utf8'));if(old.format===cache.format&&old.version===manifest.version&&(old.source_fingerprint===stamp||dependencySelection.mode==='selected'))cache={...old,source_fingerprint:stamp};}catch{}
  report.checkpoint='checked';
  for(const step of steps){
   // Only Publish Prep tracks publish inputs; changing cover copy must not invalidate character/environment caches.
@@ -205,7 +220,8 @@ else{
   if(missing.length){const issue={id:step.id,status:'BLOCKED',reason:'WORKSPACE_STEP_INPUT_MISSING',missing};report.steps.push(issue);fail('WORKSPACE_STEP_INPUT_MISSING',{step:step.id,missing});break;}
   const absolute=path.join(source.skillRoot,step.src);
   const args=[...step.args];
-  const relevant=[absolute,...(step.validator?[path.join(source.skillRoot,'orchestration/run-validator-with-receipt.mjs')]:[]),...stepInputPaths.map(p=>path.join(workspace,p))];
+  const stepSourceFiles=dependencySelection.mode==='selected'?await selectedStepDependencyFiles(source.skillRoot,step.src,[...nativeDependencies,...activeSourcePaths.map(p=>path.join(source.skillRoot,p))],{stepId:step.id}):[];
+  const relevant=[...stepSourceFiles,absolute,...(step.validator?[path.join(source.skillRoot,'orchestration/run-validator-with-receipt.mjs')]:[]),...stepInputPaths.map(p=>path.join(workspace,p))];
   if(!['character_components','character_plan','character_write'].includes(step.id)){
    const generated=step.id==='environment'?await workspaceAssetPaths('environment'):[];
    const kind=['character_identity','outfit_bake'].includes(step.id)?'character':undefined;
@@ -240,7 +256,7 @@ else{
    catch(e){extra.status='FAIL';extra.reason='VALIDATOR_RECEIPT_INVALID: '+e.message;}
   }
   if(extra.status==='PASS'){
-   cache.steps[step.id]={status:'PASS',command:result.command,after_input_sha:await signature(relevant),output_sha:required.length?await signature(required):sha('no-output-files'),at:new Date().toISOString()};
+   cache.steps[step.id]={status:'PASS',command:result.command,selected_source_files:stepSourceFiles.map(p=>path.relative(source.skillRoot,p)),after_input_sha:await signature(relevant),output_sha:required.length?await signature(required):sha('no-output-files'),at:new Date().toISOString()};
    await writeJson(checkpointPath,cache);
   }else {delete cache.steps[step.id];await writeJson(checkpointPath,cache);fail('NATIVE_STEP_FAILED',{step:step.id,reason:extra.reason??'NODE_EXIT_NONZERO',exit_code:extra.exit_code});}
   report.steps.push(extra);

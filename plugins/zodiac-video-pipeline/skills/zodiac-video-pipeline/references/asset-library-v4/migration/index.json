@@ -8,7 +8,9 @@
     "ordinary_character_strategy": "native_component_assembly",
     "specialist_character_strategy": "semantic_source_then_v4_derivative",
     "prop_effect_strategy": "lazy_semantic_derivation",
-    "runtime_dependency": false
+    "runtime_dependency": false,
+    "fresh_selection_visible": false,
+    "provenance_only": true
   },
   "ready_exemplars": [
     {

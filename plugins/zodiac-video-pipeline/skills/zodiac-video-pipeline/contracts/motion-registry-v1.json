@@ -4,7 +4,7 @@
   "motions": {
     "state_swap": {
       "renderer_motion": "state_swap",
-      "default_duration_frames": 10,
+      "default_duration_frames": 12,
       "kind": "transition"
     },
     "hold": {

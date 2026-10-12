@@ -220,7 +220,7 @@
           "id": "story_object_v2_contract",
           "kind": "internal_reference",
           "when": "fresh",
-          "guidance_uri": "references/story-object-effects.md",
+          "guidance_uri": "references/story-object-contract.md",
           "unavailable_policy": "block",
           "stage": "entry"
         }
@@ -348,7 +348,7 @@
         "references/visual-quality.md",
         "references/asset-library.md",
         "orchestration/phase02-composition-contract.md",
-        "references/story-object-composition-v2.md"
+        "references/story-object-contract.md"
       ],
       "guidance_selection": {
         "references/asset-library-v4/environments/compositions/index.json": "environment",

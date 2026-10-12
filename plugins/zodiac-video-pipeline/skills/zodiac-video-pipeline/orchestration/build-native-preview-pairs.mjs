@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {traceSceneStates} from './scene-state-trace.mjs';
 import {assessSemanticEvent} from './semantic-motion-qa.mjs';
+import {previewLineage} from './preview-lineage.mjs';
 
 const fail=(code,message)=>{throw new Error(`${code}: ${message}`)};
 const sha=x=>createHash('sha256').update(x).digest('hex');
@@ -51,6 +52,7 @@ async function frameHtml(root,scene,target,event,phase,assets,cache,assessment,s
 }
 export async function buildNativePairs(workspace,{outDir=path.join(workspace,'.authoring','preview-pairs'),inputFile=null}={}){
  const root=path.resolve(workspace);const file=inputFile??(await readFile(path.join(root,'production.json'),'utf8').then(()=>path.join(root,'production.json')).catch(()=>path.join(root,'production.ir.json')));
+ const authoring_lineage=await previewLineage(root);
  const raw=await readFile(file,'utf8');const production=JSON.parse(raw);const isJob5=production.format?.startsWith('zodiac-authoring-ir@')??false;
  if(!Array.isArray(production.scenes)||!production.scenes.length)fail('PREVIEW_SCENES_MISSING','No scenes');
  if(!production.assets||typeof production.assets!=='object')fail('PREVIEW_ASSETS_MISSING','No asset registry');
@@ -75,6 +77,8 @@ export async function buildNativePairs(workspace,{outDir=path.join(workspace,'.a
  const html=`<!doctype html><html lang="vi"><meta charset="utf-8"><title>Job@5 semantic preview pairs</title><meta name="viewport" content="width=device-width"><style>*{box-sizing:border-box}body{margin:16px auto;padding:0 16px;max-width:1100px;background:#f6f0e6;color:#2f3c44;font:15px system-ui}section{border-top:2px solid #d0c1b3;margin:18px 0;padding:6px 0}h2{font-size:18px}.pair{display:flex;flex-wrap:wrap;gap:14px}figure{margin:0;background:#fffdf9;padding:10px}.view{width:270px;height:480px;overflow:hidden;border:1px solid #d0c1b3}.scaled{width:1080px;height:1920px;transform:scale(.25);transform-origin:top left}.canvas{position:relative;width:1080px;height:1920px;overflow:hidden;background:#f6f0e6}.meta{position:absolute;left:20px;top:10px;z-index:100;font:26px sans-serif;color:#2f3c44;background:#fffdf9db;padding:8px}figcaption{text-align:center;font-weight:700;padding-top:4px}</style><h1>Producer-side visual preview: two endpoints per event</h1><p>Uses EXACT production asset SVGs and authored transforms. These are <b>semantic endpoints, not timed Remotion frames.</b> Motion-only events still require runner temporal QA.</p><main>${rows}</main></html>`;
  await writeFile(path.join(out,'index.html'),html,'utf8');
  const receipt={format:'zodiac-native-preview-pairs@1',source: path.relative(root,file),source_sha256:sha(raw),scope:'native_visual_review_only',renderer_faithful:false,description:'Two authored semantic endpoint snapshots per event. Runtime frames and motion-only visual amplitudes are local-runner owned.',scene_count:production.scenes.length,event_pairs:pairs.length,frame_files:pairs.length*2,motion_only_count:pairs.filter(x=>x.kind==='motion_only').length,static_hold_count:pairs.filter(x=>x.kind==='static_hold').length,transition_count:pairs.filter(x=>['state_or_visibility_change','actor_state_slide'].includes(x.kind)).length,asset_count:cache.size,assets_sha256:Object.fromEntries([...cache].map(([abs,value])=>[path.relative(root,abs).replaceAll('\\','/'),value.sha256])),index_sha256:sha(html),pairs};
+ if(authoring_lineage)receipt.authoring_lineage=authoring_lineage;
+ receipt.structural_status='STRUCTURAL_PASS';receipt.creative_status='CREATIVE_REVIEW_REQUIRED';receipt.runtime_status='RUNTIME_QA_PENDING';
  await writeFile(path.join(out,'preview-report.json'),JSON.stringify(receipt,null,2)+'\n','utf8');
  return receipt;
 }
