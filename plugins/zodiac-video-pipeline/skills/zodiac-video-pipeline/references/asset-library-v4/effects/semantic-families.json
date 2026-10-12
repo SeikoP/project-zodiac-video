@@ -28,6 +28,22 @@
     "motion-trail": {
       "intent": "directional movement continuation",
       "locus": "trailing_edge"
+    },
+    "focus-halo-family": {
+      "intent": "soft focus ring around selected subject",
+      "locus": "focus_subject"
+    },
+    "comparison-bracket-family": {
+      "intent": "bracket two values or subjects",
+      "locus": "comparison_axis"
+    },
+    "relief-wave-family": {
+      "intent": "release wave after tension",
+      "locus": "release_edge"
+    },
+    "alarm-zigzag-family": {
+      "intent": "sharp alert signal",
+      "locus": "alert_corner"
     }
   }
 }
