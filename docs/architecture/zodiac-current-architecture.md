@@ -17,6 +17,30 @@ Release-history notes are provenance, not active prompt policy. `bootstrap/capab
 
 Compatibility guidance is loaded only when explicitly selected. Fresh Phase 2 does not auto-load legacy room/window/furniture cues.
 
+
+## Plugin executable ownership
+
+Executable plugin code has explicit semantic owners:
+
+```text
+skills/zodiac-video-pipeline/
+├─ bootstrap/        current policy + capability registry
+├─ core/             policy, state, evidence, schema, release, audit, model
+├─ features/         episode, narration-performance, story-object, scene-set,
+│                    visual-composition, cover, ending, meme, publish
+├─ phases/
+│  ├─ phase01/       current content execution/commit implementation
+│  ├─ phase02/       current visual execution/seal implementation
+│  └─ phase03/       current Job@5 compile/export/handoff implementation
+├─ compat/           pre-Job5 production and true migration compatibility
+└─ orchestration/    public routers, context planners and thin forwarding wrappers
+```
+
+Internal current-path imports resolve to owner modules rather than depending on the flat orchestration root. Active phase manifests use canonical owner paths. Old orchestration CLI paths remain thin forwarding wrappers only where compatibility is still required.
+
+Fresh phase and feature modules are statically prohibited from importing `compat/`. Current Job@5 modules whose names contain `v2` remain under the current Phase 3 owner and are not treated as legacy merely because of the suffix.
+
+
 ## Asset framework
 
 Asset V4 is capability-driven and compile-on-use.
