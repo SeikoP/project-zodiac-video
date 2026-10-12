@@ -25,7 +25,8 @@
             "scene_set"
           ]
         }
-      ]
+      ],
+      "owner": "features/scene-set/validate-scene-set.mjs"
     },
     {
       "id": "character_assembly",
@@ -46,7 +47,8 @@
             "assets"
           ]
         }
-      ]
+      ],
+      "owner": "references/asset-library-v4/characters/compile-character-assembly.mjs"
     },
     {
       "id": "story_object",
@@ -70,7 +72,8 @@
             "fresh"
           ]
         }
-      ]
+      ],
+      "owner": "features/story-object/validate-story-object.mjs"
     },
     {
       "id": "cover",
@@ -88,7 +91,8 @@
             "publish_prep"
           ]
         }
-      ]
+      ],
+      "owner": "features/cover/validate-cover-design.mjs"
     },
     {
       "id": "narration_performance",
@@ -106,7 +110,8 @@
             "narration"
           ]
         }
-      ]
+      ],
+      "owner": "features/narration-performance/compile-narration-performance.mjs"
     },
     {
       "id": "legacy_environment",
