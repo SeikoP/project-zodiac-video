@@ -1,0 +1,94 @@
+{
+  "format": "zodiac-visual-metaphor-assets@1",
+  "style_token": "zodiac-paper-doodle-meme-v4",
+  "metaphors": [
+    {
+      "id": "balance-scale",
+      "meaning": "weigh competing choices",
+      "states": {
+        "tilt_left": {
+          "path": "balance-scale/tilt_left.svg",
+          "visual_read": "tilt left"
+        },
+        "balanced": {
+          "path": "balance-scale/balanced.svg",
+          "visual_read": "balanced"
+        },
+        "tilt_right": {
+          "path": "balance-scale/tilt_right.svg",
+          "visual_read": "tilt right"
+        }
+      }
+    },
+    {
+      "id": "split-direction",
+      "meaning": "two competing routes",
+      "states": {
+        "left": {
+          "path": "split-direction/left.svg",
+          "visual_read": "left"
+        },
+        "right": {
+          "path": "split-direction/right.svg",
+          "visual_read": "right"
+        }
+      }
+    },
+    {
+      "id": "push-pull",
+      "meaning": "attraction versus repulsion",
+      "states": {
+        "attract": {
+          "path": "push-pull/attract.svg",
+          "visual_read": "attract"
+        },
+        "repel": {
+          "path": "push-pull/repel.svg",
+          "visual_read": "repel"
+        }
+      }
+    },
+    {
+      "id": "focus-shift",
+      "meaning": "attention moves between subjects",
+      "states": {
+        "left": {
+          "path": "focus-shift/left.svg",
+          "visual_read": "left"
+        },
+        "right": {
+          "path": "focus-shift/right.svg",
+          "visual_read": "right"
+        }
+      }
+    },
+    {
+      "id": "barrier-opening",
+      "meaning": "constraint opens into access",
+      "states": {
+        "closed": {
+          "path": "barrier-opening/closed.svg",
+          "visual_read": "closed"
+        },
+        "open": {
+          "path": "barrier-opening/open.svg",
+          "visual_read": "open"
+        }
+      }
+    },
+    {
+      "id": "comparison-level",
+      "meaning": "compare relative levels",
+      "states": {
+        "low-high": {
+          "path": "comparison-level/low-high.svg",
+          "visual_read": "low-high"
+        },
+        "high-low": {
+          "path": "comparison-level/high-low.svg",
+          "visual_read": "high-low"
+        }
+      }
+    }
+  ]
+}
