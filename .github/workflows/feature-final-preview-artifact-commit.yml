@@ -1,13 +1,16 @@
 name: Feature final preview artifact commit
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - codex/zodiac-visual-semantics-palettes
 
 permissions:
   contents: write
 
 jobs:
   commit:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
