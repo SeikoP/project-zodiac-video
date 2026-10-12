@@ -1,6 +1,6 @@
 # Zodiac maintainability refactor — design
 
-Status: DESIGN REVIEW  
+Status: IMPLEMENTED ON FEATURE BRANCH — PENDING INTEGRATION  
 Baseline: `main@3fe89c2`, plugin `2.4.62`  
 Scope: zodiac plugin/control plane, asset framework, local runner/runtime, contracts/tests required by those boundaries.
 
@@ -443,3 +443,31 @@ During implementation review, specifically look for:
 - schema copies that can drift from root contracts;
 - tests that claim creative/media PASS from structural evidence;
 - “cleanup” that deletes referenced historical bytes prematurely.
+
+## 12. Implementation outcome
+
+Implemented on `codex/zodiac-maintainability-refactor`.
+
+Key outcomes:
+
+- active plugin behavior routes through current policy and step-bound capability registries;
+- narrative asset needs can resolve through the V4 coverage/capability matrix without callers knowing concrete asset IDs;
+- fresh context defaults no longer auto-load legacy environment guidance;
+- V4 fresh coverage now includes six scene-set families plus bounded accents and three-person comparison support;
+- Qt uses one ApplicationService boundary; legacy routing is lazy and isolated behind the compatibility adapter;
+- focused runner ownership now covers process control, package safety and PCM WAV primitives while legacy entrypoints remain compatible;
+- renderer/runtime selection is registry-backed and imported Job@5 renderer pins remain authoritative;
+- root contracts are canonical and plugin public copies are generated/hash-checked;
+- runner regression tests are domain-split and CI uses a compatibility matrix while preserving stable required-check job IDs;
+- runtime source history was not pruned because reverse-dependency audit reports all 12 registered versions still referenced by compatibility/test paths.
+
+Verification on the implemented tree:
+
+- plugin orchestration/reference suite: 608/608 PASS;
+- V4 library validator: PASS;
+- Python non-Qt suite: 599 PASS, 11 skipped, 23 subtests PASS;
+- architecture/runtime/contract subset: 25/25 PASS;
+- Python compileall: PASS;
+- local Qt runtime suite: not executed because the local verification environment lacks PySide6; CI retains the Qt dependency/install and launcher gate.
+
+No plugin publication, merge, or installed-ChatGPT-plugin update is implied by this status.
