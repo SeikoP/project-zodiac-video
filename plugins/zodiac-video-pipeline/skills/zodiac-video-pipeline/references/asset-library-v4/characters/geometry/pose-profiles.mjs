@@ -19,6 +19,10 @@ export const posePaths=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR,[h
  write:{la:`M${lx} ${ly} Q${lx-25} ${ly+30} ${lx-53} ${ly+74} Q${lx-60} ${ly+87} ${lx-65} ${ly+92}`,ra:`M${rx} ${ry} Q${rx+8} ${ry+18} ${rx-4} 500 Q${rx-14} 533 ${rx-24} 558`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705 Q${hlx-18} 712 ${hlx-24} 714`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704 Q${hrx+20} 711 ${hrx+27} 714`},
  read:{la:`M${lx} ${ly} Q${lx+5} ${ly+27} 224 486 Q230 505 243 520`,ra:`M${rx} ${ry} Q${rx-4} ${ry+28} 302 486 Q296 507 281 520`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705 Q${hlx-18} 712 ${hlx-24} 714`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704 Q${hrx+20} 711 ${hrx+27} 714`},
  'carry-backpack':{la:`M${lx} ${ly} Q${lx-18} ${ly-26} ${lx-23} 447 Q${lx-18} 425 ${lx-8} 414`,ra:`M${rx} ${ry} Q${rx+21} ${ry-21} ${rx+23} 445 Q${rx+16} 425 ${rx+5} 414`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705 Q${hlx-18} 712 ${hlx-24} 714`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704 Q${hrx+20} 711 ${hrx+27} 714`},
+ 'point-choice':{la:`M${lx} ${ly} Q${lx-42} ${ly+6} ${lx-101} ${ly-8}`,ra:`M${rx} ${ry} Q${rx+42} ${ry+6} ${rx+101} ${ry-8}`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704`},
+ 'receive-object':{la:`M${lx} ${ly} Q${lx-10} ${ly+35} 235 570`,ra:`M${rx} ${ry} Q${rx+8} ${ry+35} 292 570`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704`},
+ 'hold-two-props':{la:`M${lx} ${ly} Q${lx-34} ${ly+20} 190 515`,ra:`M${rx} ${ry} Q${rx+34} ${ry+20} 340 515`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704`},
+ 'open-barrier':{la:`M${lx} ${ly} Q${lx-50} ${ly-20} 140 430`,ra:`M${rx} ${ry} Q${rx+50} ${ry-20} 390 430`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704`},
  'text-phone':{la:`M${lx} ${ly} Q${lx+9} ${ly+25} 225 478 Q230 500 246 520`,ra:`M${rx} ${ry} Q${rx-8} ${ry+26} 304 479 Q297 501 278 520`,ll:`M${hlx} ${hly} Q${hlx-5} ${hly+28} ${hlx-12} 705 Q${hlx-18} 712 ${hlx-24} 714`,rl:`M${hrx} ${hry} Q${hrx+6} ${hry+29} ${hrx+14} 704 Q${hrx+20} 711 ${hrx+27} 714`}
  };
  // Per-profile authored leg geometry: do not scale the entire sticker.
@@ -52,7 +56,10 @@ export const handPoints=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR;r
  write:[[lx-65,ly+92],[rx-24,558]],
  read:[[243,520],[281,520]],
  'carry-backpack':[[lx-8,414],[rx+5,414]],
- 'text-phone':[[246,520],[278,520]]
+ 'text-phone':[[246,520],[278,520]],
+ 'point-choice':[[90,512],[430,512]],
+ 'receive-object':[[235,570],[292,570]],
+ 'hold-two-props':[[190,515],[340,515]],
+ 'open-barrier':[[140,430],[390,430]]
  })[id];};
 export const handShape=([x,y],side)=>side==='left'?`M${x-9} ${y} Q${x-3} ${y-11} ${x+7} ${y-4} Q${x+12} ${y+6} ${x+2} ${y+11} Q${x-8} ${y+9} ${x-9} ${y}Z`:`M${x-8} ${y-3} Q${x+1} ${y-11} ${x+10} ${y-1} Q${x+9} ${y+9} ${x-2} ${y+11} Q${x-11} ${y+5} ${x-8} ${y-3}Z`;
-
