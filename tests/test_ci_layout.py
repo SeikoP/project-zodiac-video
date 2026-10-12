@@ -21,22 +21,25 @@ def test_runtime_compatibility_jobs_are_one_matrix() -> None:
     assert 'runtime-version:' in text
 
 
-def test_ci_jobs_expose_validation_tiers() -> None:
+def test_ci_jobs_expose_validation_tiers_without_renaming_stable_job_ids() -> None:
     text = WORKFLOW.read_text(encoding='utf-8')
-    for job in (
-        'smoke-renderer',
-        'unit-python',
-        'contract-control-plane',
-        'integration-renderer-boundary',
-        'release-plugin',
-    ):
+    expected = {
+        'python': 'name: unit / python',
+        'renderer-smoke': 'name: smoke / renderer',
+        'control-plane-v2-core': 'name: contract / control-plane-v2-core',
+        'renderer-v2-boundary': 'name: integration / renderer-v2-boundary',
+        'zodiac-plugin-native': 'name: release / plugin-native',
+    }
+    for job, tier_name in expected.items():
         assert re.search(rf'^  {job}:\s*$', text, re.MULTILINE), job
+        assert tier_name in text
+    assert 'name: compatibility / remotion ${{ matrix.runtime-version }}' in text
 
 
 def test_compatibility_matrix_uses_step_working_directories_and_keeps_golden_cases() -> None:
     text = WORKFLOW.read_text(encoding='utf-8')
     start = text.index('  compatibility-runtime:')
-    end = text.index('  contract-control-plane:', start)
+    end = text.index('  control-plane-v2-core:', start)
     block = text[start:end]
     assert 'defaults:' not in block
     expected_dir = 'working-directory: runtime/zodiac-remotion/${{ matrix.runtime-version }}/renderer'
