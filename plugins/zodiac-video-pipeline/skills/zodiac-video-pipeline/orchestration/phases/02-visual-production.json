@@ -217,10 +217,10 @@
           "stage": "entry"
         },
         {
-          "id": "story_object_v2_contract",
+          "id": "visual_metaphor_contract",
           "kind": "internal_reference",
-          "when": "fresh",
-          "guidance_uri": "references/story-object-contract.md",
+          "when": "flag:visual_metaphor_selected",
+          "guidance_uri": "references/visual-metaphor-contract.md",
           "unavailable_policy": "block",
           "stage": "entry"
         }
@@ -678,18 +678,18 @@
           "stage": "exit"
         },
         {
-          "id": "story_object_semantic_validation",
+          "id": "visual_metaphor_semantic_validation",
           "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/story-object/validate-story-object.mjs",
+          "when": "flag:visual_metaphor_selected",
+          "tool_locator": "features/visual-metaphor/validate-visual-metaphor.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
         {
-          "id": "story_object_composition_validation",
+          "id": "visual_metaphor_composition_validation",
           "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/story-object/validate-story-object-composition.mjs",
+          "when": "flag:visual_metaphor_selected",
+          "tool_locator": "features/visual-metaphor/validate-visual-metaphor-composition.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }

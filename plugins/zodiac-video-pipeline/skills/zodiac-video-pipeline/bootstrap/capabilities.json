@@ -51,15 +51,15 @@
       "owner": "references/asset-library-v4/characters/compile-character-assembly.mjs"
     },
     {
-      "id": "story_object",
+      "id": "visual_metaphor",
       "fresh": true,
       "refs": [
-        "references/story-object-contract.md",
-        "references/story-object-composition-v2.md"
+        "references/visual-metaphor-contract.md",
+        "references/visual-metaphor-composition.md"
       ],
       "validators": [
-        "story-object",
-        "story-object-composition"
+        "visual-metaphor",
+        "visual-metaphor-composition"
       ],
       "bindings": [
         {
@@ -73,7 +73,7 @@
           ]
         }
       ],
-      "owner": "features/story-object/validate-story-object.mjs"
+      "owner": "features/visual-metaphor/validate-visual-metaphor.mjs"
     },
     {
       "id": "cover",

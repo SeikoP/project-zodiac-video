@@ -11,12 +11,12 @@
     "hard_to_extract": false,
     "relational_beats": false,
     "meme_selected": false,
-    "story_object_required": true,
     "viral_support_needed": false,
     "character_design_intent_required": true,
     "content_quality_engine": true,
     "art_direction_required": true,
-    "episode_selected": false
+    "episode_selected": false,
+    "visual_metaphor_selected": false
   },
   "current_phase": "01-content",
   "operations": [],
