@@ -1,0 +1,45 @@
+name: Feature commit final visual previews
+
+on:
+  push:
+    branches:
+      - codex/zodiac-visual-semantics-palettes
+
+permissions:
+  contents: write
+
+jobs:
+  commit-previews:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/zodiac-visual-semantics-palettes
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install preview rasterizer and font
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends librsvg2-bin fontconfig
+          mkdir -p ~/.local/share/fonts
+          cp runtime/zodiac-renderer/2.0.1/renderer/fonts/PatrickHand-Regular.ttf ~/.local/share/fonts/
+          fc-cache -f
+      - name: Build previews
+        run: node tools/preview/build-zodiac-v4-asset-showcase.mjs
+      - name: Rasterize previews
+        run: |
+          rsvg-convert -w 1080 -h 1920 docs/previews/zodiac-v4-full-asset-showcase.svg -o docs/previews/zodiac-v4-full-asset-showcase.png
+          rsvg-convert -w 1200 -h 1040 docs/previews/zodiac-v4-background-palettes.svg -o docs/previews/zodiac-v4-background-palettes.png
+          rsvg-convert -w 1200 -h 1400 docs/previews/zodiac-v4-asset-diversity-board.svg -o docs/previews/zodiac-v4-asset-diversity-board.png
+      - name: Commit generated preview artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/previews/zodiac-v4-full-asset-showcase.svg docs/previews/zodiac-v4-full-asset-showcase.png docs/previews/zodiac-v4-full-asset-showcase.json docs/previews/zodiac-v4-background-palettes.svg docs/previews/zodiac-v4-background-palettes.png docs/previews/zodiac-v4-asset-diversity-board.svg docs/previews/zodiac-v4-asset-diversity-board.png
+          git diff --cached --quiet && exit 0
+          git commit -m "docs(preview): regenerate V4 visual system diagnostic"
+          git push origin HEAD:codex/zodiac-visual-semantics-palettes
