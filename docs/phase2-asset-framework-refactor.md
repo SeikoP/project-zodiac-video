@@ -27,3 +27,21 @@ The unchanged canonical Job@5 schema and old ZIP fixture remain regression input
 ## Review and release boundary
 
 Structural validation, human creative review and runtime media QA remain separate. A source release does not approve an episode or seal Phase 3. The regenerated Gemini acceptance fixture proves reproducibility; revised episode receipts must still satisfy the existing genuine Visual Review and Phase 3 seal gates.
+
+## Plan closeout audit — 2026-10-12
+
+| Plan area | Result and evidence |
+| --- | --- |
+| A taxonomy | Canonical scene-set/shot-layout/action manifests and compatibility aliases exist; no disruptive physical moves. |
+| B fresh compilation | Clean Gemini reproduction matches entity transforms and native character hashes, compiles preview and Job@5 without local patches. |
+| C Story Object | Canonical symbolic contract; thought metaphor stays distinct from prop/effect/accent; old plan@1 documentation explicitly compatibility-only. |
+| D compiler hardening | Selected/per-step lineage, late registration, typed furniture matching, duration authority, stale preview binding/finalizer and scene-set-specific geometry checks covered by regressions. |
+| E character identity | Role-specific reference locks, authored hair and silhouette, body diversity and same-canvas identity preview retained. |
+| F cleanup | Reverse dependency audit: 24 referenced compatibility cues retained. Historical guidance indexed in docs/historical/index.md. Runtime-version deletion remains outside this change. |
+| G distribution | PR #102 merged; plugin 2.4.61 and its source-bundle CI verified. Closeout 2.4.62 repairs the missing packaged scene-set entrypoint; selected-context regression catches missing mandatory guidance. |
+
+The nine structural acceptance gates are covered by the clean Gemini regression, compatibility importer/renderer CI, selection/lineage tests, preview mutation tests and separate structural/creative/runtime receipt fields. Repeated approved scene-set geometry is exempt from legacy wallpaper diagnostics. Unselected extensions are omitted from selected authoring context and dependencies; compilation materializes selected masters only.
+
+Episode creative review, real voice and temporal/media QA are not source-refactor completion gates that can be granted by tests. They remain real episode gates; no approval receipts or Phase 3 episode seal were fabricated. The source change preserves the existing handoff/seal/import regressions.
+
+Ruling: keep referenced compatibility assets and old runtime versions; deleting them would break retained consumers. Cost: repository-size reduction is deferred. Explicit state_swap overrides retain the existing interval-preserving Job@5 alias transport; outdated runners must use the pinned supported runtime. No other outstanding source changes were identified by this closeout audit.
