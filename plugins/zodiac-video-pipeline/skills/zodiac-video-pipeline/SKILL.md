@@ -11,7 +11,7 @@ Before native execution, read orchestration/execution-bootstrap.md. Use a verifi
 
 Phase 01: use references/episode-formats.md and references/phase01-briefing.md. Distinguish episode format from the character_deconstruction story engine. Use bounded independent evidence, one coherent Story Spine and authentic Content Review. Narrative 2.1 is for fresh scoped episodes.
 
-At Phase 01 → Phase 02, run orchestration/phase02-transition-gate.mjs or its verified current target and inspect source hashes/approvals. AUTHORING_READY is not PASS.
+At Phase 01 → Phase 02, run the transition gate until AUTHORING_READY, then run orchestration/activate-phase02.mjs before Phase 02 step commits. Activation changes orchestration state only and creates no approval or native PASS. Inspect source hashes/approvals; AUTHORING_READY is not PASS.
 
 Phase 02: use approved cast, scene set, V4 native assets and stateful visual metaphors without replacing backgrounds. Compile actual native previews, run Visual Review and bind provenance. Scene accents stay inside the scene wall.
 
