@@ -1,5 +1,12 @@
 """Compatibility test entrypoint; domain cases live in tests.zodiac_local_cases."""
 
+from tests.zodiac_local_cases.support import (
+    package_files,
+    valid_timing,
+    write_package,
+    write_pcm,
+)
+
 from tests.zodiac_local_cases.package import (
     SafeExtractionTests,
     ThinPackageV3Tests,
@@ -33,6 +40,10 @@ from tests.zodiac_local_cases.output import (
 )
 
 __all__ = [
+    "package_files",
+    "valid_timing",
+    "write_package",
+    "write_pcm",
     "SafeExtractionTests",
     "ThinPackageV3Tests",
     "ThinPackageV4Tests",
