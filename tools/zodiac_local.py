@@ -36,6 +36,7 @@ from tools.runner.process import (
 )
 from tools.runner.audio import concatenate_wavs, validate_voice
 from tools.runner.package import _safe_relative_path, safe_extract_zip
+from tools.runtime.registry import default_runtime
 MAX_ZIP_ENTRIES = 5000
 MAX_FILE_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 512 * 1024 * 1024
@@ -80,7 +81,7 @@ PACKAGE_FORMAT_V3 = "zodiac-job@3"
 PACKAGE_FORMAT_V4 = "zodiac-job@4"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
-RUNTIME_VERSION = "1.20.0"
+RUNTIME_VERSION = default_runtime("zodiac-remotion", profile="legacy").version
 BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")

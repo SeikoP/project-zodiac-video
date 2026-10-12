@@ -1,0 +1,12 @@
+{
+  "format": "zodiac-runtime-release-registry@1",
+  "id": "zodiac-renderer",
+  "current": "2.0.1",
+  "defaults": {
+    "job5": "2.0.1"
+  },
+  "supported": {
+    "2.0.0": {"path": "runtime/zodiac-renderer/2.0.0", "status": "compatibility"},
+    "2.0.1": {"path": "runtime/zodiac-renderer/2.0.1", "status": "current"}
+  }
+}

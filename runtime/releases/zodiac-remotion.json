@@ -1,0 +1,20 @@
+{
+  "format": "zodiac-runtime-release-registry@1",
+  "id": "zodiac-remotion",
+  "current": "1.21.0",
+  "defaults": {
+    "legacy": "1.20.0"
+  },
+  "supported": {
+    "1.14.0": {"path": "runtime/zodiac-remotion/1.14.0", "status": "compatibility"},
+    "1.15.0": {"path": "runtime/zodiac-remotion/1.15.0", "status": "compatibility"},
+    "1.16.0": {"path": "runtime/zodiac-remotion/1.16.0", "status": "compatibility"},
+    "1.17.0": {"path": "runtime/zodiac-remotion/1.17.0", "status": "compatibility"},
+    "1.18.0": {"path": "runtime/zodiac-remotion/1.18.0", "status": "compatibility"},
+    "1.18.1": {"path": "runtime/zodiac-remotion/1.18.1", "status": "compatibility"},
+    "1.19.0": {"path": "runtime/zodiac-remotion/1.19.0", "status": "compatibility"},
+    "1.19.1": {"path": "runtime/zodiac-remotion/1.19.1", "status": "compatibility"},
+    "1.20.0": {"path": "runtime/zodiac-remotion/1.20.0", "status": "legacy-default"},
+    "1.21.0": {"path": "runtime/zodiac-remotion/1.21.0", "status": "current"}
+  }
+}

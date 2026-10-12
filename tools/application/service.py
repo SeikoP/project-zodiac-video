@@ -12,6 +12,7 @@ from typing import Callable
 from tools.application.compat import LegacyCompatibilityAdapter
 from tools.studio_v2.executor import ExecutorConfig
 from tools.studio_v2.session import StudioV2Session, detect_job5_manifest
+from tools.runtime.registry import current_runtime
 
 MODE_CURRENT = "job5"
 MODE_LEGACY = "legacy"
@@ -154,6 +155,7 @@ class ApplicationService:
             active.cancel()
 
     def _current_config(self, request: ApplicationRunRequest) -> ExecutorConfig:
+        renderer = current_runtime("zodiac-renderer")
         return ExecutorConfig(
             voice_profile=request.voice,
             tts_settings={
@@ -171,8 +173,8 @@ class ApplicationService:
                 "sentence_pause_ms": 0.0,
             },
             aligner_version="faster-whisper@local-v1",
-            renderer_version="2.0.0",
-            renderer_hash="zodiac-renderer@2.0.0",
+            renderer_version=renderer.version,
+            renderer_hash=f"{renderer.runtime_id}@{renderer.version}",
             music_path=request.music,
             mix_settings={"volume": float(request.volume)},
         )
