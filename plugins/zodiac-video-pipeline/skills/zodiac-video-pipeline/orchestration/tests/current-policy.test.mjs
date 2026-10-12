@@ -29,7 +29,9 @@ test('current effective policy is explicit and release-history is not active pro
  for(const rel of ['plugin.json','.codex-plugin/plugin.json']){
   const raw=await readFile(path.join(pluginRoot,rel),'utf8');
   const config=JSON.parse(raw);
-  assert.equal(/RELEASE\s+2\.4\./u.test(config.api?.defaultPrompt??''),false,rel+' must not carry release-history clauses');
+  const prompt=config.interface?.defaultPrompt??config.extensions?.['com.openai']?.interface?.defaultPrompt??'';
+  assert.ok(prompt.length>0,rel+' must expose an active defaultPrompt');
+  assert.equal(/RELEASE\s+2\.4\./u.test(prompt),false,rel+' must not carry release-history clauses');
  }
 });
 
