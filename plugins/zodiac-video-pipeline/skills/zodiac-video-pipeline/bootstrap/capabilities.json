@@ -70,7 +70,8 @@
           ],
           "run_modes": [
             "fresh"
-          ]
+          ],
+          "when": "flag:visual_metaphor_selected"
         }
       ],
       "owner": "features/visual-metaphor/validate-visual-metaphor.mjs"
