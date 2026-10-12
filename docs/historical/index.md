@@ -11,4 +11,6 @@ These files record migrations, regressions and earlier design decisions. They do
 | `runtime/**/tests/fixtures/songtu/` | Legacy renderer/schema contract fixture | Never the approved Gemini visual reference |
 | `tests/fixtures/phase2-gemini/` | Current clean compiler reproduction fixture | Approved-source geometry/hash regression; no synthetic creative approval |
 
-Compatibility assets and older runtime sources remain while import/render dependencies exist. Physical runtime-version pruning is a separate repository-size change. No bytes are deleted merely because they look old.
+Compatibility assets and older runtime sources remain while import/render dependencies exist.
+
+Current repository architecture is documented in `docs/architecture/zodiac-current-architecture.md`. Earlier Studio/TUI/refactor specifications are retained as design history and do not override the current ApplicationService/runtime-registry boundaries. Physical runtime-version pruning is a separate repository-size change. No bytes are deleted merely because they look old.

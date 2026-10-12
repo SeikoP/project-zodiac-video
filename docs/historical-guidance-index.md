@@ -9,3 +9,5 @@ These files are retained for compatibility and provenance. Do not load them as v
 - Plugin `references/asset-library-v4/environments/`: retained explicit selected-cue/legacy compiler inputs. Fresh work starts at `scene-set/index.json`.
 
 The active clean-reproduction reference is `tests/fixtures/phase2-gemini/`; active guidance is the canonical scene-set and Story Object contracts.
+
+Current repository architecture is documented in `docs/architecture/zodiac-current-architecture.md`. Earlier Studio/TUI/refactor specifications are retained as design history and do not override the current ApplicationService/runtime-registry boundaries.
