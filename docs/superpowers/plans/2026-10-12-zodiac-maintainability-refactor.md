@@ -234,6 +234,6 @@ Final local verification:
 - broad Python non-Qt suite → **599 PASS, 11 skipped, 23 subtests PASS**.
 - architecture/runtime/contract subset → **25 PASS**.
 - `python -m compileall -q tools tests` → **PASS**.
-- Qt runtime tests remain CI-gated because PySide6 is unavailable in the local verification environment.
+- Qt-dependent suite: **64/64 PASS** on GitHub Actions run `38255784302` with PySide6 6.12 and Linux Qt runtime libraries; the temporary feature-validation workflow was removed after verification.
 
 Historical runtime source was deliberately retained; no source tree passed the reverse-dependency deletion gate.
