@@ -21,3 +21,5 @@ export function validateBackgroundPalettes(registry){
 export async function loadAndValidateBackgroundPalettes(file=path.join(here,'background-palettes.json')){
  return validateBackgroundPalettes(JSON.parse(await readFile(file,'utf8')));
 }
+
+const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);if(direct){const r=await loadAndValidateBackgroundPalettes();console.log(JSON.stringify(r));if(r.status!=='PASS')process.exitCode=1;}
