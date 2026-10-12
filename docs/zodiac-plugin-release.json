@@ -2,9 +2,9 @@
   "format": "zodiac-plugin-release@1",
   "repository": "SeikoP/project-zodiac-video",
   "plugin_id": "plugins_6ac25a87d8d481919c5ef654596144e3",
-  "plugin_version": "2.5.1",
-  "plugin_release_id": "pluginrel_6acd722c49308191906186ba1dc5809b",
-  "source_commit": "9ad9ebbc868c922e5d4ea4254051c3f631bfc298",
+  "plugin_version": "2.5.2",
+  "plugin_release_id": "pluginrel_6acd742921d48191a9122803c242fb3e",
+  "source_commit": "dff3324c1bfdcd1878b67fb34ac621ec492a6e19",
   "plugin_root": "plugins/zodiac-video-pipeline",
   "not_an_approval": true
 }
