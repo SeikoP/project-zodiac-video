@@ -1,0 +1,74 @@
+{
+  "format": "zodiac-capability-registry@1",
+  "capabilities": [
+    {
+      "id": "scene_set",
+      "fresh": true,
+      "refs": [
+        "references/asset-library-v4/scene-set/README.md",
+        "references/asset-library-v4/scene-set/index.json",
+        "references/asset-library-v4/scene-set/accents/index.json"
+      ],
+      "validators": [
+        "scene-set",
+        "scene-set-identity",
+        "scene-set-accents"
+      ]
+    },
+    {
+      "id": "character_assembly",
+      "fresh": true,
+      "refs": [
+        "references/asset-library-v4/characters/assembly-contract.md",
+        "references/asset-library-v4/characters/components/catalog.json"
+      ],
+      "validators": [
+        "character-intent-preflight",
+        "character-assembly"
+      ]
+    },
+    {
+      "id": "story_object",
+      "fresh": true,
+      "refs": [
+        "references/story-object-contract.md",
+        "references/story-object-composition-v2.md"
+      ],
+      "validators": [
+        "story-object",
+        "story-object-composition"
+      ]
+    },
+    {
+      "id": "cover",
+      "fresh": true,
+      "refs": [
+        "references/cover-composition-v2.md"
+      ],
+      "validators": [
+        "cover-design"
+      ]
+    },
+    {
+      "id": "narration_performance",
+      "fresh": true,
+      "refs": [
+        "references/narration-rhythm.md"
+      ],
+      "validators": [
+        "narration-rhythm"
+      ]
+    },
+    {
+      "id": "legacy_environment",
+      "fresh": false,
+      "refs": [
+        "references/asset-library-v4/compatibility/environment-profiles/index.json",
+        "references/depth-background-system.md"
+      ],
+      "validators": [
+        "depth-composition"
+      ]
+    }
+  ]
+}
