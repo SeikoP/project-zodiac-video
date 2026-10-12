@@ -36,7 +36,7 @@ test('Visual Metaphor library covers six reusable mechanisms with real distinct 
 });
 
 test('character diversity expands fresh silhouettes faces accessories and interaction poses',async()=>{
- const catalog=await json('characters/components/catalog.json');
+ const [catalog,promotedAccessories]=await Promise.all([json('characters/components/catalog.json'),json('characters/accessories/index.json')]);
  const preferred=freshPreferredHairIds(catalog);
  assert.ok(preferred.length>=8,'need >=8 fresh preferred hair silhouettes');
  assert.equal(preferred.includes('lopsided-bob'),false);
@@ -45,7 +45,7 @@ test('character diversity expands fresh silhouettes faces accessories and intera
  assert.ok(catalog.poses.length>=25,'need >=25 poses');
  for(const id of ['curtain-bang','short-curl','low-ponytail','soft-mohawk'])assert.ok(preferred.includes(id),id+' fresh hair missing');
  for(const id of ['brow-marked','beauty-mark','rosy-cheeks'])assert.ok(catalog.face_profiles.some(x=>x.id===id),id+' face variation missing');
- for(const id of ['small-hoop','headband','neck-scarf','square-glasses'])assert.ok(catalog.accessories.some(x=>x.id===id),id+' accessory missing');
+ for(const id of ['small-hoop','headband','neck-scarf','square-glasses']){assert.ok(catalog.accessories.some(x=>x.id===id),id+' accessory missing');assert.ok(promotedAccessories.assets.some(x=>x.id===id),id+' must be promoted in accessory index');}
  for(const id of ['point-choice','receive-object','hold-two-props','open-barrier'])assert.ok(catalog.poses.some(x=>x.id===id),id+' pose missing');
 });
 
