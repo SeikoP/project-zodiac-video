@@ -113,6 +113,14 @@
         "focus_prop"
       ],
       "intent": "giver hands pants to an embarrassed receiver; receiver holds the other waistband edge"
+    },
+    {
+      "id": "compare-group",
+      "family": "interaction",
+      "requires": [
+        "actor",
+        "target"
+      ]
     }
   ]
 }

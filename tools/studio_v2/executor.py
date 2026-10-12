@@ -18,6 +18,7 @@ from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.resource_budget import load_resource_profile
 from tools.control_plane.segments import plan_segments, props_for_segment
+from tools.runtime.registry import current_runtime
 
 from .controller import StudioV2Controller, workspace_renderer_version as _workspace_renderer_version
 from .pipeline import (
@@ -54,12 +55,27 @@ class ExecutorConfig:
     aligner_settings: dict[str, Any]
     aligner_version: str
     compiler_version: str = "1.0.0"
-    renderer_version: str = "2.0.0"
-    renderer_hash: str = "renderer-v2"
+    renderer_version: str = field(default_factory=lambda: current_runtime("zodiac-renderer").version)
+    renderer_hash: str = field(default_factory=lambda: f"zodiac-renderer@{current_runtime('zodiac-renderer').version}")
     segment_target_seconds: float = 30.0
     run_label: str = "interactive"
     music_path: Path | None = None
     mix_settings: dict[str, Any] = field(default_factory=dict)
+
+
+def _bind_renderer_config(config: ExecutorConfig, workspace: Path) -> ExecutorConfig:
+    renderer_version = _workspace_renderer_version(workspace)
+    default_identity = f"zodiac-renderer@{config.renderer_version}"
+    renderer_hash = (
+        f"zodiac-renderer@{renderer_version}"
+        if config.renderer_hash == default_identity
+        else config.renderer_hash
+    )
+    return replace(
+        config,
+        renderer_version=renderer_version,
+        renderer_hash=renderer_hash,
+    )
 
 
 VoiceService = Callable[..., VoiceArtifact]
@@ -567,7 +583,7 @@ class StudioV2Executor:
             cancel_event: Event | None = None):
         controller = self.controller
         workspace = controller.workspace
-        config = replace(config, renderer_version=_workspace_renderer_version(workspace))
+        config = _bind_renderer_config(config, workspace)
         request_path = workspace / ".runtime" / "rerun-request.json"
         if rerun_from is None and request_path.exists():
             try:

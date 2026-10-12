@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   python:
+    name: unit / python
     runs-on: ubuntu-latest
     env:
       QT_QPA_PLATFORM: offscreen
@@ -30,12 +31,22 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Producer runner simplification parity
         run: python -m pytest tests/test_simplification_package_import.py tests/test_spatial_contract_hash.py -q
+      - name: Architecture and registry regressions
+        run: >-
+          python -m pytest
+          tests/test_application_service.py
+          tests/test_runner_modules.py
+          tests/test_runtime_registry.py
+          tests/test_contract_bundle.py
+          tests/test_test_layout.py
+          tests/test_ci_layout.py -q
       - name: Verify the GUI launcher
         run: |
           command -v zodiac
           python -c "from tools.zodiac_qt import main; from tools.studio_qt.app import ZodiacQtApp; assert callable(main) and ZodiacQtApp"
 
   renderer-smoke:
+    name: smoke / renderer
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -53,263 +64,67 @@ jobs:
       - name: Render frame-0 font smoke
         run: npm run smoke
 
-  shared-runtime:
+  compatibility-runtime:
+    name: compatibility / remotion ${{ matrix.runtime-version }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.14.0/renderer
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime-version:
+          - "1.14.0"
+          - "1.15.0"
+          - "1.16.0"
+          - "1.17.0"
+          - "1.18.0"
+          - "1.18.1"
+          - "1.19.0"
+          - "1.19.1"
+          - "1.20.0"
+          - "1.21.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install shared runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test shared runtime contract
-        run: npm test
-      - name: Typecheck shared runtime
-        run: npm run typecheck
-
-  shared-runtime-1-15:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.15.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: "22"
-      - name: Install shared runtime dependencies
+          python-version: "3.11"
+      - name: Install compatibility runtime dependencies
+        working-directory: runtime/zodiac-remotion/${{ matrix.runtime-version }}/renderer
         run: npm install --no-audit --no-fund
-      - name: Test semantic shared runtime
+      - name: Test compatibility runtime
+        working-directory: runtime/zodiac-remotion/${{ matrix.runtime-version }}/renderer
         run: npm test
-      - name: Typecheck semantic shared runtime
+      - name: Typecheck compatibility runtime
+        working-directory: runtime/zodiac-remotion/${{ matrix.runtime-version }}/renderer
         run: npm run typecheck
-      - name: Print canonical runtime hash
+      - name: Verify registered runtime hash
+        if: matrix.runtime-version != '1.14.0'
         working-directory: .
-        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.15.0/renderer
-      - name: Golden thief package prepare
+        env:
+          RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: |
+          HASH=$(python tools/hash_runtime.py "runtime/zodiac-remotion/$RUNTIME_VERSION/renderer" | tail -n 1)
+          grep -q "$HASH" "runtime/zodiac-remotion/$RUNTIME_VERSION/runtime-manifest.json"
+      - name: Run version-specific golden compatibility fixture
         working-directory: .
         env:
           ZODIAC_E2E_RUNTIME: "1"
-        run: python -m unittest tests.test_zodiac_local.SemanticRuntimeV315Tests.test_v315_runtime_prepare_golden_thief -v
-
-  shared-runtime-1-16:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.16.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install performance runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test performance runtime
-        run: npm test
-      - name: Typecheck performance runtime
-        run: npm run typecheck
-      - name: Print canonical runtime 1.16 hash
-        working-directory: .
-        run: python tools/hash_runtime.py runtime/zodiac-remotion/1.16.0/renderer
-      - name: Golden performance v4 package prepare
-        working-directory: .
-        env:
-          ZODIAC_E2E_RUNTIME: "1"
-        run: python -m unittest tests.test_zodiac_local.PerformanceRuntimeV316Tests.test_v316_runtime_prepare_accepts_local_first_v4_without_handoff_manifest -v
-
-
-  shared-runtime-1-17:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.17.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install cover-safe runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test cover-safe runtime
-        run: npm test
-      - name: Typecheck cover-safe runtime
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.17 hash
-        working-directory: .
+          RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.17.0/renderer | tail -n 1)
-          grep -q "$HASH" runtime/zodiac-remotion/1.17.0/runtime-manifest.json
-
-
-  shared-runtime-1-18:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.18.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install runtime-owned animation dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test runtime-owned animation
-        run: npm test
-      - name: Typecheck runtime-owned animation
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.18 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.18.0/renderer | tail -n 1)
-          grep -q "$HASH" runtime/zodiac-remotion/1.18.0/runtime-manifest.json
-
-
-  shared-runtime-1-18-1:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.18.1/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install corrected runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test corrected runtime
-        run: npm test
-      - name: Typecheck corrected runtime
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.18.1 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.18.1/renderer | tail -n 1)
-          grep -q "$HASH" runtime/zodiac-remotion/1.18.1/runtime-manifest.json
-
-
-  shared-runtime-1-19:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.19.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install pose-choreography runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test pose-choreography runtime
-        run: npm test
-      - name: Typecheck pose-choreography runtime
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.19 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.19.0/renderer | tail -n 1)
-          grep -q "$HASH" runtime/zodiac-remotion/1.19.0/runtime-manifest.json
-
-
-  shared-runtime-1-19-1:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.19.1/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install production-audit runtime dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test production-audit runtime
-        run: npm test
-      - name: Typecheck production-audit runtime
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.19.1 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.19.1/renderer | tail -n 1)
-          grep -q "$HASH" runtime/zodiac-remotion/1.19.1/runtime-manifest.json
-      - name: Golden runtime-owned animation v4 prepare
-        working-directory: .
-        env:
-          ZODIAC_E2E_RUNTIME: "1"
-        run: python -m unittest tests.test_zodiac_local.RuntimeOwnedAnimationV3191Tests.test_v3191_runtime_prepare_materializes_animation_defaults -v
-
-
-  shared-runtime-1-20-0:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.20.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install runtime 1.20.0 dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test runtime 1.20.0
-        run: npm test
-      - name: Typecheck runtime 1.20.0
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.20.0 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.20.0/renderer | tail -n 1)
-          echo "RUNTIME_1_20_0_HASH=$HASH"
-          grep -q "$HASH" runtime/zodiac-remotion/1.20.0/runtime-manifest.json
-      - name: Golden runtime 1.20 Studio prepare
-        working-directory: .
-        env:
-          ZODIAC_E2E_RUNTIME: "1"
-        run: python -m unittest tests.test_zodiac_local.RuntimeLayerSafetyV3200Tests.test_v3200_runtime_prepare_with_layer_safety -v
-
-
-  shared-runtime-1-21-0:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: runtime/zodiac-remotion/1.21.0/renderer
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Install runtime 1.21.0 dependencies
-        run: npm install --no-audit --no-fund
-      - name: Test runtime 1.21.0
-        run: npm test
-      - name: Typecheck runtime 1.21.0
-        run: npm run typecheck
-      - name: Verify canonical runtime 1.21.0 hash
-        working-directory: .
-        run: |
-          HASH=$(python tools/hash_runtime.py runtime/zodiac-remotion/1.21.0/renderer | tail -n 1)
-          echo "RUNTIME_1_21_0_HASH=$HASH"
-          grep -q "$HASH" runtime/zodiac-remotion/1.21.0/runtime-manifest.json
-      - name: Golden native-v4 package prepare
-        working-directory: .
-        env:
-          ZODIAC_E2E_RUNTIME: "1"
-        run: python -m unittest tests.test_zodiac_local.RuntimeV3210StyleContractTests.test_v3210_runtime_prepare_golden_v4_package -v
+          case "$RUNTIME_VERSION" in
+            1.15.0) python -m unittest tests.test_zodiac_local.SemanticRuntimeV315Tests.test_v315_runtime_prepare_golden_thief -v ;;
+            1.16.0) python -m unittest tests.test_zodiac_local.PerformanceRuntimeV316Tests.test_v316_runtime_prepare_accepts_local_first_v4_without_handoff_manifest -v ;;
+            1.19.1) python -m unittest tests.test_zodiac_local.RuntimeOwnedAnimationV3191Tests.test_v3191_runtime_prepare_materializes_animation_defaults -v ;;
+            1.20.0) python -m unittest tests.test_zodiac_local.RuntimeLayerSafetyV3200Tests.test_v3200_runtime_prepare_with_layer_safety -v ;;
+            1.21.0) python -m unittest tests.test_zodiac_local.RuntimeV3210StyleContractTests.test_v3210_runtime_prepare_golden_v4_package -v ;;
+            *) echo "No version-specific golden fixture for $RUNTIME_VERSION" ;;
+          esac
 
 
   control-plane-v2-core:
+    name: contract / control-plane-v2-core
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -340,6 +155,7 @@ jobs:
 
 
   renderer-v2-boundary:
+    name: integration / renderer-v2-boundary
     runs-on: ubuntu-latest
     timeout-minutes: 5
     defaults:
@@ -355,6 +171,7 @@ jobs:
 
 
   renderer-v2-0-1:
+    name: integration / renderer-v2-0-1
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -384,6 +201,7 @@ jobs:
           if-no-files-found: warn
 
   renderer-v2-frame-progress-smoke:
+    name: integration / frame-progress
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -415,6 +233,7 @@ jobs:
           if-no-files-found: warn
 
   renderer-v2-smoke:
+    name: integration / renderer-v2-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -460,6 +279,7 @@ jobs:
           if-no-files-found: warn
 
   zodiac-plugin-native:
+    name: release / plugin-native
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,13 @@
+{
+  "format": "zodiac-contract-registry@1",
+  "contracts": {
+    "authoring-ir-v1": {"owner": "public", "canonical_path": "contracts/authoring-ir-v1.schema.json", "plugin_bundle": true},
+    "design-token-v4": {"owner": "public", "canonical_path": "contracts/design-token-v4.schema.json", "plugin_bundle": true},
+    "error-v1": {"owner": "public", "canonical_path": "contracts/error-v1.schema.json", "plugin_bundle": false},
+    "performance-context-v1": {"owner": "public", "canonical_path": "contracts/performance-context-v1.schema.json", "plugin_bundle": false},
+    "publish-v1": {"owner": "public", "canonical_path": "contracts/publish-v1.schema.json", "plugin_bundle": true},
+    "render-plan-v1": {"owner": "public", "canonical_path": "contracts/render-plan-v1.schema.json", "plugin_bundle": false},
+    "timing-v1": {"owner": "public", "canonical_path": "contracts/timing-v1.schema.json", "plugin_bundle": false},
+    "zodiac-job-v5": {"owner": "public", "canonical_path": "contracts/zodiac-job-v5.schema.json", "plugin_bundle": true}
+  }
+}

@@ -1,6 +1,6 @@
 # Scene-set — fresh Phase 2 entrypoint
 
-Select `scene_set_id` from [index.json](index.json) before staging performers. Each master is one continuous wall, floor and outer frame; preserve its declared asset hash, viewBox, transform and bounds. Exact approved masters are `scene-set-home` and `scene-set-cafe`. Do not redraw or split their floor into another background.
+Select `scene_set_id` from [index.json](index.json) before staging performers. Each master is one continuous wall, floor and outer frame; preserve its declared asset hash, viewBox, transform and bounds. Registered fresh masters are resolved from `index.json`; the current set includes home, cafe, classroom, study, street and neutral stages. Structural registration is not creative approval. Do not redraw or split their floor into another background.
 
 Use [contract/authoring.md](contract/authoring.md) for authoring and `compile-scene-set.mjs` for materialization after Character Assembly. The compiler owns generated registration and selected-source lineage. `environment.frame` stages performers and story fixtures; it does not own scene-set geometry.
 

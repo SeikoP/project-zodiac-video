@@ -14,6 +14,7 @@ from tools.control_plane.package_validation import validate_job5_package_root
 from tools.control_plane.render_plan import validate_render_plan
 from tools.control_plane.segments import plan_segments, props_for_segment, scene_asset_ids
 from tools.control_plane.timeline import compile_render_plan
+from tools.runtime.registry import RuntimeRegistryError, current_runtime, resolve_runtime
 
 from .pipeline import PACKAGE, PLAN, PipelineStateV2
 from .runner import run_structured_command
@@ -23,14 +24,12 @@ from .state import load_state, save_state
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-_SUPPORTED_RENDERER_VERSIONS = {"2.0.0", "2.0.1"}
-
 
 def workspace_renderer_version(workspace: Path) -> str:
     """Use the imported Job@5 pin; never choose a renderer from global defaults."""
     manifest_path = Path(workspace) / "package-manifest.json"
     if not manifest_path.is_file():
-        return "2.0.0"
+        return current_runtime("zodiac-renderer").version
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         renderer = manifest["renderer"]
@@ -42,11 +41,13 @@ def workspace_renderer_version(workspace: Path) -> str:
             code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
             message=f"cannot resolve imported renderer: {exc}",
         ) from exc
-    if version not in _SUPPORTED_RENDERER_VERSIONS:
+    try:
+        resolve_runtime("zodiac-renderer", version)
+    except RuntimeRegistryError as exc:
         raise ControlPlaneError(
             code="PACKAGE_RENDERER_MISMATCH", stage="PACKAGE",
             message=f"unsupported renderer version {version!r}",
-        )
+        ) from exc
     return version
 
 

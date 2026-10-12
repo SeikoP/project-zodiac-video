@@ -10,16 +10,21 @@ from typing import Any
 _ROOT = Path(__file__).resolve().parents[2]
 _CONTRACT_DIR = _ROOT / "contracts"
 
-_CONTRACT_FILES = {
-    "zodiac-job-v5": "zodiac-job-v5.schema.json",
-    "authoring-ir-v1": "authoring-ir-v1.schema.json",
-    "timing-v1": "timing-v1.schema.json",
-    "render-plan-v1": "render-plan-v1.schema.json",
-    "design-token-v4": "design-token-v4.schema.json",
-    "publish-v1": "publish-v1.schema.json",
-    "performance-context-v1": "performance-context-v1.schema.json",
-    "error-v1": "error-v1.schema.json",
-}
+_CONTRACT_REGISTRY = _CONTRACT_DIR / "manifest.json"
+
+
+def _contract_files() -> dict[str, str]:
+    registry = json.loads(_CONTRACT_REGISTRY.read_text(encoding="utf-8"))
+    if registry.get("format") != "zodiac-contract-registry@1":
+        raise ValueError("invalid contract registry format")
+    result: dict[str, str] = {}
+    for name, row in registry.get("contracts", {}).items():
+        canonical = row.get("canonical_path")
+        if not isinstance(canonical, str) or not canonical.startswith("contracts/"):
+            raise ValueError(f"invalid canonical contract path for {name}")
+        result[name] = canonical.removeprefix("contracts/")
+    return result
+
 
 
 @dataclass(frozen=True)
@@ -30,7 +35,7 @@ class ContractIssue:
 
 def contract_path(name: str) -> Path:
     try:
-        filename = _CONTRACT_FILES[name]
+        filename = _contract_files()[name]
     except KeyError as exc:
         raise KeyError(f"unknown contract: {name}") from exc
     return _CONTRACT_DIR / filename

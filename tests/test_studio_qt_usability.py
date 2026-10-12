@@ -138,7 +138,7 @@ class WorkbenchUsabilityTests(unittest.TestCase):
         from tools.studio_qt.app import ZodiacQtApp
         with tempfile.TemporaryDirectory() as temp:
             window = ZodiacQtApp(workspace=Path(temp))
-            with patch.object(window, "_legacy_rows", return_value=[{"status": "PENDING"}]), \
+            with patch.object(window, "_pipeline_rows", return_value=[{"status": "PENDING"}]), \
                  patch.object(window, "_check_environment") as check, \
                  patch.object(window, "_start") as start:
                 window._continue_workflow()
@@ -149,7 +149,7 @@ class WorkbenchUsabilityTests(unittest.TestCase):
                 start.assert_called_once_with(resume=True)
             video = Path(temp) / "output.mp4"
             video.touch()
-            with patch.object(window, "_legacy_rows", return_value=[{"status": "DONE"}]), \
+            with patch.object(window, "_pipeline_rows", return_value=[{"status": "DONE"}]), \
                  patch.object(window, "_active_video", return_value=video), \
                  patch.object(window, "_open_output") as opened, \
                  patch.object(window, "_start") as start:

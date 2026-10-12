@@ -89,7 +89,7 @@ test('production entrypoint blocks missing Phase02 evidence before story-object 
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 test('Director native review invokes story-object validator before preview generation when opted in',async()=>{
- const wrapper=await readFile(new URL('../run-director-v2-review.mjs',import.meta.url),'utf8');
+ const wrapper=await readFile(new URL('../../features/visual-composition/run-director-v2-review.mjs',import.meta.url),'utf8');
  assert.match(wrapper,/validate-story-object\.mjs/);
  assert.match(wrapper,/findIndex\(x=>x\.id==='native_preview_build_v2'\)/);
  assert.match(wrapper,/stages\.splice\(before,0,\{id:'story_object_v1'/);

@@ -1,3 +1,1 @@
-import {open,readFile,rm} from 'node:fs/promises';import {randomUUID} from 'node:crypto';
-export async function acquireAuthoringLease(file,{run_id,owner_pid=process.pid,host_id,now=Date.now()}={}){const token=randomUUID();let handle;try{handle=await open(file,'wx')}catch(e){if(e.code!=='EEXIST')throw e;let owner;try{owner=JSON.parse(await readFile(file,'utf8'));}catch{throw Error('AUTHORING_LEASE_BUSY_UNREADABLE');}throw Error('AUTHORING_LEASE_BUSY '+JSON.stringify(owner)+'; explicit stale-owner recovery required');}
- const data={run_id,owner_pid,host_id,created_at:now,token};await handle.writeFile(JSON.stringify(data));await handle.close();return {...data,release:async()=>{const current=JSON.parse(await readFile(file,'utf8'));if(current.token!==token)throw Error('AUTHORING_LEASE_OWNER_CHANGED');await rm(file);}};}
+export * from '../core/state/authoring-lease.mjs';

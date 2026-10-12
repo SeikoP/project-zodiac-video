@@ -1,0 +1,21 @@
+{
+  "format": "zodiac-generated-contract-bundle@1",
+  "contracts": {
+    "authoring-ir-v1": {
+      "canonical_path": "contracts/authoring-ir-v1.schema.json",
+      "canonical_sha256": "2ca8394b51a9b95174ee407731f309ec3cfd44b03f5f98f25655f46cbb625b85"
+    },
+    "design-token-v4": {
+      "canonical_path": "contracts/design-token-v4.schema.json",
+      "canonical_sha256": "d4c29956242ccdba1a2d95c191ce6e0a16f5c9af4769e85cb06d7cc9eecfc5e4"
+    },
+    "publish-v1": {
+      "canonical_path": "contracts/publish-v1.schema.json",
+      "canonical_sha256": "2e55df54ab4f22cbb503ca9b45d4d9498072a50e4b16150f4a30e67e44d36d43"
+    },
+    "zodiac-job-v5": {
+      "canonical_path": "contracts/zodiac-job-v5.schema.json",
+      "canonical_sha256": "45a4bc4dc36d25235d03379750d3cb0acfa955ccde17de498698af15bd5cef7d"
+    }
+  }
+}

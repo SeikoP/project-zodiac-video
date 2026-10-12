@@ -22,7 +22,7 @@
           "kind": "internal_compiler",
           "when": "always",
           "guidance_uri": "references/production-handoff-v2.md",
-          "tool_locator": "orchestration/compile-job-v5.mjs",
+          "tool_locator": "phases/phase03/compile-job-v5.mjs",
           "unavailable_policy": "block",
           "stage": "exit",
           "invocation_policy": "owned_substage_of_production_entrypoint"
@@ -85,7 +85,7 @@
           "id": "handoff_v2_workspace_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-handoff-workspace-v2.mjs",
+          "tool_locator": "phases/phase03/validate-handoff-workspace-v2.mjs",
           "unavailable_policy": "block",
           "stage": "entry",
           "invocation_policy": "owned_substage_of_production_entrypoint"
@@ -145,7 +145,7 @@
           "id": "pre_export_v2_workspace_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-handoff-workspace-v2.mjs",
+          "tool_locator": "phases/phase03/validate-handoff-workspace-v2.mjs",
           "unavailable_policy": "block",
           "stage": "entry",
           "invocation_policy": "owned_substage_of_production_entrypoint"
@@ -154,7 +154,7 @@
           "id": "deterministic_job5_zip_exporter",
           "kind": "internal_compiler",
           "when": "always",
-          "tool_locator": "orchestration/run-phase03-production.mjs",
+          "tool_locator": "phases/phase03/run-phase03-production.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -162,7 +162,7 @@
           "id": "job5_zip_roundtrip_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-zodiac-job-zip-v2.mjs",
+          "tool_locator": "phases/phase03/validate-zodiac-job-zip-v2.mjs",
           "unavailable_policy": "block",
           "stage": "exit",
           "invocation_policy": "owned_substage_of_production_entrypoint"
@@ -252,6 +252,6 @@
       "load_references": []
     }
   ],
-  "production_entrypoint": "orchestration/run-phase03-production.mjs",
+  "production_entrypoint": "phases/phase03/run-phase03-production.mjs",
   "invocation_policy": "one_shot_with_owned_substages"
 }

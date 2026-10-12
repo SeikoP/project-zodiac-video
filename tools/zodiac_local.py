@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import contextvars
 import difflib
 import json
 import math
@@ -24,31 +23,20 @@ import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
 
 
-class PipelineError(Exception):
-    """A package, runtime, or local-tool prerequisite is invalid."""
-
-
-class AlignmentMismatchError(PipelineError):
-    """ASR differs from approved narration, with coverage metadata for retry policy."""
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        expected: list[str],
-        heard: list[str],
-        coverage_gap: bool,
-    ) -> None:
-        super().__init__(message)
-        self.expected = expected
-        self.heard = heard
-        self.coverage_gap = bool(coverage_gap)
-
-
-class InvalidAlignmentTimestampError(PipelineError):
-    """ASR returned word timing that cannot safely be repaired from neighbors."""
-
-
+from tools.runner.errors import (
+    AlignmentMismatchError,
+    InvalidAlignmentTimestampError,
+    PipelineError,
+)
+from tools.runner.process import (
+    emit_process_log,
+    observe_subprocess_output,
+    observe_subprocesses,
+    run_managed_subprocess,
+)
+from tools.runner.audio import concatenate_wavs, validate_voice
+from tools.runner.package import _safe_relative_path, safe_extract_zip
+from tools.runtime.registry import default_runtime
 MAX_ZIP_ENTRIES = 5000
 MAX_FILE_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 512 * 1024 * 1024
@@ -93,7 +81,7 @@ PACKAGE_FORMAT_V3 = "zodiac-job@3"
 PACKAGE_FORMAT_V4 = "zodiac-job@4"
 RUNTIME_FORMAT = "zodiac-runtime@1"
 RUNTIME_ID = "zodiac-remotion"
-RUNTIME_VERSION = "1.20.0"
+RUNTIME_VERSION = default_runtime("zodiac-remotion", profile="legacy").version
 BUNDLED_RUNTIMES = Path(__file__).resolve().parents[1] / "runtime"
 SUPPORTED_TYPESCRIPT_VERSIONS = {"5.8.0", "5.8.2"}
 DEFAULT_TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
@@ -120,85 +108,6 @@ BUNDLED_MUSIC = Path(__file__).resolve().parents[1] / "assets" / "music" / "back
 def default_music_path() -> Path | None:
     """Bundled background track when it exists, otherwise None (no music)."""
     return BUNDLED_MUSIC if BUNDLED_MUSIC.is_file() else None
-
-
-def _safe_relative_path(raw_name: str) -> PurePosixPath:
-    normalized = raw_name.replace("\\", "/")
-    path = PurePosixPath(normalized)
-    if (
-        "\x00" in normalized
-        or path.is_absolute()
-        or re.match(r"^[A-Za-z]:", normalized)
-        or any(part in {"", ".", ".."} for part in path.parts)
-    ):
-        raise PipelineError(f"unsafe ZIP path: {raw_name!r}")
-    return path
-
-
-def safe_extract_zip(archive_path: Path, destination: Path) -> None:
-    """Extract a ZIP after rejecting traversal, links, duplicates, and ZIP bombs."""
-    archive_path = Path(archive_path)
-    destination = Path(destination)
-    destination.mkdir(parents=True, exist_ok=True)
-    root = destination.resolve()
-    seen: set[str] = set()
-    total_size = 0
-
-    try:
-        with zipfile.ZipFile(archive_path) as archive:
-            entries = archive.infolist()
-            if len(entries) > MAX_ZIP_ENTRIES:
-                raise PipelineError(f"ZIP has more than {MAX_ZIP_ENTRIES} entries.")
-
-            for info in entries:
-                rel = _safe_relative_path(info.filename.rstrip("/"))
-                key = rel.as_posix().casefold()
-                if key in seen:
-                    raise PipelineError(f"duplicate ZIP path: {info.filename!r}")
-                seen.add(key)
-
-                mode = info.external_attr >> 16
-                kind = stat.S_IFMT(mode)
-                if kind == stat.S_IFLNK:
-                    raise PipelineError(f"ZIP symbolic links are not allowed: {info.filename!r}")
-                if kind not in (0, stat.S_IFREG, stat.S_IFDIR):
-                    raise PipelineError(f"ZIP special files are not allowed: {info.filename!r}")
-                if info.flag_bits & 0x1:
-                    raise PipelineError("encrypted ZIP members are not supported.")
-
-                target = destination.joinpath(*rel.parts)
-                resolved = target.resolve()
-                if not resolved.is_relative_to(root):
-                    raise PipelineError(f"unsafe ZIP path: {info.filename!r}")
-                if info.is_dir():
-                    target.mkdir(parents=True, exist_ok=True)
-                    continue
-
-                if info.file_size > MAX_FILE_BYTES:
-                    raise PipelineError(f"ZIP member is too large: {info.filename!r}")
-                total_size += info.file_size
-                if total_size > MAX_TOTAL_BYTES:
-                    raise PipelineError("ZIP expands beyond the 512 MiB safety limit.")
-                if info.file_size > 1_000_000 and (
-                    info.compress_size == 0
-                    or info.file_size / info.compress_size > MAX_COMPRESSION_RATIO
-                ):
-                    raise PipelineError(f"suspicious compression ratio: {info.filename!r}")
-
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with archive.open(info, "r") as source, target.open("xb") as output:
-                    copied = 0
-                    while chunk := source.read(1024 * 1024):
-                        copied += len(chunk)
-                        if copied > info.file_size or copied > MAX_FILE_BYTES:
-                            raise PipelineError(f"ZIP member exceeded declared size: {info.filename!r}")
-                        output.write(chunk)
-                    if copied != info.file_size:
-                        raise PipelineError(f"ZIP member size mismatch: {info.filename!r}")
-    except PipelineError:
-        raise
-    except (OSError, zipfile.BadZipFile, RuntimeError, EOFError, NotImplementedError) as exc:
-        raise PipelineError(f"cannot safely read ZIP: {exc}") from exc
 
 
 def _load_json(path: Path, label: str) -> dict:
@@ -2072,66 +1981,6 @@ def validate_timing(
     return timing
 
 
-def validate_voice(path: Path) -> None:
-    path = Path(path)
-    if not path.is_file():
-        raise PipelineError(f"voice WAV is missing: {path}")
-    try:
-        with wave.open(str(path), "rb") as wav:
-            if wav.getcomptype() != "NONE" or wav.getnframes() < 1 or wav.getframerate() < 1 or wav.getnchannels() < 1:
-                raise PipelineError("voice.wav must contain non-empty uncompressed PCM audio.")
-    except (wave.Error, EOFError, OSError) as exc:
-        raise PipelineError(f"voice.wav is not a readable PCM WAV file: {exc}") from exc
-
-
-def concatenate_wavs(
-    inputs: list[Path],
-    output: Path,
-    *,
-    gap_ms: float = 0.0,
-) -> None:
-    """Concatenate PCM WAV files and optionally insert silence between items."""
-    if not inputs:
-        raise PipelineError("no scene WAV files were generated.")
-    try:
-        gap_ms = float(gap_ms)
-    except (TypeError, ValueError, OverflowError):
-        raise PipelineError("scene gap must be a finite non-negative number.") from None
-    if not math.isfinite(gap_ms) or gap_ms < 0 or gap_ms > 5000:
-        raise PipelineError("scene gap must be between 0 and 5000 ms.")
-
-    output = Path(output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    params = None
-    with wave.open(str(output), "wb") as destination:
-        for index, source_path in enumerate(inputs):
-            try:
-                with wave.open(str(source_path), "rb") as source:
-                    if source.getcomptype() != "NONE":
-                        raise PipelineError(f"scene WAV is compressed: {source_path}")
-                    current = source.getparams()
-                    if params is None:
-                        params = current
-                        destination.setnchannels(current.nchannels)
-                        destination.setsampwidth(current.sampwidth)
-                        destination.setframerate(current.framerate)
-                        destination.setcomptype("NONE", "not compressed")
-                    elif current[:3] != params[:3]:
-                        raise PipelineError("scene WAV files do not share one PCM format.")
-                    destination.writeframes(source.readframes(source.getnframes()))
-                    if index < len(inputs) - 1 and gap_ms > 0:
-                        silent_frames = round(current.framerate * gap_ms / 1000.0)
-                        if current.sampwidth == 1:
-                            silent_sample = b"\x80"
-                        else:
-                            silent_sample = b"\x00" * current.sampwidth
-                        destination.writeframes(
-                            silent_sample * current.nchannels * silent_frames
-                        )
-            except (wave.Error, EOFError, OSError) as exc:
-                raise PipelineError(f"cannot read scene WAV {source_path}: {exc}") from exc
-
-
 def _expected_caption_tokens(text: str) -> list[str]:
     tokens: list[str] = []
     for raw in text.split():
@@ -3513,9 +3362,7 @@ def write_tts_diagnostics(
 def _emit_tts_log(text: str, log_callback=None) -> None:
     if log_callback is not None:
         log_callback(str(text))
-    elif _PROCESS_LOG_OBSERVER.get() is not None:
-        _PROCESS_LOG_OBSERVER.get()(str(text), channel="stdout")
-    else:
+    elif not emit_process_log(str(text), channel="stdout"):
         print(str(text), flush=True)
 
 
@@ -4430,145 +4277,6 @@ def validate_runtime(package_root: Path) -> tuple[dict, dict]:
     timing = validate_timing(root, root / ".runtime" / "timing.json")
     validate_background_music(root)
     return production, timing
-
-
-_PROCESS_OBSERVER = contextvars.ContextVar("zodiac_process_observer", default=None)
-_PROCESS_LOG_OBSERVER = contextvars.ContextVar(
-    "zodiac_process_log_observer",
-    default=None,
-)
-
-
-@contextlib.contextmanager
-def observe_subprocesses(observer):
-    """Expose the currently running child process to the Studio worker."""
-    token = _PROCESS_OBSERVER.set(observer)
-    try:
-        yield
-    finally:
-        _PROCESS_OBSERVER.reset(token)
-
-
-@contextlib.contextmanager
-def observe_subprocess_output(observer):
-    """Route child stdout/stderr into a caller-owned log sink.
-
-    Textual must never let npm/ffmpeg/pip inherit its terminal because those
-    processes can overwrite the alternate-screen UI. Output is captured and
-    emitted line-for-line after the child exits, preserving CompletedProcess
-    stdout/stderr semantics for callers that explicitly request them.
-    """
-    token = _PROCESS_LOG_OBSERVER.set(observer)
-    try:
-        yield
-    finally:
-        _PROCESS_LOG_OBSERVER.reset(token)
-
-
-def _process_group_kwargs() -> dict:
-    if os.name == "nt":
-        flag = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-        return {"creationflags": flag} if flag else {}
-    return {"start_new_session": True}
-
-
-def run_managed_subprocess(
-    arguments: list[str],
-    *,
-    cwd: Path | str | None = None,
-    check: bool = False,
-    capture_output: bool = False,
-    text: bool = False,
-    env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess:
-    """Run one cancellable child in its own process group."""
-    if any(not isinstance(arg, str) or "\x00" in arg for arg in arguments):
-        raise PipelineError("subprocess arguments must be NUL-free strings.")
-
-    popen_kwargs = _process_group_kwargs()
-    process_observer = _PROCESS_OBSERVER.get()
-    log_observer = _PROCESS_LOG_OBSERVER.get()
-    should_capture = capture_output or log_observer is not None
-    if should_capture:
-        popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    process = subprocess.Popen(
-        arguments,
-        cwd=cwd,
-        shell=False,
-        text=text,
-        env=env,
-        **popen_kwargs,
-    )
-    if process_observer is not None:
-        process_observer(process)
-    try:
-        if log_observer is None:
-            stdout, stderr = process.communicate()
-        else:
-            import threading
-
-            stdout_chunks = []
-            stderr_chunks = []
-            sentinel = "" if text else b""
-
-            def pump(stream, chunks, channel: str) -> None:
-                if stream is None:
-                    return
-                try:
-                    for raw in iter(stream.readline, sentinel):
-                        chunks.append(raw)
-                        rendered = (
-                            raw
-                            if isinstance(raw, str)
-                            else raw.decode("utf-8", errors="replace")
-                        )
-                        line = rendered.rstrip("\r\n")
-                        if line:
-                            log_observer(line, channel=channel)
-                finally:
-                    stream.close()
-
-            threads = [
-                threading.Thread(
-                    target=pump,
-                    args=(process.stdout, stdout_chunks, "stdout"),
-                    daemon=True,
-                ),
-                threading.Thread(
-                    target=pump,
-                    args=(process.stderr, stderr_chunks, "stderr"),
-                    daemon=True,
-                ),
-            ]
-            for thread in threads:
-                thread.start()
-            process.wait()
-            for thread in threads:
-                thread.join()
-            if text:
-                stdout = "".join(stdout_chunks)
-                stderr = "".join(stderr_chunks)
-            else:
-                stdout = b"".join(stdout_chunks)
-                stderr = b"".join(stderr_chunks)
-    finally:
-        if process_observer is not None:
-            process_observer(None)
-
-    result = subprocess.CompletedProcess(
-        arguments,
-        process.returncode,
-        stdout,
-        stderr,
-    )
-    if check and process.returncode:
-        raise subprocess.CalledProcessError(
-            process.returncode,
-            arguments,
-            output=stdout,
-            stderr=stderr,
-        )
-    return result
 
 
 def _npm_executable() -> str:

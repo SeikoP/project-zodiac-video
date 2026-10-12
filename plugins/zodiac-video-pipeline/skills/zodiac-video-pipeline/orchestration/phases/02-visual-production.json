@@ -13,7 +13,7 @@
           "id": "precompile_seam_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-phase02-precompile-boundary.mjs",
+          "tool_locator": "features/visual-composition/validate-phase02-precompile-boundary.mjs",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -206,7 +206,7 @@
           "when": "always",
           "unavailable_policy": "block",
           "stage": "exit",
-          "tool_locator": "orchestration/validate-meme-selection.mjs"
+          "tool_locator": "features/meme/validate-meme-selection.mjs"
         },
         {
           "id": "caption_compile_contract",
@@ -238,7 +238,7 @@
           "id": "phase02_art_direction_validation",
           "kind": "internal_validator",
           "when": "flag:art_direction_required",
-          "tool_locator": "orchestration/validate-phase02-art-direction.mjs",
+          "tool_locator": "features/visual-composition/validate-phase02-art-direction.mjs",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -246,7 +246,7 @@
           "id": "episode_cast_validation",
           "kind": "internal_validator",
           "when": "flag:episode_selected",
-          "tool_locator": "orchestration/validate-episode-handoff.mjs",
+          "tool_locator": "features/episode/validate-episode-handoff.mjs",
           "stage": "exit",
           "unavailable_policy": "block"
         }
@@ -618,13 +618,13 @@
           "when": "always",
           "unavailable_policy": "block",
           "stage": "exit",
-          "tool_locator": "orchestration/validate-visual-quality.mjs"
+          "tool_locator": "features/visual-composition/validate-visual-quality.mjs"
         },
         {
           "id": "director_v2_native_review",
           "kind": "internal_compiler",
           "when": "always",
-          "tool_locator": "orchestration/run-director-v2-review.mjs",
+          "tool_locator": "features/visual-composition/run-director-v2-review.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }
@@ -634,7 +634,7 @@
           "id": "narration_performance_compiler",
           "kind": "internal_compiler",
           "when": "fresh",
-          "tool_locator": "orchestration/compile-narration-performance.mjs",
+          "tool_locator": "features/narration-performance/compile-narration-performance.mjs",
           "stage": "exit",
           "unavailable_policy": "block",
           "required_arg_suffixes": [
@@ -670,7 +670,7 @@
           "id": "scene_composition_resolved_validation",
           "kind": "internal_validator",
           "when": "fresh",
-          "tool_locator": "orchestration/resolve-scene-composition.mjs",
+          "tool_locator": "features/visual-composition/resolve-scene-composition.mjs",
           "required_arg_suffixes": [
             "--write"
           ],
@@ -681,7 +681,7 @@
           "id": "story_object_semantic_validation",
           "kind": "internal_validator",
           "when": "fresh",
-          "tool_locator": "orchestration/validate-story-object.mjs",
+          "tool_locator": "features/story-object/validate-story-object.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -689,7 +689,7 @@
           "id": "story_object_composition_validation",
           "kind": "internal_validator",
           "when": "fresh",
-          "tool_locator": "orchestration/validate-story-object-composition.mjs",
+          "tool_locator": "features/story-object/validate-story-object-composition.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }
@@ -839,7 +839,7 @@
           "id": "publish_prep_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-publish-prep.mjs",
+          "tool_locator": "features/publish/validate-publish-prep.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -855,7 +855,7 @@
           "id": "cover_design_validation",
           "kind": "internal_validator",
           "when": "always",
-          "tool_locator": "orchestration/validate-cover-design.mjs",
+          "tool_locator": "features/cover/validate-cover-design.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }
