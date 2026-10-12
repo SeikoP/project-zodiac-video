@@ -38,9 +38,8 @@ test('Phase 2 snapshot restore resolves the core release owner after executable 
 
 test('Phase 2 fallback fingerprint scans executable owner roots, not only orchestration wrappers',async()=>{
   const source=await readFile(path.join(skill,'phases/phase02/phase02-execute.mjs'),'utf8');
-  for(const root of ['core','features','phases']){
-    assert.match(source,new RegExp("walk\\(path\\.join\\(base,'"+root+"'\\)\\)"),root+' owner tree missing from fallback dependency scan');
-  }
+  assert.match(source,/for\(const ownerRoot of \['core','features','phases','bootstrap','art-direction'\]\)await walk\(path\.join\(base,ownerRoot\)\);/u);
+  assert.match(source,/await walk\(path\.join\(base,'orchestration'\)\);/u);
 });
 
 test('selection guide does not instruct fresh unbound context to load the legacy complete list',async()=>{
