@@ -46,3 +46,28 @@ test('fresh scene-set context exposes effective policy without compatibility env
  assert.equal(result.effective_policy?.renderer,'zodiac-renderer@2.0.1');
  assert.equal(result.required_references.some(ref=>ref.includes('compatibility/environment-profiles')),false);
 });
+
+test('loadStepContext materializes registry-selected capabilities into bounded references',async()=>{
+ const {loadStepContext}=await import('../plan-step-context.mjs');
+ const state=JSON.parse(await readFile(path.join(orchestration,'pipeline-state.template.json'),'utf8'));
+ const result=await loadStepContext('02-visual-production','visual_compile',state.flags,{
+  selected_asset_ids:['scene-set-classroom'],
+  environment_mode:'scene_set'
+ });
+ assert.deepEqual(result.selected_capabilities,['scene_set','character_assembly','story_object']);
+ assert.ok(result.required_references.includes('references/asset-library-v4/scene-set/index.json'));
+ assert.ok(result.required_references.includes('references/story-object-composition-v2.md'));
+ assert.equal(result.required_references.some(ref=>ref.includes('/compatibility/')),false);
+});
+
+test('loadStepContext resolves narrative asset needs without caller knowing asset ids',async()=>{
+ const {loadStepContext}=await import('../plan-step-context.mjs');
+ const state=JSON.parse(await readFile(path.join(orchestration,'pipeline-state.template.json'),'utf8'));
+ const result=await loadStepContext('02-visual-production','visual_compile',state.flags,{
+  asset_needs:['scene.classroom','cast.three_compare'],
+  environment_mode:'scene_set'
+ });
+ assert.ok(result.resolved_asset_capabilities.some(row=>row.need_id==='scene.classroom'&&row.capability_id==='scene-set-classroom'));
+ assert.ok(result.resolved_asset_capabilities.some(row=>row.need_id==='cast.three_compare'&&row.capability_id==='three-person-comparison'));
+ assert.equal(result.required_references.some(ref=>ref.includes('/compatibility/')),false);
+});

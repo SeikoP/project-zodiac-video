@@ -87,3 +87,27 @@ test('fresh scene selection stays selected-only and does not load compatibility 
  assert.equal(Boolean(compiled.production.assets.ENV_SCENE_SET_CAFE),false);
  assert.deepEqual(Object.keys(compiled.files),['assets/environment/scene-set-classroom.svg']);
 });
+
+test('narrative asset needs resolve through coverage matrix before guidance selection',async()=>{
+ const policy=await json('selection-policy.json');
+ const capabilityIndex=await json('capability-index.json');
+ const coverageMatrix=await json('coverage-matrix.json');
+ const selected=selectAssetGuidance({
+  asset_needs:['scene.classroom','cast.three_compare','effect.confusion'],
+  environment_mode:'scene_set'
+ },policy,{capabilityIndex,coverageMatrix});
+ assert.deepEqual(selected.unresolved_needs,[]);
+ assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='scene.classroom'&&row.capability_id==='scene-set-classroom'&&row.kind==='scene_set'));
+ assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='cast.three_compare'&&row.capability_id==='three-person-comparison'&&row.kind==='layout'));
+ assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='effect.confusion'&&row.capability_id==='confusion'&&row.kind==='effect'));
+ assert.ok(selected.selected_asset_ids.includes('scene-set-classroom'));
+ assert.deepEqual(selected.unresolved_ids,[]);
+ assert.equal(selected.extension_refs.some(ref=>ref.includes('environments/composition-index.json')),false);
+});
+
+test('unknown narrative asset need fails closed',async()=>{
+ const policy=await json('selection-policy.json');
+ const capabilityIndex=await json('capability-index.json');
+ const coverageMatrix=await json('coverage-matrix.json');
+ assert.throws(()=>selectAssetGuidance({asset_needs:['scene.not-real'],environment_mode:'scene_set'},policy,{capabilityIndex,coverageMatrix}),/ASSET_CAPABILITY_NEED_UNKNOWN scene.not-real/u);
+});

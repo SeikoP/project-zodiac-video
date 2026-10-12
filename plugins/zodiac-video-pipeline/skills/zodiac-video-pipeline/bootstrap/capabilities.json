@@ -13,6 +13,18 @@
         "scene-set",
         "scene-set-identity",
         "scene-set-accents"
+      ],
+      "bindings": [
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "visual_compile",
+            "assets"
+          ],
+          "environment_modes": [
+            "scene_set"
+          ]
+        }
       ]
     },
     {
@@ -25,6 +37,15 @@
       "validators": [
         "character-intent-preflight",
         "character-assembly"
+      ],
+      "bindings": [
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "visual_compile",
+            "assets"
+          ]
+        }
       ]
     },
     {
@@ -37,6 +58,18 @@
       "validators": [
         "story-object",
         "story-object-composition"
+      ],
+      "bindings": [
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "visual_compile",
+            "assets"
+          ],
+          "run_modes": [
+            "fresh"
+          ]
+        }
       ]
     },
     {
@@ -47,6 +80,14 @@
       ],
       "validators": [
         "cover-design"
+      ],
+      "bindings": [
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "publish_prep"
+          ]
+        }
       ]
     },
     {
@@ -57,6 +98,14 @@
       ],
       "validators": [
         "narration-rhythm"
+      ],
+      "bindings": [
+        {
+          "phase": "01-content",
+          "steps": [
+            "narration"
+          ]
+        }
       ]
     },
     {
@@ -68,6 +117,19 @@
       ],
       "validators": [
         "depth-composition"
+      ],
+      "bindings": [
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "visual_compile",
+            "assets"
+          ],
+          "environment_modes": [
+            "selected_cues",
+            "legacy"
+          ]
+        }
       ]
     }
   ]
