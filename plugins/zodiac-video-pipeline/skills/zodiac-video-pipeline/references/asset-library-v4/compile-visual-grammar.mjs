@@ -9,11 +9,11 @@ const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
 const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
 const frameRows=shotLayoutsDoc.layouts??shotLayoutsDoc.frames??[];
 const mechanicsDoc=JSON.parse(await readFile(path.join(here,'mechanics/index.json'),'utf8'));
-const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));
+const envDoc=JSON.parse(await readFile(path.join(here,'environments/composition-index.json'),'utf8'));\nconst sceneSetDoc=JSON.parse(await readFile(path.join(here,'scene-set/index.json'),'utf8'));
 const memesDoc=JSON.parse(await readFile(path.join(here,'memes/index.json'),'utf8'));
 const frames=new Map(frameRows.map(x=>[x.id,x]));
 const mechanics=new Map(mechanicsDoc.mechanics.map(x=>[x.id,x]));
-const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));
+const environments=new Map((envDoc.profiles??[]).map(x=>[x.id,x]));\nconst sceneSets=new Map((sceneSetDoc.scene_sets??[]).map(x=>[x.id,x]));
 const memes=new Map((memesDoc.compositions??[]).map(x=>[x.id,x]));
 const clone=x=>JSON.parse(JSON.stringify(x));
 
@@ -118,14 +118,21 @@ export function compileVisualGrammar(production,plan){
       const assetRequirements=(meme.composition.asset_requirements??[]).map(req=>{const binding=meme.roles[req.role];if(!binding)fail(`${scene.id} meme ${meme.id} asset requirement references unbound role ${req.role}`);return {...clone(req),entity_id:binding.entity_id};});
       scene.visual_grammar.meme_composition={id:meme.id,source_library:'zodiac-visual-grammar-v4',source_contract:meme.composition.source,roles:meme.roles,required_contacts:clone(meme.composition.required_contacts??[]),acting_requirements:meme.actingRequirements,effects:meme.effectSpecs,asset_requirements:assetRequirements};
     }
-    if(spec.environment!==undefined&&!hasPrimarySceneSet(scene,out)){
+    if(spec.environment!==undefined){
       if(!spec.environment||typeof spec.environment!=='object'||Array.isArray(spec.environment))fail(`${spec.scene_id} environment must be an object`);
-      const env=environments.get(spec.environment.profile);
-      if(!env)fail(`${spec.scene_id} unknown environment profile ${spec.environment.profile}`);
-      const modifier=spec.environment.modifier??env.default_modifier;
-      if(!env.modifiers?.[modifier])fail(`${spec.scene_id} unknown environment modifier ${modifier}`);
-      if(env.modifiers[modifier].payoff_only===true&&mechanic.id!=='payoff')fail(`${spec.scene_id} environment modifier ${modifier} requires payoff mechanic`);
-      scene.environment={...scene.environment,mode:scene.environment?.mode==='archive_frame'?'archive_frame':'micro_environment',profile:env.id,modifier};
+      if(spec.environment.scene_set_id){
+        if(spec.environment.profile)fail(`${spec.scene_id} may not mix scene_set_id with legacy profile`);
+        const set=sceneSets.get(spec.environment.scene_set_id);if(!set)fail(`${spec.scene_id} unknown scene set ${spec.environment.scene_set_id}`);
+        if(spec.environment.scene_accents!==undefined&&!Array.isArray(spec.environment.scene_accents))fail(`${spec.scene_id} scene_accents must be an array`);
+        scene.environment={...scene.environment,mode:'scene_set',scene_set_id:set.id,background_palette_id:spec.environment.background_palette_id??'warm-paper',scene_accents:clone(spec.environment.scene_accents??[])};
+      }else if(!hasPrimarySceneSet(scene,out)){
+        const env=environments.get(spec.environment.profile);
+        if(!env)fail(`${spec.scene_id} unknown environment profile ${spec.environment.profile}`);
+        const modifier=spec.environment.modifier??env.default_modifier;
+        if(!env.modifiers?.[modifier])fail(`${spec.scene_id} unknown environment modifier ${modifier}`);
+        if(env.modifiers[modifier].payoff_only===true&&mechanic.id!=='payoff')fail(`${spec.scene_id} environment modifier ${modifier} requires payoff mechanic`);
+        scene.environment={...scene.environment,mode:scene.environment?.mode==='archive_frame'?'archive_frame':'micro_environment',profile:env.id,modifier};
+      }
     }
   }
   return out;
