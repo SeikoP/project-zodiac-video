@@ -25,7 +25,8 @@ jobs:
       - name: Full plugin suite
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/*.test.mjs
       - name: Validate Asset V4
-        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/validation/validate-library.mjs      - name: Runtime and contract architecture
+        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/validation/validate-library.mjs
+      - name: Runtime and contract architecture
         run: pytest -q tests/test_runtime_registry.py tests/test_contract_bundle.py tests/test_application_service.py tests/test_runner_modules.py tests/test_test_layout.py
       - name: Runtime retention audit
         run: |
