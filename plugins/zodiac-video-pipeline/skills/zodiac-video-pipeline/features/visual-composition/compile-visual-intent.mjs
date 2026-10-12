@@ -18,7 +18,7 @@ export function compileVisualIntent(intent,{narration,token,catalog}={}){
  const decision=intent.story_object_decision;if(!decision||!['required','optional','omitted'].includes(decision.mode)||!decision.reason?.trim()||!decision.review_ref?.trim())fail('OBJECT_DECISION');
  for(const s of intent.scenes){if(s.frame_ref){const ref=intent.frames.find(f=>f.asset_id===s.frame_ref.asset_id);if(!ref||hash(ref)!==hash(s.frame_ref))fail('FRAME_REFERENCE');}}
  const bytes=Buffer.from(narration),ids=new Set();partitionNarration(bytes,intent.scenes.map(s=>s.narration_range));let end=0;
- const scenes=intent.scenes.map(s=>{if(!s.id||ids.has(s.id)||!s.semantic_goal?.trim()||!s.grammar||!Array.isArray(s.entities)||!Array.isArray(s.events))fail('SCENE_INCOMPLETE');ids.add(s.id);
+ const scenes=intent.scenes.map(s=>{if(!s.id||ids.has(s.id)||!s.semantic_goal?.trim()||!s.grammar||!Array.isArray(s.entities)||!Array.isArray(s.events))fail('SCENE_INCOMPLETE');if(s.grammar?.environment?.scene_set_id&&s.art_direction?.environment_profile)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET '+s.id);ids.add(s.id);
  const [start,stop]=s.narration_range??[];if(!Number.isInteger(start)||!Number.isInteger(stop)||start!==end||stop<=start||stop>bytes.length)fail('NARRATION_RANGE');const voice=bytes.subarray(start,stop).toString('utf8');if(!Buffer.from(voice).equals(bytes.subarray(start,stop)))fail('NARRATION_CODEPOINT');end=stop;
  const {narration_range,semantic_goal,grammar,director_beats,semantic_asset_decisions,...native}=clone(s);return {...native,entities:native.entities.map(projectEntity),voice};});
  if(end!==bytes.length)fail('NARRATION_COVERAGE');
