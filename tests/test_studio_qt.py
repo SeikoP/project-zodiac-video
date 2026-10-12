@@ -551,14 +551,16 @@ class TaskWorkbenchTests(unittest.TestCase):
             self.assertEqual(window.workbench.stage_rail.count(), 7)
 
             window._environment_ready = True
-            with patch.object(window.v2_session, "run") as run:
+            with patch.object(window.application, "run", return_value=True) as run:
                 window.workbench.continue_button.click()
                 deadline = time.monotonic() + 5
                 while time.monotonic() < deadline and not run.called:
                     self.qt_app.processEvents()
                     time.sleep(0.01)
                 self.assertTrue(run.called)
-                self.assertIsNone(run.call_args.kwargs["rerun_from"])
+                request = run.call_args.args[0]
+                self.assertTrue(request.resume)
+                self.assertIsNone(request.rerun)
                 deadline = time.monotonic() + 5
                 while time.monotonic() < deadline and window.pipeline_running:
                     self.qt_app.processEvents()
