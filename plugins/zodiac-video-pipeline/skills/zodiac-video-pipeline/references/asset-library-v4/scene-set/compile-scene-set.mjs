@@ -61,7 +61,12 @@ export async function compileSceneSetWorkspace(root,{production,libraryRoot=here
  }
 
  const used=new Set((out.scenes??[]).flatMap(s=>(s.entities??[]).flatMap(e=>Object.values(e.states??{}).map(st=>st.asset))));
- for(const id of generated)if(!used.has(id))delete out.assets[id];
+ const knownMasters=new Set([...registry.scene_sets,...accents.accents].map(row=>row.id));
+ const canonicalIds=new Set([...registry.scene_sets,...accents.accents].map(row=>row.asset_id));
+ for(const [id,meta] of Object.entries(out.assets)){
+  const owned=generated.has(id)||canonicalIds.has(id)||knownMasters.has(meta?.lineage?.source_master);
+  if(owned&&!used.has(id))delete out.assets[id];
+ }
  const verdict=validateSceneSetAccents(out);if(verdict.status!=='PASS')fail('ACCENT_CONTAINMENT '+JSON.stringify(verdict.issues));
  const receipt={format:'zodiac-scene-set-compile@2',structural_status:'STRUCTURAL_PASS',creative_status:'CREATIVE_REVIEW_REQUIRED',runtime_status:'RUNTIME_QA_PENDING',scenes:selected,selected_assets:Object.keys(files),source_hashes:Object.fromEntries(Object.entries(files).map(([p,b])=>[p,sha(b)]))};
  if(write){
