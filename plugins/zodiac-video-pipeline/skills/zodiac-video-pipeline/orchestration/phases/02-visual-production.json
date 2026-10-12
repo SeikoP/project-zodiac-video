@@ -215,7 +215,9 @@
           "guidance_uri": "references/caption-timing.md",
           "unavailable_policy": "block",
           "stage": "entry"
-        },
+        }
+      ],
+      "conditional_capabilities": [
         {
           "id": "visual_metaphor_contract",
           "kind": "internal_reference",
@@ -223,9 +225,7 @@
           "guidance_uri": "references/visual-metaphor-contract.md",
           "unavailable_policy": "block",
           "stage": "entry"
-        }
-      ],
-      "conditional_capabilities": [
+        },
         {
           "id": "interaction_contract",
           "kind": "internal_reference",
