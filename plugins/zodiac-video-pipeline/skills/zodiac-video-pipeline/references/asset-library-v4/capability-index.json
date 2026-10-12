@@ -130,6 +130,67 @@
     "motion": {
       "effect_id": "motion-dash",
       "lifecycle": "bounded_enter_release"
+    },
+    "focus-halo": {
+      "effect_id": "focus-halo-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "comparison-bracket": {
+      "effect_id": "comparison-bracket-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "relief-wave": {
+      "effect_id": "relief-wave-mark",
+      "lifecycle": "bounded_enter_release"
+    },
+    "alarm-zigzag": {
+      "effect_id": "alarm-zigzag-mark",
+      "lifecycle": "bounded_enter_release"
+    }
+  },
+  "visual_metaphors": {
+    "balance-scale": {
+      "index_id": "balance-scale",
+      "states": [
+        "tilt_left",
+        "balanced",
+        "tilt_right"
+      ]
+    },
+    "split-direction": {
+      "index_id": "split-direction",
+      "states": [
+        "left",
+        "right"
+      ]
+    },
+    "push-pull": {
+      "index_id": "push-pull",
+      "states": [
+        "attract",
+        "repel"
+      ]
+    },
+    "focus-shift-metaphor": {
+      "index_id": "focus-shift",
+      "states": [
+        "left",
+        "right"
+      ]
+    },
+    "barrier-opening": {
+      "index_id": "barrier-opening",
+      "states": [
+        "closed",
+        "open"
+      ]
+    },
+    "comparison-level": {
+      "index_id": "comparison-level",
+      "states": [
+        "low-high",
+        "high-low"
+      ]
     }
   }
 }
