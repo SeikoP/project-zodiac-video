@@ -1,0 +1,24 @@
+{
+  "format": "zodiac-asset-coverage-matrix@1",
+  "needs": [
+    {"id": "scene.home", "capability": "scene-set-home"},
+    {"id": "scene.cafe", "capability": "scene-set-cafe"},
+    {"id": "scene.classroom", "capability": "scene-set-classroom"},
+    {"id": "scene.study", "capability": "scene-set-study"},
+    {"id": "scene.street", "capability": "scene-set-street"},
+    {"id": "scene.neutral", "capability": "scene-set-neutral"},
+    {"id": "cast.single", "capability": "single-character-focus"},
+    {"id": "cast.pair", "capability": "two-person-offset"},
+    {"id": "cast.three_compare", "capability": "three-person-comparison"},
+    {"id": "interaction.pass_object", "capability": "pass-object"},
+    {"id": "interaction.hold_show", "capability": "hold-show"},
+    {"id": "interaction.compare_group", "capability": "compare-group"},
+    {"id": "effect.surprise", "capability": "surprise"},
+    {"id": "effect.pressure", "capability": "pressure"},
+    {"id": "effect.confusion", "capability": "confusion"},
+    {"id": "effect.embarrassment", "capability": "embarrassment"},
+    {"id": "effect.tension", "capability": "tension"},
+    {"id": "effect.emphasis", "capability": "emphasis"},
+    {"id": "effect.motion", "capability": "motion"}
+  ]
+}

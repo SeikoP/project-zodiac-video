@@ -68,6 +68,142 @@
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-cafe.svg",
       "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame."
+    },
+    {
+      "id": "scene-set-classroom",
+      "asset_id": "ENV_SCENE_SET_CLASSROOM",
+      "path": "frames/scene-set-classroom.svg",
+      "asset_sha256": "c8e5d3ceb6712e4c0282ffb323fef0f24472a16c77634952256868a0ea720081",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-classroom.svg",
+      "semantic_intent": "Classroom-neutral continuous wall/floor/frame stage; context remains optional accents."
+    },
+    {
+      "id": "scene-set-study",
+      "asset_id": "ENV_SCENE_SET_STUDY",
+      "path": "frames/scene-set-study.svg",
+      "asset_sha256": "8d36515f0bdcb880ba51b6f8b93fa112b9425421338f236d1218bfd7277ad28f",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-study.svg",
+      "semantic_intent": "Study/work continuous wall/floor/frame stage; no automatic desk or furniture."
+    },
+    {
+      "id": "scene-set-street",
+      "asset_id": "ENV_SCENE_SET_STREET",
+      "path": "frames/scene-set-street.svg",
+      "asset_sha256": "f23238930b9fb54bb3987279eef24efed839b83b6ce3835b92835680a314f85f",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-street.svg",
+      "semantic_intent": "Outdoor/street-toned continuous wall/floor/frame stage without structural scenery."
+    },
+    {
+      "id": "scene-set-neutral",
+      "asset_id": "ENV_SCENE_SET_NEUTRAL",
+      "path": "frames/scene-set-neutral.svg",
+      "asset_sha256": "4dddabf1019ef348b11fbf99806ba5e16ff134700af87b5feb8bf63376d068a2",
+      "view_box": [
+        0,
+        0,
+        1080,
+        900
+      ],
+      "transform": {
+        "x": 0,
+        "y": 140,
+        "width": 1080,
+        "height": 1240
+      },
+      "layer": 1,
+      "wall_region_local": {
+        "x": 30,
+        "y": 125,
+        "width": 1020,
+        "height": 580
+      },
+      "floor_region_local": {
+        "x": 18,
+        "y": 707,
+        "width": 1045,
+        "height": 193
+      },
+      "accent_policy": "inside_wall_only",
+      "output_path": "assets/environment/scene-set-neutral.svg",
+      "semantic_intent": "Minimal neutral continuous wall/floor/frame stage for object- or cast-led scenes."
     }
   ]
 }

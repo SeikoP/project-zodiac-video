@@ -16,6 +16,70 @@
       "layer": 3,
       "containment": "inside_scene_set_wall",
       "semantic_intent": "Optional minimal cafe conversation context cue."
+    },
+    {
+      "id": "scene-accent-board",
+      "asset_id": "ENV_ACCENT_BOARD",
+      "path": "accents/scene-accent-board.svg",
+      "asset_sha256": "bfede51ab9a4eec6d63c1ca994993a649f6eeffa774cdf2bd2b32033621b8a3d",
+      "output_path": "assets/environment/scene-accent-board.svg",
+      "transform": {
+        "x": 260,
+        "y": 380,
+        "width": 520,
+        "height": 210
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional board cue for school/study context."
+    },
+    {
+      "id": "scene-accent-shelf",
+      "asset_id": "ENV_ACCENT_SHELF",
+      "path": "accents/scene-accent-shelf.svg",
+      "asset_sha256": "db2dcadabfa8584a19d2c8e6416841db48789227726310feff006705fbca89a3",
+      "output_path": "assets/environment/scene-accent-shelf.svg",
+      "transform": {
+        "x": 300,
+        "y": 390,
+        "width": 480,
+        "height": 220
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional shelf cue for study/home context."
+    },
+    {
+      "id": "scene-accent-clock",
+      "asset_id": "ENV_ACCENT_CLOCK",
+      "path": "accents/scene-accent-clock.svg",
+      "asset_sha256": "9982cb4758320e89b3f13b9d1712513e68fd23776e20761e7ba72610c5e950e2",
+      "output_path": "assets/environment/scene-accent-clock.svg",
+      "transform": {
+        "x": 430,
+        "y": 350,
+        "width": 220,
+        "height": 220
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional clock cue for time/schedule context."
+    },
+    {
+      "id": "scene-accent-sign",
+      "asset_id": "ENV_ACCENT_SIGN",
+      "path": "accents/scene-accent-sign.svg",
+      "asset_sha256": "1e4316091043a448def8f5e001a1320823c5e98ecfa02d3031c6e329f9fa186a",
+      "output_path": "assets/environment/scene-accent-sign.svg",
+      "transform": {
+        "x": 290,
+        "y": 390,
+        "width": 500,
+        "height": 190
+      },
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Optional sign/menu cue for cafe/street context."
     }
   ]
 }

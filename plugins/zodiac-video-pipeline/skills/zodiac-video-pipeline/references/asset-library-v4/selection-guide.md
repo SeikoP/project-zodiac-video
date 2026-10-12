@@ -1,6 +1,6 @@
 # Visual Grammar v4 selection guide
 
-Start with the approved **scene-set** (the stable wall/floor/frame stage). Per beat, choose one shot-layout (historically `Frame Skeleton`) + one primary Mechanic, then bind existing entities. Scene Direction owns coordinates. `frames/` remains the compatibility path for shot-layout metadata; it is not the scene-set library.
+Start with the selected **scene-set** (the stable wall/floor/frame stage). Use `capability-index.json` to resolve current scene/layout/interaction/effect capabilities before authoring; `coverage-matrix.json` is the audit view of supported narrative needs. Per beat, choose one shot-layout (historically `Frame Skeleton`) + one primary Mechanic, then bind existing entities. Scene Direction owns coordinates. `frames/` remains the compatibility path for shot-layout metadata; it is not the scene-set library.
 
 For each ordinary character, choose identity once in `.authoring/character-assembly-plan.json`:
 `body_profile + hair_id + face_profile_id + outfit_id + accessory_id + stable variant_seed`.
