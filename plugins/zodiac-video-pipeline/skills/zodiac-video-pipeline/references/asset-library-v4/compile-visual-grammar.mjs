@@ -145,5 +145,5 @@ if(direct){
   const productionPath=process.argv[2],planPath=process.argv[3];
   if(!productionPath||!planPath){console.error('Usage: node compile-visual-grammar.mjs <production.json> <visual-grammar-plan.json> --write');process.exit(2);}
   const production=JSON.parse(await readFile(productionPath,'utf8')),plan=JSON.parse(await readFile(planPath,'utf8')),out=compileVisualGrammar(production,plan);
-  if(process.argv.includes('--write')){await writeFile(productionPath,JSON.stringify(out,null,2)+'\\n');console.log(`VISUAL_GRAMMAR_COMPILE_PASS: scenes=${plan.scenes.length}`);}else console.log(JSON.stringify(out,null,2));
+  if(process.argv.includes('--write')){await writeFile(productionPath,JSON.stringify(out,null,2)+'\n');console.log(`VISUAL_GRAMMAR_COMPILE_PASS: scenes=${plan.scenes.length}`);}else console.log(JSON.stringify(out,null,2));
 }
