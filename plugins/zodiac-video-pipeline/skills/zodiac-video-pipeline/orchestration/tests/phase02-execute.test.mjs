@@ -36,6 +36,7 @@ const makeSource=async()=>{
  await write(path.join(skill,'references/asset-library-v4/environments/compile-environment.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/environment-compile-receipt.json'),'{}');console.log('ENV_FIXTURE_OK')`);
  await write(path.join(skill,'references/asset-library-v4/scene-direction/compile-scene-direction.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/scene-direction-compile-receipt.json'),'{}');console.log('SCENE_FIXTURE_OK')`);
  await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'orchestration',name),await readFile(new URL('../'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/phase02-composition.mjs'),await readFile(new URL('../phase02-composition.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'orchestration/phase02-composition-core.mjs'),await readFile(new URL('../phase02-composition-core.mjs',import.meta.url),'utf8'));
@@ -164,6 +165,7 @@ test('precompile and art direction preflights each execute once with genuine rec
  try{
   await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9',flags:{art_direction_required:true}}));
   await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
   for(const [scriptName,counter] of [['validate-phase02-precompile-boundary.mjs','seam'],['validate-phase02-art-direction.mjs','art']]){
    await write(path.join(skill,'orchestration',scriptName),`import {appendFile} from 'node:fs/promises';import path from 'node:path';await appendFile(path.join(process.argv[2],'.authoring/${counter}-calls'),'1\\n');console.log('PREFLIGHT_OK');`);
   }
