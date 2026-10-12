@@ -378,6 +378,54 @@
           "width": 5
         }
       ]
+    },
+    "focus-halo-mark": {
+      "semantic_family": "focus-halo-family",
+      "locus": "focus_subject",
+      "intent": "focus halo",
+      "paths": [
+        {
+          "d": "M18 50 Q50 14 83 50 Q51 87 18 50Z",
+          "stroke": "#8EC0B9",
+          "width": 6
+        }
+      ]
+    },
+    "comparison-bracket-mark": {
+      "semantic_family": "comparison-bracket-family",
+      "locus": "comparison_axis",
+      "intent": "comparison bracket",
+      "paths": [
+        {
+          "d": "M18 18 L10 18 L10 82 L18 82 M82 18 L90 18 L90 82 L82 82",
+          "stroke": "#2F3C44",
+          "width": 6
+        }
+      ]
+    },
+    "relief-wave-mark": {
+      "semantic_family": "relief-wave-family",
+      "locus": "release_edge",
+      "intent": "relief release",
+      "paths": [
+        {
+          "d": "M8 38 Q25 20 42 38 Q59 56 76 38 Q86 29 94 33",
+          "stroke": "#8EC0B9",
+          "width": 6
+        }
+      ]
+    },
+    "alarm-zigzag-mark": {
+      "semantic_family": "alarm-zigzag-family",
+      "locus": "alert_corner",
+      "intent": "alarm alert",
+      "paths": [
+        {
+          "d": "M19 80 L35 50 L48 63 L61 29 L78 43 L89 16",
+          "stroke": "#E97A66",
+          "width": 7
+        }
+      ]
     }
   }
 }
