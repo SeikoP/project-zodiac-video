@@ -10,16 +10,13 @@ on:
           - 01-content
           - 02-visual-production
           - 03-handoff
-  push:
-    paths:
-      - ".github/zodiac-source-trigger"
 permissions:
   contents: read
 jobs:
   source:
     runs-on: ubuntu-latest
     env:
-      BUNDLE_PHASE: ${{ github.event.inputs.phase || '01-content' }}
+      BUNDLE_PHASE: ${{ github.event.inputs.phase }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
