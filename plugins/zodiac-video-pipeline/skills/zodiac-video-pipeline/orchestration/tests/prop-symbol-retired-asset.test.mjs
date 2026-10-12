@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';import {fileURLToPath} from 'node:url';
+import {validatePropSymbol} from '../../features/visual-composition/validate-prop-symbol.mjs';
+import {validateFreshAssetSelection} from '../../features/visual-composition/validate-fresh-asset-selection.mjs';
+const policy=JSON.parse(readFileSync(new URL('../../references/asset-library-v4/selection-policy.json',import.meta.url)));
+const scene=id=>({scenes:[{id:'S1',grammar:{environment:{scene_set_id:id}}}]});
+test('fresh scene-set is active',()=>assert.equal(validateFreshAssetSelection({intent:scene('scene-set-cafe'),policy}).status,'PASS'));
+test('old room window ID is retired',()=>assert.throws(()=>validateFreshAssetSelection({intent:{...scene('scene-set-cafe'),assets:{A:{path:'assets/environment/bedroom-window-curtain.svg'}}},policy}),/RETIRED_SOURCE/));
+test('legacy profile cannot route into fresh',()=>assert.throws(()=>validateFreshAssetSelection({intent:{scenes:[{id:'S1',grammar:{environment:{profile:'cafe-chat'}}}]},policy}),/PROFILE_COMPATIBILITY/));
+test('symbol must have an explicit decision',()=>assert.equal(validatePropSymbol({},{scenes:[]}).status,'BLOCKED'));
+test('omitted symbol requires reason',()=>assert.equal(validatePropSymbol({symbol_intent:{mode:'omitted'}},{scenes:[]}).status,'BLOCKED'));
+test('explicit omission is permitted',()=>assert.equal(validatePropSymbol({symbol_intent:{mode:'omitted',reason:'No symbolic turn in narration'}},{scenes:[]}).status,'OMITTED_EXPLICIT'));
+test('phone-only empty visual arc cannot pass',()=>assert.equal(validatePropSymbol({symbol_intent:{mode:'required',meaning:'Phone buzzes',sign_specificity:'Gemini',removal_test:'Remove phone',beats:[]}},{scenes:[]}).status,'BLOCKED'));

@@ -903,5 +903,10 @@
     "physical_deletion": "none; dependency-safe compatibility retained",
     "automatic_environment_cues": false,
     "scene_set_required_when_authored": true
-  }
+  },
+  "retired_fresh_asset_ids": [
+    "bedroom-window-curtain",
+    "cafe-window",
+    "env__cafe-window"
+  ]
 }
