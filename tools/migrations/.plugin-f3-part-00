@@ -1,0 +1,42 @@
+from pathlib import Path
+import json, os, re
+
+skill=Path('plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline').resolve()
+orch=skill/'orchestration'
+
+move={
+'commit-phase01-step.mjs':'phases/phase01/commit-phase01-step.mjs','execution-preflight.mjs':'phases/phase01/execution-preflight.mjs','phase01-artifacts.mjs':'phases/phase01/phase01-artifacts.mjs',
+'commit-phase02-step.mjs':'phases/phase02/commit-phase02-step.mjs','finalize-phase02-workspace.mjs':'phases/phase02/finalize-phase02-workspace.mjs','phase02-execute-with-depth.mjs':'phases/phase02/phase02-execute-with-depth.mjs','phase02-execute.mjs':'phases/phase02/phase02-execute.mjs','phase02-handoff-context.mjs':'phases/phase02/phase02-handoff-context.mjs','phase02-seal-gate.mjs':'phases/phase02/phase02-seal-gate.mjs','phase02-selected-dependencies.mjs':'phases/phase02/phase02-selected-dependencies.mjs','phase02-transition-gate.mjs':'phases/phase02/phase02-transition-gate.mjs','seal-phase02-review.mjs':'phases/phase02/seal-phase02-review.mjs',
+'episode-handoff.mjs':'features/episode/episode-handoff.mjs','validate-episode-handoff.mjs':'features/episode/validate-episode-handoff.mjs','validate-scene-art-direction.mjs':'features/visual-composition/validate-scene-art-direction.mjs',
+'commit-phase03-release.mjs':'phases/phase03/commit-phase03-release.mjs','compile-job-v5.mjs':'phases/phase03/compile-job-v5.mjs','export-zodiac-job-v2.mjs':'phases/phase03/export-zodiac-job-v2.mjs','handoff-preflight.mjs':'phases/phase03/handoff-preflight.mjs','phase03-production-release.mjs':'phases/phase03/phase03-production-release.mjs','run-phase03-production.mjs':'phases/phase03/run-phase03-production.mjs','validate-handoff-workspace-v2.mjs':'phases/phase03/validate-handoff-workspace-v2.mjs','validate-job5-import-gate.mjs':'phases/phase03/validate-job5-import-gate.mjs','validate-zodiac-job-zip-v2.mjs':'phases/phase03/validate-zodiac-job-zip-v2.mjs','zip-core-v2.mjs':'phases/phase03/zip-core-v2.mjs',
+}
+
+# Discover owners already established by F1/F2 wrappers.
+owners={}
+wrapper_re=re.compile(r"^export \* from ['\"]([^'\"]+)['\"];",re.M)
+for p in orch.glob('*.mjs'):
+    m=wrapper_re.search(p.read_text())
+    if m: owners[p.resolve()]=(p.parent/m.group(1)).resolve()
+for name,dst in move.items(): owners[(orch/name).resolve()]=(skill/dst).resolve()
+# Current Job5 round-trip utilities are core model utilities, not compatibility implementation.
+for name in ['migrate-production-model.mjs','project-legacy-ir.mjs']:
+    owners[(orch/name).resolve()]=(skill/'core/model'/name).resolve()
+
+rx=re.compile(r"(?P<a>(?:\bfrom\s+|\bimport\s*\(\s*)['\"])(?P<s>\.\.?/[^'\"]+)(?P<z>['\"](?:\s*\))?)")
+def rel(a,b):
+    v=os.path.relpath(b,a).replace(os.sep,'/')
+    return v if v.startswith('.') else './'+v
+def rewrite(text,old,new):
+    def sub(m):
+        target=(old.parent/m.group('s')).resolve(); target=owners.get(target,target)
+        return m.group('a')+rel(new.parent,target)+m.group('z')
+    return rx.sub(sub,text)
+
+def adjust(name,text):
+    if name in {'commit-phase01-step.mjs','commit-phase02-step.mjs'}: text=text.replace("path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')","path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')")
+    if name=='execution-preflight.mjs':
+        text=text.replace("const root=path.resolve(here,'..');","const root=path.resolve(here,'../..');").replace("path.join(here,'pipeline-state.template.json')","path.join(root,'orchestration/pipeline-state.template.json')")
+    if name=='phase02-execute-with-depth.mjs': text=text.replace("path.resolve(home,'..',script)","path.resolve(home,'../..',script)")
+    if name=='phase02-execute.mjs': text=text.replace("path.resolve(HERE,'../../..')","path.resolve(HERE,'../../../..')")
+    if name=='phase02-seal-gate.mjs': text=text.replace("new URL('./validate-pipeline-state.mjs',import.meta.url)","new URL('../../core/state/validate-pipeline-state.mjs',import.meta.url)")
+    if name=='phase02-selected-dependencies.mjs':

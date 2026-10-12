@@ -1,0 +1,48 @@
+','orchestration/phase02-transition-gate.mjs':'phases/phase02/phase02-transition-gate.mjs','orchestration/compile-depth-composition.mjs':'features/visual-composition/compile-depth-composition.mjs','orchestration/validate-depth-composition.mjs':'features/visual-composition/validate-depth-composition.mjs','orchestration/phase02-execute.mjs':'phases/phase02/phase02-execute.mjs',
+    }.items(): text=text.replace(a,b)
+    return text
+
+# Correct model ownership before phase code is rewritten.
+(skill/'core/model').mkdir(parents=True,exist_ok=True)
+for name in ['migrate-production-model.mjs','project-legacy-ir.mjs']:
+    compat=skill/'compat/migrations'/name; dst=skill/'core/model'/name; src=compat.read_text()
+    if name=='migrate-production-model.mjs': src=src.replace('../../orchestration/normalize-motion.mjs','../../features/visual-composition/normalize-motion.mjs').replace('../../core/state/production-model.mjs','../state/production-model.mjs')
+    dst.write_text(src); compat.write_text(f"export * from '../../core/model/{name}';\n"); (orch/name).write_text(f"export * from '../core/model/{name}';\n")
+
+for name,dst_rel in move.items():
+    old=orch/name; dst=skill/dst_rel; dst.parent.mkdir(parents=True,exist_ok=True)
+    src=adjust(name,rewrite(old.read_text(),old,dst)); dst.write_text(src)
+    target=rel(orch,dst); wrapper=f"export * from '{target}';\n"
+    if 'process.argv' in src and 'fileURLToPath(import.meta.url)' in src: wrapper+=f"import {{forwardCliIfMain}} from './forward-cli.mjs';\nforwardCliIfMain(import.meta.url,new URL('{target}',import.meta.url));\n"
+    old.write_text(wrapper)
+
+# Current routers import owners directly.
+for name in ['plan-plugin-use.mjs','plan-step-context.mjs']:
+    p=orch/name; p.write_text(rewrite(p.read_text(),p,p))
+
+# Manifests call canonical owners; only true orchestration entrypoints remain orchestration locators.
+owner_by_name={p.name:p for p in owners.values()}
+for manifest in (orch/'phases').glob('*.json'):
+    data=json.loads(manifest.read_text())
+    for step in data.get('steps',[]):
+        for cap in [*(step.get('required_capabilities') or []),*(step.get('conditional_capabilities') or [])]:
+            loc=cap.get('tool_locator')
+            if isinstance(loc,str) and loc.startswith('orchestration/') and loc not in {'orchestration/verify-entry-freshness.mjs','orchestration/plan-plugin-use.mjs'}:
+                name=Path(loc).name
+                if name in owner_by_name: cap['tool_locator']=owner_by_name[name].relative_to(skill).as_posix()
+    manifest.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+
+# Phase01 validator replay classification follows canonical owner locators, retaining wrapper aliases.
+p=skill/'phases/phase01/commit-phase01-step.mjs'; text=p.read_text()
+text=text.replace("'orchestration/plan-plugin-use.mjs','orchestration/validate-episode-scope.mjs','orchestration/validate-episode-concept.mjs'","'orchestration/plan-plugin-use.mjs','features/episode/validate-episode-scope.mjs','features/episode/validate-episode-concept.mjs','orchestration/validate-episode-scope.mjs','orchestration/validate-episode-concept.mjs'")
+p.write_text(text)
+
+# Source-inspection tests use owner implementation.
+def rep(rel,*pairs):
+    p=skill/rel; text=p.read_text()
+    for a,b in pairs: text=text.replace(a,b)
+    p.write_text(text)
+rep('orchestration/tests/execution-bootstrap.test.mjs',("path.resolve(orch,'execution-preflight.mjs')","path.resolve(orch,'../phases/phase01/execution-preflight.mjs')"))
+rep('orchestration/tests/native-source-fingerprint.test.mjs',("new URL('../phase02-execute.mjs',import.meta.url)","new URL('../../phases/phase02/phase02-execute.mjs',import.meta.url)"))
+rep('orchestration/tests/phase02-write-contract.test.mjs',("new URL('../phase02-execute.mjs',import.meta.url)","new URL('../../phases/phase02/phase02-execute.mjs',import.meta.url)"))
+rep('orchestration/tests/phase03-seal-gate-wiring.test.mjs',("new URL('../run-phase03-production.mjs',import.meta.url)","new UR
