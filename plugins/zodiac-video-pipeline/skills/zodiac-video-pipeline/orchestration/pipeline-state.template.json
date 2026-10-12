@@ -1,6 +1,6 @@
 {
   "format": "zodiac-pipeline-state@2",
-  "plugin_version": "2.4.68",
+  "plugin_version": "2.4.69",
   "run_id": "<create-per-run>",
   "run_mode": "fresh",
   "flags": {
@@ -11,7 +11,7 @@
     "hard_to_extract": false,
     "relational_beats": false,
     "meme_selected": false,
-    "story_object_required": true,
+    "story_object_required": false,
     "viral_support_needed": false,
     "character_design_intent_required": true,
     "content_quality_engine": true,
