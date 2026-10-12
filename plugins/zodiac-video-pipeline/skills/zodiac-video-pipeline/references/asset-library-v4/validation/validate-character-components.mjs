@@ -14,7 +14,7 @@ export async function validateCharacterComponents(){
  if(bodies.size<6)fail('need >=6 body profiles');if(hair.size<10)fail('need >=10 hair components');if(expressions.size<6)fail('need >=6 expressions');if(poses.size<8)fail('need >=8 poses');if(faces.size<4)fail('need >=4 stable face profiles');if(accessories.size<2)fail('need >=2 identity accessories');
  const zodiac=(c.outfits??[]).filter(x=>x.kind==='zodiac'),generic=(c.outfits??[]).filter(x=>x.kind==='generic');if(zodiac.length!==12)fail('need exactly 12 zodiac outfits');if(generic.length<5)fail('need >=5 generic outfits');
  for(const b of c.body_profiles)if(!b.source_master||!b.silhouette_family)fail('body '+b.id+' missing source/silhouette');
- for(const f of c.face_profiles)if(!Number.isFinite(f.eye_scale_x)||!Number.isFinite(f.eye_scale_y)||!['none','freckles'].includes(f.mark_style))fail('face profile '+f.id+' has incomplete identity geometry');
+ for(const f of c.face_profiles)if(!Number.isFinite(f.eye_scale_x)||!Number.isFinite(f.eye_scale_y)||!['none','freckles','brow_mark','beauty_mark','rosy_cheeks'].includes(f.mark_style))fail('face profile '+f.id+' has incomplete identity geometry');
  return {bodies:bodies.size,hair:hair.size,outfits:outfits.size,expressions:expressions.size,poses:poses.size,faces:faces.size,accessories:accessories.size};
 }
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);if(direct){const r=await validateCharacterComponents();console.log(`CHARACTER_COMPONENTS_PASS: bodies=${r.bodies} hair=${r.hair} faces=${r.faces} accessories=${r.accessories} outfits=${r.outfits} expressions=${r.expressions} poses=${r.poses}`);}
