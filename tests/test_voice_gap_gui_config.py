@@ -21,9 +21,14 @@ class VoiceGapGuiTests(unittest.TestCase):
             dlg.deleteLater()
 
     def test_gui_config_never_separates_wav_and_timing_gaps(self):
-        source=(Path(__file__).resolve().parents[1]/"tools/studio_qt/app.py").read_text(encoding="utf-8")
-        self.assertEqual(source.count('"scene_gap_ms": float(self.settings["scene_gap_ms"])'),2)
-        self.assertNotIn('"scene_gap_ms": 0.0',source)
+        import tempfile
+        from tools.application.service import ApplicationRunRequest, ApplicationService
+
+        with tempfile.TemporaryDirectory() as temp:
+            service=ApplicationService(Path(temp))
+            config=service._current_config(ApplicationRunRequest(scene_gap_ms=240.0))
+        self.assertEqual(config.tts_settings["scene_gap_ms"],240.0)
+        self.assertEqual(config.aligner_settings["scene_gap_ms"],240.0)
 
 
 if __name__=="__main__":
