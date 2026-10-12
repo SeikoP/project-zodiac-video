@@ -108,7 +108,7 @@
           "selected_guidance_uri": "references/asset-library-v4/environments/composition-index.json"
         },
         {
-          "id": "bedroom_environment_contract",
+          "id": "environment_profile_contract",
           "kind": "internal_reference",
           "when": "always",
           "unavailable_policy": "block",
@@ -259,7 +259,7 @@
         "visual_contract",
         "asset_manifest",
         "environment_contract",
-        "bedroom_environment_contract",
+        "environment_profile_contract",
         "scene_direction_contract",
         "visual_grammar_contract",
         "character_assembly_contract",
@@ -310,7 +310,7 @@
         "meme_composition_selection",
         "outfit_pattern_routing",
         "environment_composition_selection",
-        "bedroom_base_selection",
+        "environment_base_selection",
         "environment_modifier_policy",
         "scene_direction_selection",
         "visual_rhythm_continuity",
@@ -352,7 +352,7 @@
       "guidance_selection": {
         "references/asset-library-v4/environments/compositions/index.json": "environment",
         "references/asset-library-v4/environments/composition-index.json": "environment",
-        "references/asset-library-v4/environments/README.md": "bedroom",
+        "references/asset-library-v4/environments/README.md": "environment_profile",
         "references/asset-library-v4/recipes/state-recipes.json": "meme",
         "references/asset-library-v4/memes/templates/index.json": "meme",
         "references/asset-library-v4/memes/index.json": "meme"
@@ -524,7 +524,7 @@
           "tool_locator": "references/asset-library-v4/environments/compositions/validate-environment-compositions.mjs"
         },
         {
-          "id": "bedroom_environment_validation",
+          "id": "environment_profile_validation",
           "kind": "internal_validator",
           "when": "always",
           "unavailable_policy": "block",
