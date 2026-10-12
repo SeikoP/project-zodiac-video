@@ -54,7 +54,7 @@ test('loadStepContext materializes registry-selected capabilities into bounded r
   selected_asset_ids:['scene-set-classroom'],
   environment_mode:'scene_set'
  });
- assert.deepEqual(result.selected_capabilities,['scene_set','character_assembly','story_object']);
+ assert.deepEqual(result.selected_capabilities,['scene_set','character_assembly','visual_metaphor']);
  assert.ok(result.required_references.includes('references/asset-library-v4/scene-set/index.json'));
  assert.ok(result.required_references.includes('references/story-object-composition-v2.md'));
  assert.equal(result.required_references.some(ref=>ref.includes('/compatibility/')),false);
