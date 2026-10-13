@@ -3,7 +3,7 @@
   "capabilities": [
     {
       "id": "scene_set",
-      "fresh": true,
+      "fresh": false,
       "refs": [
         "references/asset-library-v4/scene-set/README.md",
         "references/asset-library-v4/scene-set/index.json"
@@ -22,6 +22,9 @@
           ],
           "environment_modes": [
             "scene_set"
+          ],
+          "run_modes": [
+            "continuity"
           ]
         }
       ],
@@ -51,7 +54,7 @@
     },
     {
       "id": "visual_metaphor",
-      "fresh": true,
+      "fresh": false,
       "refs": [
         "references/visual-metaphor-contract.md",
         "references/visual-metaphor-composition.md"
@@ -68,7 +71,7 @@
             "assets"
           ],
           "run_modes": [
-            "fresh"
+            "continuity"
           ],
           "when": "flag:visual_metaphor_selected"
         }
