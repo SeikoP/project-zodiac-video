@@ -1,12 +1,14 @@
 // Authored coverage belongs to Visual Intent/Art Direction; no runtime fields or approvals.
 import {createHash} from 'node:crypto';
-export const coverageLayers=['actors','scene_set','scene_accent','story_object','props','support','caption'];
+export const legacyCoverageLayers=['actors','scene_set','scene_accent','story_object','props','support','caption'];
+export const coverageLayers=['actors','narrative_visual','props','support','caption'];
 const text=x=>typeof x==='string'&&x.trim().length>0;
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const anchorOffset=(voice,trigger)=>{let at=-1,start=0;for(let i=0;i<(trigger?.occurrence??1);i++){at=voice.indexOf(trigger?.text??'',start);if(at<0)return -1;start=at+1;}return Buffer.byteLength(voice.slice(0,at));};
 export function validateVisualCoverage(scene,planned,{required=false}={}){
  const issues=[],add=(code,detail={})=>issues.push({code,scene_id:scene.id,...detail});
  const coverage=planned?.visual_coverage;
+ const activeLayers=coverage?.layers_version==='narrative_visual@1'?coverageLayers:legacyCoverageLayers;
  if(!coverage){if(required)add('VISUAL_COVERAGE_REQUIRED');return issues;}
  const voice=String(scene.voice??''),bytes=Buffer.from(voice);
  if(coverage.format!=='zodiac-visual-coverage@1'||!Array.isArray(coverage.beats)||!coverage.beats.length){add('COVERAGE_FORMAT_INVALID');return issues;}
@@ -17,14 +19,14 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
  for(const e of scene.events??[]){const key=JSON.stringify([e.target,e.trigger?.type,e.trigger?.text,e.trigger?.occurrence??1,e.trigger?.offset_frames??0]);const prior=lanes.get(key);if(prior&&prior.state_after!==e.state_after)add('COVERAGE_EVENT_ANCHOR_CONFLICT',{event_id:e.id,prior_event_id:prior.id});lanes.set(key,e);}
  const states=new Map([...entities].map(([id,e])=>[id,e.initial_state]));
  const visible=id=>{const e=entities.get(id);return e?e.states?.[states.get(id)]?.visible!==false:components.get(id)?.visual_role==='background';};
- const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(c?.narrative_role==='story_object')return 'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
+ const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(['story_object','story_symbol','visual_metaphor','narrative_visual'].includes(c?.narrative_role)||c?.visual_role==='narrative_visual')return coverage?.layers_version==='narrative_visual@1'?'narrative_visual':'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
  let end=0;
  for(const beat of coverage.beats){
   if(!beat||!text(beat.id)||seenBeats.has(beat.id)||!text(beat.goal)){add('COVERAGE_BEAT_INVALID');continue;}seenBeats.add(beat.id);
   const [start,stop]=Array.isArray(beat.narration_range)?beat.narration_range:[];
   if(!Number.isInteger(start)||!Number.isInteger(stop)||start!==end||stop<=start||stop>bytes.length||!Buffer.from(bytes.subarray(start,stop).toString('utf8')).equals(bytes.subarray(start,stop)))add('COVERAGE_NARRATION_RANGE',{beat_id:beat.id});end=stop;
   const used=new Set(),byRole={};
-  for(const layer of coverageLayers){
+  for(const layer of activeLayers){
    const d=beat.layers?.[layer];
    if(!d||!['use','omit'].includes(d.decision)||!text(d.reason)){add('COVERAGE_LAYER_DECISION_MISSING',{beat_id:beat.id,layer});continue;}
    if(d.decision==='omit'){if(d.entity_ids?.length)add('COVERAGE_OMISSION_HAS_ENTITIES',{beat_id:beat.id,layer});continue;}
