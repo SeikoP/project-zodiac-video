@@ -308,6 +308,9 @@ jobs:
       - name: Build deterministic candidate ZIP
         run: |
           python tools/release/build_plugin_bundle.py --repo-root . --output .release/zodiac-plugin-candidate.zip --report .release/plugin-package-inventory.json
+          python tools/release/build_plugin_bundle.py --repo-root . --output .release/candidate-rebuilt.zip
+          cmp .release/zodiac-plugin-candidate.zip .release/candidate-rebuilt.zip
+          rm .release/candidate-rebuilt.zip
           python -m unittest tests.test_plugin_bundle_builder -v
       - uses: actions/upload-artifact@v4
         with:
