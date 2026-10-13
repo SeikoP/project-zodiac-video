@@ -10,9 +10,10 @@ class CandidateBundleTests(unittest.TestCase):
     def sample(self, root):
         plugin = root / "plugins/zodiac-video-pipeline"
         entries = {
-            "plugin.json": '{"name":"zodiac-video-pipeline"}',
-            ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline"}',
+            "plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
+            ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/SKILL.md": "# Zodiac",
+            "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json": '{"plugin_version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/core/run.mjs": "export const run = true;",
             "skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs": "throw Error('NO');",
             "skills/zodiac-video-pipeline/references/retired-source/dead.md": "# old",
