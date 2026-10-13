@@ -8,6 +8,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
+import {validateStepGraph,executionTrace} from '../../core/workflow/deterministic-execution.mjs';
 import os from 'node:os';
 import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
@@ -88,11 +89,11 @@ const steps=[
  {id:'visual_quality',src:'features/visual-composition/validate-visual-quality.mjs',args:[workspace],required:[],validator:true},
  {id:'publish_prep',src:'features/publish/validate-publish-prep.mjs',args:[workspace],required:[],validator:true},
 ];
-const report={format:'zodiac-phase02-execution@1',phase:'02-visual-production',at:reportedAt,workspace,mode:running?'run':'inspect',status:'BLOCKED',source:{},issues:[],steps:[],checkpoint:'not_checked'};
+const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).digest('hex').slice(0,20),format:'zodiac-phase02-execution@1',phase:'02-visual-production',at:reportedAt,workspace,mode:running?'run':'inspect',status:'BLOCKED',source:{},issues:[],steps:[],checkpoint:'not_checked'};
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{report.execution_trace=executionTrace(report);if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
@@ -181,6 +182,8 @@ if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readF
 steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_props',src:'references/asset-library-v4/memes/compile-meme-props.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-prop-compile-receipt.json','.authoring/generated-assets.json']});
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'features/visual-composition/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
 if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
+const graph=validateStepGraph(steps);
+if(graph.status!=='PASS')report.issues.push(...graph.issues);
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
 if(running&&report.issues.length===0){
  const validity=nodeRun(path.join(source.skillRoot,'core/state/validate-pipeline-state.mjs'),[statePath]);
