@@ -26,7 +26,7 @@ def asset_category_from_path(path: str) -> str | None:
     clean = "/" + path.replace("\\", "/").lstrip("/").lower()
     for folder, category in (
         ("/characters/", "character"), ("/effects/", "effect"),
-        ("/props/", "prop"), ("/environment/", "environment"),
+        ("/props/", "prop"), ("/story/", "story_object"),\n        ("/symbols/", "story_symbol"), ("/environment/", "environment"),
         ("/environments/", "environment"),
     ):
         if folder in clean:
@@ -118,6 +118,31 @@ def semantic_diagnostics(ir: dict[str, Any]) -> list[Diagnostic]:
                     out.append(Diagnostic("PROP_STATIC_REVIEW", "P2", sid, entity_id))
             elif category == "character" and len(states) > 1 and entity_id not in targets:
                 out.append(Diagnostic("UNUSED_CHARACTER_STATES", "P2", sid, entity_id))
+        # Authoring-stage temporal binding preflight. The renderer resolves
+        # exact frames later; here we reject deterministic hidden-anchor errors
+        # and cyclic relationships before releasing the ZIP.
+        links = [(b.get("entity"), b.get("anchor")) for b in scene.get("spatial_bindings", [])]
+        for subject_id, anchor_id in links:
+            if (anchor_id, subject_id) in links:
+                out.append(Diagnostic("SPATIAL_BINDING_CYCLE", "P1", sid, subject_id,
+                                      f"{subject_id} <-> {anchor_id}"))
+        current = {eid: entity.get("initial_state") for eid, entity in entities.items()}
+        def check_anchor(stage: str) -> None:
+            for binding in scene.get("spatial_bindings", []):
+                subject = entities.get(binding.get("entity"))
+                anchor = entities.get(binding.get("anchor"))
+                if subject is None or anchor is None:
+                    continue
+                a = subject.get("states", {}).get(current.get(subject["id"]), {})
+                b = anchor.get("states", {}).get(current.get(anchor["id"]), {})
+                if a.get("visible", True) is not False and b.get("visible", True) is False:
+                    out.append(Diagnostic("SPATIAL_ANCHOR_HIDDEN", "P1", sid, subject["id"],
+                                          f"anchor={anchor['id']} stage={stage}"))
+        check_anchor("initial")
+        for event in events:
+            if event.get("target") in current and event.get("state_after") is not None:
+                current[event["target"]] = event["state_after"]
+            check_anchor(str(event.get("id", "?")))
         for binding in scene.get("spatial_bindings", []):
             child, anchor = entities.get(binding.get("entity")), entities.get(binding.get("anchor"))
             if not child or not anchor:
