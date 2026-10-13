@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateCanvasAccents} from '../../features/visual-composition/validate-canvas-accents.mjs';
+import {validateCanvasAccents,resolveCanvasAccentEntities} from '../../features/visual-composition/validate-canvas-accents.mjs';
 const make=()=>{
  const accent=(id,x)=>({id,kind:'scene_accent',visual_role:'scene_accent',initial_state:'hidden',states:{
   hidden:{asset:id,visible:false,transform:{x,y:120,width:220,height:180}},
@@ -33,4 +33,26 @@ test('accent visibility event cannot refer to missing state or narration',()=>{
 test('accent may be explicitly omitted',()=>{
  const {scene,assets}=make();scene.entities=[];scene.events=[];
  assert.equal(validateCanvasAccents(scene,assets).status,'PASS');
+});
+
+test('actor-relative accent resolves above head without moving actor or adding physical contact',()=>{
+ const {scene,assets}=make();
+ scene.entities.unshift({id:'hero',kind:'character',initial_state:'idle',
+   states:{idle:{visible:true,transform:{x:450,y:650,width:300,height:550}}}});
+ const original=structuredClone(scene.entities[0]);
+ const accent=scene.entities.find(e=>e.id==='window');
+ accent.anchor={type:'actor',actor_id:'hero',placement:'above_head',offset_px:{x:0,y:-16}};
+ for(const state of Object.values(accent.states))state.transform={x:0,y:0,width:220,height:180};
+ const resolved=resolveCanvasAccentEntities(scene.entities);
+ assert.deepEqual(resolved[0],original,'actor position remains independently authored');
+ const t=resolved.find(e=>e.id==='window').states.shown.transform;
+ assert.deepEqual([t.x,t.y],[490,454]);
+ assert.equal(validateCanvasAccents({...scene,entities:resolved},assets).status,'PASS');
+ assert.deepEqual(scene.entities[1].states.shown.transform,{x:0,y:0,width:220,height:180},
+  'authored intent remains untouched');
+});
+test('missing actor for relative accent fails before export',()=>{
+ const {scene}=make();
+ scene.entities[0].anchor={type:'actor',actor_id:'unknown'};
+ assert.throws(()=>resolveCanvasAccentEntities(scene.entities),/SCENE_ACCENT_ACTOR_ANCHOR_INVALID/);
 });

@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';import path from 'node
 import {compositionHash} from './phase02-composition.mjs';
 import {partitionNarration} from '../narration-performance/voice-source-ranges.mjs';
 import {compileVisualGrammar} from '../../references/asset-library-v4/compile-visual-grammar.mjs';
-import {validateCanvasAccents} from './validate-canvas-accents.mjs';
+import {validateCanvasAccents,resolveCanvasAccentEntities} from './validate-canvas-accents.mjs';
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 const hash=x=>createHash('sha256').update(Buffer.isBuffer(x)||typeof x==='string'?x:JSON.stringify(canonical(x))).digest('hex');
 const clone=x=>structuredClone(x);
@@ -36,7 +36,7 @@ export function compileVisualIntent(intent,{narration,token,catalog}={}){
  }
  const scenes=intent.scenes.map(s=>{if(!s.id||ids.has(s.id)||!s.semantic_goal?.trim()||!s.grammar||!Array.isArray(s.entities)||!Array.isArray(s.events))fail('SCENE_INCOMPLETE');if(s.grammar?.environment?.scene_set_id&&s.art_direction?.environment_profile)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET '+s.id);ids.add(s.id);
  const [start,stop]=s.narration_range??[];if(!Number.isInteger(start)||!Number.isInteger(stop)||start!==end||stop<=start||stop>bytes.length)fail('NARRATION_RANGE');const voice=bytes.subarray(start,stop).toString('utf8');if(!Buffer.from(voice).equals(bytes.subarray(start,stop)))fail('NARRATION_CODEPOINT');end=stop;
- const {narration_range,semantic_goal,grammar,director_beats,semantic_asset_decisions,...native}=clone(s);if(native.art_direction)delete native.art_direction.visual_coverage;const frameContacts=s.environment?.frame?.contacts;if(Array.isArray(frameContacts))native.spatial_bindings=clone(frameContacts);return {...native,entities:native.entities.map(projectEntity),voice};});
+ const {narration_range,semantic_goal,grammar,director_beats,semantic_asset_decisions,...native}=clone(s);if(native.art_direction)delete native.art_direction.visual_coverage;const frameContacts=s.environment?.frame?.contacts;if(Array.isArray(frameContacts))native.spatial_bindings=clone(frameContacts);return {...native,entities:(freshNarrative?resolveCanvasAccentEntities(native.entities):native.entities).map(projectEntity),voice};});
  if(end!==bytes.length)fail('NARRATION_COVERAGE');
  const visual_grammar_plan={format:'zodiac-visual-grammar-plan@1',scenes:intent.scenes.map(s=>({scene_id:s.id,...clone(s.grammar)}))};
  const authoredProduction={version:'2.0',voice_partition:'utf8_ranges',video:clone(intent.video),visual_system:clone(intent.visual_system??{}),assets:projectAssets(intent.assets),scenes};
