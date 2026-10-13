@@ -13,7 +13,7 @@ jobs:
           path: tools-repo
       - uses: actions/checkout@v4
         with:
-          ref: 7bc1af17e3e7
+          ref: 7bc1af17e3e7cd36f6cef245ee93b49664d3d8b2
           path: before
       - uses: actions/checkout@v4
         with:
