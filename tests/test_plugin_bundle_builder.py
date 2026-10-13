@@ -47,6 +47,14 @@ class CandidateBundleTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "PLUGIN_STATIC_IMPORT_MISSING"):
                 build(root, root / "candidate.zip")
 
+    def test_version_mismatch_blocks_packaging(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plugin = self.sample(root)
+            (plugin / ".codex-plugin/plugin.json").write_text('{"version":"2.4.0"}')
+            with self.assertRaisesRegex(ValueError, "PLUGIN_RELEASE_VERSION_MISMATCH"):
+                build(root, root / "candidate.zip")
+
     def test_required_manifest_missing_fails_closed(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
