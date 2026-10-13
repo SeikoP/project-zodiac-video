@@ -8,7 +8,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
-import {validateStepGraph,executionTrace,createRepairPlan} from '../../core/workflow/deterministic-execution.mjs';
+import {validateStepGraph,PHASE02_DEPENDENCIES,executionTrace,createRepairPlan} from '../../core/workflow/deterministic-execution.mjs';
 import os from 'node:os';
 import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
@@ -191,7 +191,7 @@ if(phase02RunMode==='fresh'){
  }
 }
 if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
-const graph=validateStepGraph(steps);
+const graph=validateStepGraph(steps,PHASE02_DEPENDENCIES,{strictMissing:true});
 if(graph.status!=='PASS')report.issues.push(...graph.issues);
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
 if(running&&report.issues.length===0){
