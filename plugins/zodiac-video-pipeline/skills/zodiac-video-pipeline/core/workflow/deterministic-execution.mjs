@@ -8,8 +8,6 @@ export const PHASE02_DEPENDENCIES=Object.freeze({
  environment:['outfit_bake'],
  environment_binding:['environment'],
  scene_direction:['environment_binding'],
- scene_set_identity:['scene_direction'],
- scene_accent_containment:['scene_set_identity'],
  scene_direction_validation:['scene_direction'],
  scene_events:['scene_direction_validation'],
  motion_consistency:['scene_events'],
@@ -17,6 +15,12 @@ export const PHASE02_DEPENDENCIES=Object.freeze({
  publish_prep:['visual_quality'],
  director_final_review:['visual_quality']
 });
+export const LEGACY_PHASE02_DEPENDENCIES=Object.freeze({
+ ...PHASE02_DEPENDENCIES,
+ scene_set_identity:['scene_direction'],
+ scene_accent_containment:['scene_set_identity']
+});
+
 export function validateStepGraph(steps, dependencies=PHASE02_DEPENDENCIES, {strictMissing=false}={}) {
  const issues=[],ids=new Set(),indices=new Map();
  for(const [index,step] of steps.entries()){
