@@ -29,7 +29,9 @@ test('fresh narrative visual authoring accepts simple representation without thr
  input.scenes[0].entities[0].visual_role='narrative_visual';
  input.assets.a.category='narrative_visual';
  const out=api.compileVisualIntent(input,{narration});
- assert.equal(out.production.scenes[0].entities[0].kind,'narrative_visual');
+ assert.equal(out.production.scenes[0].entities[0].kind,'object');
+ assert.equal(out.production.scenes[0].entities[0].visual_role,'story_object');
+ assert.equal(input.scenes[0].entities[0].kind,'narrative_visual');
  assert.equal(out.story_object_plan,null);
  input.scenes[0].entities[0].kind='story_symbol';
  assert.throws(()=>api.compileVisualIntent(input,{narration}),/FRESH_SYMBOLIC_ALIAS_FORBIDDEN/);
