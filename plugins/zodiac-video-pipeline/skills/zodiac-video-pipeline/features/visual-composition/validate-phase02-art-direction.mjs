@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Generic authoring-only gate; no sign-specific entity, shot quotas or forced story objects.
 import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from '../scene-set/scene-set-detection.mjs';
+import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 const normalize=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normalize(s).replace(/\s+/gu,'');
-export function validatePhase02ArtDirection(production,plan,narration,palettes,environments){
+export function validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage=false}={}){
  const issues=[];const fail=(code,scene_id=null)=>issues.push({code,...(scene_id?{scene_id}:{})});
  if(plan?.format!=='zodiac-scene-art-direction@2')fail('FORMAT_INVALID');
  const scenes=production?.scenes??[],directed=plan?.scenes??[];
@@ -28,6 +29,7 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   }
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||!String(d?.environment_reason??'').trim())fail('ART_REASON_MISSING',scene_id);
+  if(source)issues.push(...validateVisualCoverage(source,d,{required:requireCoverage}));
   const story=d?.story_object;
   if(story && (!['prop','symbolic','story_object'].includes(story.render_layer)||story.replaces_environment===true))fail('STORY_OBJECT_BACKGROUND_FORBIDDEN',scene_id);
   if(story && (!String(story.id??'').trim()||!String(story.voice_anchor??'').trim()||!String(d.voice??'').includes(story.voice_anchor)))fail('STORY_OBJECT_VOICE_ANCHOR_MISSING',scene_id);
@@ -42,6 +44,7 @@ if(direct){
  try{const load=async f=>JSON.parse(await readFile(f,'utf8'));
  const [production,plan,narration,palettes,environments]=await Promise.all([
  load(path.join(ws,'production.json')),load(path.join(ws,'.authoring/scene-art-direction.json')),readFile(path.join(ws,'narration.txt'),'utf8'),load(path.join(root,'art-direction/palette-registry.json')),load(path.join(root,'art-direction/environment-registry.json'))]);
- const result=validatePhase02ArtDirection(production,plan,narration,palettes,environments);console.log(JSON.stringify(result,null,2));if(result.status!=='PASS')process.exitCode=1;}
+ const state=await load(path.join(ws,'.authoring/pipeline-state.json'));
+ const result=validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage:state.run_mode==='fresh'});console.log(JSON.stringify(result,null,2));if(result.status!=='PASS')process.exitCode=1;}
  catch(e){console.error('ART_DIRECTION_PREFLIGHT_ERROR '+e.message);process.exitCode=2;}
 }

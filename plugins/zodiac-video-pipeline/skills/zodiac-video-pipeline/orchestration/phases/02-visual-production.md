@@ -33,3 +33,5 @@ Retired capabilities are unavailable in the current plugin. Restore an exact,
 separately pinned snapshot to resume an approved historical job; do not use
 `legacy` or `selected_cues` to bypass current selection. An asset retirement or
 compiler change invalidates dependent cache/preview hashes before reuse.
+
+Before any native asset compilation, fill per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from symbolic Story Objects.

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Authoring seam validation BEFORE costly native SVG compilation. No generated receipts.
 import {validateComposition,designToken,compositionHash} from './phase02-composition.mjs';
+import {assertJob5VisualRoleSizes} from '../../phases/phase03/compile-job-v5.mjs';
+import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -9,6 +11,7 @@ const compact=s=>normal(s).replace(/\s+/gu,'');
 const furniture=/(?:^|[^\p{L}\p{N}])(?:desk|table|bed|chair|sofa|pillow|blanket|cabinet|headboard|bàn|ghế|giường|gối|chăn)(?=$|[^\p{L}\p{N}])/iu;
 export function validatePrecompileBoundary(production,narration){
  const issues=[];
+ try{assertJob5VisualRoleSizes(production);}catch(e){if(!e.diagnostics)throw e;for(const detail of e.diagnostics)issues.push({code:'PRECOMPILE_RUNNER_ROLE_SIZE',detail});}
  const scenes=production?.scenes??[];
  const voices=scenes.map(x=>normal(x.voice));
  const canonical=normal(narration);
@@ -88,6 +91,7 @@ const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(impo
 if(direct){
  const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-precompile-boundary.mjs <workspace>');process.exit(2);}
  try{const [p,n]=await Promise.all([readFile(path.join(root,'production.json'),'utf8'),readFile(path.join(root,'narration.txt'),'utf8')]);const r=validatePrecompileBoundary(JSON.parse(p),n);const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json'),'utf8'));
+ if(state.run_mode==='fresh'){const plan=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8'));for(const scene of JSON.parse(p).scenes??[])r.issues.push(...validateVisualCoverage(scene,plan.scenes?.find(s=>s.id===scene.id),{required:true}));r.status=r.issues.length?'BLOCKED':'PASS';if(r.status!=='PASS'){console.log(JSON.stringify(r,null,2));process.exit(1);}}
  await (await import('../../orchestration/episode-handoff.mjs')).episodeHandoffWorkspace(root);
  const version=String(state.plugin_version??'').split('.').map(Number);
  if(state.run_mode==='fresh'&&(version[0]>2||(version[0]===2&&(version[1]>4||version[1]===4&&version[2]>=47)))){let rawPlan;try{rawPlan=await readFile(path.join(root,'.authoring/narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;rawPlan=await readFile(path.join(root,'narrative-plan.json'),'utf8');}const rhythm=JSON.parse(rawPlan);if(!['2.0','2.1'].includes(rhythm.version))throw Error('NARRATIVE_V2_REQUIRED');(await import('../narration-performance/compile-narration-performance.mjs')).compileNarrationPerformance(JSON.parse(p),rhythm,n);}
