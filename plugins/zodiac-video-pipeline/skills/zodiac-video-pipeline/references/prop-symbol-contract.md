@@ -2,7 +2,7 @@
 
 This document is retained for links from existing releases. It must NOT be used to author new story symbols as props.
 
-For new work, use the single canonical `story_object` role and follow
+For new work, use the single canonical `narrative_visual` authoring category and follow
 [story-object-contract.md](story-object-contract.md).
 
 A narrative visual can be physical, abstract or symbolic. Its representation
