@@ -19,7 +19,7 @@ export function preflightHandoff(source){const issues=[],add=(scene_id,code,path
   if((counts.character>limits.max_characters||counts.prop>limits.max_prominent_props||counts.effect>limits.max_prominent_effects)&&!reported.has('SCENE_DENSITY_EXCEEDED')){add(scene.id,'SCENE_DENSITY_EXCEEDED','render_density_budget');reported.add('SCENE_DENSITY_EXCEEDED');}
   if(counts.character===3&&(counts.prop>1||counts.effect>1)&&!reported.has('THREE_ACTOR_DENSITY')){add(scene.id,'THREE_ACTOR_DENSITY','entities');reported.add('THREE_ACTOR_DENSITY');}
  };
- density();for(const event of scene.events??[]){if(event.target&&event.state_after)current[event.target]=event.state_after;density();}
+ density();for(const event of [...(scene.events??[])].sort((a,b)=>(a.start_frame??0)-(b.start_frame??0))){if(event.target&&event.state_after)current[event.target]=event.state_after;density();}
  }
 
  return {status:issues.length?'BLOCKED':'PASS',issues};}

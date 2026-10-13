@@ -247,6 +247,8 @@
             "character",
             "interactive_prop",
             "foreground_environment",
+            "story_object",
+            "story_symbol",
             "effect",
             "caption",
             "overlay"

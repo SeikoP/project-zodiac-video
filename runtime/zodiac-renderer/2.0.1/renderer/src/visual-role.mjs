@@ -1,5 +1,5 @@
-const aliases = {environment:'background', environment_cue:'background', character_pose:'character', prop:'interactive_prop', object:'interactive_prop', story_prop:'interactive_prop', story_effect:'effect'};
-const roles = new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
+const aliases = {environment:'background', environment_cue:'background', character_pose:'character', prop:'interactive_prop', object:'interactive_prop', story_prop:'story_object', story_effect:'effect'};
+const roles = new Set(['background','character','interactive_prop','foreground_environment','story_object','story_symbol','effect','caption','overlay']);
 export function resolveVisualRole(entity, assets = {}) {
   const asset = assets[entity.states?.[entity.initial_state]?.asset] ?? {};
   for (const value of [entity.visual_role, entity.role, asset.visual_role, asset.role]) {
@@ -17,10 +17,10 @@ export function resolveVisualRole(entity, assets = {}) {
     const role = aliases[value] ?? value;
     if (roles.has(role)) return role;
   }
-  for (const [folder, role] of [['characters','character'],['props','interactive_prop'],['effects','effect'],['environment','background'],['environments','background']]) {
+  for (const [folder, role] of [['characters','character'],['props','interactive_prop'],['story','story_object'],['effects','effect'],['environment','background'],['environments','background']]) {
     if (path.split('/').includes(folder)) return role;
   }
-  if (entity.id === 'story_prop') return 'interactive_prop';
+  if (entity.id === 'story_prop') return 'story_object';
   if (entity.id === 'story_effect') return 'effect';
   if (entity.id.startsWith('env__')) return 'background';
   // Older character-only plans stored no category and used char-<sign>.svg.
@@ -33,7 +33,7 @@ export function resolveLayer(entity, state, assets) {
   const authored = state?.layer ?? entity.states?.[entity.initial_state]?.layer ?? entity.layer;
   if (authored != null && (!Number.isFinite(authored) || !Number.isInteger(authored)))
     throw new Error(`LAYER_ORDER_INVALID entity=${entity.id} role=${role} layer=${authored}`);
-  return authored ?? {background:-10,character:3,foreground_environment:15,interactive_prop:20,effect:25,caption:90,overlay:100}[role];
+  return authored ?? {background:-10,character:3,foreground_environment:15,interactive_prop:20,story_object:19,story_symbol:23,effect:25,caption:90,overlay:100}[role];
 }
 
 export function resolveLayerOrder(scene, assets, states) {

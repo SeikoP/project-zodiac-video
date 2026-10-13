@@ -287,3 +287,32 @@ test("full renderer prepare and cover metadata accepts eight Song Tu scenes",asy
     await rm(root,{recursive:true,force:true});
   }
 });
+
+test("story objects and symbols do not consume prop or effect density", () => {
+  const plan = minimalPlan();
+  plan.assets = {
+    actor:{path:"assets/characters/actor.svg",category:"character"},
+    prop:{path:"assets/props/cup.svg",category:"prop"},
+    story:{path:"assets/story/conversation.svg",category:"story_object"},
+    symbol:{path:"assets/story/split.svg",category:"story_symbol"},
+    fx:{path:"assets/effects/question.svg",category:"effect"}
+  };
+  const make=(id,asset,role)=>({id,visual_role:role,initial_state:"shown",states:{
+    shown:{asset,visible:true,transform:{x:100,y:300,width:250,height:250}},
+    hidden:{asset,visible:false,transform:{x:100,y:300,width:250,height:250}}
+  }});
+  plan.scenes[0].layout_contract={caption_safe_zone:{x:80,y:1400,width:920,height:300}};
+  plan.scenes[0].entities=[
+    ...[1,2,3].map(i=>make("actor"+i,"actor","character")),
+    make("coffee","prop","interactive_prop"),
+    make("conversation","story","story_object"),
+    make("dual_meaning","symbol","story_symbol"),
+    make("question","fx","effect")
+  ];
+  assert.doesNotThrow(()=>validateSceneLayout(plan));
+  plan.scenes[0].entities.push(make("another_cup","prop","interactive_prop"));
+  plan.scenes[0].entities.at(-1).initial_state="hidden";
+  assert.doesNotThrow(()=>validateSceneLayout(plan));
+  plan.scenes[0].events.push({event_id:"E02",start_frame:17,end_frame:20,target:"another_cup",state_after:"shown"});
+  assert.throws(()=>validateSceneLayout(plan),/DENSITY_EXCEEDED.*event=E02.*props=2/);
+});

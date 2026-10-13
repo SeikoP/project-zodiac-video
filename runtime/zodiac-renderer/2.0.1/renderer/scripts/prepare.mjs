@@ -134,13 +134,34 @@ export const validateSceneLayout = (plan) => {
       }
     }
 
-    let actors = 0, props = 0, effects = 0;
+    // Density is a timeline constraint, not a count of authored asset variants.
+    // Story objects and symbols are narrative visuals; neither is an interactive prop.
+    const countsAt = (current, eventId = 'initial') => {
+      const counts = {actors:0, props:0, effects:0};
+      for (const entity of scene.entities ?? []) {
+        const state = entity.states?.[current.get(entity.id)];
+        if (!state || state.visible === false) continue;
+        const role = classifyVisualRole(entity, plan.assets);
+        if (role === 'character') counts.actors++;
+        else if (role === 'prop') counts.props++;
+        else if (role === 'effect') counts.effects++;
+      }
+      const budget = scene.render_density_budget ?? {max_characters:3,max_prominent_props:2,max_prominent_effects:2};
+      const {actors, props, effects} = counts;
+      if (actors > budget.max_characters || props > budget.max_prominent_props ||
+          effects > budget.max_prominent_effects || (actors >= 3 && (props > 1 || effects > 1))) {
+        throw new Error(`DENSITY_EXCEEDED scene=${scene.id} event=${eventId} actors=${actors} props=${props} effects=${effects}`);
+      }
+    };
+    const current = new Map((scene.entities ?? []).map(e => [e.id, e.initial_state]));
+    countsAt(current);
+    for (const event of [...(scene.events ?? [])].sort((a,b) => a.start_frame-b.start_frame || a.end_frame-b.end_frame)) {
+      if (current.has(event.target) && event.state_after) current.set(event.target, event.state_after);
+      countsAt(current, event.event_id);
+    }
     for (const entity of scene.entities ?? []) {
       const role = classifyVisualRole(entity, plan.assets);
-      if (role === "environment" || role === "foreground_environment") continue;
-      if (role === "effect") effects++;
-      else if (role === "prop") props++;
-      else actors++;
+      if (['environment','foreground_environment','story_object','story_symbol'].includes(role)) continue;
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
         const bounds = transformedBounds(state.transform);
@@ -148,11 +169,6 @@ export const validateSceneLayout = (plan) => {
           throw new Error(`LAYOUT_OVERLAP scene=${scene.id} entity=${entity.id} state=${name} caption_safe_zone`);
         }
       }
-    }
-    const budget = scene.render_density_budget ?? {max_characters:3,max_prominent_props:2,max_prominent_effects:2};
-    if (actors > budget.max_characters || props > budget.max_prominent_props || effects > budget.max_prominent_effects ||
-        (actors >= 3 && (props > 1 || effects > 1))) {
-      throw new Error(`DENSITY_EXCEEDED scene=${scene.id} actors=${actors} props=${props} effects=${effects}`);
     }
   }
   return plan;
