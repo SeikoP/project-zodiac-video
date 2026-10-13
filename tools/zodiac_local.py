@@ -986,6 +986,8 @@ def _emit_tts_log(text: str, log_callback=None) -> None:
     if log_callback is not None:
         log_callback(str(text))
     elif not emit_process_log(str(text), channel="stdout"):
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
         print(str(text), flush=True)
 
 
