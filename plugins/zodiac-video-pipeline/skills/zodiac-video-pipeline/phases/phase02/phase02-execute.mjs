@@ -102,9 +102,10 @@ const resolveSource=async p=>{
  return {pluginRoot:src,skillRoot:path.join(src,'skills/zodiac-video-pipeline')};
 };
 const nodeRun=(file,args)=>{
+ const started=Date.now();
  const r=spawnSync(process.execPath,[file,...args],{encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000});
  const exit_code=r.status??(r.error?.code==='ETIMEDOUT'?124:1);
- return {status:exit_code===0?'PASS':'FAIL',exit_code,command:[process.execPath,file,...args],stdout:String(r.stdout??'').slice(-4500),stderr:String(r.stderr??r.error?.message??'').slice(-4500)};
+ return {status:exit_code===0?'PASS':'FAIL',exit_code,elapsed_ms:Date.now()-started,command:[process.execPath,file,...args],stdout:String(r.stdout??'').slice(-4500),stderr:String(r.stderr??r.error?.message??'').slice(-4500)};
 };
 // Native library assets are executable dependencies, not just authoring metadata.
 // A changed SVG or environment cue must invalidate the corresponding cached native compilation.
