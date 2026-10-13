@@ -9,11 +9,10 @@
     "frame_skeleton",
     "mechanic",
     "character_assembly",
-    "meme_prop_and_effect_compile",
+    "meme_prop_compile",
     "skin_binding",
     "environment_composition",
-    "scene_direction_compile",
-    "meme_effect_receipt_finalize"
+    "scene_direction_compile"
   ],
   "canonical_roots": [
     "scene-set/",
@@ -34,10 +33,7 @@
     "character_assembly": "characters/assembly-contract.md",
     "meme_adapters": "memes/index.json",
     "meme_effect_catalog": "effects/meme-effect-catalog.json",
-    "meme_effect_compiler": "memes/compile-meme-effects.mjs",
     "meme_contact_validation": "memes/validate-meme-contacts.mjs",
-    "meme_effect_validation": "memes/validate-meme-effects.mjs",
-    "meme_effect_receipt": "memes/finalize-meme-effect-receipt.mjs",
     "props": "props/index.json",
     "accessories": "characters/accessories/index.json",
     "scene_direction": "scene-direction/index.json",
@@ -50,6 +46,7 @@
     "shot_layouts": "shot-layouts/index.json",
     "scene_set_provenance": "scene-set/provenance.json",
     "asset_capabilities": "capability-index.json",
-    "coverage_matrix": "coverage-matrix.json"
+    "coverage_matrix": "coverage-matrix.json",
+    "meme_prop_compiler": "memes/compile-meme-props.mjs"
   }
 }

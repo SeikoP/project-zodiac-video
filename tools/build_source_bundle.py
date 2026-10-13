@@ -2,6 +2,8 @@
 import argparse
 import hashlib
 import json
+import re
+import posixpath
 import subprocess
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -29,14 +31,24 @@ def include(path, phase):
     parts = PurePosixPath(rel).parts
     if not parts or "tests" in parts or rel.endswith(".test.mjs"):
         return False
-    # Phase 01 uses shared orchestration and reference data but never the
-    # large visual/asset source library; phase 02/03 need native contracts/assets.
-    if phase == "01-content" and (
-        rel.startswith("skills/zodiac-video-pipeline/references/asset-library-v4/")
-        or rel.startswith("skills/zodiac-video-pipeline/asset-library/")
-    ):
+    # Shared validators import V4 modules/catalogues even outside Phase 02.
+    # Exclude visual payloads, never their executable/data dependencies.
+    if phase != "02-visual-production" and PurePosixPath(rel).suffix in (".svg", ".html", ".png", ".jpg", ".webp"):
         return False
     return True
+
+
+def validate_dependencies(root, selected):
+    """Fail before emitting an archive with dangling refactored imports/CLI targets."""
+    selected = set(selected)
+    local = re.compile(r"(?:from\s*|import\s*\(?\s*|new\s+URL\s*\(\s*)['\"](\.[^'\"]+)['\"]")
+    for name in sorted(selected):
+        if not name.endswith(".mjs"):
+            continue
+        for match in local.finditer((root / name).read_text()):
+            dependency = posixpath.normpath(posixpath.join(posixpath.dirname(name), match[1]))
+            if dependency not in selected:
+                raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing executable dependency " + name + " -> " + dependency)
 
 
 def build(root, output, commit, release_id, release_record=None, phase="01-content"):
@@ -64,6 +76,11 @@ def build(root, output, commit, release_id, release_record=None, phase="01-conte
         if release_id and release_id != record["plugin_release_id"]:
             raise ValueError("SOURCE_INTEGRITY_MISMATCH: release ID mismatch")
         release_id = record["plugin_release_id"]
+        # Mapping commits may follow the implementation commit, but bytes must
+        # still match the plugin source actually associated with this release.
+        result = subprocess.run(["git", "diff", "--quiet", record["source_commit"], commit, "--", PLUGIN], cwd=root)
+        if result.returncode:
+            raise ValueError("SOURCE_INTEGRITY_MISMATCH: release source bytes mismatch")
     if not release_id:
         raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing release ID")
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
@@ -72,6 +89,7 @@ def build(root, output, commit, release_id, release_record=None, phase="01-conte
                if PLUGIN + p not in selected]
     if missing:
         raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing execution inputs " + repr(missing))
+    validate_dependencies(root, selected)
     entries = []
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -453,7 +453,7 @@
           "id": "meme_prop_compiler",
           "kind": "internal_compiler",
           "when": "always",
-          "tool_locator": "references/asset-library-v4/memes/compile-meme-effects.mjs",
+          "tool_locator": "references/asset-library-v4/memes/compile-meme-props.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -736,7 +736,7 @@
         ".authoring/character-state-asset-plan.json",
         ".authoring/scene-direction-compile-receipt.json",
         ".authoring/environment-compile-receipt.json",
-        ".authoring/meme-effect-compile-receipt.json",
+        ".authoring/meme-prop-compile-receipt.json",
         ".authoring/director-v2-review-receipt.json"
       ],
       "gate_checks": [

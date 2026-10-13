@@ -8,7 +8,7 @@ import stat
 import zipfile
 
 
-def stage(archive_path, target, phase, version, release_id):
+def stage(archive_path, target, phase, version, release_id, commit=None):
     target = Path(target).resolve()
     if target.exists() and any(target.iterdir()):
         raise ValueError("SOURCE_INTEGRITY_MISMATCH: target not empty")
@@ -22,7 +22,11 @@ def stage(archive_path, target, phase, version, release_id):
             or provenance.get("plugin_version") != version
             or provenance.get("plugin_release_id") != release_id):
             raise ValueError("SOURCE_INTEGRITY_MISMATCH: release/scope mismatch")
+        if commit is not None and provenance.get("commit") != commit:
+            raise ValueError("SOURCE_INTEGRITY_MISMATCH: commit mismatch")
         entries = provenance.get("files", [])
+        if len(entries) != len({entry["path"] for entry in entries}):
+            raise ValueError("SOURCE_INTEGRITY_MISMATCH: duplicate inventory")
         if set(names) != {entry["path"] for entry in entries} | {"SOURCE-PROVENANCE.json"}:
             raise ValueError("SOURCE_INTEGRITY_MISMATCH: file inventory mismatch")
         for entry in entries:
@@ -56,5 +60,6 @@ if __name__ == "__main__":
     parser.add_argument("--phase", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--release-id", required=True)
+    parser.add_argument("--commit", required=True)
     args = parser.parse_args()
-    print(json.dumps(stage(args.archive, args.target, args.phase, args.version, args.release_id)))
+    print(json.dumps(stage(args.archive, args.target, args.phase, args.version, args.release_id, args.commit)))

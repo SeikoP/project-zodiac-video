@@ -42,7 +42,7 @@ const sourcePaths=[
  'features/narration-performance/compile-narration-performance.mjs',
  'references/narration-rhythm.mjs',
  'features/visual-composition/resolve-scene-composition.mjs',
- 'references/asset-library-v4/memes/compile-meme-effects.mjs',
+ 'references/asset-library-v4/memes/compile-meme-props.mjs',
  'references/asset-library-v4/memes/effect-lifecycle.mjs',
  'references/design.md',
  'features/visual-composition/validate-phase02-art-direction.mjs',
@@ -177,7 +177,7 @@ const stamp=manifest?.version&&missingSource.length===0?await signature([...new 
 const releaseParts=String(manifest?.version??'0.0.0').split('.').map(Number);const modernComposition=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=46)));
 const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=47)));
 if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.run_mode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'features/narration-performance/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}}
-if(modernComposition&&running&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.flags?.meme_selected){coreInputPaths.push('.authoring/story-beat-choreography.json');steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_effects',src:'references/asset-library-v4/memes/compile-meme-effects.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-effect-compile-receipt.json','.authoring/generated-assets.json']});}}
+steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_props',src:'references/asset-library-v4/memes/compile-meme-props.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-prop-compile-receipt.json','.authoring/generated-assets.json']});
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'features/visual-composition/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
 if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;

@@ -34,7 +34,7 @@ test('fresh native assets resolve intent, preview endpoints and seal actual ZIP;
   const planned=(await import('../../references/asset-library-v4/characters/compile-character-assembly.mjs')).planCharacterStateAssets(f.source,f.assembly);await writeFile(path.join(f.root,'.authoring/character-state-asset-plan.json'),JSON.stringify(planned));
   await runGeneratedCompile(f.root,char,[path.join(f.root,'production.json'),path.join(f.root,'.authoring/character-assembly-plan.json'),'--write'],{compiler_id:'character_write'});
   execFileSync(process.execPath,[compiler('validation/validate-outfit-bake-v4.mjs'),f.root]);
-  await runGeneratedCompile(f.root,compiler('memes/compile-meme-effects.mjs'),[path.join(f.root,'production.json'),'--write'],{compiler_id:'meme_effects'});
+  await runGeneratedCompile(f.root,compiler('memes/compile-meme-props.mjs'),[path.join(f.root,'production.json'),'--write'],{compiler_id:'meme_props'});
   await runGeneratedCompile(f.root,compiler('environments/compile-environment.mjs'),[f.root,'--write'],{compiler_id:'environment'});
   let p=JSON.parse(await readFile(path.join(f.root,'production.json')));const directed=await compileProduction(p,{root:f.root});p=directed.production;await writeFile(path.join(f.root,'production.json'),JSON.stringify(p));
   assert.equal((await inspectResolvedWorkspace(f.root,{write:true})).status,'PASS');assert.equal((await inspectResolvedWorkspace(f.root)).status,'PASS');

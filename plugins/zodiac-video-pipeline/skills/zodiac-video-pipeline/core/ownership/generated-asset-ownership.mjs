@@ -34,7 +34,7 @@ async function walk(root,rel=''){
 function generatedIds(production,compilerId,statePlan){
  if(compilerId==='character_write')return (statePlan?.characters??[]).flatMap(c=>c.groups.map(g=>g.asset_id));
  if(compilerId==='environment')return [...new Set((production.scenes??[]).flatMap(s=>{const ids=[...Object.values(s.environment?.roles??{}).flat(),...(s.environment?.scene_accents??[]).map(a=>a.entity_id)];return ids.flatMap(id=>Object.values(s.entities?.find(e=>e.id===id)?.states??{}).map(st=>st.asset));}).filter(Boolean))];
- if(compilerId==='meme_effects')return [...new Set((production.scenes??[]).flatMap(s=>[...(s.visual_grammar?.meme_composition?.asset_requirements??[]).map(r=>r.asset_id),...(s.visual_grammar?.meme_composition?.effects??[]).map(spec=>{const e=s.entities.find(e=>e.id===spec.entity_id);return (e?.states?.on??e?.states?.effect)?.asset;})]).filter(Boolean))];
+ if(compilerId==='meme_props')return [...new Set((production.scenes??[]).flatMap(s=>(s.visual_grammar?.meme_composition?.asset_requirements??[]).map(r=>r.asset_id)).filter(Boolean))];
  return [];
 }
 export async function runGeneratedCompile(root,script,args,{compiler_id,prune=false}={}){
