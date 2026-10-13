@@ -1,8 +1,11 @@
-# Plain shirt contract
+# Native shirt identity
 
-Current characters use `outfit_id: plain-shirt`. The torso keeps the authored
-shirt color and native outline. No printed zodiac symbol, pattern, embroidered
-mark, random accent or accessory is generated. No per-sign outfit preset exists.
-Select shirt color once per character and preserve it across pose/expression
-states. Validate visible SVG fill and identity consistency. Multiple characters
-may share plain shirt geometry; do not create decorative variants for uniqueness.
+Choose `plain-shirt` for an actor with no stated sign, or `zodiac-glyph-shirt`
+with an explicit `zodiac_sign_id` for a sign-bearing actor. The torso retains
+its selected shirt color and one baked intrinsic chest glyph. Never infer a
+supporting actor's sign. Do not add rays, halos, stars or floating marks around
+that glyph. Glyph paths use the native token and travel with pose geometry.
+
+The sign participates in identity hashing, the asset blueprint and native
+assembly replay validation. Shirt color remains stable. Actors may share shirt
+geometry; do not add decorative variants just to distinguish them.

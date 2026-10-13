@@ -51,4 +51,16 @@ Load core guidance and only selected extension registries via
 `selection-policy.json`. Required compiler/validator/review gates remain active.
 Do not read migration records, historical episodes or old assets for inspiration.
 
-Current selection has no face-profile, accessory or effect group. Shirts are plain; expressions and actor motion remain native acting.
+Current selection has no alternate face-profile, accessory or effect group.
+Expressions and actor motion remain native acting. `zodiac-glyph-shirt` preserves one
+intrinsic chest icon selected by `zodiac_sign_id`, with no surrounding decoration.
+Keep unknown supporting signs unassigned. Prefer feminine lead presentation,
+`lean_tall`/`lanky_slouch` and suitable long/ponytail hair; explicit casting wins.
+
+Accents are sparse context cues with a lifecycle, not a permanent room skin.
+Use `initial_state` and `states: {hidden: {visible: false}, visible: {visible: true}}`
+with ordinary voice-anchored fade/state events to enter and release them. These
+states share the same SVG and canvas transform. `scene-accent-string-lights`
+is available for narrated celebrations; never add a birthday to another script.
+One native scene may contain multiple story turns. Judge changes of meaning,
+actor attention and object relations, not scene count or pose changes alone.

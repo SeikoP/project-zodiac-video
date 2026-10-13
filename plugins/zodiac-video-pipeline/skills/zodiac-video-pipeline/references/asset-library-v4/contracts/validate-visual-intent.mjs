@@ -13,5 +13,5 @@ for(const [axis,required]of Object.entries({side:['left','right','center'],direc
 for(const id of ['left_eye','right_eye','face_core','body_rear','reveal_right','trail_right']){const a=x.derived_semantic_anchors?.[id];if(!a?.source?.trim()||!a?.method?.trim())fail('derived anchor '+id);}
 const actual=x.compatibility_matrix?.assets,expected=catalog.hair.map(h=>h.id);
 if(!Array.isArray(actual)||new Set(actual).size!==actual.length||actual.length!==expected.length||expected.some(id=>!actual.includes(id)))fail('current hair catalog compatibility');
-if(catalog.face_profiles?.length!==1||catalog.face_profiles[0].id!=='balanced'||catalog.outfits?.length!==1||catalog.outfits[0].id!=='plain-shirt'||catalog.accessories?.length!==0)fail('current fixed face/plain shirt/no accessory policy');
-console.log('VISUAL_INTENT_PASS: current_native=true hair='+actual.length+' runtime_recipes=false fixed_face=true plain_shirt=true');
+if(catalog.face_profiles?.length!==1||catalog.face_profiles[0].id!=='balanced'||catalog.outfits?.length!==2||!catalog.outfits.some(o=>o.id==='plain-shirt')||!catalog.outfits.some(o=>o.id==='zodiac-glyph-shirt')||catalog.accessories?.length!==0)fail('current fixed face/intrinsic glyph shirt/no accessory policy');
+console.log('VISUAL_INTENT_PASS: current_native=true hair='+actual.length+' runtime_recipes=false fixed_face=true intrinsic_glyph_shirt=true');

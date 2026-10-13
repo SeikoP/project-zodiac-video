@@ -38,3 +38,5 @@ Profile must alter actual native geometry, not renderer scale. `lean_tall` / `la
 
 ## Minimal resting geometry
 rest_sitting uses authored bent knees in a 520×800 viewport; rest_lying uses a horizontal torso and extended limb paths in 900×760 viewBox. Neither rotates the full SVG. Preserve identity fields and plan state budget before compile. Compiler exposes left_grip/right_grip/prop_slot/seat sockets matching hand geometry, including write. Placement must honor intrinsic ratio and sofa support behind the actor; catalog integrity is separate from episode contact pixels and runner motion checks. New resting assets require visual review.
+
+Lead casting defaults prefer feminine presentation and tall slim body profiles; explicit episode selection wins. `zodiac-glyph-shirt` requires one of the twelve native `zodiac_sign_id` values and bakes only its chest glyph. Plain shirts remain available for actors whose sign is not specified. The sign joins the identity hash and blueprint so different signs cannot reuse an incorrect baked asset. No surrounding icon decoration is restored.

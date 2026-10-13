@@ -18,5 +18,5 @@ test('plain shirt keeps colored torso and expressive face without printed decora
 test('removed face accessory and effect choices are not quietly accepted',async()=>{
  const {selectAssetGuidance}=await import('../../core/policy/select-asset-guidance.mjs');const policy=await json('selection-policy.json');
  for(const id of ['freckled','round-glasses','question-pop'])assert.throws(()=>selectAssetGuidance({selected_asset_ids:[id]},policy),/ASSET_RETIRED/);
- const catalog=await json('characters/components/catalog.json');assert.equal(catalog.face_profiles.length,1);assert.equal(catalog.accessories.length,0);assert.deepEqual(catalog.outfits.map(r=>r.id),['plain-shirt']);
+ const catalog=await json('characters/components/catalog.json');assert.equal(catalog.face_profiles.length,1);assert.equal(catalog.accessories.length,0);assert.deepEqual(catalog.outfits.map(r=>r.id),['plain-shirt','zodiac-glyph-shirt']);
 });

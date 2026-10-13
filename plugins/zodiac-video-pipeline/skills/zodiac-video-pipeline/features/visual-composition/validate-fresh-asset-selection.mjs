@@ -1,6 +1,7 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {zodiacGlyphPaths} from '../../references/asset-library-v4/characters/geometry/outfit-profiles.mjs';
 const policyPath=new URL('../../references/asset-library-v4/selection-policy.json',import.meta.url);
 const fail=(code,id)=>{throw Error('FRESH_ASSET_SELECTION_BLOCKED '+code+' '+id);};
 export function validateFreshAssetSelection({intent,production,policy}){
@@ -16,7 +17,8 @@ export function validateFreshAssetSelection({intent,production,policy}){
  for(const c of intent?.cast??[])if(hair.has(c.hair_id))fail('RETIRED_HAIR',c.entity_id);
  for(const [id,a] of [...Object.entries(production?.assets??{}),...Object.entries(intent?.assets??{})]){
   if(hair.has(a.character_blueprint?.hair_id))fail('RETIRED_HAIR',id);
-  const bp=a.character_blueprint;if(bp&&(bp.outfit_id!=='plain-shirt'||(bp.face_profile_id??'balanced')!=='balanced'||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
+  const bp=a.character_blueprint;if(bp&&(!['plain-shirt','zodiac-glyph-shirt'].includes(bp.outfit_id)||(bp.face_profile_id??'balanced')!=='balanced'||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
+  if(bp?.outfit_id==='zodiac-glyph-shirt'&&!Object.hasOwn(zodiacGlyphPaths,bp.zodiac_sign_id))fail('ZODIAC_SIGN_INVALID',id);
   if(a.category==='effect')fail('EFFECTS_REMOVED',id);
   const masters=[a.lineage?.source_master].flat(),p=String(a.path??'');
   if(retired.has(id)||masters.some(m=>retired.has(m))||/(?:^|\/)environments\/structural\//u.test(p)||/(?:^|\/)assets\/environment\/(?:bedroom-|cafe-window|cafe-table)/u.test(p))fail('RETIRED_SOURCE',id);

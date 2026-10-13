@@ -8,11 +8,11 @@ export async function validateCharacterComponents(){
  const c=JSON.parse(await readFile(path.join(root,'characters/components/catalog.json'),'utf8'));
  if(c.format!=='zodiac-character-components@1')fail('format');if(c.style_token!=='zodiac-paper-doodle-meme-v4'||c.handmade_profile!=='human-stroke-v2')fail('style/profile');
  if(c.policy?.render_time_randomness!==false||c.policy?.runtime_output!=='one_baked_svg_per_planned_identity_state_asset'||c.policy?.default_unique_state_asset_budget_per_character!==null||c.policy?.state_budget_basis!=='authored performed actions before SVG compilation'||c.policy?.svg_content_dedupe!==false||c.policy?.body_variation!=='authored_geometry_not_scale_transform')fail('compile/runtime policy');
- if((c.policy?.identity_fields??[]).join('|')!=='body_profile|hair_id|face_profile_id|outfit_id|shirt_color_id|accessory_id')fail('identity fields');if((c.policy?.state_fields??[]).join('|')!=='pose_id|expression_id|crop_id')fail('state fields');
+ if((c.policy?.identity_fields??[]).join('|')!=='body_profile|hair_id|face_profile_id|outfit_id|shirt_color_id|accessory_id|zodiac_sign_id')fail('identity fields');if((c.policy?.state_fields??[]).join('|')!=='pose_id|expression_id|crop_id')fail('state fields');
  const uniq=(rows,label)=>{const s=new Set();for(const x of rows??[]){if(!x.id||s.has(x.id))fail(`${label} duplicate/missing id ${x.id}`);s.add(x.id);}return s;};
  const bodies=uniq(c.body_profiles,'body'),hair=uniq(c.hair,'hair'),outfits=uniq(c.outfits,'outfit'),expressions=uniq(c.expressions,'expression'),poses=uniq(c.poses,'pose'),faces=uniq(c.face_profiles,'face profile'),accessories=uniq(c.accessories,'accessory');
  if(bodies.size<6)fail('need >=6 body profiles');if(hair.size<1)fail('need current hair components');if(expressions.size<6)fail('need >=6 expressions');if(poses.size<8)fail('need >=8 poses');if(faces.size!==1||!faces.has('balanced'))fail('one fixed native face required');if(accessories.size!==0)fail('accessories removed');
- if(outfits.size!==1||!outfits.has('plain-shirt'))fail('only plain shirt supported');
+ if(outfits.size!==2||!outfits.has('plain-shirt')||!outfits.has('zodiac-glyph-shirt'))fail('plain or intrinsic zodiac glyph shirt required');
  for(const b of c.body_profiles)if(!b.source_master||!b.silhouette_family)fail('body '+b.id+' missing source/silhouette');
  for(const f of c.face_profiles)if(!Number.isFinite(f.eye_scale_x)||!Number.isFinite(f.eye_scale_y)||!['none','freckles','brow_mark','beauty_mark','rosy_cheeks'].includes(f.mark_style))fail('face profile '+f.id+' has incomplete identity geometry');
  return {bodies:bodies.size,hair:hair.size,outfits:outfits.size,expressions:expressions.size,poses:poses.size,faces:faces.size,accessories:accessories.size};

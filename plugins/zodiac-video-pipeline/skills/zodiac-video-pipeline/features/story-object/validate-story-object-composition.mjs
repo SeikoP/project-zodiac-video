@@ -59,6 +59,13 @@ export function validateStoryObjectComposition(plan,production,{required=true}={
     return ['held_by','on_surface'].includes(b.relation);
    });
    if(!validLinks.length)issue(issues,'STORY_OBJECT_RELATION_MISSING',at);
+   if(mode==='thought_metaphor'&&validLinks.length){
+    const current=Object.fromEntries((scene.entities??[]).map(e=>[e.id,e.initial_state??Object.keys(e.states??{})[0]]));
+    const supported=()=>story.states?.[current[story.id]]?.visible===false||validLinks.some(b=>entities.get(b.anchor)?.states?.[current[b.anchor]]?.visible!==false);
+    let unsupported=!supported();
+    for(const e of scene.events??[]){if(e.target&&e.state_after)current[e.target]=e.state_after;if(!supported())unsupported=true;}
+    if(unsupported)issue(issues,'STORY_OBJECT_VISIBLE_ANCHOR_MISSING',at);
+   }
    for(const {name,rect} of states){
     if(!isRect(rect)){issue(issues,'STORY_OBJECT_GEOMETRY_MISSING',`${at}/${name}`);continue;}
     if(rect.width*rect.height/SCENE_SIZE>0.42)issue(issues,'STORY_OBJECT_BACKDROP_TAKEOVER',`${at}/${name}`);

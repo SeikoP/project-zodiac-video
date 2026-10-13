@@ -333,7 +333,9 @@
       "curtain-bang",
       "short-curl",
       "low-ponytail",
-      "soft-mohawk"
+      "soft-mohawk",
+      "long-side-part",
+      "high-tied-ponytail"
     ],
     "expectation": "Current compiled assets only; no static historical geometry."
   },

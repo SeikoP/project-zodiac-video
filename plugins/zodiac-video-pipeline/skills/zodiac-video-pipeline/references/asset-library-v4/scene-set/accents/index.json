@@ -204,6 +204,23 @@
       "semantic_intent": "Optional sparse scene-accent-neutral-line identity cue.",
       "asset_sha256": "f04476f83a98b9e8f36fbda2549cd45641178b5244da405c82fb5fec044432fd",
       "placement_space": "scene_set_view_box"
+    },
+    {
+      "id": "scene-accent-string-lights",
+      "asset_id": "ENV_ACCENT_STRING_LIGHTS",
+      "path": "accents/scene-accent-string-lights.svg",
+      "asset_sha256": "887a9f468c8dd8eaa4049a3b1fa10a56ef8062517796fff300501d5988a20258",
+      "output_path": "assets/environment/scene-accent-string-lights.svg",
+      "transform": {
+        "x": 100,
+        "y": 180,
+        "width": 880,
+        "height": 150
+      },
+      "placement_space": "scene_set_view_box",
+      "layer": 3,
+      "containment": "inside_scene_set_wall",
+      "semantic_intent": "Sparse overhead string-light cue only while narrated celebration or birthday context is active."
     }
   ]
 }

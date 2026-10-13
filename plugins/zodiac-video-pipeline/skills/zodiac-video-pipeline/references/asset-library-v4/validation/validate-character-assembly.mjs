@@ -7,7 +7,7 @@ import {validateHumanStroke} from './validate-human-stroke.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=(code,msg)=>{throw new Error(`${code}: ${msg}`);};
 const exists=p=>access(p).then(()=>true).catch(()=>false);
-const identityFields=['body_profile','hair_id','face_profile_id','accessory_id','outfit_id','shirt_color_id','variant_seed','identity_id'];
+const identityFields=['body_profile','hair_id','face_profile_id','accessory_id','outfit_id','shirt_color_id','variant_seed','identity_id','zodiac_sign_id'];
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 
 export async function validateCharacterAssembly(packageRoot,planPath=null){
@@ -40,7 +40,7 @@ export async function validateCharacterAssembly(packageRoot,planPath=null){
     const spec=byEntity.get(entity.id);if(!spec)fail('CHARACTER_ASSEMBLY_PLAN_INVALID',`character entity ${entity.id} is missing from assembly plan`);
     const acting=scene.visual_grammar?.meme_composition?.acting_requirements?.[entity.id]??{};
     const shirtColorId=resolvedShirtColors.get(spec.entity_id);
-    const identity={entity_id:spec.entity_id,body_profile:spec.body_profile,hair_id:spec.hair_id,face_profile_id:spec.face_profile_id??'balanced',accessory_id:spec.accessory_id??'none',outfit_id:spec.outfit_id,shirt_color_id:shirtColorId,variant_seed:spec.variant_seed??spec.entity_id};
+    const identity={entity_id:spec.entity_id,body_profile:spec.body_profile,hair_id:spec.hair_id,face_profile_id:spec.face_profile_id??'balanced',accessory_id:spec.accessory_id??'none',outfit_id:spec.outfit_id,zodiac_sign_id:spec.zodiac_sign_id,shirt_color_id:shirtColorId,variant_seed:spec.variant_seed??spec.entity_id};
     const expectedSignature=identitySignature(identity);
     for(const [stateId,state] of Object.entries(entity.states??{})){
       const stateSpec=spec.states?.[stateId];if(!stateSpec)fail('CHARACTER_ASSEMBLY_PLAN_INVALID',`${entity.id} missing state spec ${stateId}`);
@@ -51,7 +51,7 @@ export async function validateCharacterAssembly(packageRoot,planPath=null){
       if(!asset?.character_blueprint)fail('CHARACTER_ASSEMBLY_REQUIRED',`${entity.id}/${stateId} has not been compiled by native v4 character assembly`);
       if(state.asset!==expectedAssetByEntityState.get(`${entity.id}/${stateId}`))fail('CHARACTER_ASSET_PLAN_MISMATCH',`${entity.id}/${stateId} does not use its preplanned asset`);
       const bp=asset.character_blueprint;
-      if(bp.identity_signature!==expectedSignature||bp.body_profile!==spec.body_profile||bp.hair_id!==spec.hair_id||bp.face_profile_id!==identity.face_profile_id||bp.accessory_id!==identity.accessory_id||bp.outfit_id!==spec.outfit_id||bp.shirt_color_id!==built.shirt_color_id||bp.shirt_color!==built.shirt_color)fail('CHARACTER_IDENTITY_DRIFT',`${entity.id}/${stateId} compiled identity does not match blueprint`);
+      if(bp.identity_signature!==expectedSignature||bp.body_profile!==spec.body_profile||bp.hair_id!==spec.hair_id||bp.face_profile_id!==identity.face_profile_id||bp.accessory_id!==identity.accessory_id||bp.outfit_id!==spec.outfit_id||(bp.zodiac_sign_id??null)!==(spec.zodiac_sign_id??null)||bp.shirt_color_id!==built.shirt_color_id||bp.shirt_color!==built.shirt_color)fail('CHARACTER_IDENTITY_DRIFT',`${entity.id}/${stateId} compiled identity does not match blueprint`);
       if(bp.pose_id!==stateSpec.pose_id||bp.expression_id!==stateSpec.expression_id||(bp.crop_id??null)!==(stateSpec.crop_id??null))fail('CHARACTER_STATE_MISMATCH',`${entity.id}/${stateId} compiled pose/expression/crop does not match plan`);
       if(asset.style_id!=='zodiac-paper-doodle-meme-v4'||asset.lineage?.source_library!=='zodiac-visual-grammar-v4'||asset.lineage?.mode!=='composite')fail('CHARACTER_ASSEMBLY_REQUIRED',`${entity.id}/${stateId} is not native v4 composite output`);
       if(typeof asset.path!=='string'||!(await exists(path.resolve(root,asset.path))))fail('CHARACTER_ASSEMBLY_REQUIRED',`${entity.id}/${stateId} compiled SVG file is missing`);

@@ -12,7 +12,8 @@
       "face_profile_id",
       "outfit_id",
       "shirt_color_id",
-      "accessory_id"
+      "accessory_id",
+      "zodiac_sign_id"
     ],
     "state_fields": [
       "pose_id",
@@ -107,6 +108,18 @@
       "source_master": "soft-mohawk",
       "selection_tier": "preferred_meme",
       "style_intent": "soft lifted center silhouette"
+    },
+    {
+      "id": "long-side-part",
+      "source_master": "long-side-part",
+      "selection_tier": "preferred_meme",
+      "style_intent": "long side-part silhouette, feminine presentation"
+    },
+    {
+      "id": "high-tied-ponytail",
+      "source_master": "high-tied-ponytail",
+      "selection_tier": "preferred_meme",
+      "style_intent": "high rear ponytail silhouette, feminine presentation"
     }
   ],
   "outfits": [
@@ -114,6 +127,13 @@
       "id": "plain-shirt",
       "kind": "plain",
       "decoration": false
+    },
+    {
+      "id": "zodiac-glyph-shirt",
+      "kind": "intrinsic_zodiac_glyph",
+      "decoration": false,
+      "requires": "zodiac_sign_id",
+      "icon_policy": "one_baked_chest_glyph_no_surrounding_decoration"
     }
   ],
   "expressions": [
@@ -267,5 +287,19 @@
       "mark_style": "none"
     }
   ],
-  "accessories": []
+  "accessories": [],
+  "casting_preferences": {
+    "gender_presentation": "feminine",
+    "body_profiles": [
+      "lean_tall",
+      "lanky_slouch"
+    ],
+    "lead_hair": [
+      "long-side-part",
+      "high-tied-ponytail",
+      "low-ponytail"
+    ],
+    "override": "explicit episode design intent",
+    "supporting_signs": "never infer unknown zodiac signs for supporting actors"
+  }
 }

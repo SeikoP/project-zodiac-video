@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {validateSceneSetAccents} from '../../../orchestration/validate-scene-set-accents.mjs';
 import {compileBackgroundPaletteSvg,paletteAssetIdentity,resolveBackgroundPalette} from './compile-background-palette.mjs';
 import {resolveAccentPlacement} from './resolve-accent-placement.mjs';
+import {resolveAccentStates} from './resolve-accent-states.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const sha=x=>createHash('sha256').update(x).digest('hex');
@@ -63,8 +64,9 @@ export async function compileSceneSetWorkspace(root,{production,libraryRoot=here
    const av=await compileAsset(accent,'environment',paletteId),eid=request.entity_id??'accent__'+request.id;
    if(scene.entities.some(e=>e.id===eid)&&!Object.values(scene.entities.find(e=>e.id===eid).states??{}).every(s=>s.asset===av.asset_id))fail('ACCENT_ENTITY_COLLISION '+eid);
    scene.entities=scene.entities.filter(e=>e.id!==eid);
-   scene.entities.push({id:eid,kind:'object',visual_role:'effect',generated_by:'scene-set',scene_asset_role:'scene_accent',scene_asset_id:accent.id,initial_state:'visible',states:{visible:{asset:av.asset_id,visible:true,layer:accent.layer,transform:structuredClone(placement)}}});
-   scene.environment.scene_accents.push({id:accent.id,entity_id:eid,asset:av.asset_id,background_palette_id:av.palette_id,transform:structuredClone(placement)});
+   const appearance=resolveAccentStates(request,{asset:av.asset_id,layer:accent.layer,transform:placement});
+   scene.entities.push({id:eid,kind:'object',visual_role:'effect',generated_by:'scene-set',scene_asset_role:'scene_accent',scene_asset_id:accent.id,...appearance});
+   scene.environment.scene_accents.push({...request,id:accent.id,entity_id:eid,asset:av.asset_id,background_palette_id:av.palette_id,transform:structuredClone(placement),initial_state:appearance.initial_state,states:Object.fromEntries(Object.entries(appearance.states).map(([id,s])=>[id,{visible:s.visible}]))});
   }
   selected.push({scene_id:scene.id,scene_set_id:id,background_palette_id:variant.palette_id,source_asset_sha256:variant.source_sha256,asset_sha256:variant.compiled_sha256,scene_accents:scene.environment.scene_accents});
  }

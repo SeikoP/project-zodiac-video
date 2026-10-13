@@ -3,7 +3,7 @@
 ## Visual Compile owns semantics
 - entity/state/action/event order and voice anchors;
 - Frame/Mechanic selection;
-- character identity blueprint (`body_profile`, `hair_id`, fixed balanced face, plain shirt and `shirt_color_id`) and state (`pose_id`, `expression_id`, optional `crop_id`);
+- character identity blueprint (`body_profile`, `hair_id`, fixed balanced face, plain/intrinsic-glyph shirt, optional `zodiac_sign_id` and `shirt_color_id`) and state (`pose_id`, `expression_id`, optional `crop_id`);
 - meme adapter selection, existing-entity role bindings, required contacts, caption slot and composition-specific role boxes;
 - supporting scene-set/contained-accent selection and semantic Scene Direction roles.
 

@@ -42,7 +42,7 @@ export async function runGeneratedCompile(root,script,args,{compiler_id,prune=fa
  try{
   await mkdir(path.dirname(lock),{recursive:true});try{const handle=await open(lock,'wx');locked=true;await handle.writeFile(JSON.stringify({pid:process.pid,compiler_id}));await handle.close();}catch(e){if(e.code==='EEXIST')fail('COMPILE_LOCKED');throw e;}
   const inputs=['production.json','assets','.authoring','publish','narration.txt','design.md','asset-plan.json','visual-grammar-plan.json'];
-  for(const rel of inputs){const src=await confined(root,rel);try{const st=await lstat(src);if(st.isDirectory())await walk(root,rel);await cp(src,path.join(stage,rel),{recursive:true});}catch(e){if(e.code!=='ENOENT')throw e;}}
+  for(const rel of inputs){const src=await confined(root,rel);try{const st=await lstat(src);if(st.isDirectory())await walk(root,rel);await cp(src,path.join(stage,rel),{recursive:true,filter:entry=>!entry.endsWith('.lock')});}catch(e){if(e.code!=='ENOENT')throw e;}}
   const sourceHashes=new Map();for(const rel of await walk(stage))sourceHashes.set(rel,hash(await readFile(path.join(stage,rel))));
   const previous=await json(path.join(root,'.authoring/generated-assets.json')).catch(e=>{if(e.code==='ENOENT')return {entries:[]};throw e;});
   const rewritten=args.map(arg=>arg===root?stage:arg.startsWith(root+path.sep)?stage+arg.slice(root.length):arg);
@@ -56,7 +56,7 @@ export async function runGeneratedCompile(root,script,args,{compiler_id,prune=fa
   for(const e of plan.retired)delete production.assets?.[e.asset_id];
   await mkdir(path.join(stage,'.authoring'),{recursive:true});await writeFile(path.join(stage,'production.json'),JSON.stringify(production,null,2)+'\n');await writeFile(path.join(stage,'.authoring/generated-assets.json'),JSON.stringify(next,null,2)+'\n');await writeFile(path.join(stage,'.authoring/generated-assets-reconcile.json'),JSON.stringify(plan,null,2)+'\n');
   for(const [rel,expected] of sourceHashes){let current;try{current=hash(await readFile(await confined(root,rel)));}catch{fail('SOURCE_CHANGED '+rel);}if(current!==expected)fail('SOURCE_CHANGED '+rel);}
-  const changes=[];for(const rel of await walk(stage)){if(!['production.json'].includes(rel)&&!rel.startsWith('assets/')&&!rel.startsWith('.authoring/'))continue;const bytes=await readFile(path.join(stage,rel)),target=await confined(root,rel);let original=null;try{original=await readFile(target);}catch(e){if(e.code!=='ENOENT')throw e;}if(original&&original.equals(bytes))continue;
+  const changes=[];for(const rel of await walk(stage)){if(rel.endsWith('.lock'))continue;if(!['production.json'].includes(rel)&&!rel.startsWith('assets/')&&!rel.startsWith('.authoring/'))continue;const bytes=await readFile(path.join(stage,rel)),target=await confined(root,rel);let original=null;try{original=await readFile(target);}catch(e){if(e.code!=='ENOENT')throw e;}if(original&&original.equals(bytes))continue;
    if(rel.startsWith('assets/')&&original){const owned=previous.entries?.find(e=>e.path===rel);if(!owned)fail('UNOWNED_PATH_CONFLICT '+rel);if(hash(original)!==owned.sha256)fail('HASH_CHANGED '+rel);}
    changes.push({target,bytes,original});
   }

@@ -30,7 +30,7 @@ export async function buildCurrentAssetReview({selected_ids=null,outDir=null}={}
  const cards=[],items=[];
  for(const row of chosen){
   let svg,source;
-  if(row.field){const identity={...defaults},acting={...state};if(row.field in acting)acting[row.field]=row.value;else identity[row.field]=row.value;svg=compileCharacterSvg(identity,acting).svg;source='native_character_compiler';}
+  if(row.field){const identity={...defaults},acting={...state};if(row.field in acting)acting[row.field]=row.value;else identity[row.field]=row.value;if(identity.outfit_id==='zodiac-glyph-shirt')identity.zodiac_sign_id='gemini';svg=compileCharacterSvg(identity,acting).svg;source='native_character_compiler';}
   else if(row.path){svg=await readSvg(row.path);source=row.path;if(row.expected_sha256&&sha(svg)!==row.expected_sha256)throw Error('ASSET_PREVIEW_HASH_DRIFT '+row.id);}
   else {const states=await Promise.all(Object.entries(row.states).map(async([name,s])=>({name,svg:await readSvg('visual-metaphors/'+s.path)})));svg=states.map(s=>s.svg).join('');source='native_metaphor_states';}
   items.push({id:row.id,group:row.group,source,sha256:sha(svg)});

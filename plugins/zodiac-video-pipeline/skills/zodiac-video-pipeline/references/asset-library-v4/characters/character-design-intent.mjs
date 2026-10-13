@@ -15,7 +15,7 @@ export function validateCharacterDesignIntent(production,plan,{requireV2=false}=
   if(visual){
    if(visual.role!==design.role||visual.reference_entity_id&&visual.reference_entity_id!==id)fail('CHARACTER_REFERENCE_SCOPE',id);
    if(typeof visual.silhouette_priority!=='string'||!visual.silhouette_priority.trim()||typeof visual.reference_notes!=='string'||!visual.reference_notes.trim())fail('CHARACTER_VISUAL_INTENT_INVALID',id);
-   for(const [field,value] of Object.entries(visual.identity_lock??{}))if(!['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id','accessory_id'].includes(field)||spec[field]!==value)fail('CHARACTER_IDENTITY_LOCK',id+'/'+field);
+   for(const [field,value] of Object.entries(visual.identity_lock??{}))if(!['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id','accessory_id','zodiac_sign_id'].includes(field)||spec[field]!==value)fail('CHARACTER_IDENTITY_LOCK',id+'/'+field);
   }
   if(design.selection_basis!=='story_first')fail('CHARACTER_INTENT_STORY_FIRST_REQUIRED',id);
   if(!['lead','support'].includes(design.role)||!meaningful(design.identity_tension)||!meaningful(design.audience_read))fail('CHARACTER_INTENT_ROLE_MISSING',id);

@@ -96,7 +96,9 @@ export function validateStoryObjectPlan(plan, production, narration){
    if(support && !(scene.spatial_bindings??[]).some(binding=>binding.entity===support.id && (binding.anchor===object?.id||entities.has(binding.anchor))))issue(issues,'EFFECT_CONTACT_MISSING',key);
   }else if(!v2)issue(issues,'EFFECT_SEMANTICS_INVALID',key);
  }
- if(usedScenes.size<2)issue(issues,'STORY_SCENE_REPETITION');
+ // V2 progression belongs to performed state/relationship changes, not scene boundaries.
+ // Keep the older V1 multi-scene requirement for historical contracts.
+ if(!v2&&usedScenes.size<2)issue(issues,'STORY_SCENE_REPETITION');
  if(!v2&&objectIdentities.size>1)issue(issues,'OBJECT_METAPHOR_IDENTITY_DRIFT');
  if(stages[0]!=='setup'||stages.at(-1)!=='payoff'||!stages.includes('friction')||stages.indexOf('friction')<=0||stages.lastIndexOf('friction')>=stages.length-1)issue(issues,'STORY_PROGRESS_INVALID');
  const payoff=beats.at(-1);

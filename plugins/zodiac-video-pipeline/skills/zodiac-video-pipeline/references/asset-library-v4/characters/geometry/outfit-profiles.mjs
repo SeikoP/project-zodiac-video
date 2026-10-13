@@ -1,2 +1,20 @@
 export const hash32=s=>{let h=2166136261;for(const c of String(s)){h^=c.codePointAt(0);h=Math.imul(h,16777619)>>>0;}return h>>>0;};
-export const outfitMarkup=()=>'';
+export const zodiacGlyphPaths={
+ aries:'M240 581 Q241 532 218 532 Q199 537 216 559 M267 581 Q265 531 288 533 Q309 538 291 559',
+ taurus:'M232 534 Q256 556 282 534 M258 550 C226 550 225 590 258 592 C292 591 291 551 258 550Z',
+ gemini:'M229 532 Q258 540 287 531 M230 589 Q258 581 287 590 M243 536 L242 585 M273 536 L275 586',
+ cancer:'M223 550 Q254 530 286 550 M236 551 C221 535 211 556 228 563 C240 566 248 551 236 551Z M291 573 Q260 593 229 574 M279 574 C294 590 305 569 288 562 C276 559 268 574 279 574Z',
+ leo:'M235 571 C215 552 211 581 230 582 Q250 583 245 558 C235 523 282 521 284 552 Q277 581 297 582',
+ virgo:'M222 585 L221 538 Q236 526 241 541 L242 585 M241 542 Q254 528 262 541 L263 582 M263 542 Q283 524 288 546 Q287 574 268 586 L291 593',
+ libra:'M228 583 Q258 580 290 583 M227 567 L246 568 C222 533 291 532 271 568 L291 567',
+ scorpio:'M220 585 L219 538 Q234 526 240 541 L241 585 M240 542 Q253 528 261 541 L262 581 Q278 596 294 577 M286 577 L297 574 L296 586',
+ sagittarius:'M229 587 L285 534 M264 534 L286 533 L286 557 M237 550 L269 580',
+ capricorn:'M222 537 L239 583 L254 548 Q263 529 274 541 L269 578 Q267 596 285 589 C302 578 281 559 269 578',
+ aquarius:'M221 550 L235 539 L249 550 L264 538 L279 549 L293 539 M222 578 L236 568 L250 579 L265 567 L280 578 L294 568',
+ pisces:'M229 534 Q248 561 228 590 M287 534 Q268 562 288 590 M226 562 Q258 558 292 562'
+};
+export function outfitMarkup(outfitId,seed,zodiacSignId){
+ if(outfitId==='plain-shirt')return '';
+ if(outfitId!=='zodiac-glyph-shirt'||!zodiacGlyphPaths[zodiacSignId])throw Error('unknown zodiac sign '+zodiacSignId);
+ return '<g id="shirt_zodiac_glyph" data-sign="'+zodiacSignId+'" fill="none" stroke="#2F3C44" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="'+zodiacGlyphPaths[zodiacSignId]+'"/></g>';
+}

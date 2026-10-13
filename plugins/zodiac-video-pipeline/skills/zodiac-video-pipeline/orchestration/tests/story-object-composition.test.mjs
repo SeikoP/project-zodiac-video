@@ -18,6 +18,13 @@ const codes=(p,v)=>check(p,v).issues.map(x=>x.code);
 test('Libra balanced thought metaphor: figure + scale on paper, without fake bedroom',()=>{
  const {plan,production}=make();assert.equal(check(plan,production).status,'PASS');
 });
+test('a visible thought metaphor cannot outlive its visible actor anchor',()=>{
+ const {plan,production}=make(),s=production.scenes[0];s.entities[0].states.off={...s.entities[0].states.idle,visible:false};
+ s.events=[{id:'hide-actor',target:'libra',state_before:'idle',state_after:'off'}];
+ assert.ok(codes(plan,production).includes('STORY_OBJECT_VISIBLE_ANCHOR_MISSING'));
+ s.entities[1].states.off={...s.entities[1].states.idle,visible:false};s.events.unshift({id:'hide-metaphor',target:'scale',state_before:'idle',state_after:'off'});
+ assert.equal(check(plan,production).status,'PASS');
+});
 test('reject object repurposed into scene environment/background',()=>{
  const {plan,production}=make();production.scenes[0].environment.roles.rear=['scale'];
  assert.ok(codes(plan,production).includes('STORY_OBJECT_USED_AS_ENVIRONMENT'));
