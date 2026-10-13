@@ -47,7 +47,7 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
    const event=events.get(id);if(!event||coveredEvents.has(id)){add('COVERAGE_EVENT_MISSING_OR_DUPLICATE',{beat_id:beat.id,event_id:id});continue;}coveredEvents.add(id);
    const at=anchorOffset(voice,event.trigger);if(event.trigger?.type!=='voice_anchor'||!text(event.trigger.text)||at<start||at>=stop)add('COVERAGE_EVENT_ANCHOR',{beat_id:beat.id,event_id:id});
    if(event.state_after)states.set(event.target,event.state_after);
-   for(const id of components.keys())if(visible(id) && (coverage?.layers_version!=='narrative_visual@1'||!['scene_set','scene_accent'].includes(roleOf(id))))seenVisible.add(id);
+   for(const id of components.keys())if(visible(id) && (coverage?.layers_version!=='narrative_visual@1'||roleOf(id)!=='scene_set'))seenVisible.add(id);
   }
   for(const id of seenVisible)if(!used.has(id))add('COVERAGE_VISIBLE_ENTITY_UNDECLARED',{beat_id:beat.id,entity_id:id});
   for(const id of used)if(!seenVisible.has(id))add('COVERAGE_ENTITY_NOT_VISIBLE',{beat_id:beat.id,entity_id:id});
