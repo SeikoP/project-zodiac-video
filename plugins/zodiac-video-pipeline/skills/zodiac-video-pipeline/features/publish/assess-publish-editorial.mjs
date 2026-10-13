@@ -13,6 +13,8 @@ export function assessPublishEditorial(publish,scene,{fresh=false}={}){
  const selected=new Set((cover.visuals??[]).map(v=>v.entity_id));
  const actors=[...entities.values()].filter(e=>e.kind==='character');
  if(actors.length&&!actors.some(e=>selected.has(e.id)))add('COVER_CHARACTER_MISSING');
+ if(actors.length>1&&actors.some(e=>!selected.has(e.id))&&!text(cover.visual_omissions?.actors))
+  add('COVER_CAST_INCOMPLETE');
  const semantic=[...entities.values()].filter(e=>['narrative_visual','story_object','story_symbol','object'].includes(e.kind));
  if(semantic.length&&!semantic.some(e=>selected.has(e.id))&&!text(cover.visual_omissions?.narrative_visual))
   add('COVER_SEMANTIC_VISUAL_MISSING');
