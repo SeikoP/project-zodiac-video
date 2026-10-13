@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
@@ -39,6 +40,22 @@ def build(root: Path, destination: Path) -> dict:
     for file in files:
         if file.is_symlink() or file.resolve().parent != file.parent.resolve():
             raise ValueError(f"PLUGIN_SOURCE_UNSAFE {file}")
+    packaged = {file.relative_to(src).as_posix() for file in files}
+    # Validate literal relative ESM imports against the exact package contents.
+    # Dynamic computed imports need separate runtime tests and are not marked PASS.
+    for file in files:
+        if file.suffix not in {".mjs", ".js"}:
+            continue
+        raw = file.read_text(encoding="utf-8")
+        imports = re.findall(r"(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\bimport\\s*)['\\\"](\\.[^'\\\"]+)['\\\"]", raw)
+        for spec in imports:
+            target = (file.parent / spec).resolve()
+            try:
+                relative = target.relative_to(src.resolve()).as_posix()
+            except ValueError as exc:
+                raise ValueError(f"PLUGIN_IMPORT_OUTSIDE_ARCHIVE {file}: {spec}") from exc
+            if relative not in packaged:
+                raise ValueError(f"PLUGIN_STATIC_IMPORT_MISSING {file}: {spec}")
     destination.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(destination, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for file in files:
