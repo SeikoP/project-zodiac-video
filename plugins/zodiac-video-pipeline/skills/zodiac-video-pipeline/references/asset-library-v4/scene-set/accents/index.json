@@ -15,7 +15,8 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional minimal cafe conversation context cue."
+      "semantic_intent": "Optional minimal cafe conversation context cue.",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-board",
@@ -31,7 +32,8 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional board cue for school/study context."
+      "semantic_intent": "Optional board cue for school/study context.",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-shelf",
@@ -47,7 +49,8 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional shelf cue for study/home context."
+      "semantic_intent": "Optional shelf cue for study/home context.",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-clock",
@@ -63,7 +66,8 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional clock cue for time/schedule context."
+      "semantic_intent": "Optional clock cue for time/schedule context.",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-sign",
@@ -79,7 +83,8 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sign/menu cue for cafe/street context."
+      "semantic_intent": "Optional sign/menu cue for cafe/street context.",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-home-lamp",
@@ -94,7 +99,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-home-lamp identity cue."
+      "semantic_intent": "Optional sparse scene-accent-home-lamp identity cue.",
+      "asset_sha256": "654a52c9a6480789c5459a4bedc8b8f0526d92253c5c5c9612433af5f9764ff1",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-cafe-window",
@@ -109,7 +116,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-cafe-window identity cue."
+      "semantic_intent": "Optional sparse scene-accent-cafe-window identity cue.",
+      "asset_sha256": "1826d803dac084ec426f4cd737738d94e464147722fb1aa603744200b66cf499",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-class-window",
@@ -124,7 +133,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-class-window identity cue."
+      "semantic_intent": "Optional sparse scene-accent-class-window identity cue.",
+      "asset_sha256": "ee7ea9ae66aeff5ac3f7749d92d5ab162525bc40ea4b34c7c3cf86b9220b1a70",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-study-note",
@@ -139,7 +150,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-study-note identity cue."
+      "semantic_intent": "Optional sparse scene-accent-study-note identity cue.",
+      "asset_sha256": "ddc43319b45a292b1efad798fcf57cf0c0a6984fde848b45ea82df73f079f6fc",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-street-tree",
@@ -154,7 +167,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-street-tree identity cue."
+      "semantic_intent": "Optional sparse scene-accent-street-tree identity cue.",
+      "asset_sha256": "481f103b550cd4636101c190e99c1d24dced5f18cfd3c70cbd0c47a6ccdcc362",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-neutral-dot",
@@ -169,7 +184,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-neutral-dot identity cue."
+      "semantic_intent": "Optional sparse scene-accent-neutral-dot identity cue.",
+      "asset_sha256": "df3c2a281037259280764c97e8307b2f63ad3cff143fb3204b70f733c47ab4a1",
+      "placement_space": "scene_set_view_box"
     },
     {
       "id": "scene-accent-neutral-line",
@@ -184,7 +201,9 @@
       },
       "layer": 3,
       "containment": "inside_scene_set_wall",
-      "semantic_intent": "Optional sparse scene-accent-neutral-line identity cue."
+      "semantic_intent": "Optional sparse scene-accent-neutral-line identity cue.",
+      "asset_sha256": "f04476f83a98b9e8f36fbda2549cd45641178b5244da405c82fb5fec044432fd",
+      "placement_space": "scene_set_view_box"
     }
   ]
 }

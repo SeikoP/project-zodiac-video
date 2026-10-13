@@ -17,6 +17,9 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   if(!Object.prototype.hasOwnProperty.call(palettes?.palettes??{},d?.palette_id))fail('PALETTE_UNKNOWN',scene_id);
   const archiveFrame=source?.environment?.mode==='archive_frame',primarySceneSet=hasPrimarySceneSet(source,production),sceneSetId=source?.environment?.scene_set_id??source?.environment?.scene_set?.id;
   if(primarySceneSet){
+   const accents=source.environment.scene_accents??[];
+   if(!Array.isArray(accents))fail('SCENE_ACCENT_SELECTION_INVALID',scene_id);
+   else if(!accents.length&&!String(source.environment.scene_accent_omission_reason??'').trim())fail('SCENE_ACCENT_DECISION_MISSING',scene_id);
    if(!sceneSetId||d?.scene_set_id!==sceneSetId)fail('SCENE_SET_ID_MISMATCH',scene_id);
    if(d?.environment_profile!==undefined&&d?.environment_profile!==null)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET',scene_id);
   }else if(!archiveFrame){

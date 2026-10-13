@@ -1,8 +1,10 @@
 // Validate authored intent separately from compiler-resolved geometry. No approval synthesis.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
 import {validateComposition,compositionHash,designToken} from './phase02-composition-core.mjs';
+import {resolveAccentPlacement} from '../../references/asset-library-v4/scene-set/resolve-accent-placement.mjs';
 const load=async relative=>JSON.parse(await readFile(new URL(relative,import.meta.url),'utf8'));
 const sceneSetRegistry=await load('../../references/asset-library-v4/scene-set/index.json');
+const accentRegistry=await load('../../references/asset-library-v4/scene-set/accents/index.json');
 const roles=new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
 const result=issues=>({status:issues.length?'BLOCKED':'PASS',issues});
 function compilerEntity(production,scene,c){
@@ -11,6 +13,12 @@ function compilerEntity(production,scene,c){
  if(kind==='scene-set'){
   const master=sceneSetRegistry.scene_sets.find(s=>s.id===key);if(!master||c.id!=='env__'+key)return null;
   return {id:c.id,kind:'object',visual_role:'background',initial_state:'visible',states:{visible:{asset:master.asset_id,visible:true,layer:master.layer,transform:structuredClone(master.transform)}}};
+ }
+ if(kind==='scene-accent'){
+  const env=scene.environment??{},master=sceneSetRegistry.scene_sets.find(s=>s.id===(env.scene_set_id??env.scene_set?.id));
+  const accent=accentRegistry.accents.find(a=>a.id===key),request=env.scene_accents?.find(a=>a.id===key&&(a.entity_id??'accent__'+a.id)===c.id);
+  if(!master||!accent||!request)return null;
+  return {id:c.id,kind:'object',visual_role:'effect',initial_state:'visible',states:{visible:{asset:request.asset??accent.asset_id,visible:true,layer:accent.layer,transform:resolveAccentPlacement(master,accent,request)}}};
  }
  if(kind==='character')return key===c.id&&scene.entities?.find(e=>e.id===key&&e.kind==='character')?{...scene.entities.find(e=>e.id===key),visual_role:'character'}:null;
  if(kind==='meme-prop')return scene.visual_grammar?.meme_composition?.asset_requirements?.some(r=>r.asset_id===key&&r.entity_id===c.id)&&scene.entities?.find(e=>e.id===c.id)?{...scene.entities.find(e=>e.id===c.id),visual_role:'interactive_prop'}:null;

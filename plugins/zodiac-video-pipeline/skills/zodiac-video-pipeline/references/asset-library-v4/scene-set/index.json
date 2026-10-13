@@ -14,9 +14,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 140,
+        "y": 0,
         "width": 1080,
-        "height": 1240
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {
@@ -54,9 +54,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 65,
+        "y": 0,
         "width": 1080,
-        "height": 940
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {
@@ -73,7 +73,7 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-cafe.svg",
-      "semantic_intent": "Supporting elevated rear pictorial frame; actors use independent foreground coordinates and may overlap or extend beyond the wall. No safe-height or actor containment authority.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "cafe-counter-line",
         "sign-menu",
@@ -94,9 +94,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 140,
+        "y": 0,
         "width": 1080,
-        "height": 1240
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {
@@ -134,9 +134,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 140,
+        "y": 0,
         "width": 1080,
-        "height": 1240
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {
@@ -174,9 +174,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 140,
+        "y": 0,
         "width": 1080,
-        "height": 1240
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {
@@ -214,9 +214,9 @@
       ],
       "transform": {
         "x": 0,
-        "y": 140,
+        "y": 0,
         "width": 1080,
-        "height": 1240
+        "height": 780
       },
       "layer": 1,
       "wall_region_local": {

@@ -207,9 +207,9 @@ Canonical palette: `#F6F0E6 #FFFDF9 #2F3C44 #5C6B75 #4B5B61 #F1C6A0 #D0C1B3 #8EC
   },
   "safe_zone": {
     "x": 72,
-    "y": 960,
+    "y": 1420,
     "width": 936,
-    "height": 620
+    "height": 350
   },
   "caption_overlay": {
     "mode": "collision_aware",

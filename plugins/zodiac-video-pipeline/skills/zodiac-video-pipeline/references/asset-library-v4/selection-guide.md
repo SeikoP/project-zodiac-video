@@ -5,7 +5,7 @@ missing IDs do not trigger a historical example, alias or fallback. Historical
 job recovery uses a separately pinned snapshot outside this package.
 
 ## Select by responsibility
-- Scene-set: stable wall/floor/frame stage from `scene-set/index.json`.
+- Scene-set: supporting rear picture/frame from `scene-set/index.json`; never an actor stage or physical support.
 - Shot layout: actor composition from `shot-layouts/index.json`.
 - Character: body, hair and shirt color from
   `characters/components/catalog.json`; identity is selected once per actor.
@@ -15,6 +15,15 @@ job recovery uses a separately pinned snapshot outside this package.
   `../story-object-contract.md`; not a background or forced physical interaction.
 - Scene accent: optional context detail from `scene-set/accents/index.json`,
   contained by the wall. No automatic room decoration.
+
+For each scene-set, explicitly select `scene_accents` or record a non-empty
+`scene_accent_omission_reason` in the scene environment. An empty list alone is
+not a reviewed choice and fails the native art-direction gate. Prefer one or
+two context cues supported by the narration, such as a cafe window/menu.
+Registry accent defaults with `placement_space: scene_set_view_box` follow the
+selected backdrop transform. An authored `transform` is in canvas coordinates
+and must fit the transformed wall; invalid overrides fail without auto-fitting.
+Foreground actor slots, physical contacts and captions remain independent.
 
 Use `capability-index.json` for supported needs and `coverage-matrix.json` for
 coverage. Per beat, select one shot-layout and primary action, then bind actual

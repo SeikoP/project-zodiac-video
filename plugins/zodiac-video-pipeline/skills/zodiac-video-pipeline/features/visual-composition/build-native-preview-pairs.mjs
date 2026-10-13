@@ -57,7 +57,7 @@ async function sceneFrameHtml(root,scene,states,assets,cache,label){
   const stid=states[e.id]??e.initial_state;if(!stid)fail('PREVIEW_SCENE_STATE_MISSING',scene.id+'/'+e.id);
   const st=stateOf(e,stid);if(st.visible===false)continue;const b=st.transform;if(!usableBox(b))fail('PREVIEW_TRANSFORM_INVALID',scene.id+'/'+e.id+'/'+stid);
   const svg=await svgUrl(root,st.asset,assets,cache);const layer=st.layer??(e.kind==='character'?15:e.kind==='effect'?27:7);
-  const svgMarkup=svg.markup.replace(/<svg\\b/u,'<svg preserveAspectRatio="none" style="display:block;width:100%;height:100%"');
+  const svgMarkup=svg.markup.replace(/<svg\b/u,'<svg preserveAspectRatio="none" style="display:block;width:100%;height:100%"');
   items.push({layer,html:'<div role="img" aria-label="'+esc(e.id)+':'+esc(stid)+'" data-entity="'+esc(e.id)+'" data-state="'+esc(stid)+'" data-sha="'+svg.sha256+'" style="position:absolute;left:'+b.x+'px;top:'+b.y+'px;width:'+b.width+'px;height:'+b.height+'px;z-index:'+layer+'">'+svgMarkup+'</div>'});
  }
  const meta=esc(scene.id)+' · SCENE '+esc(label);
