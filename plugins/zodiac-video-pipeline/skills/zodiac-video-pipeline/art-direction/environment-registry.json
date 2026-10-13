@@ -1,23 +1,10 @@
 {
   "format": "zodiac-native-environments@2",
-  "profiles": [
-    "bedroom-study-base",
-    "classroom-study",
-    "school-hallway",
-    "living-room-home",
-    "kitchen-home",
-    "front-door-entry",
-    "cafe-chat",
-    "outdoor-street-soft",
-    "library-study",
-    "school-yard"
-  ],
-  "source": "references/asset-library-v4/environments/composition-index.json",
-  "constraint": "compatibility-selected-cues-only",
-  "fresh_default": false,
+  "source": "references/asset-library-v4/scene-set/index.json",
+  "constraint": "explicit_current_scene_set_and_accents",
+  "fresh_default": true,
   "availability": [
-    "selected_cues",
-    "legacy"
+    "scene_set"
   ],
-  "scene_set_source": "references/asset-library-v4/scene-set/index.json"
+  "current_selection": "scene_set_id plus explicit scene_accents"
 }

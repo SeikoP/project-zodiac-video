@@ -33,5 +33,5 @@ test('visual grammar recipe is scene-set first and keeps character assembly befo
  const recipe=await readJson(path.join(skillRoot,'references/asset-library-v4/recipes/visual-grammar.json'));
  assert.deepEqual(recipe.selection_order,['scene_set','shot_layout','mechanic','character_assembly','skin_binding','selected_context_cues','scene_direction_compile']);
  assert.equal(recipe.policy.frames_are,'shot_layout_skeletons_not_scene_sets');
- assert.equal(recipe.policy.scene_set,'primary_visual_stage_separate_from_frame_skeleton');
+ assert.equal(recipe.policy.scene_set,'supporting_rear_pictorial_backdrop_no_actor_geometry_or_physical_support');
 });

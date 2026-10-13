@@ -21,7 +21,7 @@ After story action is known, apply `scene-direction.md`. Use shot/focus/placemen
 Within one logical place, reframe the existing environment before selecting a new environment. `two-person` binds existing participants and must express relationship through blocking/eye direction/shared prop rather than merely showing two bodies.
 
 ## Environment staging
-Use `environment-composition.md` when context benefits from spatial grounding. Micro-environments clarify place and create depth but never substitute for the story-changing state. Prefer coherent clusters and meaningful overlap over evenly scattered props.
+Select a current scene-set and explicit scene accents when the narration needs context. Character staging is independent of the outer frame; accents stay inside the wall. Physical furniture is an authored prop, not automatically generated background.
 
 ## Meme composition option
 For a clearly meme-like beat, test whether one approved macro composition matches the situation and roles. Use at most one macro template per beat; it binds existing cast and compiles into ordinary states/events. Do not turn a micro effect into the main joke.

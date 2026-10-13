@@ -41,13 +41,18 @@ export async function compileSceneSetWorkspace(root,{production,libraryRoot=here
   scene.entities=(scene.entities??[]).filter(e=>!(e.generated_by==='scene-set'&&e.scene_asset_role==='scene_accent'));
   const variant=await compileAsset(master,'environment',paletteId);
   const entityId=env.scene_set?.entity_id??'env__'+id;
+  // Decorative backdrop cannot become the actor's physical stage or surface.
+  const bindings=[...(scene.spatial_bindings??[]),...(env.frame?.contacts??[])];
+  if(bindings.some(b=>[b.entity,b.anchor].includes(entityId)&&['on_surface','held_by'].includes(b.relation)))fail('BACKDROP_PHYSICAL_SUPPORT '+scene.id);
+  if(env.frame?.slots?.some(slot=>slot.entity===entityId))fail('BACKDROP_ACTOR_FRAME_SLOT '+scene.id);
+
   const old=scene.entities.find(e=>e.id===entityId);
   if(old&&!old.generated_by&&Object.values(old.states??{}).some(s=>s.asset!==variant.asset_id))fail('ENTITY_ID_COLLISION '+entityId);
   scene.entities=scene.entities.filter(e=>e.id!==entityId);
   scene.entities.push({id:entityId,kind:'object',visual_role:'background',generated_by:'scene-set',initial_state:'visible',states:{visible:{asset:variant.asset_id,transform:structuredClone(master.transform),layer:master.layer,visible:true}}});
   const t=master.transform,v=master.view_box,w=master.wall_region_local;
   const wall={x:t.x+(w.x-v[0])*t.width/v[2],y:t.y+(w.y-v[1])*t.height/v[3],width:w.width*t.width/v[2],height:w.height*t.height/v[3]};
-  scene.environment={...env,mode:'scene_set',scene_set_id:id,background_palette_id:variant.palette_id,scene_set:{format:'zodiac-scene-set@1',id,asset:variant.asset_id,entity_id:entityId,asset_sha256:variant.compiled_sha256,source_asset_sha256:variant.source_sha256,background_palette_id:variant.palette_id,view_box:master.view_box,transform:master.transform,wall_region:wall},roles:{rear:[entityId],grounding:[],front:[]},scene_accents:[]};
+  scene.environment={...env,mode:'scene_set',scene_set_id:id,background_palette_id:variant.palette_id,scene_set:{format:'zodiac-scene-set@1',presentation_role:'supporting_backdrop',id,asset:variant.asset_id,entity_id:entityId,asset_sha256:variant.compiled_sha256,source_asset_sha256:variant.source_sha256,background_palette_id:variant.palette_id,view_box:master.view_box,transform:master.transform,wall_region:wall},roles:{rear:[entityId],grounding:[],front:[]},scene_accents:[]};
 
   for(const request of env.scene_accents??[]){
    const accent=accents.accents.find(a=>a.id===request.id);if(!accent)fail('ACCENT_UNKNOWN '+request.id);

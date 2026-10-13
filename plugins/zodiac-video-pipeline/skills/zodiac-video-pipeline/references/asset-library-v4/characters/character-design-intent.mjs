@@ -19,7 +19,7 @@ export function validateCharacterDesignIntent(production,plan,{requireV2=false}=
   }
   if(design.selection_basis!=='story_first')fail('CHARACTER_INTENT_STORY_FIRST_REQUIRED',id);
   if(!['lead','support'].includes(design.role)||!meaningful(design.identity_tension)||!meaningful(design.audience_read))fail('CHARACTER_INTENT_ROLE_MISSING',id);
-  for(const field of ['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id']){
+  for(const field of ['body_profile','hair_id','shirt_color_id']){
    if(!meaningful(design.decision_reasons?.[field]))fail('CHARACTER_INTENT_CHOICE_REASON_MISSING',`${id}/${field}`);
   }
   if(design.role==='lead'&&!spec.shirt_color_id)fail('CHARACTER_INTENT_SHIRT_CHOICE_REQUIRED',id);

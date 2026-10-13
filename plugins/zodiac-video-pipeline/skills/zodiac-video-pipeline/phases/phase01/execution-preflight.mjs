@@ -18,7 +18,7 @@ if(phase==='02-visual-production')required.push(
  'references/asset-library-v4/characters/compile-character-assembly.mjs',
  'references/asset-library-v4/characters/components/catalog.json',
  'references/asset-library-v4/environments/compile-environment.mjs',
- 'references/asset-library-v4/environments/composition-index.json',
+ 'references/asset-library-v4/scene-set/index.json',
  'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',
  'references/asset-library-v4/validation/validate-character-assembly.mjs',
  'features/visual-composition/validate-visual-quality.mjs'

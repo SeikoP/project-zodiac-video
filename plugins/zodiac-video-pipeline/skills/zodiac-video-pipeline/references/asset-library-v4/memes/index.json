@@ -83,7 +83,8 @@
         ],
         "layer": 72,
         "locus": "between giver hand and offered prop"
-      }
+      },
+      "effects": []
     },
     {
       "id": "cry-closeup",
@@ -133,7 +134,8 @@
         ],
         "layer": 72,
         "locus": "eyes down across both cheeks"
-      }
+      },
+      "effects": []
     },
     {
       "id": "cry-hug-object",
@@ -195,7 +197,8 @@
         ],
         "layer": 72,
         "locus": "eyes toward cheeks while arms squeeze prop"
-      }
+      },
+      "effects": []
     },
     {
       "id": "equip-this",
@@ -349,7 +352,8 @@
           "output_path": "assets/props/offered-pants.svg",
           "category": "prop"
         }
-      ]
+      ],
+      "effects": []
     },
     {
       "id": "facepalm-closeup",
@@ -399,7 +403,8 @@
         ],
         "layer": 72,
         "locus": "hand meeting forehead"
-      }
+      },
+      "effects": []
     },
     {
       "id": "heart-offer-overkill",
@@ -460,7 +465,8 @@
         ],
         "layer": 72,
         "locus": "around the heart"
-      }
+      },
+      "effects": []
     },
     {
       "id": "mirror-self-check",
@@ -521,7 +527,8 @@
         ],
         "layer": 72,
         "locus": "reflection upper edge"
-      }
+      },
+      "effects": []
     },
     {
       "id": "prop-pressure",
@@ -597,7 +604,8 @@
         ],
         "layer": 72,
         "locus": "fan from prop into target space"
-      }
+      },
+      "effects": []
     },
     {
       "id": "receipt-in-face",
@@ -673,7 +681,8 @@
         ],
         "layer": 72,
         "locus": "receipt toward target space"
-      }
+      },
+      "effects": []
     },
     {
       "id": "side-eye-object",
@@ -734,7 +743,8 @@
         ],
         "layer": 72,
         "locus": "gaze endpoint near prop"
-      }
+      },
+      "effects": []
     },
     {
       "id": "wallet-flex",
@@ -795,7 +805,8 @@
         ],
         "layer": 72,
         "locus": "wallet upper edge"
-      }
+      },
+      "effects": []
     }
   ]
 }

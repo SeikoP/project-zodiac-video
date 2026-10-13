@@ -33,12 +33,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-home.svg",
-      "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "wall-shelf",
         "wall-clock",
         "home-lamp"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     },
     {
       "id": "scene-set-cafe",
@@ -72,12 +73,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-cafe.svg",
-      "semantic_intent": "Continuous authored frame, wall and floor; performers may overlap frame.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "cafe-counter-line",
         "sign-menu",
         "cafe-window"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     },
     {
       "id": "scene-set-classroom",
@@ -111,12 +113,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-classroom.svg",
-      "semantic_intent": "Classroom-neutral continuous wall/floor/frame stage; context remains optional accents.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "board-plane",
         "wall-clock",
         "class-window"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     },
     {
       "id": "scene-set-study",
@@ -150,12 +153,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-study.svg",
-      "semantic_intent": "Study/work continuous wall/floor/frame stage; no automatic desk or furniture.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "wall-shelf",
         "board-plane",
         "study-note"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     },
     {
       "id": "scene-set-street",
@@ -189,12 +193,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-street.svg",
-      "semantic_intent": "Outdoor/street-toned continuous wall/floor/frame stage without structural scenery.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "sign-menu",
         "street-tree",
         "open-horizon"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     },
     {
       "id": "scene-set-neutral",
@@ -228,12 +233,13 @@
       },
       "accent_policy": "inside_wall_only",
       "output_path": "assets/environment/scene-set-neutral.svg",
-      "semantic_intent": "Minimal neutral continuous wall/floor/frame stage for object- or cast-led scenes.",
+      "semantic_intent": "Supporting rear pictorial backdrop for depth; no actor containment, coordinates or physical support authority.",
       "identity_cues": [
         "neutral-dot",
         "neutral-line",
         "quiet-negative-space"
-      ]
+      ],
+      "presentation_role": "supporting_backdrop"
     }
   ]
 }

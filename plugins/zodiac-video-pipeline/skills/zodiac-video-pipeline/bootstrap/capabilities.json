@@ -112,30 +112,6 @@
         }
       ],
       "owner": "features/narration-performance/compile-narration-performance.mjs"
-    },
-    {
-      "id": "legacy_environment",
-      "fresh": false,
-      "refs": [
-        "references/asset-library-v4/compatibility/environment-profiles/index.json",
-        "references/depth-background-system.md"
-      ],
-      "validators": [
-        "depth-composition"
-      ],
-      "bindings": [
-        {
-          "phase": "02-visual-production",
-          "steps": [
-            "visual_compile",
-            "assets"
-          ],
-          "environment_modes": [
-            "selected_cues",
-            "legacy"
-          ]
-        }
-      ]
     }
   ]
 }

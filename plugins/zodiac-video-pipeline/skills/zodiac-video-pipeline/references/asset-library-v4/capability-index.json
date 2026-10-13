@@ -102,52 +102,7 @@
       "contact": false
     }
   },
-  "effects": {
-    "surprise": {
-      "effect_id": "sparkle-burst",
-      "lifecycle": "bounded_enter_release"
-    },
-    "pressure": {
-      "effect_id": "contact-fan-pressure",
-      "lifecycle": "bounded_enter_release"
-    },
-    "confusion": {
-      "effect_id": "question-pop",
-      "lifecycle": "bounded_enter_release"
-    },
-    "embarrassment": {
-      "effect_id": "blush-marks",
-      "lifecycle": "bounded_enter_release"
-    },
-    "tension": {
-      "effect_id": "stress-ticks",
-      "lifecycle": "bounded_enter_release"
-    },
-    "emphasis": {
-      "effect_id": "offer-impact",
-      "lifecycle": "bounded_enter_release"
-    },
-    "motion": {
-      "effect_id": "motion-dash",
-      "lifecycle": "bounded_enter_release"
-    },
-    "focus-halo": {
-      "effect_id": "focus-halo-mark",
-      "lifecycle": "bounded_enter_release"
-    },
-    "comparison-bracket": {
-      "effect_id": "comparison-bracket-mark",
-      "lifecycle": "bounded_enter_release"
-    },
-    "relief-wave": {
-      "effect_id": "relief-wave-mark",
-      "lifecycle": "bounded_enter_release"
-    },
-    "alarm-zigzag": {
-      "effect_id": "alarm-zigzag-mark",
-      "lifecycle": "bounded_enter_release"
-    }
-  },
+  "effects": {},
   "visual_metaphors": {
     "balance-scale": {
       "index_id": "balance-scale",

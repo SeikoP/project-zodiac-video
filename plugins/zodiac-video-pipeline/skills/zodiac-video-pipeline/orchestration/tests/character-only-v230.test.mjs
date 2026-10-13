@@ -14,5 +14,5 @@ test('release versions match',()=>{
   assert.equal(a.version,b.version);assert.equal(a.version,s.plugin_version);
 });
 test('character-only guidance is registered',()=>{
-  assert.match(read('skills/zodiac-video-pipeline/SKILL.md'),/character-viral-performance.md/);
+  assert.match(read('skills/zodiac-video-pipeline/orchestration/phases/01-content.json'),/character-viral-performance.md/);
 });

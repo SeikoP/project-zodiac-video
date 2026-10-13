@@ -6,6 +6,6 @@ Use [contract/authoring.md](contract/authoring.md) for authoring and `compile-sc
 
 Optional `scene_accents[]` come from [accents/index.json](accents/index.json). Keep every visible accent inside the selected wall region. An empty selection adds no room cues; deselection removes compiler-owned accents. Windows, sofas and tables are never defaults for this path. Old profiles resolve only through explicit selected-cue or legacy compatibility.
 
-Shot-layouts describe composition, actions describe behavior, physical props are handled objects, and Story Objects carry symbolic progression. See [the canonical Story Object contract](../../story-object-contract.md). Characters may overlap the frame; scene-set geometry uses its dedicated bounds policy instead of ordinary caption occupancy.
+Shot-layouts describe composition, actions describe behavior, physical props are handled objects, and Story Objects carry symbolic progression. See [the canonical Story Object contract](../../story-object-contract.md). Foreground character composition is independent of the supporting rear artwork; scene-set geometry uses its dedicated bounds policy instead of ordinary caption occupancy.
 
 Reusing the same scene-set is valid continuity. Review actor blocking, state and story progression rather than requiring a new background. Preview receipts bind current intent, projection, production and SVG hashes. Structural validation never grants creative approval or runtime media QA.

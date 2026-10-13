@@ -33,448 +33,6 @@
     },
     {
       "ids": [
-        "bedroom-study-base"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "classroom-study"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "school-hallway"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "living-room-home"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "kitchen-home"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "front-door-entry"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "cafe-chat"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "outdoor-street-soft"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "library-study"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "school-yard"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "bedroom-window-curtain"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "bedroom-headboard-bed-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "bedroom-desk-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "bedroom-pillow-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "bedroom-blanket-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "classroom-whiteboard"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "classroom-window"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "classroom-desk-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "hallway-lockers"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "hallway-floor-edge"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "living-sofa"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "living-window"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "kitchen-counter"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "kitchen-cabinet"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "entry-door"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "entry-mat"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "cafe-window"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "cafe-table"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "street-tree"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "street-curb"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "library-shelf"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "library-table"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "schoolyard-fence"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
-        "schoolyard-ground"
-      ],
-      "kind": "environment",
-      "refs": [
-        "references/asset-library-v4/environments/composition-index.json"
-      ],
-      "availability": [
-        "selected_cues",
-        "legacy"
-      ]
-    },
-    {
-      "ids": [
         "standard_compact",
         "round_soft",
         "lean_tall",
@@ -482,32 +40,9 @@
         "petite_compact",
         "lanky_slouch",
         "asym-bang",
-        "lopsided-bob",
         "spiky-overthink",
         "antenna-short",
         "blocky-cut",
-        "soft-wave",
-        "side-part",
-        "clean-bun",
-        "high-ponytail",
-        "twin-tail",
-        "aries-basic-clean",
-        "taurus-basic-clean",
-        "gemini-basic-clean",
-        "cancer-basic-clean",
-        "leo-basic-clean",
-        "virgo-basic-clean",
-        "libra-basic-clean",
-        "scorpio-basic-clean",
-        "sagittarius-basic-clean",
-        "capricorn-basic-clean",
-        "aquarius-basic-clean",
-        "pisces-basic-clean",
-        "generic-cosmic-light",
-        "generic-soft-stripes",
-        "generic-doodle-dots",
-        "generic-wave-stitch",
-        "generic-check-spark",
         "neutral",
         "deadpan",
         "panic",
@@ -540,29 +75,17 @@
         "coral",
         "ochre",
         "slate",
-        "balanced",
-        "wide-set",
-        "close-set",
-        "freckled",
-        "round-glasses",
-        "star-hair-clip",
         "curtain-bang",
         "short-curl",
         "low-ponytail",
         "soft-mohawk",
-        "brow-marked",
-        "beauty-mark",
-        "rosy-cheeks",
-        "small-hoop",
-        "headband",
-        "neck-scarf",
-        "square-glasses",
         "rest_sitting",
         "rest_lying",
         "point-choice",
         "receive-object",
         "hold-two-props",
-        "open-barrier"
+        "open-barrier",
+        "plain-shirt"
       ],
       "kind": "character",
       "refs": [
@@ -600,22 +123,6 @@
       ]
     },
     {
-      "ids": [
-        "stress-ticks",
-        "motion-dash",
-        "blush-marks",
-        "question-pop",
-        "tiny-sparkle",
-        "sparkle-burst",
-        "tear-trails",
-        "offer-impact"
-      ],
-      "kind": "effect",
-      "refs": [
-        "references/asset-library-v4/effects/ornament-index.json"
-      ]
-    },
-    {
       "kind": "scene_set",
       "ids": [
         "scene-set-home",
@@ -630,9 +137,7 @@
       ],
       "availability": [
         "scene_set",
-        "archive_frame",
-        "selected_cues",
-        "legacy"
+        "archive_frame"
       ]
     },
     {
@@ -656,9 +161,7 @@
       ],
       "availability": [
         "scene_set",
-        "archive_frame",
-        "selected_cues",
-        "legacy"
+        "archive_frame"
       ]
     },
     {
@@ -674,209 +177,7 @@
       "refs": [
         "references/asset-library-v4/visual-metaphors/index.json"
       ]
-    },
-    {
-      "ids": [
-        "focus-halo",
-        "comparison-bracket",
-        "relief-wave",
-        "alarm-zigzag"
-      ],
-      "kind": "effect",
-      "refs": [
-        "references/asset-library-v4/effects/meme-effect-catalog.json",
-        "references/asset-library-v4/effects/semantic-families.json"
-      ]
     }
-  ],
-  "compatibility_ids": [
-    "absurd-offer",
-    "cry-closeup",
-    "cry-hug-object",
-    "equip-this",
-    "facepalm-closeup",
-    "heart-offer-overkill",
-    "mirror-self-check",
-    "prop-pressure",
-    "receipt-in-face",
-    "side-eye-object",
-    "wallet-flex",
-    "bedroom-study-base",
-    "classroom-study",
-    "school-hallway",
-    "living-room-home",
-    "kitchen-home",
-    "front-door-entry",
-    "cafe-chat",
-    "outdoor-street-soft",
-    "library-study",
-    "school-yard",
-    "bedroom-window-curtain",
-    "bedroom-headboard-bed-edge",
-    "bedroom-desk-edge",
-    "bedroom-pillow-edge",
-    "bedroom-blanket-edge",
-    "classroom-whiteboard",
-    "classroom-window",
-    "classroom-desk-edge",
-    "hallway-lockers",
-    "hallway-floor-edge",
-    "living-sofa",
-    "living-window",
-    "kitchen-counter",
-    "kitchen-cabinet",
-    "entry-door",
-    "entry-mat",
-    "cafe-window",
-    "cafe-table",
-    "street-tree",
-    "street-curb",
-    "library-shelf",
-    "library-table",
-    "schoolyard-fence",
-    "schoolyard-ground",
-    "standard_compact",
-    "round_soft",
-    "lean_tall",
-    "stocky_short",
-    "petite_compact",
-    "lanky_slouch",
-    "asym-bang",
-    "lopsided-bob",
-    "spiky-overthink",
-    "antenna-short",
-    "blocky-cut",
-    "soft-wave",
-    "side-part",
-    "clean-bun",
-    "high-ponytail",
-    "twin-tail",
-    "aries-basic-clean",
-    "taurus-basic-clean",
-    "gemini-basic-clean",
-    "cancer-basic-clean",
-    "leo-basic-clean",
-    "virgo-basic-clean",
-    "libra-basic-clean",
-    "scorpio-basic-clean",
-    "sagittarius-basic-clean",
-    "capricorn-basic-clean",
-    "aquarius-basic-clean",
-    "pisces-basic-clean",
-    "generic-cosmic-light",
-    "generic-soft-stripes",
-    "generic-doodle-dots",
-    "generic-wave-stitch",
-    "generic-check-spark",
-    "neutral",
-    "deadpan",
-    "panic",
-    "smug",
-    "side-eye",
-    "relieved",
-    "cry",
-    "exasperated",
-    "embarrassed",
-    "explain",
-    "reach",
-    "offer",
-    "confront",
-    "run",
-    "scratch-head",
-    "raise-evidence",
-    "facepalm",
-    "cry-hug",
-    "offer-pants",
-    "receive-pants",
-    "recoil",
-    "inspect-prop",
-    "flex-prop",
-    "write",
-    "read",
-    "carry-backpack",
-    "text-phone",
-    "face-closeup",
-    "teal",
-    "coral",
-    "ochre",
-    "slate",
-    "balanced",
-    "wide-set",
-    "close-set",
-    "freckled",
-    "round-glasses",
-    "star-hair-clip",
-    "stress-ticks",
-    "motion-dash",
-    "blush-marks",
-    "question-pop",
-    "tiny-sparkle",
-    "sparkle-burst",
-    "tear-trails",
-    "offer-impact",
-    "scene-set-home",
-    "scene-set-cafe",
-    "scene-accent-cafe",
-    "balance-scale",
-    "split-direction",
-    "push-pull",
-    "focus-shift-metaphor",
-    "barrier-opening",
-    "comparison-level",
-    "focus-halo",
-    "comparison-bracket",
-    "relief-wave",
-    "alarm-zigzag",
-    "curtain-bang",
-    "short-curl",
-    "low-ponytail",
-    "soft-mohawk",
-    "brow-marked",
-    "beauty-mark",
-    "rosy-cheeks",
-    "small-hoop",
-    "headband",
-    "neck-scarf",
-    "square-glasses",
-    "rest_sitting",
-    "rest_lying",
-    "point-choice",
-    "receive-object",
-    "hold-two-props",
-    "open-barrier",
-    "phone",
-    "offered-pants",
-    "notebook",
-    "book",
-    "water-bottle",
-    "tissue-box",
-    "headset",
-    "mirror",
-    "backpack",
-    "pen",
-    "phone-busy",
-    "phone-ping",
-    "phone-quiet",
-    "phone-silent",
-    "coffee-cup",
-    "keycard",
-    "gift-box",
-    "umbrella",
-    "sticky-note",
-    "wallet",
-    "photo-card",
-    "small-bag",
-    "scene-accent-board",
-    "scene-accent-shelf",
-    "scene-accent-clock",
-    "scene-accent-sign",
-    "scene-accent-home-lamp",
-    "scene-accent-cafe-window",
-    "scene-accent-class-window",
-    "scene-accent-study-note",
-    "scene-accent-street-tree",
-    "scene-accent-neutral-dot",
-    "scene-accent-neutral-line"
   ],
   "fresh_defaults": {
     "environment_mode": "scene_set",
@@ -892,21 +193,114 @@
       "low-ponytail",
       "soft-mohawk"
     ],
-    "compatibility_hair_ids": [
-      "soft-wave",
-      "side-part",
-      "clean-bun",
-      "high-ponytail",
-      "twin-tail"
-    ],
     "state_budget": "authored_actions",
-    "physical_deletion": "none; dependency-safe compatibility retained",
+    "physical_deletion": "historical source excluded; recovery requires the separately pinned snapshot",
     "automatic_environment_cues": false,
     "scene_set_required_when_authored": true
   },
-  "retired_fresh_asset_ids": [
+  "retired_asset_ids": [
+    "alarm-zigzag",
+    "alarm-zigzag-mark",
+    "aquarius-basic-clean",
+    "aries-basic-clean",
+    "balanced",
+    "beauty-mark",
+    "bedroom-blanket-edge",
+    "bedroom-desk-edge",
+    "bedroom-headboard-bed-edge",
+    "bedroom-pillow-edge",
+    "bedroom-study-base",
     "bedroom-window-curtain",
+    "blush-marks",
+    "brow-marked",
+    "cafe-chat",
+    "cafe-table",
     "cafe-window",
-    "env__cafe-window"
+    "cancer-basic-clean",
+    "capricorn-basic-clean",
+    "classroom-desk-edge",
+    "classroom-study",
+    "classroom-whiteboard",
+    "classroom-window",
+    "clean-bun",
+    "close-set",
+    "comparison-bracket",
+    "comparison-bracket-mark",
+    "contact-fan-pressure",
+    "contact-fan-receipt",
+    "entry-door",
+    "entry-mat",
+    "env__cafe-window",
+    "facepalm-impact",
+    "focus-halo",
+    "focus-halo-mark",
+    "freckled",
+    "front-door-entry",
+    "gemini-basic-clean",
+    "generic-check-spark",
+    "generic-cosmic-light",
+    "generic-doodle-dots",
+    "generic-soft-stripes",
+    "generic-wave-stitch",
+    "hallway-floor-edge",
+    "hallway-lockers",
+    "headband",
+    "high-ponytail",
+    "kitchen-cabinet",
+    "kitchen-counter",
+    "kitchen-home",
+    "leo-basic-clean",
+    "libra-basic-clean",
+    "library-shelf",
+    "library-study",
+    "library-table",
+    "living-room-home",
+    "living-sofa",
+    "living-window",
+    "lopsided-bob",
+    "mirror-glint",
+    "motion-dash",
+    "neck-scarf",
+    "offer-impact",
+    "offer-swish",
+    "outdoor-street-soft",
+    "pisces-basic-clean",
+    "question-accent",
+    "question-pop",
+    "relief-wave",
+    "relief-wave-mark",
+    "rosy-cheeks",
+    "round-glasses",
+    "sagittarius-basic-clean",
+    "school-hallway",
+    "school-yard",
+    "schoolyard-fence",
+    "schoolyard-ground",
+    "scorpio-basic-clean",
+    "side-part",
+    "small-hoop",
+    "soft-wave",
+    "sparkle-burst",
+    "square-glasses",
+    "star-hair-clip",
+    "street-curb",
+    "street-tree",
+    "stress-ticks",
+    "taurus-basic-clean",
+    "tear-squeeze",
+    "tear-trails",
+    "tiny-sparkle",
+    "twin-tail",
+    "virgo-basic-clean",
+    "wallet-shine",
+    "wide-set"
+  ],
+  "retired_hair_ids": [
+    "lopsided-bob",
+    "soft-wave",
+    "side-part",
+    "clean-bun",
+    "high-ponytail",
+    "twin-tail"
   ]
 }

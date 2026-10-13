@@ -106,14 +106,14 @@ test('identical metaphor visual change repeated as a decorative claim blocks',()
 
 test('new Phase-02 source template keeps Visual Metaphor opt-in for fresh content',async()=>{
  const template=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url),'utf8'));
- assert.equal('story_object_required' in template.flags,false);
- assert.equal(template.flags.visual_metaphor_selected,false);
+ assert.equal(template.flags.story_object_required??false,false);
+ assert.equal(template.flags.visual_metaphor_selected??false,false);
 });
 test('new fresh run blocks absent story object plan by release policy',async()=>{
  const tmp=await mkdtemp(path.join(os.tmpdir(),'zodiac-object-fresh-'));
  try{
   await mkdir(path.join(tmp,'.authoring'));
-  await writeFile(path.join(tmp,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.4.4',run_mode:'fresh',flags:{}}));
+  await writeFile(path.join(tmp,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.4.4',run_mode:'fresh',flags:{story_object_required:true}}));
   await assert.rejects(()=>validateStoryObjectWorkspace(tmp),/STORY_OBJECT_PLAN_MISSING/);
  }finally{await rm(tmp,{recursive:true,force:true});}
 });

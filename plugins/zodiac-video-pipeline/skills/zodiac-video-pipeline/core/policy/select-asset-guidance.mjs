@@ -17,13 +17,16 @@ function resolveAssetNeed(needId,{capabilityIndex,coverageMatrix}){
  throw new Error('ASSET_CAPABILITY_TARGET_UNKNOWN '+needId+' '+capabilityId);
 }
 
-export function selectAssetGuidance({selected_asset_ids=[],asset_needs=[],meme_selected=false,environment_mode='archive_frame'},policy,catalogs={}){
- if(!['scene_set','archive_frame','selected_cues','legacy'].includes(environment_mode))throw new Error('ASSET_ENVIRONMENT_MODE_INVALID');
+export function selectAssetGuidance({selected_asset_ids=[],asset_needs=[],meme_selected=false,environment_mode='scene_set'},policy,catalogs={}){
+ if(['selected_cues','legacy'].includes(environment_mode))throw new Error('RECOVERY_SNAPSHOT_REQUIRED');
+ if(!['scene_set','archive_frame'].includes(environment_mode))throw new Error('ASSET_ENVIRONMENT_MODE_INVALID');
  if(asset_needs.length&&(!catalogs.capabilityIndex||!catalogs.coverageMatrix))throw new Error('ASSET_CAPABILITY_CATALOG_MISSING');
  const resolvedCapabilities=asset_needs.map(need=>resolveAssetNeed(need,catalogs));
  const derivedAssetIds=resolvedCapabilities.filter(row=>['scene_set','visual_metaphor'].includes(row.kind)).map(row=>row.capability_id);
  const effectiveAssetIds=[...new Set([...selected_asset_ids,...derivedAssetIds])];
- const extensions=policy.extensions??[],known=new Set([...(policy.core_ids??[]),...(policy.compatibility_ids??[]),...extensions.flatMap(x=>x.ids)]);
+ const retired=new Set(policy.retired_asset_ids??[]);
+ for(const id of effectiveAssetIds)if(retired.has(id))throw new Error('ASSET_RETIRED '+id);
+ const extensions=policy.extensions??[],known=new Set([...(policy.core_ids??[]),...extensions.flatMap(x=>x.ids)]);
  const selected=new Set(effectiveAssetIds);
  const allowed=ext=>{
   if(ext.kind==='meme'&&!meme_selected)return false;

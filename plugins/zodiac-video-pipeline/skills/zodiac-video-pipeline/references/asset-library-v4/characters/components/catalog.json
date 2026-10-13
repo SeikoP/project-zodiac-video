@@ -1,6 +1,6 @@
 {
   "format": "zodiac-character-components@1",
-  "version": "4.4",
+  "version": "4.6",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -30,32 +30,32 @@
   "body_profiles": [
     {
       "id": "standard_compact",
-      "source_master": "female-messy-bun",
+      "source_master": "body:standard_compact",
       "silhouette_family": "standard_chibi"
     },
     {
       "id": "round_soft",
-      "source_master": "chubby-round",
+      "source_master": "body:round_soft",
       "silhouette_family": "round_body"
     },
     {
       "id": "lean_tall",
-      "source_master": "lean-tall",
+      "source_master": "body:lean_tall",
       "silhouette_family": "tall_narrow"
     },
     {
       "id": "stocky_short",
-      "source_master": "stocky-short",
+      "source_master": "body:stocky_short",
       "silhouette_family": "short_broad"
     },
     {
       "id": "petite_compact",
-      "source_master": "petite-compact",
+      "source_master": "body:petite_compact",
       "silhouette_family": "small_compact"
     },
     {
       "id": "lanky_slouch",
-      "source_master": "lanky-slouch",
+      "source_master": "body:lanky_slouch",
       "silhouette_family": "slouched_narrow"
     }
   ],
@@ -65,12 +65,6 @@
       "source_master": "asym-bang",
       "selection_tier": "preferred_meme",
       "style_intent": "simple uneven silhouette; review on the selected face"
-    },
-    {
-      "id": "lopsided-bob",
-      "source_master": "lopsided-bob",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "spiky-overthink",
@@ -89,36 +83,6 @@
       "source_master": "blocky-cut",
       "selection_tier": "preferred_meme",
       "style_intent": "simple uneven silhouette; review on the selected face"
-    },
-    {
-      "id": "soft-wave",
-      "source_master": "soft-wave",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "side-part",
-      "source_master": "side-part",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "clean-bun",
-      "source_master": "female-messy-bun",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "high-ponytail",
-      "source_master": "female-high-ponytail",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
-    },
-    {
-      "id": "twin-tail",
-      "source_master": "female-twin-tail",
-      "selection_tier": "compatibility_opt_in",
-      "style_intent": "preserve old identity; explicit selection only"
     },
     {
       "id": "curtain-bang",
@@ -147,72 +111,9 @@
   ],
   "outfits": [
     {
-      "id": "aries-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "taurus-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "gemini-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "cancer-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "leo-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "virgo-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "libra-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "scorpio-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "sagittarius-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "capricorn-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "aquarius-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "pisces-basic-clean",
-      "kind": "zodiac"
-    },
-    {
-      "id": "generic-cosmic-light",
-      "kind": "generic"
-    },
-    {
-      "id": "generic-soft-stripes",
-      "kind": "generic"
-    },
-    {
-      "id": "generic-doodle-dots",
-      "kind": "generic"
-    },
-    {
-      "id": "generic-wave-stitch",
-      "kind": "generic"
-    },
-    {
-      "id": "generic-check-spark",
-      "kind": "generic"
+      "id": "plain-shirt",
+      "kind": "plain",
+      "decoration": false
     }
   ],
   "expressions": [
@@ -364,80 +265,7 @@
       "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "none"
-    },
-    {
-      "id": "wide-set",
-      "eye_scale_x": 1.08,
-      "eye_scale_y": 1,
-      "eye_offset_x": 0,
-      "mark_style": "none"
-    },
-    {
-      "id": "close-set",
-      "eye_scale_x": 0.94,
-      "eye_scale_y": 1,
-      "eye_offset_x": -5,
-      "mark_style": "none"
-    },
-    {
-      "id": "freckled",
-      "eye_scale_x": 1,
-      "eye_scale_y": 1,
-      "eye_offset_x": 0,
-      "mark_style": "freckles"
-    },
-    {
-      "id": "brow-marked",
-      "eye_scale_x": 1,
-      "eye_scale_y": 1,
-      "eye_offset_x": 0,
-      "mark_style": "brow_mark"
-    },
-    {
-      "id": "beauty-mark",
-      "eye_scale_x": 1,
-      "eye_scale_y": 1,
-      "eye_offset_x": 0,
-      "mark_style": "beauty_mark"
-    },
-    {
-      "id": "rosy-cheeks",
-      "eye_scale_x": 1,
-      "eye_scale_y": 1,
-      "eye_offset_x": 0,
-      "mark_style": "rosy_cheeks"
     }
   ],
-  "accessories": [
-    {
-      "id": "round-glasses",
-      "path": "accessories/round-glasses.svg",
-      "slot": "face"
-    },
-    {
-      "id": "star-hair-clip",
-      "path": "accessories/star-hair-clip.svg",
-      "slot": "hair"
-    },
-    {
-      "id": "small-hoop",
-      "path": "accessories/small-hoop.svg",
-      "slot": "ear"
-    },
-    {
-      "id": "headband",
-      "path": "accessories/headband.svg",
-      "slot": "hair"
-    },
-    {
-      "id": "neck-scarf",
-      "path": "accessories/neck-scarf.svg",
-      "slot": "neck"
-    },
-    {
-      "id": "square-glasses",
-      "path": "accessories/square-glasses.svg",
-      "slot": "face"
-    }
-  ]
+  "accessories": []
 }
