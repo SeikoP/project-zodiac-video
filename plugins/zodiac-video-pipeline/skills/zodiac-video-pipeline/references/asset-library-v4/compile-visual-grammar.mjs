@@ -99,7 +99,7 @@ export function compileVisualGrammar(production,plan){
       if(!entityId)continue;
       const entity=entities.get(entityId);
       if(!entity)fail(`${spec.scene_id}/${slotId} binding references unknown entity ${entityId}`);
-      if(slot.kind&&entity.kind!==slot.kind)fail(`${spec.scene_id}/${slotId} expects ${slot.kind}, got ${entity.kind}`);
+      if(slot.kind&&entity.kind!==slot.kind&&!(slot.kind==='object'&&entity.kind==='narrative_visual'))fail(`${spec.scene_id}/${slotId} expects ${slot.kind}, got ${entity.kind}`);
     }
     const suppliedCaps=new Set();
     for(const [slotId,entityId] of Object.entries(bindings)){
@@ -126,7 +126,8 @@ export function compileVisualGrammar(production,plan){
         if(spec.environment.scene_accents!==undefined&&!Array.isArray(spec.environment.scene_accents))fail(`${spec.scene_id} scene_accents must be an array`);
         scene.environment={...scene.environment,mode:'scene_set',scene_set_id:set.id,background_palette_id:spec.environment.background_palette_id??'warm-paper',scene_accents:clone(spec.environment.scene_accents??[])};
       }else if(!hasPrimarySceneSet(scene,out)){
-        fail(`${spec.scene_id} RECOVERY_SNAPSHOT_REQUIRED`);
+        // Fresh canvas-first composition: no scene set or wall is required.
+        scene.environment={...scene.environment,mode:'canvas',background_palette_id:spec.environment.background_palette_id??'warm-paper'};
       }
     }
   }

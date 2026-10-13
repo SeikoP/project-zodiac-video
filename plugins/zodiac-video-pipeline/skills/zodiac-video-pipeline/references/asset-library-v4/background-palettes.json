@@ -1,0 +1,22 @@
+{
+  "format": "zodiac-background-palette-registry@1",
+  "default_palette_id": "warm-paper",
+  "source_roles": {
+    "wall": "#FFFDF9",
+    "floor": "#F6F0E6",
+    "ink": "#2F3C44",
+    "soft_detail": "#D0C1B3",
+    "slate_detail": "#435064",
+    "teal": "#8EC0B9",
+    "coral": "#E97A66",
+    "ochre": "#F2C45C"
+  },
+  "palettes": {
+    "warm-paper": {"mood":"canonical warm paper","roles":{"wall":"#FFFDF9","floor":"#F6F0E6","ink":"#2F3C44","soft_detail":"#D0C1B3","slate_detail":"#435064","teal":"#8EC0B9","coral":"#E97A66","ochre":"#F2C45C"}},
+    "mint-air": {"mood":"fresh mint with warm accents","roles":{"wall":"#F3FBF7","floor":"#E3F1E9","ink":"#2F3C44","soft_detail":"#C5D8CF","slate_detail":"#49606A","teal":"#78B9AD","coral":"#E98979","ochre":"#E8C968"}},
+    "blush-paper": {"mood":"soft blush with teal counter-accent","roles":{"wall":"#FFF5F3","floor":"#F7E7E4","ink":"#2F3C44","soft_detail":"#DFC9C5","slate_detail":"#5A555D","teal":"#83B5B1","coral":"#E78378","ochre":"#E8C36B"}},
+    "cool-study": {"mood":"cool blue-grey study paper","roles":{"wall":"#F5F8FC","floor":"#E6ECF3","ink":"#2F3C44","soft_detail":"#C7D1DD","slate_detail":"#4B5D72","teal":"#7FB5B8","coral":"#DD8176","ochre":"#DEC46A"}},
+    "sand-coral": {"mood":"warm sand with coral emphasis","roles":{"wall":"#FFF9EE","floor":"#F0E2C9","ink":"#2F3C44","soft_detail":"#D7C5AA","slate_detail":"#5A5550","teal":"#7FAEA7","coral":"#DF7B69","ochre":"#E0B956"}},
+    "neutral-graphite": {"mood":"low-chroma graphite paper","roles":{"wall":"#F7F6F2","floor":"#E8E6E0","ink":"#30383D","soft_detail":"#CCC9C1","slate_detail":"#50585C","teal":"#8AA8A3","coral":"#C98279","ochre":"#C9B06A"}}
+  }
+}

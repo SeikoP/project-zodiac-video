@@ -182,34 +182,10 @@
           "stage": "entry"
         },
         {
-          "id": "scene_set_contract",
-          "kind": "internal_reference",
-          "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/README.md",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
-          "id": "scene_set_authoring_contract",
-          "kind": "internal_reference",
-          "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/contract/authoring.md",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
-          "id": "scene_set_registry",
-          "kind": "internal_reference",
-          "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/index.json",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
           "id": "background_palette_registry",
           "kind": "internal_reference",
           "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/background-palettes.json",
+          "guidance_uri": "references/asset-library-v4/background-palettes.json",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -222,24 +198,23 @@
           "stage": "entry"
         },
         {
-          "id": "prop_symbol_validation",
-          "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/visual-composition/validate-prop-symbol.mjs",
-          "guidance_uri": "references/prop-symbol-contract.md",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        }
-      ],
-      "conditional_capabilities": [
-        {
-          "id": "visual_metaphor_contract",
+          "id": "narrative_visual_contract",
           "kind": "internal_reference",
-          "when": "flag:visual_metaphor_selected",
-          "guidance_uri": "references/visual-metaphor-contract.md",
+          "when": "fresh",
+          "guidance_uri": "references/narrative-visual-contract.md",
           "unavailable_policy": "block",
           "stage": "entry"
         },
+        {
+          "id": "scene_accent_canvas_contract",
+          "kind": "internal_reference",
+          "when": "fresh",
+          "guidance_uri": "references/scene-accent-contract.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        }
+      ],
+      "conditional_capabilities": [
         {
           "id": "interaction_contract",
           "kind": "internal_reference",
@@ -278,8 +253,7 @@
         "visual_grammar_contract",
         "character_assembly_contract",
         "episode_scope",
-        "selected_member_lenses",
-        "scene_set_contract"
+        "selected_member_lenses"
       ],
       "forbidden_context_categories": [
         "memory",
@@ -339,8 +313,7 @@
         "body_hair_outfit_binding",
         "pose_expression_state_binding",
         "director_beat_plan_complete",
-        "retired_asset_exclusion",
-        "prop_symbol_semantics"
+        "retired_asset_exclusion"
       ],
       "conditional_gate_checks": [
         {
@@ -350,18 +323,6 @@
         {
           "name": "art_direction_coverage",
           "when": "flag:art_direction_required"
-        },
-        {
-          "name": "scene_set_selection",
-          "when": "fresh"
-        },
-        {
-          "name": "scene_set_identity",
-          "when": "fresh"
-        },
-        {
-          "name": "scene_set_accent_containment",
-          "when": "fresh"
         },
         {
           "name": "background_palette_binding",
@@ -382,10 +343,7 @@
       "guidance_selection": {
         "references/asset-library-v4/recipes/state-recipes.json": "meme",
         "references/asset-library-v4/memes/templates/index.json": "meme",
-        "references/asset-library-v4/memes/index.json": "meme",
-        "references/asset-library-v4/scene-set/README.md": "scene_set",
-        "references/asset-library-v4/scene-set/contract/authoring.md": "scene_set",
-        "references/asset-library-v4/scene-set/index.json": "scene_set"
+        "references/asset-library-v4/memes/index.json": "meme"
       },
       "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable."
     },
@@ -602,38 +560,6 @@
           "stage": "exit"
         },
         {
-          "id": "scene_set_asset_contract",
-          "kind": "internal_reference",
-          "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/README.md",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
-          "id": "scene_set_validation",
-          "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/scene-set/validate-scene-set.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "scene_set_identity_validation",
-          "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/scene-set/validate-scene-set-identity.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "scene_set_accent_validation",
-          "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/scene-set/validate-scene-set-accents.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
           "id": "background_palette_validation",
           "kind": "internal_validator",
           "when": "fresh",
@@ -687,22 +613,6 @@
           "required_arg_suffixes": [
             "--write"
           ],
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "visual_metaphor_semantic_validation",
-          "kind": "internal_validator",
-          "when": "flag:visual_metaphor_selected",
-          "tool_locator": "features/visual-metaphor/validate-visual-metaphor.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "visual_metaphor_composition_validation",
-          "kind": "internal_validator",
-          "when": "flag:visual_metaphor_selected",
-          "tool_locator": "features/visual-metaphor/validate-visual-metaphor-composition.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }

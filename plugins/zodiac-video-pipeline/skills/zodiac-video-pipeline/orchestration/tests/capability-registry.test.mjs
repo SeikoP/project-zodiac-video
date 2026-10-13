@@ -15,7 +15,7 @@ test('capability registry resolves current capability metadata and rejects unkno
  const {resolveCapability}=await import(pathToFileURL(modulePath));
  const sceneSet=await resolveCapability('scene_set');
  assert.equal(sceneSet.id,'scene_set');
- assert.equal(sceneSet.fresh,true);
+ assert.equal(sceneSet.fresh,false);
  assert.ok(Array.isArray(sceneSet.validators));
  assert.throws(()=>resolveCapability('definitely-not-a-capability'),/CAPABILITY_UNKNOWN definitely-not-a-capability/u);
 });
@@ -35,10 +35,16 @@ test('step capability routing is registry-driven and keeps fresh context compati
  const modulePath=path.join(orchestration,'capability-registry.mjs');
  const {capabilitiesForStep}=await import(pathToFileURL(modulePath));
  const selected=capabilitiesForStep('02-visual-production','visual_compile',{
-  run_mode:'fresh',environment_mode:'scene_set',flags:{visual_metaphor_selected:true}
+  run_mode:'fresh',environment_mode:'canvas',flags:{visual_metaphor_selected:true}
  });
  const ids=selected.map(item=>item.id);
- assert.deepEqual(ids,['scene_set','character_assembly','visual_metaphor']);
- assert.equal(ids.includes('legacy_environment'),false);
- assert.ok(selected.flatMap(item=>item.refs??[]).includes('references/asset-library-v4/scene-set/index.json'));
+ assert.deepEqual(ids,['character_assembly']);
+ assert.equal(ids.includes('scene_set'),false);
+ assert.equal(ids.includes('visual_metaphor'),false);
+ assert.equal(selected.flatMap(item=>item.refs??[]).some(ref=>ref.includes('/scene-set/')||ref.includes('visual-metaphor-contract')),false);
+ const continuity=capabilitiesForStep('02-visual-production','visual_compile',{
+  run_mode:'continuity',environment_mode:'scene_set',flags:{visual_metaphor_selected:true}
+ });
+ assert.ok(continuity.some(item=>item.id==='scene_set'));
+ assert.ok(continuity.some(item=>item.id==='visual_metaphor'));
 });

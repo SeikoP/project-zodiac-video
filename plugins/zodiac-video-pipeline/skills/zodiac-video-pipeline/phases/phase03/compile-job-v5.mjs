@@ -16,6 +16,8 @@ const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const ascii=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,m=>m==='đ'?'d':'D').toLowerCase();
 const signSlug=value=>ascii(value).replace(/[^a-z0-9]+/g,'');
 const conceptSlug=value=>ascii(value).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-{2,}/g,'-');
+// Normalize only the transport projection; approved authored sources remain untouched.
+const transportVisualRole=value=>['narrative_visual','story_symbol','visual_metaphor'].includes(value)?'story_object':value;
 const canonical=value=>Array.isArray(value)?value.map(canonical):isObj(value)?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
 const contractHash=schema=>createHash('sha256').update(JSON.stringify(canonical(schema)),'utf8').digest('hex');
 
@@ -123,7 +125,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
     if(!isObj(scene)||typeof scene.id!=='string'||!scene.id||typeof scene.voice!=='string')fail(`scene ${index+1} id/voice invalid`);
     const entities=(scene.entities??[]).map(entity=>{
       if(!isObj(entity)||typeof entity.id!=='string'||!isObj(entity.states)||!Object.keys(entity.states).length)fail(`scene ${scene.id} invalid entity`);
-      return {id:entity.id,...Object.fromEntries(['kind','visual_role','role','layer'].filter(k=>k in entity).map(k=>[k,clone(entity[k])])),...(typeof entity.initial_state==='string'?{initial_state:entity.initial_state}:{}),states:clone(entity.states)};
+      return {id:entity.id,...Object.fromEntries(['kind','visual_role','role','layer'].filter(k=>k in entity).map(k=>[k,k==='visual_role'||k==='kind'||k==='role'?transportVisualRole(entity[k]):clone(entity[k])])),...(typeof entity.initial_state==='string'?{initial_state:entity.initial_state}:{}),states:clone(entity.states)};
     });
     const events=(scene.events??[]).map(event=>{
       const id=String(event?.id??'');if(!id)fail(`scene ${scene.id} has event without id`);
@@ -170,7 +172,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
     };
     return {id:scene.id,voice:scene.voice,duration_hint_frames:Number.isInteger(scene.duration_hint_frames)&&scene.duration_hint_frames>1?toRuntimeFrames(scene.duration_hint_frames):Math.max(24,Math.round(scene.voice.trim().split(/\s+/u).length*8)),entities,events,...sceneExtras};
   });
-  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:clone(source.assets),scenes};
+  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:Object.fromEntries(Object.entries(source.assets).map(([id,asset])=>[id,{...clone(asset),...(asset.category==='narrative_visual'||asset.category==='story_symbol'||asset.category==='visual_metaphor'?{category:'story_object'}:{})}])),scenes};
   assertJob5VisualRoleSizes(ir);const preflight=preflightHandoff(ir);if(preflight.status==='BLOCKED')fail('HANDOFF_PREFLIGHT '+JSON.stringify(preflight.issues));
   // Plugin owns branding/caption intent. Renderer only materializes the font.
   // Explicit contradictory brand configuration is not silently overwritten.

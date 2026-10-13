@@ -8,11 +8,13 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const orchestration=path.resolve(here,'..');
 const skill=path.resolve(orchestration,'..');
 
-test('fresh default Phase 2 context is scene-set first and does not auto-load extension catalogs',async()=>{
+test('fresh default Phase 2 context is canvas-first and does not auto-load Scene Set catalogs',async()=>{
   const {loadStepContext}=await import('../plan-step-context.mjs');
   const state=JSON.parse(await readFile(path.join(orchestration,'pipeline-state.template.json'),'utf8'));
   const result=await loadStepContext('02-visual-production','visual_compile',state.flags);
-  assert.ok(result.selected_capabilities.includes('scene_set'));
+  assert.equal(result.selected_capabilities.includes('scene_set'),false);
+  assert.ok(result.required_references.includes('references/scene-accent-contract.md'));
+  assert.ok(result.required_references.includes('references/narrative-visual-contract.md'));
   for(const forbidden of [
     'references/asset-library-v4/environments/composition-index.json',
     'references/asset-library-v4/environments/compositions/index.json',

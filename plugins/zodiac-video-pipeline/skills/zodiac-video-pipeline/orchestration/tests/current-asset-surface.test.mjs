@@ -32,8 +32,9 @@ test('retired hair and historical exemplars are absent from the current asset su
 });
 test('fresh selection validator is executable and permits current native props',async()=>{
  let api;try{api=await import('../../features/visual-composition/validate-fresh-asset-selection.mjs');}catch(e){assert.fail('fresh gate cannot execute: '+e.message);}
- const intent={cast:[{entity_id:'hero',hair_id:'asym-bang'}],assets:{phone:{path:'assets/phone.svg',lineage:{source_master:'phone'}}},scenes:[{id:'s',grammar:{environment:{scene_set_id:'scene-set-home'}}}]};
+ const intent={cast:[{entity_id:'hero',hair_id:'asym-bang'}],assets:{phone:{path:'assets/phone.svg',lineage:{source_master:'phone'}}},scenes:[{id:'s',grammar:{environment:{}}}]};
  assert.equal(api.validateFreshAssetSelection({intent,policy}).status,'PASS');
+ assert.throws(()=>api.validateFreshAssetSelection({intent:{...intent,scenes:[{id:'s',grammar:{environment:{scene_set_id:'scene-set-home'}}}]},policy}),/FRESH_SCENE_SET_RETIRED/);
  assert.throws(()=>api.validateFreshAssetSelection({intent:{...intent,cast:[{entity_id:'hero',hair_id:'lopsided-bob'}]},policy}),/RETIRED_HAIR/);
  assert.throws(()=>api.validateFreshAssetSelection({intent,production:{assets:{stale:{path:'assets/stale.svg',character_blueprint:{hair_id:'lopsided-bob'}}}},policy}),/RETIRED_HAIR/);
 });
@@ -63,7 +64,7 @@ test('catalog review renders compiled characters and exact current native stage 
 });
 test('intent IDs cannot mask retired native production identity',async()=>{
  const {validateFreshAssetSelection}=await import('../../features/visual-composition/validate-fresh-asset-selection.mjs');
- const intent={assets:{hero:{path:'assets/current.svg'}},scenes:[{id:'s',grammar:{environment:{scene_set_id:'scene-set-home'}}}]};
+ const intent={assets:{hero:{path:'assets/current.svg'}},scenes:[{id:'s',grammar:{environment:{}}}]};
  assert.throws(()=>validateFreshAssetSelection({intent,production:{assets:{hero:{path:'assets/stale.svg',character_blueprint:{hair_id:'lopsided-bob'}}}},policy}),/RETIRED_HAIR/);
 });
 test('current shirt colors have native comparison previews',async()=>{

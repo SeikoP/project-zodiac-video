@@ -15,7 +15,7 @@ function loadRegistry(){
  return registry;
 }
 
-function bindingApplies(binding,phase,step,{run_mode='fresh',environment_mode='archive_frame',flags={}}={}){
+function bindingApplies(binding,phase,step,{run_mode='fresh',environment_mode='canvas',flags={}}={}){
  if(binding?.phase!==phase)return false;
  if(!Array.isArray(binding.steps)||!binding.steps.includes(step))return false;
  if(Array.isArray(binding.run_modes)&&!binding.run_modes.includes(run_mode))return false;
