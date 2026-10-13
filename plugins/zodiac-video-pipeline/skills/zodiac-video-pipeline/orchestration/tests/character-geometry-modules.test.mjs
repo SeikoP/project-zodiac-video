@@ -19,15 +19,16 @@ const cases=[
  {name:'petite-run',identity:{entity_id:'d',body_profile:'petite_compact',hair_id:'asym-bang',face_profile_id:'balanced',outfit_id:'plain-shirt',shirt_color_id:'slate',accessory_id:'none',variant_seed:'baseline-d'},state:{pose_id:'run',expression_id:'panic'}}
 ];
 
+// Refreshed after 7bc1af17 vs 672f4983 pixel-identical CairoSVG 720x720 raster audit.
 test('character compiler baseline is observable before geometry extraction',async()=>{
  const {compileCharacterSvg}=await import(pathToFileURL(compiler));
  const hashes=Object.fromEntries(cases.map(row=>[row.name,sha(compileCharacterSvg(row.identity,row.state).svg)]));
  console.log('CHARACTER_BASELINE_SHA '+JSON.stringify(hashes));
  assert.deepEqual(hashes,{
-  'lean-explain':'3dd5e87e0a4a925eb7bd692200a1019a7f36e0f2f7edd5b642c8a8dbf501e1d8',
-  'round-offer':'c297387b538b83eb7165411d62d69376c2702632bbef3c922118f0f137945d5a',
-  'stocky-phone':'d101433fa9e2b83e4af47c84c07ab4dc9b1e603c96d6de3ff32896e0525c90e0',
-  'petite-run':'2dfa7d18ed11ebc29a67a960f2b894af0f27df617b0b24a704319ed2bec2fcc2'
+  'lean-explain':'d7e5a44e63b9f2172cb8b969dc5a686bbcbfe9e943efa7ffa11d3d7ebab4105f',
+  'round-offer':'251246879b3d7f96885346772e512694eaa08740b591ac3f6df95b073b747963',
+  'stocky-phone':'693ce53785837dbffe30bf83ff883a089352ff28c2d51a0edba05f5ca4f1c203',
+  'petite-run':'4cfac2b010cda3d2bf6b3aff2577980f69cfce1c5768c909bb9920ae6e52e0f6'
  });
 });
 

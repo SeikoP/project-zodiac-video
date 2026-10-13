@@ -19,9 +19,10 @@ test('current effective policy is explicit and release-history is not active pro
  assert.deepEqual(policy,{
   format:'zodiac-current-policy@1',
   narrative:'2.1',
-  story_object:'v2',
+  story_object:'compatibility:v2',
+  narrative_visual:'v1',
   visual_grammar:'v4',
-  scene_system:'scene-set@1',
+  scene_system:'canvas@1',
   character_assembly:'v2',
   handoff:'zodiac-job@5',
   renderer:'zodiac-renderer@2.0.1'
@@ -42,7 +43,7 @@ test('fresh scene-set context exposes effective policy without compatibility env
   selected_asset_ids:['scene-set-home'],
   environment_mode:'scene_set'
  });
- assert.equal(result.effective_policy?.scene_system,'scene-set@1');
+ assert.equal(result.effective_policy?.scene_system,'canvas@1');
  assert.equal(result.effective_policy?.renderer,'zodiac-renderer@2.0.1');
  assert.equal(result.required_references.some(ref=>ref.includes('compatibility/environment-profiles')),false);
 });

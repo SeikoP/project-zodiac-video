@@ -181,6 +181,14 @@ const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4|
 if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.run_mode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'features/narration-performance/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}}
 steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_props',src:'references/asset-library-v4/memes/compile-meme-props.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-prop-compile-receipt.json','.authoring/generated-assets.json']});
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'features/visual-composition/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
+// Retired Scene Set checks remain available for compatibility only.
+// Fresh canvas composition still runs geometry, spatial and caption validators.
+const phase02RunMode=await readFile(path.join(workspace,'.authoring/pipeline-state.json'),'utf8').then(s=>JSON.parse(s).run_mode).catch(()=>null);
+if(phase02RunMode==='fresh'){
+ for(const oldId of ['scene_set_identity','scene_accent_containment']){
+  const ix=steps.findIndex(s=>s.id===oldId);if(ix>=0)steps.splice(ix,1);
+ }
+}
 if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
 const graph=validateStepGraph(steps);
 if(graph.status!=='PASS')report.issues.push(...graph.issues);

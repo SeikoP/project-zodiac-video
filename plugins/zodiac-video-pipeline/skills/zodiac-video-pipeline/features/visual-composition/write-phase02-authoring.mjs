@@ -68,7 +68,7 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   const source=await readFile(path.join(root,'narration.txt'),'utf8');
   const authored=await decode(payloadPath);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
-  if(generated&&authored.story_object_decision.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
+  if(generated&&authored.taxonomy_version!=='narrative_visual@1'&&authored.story_object_decision?.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
   const payload=generated?{format:'zodiac-phase02-authored-handoff@1',plugin_version:manifest.version,approved_narration_sha256:authored.narration_sha256,production:generated.production,asset_plan:generated.asset_plan,visual_grammar_plan:generated.visual_grammar_plan,character_assembly_plan:generated.character_assembly}:authored;
   const verdict=assessAuthoringPayload(payload,{narration:source,pluginVersion:manifest.version,state});
   if(verdict.status==='BLOCKED')throw new Error('AUTHORING_PAYLOAD_BLOCKED '+JSON.stringify(verdict.issues));

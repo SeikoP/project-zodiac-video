@@ -6,7 +6,7 @@ const orchestrationDir=path.dirname(fileURLToPath(import.meta.url));
 const skillRoot=path.resolve(orchestrationDir,'../..');
 const requiredKeys=[
  'narrative',
- 'story_object',
+ 'narrative_visual',
  'visual_grammar',
  'scene_system',
  'character_assembly',
@@ -21,5 +21,6 @@ export async function loadCurrentPolicy(root=skillRoot){
  for(const key of requiredKeys){
   if(typeof policy[key]!=='string'||!policy[key])throw new Error('CURRENT_POLICY_FIELD_INVALID '+key);
  }
+ // Historical policy documents are still readable through the explicit alias.
  return policy;
 }

@@ -137,7 +137,7 @@ export const validateSceneLayout = (plan) => {
     // Density is a timeline constraint, not a count of authored asset variants.
     // Story objects and symbols are narrative visuals; neither is an interactive prop.
     const countsAt = (current, eventId = 'initial') => {
-      const counts = {actors:0, props:0, effects:0};
+      const counts = {actors:0, props:0, effects:0, narrativeVisuals:0};
       for (const entity of scene.entities ?? []) {
         const state = entity.states?.[current.get(entity.id)];
         if (!state || state.visible === false) continue;
@@ -145,12 +145,13 @@ export const validateSceneLayout = (plan) => {
         if (role === 'character') counts.actors++;
         else if (role === 'prop') counts.props++;
         else if (role === 'effect') counts.effects++;
+        else if (role === 'story_object' || role === 'story_symbol') counts.narrativeVisuals++;
       }
       const budget = scene.render_density_budget ?? {max_characters:3,max_prominent_props:2,max_prominent_effects:2};
-      const {actors, props, effects} = counts;
+      const {actors, props, effects, narrativeVisuals} = counts;
       if (actors > budget.max_characters || props > budget.max_prominent_props ||
-          effects > budget.max_prominent_effects || (actors >= 3 && (props > 1 || effects > 1))) {
-        throw new Error(`DENSITY_EXCEEDED scene=${scene.id} event=${eventId} actors=${actors} props=${props} effects=${effects}`);
+          effects > budget.max_prominent_effects || narrativeVisuals > 2 || (actors >= 3 && (props > 1 || effects > 1))) {
+        throw new Error(`DENSITY_EXCEEDED scene=${scene.id} event=${eventId} actors=${actors} props=${props} effects=${effects} narrative_visuals=${narrativeVisuals}`);
       }
     };
     const current = new Map((scene.entities ?? []).map(e => [e.id, e.initial_state]));

@@ -4,26 +4,19 @@ Use only this library's current registries. Retired IDs fail before authoring;
 missing IDs do not trigger a historical example, alias or fallback. Historical
 job recovery uses a separately pinned snapshot outside this package.
 
-## Select by responsibility
-- Scene-set: supporting rear picture/frame from `scene-set/index.json`; never an actor stage or physical support.
-- Shot layout: actor composition from `shot-layouts/index.json`.
-- Character: body, hair and shirt color from
-  `characters/components/catalog.json`; identity is selected once per actor.
-- State: performed pose and expression; plan before SVG generation.
-- Prop: explicit narrated physical object from `props/index.json`.
-- Story Object: symbolic progression, independently authored per
-  `../story-object-contract.md`; not a background or forced physical interaction.
-- Scene accent: optional context detail from `scene-set/accents/index.json`,
-  contained by the wall. No automatic room decoration.
+## Select by responsibility — fresh mode
 
-For each scene-set, explicitly select `scene_accents` or record a non-empty
-`scene_accent_omission_reason` in the scene environment. An empty list alone is
-not a reviewed choice and fails the native art-direction gate. Prefer one or
-two context cues supported by the narration, such as a cafe window/menu.
-Registry accent defaults with `placement_space: scene_set_view_box` follow the
-selected backdrop transform. An authored `transform` is in canvas coordinates
-and must fit the transformed wall; invalid overrides fail without auto-fitting.
-Foreground actor slots, physical contacts and captions remain independent.
+- Background: a simple color/gradient/optional pattern; never a Scene Set wall.
+- Shot layout: independent actor composition from `shot-layouts/index.json`.
+- Character: native body/hair/shirt identity, persistent across states.
+- Prop: a real physically interacted item from `props/index.json`.
+- Narrative Visual: one authoring category for thought, metaphor, contrast and meaning; optional states and actor/group/canvas anchors.
+- Scene Accent: optional independent context SVG (window, menu, notice board, lights). Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
+- Effect: optional emphasis of action or emotion, not mandatory decoration.
+
+Each beat must explicitly use or omit Scene Accent in fresh Visual Coverage.
+Selected Accent assets retain a valid category, scene ownership and visibility lifecycle.
+No Scene Set ID, wall containment or view-box positioning is required or allowed for fresh authoring. Historical Scene Set registries remain compatibility-only.
 
 Use `capability-index.json` for supported needs and `coverage-matrix.json` for
 coverage. Per beat, select one shot-layout and primary action, then bind actual
@@ -42,16 +35,14 @@ retired idea may return only through re-authoring, a new ID and visual review.
 Do not transfer visual references between actors.
 
 ## Geometry and context
-The scene-set is a supporting picture/wall behind the action. Foreground
-characters own their composition and support cues independently of that artwork. Accents fit the transformed wall.
-Scene-set masters own their dimensions; no universal full-safe-height rule.
-Preserve face/caption readability and physical contact when the action needs it.
+
+Characters are placed independently on canvas. Accents supplement spatial context without constraining cast positions; they remain behind action and must be caption-safe. Narrative Visuals are positioned for readability and do not inherit physical prop contact requirements.
 
 Load core guidance and only selected extension registries via
 `selection-policy.json`. Required compiler/validator/review gates remain active.
 Do not read migration records, historical episodes or old assets for inspiration.
 
-Current selection has no alternate face-profile, accessory or effect group.
+Current native casting does not expose alternate face/accessory components by default; effects may be selected intentionally.
 Expressions and actor motion remain native acting. `zodiac-glyph-shirt` preserves one
 intrinsic chest icon selected by `zodiac_sign_id`, with no surrounding decoration.
 Keep unknown supporting signs unassigned. Prefer feminine lead presentation,
@@ -60,7 +51,6 @@ Keep unknown supporting signs unassigned. Prefer feminine lead presentation,
 Accents are sparse context cues with a lifecycle, not a permanent room skin.
 Use `initial_state` and `states: {hidden: {visible: false}, visible: {visible: true}}`
 with ordinary voice-anchored fade/state events to enter and release them. These
-states share the same SVG and canvas transform. `scene-accent-string-lights`
-is available for narrated celebrations; never add a birthday to another script.
+states share the same SVG and canvas transform. A string-lights Accent can be authored for narrated celebrations; never add a birthday to another script.
 One native scene may contain multiple story turns. Judge changes of meaning,
 actor attention and object relations, not scene count or pose changes alone.

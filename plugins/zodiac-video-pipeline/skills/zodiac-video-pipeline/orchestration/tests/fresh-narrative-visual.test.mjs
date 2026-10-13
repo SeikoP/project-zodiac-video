@@ -11,7 +11,7 @@ test('fresh canvas authoring does not require a scene set or accent',()=>{
  assert.equal(result.status,'PASS');
 });
 test('fresh coverage excludes scene-set and scene-accent; legacy layers retained',()=>{
- assert.deepEqual(coverageLayers,['actors','narrative_visual','props','support','caption']);
+ assert.deepEqual(coverageLayers,['actors','scene_accent','narrative_visual','props','support','caption']);
  assert.ok(legacyCoverageLayers.includes('scene_set'));
 });
 test('narrative visual projects to existing Job5 story_object role without schema change',async()=>{
@@ -30,4 +30,16 @@ test('narrative visual projects to existing Job5 story_object role without schem
  assert.equal(result.ir.scenes[0].entities[0].visual_role,'story_object');
  assert.equal(source.assets.scale.category,'narrative_visual');
  assert.equal(result.manifest.contract.id,'zodiac-authoring-ir');
+});
+
+test('canvas-native accents project as rear environment without prop/effect density',async()=>{
+ const {compileVisualIntent}=await import('../../features/visual-composition/compile-visual-intent.mjs');
+ const {createHash}=await import('node:crypto');
+ const voice='Quán cà phê có cửa sổ.';
+ const input={format:'zodiac-visual-intent@1',taxonomy_version:'narrative_visual@1',narration_sha256:createHash('sha256').update(voice).digest('hex'),video:{width:1080,height:1920,fps:24},visual_system:{},cast:[],frames:[],assets:{window:{category:'scene_accent',path:'assets/environment/cafe-window.svg'}},narrative_visual_decision:{mode:'omitted',reason:'No symbolic visual needed',review_ref:'review:accent'},scenes:[{id:'S01',narration_range:[0,Buffer.byteLength(voice)],semantic_goal:'A cafe setting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'window'},environment:{background_palette_id:'warm-paper'}},entities:[{id:'window',kind:'scene_accent',visual_role:'scene_accent',initial_state:'shown',states:{shown:{asset:'window',visible:true,transform:{x:90,y:100,width:290,height:340}}}}],events:[],director_beats:[],art_direction:{},semantic_asset_decisions:[]}]};
+ const output=compileVisualIntent(input,{narration:voice});
+ assert.equal(output.production.assets.window.category,'environment');
+ assert.equal(output.production.scenes[0].entities[0].visual_role,'background');
+ assert.equal(output.production.scenes[0].environment.mode,'canvas');
+ assert.equal(output.art_direction.scenes[0].components[0].narrative_role,'scene_accent');
 });

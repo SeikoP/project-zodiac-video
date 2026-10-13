@@ -31,6 +31,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Producer runner simplification parity
         run: python -m pytest tests/test_simplification_package_import.py tests/test_spatial_contract_hash.py -q
+      - name: Verify canonical producer contract bundle (no generation in CI)
+        run: python tools/contracts/generate_plugin_bundle.py --check
       - name: Architecture and registry regressions
         run: >-
           python -m pytest
