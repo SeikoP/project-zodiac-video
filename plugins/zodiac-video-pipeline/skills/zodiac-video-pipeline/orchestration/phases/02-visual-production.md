@@ -27,7 +27,7 @@ handoff context; preserve exact narration, scope and genuine Content Review.
    Job@5 export; local runner owns voice, measured timing, final motion/render and
    audio/MP4 QA.
 
-Fresh Narrative Visual authoring follows `references/story-object-contract.md`
+Fresh Narrative Visual authoring follows `references/narrative-visual-contract.md`
 (the legacy filename is retained for existing links). The authoring role is
 `narrative_visual`, not a prop; it may have one state or narrated transitions.
 Effects and Scene Accents are optional and never fill space automatically.
