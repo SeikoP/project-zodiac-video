@@ -26,3 +26,11 @@ test('explicit semantic omission allows character-only cover but not duplicated 
 test('legacy publish packages retain compatibility',()=>{
  assert.equal(assessPublishEditorial({hashtags:['#BoCap']},scene,{fresh:false}).status,'LEGACY_COMPATIBLE');
 });
+
+test('group cover must account for all story actors or document omission',()=>{
+ const group={entities:[...scene.entities,{id:'friend',kind:'character'}]};
+ const absent=assessPublishEditorial(good,group,{fresh:true});
+ assert.ok(absent.issues.some(i=>i.code==='COVER_CAST_INCOMPLETE'));
+ const cover={...good.cover,visual_omissions:{actors:'The other actor is not part of the opening comparison beat'}};
+ assert.equal(assessPublishEditorial({...good,cover},group,{fresh:true}).status,'EDITORIAL_STRUCTURE_PASS');
+});
