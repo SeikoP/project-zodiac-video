@@ -38,6 +38,15 @@ class CandidateBundleTests(unittest.TestCase):
                 self.assertNotIn("skills/zodiac-video-pipeline/references/retired-source/dead.md", package.namelist())
             self.assertFalse(one["release_approved"])
 
+    def test_missing_static_esm_dependency_blocks_zip(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            plugin = self.sample(root)
+            entry = plugin / "skills/zodiac-video-pipeline/core/run.mjs"
+            entry.write_text("import './missing.mjs';")
+            with self.assertRaisesRegex(ValueError, "PLUGIN_STATIC_IMPORT_MISSING"):
+                build(root, root / "candidate.zip")
+
     def test_required_manifest_missing_fails_closed(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
