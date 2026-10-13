@@ -8,7 +8,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
-import {validateStepGraph,executionTrace} from '../../core/workflow/deterministic-execution.mjs';
+import {validateStepGraph,executionTrace,createRepairPlan} from '../../core/workflow/deterministic-execution.mjs';
 import os from 'node:os';
 import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
@@ -93,7 +93,7 @@ const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).diges
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{report.execution_trace=executionTrace(report);if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
