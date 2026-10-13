@@ -316,4 +316,6 @@ jobs:
         with:
           name: zodiac-plugin-candidate-unreleased
           path: .release/
+          include-hidden-files: true
+          if-no-files-found: error
           retention-days: 14
