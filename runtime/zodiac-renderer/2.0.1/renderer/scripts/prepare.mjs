@@ -161,7 +161,7 @@ export const validateSceneLayout = (plan) => {
     }
     for (const entity of scene.entities ?? []) {
       const role = classifyVisualRole(entity, plan.assets);
-      if (['environment','foreground_environment','story_object','story_symbol'].includes(role)) continue;
+      if (['environment','foreground_environment'].includes(role)) continue;
       for (const [name, state] of Object.entries(entity.states ?? {})) {
         if (state.visible === false || !state.transform) continue;
         const bounds = transformedBounds(state.transform);
