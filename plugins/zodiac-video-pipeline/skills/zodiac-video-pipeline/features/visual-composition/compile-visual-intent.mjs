@@ -19,9 +19,12 @@ export function sceneSetComponentIntents(env,voice){
 export function compileVisualIntent(intent,{narration,token,catalog}={}){
  if(intent?.format!=='zodiac-visual-intent@1')fail('FORMAT');if(intent.narration_sha256!==hash(narration))fail('NARRATION_STALE');
  if(intent.cast?.length&&!intent.episode_cast_plan)fail('EPISODE_CAST_PLAN_REQUIRED');
- if(intent.story_object_decision?.mode==='required'&&!intent.story_object_plan)fail('OBJECT_PLAN_REQUIRED');
+ const freshNarrative=intent.taxonomy_version==='narrative_visual@1';
+ if(!freshNarrative&&intent.story_object_decision?.mode==='required'&&!intent.story_object_plan)fail('OBJECT_PLAN_REQUIRED');
  if(!Array.isArray(intent.scenes)||!intent.scenes.length||!Array.isArray(intent.cast)||!intent.assets||!intent.video)fail('INCOMPLETE');
- const decision=intent.story_object_decision;if(!decision||!['required','optional','omitted'].includes(decision.mode)||!decision.reason?.trim()||!decision.review_ref?.trim())fail('OBJECT_DECISION');
+ const decision=freshNarrative?intent.narrative_visual_decision:intent.story_object_decision;
+ if(!decision||!['required','optional','omitted'].includes(decision.mode)||!decision.reason?.trim()||!decision.review_ref?.trim())fail('OBJECT_DECISION');
+ if(freshNarrative&&intent.scenes.some(scene=>scene.entities?.some(e=>['story_object','story_symbol','visual_metaphor'].includes(e.kind))))fail('FRESH_SYMBOLIC_ALIAS_FORBIDDEN');
  for(const s of intent.scenes){if(s.frame_ref){const ref=intent.frames.find(f=>f.asset_id===s.frame_ref.asset_id);if(!ref||hash(ref)!==hash(s.frame_ref))fail('FRAME_REFERENCE');}}
  const bytes=Buffer.from(narration),ids=new Set();partitionNarration(bytes,intent.scenes.map(s=>s.narration_range));let end=0;
  const scenes=intent.scenes.map(s=>{if(!s.id||ids.has(s.id)||!s.semantic_goal?.trim()||!s.grammar||!Array.isArray(s.entities)||!Array.isArray(s.events))fail('SCENE_INCOMPLETE');if(s.grammar?.environment?.scene_set_id&&s.art_direction?.environment_profile)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET '+s.id);ids.add(s.id);
