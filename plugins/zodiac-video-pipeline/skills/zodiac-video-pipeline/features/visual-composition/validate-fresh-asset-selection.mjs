@@ -20,7 +20,7 @@ export function validateFreshAssetSelection({intent,production,policy}){
   if(hair.has(a.character_blueprint?.hair_id))fail('RETIRED_HAIR',id);
   const bp=a.character_blueprint;if(bp&&(!['plain-shirt','zodiac-glyph-shirt'].includes(bp.outfit_id)||(bp.face_profile_id??'balanced')!=='balanced'||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
   if(bp?.outfit_id==='zodiac-glyph-shirt'&&!Object.hasOwn(zodiacGlyphPaths,bp.zodiac_sign_id))fail('ZODIAC_SIGN_INVALID',id);
-  if(a.category==='effect')fail('EFFECTS_REMOVED',id);
+  // Effects are optional emphasis, not mandatory and not forbidden for fresh work.
   const masters=[a.lineage?.source_master].flat(),p=String(a.path??'');
   if(retired.has(id)||masters.some(m=>retired.has(m))||/(?:^|\/)environments\/structural\//u.test(p)||/(?:^|\/)assets\/environment\/(?:bedroom-|cafe-window|cafe-table)/u.test(p))fail('RETIRED_SOURCE',id);
  }
