@@ -1,7 +1,7 @@
 // Authored coverage belongs to Visual Intent/Art Direction; no runtime fields or approvals.
 import {createHash} from 'node:crypto';
 export const legacyCoverageLayers=['actors','scene_set','scene_accent','story_object','props','support','caption'];
-export const coverageLayers=['actors','narrative_visual','props','support','caption'];
+export const coverageLayers=['actors','scene_accent','narrative_visual','props','support','caption'];
 const text=x=>typeof x==='string'&&x.trim().length>0;
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const anchorOffset=(voice,trigger)=>{let at=-1,start=0;for(let i=0;i<(trigger?.occurrence??1);i++){at=voice.indexOf(trigger?.text??'',start);if(at<0)return -1;start=at+1;}return Buffer.byteLength(voice.slice(0,at));};
@@ -19,7 +19,7 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
  for(const e of scene.events??[]){const key=JSON.stringify([e.target,e.trigger?.type,e.trigger?.text,e.trigger?.occurrence??1,e.trigger?.offset_frames??0]);const prior=lanes.get(key);if(prior&&prior.state_after!==e.state_after)add('COVERAGE_EVENT_ANCHOR_CONFLICT',{event_id:e.id,prior_event_id:prior.id});lanes.set(key,e);}
  const states=new Map([...entities].map(([id,e])=>[id,e.initial_state]));
  const visible=id=>{const e=entities.get(id);return e?e.states?.[states.get(id)]?.visible!==false:components.get(id)?.visual_role==='background';};
- const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(['story_object','story_symbol','visual_metaphor','narrative_visual'].includes(c?.narrative_role)||c?.visual_role==='narrative_visual')return coverage?.layers_version==='narrative_visual@1'?'narrative_visual':'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
+ const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.narrative_role==='scene_accent'||c?.visual_role==='scene_accent')return 'scene_accent';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(['story_object','story_symbol','visual_metaphor','narrative_visual'].includes(c?.narrative_role)||c?.visual_role==='narrative_visual')return coverage?.layers_version==='narrative_visual@1'?'narrative_visual':'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
  let end=0;
  for(const beat of coverage.beats){
   if(!beat||!text(beat.id)||seenBeats.has(beat.id)||!text(beat.goal)){add('COVERAGE_BEAT_INVALID');continue;}seenBeats.add(beat.id);
@@ -39,7 +39,7 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
     if(!matches)add('COVERAGE_ROLE_MISMATCH',{beat_id:beat.id,entity_id:id,layer});
    }
   }
-  const seenVisible=new Set([...components.keys()].filter(id=>visible(id) && (coverage?.layers_version!=='narrative_visual@1'||!['scene_set','scene_accent'].includes(roleOf(id)))));
+  const seenVisible=new Set([...components.keys()].filter(id=>visible(id) && (coverage?.layers_version!=='narrative_visual@1'||roleOf(id)!=='scene_set')));
   if(!Array.isArray(beat.event_ids)||new Set(beat.event_ids).size!==beat.event_ids.length){add('COVERAGE_EVENT_LIST_INVALID',{beat_id:beat.id});continue;}
   const expected=(scene.events??[]).filter(e=>{const p=anchorOffset(voice,e.trigger);return p>=start&&p<stop;}).map(e=>e.id);
   if(JSON.stringify(expected)!==JSON.stringify(beat.event_ids))add('COVERAGE_EVENT_ORDER',{beat_id:beat.id});
