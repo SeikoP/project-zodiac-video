@@ -34,6 +34,14 @@ def build(root: Path, destination: Path) -> dict:
     for rel in REQUIRED:
         if not (src / rel).is_file():
             raise ValueError(f"PLUGIN_REQUIRED_FILE_MISSING {rel}")
+    manifest = json.loads((src / "plugin.json").read_text(encoding="utf-8"))
+    codex = json.loads((src / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+    state_file = src / "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json"
+    if not state_file.is_file():
+        raise ValueError("PLUGIN_STATE_TEMPLATE_MISSING")
+    state = json.loads(state_file.read_text(encoding="utf-8"))
+    if not manifest.get("version") or manifest.get("version") != codex.get("version") or manifest.get("version") != state.get("plugin_version"):
+        raise ValueError("PLUGIN_RELEASE_VERSION_MISMATCH")
     files = sorted((p for p in src.rglob("*") if p.is_file() and eligible(p.relative_to(src))),
                    key=lambda x: x.relative_to(src).as_posix())
     # Security: no symlinks or path traversal entries, even when source is polluted.
