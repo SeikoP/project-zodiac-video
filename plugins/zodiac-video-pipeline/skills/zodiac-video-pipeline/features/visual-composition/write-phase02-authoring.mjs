@@ -89,8 +89,8 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   // Re-read approved source/state before mutating: concurrent edits fail closed.
   if(sha(Buffer.from(await readFile(path.join(root,'narration.txt'))))!==payload.approved_narration_sha256)throw new Error('NARRATION_CHANGED_CONCURRENTLY');
   if(sha(await readFile(statePath))!==sha(stateBytes))throw new Error('STATE_CHANGED_CONCURRENTLY');
-  for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');staged.push({tmp,...o});}
-  for(const o of staged){await rename(o.tmp,o.target);committed.push(o);}
+  for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');if(sha(await readFile(tmp))!==o.sha256)throw Error('AUTHORING_STAGING_HASH_MISMATCH '+o.rel);staged.push({tmp,...o});}
+  for(const o of staged){await rename(o.tmp,o.target);committed.push(o);if(sha(await readFile(o.target))!==o.sha256)throw Error('AUTHORING_COMMIT_HASH_MISMATCH '+o.rel);}
   return {status:'AUTHORING_WRITTEN_NOT_COMPILED',files:outputs.map(o=>({path:o.rel,sha256:o.sha256})),next:'Run strict execution-preflight and native Phase02 compilers; do not mark PASS.'};
  }catch(e){for(const o of committed.reverse())await rm(o.target,{force:true});throw e;}
  finally{for(const o of staged)await rm(o.tmp,{force:true});await lease.release();}
