@@ -93,7 +93,7 @@ const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).diges
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}if(nativeLease)await nativeLease.release();await writeJson(reportPath,report);console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
@@ -245,13 +245,13 @@ else{
   if(step.validator)required.push(path.join(workspace,'.authoring/native-validator-'+step.id+'.json'));
   const cached=cache.steps?.[step.id];
   const outputsSig=required.length?await signature(required):sha('no-output-files');
-  if(!force&&before!==null&&outputsSig!==null&&cached?.status==='PASS'&&cached.after_input_sha===before&&cached.output_sha===outputsSig){report.steps.push({id:step.id,status:'SKIPPED_REUSED',evidence:'verified_post_input_and_output_hash',previous_command:cached.command});continue;}
+  if(!force&&before!==null&&outputsSig!==null&&cached?.status==='PASS'&&cached.after_input_sha===before&&cached.output_sha===outputsSig){report.steps.push({id:step.id,status:'SKIPPED_REUSED',input_hash:before,output_hash:outputsSig,evidence:'verified_post_input_and_output_hash',previous_command:cached.command});continue;}
   if(before===null){const error={id:step.id,status:'BLOCKED',reason:'INPUT_UNREADABLE_OR_MISSING'};report.steps.push(error);fail('NATIVE_STEP_INPUT_MISSING',{step:step.id});break;}
   const receiptRel='.authoring/native-validator-'+step.id+'.json';
   const commandFile=step.validator?path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs'):absolute;
   const commandArgs=step.validator?[step.id,path.join(workspace,receiptRel),absolute,...args]:args;
   const result=nodeRun(commandFile,commandArgs);
-  const extra={id:step.id,...result};
+  const extra={id:step.id,input_hash:before,...result};
   if(result.status==='PASS'&&step.id==='character_write'){
    required.push(...await workspaceAssetPaths('character'));
    const check=await findNativeCharAssets();extra.missing_character_asset_refs=check.missing;
@@ -267,6 +267,7 @@ else{
    catch(e){extra.status='FAIL';extra.reason='VALIDATOR_RECEIPT_INVALID: '+e.message;}
   }
   if(extra.status==='PASS'){
+   extra.output_hash=required.length?await signature(required):sha('no-output-files');
    cache.steps[step.id]={status:'PASS',command:result.command,selected_source_files:stepSourceFiles.map(p=>path.relative(source.skillRoot,p)),after_input_sha:await signature(relevant),output_sha:required.length?await signature(required):sha('no-output-files'),at:new Date().toISOString()};
    await writeJson(checkpointPath,cache);
   }else {delete cache.steps[step.id];await writeJson(checkpointPath,cache);fail('NATIVE_STEP_FAILED',{step:step.id,reason:extra.reason??'NODE_EXIT_NONZERO',exit_code:extra.exit_code});}
