@@ -185,7 +185,7 @@
           "id": "background_palette_registry",
           "kind": "internal_reference",
           "when": "fresh",
-          "guidance_uri": "references/asset-library-v4/scene-set/background-palettes.json",
+          "guidance_uri": "references/asset-library-v4/background-palettes.json",
           "unavailable_policy": "block",
           "stage": "entry"
         },
