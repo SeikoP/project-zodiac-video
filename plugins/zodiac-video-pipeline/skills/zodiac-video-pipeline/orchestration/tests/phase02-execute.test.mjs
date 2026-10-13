@@ -53,6 +53,10 @@ const makeSource=async()=>{
  for(const name of ['phase02-composition.mjs','phase02-composition-core.mjs','validate-phase02-precompile-boundary.mjs','validate-phase02-art-direction.mjs']) await write(path.join(skill,'features/visual-composition',name),await readFile(new URL('../../features/visual-composition/'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/scene-set/scene-set-detection.mjs'),await readFile(new URL('../../features/scene-set/scene-set-detection.mjs',import.meta.url),'utf8'));
  for(const f of ['palette-registry.json','environment-registry.json']) await write(path.join(skill,'art-direction',f),await readFile(new URL('../../art-direction/'+f,import.meta.url),'utf8'));
+ // Minimal imports needed by the isolated coordinator fixture; the real
+ // contract/motion validators have their own dedicated suites.
+ await write(path.join(skill,'phases/phase03/compile-job-v5.mjs'),'export const assertJob5VisualRoleSizes = () => ({status:"PASS"});');
+ await write(path.join(skill,'features/visual-composition/validate-visual-coverage.mjs'),'export const validateVisualCoverage = () => [];');
  await write(path.join(skill,'orchestration/validate-pipeline-state.mjs'),`import {readFile} from 'node:fs/promises';const j=JSON.parse(await readFile(process.argv[2]));if(j.plugin_version!=='2.2.9')process.exit(2);console.log('VALID_STATE_FIXTURE')`);
  return root;
 };
