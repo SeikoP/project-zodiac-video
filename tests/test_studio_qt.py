@@ -303,16 +303,17 @@ class TaskWorkbenchTests(unittest.TestCase):
             self.assertEqual(len(window._shortcuts), 5)
             window.close()
 
-    def test_app_exposes_one_shared_workspace_and_one_media_tab(self):
+    def test_app_exposes_workspace_media_and_checklist_tabs(self):
         from tools.studio_qt.app import ZodiacQtApp
 
         with tempfile.TemporaryDirectory() as workspace:
             window = ZodiacQtApp(workspace=Path(workspace))
             self.assertEqual(
                 [window.main_tabs.tabText(index) for index in range(window.main_tabs.count())],
-                ["Công việc / Workspace", "Media"],
+                ["Công việc / Workspace", "Media", "Checklist sản xuất"],
             )
             self.assertIs(window.main_tabs.widget(0), window.stack)
+            self.assertIs(window.main_tabs.widget(2), window.checklist)
             window.close()
 
     def test_closed_qt_window_releases_multimedia_children(self):

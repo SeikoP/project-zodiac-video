@@ -277,7 +277,7 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         legacy = self.root / "legacy" / "local-job"
         job5 = self.root / "runner" / "gemini-job"
         (job5 / "out").mkdir(parents=True)
-        image = QImage(32, 24, QImage.Format.Format_RGB32)
+        image = QImage(54, 96, QImage.Format.Format_RGB32)
         image.fill(Qt.GlobalColor.red)
         cover_path = job5 / "out" / "cover.png"
         self.assertTrue(image.save(str(cover_path)))
@@ -300,6 +300,8 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.assertFalse(screen.episode_cards[0]["cover_placeholder"].isVisible())
         pixmap = screen.episode_cards[0]["cover_preview"].pixmap()
         self.assertFalse(pixmap.isNull())
+        self.assertGreaterEqual(pixmap.width(), 290)
+        self.assertGreaterEqual(pixmap.height(), 500)
         self.assertEqual(pixmap.toImage().pixelColor(0, 0), image.pixelColor(0, 0))
 
         cover_path.unlink()
@@ -382,6 +384,67 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.assertFalse(screen.series_link_button.isEnabled())
         self.assertFalse(screen.cover_visible_check.isEnabled())
         self.assertEqual(path.read_bytes(), original)
+
+
+class ProductionChecklistAppTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from PySide6.QtWidgets import QApplication
+        except ImportError:
+            raise unittest.SkipTest("PySide6 Essentials is not installed")
+        cls.qt_app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        for widget in self.qt_app.topLevelWidgets():
+            widget.close()
+            widget.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.qt_app.processEvents()
+        self.temp.cleanup()
+
+    def test_studio_tab_uses_workspace_preferences_and_only_job5_links(self):
+        from tools.studio_qt.app import ZodiacQtApp
+
+        studio_workspace = self.root / "studio"
+        job5 = studio_workspace / "v2" / "jobs" / "gemini-job"
+        local = studio_workspace / "jobs" / "legacy-job"
+        (job5 / "out").mkdir(parents=True)
+        (job5 / "package-manifest.json").write_text("{}\n", encoding="utf-8")
+        (local / "out").mkdir(parents=True)
+        episode = workspace_fixture(self.root / "authoring" / "gemini")
+        app = ZodiacQtApp(workspace=studio_workspace)
+
+        index = app.main_tabs.indexOf(app.checklist)
+        self.assertGreaterEqual(index, 0)
+        self.assertEqual(app.main_tabs.tabText(index), "Checklist sản xuất")
+        self.assertEqual(app.checklist.config_path, studio_workspace.resolve() / "studio-production-checklist.json")
+        self.assertNotEqual(app.checklist.config_path, job5 / ".runtime" / "gui-settings.json")
+        config = {
+            **production_checklist.new_checklist_config(),
+            "workspaces": [{"path": str(episode), "job_id": "gemini-job"}],
+        }
+        production_checklist.save_checklist_config(app.checklist.config_path, config)
+
+        app._refresh_media_jobs()
+
+        self.assertEqual([job["name"] for job in app.checklist.runner_jobs], ["gemini-job"])
+        picker = app.checklist.episode_cards[0]["job_combo"]
+        self.assertEqual(picker.currentData(), "gemini-job")
+        self.assertNotIn("legacy-job", [picker.itemText(row) for row in range(picker.count())])
+
+        (job5 / "package-manifest.json").unlink()
+        app.main_tabs.setCurrentWidget(app.checklist)
+        self.qt_app.processEvents()
+        self.assertEqual(app.checklist.runner_jobs, [])
+        self.assertEqual(app.checklist.episode_cards[0]["job_combo"].currentData(), "gemini-job")
+        self.assertIn("không có trong Runner", app.checklist.episode_cards[0]["job_combo"].currentText())
 
 
 if __name__ == "__main__":

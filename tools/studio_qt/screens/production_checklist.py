@@ -207,7 +207,7 @@ class ProductionChecklistScreen(QWidget):
         cover_layout = QVBoxLayout(cover_card)
         cover_preview = QLabel(objectName="checklist_cover_preview")
         cover_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        cover_preview.setFixedSize(360, 203)
+        cover_preview.setFixedSize(300, 533)
         cover_placeholder = QLabel()
         cover_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         cover_placeholder.setWordWrap(True)

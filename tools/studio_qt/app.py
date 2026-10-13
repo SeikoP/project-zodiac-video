@@ -38,6 +38,7 @@ from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio_qt.events import WorkerEventBridge
 from tools.studio_qt.screens.home import HomeScreen
 from tools.studio_qt.screens.media import MediaWorkspace
+from tools.studio_qt.screens.production_checklist import ProductionChecklistScreen
 from tools.studio_qt.screens.workbench import STAGE_TITLES, WorkbenchScreen
 from tools.studio_qt.theme import stylesheet
 from tools.zodiac_local import (
@@ -89,15 +90,22 @@ class ZodiacQtApp(QMainWindow):
         self._refresh_ready_archives()
         self.stack.addWidget(self.home)
         self.media = MediaWorkspace()
-        self.media.set_jobs(self._media_jobs())
+        media_jobs = self._media_jobs()
+        self.media.set_jobs(media_jobs)
         self.media.refresh_jobs_requested.connect(self._refresh_media_jobs)
         self.media.workspace_requested.connect(self._open_media_workspace)
         self._media_output: tuple[str | None, str | None] | None = None
+        self.checklist = ProductionChecklistScreen(
+            self.workspace / "studio-production-checklist.json",
+            ROOT / "plugins" / "zodiac-video-pipeline",
+            media_jobs,
+        )
         self.main_tabs = QTabWidget()
         self.main_tabs.setDocumentMode(True)
         self.main_tabs.setMovable(False)
         self.main_tabs.addTab(self.stack, "Công việc / Workspace")
         self.main_tabs.addTab(self.media, "Media")
+        self.main_tabs.addTab(self.checklist, "Checklist sản xuất")
         self.main_tabs.currentChanged.connect(self._main_tab_changed)
 
         shell = QWidget()
@@ -177,8 +185,10 @@ class ZodiacQtApp(QMainWindow):
                 })
         return jobs
 
-    def _refresh_media_jobs(self) -> None:
-        self.media.set_jobs(self._media_jobs())
+    def _refresh_media_jobs(self, selected_path: Path | None = None) -> None:
+        jobs = self._media_jobs()
+        self.media.set_jobs(jobs, selected_path=selected_path)
+        self.checklist.set_runner_jobs(jobs)
 
     @staticmethod
     def _job5_recent_state(path: Path) -> str:
@@ -392,14 +402,15 @@ class ZodiacQtApp(QMainWindow):
         self.workbench.continue_button.setToolTip(note)
         self.workbench.next_action.setText(note)
         if output != self._media_output:
-            self.media.set_jobs(self._media_jobs())
+            self._refresh_media_jobs()
             self.media.set_output(*output, job_path=job)
             self._media_output = output
 
     def _main_tab_changed(self, index: int) -> None:
-        if self.main_tabs.widget(index) is self.media:
+        widget = self.main_tabs.widget(index)
+        if widget in (self.media, self.checklist):
             self._refresh_media_jobs()
-        else:
+        if widget is not self.media:
             self.media.player.pause()
 
     @Slot(str, dict)
@@ -654,7 +665,7 @@ class ZodiacQtApp(QMainWindow):
             self.header_job.setToolTip(str(path))
             self.header_settings_button.setEnabled(True)
             self._media_output = None
-            self.media.set_jobs(self._media_jobs(), selected_path=path)
+            self._refresh_media_jobs(selected_path=path)
             self.main_tabs.setCurrentWidget(self.stack)
             if self.workbench:
                 self.stack.removeWidget(self.workbench)
