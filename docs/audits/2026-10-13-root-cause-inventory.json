@@ -1,0 +1,117 @@
+{
+  "baseline_commit": "e656b690d68d660d95dc86593f715d6e572f9815",
+  "actions_run": 38426544323,
+  "classification_source": "CI logs and GitHub code",
+  "findings": [
+    {
+      "id": "P0-PY-001",
+      "classification": "CONFIRMED_DEFECT",
+      "severity": "P0",
+      "owner": "Control Plane",
+      "components": [
+        "tools/control_plane/semantic_qc.py"
+      ],
+      "evidence": "Actions run 38426544323 job 115397324109 SyntaxError; literal escaped newline in taxonomy tuple",
+      "root_cause": "escaped newline committed as Python source text",
+      "regression_test": "compileall + control-plane tests",
+      "status": "FIX_COMMITTED_NOT_VERIFIED"
+    },
+    {
+      "id": "P0-REN-002",
+      "classification": "CONFIRMED_DEFECT",
+      "severity": "P0",
+      "owner": "Renderer",
+      "components": [
+        "runtime/zodiac-renderer/2.0.1/renderer/scripts/prepare.mjs"
+      ],
+      "evidence": "run 38426544323 renderer test 46 missing expected LAYOUT_OVERLAP",
+      "root_cause": "story_prop resolves to story_object; preflight skips story_object caption collision",
+      "regression_test": "caption safe zone blocks transformed visible props",
+      "status": "FIX_COMMITTED_NOT_VERIFIED"
+    },
+    {
+      "id": "P1-CON-003",
+      "classification": "CONTRACT_MISMATCH",
+      "severity": "P1",
+      "owner": "Producer/Runner",
+      "components": [
+        "orchestration/tests/spatial-contract-sync.test.mjs",
+        "contracts/authoring-ir-v1.schema.json"
+      ],
+      "evidence": "plugin-native test 528 producer hash d6af8a.. vs hardcoded 2ca839..",
+      "root_cause": "hardcoded obsolete schema fingerprint",
+      "regression_test": "compare canonical schema fingerprints from source of truth",
+      "status": "FIX_COMMITTED_NOT_VERIFIED"
+    },
+    {
+      "id": "P1-SEM-004",
+      "classification": "CONTRACT_MISMATCH",
+      "severity": "P1",
+      "owner": "Plugin-native",
+      "components": [
+        "handoff-preflight.test.mjs",
+        "phases/phase03/handoff-preflight.mjs"
+      ],
+      "evidence": "plugin-native test 218 expects HANDOFF_SEMANTIC_P1, direct preflight emits ASSET_CATEGORY_MISMATCH",
+      "root_cause": "diagnostic contract diverged after refactor",
+      "regression_test": "handoff preflight semantic taxonomy test",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1-SCENE-005",
+      "classification": "CONTRACT_MISMATCH",
+      "severity": "P1",
+      "owner": "Phase02/Phase03",
+      "components": [
+        "asset-agent-e2e.test.mjs",
+        "phases/phase02/scene-plan.mjs"
+      ],
+      "evidence": "plugin-native test 14 blocks SCENE_PLAN_MISSING",
+      "root_cause": "new fresh-scene gate is not represented in fixture authoring data",
+      "regression_test": "fresh native assets resolve intent and seal actual ZIP",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1-CACHE-006",
+      "classification": "CONFIRMED_TECH_DEBT",
+      "severity": "P1",
+      "owner": "Plugin native tests",
+      "components": [
+        "phase02-execute.test.mjs"
+      ],
+      "evidence": "plugin-native 325 fails ERR_MODULE_NOT_FOUND compile-job-v5.mjs in sandbox fixture; 322 327 328 329 331 share fixture path",
+      "root_cause": "test mock source incomplete after module extraction",
+      "regression_test": "Phase02 execute and resume tests",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1-VER-007",
+      "classification": "CONTRACT_MISMATCH",
+      "severity": "P1",
+      "owner": "Release",
+      "components": [
+        "job-v5-phase-wiring.test.mjs",
+        "meme-skip-state.test.mjs",
+        "phase-audit-v156.test.mjs",
+        "release-consistency.test.mjs"
+      ],
+      "evidence": "plugin-native 238 260 298 454 455 require stable X.Y.Z but source 2.5.6-dev.7",
+      "root_cause": "release SemVer state and old stable-only assumptions diverge",
+      "regression_test": "SemVer release preparation negative tests",
+      "status": "OPEN"
+    },
+    {
+      "id": "P1-BASE-008",
+      "classification": "POTENTIAL_RISK",
+      "severity": "P1",
+      "owner": "Character assets",
+      "components": [
+        "character-geometry-modules.test.mjs"
+      ],
+      "evidence": "plugin-native test 56 observed four baseline SVG hash changes",
+      "root_cause": "not yet isolated; may reflect actual design changes or stale pinned baseline",
+      "regression_test": "character baseline hashes",
+      "status": "OPEN"
+    }
+  ]
+}

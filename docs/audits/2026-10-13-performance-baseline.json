@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-13",
+  "baseline_commit": "e656b690d68d660d95dc86593f715d6e572f9815",
+  "measurement_status": "NOT_MEASURED",
+  "reason": "Full repository checkout and local runner dependencies unavailable; do not invent baselines",
+  "metrics": {
+    "phase_ms": null,
+    "compiler_ms": null,
+    "cache_hits": null,
+    "cache_misses": null,
+    "context_bytes": null,
+    "asset_count": null,
+    "svg_bytes": null,
+    "zip_bytes": null,
+    "prepare_ms": null,
+    "renderer_startup_ms": null,
+    "render_ms": null,
+    "ci_wall_clock_ms": null
+  }
+}

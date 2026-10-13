@@ -26,7 +26,8 @@ def asset_category_from_path(path: str) -> str | None:
     clean = "/" + path.replace("\\", "/").lstrip("/").lower()
     for folder, category in (
         ("/characters/", "character"), ("/effects/", "effect"),
-        ("/props/", "prop"), ("/story/", "story_object"),\n        ("/symbols/", "story_symbol"), ("/environment/", "environment"),
+        ("/props/", "prop"), ("/story/", "story_object"),
+        ("/symbols/", "story_symbol"), ("/environment/", "environment"),
         ("/environments/", "environment"),
     ):
         if folder in clean:
