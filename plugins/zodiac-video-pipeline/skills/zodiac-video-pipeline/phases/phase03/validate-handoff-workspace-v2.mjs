@@ -78,12 +78,9 @@ export async function validateHandoffV2(root){
     if(entity.id==='story_effect')return 'effect';
     return 'character';
   };
-  const roles=scene.entities.map(roleOf);
-  const actorCount=roles.filter(role=>role==='character').length;
-  const propCount=roles.filter(role=>role==='prop').length;
-  const effectCount=roles.filter(role=>role==='effect').length;
-  if(actorCount>density.max_characters||propCount>density.max_prominent_props||effectCount>density.max_prominent_effects)fail('scene density exceeded '+scene.id);
-  if(actorCount===3&&(propCount>1||effectCount>1))fail('scene has 3 actors and too many props/effects '+scene.id);
+  const current=Object.fromEntries(scene.entities.map(entity=>[entity.id,entity.initial_state??Object.keys(entity.states??{})[0]]));
+  const assertDensity=()=>{const counts={character:0,prop:0,effect:0};for(const entity of scene.entities){if(entity.states?.[current[entity.id]]?.visible===false)continue;const role=roleOf(entity);if(role in counts)counts[role]++;}if(counts.character>density.max_characters||counts.prop>density.max_prominent_props||counts.effect>density.max_prominent_effects)fail('scene density exceeded '+scene.id);if(counts.character===3&&(counts.prop>1||counts.effect>1))fail('scene has 3 actors and too many props/effects '+scene.id);};
+  assertDensity();for(const event of scene.events){if(event.target&&event.state_after)current[event.target]=event.state_after;assertDensity();}
  }
  const eventIds=new Set();for(const scene of ir.scenes){const entities=new Map(scene.entities.map(e=>[e.id,e]));for(const event of scene.events){if(eventIds.has(event.id))fail('duplicate event id '+event.id);eventIds.add(event.id);const entity=entities.get(event.target);if(!entity)fail('event '+event.id+' target missing');for(const sid of [event.state_before,event.state_after]){const state=entity.states?.[sid];if(!state)fail('event '+event.id+' state missing '+sid);if(typeof state.asset!=='string'||!ir.assets[state.asset])fail('event '+event.id+' executable state must resolve an asset: '+sid);}if(!design.motion_defaults[event.desired_motion])fail('event '+event.id+' desired_motion missing design motion default');}}
  const serialized=JSON.stringify(ir);for(const field of ['start_frame','end_frame','anticipation_frames','hold_frames','settle_frames','runtime_motion','performance'])if(serialized.includes(`"${field}"`))fail('runtime-derived field forbidden in authoring IR: '+field);
