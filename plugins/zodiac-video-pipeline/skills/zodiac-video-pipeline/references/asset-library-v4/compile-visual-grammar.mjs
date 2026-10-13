@@ -99,7 +99,7 @@ export function compileVisualGrammar(production,plan){
       if(!entityId)continue;
       const entity=entities.get(entityId);
       if(!entity)fail(`${spec.scene_id}/${slotId} binding references unknown entity ${entityId}`);
-      if(slot.kind&&entity.kind!==slot.kind)fail(`${spec.scene_id}/${slotId} expects ${slot.kind}, got ${entity.kind}`);
+      if(slot.kind&&entity.kind!==slot.kind&&!(slot.kind==='object'&&entity.kind==='narrative_visual'))fail(`${spec.scene_id}/${slotId} expects ${slot.kind}, got ${entity.kind}`);
     }
     const suppliedCaps=new Set();
     for(const [slotId,entityId] of Object.entries(bindings)){
