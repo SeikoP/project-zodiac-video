@@ -30,3 +30,29 @@ export function validateCanvasAccents(scene,assets,{width=1080,height=1920}={}){
  }
  return {status:issues.length?'BLOCKED':'PASS',issues};
 }
+
+// Resolve optional actor-relative accents once against the authored actor's
+// initial layout. Actor animation is independent; this is not a physical bind.
+export function resolveCanvasAccentEntities(entities) {
+ const cast=new Map((entities??[]).map(e=>[e.id,e]));
+ return (entities??[]).map(e=>{
+  if(e.kind!=='scene_accent'||e.anchor?.type!=='actor')return structuredClone(e);
+  const actor=cast.get(e.anchor.actor_id);
+  const a=actor?.states?.[actor.initial_state]?.transform;
+  if(actor?.kind!=='character'||!bounds(a))throw Error('SCENE_ACCENT_ACTOR_ANCHOR_INVALID '+e.id);
+  const placement=e.anchor.placement??'above_head';
+  if(!['above_head','near_left','near_right'].includes(placement))throw Error('SCENE_ACCENT_PLACEMENT_INVALID '+e.id);
+  const offset=e.anchor.offset_px??{x:0,y:0};
+  if(!Number.isFinite(offset.x)||!Number.isFinite(offset.y))throw Error('SCENE_ACCENT_OFFSET_INVALID '+e.id);
+  const out=structuredClone(e);
+  for(const st of Object.values(out.states??{})){
+   const t=st.transform;
+   if(!bounds({...t,x:t?.x??0,y:t?.y??0}))throw Error('SCENE_ACCENT_TRANSFORM_INVALID '+e.id);
+   let x=a.x+(a.width-t.width)/2,y=a.y-t.height;
+   if(placement==='near_left'){x=a.x-t.width;y=a.y+(a.height-t.height)/2;}
+   if(placement==='near_right'){x=a.x+a.width;y=a.y+(a.height-t.height)/2;}
+   st.transform={...t,x:x+(t.x??0)+offset.x,y:y+(t.y??0)+offset.y};
+  }
+  return out;
+ });
+}
