@@ -8,8 +8,6 @@ export const PHASE02_DEPENDENCIES=Object.freeze({
  environment:['outfit_bake'],
  environment_binding:['environment'],
  scene_direction:['environment_binding'],
- scene_set_identity:['scene_direction'],
- scene_accent_containment:['scene_set_identity'],
  scene_direction_validation:['scene_direction'],
  scene_events:['scene_direction_validation'],
  motion_consistency:['scene_events'],
@@ -17,7 +15,13 @@ export const PHASE02_DEPENDENCIES=Object.freeze({
  publish_prep:['visual_quality'],
  director_final_review:['visual_quality']
 });
-export function validateStepGraph(steps, dependencies=PHASE02_DEPENDENCIES) {
+export const LEGACY_PHASE02_DEPENDENCIES=Object.freeze({
+ ...PHASE02_DEPENDENCIES,
+ scene_set_identity:['scene_direction'],
+ scene_accent_containment:['scene_set_identity']
+});
+
+export function validateStepGraph(steps, dependencies=PHASE02_DEPENDENCIES, {strictMissing=false}={}) {
  const issues=[],ids=new Set(),indices=new Map();
  for(const [index,step] of steps.entries()){
   if(typeof step.id!=='string'||!step.id||ids.has(step.id))issues.push({code:'WORKFLOW_STEP_DUPLICATE_OR_INVALID',step_id:step.id});
@@ -25,7 +29,10 @@ export function validateStepGraph(steps, dependencies=PHASE02_DEPENDENCIES) {
   ids.add(step.id);indices.set(step.id,index);
  }
  for(const step of steps)for(const dependency of dependencies[step.id]??[]){
-  if(!ids.has(dependency))continue; // optional steps may be excluded intentionally
+  if(!ids.has(dependency)){
+   if(strictMissing)issues.push({code:'WORKFLOW_DEPENDENCY_MISSING',step_id:step.id,dependency});
+   continue;
+  }
   if(indices.get(dependency)>=indices.get(step.id))issues.push({code:'WORKFLOW_DEPENDENCY_ORDER_INVALID',step_id:step.id,dependency});
  }
  return {status:issues.length?'BLOCKED':'PASS',issues,order:steps.map(s=>s.id)};
