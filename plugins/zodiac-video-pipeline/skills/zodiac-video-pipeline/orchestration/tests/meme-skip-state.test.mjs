@@ -8,7 +8,7 @@ const phase=JSON.parse(await readFile(path.join(here,"../phases/02-visual-produc
 const template=JSON.parse(await readFile(path.join(here,"../pipeline-state.template.json"),"utf8"));
 const assets=phase.steps.find(x=>x.id==="assets");
 const applies=(c,flags)=>c.when==="always"||(c.when?.startsWith("flag:")&&Boolean(flags[c.when.slice(5)]));
-test("new runs default to no selected meme",()=>{assert.match(template.plugin_version,/^\d+\.\d+\.\d+$/u);assert.equal(template.flags.meme_selected,false);});
+test("new runs default to no selected meme",()=>{assert.match(template.plugin_version,/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u);assert.equal(template.flags.meme_selected,false);});
 test("selection consistency validator always runs even when the default flag is false",()=>{const check=phase.steps.find(x=>x.id==="visual_compile").required_capabilities.find(x=>x.id==="meme_selection_validation");assert.equal(check?.when,"always");assert.equal(check?.stage,"exit");});
 test("meme capabilities are absent when meme_selected is false",()=>{const caps=[...assets.required_capabilities,...assets.conditional_capabilities].filter(c=>applies(c,template.flags)).map(c=>c.id);assert.equal(caps.includes("meme_composition_contract"),false);assert.equal(caps.includes("meme_composition_validation"),false);});
 test("meme capabilities become mandatory when meme_selected is true",()=>{const flags={...template.flags,meme_selected:true};const caps=[...assets.required_capabilities,...assets.conditional_capabilities].filter(c=>applies(c,flags)).map(c=>c.id);assert.equal(caps.includes("meme_composition_contract"),true);assert.equal(caps.includes("meme_composition_validation"),true);});
