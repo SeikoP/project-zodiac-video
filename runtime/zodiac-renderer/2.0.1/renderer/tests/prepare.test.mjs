@@ -316,3 +316,11 @@ test("story objects and symbols do not consume prop or effect density", () => {
   plan.scenes[0].events.push({event_id:"E02",start_frame:17,end_frame:20,target:"another_cup",state_after:"shown"});
   assert.throws(()=>validateSceneLayout(plan),/DENSITY_EXCEEDED.*event=E02.*props=2/);
 });
+
+test("legacy story_symbol is normalized to canonical story_object", async () => {
+  const {resolveVisualRole} = await import("../src/visual-role.mjs");
+  const assets={symbol:{path:"assets/symbols/balance.svg",category:"story_symbol"}};
+  const entity={id:"narrative_balance",visual_role:"story_symbol",initial_state:"shown",
+    states:{shown:{asset:"symbol",visible:true}}};
+  assert.equal(resolveVisualRole(entity,assets),"story_object");
+});
