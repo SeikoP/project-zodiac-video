@@ -27,6 +27,7 @@ export function compileVisualIntent(intent,{narration,token,catalog}={}){
  const decision=freshNarrative?intent.narrative_visual_decision:intent.story_object_decision;
  if(!decision||!['required','optional','omitted'].includes(decision.mode)||!decision.reason?.trim()||!decision.review_ref?.trim())fail('OBJECT_DECISION');
  if(freshNarrative&&intent.scenes.some(scene=>scene.entities?.some(e=>['story_object','story_symbol','visual_metaphor'].includes(e.kind))))fail('FRESH_SYMBOLIC_ALIAS_FORBIDDEN');
+ if(freshNarrative&&intent.scenes.some(scene=>scene.grammar?.environment?.scene_set_id||scene.environment?.scene_set_id))fail('FRESH_SCENE_SET_RETIRED');
  for(const s of intent.scenes){if(s.frame_ref){const ref=intent.frames.find(f=>f.asset_id===s.frame_ref.asset_id);if(!ref||hash(ref)!==hash(s.frame_ref))fail('FRAME_REFERENCE');}}
  const bytes=Buffer.from(narration),ids=new Set();partitionNarration(bytes,intent.scenes.map(s=>s.narration_range));let end=0;
  if(freshNarrative)for(const scene of intent.scenes){
