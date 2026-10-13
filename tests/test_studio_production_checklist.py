@@ -24,7 +24,7 @@ def write_json(path: Path, value: object) -> Path:
     return path
 
 
-def workspace_fixture(root: Path, *, state_version: str | None = None, concept: str | None = "idea-1") -> Path:
+def workspace_fixture(root: Path, *, state_version: str | None = None, concept: str | None = "idea-1", member: str = "gemini") -> Path:
     authoring = root / ".authoring"
     plugin = json.loads((PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
     index = json.loads((SKILL_ROOT / "orchestration" / "phase-index.json").read_text(encoding="utf-8"))
@@ -46,13 +46,14 @@ def workspace_fixture(root: Path, *, state_version: str | None = None, concept: 
         "current_phase": "02-visual-production",
         "phases": phases,
     })
+    member_label = {"gemini": "Song Tử", "libra": "Thiên Bình"}[member]
     write_json(authoring / "episode-scope.json", {
         "format": "zodiac-episode-scope@1",
-        "episode_id": "gemini-trust",
+        "episode_id": f"{member}-trust",
         "episode_format": "single_sign",
-        "member_ids": ["gemini"],
-        "title_working": "Song Tử giữ lời hứa nào?",
-        "topic_question": "Khi nào Song Tử thật sự đáng tin?",
+        "member_ids": [member],
+        "title_working": f"{member_label} giữ lời hứa nào?",
+        "topic_question": f"Khi nào {member_label} thật sự đáng tin?",
         "selection_reason": "Một câu hỏi cụ thể cho tập.",
     })
     if concept is not None:
@@ -204,6 +205,183 @@ class ProductionChecklistDataTests(unittest.TestCase):
                 rejected = production_checklist.load_series_tracker(tracker)
                 self.assertIsNotNone(rejected["diagnostic"])
                 self.assertEqual(rejected["signs"], [])
+
+
+class ProductionChecklistScreenTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from PySide6.QtWidgets import QApplication
+        except ImportError:
+            raise unittest.SkipTest("PySide6 Essentials is not installed")
+        cls.qt_app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.config_path = self.root / "studio" / "production-checklist.json"
+
+    def tearDown(self):
+        from PySide6.QtCore import QCoreApplication, QEvent
+
+        for widget in self.qt_app.topLevelWidgets():
+            widget.close()
+            widget.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.qt_app.processEvents()
+        self.temp.cleanup()
+
+    def write_config(self, workspaces: list[dict], **overrides):
+        config = {**production_checklist.new_checklist_config(), "workspaces": workspaces, **overrides}
+        production_checklist.save_checklist_config(self.config_path, config)
+
+    def make_screen(self, jobs: list[dict] | None = None):
+        from tools.studio_qt.screens.production_checklist import ProductionChecklistScreen
+
+        screen = ProductionChecklistScreen(self.config_path, PLUGIN_ROOT, jobs or [])
+        screen.show()
+        self.qt_app.processEvents()
+        return screen
+
+    def test_registered_rows_show_episode_scope_and_optional_concept(self):
+        from PySide6.QtWidgets import QFileDialog
+
+        gemini = workspace_fixture(self.root / "gemini")
+        libra = workspace_fixture(self.root / "libra", member="libra", concept=None)
+        original = (gemini / ".authoring" / "episode-scope.json").read_bytes()
+        self.write_config([])
+        screen = self.make_screen()
+
+        with patch.object(QFileDialog, "getExistingDirectory", return_value=str(gemini)):
+            screen.add_workspace_button.click()
+        with patch.object(QFileDialog, "getExistingDirectory", return_value=str(libra)):
+            screen.add_workspace_button.click()
+
+        self.assertEqual(len(screen.episode_cards), 2)
+        self.assertIn("Song Tử", screen.episode_cards[0]["summary"].text())
+        self.assertIn("Visual Production", screen.episode_cards[0]["phase"].text())
+        self.assertIn("Visual Compile", screen.episode_cards[0]["step"].text())
+        self.assertIn("Lời hứa trong hai phiên bản", screen.episode_cards[0]["concept"].text())
+        self.assertIn("Thiên Bình", screen.episode_cards[1]["summary"].text())
+        self.assertEqual(screen.episode_cards[1]["concept"].text(), "Concept: Chưa chốt")
+        screen.episode_cards[0]["remove_button"].click()
+        self.assertEqual(len(screen.episode_cards), 1)
+        self.assertEqual((gemini / ".authoring" / "episode-scope.json").read_bytes(), original)
+        self.assertTrue(gemini.is_dir())
+
+    def test_missing_job_and_cover_keep_explicit_link(self):
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QImage
+
+        workspace = workspace_fixture(self.root / "episode")
+        legacy = self.root / "legacy" / "local-job"
+        job5 = self.root / "runner" / "gemini-job"
+        (job5 / "out").mkdir(parents=True)
+        image = QImage(32, 24, QImage.Format.Format_RGB32)
+        image.fill(Qt.GlobalColor.red)
+        cover_path = job5 / "out" / "cover.png"
+        self.assertTrue(image.save(str(cover_path)))
+        self.write_config([{"path": str(workspace), "job_id": "deleted-job"}])
+        jobs = [
+            {"group": "Job local", "name": "local-job", "path": str(legacy), "out_path": str(legacy / "out")},
+            {"group": "Job@5", "name": "gemini-job", "path": str(job5), "out_path": str(job5 / "out")},
+        ]
+        screen = self.make_screen(jobs)
+        card = screen.episode_cards[0]
+        picker = card["job_combo"]
+
+        self.assertEqual(picker.currentData(), "deleted-job")
+        self.assertIn("không có trong Runner", picker.currentText())
+        self.assertIn("không có trong Runner", card["cover_placeholder"].text())
+        self.assertNotIn("local-job", [picker.itemText(index) for index in range(picker.count())])
+        picker.setCurrentIndex(picker.findData("gemini-job"))
+        self.qt_app.processEvents()
+        self.assertEqual(screen.episode_cards[0]["job_combo"].currentData(), "gemini-job")
+        self.assertFalse(screen.episode_cards[0]["cover_placeholder"].isVisible())
+        pixmap = screen.episode_cards[0]["cover_preview"].pixmap()
+        self.assertFalse(pixmap.isNull())
+        self.assertEqual(pixmap.toImage().pixelColor(0, 0), image.pixelColor(0, 0))
+
+        cover_path.unlink()
+        screen.refresh()
+        card = screen.episode_cards[0]
+        self.assertEqual(card["job_combo"].currentData(), "gemini-job")
+        self.assertIn("cover.png", card["cover_placeholder"].text())
+
+        screen.set_runner_jobs([jobs[0]])
+        self.assertEqual(screen.episode_cards[0]["job_combo"].currentData(), "gemini-job")
+        self.assertIn("không có trong Runner", screen.episode_cards[0]["job_combo"].currentText())
+        self.assertIn("không có trong Runner", screen.episode_cards[0]["cover_placeholder"].text())
+
+    def test_cover_visibility_and_series_tracker_preferences_persist(self):
+        from PySide6.QtWidgets import QFileDialog
+
+        workspace = workspace_fixture(self.root / "episode")
+        tracker = self.root / "zodiac-series-checklist.json"
+        signs = [{"id": sign, "status": "done" if sign == "gemini" else "todo"} for sign in sorted(SIGN_IDS)]
+        write_json(tracker, {"format": "zodiac-series-checklist@1", "signs": signs})
+        tracker_bytes = tracker.read_bytes()
+        self.write_config([{"path": str(workspace), "job_id": None}])
+        screen = self.make_screen()
+
+        self.assertEqual(screen.series_status_label.text(), "Chưa liên kết series checklist.")
+        with patch.object(QFileDialog, "getOpenFileName", return_value=(str(tracker), "JSON (*.json)")):
+            screen.series_link_button.click()
+        self.assertIn("1/12", screen.series_status_label.text())
+        self.assertIn("Song Tử: done", screen.series_signs_label.text())
+        self.assertNotIn("phase", screen.series_signs_label.text().lower())
+        linked, error = production_checklist.load_checklist_config(self.config_path)
+        self.assertIsNone(error)
+        self.assertEqual(linked["series_tracker_path"], str(tracker.resolve()))
+        screen.cover_visible_check.click()
+        config, error = production_checklist.load_checklist_config(self.config_path)
+        self.assertIsNone(error)
+        self.assertFalse(config["cover_visible"])
+
+        restarted = self.make_screen()
+        self.assertFalse(restarted.cover_visible_check.isChecked())
+        self.assertTrue(restarted.episode_cards[0]["cover_card"].isHidden())
+        self.assertEqual(restarted.series_status_label.text(), screen.series_status_label.text())
+        restarted.series_unlink_button.click()
+        self.assertEqual(restarted.series_status_label.text(), "Chưa liên kết series checklist.")
+        unlinked, error = production_checklist.load_checklist_config(self.config_path)
+        self.assertIsNone(error)
+        self.assertIsNone(unlinked["series_tracker_path"])
+        self.assertEqual(tracker.read_bytes(), tracker_bytes)
+
+    def test_copy_handoff_uses_current_plugin_default_prompt_routes(self):
+        from PySide6.QtWidgets import QApplication
+
+        workspace = workspace_fixture(self.root / "episode")
+        self.write_config([{"path": str(workspace), "job_id": None}])
+        screen = self.make_screen()
+        screen.episode_cards[0]["handoff_button"].click()
+        self.qt_app.processEvents()
+        copied = QApplication.clipboard().text()
+        plugin = json.loads((PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
+        default_prompt = plugin["extensions"]["com.openai"]["interface"]["defaultPrompt"]
+
+        self.assertIn(str(workspace.resolve()), copied)
+        self.assertIn("02-visual-production", copied)
+        self.assertIn("visual_compile", copied)
+        self.assertIn("defaultPrompt", copied)
+        for route in ("skills/zodiac-video-pipeline/SKILL.md", "orchestration/router.md"):
+            self.assertIn(route, default_prompt)
+            self.assertIn(route, copied)
+
+    def test_malformed_preferences_show_diagnostic_and_disable_mutations(self):
+        path = self.config_path
+        path.parent.mkdir(parents=True)
+        original = b'{"format":"zodiac-studio-checklist@99"}\n'
+        path.write_bytes(original)
+
+        screen = self.make_screen()
+
+        self.assertTrue(screen.preferences_error_label.text())
+        self.assertFalse(screen.add_workspace_button.isEnabled())
+        self.assertFalse(screen.series_link_button.isEnabled())
+        self.assertFalse(screen.cover_visible_check.isEnabled())
+        self.assertEqual(path.read_bytes(), original)
 
 
 if __name__ == "__main__":
