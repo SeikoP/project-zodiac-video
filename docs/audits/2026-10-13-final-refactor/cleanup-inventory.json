@@ -1,0 +1,18 @@
+{
+  "format": "zodiac-cleanup-inventory@1",
+  "observed_commit": "6574e9b01f0035dd21a310d0bfebe3fa8b4ca426",
+  "plugin_source_files": 710,
+  "plugin_source_bytes": 2036773,
+  "classes": {
+    "ACTIVE": 528,
+    "SHARED": 136,
+    "COMPAT_REQUIRED_PENDING_CONSUMER_AUDIT": 46,
+    "OBSOLETE_CONFIRMED": 0,
+    "DEAD_CONFIRMED": 0,
+    "DUPLICATE_CONFIRMED": 0
+  },
+  "interpretation": "207 tests are ACTIVE QA in Git HEAD but excluded from candidate ZIP; compat and scene-set implementations remain pending consumer proof, not safe for deletion yet.",
+  "deletions_performed": 0,
+  "packaging_exclusions": 207,
+  "cleanup_gate": "BLOCKED_ON_NATIVE_COMPATIBILITY_AND_RENDER_PARITY"
+}
