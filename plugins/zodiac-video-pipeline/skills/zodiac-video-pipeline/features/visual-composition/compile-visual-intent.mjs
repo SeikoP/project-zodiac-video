@@ -9,7 +9,7 @@ const hash=x=>createHash('sha256').update(Buffer.isBuffer(x)||typeof x==='string
 const clone=x=>structuredClone(x);
 // Fresh taxonomy is normalized to an existing Job@5 transport role, not a physical prop.
 const runtimeRole=role=>({narrative_visual:'story_object',story_symbol:'story_object',visual_metaphor:'story_object',scene_set:'background',scene_accent:'background'}[role]??role);
-const projectEntity=({narrative_intent,ownership,...e})=>({...e,kind:['story_object','story_symbol','visual_metaphor','narrative_visual','scene_set','scene_accent'].includes(e.kind)?'object':e.kind,visual_role:runtimeRole(e.visual_role)});
+const projectEntity=({narrative_intent,ownership,...e})=>({...e,kind:['story_object','story_symbol','visual_metaphor','narrative_visual','scene_set','scene_accent'].includes(e.kind)?'object':e.kind,visual_role:runtimeRole(e.visual_role),...(e.kind==='scene_accent'?{role:'scene_accent'}:{})});
 const projectAssets=assets=>Object.fromEntries(Object.entries(clone(assets)).map(([id,a])=>[id,{...a,category:['narrative_visual','story_symbol','visual_metaphor'].includes(a.category)?'story_object':['scene_set','scene_accent'].includes(a.category)?'environment':a.category}]));const fail=m=>{throw Error('VISUAL_INTENT_'+m)};
 export const projectionPaths={production:'production.json',character_assembly:'.authoring/character-assembly-plan.json',visual_grammar_plan:'visual-grammar-plan.json',asset_plan:'asset-plan.json',director_plan:'.authoring/director-plan.json',art_direction:'.authoring/scene-art-direction.json',episode_cast_plan:'.authoring/episode-cast-plan.json',story_object_plan:'.authoring/story-object-plan.json'};
 export function sceneSetComponentIntents(env,voice){
