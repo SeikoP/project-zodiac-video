@@ -40,3 +40,32 @@ export function executionTrace(receipt) {
   })),
   issues:receipt.issues??[],status:receipt.status};
 }
+
+export const WORKFLOW_TRANSITIONS=Object.freeze({
+ PENDING:['READY','BLOCKED'],
+ READY:['RUNNING','SKIPPED_REUSED','BLOCKED'],
+ RUNNING:['PASS','FAIL','BLOCKED'],
+ FAIL:['READY','ESCALATED'],
+ BLOCKED:['READY','ESCALATED'],
+ PASS:[],SKIPPED_REUSED:[],ESCALATED:[]
+});
+export function transitionStepState(from,to,{approval=false}={}) {
+ if(approval)throw Error('WORKFLOW_APPROVAL_FORBIDDEN');
+ if(!(WORKFLOW_TRANSITIONS[from]??[]).includes(to))
+  throw Error('WORKFLOW_TRANSITION_INVALID '+from+' -> '+to);
+ return to;
+}
+export function createRepairPlan(issues,{attempt=0,maxAttempts=1}={}) {
+ if(!Number.isInteger(attempt)||!Number.isInteger(maxAttempts)||attempt<0||maxAttempts<0)
+  throw Error('WORKFLOW_RETRY_BUDGET_INVALID');
+ const deterministic=/^(WORKSPACE_|SOURCE_|ASSET_|CONTRACT_|SCENE_PLAN_|SPATIAL_|VISUAL_ROLE_|JOB_V5_)/;
+ const classified=(issues??[]).map(issue=>{
+  const code=String(issue.code??'UNKNOWN');
+  const owner=deterministic.test(code)?'producer_or_runner':'review_or_environment';
+  return {code,owner,action:owner==='producer_or_runner'?'repair_inputs_or_contract':'escalate_for_review',step:issue.step??null};
+ });
+ const safeToRetry=classified.length>0&&classified.every(x=>x.owner==='producer_or_runner')&&attempt<maxAttempts;
+ return {format:'zodiac-workflow-repair-plan@1',attempt,max_attempts:maxAttempts,
+   decision:safeToRetry?'REPAIR_THEN_RETRY':'ESCALATE',
+   repairs:classified,no_approval_created:true};
+}
