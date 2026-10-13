@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {validateRunnerMotionBoundary} from '../../features/visual-composition/validate-runner-motion-boundary.mjs';
 
 import {resolveHandoffLayout,preflightHandoff} from './handoff-preflight.mjs';
+import {validateScenePlan} from '../phase02/scene-plan.mjs';
 const fail=m=>{throw new Error('JOB_V5_COMPILE_INVALID: '+m);};
 const producerVersion=JSON.parse(await readFile(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../../plugin.json'),'utf8')).version;
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -113,6 +114,8 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
   const toRuntimeFrames=(frames,min=1)=>Math.max(min,Math.round(frames*24/video.fps));
   if(!Array.isArray(source.scenes)||!source.scenes.length)fail('source must contain scenes');
   if(!isObj(source.assets))fail('source assets must be an object');
+  const scenePlan=validateScenePlan(source,{required:source.scene_plan_required===true});
+  if(scenePlan.status!=='PASS')fail('SCENE_PLAN '+JSON.stringify(scenePlan.issues));
   if(!isObj(contractSchema))fail('canonical authoring IR schema is required');
   const token=parseStyleToken(designMarkdown);
   const motionDefaults={};
