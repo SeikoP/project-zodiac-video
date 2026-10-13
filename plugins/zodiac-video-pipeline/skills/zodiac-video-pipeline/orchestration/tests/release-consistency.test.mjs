@@ -18,7 +18,11 @@ test('block stale state template after orchestration patch version bump',async()
 test('block stale alternate plugin manifest',async()=>fixture(async dir=>{await update(dir,file[1],'version','2.2.19');assert.equal((await checkReleaseConsistency(dir)).status,'BLOCKED');}));
 test('block damaged release manifest',async()=>fixture(async dir=>{await update(dir,file[0],'version','not-a-version');assert.ok((await checkReleaseConsistency(dir)).problems.some(x=>x.startsWith('INVALID_RELEASE_VERSION')));}));
 test('explicit patch preparation synchronizes all three versions',async()=>fixture(async dir=>{await update(dir,file[2],'plugin_version','2.2.18');const run=spawnSync(process.execPath,[path.join(root,'skills/zodiac-video-pipeline/orchestration/prepare-release.mjs'),next,dir],{encoding:'utf8'});assert.equal(run.status,0,run.stderr);assert.equal((await checkReleaseConsistency(dir)).status,'PASS');const v=JSON.parse(await readFile(path.join(dir,file[2]),'utf8'));assert.equal(v.plugin_version,next);}));
-test('reject same-version preparation to avoid automatic patch bump',async()=>fixture(async dir=>{const run=spawnSync(process.execPath,[path.join(root,'skills/zodiac-video-pipeline/orchestration/prepare-release.mjs'),stable,dir],{encoding:'utf8'});assert.notEqual(run.status,0);assert.match(run.stderr,current.includes('-')?/RELEASE_PREPARED|must be higher/:/must be higher/);}));
+test('reject same-version preparation to avoid automatic patch bump',async()=>fixture(async dir=>{
+ for(const p of file)await update(dir,p,p.includes('pipeline-state.template')?'plugin_version':'version',stable);
+ const run=spawnSync(process.execPath,[path.join(root,'skills/zodiac-video-pipeline/orchestration/prepare-release.mjs'),stable,dir],{encoding:'utf8'});
+ assert.notEqual(run.status,0);assert.match(run.stderr,/must be higher/);
+}));
 test('reject older-version release preparation',async()=>fixture(async dir=>{const run=spawnSync(process.execPath,[path.join(root,'skills/zodiac-video-pipeline/orchestration/prepare-release.mjs'),stable.replace(/\d+$/,x=>String(Number(x)-1)),dir],{encoding:'utf8'});assert.notEqual(run.status,0);}));
 
 test('state machine fixtures derive plugin_version from installed manifest',async()=>{
