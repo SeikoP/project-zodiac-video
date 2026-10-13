@@ -324,3 +324,16 @@ test("legacy story_symbol is normalized to canonical story_object", async () => 
     states:{shown:{asset:"symbol",visible:true}}};
   assert.equal(resolveVisualRole(entity,assets),"story_object");
 });
+
+test("narrative visuals use separate visibility-based density without counting physical props",()=>{
+ const plan=minimalPlan();plan.assets={symbol:{path:"assets/story/scale.svg",category:"story_object"}};
+ const make=id=>({id,kind:"object",visual_role:"story_object",initial_state:"shown",
+  states:{shown:{asset:"symbol",visible:true,transform:{x:20,y:80,width:210,height:140}},
+          hidden:{asset:"symbol",visible:false,transform:{x:20,y:80,width:210,height:140}}}});
+ plan.scenes[0].layout_contract={caption_safe_zone:{x:80,y:1420,width:920,height:300}};
+ plan.scenes[0].entities=[make("first"),make("second"),make("third")];
+ plan.scenes[0].entities[2].initial_state="hidden";
+ assert.doesNotThrow(()=>validateSceneLayout(plan));
+ plan.scenes[0].events=[{event_id:"reveal",target:"third",start_frame:12,end_frame:14,state_after:"shown"}];
+ assert.throws(()=>validateSceneLayout(plan),/DENSITY_EXCEEDED.*event=reveal.*narrative_visuals=3/);
+});

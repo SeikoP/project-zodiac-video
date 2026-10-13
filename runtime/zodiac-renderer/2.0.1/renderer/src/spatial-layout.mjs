@@ -69,7 +69,7 @@ export function auditSpatialLayout(plan) {
       const ordered=resolveLayerOrder(scene,plan.assets,states);
       const visible=ordered.filter(e=>states[e.id]?.visible!==false).map((entity,index)=>{
         const state=states[entity.id],role=resolveVisualRole(entity,plan.assets),asset=plan.assets[state.asset];
-        return {entity:entity.id,asset:state.asset,category:asset?.category,kind:entity.kind,role,layer:resolveLayer(entity,state,plan.assets),order:index,transform:state.transform,animation:scene.events.filter(e=>e.target===entity.id && frame>=e.start_frame && frame<e.end_frame),bounds:entityBounds(scene,entity,state,frame,asset)};
+        return {entity:entity.id,asset:state.asset,category:asset?.category,kind:entity.kind,role,context_role:entity.role??null,layer:resolveLayer(entity,state,plan.assets),order:index,transform:state.transform,animation:scene.events.filter(e=>e.target===entity.id && frame>=e.start_frame && frame<e.end_frame),bounds:entityBounds(scene,entity,state,frame,asset)};
       });
       for (const binding of scene.spatial_bindings ?? []) {
         const subject=(scene.entities ?? []).find(e=>e.id===binding.entity),anchor=(scene.entities ?? []).find(e=>e.id===binding.anchor);
@@ -89,7 +89,7 @@ export function auditSpatialLayout(plan) {
       const caption=scene.captions?.find(c=>frame>=c.start_frame && frame<c.end_frame);
       const text=caption?.resolved_layout;
       for(const item of visible) {
-        if(text && !['background','overlay','caption'].includes(item.role)) {
+        if(text && (!['background','overlay','caption'].includes(item.role)||item.context_role==='scene_accent')) {
           const padding=text.zone.padding;
           const overlap=overlapArea(item.bounds,{x:text.x-padding,y:text.y-padding,width:text.width+2*padding,height:text.height+2*padding});
           item.caption_overlap_px=Math.ceil(overlap);

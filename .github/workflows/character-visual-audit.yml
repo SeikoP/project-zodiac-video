@@ -1,0 +1,60 @@
+name: Character Baseline Visual Audit
+on:
+  push:
+    branches: [audit/2026-10-13-pipeline-stabilization]
+    paths: [.github/workflows/character-visual-audit.yml, tools/audit/export_character_visual_baseline.mjs]
+  workflow_dispatch:
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: tools-repo
+      - uses: actions/checkout@v4
+        with:
+          ref: 7bc1af17e3e7cd36f6cef245ee93b49664d3d8b2
+          path: before
+      - uses: actions/checkout@v4
+        with:
+          path: after
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Export compiler SVG output from both revisions
+        run: |
+          node tools-repo/tools/audit/export_character_visual_baseline.mjs before output/before
+          node tools-repo/tools/audit/export_character_visual_baseline.mjs after output/after
+      - name: Rasterize and compare visual differences
+        run: |
+          python -m pip install pillow cairosvg
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import cairosvg
+          from PIL import Image,ImageChops,ImageStat,ImageDraw
+          root=Path('output')
+          result={}
+          for name in ('lean-explain','round-offer','stocky-phone','petite-run'):
+              images=[]
+              for revision in ('before','after'):
+                  svg=root/revision/(name+'.svg')
+                  target=svg.with_suffix('.png')
+                  cairosvg.svg2png(url=str(svg),write_to=str(target),output_width=720,output_height=720)
+                  images.append(Image.open(target).convert('RGBA'))
+              diff=ImageChops.difference(*images)
+              composite=Image.new('RGBA',(1440,720),'white')
+              composite.paste(images[0],(0,0),images[0]);composite.paste(images[1],(720,0),images[1])
+              composite.save(root/(name+'-comparison.png'))
+              result[name]={'bbox_changed':diff.getbbox(),'mean_channel_difference':list(ImageStat.Stat(diff).mean)}
+          (root/'visual-diff.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: character-geometry-comparison
+          path: output/
+          retention-days: 14

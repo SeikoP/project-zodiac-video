@@ -113,3 +113,47 @@ test('actual eight-scene Job@5 prepares with real font metrics, unchanged timing
     await assert.rejects(()=>prepareRendererProps(root),/CAPTION_OVERFLOW.*ink_height=.*line_height_px=/);
   } finally {await rm(root,{recursive:true,force:true});}
 });
+
+test('Libra narrative balance tilts above actor without Scene Set or physical contact',()=>{
+ const p=fixture(),scene=p.scenes[0];
+ p.assets.scale={category:'story_object',path:'assets/story/libra-balance.svg'};
+ scene.duration_frames=22;
+ const actor=entity('libra','actor',{x:340,y:610,width:400,height:550});
+ const scale={id:'balance',kind:'story_object',visual_role:'story_object',initial_state:'center',states:{
+  center:{asset:'scale',visible:true,transform:{x:370,y:260,width:340,height:220,rotation:0}},
+  left:{asset:'scale',visible:true,transform:{x:370,y:260,width:340,height:220,rotation:-12}},
+  right:{asset:'scale',visible:true,transform:{x:370,y:260,width:340,height:220,rotation:12}}
+ }};
+ scene.entities=[actor,scale];
+ scene.events=[
+  {event_id:'tilt-left',target:'balance',start_frame:4,end_frame:7,state_before:'center',state_after:'left',motion:'state_swap'},
+  {event_id:'tilt-right',target:'balance',start_frame:8,end_frame:11,state_before:'left',state_after:'right',motion:'state_swap'},
+  {event_id:'balance-again',target:'balance',start_frame:12,end_frame:15,state_before:'right',state_after:'center',motion:'state_swap'}
+ ];
+ scene.spatial_bindings=[]; // A thought metaphor is NOT held_by or on_surface.
+ scene.captions=[{start_frame:0,end_frame:22,text:'Hai lựa chọn',resolved_layout:resolveCaptionLayout(scene,p.presentation,p.video,'Hai lựa chọn',()=>100)}];
+ assert.equal(resolveVisualRole(scale,p.assets),'story_object');
+ assert.equal(resolveEntityState(scene,scale,7).transform.rotation,-12);
+ assert.equal(resolveEntityState(scene,scale,11).transform.rotation,12);
+ assert.equal(resolveEntityState(scene,scale,15).transform.rotation,0);
+ const qc=auditSpatialLayout(p);
+ assert.equal(qc.frames.length,22);
+ for(const frame of qc.frames){
+  const a=frame.entities.find(e=>e.entity==='libra'),b=frame.entities.find(e=>e.entity==='balance');
+  assert.ok(b.bounds.y+b.bounds.height<a.bounds.y+100,'scale stays above actor focus');
+  assert.equal(b.caption_overlap_px??0,0);
+ }
+});
+
+test('cafe rear accents remain background-layered yet fail caption collision on actual frames',()=>{
+ const p=fixture(),scene=p.scenes[0];
+ p.assets.window={category:'environment',path:'assets/environment/cafe-window.svg'};
+ const accent=entity('window','window',{x:100,y:120,width:320,height:330});
+ accent.visual_role='background';accent.role='scene_accent';
+ scene.entities=[entity('actor','actor',{x:370,y:500,width:380,height:650}),accent];
+ scene.captions=[{start_frame:0,end_frame:21,text:'cafe',resolved_layout:resolveCaptionLayout(scene,p.presentation,p.video,'cafe',()=>60)}];
+ assert.equal(resolveVisualRole(accent,p.assets),'background');
+ assert.doesNotThrow(()=>auditSpatialLayout(p));
+ accent.states.idle.transform.y=scene.captions[0].resolved_layout.y;
+ assert.throws(()=>auditSpatialLayout(p),/CAPTION_SAFE_ZONE_BLOCKED.*entity=window/);
+});

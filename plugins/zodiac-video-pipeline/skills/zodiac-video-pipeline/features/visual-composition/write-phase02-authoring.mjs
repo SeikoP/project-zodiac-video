@@ -68,7 +68,7 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   const source=await readFile(path.join(root,'narration.txt'),'utf8');
   const authored=await decode(payloadPath);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
-  if(generated&&authored.story_object_decision.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
+  if(generated&&authored.taxonomy_version!=='narrative_visual@1'&&authored.story_object_decision?.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
   const payload=generated?{format:'zodiac-phase02-authored-handoff@1',plugin_version:manifest.version,approved_narration_sha256:authored.narration_sha256,production:generated.production,asset_plan:generated.asset_plan,visual_grammar_plan:generated.visual_grammar_plan,character_assembly_plan:generated.character_assembly}:authored;
   const verdict=assessAuthoringPayload(payload,{narration:source,pluginVersion:manifest.version,state});
   if(verdict.status==='BLOCKED')throw new Error('AUTHORING_PAYLOAD_BLOCKED '+JSON.stringify(verdict.issues));
@@ -89,8 +89,8 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   // Re-read approved source/state before mutating: concurrent edits fail closed.
   if(sha(Buffer.from(await readFile(path.join(root,'narration.txt'))))!==payload.approved_narration_sha256)throw new Error('NARRATION_CHANGED_CONCURRENTLY');
   if(sha(await readFile(statePath))!==sha(stateBytes))throw new Error('STATE_CHANGED_CONCURRENTLY');
-  for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');staged.push({tmp,...o});}
-  for(const o of staged){await rename(o.tmp,o.target);committed.push(o);}
+  for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');if(sha(await readFile(tmp))!==o.sha256)throw Error('AUTHORING_STAGING_HASH_MISMATCH '+o.rel);staged.push({tmp,...o});}
+  for(const o of staged){await rename(o.tmp,o.target);committed.push(o);if(sha(await readFile(o.target))!==o.sha256)throw Error('AUTHORING_COMMIT_HASH_MISMATCH '+o.rel);}
   return {status:'AUTHORING_WRITTEN_NOT_COMPILED',files:outputs.map(o=>({path:o.rel,sha256:o.sha256})),next:'Run strict execution-preflight and native Phase02 compilers; do not mark PASS.'};
  }catch(e){for(const o of committed.reverse())await rm(o.target,{force:true});throw e;}
  finally{for(const o of staged)await rm(o.tmp,{force:true});await lease.release();}
