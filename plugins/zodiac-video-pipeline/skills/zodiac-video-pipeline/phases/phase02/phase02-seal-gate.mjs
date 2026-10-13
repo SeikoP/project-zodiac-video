@@ -19,6 +19,17 @@ export async function inspectPhase02Seal(root, {validateState=true}={}) {
  try{execution=await read(join(dir,'.authoring/phase02-execution-receipt.json'));}catch{}
  const report=assessPhase02Evidence({state,checkpoints,execution,workspaceFiles:files});
  const issues=[...report.issues];
+ // Fresh visual production cannot seal without intentional scene boundaries.
+ // Existing imported/sealed jobs are unaffected.
+ if(state?.run_mode==='fresh'){
+  try{
+   const source=await read(join(dir,'production.json'));
+   const {validateScenePlan}=await import('./scene-plan.mjs');
+   const sceneReport=validateScenePlan(source,{required:true});
+   issues.push(...sceneReport.issues);
+  }catch(e){issues.push({code:'SCENE_PLAN_VALIDATION_FAILED',detail:e.message});}
+ }
+
  const v=String(state?.plugin_version??'0.0.0').split('.').map(Number),modern=v[0]>2||(v[0]===2&&(v[1]>4||(v[1]===4&&v[2]>=46)));
  let intent=false;try{intent=(await read(join(dir,'.authoring/scene-art-direction.json'))).composition_stage==='intent';}catch{}
  if((modern&&state?.run_mode==='fresh')||intent){try{const checked=await (await import('../../features/visual-composition/resolve-scene-composition.mjs')).inspectResolvedWorkspace(dir);if(checked.status!=='PASS')issues.push(...checked.issues);}catch(e){issues.push({code:'COMPOSITION_RESOLVED_MISSING_OR_INVALID',detail:e.message});}}
