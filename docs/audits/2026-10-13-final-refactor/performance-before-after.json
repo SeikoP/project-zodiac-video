@@ -1,0 +1,20 @@
+{
+  "format": "zodiac-performance-before-after@1",
+  "evidence": "Candidate packaging run 38437254794; Phase02 timings are only produced by actual native receipt runs",
+  "baseline": {
+    "context_tokens": null,
+    "phase02_duration_ms": null,
+    "cache_hit_rate": null,
+    "zip_bytes": null,
+    "compiler_calls": null
+  },
+  "after": {
+    "context_tokens": null,
+    "phase02_duration_ms": null,
+    "cache_hit_rate": null,
+    "candidate_zip_bytes": 631505,
+    "compiler_calls": null
+  },
+  "before_after_comparison": "NOT_MEASURABLE",
+  "reason": "No paired native Phase02+renderer execution receipts on identical workloads. Do not confuse source bytes with compressed ZIP bytes."
+}
