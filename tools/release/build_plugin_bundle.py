@@ -47,7 +47,7 @@ def build(root: Path, destination: Path) -> dict:
         if file.suffix not in {".mjs", ".js"}:
             continue
         raw = file.read_text(encoding="utf-8")
-        imports = re.findall(r"(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\bimport\\s*)['\\\"](\\.[^'\\\"]+)['\\\"]", raw)
+        imports = re.findall(r"""(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s*)['"](\.[^'"]+)['"]""", raw)
         for spec in imports:
             target = (file.parent / spec).resolve()
             try:
