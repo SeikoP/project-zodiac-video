@@ -26,3 +26,17 @@ Preserve a recognizable visual identity through the authored states. Details
 must belong to the object; no separate effect asset, floating decoration or
 mandatory sparkle/ray/question-mark treatment is introduced. Degree of detail
 follows the story idea and native visual review, not a path-count quota.
+
+## Canonical taxonomy and compatibility
+
+New productions use one `story_object` visual role for symbolic and narrative
+objects. `story_symbol` is a deprecated legacy alias, not a new type or asset
+budget. `presentation_mode` describes thought metaphor, physical interaction
+or visual cutaway; it never changes the canonical visual role. Explicitly
+distinguish prop (physical interaction) and effect (reaction emphasis).
+Do not create duplicate entities for a story object and its symbolic meaning.
+
+Scene Plan must identify the narrative setup, friction and payoff scene/beat
+for each story object. Reuse a single conceptual entity with meaningful states
+whenever it persists across beats. Rendering may instantiate scene-local
+entity lifetimes while retaining conceptual lineage.
