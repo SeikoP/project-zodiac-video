@@ -15,7 +15,7 @@ Publish metadata belongs to **Visual Production → Publish Prep**. It reuses ap
   "cover": {
     "layout": "tilted_top_hook",
     "identity": {"sign_id": "libra", "label": "THIÊN BÌNH", "glyph": "♎"},
-    "hook": "Concise hook",
+    "hook": "THIÊN BÌNH CÂN NHẮC ĐẾN KHI ĐÁNH MẤT CẢ HAI?",
     "source_scene_id": "S04",
     "visuals": [
       {"entity_id": "libra", "state_id": "explain"},
@@ -23,7 +23,8 @@ Publish metadata belongs to **Visual Production → Publish Prep**. It reuses ap
     ]
   },
   "caption": "...",
-  "hashtags": ["#ThienBinh"],
+  "title": "Thiên Bình do dự giữa hai lựa chọn đến mức đánh mất cơ hội",
+  "hashtags": ["#ThienBinh", "#CungHoangDao", "#TinhCachThienBinh", "#SuDoDu", "#GiaiMaTinhCach", "#bungmoto"],
   "source": {"narration": "narration.txt", "production": "production.json"}
 }
 ```
@@ -64,8 +65,11 @@ out/
 Zodiac Studio does **not** create `zodiac-publish-bundle.zip`. The only optional creative archive is `zodiac-job.zip`, owned by explicit Handoff Export.
 
 ## Publishing strength addendum v2.3.1
-Read `references/publish-virality.md` as editorial authority. For new content, include optional `title` as a sign-specific search/title line and optionally append `TITLE:` in `publish-copy.txt`. Preserve existing `cover.hook` and original four copy markers to keep current runner compatibility. Prefer 4–7 meaningful multi-role hashtags (sign, topic, niche, brand; series when applicable), never pad for count. Do not assert "more tags => more views". Existing packages without title stay compatible.
+Read `references/publish-virality.md` as editorial authority. For new content, include optional `title` as a sign-specific search/title line and optionally append `TITLE:` in `publish-copy.txt`. Preserve existing `cover.hook` and original four copy markers to keep current runner compatibility. For fresh episodes, plan 5–9 distinct relevant hashtags (identity, topic, niche, episode format/audience context when applicable, and brand). An honest smaller set requires editorial review, not padding. Never claim hashtag count guarantees distribution. Do not assert "more tags => more views". Existing packages without title stay compatible.
 
 
 ## Cover Composition v2 (new v2.4.14)
 Fresh Publish Prep must read `references/cover-composition-v2.md`, include `cover.design` derived exclusively from V4 style token and scene-native assets, run `node orchestration/validate-cover-design.mjs <workspace>` before Visual Review. Explicitly note the runtime must implement title shadow and scale; producer validation cannot assert final cover.png pixel parity. Do not replace environment with story object. Old approved covers remain compatible via `--allow-legacy` only.
+
+## Fresh cover completeness — editorial decision
+For each source-scene actor, Narrative Visual, physical Prop, contextual Scene Accent and meaningful Effect, explicitly decide whether the selected cover frame needs it. The exported `cover.visuals` must resolve to actual native entities/states; do not invent cover-only SVGs. When a narratively decisive element is omitted, add a specific producer-side omission reason. A cover that simply has one legal entity is not automatically a complete or persuasive composition. Quality review must inspect the actual `cover.png` at thumbnail scale and the opening frame.
