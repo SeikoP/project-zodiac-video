@@ -11,7 +11,7 @@ export function validateFreshAssetSelection({intent,production,policy}){
   const env=scene.grammar?.environment??scene.environment??{};
   if(env.profile||scene.environment?.profile)fail('PROFILE_COMPATIBILITY',scene.id);
   // Fresh compositions are canvas-first. Legacy scene-set remains an optional compatibility reference.
-  if(env.scene_set_id && !sets.has(env.scene_set_id))fail('SCENE_SET_UNKNOWN',scene.id);
+  if(env.scene_set_id)fail('FRESH_SCENE_SET_RETIRED',scene.id);
   if(scene.art_direction?.environment_profile)fail('STALE_ART_DIRECTION_PROFILE',scene.id);
   for(const a of env.scene_accents??[])if(retired.has(a.id))fail('RETIRED_ACCENT',a.id);
  }
