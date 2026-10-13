@@ -19,3 +19,18 @@ test('manifest finalization permits forced native revalidation only after genuin
   steps.assets.status='PASS';await put('.authoring/pipeline-state.json',{phases:{'02-visual-production':{steps}}});out.asset_plan.extra='tampered';await put('asset-plan.json',out.asset_plan);await assert.rejects(()=>api.verifyIntentWorkspace(root,{revalidateNativeOutput:true}),/PROJECTION_DRIFT/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('fresh narrative visual authoring accepts simple representation without three-beat object plan',()=>{
+ const input=intent();
+ input.taxonomy_version='narrative_visual@1';
+ delete input.story_object_decision;
+ input.narrative_visual_decision={mode:'required',reason:'Compare two choices',review_ref:'review:nv1'};
+ input.scenes[0].entities[0].kind='narrative_visual';
+ input.scenes[0].entities[0].visual_role='narrative_visual';
+ input.assets.a.category='narrative_visual';
+ const out=api.compileVisualIntent(input,{narration});
+ assert.equal(out.production.scenes[0].entities[0].kind,'narrative_visual');
+ assert.equal(out.story_object_plan,null);
+ input.scenes[0].entities[0].kind='story_symbol';
+ assert.throws(()=>api.compileVisualIntent(input,{narration}),/FRESH_SYMBOLIC_ALIAS_FORBIDDEN/);
+});
