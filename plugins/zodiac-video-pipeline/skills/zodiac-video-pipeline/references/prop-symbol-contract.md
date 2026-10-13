@@ -1,7 +1,15 @@
-# Prop-first symbol contract
+# Symbolic visuals — legacy compatibility note
 
-A symbolic prop stays a normal native V4 prop/object with states, events and ordinary asset lineage. Do not create `kind:story_object` for fresh authoring. A phone with notification states is an ordinary Prop, not a proof of a meaningful symbol.
+This document is retained for links from existing releases. It must NOT be used to author new story symbols as props.
 
-`symbol_intent` requires an explicit `required | optional | omitted` decision. For required symbols, declare sign specificity, meaning, removal test, and three real setup/friction/payoff beats. Each beat must bind a real scene ID, prop entity, state-changing event, distinct semantic delta and narration anchor. Structural PASS is not creative approval.
+For new work, use the single canonical `story_object` role and follow
+[story-object-contract.md](story-object-contract.md).
 
-Fresh selection fails closed on retired source IDs and paths. Compatibility routing remains available to older continuity packages only. Story Symbol must stay within the selected scene-set; it must never replace the continuous frame/background.
+A narrative visual can be physical, abstract or symbolic. Its representation
+does not create a separate role: use `presentation_mode` for this distinction.
+A prop remains `interactive_prop` only when its primary purpose is physical
+character interaction. An effect is a reaction accent, not a narrative metaphor.
+
+Legacy `story_symbol`, `symbol_intent`, and authored symbolic props must
+remain readable for existing packages; migration must preserve states, events,
+scene-bound narrative meaning and lineage, without silent deletion.
