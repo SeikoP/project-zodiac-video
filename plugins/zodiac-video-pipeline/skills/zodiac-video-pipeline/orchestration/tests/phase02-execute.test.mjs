@@ -26,6 +26,7 @@ const makeSource=async()=>{
  const coordinator=await readFile(script,'utf8');
  const rels=coordinator.match(/const sourcePaths=\[([\s\S]*?)\];/)[1].match(/'[^']+'/g).map(x=>x.slice(1,-1));
  for(const p of rels){const full=path.join(skill,p);if(p.endsWith('.mjs'))await write(full,'console.log("MOCK_PASS");\n');else if(!(await exists(full)))await write(full,'{}\n');}
+ await write(path.join(skill,'references/asset-library-v4/memes/compile-meme-props.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=path.dirname(process.argv[2]);await mkdir(path.join(root,'.authoring'),{recursive:true});for(const file of ['meme-prop-compile-receipt.json','generated-assets.json'])await writeFile(path.join(root,'.authoring',file),'{}');`);
  // Deterministic fake binaries only for testing the coordinator, never for production.
  const fakeCharacter=`import {readFile,writeFile,mkdir} from 'node:fs/promises';import path from 'node:path';
  const file=process.argv[2],root=path.dirname(file);await mkdir(path.join(root,'.authoring'),{recursive:true});
@@ -57,6 +58,21 @@ const makeSource=async()=>{
 };
 const exists=async p=>{try{await readFile(p);return true;}catch{return false;}};
 
+test('cached visual quality invalidates when workspace art-direction inputs change',async()=>{
+ const ws=await makeWorkspace(),src=await makeSource();
+ try{
+  await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
+  await write(path.join(ws,'.authoring/scene-art-direction.json'),'{"reason":"first"}');
+  assert.equal(run(ws,src,['--run']).status,0);
+  assert.equal(run(ws,src,['--run']).status,0);
+  await write(path.join(ws,'.authoring/scene-art-direction.json'),'{"reason":"changed"}');
+  const result=run(ws,src,['--run']);assert.equal(result.status,0,result.stderr+result.stdout);
+  const receipt=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
+  assert.equal(receipt.steps.find(s=>s.id==='visual_quality').status,'PASS');
+  assert.equal(receipt.steps.find(s=>s.id==='character_write').status,'SKIPPED_REUSED');
+ }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
+});
+
 test('absent source blocks with named files and does not invent compiler results',async()=>{
  const ws=await makeWorkspace(),src=path.join(ws,'nothing-installed');const r=run(ws,src,['--run']);
  assert.equal(r.status,2);const evidence=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
@@ -75,8 +91,8 @@ test('native run invokes fixture compilers and receipt-wrapped validators in ord
  const ws=await makeWorkspace(),src=await makeSource();await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
  const r=run(ws,src,['--run']);assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
  const e=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
- assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,15);
- assert.deepEqual(e.steps.map(x=>x.id),['character_components','character_plan','character_write','character_identity','outfit_bake','environment','environment_binding','scene_direction','scene_set_identity','scene_accent_containment','scene_direction_validation','scene_events','motion_consistency','visual_quality','publish_prep']);
+ assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,16);
+ assert.deepEqual(e.steps.map(x=>x.id),['character_components','character_plan','character_write','character_identity','outfit_bake','meme_props','environment','environment_binding','scene_direction','scene_set_identity','scene_accent_containment','scene_direction_validation','scene_events','motion_consistency','visual_quality','publish_prep']);
  assert.ok(e.steps.every(x=>x.status==='PASS'));
  const p=JSON.parse(await readFile(path.join(ws,'production.json')));
  assert.equal(p.scenes[0].entities[0].states.neutral.asset,'demo');

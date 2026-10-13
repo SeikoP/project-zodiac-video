@@ -18,7 +18,7 @@ masters, room cues, migration guides and compatibility hair are absent. Resume
 historical jobs through their separately pinned recovery snapshot. Re-authoring a
 useful retired idea requires a new ID and explicit visual review.
 
-Shot layouts/actions, native character/effect compilers, prop masters and meme
+Shot layouts/actions, native character/prop compilers, prop masters and meme
 semantic templates remain current. No historical finished-character artwork is
 an ordinary actor source. `frames/` is a compiler metadata path for shot layouts.
 

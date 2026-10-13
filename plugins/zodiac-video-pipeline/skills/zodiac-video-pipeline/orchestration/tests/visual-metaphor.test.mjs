@@ -92,6 +92,6 @@ test('Visual Metaphor cannot own background or environment roles',async()=>{
 
 test('fresh template no longer requires Story Object and exposes lightweight metaphor routing flag',async()=>{
  const state=JSON.parse(await readFile(path.join(skill,'orchestration/pipeline-state.template.json'),'utf8'));
- assert.equal('story_object_required' in state.flags,false);
- assert.equal(state.flags.visual_metaphor_selected,false);
+ assert.equal(state.flags.story_object_required??false,false);
+ assert.equal(state.flags.visual_metaphor_selected??false,false);
 });

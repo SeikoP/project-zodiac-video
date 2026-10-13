@@ -9,5 +9,5 @@ const plugin=JSON.parse(await readFile(path.resolve(orch,'../../../plugin.json')
 const overlay=JSON.parse(await readFile(path.resolve(orch,'../../../.codex-plugin/plugin.json'),'utf8'));
 const state=JSON.parse(await readFile(path.join(orch,'pipeline-state.template.json'),'utf8'));
 test('manifest, overlay and state template versions stay synchronized',()=>{assert.equal(state.plugin_version,plugin.version);assert.equal(overlay.version,plugin.version)});
-test('router invokes execution preflight before phase execution',async()=>{const r=await readFile(path.join(orch,'router.md'),'utf8');assert.match(r,/execution-preflight\.mjs/);assert.match(r,/no fabricated receipts/i)});
+test('router invokes execution preflight before phase execution',async()=>{const r=await readFile(path.join(orch,'router.md'),'utf8');assert.match(r,/execution-preflight\.mjs/);assert.match(r,/record real operations/i)});
 test('preflight exists and is source-only rather than a validator bypass',async()=>{const s=await readFile(path.resolve(orch,'../phases/phase01/execution-preflight.mjs'),'utf8');assert.match(s,/MISSING_SOURCE/);assert.match(s,/STATE_MISSING/);assert.doesNotMatch(s,/status:\s*['"]PASS['"]/)});

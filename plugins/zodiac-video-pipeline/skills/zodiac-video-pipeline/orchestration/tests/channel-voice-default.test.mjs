@@ -9,7 +9,7 @@ test('channel follows semantic beat rhythm without mandatory intensity',()=>{
  assert.match(docs[0],/no fixed intensity/);
  assert.match(docs[0],/not the fresh default/);
  assert.match(docs[1],/TONE_RHYTHM_DEFAULT/);
- assert.match(docs[2],/TONE_RHYTHM_DEFAULT/);
+ assert.match(docs[2],/references\/phase01-briefing.md/);
 });
 test('editorial voice remains evidence bounded and preserves already approved narration',()=>{
  assert.match(docs[0],/đặc điểm cung được kiểm chứng|evidence/i);

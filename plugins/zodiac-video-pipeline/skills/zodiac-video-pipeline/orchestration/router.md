@@ -58,7 +58,7 @@ foreground characters have independent composition and physical support; the sce
 inside the selected wall; story objects do not replace the background.
 
 Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
-all manifest capabilities, conditional meme/effect work and Director/native QC.
+all manifest capabilities, selected meme/prop work and Director/native QC.
 NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED is not Visual Review PASS. Compile
 scene-complete review frames and two actual endpoints per event, validate them,
 then prepare the clean review surface through `prepare-phase02-review.mjs`.

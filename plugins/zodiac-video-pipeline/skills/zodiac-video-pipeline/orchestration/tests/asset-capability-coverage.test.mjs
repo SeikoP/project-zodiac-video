@@ -28,11 +28,9 @@ test('asset capability index covers fresh scene, cast, interaction and effect ne
  }
  assert.deepEqual(capabilities.layouts?.['three-person-comparison']?.cast,[3]);
  for(const id of ['pass-object','hold-show','compare-group'])assert.ok(capabilities.interactions?.[id],id+' interaction capability missing');
- for(const id of ['surprise','pressure','confusion','embarrassment','tension','emphasis','motion']){
-  assert.equal(capabilities.effects?.[id]?.lifecycle,'bounded_enter_release');
- }
+ assert.deepEqual(capabilities.effects,{});
  const needs=new Map((coverage.needs??[]).map(row=>[row.id,row]));
- for(const id of ['scene.classroom','scene.study','scene.street','scene.neutral','cast.three_compare','interaction.pass_object','effect.confusion'])assert.ok(needs.has(id),id+' coverage missing');
+ for(const id of ['scene.classroom','scene.study','scene.street','scene.neutral','cast.three_compare','interaction.pass_object'])assert.ok(needs.has(id),id+' coverage missing');
 });
 
 test('new scene-set and accent masters are registered, hashed and style-safe',async()=>{
@@ -93,13 +91,13 @@ test('narrative asset needs resolve through coverage matrix before guidance sele
  const capabilityIndex=await json('capability-index.json');
  const coverageMatrix=await json('coverage-matrix.json');
  const selected=selectAssetGuidance({
-  asset_needs:['scene.classroom','cast.three_compare','effect.confusion'],
+  asset_needs:['scene.classroom','cast.three_compare'],
   environment_mode:'scene_set'
  },policy,{capabilityIndex,coverageMatrix});
  assert.deepEqual(selected.unresolved_needs,[]);
  assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='scene.classroom'&&row.capability_id==='scene-set-classroom'&&row.kind==='scene_set'));
  assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='cast.three_compare'&&row.capability_id==='three-person-comparison'&&row.kind==='layout'));
- assert.ok(selected.resolved_capabilities.some(row=>row.need_id==='effect.confusion'&&row.capability_id==='confusion'&&row.kind==='effect'));
+ assert.throws(()=>selectAssetGuidance({asset_needs:['effect.confusion']},policy,{capabilityIndex,coverageMatrix}),/ASSET_CAPABILITY_NEED_UNKNOWN/);
  assert.ok(selected.selected_asset_ids.includes('scene-set-classroom'));
  assert.deepEqual(selected.unresolved_ids,[]);
  assert.equal(selected.extension_refs.some(ref=>ref.includes('environments/composition-index.json')),false);

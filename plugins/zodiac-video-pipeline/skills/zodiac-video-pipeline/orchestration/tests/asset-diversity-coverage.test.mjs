@@ -40,12 +40,10 @@ test('character diversity expands fresh silhouettes faces accessories and intera
  const preferred=freshPreferredHairIds(catalog);
  assert.ok(preferred.length>=8,'need >=8 fresh preferred hair silhouettes');
  assert.equal(preferred.includes('lopsided-bob'),false);
- assert.ok(catalog.face_profiles.length>=7,'need >=7 face profiles');
- assert.ok(catalog.accessories.length>=6,'need >=6 accessories');
+ assert.deepEqual(catalog.face_profiles.map(x=>x.id),['balanced']);
+ assert.deepEqual(catalog.accessories,[]);assert.deepEqual(promotedAccessories.assets,[]);
  assert.ok(catalog.poses.length>=25,'need >=25 poses');
  for(const id of ['curtain-bang','short-curl','low-ponytail','soft-mohawk'])assert.ok(preferred.includes(id),id+' fresh hair missing');
- for(const id of ['brow-marked','beauty-mark','rosy-cheeks'])assert.ok(catalog.face_profiles.some(x=>x.id===id),id+' face variation missing');
- for(const id of ['small-hoop','headband','neck-scarf','square-glasses']){assert.ok(catalog.accessories.some(x=>x.id===id),id+' accessory missing');assert.ok(promotedAccessories.assets.some(x=>x.id===id),id+' must be promoted in accessory index');}
  for(const id of ['point-choice','receive-object','hold-two-props','open-barrier'])assert.ok(catalog.poses.some(x=>x.id===id),id+' pose missing');
 });
 
@@ -73,20 +71,11 @@ test('each scene family gains a third sparse authored identity cue',async()=>{
  }
 });
 
-test('effect and mechanic vocabulary expands through explicit semantic coverage needs',async()=>{
- const [families,effects,caps,mechanics,coverage,policy]=await Promise.all([
-  json('effects/semantic-families.json'),json('effects/meme-effect-catalog.json'),json('capability-index.json'),
-  json('mechanics/index.json'),json('coverage-matrix.json'),json('selection-policy.json')
- ]);
- for(const id of ['focus-halo','comparison-bracket','relief-wave','alarm-zigzag']){
-  assert.ok(caps.effects[id],id+' capability missing');
-  const fx=effects.effects[caps.effects[id].effect_id];assert.ok(fx,id+' effect missing');
-  assert.ok(families.families[fx.semantic_family],id+' family missing');
- }
- for(const id of ['compare-two-props','point-choice','open-barrier','focus-shift'])assert.ok(mechanics.mechanics.some(x=>x.id===id),id+' mechanic missing');
- const needs=new Map(coverage.needs.map(x=>[x.id,x.capability]));
- for(const id of ['metaphor.balance','metaphor.split_direction','metaphor.push_pull','metaphor.focus_shift','metaphor.barrier','metaphor.comparison_level','effect.focus','effect.comparison','effect.relief','effect.alarm'])assert.ok(needs.has(id),id+' coverage need missing');
- const selected=selectAssetGuidance({asset_needs:['metaphor.balance','effect.focus'],environment_mode:'scene_set'},policy,{capabilityIndex:caps,coverageMatrix:coverage});
+test('removed effect needs fail closed while metaphor and mechanics remain native',async()=>{
+ const [caps,mechanics,coverage,policy]=await Promise.all([json('capability-index.json'),json('mechanics/index.json'),json('coverage-matrix.json'),json('selection-policy.json')]);
+ assert.deepEqual(caps.effects,{});
+ for(const id of ['compare-two-props','point-choice','open-barrier','focus-shift'])assert.ok(mechanics.mechanics.some(x=>x.id===id));
+ const selected=selectAssetGuidance({asset_needs:['metaphor.balance'],environment_mode:'scene_set'},policy,{capabilityIndex:caps,coverageMatrix:coverage});
  assert.ok(selected.resolved_capabilities.some(x=>x.need_id==='metaphor.balance'&&x.kind==='visual_metaphor'));
- assert.ok(selected.resolved_capabilities.some(x=>x.need_id==='effect.focus'&&x.kind==='effect'));
+ assert.throws(()=>selectAssetGuidance({asset_needs:['effect.focus']},policy,{capabilityIndex:caps,coverageMatrix:coverage}),/ASSET_CAPABILITY_NEED_UNKNOWN/);
 });

@@ -127,7 +127,8 @@ const signature=async(files)=>{const parts=[];for(const rel of [...new Set(files
 const workspaceAssetPaths=async(kind)=>{
  const production=JSON.parse(await readFile(path.join(workspace,'production.json'),'utf8'));
  const characterIds=new Set((production.scenes??[]).flatMap(s=>(s.entities??[]).filter(e=>e.kind==='character').flatMap(e=>Object.values(e.states??{}).map(s=>s.asset))));
- return [...new Set(Object.entries(production.assets??{}).filter(([id,a])=>!kind||(kind==='character'?characterIds.has(id):a.category===kind)).map(([,a])=>a.path).filter(Boolean))].sort().map(p=>path.resolve(workspace,p));
+ const memePropIds=new Set((production.scenes??[]).flatMap(s=>(s.visual_grammar?.meme_composition?.asset_requirements??[]).map(r=>r.asset_id)));
+ return [...new Set(Object.entries(production.assets??{}).filter(([id,a])=>!kind||(kind==='character'?characterIds.has(id):kind==='meme_props'?memePropIds.has(id):a.category===kind)).map(([,a])=>a.path).filter(Boolean))].sort().map(p=>path.resolve(workspace,p));
 };
 const findNativeCharAssets=async()=>{
  let production;try{production=JSON.parse(await readFile(path.join(workspace,'production.json'),'utf8'));}catch{return {missing:['production.json unreadable']};}
@@ -224,7 +225,10 @@ else{
   const args=[...step.args];
   const stepSourceFiles=dependencySelection.mode==='selected'?await selectedStepDependencyFiles(source.skillRoot,step.src,[...nativeDependencies,...activeSourcePaths.map(p=>path.join(source.skillRoot,p))],{stepId:step.id}):[];
   const relevant=[...stepSourceFiles,absolute,...(step.validator?[path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs')]:[]),...stepInputPaths.map(p=>path.join(workspace,p))];
-  if(!['character_components','character_plan','character_write'].includes(step.id)){
+  // These validators read workspace plans outside production.json. A cached
+  // PASS must not survive changes to their actual authoring inputs.
+  if(['composition_resolved','visual_quality','director_final_review'].includes(step.id))for(const rel of ['design.md','.authoring/scene-art-direction.json','.authoring/director-plan.json','.authoring/story-object-plan.json','.authoring/visual-metaphor-plan.json'])if(await exists(path.join(workspace,rel)))relevant.push(path.join(workspace,rel));
+  if(!['character_components','character_plan','character_write','meme_props'].includes(step.id)){
    const generated=step.id==='environment'?await workspaceAssetPaths('environment'):[];
    const kind=['character_identity','outfit_bake'].includes(step.id)?'character':undefined;
    relevant.push(...(await workspaceAssetPaths(kind)).filter(p=>!generated.includes(p)));
@@ -233,6 +237,7 @@ else{
   const before=await signature(relevant);
   const required=step.required.map(p=>path.join(workspace,p));
   if(step.id==='character_write')required.push(...await workspaceAssetPaths('character'));
+  if(step.id==='meme_props')required.push(...await workspaceAssetPaths('meme_props'));
   if(step.id==='environment')required.push(...await workspaceAssetPaths('environment'));
   if(step.validator)required.push(path.join(workspace,'.authoring/native-validator-'+step.id+'.json'));
   const cached=cache.steps?.[step.id];
@@ -252,6 +257,7 @@ else{
   if(result.status==='PASS'&&step.id==='environment'){
    required.push(...await workspaceAssetPaths('environment'));
   }
+  if(result.status==='PASS'&&step.id==='meme_props')required.push(...await workspaceAssetPaths('meme_props'));
   if(extra.status==='PASS'&&required.length&&await signature(required)===null){extra.status='FAIL';extra.reason='NATIVE_OUTPUT_RECEIPT_MISSING';}
   if(extra.status==='PASS'&&step.validator){
    try{const receipt=JSON.parse(await readFile(required[0],'utf8'));if(receipt.format!=='zodiac-validator-receipt@1'||receipt.status!=='PASS'||receipt.exit_code!==0)throw Error('not an executed validator PASS');}
