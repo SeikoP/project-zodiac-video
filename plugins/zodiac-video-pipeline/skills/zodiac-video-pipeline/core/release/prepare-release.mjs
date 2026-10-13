@@ -11,9 +11,10 @@ const fail=s=>{throw new Error('RELEASE_PREPARE_INVALID: '+s);};
 const value=s=>String(s).split('.').map(Number);
 if(!/^\d+\.\d+\.\d+$/.test(version??''))fail('explicit X.Y.Z version required');
 const [manifest,alt,template]=await Promise.all(files.map(async ([p])=>JSON.parse(await readFile(path.join(root,p),'utf8'))));
-const old=manifest.version;if(!/^\d+\.\d+\.\d+$/.test(old??''))fail('source manifest version invalid');
-const a=value(version),b=value(old);
-if(a[0]<b[0]||(a[0]===b[0]&&a[1]<b[1])||(a[0]===b[0]&&a[1]===b[1]&&a[2]<=b[2]))fail('new release version must be higher than '+old);
+const old=manifest.version;if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(old??''))fail('source manifest version invalid');
+const a=value(version),b=value(old.split('-')[0]);
+const sourceIsPrerelease=old.includes('-');
+if(a[0]<b[0]||(a[0]===b[0]&&a[1]<b[1])||(a[0]===b[0]&&a[1]===b[1]&&(a[2]<b[2]||(a[2]===b[2]&&!sourceIsPrerelease))))fail('new release version must be higher than '+old);
 if(alt.version!==old)fail('plugin manifests differ before preparation');
 for(const [i,[p,k]] of files.entries()){
   const obj=[manifest,alt,template][i];obj[k]=version;
