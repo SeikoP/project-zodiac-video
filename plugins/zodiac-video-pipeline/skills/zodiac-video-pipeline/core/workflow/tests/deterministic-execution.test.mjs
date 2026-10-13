@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateStepGraph,executionTrace} from '../deterministic-execution.mjs';
+import {validateStepGraph,executionTrace,transitionStepState,createRepairPlan} from '../deterministic-execution.mjs';
 const step=id=>({id,src:id+'.mjs',args:[],required:[]});
 test('dependency ordering is deterministic and fail closed',()=>{
  assert.equal(validateStepGraph([step('character_components'),step('character_plan'),step('character_write')]).status,'PASS');
@@ -15,4 +15,16 @@ test('trace preserves provenance without converting missing approvals into passe
  assert.equal(r.status,'BLOCKED');
  assert.deepEqual(r.steps.map(x=>x.exit_code),[2]);
  assert.equal(r.issues[0].code,'BAD_INPUT');
+});
+
+test('state transitions reject gate bypass and fabricated approvals',()=>{
+ assert.equal(transitionStepState('READY','RUNNING'),'RUNNING');
+ assert.throws(()=>transitionStepState('PENDING','PASS'),/WORKFLOW_TRANSITION_INVALID/);
+ assert.throws(()=>transitionStepState('READY','RUNNING',{approval:true}),/WORKFLOW_APPROVAL_FORBIDDEN/);
+});
+test('retry budget is finite, creative and environment faults escalate',()=>{
+ assert.equal(createRepairPlan([{code:'CONTRACT_MISMATCH'}],{attempt:0,maxAttempts:1}).decision,'REPAIR_THEN_RETRY');
+ assert.equal(createRepairPlan([{code:'CONTRACT_MISMATCH'}],{attempt:1,maxAttempts:1}).decision,'ESCALATE');
+ assert.equal(createRepairPlan([{code:'CREATIVE_REVIEW_MISSING'}],{attempt:0,maxAttempts:1}).decision,'ESCALATE');
+ assert.throws(()=>createRepairPlan([],{attempt:-1,maxAttempts:1}),/WORKFLOW_RETRY_BUDGET_INVALID/);
 });
