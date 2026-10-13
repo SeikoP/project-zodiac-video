@@ -51,13 +51,12 @@ test('fresh default context does not load legacy Story Object or full Visual Met
  assert.ok(bytes<=70000,'fresh default context is '+bytes+' bytes');
 });
 
-test('selected Visual Metaphor loads current guidance but never Story Object compatibility docs',async()=>{
+test('fresh symbolic selection cannot reactivate deprecated Visual Metaphor guides',async()=>{
  const {loadStepContext}=await import('../plan-step-context.mjs');
  const state=JSON.parse(await readFile(path.join(orchestration,'pipeline-state.template.json'),'utf8'));
  const flags={...state.flags,visual_metaphor_selected:true};
- const result=await loadStepContext('02-visual-production','visual_compile',flags,{environment_mode:'scene_set'});
- assert.ok(result.selected_capabilities.includes('visual_metaphor'));
- assert.ok(result.required_references.includes('references/visual-metaphor-contract.md'));
- assert.ok(result.required_references.includes('references/visual-metaphor-composition.md'));
- assert.equal(result.required_references.some(ref=>ref.includes('story-object')),false);
+ const result=await loadStepContext('02-visual-production','visual_compile',flags,{environment_mode:'canvas'});
+ assert.ok(result.required_references.includes('references/narrative-visual-contract.md'));
+ assert.equal(result.required_references.some(ref=>ref.includes('visual-metaphor-contract')),false);
+ assert.equal(result.required_references.some(ref=>ref.includes('story-object-contract')),false);
 });
