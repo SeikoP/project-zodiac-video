@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateStepGraph,executionTrace,transitionStepState,createRepairPlan} from '../deterministic-execution.mjs';
+import {PHASE02_DEPENDENCIES,LEGACY_PHASE02_DEPENDENCIES,validateStepGraph,executionTrace,transitionStepState,createRepairPlan} from '../deterministic-execution.mjs';
 const step=id=>({id,src:id+'.mjs',args:[],required:[]});
 test('dependency ordering is deterministic and fail closed',()=>{
  assert.equal(validateStepGraph([step('character_components'),step('character_plan'),step('character_write')]).status,'PASS');
@@ -33,4 +33,10 @@ test('strict execution rejects omitted mandatory dependency',()=>{
  const result=validateStepGraph([step('character_plan')],undefined,{strictMissing:true});
  assert.ok(result.issues.some(i=>i.code==='WORKFLOW_DEPENDENCY_MISSING'&&i.dependency==='character_components'));
  assert.equal(result.status,'BLOCKED');
+});
+
+test('retired Scene Set graph edges are continuity-only',()=>{
+ assert.equal(Object.hasOwn(PHASE02_DEPENDENCIES,'scene_set_identity'),false);
+ assert.equal(Object.hasOwn(PHASE02_DEPENDENCIES,'scene_accent_containment'),false);
+ assert.deepEqual(LEGACY_PHASE02_DEPENDENCIES.scene_accent_containment,['scene_set_identity']);
 });
