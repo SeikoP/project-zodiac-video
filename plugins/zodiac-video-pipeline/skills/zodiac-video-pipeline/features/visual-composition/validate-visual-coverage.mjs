@@ -39,7 +39,7 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
     if(!matches)add('COVERAGE_ROLE_MISMATCH',{beat_id:beat.id,entity_id:id,layer});
    }
   }
-  const seenVisible=new Set([...components.keys()].filter(visible));
+  const seenVisible=new Set([...components.keys()].filter(id=>visible(id) && (coverage?.layers_version!=='narrative_visual@1'||!['scene_set','scene_accent'].includes(roleOf(id)))));
   if(!Array.isArray(beat.event_ids)||new Set(beat.event_ids).size!==beat.event_ids.length){add('COVERAGE_EVENT_LIST_INVALID',{beat_id:beat.id});continue;}
   const expected=(scene.events??[]).filter(e=>{const p=anchorOffset(voice,e.trigger);return p>=start&&p<stop;}).map(e=>e.id);
   if(JSON.stringify(expected)!==JSON.stringify(beat.event_ids))add('COVERAGE_EVENT_ORDER',{beat_id:beat.id});
@@ -47,7 +47,7 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
    const event=events.get(id);if(!event||coveredEvents.has(id)){add('COVERAGE_EVENT_MISSING_OR_DUPLICATE',{beat_id:beat.id,event_id:id});continue;}coveredEvents.add(id);
    const at=anchorOffset(voice,event.trigger);if(event.trigger?.type!=='voice_anchor'||!text(event.trigger.text)||at<start||at>=stop)add('COVERAGE_EVENT_ANCHOR',{beat_id:beat.id,event_id:id});
    if(event.state_after)states.set(event.target,event.state_after);
-   for(const id of components.keys())if(visible(id))seenVisible.add(id);
+   for(const id of components.keys())if(visible(id) && (coverage?.layers_version!=='narrative_visual@1'||!['scene_set','scene_accent'].includes(roleOf(id))))seenVisible.add(id);
   }
   for(const id of seenVisible)if(!used.has(id))add('COVERAGE_VISIBLE_ENTITY_UNDECLARED',{beat_id:beat.id,entity_id:id});
   for(const id of used)if(!seenVisible.has(id))add('COVERAGE_ENTITY_NOT_VISIBLE',{beat_id:beat.id,entity_id:id});
