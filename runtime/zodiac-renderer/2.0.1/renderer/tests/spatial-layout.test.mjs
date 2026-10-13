@@ -144,3 +144,16 @@ test('Libra narrative balance tilts above actor without Scene Set or physical co
   assert.equal(b.caption_overlap_px??0,0);
  }
 });
+
+test('cafe rear accents remain background-layered yet fail caption collision on actual frames',()=>{
+ const p=fixture(),scene=p.scenes[0];
+ p.assets.window={category:'environment',path:'assets/environment/cafe-window.svg'};
+ const accent=entity('window','window',{x:100,y:120,width:320,height:330});
+ accent.visual_role='background';accent.role='scene_accent';
+ scene.entities=[entity('actor','actor',{x:370,y:500,width:380,height:650}),accent];
+ scene.captions=[{start_frame:0,end_frame:21,text:'cafe',resolved_layout:resolveCaptionLayout(scene,p.presentation,p.video,'cafe',()=>60)}];
+ assert.equal(resolveVisualRole(accent,p.assets),'background');
+ assert.doesNotThrow(()=>auditSpatialLayout(p));
+ accent.states.idle.transform.y=scene.captions[0].resolved_layout.y;
+ assert.throws(()=>auditSpatialLayout(p),/CAPTION_SAFE_ZONE_BLOCKED.*entity=window/);
+});
