@@ -9,6 +9,15 @@ export function preflightHandoff(source){const issues=[],add=(scene_id,code,path
   categories.set(e.id,[...cats][0]??(e.kind==='character'?'character':null));
   current[e.id]=e.initial_state??Object.keys(e.states??{})[0];
  }
+ const assetFolderCategory=p=>{const path=String(p??'').replaceAll('\\\\','/');for(const [part,cat] of [['characters','character'],['props','prop'],['effects','effect'],['story','story_object'],['symbols','story_symbol'],['environment','environment'],['environments','environment']])if(path.split('/').includes(part))return cat;return null;};
+ for(const [assetId,asset] of Object.entries(source.assets??{})){const inferred=assetFolderCategory(asset.path);if(inferred&&asset.category!==inferred)add(scene.id,'ASSET_CATEGORY_MISMATCH',assetId);}
+ const byId=new Map((scene.entities??[]).map(e=>[e.id,e]));
+ const links=new Set((scene.spatial_bindings??[]).map(b=>b.entity+'->'+b.anchor));
+ for(const b of scene.spatial_bindings??[])if(links.has(b.anchor+'->'+b.entity))add(scene.id,'SPATIAL_BINDING_CYCLE',b.entity);
+ const anchorCheck=(stage)=>{for(const b of scene.spatial_bindings??[]){const child=byId.get(b.entity),anchor=byId.get(b.anchor);if(!child||!anchor)continue;const c=child.states?.[current[child.id]],a=anchor.states?.[current[anchor.id]];if(c?.visible!==false&&a?.visible===false)add(scene.id,'SPATIAL_ANCHOR_HIDDEN',b.entity+'->'+b.anchor+'@'+stage);}};
+ anchorCheck('initial');
+ for(const ev of scene.events??[]){if(ev.target in current&&ev.state_after)current[ev.target]=ev.state_after;anchorCheck(ev.id??'event');}
+ for(const e of scene.entities??[])current[e.id]=e.initial_state??Object.keys(e.states??{})[0];
  const limits={max_characters:3,max_prominent_props:2,max_prominent_effects:2,...scene.render_density_budget},reported=new Set();
  const density=()=>{
   const counts={character:0,prop:0,effect:0};
