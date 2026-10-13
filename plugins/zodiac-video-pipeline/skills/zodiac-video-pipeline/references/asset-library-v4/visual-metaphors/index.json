@@ -4,7 +4,7 @@
   "metaphors": [
     {
       "id": "balance-scale",
-      "meaning": "weigh competing choices",
+      "meaning": "Cân nhắc hai hướng; điểm nhấn nằm ở nút xoay và lòng đĩa, diễn biến ở độ nghiêng.",
       "states": {
         "tilt_left": {
           "path": "balance-scale/tilt_left.svg",
@@ -18,7 +18,8 @@
           "path": "balance-scale/tilt_right.svg",
           "visual_read": "tilt right"
         }
-      }
+      },
+      "detail_revision": "story-figure-1"
     },
     {
       "id": "split-direction",
@@ -90,5 +91,8 @@
         }
       }
     }
-  ]
+  ],
+  "display_name": "Hình tượng kể chuyện",
+  "version": "1.1",
+  "selection_policy": "starting forms for authored narrative figures, not finished icon templates"
 }
