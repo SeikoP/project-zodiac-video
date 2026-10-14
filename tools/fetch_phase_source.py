@@ -10,12 +10,21 @@ import os
 from pathlib import Path
 import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 import zipfile
 
 from stage_source_bundle import stage
 
 API = "https://api.github.com"
 REPOSITORY = "SeikoP/project-zodiac-video"
+
+
+class _SafeRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected and urlsplit(req.full_url).netloc != urlsplit(newurl).netloc:
+            redirected.remove_header("Authorization")
+        return redirected
 
 
 def request(url, token, accept="application/vnd.github+json"):
@@ -25,7 +34,7 @@ def request(url, token, accept="application/vnd.github+json"):
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "zodiac-phase-source-transport",
     })
-    with urllib.request.urlopen(req, timeout=60) as response:
+    with urllib.request.build_opener(_SafeRedirect()).open(req, timeout=60) as response:
         return response.read()
 
 
