@@ -1,6 +1,6 @@
 {
   "format": "zodiac-pipeline-state@2",
-  "plugin_version": "2.5.6-dev.7",
+  "plugin_version": "2.6.0",
   "run_id": "<create-per-run>",
   "run_mode": "fresh",
   "flags": {
