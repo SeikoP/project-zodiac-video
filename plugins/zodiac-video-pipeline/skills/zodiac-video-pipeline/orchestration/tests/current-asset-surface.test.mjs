@@ -4,7 +4,7 @@ import {readFile,access,mkdtemp,writeFile,mkdir,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {selectAssetGuidance} from '../../core/policy/select-asset-guidance.mjs';
 import {loadStepContext} from '../plan-step-context.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -43,15 +43,15 @@ test('selected stage bytes participate in dependency fingerprints from canonical
  const ws=await mkdtemp(path.join(os.tmpdir(),'current-deps-'));
  try{await mkdir(path.join(ws,'.authoring'));await writeFile(path.join(ws,'.authoring/visual-intent.json'),JSON.stringify({cast:[],assets:{},scenes:[{grammar:{environment:{scene_set_id:'scene-set-home',scene_accents:[{id:'scene-accent-clock'}]}}}]}));
  const r=await selectedPhase02Dependencies(root,ws);
- assert.ok(r.files.some(p=>p.endsWith('/scene-set/frames/scene-set-home.svg')));
+ assert.ok(r.files.some(p=>p.replaceAll('\\','/').endsWith('/scene-set/frames/scene-set-home.svg')));
  const clock=(await json('references/asset-library-v4/scene-set/accents/index.json')).accents.find(a=>a.id==='scene-accent-clock');
- assert.ok(r.files.some(p=>p.endsWith('/scene-set/'+clock.path)));
+ assert.ok(r.files.some(p=>p.replaceAll('\\','/').endsWith('/scene-set/'+clock.path)));
  }finally{await rm(ws,{recursive:true,force:true});}
 });
 test('catalog review renders compiled characters and exact current native stage bytes',async()=>{
  const module=path.join(root,'features/asset-selection/build-current-asset-review.mjs');
  assert.ok(await access(module).then(()=>true,()=>false),'current catalog preview is missing');
- const {buildCurrentAssetReview}=await import(module);
+ const {buildCurrentAssetReview}=await import(pathToFileURL(module).href);
  const result=await buildCurrentAssetReview({selected_ids:['scene-set-home','asym-bang','phone']});
  assert.ok(result.html.includes('hair_id=asym-bang'));
  assert.equal(result.receipt.items.some(i=>i.id==='lopsided-bob'),false);
