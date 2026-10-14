@@ -45,7 +45,7 @@ def fetch(phase, version, release_id, commit, target, token, archive_path=None):
     if not matching:
         raise RuntimeError("SOURCE_TRANSPORT_UNAVAILABLE: no matching artifact " + artifact_name)
     matching.sort(key=lambda a: a["id"], reverse=True)
-    downloaded = request(matching[0]["archive_download_url"], token, "application/octet-stream")
+    downloaded = request(matching[0]["archive_download_url"], token)
     # GitHub Actions artifact downloads are a ZIP wrapper around the payload ZIP.
     with zipfile.ZipFile(io.BytesIO(downloaded)) as wrapper:
         files = [n for n in wrapper.namelist() if n.endswith(".zip") and "/" not in n]
