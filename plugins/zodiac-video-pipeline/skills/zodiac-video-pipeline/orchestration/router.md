@@ -34,6 +34,27 @@ never an implicit compatibility flag in the current library.
 - Reuse requires matching input, compiler, selected asset and output SHA-256.
   SKIPPED_REUSED creates neither approval nor export permission.
 
+## Contract-first resume loop
+
+Before each step, re-read `.authoring/pipeline-state.json`, resolve the phase through
+`phase-index.json`, and select the current manifest step. Use `plan-step-context.mjs`
+to load its bounded references and capability routes. Apply conditional capabilities
+only when the current state satisfies their manifest condition. Do not trust a copied
+Studio pointer after the workspace may have changed.
+
+After each step, verify its required outputs, gates and validator receipts before
+committing state. Move to the next step only after that commit succeeds. At phase
+boundaries, use the existing gates:
+
+| Phase | Entry and exit contract |
+| --- | --- |
+| 01-content | Complete manifest outputs and content gates, obtain the required user review receipt, then pass `phase02-transition-gate.mjs` as `AUTHORING_READY` before `activate-phase02.mjs`. |
+| 02-visual-production | Use activated Phase 01 source; complete manifest outputs and native visual evidence, obtain visual review approval, then pass the seal gate and write the review lock. |
+| 03-handoff | Start from the approved source and review lock; validate and export one Job@5 ZIP. Report local-runner import readiness separately from rendered MP4 and media acceptance. |
+
+The phase manifests stay the only source for per-step capabilities, outputs and
+gates. This resume loop adds no second orchestration engine and never creates approval.
+
 ## Phase 01
 Use `references/phase01-briefing.md` and the selected episode format. Fresh
 scoped episodes use Narrative 2.1, sourced claims and one coherent Story Spine.

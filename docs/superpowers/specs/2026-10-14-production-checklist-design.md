@@ -14,7 +14,7 @@ Give the creator one Studio screen to remember which Zodiac episodes and signs a
 - Users explicitly link a local Runner Job@5 to an episode. Do not infer a link from title, sign, hashes, or directory names. Job@5 remains unchanged and does not gain authoring metadata.
 - Each row has a Cover preview card. Preview the linked job's actual `out/cover.png`; if no job is linked or the image is absent, show that state in the card. This is a GUI preview and does not alter the rendered artwork or approve the cover.
 - Add a Studio-wide show/hide setting for the Cover card. Store it with checklist preferences, separate from per-job GUI settings. The concept remains optional regardless of this setting.
-- Provide a **Tiếp tục bằng plugin** action that copies the authoring workspace path and current phase/step as a short handoff for the user to paste into the plugin. The handoff points the plugin back to its current `defaultPrompt` and router. It must not duplicate their workflow instructions, invoke the plugin, or bypass its state and approval gates.
+- Provide a **Sao chép prompt tiếp tục** action that copies the current plugin `defaultPrompt` text and a read-only episode snapshot: workspace/episode identity, format, signs, title/topic, selected concept or **Chưa chốt**, phase/step state, current step contract, explicit Job@5 link, and completion recorded by the explicitly linked 12-sign tracker. For a multi-sign episode, show how many of its members are marked `done` in that ledger as well as the overall ledger count. Tell the agent to re-read current workspace state and derive the first incomplete step from the active manifest; the clipboard snapshot is not authority, approval, or permission to skip a gate. Do not invoke the plugin or edit source artifacts from Studio.
 - The checklist may add and remove references to tracked workspaces and save explicit Runner job links. Removing a reference must not delete or modify its workspace or job.
 
 ## Data ownership and error handling
@@ -32,7 +32,7 @@ Give the creator one Studio screen to remember which Zodiac episodes and signs a
 - Users can explicitly select or unlink one local `zodiac-series-checklist.json`; the UI shows whether a tracker is linked and its recorded completion summary.
 - Each episode row presents the Zodiac member labels, title/topic, concept state, and current phase/step/state. The linked series ledger is presented separately so its sign statuses are not mistaken for an individual episode's workflow state.
 - Cover preview visibility is controlled by one persisted Studio-wide setting. Hiding the card does not remove its job link or any media.
-- The handoff action copies the workspace path and authoritative phase/step context. The user continues in the plugin, whose current default prompt and router remain authoritative.
+- The handoff action includes the current `defaultPrompt`, episode metadata, trustworthy ledger progress and manifest-derived step contract. It tells the agent to re-read the source and follow the installed router; the user continues in the plugin.
 
 ## Implementation boundaries
 
@@ -54,7 +54,13 @@ Give the creator one Studio screen to remember which Zodiac episodes and signs a
 7. Hide and show the Cover card, restart Studio, and verify the setting persists without changing a job's per-job settings.
 8. Remove a tracked reference and verify the workspace and Runner job remain untouched.
 9. Exercise missing workspace/state, malformed JSON, unsupported schema, and plugin/state version mismatch. Each is visible and fail-closed; no source file is rewritten and no error is shown as PASS.
-10. Verify the copied handoff includes the selected workspace path and current phase/step and points back to the plugin's current default prompt/router without claiming that Studio invoked or updated the plugin.
+10. Copy a two-sign episode prompt with one member marked `done`; verify topic, selected concept state, `1/2` member progress, overall `1/12` progress, explicit Job@5 ID, the current `defaultPrompt`, and active-step manifest outputs/gates/capabilities are included. Confirm it directs the agent to re-read state and preserve approval gates.
+
+## Phase resume and release
+
+- Use the existing `phase-index.json`, phase manifests, pipeline state, `plan-step-context.mjs`, phase transition gates, and receipts. Do not create a second orchestrator or duplicate manifest rules.
+- Make the copied handoff name the exact current step contract. The active plugin still resolves its next action from current state and manifest, validates outputs and receipts before step commits, and crosses phase boundaries only through the existing transition gates.
+- Release plugin version `2.6.0` by synchronizing the root manifest, Codex manifest, and pipeline-state template. Preserve plugin identity, scope, current `defaultPrompt`, MCP/app binding, and supported compatibility consumers.
 11. Verify the Job@5 package shape and renderer output contract are unchanged.
 
 ## Risks and limits

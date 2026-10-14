@@ -23,13 +23,21 @@ from PySide6.QtWidgets import (
 from .. import production_checklist as checklist
 
 
-def _default_prompt_routes(plugin_root: Path) -> list[str]:
+def _default_prompt_values(plugin_root: Path) -> list[str]:
     try:
         manifest = json.loads((plugin_root / "plugin.json").read_text(encoding="utf-8"))
         prompt = manifest["extensions"]["com.openai"]["interface"]["defaultPrompt"]
     except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError):
         return []
-    return re.findall(r"skills/[^\s]+?/SKILL\.md|orchestration/router\.md", prompt)
+    if isinstance(prompt, str) and prompt.strip():
+        return [prompt]
+    if isinstance(prompt, list) and prompt and all(isinstance(item, str) and item.strip() for item in prompt):
+        return prompt
+    return []
+
+
+def _default_prompt_routes(plugin_root: Path) -> list[str]:
+    return re.findall(r"skills/[^\s]+?/SKILL\.md|orchestration/router\.md", "\n".join(_default_prompt_values(plugin_root)))
 
 
 class ProductionChecklistScreen(QWidget):
@@ -194,7 +202,7 @@ class ProductionChecklistScreen(QWidget):
             lambda _index, workspace=workspace, picker=job_combo: self._set_job_link(workspace, picker.currentData())
         )
         actions.addWidget(job_combo, 1)
-        handoff = QPushButton("Tiếp tục bằng plugin", objectName="checklist_handoff")
+        handoff = QPushButton("Sao chép prompt tiếp tục", objectName="checklist_handoff")
         handoff.clicked.connect(lambda _checked=False, path=workspace: self._copy_handoff(path))
         actions.addWidget(handoff)
         remove = QPushButton("Bỏ theo dõi", objectName="checklist_remove_workspace")
@@ -312,16 +320,93 @@ class ProductionChecklistScreen(QWidget):
         self.refresh()
 
     def _copy_handoff(self, workspace: str) -> None:
-        row = checklist.load_episode_row(Path(workspace), self.plugin_root)
+        workspace_path = Path(workspace).resolve()
+        entry = next((item for item in self.config["workspaces"] if Path(item["path"]).resolve() == workspace_path), {})
+        job_id = entry.get("job_id")
+        linked_job = next((job for job in self.runner_jobs if job["name"] == job_id), None) if job_id else None
+        row = checklist.load_episode_row(workspace_path, self.plugin_root, Path(linked_job["path"]) if linked_job else None)
         phase = row["phase"]
         step = row["step"]
-        route = ", ".join(_default_prompt_routes(self.plugin_root))
-        text = "\n".join((
-            "Tiếp tục tập này bằng Zodiac Video Pipeline.",
-            f"Workspace: {Path(workspace).resolve()}",
-            f"Phase: {phase['id']} · {phase['title']} · {phase['status']}" if phase else "Phase: chưa xác định trong pipeline-state.json",
-            f"Bước: {step['id']} · {step['title']} · {step['status']}" if step else "Bước: chưa xác định trong pipeline-state.json",
-            f"Plugin routing: dùng defaultPrompt hiện hành trong plugin.json → {route}" if route else "Plugin routing: dùng defaultPrompt hiện hành trong plugin.json.",
+        prompts = _default_prompt_values(self.plugin_root)
+        routes = _default_prompt_routes(self.plugin_root)
+        lines = [
+            "Tiếp tục episode này bằng Zodiac Video Pipeline, theo defaultPrompt và router đang cài.",
+            "Đây là snapshot checklist để định hướng; hãy đọc lại workspace trước khi sửa và không coi trạng thái này là approval.",
+            f"Workspace: {workspace_path}",
+            f"Episode ID: {row['episode_id'] or 'chưa xác định'}",
+            f"Format: {row['episode_format'] or 'chưa xác định'}",
+            f"Title: {row['title'] or 'chưa có trong episode scope'}",
+            f"Topic: {row['topic'] or 'chưa có trong episode scope'}",
+            "Cung trong episode: " + (" · ".join(f"{member['label']} ({member['id']})" for member in row["members"]) or "chưa xác định; không tự chọn"),
+            f"Concept: {row['concept'] or 'Chưa chốt; không tự chọn hoặc ghi nhận approval.'}",
+            f"Phase hiện tại: {phase['id']} · {phase['title']} · {phase['status']}" if phase else "Phase hiện tại: chưa xác định từ pipeline-state.json; kiểm tra state trước khi làm tiếp.",
+            f"Step pointer hiện tại: {step['id']} · {step['title']} · {step['status']}" if step else "Step pointer hiện tại: chưa xác định từ pipeline-state.json; không đoán bước.",
+            f"Run mode: {row['run_mode'] or 'chưa xác định'}",
+            "State flags: " + json.dumps(row["flags"], ensure_ascii=False, sort_keys=True),
+            f"Job@5 đã liên kết tường minh: {job_id or 'chưa liên kết'}" + (f" · cover: {row['cover_path']}" if row["cover_path"] else ""),
+        ]
+
+        tracker_path = self.config.get("series_tracker_path")
+        if not tracker_path:
+            lines.append("Series tracker: chưa liên kết; tiến độ series chưa được xác nhận.")
+        else:
+            tracker = checklist.load_series_tracker(Path(tracker_path))
+            if tracker["diagnostic"]:
+                lines.append(f"Series tracker lỗi tại {tracker_path}: {tracker['diagnostic']}; không suy đoán tiến độ cung.")
+            else:
+                by_id = {sign["id"]: sign["status"] for sign in tracker["signs"]}
+                lines.append(f"Series tracker: {tracker_path}")
+                lines.append(f"Tiến độ series: {tracker['done']}/12 cung done · {tracker['todo']} cung todo.")
+                if row["members"]:
+                    done = sum(by_id[member["id"]] == "done" for member in row["members"])
+                    lines.append(f"Tiến độ cung của tập theo tracker: {done}/{len(row['members'])} đã đánh dấu done.")
+                    lines.append("Trạng thái cung: " + " · ".join(f"{member['label']} ({member['id']}): {by_id[member['id']]}" for member in row["members"]))
+
+        if job_id and linked_job is None:
+            lines.append("Runner: Job@5 ID đã lưu nhưng hiện không có trong inventory; giữ nguyên liên kết, không tự nối job khác.")
+        elif job_id and row["cover_path"] is None:
+            lines.append("Runner: job đã nối nhưng cover chưa đọc được hoặc chưa render; không suy diễn trạng thái video.")
+
+        manifest_path = f"orchestration/phases/{phase['id']}.json" if phase else "orchestration/phase-index.json"
+        lines.append(f"Active manifest: {manifest_path}")
+        contract = row["step_contract"] or {}
+        if step:
+            for label, key in (
+                ("Required outputs", "required_outputs"),
+                ("Conditional outputs", "conditional_outputs"),
+                ("Gate checks", "gate_checks"),
+                ("Conditional gate checks", "conditional_gate_checks"),
+                ("Allowed context", "allowed_context_categories"),
+                ("Forbidden context", "forbidden_context_categories"),
+                ("Allowed operations", "allowed_operations"),
+                ("References to load", "load_references"),
+            ):
+                values = contract.get(key)
+                if values:
+                    lines.append(f"{label}: " + ", ".join(
+                        f"{item.get('name') or item.get('id')} (when={item.get('when')})" if isinstance(item, dict) else str(item)
+                        for item in values
+                    ))
+            for label, key in (("Required capabilities", "required_capabilities"), ("Conditional capabilities", "conditional_capabilities")):
+                capabilities = contract.get(key) or []
+                if capabilities:
+                    lines.append(f"{label}: " + ", ".join(
+                        f"{item.get('id')} (when={item.get('when')}; {item.get('tool_locator') or item.get('guidance_uri') or 'see manifest'})"
+                        for item in capabilities if isinstance(item, dict)
+                    ))
+
+        lines.extend((
+            "Plugin defaultPrompt hiện hành (đọc từ plugin.json):",
+            *(f"- {prompt}" for prompt in prompts),
+            "Plugin routes: " + (", ".join(routes) if routes else "đọc routes từ defaultPrompt hiện hành."),
+            "",
+            "Việc cần làm tiếp: đọc lại pipeline-state.json, episode scope, approvals/receipts và outputs trong workspace; sau đó dùng đúng router, active phase manifest và plan-step-context.mjs.",
+            "Derive the first incomplete step từ state và manifest hiện tại; step pointer trong clipboard chỉ là snapshot. Không chạy lại bước PASS, không bỏ capability/output/gate bắt buộc, và chỉ commit step sau khi output cùng validator receipt đã được kiểm chứng.",
+            "Giữ nguyên narration, concept và approvals đã được người dùng chốt. Series tracker chỉ là tiến độ ledger, không phải creative approval. Nếu thiếu hoặc lệch contract, state, input, hoặc approval thì dừng ở gate đó và báo rõ; không tự bịa hay chuyển phase.",
+            "Phase 01→02: transition gate phải ra AUTHORING_READY rồi mới activation. Phase 02→03: visual review/approval và seal gate phải đủ bằng chứng. Phase 03: xuất đúng Job@5; ZIP-ready không có nghĩa MP4-ready, runner mới xác nhận voice, captions, cover, audio và MP4.",
         ))
+        if row["diagnostics"]:
+            lines.extend(("Checklist diagnostics (đọc lại nguồn trước khi ghi):", *(f"- {issue}" for issue in row["diagnostics"])))
+        text = "\n".join(lines)
         QApplication.clipboard().setText(text)
-        self.notice_label.setText("Đã sao chép workspace và phase/bước hiện tại để tiếp tục bằng plugin.")
+        self.notice_label.setText("Đã sao chép prompt tiếp tục kèm episode, tiến độ, phase contract và router plugin.")

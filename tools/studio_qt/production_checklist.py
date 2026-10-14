@@ -33,6 +33,8 @@ def new_checklist_config() -> dict:
 def _validate_config(config: object) -> dict:
     if not isinstance(config, dict) or config.get("format") != FORMAT:
         raise ValueError("Unsupported Studio checklist preferences format")
+    config = dict(config)
+    config.setdefault("series_tracker_path", None)
     workspaces = config.get("workspaces")
     if not isinstance(workspaces, list):
         raise ValueError("Checklist workspaces must be a list")
@@ -135,12 +137,16 @@ def load_episode_row(workspace: Path, plugin_root: Path, linked_job: Path | None
     result = {
         "workspace": str(workspace),
         "episode_id": None,
+        "episode_format": None,
         "members": [],
         "title": None,
         "topic": None,
         "concept": None,
         "phase": None,
         "step": None,
+        "step_contract": None,
+        "run_mode": None,
+        "flags": {},
         "job_id": None,
         "cover_path": None,
         "diagnostics": [],
@@ -160,17 +166,30 @@ def load_episode_row(workspace: Path, plugin_root: Path, linked_job: Path | None
         else:
             phase_id = state.get("current_phase")
             manifest = manifests.get(phase_id) if isinstance(phase_id, str) else None
-            phase_state = state.get("phases", {}).get(phase_id) if isinstance(state.get("phases"), dict) else None
+            phases = state.get("phases")
+            phase_state = phases.get(phase_id) if isinstance(phase_id, str) and isinstance(phases, dict) else None
             phase_status = phase_state.get("status") if isinstance(phase_state, dict) else None
             step_id = phase_state.get("current_step") if isinstance(phase_state, dict) else None
             step = next((item for item in manifest.get("steps", []) if item.get("id") == step_id), None) if manifest and isinstance(step_id, str) else None
-            step_state = phase_state.get("steps", {}).get(step_id) if isinstance(phase_state, dict) and isinstance(phase_state.get("steps"), dict) else None
+            steps = phase_state.get("steps") if isinstance(phase_state, dict) else None
+            step_state = steps.get(step_id) if isinstance(step_id, str) and isinstance(steps, dict) else None
             step_status = step_state.get("status") if isinstance(step_state, dict) else None
             if not manifest or not isinstance(phase_status, str) or phase_status not in PHASE_STATUSES or not step or not isinstance(step_status, str) or step_status not in STEP_STATUSES:
                 result["diagnostics"].append("Pipeline state has an unsupported phase, step, or status")
             else:
                 result["phase"] = {"id": phase_id, "title": manifest["title"], "status": phase_status}
                 result["step"] = {"id": step_id, "title": step["title"], "status": step_status}
+                result["step_contract"] = {
+                    key: step.get(key, [])
+                    for key in (
+                        "required_capabilities", "conditional_capabilities", "required_outputs",
+                        "conditional_outputs", "gate_checks", "conditional_gate_checks",
+                        "allowed_context_categories", "forbidden_context_categories",
+                        "allowed_operations", "load_references",
+                    )
+                }
+                result["run_mode"] = state.get("run_mode") if isinstance(state.get("run_mode"), str) else None
+                result["flags"] = state.get("flags") if isinstance(state.get("flags"), dict) else {}
 
     scope, error = _read_json(workspace / ".authoring" / "episode-scope.json", "Episode scope is missing or invalid")
     if error:
@@ -195,6 +214,7 @@ def load_episode_row(workspace: Path, plugin_root: Path, linked_job: Path | None
             result["diagnostics"].append("Episode scope is incomplete or unsupported")
         else:
             result["episode_id"] = scope["episode_id"]
+            result["episode_format"] = scope["episode_format"]
             result["members"] = [{"id": member, "label": SIGN_LABELS[member]} for member in members]
             result["title"] = scope["title_working"]
             result["topic"] = scope["topic_question"]
@@ -208,7 +228,8 @@ def load_episode_row(workspace: Path, plugin_root: Path, linked_job: Path | None
                 selected_id = narrative.get("selected_concept_id")
                 selected_candidate_id = candidates.get("selected_candidate_id")
                 candidate = next((item for item in candidates.get("candidates", []) if isinstance(item, dict) and item.get("id") == selected_id), None) if isinstance(candidates.get("candidates"), list) else None
-                if candidates.get("format") == "zodiac-concept-competition@1" and selected_id == selected_candidate_id and candidate and isinstance(candidate.get("premise"), str) and candidate["premise"].strip():
+                selected = isinstance(selected_id, str) and bool(selected_id.strip()) and selected_id == selected_candidate_id
+                if candidates.get("format") == "zodiac-concept-competition@1" and selected and candidate and isinstance(candidate.get("premise"), str) and candidate["premise"].strip():
                     result["concept"] = candidate["premise"]
                 elif selected_id or selected_candidate_id:
                     result["diagnostics"].append("Concept selection is incomplete or inconsistent; shown as Chưa chốt")

@@ -6,6 +6,12 @@ description: Produce or resume Vietnamese Zodiac videos in single-sign, element-
 
 Follow orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Do not use account memory as unapproved episode evidence. The installed plugin router/manifests and genuine user approvals govern workflow; GitHub is execution-byte transport only.
 
+## Resume from Studio checklist
+
+A copied Studio prompt is a snapshot of the selected workspace, episode scope, tracker ledger and current step contract. It is not a creative brief, approval receipt or source of truth. Re-read that workspace's pipeline state, scope, approval receipts and durable outputs before writing. A missing, malformed or version-mismatched source blocks the next write.
+
+Use the installed `defaultPrompt`, router, current phase manifest and `plan-step-context.mjs`. Derive the first incomplete step from the current state and manifest; do not blindly repeat the copied step pointer. Honor that step's active capabilities, required inputs/outputs, context boundaries and gates; validate durable outputs and receipts before committing the step. The linked series tracker reports progress only; it does not approve narration, visuals, cover or a phase transition.
+
 ## Execution source after refactor
 Before native execution, read orchestration/execution-bootstrap.md. Use a verified **phase-scoped execution bundle** for the current phase. Never clone/download the whole repository as runtime context. A repository file listing, skill read, or connector response is not executable source on the host filesystem. Source transport must not bypass the active router, phase manifest, validator order, source hashes, or review gates.
 

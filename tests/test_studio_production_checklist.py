@@ -43,6 +43,8 @@ def workspace_fixture(root: Path, *, state_version: str | None = None, concept: 
     write_json(authoring / "pipeline-state.json", {
         "format": "zodiac-pipeline-state@2",
         "plugin_version": state_version or plugin["version"],
+        "run_mode": "fresh",
+        "flags": {},
         "current_phase": "02-visual-production",
         "phases": phases,
     })
@@ -100,6 +102,15 @@ class ProductionChecklistDataTests(unittest.TestCase):
                 production_checklist.save_checklist_config(path, {"format": "wrong"})
             self.assertEqual(path.read_bytes(), original)
 
+            path.write_text('{"format":"zodiac-studio-checklist@1","workspaces":[],"cover_visible":true}\n', encoding="utf-8")
+            original = path.read_bytes()
+            _config, diagnostic = production_checklist.load_checklist_config(path)
+            self.assertIsNone(diagnostic)
+            self.assertIsNone(_config["series_tracker_path"])
+            self.assertEqual(path.read_bytes(), original)
+            production_checklist.save_checklist_config(path, _config)
+            self.assertIsNone(json.loads(path.read_text(encoding="utf-8"))["series_tracker_path"])
+
     def test_failed_atomic_replace_preserves_previous_bytes(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "production-checklist.json"
@@ -119,12 +130,15 @@ class ProductionChecklistDataTests(unittest.TestCase):
             row = production_checklist.load_episode_row(workspace, PLUGIN_ROOT)
 
             self.assertEqual(row["episode_id"], "gemini-trust")
+            self.assertEqual(row["episode_format"], "single_sign")
             self.assertEqual(row["members"], [{"id": "gemini", "label": "Song Tử"}])
             self.assertEqual(row["title"], "Song Tử giữ lời hứa nào?")
             self.assertEqual(row["topic"], "Khi nào Song Tử thật sự đáng tin?")
             self.assertEqual(row["concept"], "Lời hứa trong hai phiên bản.")
             self.assertEqual(row["phase"], {"id": "02-visual-production", "title": "Visual Production", "status": "IN_PROGRESS"})
             self.assertEqual(row["step"], {"id": "visual_compile", "title": "Visual Compile", "status": "IN_PROGRESS"})
+            self.assertTrue(row["step_contract"]["required_capabilities"])
+            self.assertTrue(row["step_contract"]["required_outputs"])
             self.assertEqual(row["diagnostics"], [])
             self.assertEqual(before, {path: path.read_bytes() for path in before})
 
@@ -141,6 +155,7 @@ class ProductionChecklistDataTests(unittest.TestCase):
             self.assertTrue(any("version" in issue.lower() for issue in row["diagnostics"]))
 
             state_path = workspace / ".authoring" / "pipeline-state.json"
+            valid_state = json.loads(state_path.read_text(encoding="utf-8"))
             state_path.write_text('{broken json', encoding="utf-8")
             row = production_checklist.load_episode_row(workspace, PLUGIN_ROOT)
             self.assertIsNone(row["phase"])
@@ -150,6 +165,17 @@ class ProductionChecklistDataTests(unittest.TestCase):
             row = production_checklist.load_episode_row(workspace, PLUGIN_ROOT)
             self.assertIsNone(row["phase"])
             self.assertTrue(row["diagnostics"])
+
+            for field in ("current_phase", "current_step"):
+                state = json.loads(json.dumps(valid_state))
+                if field == "current_phase":
+                    state[field] = []
+                else:
+                    state["phases"]["02-visual-production"][field] = []
+                write_json(state_path, state)
+                row = production_checklist.load_episode_row(workspace, PLUGIN_ROOT)
+                self.assertIsNone(row["phase"])
+                self.assertTrue(row["diagnostics"])
 
     def test_episode_scope_and_concept_are_not_guessed(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -163,6 +189,17 @@ class ProductionChecklistDataTests(unittest.TestCase):
 
             self.assertIsNone(row["concept"])
             self.assertEqual(row["title"], "Song Tử giữ lời hứa nào?")
+
+            narrative_path = workspace / ".authoring" / "narrative-plan.json"
+            narrative = json.loads(narrative_path.read_text(encoding="utf-8"))
+            narrative["selected_concept_id"] = None
+            write_json(narrative_path, narrative)
+            candidates = json.loads(candidates_path.read_text(encoding="utf-8"))
+            candidates["selected_candidate_id"] = None
+            candidates["candidates"][0].pop("id")
+            write_json(candidates_path, candidates)
+            unselected = production_checklist.load_episode_row(workspace, PLUGIN_ROOT)
+            self.assertIsNone(unselected["concept"])
 
             absent = Path(temp) / "no-scope"
             (absent / ".authoring").mkdir(parents=True)
@@ -355,7 +392,19 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         from PySide6.QtWidgets import QApplication
 
         workspace = workspace_fixture(self.root / "episode")
-        self.write_config([{"path": str(workspace), "job_id": None}])
+        scope_path = workspace / ".authoring" / "episode-scope.json"
+        scope = json.loads(scope_path.read_text(encoding="utf-8"))
+        scope.update({
+            "episode_format": "comparison",
+            "member_ids": ["gemini", "libra"],
+            "title_working": "Top 6 cung xử lý bất đồng thế nào?",
+            "topic_question": "Hai cung phản ứng ra sao khi bị hiểu lầm?",
+        })
+        write_json(scope_path, scope)
+        tracker = self.root / "zodiac-series-checklist.json"
+        signs = [{"id": sign, "status": "done" if sign == "gemini" else "todo"} for sign in sorted(SIGN_IDS)]
+        write_json(tracker, {"format": "zodiac-series-checklist@1", "signs": signs})
+        self.write_config([{"path": str(workspace), "job_id": "job-gemini"}], series_tracker_path=str(tracker))
         screen = self.make_screen()
         screen.episode_cards[0]["handoff_button"].click()
         self.qt_app.processEvents()
@@ -364,8 +413,20 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         default_prompt = plugin["extensions"]["com.openai"]["interface"]["defaultPrompt"]
 
         self.assertIn(str(workspace.resolve()), copied)
+        self.assertIn("gemini-trust", copied)
+        self.assertIn("Topic: Hai cung phản ứng ra sao khi bị hiểu lầm?", copied)
+        self.assertIn("Concept: Lời hứa trong hai phiên bản.", copied)
+        self.assertIn("Song Tử (gemini): done", copied)
+        self.assertIn("Thiên Bình (libra): todo", copied)
+        self.assertIn("Tiến độ cung của tập theo tracker: 1/2", copied)
+        self.assertIn("Tiến độ series: 1/12", copied)
+        self.assertIn("Job@5 đã liên kết tường minh: job-gemini", copied)
         self.assertIn("02-visual-production", copied)
         self.assertIn("visual_compile", copied)
+        for contract in ("Required capabilities:", "Required outputs:", "Gate checks:", "Allowed context:", "Forbidden context:", "References to load:"):
+            self.assertIn(contract, copied)
+        self.assertIn("first incomplete step", copied)
+        self.assertIn(default_prompt, copied)
         self.assertIn("defaultPrompt", copied)
         for route in ("skills/zodiac-video-pipeline/SKILL.md", "orchestration/router.md"):
             self.assertIn(route, default_prompt)
