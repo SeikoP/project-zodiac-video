@@ -5,7 +5,7 @@ export const coverageLayers=['actors','scene_accent','narrative_visual','props',
 const text=x=>typeof x==='string'&&x.trim().length>0;
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const anchorOffset=(voice,trigger)=>{let at=-1,start=0;for(let i=0;i<(trigger?.occurrence??1);i++){at=voice.indexOf(trigger?.text??'',start);if(at<0)return -1;start=at+1;}return Buffer.byteLength(voice.slice(0,at));};
-export function validateVisualCoverage(scene,planned,{required=false}={}){
+export function validateVisualCoverage(scene,planned,{required=false,deriveEmptyLayers=false}={}){
  const issues=[],add=(code,detail={})=>issues.push({code,scene_id:scene.id,...detail});
  const coverage=planned?.visual_coverage;
  const activeLayers=coverage?.layers_version==='narrative_visual@1'?coverageLayers:legacyCoverageLayers;
@@ -27,7 +27,9 @@ export function validateVisualCoverage(scene,planned,{required=false}={}){
   if(!Number.isInteger(start)||!Number.isInteger(stop)||start!==end||stop<=start||stop>bytes.length||!Buffer.from(bytes.subarray(start,stop).toString('utf8')).equals(bytes.subarray(start,stop)))add('COVERAGE_NARRATION_RANGE',{beat_id:beat.id});end=stop;
   const used=new Set(),byRole={};
   for(const layer of activeLayers){
-   const d=beat.layers?.[layer];
+   let d=beat.layers?.[layer];
+   // Opt-in: an unauthored non-caption layer, or an omit without a reason, is a derived omission; entity presence is still enforced below.
+   if(deriveEmptyLayers&&layer!=='caption'&&(!d||(d.decision==='omit'&&!text(d.reason)&&!d.entity_ids?.length)))d={decision:'omit',reason:'no entity in beat'};
    if(!d||!['use','omit'].includes(d.decision)||!text(d.reason)){add('COVERAGE_LAYER_DECISION_MISSING',{beat_id:beat.id,layer});continue;}
    if(d.decision==='omit'){if(d.entity_ids?.length)add('COVERAGE_OMISSION_HAS_ENTITIES',{beat_id:beat.id,layer});continue;}
    if(layer==='caption'){const r=scene.layout_contract?.caption_safe_zone;if(!r||!['x','y','width','height'].every(k=>Number.isFinite(r[k]))||r.width<=0||r.height<=0)add('COVERAGE_CAPTION_LAYOUT_MISSING',{beat_id:beat.id});continue;}
