@@ -32,6 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     clean = sub.add_parser("clean", help="chuyển bản cũ/trùng vào _archive (mặc định chỉ xem trước)")
     clean.add_argument("--yes", action="store_true", help="thực hiện thật")
     clean.add_argument("--caches", action="store_true", help="gồm cả thư mục đệm (scratch, source-bundles, v1export, phase01-source-*)")
+    videos = sub.add_parser("videos", help="chép video mới nhất của mỗi job vào một thư mục với tên rõ ràng")
+    videos.add_argument("--to", type=Path, default=None, help="mặc định: <project>/videos")
     restore = sub.add_parser("restore", help="khôi phục một lượt dọn")
     restore.add_argument("batch", type=Path)
     purge = sub.add_parser("purge", help="xóa hẳn các lượt trong _archive")
@@ -59,6 +61,12 @@ def main(argv: list[str] | None = None) -> int:
         for entry in sorted(entries, key=lambda e: (e.kind, e.group or "", -e.mtime)):
             print(_row(entry))
         print(f"\n{len(entries)} mục · {library.human_size(sum(e.size for e in entries))}")
+        return 0
+    if args.command == "videos":
+        done = library.export_videos(entries, (args.to or project / "videos").resolve())
+        for source, target in done:
+            print(f"  {target.name}   ← {source.parent.parent.name}")
+        print(f"\nĐã chép {len(done)} video." if done else "Không có video mới cần chép.")
         return 0
     moves = library.plan_cleanup(entries, caches=args.caches)
     for move in moves:

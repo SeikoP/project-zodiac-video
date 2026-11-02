@@ -128,3 +128,39 @@ class LibraryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VideoExportTests(unittest.TestCase):
+    def test_videos_get_job_revision_and_render_time_names_and_export_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ws = root / ".zodiac-work"
+            (root / "ready").mkdir()
+            make_job(ws / "v2" / "jobs", "a-dir", "bocap", 1000, video=True)
+            make_job(ws / "v2" / "jobs", "b-dir", "songtu", 1000, video=True)
+            entries = library.scan(root, ws)
+            first = library.export_videos(entries, root / "videos")
+            names = sorted(t.name for _, t in first)
+            self.assertEqual(len(names), 2)
+            self.assertTrue(names[0].startswith("bocap__r1__") and names[0].endswith(".mp4"))
+            self.assertTrue(names[1].startswith("songtu__r1__"))
+            self.assertEqual(library.export_videos(entries, root / "videos"), [])
+
+    def test_superseded_jobs_are_not_exported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ws = root / ".zodiac-work"
+            (root / "ready").mkdir()
+            make_job(ws / "v2" / "jobs", "old", "x", 1000, video=True)
+            make_job(ws / "v2" / "jobs", "new", "x", 2000, video=True)
+            done = library.export_videos(library.scan(root, ws), root / "videos")
+            self.assertEqual([s.parent.parent.name for s, _ in done], ["new"])
+
+    def test_cli_videos_command(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ws = root / ".zodiac-work"
+            (root / "ready").mkdir()
+            make_job(ws / "v2" / "jobs", "j", "bocap", 1000, video=True)
+            self.assertEqual(main(["--project", str(root), "--workspace", str(ws), "videos"]), 0)
+            self.assertEqual(len(list((root / "videos").glob("bocap__r1__*.mp4"))), 1)
