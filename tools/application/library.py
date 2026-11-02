@@ -306,6 +306,38 @@ def purge_archive(workspace: Path, *, keep_latest: int = 0) -> int:
     return removed
 
 
+def _slug(text: str) -> str:
+    cleaned = re.sub(r"[^\w.-]+", "-", text.strip(), flags=re.UNICODE).strip("-_.")
+    return cleaned or "job"
+
+
+def video_name(entry: Entry, video: Path) -> str:
+    """<job>__r<revision>__<render time><ext>, so every video says which job and render it is."""
+    stamp = datetime.fromtimestamp(video.stat().st_mtime).strftime("%Y%m%d-%H%M")
+    revision = _slug(entry.revision) if entry.revision else "x"
+    return f"{_slug(entry.group or entry.name)}__r{revision}__{stamp}{video.suffix.casefold()}"
+
+
+def export_videos(entries: list[Entry], destination: Path) -> list[tuple[Path, Path]]:
+    """Copy each job's newest video into one folder under a descriptive name.
+
+    Idempotent: a file already exported under the same name is left alone.
+    Jobs already marked for archive are skipped so the folder only holds current work.
+    """
+    done: list[tuple[Path, Path]] = []
+    for entry in entries:
+        if entry.kind not in {"job", "legacy_job"} or not entry.videos or entry.verdict == "archive":
+            continue
+        source = entry.videos[0]
+        target = destination / video_name(entry, source)
+        if target.exists() and target.stat().st_size == source.stat().st_size:
+            continue
+        destination.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+        done.append((source, target))
+    return done
+
+
 def human_size(value: int) -> str:
     size = float(value)
     for unit in ("B", "KB", "MB", "GB"):

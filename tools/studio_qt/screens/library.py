@@ -62,11 +62,14 @@ class LibraryScreen(QWidget):
         self.refresh_button.clicked.connect(self.refresh)
         self.folder_button = QPushButton("Mở thư mục")
         self.folder_button.clicked.connect(self._open_selected_folder)
+        self.export_button = QPushButton("Xuất video có tên")
+        self.export_button.setToolTip("Chép video mới nhất của mỗi job vào thư mục videos/ với tên <job>__r<bản>__<giờ render>.mp4")
+        self.export_button.clicked.connect(self._export_videos)
         self.clean_button = QPushButton("Dọn bản cũ…")
         self.clean_button.clicked.connect(self._clean)
         self.undo_button = QPushButton("Hoàn tác lần dọn gần nhất")
         self.undo_button.clicked.connect(self._undo)
-        for button in (self.refresh_button, self.folder_button, self.clean_button, self.undo_button):
+        for button in (self.refresh_button, self.folder_button, self.export_button, self.clean_button, self.undo_button):
             bar.addWidget(button)
         layout.addLayout(bar)
         self.table = QTableWidget(0, len(HEADERS))
@@ -109,6 +112,7 @@ class LibraryScreen(QWidget):
         self.summary.setText(
             f"{len(self._entries)} mục · {library.human_size(total)} · "
             f"{len(moves)} bản cũ/trùng có thể dọn ({library.human_size(sum(m.size for m in moves))})")
+        self.export_button.setEnabled(any(e.videos and e.verdict == "keep" for e in self._entries))
         self.clean_button.setEnabled(bool(moves))
         self.undo_button.setEnabled(self._latest_batch() is not None)
 
@@ -128,6 +132,17 @@ class LibraryScreen(QWidget):
         raw = item.data(Qt.ItemDataRole.UserRole) if item else None
         if raw and Path(raw).is_dir() and (Path(raw) / "package-manifest.json").is_file():
             self.job_requested.emit(raw)
+
+    def _export_videos(self) -> None:
+        destination = self.project_root / "videos"
+        done = library.export_videos(self._entries, destination)
+        if done:
+            names = "\n".join(f"• {target.name}" for _, target in done[:15])
+            QMessageBox.information(self, "Xuất video", f"Đã chép {len(done)} video vào {destination}:\n{names}")
+        else:
+            QMessageBox.information(self, "Xuất video", "Không có video mới cần chép.")
+        if destination.is_dir():
+            _open_folder(destination)
 
     def _clean(self) -> None:
         moves = library.plan_cleanup(self._entries)
