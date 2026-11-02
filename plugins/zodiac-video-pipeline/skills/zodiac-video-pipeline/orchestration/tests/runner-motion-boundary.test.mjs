@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateRunnerMotionBoundary} from '../validate-runner-motion-boundary.mjs';
+import {validateRunnerMotionBoundary} from '../../features/visual-composition/validate-runner-motion-boundary.mjs';
 const ir=(motion)=>({scenes:[{id:'S01',events:[{id:'E01',desired_motion:motion}]}]});
 test('accept only supported canonical motions',()=>assert.equal(validateRunnerMotionBoundary(ir('state_swap')).ok,true));
 test('duration-named state swaps use the runner interval contract without losing duration',()=>{

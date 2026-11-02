@@ -17,4 +17,4 @@ The Narration writer still receives only the minimal brief and evidence. The ful
 
 ## Run
 `node references/validate-story-spine-performance.mjs <narrative-plan.json> <narration.txt> <story-spine-performance.json>`.
-Run with `orchestration/run-validator-with-receipt.mjs` for official pipeline receipts. This validation must finish before setting Narration PASS or opening Content Review.
+Run with `core/evidence/run-validator-with-receipt.mjs` for official pipeline receipts. This validation must finish before setting Narration PASS or opening Content Review.

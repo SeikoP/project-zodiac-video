@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validatePhase02ArtDirection} from '../validate-phase02-art-direction.mjs';
+import {validatePhase02ArtDirection} from '../../features/visual-composition/validate-phase02-art-direction.mjs';
 const palettes={palettes:{'school-warm':{},'social-teal':{}}},environments={profiles:['classroom-study','cafe-chat']};
 const source={scenes:[{id:'S01',voice:'Đầu.',environment:{profile:'classroom-study'},entities:[]},{id:'S02',voice:'Cuối.',environment:{profile:'cafe-chat'},entities:[]}]};
 const plan={format:'zodiac-scene-art-direction@2',scenes:[

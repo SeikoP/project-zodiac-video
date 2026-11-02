@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assessSemanticEvent} from '../semantic-motion-qa.mjs';
+import {assessSemanticEvent} from '../../features/visual-composition/semantic-motion-qa.mjs';
 // Geometry reproduces the approved S05 friend wait → withdraw transition.
 const s05={id:'S05',entities:[
  {id:'friend',initial_state:'wait',states:{wait:{asset:'friend-wait',transform:{x:625,y:500,width:300,height:420},visible:true},withdraw:{asset:'friend-withdraw',transform:{x:775,y:500,width:300,height:420},visible:true}}},

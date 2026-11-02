@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
-import os from 'node:os';import path from 'node:path';import test from 'node:test';import {fileURLToPath} from 'node:url';import {validatePipelineState} from '../validate-pipeline-state.mjs';
+import os from 'node:os';import path from 'node:path';import test from 'node:test';import {fileURLToPath} from 'node:url';import {validatePipelineState} from '../../core/state/validate-pipeline-state.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'..');
 const index=JSON.parse(await readFile(path.join(root,'phase-index.json'),'utf8'));const manifests=new Map();for(const item of index.phases)manifests.set(item.id,JSON.parse(await readFile(path.join(root,item.manifest),'utf8')));
 const condition=(when,flags)=>!when||when==='always'||when==='fresh'||(when.startsWith('flag:')&&Boolean(flags[when.slice(5)]));

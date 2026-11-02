@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {loadStepContext} from '../plan-step-context.mjs';import {preparePhase01StepCommit} from '../commit-phase01-step.mjs';import {readFile} from 'node:fs/promises';
+import test from 'node:test';import assert from 'node:assert/strict';import {loadStepContext} from '../plan-step-context.mjs';import {preparePhase01StepCommit} from '../../phases/phase01/commit-phase01-step.mjs';import {readFile} from 'node:fs/promises';
 test('episode routing carries durable scope and keeps research pool outside narration draft',async()=>{
  const template=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url))),flags={...template.flags,episode_selected:true};
  const c=await loadStepContext('01-content','concept',flags);assert.ok(c.required_outputs.includes('episode-scope.json'));assert.ok(c.deferred_exit_capabilities.includes('episode_scope_validation'));

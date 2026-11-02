@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateAnchorLanes} from '../validate-anchor-lanes.mjs';
+import {validateAnchorLanes} from '../../features/visual-composition/validate-anchor-lanes.mjs';
 const token={motion_defaults:{bounce:{duration_frames:10}}};
 const event=(id,target='friend',text='Rồi chỉ cần một người lên tiếng.')=>({id,target,intent:id,trigger:{type:'voice_anchor',text},state_before:'on',state_after:'on',desired_motion:'bounce',scheduling:{max_drift_frames:8,merge_policy:'never'}});
 const ir=events=>({video:{fps:24},scenes:[{id:'S05',events}]});

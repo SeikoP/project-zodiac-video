@@ -19,7 +19,7 @@ The installed ChatGPT plugin is the workflow authority. GitHub `SeikoP/project-z
 
 ## Run order
 ```sh
-node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/execution-preflight.mjs <episode-workspace> 01-content
+node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs <episode-workspace> 01-content
 ```
 Follow the installed phase-01 manifest to execute Evidence, Concept, Narration compilers and validators, use `run-validator-with-receipt.mjs`, persist operations and run `commit-phase01-step.mjs` for each step. A new episode needs explicit Content Review before Phase 02. Never synthesize validator or user approval receipts.
 

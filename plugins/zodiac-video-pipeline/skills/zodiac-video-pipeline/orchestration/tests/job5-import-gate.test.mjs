@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import test from 'node:test';
-import {assertJob5ImportReady,job5ImportDiagnostics} from '../validate-job5-import-gate.mjs';
+import {assertJob5ImportReady,job5ImportDiagnostics} from '../../phases/phase03/validate-job5-import-gate.mjs';
 const ev=(id,text,motion='subtle-tilt',target='gemini',before='listen',after='listen',occurrence)=>({id,target,desired_motion:motion,state_before:before,state_after:after,trigger:{type:'voice_anchor',text,...(occurrence?{occurrence}:{})}});
 test('both ambiguous anchors detected together',()=>{const ir={scenes:[{id:'s05',voice:'Song Tử nghĩ. Song Tử nói.',events:[ev('s05_e01','Song'),ev('s05_e02','Song','focus-shift','notebook')]}]};assert.deepEqual(job5ImportDiagnostics(ir).filter(x=>x.severity==='P1').map(x=>x.event_id),['s05_e01','s05_e02']);assert.throws(()=>assertJob5ImportReady(ir),/JOB5_IMPORT_GATE_INVALID/)});
 test('unique phrases and explicit occurrence supported',()=>{const ir={scenes:[{id:'s05',voice:'Song Tử nghĩ. Song Tử nói.',events:[ev('s05_e01','Song Tử nghĩ'),ev('s05_e02','Song','focus-shift','notebook','visible','visible',2)]}]};assert.equal(assertJob5ImportReady(ir).events,2)});

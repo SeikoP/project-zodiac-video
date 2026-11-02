@@ -12,7 +12,7 @@ const pluginRoot=path.resolve(skill,'../..');
 async function exists(p){try{await access(p);return true;}catch{return false;}}
 
 test('current effective policy is explicit and release-history is not active prompt policy',async()=>{
- const modulePath=path.join(orchestration,'current-policy.mjs');
+ const modulePath=path.join(orchestration,'..','core/policy/current-policy.mjs');
  assert.equal(await exists(modulePath),true,'current-policy.mjs must exist');
  const {loadCurrentPolicy}=await import(pathToFileURL(modulePath));
  const policy=await loadCurrentPolicy();

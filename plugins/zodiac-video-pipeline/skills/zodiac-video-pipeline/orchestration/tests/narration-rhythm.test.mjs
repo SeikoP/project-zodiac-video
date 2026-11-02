@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {compileNarrationPerformance} from '../compile-narration-performance.mjs';
+import {compileNarrationPerformance} from '../../features/narration-performance/compile-narration-performance.mjs';
 const performance=()=>({delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:['Bọ Cạp'],reason:'Recognizable observation before the reframe.'});
 const fixture=()=>({p:{scenes:[{id:'S01',voice:'Bọ Cạp nhìn lại.',performance_context:{motion_duration_ms:400}}]},plan:{version:'2.0',beats:[{id:'B01',voice_anchor:'Bọ Cạp',performance:performance()}]},n:'Bọ Cạp nhìn lại.\n'});
 test('v2 maps actual beat direction without touching voice or visual fields',()=>{const {p,plan,n}=fixture(),out=compileNarrationPerformance(p,plan,n);assert.equal(out.scenes[0].performance_context.pace,'medium');assert.equal(out.scenes[0].performance_context.motion_duration_ms,400);assert.equal(out.scenes[0].voice,p.scenes[0].voice);assert.equal(p.scenes[0].performance_context.pace,undefined);});

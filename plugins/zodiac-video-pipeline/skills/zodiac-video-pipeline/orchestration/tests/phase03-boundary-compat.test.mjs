@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, readFile, writeFile, rm} from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import {compileJobV5,compileWorkspace,captionSegmentsForScene} from '../compile-job-v5.mjs';
-import {validateHandoffV2} from '../validate-handoff-workspace-v2.mjs';
-import {validateJob5Workspace} from '../validate-job5-import-gate.mjs';
+import {compileJobV5,compileWorkspace,captionSegmentsForScene} from '../../phases/phase03/compile-job-v5.mjs';
+import {validateHandoffV2} from '../../phases/phase03/validate-handoff-workspace-v2.mjs';
+import {validateJob5Workspace} from '../../phases/phase03/validate-job5-import-gate.mjs';
 import {design} from './handoff-fixture.mjs';
 
 const char=(id,asset)=>({id,initial_state:'neutral',states:{neutral:{asset,visible:true},point:{asset,visible:true}}});

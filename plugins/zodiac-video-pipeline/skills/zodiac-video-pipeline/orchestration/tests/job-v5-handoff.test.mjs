@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,readFile,writeFile,access,rm} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';import test from 'node:test';
-import {compileWorkspace,compileJobV5} from '../compile-job-v5.mjs';
-import {validateHandoffV2} from '../validate-handoff-workspace-v2.mjs';
-import {exportZodiacJobV2,canonicalPackageZipName} from '../export-zodiac-job-v2.mjs';
-import {validateZipFile,parseZip} from '../zip-core-v2.mjs';
+import {compileWorkspace,compileJobV5} from '../../phases/phase03/compile-job-v5.mjs';
+import {validateHandoffV2} from '../../phases/phase03/validate-handoff-workspace-v2.mjs';
+import {exportZodiacJobV2,canonicalPackageZipName} from '../../phases/phase03/export-zodiac-job-v2.mjs';
+import {validateZipFile,parseZip} from '../../phases/phase03/zip-core-v2.mjs';
 const exists=p=>access(p).then(()=>true).catch(()=>false);
 test('explicit state-swap duration overrides use the existing runner-compatible duration ID',async()=>{const root=await makeRoot();try{const s=source();s.scenes[0].events[0].motion.duration_frames=12;s.scenes[0].events.push({...s.scenes[0].events[0],id:'E02',state_before:'open',state_after:'neutral',scheduling:{max_drift_frames:30,merge_policy:'never'},motion:{preset:'state_swap',duration_frames:8,duration_override:true}});await writeFile(path.join(root,'production.json'),JSON.stringify(s));const r=await compileWorkspace(root,{sign:'Bọ Cạp',concept:'Hai phiên bản',prune:true});assert.equal(r.ir.scenes[0].events[1].desired_motion,'state_swap_8f');assert.equal(r.designToken.motion_defaults.state_swap_8f.duration_frames,8);await validateHandoffV2(root);}finally{await rm(root,{recursive:true,force:true})}});
 const token={id:'zodiac-paper-doodle-meme-v4',version:'4.0',style_family:'paper-doodle-chibi-meme',handmade_profile:'human-stroke-v2',hard_style_lock:true,palette_roles:{paper:'#fff',ink:'#111'},character_construction:{handmade_profile:'human-stroke-v2',identity_rule:'body + hair + outfit',body_variation:'authored_geometry_not_scale_transform'},shape_language:{},caption_emphasis:{font_family:'Patrick Hand'},safe_zone:{x:72,y:960,width:936,height:620},caption_overlay:{mode:'collision_aware'},motion_grammar:{state_swap:'voice anchored'},asset_style_contract:{style_token:'zodiac-paper-doodle-meme-v4',handmade_profile:'human-stroke-v2',legacy_v3_direct_copy:false}};

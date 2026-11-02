@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {validateStoryObjectComposition as check} from '../validate-story-object-composition.mjs';
+import {validateStoryObjectComposition as check} from '../../features/story-object/validate-story-object-composition.mjs';
 const rect=(x,y,width,height)=>({x,y,width,height,rotation:0});
 const make=()=>{
  const person={id:'libra',kind:'character',initial_state:'idle',states:{idle:{asset:'cast',visible:true,transform:rect(330,580,340,500)}}};

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {assessAuthoringPayload} from '../write-phase02-authoring.mjs';
+import {assessAuthoringPayload} from '../../features/visual-composition/write-phase02-authoring.mjs';
 const narration='Cung Bảo Bình nghĩ khác.\nRồi cân nhắc một hướng khác.\n';
 const hash=createHash('sha256').update(narration).digest('hex');
 const state={phases:{'01-content':{status:'PASS'}},review_receipts:[{phase_id:'01-content',status:'APPROVED',proof:{kind:'user_message',ref:'message-10'}}]};

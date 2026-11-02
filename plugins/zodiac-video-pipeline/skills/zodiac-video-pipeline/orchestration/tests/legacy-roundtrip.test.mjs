@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {rm} from 'node:fs/promises';
-import {migrateLegacyJob5} from '../migrate-production-model.mjs';import {projectLegacyIR,assertRoundTrip} from '../project-legacy-ir.mjs';
+import {migrateLegacyJob5} from '../../core/model/migrate-production-model.mjs';import {projectLegacyIR,assertRoundTrip} from '../../core/model/project-legacy-ir.mjs';
 import {makePortableLegacyFixture} from './portable-legacy-fixture.mjs';
 test('portable 16-scene Job@5 authoring IR roundtrips without semantic loss',async()=>{
  const {root,ir}=await makePortableLegacyFixture();

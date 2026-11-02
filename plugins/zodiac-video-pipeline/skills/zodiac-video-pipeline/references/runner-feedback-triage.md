@@ -18,7 +18,7 @@ prerequisite and never mutates a released ZIP.
 1. Read the runner's actual report or log (the runner keeps stage state in `.runtime/pipeline-state.json` and the Workbench log). If none was provided, ask for it; do not guess the cause.
 2. Classify the failure by the surface that owns it, using the table. Reopen the narrowest surface that explains it.
 3. Edit the approved **source workspace**, never the staged or released ZIP.
-4. Run `orchestration/assess-revision-impact.mjs --before <approved> --after <revised> --output <revision-impact.json>`. `REAPPROVAL_REQUIRED` is a hard obligation for each impacted surface; `UNCHANGED_BY_SNAPSHOT` is not proof of approval.
+4. Run `core/audit/assess-revision-impact.mjs --before <approved> --after <revised> --output <revision-impact.json>`. `REAPPROVAL_REQUIRED` is a hard obligation for each impacted surface; `UNCHANGED_BY_SNAPSHOT` is not proof of approval.
 5. Obtain a new genuine user approval for impacted surfaces, seal a new review lock, and export a new revision through `run-phase03-production.mjs` (bump `--revision`). Never overwrite a released ZIP.
 
 ## Failure → owning surface

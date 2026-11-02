@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {normalizeEpisodeScope,validateEpisodeScope} from '../episode-scope.mjs';
+import {normalizeEpisodeScope,validateEpisodeScope} from '../../features/episode/episode-scope.mjs';
 export const scope=()=>({format:'zodiac-episode-scope@1',episode_id:'fire-triggers',episode_format:'element_group',title_working:'Nhóm Lửa không nóng vì cùng một chuyện',topic_question:'Họ bảo vệ điều gì?',member_ids:['aries','leo','sagittarius'],selection_reason:'Cùng nguyên tố, khác động cơ.',group_element:'fire'});
 test('canonical aliases and all four exact element groups validate without input mutation',()=>{
  const s=scope();s.member_ids=['Bạch Dương','Sư Tử','Nhân Mã'];const copy=structuredClone(s),n=normalizeEpisodeScope(s);

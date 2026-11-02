@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,writeFile,readFile} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';import {createHash} from 'node:crypto';import {fileURLToPath} from 'node:url';
-const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../restore-plugin-source.mjs');
+const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../core/release/restore-plugin-source.mjs');
 const manifest=Buffer.from(JSON.stringify({name:'zodiac-video-pipeline',version:'2.2.5'}));
 const item=(p,b)=>({path:p,base64:b.toString('base64'),sha256:createHash('sha256').update(b).digest('hex')});
 const run=async files=>{const dir=await mkdtemp(path.join(os.tmpdir(),'zodiac-source-'));const source=path.join(dir,'snapshot.json');await writeFile(source,JSON.stringify({format:'zodiac-plugin-source-snapshot@1',version:'2.2.5',files}));const target=path.join(dir,'output');return {dir,target,result:spawnSync(process.execPath,[script,'--source',source,'--target',target],{encoding:'utf8'})};};

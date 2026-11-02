@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {stages,sourcePath} from '../phase02-execute-with-depth.mjs';
+import {stages,sourcePath} from '../../phases/phase02/phase02-execute-with-depth.mjs';
 import {access} from 'node:fs/promises';
 test('preserves entry gate and native ordering before scene direction',async()=>{
  assert.deepEqual(stages.map(x=>x.id),['transition','native_environment','native_depth','depth_validation','phase02_native']);

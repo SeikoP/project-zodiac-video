@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
-const script=path.resolve(import.meta.dirname,'../phase02-transition-gate.mjs');
+const script=path.resolve(import.meta.dirname,'../../phases/phase02/phase02-transition-gate.mjs');
 const root=path.resolve(import.meta.dirname,'../../../..');
 const manifest=JSON.parse(await (await import('node:fs/promises')).readFile(path.join(root,'plugin.json'),'utf8'));
 async function fixture(inputs){const d=await mkdtemp(path.join(tmpdir(),'zodiac-gate-'));await mkdir(path.join(d,'.authoring'),{recursive:true});await writeFile(path.join(d,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:manifest.version,phases:{'01-content':{status:'PASS'}},review_receipts:[{phase_id:'01-content',status:'APPROVED',proof:{kind:'user_message',ref:'real-user-reference'}}]}));await writeFile(path.join(d,'narration.txt'),'Narration');if(inputs)for(const [name,value] of Object.entries({'production.json':{scenes:[{id:'s01'}]},'asset-plan.json':{},'visual-grammar-plan.json':{},'.authoring/character-assembly-plan.json':{}}))await writeFile(path.join(d,name),JSON.stringify(value));return d;}

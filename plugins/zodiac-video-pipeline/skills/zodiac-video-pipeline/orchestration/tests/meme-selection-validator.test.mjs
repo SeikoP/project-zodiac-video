@@ -3,7 +3,7 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import {validateMemeSelection} from '../validate-meme-selection.mjs';
+import {validateMemeSelection} from '../../features/meme/validate-meme-selection.mjs';
 
 async function workspace({selected=false,flag=selected}={}){
   const root=await mkdtemp(path.join(os.tmpdir(),'meme-selection-'));
