@@ -87,7 +87,7 @@ CI jobs are grouped by responsibility:
 - `unit-python`
 - `contract-control-plane`
 - `integration-*`
-- `compatibility-runtime` matrix
+- `compat-remotion` workflow (`compatibility-runtime` matrix; runs only when the legacy v1 path changes, on main, or on demand)
 - `release-plugin`
 
 The compatibility matrix keeps all registered Remotion versions and version-specific golden fixtures without duplicating whole workflow jobs.

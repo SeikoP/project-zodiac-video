@@ -3,10 +3,11 @@ import re
 
 
 WORKFLOW = Path('.github/workflows/tests.yml')
+COMPAT = Path('.github/workflows/compat-remotion.yml')
 
 
 def test_runtime_compatibility_jobs_are_one_matrix() -> None:
-    text = WORKFLOW.read_text(encoding='utf-8')
+    text = COMPAT.read_text(encoding='utf-8')
     assert re.search(r'^  compatibility-runtime:\s*$', text, re.MULTILINE)
     for legacy_job in (
         'shared-runtime:', 'shared-runtime-1-15:', 'shared-runtime-1-16:',
@@ -32,14 +33,15 @@ def test_ci_jobs_expose_validation_tiers_without_renaming_stable_job_ids() -> No
     for job, tier_name in expected.items():
         assert re.search(rf'^  {job}:\s*$', text, re.MULTILINE), job
         assert tier_name in text
-    assert 'name: compatibility / remotion ${{ matrix.runtime-version }}' in text
+
+
+def test_compat_workflow_names_each_runtime_check() -> None:
+    assert 'name: compatibility / remotion ${{ matrix.runtime-version }}' in COMPAT.read_text(encoding='utf-8')
 
 
 def test_compatibility_matrix_uses_step_working_directories_and_keeps_golden_cases() -> None:
-    text = WORKFLOW.read_text(encoding='utf-8')
-    start = text.index('  compatibility-runtime:')
-    end = text.index('  control-plane-v2-core:', start)
-    block = text[start:end]
+    text = COMPAT.read_text(encoding='utf-8')
+    block = text[text.index('  compatibility-runtime:'):]
     assert 'defaults:' not in block
     expected_dir = 'working-directory: runtime/zodiac-remotion/${{ matrix.runtime-version }}/renderer'
     assert block.count(expected_dir) >= 3
@@ -51,3 +53,9 @@ def test_compatibility_matrix_uses_step_working_directories_and_keeps_golden_cas
         'RuntimeV3210StyleContractTests.test_v3210_runtime_prepare_golden_v4_package',
     ):
         assert case in block
+
+
+def test_old_remotion_matrix_runs_only_when_the_legacy_path_changes() -> None:
+    text = COMPAT.read_text(encoding='utf-8')
+    assert 'paths:' in text and 'runtime/zodiac-remotion/**' in text
+    assert 'compatibility-runtime:' not in WORKFLOW.read_text(encoding='utf-8')
