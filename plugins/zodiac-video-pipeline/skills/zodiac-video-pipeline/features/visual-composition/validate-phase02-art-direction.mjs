@@ -2,6 +2,7 @@
 // Generic authoring-only gate; no sign-specific entity, shot quotas or forced story objects.
 import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from '../scene-set/scene-set-detection.mjs';
 import {validateVisualCoverage} from './validate-visual-coverage.mjs';
+import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
 const normalize=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normalize(s).replace(/\s+/gu,'');
 export function validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage=false,fresh=false}={}){
@@ -29,7 +30,9 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   }
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||(!fresh&&!String(d?.environment_reason??'').trim()))fail('ART_REASON_MISSING',scene_id);
-  if(source)issues.push(...validateVisualCoverage(source,d,{required:requireCoverage}));
+  if(source)issues.push(...validateVisualCoverage(source,d,{required:requireCoverage,deriveEmptyLayers:fresh}));
+  // Fresh runs only: a beat that draws a narrative visual must state its claim, anchor and state change first.
+  if(source&&fresh){const usesNarrative=(d?.visual_coverage?.beats??[]).some(b=>b?.layers?.narrative_visual?.decision==='use');if(usesNarrative||d?.narrative_brief)issues.push(...validateNarrativeBrief(source,d.narrative_brief));}
   const story=d?.story_object;
   if(story && (!['prop','symbolic','story_object'].includes(story.render_layer)||story.replaces_environment===true))fail('STORY_OBJECT_BACKGROUND_FORBIDDEN',scene_id);
   if(story && (!String(story.id??'').trim()||!String(story.voice_anchor??'').trim()||!String(d.voice??'').includes(story.voice_anchor)))fail('STORY_OBJECT_VOICE_ANCHOR_MISSING',scene_id);
