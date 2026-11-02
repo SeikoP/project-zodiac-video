@@ -23,6 +23,7 @@ local = [
 [project.scripts]
 zodiac = "tools.zodiac_qt:main"
 zodiac-control = "tools.control_plane.cli:main"
+zodiac-library = "tools.application.library_cli:main"
 
 [tool.setuptools.packages.find]
 include = ["tools*"]

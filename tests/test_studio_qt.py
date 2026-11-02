@@ -310,10 +310,10 @@ class TaskWorkbenchTests(unittest.TestCase):
             window = ZodiacQtApp(workspace=Path(workspace))
             self.assertEqual(
                 [window.main_tabs.tabText(index) for index in range(window.main_tabs.count())],
-                ["Công việc / Workspace", "Media", "Checklist sản xuất"],
+                ["Công việc / Workspace", "Kho", "Media", "Checklist sản xuất"],
             )
             self.assertIs(window.main_tabs.widget(0), window.stack)
-            self.assertIs(window.main_tabs.widget(2), window.checklist)
+            self.assertIs(window.main_tabs.widget(3), window.checklist)
             window.close()
 
     def test_closed_qt_window_releases_multimedia_children(self):
@@ -346,7 +346,7 @@ class TaskWorkbenchTests(unittest.TestCase):
 
             window._open_output("video")
 
-            self.assertEqual(window.main_tabs.currentIndex(), 1)
+            self.assertEqual(window.main_tabs.currentIndex(), window.main_tabs.indexOf(window.media))
             window.media.open_media.assert_called_once_with(video)
             window.close()
 
