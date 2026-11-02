@@ -1,0 +1,128 @@
+export type RenderPlanAsset = {
+  path?: string;
+  src?: string;
+  [key: string]: unknown;
+};
+
+export type RenderTransform = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  scale?: number;
+  rotation?: number;
+};
+
+export type RenderPlanState = {
+  asset: string;
+  transform?: RenderTransform;
+  layer?: number;
+  visible?: boolean;
+  [key: string]: unknown;
+};
+
+export type RenderPlanEntity = {
+  id: string;
+  role?: string;
+  visual_role?: string;
+  kind?: string;
+  layer?: number;
+  initial_state: string;
+  states: Record<string, RenderPlanState>;
+};
+
+export type RenderPlanCaption = {
+  text: string;
+  words?: Array<{text: string; start_frame: number; end_frame: number}>;
+  resolved_layout?: {zone: RenderBox & {padding:number}; lines:string[]; x:number; y:number; width:number; height:number};
+  start_frame: number;
+  end_frame: number;
+};
+
+export type RenderPlanEvent = {
+  event_id: string;
+  scene_id: string;
+  target: string;
+  asset_before: string;
+  asset_after: string;
+  preferred_start_frame?: number;
+  start_frame: number;
+  end_frame: number;
+  state_before: string;
+  state_after: string;
+  motion: string;
+  merged_event_ids?: string[];
+};
+
+export type RenderBox = {x: number; y: number; width: number; height: number};
+export type RenderLayoutContract = {canvas: {width: number; height: number}; caption_safe_zone: RenderBox; character_zone: RenderBox; prop_zone: RenderBox; effect_zone: RenderBox};
+
+export type RenderPlanScene = {
+  id: string;
+  continuity_group?: string;
+  performance_context_hash?: string;
+  start_frame: number;
+  duration_frames: number;
+  measured_duration_frames?: number;
+  entities?: RenderPlanEntity[];
+  occlusion_relations?: Array<{front:string;back:string}>;
+  spatial_bindings?: Array<{
+    entity: string;
+    anchor: string;
+    relation: "near" | "held_by" | "on_surface" | "emitted_by" | "points_to";
+    max_distance_px: number;
+  }>;
+  layout_contract?: RenderLayoutContract;
+  captions?: RenderPlanCaption[];
+  events: RenderPlanEvent[];
+};
+
+export type RenderPlanPresentation = {
+  paper?: string;
+  ink?: string;
+  caption?: {
+    font_family?: string;
+    font_data_uri?: string;
+    font_size_px?: number;
+    font_weight?: number;
+    max_lines?: number;
+    padding_px?: number;
+    line_height?: number;
+    color?: string;
+    highlight_color?: string;
+    safe_zone?: {x?: number; y?: number; width?: number; height?: number};
+  };
+  watermark?: {
+    enabled?: boolean;
+    text?: string;
+    anchor?: string;
+    offset_px?: {x?: number; y?: number};
+    font_family?: string;
+    font_size_px?: number;
+    font_weight?: number;
+    opacity?: number;
+    layer?: number;
+  };
+};
+
+export type CoverDesignV2 = {
+  version: "zodiac-cover-design@2";
+  style_token: "zodiac-paper-doodle-meme-v4";
+  canvas: {width:number; height:number};
+  title_frame: {shape:string;fill_role:string;stroke_role:string;shadow_role:string;
+    shadow_dx_px:number;shadow_dy_px:number;shadow_opacity:number;font_family:string;max_lines:number};
+  composition: {hero_scale:number;supporting_prop_scale:number;read_order:string[];
+    max_supporting_accents:number;min_side_margin_px:number;background_policy:string};
+};
+export type CoverPublish = {cover?: {opening?:{enabled:boolean;duration_sec?:number;transition_sec?:number};design?:CoverDesignV2;source_scene_id: string; identity: {label: string; glyph: string}; hook: string; visuals: Array<{entity_id: string; state_id: string; transform?: RenderTransform}>}; [key: string]: unknown};
+
+export type RendererV2Props = {
+  publish?: CoverPublish;
+  contract: "zodiac-render-plan@1";
+  fps: number;
+  video: {width: number; height: number};
+  presentation?: RenderPlanPresentation;
+  performance_context_hash?: string;
+  assets: Record<string, RenderPlanAsset>;
+  scenes: RenderPlanScene[];
+};
