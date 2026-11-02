@@ -13,6 +13,9 @@ The ChatGPT edition (`plugin.json`, `extensions."com.openai"`) is unchanged. On 
 
 Capabilities marked `fallback` may use the substitute; capabilities marked `block` may not. The manifest's `unavailable_policy` still governs.
 
+## `skills://plugins/...` references
+Some manifest entries point at ChatGPT-installed plugins by URI, for example the `evidence` step's `skills://plugins/app-.../Search` (search guidance) and the `concept` step's `viral_analysis` skill. These do not resolve on Claude and `plan-step-context.mjs` reports them as non-files. Do not treat that as a missing source. Use the table above: the connector or search tool does the work, and the Social Media Skills plugin supplies viral-analysis guidance. A `block` capability still blocks if its replacement is unavailable.
+
 ## Model per task (optional subagents in `agents/`)
 Use the cheapest model that the step's validators can still catch mistakes for; spend the strongest model where quality is the deliverable.
 | Task | Agent | Model | Why |
