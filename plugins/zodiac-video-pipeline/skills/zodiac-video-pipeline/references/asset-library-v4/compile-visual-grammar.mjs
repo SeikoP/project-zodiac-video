@@ -3,7 +3,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-import {hasPrimarySceneSet} from '../../orchestration/scene-set-detection.mjs';
+import {hasPrimarySceneSet} from '../../features/scene-set/scene-set-detection.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
 const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));

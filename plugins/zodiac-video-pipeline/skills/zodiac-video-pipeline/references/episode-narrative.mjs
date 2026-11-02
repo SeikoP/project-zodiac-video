@@ -1,4 +1,4 @@
-import {assertEpisodeScope,MEMBER_LABELS} from '../orchestration/episode-scope.mjs';
+import {assertEpisodeScope,MEMBER_LABELS} from '../features/episode/episode-scope.mjs';
 const norm=s=>String(s??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replaceAll('đ','d').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 export function validateEpisodeNarrative(plan,narration){
  const scope=assertEpisodeScope(plan.episode_scope),lenses=plan.member_lenses;

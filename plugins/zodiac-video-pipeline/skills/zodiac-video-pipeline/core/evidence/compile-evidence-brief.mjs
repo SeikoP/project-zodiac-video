@@ -1,5 +1,5 @@
 import {fileURLToPath} from 'node:url';import path from 'node:path';
-import {compositionHash} from '../../orchestration/phase02-composition.mjs';import {readArtifact,writeArtifact} from '../../orchestration/phase01-artifacts.mjs';
+import {compositionHash} from '../../features/visual-composition/phase02-composition.mjs';import {readArtifact,writeArtifact} from '../../phases/phase01/phase01-artifacts.mjs';
 const fail=m=>{throw Error('EVIDENCE_BRIEF_INVALID '+m);};
 export function compileEvidenceBrief(ledger,{evidence_ids,max_bytes=12000}={}){
  const entries=ledger.entries??ledger.sources;if(!Array.isArray(entries)||entries.length<2)fail('SOURCES');

@@ -2,7 +2,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validateSceneSetAccents} from '../../../orchestration/validate-scene-set-accents.mjs';
+import {validateSceneSetAccents} from '../../../features/scene-set/validate-scene-set-accents.mjs';
 import {compileBackgroundPaletteSvg,paletteAssetIdentity,resolveBackgroundPalette} from './compile-background-palette.mjs';
 import {resolveAccentPlacement} from './resolve-accent-placement.mjs';
 import {resolveAccentStates} from './resolve-accent-states.mjs';

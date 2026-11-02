@@ -1,6 +1,6 @@
 ---
 name: zodiac-video-pipeline
-description: Produce or resume Vietnamese Zodiac videos in single-sign, element-group, ranked-shortlist and comparison formats.
+description: Produce or resume Vietnamese Zodiac videos in single-sign, element-group, ranked-shortlist and comparison formats. Use whenever the user mentions a zodiac or cung hoàng đạo episode, a Studio prompt or workspace to resume, Content Review or Visual Review, Job@5 or the ZIP for the local runner, or a failure the local runner reported (voice, timing, caption, render, cover), even if they do not name the pipeline.
 ---
 # Zodiac Video Pipeline
 
@@ -25,10 +25,10 @@ Phase 03: use orchestration/run-phase03-production.mjs or its verified current t
 
 Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Missing choices block; no legacy/selected-cues fallback. Historical job recovery requires its separately pinned external snapshot. Fresh production has no Scene Set. Legacy Scene Set rendering is compatibility-only, requiring verified historical job input; character placement always remains independent.
 
-Current visual selection uses a fixed native face, plain or intrinsic zodiac-glyph shirts with selected colors, no accessories by default; optional restrained reaction/effect assets remain allowed when narration or acting requires them. Preserve the sign's icon baked on its shirt; omit decorative halos, rays and floating marks around that icon. Never infer a supporting actor's sign. Prefer feminine presentation with a tall slim silhouette for leads unless explicit episode design requests otherwise. Preserve pose/expression acting, props, symbolic story objects and supporting backdrops.
+## Where to read next
+Load only what the current task needs.
 
-Scene Accents are optional context cues with explicit per-beat use/omission in Visual Coverage. Fresh accents have their own authoring category `scene_accent`, canvas-relative placement, optional actor-relative anchor, rear layering, one reusable SVG per identity, and voice-anchored visibility states. They do not require a Scene Set and must not constrain character positioning. Canvas, spatial and caption safety remain mandatory.
-
-Scene accents are sparse narrative context cues, not a permanently decorated room. Their `initial_state` and boolean visibility `states` may be driven by ordinary voice-anchored events, reusing one SVG. Define when each cue enters and leaves; string lights suit a narrated birthday, while cafe cues only accompany the cafe passage. One continuous scene can contain many visual story turns. Narrative Visuals communicate thoughts, feelings and symbolic meaning independently of backdrop accents; simple visuals do not require setup/friction/payoff. Historical Story Object V2 remains importable and may play within one native scene without splitting approved narration paragraphs.
-
-Fresh Phase 02 requires per-beat visual_coverage in Visual Intent art_direction before SVG compilation. Fill actor, optional Scene Accent, Narrative Visual, ordinary prop, support and caption decisions with actual references or explicit omissions. The native seam and Visual Quality enforce coverage; a symbolic metaphor cannot substitute for ordinary props used by the narration.
+| Task | Read |
+| --- | --- |
+| Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
+| Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |

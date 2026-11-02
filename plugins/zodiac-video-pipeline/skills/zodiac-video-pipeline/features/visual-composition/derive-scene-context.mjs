@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validateEpisodeCast} from '../../orchestration/episode-handoff.mjs';
+import {validateEpisodeCast} from '../episode/episode-handoff.mjs';
 import {designToken,compositionHash} from './phase02-composition.mjs';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const inputs=[['production','production.json'],['visual_grammar','visual-grammar-plan.json'],['character_assembly','.authoring/character-assembly-plan.json'],['story_object','.authoring/story-object-plan.json'],['depth','.authoring/depth-composition-plan.json'],['composition','.authoring/scene-art-direction.json'],['resolved','.authoring/scene-composition-resolved.json'],['narrative','.authoring/narrative-plan.json'],['episode_cast','.authoring/episode-cast-plan.json'],['director','.authoring/director-plan.json'],['choreography','.authoring/story-beat-choreography.json']];
