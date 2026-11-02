@@ -5137,85 +5137,6 @@ def _choose(prompt: str, values: list[Path]) -> Path:
         print("Please choose one of the listed numbers.")
 
 
-def run_tui(args: argparse.Namespace, workspace: Path) -> None:
-    """Small dependency-free terminal menu for the complete local flow."""
-    jobs_dir = workspace / "jobs"
-    if args.archive:
-        archive = Path(args.archive).expanduser().resolve()
-        requested = args.name or archive.stem.replace("-render-ready", "")
-        target = jobs_dir / re.sub(r"[^a-zA-Z0-9._-]+", "-", requested).strip("-.").lower()
-        if not target.exists():
-            target = import_package(archive, jobs_dir, args.name)
-        job = target
-    else:
-        jobs = sorted(path for path in jobs_dir.glob("*") if path.is_dir())
-        archives = sorted(Path("ready").glob("*.zip"))
-        if jobs:
-            job = _choose("Existing jobs:", jobs)
-        else:
-            job = import_package(_choose("Ready packages:", archives), jobs_dir, args.name)
-
-    print(f"\nZodiac local TUI\nJob: {job.name}\n")
-    while True:
-        print("1. Generate VieNeu voice + timing")
-        print("2. Generate voice + render MP4")
-        print("3. Preview in Remotion Studio")
-        print("4. Render MP4")
-        print("5. Check package/runtime")
-        print("q. Quit")
-        choice = input("Action: ").strip().lower()
-        if choice == "q":
-            return
-        if choice == "1":
-            synthesize_voice(
-                job,
-                args.tts_root,
-                args.tts_python,
-                args.voice,
-                args.tts_mode,
-                args.vieneu_url,
-                args.align_model,
-                args.align_device,
-                args.align_compute_type,
-                args.tts_backend,
-                args.tts_precision,
-                args.tts_frame_cap,
-                args.tts_max_chars,
-                args.speech_rate_warning_wps,
-                args.tts_fp32_fallback,
-            )
-            print("Voice and timing ready.")
-        elif choice == "2":
-            synthesize_voice(
-                job,
-                args.tts_root,
-                args.tts_python,
-                args.voice,
-                args.tts_mode,
-                args.vieneu_url,
-                args.align_model,
-                args.align_device,
-                args.align_compute_type,
-                args.tts_backend,
-                args.tts_precision,
-                args.tts_frame_cap,
-                args.tts_max_chars,
-                args.speech_rate_warning_wps,
-                args.tts_fp32_fallback,
-            )
-            run_renderer(job, "render")
-        elif choice == "3":
-            run_renderer(job, "preview")
-        elif choice == "4":
-            run_renderer(job, "render")
-        elif choice == "5":
-            validate_package(job)
-            validate_runtime(job)
-            print("Package and local runtime: valid")
-        else:
-            print("Unknown action.")
-
-
 def _job_path(value: str, workspace: Path) -> Path:
     candidate = Path(value).expanduser()
     if candidate.is_absolute() or candidate.exists():
@@ -5270,28 +5191,6 @@ def build_parser() -> argparse.ArgumentParser:
         music_group.add_argument("--music", type=Path, help="loop this background track under the narration")
         music_group.add_argument("--no-music", action="store_true", help="remove background music from this render")
         sub.add_argument("--music-volume", type=float, default=DEFAULT_MUSIC_VOLUME, help="background music volume from 0 to 1")
-    tui = commands.add_parser("tui", help="interactive local voice and Remotion workflow")
-    tui.add_argument("--archive", type=Path, help="ready ZIP to import automatically")
-    tui.add_argument("--name", help="local job name when importing")
-    tui.add_argument("--voice", default=DEFAULT_TTS_VOICE)
-    tui.add_argument("--tts-root", type=Path, default=DEFAULT_TTS_ROOT)
-    tui.add_argument("--tts-python", type=Path)
-    tui.add_argument("--tts-mode", default="v3turbo")
-    tui.add_argument("--vieneu-url", help="reuse an existing VieNeu Gradio server")
-    tui.add_argument("--tts-backend", choices=("auto", "onnx", "pytorch"), default=DEFAULT_TTS_BACKEND)
-    tui.add_argument("--tts-precision", choices=("fp32", "int8"), default=DEFAULT_TTS_PRECISION)
-    tui.add_argument("--tts-frame-cap", choices=("on", "off"), default=DEFAULT_TTS_FRAME_CAP)
-    tui.add_argument("--tts-max-chars", type=int, default=DEFAULT_TTS_MAX_CHARS)
-    tui.add_argument("--speech-rate-warning-wps", type=float, default=DEFAULT_SPEECH_RATE_WARNING_WPS)
-    tui.add_argument(
-        "--no-tts-fp32-fallback",
-        action="store_false",
-        dest="tts_fp32_fallback",
-    )
-    tui.set_defaults(tts_fp32_fallback=True)
-    tui.add_argument("--align-model", default="small")
-    tui.add_argument("--align-device", default="cpu")
-    tui.add_argument("--align-compute-type", default="int8")
     return parser
 
 
@@ -5344,8 +5243,6 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command in {"preview", "render"}:
             music = args.music if args.music else None
             run_renderer(_job_path(args.job, workspace), args.command, music, args.music_volume, bool(args.music or args.no_music))
-        elif args.command == "tui":
-            run_tui(args, workspace)
     except PipelineError as exc:
         print(f"ZODIAC_LOCAL_ERROR: {exc}", file=sys.stderr)
         return 2
