@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,copyFile,readFile,rm} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';import test from 'node:test';import {fileURLToPath} from 'node:url';
-import {parseStyleToken} from '../compile-job-v5.mjs';
+import {parseStyleToken} from '../../phases/phase03/compile-job-v5.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));const skillRoot=path.resolve(here,'../..');
 const validator=path.join(skillRoot,'references/asset-library-v4/validation/validate-production-style.mjs');
 const exemplar=path.join(skillRoot,'references/asset-library-v4/props/phone.svg');

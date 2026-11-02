@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateProductionModel,canonicalizeProductionModel,getOwnedField} from '../production-model.mjs';
-import {canonicalDigest} from '../verify-release-sync.mjs';
+import {validateProductionModel,canonicalizeProductionModel,getOwnedField} from '../../core/state/production-model.mjs';
+import {canonicalDigest} from '../../core/release/verify-release-sync.mjs';
 const model={format:'zodiac-production-model@1',narration:'Bọ Cạp nói không sao.',scenes:[{id:'S01',actions:[]}]};
 test('canonical model succeeds',()=>assert.equal(validateProductionModel(model).ok,true));
 test('immutable approved narration',()=>assert.ok(validateProductionModel({...model,narration:'other'},{narrationChecksum:canonicalDigest(model.narration)}).errors.includes('APPROVED_NARRATION_CHANGED')));

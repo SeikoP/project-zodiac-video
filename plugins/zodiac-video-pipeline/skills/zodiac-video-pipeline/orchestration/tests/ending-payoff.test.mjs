@@ -6,8 +6,8 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
-const compiler=path.join(here,'../compile-ending-payoff.mjs');
-const validator=path.join(here,'../validate-ending-payoff.mjs');
+const compiler=path.join(here,'../../features/ending/compile-ending-payoff.mjs');
+const validator=path.join(here,'../../features/ending/validate-ending-payoff.mjs');
 const base=hold=>({version:'2.0',scenes:[{id:'S01',voice:'Và tin nhắn đó vẫn chưa gửi.',entities:[{id:'hero',kind:'character',initial_state:'idle',states:{idle:{},land:{}}}],events:[{id:'E1',target:'hero',state_before:'idle',state_after:'land',trigger:{source:'voice_anchor',text:'vẫn chưa gửi'},...(hold!==undefined?{performance:{intent:'final landing',hold_frames:hold}}:{})}]}]});
 async function run(p){const d=await mkdtemp(path.join(os.tmpdir(),'zodiac-ending-'));const f=path.join(d,'production.json');await writeFile(f,JSON.stringify(p));const c=spawnSync(process.execPath,[compiler,f,'--write'],{encoding:'utf8'});let out=null;try{out=JSON.parse(await readFile(f,'utf8'));}catch{}const v=spawnSync(process.execPath,[validator,f],{encoding:'utf8'});await rm(d,{recursive:true,force:true});return {c,v,out};}
 

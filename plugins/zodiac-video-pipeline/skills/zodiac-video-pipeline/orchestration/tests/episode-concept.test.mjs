@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateEpisodeConcept} from '../validate-episode-concept.mjs';import {compileEpisodeEvidenceView} from '../episode-evidence.mjs';import {scope,ledger,plan,candidates} from './helpers/episode-fixture.mjs';
+import {validateEpisodeConcept} from '../../features/episode/validate-episode-concept.mjs';import {compileEpisodeEvidenceView} from '../../core/evidence/episode-evidence.mjs';import {scope,ledger,plan,candidates} from './helpers/episode-fixture.mjs';
 const input=()=>({scope:scope(),candidates:candidates(),narrativePlan:plan(),evidenceView:compileEpisodeEvidenceView(ledger(),scope())});
 test('three distinct premises and grounded per-member lenses are structurally valid',()=>assert.equal(validateEpisodeConcept(input()).status,'VALID'));
 test('missing member lens, unresolved refs, duplicated premise and changed scope block',()=>{

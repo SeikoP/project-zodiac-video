@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,mkdir} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';
-const api=await import('../benchmark-phase02-simplification.mjs').catch(()=>({}));
+const api=await import('../../core/audit/benchmark-phase02-simplification.mjs').catch(()=>({}));
 test('reference rejects SVG or transform or provenance drift',()=>{
  assert.equal(typeof api.verifyArchiveFrame,'function');
  const ref={asset_sha256:'x',transform:{x:0,y:0,width:1080,height:900},source_zip_sha256:'zip'};

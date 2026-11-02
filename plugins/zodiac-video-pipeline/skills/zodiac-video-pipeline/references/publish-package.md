@@ -69,7 +69,7 @@ Read `references/publish-virality.md` as editorial authority. For new content, i
 
 
 ## Cover Composition v2 (new v2.4.14)
-Fresh Publish Prep must read `references/cover-composition-v2.md`, include `cover.design` derived exclusively from V4 style token and scene-native assets, run `node orchestration/validate-cover-design.mjs <workspace>` before Visual Review. Explicitly note the runtime must implement title shadow and scale; producer validation cannot assert final cover.png pixel parity. Do not replace environment with story object. Old approved covers remain compatible via `--allow-legacy` only.
+Fresh Publish Prep must read `references/cover-composition-v2.md`, include `cover.design` derived exclusively from V4 style token and scene-native assets, run `node features/cover/validate-cover-design.mjs <workspace>` before Visual Review. Explicitly note the runtime must implement title shadow and scale; producer validation cannot assert final cover.png pixel parity. Do not replace environment with story object. Old approved covers remain compatible via `--allow-legacy` only.
 
 ## Fresh cover completeness — editorial decision
 For each source-scene actor, Narrative Visual, physical Prop, contextual Scene Accent and meaningful Effect, explicitly decide whether the selected cover frame needs it. The exported `cover.visuals` must resolve to actual native entities/states; do not invent cover-only SVGs. When a narratively decisive element is omitted, add a specific producer-side omission reason. A cover that simply has one legal entity is not automatically a complete or persuasive composition. Quality review must inspect the actual `cover.png` at thumbnail scale and the opening frame.

@@ -16,11 +16,11 @@ ROOT_REQUIRED = ("plugin.json", ".codex-plugin/plugin.json",
                  "skills/zodiac-video-pipeline/orchestration/execution-bootstrap.md",
                  "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json")
 PHASE_REQUIRED = {
-    "01-content": ("skills/zodiac-video-pipeline/orchestration/execution-preflight.mjs",
-                   "skills/zodiac-video-pipeline/orchestration/commit-phase01-step.mjs",
-                   "skills/zodiac-video-pipeline/orchestration/run-validator-with-receipt.mjs"),
-    "02-visual-production": ("skills/zodiac-video-pipeline/orchestration/phase02-execute.mjs",),
-    "03-handoff": ("skills/zodiac-video-pipeline/orchestration/run-phase03-production.mjs",),
+    "01-content": ("skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs",
+                   "skills/zodiac-video-pipeline/phases/phase01/commit-phase01-step.mjs",
+                   "skills/zodiac-video-pipeline/core/evidence/run-validator-with-receipt.mjs"),
+    "02-visual-production": ("skills/zodiac-video-pipeline/phases/phase02/phase02-execute.mjs",),
+    "03-handoff": ("skills/zodiac-video-pipeline/phases/phase03/run-phase03-production.mjs",),
 }
 
 

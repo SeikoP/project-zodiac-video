@@ -2,9 +2,9 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,access} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';
-import {buildReviewLock} from '../phase03-production-release.mjs';
+import {buildReviewLock} from '../../phases/phase03/phase03-production-release.mjs';
 import {writeStateFixture} from './helpers/state-fixture.mjs';
-import {runPhase03Production} from '../run-phase03-production.mjs';
+import {runPhase03Production} from '../../phases/phase03/run-phase03-production.mjs';
 
 const design={id:'zodiac-paper-doodle-meme-v4',version:'4.0',style_family:'paper-doodle-chibi-meme',handmade_profile:'human-stroke-v2',caption_emphasis:{font_family:'Patrick Hand'}};
 const style=`<!-- STYLE_TOKEN_BEGIN -->\n\`\`\`json\n${JSON.stringify(design)}\n\`\`\`\n<!-- STYLE_TOKEN_END -->\n`;
@@ -66,7 +66,7 @@ test('exported native ZIP commits a strictly valid Phase03 state and survives re
  const sourceRoot=await fixture(),dest=await mkdtemp(path.join(os.tmpdir(),'zodiac-phase03-state-'));
  try{const stateFile=path.join(sourceRoot,'.authoring/pipeline-state.json');const initial=JSON.parse(await readFile(stateFile));const template=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url)));initial.phases['03-handoff']=template.phases['03-handoff'];initial.phases['03-handoff'].status='READY';initial.phases['03-handoff'].steps.assemble.status='READY';initial.operations=initial.operations.filter(op=>op.phase_id!=='03-handoff');await writeFile(stateFile,JSON.stringify(initial));const result=await runPhase03Production({sourceRoot,outputDir:dest,sign:'Bọ Cạp',concept:'Không sao'});
   const state=JSON.parse(await readFile(path.join(sourceRoot,'.authoring/pipeline-state.json')));
-  const {validatePipelineState}=await import('../validate-pipeline-state.mjs');await validatePipelineState(path.join(sourceRoot,'.authoring/pipeline-state.json'));
+  const {validatePipelineState}=await import('../../core/state/validate-pipeline-state.mjs');await validatePipelineState(path.join(sourceRoot,'.authoring/pipeline-state.json'));
   assert.equal(state.phases['03-handoff'].status,'PASS');assert.equal(state.phase03_release.runner_media_verified,false);assert.equal(result.state_commit.state_status,'PRODUCTION_READY_ZIP');
  }finally{await rm(sourceRoot,{recursive:true,force:true});await rm(dest,{recursive:true,force:true});}
 });

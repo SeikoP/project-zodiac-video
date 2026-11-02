@@ -12,7 +12,7 @@ Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-a
 
 Use `art-direction/palette-registry.json` for token colors. `art-direction/environment-registry.json` contains compatibility selected-cue/legacy profiles; fresh scene-set authoring does not need a room profile from that registry. Do not auto-add windows, boards, tables, lamps, shadows, gradients or perspective.
 
-Run `node orchestration/validate-phase02-art-direction.mjs <workspace>` before native compilation. Then run native compilers, Director V2, preview pairs and human Visual Review. Structural PASS never implies aesthetic or runtime-media PASS.
+Run `node features/visual-composition/validate-phase02-art-direction.mjs <workspace>` before native compilation. Then run native compilers, Director V2, preview pairs and human Visual Review. Structural PASS never implies aesthetic or runtime-media PASS.
 
 ## Required visual coverage before compilation
 

@@ -6,7 +6,7 @@ import {validateDirectorPlan,validateDirectorCausality,compileDirectorBlocking,s
 import {assertJob5VisualRoleSizes} from '../../phases/phase03/compile-job-v5.mjs';
 
 const main=async()=>{
- const root=process.argv[2];if(!root)throw Error('Usage: node orchestration/director-v2-gate.mjs <workspace> [--write]');
+ const root=process.argv[2];if(!root)throw Error('Usage: node features/visual-composition/director-v2-gate.mjs <workspace> [--write]');
  const load=async p=>JSON.parse(await readFile(path.join(root,p),'utf8'));
  const narration=await readFile(path.join(root,'narration.txt'),'utf8');
  const plan=await load('.authoring/director-plan.json');

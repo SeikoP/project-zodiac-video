@@ -5,7 +5,7 @@ import {mkdtemp,writeFile,readFile,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {runGeneratedCompile} from '../generated-asset-ownership.mjs';
+import {runGeneratedCompile} from '../../core/ownership/generated-asset-ownership.mjs';
 test('prop compiler rejects effects and receipts describe actual prop bindings',async()=>{
  const production={version:'2.0',assets:{},scenes:[{id:'S01',entities:[],visual_grammar:{meme_composition:{effects:[]}}}]};
  assert.deepEqual(await compileMemeProps(production,{writeAssets:false}),production);

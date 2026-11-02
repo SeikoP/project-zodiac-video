@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {validatePhase02ArtDirection} from '../validate-phase02-art-direction.mjs';
+import {validatePhase02ArtDirection} from '../../features/visual-composition/validate-phase02-art-direction.mjs';
 const narration='Uống cà phê.\nHỏi chuyện.';
 const roles=['actors','scene_set','scene_accent','story_object','props','support','caption'];
 const box={x:0,y:0,width:100,height:100};

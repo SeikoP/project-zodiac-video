@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {sha256} from '../director-v2-core.mjs';
+import {sha256} from '../../features/visual-composition/director-v2-core.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const original=path.resolve(here,'..');
 

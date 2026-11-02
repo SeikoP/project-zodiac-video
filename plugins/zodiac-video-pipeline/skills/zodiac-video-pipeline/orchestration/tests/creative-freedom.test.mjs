@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {compileWriterBrief,assertWriterBriefLineage} from '../compile-writer-brief.mjs';
-import {validateEpisodeConcept} from '../validate-episode-concept.mjs';
-import {compileEpisodeEvidenceView} from '../episode-evidence.mjs';
+import {compileWriterBrief,assertWriterBriefLineage} from '../../features/episode/compile-writer-brief.mjs';
+import {validateEpisodeConcept} from '../../features/episode/validate-episode-concept.mjs';
+import {compileEpisodeEvidenceView} from '../../core/evidence/episode-evidence.mjs';
 import {scope,ledger,plan,candidates,research} from './helpers/episode-fixture.mjs';
 const input=()=>({episodeScope:scope(),researchScope:research(),selectedCandidate:candidates().candidates[0],narrativePlan:plan(),evidenceBrief:compileEpisodeEvidenceView(ledger(),scope()),viral:{mechanics:[],decision:{mode:'omitted',reason:'Premise recognition carries the opening without extra viral devices.'}},referenceMechanics:{reference_present:false},authoredBriefExtras:{rhythm_direction:'Dry recognition, no forced twist',forbidden_claims:[],creative_direction:'Observe each motive; do not turn this into a conversation between three characters.'}});
 test('writer preserves explicit creative direction and intentional omission of viral devices',()=>{const x=input(),r=compileWriterBrief(x);assert.equal(r.brief.creative_direction,x.authoredBriefExtras.creative_direction);assert.deepEqual(r.brief.viral_mechanics,[]);assertWriterBriefLineage(r.brief,x,r.receipt);x.authoredBriefExtras.creative_direction='Changed';assert.throws(()=>assertWriterBriefLineage(r.brief,x,r.receipt),/DRIFT/);});

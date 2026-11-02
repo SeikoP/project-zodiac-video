@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,access} from 'node:fs/promises';
 import os from 'node:os'; import path from 'node:path';
-import {buildReviewLock,assertReviewLock,assertProductionSemantics,assertBrandIntent} from '../phase03-production-release.mjs';
+import {buildReviewLock,assertReviewLock,assertProductionSemantics,assertBrandIntent} from '../../phases/phase03/phase03-production-release.mjs';
 
 const sha=(await import('node:crypto')).createHash;
 const hash=value=>sha('sha256').update(value).digest('hex');
@@ -24,7 +24,7 @@ test('source approval lock rejects post-review asset change and missing phase ap
 });
 
 test('export rejects missing approved visual evidence before ZIP creation',async()=>{
- const {exportZodiacJobV2}=await import('../export-zodiac-job-v2.mjs');
+ const {exportZodiacJobV2}=await import('../../phases/phase03/export-zodiac-job-v2.mjs');
  const out=path.join(os.tmpdir(),'must-not-create-phase03-'+Date.now()+'.zip');
  await assert.rejects(()=>exportZodiacJobV2('/nonexistent/package',out),/APPROVAL_EVIDENCE_REQUIRED/);
  await assert.rejects(()=>access(out));
@@ -33,13 +33,13 @@ test('export rejects missing approved visual evidence before ZIP creation',async
 test('production model narrative source checksum uses raw approved bytes',async()=>{
  const tmp=await mkdtemp(path.join(os.tmpdir(),'prod-model-'));
  try{await writeFile(path.join(tmp,'production.ir.json'),JSON.stringify({format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:{},scenes:[{id:'S01',voice:'Này!',entities:[],events:[]}]}));await writeFile(path.join(tmp,'narration.txt'),'Này!');await writeFile(path.join(tmp,'design-token.json'),'{}');await mkdir(path.join(tmp,'publish'));await writeFile(path.join(tmp,'publish/publish.json'),'{}');
- const {migrateLegacyJob5}=await import('../migrate-production-model.mjs');const model=migrateLegacyJob5(tmp);
+ const {migrateLegacyJob5}=await import('../../core/model/migrate-production-model.mjs');const model=migrateLegacyJob5(tmp);
  assert.equal(model.source.narration_sha256,hash('Này!'));
  }finally{await rm(tmp,{recursive:true,force:true});}
 });
 
 test('Job@5 compiler pins channel voice/brand visual intent without weakening narrator scripts',async()=>{
- const {compileJobV5}=await import('../compile-job-v5.mjs');
+ const {compileJobV5}=await import('../../phases/phase03/compile-job-v5.mjs');
  const schema=JSON.parse(await readFile(new URL('../../references/contracts/authoring-ir-v1.schema.json',import.meta.url),'utf8'));
  const style={id:'zodiac-paper-doodle-meme-v4',version:'4.0',style_family:'paper-doodle-chibi-meme',handmade_profile:'human-stroke-v2'};
  const mark=`<!-- STYLE_TOKEN_BEGIN -->\n\`\`\`json\n${JSON.stringify(style)}\n\`\`\`\n<!-- STYLE_TOKEN_END -->`;
@@ -49,7 +49,7 @@ test('Job@5 compiler pins channel voice/brand visual intent without weakening na
 });
 
 test('phase03 source-to-IR parity rejects edited character transforms after visual approval',async()=>{
- const {assertAuthoringProjection}=await import('../phase03-production-release.mjs');
+ const {assertAuthoringProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
  const s={version:'2.0',video:{width:1080,height:1920,fps:24},assets:{C:{path:'assets/characters/main.svg',category:'character'}},scenes:[{id:'S01',voice:'Bọ Cạp nhìn kỹ.',entities:[{id:'actor',initial_state:'idle',states:{idle:{asset:'C',visible:true,transform:{x:210,y:200,width:500,height:600}}}}],events:[]}]};
  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:s.assets,scenes:[{id:'S01',voice:s.scenes[0].voice,entities:s.scenes[0].entities,events:[]}]};
  assert.doesNotThrow(()=>assertAuthoringProjection(s,ir));
@@ -59,13 +59,13 @@ test('phase03 source-to-IR parity rejects edited character transforms after visu
 });
 
 test('production release requires usable cover and publish text before export',async()=>{
- const {assertPublishIntent}=await import('../phase03-production-release.mjs');
+ const {assertPublishIntent}=await import('../../phases/phase03/phase03-production-release.mjs');
  const ir=pkg();
  assert.throws(()=>assertPublishIntent({format:'zodiac-publish@1',caption:'Bọ Cạp',hashtags:['#bocap']},'',ir),/PUBLISH_INTENT_INVALID/);
 });
 
 test('reviewed action voice anchors and scheduling cannot change after Visual Review',async()=>{
- const {assertAuthoringProjection}=await import('../phase03-production-release.mjs');
+ const {assertAuthoringProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
  const source={assets:{C:{category:'character',path:'assets/characters/hero.svg'}},scenes:[{id:'S01',voice:'Bọ Cạp bảo không sao.',entities:[{id:'actor',initial_state:'idle',states:{idle:{asset:'C'}}}],events:[{id:'E01',target:'actor',action:'respond',state_before:'idle',state_after:'idle',motion:{preset:'hold',duration_frames:8},trigger:{type:'voice_anchor',text:'không sao'},scheduling:{max_drift_frames:0,merge_policy:'never'}}]}]};
  const ir={assets:structuredClone(source.assets),scenes:[{id:'S01',voice:source.scenes[0].voice,entities:structuredClone(source.scenes[0].entities),events:[{id:'E01',target:'actor',intent:'respond',state_before:'idle',state_after:'idle',desired_motion:'hold',trigger:{type:'voice_anchor',text:'không sao'},scheduling:{max_drift_frames:0,merge_policy:'never'}}]}]};
  assert.doesNotThrow(()=>assertAuthoringProjection(source,ir));
@@ -75,7 +75,7 @@ test('reviewed action voice anchors and scheduling cannot change after Visual Re
  assert.throws(()=>assertAuthoringProjection(source,ir),/APPROVED_AUTHORING_DRIFT/);
 });
 test('publish intent cannot be changed in staging after reviewed source',async()=>{
- const {assertPublishProjection}=await import('../phase03-production-release.mjs');
+ const {assertPublishProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
  const original={version:'1.5',source:{narration:'narration.txt',production:'production.json'},caption:'Một câu gắt',cover:{hook:'Bọ Cạp nói sao?',visuals:[]}};
  const compiled={...structuredClone(original),format:'zodiac-publish@1',source:{narration:'narration.txt',production:'production.ir.json'}};
  assert.doesNotThrow(()=>assertPublishProjection(original,compiled));
@@ -121,7 +121,7 @@ test('Phase03 rejects noncontact state slide and accepts authored S05 friend ret
 });
 
 test('approved role and depth metadata survives release projection, but edits block',async()=>{
- const {assertAuthoringProjection}=await import('../phase03-production-release.mjs');
+ const {assertAuthoringProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
  const source={assets:{},scenes:[{id:'s',voice:'Voice',entities:[{id:'hero',kind:'character',visual_role:'primary_character',role:'lead',layer:3,initial_state:'idle',states:{idle:{visible:true}}}],events:[],occlusion_relations:[{front:'hero',back:'wall'}],performance_context:{intent:'reaction'},layout_contract:{canvas:{width:1080,height:1920}},render_density_budget:{max_characters:1}}]};
  const ir=structuredClone(source);
  assert.doesNotThrow(()=>assertAuthoringProjection(source,ir));

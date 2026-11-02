@@ -12,9 +12,9 @@ Phase02 `visual_compile` entry, before any native scene/character/environment co
 
 ## Commands
 ```bash
-node orchestration/validate-phase02-precompile-boundary.mjs /path/to/workspace
-node orchestration/validate-phase02-art-direction.mjs /path/to/workspace
-node orchestration/phase02-execute.mjs --workspace /path/to/workspace --run
+node features/visual-composition/validate-phase02-precompile-boundary.mjs /path/to/workspace
+node features/visual-composition/validate-phase02-art-direction.mjs /path/to/workspace
+node phases/phase02/phase02-execute.mjs --workspace /path/to/workspace --run
 ```
 
 ## Migration boundary

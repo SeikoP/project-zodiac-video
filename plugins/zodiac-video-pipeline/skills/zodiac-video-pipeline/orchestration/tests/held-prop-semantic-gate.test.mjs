@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {lintSemanticAnimation} from '../validate-animation-semantics.mjs';
+import {lintSemanticAnimation} from '../../features/visual-composition/validate-animation-semantics.mjs';
 const states={neutral:{asset:'HERO_NEUTRAL',visible:true},raise:{asset:'HERO_RAISE',visible:true}};
 function story({heroEvent=true,mapStates=1,relation='held_by'}={}){
  const map={annotated:{asset:'MAP',visible:true}};

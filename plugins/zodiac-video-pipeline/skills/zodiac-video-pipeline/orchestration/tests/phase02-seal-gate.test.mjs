@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {inspectPhase02Seal} from '../phase02-seal-gate.mjs';
+import {inspectPhase02Seal} from '../../phases/phase02/phase02-seal-gate.mjs';
 const fixture=async()=>{
  const root=await mkdtemp(join(tmpdir(),'zodiac-seal-'));await mkdir(join(root,'.authoring'));
  const state={plugin_version:'2.4.23',operations:[{kind:'write_production'}],review_receipts:[{phase_id:'02-visual-production',status:'APPROVED',proof:{kind:'user_message',ref:'real-user-message'}}],phases:{'01-content':{status:'PASS'},'02-visual-production':{status:'PASS',steps:Object.fromEntries(['visual_compile','assets','publish_prep'].map(id=>[id,{status:'PASS',capability_receipts:[{proof:{kind:'validator_result'}}],outputs:['output'],gate_results:{x:'PASS'}}]))}}};
