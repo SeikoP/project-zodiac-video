@@ -32,3 +32,4 @@ Load only what the current task needs.
 | --- | --- |
 | Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
 | Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |
+| Running on Claude (tool equivalents, model per task) | references/claude-runtime.md |
