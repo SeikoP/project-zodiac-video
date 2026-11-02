@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="zodiac-library", description=__doc__)
     parser.add_argument("--project", type=Path, default=ROOT)
     parser.add_argument("--workspace", type=Path, default=None, help="mặc định: <project>/.zodiac-work")
+    parser.add_argument("--no-sizes", action="store_true", help="bỏ qua đo dung lượng thư mục (nhanh hơn trên ổ chậm)")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("list", help="liệt kê mọi gói, job, video theo nhóm")
     clean = sub.add_parser("clean", help="chuyển bản cũ/trùng vào _archive (mặc định chỉ xem trước)")
@@ -53,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.yes:
             library.purge_archive(workspace, keep_latest=args.keep)
         return 0
-    entries = library.scan(project, workspace)
+    entries = library.scan(project, workspace, with_sizes=not args.no_sizes)
     if args.command == "list":
         for entry in sorted(entries, key=lambda e: (e.kind, e.group or "", -e.mtime)):
             print(_row(entry))

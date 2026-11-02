@@ -152,7 +152,8 @@ def _package_group(path: Path, manifest: dict | None) -> tuple[str | None, str |
     return None, None, None
 
 
-def scan(project_root: Path, workspace: Path, *, with_hashes: bool = True) -> list[Entry]:
+def scan(project_root: Path, workspace: Path, *, with_hashes: bool = True, with_sizes: bool = True) -> list[Entry]:
+    size_of = _tree_size if with_sizes else (lambda path: 0)
     entries: list[Entry] = []
     for ready in dict.fromkeys(p.resolve() for p in (project_root / "ready", workspace / "ready")):
         if not ready.is_dir():
@@ -172,17 +173,17 @@ def scan(project_root: Path, workspace: Path, *, with_hashes: bool = True) -> li
             if not path.is_dir() or path.name.startswith("."):
                 continue
             group, revision, renderer = _identity(_manifest_from_dir(path))
-            entries.append(Entry(kind, path, path.name, group or path.name, revision, _tree_size(path),
+            entries.append(Entry(kind, path, path.name, group or path.name, revision, size_of(path),
                                  _newest_mtime(path), None, renderer, _job_state(path) if kind == "job" else "cũ",
                                  _videos(path)))
     for name in CACHE_DIRS:
         path = workspace / name
         if path.is_dir():
-            entries.append(Entry("cache", path, name, None, None, _tree_size(path), _newest_mtime(path)))
+            entries.append(Entry("cache", path, name, None, None, size_of(path), _newest_mtime(path)))
     for pattern in CACHE_GLOBS:
         for path in sorted(workspace.glob(pattern)):
             if path.is_dir():
-                entries.append(Entry("cache", path, path.name, None, None, _tree_size(path), _newest_mtime(path)))
+                entries.append(Entry("cache", path, path.name, None, None, size_of(path), _newest_mtime(path)))
     classify(entries)
     return entries
 
