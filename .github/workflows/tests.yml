@@ -45,7 +45,6 @@ jobs:
           tests/test_runner_modules.py
           tests/test_runtime_registry.py
           tests/test_contract_bundle.py
-          tests/test_test_layout.py
           tests/test_ci_layout.py -q
       - name: Verify the GUI launcher
         run: |

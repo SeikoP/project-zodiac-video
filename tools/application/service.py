@@ -1,11 +1,10 @@
-"""One application service for current Job@5 execution and explicit legacy compatibility."""
+"""One application service: every package runs through the Job@5 runner."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Callable
 
@@ -14,7 +13,6 @@ from tools.studio_v2.session import StudioV2Session, detect_job5_manifest
 from tools.runtime.registry import current_runtime
 
 MODE_CURRENT = "job5"
-MODE_LEGACY = "legacy"
 MODE_NONE = "none"
 
 
@@ -22,7 +20,6 @@ MODE_NONE = "none"
 class ApplicationOpenResult:
     mode: str
     path: Path | None
-    package_conflict: bool = False
 
 
 @dataclass(frozen=True)
@@ -45,7 +42,6 @@ class ApplicationRunRequest:
 
 @dataclass(frozen=True)
 class ApplicationObservers:
-    legacy_event: Callable[[str, dict], None] | None = None
     subprocess: Callable[..., None] | None = None
     native: Callable[..., None] | None = None
     unit: Callable[..., None] | None = None
@@ -53,12 +49,7 @@ class ApplicationObservers:
 
 
 class ApplicationService:
-    """Route package lifecycle through one current-path API.
-
-    Job@5 is the primary path. Legacy behavior is reachable only through the
-    compatibility adapter and never selected as an implicit fallback for a
-    package that declares Job@5.
-    """
+    """Route package lifecycle through the single Job@5 path."""
 
     def __init__(
         self,
@@ -67,7 +58,6 @@ class ApplicationService:
         tts_root: Path | None = None,
         vieneu_url: str | None = "http://127.0.0.1:7860",
         current_factory=StudioV2Session,
-        compat_factory=None,
         detector=detect_job5_manifest,
     ) -> None:
         self.workspace_root = Path(workspace_root).resolve()
@@ -75,32 +65,11 @@ class ApplicationService:
         self.vieneu_url = vieneu_url
         self.detector = detector
         self.current = current_factory(self.workspace_root)
-        self._compat_factory = compat_factory
-        self._compat = None
         self.mode = MODE_NONE
 
     @property
-    def compat(self):
-        if self._compat is None:
-            factory = self._compat_factory
-            if factory is None:
-                from tools.application.compat import LegacyCompatibilityAdapter
-
-                factory = LegacyCompatibilityAdapter
-            self._compat = factory(
-                self.workspace_root,
-                tts_root=self.tts_root,
-                vieneu_url=self.vieneu_url,
-            )
-        return self._compat
-
-    @property
     def active(self):
-        if self.mode == MODE_CURRENT:
-            return self.current
-        if self.mode == MODE_LEGACY:
-            return self.compat
-        return None
+        return self.current if self.mode == MODE_CURRENT else None
 
     @property
     def job(self) -> Path | None:
@@ -142,19 +111,10 @@ class ApplicationService:
             self.mode = MODE_CURRENT
             return ApplicationOpenResult(mode=self.mode, path=path)
 
-        result = self.compat.import_archive(source) if operation == "import" else self.compat.open_workspace(source)
-        self.mode = MODE_LEGACY
-        return ApplicationOpenResult(
-            mode=self.mode,
-            path=result.path,
-            package_conflict=bool(result.package_conflict),
+        raise ValueError(
+            "Gói này không phải zodiac-job@5. Hãy tạo lại gói bằng plugin hiện tại; "
+            "luồng gói cũ (v1/v3/v4) đã được gỡ."
         )
-
-    def resolve_package_conflict(self, action: str) -> ApplicationOpenResult:
-        if self.mode != MODE_LEGACY:
-            raise RuntimeError("package conflict resolution is legacy-only")
-        result = self.compat.resolve_package_conflict(action)
-        return ApplicationOpenResult(mode=MODE_LEGACY, path=result.path)
 
     def pipeline_rows(self) -> list[dict]:
         active = self.active
@@ -191,8 +151,6 @@ class ApplicationService:
         )
 
     def run(self, request: ApplicationRunRequest, observers: ApplicationObservers | None = None) -> bool:
-        if self.mode == MODE_LEGACY:
-            return bool(self.compat.run(request, observers))
         if self.mode != MODE_CURRENT:
             raise RuntimeError("open a package before running the application service")
 
@@ -217,8 +175,6 @@ class ApplicationService:
             if self.job is None:
                 raise RuntimeError("no current job")
             return Job5PreflightChecker(self.job, tts_root=self.tts_root, vieneu_url=self.vieneu_url)
-        if self.mode == MODE_LEGACY:
-            return self.compat.preflight_checker()
         raise RuntimeError("open a package before preflight")
 
     def dependency_install_plan(self) -> tuple[list[list[str]], list[str]]:
@@ -234,8 +190,6 @@ class ApplicationService:
         return ([command] if command else []), missing
 
     def execute_install(self, commands: list[list[str]], *, log_callback=None) -> tuple[int, str | None]:
-        if self.mode == MODE_LEGACY:
-            return self.compat.install_dependencies(log_callback=log_callback)
         if self.mode != MODE_CURRENT:
             raise RuntimeError("open a package before installing dependencies")
         try:
@@ -263,12 +217,6 @@ class ApplicationService:
         project_root = Path(project_root).resolve()
         if self.job is None:
             raise RuntimeError("open a package before launching Remotion Studio")
-        if self.mode == MODE_LEGACY:
-            return ApplicationLaunchSpec(
-                command=(sys.executable, "tools/zodiac_local.py", "preview", self.job.name, "--workspace", str(self.workspace_root)),
-                cwd=project_root,
-                message="Đang mở Remotion Studio cho job compatibility.",
-            )
         if self.mode != MODE_CURRENT:
             raise RuntimeError("open a package before launching Remotion Studio")
         if not (self.job / ".runtime" / "render-plan.json").is_file():

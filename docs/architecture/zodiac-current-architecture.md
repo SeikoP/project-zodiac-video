@@ -56,18 +56,18 @@ Asset V4 is capability-driven and compile-on-use.
 `tools.application.service.ApplicationService` is the application boundary used by the Qt shell.
 
 - Job@5 is the primary current path.
-- `LegacyCompatibilityAdapter` owns pre-Job@5 routing and stage translation.
+- Packages that are not `zodiac-job@5` are rejected with a clear message; the v1/v3/v4 path (Remotion 1.x, `StudioController`, the compatibility adapter) was removed.
 - `tools.runner` owns focused reusable primitives such as process control, package safety and PCM WAV handling.
-- `tools/zodiac_local.py` retains compatibility entrypoints and re-exports moved primitives; it is no longer the owner of those helpers.
+- `tools/zodiac_local.py` now only holds shared voice/alignment/music helpers used by `tools.studio_v2`; it has no CLI.
 
-The Qt shell does not directly coordinate `StudioController` and `StudioV2Session` as parallel pipelines.
+The Qt shell drives a single pipeline (`StudioV2Session`).
 
 ## Runtime versions
 
 Runtime selection is owned by `runtime/releases/*.json` and `tools.runtime.registry`.
 
 - `zodiac-renderer` current: `2.0.1`; imported Job@5 package pins remain authoritative when supported.
-- `zodiac-remotion` current: `1.21.0`; legacy default remains `1.20.0` through registry metadata.
+- `zodiac-renderer` versions: `2.0.1` (current) and `2.0.2` (stepped-motion candidate). `zodiac-remotion` 1.x was removed.
 - Unknown runtime IDs or versions fail closed.
 - Historical runtime source is not deleted while reverse-dependency audit reports active consumers.
 
@@ -79,18 +79,13 @@ Root `contracts/` schemas are canonical. `contracts/manifest.json` records owner
 
 ## Tests and CI
 
-The former `tests/test_zodiac_local.py` monolith is a compatibility aggregator. Domain cases live under `tests/zodiac_local_cases/` and preserve historical unittest import paths.
-
 CI jobs are grouped by responsibility:
 
 - `smoke-renderer`
 - `unit-python`
 - `contract-control-plane`
 - `integration-*`
-- `compat-remotion` workflow (`compatibility-runtime` matrix; runs only when the legacy v1 path changes, on main, or on demand)
 - `release-plugin`
-
-The compatibility matrix keeps all registered Remotion versions and version-specific golden fixtures without duplicating whole workflow jobs.
 
 ## Historical material
 

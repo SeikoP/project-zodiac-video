@@ -41,36 +41,6 @@ class FakeCurrent:
         return SimpleNamespace(ok=True)
 
 
-class FakeCompat:
-    def __init__(self, workspace_root: Path, **_: object) -> None:
-        self.workspace_root = Path(workspace_root)
-        self.job = None
-        self.video_path = None
-        self.package_revision = None
-        self.running = False
-        self.cancelled = False
-        self.run_calls = []
-        self.conflict = False
-
-    def import_archive(self, source: Path):
-        self.job = self.workspace_root / "jobs" / "legacy"
-        return SimpleNamespace(path=self.job, package_conflict=self.conflict)
-
-    def open_workspace(self, source: Path):
-        self.job = Path(source)
-        return SimpleNamespace(path=self.job, package_conflict=False)
-
-    def pipeline_rows(self):
-        return [{"step": "PACKAGE", "status": "DONE", "detail": "legacy"}]
-
-    def cancel(self) -> None:
-        self.cancelled = True
-
-    def run(self, request, observers=None):
-        self.run_calls.append((request, observers))
-        return True
-
-
 def make_service(tmp_path: Path, *, current_manifest=True):
     from tools.application.service import ApplicationService
 
@@ -78,7 +48,6 @@ def make_service(tmp_path: Path, *, current_manifest=True):
     return ApplicationService(
         tmp_path,
         current_factory=FakeCurrent,
-        compat_factory=FakeCompat,
         detector=detector,
     )
 
@@ -110,24 +79,16 @@ def test_job5_import_is_primary_and_common_state_routes_to_current(tmp_path: Pat
     assert service.pipeline_rows()[0]["detail"] == "job5"
     service.cancel()
     assert service.current.cancelled is True
-    assert service.compat.cancelled is False
 
 
-def test_legacy_import_is_explicit_compatibility_adapter(tmp_path: Path) -> None:
-    from tools.application.service import MODE_LEGACY
-
+def test_non_job5_package_is_rejected_with_a_clear_message(tmp_path: Path) -> None:
     source = tmp_path / "old.zip"
     source.write_bytes(b"placeholder")
     service = make_service(tmp_path, current_manifest=False)
 
-    opened = service.open("import", source)
-
-    assert opened.mode == MODE_LEGACY
-    assert opened.path == tmp_path / "jobs" / "legacy"
-    assert service.pipeline_rows()[0]["detail"] == "legacy"
-    service.cancel()
-    assert service.compat.cancelled is True
-    assert service.current.cancelled is False
+    with pytest.raises(ValueError, match="zodiac-job@5"):
+        service.open("import", source)
+    assert service.job is None
 
 
 def test_open_existing_v2_workspace_routes_without_manifest_probe(tmp_path: Path) -> None:
@@ -143,7 +104,7 @@ def test_open_existing_v2_workspace_routes_without_manifest_probe(tmp_path: Path
     assert opened.path == job
 
 
-def test_run_request_uses_one_service_interface_for_current_and_legacy(tmp_path: Path) -> None:
+def test_run_request_maps_to_the_job5_executor_config(tmp_path: Path) -> None:
     from tools.application.service import ApplicationRunRequest
 
     request = ApplicationRunRequest(
@@ -168,14 +129,6 @@ def test_run_request_uses_one_service_interface_for_current_and_legacy(tmp_path:
     assert config.aligner_settings["scene_gap_ms"] == 180.0
     assert rerun_from == "RENDER"
 
-    legacy = make_service(tmp_path / "legacy", current_manifest=False)
-    (tmp_path / "legacy").mkdir()
-    old = tmp_path / "legacy" / "old.zip"
-    old.write_bytes(b"x")
-    legacy.open("import", old)
-    assert legacy.run(request) is True
-    legacy_request, _ = legacy.compat.run_calls[-1]
-    assert legacy_request.rerun == "RENDER"
 
 
 def test_qt_shell_depends_on_application_service_not_two_pipeline_controllers() -> None:
@@ -187,13 +140,5 @@ def test_qt_shell_depends_on_application_service_not_two_pipeline_controllers() 
     assert "self.v2_session" not in source
     assert "LEGACY_STAGES" not in source
     assert "LEGACY_RERUN" not in source
+    assert "MODE_LEGACY" not in source
 
-
-def test_managed_process_helpers_have_runner_owner_and_legacy_reexports() -> None:
-    from tools.runner.process import observe_subprocess_output as owned_observer
-    from tools.runner.process import run_managed_subprocess as owned_runner
-    from tools.zodiac_local import observe_subprocess_output as legacy_observer
-    from tools.zodiac_local import run_managed_subprocess as legacy_runner
-
-    assert legacy_observer is owned_observer
-    assert legacy_runner is owned_runner
