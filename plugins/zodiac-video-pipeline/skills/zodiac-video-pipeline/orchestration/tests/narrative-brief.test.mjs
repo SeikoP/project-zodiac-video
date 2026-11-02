@@ -1,0 +1,24 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {validateNarrativeBrief} from '../../features/visual-composition/validate-narrative-brief.mjs';
+import {validateVisualCoverage,coverageLayers} from '../../features/visual-composition/validate-visual-coverage.mjs';
+import {createHash} from 'node:crypto';
+const voice='Cô ấy bỏ lại chiếc ghế trống.';
+const scene={id:'S01',voice,events:[{id:'E1'}]};
+const ok=()=>({format:'zodiac-narrative-brief@1',claim:'Sự vắng mặt nói thay lời',anchor_phrase:'chiếc ghế trống',state_changes:[{from:'ghế có người',to:'ghế trống',anchor_phrase:'bỏ lại',event_id:'E1'}]});
+const codes=b=>validateNarrativeBrief(scene,b).map(i=>i.code);
+test('valid brief passes',()=>assert.deepEqual(codes(ok()),[]));
+test('missing brief is required',()=>assert.deepEqual(codes(undefined),['NARRATIVE_BRIEF_REQUIRED']));
+test('claim is required',()=>{const b=ok();b.claim=' ';assert.ok(codes(b).includes('NARRATIVE_BRIEF_CLAIM_MISSING'));});
+test('anchor must exist in voice',()=>{const b=ok();b.anchor_phrase='không có';assert.ok(codes(b).includes('NARRATIVE_BRIEF_ANCHOR_NOT_IN_VOICE'));});
+test('state change needs a real change tied to an anchor',()=>{const b=ok();b.state_changes[0].to=b.state_changes[0].from;b.state_changes[0].anchor_phrase='x';const c=codes(b);assert.ok(c.includes('NARRATIVE_BRIEF_STATE_CHANGE_INVALID')&&c.includes('NARRATIVE_BRIEF_CHANGE_ANCHOR_NOT_IN_VOICE'));});
+test('unknown event is rejected',()=>{const b=ok();b.state_changes[0].event_id='E9';assert.ok(codes(b).includes('NARRATIVE_BRIEF_EVENT_UNKNOWN'));});
+const cov=(layers)=>({format:'zodiac-visual-coverage@1',layers_version:'narrative_visual@1',narration_sha256:createHash('sha256').update(voice).digest('hex'),beats:[{id:'B1',goal:'g',narration_range:[0,Buffer.byteLength(voice)],event_ids:[],layers}]});
+const caption={decision:'use',reason:'Runner hiển thị',entity_ids:[]};
+const sc={id:'S01',voice,entities:[],events:[],layout_contract:{caption_safe_zone:{x:0,y:0,width:10,height:10}}};
+const run=(layers,opt)=>validateVisualCoverage(sc,{components:[],visual_coverage:cov(layers)},{required:true,...opt}).map(i=>i.code);
+test('without the flag, unauthored empty layers still block',()=>assert.ok(run({caption}).includes('COVERAGE_LAYER_DECISION_MISSING')));
+test('with the flag, empty layers derive to omit; caption stays explicit',()=>{
+ assert.ok(!run({caption},{deriveEmptyLayers:true}).includes('COVERAGE_LAYER_DECISION_MISSING'));
+ assert.ok(run({},{deriveEmptyLayers:true}).includes('COVERAGE_LAYER_DECISION_MISSING'));
+});
+test('with the flag, layers that carry entities still need a decision',()=>assert.ok(run({caption,props:{decision:'use',reason:'',entity_ids:['x']}},{deriveEmptyLayers:true}).includes('COVERAGE_LAYER_DECISION_MISSING')));
