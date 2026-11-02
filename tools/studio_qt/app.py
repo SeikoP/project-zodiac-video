@@ -37,6 +37,7 @@ from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
 from tools.studio_qt.events import WorkerEventBridge
 from tools.studio_qt.screens.home import HomeScreen
+from tools.studio_qt.screens.library import LibraryScreen
 from tools.studio_qt.screens.media import MediaWorkspace
 from tools.studio_qt.screens.production_checklist import ProductionChecklistScreen
 from tools.studio_qt.screens.workbench import STAGE_TITLES, WorkbenchScreen
@@ -104,6 +105,10 @@ class ZodiacQtApp(QMainWindow):
         self.main_tabs.setDocumentMode(True)
         self.main_tabs.setMovable(False)
         self.main_tabs.addTab(self.stack, "Công việc / Workspace")
+        self.library = LibraryScreen(ROOT, self.workspace)
+        self.library.job_requested.connect(self._open_recent)
+        self.library.changed.connect(self._after_library_change)
+        self.main_tabs.addTab(self.library, "Kho")
         self.main_tabs.addTab(self.media, "Media")
         self.main_tabs.addTab(self.checklist, "Checklist sản xuất")
         self.main_tabs.currentChanged.connect(self._main_tab_changed)
@@ -184,6 +189,10 @@ class ZodiacQtApp(QMainWindow):
                     "out_path": str(output.resolve()),
                 })
         return jobs
+
+    def _after_library_change(self) -> None:
+        self.home.set_ready_packages(self._ready_archives())
+        self._refresh_media_jobs()
 
     def _refresh_media_jobs(self, selected_path: Path | None = None) -> None:
         jobs = self._media_jobs()
@@ -408,6 +417,8 @@ class ZodiacQtApp(QMainWindow):
 
     def _main_tab_changed(self, index: int) -> None:
         widget = self.main_tabs.widget(index)
+        if widget is self.library:
+            self.library.refresh()
         if widget in (self.media, self.checklist):
             self._refresh_media_jobs()
         if widget is not self.media:
