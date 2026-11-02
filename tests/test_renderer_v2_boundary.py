@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNTIME = ROOT / "runtime" / "zodiac-renderer" / "2.0.0"
+RUNTIME = ROOT / "runtime" / "zodiac-renderer" / "2.0.1"
 RENDERER = RUNTIME / "renderer"
 
 
@@ -11,7 +11,7 @@ class RendererV2BoundaryTests(unittest.TestCase):
     def test_runtime_manifest_declares_renderer_2(self):
         manifest = json.loads((RUNTIME / "runtime-manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["id"], "zodiac-renderer")
-        self.assertEqual(manifest["version"], "2.0.0")
+        self.assertEqual(manifest["version"], "2.0.1")
         self.assertEqual(manifest["input_contract"], "zodiac-render-plan@1")
 
     def test_prepare_boundary_only_reads_render_plan(self):

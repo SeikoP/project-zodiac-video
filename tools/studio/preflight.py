@@ -241,7 +241,7 @@ class Job5PreflightChecker(PreflightChecker):
             try:
                 payload = json.loads(manifest.read_text(encoding="utf-8"))
                 candidate = payload["renderer"]["version"]
-                if candidate in {"2.0.0", "2.0.1"}:
+                if candidate in {"2.0.1"}:
                     version = candidate
             except (KeyError, ValueError, OSError, TypeError):
                 pass  # PACKAGE validator handles invalid manifest contents.
@@ -252,9 +252,6 @@ class Job5PreflightChecker(PreflightChecker):
         renderer = self.renderer_directory()
         source = ("package.json", "scripts/prepare.mjs", "src/index.ts",
                   "scripts/local-remotion-cli.mjs")
-        # v2.0.0 predates the pinned launcher and remains backward compatible.
-        if renderer.parent.name == "2.0.0":
-            source = source[:-1]
         missing = [name for name in source if not (renderer / name).is_file()]
         install_command = f'npm install --prefix "{renderer}"'
         if missing:

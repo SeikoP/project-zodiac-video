@@ -58,7 +58,7 @@ def make_source(root: Path) -> Path:
             "version": "1.0.0",
             "sha256": canonical_contract_hash("authoring-ir-v1"),
         },
-        "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+        "renderer": {"id": "zodiac-renderer", "version": "2.0.1"},
         "producer": {"plugin": "test-fixture", "version": "2.0.0"},
     }
     (source / "package-manifest.json").write_text(
@@ -242,7 +242,7 @@ class StudioV2ExecutorTests(unittest.TestCase):
             aligner_settings={"model": "small", "scene_gap_ms": 0},
             aligner_version="align-test-1",
             compiler_version="1.0.0",
-            renderer_version="2.0.0",
+            renderer_version="2.0.1",
             renderer_hash=renderer_hash,
             music_path=music,
             mix_settings={"volume": 0.2},

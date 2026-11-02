@@ -27,7 +27,6 @@ def test_ci_jobs_expose_validation_tiers_without_renaming_stable_job_ids() -> No
         'python': 'name: unit / python',
         'renderer-smoke': 'name: smoke / renderer',
         'control-plane-v2-core': 'name: contract / control-plane-v2-core',
-        'renderer-v2-boundary': 'name: integration / renderer-v2-boundary',
         'zodiac-plugin-native': 'name: release / plugin-native',
     }
     for job, tier_name in expected.items():

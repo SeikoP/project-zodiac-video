@@ -36,7 +36,7 @@ def make_source(root: Path) -> Path:
             "version": "1.0.0",
             "sha256": canonical_contract_hash("authoring-ir-v1"),
         },
-        "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+        "renderer": {"id": "zodiac-renderer", "version": "2.0.1"},
         "producer": {"plugin": "test-fixture", "version": "2.0.0"},
     }
     (source / "package-manifest.json").write_text(

@@ -98,7 +98,7 @@ class ScorpioProductionE2ETests(unittest.TestCase):
         self.assertEqual(manifest["format"], "zodiac-job@5")
         self.assertEqual(manifest["job"]["id"], "bocap-hai-phien-ban")
         self.assertIn(manifest["contract"]["sha256"], {canonical_contract_hash("authoring-ir-v1"), "5728656019306975d7b3c4feabad9a02fa02cda2a22b38a27eff4563f3c77f95"})
-        self.assertEqual(manifest["renderer"], {"id": "zodiac-renderer", "version": "2.0.0"})
+        self.assertEqual(manifest["renderer"], {"id": "zodiac-renderer", "version": "2.0.1"})
         self.assertEqual(manifest["producer"], {"plugin": "zodiac-video-pipeline", "version": "2.0.0"})
         return source
 
@@ -130,7 +130,7 @@ class ScorpioProductionE2ETests(unittest.TestCase):
             aligner_settings={"model": "fixture", "scene_gap_ms": 0, "sentence_pause_ms": 0},
             aligner_version="timing-scorpio-fixture-1",
             compiler_version="1.0.0",
-            renderer_version="2.0.0",
+            renderer_version="2.0.1",
             renderer_hash=renderer_hash,
             music_path=music,
             mix_settings={"volume": 0.2},

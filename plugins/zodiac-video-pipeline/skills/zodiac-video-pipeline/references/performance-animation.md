@@ -1,6 +1,6 @@
 # Performance and Character State Assets — renderer 2.0
 
-The handoff targets `zodiac-renderer@2.0.0`. The renderer changes character appearance by selecting a complete SVG asset; it does not animate limb groups inside character SVGs.
+The handoff targets `zodiac-renderer@2.0.1`. The renderer changes character appearance by selecting a complete SVG asset; it does not animate limb groups inside character SVGs.
 
 ## Plan before creating assets
 

@@ -1,6 +1,6 @@
 # Zodiac job package v5 — canonical authoring handoff
 
-Format: `zodiac-job@5`. Renderer pin: `zodiac-renderer@2.0.0`. Authoring contract: `zodiac-authoring-ir@1`.
+Format: `zodiac-job@5`. Renderer pin: `zodiac-renderer@2.0.1`. Authoring contract: `zodiac-authoring-ir@1`.
 
 ## Identity
 `package-manifest.json` contains stable `job.id` derived from approved sign + concept and a mutable `job.revision`. ZIP filenames may change across patches; `job.id` must not.
