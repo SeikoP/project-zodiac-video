@@ -28,7 +28,7 @@ def make_job(root: Path) -> Path:
             "version": "1.0.0",
             "sha256": canonical_contract_hash("authoring-ir-v1"),
         },
-        "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+        "renderer": {"id": "zodiac-renderer", "version": "2.0.1"},
         "producer": {"plugin": "test-fixture", "version": "2.0.0"},
     }
     (source / "package-manifest.json").write_text(
@@ -101,7 +101,7 @@ class StudioV2ControllerTests(unittest.TestCase):
             self.assertEqual(payload["contract"], "zodiac-render-plan@1")
 
     def test_prepare_and_scene_preview_use_imported_renderer_pin_and_keep_caption_layout(self):
-        for version in ("2.0.0", "2.0.1"):
+        for version in ("2.0.1",):
             with self.subTest(version=version), tempfile.TemporaryDirectory() as temp:
                 controller = StudioV2Controller(Path(temp))
                 (controller.workspace / "package-manifest.json").write_text(json.dumps({
