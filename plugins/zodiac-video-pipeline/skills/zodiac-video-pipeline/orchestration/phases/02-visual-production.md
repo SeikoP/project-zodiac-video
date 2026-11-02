@@ -31,6 +31,7 @@ Fresh Narrative Visual authoring follows `references/narrative-visual-contract.m
 (the legacy filename is retained for existing links). The authoring role is
 `narrative_visual`, not a prop; it may have one state or narrated transitions.
 Effects and Scene Accents are optional and never fill space automatically.
+Fresh runs also follow `references/narrative-visual-authoring.md`: a brief before drawing, a kit lint, and an optional blind readback.
 
 Retired capabilities are unavailable in the current plugin. Restore an exact,
 separately pinned snapshot to resume an approved historical job; do not use

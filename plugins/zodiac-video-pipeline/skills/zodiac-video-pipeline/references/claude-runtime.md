@@ -20,6 +20,7 @@ Use the cheapest model that the step's validators can still catch mistakes for; 
 | Evidence gathering | `zodiac-researcher` | sonnet | Search volume, sources are checkable |
 | Concept and narration | `zodiac-story-writer` | opus | The story is the product; reviewed by the user |
 | Visual authoring | `zodiac-visual-author` | sonnet | Structured inputs; native compilers and validators judge them |
+| Narrative Visual (brief, concepts, SVG) | `zodiac-narrative-visual` | opus | The picture must tell this story; creativity is the deliverable |
 | Validators, commits, gates, export | `zodiac-gatekeeper` | haiku | Mechanical, no judgment |
 | Pre-review second opinion | `zodiac-reviewer` | opus | Independent check before the user's review |
 

@@ -4,7 +4,21 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 const norm=s=>String(s??'').trim().toLocaleLowerCase('vi-VN').replace(/\s+/g,' ');
 const sceneKey=o=>String(o?.scene_id??o?.id??'');
-export function auditCreativeReuse({production,visualGrammar,depth,assetPlan}={}){
+const words=s=>new Set(norm(s).replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/u).filter(w=>w.length>1));
+const jaccard=(a,b)=>{if(!a.size||!b.size)return 0;let n=0;for(const w of a)if(b.has(w))n++;return n/(a.size+b.size-n);};
+/** Editorial only: flags a narrative-visual claim that closely repeats one from an earlier episode. Never blocks. */
+export function auditNarrativeBriefReuse(briefs=[],priorBriefs=[],{threshold=0.6}={}){
+ const flags=[];
+ for(const b of briefs){
+  const mine=words(b?.claim);
+  for(const p of priorBriefs){
+   const score=jaccard(mine,words(p?.claim));
+   if(score>=threshold)flags.push({code:'NARRATIVE_CONCEPT_REPEATED',scenes:[String(b.scene_id)],prior:{episode:p.episode??null,scene_id:p.scene_id??null},similarity:Math.round(score*100)/100,severity:'EDITORIAL_REVIEW'});
+  }
+ }
+ return flags;
+}
+export function auditCreativeReuse({production,visualGrammar,depth,assetPlan,narrativeBriefs,priorNarrativeBriefs}={}){
  const scenes=production?.scenes;
  if(!Array.isArray(scenes)||!scenes.length)throw new Error('REUSE_PRODUCTION_REQUIRED');
  const ids=scenes.map(s=>s.id);
@@ -37,6 +51,7 @@ export function auditCreativeReuse({production,visualGrammar,depth,assetPlan}={}
  const byReuse=new Map();
  for(const d of decisions){if(d.role!=='primary_story'||!d.scene_id)continue;const master=String(d.selected_master??d.asset_id??'');if(!master)continue;const arr=byReuse.get(master)??[];arr.push({scene:String(d.scene_id),need:norm(d.semantic_need)});byReuse.set(master,arr);}
  for(const [master,rows] of byReuse){const uniqueScenes=[...new Set(rows.map(x=>x.scene))],needs=[...new Set(rows.map(x=>x.need).filter(Boolean))];if(uniqueScenes.length>=3&&needs.length>=2)add('MASTER_REUSED_ACROSS_DIFFERENT_MEANINGS',uniqueScenes,{master,distinct_needs:needs.length});}
+ if(narrativeBriefs?.length)flags.push(...auditNarrativeBriefReuse(narrativeBriefs,priorNarrativeBriefs??[]));
  const repeated=[...byMaster].filter(([,v])=>v.size>=4).map(([master,v])=>({master,scene_count:v.size}));
  return {format:'zodiac-creative-reuse-audit@1',status:'REVIEW_REQUIRED',flags,reused_story_masters:repeated,scenes_checked:scenes.length,policy:'Reuse stable identities/assets for continuity. Review unrelated meanings, three-scene repetition and unsupported variation; do not generate extra SVG solely to satisfy a quota.',not_a_validation_or_creative_pass:true};
 }

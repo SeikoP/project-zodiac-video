@@ -1,6 +1,6 @@
 # Narrative Visual authoring — design (no pre-built library)
 
-Status: proposal for review. Nothing here is implemented.
+Status: implemented. Brief validator, derived-omit coverage (fresh runs), kit lint (wired into the precompile boundary), narrative reuse check, the `zodiac-narrative-visual` agent and `references/narrative-visual-authoring.md` are in the plugin. Blind readback is a protocol (offered), not code.
 
 ## Problem
 Fresh episodes need a narrative visual that tells the story at that moment. Today:
@@ -43,6 +43,6 @@ Trade-off: this relaxes the deliberate "think about every layer" rule for empty 
 3. Reuse-check extension, blind-readback protocol and the new agent.
 4. Reference doc replacing the current coverage guidance for fresh runs.
 
-## Open questions
-- Is the 30,000 px² floor the right minimum for a narrative visual, or should it follow its placement (above-head vs canvas-wide)?
-- Should blind readback be required before Visual Review, or offered?
+## Decisions on the open questions
+- Area floor: keep 30,000 px² as the default and allow a per-call `minArea` override; revisit with real episodes before adding per-placement numbers.
+- Blind readback: offered, not required. It costs a model call, cannot be verified in CI, and the user's Visual Review is the approval.
