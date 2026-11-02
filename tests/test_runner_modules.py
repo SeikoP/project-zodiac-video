@@ -17,11 +17,9 @@ def _write_wav(path: Path, frames: bytes, *, rate: int = 8000, channels: int = 1
         wav.writeframes(frames)
 
 
-def test_package_safety_has_runner_owner_and_legacy_reexport(tmp_path: Path) -> None:
+def test_package_safety_rejects_unsafe_zip_paths(tmp_path: Path) -> None:
     from tools.runner.package import safe_extract_zip as owned
-    from tools.zodiac_local import safe_extract_zip as legacy
 
-    assert legacy is owned
     archive = tmp_path / 'bad.zip'
     with zipfile.ZipFile(archive, 'w') as zf:
         zf.writestr('../escape.txt', 'nope')
@@ -29,11 +27,9 @@ def test_package_safety_has_runner_owner_and_legacy_reexport(tmp_path: Path) -> 
         owned(archive, tmp_path / 'out')
 
 
-def test_audio_primitives_have_runner_owner_and_preserve_gap_behavior(tmp_path: Path) -> None:
+def test_audio_primitives_preserve_gap_behavior(tmp_path: Path) -> None:
     from tools.runner.audio import concatenate_wavs as owned
-    from tools.zodiac_local import concatenate_wavs as legacy
 
-    assert legacy is owned
     a = tmp_path / 'a.wav'
     b = tmp_path / 'b.wav'
     out = tmp_path / 'out.wav'

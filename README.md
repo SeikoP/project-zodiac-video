@@ -87,130 +87,7 @@ The direct compiler uses the same canonical timing path:
 zodiac-control build "/path/to/imported-job"
 ```
 
-### Legacy Job@2–4 package compatibility
-
-The legacy runner below accepts older Job@2–4 exports. New plugin exports use
-Job@5.
-
-A thin package v4 ZIP is creative data only:
-
-```text
-package-manifest.json     # zodiac-job@4, runtime id/version only
-design.md
-narration.txt
-production.json           # production contract 2.0
-publish/
-README.md                  # optional human-facing handoff
-assets/                    # only assets referenced by production.json
-```
-
-A v4 ZIP must not contain `.authoring/`, `renderer/`, `library/`, `references/`,
-`node_modules/`, `.runtime/`, `out/`, `voice.wav`, `FINAL_VALIDATION.json`,
-or `handoff-manifest.json`.
-
-The package selects an exact runtime **id + version**. Zodiac Studio resolves that
-runtime from its local registry and verifies the bundled/cached renderer against
-the local `runtime-manifest.json`. Runtime SHA-256 is therefore a Studio concern,
-not package metadata, and Studio never falls back to "latest".
-
-Studio validates the production entity/state/event contract, the design token,
-Patrick Hand caption contract, SVG safety/style, asset lineage, semantic animation,
-canonical narration, and referenced-asset boundary directly from the creative
-package. After local TTS, measured alignment, runtime checks, video and cover
-exist, Studio writes `out/FINAL_VALIDATION.json` and includes it in the publish
-bundle.
-
-Compatibility:
-- legacy v2 ZIPs without `package-manifest.json` continue to use package-local `renderer/`;
-- `zodiac-job@3` remains accepted with its existing runtime/design hashes and
-  semantic `FINAL_VALIDATION.json` receipt;
-- `zodiac-job@4` remains accepted for older plugin exports;
-- current plugin exports default to `zodiac-job@5`.
-
-Old v1 packages using `actors/objects/actions/motion` are intentionally rejected.
-See `docs/THIN_PACKAGE_V4_SPEC.md` and `docs/THIN_PACKAGE_V3_SPEC.md` for the
-legacy compatibility contracts. The Job@5 package contract is defined by the
-`zodiac-video-pipeline` handoff.
-
-## Legacy quick start (Job@2–4)
-
-Import:
-
-```bash
-python tools/zodiac_local.py import "/path/to/zodiac-render-ready.zip"
-```
-
-Check:
-
-```bash
-python tools/zodiac_local.py check zodiac-sun-gemini
-```
-
-### Generate VieNeu voice + measured words
-
-```powershell
-python tools/zodiac_local.py voice zodiac-sun-gemini --voice "Hải Đăng"
-```
-
-The voice flow:
-
-1. generates one PCM WAV per production scene;
-2. concatenates them into `voice.wav`;
-3. uses faster-whisper forced word timing against each approved `scene.voice`;
-4. writes word-level `.runtime/timing.json`.
-
-The aligner does **not** distribute a scene duration evenly across words. If recognized word order does not match approved narration, the command stops instead of inventing timing.
-
-Optional aligner controls:
-
-```bash
---align-model small
---align-device cpu
---align-compute-type int8
-```
-
-To reuse a running VieNeu Gradio service:
-
-```powershell
-python tools/zodiac_local.py voice zodiac-sun-gemini \
-  --voice "Hải Đăng" \
-  --vieneu-url http://127.0.0.1:7860
-```
-
-### Attach externally measured voice/timing
-
-```bash
-python tools/zodiac_local.py attach zodiac-sun-gemini \
-  --voice "/path/to/voice.wav" \
-  --timing "/path/to/timing.json"
-```
-
-Timing must contain one measured token per spoken word. This is required by v2 for:
-
-- phrase/page captions;
-- active-word highlighting;
-- `voice_anchor` event resolution;
-- intra-scene character/object/camera animation.
-
-## Preview vs render
-
-```bash
-python tools/zodiac_local.py preview zodiac-sun-gemini
-python tools/zodiac_local.py render zodiac-sun-gemini
-```
-
-**Preview means Remotion Studio**, an interactive long-running process. It is not a short MP4 preview.
-
-Before preview/render the runner:
-
-1. validates local voice + word timing;
-2. resolves the exact pinned renderer runtime;
-3. installs pinned runtime dependencies only when that shared runtime is not already prepared;
-4. verifies the compiled style token;
-5. runs runtime contract tests + TypeScript once per runtime hash;
-6. lets the canonical renderer create `.runtime/render-props.json`, resolve `voice_anchor` events, and render against the job root as its public asset directory.
-
-For v3, captions, event resolution, visual states, SFX and transitions are owned by the trusted shared runtime, not executable code inside the ZIP. `zodiac-remotion@1.14.0` remains the immutable thin-package baseline; `zodiac-remotion@1.15.0` adds the semantic lineage/mechanism contract and executes the Semantic Animation Gate. Multiple jobs using the same runtime reuse the same source, `node_modules`, and runtime-check cache. Legacy v2 jobs keep package-local renderer compatibility repair for older exports.
+Gói zodiac-job@1–4 cũ đã được gỡ khỏi Studio; hãy tạo lại bằng plugin hiện tại (Job@5).
 
 ## Background music
 
@@ -222,21 +99,7 @@ The selected track is copied to package-local `media/` and its local setting is 
 .runtime/audio.json
 ```
 
-Remotion renders voice + SFX first. The local runner then post-mixes the selected background track into the final MP4 with FFmpeg. This keeps the plugin's canonical renderer unchanged.
-
-CLI example:
-
-```bash
-python tools/zodiac_local.py render zodiac-sun-gemini \
-  --music "/path/to/music.mp3" \
-  --music-volume 0.45
-```
-
-Disable:
-
-```bash
-python tools/zodiac_local.py render zodiac-sun-gemini --no-music
-```
+Renderer renders voice + SFX first. The local runner then post-mixes the selected background track into the final MP4 with FFmpeg. This keeps the plugin's canonical renderer unchanged.
 
 ### Nghe thử
 
@@ -286,10 +149,6 @@ Nếu thiếu, badge đầu cửa sổ chuyển sang *Thiếu dependency* và n�
 
 Cài xong preflight chạy lại; chỉ khi mọi thứ xanh mới chạy TTS. Nếu thiếu mà bấm **Chạy toàn bộ**/**Tiếp tục**, bước *Kiểm tra môi trường* fail với mã `DEPENDENCY_MISSING` và **không scene nào** được tạo.
 
-### Chọn đúng gói ZIP
-
-Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZIP đã nhập. Chọn ZIP khác (kể cả cùng tên job) sẽ báo *Gói video đã thay đổi* và hỏi **Nhập lại** hoặc **Giữ job cũ** — không bao giờ dùng nhầm package đã cache. Gói mới được validate trong thư mục tạm trước khi thay thế job cũ.
-
 ### Xử lý sự cố
 
 | Tình huống | Cách xử lý |
@@ -301,7 +160,7 @@ Job trong `.zodiac-work/jobs/` được đánh dấu bằng fingerprint của ZI
 | Muốn làm lại từ đầu | **Chạy lại bước** ở bước *Nhập gói video* (vô hiệu hoá phía dưới), hoặc xóa riêng `.runtime/pipeline-state.json` để app suy luận lại từ artifact |Output sau render/publish:
 
 ```text
-.zodiac-work/jobs/<job>/out/
+.zodiac-work/v2/jobs/<job>/out/
 ├─ zodiac-story.mp4              # final MP4; nhạc nền được mix trực tiếp vào file này nếu bật
 ├─ cover.png
 ├─ publish-copy.txt
@@ -317,7 +176,7 @@ This is a dark workstation with two top-level tabs: **Công việc / Workspace**
 combines recent-job selection with the seven-step production workbench, and
 **Media** manages the active job's video, audio, and image outputs. Video and
 music previews play inside the Qt app. It provides environment checks, audio
-settings, Remotion actions for supported legacy jobs, resume/run-all, rerun, safe
+settings, Remotion Studio, resume/run-all, rerun, safe
 stop, and output navigation. It adds keyboard shortcuts: `Ctrl+O` import,
 `Ctrl+R` continue, `Ctrl+Shift+R` run all, `Ctrl+L` logs, `Esc` back to jobs.
 Run `uv run zodiac` to open this GUI. PySide6 installs with the project's default
@@ -347,14 +206,8 @@ ZIP import rejects traversal, links, duplicate paths, oversized entries and susp
 
 FFmpeg/npm calls pass validated executables and arguments as argv with `shell=False`; user-selected paths are never interpreted as shell source.
 
-Thin v3 ZIPs contain data only; executable Node.js renderer code comes from the trusted runtime bundled with Zodiac Studio. Legacy v2 packages may still contain executable renderer code and should only come from a trusted plugin/workflow.
+Job@5 ZIPs contain data only; executable Node.js renderer code comes from the trusted `zodiac-renderer` runtime bundled with Zodiac Studio.
 
-
-## Legacy Runtime 1.20.0 — production
-
-New jobs use `zodiac-remotion@1.20.0`. It keeps the 1.19.1 deterministic animation/caption behavior and adds scene-level layer safety: runtime evaluates the declared active state sequence, blocks materially overlapping visible entities that share the same layer, and uses deterministic z-index ordering.
-
-Runtime deliberately does not auto-move meaningful props or characters because overlap may represent holding, hugging or offering. Internal SVG groups such as torso, outfit decoration, arms and baked props remain a Semantic Assets compile-time concern. Whole-pose choreography is still not skeletal morphing.
 
 ## Zodiac plugin source
 

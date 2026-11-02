@@ -21,9 +21,9 @@ class Job5PreflightTests(unittest.TestCase):
             (job / "voice.wav").write_bytes(b"existing-voice")
             with self.assertRaises(ControlPlaneError):
                 validate_job5_package_root(job)
-            self.assertTrue(Job5PreflightChecker(job)._package(None).ok)
+            self.assertTrue(Job5PreflightChecker(job)._package().ok)
             (job / "narration.txt").write_text("changed narration", encoding="utf-8")
-            result = Job5PreflightChecker(job)._package(None)
+            result = Job5PreflightChecker(job)._package()
             self.assertFalse(result.ok)
             self.assertIn("narration", result.message)
             self.assertIn("nhập lại", result.details)

@@ -68,8 +68,6 @@ class PreflightChecker:
     def run(self, *, on_check: Callable[[Check], None] | None = None,
             on_start: Callable[[str], None] | None = None) -> list[Check]:
         """Run in order and publish each *observed* check result, even on fail."""
-        from tools.zodiac_local import validate_package
-
         checks: list[Check] = []
 
         def take(label: str, callback) -> None:
@@ -84,7 +82,7 @@ class PreflightChecker:
         take("faster-whisper", self._faster_whisper)
         for name, code in (("node", "NODE"), ("npm", "NPM"), ("ffmpeg", "FFMPEG")):
             take(code, lambda n=name, c=code: self._executable(n, c))
-        take("PACKAGE", lambda: self._package(validate_package))
+        take("PACKAGE", self._package)
         take("VieNeu", self._vieneu)
         if self.require_music:
             take("Nhạc nền", self._music)
@@ -159,24 +157,6 @@ class PreflightChecker:
             missing=[] if found else [labels[code]],
         )
 
-    def _package(self, validate_package) -> Check:
-        if self.package_root is None:
-            return Check(code="PACKAGE", label="Gói video", ok=False, message="Chưa chọn gói video.",
-                         error_code="PACKAGE_INVALID")
-        try:
-            validate_package(self.package_root)
-        except Exception as exc:
-            return Check(
-                code="PACKAGE",
-                label="Gói video",
-                ok=False,
-                message="Gói video không hợp lệ với contract v2.0.",
-                details=str(exc),
-                error_code="PACKAGE_INVALID",
-            )
-        return Check(code="PACKAGE", label="Gói video", ok=True, message="Gói video hợp lệ.",
-                     details=str(self.package_root))
-
     def _vieneu(self) -> Check:
         if self.tts_root is not None and not Path(self.tts_root).is_dir():
             return Check(
@@ -221,7 +201,7 @@ class PreflightChecker:
 class Job5PreflightChecker(PreflightChecker):
     """Use the imported Job@5 contract and Renderer 2 for GUI checks."""
 
-    def _package(self, _validate_package) -> Check:
+    def _package(self) -> Check:
         from tools.control_plane.package_validation import validate_job5_package_root
 
         if self.package_root is None:

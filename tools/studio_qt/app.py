@@ -29,9 +29,7 @@ from tools.application.service import (
     ApplicationRunRequest,
     ApplicationService,
     MODE_CURRENT,
-    MODE_LEGACY,
 )
-from tools.studio.job_state import JobStateStore
 from tools.studio.pipeline import DONE, FAILED, PENDING, RUNNING, SKIPPED, CANCELLED
 from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.studio.messages_vi import ALIGN_MODEL_DEFAULT
@@ -60,7 +58,6 @@ class ZodiacQtApp(QMainWindow):
         self.workspace = Path(workspace or WORKSPACE).resolve()
         self.application = ApplicationService(self.workspace, tts_root=TTS_ROOT, vieneu_url=TTS_URL)
         self.bridge = WorkerEventBridge(self)
-        self.bridge.event_received.connect(self._on_legacy_event)
         self.bridge.log_received.connect(self._on_log)
         self.bridge.native_log_received.connect(self._on_native_log)
         self.bridge.native_progress.connect(self._on_native_progress)
@@ -156,21 +153,12 @@ class ZodiacQtApp(QMainWindow):
         for path in sorted(self.workspace.joinpath("v2", "jobs").glob("*"), key=lambda item: item.stat().st_mtime, reverse=True):
             if path.is_dir() and (path / "package-manifest.json").is_file():
                 jobs.append({"name": path.name, "state": self._job5_recent_state(path), "path": str(path)})
-        for path in sorted(self.workspace.joinpath("jobs").glob("*"), key=lambda item: item.stat().st_mtime, reverse=True):
-            if not path.is_dir():
-                continue
-            state = JobStateStore(path).load()
-            steps = list((state or {}).get("steps", {}).values())
-            statuses = [str(item.get("status", "")) for item in steps]
-            status = "Cần xử lý" if FAILED in statuses else "Đang chạy" if RUNNING in statuses else "Cần tiếp tục" if any(value in (PENDING, CANCELLED) for value in statuses) else "Hoàn tất" if statuses and all(value == DONE for value in statuses) else "Job local"
-            jobs.append({"name": path.name, "state": status, "path": str(path)})
         return jobs[:12]
 
     def _media_jobs(self) -> list[dict]:
         jobs = []
         for group, directory, job5 in (
             ("Job@5", self.workspace / "v2" / "jobs", True),
-            ("Job local", self.workspace / "jobs", False),
         ):
             try:
                 paths = sorted(directory.iterdir(), key=lambda item: item.name.casefold())
@@ -296,9 +284,6 @@ class ZodiacQtApp(QMainWindow):
         def run() -> None:
             try:
                 opened = self.application.open(name, value)
-                if opened.package_conflict:
-                    self.bridge.operation_finished.emit("package_conflict", (None, value, None))
-                    return
                 self.bridge.operation_finished.emit(name, (opened.mode, opened.path, None))
             except Exception as exc:
                 self.bridge.operation_finished.emit(name, (None, None, exc))
@@ -325,7 +310,7 @@ class ZodiacQtApp(QMainWindow):
             self.workspace.mkdir(parents=True, exist_ok=True)
             path = self.workspace / "gui-session.json"
             temp = path.with_suffix(".json.tmp")
-            temp.write_text(json.dumps({"mode": "v2" if self.application.mode == MODE_CURRENT else "legacy", "job": job.resolve().relative_to(self.workspace).as_posix()}), encoding="utf-8")
+            temp.write_text(json.dumps({"mode": "v2", "job": job.resolve().relative_to(self.workspace).as_posix()}), encoding="utf-8")
             os.replace(temp, path)
             settings_path = job / ".runtime" / "gui-settings.json"
             settings_path.parent.mkdir(parents=True, exist_ok=True)
@@ -370,10 +355,7 @@ class ZodiacQtApp(QMainWindow):
         # Live progress keeps updating its source stage without hijacking focus.
         if self.selected_stage:
             active = next((row for row in rows if row.get("step") == self.selected_stage), active)
-        percent = None
-        if self.mode == "legacy" and active.get("status") == RUNNING and float(active.get("progress", 0.0)) > 0:
-            percent = float(active["progress"])
-        self.workbench.set_active_stage(active["step"], active, percent=percent)
+        self.workbench.set_active_stage(active["step"], active, percent=None)
         pipeline_active = self.pipeline_running or self.application.running
         self.home.set_busy(pipeline_active or self.busy)
         self.workbench.set_running(pipeline_active, busy=self.busy and not pipeline_active)
@@ -423,15 +405,6 @@ class ZodiacQtApp(QMainWindow):
             self._refresh_media_jobs()
         if widget is not self.media:
             self.media.player.pause()
-
-    @Slot(str, dict)
-    def _on_legacy_event(self, kind: str, payload: dict) -> None:
-        if self.workbench:
-            message = payload.get("text") or payload.get("message") or kind
-            stage = self._running_stage()
-            self.workbench.append_activity(message, channel="event", stage=stage)
-            self.workbench.set_stage_activity(stage, message)
-        self._refresh_workbench()
 
     def _running_stage(self) -> str | None:
         rows = self._pipeline_rows()
@@ -522,7 +495,6 @@ class ZodiacQtApp(QMainWindow):
             self.workbench.reset_measured_progress()
         self._frame_milestones.clear()
         observers = ApplicationObservers(
-            legacy_event=lambda kind, payload: self.bridge.event_received.emit(kind, payload),
             subprocess=lambda line, channel="stdout": self.bridge.log_received.emit(line, channel),
             native=lambda line, channel, stage: self.bridge.native_log_received.emit(line, channel, stage),
             unit=lambda stage, complete, total, unit, label: self.bridge.native_progress.emit(
@@ -556,8 +528,7 @@ class ZodiacQtApp(QMainWindow):
         self.selected_stage = stage
         rows = self._pipeline_rows()
         row = next((row for row in rows if row["step"] == stage), {"status": PENDING})
-        percent = float(row.get("progress", 0.0)) if self.mode == "legacy" and row.get("status") == RUNNING and float(row.get("progress", 0)) > 0 else None
-        self.workbench.set_active_stage(stage, row, percent=percent)
+        self.workbench.set_active_stage(stage, row, percent=None)
 
     def _rerun(self, stage: str) -> None:
         self._start(resume=True, rerun=stage)
@@ -579,36 +550,6 @@ class ZodiacQtApp(QMainWindow):
         self.workbench.append_activity("Đang chờ bước hiện tại dừng an toàn…")
 
     def _on_operation_finished(self, name: str, result: object) -> None:
-        if name == "package_conflict":
-            self.busy = False
-            self.home.set_busy(False, "Gói đã thay đổi; chọn cách xử lý trong hộp thoại.")
-            answer = QMessageBox.question(
-                self,
-                "Gói video đã thay đổi",
-                "ZIP được chọn có nội dung khác job hiện tại.\n\n"
-                "Nhập bản mới sẽ cập nhật nội dung gói và giữ lại cache local có thể dùng lại.\n"
-                "Bạn muốn nhập bản mới? Chọn No để tiếp tục giữ job hiện tại.",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Cancel,
-            )
-            if answer == QMessageBox.StandardButton.Yes:
-                self.busy = True
-                self.home.set_busy(True, "Đang cập nhật gói và kiểm tra cache…")
-
-                def resolve() -> None:
-                    try:
-                        opened = self.application.resolve_package_conflict("import")
-                        self.bridge.operation_finished.emit("import", (opened.mode, opened.path, None))
-                    except Exception as exc:
-                        self.bridge.operation_finished.emit("import", (None, None, exc))
-
-                threading.Thread(target=resolve, daemon=True).start()
-            else:
-                self.application.resolve_package_conflict("keep")
-                self.home.set_busy(False, "Đã giữ lại job hiện tại.")
-                if self.close_when_stopped:
-                    self.close()
-            return
         if name == "install_plan":
             self.busy = False
             commands, missing, error = result

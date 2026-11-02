@@ -7,7 +7,6 @@ from .service import (
     ApplicationRunRequest,
     ApplicationService,
     MODE_CURRENT,
-    MODE_LEGACY,
 )
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "ApplicationRunRequest",
     "ApplicationService",
     "MODE_CURRENT",
-    "MODE_LEGACY",
 ]
