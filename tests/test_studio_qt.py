@@ -241,15 +241,15 @@ class TaskWorkbenchTests(unittest.TestCase):
                 self.received_on_gui_thread = False
                 self.message = ""
 
-            @Slot(str, dict)
-            def receive(self, _kind, payload):
-                self.message = payload["text"]
+            @Slot(str, str)
+            def receive(self, line, _channel):
+                self.message = line
                 self.received_on_gui_thread = QThread.currentThread() == self.thread()
 
         bridge = WorkerEventBridge()
         receiver = Receiver()
-        bridge.event_received.connect(receiver.receive)
-        worker = threading.Thread(target=lambda: bridge.event_received.emit("LOG_LINE", {"text": "render segment 2/4"}))
+        bridge.log_received.connect(receiver.receive)
+        worker = threading.Thread(target=lambda: bridge.log_received.emit("render segment 2/4", "stdout"))
         worker.start()
         worker.join()
         self.qt_app.processEvents()
@@ -458,28 +458,25 @@ class TaskWorkbenchTests(unittest.TestCase):
         self.assertFalse(media.job_picker.isEnabled())
         media.close()
 
-    def test_app_lists_all_jobs_with_out_folders_grouped_by_job_type(self):
+    def test_app_lists_job5_jobs_with_out_folders(self):
         from tools.studio_qt.app import ZodiacQtApp
 
         with tempfile.TemporaryDirectory() as temp:
             workspace = Path(temp)
             v2 = workspace / "v2" / "jobs"
-            local = workspace / "jobs"
             valid_v2 = v2 / "v2-job"
-            valid_local = local / "local-job"
-            missing_out = local / "no-output"
-            for job in (valid_v2, valid_local, missing_out):
+            missing_out = v2 / "no-output"
+            for job in (valid_v2, missing_out):
                 job.mkdir(parents=True)
+            (missing_out / "package-manifest.json").touch()
             (valid_v2 / "package-manifest.json").touch()
             (valid_v2 / "out").mkdir()
-            (valid_local / "out").mkdir()
 
             window = ZodiacQtApp(workspace=workspace)
             jobs = window._media_jobs()
 
             self.assertEqual([(job["group"], job["name"]) for job in jobs], [
                 ("Job@5", "v2-job"),
-                ("Job local", "local-job"),
             ])
             self.assertEqual(Path(jobs[0]["out_path"]), (valid_v2 / "out").resolve())
             window.close()
