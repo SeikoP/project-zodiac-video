@@ -23,7 +23,7 @@ def manifest(*, job_id="scorpio-two-versions", revision="1.0.0"):
             "version": "1.0.0",
             "sha256": canonical_contract_hash("authoring-ir-v1"),
         },
-        "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+        "renderer": {"id": "zodiac-renderer", "version": "2.0.1"},
         "producer": {"plugin": "test", "version": "2.0.0"},
     }
 
