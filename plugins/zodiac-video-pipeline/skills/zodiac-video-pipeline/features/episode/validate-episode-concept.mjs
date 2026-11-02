@@ -2,7 +2,7 @@ import {assertPremiseSelection} from '../../core/policy/creative-policy.mjs';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 import {assertEpisodeScope,validateResearchScope,MEMBER_LABELS} from './episode-scope.mjs';
 import {compositionHash} from '../visual-composition/phase02-composition.mjs';
-import {readArtifact} from '../../orchestration/phase01-artifacts.mjs';
+import {readArtifact} from '../../phases/phase01/phase01-artifacts.mjs';
 import {compileEpisodeEvidenceView,validateEpisodeEvidencePool} from '../../core/evidence/episode-evidence.mjs';
 const text=v=>typeof v==='string'&&Boolean(v.trim());
 export function assertMemberLenses(lenses,scope,evidenceView){

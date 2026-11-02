@@ -1,6 +1,6 @@
 import {assertViralDecision} from '../../core/policy/creative-policy.mjs';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
-import {compositionHash} from '../visual-composition/phase02-composition.mjs';import {readArtifact,writeArtifact} from '../../orchestration/phase01-artifacts.mjs';import {compileEvidenceBrief} from '../../core/evidence/compile-evidence-brief.mjs';
+import {compositionHash} from '../visual-composition/phase02-composition.mjs';import {readArtifact,writeArtifact} from '../../phases/phase01/phase01-artifacts.mjs';import {compileEvidenceBrief} from '../../core/evidence/compile-evidence-brief.mjs';
 import {compileEpisodeWriterBrief} from './episode-writer-brief.mjs';import {compileEpisodeEvidenceView} from '../../core/evidence/episode-evidence.mjs';
 const fail=m=>{throw Error('WRITER_BRIEF_INVALID '+m);};const text=(v,k)=>{if(typeof v!=='string'||!v.trim())fail('REQUIRED '+k);return v;};
 export function compileWriterBrief(input){

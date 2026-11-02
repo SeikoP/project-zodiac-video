@@ -7,7 +7,7 @@ if(quality.status==='REVIEW_REQUIRED'){
  console.log('PUBLISH_EDITORIAL_REVIEW_REQUIRED: '+quality.issues.map(issue=>issue.code).join(','));
  // Schema PASS is not permission to call the creative package complete.
 }
-await (await import('../../orchestration/episode-handoff.mjs')).episodeHandoffWorkspace(root,{cover:true});
+await (await import('../episode/episode-handoff.mjs')).episodeHandoffWorkspace(root,{cover:true});
 const clean=t=>String(t??'').normalize('NFC').trim();const norm=t=>clean(t).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase().replace(/[^a-z0-9]+/g,'');
 const tags=pub.hashtags.map(clean);
 if(new Set(tags.map(x=>x.toLowerCase())).size!==tags.length)fail('HASHTAG_DUPLICATE');

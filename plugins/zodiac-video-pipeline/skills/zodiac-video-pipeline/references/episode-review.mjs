@@ -1,4 +1,4 @@
-import {assertEpisodeScope,MEMBER_LABELS} from '../orchestration/episode-scope.mjs';import {compositionHash} from '../orchestration/phase02-composition.mjs';
+import {assertEpisodeScope,MEMBER_LABELS} from '../features/episode/episode-scope.mjs';import {compositionHash} from '../features/visual-composition/phase02-composition.mjs';
 const norm=s=>String(s??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replaceAll('đ','d').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const fail=m=>{throw Error('EPISODE_REVIEW_INVALID '+m);};
 export function validateEpisodeIdentityReview(review,plan,narration){

@@ -1,6 +1,6 @@
 import {compileEvidenceBrief} from './compile-evidence-brief.mjs';
-import {assertEpisodeScope,MEMBER_LABELS,validateResearchScope} from '../../orchestration/episode-scope.mjs';
-import {compositionHash} from '../../orchestration/phase02-composition.mjs';
+import {assertEpisodeScope,MEMBER_LABELS,validateResearchScope} from '../../features/episode/episode-scope.mjs';
+import {compositionHash} from '../../features/visual-composition/phase02-composition.mjs';
 export function compileEpisodeEvidenceView(ledger,inputScope){
  const scope=assertEpisodeScope(inputScope),entries=ledger.entries??ledger.sources;
  if(!Array.isArray(entries))throw Error('EPISODE_EVIDENCE_ENTRIES');

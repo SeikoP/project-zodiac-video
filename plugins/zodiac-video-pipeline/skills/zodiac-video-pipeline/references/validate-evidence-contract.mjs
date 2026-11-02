@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import {access,readFile} from 'node:fs/promises';
 import path from 'node:path';
-import {compileEvidenceBriefWorkspace} from '../orchestration/compile-evidence-brief.mjs';
-import {newFresh,readArtifact} from '../orchestration/phase01-artifacts.mjs';
+import {compileEvidenceBriefWorkspace} from '../core/evidence/compile-evidence-brief.mjs';
+import {newFresh,readArtifact} from '../phases/phase01/phase01-artifacts.mjs';
 const rootArg=process.argv[2];
 if(!rootArg){console.error('Usage: node validate-evidence-contract.mjs <workspace-root>');process.exit(2);}
 const root=path.resolve(rootArg);
@@ -26,5 +26,5 @@ for(const [i,e] of entries.entries()){
 }
 if(sources.size<2)fail('evidence ledger needs at least two independent source identities');
 if(typeof ledger.central_claim==='string'&&!ledger.central_claim.trim())fail('central_claim may not be blank');
-const state=await readArtifact(root,'pipeline-state.json').catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(newFresh(state))await compileEvidenceBriefWorkspace(root);if(state?.flags?.episode_selected===true){const {validateEpisodeEvidencePool}=await import('../orchestration/episode-evidence.mjs');validateEpisodeEvidencePool(ledger,await readArtifact(root,'research-scope.json'));}
+const state=await readArtifact(root,'pipeline-state.json').catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(newFresh(state))await compileEvidenceBriefWorkspace(root);if(state?.flags?.episode_selected===true){const {validateEpisodeEvidencePool}=await import('../core/evidence/episode-evidence.mjs');validateEpisodeEvidencePool(ledger,await readArtifact(root,'research-scope.json'));}
 console.log(`EVIDENCE_CONTRACT_PASS: entries=${entries.length} independent_sources=${sources.size}`);

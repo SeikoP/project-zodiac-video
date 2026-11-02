@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
-import {validateArchiveFrameWorkspace} from '../../../orchestration/validate-archive-frame.mjs';
+import {validateArchiveFrameWorkspace} from '../../../features/scene-set/validate-archive-frame.mjs';
 import {validateSceneSetIdentityWorkspace} from '../../../features/scene-set/validate-scene-set-identity.mjs';
 import {validateSceneSetAccents} from '../../../features/scene-set/validate-scene-set-accents.mjs';
 const root=process.argv[2];if(!root)throw Error('workspace required');

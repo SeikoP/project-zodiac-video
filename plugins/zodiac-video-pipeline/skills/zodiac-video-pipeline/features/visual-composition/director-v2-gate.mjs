@@ -3,7 +3,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateDirectorPlan,validateDirectorCausality,compileDirectorBlocking,sha256} from './director-v2-core.mjs';
-import {assertJob5VisualRoleSizes} from '../../orchestration/compile-job-v5.mjs';
+import {assertJob5VisualRoleSizes} from '../../phases/phase03/compile-job-v5.mjs';
 
 const main=async()=>{
  const root=process.argv[2];if(!root)throw Error('Usage: node orchestration/director-v2-gate.mjs <workspace> [--write]');

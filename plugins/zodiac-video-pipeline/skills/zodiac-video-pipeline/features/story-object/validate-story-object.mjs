@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {isDeepStrictEqual} from 'node:util';
 import {traceSceneStates} from '../visual-composition/scene-state-trace.mjs';
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
-import {newFresh} from '../../orchestration/phase01-artifacts.mjs';
+import {newFresh} from '../../phases/phase01/phase01-artifacts.mjs';
 const TOKEN='zodiac-paper-doodle-meme-v4';
 const ROLES=new Set(['setup','friction','payoff']);
 const EFFECT_ROLES=new Set(['compare','block','reveal','pressure','split','highlight','callback','collapse']);

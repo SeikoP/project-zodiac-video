@@ -1,4 +1,4 @@
-import path from 'node:path';import {fileURLToPath} from 'node:url';import {readArtifact} from '../../orchestration/phase01-artifacts.mjs';import {assertEpisodeScope,validateResearchScope} from './episode-scope.mjs';
+import path from 'node:path';import {fileURLToPath} from 'node:url';import {readArtifact} from '../../phases/phase01/phase01-artifacts.mjs';import {assertEpisodeScope,validateResearchScope} from './episode-scope.mjs';
 export async function validateEpisodeScopeWorkspace(root,{researchOnly=false}={}){
  const research=validateResearchScope(await readArtifact(root,'research-scope.json'));
  if(!researchOnly)assertEpisodeScope(await readArtifact(root,'episode-scope.json'),research);

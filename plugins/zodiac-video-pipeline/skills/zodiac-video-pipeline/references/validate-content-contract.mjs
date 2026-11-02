@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import {assertPremiseSelection,assertViralDecision} from '../orchestration/creative-policy.mjs';
+import {assertPremiseSelection,assertViralDecision} from '../core/policy/creative-policy.mjs';
 import {access,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {validateBeatPerformance} from './narration-rhythm.mjs';
 
-import {compileWriterBriefWorkspace} from '../orchestration/compile-writer-brief.mjs';
+import {compileWriterBriefWorkspace} from '../features/episode/compile-writer-brief.mjs';
 import {validatePluginUse} from '../orchestration/plan-plugin-use.mjs';
-import {newFresh} from '../orchestration/phase01-artifacts.mjs';
-import {assertEpisodeConcept,episodeConceptInput} from '../orchestration/validate-episode-concept.mjs';
+import {newFresh} from '../phases/phase01/phase01-artifacts.mjs';
+import {assertEpisodeConcept,episodeConceptInput} from '../features/episode/validate-episode-concept.mjs';
 const rootArg=process.argv[2];
 if(!rootArg){console.error('Usage: node validate-content-contract.mjs <workspace-root>');process.exit(2);}
 const root=path.resolve(rootArg);
