@@ -313,7 +313,7 @@ class TaskWorkbenchTests(unittest.TestCase):
                 ["Công việc / Workspace", "Kho", "Media", "Checklist sản xuất"],
             )
             self.assertIs(window.main_tabs.widget(0), window.stack)
-            self.assertIs(window.main_tabs.widget(2), window.checklist)
+            self.assertIs(window.main_tabs.widget(3), window.checklist)
             window.close()
 
     def test_closed_qt_window_releases_multimedia_children(self):
