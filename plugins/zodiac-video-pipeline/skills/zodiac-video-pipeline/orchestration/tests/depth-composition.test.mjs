@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {compileDepth} from '../compile-depth-composition.mjs';
+import {compileDepth} from '../../features/visual-composition/compile-depth-composition.mjs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));

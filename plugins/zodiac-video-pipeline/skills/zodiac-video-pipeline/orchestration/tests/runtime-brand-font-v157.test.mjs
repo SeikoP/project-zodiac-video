@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {projectProduction} from '../compile-runtime-production.mjs';
+import {projectProduction} from '../../compat/production-v1/compile-runtime-production.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const refs=path.resolve(here,'../../references');

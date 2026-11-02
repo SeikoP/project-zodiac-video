@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compileJobV5, assertJob5VisualRoleSizes} from '../compile-job-v5.mjs';
+import {compileJobV5, assertJob5VisualRoleSizes} from '../../phases/phase03/compile-job-v5.mjs';
 
 const makeIr=()=>({assets:{FX:{category:'effect',path:'assets/effects/x.svg'},PHONE:{category:'prop',path:'assets/props/phone.svg'}},scenes:[
   {id:'S02',layout_contract:{canvas:{width:1080,height:1920}},entities:[{id:'reaction',states:{off:{asset:'FX',visible:false,transform:{x:700,y:350,width:158,height:172}},on:{asset:'FX',visible:true,transform:{x:700,y:350,width:158,height:172}}}}]},

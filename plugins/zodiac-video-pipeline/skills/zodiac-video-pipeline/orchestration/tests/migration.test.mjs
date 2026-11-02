@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {rm} from 'node:fs/promises';import {migrateLegacyJob5} from '../migrate-production-model.mjs';
+import {rm} from 'node:fs/promises';import {migrateLegacyJob5} from '../../core/model/migrate-production-model.mjs';
 import {makePortableLegacyFixture} from './portable-legacy-fixture.mjs';
 test('portable Bọ Cạp 16-scene migration preserves narration byte provenance',async()=>{
  const {root}=await makePortableLegacyFixture();

@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,writeFile,readdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {compileMemeProps} from '../../references/asset-library-v4/memes/compile-meme-props.mjs';
-import {validateSemanticAssetFit} from '../validate-semantic-asset-fit.mjs';
+import {validateSemanticAssetFit} from '../../features/visual-composition/validate-semantic-asset-fit.mjs';
 
 test('story object without semantic fit decision is rejected',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'zodiac-fit-'));

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {lintSceneEvents} from '../validate-authoring-scene-events.mjs';
+import {lintSceneEvents} from '../../features/visual-composition/validate-authoring-scene-events.mjs';
 const good={assets:{FX:{category:'effect'}},scenes:[{id:'s1',voice:'Ai vậy?',entities:[{id:'fx',kind:'object',initial_state:'off',states:{off:{asset:'FX',visible:false},on:{asset:'FX',visible:true}}}],events:[{id:'e1',target:'fx',action:'show',state_before:'off',state_after:'on',motion:{preset:'pop-in',duration_frames:7},trigger:{type:'voice_anchor',text:'Ai'}},{id:'e2',target:'fx',action:'hide',state_before:'on',state_after:'off',motion:{preset:'fade-out',duration_frames:9},trigger:{type:'voice_anchor',text:'vậy'}}]}]};
 test('semantic events embedded in scene pass',()=>assert.equal(lintSceneEvents(good).status,'PASS'));
 test('events solely in sidecar do not pass',()=>{const x=structuredClone(good);delete x.scenes[0].events;assert.ok(lintSceneEvents(x).errors.some(e=>e.problem==='SCENE_EVENTS_MISSING'))});

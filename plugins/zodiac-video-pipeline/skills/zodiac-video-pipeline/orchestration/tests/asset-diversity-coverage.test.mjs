@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {freshPreferredHairIds} from '../../references/asset-library-v4/characters/select-character-components.mjs';
-import {selectAssetGuidance} from '../select-asset-guidance.mjs';
+import {selectAssetGuidance} from '../../core/policy/select-asset-guidance.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const skill=path.resolve(here,'../..');

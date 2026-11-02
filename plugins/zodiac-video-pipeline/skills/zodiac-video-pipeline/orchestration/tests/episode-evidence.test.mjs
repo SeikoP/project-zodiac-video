@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {compileEpisodeEvidenceView} from '../episode-evidence.mjs';
+import {compileEpisodeEvidenceView} from '../../core/evidence/episode-evidence.mjs';
 export const episode=()=>({format:'zodiac-episode-scope@1',episode_id:'fire-triggers',episode_format:'element_group',title_working:'Nhóm Lửa',topic_question:'Điều gì bị chạm?',member_ids:['aries','leo','sagittarius'],group_element:'fire',selection_reason:'Cùng nguyên tố, khác cơ chế'});
 export const ledger=()=>({entries:['aries','leo','sagittarius','virgo','taurus','capricorn'].flatMap((member,i)=>['one.test','two.test'].map((host,j)=>({id:`E${i*2+j+1}`,url:`https://${host}/${member}`,scope:member,claim_scope:'member',member_ids:[member],claim_class:'astrology_interpretation',supported_interpretation:`Cơ chế riêng ${member} ${j}`})))});
 test('selected evidence contains only selected members and never mutates the research ledger',()=>{

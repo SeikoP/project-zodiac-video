@@ -36,20 +36,19 @@ const makeSource=async()=>{
  await write(path.join(skill,'references/asset-library-v4/characters/compile-character-assembly.mjs'),fakeCharacter);
  await write(path.join(skill,'references/asset-library-v4/environments/compile-environment.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/environment-compile-receipt.json'),'{}');console.log('ENV_FIXTURE_OK')`);
  await write(path.join(skill,'references/asset-library-v4/scene-direction/compile-scene-direction.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/scene-direction-compile-receipt.json'),'{}');console.log('SCENE_FIXTURE_OK')`);
- await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/forward-cli.mjs'),await readFile(new URL('../forward-cli.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/state/authoring-lease.mjs'),await readFile(new URL('../../core/state/authoring-lease.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'phases/phase02/finalize-phase02-workspace.mjs'),await readFile(new URL('../../phases/phase02/finalize-phase02-workspace.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'phases/phase02/phase02-selected-dependencies.mjs'),await readFile(new URL('../../phases/phase02/phase02-selected-dependencies.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'features/visual-composition/compile-visual-intent.mjs'),await readFile(new URL('../../features/visual-composition/compile-visual-intent.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'features/episode/episode-handoff.mjs'),await readFile(new URL('../../features/episode/episode-handoff.mjs',import.meta.url),'utf8'));
- for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'orchestration',name),await readFile(new URL('../'+name,import.meta.url),'utf8'));
+ for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'features/episode',name),await readFile(new URL('../../features/episode/'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/episode/episode-scope.mjs'),await readFile(new URL('../../features/episode/episode-scope.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/phase02-composition.mjs'),await readFile(new URL('../phase02-composition.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/phase02-composition-core.mjs'),await readFile(new URL('../phase02-composition-core.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/validate-phase02-precompile-boundary.mjs'),await readFile(new URL('../validate-phase02-precompile-boundary.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/validate-phase02-art-direction.mjs'),await readFile(new URL('../validate-phase02-art-direction.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/phase02-composition.mjs'),await readFile(new URL('../../features/visual-composition/phase02-composition.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/phase02-composition-core.mjs'),await readFile(new URL('../../features/visual-composition/phase02-composition-core.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-precompile-boundary.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'features/visual-composition/validate-phase02-art-direction.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-art-direction.mjs',import.meta.url),'utf8'));
  for(const name of ['phase02-composition.mjs','phase02-composition-core.mjs','validate-phase02-precompile-boundary.mjs','validate-phase02-art-direction.mjs']) await write(path.join(skill,'features/visual-composition',name),await readFile(new URL('../../features/visual-composition/'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/scene-set/scene-set-detection.mjs'),await readFile(new URL('../../features/scene-set/scene-set-detection.mjs',import.meta.url),'utf8'));
  for(const f of ['palette-registry.json','environment-registry.json']) await write(path.join(skill,'art-direction',f),await readFile(new URL('../../art-direction/'+f,import.meta.url),'utf8'));
@@ -57,7 +56,7 @@ const makeSource=async()=>{
  // contract/motion validators have their own dedicated suites.
  await write(path.join(skill,'phases/phase03/compile-job-v5.mjs'),'export const assertJob5VisualRoleSizes = () => ({status:"PASS"});');
  await write(path.join(skill,'features/visual-composition/validate-visual-coverage.mjs'),'export const validateVisualCoverage = () => [];');
- await write(path.join(skill,'orchestration/validate-pipeline-state.mjs'),`import {readFile} from 'node:fs/promises';const j=JSON.parse(await readFile(process.argv[2]));if(j.plugin_version!=='2.2.9')process.exit(2);console.log('VALID_STATE_FIXTURE')`);
+ await write(path.join(skill,'core/state/validate-pipeline-state.mjs'),`import {readFile} from 'node:fs/promises';const j=JSON.parse(await readFile(process.argv[2]));if(j.plugin_version!=='2.2.9')process.exit(2);console.log('VALID_STATE_FIXTURE')`);
  return root;
 };
 const exists=async p=>{try{await readFile(p);return true;}catch{return false;}};
@@ -193,8 +192,7 @@ test('precompile and art direction preflights each execute once with genuine rec
  const ws=await makeWorkspace(),src=await makeSource(),skill=path.join(src,'skills/zodiac-video-pipeline');
  try{
   await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9',flags:{art_direction_required:true}}));
-  await write(path.join(skill,'orchestration/run-validator-with-receipt.mjs'),await readFile(new URL('../run-validator-with-receipt.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'orchestration/forward-cli.mjs'),await readFile(new URL('../forward-cli.mjs',import.meta.url),'utf8'));
+  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/state/authoring-lease.mjs'),await readFile(new URL('../../core/state/authoring-lease.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'phases/phase02/finalize-phase02-workspace.mjs'),await readFile(new URL('../../phases/phase02/finalize-phase02-workspace.mjs',import.meta.url),'utf8'));

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateDirectorPlan,validateDirectorCausality,compileDirectorBlocking,sha256} from '../director-v2-core.mjs';
+import {validateDirectorPlan,validateDirectorCausality,compileDirectorBlocking,sha256} from '../../features/visual-composition/director-v2-core.mjs';
 
 const narration='Bạn tưởng nó im lặng. Nhưng hóa ra nó đã đọc hết.';
 const ch=(id,x,y,w=300,h=400,kind='character',asset='CHAR')=>({id,kind,initial_state:'on',states:{on:{asset,visible:true,transform:{x,y,width:w,height:h}}}});

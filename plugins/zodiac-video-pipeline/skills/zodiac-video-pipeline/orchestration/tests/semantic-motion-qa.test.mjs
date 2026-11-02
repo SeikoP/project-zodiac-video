@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {assessSemanticEvent} from '../semantic-motion-qa.mjs';
+import {assessSemanticEvent} from '../../features/visual-composition/semantic-motion-qa.mjs';
 const entity=(id,x,y,width,height)=>({id,kind:'object',initial_state:'visible',states:{visible:{asset:id,visible:true,transform:{x,y,width,height}}}});
 const fixture=()=>({id:'s07',entities:[entity('pen',620,745,220,115),entity('notebook',280,356,520,488)],spatial_bindings:[{entity:'pen',anchor:'notebook',relation:'points_to',max_distance_px:360}]});
 const e=(preset,target='pen')=>({id:'test',target,state_before:'visible',state_after:'visible',motion:{preset,duration_frames:11}});

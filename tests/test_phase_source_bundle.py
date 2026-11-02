@@ -73,7 +73,7 @@ class BundleSelectionTests(unittest.TestCase):
     def test_router_and_preflight_survive(self):
         for phase in builder.PHASES:
             self.assertTrue(builder.include("plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/router.md", phase))
-            self.assertTrue(builder.include("plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/execution-preflight.mjs", phase))
+            self.assertTrue(builder.include("plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs", phase))
 
     def test_tests_excluded(self):
         path = "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/audit.test.mjs"

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {assessPhase02Evidence} from '../phase02-evidence-audit.mjs';
+import {assessPhase02Evidence} from '../../core/evidence/phase02-evidence-audit.mjs';
 const valid=()=>({state:{plugin_version:'2.4.22',operations:[{path:'production.json'}],review_receipts:[{phase_id:'02-visual-production',status:'APPROVED',proof:{kind:'user_message',ref:'message-123'}}],phases:{'02-visual-production':{steps:Object.fromEntries(['visual_compile','assets','publish_prep'].map(x=>[x,{status:'PASS',capability_receipts:[{}],outputs:['x'],gate_results:{validated:true}}]))}}},checkpoints:{format:'zodiac-phase02-native-checkpoints@1',version:'2.4.22',steps:{scene:{status:'PASS',output_sha:'a',after_input_sha:'b'}}},execution:{status:'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'},workspaceFiles:{'production.json':true}});
 test('complete evidence only permits strict validator, never PASS',()=>{const result=assessPhase02Evidence(valid());assert.equal(result.status,'EVIDENCE_READY_FOR_STRICT_VALIDATOR');assert.equal(result.not_a_pass,true)});
 test('missing approval blocks despite native compiler PASS',()=>{const x=valid();x.state.review_receipts=[];assert.ok(assessPhase02Evidence(x).issues.some(y=>y.code==='VISUAL_APPROVAL_MISSING'))});

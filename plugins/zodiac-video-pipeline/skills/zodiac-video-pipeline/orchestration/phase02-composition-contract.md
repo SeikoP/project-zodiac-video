@@ -16,7 +16,7 @@ Roles: background, character, interactive_prop, foreground_environment, effect, 
 
 Resume / scene switch:
 ```bash
-node orchestration/phase02-composition.mjs <workspace> --context <scene-id>
+node features/visual-composition/phase02-composition.mjs <workspace> --context <scene-id>
 ```
 For routine work use `derive-scene-context.mjs <workspace> <scene-id>`; full token/scene mode is explicit recovery. Fix all diagnostics in one pass before drawing. This context is not an approval. The existing precompile validator enforces composition for states >=2.4.44; sealed older jobs are not rewritten.
 

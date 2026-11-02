@@ -7,7 +7,7 @@ Read the full STYLE_TOKEN in `references/design.md` once at bootstrap; copy it i
 For each active scene:
 
 ```bash
-node orchestration/derive-scene-context.mjs <workspace> <scene-id> --budget 12
+node features/visual-composition/derive-scene-context.mjs <workspace> <scene-id> --budget 12
 ```
 
 This bounded view contains component reasons, voice anchors, native locators, state keys/reuse, contacts/front-back and source hashes. `SOURCE_READ` is a read, not QC or approval. `STALE` means reload the referenced plans and revalidate. Use `--full` only for recovery or detailed scene inspection. Read full token again if its hash changed. The capsule's input hashes can be passed as `expectedSourceSha256` to the API; a newly read capsule alone does not prove earlier inputs are unchanged.
@@ -28,8 +28,8 @@ This bounded view contains component reasons, voice anchors, native locators, st
 After all native compilers and semantic assets:
 
 ```bash
-node orchestration/resolve-scene-composition.mjs <workspace> --write
-node orchestration/run-director-v2-review.mjs <workspace>
+node features/visual-composition/resolve-scene-composition.mjs <workspace> --write
+node features/visual-composition/run-director-v2-review.mjs <workspace>
 ```
 
 Resolved geometry goes to `.authoring/scene-composition-resolved.json`; it does not overwrite narrative reasons/anchors in intent. Director reruns the resolved check after its adjustments, before native endpoints. Visual Review still needs actual user approval. Phase 3 validates the snapshot again before ZIP; local runner alone verifies audio timing, frames and MP4.

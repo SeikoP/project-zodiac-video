@@ -11,7 +11,7 @@ if(!workspace){console.error('Usage: node run-director-v2-review.mjs <workspace>
 const root=path.resolve(workspace);
 const stages=[
  {id:'director_v2',script:'features/visual-composition/director-v2-gate.mjs',args:[root,'--write']},
- {id:'handoff_preflight',script:'orchestration/handoff-preflight.mjs',args:[root],validator:true},
+ {id:'handoff_preflight',script:'phases/phase03/handoff-preflight.mjs',args:[root],validator:true},
  {id:'scene_direction_v2',script:'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',args:[root],validator:true},
  {id:'environment_frame_v1',script:'references/asset-library-v4/environments/validate-environment-frame.mjs',args:[root],validator:true},
  {id:'visual_quality_v2',script:'features/visual-composition/validate-visual-quality.mjs',args:[root],validator:true},

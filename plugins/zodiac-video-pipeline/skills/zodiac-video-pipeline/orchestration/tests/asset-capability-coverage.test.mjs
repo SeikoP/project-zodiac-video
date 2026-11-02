@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {compileVisualGrammar} from '../../references/asset-library-v4/compile-visual-grammar.mjs';
 import {compileSceneSetWorkspace} from '../../references/asset-library-v4/scene-set/compile-scene-set.mjs';
-import {selectAssetGuidance} from '../select-asset-guidance.mjs';
+import {selectAssetGuidance} from '../../core/policy/select-asset-guidance.mjs';
 
 const orchestration=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const skill=path.resolve(orchestration,'..');

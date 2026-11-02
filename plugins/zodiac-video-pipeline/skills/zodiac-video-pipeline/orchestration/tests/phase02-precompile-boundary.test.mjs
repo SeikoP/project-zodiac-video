@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validatePrecompileBoundary} from '../validate-phase02-precompile-boundary.mjs';
+import {validatePrecompileBoundary} from '../../features/visual-composition/validate-phase02-precompile-boundary.mjs';
 const production=(voices,entities=[])=>({scenes:voices.map((voice,i)=>({id:'S'+(i+1),voice,entities:entities[i]??[],environment:{roles:{}}})),assets:{}});
 const narration='Một đoạn đầu tiên.\n\nMột đoạn thứ hai.';
 test('rejects a paragraph split across two scenes before SVG compile',()=>{

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {spawnSync} from 'node:child_process';
 import {mkdtemp,readFile,writeFile} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {fileURLToPath} from 'node:url';
-const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../build-source-snapshot.mjs');
+const script=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../core/evidence/build-source-snapshot.mjs');
 const id='plugins_6ac25a87d8d481919c5ef654596144e3', manifest=JSON.stringify({name:'zodiac-video-pipeline',version:'2.2.6'});const bytes=Buffer.byteLength(manifest);
 const mk=(release='abc',src=manifest)=>({result:{plugin:{plugin_id:id,version:'2.2.6',current_release_id:release},files:[{path:'plugin.json',size_bytes:bytes}],contents:{'plugin.json':src}}});
 async function run(pages,flags=[]){const dir=await mkdtemp(path.join(os.tmpdir(),'bridge-'));const inp=path.join(dir,'p.json'),out=path.join(dir,'out.json');await writeFile(inp,JSON.stringify({pages}));const r=spawnSync(process.execPath,[script,'--input',inp,'--output',out,...flags],{encoding:'utf8'});return {r,out};}

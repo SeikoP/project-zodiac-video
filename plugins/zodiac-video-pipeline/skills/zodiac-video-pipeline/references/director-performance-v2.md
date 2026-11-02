@@ -19,7 +19,7 @@ Adaptive placement works only on **explicit** non-character supporting entities,
 After Phase-02 native core and meme/environment capabilities are complete, and before building native preview pairs, execute:
 
 ```bash
-node orchestration/run-director-v2-review.mjs <workspace>
+node features/visual-composition/run-director-v2-review.mjs <workspace>
 ```
 
 `DIRECTOR_V2_GATE` and post-compile native validators are blocking. The wrapper writes `.authoring/director-v2-review-receipt.json` and stops on the first failed validator; it never grants human review approval. It validates authored intent, exact Narration SHA, voice anchors, performer/target, supported motion, causal order, authored blocking, pixel-space safety, and **reuses** Job@5's authoritative visual-role footprint validator. Use the existing compiled source-backed preview pairs after this gate. A missing plan, failed gate or stale preview pair means `VISUAL_REVIEW` is blocked.

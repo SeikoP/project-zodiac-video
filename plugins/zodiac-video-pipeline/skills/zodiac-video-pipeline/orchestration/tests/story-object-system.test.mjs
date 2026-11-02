@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdtemp,mkdir,rm,writeFile,readFile} from 'node:fs/promises';
 import os from 'node:os';import path from 'node:path';
-import {validateStoryObjectPlan,validateStoryObjectWorkspace} from '../validate-story-object.mjs';
+import {validateStoryObjectPlan,validateStoryObjectWorkspace} from '../../features/story-object/validate-story-object.mjs';
 
 const narration='Cái cân đứng im.\nCái cân nghiêng sang bên kia.\nCái cân cuối cùng quay về chính mình.';
 const checksum=x=>createHash('sha256').update(x).digest('hex');
@@ -65,7 +65,7 @@ test('workspace must reject missing plan when story object is explicitly require
 });
 
 test('Phase 03 lock fingerprints semantic object plan so post-review edits block release',async()=>{
- const {sourceReviewFingerprint}=await import('../phase03-production-release.mjs');
+ const {sourceReviewFingerprint}=await import('../../phases/phase03/phase03-production-release.mjs');
  const dir=await mkdtemp(path.join(os.tmpdir(),'zodiac-object-lock-'));
  try{
   await mkdir(path.join(dir,'.authoring'));await mkdir(path.join(dir,'assets'));
@@ -79,7 +79,7 @@ test('Phase 03 lock fingerprints semantic object plan so post-review edits block
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 test('production entrypoint blocks missing Phase02 evidence before story-object validation and ZIP',async()=>{
- const {runPhase03Production}=await import('../run-phase03-production.mjs');
+ const {runPhase03Production}=await import('../../phases/phase03/run-phase03-production.mjs');
  const dir=await mkdtemp(path.join(os.tmpdir(),'zodiac-object-phase03-'));
  try{
   await mkdir(path.join(dir,'.authoring'));

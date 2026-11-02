@@ -10,7 +10,7 @@ Use a verified execution bundle for the current phase only. The supported reposi
 
 A skill:// read, GitHub connector response, repository URL, artifact listing or source manifest is not executable source until actual verified bytes are staged on the host filesystem. Require an exact commit identity, plugin version/release lineage, safe paths and SHA-256 inventory. A missing artifact or blocked transfer is SOURCE_TRANSPORT_UNAVAILABLE. Any mismatch is SOURCE_INTEGRITY_MISMATCH. Do not silently fall back to main, another release, or a whole-repository download.
 
-If an authorized phase artifact is staged, use the source-root inside that staged bundle and run orchestration/execution-preflight.mjs <workspace> <phase>. Transport PASS only proves executable bytes are available; it does not prove a phase, creative review, or media output.
+If an authorized phase artifact is staged, use the source-root inside that staged bundle and run phases/phase01/execution-preflight.mjs <workspace> <phase>. Transport PASS only proves executable bytes are available; it does not prove a phase, creative review, or media output.
 
 ## Phase 01
 Run the active 01-content manifest in order: Evidence → Concept → Narration. Use real compilers, validators through run-validator-with-receipt.mjs and commit-phase01-step.mjs. New content reaches IN_REVIEW only; explicit user Content Review is still required. Preserve approved Narration bytes and do not regenerate an episode solely because source transport was repaired.

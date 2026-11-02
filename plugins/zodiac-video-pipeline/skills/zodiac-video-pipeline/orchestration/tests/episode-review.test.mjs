@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateEpisodeIdentityReview} from '../../references/episode-review.mjs';import {compositionHash} from '../phase02-composition.mjs';import {plan,narration} from './helpers/episode-fixture.mjs';
+import {validateEpisodeIdentityReview} from '../../references/episode-review.mjs';import {compositionHash} from '../../features/visual-composition/phase02-composition.mjs';import {plan,narration} from './helpers/episode-fixture.mjs';
 const criterion=excerpt=>({result:'PASS',objection:'Có thể đoạn này chỉ lặp biểu hiện chung của cả nhóm.',response:'Đoạn trích xác định động cơ riêng, cần native editorial judgment.',evidence_excerpt:excerpt});
 export const review=()=>({scope_sha256:compositionHash(plan().episode_scope),member_reviews:plan().beats.map((b,i)=>({member_id:b.member_ids[0],decision:'PASS',sign_swap:criterion(b.voice_anchor),distinct_insight:criterion(b.voice_anchor)})),group_thesis_review:criterion('Nhóm Lửa không nóng vì cùng một chuyện')});
 test('episode review covers each member with grounded distinct excerpts',()=>assert.equal(validateEpisodeIdentityReview(review(),plan(),narration()).status,'VALID'));

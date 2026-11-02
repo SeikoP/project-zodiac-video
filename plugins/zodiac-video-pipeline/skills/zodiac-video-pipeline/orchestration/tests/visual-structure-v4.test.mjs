@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';import {mkdtemp,writeFile,rm} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';import test from 'node:test';import {fileURLToPath} from 'node:url';
-const here=path.dirname(fileURLToPath(import.meta.url));const validator=path.join(here,'../validate-visual-structure.mjs');
+const here=path.dirname(fileURLToPath(import.meta.url));const validator=path.join(here,'../../features/visual-composition/validate-visual-structure.mjs');
 const design='<!-- STYLE_TOKEN_BEGIN -->\n```json\n'+JSON.stringify({id:'zodiac-paper-doodle-meme-v4',safe_zone:{x:72,y:960,width:936,height:620}})+'\n```\n<!-- STYLE_TOKEN_END -->\n';
 const state=(asset,x)=>({asset,transform:{x,y:220,width:260,height:420},layer:20,visible:true});
 const base=()=>({version:'2.0',assets:{A:{character_blueprint:{body_profile:'lean_tall'},lineage:{source_master:'lean-tall'}},B:{character_blueprint:{body_profile:'round_soft'},lineage:{source_master:'chubby-round'}}},scenes:[{id:'S01',scene_direction:{shot:'two-person'},entities:[{id:'a',kind:'character',initial_state:'n',states:{n:state('A',140)}},{id:'b',kind:'character',initial_state:'n',states:{n:state('B',680)}}]}]});

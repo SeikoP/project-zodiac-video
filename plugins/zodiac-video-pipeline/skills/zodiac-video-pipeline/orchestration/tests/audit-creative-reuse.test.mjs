@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {auditCreativeReuse} from '../audit-creative-reuse.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {auditCreativeReuse} from '../../core/audit/audit-creative-reuse.mjs';
 const build=()=>({production:{assets:{p:{path:'assets/props/cup.svg'}},scenes:['s1','s2','s3'].map(id=>({id,entities:[{id:'story_obj',kind:'story_object',states:{a:{asset:'p'}}}],events:[]}))},visualGrammar:{scenes:['s1','s2','s3'].map(scene_id=>({scene_id,frame_id:'a',mechanic_id:'b'}))},depth:{scenes:['s1','s2','s3'].map(scene_id=>({scene_id,palette:'bright-clean',profile:'bedroom-clean'}))}});
 test('three scene repeated staging reported rather than rejected',()=>{const r=auditCreativeReuse(build());assert.ok(r.flags.some(f=>f.code==='THREE_SCENES_SAME_FRAME'));assert.equal(r.status,'REVIEW_REQUIRED')});
 test('legitimate reusable character is not forbidden',()=>{const x=build();x.production.scenes.forEach(s=>s.entities=[{id:'hero',kind:'character',states:{a:{asset:'p'}}}]);const r=auditCreativeReuse(x);assert.equal(r.reused_story_masters.length,0)});

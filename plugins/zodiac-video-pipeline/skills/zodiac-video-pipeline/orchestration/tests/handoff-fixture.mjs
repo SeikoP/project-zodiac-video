@@ -1,7 +1,7 @@
 import {mkdtemp,mkdir,writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {projectProduction} from '../compile-runtime-production.mjs';
+import {projectProduction} from '../../compat/production-v1/compile-runtime-production.mjs';
 
 export const v4Token={
   id:'zodiac-paper-doodle-meme-v4',version:'4.0',style_family:'paper-doodle-chibi-meme',handmade_profile:'human-stroke-v2',hard_style_lock:true,
