@@ -1,4 +1,4 @@
-"""Transactional repair for Renderer 2.0.1's damaged npm dependency tree.
+"""Transactional repair for a Renderer's damaged npm dependency tree.
 
 Invoked only from the user's approved "Cài dependency" Studio action.
 Never touches .zodiac-work, Job@5, voice, timing, props, or output video.
@@ -17,7 +17,7 @@ from pathlib import Path
 from tools.studio.preflight import ROOT
 
 
-def repair_renderer_201(
+def repair_renderer(
     renderer: Path,
     *,
     run=subprocess.run,
@@ -76,12 +76,13 @@ def repair_renderer_201(
 
 
 def main() -> int:
-    parser=argparse.ArgumentParser(description="Repair local Renderer 2.0.1 node_modules")
-    parser.add_argument("--version",choices=["2.0.1"],required=True)
+    parser=argparse.ArgumentParser(description="Repair local Renderer node_modules")
+    from tools.runtime.registry import supported_versions
+    parser.add_argument("--version",choices=list(supported_versions("zodiac-renderer")),required=True)
     args=parser.parse_args()
     path=ROOT/"runtime"/"zodiac-renderer"/args.version/"renderer"
     try:
-        print(repair_renderer_201(path),flush=True)
+        print(repair_renderer(path),flush=True)
         return 0
     except Exception as exc:
         print("RENDERER_DEPENDENCY_REPAIR_FAILED: "+str(exc),file=sys.stderr,flush=True)

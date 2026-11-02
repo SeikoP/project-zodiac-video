@@ -25,7 +25,7 @@ export async function validateHandoffV2(root){
  const schemas={manifest:await readJson(path.join(contracts,'zodiac-job-v5.schema.json')),ir:await readJson(path.join(contracts,'authoring-ir-v1.schema.json')),design:await readJson(path.join(contracts,'design-token-v4.schema.json')),publish:await readJson(path.join(contracts,'publish-v1.schema.json'))};
  for(const [name,value] of Object.entries({manifest,ir,design,publish})){const issues=validateSchema(schemas[name],value);if(issues.length)fail(`${name} schema: ${issues[0].path} ${issues[0].message}`);}
  if(manifest.contract.sha256!==hash(schemas.ir))fail('package contract hash does not match canonical authoring-ir-v1 schema');
- if(manifest.renderer.id!=='zodiac-renderer'||manifest.renderer.version!=='2.0.1')fail('renderer must pin zodiac-renderer@2.0.1');
+ if(manifest.renderer.id!=='zodiac-renderer'||!['2.0.1','2.0.2'].includes(manifest.renderer.version))fail('renderer must pin zodiac-renderer@2.0.1 or @2.0.2');
  if(manifest.producer.plugin!=='zodiac-video-pipeline'||manifest.producer.version!==installedPluginVersion)fail(`producer must match installed plugin version ${installedPluginVersion}`);
  if(ir.fps!==24||ir.video.width!==1080||ir.video.height!==1920)fail('authoring IR must be 1080x1920 at 24fps');
  const narration=await readFile(path.join(root,'narration.txt'),'utf8');if(!voicesMatchNarration(ir.scenes.map(s=>s.voice),narration))fail('narration.txt must exactly match ordered IR scene voice');

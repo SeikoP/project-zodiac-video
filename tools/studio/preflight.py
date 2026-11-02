@@ -215,13 +215,14 @@ class Job5PreflightChecker(PreflightChecker):
 
     def renderer_directory(self) -> Path:
         import json
-        version = "2.0.1"
+        from tools.runtime.registry import current_runtime, supported_versions
+        version = current_runtime("zodiac-renderer").version
         manifest = (self.package_root / "package-manifest.json") if self.package_root else None
         if manifest and manifest.is_file():
             try:
                 payload = json.loads(manifest.read_text(encoding="utf-8"))
                 candidate = payload["renderer"]["version"]
-                if candidate in {"2.0.1"}:
+                if candidate in supported_versions("zodiac-renderer"):
                     version = candidate
             except (KeyError, ValueError, OSError, TypeError):
                 pass  # PACKAGE validator handles invalid manifest contents.
@@ -252,27 +253,26 @@ class Job5PreflightChecker(PreflightChecker):
                 raise ValueError("Pinned local Remotion CLI executable is missing")
             # Probe actual CLI boot, not just package.json and bin presence.
             # Broken nested node_modules/which/isexe installs pass the old check.
-            if renderer.parent.name == "2.0.1":
-                node = shutil.which("node")
-                if not node:
-                    raise ValueError("Node.js is missing")
-                result = subprocess.run(
-                    [node, str(renderer / "scripts" / "local-remotion-cli.mjs"), "--check"],
-                    cwd=str(renderer), capture_output=True, text=True,
-                    # Allow the launcher's 60s help probe to report its own failure.
-                    encoding="utf-8", errors="replace", timeout=75, check=False,
-                )
-                if result.returncode:
-                    message = result.stderr.strip() or result.stdout.strip()
-                    try:
-                        import json as _json
-                        detail = _json.loads(result.stderr.strip().splitlines()[-1])
-                        message = detail.get("message", message)
-                        if detail.get("code") == "RENDERER_CLI_TIMEOUT":
-                            raise subprocess.TimeoutExpired(node, 60, stderr=message)
-                    except (ValueError, IndexError, TypeError, AttributeError):
-                        pass
-                    raise ValueError("Remotion CLI không khởi chạy được: " + message[:1300])
+            node = shutil.which("node")
+            if not node:
+                raise ValueError("Node.js is missing")
+            result = subprocess.run(
+                [node, str(renderer / "scripts" / "local-remotion-cli.mjs"), "--check"],
+                cwd=str(renderer), capture_output=True, text=True,
+                # Allow the launcher's 60s help probe to report its own failure.
+                encoding="utf-8", errors="replace", timeout=75, check=False,
+            )
+            if result.returncode:
+                message = result.stderr.strip() or result.stdout.strip()
+                try:
+                    import json as _json
+                    detail = _json.loads(result.stderr.strip().splitlines()[-1])
+                    message = detail.get("message", message)
+                    if detail.get("code") == "RENDERER_CLI_TIMEOUT":
+                        raise subprocess.TimeoutExpired(node, 60, stderr=message)
+                except (ValueError, IndexError, TypeError, AttributeError):
+                    pass
+                raise ValueError("Remotion CLI không khởi chạy được: " + message[:1300])
         except subprocess.TimeoutExpired as exc:
             return Check("RENDERER", "Renderer " + renderer.parent.name, False,
                          f"Remotion CLI khởi động quá thời gian chờ {exc.timeout} giây.",
@@ -291,18 +291,11 @@ class Job5PreflightChecker(PreflightChecker):
         if "FASTER_WHISPER" in missing:
             commands.append(self.install_command())
         if "RENDERER" in missing:
-            if self.renderer_directory().parent.name == "2.0.1":
-                # Broken transitive installs (e.g. missing isexe) cannot be
-                # reliably repaired by npm install over the old node_modules.
-                # Use atomic backup/rebuild/CLI smoke verification instead.
-                commands.append([sys.executable,"-m","tools.studio.renderer_repair",
-                                 "--version","2.0.1"])
-            else:
-                npm = shutil.which("npm.cmd") or shutil.which("npm")
-                if npm is None:
-                    raise PipelineError("Không tìm thấy npm; cài Node.js và mở lại Studio.")
-                commands.append([npm, "install", "--prefix", str(self.renderer_directory()),
-                                 "--no-audit", "--no-fund"])
+            # Broken transitive installs (e.g. missing isexe) cannot be reliably
+            # repaired by npm install over the old node_modules. Use atomic
+            # backup/rebuild/CLI smoke verification for every renderer version.
+            commands.append([sys.executable, "-m", "tools.studio.renderer_repair",
+                             "--version", self.renderer_directory().parent.name])
         return commands
 
     def run(self, *, on_check: Callable[[Check], None] | None = None,

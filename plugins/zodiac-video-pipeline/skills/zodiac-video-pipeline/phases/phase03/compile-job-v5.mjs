@@ -186,7 +186,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
   const s=signSlug(sign),c=conceptSlug(concept);if(!identity&&(!s||!c))fail('sign and concept are required for stable job identity');
   const jobId=identity?.job_id??`${s}-${c}`;
   if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(jobId))fail('stable job id is invalid/too long');
-  const manifest={format:'zodiac-job@5',job:{id:jobId,revision:String(revision)},contract:{id:'zodiac-authoring-ir',version:'1.0.0',sha256:contractHash(contractSchema)},renderer:{id:'zodiac-renderer',version:'2.0.1'},producer:{plugin:'zodiac-video-pipeline',version:producerVersion}};
+  const manifest={format:'zodiac-job@5',job:{id:jobId,revision:String(revision)},contract:{id:'zodiac-authoring-ir',version:'1.0.0',sha256:contractHash(contractSchema)},renderer:{id:'zodiac-renderer',version:'2.0.2'},producer:{plugin:'zodiac-video-pipeline',version:producerVersion}};
   return {ir,designToken,manifest};
 }
 

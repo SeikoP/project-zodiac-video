@@ -1,6 +1,6 @@
 # Renderer 2.0.2 — stepped ("on twos") entity motion
 
-Status: **candidate**. `runtime/releases/zodiac-renderer.json` keeps `current` and `defaults.job5` on 2.0.1; nothing selects 2.0.2 until a package manifest names it. Job@5 and the render-plan contract are unchanged.
+Status: **current default**. The registry, `bootstrap/current-policy.json`, the Job@5 compiler and the handoff receipt now name 2.0.2; the local runner accepts both 2.0.1 and 2.0.2 (list comes from the registry). Packages pinned to 2.0.1 still import and render. To roll back, set `current` / `defaults.job5` in `runtime/releases/zodiac-renderer.json` and the renderer in `bootstrap/current-policy.json` / `compile-job-v5.mjs` back to 2.0.1.
 
 ## Change
 `src/semantic-motion.mjs` samples entity motion every `MOTION_STEP_FRAMES = 2` frames instead of every frame.
