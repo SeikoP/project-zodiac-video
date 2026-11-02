@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.studio.renderer_repair import repair_renderer_201
+from tools.studio.renderer_repair import repair_renderer
 
 
 class TransactionalRendererRepairTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class TransactionalRendererRepairTests(unittest.TestCase):
                     (renderer/"node_modules"/"repaired.txt").write_text("complete")
                     return subprocess.CompletedProcess(cmd,0,stdout="npm installed",stderr="")
                 return subprocess.CompletedProcess(cmd,0,stdout="RENDERER_CLI_READY",stderr="")
-            result=repair_renderer_201(renderer,run=run,which=self.which)
+            result=repair_renderer(renderer,run=run,which=self.which)
             self.assertIn("RENDERER_DEPENDENCY_REPAIRED",result)
             self.assertTrue((renderer/"node_modules"/"repaired.txt").exists())
             self.assertFalse((renderer/"node_modules"/"broken-marker.txt").exists())
@@ -53,7 +53,7 @@ class TransactionalRendererRepairTests(unittest.TestCase):
                 (renderer/"node_modules"/"partial.txt").write_text("partial")
                 return subprocess.CompletedProcess(cmd,1,stdout="",stderr="network error")
             with self.assertRaisesRegex(RuntimeError,"npm install failed"):
-                repair_renderer_201(renderer,run=run,which=self.which)
+                repair_renderer(renderer,run=run,which=self.which)
             self.assertTrue((renderer/"node_modules"/"broken-marker.txt").exists())
             self.assertFalse((renderer/"node_modules"/"partial.txt").exists())
             self.assertFalse(any(renderer.glob(".zodiac-node_modules-backup-*")))
@@ -69,7 +69,7 @@ class TransactionalRendererRepairTests(unittest.TestCase):
                     return subprocess.CompletedProcess(cmd,0,stdout="",stderr="")
                 return subprocess.CompletedProcess(cmd,2,stdout="",stderr="Cannot find module 'isexe'")
             with self.assertRaisesRegex(RuntimeError,"STILL_BROKEN"):
-                repair_renderer_201(renderer,run=run,which=self.which)
+                repair_renderer(renderer,run=run,which=self.which)
             self.assertTrue((renderer/"node_modules"/"old.txt").exists())
             self.assertFalse(any(renderer.glob(".zodiac-node_modules-backup-*")))
 
@@ -80,7 +80,7 @@ class TransactionalRendererRepairTests(unittest.TestCase):
             old.mkdir()
             (old/"marker.txt").write_text("untouched")
             with self.assertRaisesRegex(RuntimeError,"TOOLS_MISSING"):
-                repair_renderer_201(renderer,which=lambda name:None)
+                repair_renderer(renderer,which=lambda name:None)
             self.assertTrue((old/"marker.txt").is_file())
 
     def test_repair_does_not_touch_job_workspace(self):
@@ -95,7 +95,7 @@ class TransactionalRendererRepairTests(unittest.TestCase):
                 if cmd[0]=="/fake/npm":
                     (renderer/"node_modules").mkdir()
                 return subprocess.CompletedProcess(cmd,0,stdout="RENDERER_CLI_READY",stderr="")
-            repair_renderer_201(renderer,run=run,which=self.which)
+            repair_renderer(renderer,run=run,which=self.which)
             self.assertEqual((job/"voice.wav").read_bytes(),b"voice-cache")
             self.assertEqual((job/"render-plan.json").read_bytes(),b"plan-cache")
 

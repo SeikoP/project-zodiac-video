@@ -11,9 +11,9 @@ def test_runtime_registry_exposes_current_and_compatibility_defaults() -> None:
     from tools.runtime.registry import current_runtime, resolve_runtime
 
     renderer = current_runtime('zodiac-renderer')
-    assert renderer.version == '2.0.1'
-    assert renderer.path == Path('runtime/zodiac-renderer/2.0.1')
-    assert resolve_runtime('zodiac-renderer', '2.0.2').version == '2.0.2'
+    assert renderer.version == '2.0.2'
+    assert renderer.path == Path('runtime/zodiac-renderer/2.0.2')
+    assert resolve_runtime('zodiac-renderer', '2.0.1').version == '2.0.1'
 
     with pytest.raises(Exception, match='RUNTIME_ID_UNKNOWN'):
         current_runtime('zodiac-remotion')
@@ -116,3 +116,46 @@ def test_renderer_binding_retargets_default_identity_but_preserves_custom_hash(t
     bound_custom = _bind_renderer_config(custom, workspace)
     assert bound_custom.renderer_version == '2.0.1'
     assert bound_custom.renderer_hash == 'source-tree-hash-a'
+
+
+def _write_job5_package(job: Path, renderer_version: str) -> None:
+    import shutil
+    from tools.control_plane.contracts import canonical_contract_hash
+
+    shutil.copytree(Path('tests/fixtures/control-plane-v2/minimal'), job)
+    shutil.rmtree(job / '.runtime', ignore_errors=True)
+    (job / 'publish').mkdir(exist_ok=True)
+    (job / 'publish/publish.json').write_text(json.dumps({
+        'format': 'zodiac-publish@1',
+        'source': {'narration': 'narration.txt', 'production': 'production.ir.json'},
+        'cover': {'identity': {'episode_id': 'fire-triggers', 'label': 'NHÓM LỬA', 'glyph': '🔥'}},
+    }), encoding='utf-8')
+    (job / 'publish/publish-copy.txt').write_text('fixture', encoding='utf-8')
+    (job / 'package-manifest.json').write_text(json.dumps({
+        'format': 'zodiac-job@5',
+        'job': {'id': 'zodiac-fire-triggers-khac-dong-co', 'revision': '1.0'},
+        'contract': {'id': 'zodiac-authoring-ir', 'version': '1.0.0', 'sha256': canonical_contract_hash('authoring-ir-v1')},
+        'renderer': {'id': 'zodiac-renderer', 'version': renderer_version},
+        'producer': {'plugin': 'zodiac-video-pipeline', 'version': '2.4.50'},
+    }), encoding='utf-8')
+    ir = json.loads((job / 'production.ir.json').read_text(encoding='utf-8'))
+    (job / 'narration.txt').write_text('\n'.join(scene['voice'] for scene in ir['scenes']), encoding='utf-8')
+
+
+def test_every_registered_renderer_is_accepted_by_import() -> None:
+    import tempfile
+    from tools.control_plane.package_validation import validate_job5_package_root
+    from tools.runtime.registry import supported_versions
+
+    assert supported_versions('zodiac-renderer') == ('2.0.1', '2.0.2')
+    for version in supported_versions('zodiac-renderer'):
+        with tempfile.TemporaryDirectory() as tmp:
+            job = Path(tmp) / 'job'
+            _write_job5_package(job, version)
+            assert validate_job5_package_root(job) is not None
+
+    with tempfile.TemporaryDirectory() as tmp:
+        job = Path(tmp) / 'job'
+        _write_job5_package(job, '9.9.9')
+        with pytest.raises(Exception, match='unsupported renderer'):
+            validate_job5_package_root(job)

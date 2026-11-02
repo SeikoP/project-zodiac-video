@@ -7,6 +7,7 @@ from typing import Any
 from .authoring import load_authoring_ir
 from .contracts import canonical_contract_hash, validate_contract_shape, contract_path
 from .errors import ControlPlaneError
+from tools.runtime.registry import supported_versions
 from .semantic_qc import strict_errors
 from .import_preflight import blocking_import_issues
 
@@ -275,7 +276,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
             detail={"expected": expected_hash, "accepted_legacy": sorted(legacy_hashes), "actual": contract["sha256"], "contract_path": str(contract_path("authoring-ir-v1"))},
         )
     renderer = manifest["renderer"]
-    if renderer not in ({"id": "zodiac-renderer", "version": "2.0.1"},):
+    if renderer not in tuple({"id": "zodiac-renderer", "version": v} for v in supported_versions("zodiac-renderer")):
         _fail(
             "PACKAGE_RENDERER_MISMATCH",
             "package requires an unsupported renderer",

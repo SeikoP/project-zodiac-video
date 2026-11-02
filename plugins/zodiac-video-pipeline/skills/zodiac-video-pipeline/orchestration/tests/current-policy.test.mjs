@@ -25,7 +25,7 @@ test('current effective policy is explicit and release-history is not active pro
   scene_system:'canvas@1',
   character_assembly:'v2',
   handoff:'zodiac-job@5',
-  renderer:'zodiac-renderer@2.0.1'
+  renderer:'zodiac-renderer@2.0.2'
  });
  for(const rel of ['plugin.json','.codex-plugin/plugin.json']){
   const raw=await readFile(path.join(pluginRoot,rel),'utf8');
@@ -44,7 +44,7 @@ test('continuity Scene Set context retains explicit historical policy without im
   run_mode:'continuity',environment_mode:'scene_set'
  });
  assert.equal(result.effective_policy?.scene_system,'canvas@1');
- assert.equal(result.effective_policy?.renderer,'zodiac-renderer@2.0.1');
+ assert.equal(result.effective_policy?.renderer,'zodiac-renderer@2.0.2');
  assert.equal(result.required_references.some(ref=>ref.includes('compatibility/environment-profiles')),false);
 });
 

@@ -69,6 +69,11 @@ def resolve_runtime(runtime_id: str, version: str) -> RuntimeSpec:
     return RuntimeSpec(runtime_id=runtime_id, version=version, path=Path(raw_path), status=str(row.get("status", "supported")))
 
 
+def supported_versions(runtime_id: str) -> tuple[str, ...]:
+    """Every version the registry lists, so callers never hardcode a pin."""
+    return tuple(_load(runtime_id)["supported"])
+
+
 def current_runtime(runtime_id: str) -> RuntimeSpec:
     registry = _load(runtime_id)
     version = registry.get("current")

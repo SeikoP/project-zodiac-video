@@ -6,6 +6,6 @@
   "scene_system": "canvas@1",
   "character_assembly": "v2",
   "handoff": "zodiac-job@5",
-  "renderer": "zodiac-renderer@2.0.1",
+  "renderer": "zodiac-renderer@2.0.2",
   "narrative_visual": "v1"
 }

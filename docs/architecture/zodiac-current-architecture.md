@@ -67,7 +67,7 @@ The Qt shell drives a single pipeline (`StudioV2Session`).
 Runtime selection is owned by `runtime/releases/*.json` and `tools.runtime.registry`.
 
 - `zodiac-renderer` current: `2.0.1`; imported Job@5 package pins remain authoritative when supported.
-- `zodiac-renderer` versions: `2.0.1` (current) and `2.0.2` (stepped-motion candidate). `zodiac-remotion` 1.x was removed.
+- `zodiac-renderer` versions: `2.0.2` (current, stepped "on twos" motion) and `2.0.1` (still supported; packages pinned to it keep rendering). Every consumer reads the list from the registry (`supported_versions`), so adding a version needs no code change. `zodiac-remotion` 1.x was removed.
 - Unknown runtime IDs or versions fail closed.
 - Historical runtime source is not deleted while reverse-dependency audit reports active consumers.
 

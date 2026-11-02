@@ -18,7 +18,7 @@ from tools.control_plane.artifact_graph import ArtifactGraph
 from tools.control_plane.errors import ControlPlaneError
 from tools.control_plane.resource_budget import load_resource_profile
 from tools.control_plane.segments import plan_segments, props_for_segment
-from tools.runtime.registry import current_runtime
+from tools.runtime.registry import current_runtime, supported_versions
 
 from .controller import StudioV2Controller, workspace_renderer_version as _workspace_renderer_version
 from .pipeline import (
@@ -621,13 +621,13 @@ class StudioV2Executor:
 
         # Check the pinned CLI BEFORE expensive voice/TTS or alignment. The
         # GUI preflight is advisory; the executor also enforces this guarantee.
-        if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+        if self.render_handler is _default_render_handler and config.renderer_version in supported_versions("zodiac-renderer"):
             cli_started = time.perf_counter()
             node = shutil.which("node")
             if node is None:
                 raise ControlPlaneError(
                     code="RENDERER_EXECUTABLE_MISSING", stage="RENDER",
-                    message="Node.js is required for renderer 2.0.1",
+                    message=f"Node.js is required for renderer {config.renderer_version}",
                 )
             run_structured_command(
                 [node, str(_renderer_dir(workspace) / "scripts" / "local-remotion-cli.mjs"), "--check"],
@@ -856,7 +856,7 @@ class StudioV2Executor:
         # video rendering. Previously this quality gate ran only at cover
         # publishing, so a valid MP4 could fail on the final OUTPUT step.
         # Includes cached renders: covers must never encounter surprise QC.
-        if config.renderer_version == "2.0.1" and self.render_handler is _default_render_handler:
+        if config.renderer_version in supported_versions("zodiac-renderer") and self.render_handler is _default_render_handler:
             try:
                 run_structured_command(
                     ["node", str(_renderer_dir(workspace) / "scripts" / "prepare.mjs"),
@@ -866,7 +866,7 @@ class StudioV2Executor:
             except ControlPlaneError as exc:
                 self._mark_failed(RENDER, exc)
                 raise
-        if self.render_handler is _default_render_handler and config.renderer_version == "2.0.1":
+        if self.render_handler is _default_render_handler and config.renderer_version in supported_versions("zodiac-renderer"):
             renderer = _renderer_dir(workspace)
             config = replace(config, renderer_hash=hashlib.sha256(
                 (config.renderer_hash + _tree_hash(renderer / "src")
