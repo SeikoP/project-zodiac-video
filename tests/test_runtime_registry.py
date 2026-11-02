@@ -13,7 +13,7 @@ def test_runtime_registry_exposes_current_and_compatibility_defaults() -> None:
     renderer = current_runtime('zodiac-renderer')
     assert renderer.version == '2.0.1'
     assert renderer.path == Path('runtime/zodiac-renderer/2.0.1')
-    assert resolve_runtime('zodiac-renderer', '2.0.0').version == '2.0.0'
+    assert resolve_runtime('zodiac-renderer', '2.0.2').version == '2.0.2'
 
     remotion = current_runtime('zodiac-remotion')
     assert remotion.version == '1.21.0'
@@ -32,7 +32,7 @@ def test_runtime_registry_fails_closed_for_unknown_version() -> None:
 def test_workspace_renderer_uses_package_pin_but_validates_through_registry(tmp_path: Path) -> None:
     from tools.studio_v2.controller import workspace_renderer_version
 
-    for version in ('2.0.0', '2.0.1'):
+    for version in ('2.0.1', '2.0.2'):
         workspace = tmp_path / version
         workspace.mkdir()
         (workspace / 'package-manifest.json').write_text(json.dumps({
@@ -99,11 +99,9 @@ def test_reverse_dependency_audit_blocks_referenced_runtime_versions() -> None:
 
     rows = audit_runtime_references()
     by_key = {(row.runtime_id, row.version): row for row in rows}
-    assert by_key[('zodiac-renderer', '2.0.0')].references
     assert by_key[('zodiac-renderer', '2.0.1')].references
     assert by_key[('zodiac-remotion', '1.20.0')].references
     assert by_key[('zodiac-remotion', '1.21.0')].references
-    assert by_key[('zodiac-renderer', '2.0.0')].safe_to_archive is False
 
 
 def test_renderer_binding_retargets_default_identity_but_preserves_custom_hash(tmp_path: Path) -> None:
@@ -112,20 +110,20 @@ def test_renderer_binding_retargets_default_identity_but_preserves_custom_hash(t
     workspace = tmp_path / 'job'
     workspace.mkdir()
     (workspace / 'package-manifest.json').write_text(json.dumps({
-        'renderer': {'id': 'zodiac-renderer', 'version': '2.0.0'}
+        'renderer': {'id': 'zodiac-renderer', 'version': '2.0.1'}
     }), encoding='utf-8')
     default = ExecutorConfig(
         voice_profile='voice', tts_settings={}, tts_engine_version='tts',
         aligner_settings={}, aligner_version='aligner',
     )
     bound = _bind_renderer_config(default, workspace)
-    assert bound.renderer_version == '2.0.0'
-    assert bound.renderer_hash == 'zodiac-renderer@2.0.0'
+    assert bound.renderer_version == '2.0.1'
+    assert bound.renderer_hash == 'zodiac-renderer@2.0.1'
 
     custom = ExecutorConfig(
         voice_profile='voice', tts_settings={}, tts_engine_version='tts',
         aligner_settings={}, aligner_version='aligner', renderer_hash='source-tree-hash-a',
     )
     bound_custom = _bind_renderer_config(custom, workspace)
-    assert bound_custom.renderer_version == '2.0.0'
+    assert bound_custom.renderer_version == '2.0.1'
     assert bound_custom.renderer_hash == 'source-tree-hash-a'

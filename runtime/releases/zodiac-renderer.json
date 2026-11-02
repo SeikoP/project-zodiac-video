@@ -6,7 +6,6 @@
     "job5": "2.0.1"
   },
   "supported": {
-    "2.0.0": {"path": "runtime/zodiac-renderer/2.0.0", "status": "compatibility"},
     "2.0.1": {"path": "runtime/zodiac-renderer/2.0.1", "status": "current"},
     "2.0.2": {"path": "runtime/zodiac-renderer/2.0.2", "status": "candidate"}
   }

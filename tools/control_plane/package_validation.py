@@ -275,7 +275,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
             detail={"expected": expected_hash, "accepted_legacy": sorted(legacy_hashes), "actual": contract["sha256"], "contract_path": str(contract_path("authoring-ir-v1"))},
         )
     renderer = manifest["renderer"]
-    if renderer not in ({"id": "zodiac-renderer", "version": "2.0.0"}, {"id": "zodiac-renderer", "version": "2.0.1"}):
+    if renderer not in ({"id": "zodiac-renderer", "version": "2.0.1"},):
         _fail(
             "PACKAGE_RENDERER_MISMATCH",
             "package requires an unsupported renderer",

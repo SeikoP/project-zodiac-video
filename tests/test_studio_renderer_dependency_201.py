@@ -108,16 +108,6 @@ class PinnedRendererPreflightTests(unittest.TestCase):
                 self.assertIn("npm install --prefix",status.details)
                 self.assertEqual(invoke.call_args.args[0][-1],"--check")
 
-    def test_renderer_200_remains_backward_compatible(self):
-        with tempfile.TemporaryDirectory() as d:
-            root=Path(d)
-            job=self.make_job(root,"2.0.0")
-            renderer=self.make_source(root,"2.0.0")
-            (renderer/"scripts"/"local-remotion-cli.mjs").unlink()
-            self.make_cli(renderer)
-            with patch("tools.studio.preflight.ROOT",root):
-                self.assertTrue(Job5PreflightChecker(job).renderer_check().ok)
-
     def test_cli_timeout_is_not_a_missing_dependency_or_install_action(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d)

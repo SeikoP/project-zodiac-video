@@ -18,7 +18,7 @@ def _minimal_package(tmp_path: Path, digest: str) -> Path:
     manifest = {
         "format": "zodiac-job@5",
         "contract": {"id": "zodiac-authoring-ir", "version": "1.0.0", "sha256": digest},
-        "renderer": {"id": "zodiac-renderer", "version": "2.0.0"},
+        "renderer": {"id": "zodiac-renderer", "version": "2.0.1"},
     }
     (tmp_path / "package-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     (tmp_path / "production.ir.json").write_text("{}", encoding="utf-8")
