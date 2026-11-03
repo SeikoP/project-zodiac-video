@@ -22,16 +22,6 @@
 .sp.moonph { background: rgba(242, 196, 92, .22); }
 .sp.full { border-color: var(--gold); }
 
-/* the how-to row gains a sixth tile for the new keywords */
-#how { grid-template-columns: repeat(6, 1fr); gap: 8px; }
-#how p b { font-size: 17px; }
-
-/* planet glyphs on the sign they stand in */
-.node .pl { position: absolute; top: -16px; right: -26px; padding: 1px 7px; border-radius: 12px; background: var(--card); border: 2px solid var(--ink); color: var(--ink);
-  font-size: 18px; line-height: 1.2; white-space: nowrap; display: none; }
-.node .pl.on { display: block; }
-.node .pl i { font-style: normal; color: #8a4fd6; font-size: 13px; }
-
 /* Thủy Nghịch: the dial turns the wrong way, fast, the signs shiver and the whole sky takes a violet cast */
 #stage.retro .spin { animation-duration: 18s; animation-direction: reverse; }
 #stage::after { content: ''; position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .8s;

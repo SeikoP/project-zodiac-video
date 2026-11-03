@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <!-- Rương sao (closed): a star-studded wooden chest -->
+  <ellipse cx="120" cy="188" rx="96" ry="10" fill="#161d21" opacity=".25"/>
+  <path d="M26 92 L214 92 L206 178 C206 184 200 188 194 188 L46 188 C40 188 34 184 34 178 Z" fill="#b8743a" stroke="#2F3C44" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M22 92 C22 40 60 18 120 18 C180 18 218 40 218 92 Z" fill="#cf8a48" stroke="#2F3C44" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M100 20 L100 188 M140 20 L140 188" stroke="#F2C45C" stroke-width="14"/>
+  <path d="M100 20 L100 188 M140 20 L140 188" stroke="#2F3C44" stroke-width="3" stroke-dasharray="1 0" opacity=".25"/>
+  <path d="M22 92 L218 92" stroke="#2F3C44" stroke-width="6"/>
+  <rect x="98" y="78" width="44" height="46" rx="10" fill="#F2C45C" stroke="#2F3C44" stroke-width="5"/>
+  <circle cx="120" cy="96" r="6" fill="#2F3C44"/><path d="M120 100 L120 112" stroke="#2F3C44" stroke-width="5" stroke-linecap="round"/>
+  <path d="M58 52 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z" fill="#fff6d6" stroke="#2F3C44" stroke-width="2.5"/>
+  <path d="M178 52 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z" fill="#fff6d6" stroke="#2F3C44" stroke-width="2.5"/>
+  <path d="M60 140 l3 7 8 1 -6 5 2 8 -7 -5 -7 5 2 -8 -6 -5 8 -1z M180 140 l3 7 8 1 -6 5 2 8 -7 -5 -7 5 2 -8 -6 -5 8 -1z" fill="#fff6d6" stroke="#2F3C44" stroke-width="2.5"/>
+</svg>

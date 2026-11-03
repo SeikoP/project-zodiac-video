@@ -173,6 +173,17 @@ test('a boss nobody beats in time escapes, and the next one is scheduled', () =>
   assert.ok(game.state.nextBossAt > Date.UTC(2026, 10, 3, 12, 1) + 300000);
 });
 
+test('a boss beaten by a gift (between ticks) also schedules the next one', () => {
+  const { game, advance } = setup({ bossHpMin: 10, bossHpPerViewer: 1, bossEverySeconds: 300, bossDiamondDamage: 5 });
+  game.chat(u('a', { comment: 'leo' }));
+  game.startBoss();
+  advance(250);
+  game.gift(u('a', { diamonds: 10, count: 1 }));
+  assert.equal(game.state.boss, null);
+  advance(250);
+  assert.ok(game.state.nextBossAt >= Date.UTC(2026, 10, 3, 12, 1) + 300000);
+});
+
 test('readings wait while the boss is up', () => {
   const { game, advance } = setup({ bossHpMin: 1e6, bossSeconds: 60 });
   game.chat(u('a', { comment: 'leo' }));

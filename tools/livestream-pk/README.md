@@ -44,6 +44,20 @@ Một sân khấu dưới bầu trời sao: người xem bước vào sân bằn
 - Rương mở đúng **:00, :15, :30, :45** (đồng hồ đếm ngược luôn ở góc trên), mở 25 giây; gõ **“nhận”** để lấy 1 thẻ — chỉ người đang có mặt mới lấy được. Không ai hoạt động 10 phút thì rương bỏ lượt.
 - 60 thẻ = 12 cung × 5 bản: Thường · **Tinh Tú** (hiếm) · **Thủy Nghịch** (ánh kim, chỉ rơi khi đang Thủy Nghịch hoặc Sao Thủy nghịch hành thật) · **Trăng Tròn** (ánh kim, chỉ đêm trăng tròn thật) · **Diệt Sao Chổi** (MVP boss). Gom đủ 12 cung được vinh danh. Gõ **“khoe thẻ”** để bộ sưu tập hiện lên sóng (mỗi người 1 lần/phút). Thẻ **không bán**, không đổi bằng quà.
 
+**Kho tài nguyên & nâng cấp linh vật** (`bag.mjs`)
+- Mỗi người xem có kho riêng, giữ qua các đêm: **✦ Bụi sao** (rơi theo mọi ánh sao bạn tạo ra), **4 loại ngọc nguyên tố** — Hỏa · Thổ · Phong · Thủy (đánh boss: 2 viên, MVP 4 · nhận rương: 1 · trả lời đúng câu đố: 1 · sửa sóng Thủy Nghịch: 1, luôn là ngọc của nguyên tố cung bạn) và **🌙 Mảnh trăng** (có mặt lúc trăng rằm, hoặc điều ước được cả phòng chúc phúc).
+- Gõ **“nâng cấp”**: tiêu bụi sao + ngọc (+ mảnh trăng từ Lv4) để linh vật lên **Lv2 → Lv5**. Linh vật to hơn, có hào quang màu theo cấp trên vòng, avatar có viền và nhãn "Lv", và mọi hành động được thêm 6% ánh sao mỗi cấp. Thiếu thì hiện "còn thiếu …". Gõ **“kho”** để kho hiện lên sóng; **“ghép thẻ”** đổi 3 thẻ Thường giống nhau thành 1 thẻ Tinh Tú.
+
+**Đèn ước có lời nhắn và được chúc phúc**
+- “ước …” thả một **đèn lồng giấy có ghi lời ước** (bỏ chữ "ước" ở đầu), avatar và tên người ước bay chậm qua bầu trời; dải "Điều ước" ở khung dưới giữ 3 điều ước gần nhất.
+- Trong 45 giây, người khác gõ **“chúc”** để chúc phúc (mỗi người +3 bụi sao). Đủ 3 lời chúc thì đèn hóa sao vàng, có màn chúc mừng ghi lời ước và tên những người chúc, người ước nhận 1 mảnh trăng. Bước 2 của "Cách tham gia" tự đổi thành "Gõ “chúc”" lúc đó.
+
+**Cách tham gia ở trên cùng**: bước 1 luôn là "Comment tên cung hoặc ngày sinh"; bước 2 là việc nên làm *ngay lúc này* (đánh boss, gõ "nhận" khi rương mở, gõ "thuận" khi Thủy Nghịch, gõ "chúc" khi có điều ước), lúc yên thì xoay vòng qua các lệnh.
+
+**Vòng ngoài = vòng hoàng đạo**: mỗi cung có một cung tròn màu sáng dần theo ánh sao cả đội góp (đủ thì phát sáng), và **các hành tinh thật** đứng trên vòng đúng kinh độ hiện tại (viền tím + ℞ khi nghịch hành). Người xem đứng ngoài vòng bằng linh vật của cung kèm **avatar TikTok** của chính họ (người diễn tập hoặc không có ảnh thì hiện chữ cái đầu trên nền màu). Hàng đợi khi chưa ai vào vòng và lời chào người mới cũng dùng avatar thật.
+
+**Hình vẽ mới** (`public/art/`): đèn lồng, rương sao (đóng/mở), Sao Chổi Đen, 4 viên ngọc nguyên tố, bụi sao, mảnh trăng — nét mực trên giấy như bộ linh vật. Trong lúc đánh boss, các màn chúc mừng khác thu về dải thông báo để không che vòng đấu; boss bắn tia vào cung bị đóng băng và cả khung rung lên.
+
 **Icon khớp với TikTok**: phần hướng dẫn và thông báo dùng đúng biểu tượng các nút bên phải màn hình TikTok LIVE (bình luận, thả tim, tặng quà, theo dõi, chia sẻ) và đơn vị "xu".
 
 **Mục tiêu chung**

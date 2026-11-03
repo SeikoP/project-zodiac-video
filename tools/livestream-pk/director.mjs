@@ -6,7 +6,7 @@
 export const DEFAULT_LIMITS = Object.freeze({
   joins: 3, // named joins per frame; the rest become a count
   dances: 6,
-  wishes: 1,
+  wishes: 2,
   sparkles: 4,
   fireworks: 2,
   meteors: 1,
@@ -16,6 +16,7 @@ export const DEFAULT_LIMITS = Object.freeze({
   streaks: 2,
   hits: 4, // named boss hits per frame (crits first); the rest only count toward each sign's total
   cards: 4,
+  loot: 3,
 });
 
 export function createDirector(limits = {}) {
@@ -23,7 +24,7 @@ export function createDirector(limits = {}) {
   let f = fresh();
 
   function fresh() {
-    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
+    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, loot: [], moreLoot: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
   }
 
   function push(e) {
@@ -48,6 +49,7 @@ export function createDirector(limits = {}) {
         else if (e.crit) { const i = f.hits.findIndex(h => !h.crit); if (i >= 0) f.hits[i] = e; }
         break;
       }
+      case 'loot': if (f.loot.length < L.loot) f.loot.push(e); else f.moreLoot++; break; // a moon shard for 40 people is one line, not 40
       case 'card': {
         // rare cards always make it; plain ones fill the remaining slots
         if (f.cards.length < L.cards) f.cards.push(e);
@@ -69,13 +71,14 @@ export function createDirector(limits = {}) {
     const fx = [];
     if (f.joins.length) fx.push({ type: 'joins', people: f.joins, more: f.moreJoins });
     if (f.dances.size) fx.push({ type: 'dance', userIds: [...f.dances] });
-    for (const w of f.wishes) fx.push({ type: 'wish', userId: w.userId, nickname: w.nickname, sign: w.sign, text: w.text });
+    for (const w of f.wishes) fx.push(w);
     for (const tier of ['meteor', 'firework', 'sparkle']) for (const g of f.gifts[tier]) fx.push({ type: 'gift', tier, ...g });
     if (f.hearts.size) fx.push({ type: 'hearts', from: [...f.hearts].map(([userId, count]) => ({ userId, count })) });
     if (f.flows.size) fx.push({ type: 'flows', flows: [...f.flows].map(([k, amount]) => { const [from, to] = k.split('>'); return { from, to, amount }; }) });
     if (f.swaps.size) fx.push({ type: 'swaps', swaps: [...f.swaps].map(([from, to]) => ({ from, to })) });
     if (f.hitSigns.size) fx.push({ type: 'boss-hits', hits: f.hits, bySign: Object.fromEntries(f.hitSigns) });
     if (f.cards.length) fx.push({ type: 'cards', cards: f.cards, more: f.moreCards });
+    if (f.loot.length) fx.push({ type: 'loots', loot: f.loot, more: f.moreLoot });
     for (const l of f.lit) fx.push({ type: 'lit', ...l });
     for (const t of f.titles) fx.push({ type: 'title-up', userId: t.userId, nickname: t.nickname, sign: t.sign, title: t.title });
     if (f.bells.length) fx.push({ type: 'bells', people: f.bells, more: f.moreBells });

@@ -144,7 +144,7 @@ test('wishes have a cooldown and hide text with blocked words', () => {
   game.chat(u('l', { comment: 'ước nữa' }));
   advance(60000);
   game.chat(u('l', { comment: 'ước đm' }));
-  assert.deepEqual(of(events, 'wish').map(e => e.text), ['ước được tăng lương', null]);
+  assert.deepEqual(of(events, 'wish').map(e => e.text), ['được tăng lương', null]);
 });
 
 test('follow/share ring the bell every time but pay once a night', () => {

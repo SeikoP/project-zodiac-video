@@ -12,6 +12,7 @@ export const CARD_DEFAULTS = Object.freeze({
   cardStarChance: 0.15,
   cardSpecialChance: 0.06, // a sky edition (Thủy Nghịch, Trăng Tròn) when the sky allows one
   showCooldownSeconds: 60,
+  combineCount: 3, // "ghép thẻ": this many copies of a plain card → one Tinh Tú
 });
 
 export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
@@ -82,6 +83,22 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
     onEvent({ type: 'collection', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, unique: ids.length, total: CARD_TOTAL, best, editions, setDone: Boolean(v.setDone) });
   }
 
+  // "ghép thẻ": three copies of a plain card become one Tinh Tú card of the same sign (own sign first).
+  function combine(u, v) {
+    const own = cardId(v.sign, 'base');
+    const id = (v.cards?.[own] ?? 0) >= cfg.combineCount ? own : Object.keys(v.cards ?? {}).find(k => k.endsWith(':base') && v.cards[k] >= cfg.combineCount);
+    if (!id) {
+      if (now() - (v.combineAt ?? 0) >= cfg.showCooldownSeconds * 1000) { v.combineAt = now(); onEvent({ type: 'combine-need', userId: u.userId, nickname: v.nickname, sign: v.sign, need: cfg.combineCount }); }
+      return false;
+    }
+    v.cards[id] -= cfg.combineCount;
+    if (!v.cards[id]) delete v.cards[id];
+    const { sign } = parseCard(id);
+    onEvent({ type: 'combine', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, from: sign, count: cfg.combineCount });
+    give(u, v, cardId(sign, 'star'), 'combine');
+    return true;
+  }
+
   // Returns true when the countdown shown on screen moved (so the caller can resend it).
   let lastShown = null;
   function tick(activeSince) {
@@ -105,5 +122,5 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
       : { open: false, inMs: Number.isFinite(scheduled) ? scheduled - t : null };
   }
 
-  return { claim, show, give, draw, tick, view, openNow: () => { if (!isOpen()) open(); }, isOpen };
+  return { claim, show, give, draw, combine, tick, view, openNow: () => { if (!isOpen()) open(); }, isOpen };
 }

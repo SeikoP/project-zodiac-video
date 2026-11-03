@@ -26,6 +26,7 @@ import { occasionOn } from './public/occasions.js';
 import { readSky as readRealSky, boonFor } from './sky.mjs';
 import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
 import { createCards, CARD_DEFAULTS } from './cards.mjs';
+import { createBag, BAG_DEFAULTS } from './bag.mjs';
 
 export const SIGNS = Object.freeze([
   { id: 'aries', label: 'Bạch Dương', glyph: '♈', element: 'fire' },
@@ -114,6 +115,11 @@ export const DEFAULT_CONFIG = Object.freeze({
   chaosFixLight: 5,
   ...BOSS_DEFAULTS,
   ...CARD_DEFAULTS,
+  ...BAG_DEFAULTS,
+  // a wish the room blesses: "chúc" within the window; enough blessings and the wish becomes a star
+  blessWindowSeconds: 45,
+  blessNeed: 3,
+  blessDust: 3,
   // which minor announcements the overlay shows; the big ones (gifts, follows, lit signs, readings, quizzes) are always on
   show: { join: true, dance: false, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
@@ -168,12 +174,20 @@ const WISH_RE = /^\s*(uoc|mong|nguyen|cau (nguyen|mong|cho|chuc))\b/;
 const CLAIM_RE = /^\s*(nhan|nhan the|nhan ruong|mo ruong)[\s!.]*$/;
 const FIX_RE = /\b(thuan hanh|sua song)\b|^\s*thuan\b/;
 const CARDS_RE = /\b(khoe the|bo the|xem the)\b/;
+const UPGRADE_RE = /\b(nang cap|len cap|len lv|up lv)\b/;
+const COMBINE_RE = /\bghep the\b/;
+const BAG_RE = /^\s*(kho|tui|tui do|xem kho|kho do)[\s!.]*$/;
+const BLESS_RE = /^\s*(chuc|chuc phuc|thanh hien thuc|thanh su|amen|\+1)\b/;
 export function parseAction(comment) {
   const t = norm(comment);
   if (WISH_RE.test(t)) return 'wish';
   if (CLAIM_RE.test(t)) return 'claim';
   if (FIX_RE.test(t)) return 'fix';
   if (CARDS_RE.test(t)) return 'cards';
+  if (UPGRADE_RE.test(t)) return 'upgrade';
+  if (COMBINE_RE.test(t)) return 'combine';
+  if (BAG_RE.test(t)) return 'bag';
+  if (BLESS_RE.test(t)) return 'bless';
   if (FORTUNE_RE.test(t)) return 'fortune';
   if (DANCE_RE.test(t)) return 'dance';
   return null;
@@ -214,6 +228,8 @@ export function emptyState() {
     boss: null, // see boss.mjs
     nextBossAt: 0,
     chest: { no: 0, openUntil: 0, claimed: {}, recent: [] },
+    wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, sign, text, at, blessers: { userId: nickname }, blessed }
+    wishNo: 0,
   };
 }
 
@@ -227,6 +243,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.season ??= { light: zeros(), crowns: zeros() };
   st.lucky ??= null;
   st.gifts ??= freshGifts();
+  st.wishes ??= [];
+  st.wishNo ??= 0;
   st.nextLuckyAt ||= now() + cfg.luckyEverySeconds * 1000;
   const partying = () => now() < st.moon.partyUntil;
 
@@ -302,6 +320,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.moon.goal = moonGoalFor(st.moon.full);
     st.moon.partyUntil = now() + cfg.partySeconds * 1000;
     onEvent({ type: 'moon-full', count: st.moon.full, seconds: cfg.partySeconds, multiplier: cfg.partyMultiplier });
+    for (const id of stage.keys()) if (st.viewers[id]) bag.add({ userId: id }, st.viewers[id], 'moon', 1, 'moon'); // everyone there gets a moon shard
   }
 
   // --- the real sky, Thủy Nghịch, the boss and the star chest ---------------------------------------------
@@ -341,7 +360,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     scheduleChaos();
     touch('cosmos');
     const ids = Object.keys(c.fixers);
-    if (fixed) for (const id of ids) if (st.viewers[id]) shine({ userId: id }, st.viewers[id], cfg.chaosFixLight, 'chaos');
+    if (fixed) for (const id of ids) if (st.viewers[id]) { shine({ userId: id }, st.viewers[id], cfg.chaosFixLight, 'chaos'); gem({ userId: id }, st.viewers[id], 1, 'chaos'); }
     onEvent({ type: fixed ? 'chaos-fixed' : 'chaos-end', fixers: ids.slice(0, 5).map(id => c.fixers[id]), count: ids.length });
   }
 
@@ -355,13 +374,39 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (!v?.sign) return;
       shine({ userId }, v, cfg.bossReward, 'boss');
       cards.give({ userId }, v, cards.draw(v, mvp ? 'boss' : undefined), 'boss');
+      gem({ userId }, v, mvp ? 4 : 2, 'boss');
     },
   });
   st.nextBossAt ||= cfg.bossEverySeconds ? now() + cfg.bossEverySeconds * 500 : Infinity; // the first one comes half as soon
-  const startBoss = () => (st.chaos ? null : boss.start(Math.max(3, stage.size)));
+  let bossWas = Boolean(st.boss);
+  function startBoss() {
+    const b = st.chaos ? null : boss.start(Math.max(3, stage.size));
+    if (b) bossWas = true;
+    return b;
+  }
 
   // Sky editions a chest can drop right now: Thủy Nghịch during the chaos or a real retrograde, Trăng Tròn on a real full moon.
   const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [...(st.chaos || sky?.mercuryRetro ? ['retro'] : []), ...(sky?.moon.full ? ['fullmoon'] : [])] });
+  const bag = createBag({ cfg, now, onEvent, elementOf: id => SIGN[id].element });
+  // one gem of the viewer's own element (what their next level needs)
+  const gem = (u, v, n, why) => { if (v?.sign) bag.add(u, v, SIGN[v.sign].element, n, why); };
+
+  // --- wishes the room can bless --------------------------------------------------------------------
+  function bless(u, v) {
+    const t = now();
+    const w = st.wishes.find(x => !x.blessed && x.userId !== u.userId && !x.blessers[u.userId] && t - x.at < cfg.blessWindowSeconds * 1000);
+    if (!w) return;
+    w.blessers[u.userId] = v.nickname;
+    bag.add(u, v, 'dust', cfg.blessDust);
+    touch('cosmos');
+    const count = Object.keys(w.blessers).length;
+    onEvent({ type: 'wish-bless', id: w.id, nickname: v.nickname, avatar: v.avatar, wisher: w.nickname, count, need: cfg.blessNeed });
+    if (count < cfg.blessNeed) return;
+    w.blessed = true;
+    const owner = st.viewers[w.userId];
+    if (owner) bag.add({ userId: w.userId }, owner, 'moon', 1, 'wish');
+    onEvent({ type: 'wish-blessed', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessers: Object.values(w.blessers).slice(0, 5), count });
+  }
 
   // --- the shared sky --------------------------------------------------------
   const cost = () => st.wheel.cost;
@@ -430,9 +475,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       return 0;
     }
     const boon = cfg.skyBoons ? boonFor(sky, v.sign, kind) : { mult: 1, by: [] };
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * boon.mult);
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * boon.mult * bag.bonus(v));
     const before = v.lifetime;
     v.lifetime += amount;
+    bag.fromLight(v, amount);
     if (v.wheelNo !== st.wheel.no) { v.wheelNo = st.wheel.no; v.wheelLight = 0; }
     v.wheelLight += amount;
     // during Thủy Nghịch the light goes astray: it lands on the opposite sign, in the race and in the sky
@@ -478,7 +524,15 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (action === 'wish') wish(u, v);
     else if (action === 'fortune') requestFortune(u, v);
     else if (action === 'dance' && v.sign) onEvent({ type: 'dance', userId: u.userId, sign: v.sign });
-    else if (action === 'claim') cards.claim(u, v);
+    else if (action === 'claim') {
+      const had = st.chest.claimed[u.userId];
+      cards.claim(u, v);
+      if (!had && st.chest.claimed[u.userId]) gem(u, v, 1, 'chest');
+    }
+    else if (action === 'upgrade') bag.upgrade(u, v);
+    else if (action === 'combine' && v.sign) cards.combine(u, v);
+    else if (action === 'bag') bag.show(u, v);
+    else if (action === 'bless') bless(u, v);
     else if (action === 'cards') cards.show(u, v);
     else if (action === 'fix') fixChaos(u, v);
     boss.hit(u, v, 'comment');
@@ -493,7 +547,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (now() - v.wishAt < cfg.wishCooldownSeconds * 1000) return;
     v.wishAt = now();
     const text = cfg.showWishText ? cleanWish(u.comment, cfg.blockedWords) : null;
-    onEvent({ type: 'wish', userId: u.userId, nickname: v.nickname, sign: v.sign, text });
+    // the lantern carries the wish without its "ước…" opening, so it reads like the wish itself
+    const shown = text && text.replace(/^\s*(ước|mong|nguyện|cầu (nguyện|mong|cho|chúc))\s*(gì\s*)?(là\s*)?/iu, '').trim();
+    const w = { id: ++st.wishNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, text: shown || text, at: now(), blessers: {}, blessed: false };
+    st.wishes.unshift(w);
+    st.wishes.length = Math.min(st.wishes.length, 6);
+    touch('cosmos');
+    onEvent({ type: 'wish', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, text: w.text, need: cfg.blessNeed, seconds: cfg.blessWindowSeconds });
   }
 
   function requestFortune(u, v) {
@@ -528,12 +588,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     g.recent.unshift({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, giftName: u.giftName ?? '', giftImage: u.giftImage ?? '', count });
     g.recent.length = Math.min(g.recent.length, 4);
     g.goalSum += diamonds;
-    if (g.goalSum >= giftGoal()) {
-      const reached = giftGoal();
+    // a big gift can fill several goals at once: one celebration, and the bar keeps only what is left over
+    let reached = 0;
+    while (g.goalSum >= giftGoal()) {
+      reached = giftGoal();
       g.goalSum -= reached;
       g.goalNo++;
-      onEvent({ type: 'gift-goal', no: g.goalNo, goal: reached, nickname: v.nickname, sign: v.sign });
     }
+    if (reached) onEvent({ type: 'gift-goal', no: g.goalNo, goal: reached, nickname: v.nickname, sign: v.sign });
     touch('gifts');
   }
 
@@ -641,6 +703,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.quiz.winners.push({ nickname: v.nickname, sign: v.sign, reward });
     thank(u, v);
     shine(u, v, reward, 'quiz');
+    gem(u, v, 1, 'quiz');
     return true;
   }
 
@@ -674,8 +737,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const active = t - st.lastActivityAt < 60000, busy = st.quiz || st.poll || st.fortune;
     if (st.chaos && t >= st.chaos.endsAt) endChaos(false);
     else if (!st.chaos && !st.boss && t >= st.nextChaosAt) { if (active && stage.size) startChaos(); else scheduleChaos(); }
-    const hadBoss = Boolean(st.boss);
+    // bossWas spans ticks: a boss beaten by a gift ends between two ticks, not inside boss.tick()
+    const hadBoss = bossWas;
     boss.tick();
+    bossWas = Boolean(st.boss);
     if (hadBoss && !st.boss) st.nextBossAt = cfg.bossEverySeconds ? t + cfg.bossEverySeconds * 1000 : Infinity;
     if (!st.boss && !st.chaos && !busy && active && stage.size && t >= st.nextBossAt) startBoss();
     if (st.boss || hadBoss) touch('cosmos');
@@ -737,7 +802,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     },
     stage: () => [...stage.keys()].map(id => {
       const v = st.viewers[id];
-      return { userId: id, nickname: v.nickname, sign: v.sign, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0 };
+      return { userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1 };
     }),
     thanks: () => st.thanks.map(({ nickname, avatar, sign }) => ({ nickname, avatar, sign })),
     gifts: () => {
@@ -755,6 +820,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         boss: boss.view(),
         bossInMs: st.boss || !Number.isFinite(st.nextBossAt) ? null : Math.max(0, st.nextBossAt - t),
         chest: cards.view(),
+        wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
+        blessNeed: cfg.blessNeed,
       };
     },
     // first eight in line for the waiting-queue layout, plus how many wait in all and who arrived last (to greet)
@@ -823,6 +890,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     boss.purge('sim:');
     if (st.chaos) for (const id of Object.keys(st.chaos.fixers)) if (id.startsWith('sim:')) delete st.chaos.fixers[id];
     st.chest.recent = [];
+    st.wishes = st.wishes.filter(w => !w.userId.startsWith('sim:'));
     touch('hud', 'stage', 'thanks', 'race', 'lobby', 'gifts', 'cosmos');
     return n;
   }

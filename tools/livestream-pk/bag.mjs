@@ -1,0 +1,82 @@
+// Kho tài nguyên: what a viewer collects by playing, and what they spend it on.
+//   ✦ Bụi sao  — a little with every bit of starlight they shed
+//   Ngọc nguyên tố (Hỏa · Thổ · Phong · Thủy) — from the boss, the chest, quizzes and fixing Thủy Nghịch
+//   🌙 Mảnh trăng — for being there when the moon is full, and for a wish the room blessed
+// "nâng cấp" spends them to raise the viewer's mascot a level (Lv1–Lv5): a bigger halo on the wheel and a little
+// more starlight on everything they do. "kho" shows the bag on stream. Bags last across nights.
+
+export const RESOURCES = Object.freeze({
+  dust: { label: 'Bụi sao', icon: '✦' },
+  fire: { label: 'Hỏa ngọc', icon: '🔥' },
+  earth: { label: 'Thổ ngọc', icon: '🌿' },
+  air: { label: 'Phong ngọc', icon: '💨' },
+  water: { label: 'Thủy ngọc', icon: '💧' },
+  moon: { label: 'Mảnh trăng', icon: '🌙' },
+});
+
+export const BAG_DEFAULTS = Object.freeze({
+  dustPerLight: 0.5,
+  // cost of reaching level 2, 3, 4, 5: bụi sao, ngọc of the viewer's own element, mảnh trăng
+  levelDust: [60, 160, 320, 560],
+  levelGems: [1, 2, 3, 5],
+  levelMoon: [0, 0, 1, 2],
+  levelBonus: 0.06, // extra starlight per level above 1
+  bagShowCooldownSeconds: 30,
+  upgradeHintCooldownSeconds: 20,
+});
+
+export const LEVEL_MAX = 5;
+export const emptyBag = () => ({ dust: 0, fire: 0, earth: 0, air: 0, water: 0, moon: 0 });
+
+export function createBag({ cfg, now, onEvent, elementOf }) {
+  const bagOf = v => (v.bag ??= emptyBag());
+  const levelOf = v => v.level ?? 1;
+  // What the next level costs this viewer (null at the top).
+  function nextCost(v) {
+    const lv = levelOf(v);
+    if (lv >= LEVEL_MAX || !v.sign) return null;
+    return { dust: cfg.levelDust[lv - 1], gem: elementOf(v.sign), gems: cfg.levelGems[lv - 1], moon: cfg.levelMoon[lv - 1] };
+  }
+
+  function add(u, v, res, n, why) {
+    if (!n) return;
+    const bag = bagOf(v);
+    bag[res] = (bag[res] ?? 0) + n;
+    if (res !== 'dust') onEvent({ type: 'loot', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, res, n, why });
+  }
+  const fromLight = (v, amount) => { bagOf(v).dust += Math.ceil(amount * cfg.dustPerLight); };
+
+  // "nâng cấp": pays the next level if the bag holds enough, otherwise says (now and then) what is missing.
+  function upgrade(u, v) {
+    const cost = nextCost(v);
+    if (!cost) return false;
+    const bag = bagOf(v);
+    const missing = {};
+    if (bag.dust < cost.dust) missing.dust = cost.dust - bag.dust;
+    if (bag[cost.gem] < cost.gems) missing[cost.gem] = cost.gems - bag[cost.gem];
+    if (bag.moon < cost.moon) missing.moon = cost.moon - bag.moon;
+    if (Object.keys(missing).length) {
+      if (now() - (v.hintAt ?? 0) >= cfg.upgradeHintCooldownSeconds * 1000) {
+        v.hintAt = now();
+        onEvent({ type: 'upgrade-need', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: levelOf(v), missing });
+      }
+      return false;
+    }
+    bag.dust -= cost.dust;
+    bag[cost.gem] -= cost.gems;
+    bag.moon -= cost.moon;
+    v.level = levelOf(v) + 1;
+    onEvent({ type: 'level-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.level });
+    return true;
+  }
+
+  // "kho": the bag on stream, with what the next level needs.
+  function show(u, v) {
+    if (now() - (v.bagAt ?? 0) < cfg.bagShowCooldownSeconds * 1000) return;
+    v.bagAt = now();
+    onEvent({ type: 'bag', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: levelOf(v), bag: { ...bagOf(v) }, next: nextCost(v) });
+  }
+
+  const bonus = v => 1 + cfg.levelBonus * (levelOf(v) - 1);
+  return { add, fromLight, upgrade, show, nextCost, bonus, levelOf };
+}
