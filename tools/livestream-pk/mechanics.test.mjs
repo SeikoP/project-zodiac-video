@@ -75,7 +75,7 @@ test('sổ sao: starlight is experience; levels pay out and 10 brings a silver f
   assert.equal(passReward(10).frame, 'silver');
   assert.equal(passReward(30).frame, 'star');
   s.say('a', 'sổ sao');
-  assert.equal(s.of('pass-show')[0].level, s.v('a').pass.level);
+  assert.equal(s.of('vault')[0].pass.level, s.v('a').pass.level);
   assert.equal(s.game.snapshot().stage.find(x => x.userId === 'a').frame, s.v('a').pass.level >= 10 ? 'silver' : null);
 });
 

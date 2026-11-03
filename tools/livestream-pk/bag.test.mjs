@@ -16,7 +16,7 @@ test('keywords for the bag, upgrades, combining cards and blessing a wish', () =
   assert.equal(parseAction('nâng cấp'), 'upgrade');
   assert.equal(parseAction('lên cấp đi'), 'upgrade');
   assert.equal(parseAction('ghép thẻ'), 'combine');
-  assert.equal(parseAction('kho'), 'bag');
+  assert.equal(parseAction('kho'), 'vault');
   assert.equal(parseAction('kho báu ở đâu'), null);
   assert.equal(parseAction('chúc bạn thành công'), 'bless');
   assert.equal(parseAction('cầu chúc bình an'), 'wish');

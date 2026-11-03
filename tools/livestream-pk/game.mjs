@@ -14,13 +14,14 @@
 // worth coming back for: a "lucky star" rotates through the lower half of the race for a short x2 window,
 // returning viewers get a streak bonus, and everything is a team score, never a ranking of people.
 // Comment keywords (from the "chùa online" / "sàn nhạc" trends, in an astrology frame):
-//   "xin quẻ" → a free daily zodiac reading on the altar · "ước …" → a wish lantern · "nhảy" → dance.
+//   "xin quẻ" → a free daily zodiac reading on the altar · "ước …" → a wish lantern · "kho" → everything you own.
 // Gifts trigger on-stage effects by size and are thanked by name, never ranked.
 //
 // Built for busy rooms: every handler is O(1) in the number of viewers; the stage keeps only the
 // most recently active viewers; snapshot parts carry version numbers so callers send only what changed.
 import { CONSTELLATIONS } from './public/constellations.js';
-import { drawFortune, dayKey } from './fortunes.mjs';
+import { dayKey } from './fortunes.mjs';
+import { createAltar, ALTAR_DEFAULTS } from './altar.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { occasionOn } from './public/occasions.js';
 import { readSky as readRealSky, boonFor, BOON_CAP } from './sky.mjs';
@@ -36,6 +37,7 @@ import { createPass, PASS_DEFAULTS } from './pass.mjs';
 import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
 import { createCards, CARD_DEFAULTS } from './cards.mjs';
 import { createBag, BAG_DEFAULTS } from './bag.mjs';
+import { EDITION, CARD_TOTAL, parseCard } from './public/cards.js';
 
 export const SIGNS = Object.freeze([
   { id: 'aries', label: 'Bạch Dương', glyph: '♈', element: 'fire' },
@@ -67,7 +69,6 @@ export const DEFAULT_CONFIG = Object.freeze({
   followLight: 20,
   shareLight: 20,
   lightPerDiamond: 5,
-  fortuneLight: 3,
   quizRewards: [40, 25, 15],
   // the shared sky
   constellationCost: 240, // light to light one constellation on the first wheel
@@ -92,8 +93,6 @@ export const DEFAULT_CONFIG = Object.freeze({
   luckyMultiplier: 2,
   overtakeCooldownSeconds: 8,
   // keywords
-  fortuneSeconds: 6,
-  fortuneCooldownMinutes: 10,
   wishCooldownSeconds: 60,
   showWishText: true,
   // matched as whole words, with accents (so 'lớn', 'các', 'đeo' stay allowed)
@@ -129,6 +128,14 @@ export const DEFAULT_CONFIG = Object.freeze({
   ...BOSS_DEFAULTS,
   ...CARD_DEFAULTS,
   ...BAG_DEFAULTS,
+  ...ALTAR_DEFAULTS,
+  // "kho" (also "khoe", "khoe thẻ", "sổ sao"): everything a viewer owns in one panel, once per this many seconds each
+  vaultCooldownSeconds: 30,
+  // resources used in the room's events: "tung ngọc" in a fight hits like a gift of this many coins; "thắp trăng"
+  // raises the moon by this share of its goal; each at most once per powerCooldownSeconds per viewer
+  gemPowerDiamonds: 20,
+  moonShardShare: 0.2,
+  powerCooldownSeconds: 10,
   // a wish the room blesses: "chúc" within the window; enough blessings and the wish becomes a star
   blessWindowSeconds: 45,
   blessNeed: 3,
@@ -175,7 +182,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   // quiet room: some of the turns are the house mascots showing a command (clearly labelled as mascots)
   demoTurns: true,
   // which minor announcements the overlay shows; the big ones (gifts, follows, lit signs, readings, quizzes) are always on
-  show: { join: true, dance: false, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
+  show: { join: true, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
 
 const TITLES = [[15000, 'Thiên Hà'], [3000, 'Chòm Sao'], [500, 'Sao Sáng'], [0, 'Tân Tinh']];
@@ -231,37 +238,35 @@ const SWITCH_NAMES = [...SIGNS.map(s => [squash(s.label), s.id]), ...Object.entr
 
 // Keyword actions, matched on accent-free words.
 const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
-const DANCE_RE = /\b(nhay|quay|dance)\b/;
 const WISH_RE = /^\s*(uoc|mong|nguyen|cau (nguyen|mong|cho|chuc))\b/;
 const CLAIM_RE = /^\s*(nhan|nhan the|nhan ruong|mo ruong)[\s!.]*$/;
 const FIX_RE = /\b(thuan hanh|sua song)\b|^\s*thuan\b/;
-const CARDS_RE = /\b(khoe the|bo the|xem the)\b/;
 const UPGRADE_RE = /\b(nang cap|len cap|len lv|up lv)\b/;
 const COMBINE_RE = /\bghep the\b/;
-const BAG_RE = /^\s*(kho|tui|tui do|xem kho|kho do)[\s!.]*$/;
+const VAULT_RE = /^\s*(kho|tui|tui do|xem kho|kho do|khoe|khoe kho|so sao|xem so sao|so sao cua toi)[\s!.]*$|\b(khoe the|bo the|xem the)\b/;
+const GEM_POWER_RE = /^\s*(tung ngoc|nem ngoc|dung ngoc)\b/;
+const MOON_POWER_RE = /^\s*(thap trang|dot trang)\b/;
 const WELCOME_RE = /^\s*(xin chao|chao mung|chao|hi|hello|helo|welcome)\b/;
 const BLESS_RE = /^\s*(chuc|chuc phuc|thanh hien thuc|thanh su|amen|\+1)\b/;
 // what the house mascots demonstrate in a quiet room, in turn
 export const DEMOS = ['join', 'wish', 'fortune', 'upgrade', 'bless', 'chest', 'switch'];
 const BINGO_RE = /^\s*(bingo|xem bingo|the bingo)[\s!.]*$/;
-const PASS_RE = /^\s*(so sao|xem so sao|so sao cua toi)[\s!.]*$/;
 const CALL_RE = /^\s*(goi sao|goi sao may man)[\s!.]*$/;
 export function parseAction(comment) {
   const t = norm(comment);
   if (WISH_RE.test(t)) return 'wish';
   if (CLAIM_RE.test(t)) return 'claim';
   if (FIX_RE.test(t)) return 'fix';
-  if (CARDS_RE.test(t)) return 'cards';
+  if (VAULT_RE.test(t)) return 'vault';
+  if (GEM_POWER_RE.test(t)) return 'gem-power';
+  if (MOON_POWER_RE.test(t)) return 'moon-power';
   if (UPGRADE_RE.test(t)) return 'upgrade';
   if (COMBINE_RE.test(t)) return 'combine';
-  if (BAG_RE.test(t)) return 'bag';
   if (BLESS_RE.test(t)) return 'bless';
   if (WELCOME_RE.test(t)) return 'welcome';
   if (CALL_RE.test(t)) return 'call';
   if (BINGO_RE.test(t)) return 'bingo';
-  if (PASS_RE.test(t)) return 'pass';
   if (FORTUNE_RE.test(t)) return 'fortune';
-  if (DANCE_RE.test(t)) return 'dance';
   return null;
 }
 
@@ -544,6 +549,54 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const bag = createBag({ cfg, now, onEvent, elementOf: id => SIGN[id].element });
   // one gem of the viewer's own element (what their next level needs)
   const gem = (u, v, n, why) => { if (v?.sign) bag.add(u, v, SIGN[v.sign].element, n, why); };
+  // --- bàn quẻ (altar.mjs): "xin quẻ", and the room's "chuẩn" / "xin vía" while a reading is on ---
+  const altar = createAltar({ st, cfg, now, onEvent, touch, signs: SIGN, pickSign: () => pickEventSign(), shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
+  const showFortune = req => altar.show(req);
+
+  // --- kho chung: resources, level, cards, Sổ Sao and bingo in one panel ("kho", "khoe", "khoe thẻ", "sổ sao") ---
+  function showVault(u, v) {
+    if (now() - (v.vaultAt ?? 0) < cfg.vaultCooldownSeconds * 1000) return;
+    v.vaultAt = now();
+    const ids = Object.keys(v.cards ?? {}).map(parseCard);
+    const best = ids.sort((a, b) => EDITION[b.edition].rarity - EDITION[a.edition].rarity).slice(0, 3);
+    const p = v.sign ? pass.view(v) : null, b = v.sign ? bingo.cardOf(u.userId, v) : null;
+    onEvent({ type: 'vault', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: bag.levelOf(v), bag: { ...(v.bag ?? {}) }, next: bag.nextCost(v),
+      cards: { unique: ids.length, total: CARD_TOTAL, best, setDone: Boolean(v.setDone) },
+      pass: p, bingo: b && { lines: b.lines, marked: b.marked.filter(Boolean).length }, title: titleOf(v.lifetime) });
+  }
+
+  // --- resources used in the room's events ---
+  const FIGHTS = [['boss', () => st.boss], ['tug', () => st.tug], ['run', () => st.run?.phase?.kind === 'fight']];
+  const powerReady = v => now() - (v.powerAt ?? 0) >= cfg.powerCooldownSeconds * 1000;
+  function powerNeed(u, v, why) {
+    if (now() - (v.powerHintAt ?? 0) < cfg.powerCooldownSeconds * 1000) return;
+    v.powerHintAt = now();
+    onEvent({ type: 'power-need', userId: u.userId, nickname: v.nickname, why });
+  }
+  // "tung ngọc": one gem (own element first) lands like a gift on the fight that is on
+  function gemPower(u, v) {
+    if (!v.sign || !powerReady(v)) return;
+    const target = FIGHTS.find(([, on]) => on())?.[0];
+    if (!target) return powerNeed(u, v, 'no-fight');
+    const held = v.bag ?? {}, own = SIGN[v.sign].element;
+    const res = (held[own] ?? 0) > 0 ? own : ['fire', 'earth', 'air', 'water'].find(k => (held[k] ?? 0) > 0);
+    if (!res) return powerNeed(u, v, 'no-gem');
+    v.powerAt = now();
+    held[res]--;
+    onEvent({ type: 'power', kind: 'gem', res, target, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
+    if (target === 'boss') boss.hit(u, v, 'gift', cfg.gemPowerDiamonds);
+    else if (target === 'tug') tug.pull(u, v, 'gift', cfg.gemPowerDiamonds);
+    else run.hit(u, v, 'gift', cfg.gemPowerDiamonds);
+  }
+  // "thắp trăng": one moon shard raises the moon by a share of its goal
+  function moonPower(u, v) {
+    if (!v.sign || !powerReady(v)) return;
+    if (!(v.bag?.moon > 0)) return powerNeed(u, v, 'no-moon');
+    v.powerAt = now();
+    v.bag.moon--;
+    onEvent({ type: 'power', kind: 'moon', res: 'moon', target: 'moon', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
+    raiseMoon(Math.round(st.moon.goal * cfg.moonShardShare));
+  }
 
   // --- Hành trình Tầng Trời: the roguelike run (run.mjs) ----------------------------------------------
   const run = createRun({
@@ -1002,10 +1055,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       shine(u, v, bonus, 'checkin');
       if (v.streak >= 2) onEvent({ type: 'streak', userId: u.userId, nickname: v.nickname, sign: v.sign, streak: v.streak, amount: bonus });
     }
+    altar.chat(u, v, u.comment); // "chuẩn" / "xin vía" while a reading is on screen
     const action = parseAction(u.comment);
     if (action === 'wish') wish(u, v);
-    else if (action === 'fortune') requestFortune(u, v);
-    else if (action === 'dance' && v.sign) onEvent({ type: 'dance', userId: u.userId, sign: v.sign });
+    else if (action === 'fortune') altar.request(u, v, u.comment);
     else if (action === 'claim') {
       const had = st.chest.claimed[u.userId];
       cards.claim(u, v);
@@ -1013,14 +1066,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     else if (action === 'upgrade') { if (v.sign) bag.upgrade(u, v); else onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'upgrade' }); }
     else if (action === 'combine' && v.sign) cards.combine(u, v);
-    else if (action === 'bag') bag.show(u, v);
+    else if (action === 'vault') showVault(u, v);
+    else if (action === 'gem-power') gemPower(u, v);
+    else if (action === 'moon-power') moonPower(u, v);
     else if (action === 'bless') bless(u, v);
     else if (action === 'welcome') welcome(u, v);
     else if (action === 'call') fanCall(u, v);
-    else if (action === 'cards') cards.show(u, v);
     else if (action === 'fix') fixChaos(u, v);
     else if (action === 'bingo') bingo.show(u, v);
-    else if (action === 'pass') pass.show(u, v);
     boss.hit(u, v, 'comment');
     run.hit(u, v, 'comment');
     tug.pull(u, v, 'comment');
@@ -1087,25 +1140,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (kind === 'roast') return roast.start();
     const people = presentWith(v => v.star).slice(-12).map(([id, v]) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, x: v.star.x, y: v.star.y }));
     onEvent({ type: 'showtime', kind: kind === 'starcall' && people.length ? 'starcall' : 'meteor', people });
-  }
-
-  function requestFortune(u, v) {
-    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'fortune' });
-    if (now() - v.fortuneAt < cfg.fortuneCooldownMinutes * 60000) return;
-    if (st.fortuneQueue.some(f => f.userId === u.userId) || st.fortuneQueue.length >= 12) return;
-    v.fortuneAt = now();
-    st.fortuneQueue.push({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
-    touch('hud');
-    shine(u, v, cfg.fortuneLight, 'fortune');
-  }
-
-  // Reading for a viewer, or a "quẻ chung" for a sign when the room is quiet (userId null).
-  function showFortune(req) {
-    const sign = SIGN[req.sign] ? req.sign : pickEventSign();
-    const s = SIGN[sign];
-    st.fortune = { ...req, sign, ...drawFortune({ seed: req.userId ?? 'room', sign, element: s.element, now: now() }), endsAt: now() + cfg.fortuneSeconds * 1000 };
-    touch('hud');
-    onEvent({ type: 'fortune', userId: req.userId, sign });
   }
 
   // diamonds = coin value of ONE gift; count = final repeat count of the streak.
@@ -1295,7 +1329,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (t >= st.nextLuckyAt && t - st.lastActivityAt < 60000) { if (allow('lucky')) startLucky(); else st.nextLuckyAt = t + luckyEvery(); }
     const luckyTick = st.lucky ? Math.ceil((st.lucky.endsAt - t) / 1000) : 1000 + Math.ceil((st.nextLuckyAt - t) / 10000);
     if (luckyTick !== lastLuckyTick) { lastLuckyTick = luckyTick; touch('hud'); }
-    if (st.fortune && t >= st.fortune.endsAt) { st.fortune = null; touch('hud'); }
     if (st.poll && t >= st.poll.endsAt) endPoll();
     // The real sky, Thủy Nghịch, the boss (they never overlap) and the chest. Readings wait while the boss is up.
     if (t - skyAt >= 60000) refreshSky();
@@ -1332,7 +1365,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       heat.level = hl;
       touch('cosmos');
     }
-    if (!st.fortune && !st.quiz && !st.poll && !st.boss && st.fortuneQueue.length) showFortune(st.fortuneQueue.shift());
+    altar.tick(t, !st.quiz && !st.poll && !st.boss);
     if (st.quiz && t >= st.quiz.endsAt) endQuiz();
     // Quiet room: mostly a sign's reading of the day; a quiz and a light poll come once each per eight
     // turns (about every six minutes), so they leave room for gifts, lit signs and the other events.
@@ -1370,7 +1403,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         night: { ...st.night },
         occasion: occasionOn(dayKey(t)),
         moon: { light: st.moon.light, goal: st.moon.goal, full: st.moon.full, partyMs: Math.max(0, st.moon.partyUntil - t) },
-        fortune: st.fortune && { ...st.fortune, remainingMs: Math.max(0, st.fortune.endsAt - t) },
+        fortune: altar.view(t),
         fortuneQueue: st.fortuneQueue.length,
         quiz: q && { q: q.q, options: q.options, remainingMs: Math.max(0, q.endsAt - t), winners: q.winners, tries: Object.keys(q.answered).length },
         lucky: st.lucky && { sign: st.lucky.sign, remainingMs: Math.max(0, st.lucky.endsAt - t), multiplier: cfg.luckyMultiplier },
@@ -1417,6 +1450,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         chest: cards.view(),
         wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
         blessNeed: cfg.blessNeed,
+        welcomes: st.welcomes.filter(w => !w.done && t - w.at < cfg.welcomeWindowSeconds * 1000).slice(0, 3).map(w => ({ id: w.id, nickname: w.nickname, greetings: Object.keys(w.greeters).length })),
+        welcomeNeed: cfg.welcomeNeed,
         heat: { level: heat.level, score: heatScore(), levels: cfg.heatLevels, multiplier: heatMult() },
         fans: fansHere.sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
         fanCount: fansHere.length,

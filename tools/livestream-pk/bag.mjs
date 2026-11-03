@@ -21,7 +21,6 @@ export const BAG_DEFAULTS = Object.freeze({
   levelGems: [1, 2, 3, 5],
   levelMoon: [0, 0, 1, 2],
   levelBonus: 0.06, // extra starlight per level above 1
-  bagShowCooldownSeconds: 30,
   upgradeHintCooldownSeconds: 20,
 });
 
@@ -70,13 +69,6 @@ export function createBag({ cfg, now, onEvent, elementOf }) {
     return true;
   }
 
-  // "kho": the bag on stream, with what the next level needs.
-  function show(u, v) {
-    if (now() - (v.bagAt ?? 0) < cfg.bagShowCooldownSeconds * 1000) return;
-    v.bagAt = now();
-    onEvent({ type: 'bag', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: levelOf(v), bag: { ...bagOf(v) }, next: nextCost(v) });
-  }
-
   const bonus = v => 1 + cfg.levelBonus * (levelOf(v) - 1);
-  return { add, fromLight, upgrade, show, nextCost, bonus, levelOf };
+  return { add, fromLight, upgrade, nextCost, bonus, levelOf };
 }

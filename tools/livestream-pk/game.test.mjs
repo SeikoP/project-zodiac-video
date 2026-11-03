@@ -31,7 +31,7 @@ test('parseAction finds keywords without tripping on everyday words', () => {
   assert.equal(parseAction('ước thi đỗ đại học'), 'wish');
   assert.equal(parseAction('cầu mong bình an'), 'wish');
   assert.equal(parseAction('câu này khó quá'), null);
-  assert.equal(parseAction('nhảy đi'), 'dance');
+  assert.equal(parseAction('nhảy đi'), null); // dancing was dropped: it did nothing for the room
   assert.equal(parseAction('bây giờ là mấy giờ'), null);
 });
 
