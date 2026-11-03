@@ -95,7 +95,11 @@ const body = req => new Promise(resolve => {
 
 const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30], ['Hand Hearts', 100], ['Galaxy', 1000]];
 const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó', 'chúc', 'chúc phúc nha', 'nâng cấp', 'kho', 'ước có người yêu thương mình'];
-const sim = name => ({ userId: `sim:${name}`, nickname: name });
+// every seventh rehearsal viewer is a fan club member, so the fan club look can be rehearsed too
+const sim = name => {
+  const n = Number(String(name).match(/\d+$/)?.[0]);
+  return { userId: `sim:${name}`, nickname: name, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
+};
 // A crowd of `size` simulated viewers doing typical things; used by the panel and the load test.
 function simulateCrowd(size = 6, giftRate = 0.3) {
   for (let i = 0; i < size; i++) {

@@ -28,7 +28,6 @@
 .ringlabel { position: absolute; left: 12px; bottom: 6px; display: flex; flex-direction: column; padding: 6px 14px; border-radius: 16px; background: rgba(22, 29, 33, .55); border: 2px solid rgba(246, 240, 230, .3); }
 .ringlabel b { font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--paper); line-height: 1.1; }
 .ringlabel span { font-size: 17px; font-weight: 800; color: var(--gold); }
-.ringkey { position: absolute; right: 12px; bottom: 6px; display: flex; flex-direction: column; gap: 2px; padding: 6px 12px; border-radius: 16px; background: rgba(22, 29, 33, .55); font-size: 15px; font-weight: 700; color: rgba(246, 240, 230, .85); text-align: right; }
 
 /* avatars: the TikTok picture, or the initial on a coloured disc */
 .av { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: rgba(47, 60, 68, .12); }
@@ -42,22 +41,22 @@
 .duo .av.big { position: absolute; right: -54px; top: 4px; box-shadow: 0 4px 0 rgba(22, 29, 33, .35); }
 
 /* đèn ước: lanterns with the wish written on them rise across the whole frame */
-#lanterns { position: absolute; inset: 0; z-index: 13; pointer-events: none; overflow: hidden; } /* under the top card (14), over the wheel */
-.lantern { position: absolute; top: 1040px; width: 230px; height: 300px; animation: rise-lantern 15s cubic-bezier(.3, .1, .4, 1) forwards; }
+#lanterns { position: absolute; inset: 0; z-index: 15; pointer-events: none; overflow: hidden; } /* over the wheel and the waiting line; they stop below the top card */
+.lantern { position: absolute; top: 1040px; width: 196px; height: 256px; animation: rise-lantern 15s cubic-bezier(.3, .1, .4, 1) forwards; }
 .lantern .lb { position: absolute; inset: 0; width: 100%; height: 100%; animation: lanternSway 3.2s ease-in-out infinite; transform-origin: 50% 0; }
-.lantern .lt { position: absolute; left: 40px; right: 40px; top: 62px; height: 122px; display: flex; align-items: center; justify-content: center; text-align: center; }
-.lantern .lt b { font-family: var(--hand); font-weight: 400; font-size: 27px; line-height: 1.12; color: #6b2d10; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.lantern .lt { position: absolute; left: 34px; right: 34px; top: 52px; height: 106px; display: flex; align-items: center; justify-content: center; text-align: center; }
+.lantern .lt b { font-family: var(--hand); font-weight: 400; font-size: 24px; line-height: 1.1; color: #6b2d10; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
 .lantern .lt b.secret { font-size: 24px; color: #8a4a20; }
-.lantern .lw { position: absolute; left: 50%; top: 298px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: 999px; background: var(--card); border: 2px solid var(--ink); color: var(--ink); font-size: 17px; font-weight: 800; white-space: nowrap; max-width: 260px; }
+.lantern .lw { position: absolute; left: 50%; top: 254px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: 999px; background: var(--card); border: 2px solid var(--ink); color: var(--ink); font-size: 17px; font-weight: 800; white-space: nowrap; max-width: 260px; }
 .lantern .lw .av { width: 32px; height: 32px; border-width: 2px; font-size: 16px; }
 .lantern .lw span { overflow: hidden; text-overflow: ellipsis; }
-.lantern .lbless { position: absolute; left: 50%; top: 340px; transform: translateX(-50%); padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .7); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.lantern .lbless { position: absolute; left: 50%; top: 294px; transform: translateX(-50%); padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .7); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
 .lantern .lbless em { font-style: normal; color: #fff; }
 .lantern.pop .lb { animation: lanternSway 3.2s ease-in-out infinite, blessPop .5s; }
 .lantern.blessed .lb { filter: none; }
 .lantern.blessed::before { content: '⭐'; position: absolute; left: 50%; top: -30px; transform: translateX(-50%); font-size: 52px; animation: popc .5s; }
 .lantern.blessed .lbless { background: var(--gold); color: var(--ink); }
-@keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -900px); opacity: 0; } }
+@keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -700px); opacity: 0; } }
 @keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes blessPop { 40% { transform: scale(1.12); } }
 
@@ -104,3 +103,27 @@
 @keyframes chestBounce { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-14px) rotate(-3deg); } 60% { transform: translateY(0) rotate(3deg); } }
 #stage.quake { animation: quake .45s; }
 @keyframes quake { 20% { transform-origin: top left; translate: -10px 6px; } 40% { translate: 9px -7px; } 60% { translate: -6px 4px; } 80% { translate: 4px -2px; } }
+
+/* Nhiệt phòng (bottom-left, above the wheel label) and the fan club on stage (bottom-right) */
+.heat { position: absolute; left: 12px; bottom: 72px; width: 228px; padding: 7px 12px 8px; border-radius: 16px; background: rgba(22, 29, 33, .72); border: 2px solid var(--hc, #8EC0B9); color: var(--paper); }
+.heat .hh { display: flex; align-items: baseline; gap: 6px; }
+.heat .hh b { font-size: 17px; font-weight: 900; white-space: nowrap; }
+.heat .hh em { font-style: normal; font-size: 20px; font-weight: 900; color: var(--hc, #8EC0B9); white-space: nowrap; }
+.heat .hbar { height: 12px; margin: 5px 0 4px; border-radius: 6px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.heat .hbar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); transition: transform .4s; background: linear-gradient(90deg, #F2C45C, var(--hc, #8EC0B9)); }
+.heat span { display: block; font-size: 13px; font-weight: 700; color: rgba(246, 240, 230, .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heat.hot { animation: heatGlow 1s ease-in-out infinite; }
+@keyframes heatGlow { 50% { box-shadow: 0 0 22px var(--hc); } }
+.fanbox { position: absolute; right: 12px; bottom: 6px; width: 215px; padding: 7px 10px; border-radius: 16px; background: rgba(60, 14, 34, .78); border: 2px solid #FFD45E; color: var(--paper); display: none; }
+.fanbox.on { display: block; animation: popc .4s; }
+.fanbox b { display: block; font-size: 15px; font-weight: 900; color: #FFD45E; margin-bottom: 4px; }
+.fanbox > div { display: grid; grid-template-columns: 30px 1fr; gap: 3px 6px; align-items: center; }
+.fanbox .av { width: 28px; height: 28px; border-width: 2px; font-size: 14px; }
+.fanbox span { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fanbox span em { font-style: normal; color: #FFD45E; }
+.av.fanring { border-color: #FFD45E; box-shadow: 0 0 0 3px #c43c6a; }
+.ev.heat { background: linear-gradient(100deg, color-mix(in srgb, var(--ec) 60%, #fff) 0%, var(--card) 62%); }
+
+/* the house mascots' how-to cards are tagged so they never read as a viewer */
+#center .demo-tag { padding: 3px 14px; border-radius: 999px; background: var(--teal); color: var(--ink); font-size: 18px; font-weight: 900; }
+#center .sub small { font-size: 20px; color: var(--accent); }

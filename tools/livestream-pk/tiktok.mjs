@@ -10,12 +10,26 @@ import { TikTokLiveConnection, WebcastEvent, ControlEvent } from 'tiktok-live-co
 const img = m => m?.urlList?.[0] ?? m?.url_list?.[0] ?? '';
 const num = (...vals) => { for (const v of vals) { const n = Number(v); if (Number.isFinite(n) && n > 0) return n; } return 0; };
 
+// Fan club membership of this room (user.fansClub.data: club name + level) and the viewer's ties to the host
+// (chat messages carry userIdentity: subscriber / moderator). Only what is there is returned.
+export function fanOf(data) {
+  const club = data?.user?.fansClub?.data ?? data?.user?.fansClub ?? {};
+  const id = data?.userIdentity ?? {};
+  const out = {};
+  const level = Number(club.level) || 0;
+  if (level) { out.fanLevel = level; out.fanClub = String(club.clubName ?? '').slice(0, 24); }
+  if (id.isSubscriberOfAnchor) out.subscriber = true;
+  if (id.isModeratorOfAnchor) out.moderator = true;
+  return out;
+}
+
 export function userOf(data) {
   const u = data?.user ?? {};
   return {
     userId: String(u.id || u.userId || u.uniqueId || u.displayId || 'unknown'),
     nickname: u.nickname || u.displayId || u.uniqueId || '',
     avatar: img(u.avatarThumb) || img(u.avatarMedium) || img(u.profilePicture) || u.profilePictureUrl || '',
+    ...fanOf(data),
   };
 }
 

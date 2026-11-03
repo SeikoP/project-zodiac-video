@@ -64,7 +64,7 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
   // "nhận" while the chest is open: one card per viewer per chest. Returns true when the comment was a claim.
   function claim(u, v) {
     if (!isOpen() || st.chest.claimed[u.userId]) return false;
-    if (!v.sign) { onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname }); return true; }
+    if (!v.sign) { onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'chest' }); return true; }
     st.chest.claimed[u.userId] = true;
     const id = give(u, v, draw(v), 'chest');
     st.chest.recent.unshift({ nickname: v.nickname, card: parseCard(id) });

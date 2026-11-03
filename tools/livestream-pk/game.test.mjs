@@ -160,7 +160,7 @@ test('follow/share ring the bell every time but pay once a night', () => {
 });
 
 test('a quiet room mostly shows a reading for a sign, with a quiz now and then', () => {
-  const { game, advance } = setup({ autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   advance(45000);
   assert.equal(game.state.fortune.userId, null, 'a reading comes first');
   advance(45000);
@@ -354,7 +354,7 @@ test('a poll counts one vote per viewer, does not move existing teams, and names
 });
 
 test('quiet rooms mostly read a sign, with a quiz and a poll now and then', () => {
-  const { game, advance } = setup({ autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   const kinds = [];
   for (let i = 0; i < 8; i++) {
     advance(45000);

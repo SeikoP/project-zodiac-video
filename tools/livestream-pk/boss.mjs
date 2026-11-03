@@ -10,8 +10,8 @@
 
 export const ROLES = Object.freeze({
   fire: 'quà x2',
-  earth: 'comment = khiên',
-  air: 'comment combo',
+  earth: 'chat = khiên',
+  air: 'chat liên tục',
   water: 'tim x3',
 });
 

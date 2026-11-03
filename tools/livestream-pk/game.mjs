@@ -120,6 +120,17 @@ export const DEFAULT_CONFIG = Object.freeze({
   blessWindowSeconds: 45,
   blessNeed: 3,
   blessDust: 3,
+  switchCooldownSeconds: 30, // "đổi <cung>": at most this often, so the lucky star can't be chased sign to sign
+  // fan club members / subscribers of the room: a little extra starlight, a greeting, and "gọi sao" once a night
+  fanBonus: 0.1,
+  fanBonusPerLevel: 0.01,
+  fanBonusMax: 0.3,
+  subscriberBonus: 0.1,
+  // Nhiệt phòng: what the whole room did in the last 20 seconds; hotter rooms shed more starlight
+  heatLevels: [12, 30, 60, 110],
+  heatMultipliers: [1, 1.1, 1.25, 1.5, 2],
+  // quiet room: some of the turns are the house mascots showing a command (clearly labelled as mascots)
+  demoTurns: true,
   // which minor announcements the overlay shows; the big ones (gifts, follows, lit signs, readings, quizzes) are always on
   show: { join: true, dance: false, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
@@ -167,6 +178,17 @@ export function parseSign(comment) {
   return best?.id ?? parseBirthday(raw);
 }
 
+// A viewer who already has a sign keeps it unless they clearly ask for another: "đổi Sư Tử", "đổi sang 7",
+// "chuyển qua cung Bảo Bình", or a comment that is nothing but a sign's name. "Sư Tử đỉnh quá" from a Kim Ngưu
+// fan is cheering, not switching.
+export function parseSwitch(comment) {
+  const t = norm(comment).trim();
+  const m = t.match(/^(doi|chuyen)\s+(?:sang\s+|qua\s+|ve\s+|thanh\s+)?(?:cung\s+)?(.+)$/);
+  if (m) return parseSign(m[2]);
+  const whole = squash(comment);
+  return whole ? ALIASES.find(([alias]) => alias === whole)?.[1] ?? null : null;
+}
+
 // Keyword actions, matched on accent-free words.
 const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
 const DANCE_RE = /\b(nhay|quay|dance)\b/;
@@ -178,6 +200,9 @@ const UPGRADE_RE = /\b(nang cap|len cap|len lv|up lv)\b/;
 const COMBINE_RE = /\bghep the\b/;
 const BAG_RE = /^\s*(kho|tui|tui do|xem kho|kho do)[\s!.]*$/;
 const BLESS_RE = /^\s*(chuc|chuc phuc|thanh hien thuc|thanh su|amen|\+1)\b/;
+// what the house mascots demonstrate in a quiet room, in turn
+export const DEMOS = ['join', 'wish', 'fortune', 'upgrade', 'bless', 'chest', 'switch'];
+const CALL_RE = /^\s*(goi sao|goi sao may man)[\s!.]*$/;
 export function parseAction(comment) {
   const t = norm(comment);
   if (WISH_RE.test(t)) return 'wish';
@@ -188,6 +213,7 @@ export function parseAction(comment) {
   if (COMBINE_RE.test(t)) return 'combine';
   if (BAG_RE.test(t)) return 'bag';
   if (BLESS_RE.test(t)) return 'bless';
+  if (CALL_RE.test(t)) return 'call';
   if (FORTUNE_RE.test(t)) return 'fortune';
   if (DANCE_RE.test(t)) return 'dance';
   return null;
@@ -287,6 +313,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (u.nickname) v.nickname = name;
     const avatar = safeAvatar(u.avatar);
     if (avatar) v.avatar = avatar;
+    // fan club level / subscriber come with chat and gift events; a like without them doesn't clear them
+    if (u.fanLevel) { v.fanLevel = u.fanLevel; v.fanClub = cleanName(u.fanClub || '', cfg.blockedWords); }
+    if (u.subscriber) v.subscriber = true;
+    if ((v.fanLevel || v.subscriber) && v.fanNight !== st.night.no) {
+      v.fanNight = st.night.no;
+      onEvent({ type: 'fan-arrive', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.fanLevel ?? 0, club: v.fanClub ?? '', subscriber: Boolean(v.subscriber) });
+      touch('cosmos');
+    }
     if (v.night !== st.night.no) {
       v.streak = v.lastNight === st.night.no - 1 ? (v.streak ?? 0) + 1 : 1; // consecutive nights
       v.lastNight = st.night.no;
@@ -340,7 +374,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   if (!st.nextChaosAt) scheduleChaos();
   function startChaos() {
     if (st.chaos || st.boss) return null;
-    const need = Math.min(12, Math.max(cfg.chaosFixMin, Math.ceil(stage.size * cfg.chaosFixShare)));
+    // never more than the viewers actually there (a room of two can still fix it)
+    const need = Math.max(1, Math.min(12, stage.size, Math.max(cfg.chaosFixMin, Math.ceil(stage.size * cfg.chaosFixShare))));
     st.chaos = { endsAt: now() + cfg.chaosSeconds * 1000, need, fixers: {}, real: Boolean(sky?.mercuryRetro) };
     touch('cosmos');
     onEvent({ type: 'chaos-start', seconds: cfg.chaosSeconds, need, real: st.chaos.real });
@@ -475,7 +510,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       return 0;
     }
     const boon = cfg.skyBoons ? boonFor(sky, v.sign, kind) : { mult: 1, by: [] };
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * boon.mult * bag.bonus(v));
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * boon.mult * bag.bonus(v) * heatMult() * fanMult(v));
     const before = v.lifetime;
     v.lifetime += amount;
     bag.fromLight(v, amount);
@@ -496,10 +531,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   function join(u, v, sign) {
     if (v.sign === sign) return;
+    const from = v.sign;
     v.sign = sign;
+    if (from) v.switchAt = now(); // the first correction is free; only later switches wait for the cooldown
     outOfLobby(u.userId);
     onStage(u.userId, true);
-    onEvent({ type: 'join', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign });
+    onEvent({ type: 'join', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign, from });
     const held = st.pending[u.userId];
     if (held) {
       delete st.pending[u.userId];
@@ -507,13 +544,57 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
   }
 
+  // A clear "đổi <cung>" moves the viewer to another sign (light already given stays where it landed).
+  function switchSign(u, v, to) {
+    if (!to || to === v.sign) return;
+    const wait = cfg.switchCooldownSeconds * 1000 - (now() - (v.switchAt ?? 0));
+    if (wait > 0) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, sign: v.sign, to, seconds: Math.ceil(wait / 1000) });
+    join(u, v, to);
+  }
+
+  // "gọi sao": a fan club member or subscriber calls the lucky star onto their own sign, once a night.
+  function fanCall(u, v) {
+    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'call' });
+    if (!v.fanLevel && !v.subscriber) {
+      if (now() - (v.callHintAt ?? 0) > 60000) { v.callHintAt = now(); onEvent({ type: 'fan-only', userId: u.userId, nickname: v.nickname, sign: v.sign }); }
+      return;
+    }
+    if (v.callNight === st.night.no || st.lucky) return;
+    v.callNight = st.night.no;
+    onEvent({ type: 'fan-call', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.fanLevel ?? 0, club: v.fanClub ?? '' });
+    startLucky(v.sign);
+  }
+
+  // --- Nhiệt phòng: activity over the last 20 seconds, in 2-second buckets ---------------------------
+  // Each viewer adds at most a little per bucket, so one spammer can't heat the room alone.
+  const heat = { buckets: new Array(10).fill(0), per: new Map(), at: 0, level: 0 };
+  function rollHeat() {
+    const slot = Math.floor(now() / 2000);
+    if (!heat.at) heat.at = slot;
+    for (; heat.at < slot && heat.at > slot - 11; heat.at++) { heat.buckets.shift(); heat.buckets.push(0); heat.per.clear(); }
+    heat.at = slot;
+  }
+  function addHeat(userId, n) {
+    rollHeat();
+    const had = heat.per.get(userId) ?? 0, add = Math.max(0, Math.min(n, 6 - had));
+    if (!add) return;
+    heat.per.set(userId, had + add);
+    heat.buckets[9] += add;
+  }
+  const heatScore = () => heat.buckets.reduce((a, b) => a + b, 0);
+  const heatLevelOf = score => cfg.heatLevels.filter(x => score >= x).length;
+  const heatMult = () => cfg.heatMultipliers[heat.level] ?? 1;
+  const fanMult = v => 1 + (v.fanLevel ? Math.min(cfg.fanBonusMax, cfg.fanBonus + cfg.fanBonusPerLevel * v.fanLevel) : 0) + (v.subscriber ? cfg.subscriberBonus : 0);
+
   function chat(u) {
     const v = viewer(u);
     if (st.quiz && answerQuiz(u, v)) return;
     const sign = parseSign(u.comment);
     // While a poll runs, naming a sign is a vote; it only joins a team for viewers who have none yet.
     if (st.poll && sign && !st.poll.voted[u.userId]) castVote(u, v, sign);
-    if (sign && !(st.poll && v.sign)) join(u, v, sign);
+    addHeat(u.userId, 1);
+    if (!v.sign) { if (sign) join(u, v, sign); }
+    else if (!st.poll) switchSign(u, v, parseSwitch(u.comment));
     if (v.sign && v.checkin) {
       const bonus = v.checkin;
       v.checkin = 0;
@@ -529,10 +610,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       cards.claim(u, v);
       if (!had && st.chest.claimed[u.userId]) gem(u, v, 1, 'chest');
     }
-    else if (action === 'upgrade') bag.upgrade(u, v);
+    else if (action === 'upgrade') { if (v.sign) bag.upgrade(u, v); else onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'upgrade' }); }
     else if (action === 'combine' && v.sign) cards.combine(u, v);
     else if (action === 'bag') bag.show(u, v);
     else if (action === 'bless') bless(u, v);
+    else if (action === 'call') fanCall(u, v);
     else if (action === 'cards') cards.show(u, v);
     else if (action === 'fix') fixChaos(u, v);
     boss.hit(u, v, 'comment');
@@ -557,7 +639,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   function requestFortune(u, v) {
-    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname });
+    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'fortune' });
     if (now() - v.fortuneAt < cfg.fortuneCooldownMinutes * 60000) return;
     if (st.fortuneQueue.some(f => f.userId === u.userId) || st.fortuneQueue.length >= 12) return;
     v.fortuneAt = now();
@@ -608,6 +690,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     recordGift(u, v, count, diamonds);
     thank(u, v);
     boss.hit(u, v, 'gift', diamonds);
+    addHeat(u.userId, Math.min(6, 1 + diamonds));
     raiseMoon(diamonds * 2);
     return shine(u, v, diamonds * cfg.lightPerDiamond, 'gift');
   }
@@ -618,6 +701,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const n = Math.max(0, u.count | 0);
     raiseMoon(n);
     boss.hit(u, v, 'like', n);
+    addHeat(u.userId, Math.ceil(n / 15));
     onEvent({ type: 'likes', userId: u.userId, sign: v.sign, count: n });
     if (!cfg.likesPerLight || !v.sign) return 0;
     const total = v.likeCarry + n;
@@ -634,6 +718,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     v.bonusNight[kind] = st.night.no;
     thank(u, v);
     boss.hit(u, v, kind);
+    addHeat(u.userId, 3);
     raiseMoon(20);
     return shine(u, v, kind === 'share' ? cfg.shareLight : cfg.followLight, kind);
   }
@@ -745,6 +830,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!st.boss && !st.chaos && !busy && active && stage.size && t >= st.nextBossAt) startBoss();
     if (st.boss || hadBoss) touch('cosmos');
     if (cards.tick(st.lastActivityAt)) touch('cosmos');
+    rollHeat();
+    const hl = heatLevelOf(heatScore());
+    if (hl !== heat.level) {
+      if (hl > heat.level) onEvent({ type: 'heat-up', level: hl, multiplier: cfg.heatMultipliers[hl] ?? 1 });
+      heat.level = hl;
+      touch('cosmos');
+    }
     if (!st.fortune && !st.quiz && !st.poll && !st.boss && st.fortuneQueue.length) showFortune(st.fortuneQueue.shift());
     if (st.quiz && t >= st.quiz.endsAt) endQuiz();
     // Quiet room: mostly a sign's reading of the day; a quiz and a light poll come once each per eight
@@ -752,9 +844,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!st.quiz && !st.fortune && !st.poll && !st.boss && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
       const turn = st.quietTurn++;
       st.quietUntil = t + 45000;
-      const kind = [1, 1, 1, 0, 1, 1, 1, 2][turn % 8]; // 6× fortune, 1× quiz, 1× poll
+      // 3× a house mascot shows a command, 3× a sign's reading, 1× quiz, 1× poll
+      const kind = (cfg.demoTurns ? [3, 1, 3, 0, 1, 3, 1, 2] : [1, 1, 1, 0, 1, 1, 1, 2])[turn % 8];
       if (kind === 0 && cfg.autoQuiz && quiz.length) startQuiz();
       else if (kind === 2 && polls.length) startPoll();
+      else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], sign: SIGNS[Math.floor(rng() * 12)].id });
       else showFortune({ userId: null, nickname: null, avatar: '', sign: SIGNS[Math.floor(rng() * 12)].id });
     }
     // Drop viewers who went quiet from the stage (at most crowdMax entries to look at).
@@ -802,7 +896,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     },
     stage: () => [...stage.keys()].map(id => {
       const v = st.viewers[id];
-      return { userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1 };
+      return { userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1, fan: v.fanLevel ?? 0, sub: Boolean(v.subscriber) };
     }),
     thanks: () => st.thanks.map(({ nickname, avatar, sign }) => ({ nickname, avatar, sign })),
     gifts: () => {
@@ -822,6 +916,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         chest: cards.view(),
         wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
         blessNeed: cfg.blessNeed,
+        heat: { level: heat.level, score: heatScore(), levels: cfg.heatLevels, multiplier: heatMult() },
+        fans: [...stage.keys()].map(id => st.viewers[id]).filter(v => v?.fanLevel || v?.subscriber).sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
+        fanCount: [...stage.keys()].filter(id => st.viewers[id]?.fanLevel || st.viewers[id]?.subscriber).length,
       };
     },
     // first eight in line for the waiting-queue layout, plus how many wait in all and who arrived last (to greet)

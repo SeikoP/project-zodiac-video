@@ -17,6 +17,7 @@ export const DEFAULT_LIMITS = Object.freeze({
   hits: 4, // named boss hits per frame (crits first); the rest only count toward each sign's total
   cards: 4,
   loot: 3,
+  fans: 2,
 });
 
 export function createDirector(limits = {}) {
@@ -24,12 +25,13 @@ export function createDirector(limits = {}) {
   let f = fresh();
 
   function fresh() {
-    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, loot: [], moreLoot: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
+    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, loot: [], moreLoot: 0, fans: [], moreFans: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
   }
 
   function push(e) {
     switch (e.type) {
-      case 'join': if (f.joins.length < L.joins) f.joins.push({ userId: e.userId, nickname: e.nickname, sign: e.sign }); else f.moreJoins++; break;
+      case 'join': if (f.joins.length < L.joins) f.joins.push({ userId: e.userId, nickname: e.nickname, avatar: e.avatar, sign: e.sign, from: e.from }); else f.moreJoins++; break;
+      case 'fan-arrive': if (f.fans.length < L.fans) f.fans.push(e); else f.moreFans++; break; // the whole fan club may walk in at once
       case 'dance': if (f.dances.size < L.dances) f.dances.add(e.userId); break;
       case 'wish': if (f.wishes.length < L.wishes) f.wishes.push(e); break;
       case 'likes': if (e.sign && (f.hearts.has(e.userId) || f.hearts.size < L.hearts)) f.hearts.set(e.userId, (f.hearts.get(e.userId) ?? 0) + e.count); break;
@@ -79,6 +81,7 @@ export function createDirector(limits = {}) {
     if (f.hitSigns.size) fx.push({ type: 'boss-hits', hits: f.hits, bySign: Object.fromEntries(f.hitSigns) });
     if (f.cards.length) fx.push({ type: 'cards', cards: f.cards, more: f.moreCards });
     if (f.loot.length) fx.push({ type: 'loots', loot: f.loot, more: f.moreLoot });
+    if (f.fans.length) fx.push({ type: 'fans', fans: f.fans, more: f.moreFans });
     for (const l of f.lit) fx.push({ type: 'lit', ...l });
     for (const t of f.titles) fx.push({ type: 'title-up', userId: t.userId, nickname: t.nickname, sign: t.sign, title: t.title });
     if (f.bells.length) fx.push({ type: 'bells', people: f.bells, more: f.moreBells });
