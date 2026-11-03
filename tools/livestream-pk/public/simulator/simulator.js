@@ -127,6 +127,7 @@ simStream.addEventListener('sim-event', message => {
   try { handleSimEvent(JSON.parse(message.data)); }
   catch (error) { log('Không đọc được sự kiện mô phỏng: ' + error.message); }
 });
+simStream.onopen = () => { $('scenarioStatus').textContent = 'Kết nối simulator ổn định'; };
 simStream.onerror = () => { $('scenarioStatus').textContent = 'Mất kết nối simulator · đang thử lại'; };
 
 async function sendComment(value = $('commentText').value, name = currentName()) {
