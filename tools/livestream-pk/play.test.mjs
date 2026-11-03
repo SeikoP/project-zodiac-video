@@ -7,7 +7,7 @@ const OFF = { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosE
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });

@@ -44,3 +44,22 @@ Giấy phép Mixkit cho dùng miễn phí (kể cả thương mại), không c�
 | 949 | game-show correct | quiz | mixkit-sfx-949.mp3 |
 | 867 | fairy magic falling | lucky | mixkit-sfx-867.mp3 |
 | 952 | game-show notification correct | poll | mixkit-sfx-952.mp3 |
+| 2629 | magic astral sweep | hourStart | mixkit-sfx-2629.mp3 |
+| 224 | elegant door announcement | actOpen | mixkit-sfx-224.mp3 |
+| 566 | drum roll | headStart | mixkit-sfx-566.mp3 |
+| 2059 | game level completed | actClose | mixkit-sfx-2059.mp3 |
+| 937 | happy bells notification | pair | mixkit-sfx-937.mp3 |
+| 869 | fairy sparkle whoosh | starFly | mixkit-sfx-869.mp3 |
+| 2066 | video game treasure | chestOpen | mixkit-sfx-2066.mp3 |
+| 227 | ominous drums | bossStart | mixkit-sfx-227.mp3 |
+| 2072 | small hit in a game | bossHit | mixkit-sfx-2072.mp3 |
+| 1528 | magical stone slide | door | mixkit-sfx-1528.mp3 |
+| 2062 | game experience level increased | boon | mixkit-sfx-2062.mp3 |
+| 2055 | boxer getting hit | runHit | mixkit-sfx-2055.mp3 |
+| 2042 | player losing or failing | fall | mixkit-sfx-2042.mp3 |
+| 2583 | magical light transition | revive | mixkit-sfx-2583.mp3 |
+| 2645 | game spinning machine | spin | mixkit-sfx-2645.mp3 |
+| 579 | drum joke accent | roast | mixkit-sfx-579.mp3 |
+| 422 | small crowd laugh and applause | laugh | mixkit-sfx-422.mp3 |
+| 555 | achievement win drums | cleared | mixkit-sfx-555.mp3 |
+| 3175 | thin metal card deck shuffle | cardFlip | mixkit-sfx-3175.mp3 |

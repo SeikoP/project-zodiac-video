@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
-    "live": "node scripts/live.mjs",
-    "check": "node scripts/check.mjs",
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "live": "node --env-file-if-exists=.env scripts/live.mjs",
+    "check": "node --env-file-if-exists=.env scripts/check.mjs",
     "setup": "node scripts/check.mjs --init",
     "test": "node --test",
     "audio": "node scripts/fetch-audio.mjs",

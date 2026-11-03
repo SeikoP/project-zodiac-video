@@ -128,6 +128,12 @@
     </div>
     <div class="line"><button id="boss">☄ Gọi Sao Chổi Đen</button><button id="chaos">☿ Thủy Nghịch</button><button id="chaosEnd">Dừng Thủy Nghịch</button><button id="chest">🎁 Mở rương sao</button></div>
     <p class="muted" id="cosmosTxt"></p>
+    <div class="line">
+      <select id="hourPick"><option value="">Giờ: xoay vòng tự động</option><option value="mars">♂ Sao Hỏa · Boss tinh anh, Kéo co</option><option value="venus">♀ Sao Kim · Se duyên, Bóc phốt, Mưa rương</option><option value="mercury">☿ Sao Thủy · Đố nhanh, Thủy Nghịch, Đêm trăng</option><option value="saturn">♄ Sao Thổ · Hành trình, Chung kết</option></select>
+      <button id="hourSet">Đặt giờ (60 phút)</button><button id="headStart">★ Sự kiện chính ngay</button>
+    </div>
+    <div class="line"><button id="runStart">🪐 Bắt đầu Hành trình</button><button id="runStop">Dừng Hành trình</button><button id="pairNow">💞 Ghép đôi</button><button id="roastNow">🔥 Vòng quay bóc phốt</button><button id="tugNow">🪢 Kéo co cung</button></div>
+    <p class="muted" id="hourTxt"></p>
     <div class="line"><button id="musicSkip">⏭ Bài khác</button><button id="musicMute">🔇 Tắt/bật nhạc</button></div>
     <div class="line">
       <label><input type="checkbox" id="autoQuiz"> Tự ra câu đố / quẻ / bình chọn khi phòng im</label>
@@ -212,6 +218,13 @@ $('boss').onclick = () => api('boss/start');
 $('chaos').onclick = () => api('chaos/start');
 $('chaosEnd').onclick = () => api('chaos/end');
 $('chest').onclick = () => api('chest/open');
+$('hourSet').onclick = () => api('hour/set', { planet: $('hourPick').value || null });
+$('headStart').onclick = () => api('headline/start');
+$('runStart').onclick = () => api('run/start');
+$('runStop').onclick = () => confirm('Dừng Hành trình Tầng Trời? Đoàn sẽ dừng ở tầng hiện tại.') && api('run/stop');
+$('pairNow').onclick = () => api('pair');
+$('roastNow').onclick = () => api('roast');
+$('tugNow').onclick = () => api('tug/start');
 $('musicSkip').onclick = () => api('music/skip');
 $('musicMute').onclick = () => api('music/mute');
 for (const k of ['autoQuiz', 'showWishText']) $(k).onchange = () => api('settings', { [k]: $(k).checked });
@@ -333,6 +346,10 @@ function renderCosmos(c) {
   else if (c.chaosInMs != null) parts.push(`☿ Thủy Nghịch sau ${mmss(c.chaosInMs)}`);
   parts.push(c.chest.open ? `🎁 Rương đang mở · ${c.chest.claims} người nhận` : c.chest.inMs != null ? `🎁 Rương sau ${mmss(c.chest.inMs)}` : '🎁 Rương tắt');
   $('cosmosTxt').textContent = parts.join('  |  ');
+  const h = c.hour, r = c.run;
+  $('hourTxt').textContent = h ? `${h.glyph} Giờ ${h.label}${h.forced ? ' (host chọn)' : ''} · đến ${new Date(h.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} · ${h.rule} · sự kiện chính: ${h.head}${c.act ? ` (màn ${c.act.no}/${c.act.of}, ${c.act.phase === 'head' ? 'đang diễn' : `sau ${mmss(c.act.headInMs)}`})` : ''} · tiếp: ${h.next.glyph} ${h.next.label}`
+    + (r ? `  |  🪐 Tầng ${r.floor}/${r.of} · đoàn ${r.hp}/${r.max} · ${r.phase}${r.enemy ? ` · ${r.enemy.name} ${r.enemy.hp}/${r.enemy.max}` : ''}` : '')
+    : 'Giờ hành tinh đang tắt (hours: false)';
 }
 
 function renderRace() {

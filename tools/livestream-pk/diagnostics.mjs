@@ -29,9 +29,10 @@ export function createDiagnostics({ dir, record = false, now = () => Date.now() 
   const out = record ? fs.createWriteStream(eventsFile, { flags: 'a' }) : null;
   const log = (type, e) => out?.write(`${JSON.stringify({ t: now(), type, ...e })}\n`);
 
-  // The same four calls the game offers, recorded first when recording is on.
+  // Game calls are recorded first when recording is on.
   const wrap = game => ({
     chat: e => { log('chat', e); return game.chat(e); },
+    member: e => { log('member', e); return game.member(e); },
     gift: e => { log('gift', e); return game.gift(e); },
     like: e => { log('like', e); return game.like(e); },
     social: e => { log('social', e); return game.social(e); },
@@ -44,6 +45,7 @@ export function createDiagnostics({ dir, record = false, now = () => Date.now() 
 export function ingest(game, e) {
   const { type, t, replay, ...rest } = e ?? {};
   if (type === 'chat') return game.chat({ ...rest, comment: String(rest.comment ?? '') });
+  if (type === 'member') return game.member(rest);
   if (type === 'gift') return game.gift(rest);
   if (type === 'like') return game.like(rest);
   if (type === 'social') return game.social(rest);

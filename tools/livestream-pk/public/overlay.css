@@ -2,9 +2,8 @@
    animated backgrounds; everything that moves per-frame is drawn on the #fx canvas.
    Look: channel token zodiac-paper-doodle-meme-v4 — warm paper cards on an ink night sky, Patrick Hand for
    display type, system sans for dense reading text.
-   Layout: designed on the whole 1080x1920 frame first, with no safe zone (to be added back afterwards by
-   moving the top card and the base card). From the top: ONE merged card (title + moon + goal + top-3
-   ranking + call line), the wheel, the event card, ONE merged base card (thanks + how-to). */
+   Layout: 1080x1920 full frame: top card (title, moon, ranking, sky and wishes), wheel, compact event strip,
+   and a gift-goal bar at the bottom. */
 :root {
   --paper: #F6F0E6; --card: #FFFDF9; --ink: #2F3C44; --soft-ink: #5C6B75;
   --line: rgba(47, 60, 68, .3); --shadow: #D0C1B3;
@@ -61,38 +60,51 @@ body.transparent, body.transparent #stage { background: transparent; }
 .rc.lead { border-color: var(--accent); }
 
 /* zodiac wheel — the whole width under the top card */
-#wheel { position: absolute; left: 32px; top: 350px; width: 1016px; height: 1050px; }
+#wheel { position: absolute; left: 32px; top: 326px; width: 1016px; height: 1050px; }
 #wheel svg.ring { position: absolute; inset: 0; }
 .spin { transform-box: fill-box; transform-origin: 50% 50%; animation: spin 140s linear infinite; }
-.node { position: absolute; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--el) 70%, #fff), var(--el) 55%, color-mix(in srgb, var(--el) 45%, #000));
+.node { position: absolute; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.42), rgba(246,240,230,.86) 70%);
   border: 3px solid rgba(246, 240, 230, .85); opacity: .82; transition: opacity .6s, box-shadow .6s; }
-.node .g { font-size: 42px; font-weight: 400; color: var(--ink); line-height: 1; margin-top: -4px; }
-.node .nm { margin-top: 2px; max-width: 86px; font-size: 14px; font-weight: 800; color: var(--ink); line-height: 1; white-space: nowrap; }
-.node .n { position: absolute; top: -8px; left: -8px; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); border: 2px solid var(--el);
-  display: grid; place-items: center; font-size: 16px; font-weight: 900; color: var(--card); }
-.node .more { position: absolute; bottom: -6px; right: -12px; padding: 0 7px; border-radius: 10px; background: var(--ink); color: var(--card); font-size: 13px; font-weight: 800; display: none; }
+.node .fill-clip { position: absolute; inset: 0; z-index: 0; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.node .fill-clip > span { position: absolute; left: 0; right: 0; bottom: 0; height: var(--fill, 0%); background: linear-gradient(150deg, color-mix(in srgb, var(--el) 56%, #fff), color-mix(in srgb, var(--el) 82%, #fff)); transition: height .45s; }
+.node .g, .node .nm { position: relative; z-index: 1; }
+.node .g { font-size: 38px; font-weight: 400; color: var(--ink); line-height: 1; margin-top: -4px; }
+.node .nm { margin-top: 2px; max-width: 80px; font-size: 13px; font-weight: 800; color: var(--ink); line-height: 1; white-space: nowrap; }
+.node .n { position: absolute; top: -7px; left: -7px; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); border: 2px solid var(--el);
+  display: grid; place-items: center; font-size: 14px; font-weight: 900; color: var(--card); z-index: 1; }
+.node .more { position: absolute; bottom: -6px; right: -12px; padding: 0 7px; border-radius: 10px; background: var(--ink); color: var(--card); font-size: 13px; font-weight: 800; display: none; z-index: 1; }
 .node .more.on { display: block; }
 .node.waiting { opacity: .5; border-style: dashed; }
 .node.lit { opacity: 1; border-color: var(--card); box-shadow: 0 0 24px var(--el), 0 0 54px color-mix(in srgb, var(--el) 50%, transparent); }
-.node.flash { animation: hit .8s; }
 
 /* the middle circle is the stage of the wheel: every small announcement (a join, a dance, a sign's card) plays here, big enough to read from a phone */
-#center { position: absolute; left: 50%; top: 50%; width: 580px; height: 580px; margin: -290px 0 0 -290px; border-radius: 50%; overflow: hidden;
+#center { position: absolute; left: 50%; top: 50%; width: 520px; height: 520px; transform: translate(-50%, -50%); border-radius: 50%; overflow: hidden;
   background: var(--card); border: 4px solid var(--ink); color: var(--ink); box-shadow: 0 12px 0 rgba(22, 29, 33, .45); }
-#center.pulse { animation: stagePulse .7s ease-out; }
-#center .slide { position: absolute; inset: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; animation: fadein .4s; }
-#center img { height: 220px; }
-#center .ico-g { font-size: 120px; line-height: 1; color: var(--accent); }
-#center .cap { font-family: var(--hand); font-weight: 400; font-size: 50px; text-align: center; line-height: 1.3; max-width: 430px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#center .sub { font-size: 27px; font-weight: 700; color: var(--soft-ink); text-align: center; max-width: 430px; line-height: 1.25;
+/* a new slide flips in like a card while a shine sweeps across; the circle itself never moves */
+#center::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; transform: translateX(-130%) skewX(-16deg);
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .85) 50%, transparent 70%); }
+#center.flip::after { animation: centerShine .9s ease-out; }
+#center.flip .slide { animation: flipIn .6s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes centerShine { to { transform: translateX(130%) skewX(-16deg); } }
+@keyframes flipIn { from { transform: perspective(900px) rotateY(75deg); opacity: 0; } }
+/* the halo: a comet of light running round the rim in the colour of the hour's planet */
+#halo { position: absolute; left: 50%; top: 50%; width: 580px; height: 580px; margin: -290px 0 0 -290px; border-radius: 50%; pointer-events: none; animation: spin 7s linear infinite;
+  background: conic-gradient(from 0deg, transparent 0 55%, color-mix(in srgb, var(--hour, #F2C45C) 40%, transparent) 70%, var(--hour, #F2C45C) 86%, #fff 90%, transparent 91%);
+  -webkit-mask-image: radial-gradient(circle, transparent 262px, #000 264px, #000 288px, transparent 290px); mask-image: radial-gradient(circle, transparent 262px, #000 264px, #000 288px, transparent 290px); }
+#halo::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--hour, #F2C45C) 45%, transparent); }
+.lite #halo { animation-duration: 14s; }
+#center .slide { position: absolute; inset: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; animation: fadein .4s; }
+#center img { height: 196px; }
+#center .ico-g { font-size: 108px; line-height: 1; color: var(--accent); }
+#center .cap { font-family: var(--hand); font-weight: 400; font-size: 46px; text-align: center; line-height: 1.3; /* room for Vietnamese diacritics */ max-width: 390px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#center .sub { font-size: 24px; font-weight: 700; color: var(--soft-ink); text-align: center; max-width: 390px; line-height: 1.2;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 /* nobody on stage yet: the wheel hides entirely (no mascots, no centre), the queue takes its place */
 #wheel.empty { visibility: hidden; }
 
-/* waiting layout: shown instead of the wheel while nobody is on stage — a greeting, the line of viewers who
-   have not picked a sign yet, and the 12 seats to pick from. */
-#waiting { position: absolute; left: 32px; top: 352px; width: 1016px; height: 1048px; z-index: 13; display: none; flex-direction: column; gap: 16px; }
+/* Waiting room shows the greeting and viewers who have not picked a sign yet. */
+#waiting { position: absolute; left: 32px; top: 326px; width: 1016px; height: auto; z-index: 13; display: none; flex-direction: column; gap: 16px; }
 #waiting.on { display: flex; animation: fadein .3s; }
 .wgreet { flex: none; height: 168px; display: flex; align-items: center; gap: 20px; padding: 0 26px 0 22px; border-radius: var(--note); background: var(--card); color: var(--ink);
   border: 3px solid var(--ink); box-shadow: 0 8px 0 rgba(22, 29, 33, .4); }
@@ -105,12 +117,13 @@ body.transparent, body.transparent #stage { background: transparent; }
 .wvis { flex: none; display: flex; flex-direction: column; align-items: center; min-width: 108px; padding: 8px 14px; border-radius: 22px; background: rgba(47, 60, 68, .07); }
 .wvis b { font-family: var(--hand); font-weight: 400; font-size: 46px; line-height: 1; font-variant-numeric: tabular-nums; }
 .wvis span { font-size: 15px; font-weight: 800; color: var(--soft-ink); }
-.wqueue { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 14px 20px 18px; border-radius: var(--note); background: var(--card); color: var(--ink);
+.wqueue { flex: none; min-height: 0; display: none; flex-direction: column; padding: 14px 20px 18px; border-radius: var(--note); background: var(--card); color: var(--ink);
   border: 3px solid var(--ink); box-shadow: 0 8px 0 rgba(22, 29, 33, .4); }
+.wqueue.on { display: flex; }
 .wqh { flex: none; display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
 .wqh b { font-family: var(--hand); font-weight: 400; font-size: 34px; }
 .wqh span { font-size: 20px; font-weight: 800; color: var(--accent); }
-.wql { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); gap: 10px 14px; }
+.wql { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(76px, auto); gap: 10px 14px; }
 .wp { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0 14px 0 10px; border-radius: 999px; background: rgba(47, 60, 68, .06); border: 2px solid var(--line); animation: rise .3s; }
 .wp .pos { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--card); font-size: 19px; font-weight: 900; }
 .wp img { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: rgba(47, 60, 68, .12); border: 2px solid var(--ink); }
@@ -119,69 +132,89 @@ body.transparent, body.transparent #stage { background: transparent; }
 .wp .who span { display: block; font-size: 16px; font-weight: 700; color: var(--soft-ink); white-space: nowrap; }
 .wp.first { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, #fff); }
 .wp.first .pos { background: var(--accent); }
-.wp.open { border-style: dashed; background: transparent; opacity: .55; }
-.wp.open .pos { background: transparent; color: var(--soft-ink); border: 2px dashed var(--soft-ink); }
-.wp.open .who b { font-weight: 700; color: var(--soft-ink); }
-.wseats { flex: none; padding: 10px 16px 14px; border-radius: var(--note); background: rgba(22, 29, 33, .55); border: 3px dashed rgba(246, 240, 230, .35); }
-.wsh { margin-bottom: 8px; font-family: var(--hand); font-size: 26px; letter-spacing: 1px; color: var(--gold); }
-.wq { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(2, 84px); gap: 8px; }
-.ws { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; border-radius: 18px;
-  background: rgba(255, 253, 249, .07); border: 2px dashed color-mix(in srgb, var(--el) 70%, #fff); }
-.ws b { position: absolute; top: 4px; left: 5px; width: 24px; height: 24px; border-radius: 50%; background: var(--el); color: var(--ink);
-  display: grid; place-items: center; font-size: 14px; font-weight: 900; }
-.ws span { font-size: 34px; line-height: 1; color: color-mix(in srgb, var(--el) 70%, #fff); }
-.ws i { font-style: normal; font-size: 16px; font-weight: 800; color: rgba(246, 240, 230, .9); white-space: nowrap; }
 
-/* event card (level 1): one announcement at a time. Tall, tinted with the event's colour, a big icon bubble that bounces in */
-#event { position: absolute; left: 36px; right: 36px; top: 1416px; height: 150px; z-index: 12; pointer-events: none; }
-.ev { position: relative; display: flex; align-items: center; gap: 20px; height: 100%; padding: 0 28px 0 22px; border-radius: var(--note); color: var(--ink);
+
+/* event card (level 1): compact center toast; createLane serializes cards so they never stack */
+#event { position: absolute; left: 50%; top: 851px; width: min(760px, calc(100% - 72px)); height: 72px; transform: translate(-50%, -50%); z-index: 12; pointer-events: none; }
+.ev { position: relative; display: flex; align-items: center; gap: 10px; height: 100%; padding: 0 12px; border-radius: 24px; color: var(--ink);
   background: linear-gradient(100deg, color-mix(in srgb, var(--ec, var(--gold)) 55%, #fff) 0%, var(--card) 62%);
-  border: 4px solid var(--ink); box-shadow: 0 10px 0 rgba(22, 29, 33, .42); overflow: hidden; animation: evIn .4s cubic-bezier(.2, 1.5, .4, 1); }
-.ev .ic { flex: none; width: 104px; height: 104px; border-radius: 50%; display: grid; place-items: center; font-size: 58px; line-height: 1;
-  background: var(--ec, var(--gold)); border: 4px solid var(--ink); box-shadow: 0 5px 0 rgba(22, 29, 33, .35); animation: icBounce .7s cubic-bezier(.2, 1.8, .4, 1) .1s backwards; }
-.ev .ic svg { width: 58px; height: 58px; }
-.ev .ic .gf { font-size: 56px; color: var(--ink); }
+  border: 2px solid var(--ink); box-shadow: 0 4px 0 rgba(22, 29, 33, .42); overflow: hidden; animation: evIn .4s cubic-bezier(.2, 1.5, .4, 1); }
+.ev .ic { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; line-height: 1;
+  background: var(--ec, var(--gold)); border: 3px solid var(--ink); box-shadow: 0 4px 0 rgba(22, 29, 33, .35); animation: icBounce .7s cubic-bezier(.2, 1.8, .4, 1) .1s backwards; }
+.ev .ic svg { width: 30px; height: 30px; }
+.ev .ic .gf { font-size: 30px; color: var(--ink); }
 .ev .tx { flex: 1; min-width: 0; }
-.ev .tt { font-family: var(--hand); font-size: 50px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev .tt { font-family: var(--hand); font-size: 25px; line-height: 1.12; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ev .tt b { color: color-mix(in srgb, var(--ec, var(--gold)) 50%, var(--ink)); font-weight: 400; }
-.ev .ss { margin-top: 2px; font-size: 25px; font-weight: 700; color: var(--soft-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ev .pg { position: absolute; left: 0; right: 0; bottom: 0; height: 9px; background: var(--ink); opacity: .85; transform-origin: left; animation: evBar var(--ms, 2800ms) linear forwards; }
+.ev .ss { margin-top: 1px; font-size: 14px; font-weight: 700; color: var(--soft-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev .pg { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--ink); opacity: .85; transform-origin: left; animation: evBar var(--ms, 2800ms) linear forwards; }
 
 /* gifts are the loudest card: golden paper with a gold halo, the gift itself bouncing, the sender's face, a combo bubble, a shine sweep */
-.ev.gift { padding: 0 18px 0 14px; border-radius: 40px 30px 42px 34px / 34px 42px 30px 40px; animation: giftIn .5s cubic-bezier(.2, 1.5, .4, 1);
-  background: linear-gradient(180deg, #FFF7DC, #FFE7A1); border: 4px solid var(--ink);
-  box-shadow: 0 0 0 6px rgba(242, 196, 92, .55), 0 0 40px rgba(242, 196, 92, .6), 0 9px 0 rgba(22, 29, 33, .45); }
+.ev.gift { padding: 0 12px; border-radius: 30px 24px 32px 26px / 26px 32px 24px 30px; animation: giftIn .5s cubic-bezier(.2, 1.5, .4, 1);
+  background: linear-gradient(180deg, #FFF7DC, #FFE7A1); border: 3px solid var(--ink);
+  box-shadow: 0 0 0 4px rgba(242, 196, 92, .45), 0 0 20px rgba(242, 196, 92, .45), 0 7px 0 rgba(22, 29, 33, .45); }
 .ev.gift::before { display: none; }
 .ev.gift::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 140px; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .8), transparent);
   transform: translateX(-200px) skewX(-18deg); animation: shine 1.6s ease-in-out .3s 2; pointer-events: none; }
-.ev.gift .ic { position: relative; width: 116px; height: 116px; margin: 0; font-size: 62px; background: var(--gold); border: 3px solid var(--ink); animation: wobble 1.1s ease-in-out infinite; }
-.ev.gift .ic img { width: 84px; height: 84px; object-fit: contain; }
-.ev.gift .ic svg { width: 62px; height: 62px; }
+.ev.gift .ic { position: relative; width: 48px; height: 48px; margin: 0; font-size: 28px; background: var(--gold); border: 2px solid var(--ink); animation: wobble 1.1s ease-in-out infinite; }
+.ev.gift .ic img { width: 34px; height: 34px; object-fit: contain; }
+.ev.gift .ic svg { width: 30px; height: 30px; }
 .ev.gift .tx { position: relative; }
-.ev.gift .tt { font-size: 58px; line-height: 1.25; }
+.ev.gift .tt { font-size: 25px; line-height: 1.12; }
 .ev.gift .ss { display: flex; align-items: center; gap: 8px; color: var(--ink); }
-.ev.gift .ss img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--ink); flex: none; }
+.ev.gift .ss img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--ink); flex: none; }
 .ev.gift .ss span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ev.gift .pg { height: 7px; background: var(--accent); }
-.ev .combo { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 112px; height: 112px; border-radius: 50%;
-  background: var(--accent); border: 4px solid var(--ink); color: #fff; box-shadow: 0 5px 0 rgba(22, 29, 33, .4); animation: popc .5s cubic-bezier(.2, 1.8, .4, 1) .15s backwards; }
-.ev .combo b { font-family: var(--hand); font-weight: 400; font-size: 52px; line-height: .9; }
+.ev .combo { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%;
+  background: var(--accent); border: 3px solid var(--ink); color: #fff; box-shadow: 0 4px 0 rgba(22, 29, 33, .4); animation: popc .5s cubic-bezier(.2, 1.8, .4, 1) .15s backwards; }
+.ev .combo b { font-family: var(--hand); font-weight: 400; font-size: 34px; line-height: .9; }
 .ev .combo small { font-size: 12px; font-weight: 900; letter-spacing: 2px; }
 
-/* the merged base card: thanks on top, how-to icons underneath */
-#bottom { position: static; }
+/* nhiệm vụ giờ: one slim row at the foot of the top card (the bottom of the frame is under TikTok's chat) */
 .panel { border-radius: var(--note); background: var(--card); border: 2px solid var(--ink); color: var(--ink); padding: 10px 16px 12px; overflow: hidden; box-shadow: 0 6px 0 rgba(22, 29, 33, .38); }
 .panel h3 { font-family: var(--hand); font-weight: 400; font-size: 26px; margin-bottom: 6px; }
-#base { position: absolute; left: 36px; top: 1586px; width: 1008px; padding: 12px 18px 14px; }
-.gbar { padding-bottom: 10px; border-bottom: 2px dashed var(--line); }
-.gtitle { display: flex; justify-content: space-between; align-items: baseline; }
-.gtitle b { font-family: var(--hand); font-weight: 400; font-size: 30px; }
-.gtitle span { font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
-.gtrack { height: 22px; margin: 4px 0 6px; border-radius: 11px; background: rgba(47, 60, 68, .14); overflow: hidden; border: 2px solid var(--ink); }
+.gbar { display: flex; align-items: center; gap: 12px; height: 34px; margin-top: 6px; padding-top: 6px; border-top: 2px dashed var(--line); font-size: 18px; font-weight: 800; }
+.gbar > b { flex: none; font-family: var(--hand); font-weight: 400; font-size: 24px; }
+.gtrack { flex: 1; height: 16px; border-radius: 8px; background: rgba(47, 60, 68, .14); overflow: hidden; border: 2px solid var(--ink); }
 .gtrack i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); transition: transform .6s; background: repeating-linear-gradient(135deg, var(--gold) 0 14px, #f7d98a 14px 28px); }
-.gmeta { display: flex; justify-content: space-between; font-size: 19px; font-weight: 700; color: var(--soft-ink); }
-.gmeta b { color: var(--ink); }
-.node.lead::after { content: '👑'; position: absolute; top: -26px; left: 50%; transform: translateX(-50%); font-size: 22px; }
+#qnums { flex: none; color: var(--accent); font-variant-numeric: tabular-nums; }
+#qrew { flex: none; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--soft-ink); }
+.gbar.quest .gtrack i { background: repeating-linear-gradient(135deg, var(--qc, var(--gold)) 0 14px, color-mix(in srgb, var(--qc, var(--gold)) 55%, #fff) 14px 28px); }
+.gbar.quest.done #qnums { color: #3c8a5a; }
+
+/* countdown to the next big moment, in the top card next to the chest */
+.show { display: flex; align-items: center; gap: 8px; padding: 0 4px 0 18px; border-left: 2px dashed var(--line); }
+.show i { font-style: normal; font-size: 40px; color: var(--accent); line-height: 1; }
+.show b { display: block; font-family: var(--hand); font-weight: 400; font-size: 34px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.show span { display: block; max-width: 128px; font-size: 15px; font-weight: 800; color: var(--soft-ink); line-height: 1.1; }
+.show.soon i { animation: popc .8s ease-in-out infinite; }
+.show.now b { color: var(--accent); }
+
+/* the community sky under the chat: decorative, every star carries a viewer's name */
+#skyzone { position: absolute; left: 0; right: 0; top: var(--zone); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; z-index: 2; opacity: .75; }
+#skyzone b { font-family: var(--hand); font-weight: 400; font-size: 30px; color: var(--gold); letter-spacing: 2px; }
+#skyzone span { font-size: 17px; font-weight: 700; color: var(--paper); opacity: .8; }
+
+/* bầu trời ngày sinh: a small chart of that day's sky inside the celebration */
+.bchart { position: relative; width: 360px; height: 360px; }
+.bchart svg { width: 100%; height: 100%; overflow: visible; }
+.bchart .ring { fill: rgba(246, 240, 230, .08); stroke: rgba(246, 240, 230, .6); stroke-width: 2; }
+.bchart .tick { stroke: rgba(246, 240, 230, .25); stroke-width: 1.5; }
+.bchart .sg { font: 400 22px 'Segoe UI Symbol', sans-serif; fill: var(--paper); opacity: .75; text-anchor: middle; dominant-baseline: central; }
+.bchart .sg.sun { fill: var(--gold); opacity: 1; font-size: 28px; }
+.bchart .pl { animation: plIn .9s cubic-bezier(.2, 1.4, .4, 1) backwards; }
+.bchart .pl circle { fill: var(--card); stroke: var(--ink); stroke-width: 3; }
+.bchart .pl text { font: 400 24px 'Segoe UI Symbol', sans-serif; fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.bchart .pl.sun circle { fill: var(--gold); }
+.bchart .pl.moon circle { fill: #FFE7A1; }
+@keyframes plIn { from { transform: translate(calc(-1 * var(--dx)), calc(-1 * var(--dy))) scale(.2); opacity: 0; } }
+.bchart .me { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.bchart .me .av { width: 96px; height: 96px; border-radius: 50%; border: 4px solid var(--gold); object-fit: cover; font-size: 44px; }
+.blines { display: grid; gap: 6px; max-width: 900px; margin-top: 4px; text-align: left; }
+.blines p { padding: 6px 16px; border-radius: 16px; background: rgba(246, 240, 230, .12); color: var(--paper); font-size: 24px; font-weight: 700; line-height: 1.25; text-shadow: none; }
+.blines p b { color: var(--gold); font-weight: 800; }
+.blines .hint { text-align: center; color: var(--gold); }
+.node.lead::after { content: '👑'; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); width: 38px; height: 38px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: var(--gold); font-size: 22px; line-height: 1; box-shadow: 0 3px 0 rgba(22,29,33,.45), 0 0 18px rgba(242,196,92,.8); z-index: 2; }
 .node.lucky { border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold), 0 0 34px var(--gold); opacity: 1; }
 
 .ty { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--line); font-size: 17px; font-weight: 800; }
@@ -222,9 +255,9 @@ body.transparent, body.transparent #stage { background: transparent; }
 #conn.on { display: block; }
 
 /* modals over the body area */
-#scrim { position: absolute; left: 36px; right: 36px; top: 352px; height: 1048px; z-index: 20; display: none; background: rgba(22, 29, 33, .5); }
+#scrim { position: absolute; left: 36px; right: 36px; top: 326px; height: 1048px; z-index: 20; display: none; background: rgba(22, 29, 33, .5); }
 #scrim.on { display: block; animation: fadein .3s; }
-.modal { position: absolute; left: 56px; right: 56px; top: 380px; z-index: 25; display: none; padding: 16px 24px 14px; border-radius: 36px 28px 38px 30px / 30px 38px 28px 36px; text-align: center;
+.modal { position: absolute; left: 56px; right: 56px; top: 350px; z-index: 25; display: none; padding: 16px 24px 14px; border-radius: 36px 28px 38px 30px / 30px 38px 28px 36px; text-align: center;
   background: var(--card); border: 3px solid var(--ink); color: var(--ink); box-shadow: 0 10px 0 rgba(22, 29, 33, .5); }
 .modal.on { display: block; animation: rise .3s; }
 .modal .k { font-family: var(--hand); font-weight: 400; font-size: 18px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; }
@@ -250,7 +283,7 @@ body.transparent, body.transparent #stage { background: transparent; }
 .modal .win { margin-top: 4px; font-size: 18px; font-weight: 800; color: color-mix(in srgb, var(--teal) 50%, var(--ink)); min-height: 24px; }
 
 /* celebration (level 3): the big moments take the whole body area */
-#hero { position: absolute; left: 36px; right: 36px; top: 352px; height: 1048px; z-index: 22; display: none; pointer-events: none; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+#hero { position: absolute; left: 36px; right: 36px; top: 326px; height: 1048px; z-index: 22; display: none; pointer-events: none; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
   background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--hc, #F2C45C) 36%, rgba(22, 29, 33, .92)), rgba(22, 29, 33, .84) 60%, rgba(22, 29, 33, .6)); }
 #hero.on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; animation: fadein .22s; }
 #hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 1400px; height: 1400px; margin: -700px 0 0 -700px; opacity: .6; animation: spin 28s linear infinite;
@@ -263,6 +296,19 @@ body.transparent, body.transparent #stage { background: transparent; }
 #hero > img { height: 250px; animation: riseup .5s ease-out; }
 #hero .cap { text-align: center; padding: 0 40px; font-family: var(--hand); font-size: 54px; line-height: 1.05; color: var(--paper); text-shadow: 0 4px 0 #161d21, 0 0 34px var(--hc, #F2C45C); animation: popc .5s; }
 #hero.compact .cap { font-size: 48px; }
+
+/* Layout vs TikTok's player (overlay.js sets the variables): the top card sits at --top, the wheel is scaled to fit
+   between --wheel-t and --wheel-b, and everything below --zone is under the viewers' chat, so it only holds the
+   community sky. ?phone=1 is the same plan for a 1080x2400 canvas (its top ~340px is under TikTok's header). */
+#top { top: var(--top); }
+#wheel { left: var(--wheel-l); top: var(--wheel-t); transform: scale(var(--z)); transform-origin: top left; }
+#waiting { top: var(--wheel-t); }
+#scrim, #hero { top: var(--wheel-t); height: calc(var(--wheel-b) - var(--wheel-t)); }
+.modal { top: calc(var(--wheel-t) + 20px); }
+#event { top: var(--cy); }
+.arena-live #event { top: calc(var(--cy) - 226px * var(--z)); }
+#conn { top: calc(var(--zone) - 40px); }
+#sound { top: calc(var(--zone) + 60px); }
 #hero .sub { text-align: center; padding: 0 48px; font-size: 26px; font-weight: 800; line-height: 1.25; color: var(--gold); text-shadow: 0 2px 10px #161d21; }
 /* a big gift: the gift picture, the count and the sender */
 #hero .gimg { display: grid; place-items: center; width: 150px; height: 150px; color: var(--gold); animation: popc .55s cubic-bezier(.2, 1.6, .4, 1), wobble 1.2s ease-in-out .6s infinite; }
@@ -273,7 +319,6 @@ body.transparent, body.transparent #stage { background: transparent; }
 #hero .giver img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid var(--hc, var(--gold)); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes hit { 30% { transform: scale(1.25); } }
 @keyframes fadein { from { opacity: 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(30px); } }
 @keyframes evIn { from { opacity: 0; transform: translateY(30px) scale(.92); } }
@@ -291,3 +336,7 @@ body.transparent, body.transparent #stage { background: transparent; }
 @keyframes beat { 30% { transform: scale(1.12); box-shadow: 0 0 0 6px rgba(233, 122, 102, .45); } }
 /* the canvases may hold more pixels than the stage has units; keep them exactly stage-sized on screen */
 #bg, #fx { width: 1080px; height: 1920px; }
+.phone #bg, .phone #fx { height: 2400px; }
+
+/* ?lite=1: drop the expensive paint effects */
+.lite *, .lite *::before, .lite *::after { box-shadow: none !important; filter: none !important; backdrop-filter: none !important; text-shadow: none !important; }

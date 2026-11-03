@@ -64,6 +64,10 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   const set = patch => { Object.assign(status, patch); onStatus({ ...status }); };
 
   // One guard for every handler: a malformed event is logged and skipped, never allowed to crash the show.
+  // Joins arrive in bursts and only drive a greeting card: let a few through per second, drop the rest.
+  let joinSec = 0, joinN = 0;
+  const joinAllowed = () => { const s = Math.floor(Date.now() / 1000); if (s !== joinSec) { joinSec = s; joinN = 0; } return ++joinN <= 5; };
+
   const handle = (type, fn) => d => {
     try { probe(type, d); fn(d); } catch (e) { log(`[tiktok] bad ${type} event ignored: ${e?.message ?? e}`); }
   };
@@ -71,8 +75,12 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   async function open() {
     clearTimeout(retry);
     if (!wanted) return;
-    const c = (conn = connect(wanted, { enableExtendedGiftInfo: true }));
+    const c = (conn = connect(wanted, {
+      enableExtendedGiftInfo: false,
+      ...(process.env.EULERSTREAM_API_KEY ? { signApiKey: process.env.EULERSTREAM_API_KEY } : {}),
+    }));
     c.on(WebcastEvent.CHAT, handle('chat', d => game.chat(chatOf(d))));
+    c.on(WebcastEvent.MEMBER, handle('member', d => { if (joinAllowed()) game.member(userOf(d)); }));
     c.on(WebcastEvent.GIFT, handle('gift', d => { const g = giftOf(d); if (g) game.gift(g); }));
     c.on(WebcastEvent.LIKE, handle('like', d => game.like(likeOf(d))));
     c.on(WebcastEvent.FOLLOW, handle('follow', d => game.social(socialOf(d, 'follow'))));

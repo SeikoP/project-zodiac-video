@@ -31,6 +31,7 @@ function longitude(body, date) {
   if (body === 'Moon') return Astronomy.EclipticGeoMoon(date).lon;
   return Astronomy.Ecliptic(Astronomy.GeoVector(body, date, true)).elon;
 }
+export { longitude as longitudeOf };
 const signAt = lon => ZODIAC[Math.floor((((lon % 360) + 360) % 360) / 30)];
 // Signed shortest difference b - a in degrees (handles the 360→0 wrap).
 const diff = (a, b) => ((b - a + 540) % 360) - 180;

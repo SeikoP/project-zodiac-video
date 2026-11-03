@@ -26,21 +26,24 @@
         <circle cx="44" cy="46" r="7" fill="rgba(200,150,60,.25)" clip-path="url(#moonFill)"/><circle cx="72" cy="70" r="10" fill="rgba(200,150,60,.2)" clip-path="url(#moonFill)"/></svg>
       <div class="moontxt"><b id="moonPct">0%</b><span id="moonSub">thả tim để trăng lên</span></div>
     </div>
+      <div class="show" id="show"><i>✦</i><div><b id="showT">–:––</b><span id="showS">màn lớn</span></div></div>
     </div>
     <div class="join" id="join">
-      <div class="j1"><span class="jn">1</span><div><b>Comment <em>tên cung</em> hoặc <em>ngày sinh</em></b><span>vd “Sư Tử”, “7” hay “12/8” → vào đội cung của bạn</span></div></div>
+      <div class="j1"><span class="jn">1</span><div><b>Comment <em>ngày sinh</em> hoặc <em>tên cung</em></b><span>vd “12/8/1998” → xem bầu trời ngày bạn chào đời ✨</span></div></div>
       <div class="j2" id="jcmd"></div>
     </div>
-    <div class="skyrow" id="skyrow"></div>
     <div id="race"></div>
     <div class="call" id="call"></div>
+    <div class="wall"><h3 title="Điều ước" aria-label="Điều ước">🏮</h3><div id="wishwall"></div></div>
+    <div class="gbar quest" id="quest"><b id="qtitle">✦ Nhiệm vụ giờ</b><div class="gtrack"><i id="qfill"></i></div><span id="qnums"></span><span id="qrew"></span></div>
   </section>
 
   <section id="wheel">
     <svg class="ring" viewBox="420 464 624 866" id="ring"></svg>
+    <div id="halo"></div>
     <div id="center"></div>
     <div id="arena"></div>
-    <div class="ringlabel" id="ringLabel"><b id="wheelTitle">Vòng 1</b><span id="wheelCount">0/12 chòm đã sáng</span></div>
+    <div class="ringlabel" id="ringLabel"><b id="wheelTitle">Vòng 1</b><span id="wheelCount">🎯 Thắp sáng 12 cung · 0/12</span></div>
     <div class="heat" id="heat"><div class="hh"><b>🔥</b><em id="heatName">Yên ả</em></div><div class="hbar"><i id="heatFill"></i></div><span id="heatSub">nhiệt phòng · chat, tim, quà</span></div>
     <div class="fanbox" id="fanbox"></div>  </section>
   <div id="lanterns"></div>
@@ -51,29 +54,16 @@
       <div class="wgtx"><b id="wgTitle">Chào mừng cả nhà đến Đêm Hội!</b><span id="wgSub">Comment <em>số 1–12</em> hoặc <em>tên cung</em> để vào vòng ✨</span></div>
       <div class="wvis"><b id="wvis">0</b><span>người ghé</span></div>
     </div>
-    <div class="wqueue">
+    <div class="wqueue" id="wqueue">
       <div class="wqh"><b>Hàng đợi vào vòng</b><span id="wqn">chưa có ai</span></div>
       <div class="wql" id="wql"></div>
-    </div>
-    <div class="wseats">
-      <div class="wsh">Chọn chỗ của bạn trên vòng hoàng đạo</div>
-      <div class="wq" id="wq"></div>
     </div>
   </section>
 
   <div id="event"></div>
 
-  <section id="bottom">
-    <div class="panel" id="base">
-      <div class="gbar">
-        <div class="gtitle"><b>☄ Quà chung · mưa sao băng</b><span id="gnums">0/30 xu</span></div>
-        <div class="gtrack"><i id="gfill"></i></div>
-        <div class="gmeta"><span id="gstat">0 quà đêm nay</span><span id="gtop"></span></div>
-      </div>
-      <div class="thx"><h3>Quà gần đây</h3><div id="thanks"></div></div>
-      <div class="wall"><h3>🏮 Điều ước</h3><div id="wishwall"></div></div>
-    </div>
-  </section>
+  <!-- the lower part of the frame sits under TikTok's chat: only the community sky lives there, nothing to read -->
+  <div id="skyzone"><b>✦ Bầu trời cộng đồng</b><span>mỗi ngôi sao mang tên một bạn đã ghé · quay lại là sao sáng lên</span></div>
 
   <canvas id="fx" width="1080" height="1920"></canvas>
   <div id="scrim"></div>

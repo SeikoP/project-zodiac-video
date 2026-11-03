@@ -1,4 +1,4 @@
-// Builds a large, varied quiz bank: ~15 question templates generated from the sign data
+// Builds a large, varied quiz bank: ~20 question templates, two in three of them easy (a glyph, an emoji, an element), generated from the sign data
 // (so questions never repeat word for word), plus the hand-written trivia in quiz.json.
 // Questions are interleaved by template so two of the same kind never come back to back.
 import { SIGNS } from './game.mjs';
@@ -26,7 +26,14 @@ function make(kind, q, correct, pool, rng) {
   return { kind, q, options, answer: LETTERS[options.indexOf(correct)] };
 }
 
+// The everyday picture of each sign, for the easiest questions.
+const EMOJI = { aries: '🐏', taurus: '🐂', gemini: '👯', cancer: '🦀', leo: '🦁', virgo: '🌾', libra: '⚖️', scorpio: '🦂', sagittarius: '🏹', capricorn: '🐐', aquarius: '🏺', pisces: '🐟' };
+// Kinds a newcomer can answer at a glance; they make up two questions in three (see buildQuizBank).
+export const EASY = new Set(['glyph', 'emoji', 'element', 'symbol', 'order', 'birthday', 'whichElement', 'fromEnglish']);
+
 const TEMPLATES = {
+  glyph: rng => SIGNS.map(s => make('glyph', `Ký hiệu ${s.glyph}︎ là cung nào?`, s.label, SIGNS.map(x => x.label), rng)),
+  emoji: rng => SIGNS.map(s => make('emoji', `${EMOJI[s.id]} là con vật / biểu tượng của cung nào?`, s.label, SIGNS.map(x => x.label), rng)),
   element: rng => SIGNS.map(s => make('element', `${s.label} thuộc nguyên tố nào?`, ELEMENT_LABEL[s.element], Object.values(ELEMENT_LABEL), rng)),
   symbol: rng => SIGNS.map(s => make('symbol', `Biểu tượng của ${s.label} là gì?`, SIGN_DATA[s.id].symbol, SIGNS.map(x => SIGN_DATA[x.id].symbol), rng)),
   planet: rng => SIGNS.map(s => make('planet', `Hành tinh chủ quản truyền thống của ${s.label}?`, SIGN_DATA[s.id].planet, ['Sao Hỏa', 'Sao Kim', 'Sao Thủy', 'Mặt Trăng', 'Mặt Trời', 'Sao Mộc', 'Sao Thổ'], rng)),
@@ -66,7 +73,7 @@ const TEMPLATES = {
 };
 
 // extra: hand-written { q, options, answer } from quiz.json. Returns a flat, interleaved list.
-export function buildQuizBank({ extra = [], seed = Date.now() } = {}) {
+export function buildQuizBank({ extra = [], seed = Date.now(), easyShare = 2 / 3 } = {}) {
   const rng = seeded(seed);
   const groups = Object.entries(TEMPLATES).map(([, fn]) => shuffle(fn(rng).filter(Boolean), rng));
   groups.push(shuffle(extra.filter(x => x?.q && Array.isArray(x.options) && x.options.length >= 2 && 'ABCD'.includes(x.answer)).map(x => ({ kind: 'trivia', ...x })), rng));
@@ -74,12 +81,16 @@ export function buildQuizBank({ extra = [], seed = Date.now() } = {}) {
   const seen = new Set();
   for (const g of groups) for (let i = g.length - 1; i >= 0; i--) { if (seen.has(g[i].q)) g.splice(i, 1); else seen.add(g[i].q); }
   const out = [];
-  let last = null;
+  let last = null, easy = 0;
   while (groups.some(g => g.length)) {
-    // take from the non-empty group with the most left, skipping the kind we just used
-    const pick = groups.filter(g => g.length && g[0].kind !== last).sort((a, b) => b.length - a.length)[0] ?? groups.find(g => g.length);
+    // easy kinds fill `easyShare` of the slots; within that, take from the non-empty group with the most left,
+    // skipping the kind we just used
+    const wantEasy = easy < easyShare * (out.length + 1);
+    const ok = g => g.length && g[0].kind !== last && EASY.has(g[0].kind) === wantEasy;
+    const pick = groups.filter(ok).sort((a, b) => b.length - a.length)[0] ?? groups.filter(g => g.length && g[0].kind !== last).sort((a, b) => b.length - a.length)[0] ?? groups.find(g => g.length);
     const item = pick.shift();
     out.push(item);
+    if (EASY.has(item.kind)) easy++;
     last = item.kind;
   }
   return out;

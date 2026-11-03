@@ -6,7 +6,7 @@
 export function createSfx(volume = 0.3) {
   let ctx = null, master = null, noise = null, samples = {}, loading = false;
   const lastAt = {}, recent = [];
-  const COOLDOWN = { title: 4000, milestone: 1500, quiz: 800, join: 700, heart: 450, comment: 1500, dance: 800, sparkle: 400, wish: 1500, overtake: 4000, flow: 1200, quizTick: 900, boop: 1500 };
+  const COOLDOWN = { title: 4000, milestone: 1500, quiz: 800, join: 700, heart: 450, comment: 1500, dance: 800, sparkle: 400, wish: 1500, overtake: 4000, flow: 1200, quizTick: 900, boop: 1500, starFly: 900, bossHit: 300, runHit: 2000, cardFlip: 600, laugh: 3000 };
 
   // Loads the recorded effects listed in /sfx/manifest.json; any that fail to load stay synthesized.
   async function loadSamples() {
@@ -111,6 +111,28 @@ export function createSfx(volume = 0.3) {
     welcome: () => arp([N.c5, N.e5, N.g5, N.c6, N.e6], 0.08, 0.6, { type: 'triangle', gain: 0.3 }),
     night: () => { tone(110, 0, 1.8, { gain: 0.5 }); tone(220, 0, 1.4, { gain: 0.2 }); },
     boop: () => tone(330, 0, 0.12, { type: 'sine', gain: 0.2, glide: 0.8 }),
+    // giờ hành tinh, the acts and their headliners
+    hourStart: () => { [196, 261.63, 392].forEach((f, i) => tone(f, i * 0.22, 2.2, { gain: 0.32 })); tone(1568, 0.66, 1.6, { type: 'sine', gain: 0.12 }); },
+    actOpen: () => { tone(N.g5, 0, 0.6, { type: 'triangle', gain: 0.25 }); tone(N.c6, 0.14, 0.8, { type: 'triangle', gain: 0.25 }); },
+    headStart: () => { for (let i = 0; i < 3; i++) tone(146.8, i * 0.16, 0.14, { type: 'square', gain: 0.12 }); arp([N.c5, N.g5, N.c6, N.g6], 0.08, 0.5, { type: 'triangle', gain: 0.3 }); },
+    actClose: () => arp([N.c6, N.g5, N.e5, N.c5, N.g5, N.c6], 0.1, 0.4, { type: 'triangle', gain: 0.25 }),
+    pair: () => { tone(N.e5, 0, 0.5, { type: 'sine', gain: 0.25 }); tone(N.a5, 0.12, 0.6, { type: 'sine', gain: 0.25 }); tone(N.e6, 0.3, 0.9, { type: 'sine', gain: 0.15, glide: 1.02 }); },
+    starFly: () => { hiss(0, 0.7, { from: 1500, to: 7000, gain: 0.15 }); tone(N.g6, 0.55, 0.5, { type: 'sine', gain: 0.18 }); },
+    chestOpen: () => { tone(110, 0, 0.18, { type: 'square', gain: 0.15, glide: 1.5 }); arp([N.c6, N.e6, N.g6], 0.06, 0.35, { type: 'sine', gain: 0.25 }); },
+    bossStart: () => { tone(55, 0, 1.6, { type: 'sawtooth', gain: 0.25, glide: 1.4 }); hiss(0.1, 1.2, { from: 300, to: 2500, gain: 0.25 }); },
+    bossHit: () => { hiss(0, 0.12, { from: 2000, to: 400, gain: 0.3 }); tone(120, 0, 0.12, { gain: 0.3, glide: 0.5 }); },
+    // Hành trình Tầng Trời
+    door: () => { tone(220, 0, 0.5, { type: 'triangle', gain: 0.3, glide: 0.75 }); hiss(0.05, 0.4, { from: 600, to: 200, gain: 0.2 }); },
+    boon: () => { arp([N.e5, N.a5, N.c6, N.e6, N.a5 * 2], 0.06, 0.6, { type: 'sine', gain: 0.28 }); },
+    runHit: () => { tone(80, 0, 0.35, { type: 'square', gain: 0.25, glide: 0.5 }); hiss(0, 0.25, { from: 900, to: 150, gain: 0.35 }); },
+    fall: () => { arp([N.c5, 466.16, 415.3, 392], 0.22, 0.6, { type: 'triangle', gain: 0.3 }); tone(65, 0.6, 1.5, { gain: 0.35 }); },
+    revive: () => { hiss(0, 0.8, { from: 300, to: 6000, gain: 0.25 }); arp([N.c5, N.e5, N.g5, N.c6, N.e6, N.g6], 0.07, 0.7, { type: 'triangle', gain: 0.3 }); },
+    cleared: () => { for (let i = 0; i < 6; i++) tone(98, i * 0.08, 0.1, { type: 'square', gain: 0.15 }); arp([N.c5, N.e5, N.g5, N.c6], 0.12, 0.9, { type: 'triangle', gain: 0.32 }); },
+    cardFlip: () => hiss(0, 0.18, { from: 3000, to: 900, gain: 0.25 }),
+    // vòng quay bóc phốt: the wheel ticking down, a "ba-dum-tss", the room laughing
+    spin: () => { for (let i = 0; i < 18; i++) tone(1200, 0.05 * i + 0.004 * i * i, 0.03, { type: 'square', gain: 0.06 }); },
+    roast: () => { tone(110, 0, 0.12, { type: 'square', gain: 0.2 }); tone(98, 0.15, 0.12, { type: 'square', gain: 0.2 }); hiss(0.32, 0.5, { from: 9000, to: 6000, gain: 0.3 }); },
+    laugh: () => { for (let i = 0; i < 5; i++) tone(520 - i * 30, i * 0.13, 0.1, { type: 'sawtooth', gain: 0.08, glide: 0.8 }); },
   };
 
   return function play(name, arg) {

@@ -35,7 +35,7 @@ function poll(handlers, onStatus) {
   let id = '', up = null, misses = 0;
   const tick = async () => {
     try {
-      const r = await fetch(`/poll?id=${id}`, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+      const r = await fetch(`/poll?id=${id}&wait=1`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const { id: next, msgs } = await r.json();
       id = next;
@@ -46,7 +46,7 @@ function poll(handlers, onStatus) {
       // one dropped request through a tunnel is normal; only a streak of them means the server is really gone
       if (++misses >= 3 && up !== false) { up = false; onStatus?.(false); }
     }
-    setTimeout(tick, 400);
+    setTimeout(tick, misses ? 1000 : 0); // the server holds each request until there is news, so asking again at once is cheap
   };
   tick();
   return { close() {} };

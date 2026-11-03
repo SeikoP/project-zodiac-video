@@ -11,11 +11,14 @@ export const CARD_DEFAULTS = Object.freeze({
   cardOwnSignShare: 0.5, // a drawn card is your own sign this often, otherwise any sign
   cardStarChance: 0.15,
   cardSpecialChance: 0.06, // a sky edition (Thủy Nghịch, Trăng Tròn) when the sky allows one
+  cardHourChance: 0.3, // the current planetary hour's edition
+  cardGoldChance: 0, // Hoàng Kim only comes from the pity counter (raise for a rare surprise)
+  cardPity: 10, // this many chest cards in a row without a rare one (rarity 3+) → the next is Hoàng Kim
   showCooldownSeconds: 60,
   combineCount: 3, // "ghép thẻ": this many copies of a plain card → one Tinh Tú
 });
 
-export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
+export function createCards({ st, cfg, now, rng, onEvent, signs, specials, hourEdition = () => null }) {
   const period = () => cfg.chestEveryMinutes * 60000;
   st.chest ??= { no: 0, openUntil: 0, claimed: {}, recent: [] };
   const nextChestAt = () => (period() ? Math.ceil((now() + 1) / period()) * period() : Infinity);
@@ -40,9 +43,10 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
   function draw(v, edition) {
     const sign = edition === 'boss' || rng() < cfg.cardOwnSignShare ? v.sign : signs[Math.floor(rng() * signs.length)];
     if (!edition) {
-      const sky = specials();
+      const sky = specials(), hourEd = hourEdition();
       const roll = rng();
-      edition = sky.length && roll < cfg.cardSpecialChance ? sky[Math.floor(rng() * sky.length)] : roll < cfg.cardSpecialChance + cfg.cardStarChance ? 'star' : 'base';
+      edition = sky.length && roll < cfg.cardSpecialChance ? sky[Math.floor(rng() * sky.length)] : roll < cfg.cardSpecialChance + cfg.cardStarChance ? 'star'
+        : hourEd && roll < cfg.cardSpecialChance + cfg.cardStarChance + cfg.cardHourChance ? hourEd : 'base';
     }
     return cardId(sign, edition);
   }
@@ -53,7 +57,7 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
     v.cards[id] = (v.cards[id] ?? 0) + 1;
     const unique = Object.keys(v.cards).length;
     const { sign, edition } = parseCard(id);
-    onEvent({ type: 'card', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, card: { sign, edition }, isNew, unique, why });
+    onEvent({ type: 'card', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, card: { sign, edition }, isNew, unique, why, pityLeft: Math.max(0, cfg.cardPity - (v.pity ?? 0)) });
     if (!v.setDone && signs.every(s => v.cards[cardId(s, 'base')] || v.cards[cardId(s, 'star')])) {
       v.setDone = true;
       onEvent({ type: 'set-complete', userId: u.userId, nickname: v.nickname, sign: v.sign });
@@ -66,7 +70,11 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials }) {
     if (!isOpen() || st.chest.claimed[u.userId]) return false;
     if (!v.sign) { onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'chest' }); return true; }
     st.chest.claimed[u.userId] = true;
-    const id = give(u, v, draw(v), 'chest');
+    // the pity counter: a rare card (rarity 3+) resets it; the cardPity-th chest without one is Hoàng Kim
+    v.pity = (v.pity ?? 0) + 1;
+    const pick = v.pity >= cfg.cardPity || (cfg.cardGoldChance > 0 && rng() < cfg.cardGoldChance) ? cardId(v.sign, 'gold') : draw(v);
+    if (EDITION[parseCard(pick).edition].rarity >= 3) v.pity = 0;
+    const id = give(u, v, pick, 'chest');
     st.chest.recent.unshift({ nickname: v.nickname, card: parseCard(id) });
     st.chest.recent.length = Math.min(st.chest.recent.length, 4);
     return true;

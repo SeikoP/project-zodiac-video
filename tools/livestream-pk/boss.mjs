@@ -9,14 +9,14 @@
 // Pure logic: the game owns the state object (so it is saved with everything else) and hands out the rewards.
 
 export const ROLES = Object.freeze({
-  fire: 'quà x2',
+  fire: 'đòn chí mạng',
   earth: 'chat = khiên',
   air: 'chat liên tục',
   water: 'tim x3',
 });
 
 export const BOSS_DEFAULTS = Object.freeze({
-  bossEverySeconds: 600, // a new boss this long after the last one ended (only while the room is active)
+  bossEverySeconds: 1200, // a new boss this long after the last one ended (only while the room is active)
   bossSeconds: 150,
   bossHpPerViewer: 120,
   bossHpMin: 400,
@@ -93,18 +93,19 @@ export function createBoss({ st, cfg, now, onEvent, elementOf, signsOnStage, fan
     b.bySign[v.sign] = (b.bySign[v.sign] ?? 0) + dmg;
     b.byElement[el] += dmg;
     onEvent({ type: 'boss-hit', userId: u.userId, nickname: v.nickname, sign: v.sign, dmg, crit, combo: el === 'air' && kind === 'comment' ? b.combo : 0 });
-    if (b.hp <= 0) defeat();
+    if (b.hp <= 0) defeat({ nickname: v.nickname, sign: v.sign, kind });
     return dmg;
   }
 
-  function defeat() {
+  // finisher: who landed the last blow (the overlay calls it "cú kết liễu")
+  function defeat(finisher = null) {
     const b = st.boss;
     st.boss = null;
     const hitters = Object.entries(b.hitters).map(([userId, h]) => ({ userId, ...h })).sort((a, z) => z.dmg - a.dmg);
     const mvps = {};
     for (const h of hitters) { const el = elementOf(h.sign); if (!mvps[el]) mvps[el] = { nickname: h.nickname, sign: h.sign, dmg: h.dmg }; }
     hitters.forEach((h, i) => reward(h.userId, i === 0));
-    onEvent({ type: 'boss-defeated', seconds: Math.round((now() - b.startedAt) / 1000), fighters: hitters.length, mvp: hitters[0] ? { nickname: hitters[0].nickname, sign: hitters[0].sign, dmg: hitters[0].dmg } : null, mvps, reward: cfg.bossReward });
+    onEvent({ type: 'boss-defeated', seconds: Math.round((now() - b.startedAt) / 1000), fighters: hitters.length, mvp: hitters[0] ? { nickname: hitters[0].nickname, sign: hitters[0].sign, dmg: hitters[0].dmg } : null, mvps, reward: cfg.bossReward, finisher });
   }
 
   function attack(t) {

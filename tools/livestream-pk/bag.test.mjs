@@ -6,7 +6,7 @@ const OFF = { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosE
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -44,7 +44,7 @@ test('"nâng cấp" says what is missing, then levels up once the bag holds enou
 });
 
 test('gems come from the quiz, the boss and the chest; moon shards from a full moon', () => {
-  const { game, advance } = setup({ moonGoal: 5, adaptiveCrowd: false, bossHpMin: 10, bossHpPerViewer: 1, bossDiamondDamage: 5, chestEveryMinutes: 15 });
+  const { game, advance } = setup({ passXpPerLevel: 1e9, moonGoal: 5, adaptiveCrowd: false, bossHpMin: 10, bossHpPerViewer: 1, bossDiamondDamage: 5, chestEveryMinutes: 15 });
   game.chat(u('a', { comment: 'song ngư' }));
   game.like(u('a', { count: 10 }));
   assert.equal(game.state.viewers.a.bag.moon, 1);

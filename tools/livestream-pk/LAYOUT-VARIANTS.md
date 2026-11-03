@@ -19,7 +19,7 @@ Cùng một bộ nội dung (trăng, vòng hoàng đạo, đua sao, quẻ, câu 
 | Cột nút phải (avatar, tim, bình luận, quà, chia sẻ) | x 930–1080 | — |
 | Khung bình luận + banner quà | y 1440–1920 | 75–100% |
 
-Bảng trên là ghi chú lúc thiết kế 5 biến thể. Overlay hiện tại bỏ `?safe`/`&guides` (tham số cũ được bỏ qua).
+Bảng trên là ghi chú lúc thiết kế 5 biến thể. Bố cục hiện tại đã tự chừa vùng bình luận của TikTok (mọi thứ cần đọc nằm trên y≈1200, phía dưới là Bầu trời cộng đồng), nên `?safe=1` trong các phần Setup bên dưới không còn tác dụng; `&guides` vẫn bị bỏ qua.
 
 ---
 

@@ -23,7 +23,7 @@ import { ROLES } from './boss.mjs';
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(dir, 'public');
 const PORT = Number(process.env.PK_PORT || 4848);
-const FRAME_MS = 250;
+const FRAME_MS = Number(process.env.PK_FRAME_MS) || 150; // how often changed parts are pushed to the overlay
 const DATA = process.env.PK_DATA_DIR ?? path.join(dir, 'data'); // PK_DATA_DIR / PK_LOG_DIR let tests run on throwaway folders
 const STATE_FILE = path.join(DATA, 'state.json');
 
@@ -104,6 +104,7 @@ const sim = name => {
 function simulateCrowd(size = 6, giftRate = 0.3) {
   for (let i = 0; i < size; i++) {
     const user = sim(`fan${1 + Math.floor(Math.random() * Math.max(30, size * 3))}`);
+    game.member(user);
     game.chat({ ...user, comment: String(1 + Math.floor(Math.random() * 12)) });
     if (Math.random() < 0.4) game.chat({ ...user, comment: SIM_LINES[Math.floor(Math.random() * SIM_LINES.length)] });
     game.like({ ...user, count: Math.floor(Math.random() * 40) });
@@ -131,12 +132,20 @@ const API = {
   'music/mute': () => broadcast('cmd', { type: 'music-mute' }),
   reset: () => game.resetAll(),
   'quiz/start': () => game.startQuiz(),
-  'fortune/sign': b => game.showFortune({ userId: null, nickname: null, avatar: '', sign: SIGNS.some(s => s.id === b.sign) ? b.sign : SIGNS[Math.floor(Math.random() * 12)].id }),
+  'fortune/sign': b => game.showFortune({ userId: null, nickname: null, avatar: '', sign: b.sign }),
   'lucky/start': b => game.startLucky(b.sign),
   'boss/start': () => game.startBoss(),
   'chaos/start': () => game.startChaos(),
   'chaos/end': () => game.endChaos(false),
   'chest/open': () => game.openChest(),
+  // giờ hành tinh: hold one hour for 60 minutes (or back to the real sky with no planet), start the headliner now
+  'hour/set': b => game.forceHour(['mars', 'venus', 'mercury', 'saturn'].includes(b.planet) ? b.planet : null),
+  'headline/start': () => game.startHead(),
+  'run/start': () => game.startRun(),
+  'run/stop': () => game.stopRun(),
+  pair: () => game.makePair(),
+  roast: b => game.startRoast(b.sign),
+  'tug/start': () => game.startTug(),
   settings: b => {
     for (const k of ['autoQuiz', 'showWishText']) if (typeof b[k] === 'boolean') game.config[k] = b[k];
     for (const [k, v] of Object.entries(b.show ?? {})) if (k in game.config.show && typeof v === 'boolean') game.config.show[k] = v;
@@ -221,7 +230,16 @@ const handler = shared => async (req, res) => {
     if (!c) {
       id = Math.random().toString(36).slice(2) + Date.now().toString(36);
       const queue = [];
-      c = { seen: {}, host: !shared, lastPoll: Date.now(), queue, busy: () => queue.length > 400, send: (event, data) => queue.push({ event, data }) };
+      c = {
+        seen: {}, host: !shared, lastPoll: Date.now(), queue, wake: null, busy: () => queue.length > 400,
+        send: (event, data) => {
+          const last = queue.at(-1);
+          // a page that is behind gets one merged frame instead of a backlog: newest parts win, effects keep their order
+          if (event === 'frame' && last?.event === 'frame') { Object.assign(last.data.parts, data.parts); last.data.fx = last.data.fx.concat(data.fx); }
+          else queue.push({ event, data });
+          c.wake?.();
+        },
+      };
       if (c.host) c.send('log', { entries: monitor.all(), reset: true });
       pollers.set(id, c);
       clients.add(c);
@@ -230,6 +248,17 @@ const handler = shared => async (req, res) => {
       c.send('frame', { parts: game.changes(c.seen), fx: [] });
     }
     c.lastPoll = Date.now();
+    // Long poll: hold the request until something is queued (or ~8s), so a message goes out the moment it exists
+    // instead of waiting for the page's next poll. Pages that don't ask (no `wait`) get the old immediate answer.
+    if (url.searchParams.has('wait') && !c.queue.length) {
+      await new Promise(done => {
+        const timer = setTimeout(done, 8000);
+        c.wake = () => { clearTimeout(timer); done(); };
+        req.on('close', c.wake);
+      });
+      c.wake = null;
+      c.lastPoll = Date.now();
+    }
     const msgs = c.queue.splice(0);
     return void res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify({ id, msgs }));
   }
@@ -252,7 +281,7 @@ const handler = shared => async (req, res) => {
 
 http.createServer(handler(false)).listen(PORT, '127.0.0.1', () => {
   console.log(`Đêm Hội Hoàng Đạo running:\n  overlay  http://127.0.0.1:${PORT}/\n  control  http://127.0.0.1:${PORT}/control`);
-  if (config.tiktokUsername) { game.purgeSim(); tiktok.connect(config.tiktokUsername); }
+  if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) { game.purgeSim(); tiktok.connect(config.tiktokUsername); }
 });
 // Read-only copy of the overlay for a tunnel; still bound to localhost, the tunnel client connects from this machine.
 http.createServer(handler(true)).listen(SHARE_PORT, '127.0.0.1', () => console.log(`  chia sẻ overlay (chỉ xem, cho tunnel)  http://127.0.0.1:${SHARE_PORT}/`))
