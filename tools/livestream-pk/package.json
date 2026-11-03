@@ -12,7 +12,8 @@
     "obs": "node scripts/setup-obs.mjs",
     "replay": "node scripts/replay.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "share": "node scripts/share.mjs"
+    "share": "node scripts/share.mjs",
+    "simulator": "node --env-file-if-exists=.env scripts/simulator.mjs"
   },
   "dependencies": {
     "astronomy-engine": "2.1.19",

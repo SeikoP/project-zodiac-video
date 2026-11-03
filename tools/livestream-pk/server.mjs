@@ -43,7 +43,8 @@ const music = listMusic({ dir: MUSIC_DIR, exclude: config.musicExclude, upbeat: 
 const monitor = createMonitor({ label: id => SIGNS.find(s => s.id === id)?.label ?? id });
 const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show } }, state, quiz, polls: POLLS, onEvent: e => { director.push(e); monitor.note(e); dirty = true; } });
 const tapped = monitor.tap(game); // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
-const diag = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
+const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
+const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
 const meta = () => ({ signs: SIGNS, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
@@ -85,7 +86,7 @@ setInterval(async () => {
 }, 10000);
 
 const TYPES = { '.json': 'application/json; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-const ROUTES = { '/': 'overlay.html', '/overlay': 'overlay.html', '/control': 'control.html' };
+const ROUTES = { '/': 'overlay.html', '/overlay': 'overlay.html', '/control': 'control.html', '/simulator': 'simulator/index.html' };
 
 const body = req => new Promise(resolve => {
   let s = '';
@@ -97,20 +98,47 @@ const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30]
 const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó', 'chúc', 'chúc phúc nha', 'nâng cấp', 'kho', 'ước có người yêu thương mình'];
 // every seventh rehearsal viewer is a fan club member, so the fan club look can be rehearsed too
 const sim = name => {
-  const n = Number(String(name).match(/\d+$/)?.[0]);
-  return { userId: `sim:${name}`, nickname: name, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
+  const nickname = String(name ?? 'Người xem').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 32) || 'Người xem';
+  const n = Number(nickname.match(/\d+$/)?.[0]);
+  return { userId: 'sim:' + nickname, nickname, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
 };
-// A crowd of `size` simulated viewers doing typical things; used by the panel and the load test.
-function simulateCrowd(size = 6, giftRate = 0.3) {
+const simulated = recorded.wrap(tapped);
+function simulatorEvent(kind, data, mirror = true) {
+  if (mirror && process.env.PK_SIMULATOR === '1') broadcast('sim-event', { kind, ...data }, true);
+}
+function simMember(user, mirror = true) {
+  const fresh = simulated.member(user);
+  if (fresh) simulatorEvent('member', { user }, mirror);
+  return fresh;
+}
+function simChat(user, comment, mirror = true) {
+  simulated.chat({ ...user, comment });
+  simulatorEvent('chat', { user, comment }, mirror);
+}
+function simLike(user, count, mirror = true) {
+  simulated.like({ ...user, count });
+  simulatorEvent('like', { user, count }, mirror);
+}
+function simGift(user, gift, mirror = true) {
+  simulated.gift({ ...user, ...gift });
+  simulatorEvent('gift', { user, ...gift }, mirror);
+}
+function simSocial(user, kind, mirror = true) {
+  simulated.social({ ...user, kind });
+  simulatorEvent('social', { user, kind }, mirror);
+}
+// A crowd of simulated viewers doing typical things. Every event goes through the same
+// monitor/diagnostics wrapper as a real viewer; stress mode suppresses per-event UI mirroring.
+function simulateCrowd(size = 6, giftRate = 0.3, { mirror = true } = {}) {
   for (let i = 0; i < size; i++) {
     const user = sim(`fan${1 + Math.floor(Math.random() * Math.max(30, size * 3))}`);
-    game.member(user);
-    game.chat({ ...user, comment: String(1 + Math.floor(Math.random() * 12)) });
-    if (Math.random() < 0.4) game.chat({ ...user, comment: SIM_LINES[Math.floor(Math.random() * SIM_LINES.length)] });
-    game.like({ ...user, count: Math.floor(Math.random() * 40) });
+    simMember(user, mirror);
+    simChat(user, String(1 + Math.floor(Math.random() * 12)), mirror);
+    if (Math.random() < 0.4) simChat(user, SIM_LINES[Math.floor(Math.random() * SIM_LINES.length)], mirror);
+    simLike(user, Math.floor(Math.random() * 40), mirror);
     if (Math.random() < giftRate) {
       const [giftName, diamonds] = GIFTS[Math.floor(Math.random() ** 3 * GIFTS.length)];
-      game.gift({ ...user, diamonds, count: 1 + Math.floor(Math.random() * 3), giftName });
+      simGift(user, { diamonds, count: 1 + Math.floor(Math.random() * 3), giftName }, mirror);
     }
   }
 }
@@ -155,20 +183,24 @@ const API = {
   // Connecting to a real room drops any rehearsal viewers first.
   // Feed one recorded event (see npm run replay); same path as a real TikTok event.
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time
-  'tiktok/connect': b => { const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username); },
+  'tiktok/connect': b => {
+    if (process.env.PK_SIMULATOR === '1') throw new Error('TikTok connection is disabled in the isolated simulator.');
+    const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username);
+  },
   'tiktok/disconnect': () => tiktok.disconnect(),
   // Simulated viewers, for rehearsing without going live. Don't use them while actually live.
-  'sim/chat': b => tapped.chat({ ...sim(b.user), comment: b.comment }),
-  'sim/gift': b => tapped.gift({ ...sim(b.user), diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1, giftName: b.giftName || 'Rose' }),
-  'sim/like': b => tapped.like({ ...sim(b.user), count: Number(b.count) || 15 }),
-  'sim/social': b => tapped.social({ ...sim(b.user), kind: b.kind }),
-  'sim/crowd': () => simulateCrowd(6),
+  'sim/member': b => simMember(sim(b.user)),
+  'sim/chat': b => { const user = sim(b.user); return simChat(user, String(b.comment ?? '').slice(0, 500)); },
+  'sim/gift': b => { const user = sim(b.user); return simGift(user, { diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1, giftName: String(b.giftName || 'Rose').slice(0, 64) }); },
+  'sim/like': b => { const user = sim(b.user); return simLike(user, Math.max(1, Math.min(10000, Number(b.count) || 15))); },
+  'sim/social': b => { const user = sim(b.user); return simSocial(user, b.kind === 'share' ? 'share' : 'follow'); },
+  'sim/crowd': b => simulateCrowd(Math.min(100, Math.max(1, Number(b.count) || 6)), Math.max(0, Math.min(1, Number(b.giftRate ?? 0.3)))),
   // Busy-room rehearsal: `perSecond` simulated viewers act every second until stopped.
   'sim/storm': b => {
     clearInterval(storm);
     storm = null;
-    const perSecond = Math.min(2000, Number(b.perSecond) || 0);
-    if (perSecond) storm = setInterval(() => simulateCrowd(perSecond / 10, 0.05), 100);
+    const perSecond = Math.min(2000, Math.max(0, Number(b.perSecond) || 0));
+    if (perSecond) storm = setInterval(() => simulateCrowd(perSecond / 10, 0.05, { mirror: false }), 100);
     return { perSecond };
   },
 };
@@ -212,7 +244,7 @@ const handler = shared => async (req, res) => {
   if (shared ? !['GET', 'HEAD'].includes(req.method) : !trusted(req)) return void res.writeHead(shared ? 405 : 403).end('forbidden');
   let url;
   try { url = new URL(req.url, 'http://x'); } catch { return void res.writeHead(400).end('bad request'); }
-  if (shared && (url.pathname.startsWith('/api/') || HOST_ONLY.has(url.pathname))) return void res.writeHead(404).end('not found');
+  if (shared && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/simulator') || HOST_ONLY.has(url.pathname))) return void res.writeHead(404).end('not found');
   if (url.pathname === '/events') {
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
     const client = { seen: {}, host: !shared, send: (event, data) => sse(res, event, data), busy: () => res.writableNeedDrain };

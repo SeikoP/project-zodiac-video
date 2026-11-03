@@ -50,6 +50,7 @@ test('Job@5 compiler pins channel voice/brand visual intent without weakening na
 
 test('phase03 source-to-IR parity rejects edited character transforms after visual approval',async()=>{
  const {assertAuthoringProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
+ const {resolveHandoffLayout}=await import('../../phases/phase03/handoff-preflight.mjs');
  const s={version:'2.0',video:{width:1080,height:1920,fps:24},assets:{C:{path:'assets/characters/main.svg',category:'character'}},scenes:[{id:'S01',voice:'Bọ Cạp nhìn kỹ.',entities:[{id:'actor',initial_state:'idle',states:{idle:{asset:'C',visible:true,transform:{x:210,y:200,width:500,height:600}}}}],events:[]}]};
  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:s.assets,scenes:[{id:'S01',voice:s.scenes[0].voice,entities:s.scenes[0].entities,events:[]}]};
  assert.doesNotThrow(()=>assertAuthoringProjection(s,ir));
@@ -122,8 +123,10 @@ test('Phase03 rejects noncontact state slide and accepts authored S05 friend ret
 
 test('approved role and depth metadata survives release projection, but edits block',async()=>{
  const {assertAuthoringProjection}=await import('../../phases/phase03/phase03-production-release.mjs');
+ const {resolveHandoffLayout}=await import('../../phases/phase03/handoff-preflight.mjs');
  const source={assets:{},scenes:[{id:'s',voice:'Voice',entities:[{id:'hero',kind:'character',visual_role:'primary_character',role:'lead',layer:3,initial_state:'idle',states:{idle:{visible:true}}}],events:[],occlusion_relations:[{front:'hero',back:'wall'}],performance_context:{intent:'reaction'},layout_contract:{canvas:{width:1080,height:1920}},render_density_budget:{max_characters:1}}]};
  const ir=structuredClone(source);
+ ir.scenes[0].layout_contract=resolveHandoffLayout(source.scenes[0].layout_contract);
  assert.doesNotThrow(()=>assertAuthoringProjection(source,ir));
  for(const field of ['occlusion_relations','performance_context','layout_contract','render_density_budget']){
   const changed=structuredClone(ir);changed.scenes[0][field]=null;

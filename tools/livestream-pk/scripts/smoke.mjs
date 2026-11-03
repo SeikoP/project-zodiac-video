@@ -11,7 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = 4871 + Math.floor(Math.random() * 100);
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-smoke-'));
 // run a private copy of the data/logs folders so a real night's state is never touched
-const env = { ...process.env, PK_PORT: String(port), PK_RECORD: '1', PK_DATA_DIR: path.join(work, 'data'), PK_LOG_DIR: path.join(work, 'logs') };
+const env = { ...process.env, PK_PORT: String(port), PK_RECORD: '1', PK_NO_TIKTOK: '1', PK_SIMULATOR: '1', PK_DATA_DIR: path.join(work, 'data'), PK_LOG_DIR: path.join(work, 'logs') };
 const results = [];
 const check = (ok, msg) => { results.push(ok); console.log(`  ${ok ? '✔' : '✖'} ${msg}`); };
 const post = (route, body) => fetch(`http://127.0.0.1:${port}/api/${route}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) }).then(r => r.json());
@@ -50,6 +50,10 @@ try {
   const bad = await post('ingest', { type: 'nope' });
   check(bad.ok === false, 'sự kiện sai bị từ chối, server vẫn sống');
   check((await fetch(`http://127.0.0.1:${port}/control`)).status === 200 && (await fetch(`http://127.0.0.1:${port}/`)).status === 200, 'trang overlay và bảng điều khiển mở được');
+  check((await fetch(`http://127.0.0.1:${port}/simulator`)).status === 200, 'màn hình TikTok LIVE Simulator được phục vụ');
+  check((await fetch(`http://127.0.0.1:${port}/simulator/simulator.js`)).status === 200 && (await fetch(`http://127.0.0.1:${port}/simulator/simulator.css`)).status === 200, 'tải được JavaScript và CSS của Simulator');
+  const blockedTikTok = await post('tiktok/connect', { username: 'must-not-connect' });
+  check(blockedTikTok.ok === false && /disabled in the isolated simulator/.test(blockedTikTok.error || ''), 'Simulator khóa API kết nối TikTok thật');
   const mp3 = fs.existsSync(path.join(root, 'public/sfx/manifest.json')) ? await fetch(`http://127.0.0.1:${port}/sfx/manifest.json`) : null;
   check(!mp3 || mp3.status === 200, 'gói hiệu ứng âm thanh được phục vụ');
 

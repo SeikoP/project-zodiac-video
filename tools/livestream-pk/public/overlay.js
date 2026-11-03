@@ -167,7 +167,16 @@ function drawBackground() {
   g.setTransform(K, 0, 0, K, 0, 0);
   g.clearRect(0, 0, 1080, FRAME_HEIGHT);
   g.fillStyle = C.paper;
-  for (const [a, x, y, r] of skyStars) { g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  const clusterY = LAYOUT.zone + 74;
+  const clusterH = FRAME_HEIGHT - clusterY - 46;
+  const clusterRX = 280, clusterRY = Math.min(152, clusterH * .31);
+  const clusterCY = clusterY + clusterH * .5;
+  for (const [a, x, y, r] of skyStars) {
+    // Leave the visitor-star cluster clear: only named, recorded visitors are drawn there.
+    const nx = (x - CX) / clusterRX, ny = (y - clusterCY) / clusterRY;
+    if (nx * nx + ny * ny < 1) continue;
+    g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
   g.globalAlpha = 1;
 }
 
@@ -309,7 +318,18 @@ function spotOf(userId, sign) { return orbitSpots.get(userId) ?? (sign ? nodePos
 // Tonight's viewers shine gold with their name; the others stay dim. A new star flies down from its owner's
 // mascot; the big "điểm danh" moment flies tonight's stars in from above. Positions come from the server (0..1).
 const SKY_Y = LAYOUT.zone + 74, SKY_H = FRAME_HEIGHT - SKY_Y - 46;
-const starPoint = s => [50 + s.x * 980, SKY_Y + s.y * SKY_H];
+// Visitor stars form a loose ring around the edge of one centered ellipse.
+// Keep the middle open; each point represents a real viewer with a saved community star.
+const starPoint = s => {
+  const angle = s.x * Math.PI * 2;
+  const radius = .82 + Math.max(0, Math.min(1, s.y)) * .18;
+  const clusterRadiusX = 250;
+  const clusterRadiusY = Math.min(135, SKY_H * .28);
+  return [
+    CX + Math.cos(angle) * clusterRadiusX * radius,
+    SKY_Y + SKY_H * .5 + Math.sin(angle) * clusterRadiusY * radius,
+  ];
+};
 const flare = new Map(), landing = new Set(); // userId -> until (ms); stars still in flight are not drawn yet
 let flights = [], hereIds = new Set();
 function fly(userId, from, to, c, name, delay = 0) {
