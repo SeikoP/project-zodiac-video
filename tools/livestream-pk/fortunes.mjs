@@ -197,7 +197,8 @@ export const FORTUNE_TOPICS = ['love', 'work', 'money', 'luck'];
 // Number of distinct lines a topic can draw from for one sign (used by tests and the setup check).
 export const poolSize = (topic, sign, element) => new Set([...GENERIC[topic], ...ELEMENT_LINES[topic][element], ...SIGN_LINES[topic][sign]]).size;
 
-export function drawFortune({ seed, sign, element, now }) {
+// topic ('love' | 'work' | 'money' | null): the viewer asked about one thing; `focus` adds two more lines on it.
+export function drawFortune({ seed, sign, element, now, topic = null }) {
   let h = hash(`${seed}|${sign}|${dayKey(now)}`);
   const next = n => { const v = h % n; h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; return v; };
   let roll = next(100), level = LEVELS[0][0];
@@ -210,7 +211,7 @@ export function drawFortune({ seed, sign, element, now }) {
   const data = SIGN_DATA[sign];
   const occasion = occasionOn(dayKey(now));
   const colors = [data.color, ...ELEMENT_COLORS[element]];
-  return {
+  const reading = {
     level,
     love: line('love'),
     work: line('work'),
@@ -221,4 +222,9 @@ export function drawFortune({ seed, sign, element, now }) {
     number: next(3) === 0 ? 1 + next(99) : data.numbers[next(data.numbers.length)],
     hour: HOURS[next(HOURS.length)],
   };
+  if (!topic || !(topic in GENERIC)) return reading;
+  // two more lines on the asked topic, none repeating the reading's own line on it (drawn last: the rest stays the same)
+  const focus = [];
+  for (let i = 0; focus.length < 2 && i < 40; i++) { const l = line(topic); if (l !== reading[topic] && !focus.includes(l)) focus.push(l); }
+  return { ...reading, topic, focus };
 }

@@ -159,6 +159,5 @@ export function createBoss({ st, cfg, now, onEvent, elementOf, signsOnStage, fan
     };
   }
 
-  const purge = prefix => { if (st.boss) for (const id of Object.keys(st.boss.hitters)) if (id.startsWith(prefix)) delete st.boss.hitters[id]; };
-  return { start, hit, tick, view, purge, active: () => Boolean(st.boss) };
+  return { start, hit, tick, view, active: () => Boolean(st.boss) };
 }

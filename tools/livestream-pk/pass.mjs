@@ -1,9 +1,9 @@
 // Sổ Sao: a monthly season pass every viewer fills just by playing — each bit of starlight they shed is experience.
 // 30 levels; every level pays a little bụi sao, some pay a gem, a card or a moon shard, and levels 10 / 20 / 30 put a
 // silver / gold / starry frame round the viewer's avatar on the wheel for the rest of the season. There is one free
-// track: nothing in it is sold. "sổ sao" shows your progress on stream.
+// track: nothing in it is sold. "kho" / "sổ sao" shows your progress on stream.
 
-export const PASS_DEFAULTS = Object.freeze({ passXpPerLevel: 40, passMaxLevel: 30, passShowCooldownSeconds: 30 });
+export const PASS_DEFAULTS = Object.freeze({ passXpPerLevel: 40, passMaxLevel: 30 });
 
 // what a level pays on top of 5 bụi sao
 export function passReward(level) {
@@ -43,12 +43,11 @@ export function createPass({ cfg, now, onEvent, seasonOf, gem, moon, card }) {
     }
   }
 
-  function show(u, v) {
-    if (!v.sign || now() - (v.passShownAt ?? 0) < cfg.passShowCooldownSeconds * 1000) return;
-    v.passShownAt = now();
+  // the viewer's season so far, for the vault ("kho")
+  function view(v) {
     const p = passOf(v);
-    onEvent({ type: 'pass-show', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: p.level, xp: p.xp, need: need(p.level), max: cfg.passMaxLevel, next: p.level < cfg.passMaxLevel ? passReward(p.level + 1).label : null, frame: p.frame });
+    return { level: p.level, xp: p.xp, need: need(p.level), max: cfg.passMaxLevel, next: p.level < cfg.passMaxLevel ? passReward(p.level + 1).label : null, frame: p.frame };
   }
   const frameOf = v => (v.pass?.season === seasonOf() ? v.pass.frame : null);
-  return { addXp, show, frameOf, passOf };
+  return { addXp, view, frameOf, passOf };
 }

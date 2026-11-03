@@ -41,13 +41,14 @@ const director = createDirector(config.limits);
 const MUSIC_DIR = path.resolve(dir, config.musicDir ?? '../../assets/music');
 const music = listMusic({ dir: MUSIC_DIR, exclude: config.musicExclude, upbeat: config.musicUpbeat });
 const monitor = createMonitor({ label: id => SIGNS.find(s => s.id === id)?.label ?? id });
-const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show } }, state, quiz, polls: POLLS, onEvent: e => { director.push(e); monitor.note(e); dirty = true; } });
-const tapped = monitor.tap(game); // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
+const SIMULATOR = process.env.PK_SIMULATOR === '1'; // the isolated rehearsal server (npm run simulator)
+const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show }, rehearsal: SIMULATOR }, state, quiz, polls: POLLS, onEvent: e => { if (e.type === 'host-cue') return void broadcast('cue', e, true); director.push(e); monitor.note(e); dirty = true; } }); // a host cue is for the host's panel only, never the stream
+const tapped = monitor.tap(game, { skip: e => !SIMULATOR && String(e?.userId ?? '').startsWith('sim:') }); // the game ignores rehearsal viewers here, so the host's numbers do too // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
 const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
 const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
-const meta = () => ({ signs: SIGNS, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
+const meta = () => ({ signs: SIGNS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
 
 // A client is one open overlay/panel page: { send(event, data), seen, busy(), host }. Normally it is a server-sent-events
 // stream; behind a quick tunnel (which does not stream SSE) the page polls /poll and gets its queued messages instead.
@@ -169,8 +170,8 @@ const API = {
   // giờ hành tinh: hold one hour for 60 minutes (or back to the real sky with no planet), start the headliner now
   'hour/set': b => game.forceHour(['mars', 'venus', 'mercury', 'saturn'].includes(b.planet) ? b.planet : null),
   'headline/start': () => game.startHead(),
-  'run/start': () => game.startRun(),
-  'run/stop': () => game.stopRun(),
+  'mystery/start': () => game.startHead('mystery'),
+  'starcatch/start': () => game.startHead('starcatch'),
   pair: () => game.makePair(),
   roast: b => game.startRoast(b.sign),
   'tug/start': () => game.startTug(),
@@ -180,15 +181,16 @@ const API = {
     broadcast('meta', meta());
     try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoQuiz: game.config.autoQuiz, showWishText: game.config.showWishText, show: game.config.show })); } catch (e) { console.error('[settings]', e.message); }
   },
-  // Connecting to a real room drops any rehearsal viewers first.
   // Feed one recorded event (see npm run replay); same path as a real TikTok event.
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time
   'tiktok/connect': b => {
-    if (process.env.PK_SIMULATOR === '1') throw new Error('TikTok connection is disabled in the isolated simulator.');
-    const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username);
+    if (SIMULATOR) throw new Error('TikTok connection is disabled in the isolated simulator.');
+    return tiktok.connect(b.username);
   },
   'tiktok/disconnect': () => tiktok.disconnect(),
-  // Simulated viewers, for rehearsing without going live. Don't use them while actually live.
+};
+// Simulated viewers exist only in the isolated simulator process (npm run simulator), never on the real LIVE server.
+if (SIMULATOR) Object.assign(API, {
   'sim/member': b => simMember(sim(b.user)),
   'sim/chat': b => { const user = sim(b.user); return simChat(user, String(b.comment ?? '').slice(0, 500)); },
   'sim/gift': b => { const user = sim(b.user); return simGift(user, { diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1, giftName: String(b.giftName || 'Rose').slice(0, 64) }); },
@@ -203,7 +205,7 @@ const API = {
     if (perSecond) storm = setInterval(() => simulateCrowd(perSecond / 10, 0.05, { mirror: false }), 100);
     return { perSecond };
   },
-};
+});
 
 function serveMusic(req, res, name) {
   const file = path.join(MUSIC_DIR, name);
@@ -313,7 +315,7 @@ const handler = shared => async (req, res) => {
 
 http.createServer(handler(false)).listen(PORT, '127.0.0.1', () => {
   console.log(`Đêm Hội Hoàng Đạo running:\n  overlay  http://127.0.0.1:${PORT}/\n  control  http://127.0.0.1:${PORT}/control`);
-  if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) { game.purgeSim(); tiktok.connect(config.tiktokUsername); }
+  if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) tiktok.connect(config.tiktokUsername);
 });
 // Read-only copy of the overlay for a tunnel; still bound to localhost, the tunnel client connects from this machine.
 http.createServer(handler(true)).listen(SHARE_PORT, '127.0.0.1', () => console.log(`  chia sẻ overlay (chỉ xem, cho tunnel)  http://127.0.0.1:${SHARE_PORT}/`))

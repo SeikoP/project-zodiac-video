@@ -10,8 +10,8 @@ export const EDITIONS = Object.freeze([
   // Bộ thẻ Giờ Hành Tinh: each only drops during its themed hour (rương, or the act's MVP)
   { id: 'h-mars', label: 'Giờ Sao Hỏa', rarity: 2, color: '#E97A66', hour: 'mars', hint: 'rơi trong giờ Sao Hỏa' },
   { id: 'h-venus', label: 'Giờ Sao Kim', rarity: 2, color: '#F2A7C3', hour: 'venus', hint: 'rơi trong giờ Sao Kim' },
-  { id: 'h-mercury', label: 'Giờ Sao Thủy', rarity: 2, color: '#B48CF2', hour: 'mercury', hint: 'rơi trong giờ Sao Thủy' },
-  { id: 'h-saturn', label: 'Giờ Sao Thổ', rarity: 2, color: '#8EC0B9', hour: 'saturn', hint: 'rơi trong giờ Sao Thổ' },
+  { id: 'h-mercury', label: 'Giờ Sao Thủy', rarity: 2, color: '#B48CF2', hour: 'mercury', hint: 'rơi trong giờ Sao Kim (và giờ Sao Thủy)' },
+  { id: 'h-saturn', label: 'Giờ Sao Thổ', rarity: 2, color: '#8EC0B9', hour: 'saturn', hint: 'rơi trong giờ Sao Hỏa (và giờ Sao Thổ)' },
 ]);
 export const EDITION = Object.fromEntries(EDITIONS.map(e => [e.id, e]));
 export const CARD_TOTAL = 12 * EDITIONS.length;

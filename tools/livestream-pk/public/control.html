@@ -18,6 +18,7 @@
   section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
   h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   h2 small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  [hidden] { display: none !important; } /* author display rules (.line) would otherwise beat the hidden attribute */
   .line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   input, select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; }
   button { font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
@@ -132,7 +133,7 @@
       <select id="hourPick"><option value="">Giờ: xoay vòng tự động</option><option value="mars">♂ Sao Hỏa · Boss tinh anh, Kéo co</option><option value="venus">♀ Sao Kim · Se duyên, Bóc phốt, Mưa rương</option><option value="mercury">☿ Sao Thủy · Đố nhanh, Thủy Nghịch, Đêm trăng</option><option value="saturn">♄ Sao Thổ · Hành trình, Chung kết</option></select>
       <button id="hourSet">Đặt giờ (60 phút)</button><button id="headStart">★ Sự kiện chính ngay</button>
     </div>
-    <div class="line"><button id="runStart">🪐 Bắt đầu Hành trình</button><button id="runStop">Dừng Hành trình</button><button id="pairNow">💞 Ghép đôi</button><button id="roastNow">🔥 Vòng quay bóc phốt</button><button id="tugNow">🪢 Kéo co cung</button></div>
+    <div class="line"><button id="mysteryNow">🕵️ Cung bí ẩn</button><button id="catchNow">🌠 Hứng sao băng</button><button id="pairNow">💞 Ghép đôi</button><button id="roastNow">🔥 Vòng quay bóc phốt</button><button id="tugNow">🪢 Kéo co cung</button></div>
     <p class="muted" id="hourTxt"></p>
     <div class="line"><button id="musicSkip">⏭ Bài khác</button><button id="musicMute">🔇 Tắt/bật nhạc</button></div>
     <div class="line">
@@ -171,6 +172,7 @@
 
   <section class="c12">
     <h2>Gợi ý lời dẫn</h2>
+    <div id="cues" style="margin:4px 0 10px"><p class="muted">🎙 Lời dẫn theo cao trào sẽ hiện ở đây (boss sắp gục, đảo chiều kéo co, 15 giây cuối, trăng sắp tròn, xong chặng…).</p></div>
     <div class="line" id="promptTabs"></div>
     <p id="promptText" style="font-size:20px;font-weight:600;line-height:1.4;margin:6px 0 10px;min-height:56px"></p>
     <div class="line"><button class="primary" id="promptNext">Gợi ý khác</button><button id="promptCopy">Sao chép</button><span class="muted" id="promptMeta"></span></div>
@@ -178,8 +180,9 @@
   </section>
 
   <section class="c12">
-    <h2>Diễn tập <small>người xem giả lập — chỉ để thử, đừng dùng khi đang live thật</small></h2>
-    <div class="line">
+    <h2>Diễn tập <small>người xem giả lập — chỉ có trong simulator</small></h2>
+    <p class="muted" id="simHint">Diễn tập: chạy <b>npm run simulator</b> (server riêng, không đụng tới LIVE thật).</p>
+    <div class="line" id="simTools" hidden>
       <input id="simUser" value="fan_test" style="width:140px">
       <input id="simComment" placeholder="vd: sư tử / xin quẻ / ước … / nhảy / A" style="width:280px">
       <button id="simChat">Gửi comment</button>
@@ -220,8 +223,8 @@ $('chaosEnd').onclick = () => api('chaos/end');
 $('chest').onclick = () => api('chest/open');
 $('hourSet').onclick = () => api('hour/set', { planet: $('hourPick').value || null });
 $('headStart').onclick = () => api('headline/start');
-$('runStart').onclick = () => api('run/start');
-$('runStop').onclick = () => confirm('Dừng Hành trình Tầng Trời? Đoàn sẽ dừng ở tầng hiện tại.') && api('run/stop');
+$('mysteryNow').onclick = () => api('mystery/start');
+$('catchNow').onclick = () => api('starcatch/start');
 $('pairNow').onclick = () => api('pair');
 $('roastNow').onclick = () => api('roast');
 $('tugNow').onclick = () => api('tug/start');
@@ -265,7 +268,6 @@ const SHOWS = [
   ['overtake', 'Cung vượt lên hạng 1', 'Thẻ báo khi cung đang dẫn bị vượt.'],
   ['hearts', 'Tim nổi lên từ mặt trăng', 'Mặt trăng nảy lên và thả tim mỗi khi có người thả tim.'],
   ['milestone', 'Mốc người xem 100, 200, …', 'Mốc 10/25/50 người luôn bị bỏ qua; người đầu tiên luôn được chào.'],
-  ['dance', 'Người nhảy', 'Chú thích "nhảy cùng cung …" (linh vật vẫn nhảy dù tắt).'],
   ['flow', 'Ánh sao lan sang cung khác', 'Dòng giải thích khi cung đã sáng chia ánh sao dư (sao chổi vẫn bay).'],
   ['title', 'Lên danh hiệu', 'Thẻ "X lên hạng!" khi người xem đổi danh hiệu.'],
   ['streak', 'Chuỗi đêm trở lại', 'Thẻ "X trở lại · chuỗi N đêm".'],
@@ -346,9 +348,9 @@ function renderCosmos(c) {
   else if (c.chaosInMs != null) parts.push(`☿ Thủy Nghịch sau ${mmss(c.chaosInMs)}`);
   parts.push(c.chest.open ? `🎁 Rương đang mở · ${c.chest.claims} người nhận` : c.chest.inMs != null ? `🎁 Rương sau ${mmss(c.chest.inMs)}` : '🎁 Rương tắt');
   $('cosmosTxt').textContent = parts.join('  |  ');
-  const h = c.hour, r = c.run;
+  const h = c.hour, m = c.mystery, k = c.starcatch;
   $('hourTxt').textContent = h ? `${h.glyph} Giờ ${h.label}${h.forced ? ' (host chọn)' : ''} · đến ${new Date(h.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} · ${h.rule} · sự kiện chính: ${h.head}${c.act ? ` (màn ${c.act.no}/${c.act.of}, ${c.act.phase === 'head' ? 'đang diễn' : `sau ${mmss(c.act.headInMs)}`})` : ''} · tiếp: ${h.next.glyph} ${h.next.label}`
-    + (r ? `  |  🪐 Tầng ${r.floor}/${r.of} · đoàn ${r.hp}/${r.max} · ${r.phase}${r.enemy ? ` · ${r.enemy.name} ${r.enemy.hp}/${r.enemy.max}` : ''}` : '')
+    + (m ? `  |  🕵️ Cung bí ẩn · gợi ý ${m.clues.length}/${m.of} · ${m.winners.length} người đoán đúng` : '') + (k ? `  |  🌠 Sao băng ${k.round}/${k.of} · từ “${k.word}” · ${k.caught}/${k.need}` : '')
     : 'Giờ hành tinh đang tắt (hours: false)';
 }
 
@@ -397,6 +399,8 @@ setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-V
 
 subscribe({
   meta: m => {
+    $('simTools').hidden = !m.simulator;
+    $('simHint').hidden = Boolean(m.simulator);
     S.config = m.config;
     S.planets = m.planets;
     if (!S.signs.length) {
@@ -409,6 +413,17 @@ subscribe({
     for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(m.config[k]);
   },
   tiktok: t => { S.tiktok = t; renderHealth(); },
+  // lời dẫn theo cao trào: the newest on top, highlighted for a few seconds, the last three kept
+  cue: c => {
+    const box = $('cues');
+    box.querySelector('.muted')?.remove();
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:20px;font-weight:700;line-height:1.35;margin:4px 0;padding:8px 12px;border-radius:12px;background:#F2C45C;color:#2F3C44;transition:background 2s';
+    p.textContent = `🎙 ${new Date().toLocaleTimeString('vi-VN', { hour12: false })} · ${c.text}`;
+    box.prepend(p);
+    setTimeout(() => { p.style.background = 'rgba(242,196,92,.25)'; p.style.color = 'inherit'; }, 4000);
+    while (box.children.length > 3) box.lastElementChild.remove();
+  },
   stats: s => { S.stats = s; if (s.tiktok) S.tiktok = s.tiktok; renderStats(); },
   log: m => { log = m.reset ? m.entries : [...log, ...m.entries].slice(-120); renderFeed(m.reset); },
   frame: f => {

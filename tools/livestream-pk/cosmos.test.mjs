@@ -222,18 +222,18 @@ test('nobody around: the chest skips its turn', () => {
   assert.equal(of(events, 'chest-open').length, 0);
 });
 
-test('"khoe thẻ" shows a viewer\'s collection, at most once a minute each', () => {
-  const { game, events, advance } = setup({ chestEveryMinutes: 15, showCooldownSeconds: 60 });
+test('"khoe thẻ" shows a viewer\'s collection in the vault, at most once per cooldown each', () => {
+  const { game, events, advance } = setup({ chestEveryMinutes: 15, vaultCooldownSeconds: 60 });
   advance(14 * 60000 - 1000);
   game.chat(u('a', { comment: 'leo' }));
   advance(1000);
   game.chat(u('a', { comment: 'nhận' }));
   game.chat(u('a', { comment: 'khoe thẻ nè' }));
   game.chat(u('a', { comment: 'khoe thẻ' }));
-  const shown = of(events, 'collection');
+  const shown = of(events, 'vault');
   assert.equal(shown.length, 1);
-  assert.equal(shown[0].unique, 1);
-  assert.equal(shown[0].total, 120); // 12 signs × (5 classic + Hoàng Kim + 4 themed-hour editions)
+  assert.equal(shown[0].cards.unique, 1);
+  assert.equal(shown[0].cards.total, 120); // 12 signs × (5 classic + Hoàng Kim + 4 themed-hour editions)
 });
 
 test('keywords: "nhận" claims, "thuận" fixes, "khoe thẻ" shows; "nhân mã" is still just a sign', () => {
@@ -244,8 +244,8 @@ test('keywords: "nhận" claims, "thuận" fixes, "khoe thẻ" shows; "nhân mã
   assert.equal(parseAction('thuận'), 'fix');
   assert.equal(parseAction('sửa sóng đi'), 'fix');
   assert.equal(parseAction('mọi việc thuận lợi'), null);
-  assert.equal(parseAction('khoe thẻ'), 'cards');
-  assert.equal(parseAction('xem thẻ của mình'), 'cards');
+  assert.equal(parseAction('khoe thẻ'), 'vault');
+  assert.equal(parseAction('xem thẻ của mình'), 'vault');
 });
 
 test('director keeps the crits and the rare cards when a frame overflows', () => {

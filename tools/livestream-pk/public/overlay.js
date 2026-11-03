@@ -103,21 +103,28 @@ function buildRace() {
 // Each line has to fit its half of the strip on a phone: a short command, then at most ~28 characters.
 const TIPS = [
   [ICON.heart, 'Thả tim', 'trăng lên rằm'],
-  [ICON.comment, '“xin quẻ”', 'quẻ riêng của bạn'],
+  [ICON.comment, '“xin quẻ tình duyên”', 'quẻ riêng hôm nay'],
   [ICON.comment, '“ước …”', 'thả đèn ước lên trời'],
   [ICON.gift, 'Tặng quà', 'ánh sao cho cung bạn'],
-  [ICON.comment, '“nâng cấp”', 'linh vật lên cấp'],
-  [ICON.comment, '“kho”', 'xem đồ bạn đã có'],
-  [ICON.comment, '“đổi Sư Tử”', 'chọn nhầm? đổi cung'],
-  [ICON.comment, '“khoe thẻ”', 'khoe bộ thẻ của bạn'],
+  [ICON.comment, '“kho”', 'khoe đồ · thẻ · cấp'],
+  [ICON.comment, '“tung ngọc”', 'đòn mạnh khi đánh boss'],
   [ICON.follow, 'Fanclub: “gọi sao”', 'sao may mắn cho cung bạn'],
 ];
 let tipI = 0, lastTip = '';
 function renderJoin() {
-  const c = S.cosmos, wish = c?.wishes?.find(w => w.open);
-  const tip = c?.boss ? ['⚔️', 'Đánh Sao Chổi!', 'chat · thả tim = sát thương', 'hot']
+  const c = S.cosmos, h = S.hud, wish = c?.wishes?.find(w => w.open), hi = c?.welcomes?.[0], f = h?.fortune;
+  // what to type right now, most urgent first: every live event says how to join it
+  const tip = h?.poll ? ['🗳', 'Gõ 1, 2, 3 hoặc 4', 'bình chọn · mỗi người một phiếu', 'hot']
+    : h?.quiz ? ['🧠', 'Gõ A, B hoặc C', 'trả lời câu đố · 3 người nhanh nhất', 'hot']
     : c?.chest.open ? ['🎁', 'Gõ “nhận”', `lấy thẻ · còn ${Math.ceil(c.chest.remainingMs / 1000)}s`, 'hot']
+    : c?.predict?.open ? ['🔮', 'Gõ “đoán A” / “đoán B”', 'đoán đúng nhận bụi sao', 'hot']
+    : c?.boss ? ['⚔️', 'Chat để đánh Sao Chổi', 'có ngọc? gõ “tung ngọc” 💥', 'hot']
+    : c?.tug ? ['🪢', 'Chat để kéo co', 'fan 2 cung đang đấu · “tung ngọc” = kéo mạnh', 'hot']
+    : c?.starcatch?.word ? ['🌠', `Gõ “${c.starcatch.word}”`, `hứng sao băng · ${c.starcatch.caught}/${c.starcatch.need} người nhanh nhất`, 'hot']
+    : c?.mystery ? ['🕵️', 'Gõ tên cung bạn đoán', `cung bí ẩn · gợi ý ${c.mystery.clues.length}/${c.mystery.of}`, 'hot']
     : c?.chaos ? ['☿', 'Gõ “thuận”', `sửa sóng · ${c.chaos.got}/${c.chaos.need} người`, 'hot']
+    : f?.userId ? (f.lucky ? ['✨', 'Gõ “xin vía”', `quẻ ${f.level} của ${f.nickname} · cả hai nhận bụi sao`, 'hot'] : ['🙏', 'Gõ “chuẩn”', `nếu quẻ của ${f.nickname} đúng · ${f.agree} người`, 'hot'])
+    : hi ? ['👋', 'Gõ “chào”', `chào ${hi.nickname} · ${hi.greetings}/${c.welcomeNeed}`, 'hot']
     : wish ? ['🙏', 'Gõ “chúc”', `cho ${wish.nickname} · ${wish.blessings}/${c.blessNeed}`, 'hot']
     : TIPS[tipI % TIPS.length];
   const html = `<span class="ji">${tip[0]}</span><div><b>${esc(tip[1])}</b><span>${esc(tip[2])}</span></div>`;
@@ -239,20 +246,66 @@ function releaseLantern(e) {
   el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-lantern') el.remove(); });
   box.append(el);
 }
-const GREETING_X = [70, 680, 360];
-let greetingSlot = 0;
+// Lời chào ghé thăm: like a wish, but a glowing paper star instead of a lantern. It rises over the frame carrying
+// “Chào <tên>!” and the room's “chào” count, while the newcomer's own star (their avatar) appears on the rim of the
+// centre orbit, right round the wheel where everyone looks. Each “chào” makes it flash; enough of them and it bursts
+// gold. When the welcome is over the star drifts down to its place in the community sky.
+const GREET_X = [120, 800, 460];
+let greetSlot = 0;
+const visitors = new Map(); // userId -> the newcomer's star on the orbit rim
+// the rim: an ellipse just outside the mascots, on the sides and below the wheel (the top belongs to the top card)
+const rimPoint = x => { const a = Math.PI * (-0.12 + 1.24 * x); return [CX + Math.cos(a) * (STAND + 62), CY + Math.sin(a) * (STAND + 44)]; };
 function releaseGreeting(e) {
   const box = $('lanterns');
-  const old = [...box.querySelectorAll('.floating-greeting')];
+  const old = [...box.querySelectorAll('.greet-star')];
   while (old.length >= 3) old.shift().remove();
   const el = document.createElement('div');
-  el.className = 'floating-greeting';
+  el.className = 'greet-star';
   el.dataset.id = `g${e.id}`;
-  el.style.left = `${GREETING_X[greetingSlot++ % GREETING_X.length] + rnd(-18, 18)}px`;
-  el.style.setProperty('--sway', `${rnd(-40, 40)}px`);
-  el.innerHTML = `<span class="fg-icon">👋</span><div><b>Chào ${esc(e.nickname)}!</b><span>Chúc bạn xem live thật vui ✨</span></div>${avatarHtml(e)}`;
-  el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-greeting') el.remove(); });
+  el.style.left = `${GREET_X[greetSlot++ % GREET_X.length] + rnd(-24, 24)}px`;
+  el.style.setProperty('--sway', `${rnd(-50, 50)}px`);
+  el.innerHTML = `<div class="gs-star">${avatarHtml(e, 'av')}</div><div class="gs-txt"><b>Chào ${esc(e.nickname)}!</b><span>vừa ghé đêm hội ✨</span></div>`
+    + `<div class="gs-count">👋 gõ “chào” · <em>0</em>/${e.need ?? 3}</div>`;
+  el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-greet') el.remove(); });
   box.append(el);
+  const [x, y] = rimPoint(e.x ?? Math.random());
+  visitors.set(e.userId, { ...e, x, y, c: e.sign ? color(e.sign) : C.gold, born: Date.now(), until: Date.now() + (e.seconds ?? 30) * 1000, flash: 0, done: false });
+  burst(x, y, [C.gold, '#fff', C.paper], 40, 7);
+}
+function greetStar(e, done = false) {
+  const el = $('lanterns').querySelector(`[data-id="g${e.id}"]`);
+  const vs = visitors.get(e.userId);
+  if (vs) {
+    vs.flash = Date.now() + (done ? 1500 : 700);
+    burst(vs.x, vs.y, done ? [C.gold, '#fff', C.paper] : [C.gold, C.paper], done ? 90 : 16, done ? 11 : 5);
+    if (done) { vs.done = true; vs.until = Date.now() + 5000; }
+  }
+  if (!el) return;
+  const em = el.querySelector('em');
+  if (em) em.textContent = e.count;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  if (done) { el.classList.add('done'); el.querySelector('.gs-count').textContent = `⭐ ${e.greeters.slice(0, 3).join(', ')}${e.count > 3 ? '…' : ''} đã chào · +${e.dust} bụi sao`; }
+}
+const starPath = (x, y, r1, r2, rot = 0) => { fx.beginPath(); for (let i = 0; i < 10; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? r2 : r1; fx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } fx.closePath(); };
+function drawVisitors(t) {
+  const now = Date.now();
+  for (const [id, v] of visitors) {
+    if (now >= v.until) {
+      visitors.delete(id);
+      const s = S.stars.find(x => x.userId === id);
+      if (s) fly(id, [v.x, v.y], starPoint(s), v.c, '', 0);
+      continue;
+    }
+    const grow = Math.min(1, (now - v.born) / 500), lit = v.flash > now || v.done, pulse = 1 + .08 * Math.sin(t / 220);
+    const r = (lit ? 46 : 36) * grow * pulse;
+    fx.globalAlpha = lit ? .45 : .25; fx.fillStyle = C.gold;
+    fx.beginPath(); fx.arc(v.x, v.y, r * 1.5, 0, 7); fx.fill();
+    fx.globalAlpha = 1; fx.fillStyle = v.done ? C.gold : 'rgba(255, 240, 200, .95)';
+    starPath(v.x, v.y, r, r * .48, t / 2400); fx.fill();
+    drawAvatar(v, v.x, v.y, 17 * grow, v.done ? C.gold : v.c);
+    drawLabel(label(v.done ? `✨ ${v.nickname}` : `✦ ${v.nickname}`, v.done ? 20 : 17, C.gold), v.x, v.y + r + 4);
+  }
+  fx.globalAlpha = 1;
 }
 function blessLantern(e, done = false) {
   const el = $('lanterns').querySelector(`[data-id="${e.id}"]`);
@@ -404,10 +457,11 @@ function roastWheel(e) {
   }, back);
 }
 
-// --- the hour's look: its ruling planet rides the wheel's gold ring, and each planet brings its own weather ------
+// --- the hour's look: a clock on the orbit round the centre, and each planet brings its own weather -----------
 //   ♂ embers rising · ♀ hearts drifting down · ☿ quick sparks round the ring · ☽ slow mist · ☉ turning rays
 //   ♃ gold glitter falling · ♄ a tilted ring round the centre and drifting dust
-let weather = [], weatherOf = '', orbitA = -Math.PI / 2, orbitTrail = [];
+let weather = [], weatherOf = '', clockOf = '', clockFlash = 0;
+const HOUR_R = 282; // the hour clock's orbit: just outside the centre circle, inside the 12 sign nodes
 const HEART = (x, y, r) => { fx.beginPath(); fx.moveTo(x, y + r * .9); fx.bezierCurveTo(x - r * 1.6, y - r * .2, x - r * .6, y - r * 1.4, x, y - r * .4); fx.bezierCurveTo(x + r * .6, y - r * 1.4, x + r * 1.6, y - r * .2, x, y + r * .9); fx.fill(); };
 function spawnWeather(p) {
   const top = WHEEL_T, bot = LAYOUT.wheelB;
@@ -445,28 +499,45 @@ function drawHourFx(t, dt) {
     else if (w.glint) { fx.globalAlpha = .5 + .5 * Math.sin(t / 120 + w.x); fx.save(); fx.translate(w.x, w.y); fx.rotate(t / 300 + w.x); fx.fillRect(-w.r, -w.r, w.r * 2, w.r * 2); fx.restore(); }
     else { fx.globalAlpha = (.4 + .4 * Math.sin(t / 150 + w.x)) * Math.min(1, w.life / 40); fx.beginPath(); fx.arc(w.x, w.y, w.r, 0, 7); fx.fill(); }
   }
-  // the ruling planet: a glowing sphere with its glyph, riding the gold ring with a tail of light
-  orbitA += 0.0035 * dt;
-  const [ox, oy] = at(BAND, orbitA), pr = 26 * Z;
-  orbitTrail.push([ox, oy]); if (orbitTrail.length > 22) orbitTrail.shift();
-  orbitTrail.forEach(([x, y], i) => { fx.globalAlpha = i / orbitTrail.length * .5; fx.fillStyle = h.color; fx.beginPath(); fx.arc(x, y, pr * (.3 + .5 * i / orbitTrail.length), 0, 7); fx.fill(); });
-  const g = fx.createRadialGradient(ox - pr * .3, oy - pr * .3, 2, ox, oy, pr * 1.9);
-  g.addColorStop(0, '#fff'); g.addColorStop(.45, h.color); g.addColorStop(1, 'rgba(0,0,0,0)');
-  fx.globalAlpha = 1; fx.fillStyle = g; fx.beginPath(); fx.arc(ox, oy, pr * 1.9, 0, 7); fx.fill();
-  fx.fillStyle = '#2F3C44'; fx.font = `400 ${Math.round(pr * 1.15)}px 'Segoe UI Symbol', sans-serif`; fx.textAlign = 'center'; fx.textBaseline = 'middle'; fx.fillText(h.glyph, ox, oy + 1);
+  // the hour as a clock on the orbit round the centre: the ruling planet's colour drains as its turn runs out and the
+  // next planet's colour fills in behind; the ruler's medallion (glyph + time left) rides the boundary, the next
+  // planet waits at the top. When the hour changes the whole orbit flashes in the new colour.
+  const now = Date.now(), span = Math.max(1, h.endsAt - h.startsAt), left = Math.max(0, Math.min(1, (h.endsAt - now) / span));
+  const nextColor = h.next?.color ?? C.paper, top = -Math.PI / 2, end = top + Math.PI * 2 * left, rr = HOUR_R * Z;
+  if (h.planet !== clockOf) { if (clockOf) { clockFlash = now + 1600; burst(CX, CY - rr, [h.color, C.gold, '#fff'], 60, 8); } clockOf = h.planet; }
+  const flash = Math.max(0, (clockFlash - now) / 1600);
+  fx.save();
+  fx.lineCap = 'round';
+  fx.globalAlpha = .28; fx.strokeStyle = nextColor; fx.lineWidth = 8 * Z;
+  fx.beginPath(); fx.arc(CX, CY, rr, 0, Math.PI * 2); fx.stroke();
+  fx.globalAlpha = .95; fx.strokeStyle = h.color; fx.lineWidth = (10 + 10 * flash) * Z; fx.shadowColor = h.color; fx.shadowBlur = 14 + 30 * flash;
+  if (left > 0.002) { fx.beginPath(); fx.arc(CX, CY, rr, top, end); fx.stroke(); }
+  fx.restore();
+  // the next planet waits at the top
+  const [nx, ny] = [CX, CY - rr], nr = 13 * Z;
+  fx.globalAlpha = .9; fx.fillStyle = nextColor; fx.beginPath(); fx.arc(nx, ny, nr, 0, 7); fx.fill();
+  fx.fillStyle = '#2F3C44'; fx.font = `400 ${Math.round(nr * 1.2)}px 'Segoe UI Symbol', sans-serif`; fx.textAlign = 'center'; fx.textBaseline = 'middle'; fx.fillText(h.next?.glyph ?? '', nx, ny + 1);
+  // the ruler's medallion on the boundary, with the minutes left
+  const mx = CX + Math.cos(end) * rr, my = CY + Math.sin(end) * rr, pr = (22 + 8 * flash + 2 * Math.sin(t / 300)) * Z;
+  const g = fx.createRadialGradient(mx - pr * .3, my - pr * .3, 2, mx, my, pr * 1.7);
+  g.addColorStop(0, '#fff'); g.addColorStop(.5, h.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+  fx.globalAlpha = 1; fx.fillStyle = g; fx.beginPath(); fx.arc(mx, my, pr * 1.7, 0, 7); fx.fill();
+  fx.fillStyle = '#2F3C44'; fx.font = `400 ${Math.round(pr * 1.15)}px 'Segoe UI Symbol', sans-serif`; fx.fillText(h.glyph, mx, my + 1);
+  drawLabel(label(`${h.label} · ${mmss(h.endsAt - now)}`, 15, h.color), mx, my + pr + 2);
   fx.globalAlpha = 1;
 }
 
 // --- giờ hành tinh and the run: how each headliner and door is played, in one line ---------------------
-const HEAD_ICON = { elite: '☄️', tug: '🪢', matchmaking: '💞', roast: '🔥', quizchain: '🧠', chaos: '🌀', moonnight: '🌕', final: '👑', chestrain: '🎁', run: '🪐' };
+const HEAD_ICON = { elite: '☄️', tug: '🪢', matchmaking: '💞', roast: '🔥', quizchain: '🧠', chaos: '🌀', moonnight: '🌕', final: '👑', chestrain: '🎁', mystery: '🕵️', starcatch: '🌠' };
 const HEAD_HOW = {
   matchmaking: 'mỗi 25 giây ghép một đôi trên sân — comment để được gọi tên',
   quizchain: `${S.config?.quizChainLength ?? 5} câu liền · trả lời đúng liên tiếp để giữ chuỗi`,
   moonnight: 'quẻ chung + bầu trời ngày sinh · thả tim để trăng lên nhanh gấp đôi',
   final: 'đến hết màn: cung góp nhiều ánh sao nhất được đội vương miện',
   chestrain: 'rương mở 3 lần liền — gõ “nhận” mỗi lần',
+  mystery: 'gợi ý hiện dần · gõ tên cung bạn đoán, 3 người đúng đầu tiên nhận ngọc',
+  starcatch: 'mỗi ngôi sao băng mang một chữ · gõ đúng chữ đó thật nhanh để hứng',
 };
-const RUN_DOOR_HOW = { fight: 'comment · thả tim để đánh', elite: 'quái mạnh, thưởng ngọc', chest: 'ngọc cho cả đoàn + chọn ấn', event: 'gõ A hoặc B để quyết định', rest: 'hồi 30% máu', boss: 'trận cuối — dồn hết sức!' };
 
 // --- bầu trời ngày sinh: that day's planets on a small chart, the viewer's face in the middle -----------
 const SHOW_LABEL = { starcall: 'điểm danh sao', birth: 'bầu trời ngày sinh', meteor: 'mưa sao băng' };
@@ -503,6 +574,7 @@ function frame(t) {
   fx.globalAlpha = 1;
   drawCommunitySky(t, dt);
   drawHourFx(t, dt);
+  drawVisitors(t);
 
   // viewers stand just outside the zodiac band by their sign (up to 2 per sign, the rest are "+n" on the node):
   // their mascot (bigger, with a halo, as it levels up), their own TikTok avatar on its shoulder, and their name
@@ -627,33 +699,51 @@ const paintCenter = (html, force = false) => { if (holdCenter() && !force) retur
 function spotlight(html, ms = 1800, key = 'spot') {
   go({ key, level: LV.TICK, ms, show: () => { paintCenter(html); centerUntil = Date.now() + ms + 400; } });
 }
-// while the lane is free the centre introduces a sign or invites the signs still waiting
+// The centre is the main stage. While the lane is free it never shows filler: it turns between the night's journey
+// (the chapter in progress, so a newcomer sees at once what the room is doing), what comes on the stage next, the
+// element teams' race, and — when a sign is still empty — an invitation to take its seat.
+const EL = { fire: ['🔥', 'Hỏa', '#E97A66'], earth: ['🌿', 'Thổ', '#8EC0B9'], air: ['💨', 'Phong', '#B48CF2'], water: ['💧', 'Thủy', '#6FA8DC'] };
+function journeyCard(j) {
+  const pct = Math.round(100 * j.got / j.need);
+  const dots = Array.from({ length: j.of }, (_, i) => `<i class="${i < j.no - 1 || j.done ? 'done' : i === j.no - 1 ? 'now' : ''}"></i>`).join('');
+  return `<div class="kick">Hành trình đêm · chặng ${j.no}/${j.of}</div><div class="ico-g">${j.icon}</div><div class="cap">${esc(j.label)}</div>`
+    + `<div class="sub">${j.done ? 'cả hành trình đã trọn vẹn 👑' : `${j.got}/${j.need} ${esc(j.goal)}`}</div><div class="jbar"><i style="width:${j.done ? 100 : pct}%"></i></div><div class="jdots">${dots}</div>`;
+}
+function elementsCard(e) {
+  const max = Math.max(1, ...Object.values(e.light));
+  return `<div class="kick">Đội nguyên tố đêm nay</div><div class="elrace">${Object.entries(EL).map(([k, [icon, name, col]]) => `<div class="el${k === e.lead ? ' lead' : ''}" style="--c:${col}"><span>${icon} ${name}</span><b><i style="width:${Math.round(100 * e.light[k] / max)}%"></i></b><em>${fmt(e.light[k])}</em></div>`).join('')}</div>`
+    + `<div class="sub">${e.lead ? `${EL[e.lead][0]} Đội ${EL[e.lead][1]} dẫn đầu · ánh sao của cả đội` : 'comment tên cung để vào đội'}</div>`;
+}
 setInterval(() => {
   const t = Date.now();
   if (!lane.idle() || t < centerUntil || !S.sky) return;
-  // now and then the centre explains the wheel itself
-  if (attractI % 20 === 10) {
-    attractI++;
-    paintCenter(`<div class="ico-g">🌌</div><div class="cap">Vòng hoàng đạo</div><div class="sub">mỗi cung một cung tròn ngoài, sáng dần theo ánh sao cả đội góp · chấm tròn là hành tinh thật đang đứng lúc này</div>`);
-    centerUntil = t + 5000;
+  const c = S.cosmos, j = c?.journey, act = c?.act, slot = attractI++ % 4;
+  if (j && slot % 2 === 0) { paintCenter(journeyCard(j)); centerUntil = t + 5200; return; }
+  if (slot === 1 && act?.headLabel && act.headInMs > 0) {
+    paintCenter(`<div class="kick">Sắp diễn ra</div><div class="ico-g">★</div><div class="cap">${esc(act.headLabel)}</div><div class="sub">sau ${mmss(act.headInMs)} · ở lại để cùng chơi!</div>`);
+    centerUntil = t + 4200;
     return;
   }
-  // every third card explains one planet of the real sky: where it stands right now and what it gives that sign's fans
-  const planets = S.cosmos?.sky?.planets;
-  if (planets && S.cosmos.boons && attractI % 3 === 2) {
-    const p = planets[(attractI / 3 | 0) % planets.length], d = PLANET(p.id), s = SIGN[p.sign];
-    attractI++;
-    paintCenter(`<div class="ico-g gf">${d.glyph}</div><div class="cap">${esc(d.label)} ở ${esc(s.label)}</div><div class="sub">${p.retro ? '℞ đang nghịch hành · ' : ''}fan ${esc(s.label)}: ${esc(d.boon)} x${d.mult}<br>trời thật lúc này ✨</div>`);
-    centerUntil = t + 4000;
-    return;
-  }
-  const waiting = S.sky.waiting, id = attractI % 2 === 0 && waiting.length ? waiting[(attractI / 2) % waiting.length | 0] : IDS[attractI % 12];
-  const s = SIGN[id], empty = !S.stage.some(v => v.sign === id);
-  attractI++;
-  // a sign's mascot only shows once somebody has picked it; an empty seat shows just its glyph
-  paintCenter(`${empty ? `<div class="ico-g gf">${s.glyph}︎</div>` : `<img src="${mascot(id, 'idle')}" alt="">`}<div class="cap">${esc(s.label)}</div><div class="sub">${empty ? `Comment “${IDS.indexOf(id) + 1}” để giữ chỗ ✨` : esc(pickLine(id))}</div>`);
+  if (slot === 3 && j?.elements?.lead) { paintCenter(elementsCard(j.elements)); centerUntil = t + 4800; return; }
+  // an empty seat: invite its sign (the one waiting longest first)
+  const id = S.sky.waiting?.[(attractI / 4 | 0) % Math.max(1, S.sky.waiting.length)] ?? IDS.find(x => !S.stage.some(v => v.sign === x));
+  if (!id) { if (j) { paintCenter(journeyCard(j)); centerUntil = t + 4000; } return; }
+  const s = SIGN[id];
+  paintCenter(`<div class="ico-g gf">${s.glyph}︎</div><div class="cap">${esc(s.label)}</div><div class="sub">còn trống chỗ · comment “${IDS.indexOf(id) + 1}” để vào đội ${esc(EL[s.element]?.[1] ?? '')} ✨</div>`);
   centerUntil = t + 3500;
 }, 250);
+
+// Giờ sinh tử: the last ten seconds of a fight (boss, tug of war) or a short game count down in red over the centre.
+let doomAt = 0, doomShown = 0;
+setInterval(() => {
+  const el = $('doom'), left = doomAt - Date.now(), sec = Math.ceil(left / 1000);
+  if (!(left > 0 && left <= 10000)) { if (doomShown) { el.className = ''; el.textContent = ''; doomShown = 0; } return; }
+  if (sec === doomShown) return;
+  doomShown = sec;
+  el.className = 'on';
+  el.innerHTML = `<b>${sec}</b><span>giây sinh tử!</span>`;
+  sfx('quizTick');
+}, 100);
 
 // level 1: one announcement strip with an icon, a title and an optional line under it, plus a countdown bar
 const eventEl = $('event');
@@ -685,9 +775,9 @@ function giftCard(e, sign) {
 // level 3: the big moments take over the wheel area
 const heroEl = $('hero');
 function celebrate({ key, badge = '', icon = '', glyphs = '', mascotSign = null, mood = 'win', title, sub = '', extra = '', color: hc = C.gold, ms = 3200, compact = false }) {
-  // while the boss, a tug of war or a run is on the arena stays in view: other celebrations shrink to the announcement strip
+  // while the boss, a tug of war or a short game is on the arena stays in view: other celebrations shrink to the announcement strip
   // (the strip keeps the celebration's picture — a gift, the chest, an avatar — as its icon)
-  const arena = S.cosmos?.boss ? 'boss' : S.cosmos?.tug ? 'tug' : S.cosmos?.run ? 'run' : null; // these keep the centre in view
+  const arena = S.cosmos?.boss ? 'boss' : S.cosmos?.tug ? 'tug' : S.cosmos?.mystery ? 'mystery' : S.cosmos?.starcatch ? 'starcatch' : null; // these keep the centre in view
   if (arena && key !== arena) return card({ key, icon: icon || extra.match(/<img[^>]*>|<span class="av[^"]*"[^>]*>[^<]*<\/span>/)?.[0] || '✨', title: `${badge ? `${badge} · ` : ''}${title}`, sub, color: hc, ms: Math.min(ms, 3200) });
   go({
     key, level: LV.BIG, ms,
@@ -702,8 +792,6 @@ function celebrate({ key, badge = '', icon = '', glyphs = '', mascotSign = null,
 
 // --- part renderers (called only when a part changed) ----------------------------------------------------
 function renderSky(sky) {
-  $('wheelTitle').textContent = `Vòng hoàng đạo thứ ${sky.wheel}`;
-  $('wheelCount').textContent = `🎯 Thắp sáng 12 cung · ${sky.litCount}/12`;
   $('missionProgress').setAttribute('stroke-dasharray', `${(sky.sky.reduce((sum, s) => sum + s.progress, 0) / 12).toFixed(3)} 1`);
   for (const s of sky.sky) {
     const n = nodes[s.id];
@@ -814,7 +902,8 @@ function renderCall() {
   else if (!S.stage.length && !h.lucky) html = 'Chào mừng! Comment <b>số 1–12</b> hoặc tên cung để bay vào vòng ✨';
   else if (cz?.predict?.open) { kind = 'boss'; const [A, B] = cz.predict.options; html = `🔮 <b>${esc(cz.predict.q)}</b> · gõ “đoán A” ${esc(A.label)} (${A.n}) / “đoán B” ${esc(B.label)} (${B.n}) · ${Math.ceil(cz.predict.closesInMs / 1000)}s`; }
   else if (cz?.roast && !cz.roast.spinning) { kind = 'boss'; html = `🔥 <b>Bóc phốt ${esc(SIGN[cz.roast.sign].label)}</b> · fan gõ “oan” ${cz.roast.protests}/${cz.roast.need} · “chuẩn” ${cz.roast.agree} · ${Math.ceil(cz.roast.remainingMs / 1000)}s`; }
-  else if (cz?.run) { kind = 'boss'; html = `🪐 <b>Hành trình Tầng Trời</b> · tầng ${cz.run.floor}/${cz.run.of} · ${cz.run.vote ? 'gõ <b>A/B/C</b> để chọn' : cz.run.down ? 'gõ <b>“hồi sinh”</b>!' : 'comment · thả tim để đánh'}`; }
+  else if (cz?.mystery) { kind = 'boss'; html = `🕵️ <b>Cung bí ẩn</b> · gõ tên cung bạn đoán · gợi ý ${cz.mystery.clues.length}/${cz.mystery.of}`; }
+  else if (cz?.starcatch) { kind = 'boss'; html = `🌠 <b>Hứng sao băng</b> · sao ${cz.starcatch.round}/${cz.starcatch.of} · gõ “${esc(cz.starcatch.word ?? '')}”`; }
   else if (cz?.head) html = `★ <b>${esc(cz.head.label)}</b> đang diễn ra · ${mmss(Math.max(0, S.headEnd - Date.now()))}`;
   else if (h.lucky) html = `⭐ <b>Sao may mắn: ${esc(SIGN[h.lucky.sign].label)}</b> · ánh sao x${h.lucky.multiplier} · ${Math.ceil(h.lucky.remainingMs / 1000)}s`;
   else if (cz?.act && cz.hour && cz.act.phase === 'play' && S.headAt - Date.now() < 300000) html = `${cz.hour.glyph} sắp tới: <b>★ ${esc(cz.hour.head)}</b> sau ${mmss(Math.max(0, S.headAt - Date.now()))} · ${esc(cz.hour.rule)}`;
@@ -844,16 +933,6 @@ const HEAT = [
   { name: 'Bùng cháy', color: '#ff6b3d' }, { name: 'Siêu tân tinh', color: '#ff3d7f' },
 ];
 
-// Nhiệt phòng (bottom-left of the wheel): the level, a bar to the next one, the bonus it gives.
-function renderHeat(h) {
-  if (!h) return;
-  const lv = HEAT[h.level], lo = h.levels[h.level - 1] ?? 0, hi = h.levels[h.level];
-  $('heat').style.setProperty('--hc', lv.color);
-  $('heat').classList.toggle('hot', h.level >= 3);
-  $('heatName').textContent = h.level ? `${lv.name} x${h.multiplier}` : lv.name;
-  $('heatFill').style.transform = `scaleX(${hi ? Math.min(1, (h.score - lo) / (hi - lo)).toFixed(3) : 1})`;
-  $('heatSub').textContent = hi ? `nhiệt phòng · còn ${Math.max(1, hi - h.score)} lượt nữa` : 'nóng nhất rồi, giữ lửa nào!';
-}
 // The fan club members on stage right now, with their level (bottom-right of the wheel).
 let fanKey = '';
 function renderFans(c) {
@@ -890,7 +969,7 @@ function demo(e) {
   if (e.demo === 'wish') releaseLantern({ id: `demo-${Date.now()}`, ...host, demo: true, text: SAMPLE_WISHES[Math.floor(Math.random() * SAMPLE_WISHES.length)] });
 }
 
-const LOOT_WHY = { bingo: 'bingo!', pass: 'Sổ Sao', quest: 'nhiệm vụ giờ', run: 'Hành trình Tầng Trời', boss: 'chiến lợi phẩm Sao Chổi', chest: 'từ rương sao', quiz: 'trả lời đúng câu đố', chaos: 'sửa sóng Thủy Nghịch', moon: 'có mặt lúc trăng rằm', wish: 'điều ước được chúc phúc' };
+const LOOT_WHY = { welcome: 'được cả phòng chào đón', fortune: 'quẻ được khen chuẩn', bingo: 'bingo!', pass: 'Sổ Sao', quest: 'nhiệm vụ giờ', mystery: 'đoán trúng cung bí ẩn', catch: 'hứng nhiều sao băng nhất', boss: 'chiến lợi phẩm Sao Chổi', chest: 'từ rương sao', quiz: 'trả lời đúng câu đố', chaos: 'sửa sóng Thủy Nghịch', moon: 'có mặt lúc trăng rằm', wish: 'điều ước được chúc phúc' };
 const mmss = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 // One card of the collection: the sign's mascot on paper framed in the edition's colour.
 function cardHtml(card, { big = false, name = '' } = {}) {
@@ -899,9 +978,40 @@ function cardHtml(card, { big = false, name = '' } = {}) {
     + `${name ? `<span class="zn">${esc(name)}</span>` : ''}<span class="zl">${esc(ed.id === 'base' ? s.label : ed.label)}</span></div>`;
 }
 
+const POWER_NEED = { 'no-fight': 'ngọc chỉ dùng khi đang đánh boss, kéo co hay Tầng Trời', 'no-gem': 'chưa có ngọc: đánh boss, mở rương, trả lời đúng để nhận', 'no-moon': 'chưa có mảnh trăng: có mặt lúc trăng rằm, ước được chúc phúc' };
+function showVault(e) {
+  const res = Object.entries(e.bag ?? {}).filter(([k, n]) => n && RES[k]);
+  const best = e.cards.best ?? [], rare = best[0] && (EDITION[best[0].edition]?.rarity ?? 0) >= 3;
+  const extra = `<div class="vault">
+    <div class="vhead">${avatarHtml(e, 'av big')}${e.sign ? `<img class="vm" src="${mascot(e.sign, rare ? 'hype' : 'win')}" alt="">` : ''}<div><b>Lv${e.level}${e.level >= 5 ? ' 👑' : ''}</b><span>${esc(e.title ?? '')}${e.sign ? ` · ${esc(SIGN[e.sign].label)}` : ''}</span></div></div>
+    <div class="vres">${res.length ? res.map(([k, n]) => `<span><img class="resimg" src="${RES[k].img}" alt="">${fmt(Math.floor(n))}</span>`).join('') : '<span class="vempty">kho trống · chơi để nhận bụi sao, ngọc</span>'}</div>
+    ${best.length ? `<div class="vcards">${best.map(c => cardHtml(c, { big: true })).join('')}</div>` : ''}
+    <div class="vstats"><span>🃏 ${e.cards.unique}/${e.cards.total} thẻ${e.cards.setDone ? ' · đủ 12 cung 🏆' : ''}</span>${e.pass ? `<span>📒 Sổ Sao ${e.pass.level}/${e.pass.max}</span>` : ''}${e.bingo ? `<span>🎯 bingo ${e.bingo.marked}/9</span>` : ''}</div>
+    ${e.next ? `<div class="vnext">lên Lv${e.level + 1}: ${e.next.dust} bụi · ${e.next.gems} ${RES[e.next.gem].label}${e.next.moon ? ` · ${e.next.moon} mảnh trăng` : ''} → gõ “nâng cấp”</div>` : ''}
+  </div>`;
+  celebrate({ key: 'vault', badge: '🎒 KHO BÁU', extra, title: esc(e.nickname), sub: 'gõ “kho” để khoe kho của bạn', color: rare ? EDITION[best[0].edition].color : C.gold, ms: 5200, compact: true });
+  if (rare) { const [x, y] = spotOf(e.userId, e.sign); burst(x, y, [EDITION[best[0].edition].color, C.gold, '#fff'], 80, 10); }
+}
+// "tung ngọc" / "thắp trăng": a resource spent in the room's event, shown where it lands
+function power(e) {
+  const r = RES[e.res];
+  if (e.kind === 'moon') {
+    const m = $('moon').getBoundingClientRect(), st = stage.getBoundingClientRect(), k = st.width / 1080;
+    burst((m.left + m.width / 2 - st.left) / k, (m.top + m.height / 2 - st.top) / k, ['#FFE7A1', C.gold, '#fff'], 60, 8);
+    card({ key: 'power', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(e.nickname)}</b> thắp trăng!`, sub: 'một mảnh trăng · trăng sáng thêm 20% 🌕', color: r.color, ms: 2600 });
+    return;
+  }
+  const where = e.target === 'boss' ? [CX, CY] : spotOf(e.userId, e.sign);
+  burst(where[0], where[1], [r.color, C.gold, '#fff'], 110, 13);
+  card({ key: 'power', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(e.nickname)}</b> tung ${esc(r.label)}! 💥`, sub: e.target === 'tug' ? 'cú kéo cực mạnh cho cung mình' : 'đòn mạnh như một món quà · gõ “tung ngọc” khi có ngọc', color: r.color, ms: 2600 });
+}
+
 let skyKey = '';
 function renderCosmos(c) {
   S.cosmos = c;
+  // the fight that ends soonest sets the "giờ sinh tử" countdown
+  const ends = [c.boss?.remainingMs, c.tug && !c.tug.warmupMs ? c.tug.remainingMs : null, c.mystery?.remainingMs].filter(ms => ms > 0);
+  doomAt = ends.length ? Date.now() + Math.min(...ends) : 0;
   // Keep the real planets on the wheel; their separate top-bar row is intentionally omitted.
   const key = c.sky ? JSON.stringify([c.sky.planets, c.sky.moon.phase]) : '';
   if (key !== skyKey) {
@@ -909,7 +1019,6 @@ function renderCosmos(c) {
     renderPlanets(c.sky);
   }
   renderWishes(c.wishes ?? []);
-  renderHeat(c.heat);
   renderFans(c);
   renderJoin();
   // the chest: a countdown, wobbling in the last minute, then OPEN
@@ -990,9 +1099,9 @@ function renderWishes(list) {
 // The arena covers the centre circle while the boss is up, Thủy Nghịch is on, or the chest is open.
 let arenaMode = '', claimKey = '', roleKey = '';
 function renderArena(c) {
-  const a = $('arena'), mode = c.boss ? 'boss' : c.chaos ? 'chaos' : c.run ? 'run' : c.tug ? 'tug' : c.chest.open ? 'chest' : '';
+  const a = $('arena'), mode = c.boss ? 'boss' : c.chaos ? 'chaos' : c.mystery ? 'mystery' : c.starcatch ? 'starcatch' : c.tug ? 'tug' : c.chest.open ? 'chest' : '';
   if (mode === 'tug' || arenaMode === 'tug') { if (renderTug(a, c.tug, mode !== arenaMode)) { arenaMode = mode; stage.classList.toggle('arena-live', Boolean(mode)); return; } }
-  if (mode === 'run' || arenaMode === 'run') { if (renderRun(a, c.run, mode !== arenaMode)) { arenaMode = mode; stage.classList.toggle('arena-live', Boolean(mode)); return; } }
+  for (const game of ['mystery', 'starcatch']) if (mode === game || arenaMode === game) { if (renderMini(a, game, c[game], mode !== arenaMode)) { arenaMode = mode; stage.classList.toggle('arena-live', Boolean(mode)); return; } }
   stage.classList.toggle('arena-live', Boolean(mode));
   if (mode !== arenaMode) {
     arenaMode = mode;
@@ -1037,44 +1146,27 @@ function renderArena(c) {
     if (key !== claimKey) { claimKey = key; a.querySelector('.claims').innerHTML = ch.recent.slice(0, 4).map(r => cardHtml(r.card, { name: r.nickname })).join(''); }
   }
 }
-// Hành trình Tầng Trời in the centre circle: the floor, the party's health and ấn, then whatever this moment is —
-// a vote (doors, ấn or a kỳ ngộ with live counts), the enemy's health, or the "hồi sinh" rally.
-// Returns false when the run just ended (the normal arena takes over again).
-let runKey = '';
-function renderRun(a, r, fresh) {
-  if (!r) { if (fresh) { a.className = ''; a.innerHTML = ''; runKey = ''; } return false; }
-  if (fresh) { a.className = 'on runmode'; a.innerHTML = '<div class="ak"></div><div class="party"><div class="hp php"><i></i><b></b></div><div class="boons"></div></div><div class="stagebox"></div>'; runKey = ''; }
-  a.querySelector('.ak').textContent = `♄ Tầng ${r.floor}/${r.of}${r.ascension ? ` · Thăng thiên ${r.ascension}` : ''}`;
-  a.querySelector('.php i').style.transform = `scaleX(${Math.max(0, r.hp / r.max).toFixed(3)})`;
-  a.querySelector('.php b').textContent = `Đoàn ❤ ${fmt(r.hp)}/${fmt(r.max)}${r.shield ? ` · 🛡${r.shield}` : ''}`;
-  const boonKey = r.boons.map(b => b.id).join() + '|' + r.curses.map(x => x.id).join() + '|' + r.resonance.map(x => x.element).join();
-  const bx = a.querySelector('.boons');
-  if (bx.dataset.k !== boonKey) {
-    bx.dataset.k = boonKey;
-    bx.innerHTML = r.boons.map(b => `<span class="bn" style="--el:${color(b.id)}" title="${esc(b.text)}">${G(b.id)}</span>`).join('')
-      + r.resonance.map(x => `<span class="rs" style="--el:${ELEMENT[x.element].color}">✦ ${esc(x.label)}</span>`).join('')
-      + r.curses.map(x => `<span class="cs">☠ ${esc(x.label)}</span>`).join('');
+// Cung bí ẩn and Hứng sao băng in the centre circle: the clues so far (or the falling word), the winners, a timer.
+// Returns false when the game just ended (the normal arena takes over again).
+function renderMini(a, game, g, fresh) {
+  if (!g) { if (fresh) { a.className = ''; a.innerHTML = ''; } return false; }
+  if (fresh) {
+    a.className = `on ${game}mode`;
+    a.innerHTML = game === 'mystery'
+      ? '<div class="ak">🕵️ Cung bí ẩn</div><div class="mq">?</div><ol class="clues"></ol><div class="sub mw"></div><div class="sub mt"></div>'
+      : '<div class="ak">🌠 Hứng sao băng</div><div class="word"></div><div class="sub cw"></div><div class="sub ct"></div>';
   }
-  const box = a.querySelector('.stagebox'), key = `${r.floor}|${r.phase}|${r.vote?.kind ?? ''}|${r.enemy?.name ?? ''}`;
-  if (key !== runKey) {
-    runKey = key;
-    if (r.vote) box.innerHTML = `<div class="vt">${esc(r.vote.title ?? (r.vote.kind === 'door' ? 'Chọn cửa' : r.vote.kind === 'boon' ? 'Chọn ấn chòm sao' : 'Kỳ ngộ'))}</div><div class="doors ${r.vote.kind}">${r.vote.options.map(o => `<div class="door" data-k="${o.key}"${o.sign ? ` style="--el:${color(o.sign)}"` : ''}><b>${o.key}</b><span>${o.icon ? `${o.icon} ` : o.sign ? `${G(o.sign)} ` : ''}${esc(o.label)}${o.text ? `<small>${esc(o.text)}</small>` : ''}</span><em>0</em></div>`).join('')}</div><div class="sub vs"></div>`;
-    else if (r.enemy) box.innerHTML = `<div class="foe">${r.enemy.door === 'boss' ? '<img src="/art/boss.svg" alt="">' : `<span>${r.enemy.icon}</span>`}</div><div class="fn">${esc(r.enemy.name)}</div><div class="hp ehp"><i></i><b></b></div><div class="sub es"></div>`;
-    else if (r.down) box.innerHTML = '<div class="vt">💀 Đoàn gục ngã</div><div class="cap">Gõ “hồi sinh”</div><div class="sub ds"></div>';
-    else box.innerHTML = `<div class="sub">${r.next ? `tầng kế: ${r.next.map(d => RUN_DOOR_ICON[d]).join(' ')}` : 'chuẩn bị…'}</div>`;
+  if (game === 'mystery') {
+    const ol = a.querySelector('.clues');
+    if (ol.children.length !== g.clues.length) { ol.innerHTML = g.clues.map(c => `<li>${esc(c)}</li>`).join(''); ol.lastElementChild?.classList.add('new'); }
+    a.querySelector('.mw').innerHTML = g.winners.length ? g.winners.map(w => `${['🥇', '🥈', '🥉'][w.rank - 1]} <b>${esc(w.nickname)}</b>`).join(' · ') : 'gõ tên cung bạn đoán · 3 người đúng đầu tiên nhận ngọc';
+    a.querySelector('.mt').textContent = g.remainingMs != null ? `gợi ý cuối · còn ${Math.ceil(g.remainingMs / 1000)}s` : `gợi ý ${g.clues.length}/${g.of} · gợi ý mới sau ${Math.ceil(g.nextInMs / 1000)}s`;
+  } else {
+    const w = a.querySelector('.word');
+    if (w.textContent !== g.word) { w.textContent = g.word ?? ''; w.classList.remove('drop'); void w.offsetWidth; w.classList.add('drop'); meteorShower(3); }
+    a.querySelector('.cw').innerHTML = `gõ đúng chữ này · <b>${g.caught}/${g.need}</b> người đã hứng · sao ${g.round}/${g.of}`;
+    a.querySelector('.ct').innerHTML = g.top.length ? `hứng nhiều nhất: ${g.top.map(x => `<b>${esc(x.nickname)}</b> ${x.catches}`).join(' · ')}` : `sao kế tiếp sau ${Math.ceil(g.nextInMs / 1000)}s`;
   }
-  if (r.vote) {
-    for (const o of r.vote.options) { const d = box.querySelector(`.door[data-k="${o.key}"]`); if (d) d.querySelector('em').textContent = o.votes; }
-    const top = Math.max(...r.vote.options.map(o => o.votes));
-    box.querySelectorAll('.door').forEach((d, i) => d.classList.toggle('lead', top > 0 && r.vote.options[i].votes === top));
-    box.querySelector('.vs').textContent = `gõ ${r.vote.options.map(o => o.key).join(' / ')} · ${Math.ceil(r.vote.remainingMs / 1000)}s · ${r.vote.voters} phiếu`;
-  } else if (r.enemy) {
-    box.querySelector('.ehp i').style.transform = `scaleX(${(r.enemy.hp / r.enemy.max).toFixed(3)})`;
-    box.querySelector('.ehp b').textContent = `${fmt(r.enemy.hp)} / ${fmt(r.enemy.max)}`;
-    box.querySelector('.es').textContent = `⏱ ${mmss(r.enemy.remainingMs)}${r.enemy.combo > 1 ? ` · Khí combo x${r.enemy.combo}` : ''}${r.top[0] ? ` · mạnh nhất: ${r.top[0].nickname}` : ''}`;
-    a.classList.toggle('rage', r.enemy.rage);
-  } else if (r.down) box.querySelector('.ds').textContent = `${r.down.got}/${r.down.need} người · ${Math.ceil(r.down.remainingMs / 1000)}s`;
-  if (!r.enemy) a.classList.remove('rage');
   return true;
 }
 // Kéo co cung: two teams, a rope across the centre, the knot sliding toward whoever pulls harder.
@@ -1093,7 +1185,6 @@ function renderTug(a, g, fresh) {
 // Bingo Hoàng Đạo: the 3×3 card, marked squares lit.
 const bingoGrid = card => `<div class="bingo">${card.map(q => `<span class="${q.marked ? 'on' : ''}" title="${esc(q.label)}">${q.icon}</span>`).join('')}</div>`;
 
-const RUN_DOOR_ICON = { fight: '⚔️', elite: '💀', chest: '🎁', event: '❓', rest: '🔥', boss: '🪐' };
 
 function bossShake() { const b = $('bossFig'); if (!b) return; b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }
 // The whole frame jolts when the boss strikes.
@@ -1109,46 +1200,73 @@ const modal = (id, holdWhile) => ({
   done: () => { $(id).dataset.q = ''; },
 });
 
-// Light poll: everyone names a sign; live bars show the top four.
+// Bình chọn: four numbered options, "1"–"4" to vote; the bars fill live. A "which sign…?" poll shows the four signs'
+// glyphs; a "next headliner" poll lets the room choose what the other planet plays in its next turn.
 function renderPoll(p) {
   if (Date.now() < pollReveal || !p) return;
   const m = $('poll');
   if (m.dataset.q !== p.q) {
     m.dataset.q = p.q;
-    m.innerHTML = `<div class="k">🗳 Bình chọn vui</div><h2>${esc(p.q)}</h2><div class="bars"></div><p class="hint">Comment <b style="color:var(--accent)">tên cung</b> để bình chọn!</p>`;
+    m.innerHTML = `<div class="k">🗳 ${p.kind === 'next' ? 'Cả phòng chọn màn tiếp theo' : 'Bình chọn vui'}</div><h2>${esc(p.q)}</h2><div class="bars"></div><p class="hint">Comment <b style="color:var(--accent)">1, 2, 3 hoặc 4</b> để bình chọn!</p>`;
     go(modal('poll', () => Boolean(S.hud?.poll) || Date.now() < pollReveal));
   }
-  const rows = IDS.map(id => [id, p.votes[id]]).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  const top = Math.max(1, rows[0][1]);
-  m.querySelector('.bars').innerHTML = rows.map(([id, n]) => `<div class="bar" style="--el:${color(id)}"><i style="transform:scaleX(${(n / top).toFixed(2)})"></i><span><span class="gf">${SIGN[id].glyph}\uFE0E</span> ${esc(SIGN[id].label)}</span><b>${n}</b></div>`).join('');
+  const top = Math.max(1, ...p.options.map(o => o.n));
+  m.querySelector('.bars').innerHTML = p.options.map((o, i) => {
+    const col = o.sign ? color(o.sign) : ['#E97A66', '#F2C45C', '#8EC0B9', '#B48CF2'][i];
+    const name = o.sign ? `<span class="gf">${SIGN[o.sign].glyph}︎</span> ${esc(o.label)}` : `${HEAD_ICON[o.head] ?? ''} ${esc(o.label)}`;
+    return `<div class="bar" style="--el:${col}"><i style="transform:scaleX(${(o.n / top).toFixed(2)})"></i><span><b class="no">${i + 1}</b> ${name}</span><b>${o.n}</b></div>`;
+  }).join('');
 }
 function revealPoll(e) {
   const m = $('poll');
-  if (!e.winner || !m.dataset.q) { pollReveal = 0; return; }
-  m.querySelector('.hint').innerHTML = `🎉 <b>${esc(SIGN[e.winner].label)}</b> được chọn nhiều nhất · ${e.votes}/${e.total} phiếu`;
-  m.querySelector('.bars').firstElementChild?.classList.add('win');
+  if (e.winner == null || !m.dataset.q) { pollReveal = 0; return; }
+  const what = e.kind === 'next' ? `lượt sau chơi <b>${esc(e.option.label)}</b>` : `<b>${esc(e.option.label)}</b> được chọn nhiều nhất`;
+  m.querySelector('.hint').innerHTML = `🎉 ${what} · ${e.votes}/${e.total} phiếu`;
+  m.querySelectorAll('.bar')[e.winner]?.classList.add('win');
   pollReveal = Date.now() + 3000;
-  const [x, y] = nodePos(e.winner);
-  burst(x, y, [color(e.winner), C.gold, C.paper], 60, 9);
+  const [x, y] = e.sign ? nodePos(e.sign) : [CX, CY];
+  burst(x, y, [e.sign ? color(e.sign) : C.accent, C.gold, C.paper], 60, 9);
 }
 
+// Bàn quẻ: the bamboo tube shakes for a moment, then the stick lands and the reading opens. A topic ("xin quẻ tình
+// duyên") leads with that topic and two more lines on it. Under the reading the room's answer counts up live:
+// "chuẩn" for any reading, "xin vía" on a Thượng / Đại Cát one.
+const TOPIC = { love: ['❤️', 'Tình duyên'], work: ['💼', 'Công việc'], money: ['💰', 'Tiền bạc'], luck: ['🍀', 'May mắn'] };
+let fortuneOpen = 0;
+function fortuneRoom(f) {
+  const el = $('fortune').querySelector('.room');
+  if (!el || !f.userId) return;
+  el.innerHTML = `<span>🙏 <b>${f.agree}</b> người thấy chuẩn · gõ “chuẩn”</span>${f.lucky ? `<span>✨ <b>${f.vias}</b> người xin vía · gõ “xin vía”</span>` : ''}`;
+}
 function renderFortune(f) {
   if (!f) { if (shownFortune) { sfx('fortuneEnd'); shownFortune = null; } return; }
   const key = `${f.userId}|${f.sign}|${f.endsAt}`;
-  if (key === shownFortune) return;
+  if (key === shownFortune) return fortuneRoom(f);
   shownFortune = key;
   sfx('fortune');
   const m = $('fortune'), s = SIGN[f.sign];
-  m.innerHTML = `<div class="k">🎋 Quẻ hoàng đạo hôm nay</div>
-    <div class="who"><img src="${mascot(f.sign, 'hype')}" alt=""><span>${f.nickname ? esc(f.nickname) + ' · ' : 'Quẻ chung cho '}<span class="gf">${s.glyph}\uFE0E</span> ${esc(s.label)}</span></div>
-    <div class="lvl">${f.level}</div>
-    <div class="lines"><p>❤️ ${esc(f.love)}</p><p>💼 ${esc(f.work)}</p><p>💰 ${esc(f.money)}</p><p>🍀 ${esc(f.luck)}</p></div>
-    <div class="lucky"><span>Màu: ${esc(f.color)}</span><span>Số: ${f.number}</span>${f.hour ? `<span>Giờ vàng: ${esc(f.hour)}</span>` : ''}</div>
-    <div class="fine">${f.tip ? `“${esc(f.tip)}” · ` : ''}chỉ mang tính giải trí</div>`;
+  const rest = ['love', 'work', 'money', 'luck'].filter(k => !(f.focus && k === f.topic));
+  m.innerHTML = `<div class="k">🎋 Quẻ hoàng đạo hôm nay${f.topic ? ` · ${TOPIC[f.topic][1]}` : ''}</div>
+    <div class="who"><img src="${mascot(f.sign, 'hype')}" alt=""><span>${f.nickname ? esc(f.nickname) + ' · ' : 'Quẻ chung cho '}<span class="gf">${s.glyph}︎</span> ${esc(s.label)}</span></div>
+    <div class="shake">🎋</div>
+    <div class="reveal">
+      <div class="lvl">${f.level}</div>
+      ${f.focus ? `<div class="focus"><b>${TOPIC[f.topic][0]} ${TOPIC[f.topic][1]}</b><p>${esc(f[f.topic])}</p>${f.focus.map(l => `<p>${esc(l)}</p>`).join('')}</div>` : ''}
+      <div class="lines">${rest.map(k => `<p>${TOPIC[k][0]} ${esc(f[k])}</p>`).join('')}</div>
+      <div class="lucky"><span>Màu: ${esc(f.color)}</span><span>Số: ${f.number}</span>${f.hour ? `<span>Giờ vàng: ${esc(f.hour)}</span>` : ''}</div>
+      ${f.userId ? '<div class="room"></div>' : ''}
+      <div class="fine">${f.tip ? `“${esc(f.tip)}” · ` : ''}chỉ mang tính giải trí</div>
+    </div>`;
+  m.classList.remove('opened');
   go(modal('fortune', () => Boolean(S.hud?.fortune)));
-  const [x, y] = nodePos(f.sign);
-  burst(x, y, [C.gold, C.paper, color(f.sign)], 40, 7);
-  speak(`${f.nickname ? f.nickname : 'Cung ' + s.label}, quẻ hôm nay: ${f.level}. ${f.love} ${f.luck}`);
+  fortuneRoom(f);
+  clearTimeout(fortuneOpen);
+  fortuneOpen = setTimeout(() => {
+    m.classList.add('opened');
+    const [x, y] = nodePos(f.sign);
+    burst(x, y, f.lucky ? [C.gold, '#fff', '#ff6b3d'] : [C.gold, C.paper, color(f.sign)], f.lucky ? 90 : 40, f.lucky ? 11 : 7);
+  }, 1200);
+  speak(`${f.nickname ? f.nickname : 'Cung ' + s.label}, quẻ hôm nay: ${f.level}. ${f.topic ? f[f.topic] : f.love} ${f.luck}`);
 }
 
 function renderQuiz(q) {
@@ -1197,17 +1315,16 @@ const sfx = createSfx(params.has('sfx') ? Number(params.get('sfx')) : 0.3);
 const music = createMusic({ volume: params.has('music') ? Number(params.get('music')) : 0.22, onBlocked: () => { if (params.has('soundbtn')) $('sound').classList.add('on'); } }); // viewers cannot click the stream: the button is only for testing in a normal browser (?soundbtn=1)
 addEventListener('pointerdown', () => music.resume(), { once: true }); // a normal browser tab still starts the music on the first click
 $('sound').onclick = () => { music.resume(); sfx('welcome'); $('sound').classList.remove('on'); };
-const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak', dance: 'dance',
+const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak',
   swaps: 'flow', 'boss-hits': 'bossHit', 'boss-start': 'bossStart', 'boss-freeze': 'boop', 'boss-rescue': 'lit', 'boss-blocked': 'follow', 'boss-heal': 'luckyEnd', 'boss-defeated': 'wheel', 'boss-escaped': 'moonEnd',
-  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', collection: 'title', 'set-complete': 'title',
-  'wish-bless': 'sparkle', 'wish-blessed': 'lit', loots: 'sparkle', 'level-up': 'title', bag: 'boop', combine: 'lit', 'upgrade-need': 'boop',
+  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', chapter: 'wheel', 'journey-done': 'moon', 'element-lead': 'overtake', 'tug-flip': 'overtake', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
+  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', combine: 'lit', 'upgrade-need': 'boop',
   fans: 'milestone', 'fan-call': 'lucky', 'heat-up': 'overtake', demo: 'boop', 'switch-wait': 'boop',
   'birth-sky': 'lucky', 'star-born': 'starFly', showtime: 'milestone',
   'hour-start': 'hourStart', 'act-open': 'actOpen', 'head-start': 'headStart', 'head-end': 'actClose', 'act-close': 'actClose', pair: 'pair',
-  'run-start': 'headStart', 'run-vote': 'boop', 'run-door': 'door', 'run-fight': 'bossStart', 'run-won': 'lit', 'run-boon': 'boon', 'run-attack': 'runHit',
-  'run-down': 'fall', 'run-revive': 'revive', 'run-chest': 'chestOpen', 'run-rest': 'moon', 'run-event': 'sparkle', 'run-fled': 'moonEnd',
+  'mystery-start': 'headStart', 'mystery-clue': 'boop', 'mystery-win': 'quiz', 'mystery-end': 'cleared', 'catch-star': 'starFly', catch: 'sparkle', 'catch-end': 'cleared',
   'roast-start': 'spin', 'quest-done': 'cleared', 'tug-start': 'headStart', 'tug-yank': 'runHit', 'tug-end': 'cleared', 'predict-open': 'pollStart', 'predict-end': 'poll',
-  bingo: 'cleared', 'bingo-card': 'cardFlip', 'pass-up': 'boon', 'pass-show': 'boop' };
+  bingo: 'cleared', 'bingo-card': 'cardFlip', 'pass-up': 'boon' };
 const BIG = new Set(['meteor', 'wheel', 'moon', 'milestone', 'night', 'firework', 'hourStart', 'headStart', 'bossStart', 'fall', 'revive']); // the music ducks under these
 const gold = C.gold;
 function onFx(e) {
@@ -1217,24 +1334,20 @@ function onFx(e) {
   else if (e.type === 'bells') sound = e.people[0].kind === 'share' ? 'share' : 'follow';
   else if (e.type === 'milestone' && e.count === 1) sound = 'welcome';
   if (e.type === 'gift' && e.count >= 5) sfx('combo', e.count);
-  const MINOR = { dance: 'dance', flows: 'flow', 'title-up': 'title', streak: 'streak', overtake: 'overtake', wish: 'wish', hearts: 'hearts' };
+  const MINOR = { flows: 'flow', 'title-up': 'title', streak: 'streak', overtake: 'overtake', wish: 'wish', hearts: 'hearts' };
   if (MINOR[e.type] && !on(MINOR[e.type])) sound = null;
   if (e.type === 'milestone' && ![1, 100].includes(e.count) && (!on('milestone') || e.count < 100)) sound = null;
   if (sound) { sfx(sound, arg); if (BIG.has(sound)) music.duck(); }
   switch (e.type) {
     case 'greeting': releaseGreeting(e); break;
+    case 'welcome-hi': greetStar(e); break;
+    case 'welcome-done': greetStar(e, true); break;
     case 'joins': {
       const p = e.people.at(-1);
       // a switch is always shown (the viewer is waiting to see it worked); plain joins follow the panel's switch
       if (p.from) spotlight(`<div class="duo"><img src="${mascot(p.sign, 'hype')}" alt="">${avatarHtml(p, 'av big')}</div><div class="cap">${esc(p.nickname)}</div><div class="sub">đổi cung ${G(p.from)} ${esc(SIGN[p.from].label)} → ${G(p.sign)} ${esc(SIGN[p.sign].label)} ✓</div>`, 2200, 'join');
       else if (on('join')) spotlight(`<div class="duo"><img src="${mascot(p.sign, 'hype')}" alt="">${avatarHtml(p, 'av big')}</div><div class="cap">${esc(p.nickname)}</div><div class="sub">vào đội ${G(p.sign)} ${esc(SIGN[p.sign].label)} ✨${e.more ? ` · +${e.more} người` : ''}<br><small>nhầm? gõ “đổi” + tên cung</small></div>`, 1800, 'join');
       for (const q of e.people) { const [x, y] = nodePos(q.sign); burst(x, y, [color(q.sign), C.paper], 16, 5); }
-      break;
-    }
-    case 'dance': {
-      for (const id of e.userIds) dancing.set(id, Date.now() + 4000);
-      const v = S.stage.find(x => x.userId === e.userIds[0]);
-      if (v && on('dance')) spotlight(`<img src="${mascot(v.sign, 'hype')}" alt=""><div class="cap">${esc(v.nickname)}</div><div class="sub">💃 nhảy cùng cung ${esc(SIGN[v.sign].label)}${e.userIds.length > 1 ? ` · +${e.userIds.length - 1} người` : ''}</div>`, 1800, 'dance');
       break;
     }
     case 'hearts': {
@@ -1271,6 +1384,24 @@ function onFx(e) {
       else card({ key: 'loot', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(l.nickname)}</b> nhận ${l.n} ${r.label}`, sub: `${LOOT_WHY[l.why] ?? ''}${e.loot.length + e.more > 1 ? ` · +${e.loot.length + e.more - 1} người nữa` : ''} · gõ “kho” để xem`, color: r.color, ms: 2600 });
       break;
     }
+    // --- hành trình đêm, đội nguyên tố, đảo chiều ---
+    case 'chapter':
+      meteorShower(e.next ? 10 : 30);
+      celebrate({ key: 'chapter', badge: `${e.icon} CHẶNG ${e.no}/${e.of} HOÀN THÀNH`, icon: e.icon, title: esc(e.label), sub: `cả sân +${e.dust} bụi sao (${e.people} người)${e.next ? ` · chặng tiếp: ${e.next.icon} ${esc(e.next.label)}: ${e.next.need} ${esc(e.next.goal)}` : ''}`, color: C.gold, ms: 4200, compact: true });
+      break;
+    case 'journey-done':
+      celebrate({ key: 'chapter', badge: '👑 TRỌN HÀNH TRÌNH ĐÊM NAY', icon: '🌌', title: 'Cả phòng đã đi hết 5 chặng!', sub: `${e.people} người trên sân nhận 1 mảnh trăng 🌙 · cảm ơn cả nhà`, color: '#FFE7A1', ms: 5200, compact: true });
+      break;
+    case 'element-lead': {
+      const [icon, name, col] = EL[e.element], [, prev] = EL[e.prev];
+      card({ key: 'lead', icon, title: `Đảo chiều! Đội <b>${name}</b> dẫn đầu`, sub: `vượt đội ${prev} · fan ${prev} ơi, gỡ lại nào!`, color: col, ms: 3000 });
+      break;
+    }
+    case 'tug-flip': {
+      burst(CX, CY, [color(e.lead), C.gold, '#fff'], 70, 10);
+      card({ key: 'flip', icon: '🪢', title: `Đảo chiều! <b>${esc(SIGN[e.lead].label)}</b> lật thế`, sub: `fan ${esc(SIGN[e.other].label)} ơi, kéo lại!`, color: color(e.lead), ms: 2400 });
+      break;
+    }
     case 'level-up': {
       const [x, y] = spotOf(e.userId, e.sign);
       burst(x, y, [LEVEL_COLOR[e.level], C.gold, C.paper], 90, 12);
@@ -1280,8 +1411,16 @@ function onFx(e) {
     case 'upgrade-need':
       spotlight(`<div class="duo"><img src="${mascot(e.sign, 'panic')}" alt="">${avatarHtml(e, 'av big')}</div><div class="cap">${esc(e.nickname)} · Lv${e.level}</div><div class="sub">còn thiếu ${Object.entries(e.missing).map(([k, n]) => `${n} ${RES[k].label}`).join(', ')}</div>`, 2600, 'need');
       break;
-    case 'bag':
-      card({ key: 'bag', icon: avatarHtml(e, 'av'), title: `Kho của <b>${esc(e.nickname)}</b> · Lv${e.level}`, sub: `<span class="bagrow">${Object.entries(e.bag).filter(([, n]) => n).map(([k, n]) => `<img class="resimg sm" src="${RES[k].img}" alt="">${fmt(n)}`).join(' ') || 'trống'}</span>${e.next ? ` · lên Lv${e.level + 1}: ${e.next.dust} bụi, ${e.next.gems} ${RES[e.next.gem].label}${e.next.moon ? `, ${e.next.moon} mảnh trăng` : ''}` : e.level >= 5 ? ' · cấp tối đa 👑' : ' · chọn cung để nâng cấp'}`, color: C.gold, ms: 4200 });
+    case 'vault': showVault(e); break;
+    case 'power': power(e); break;
+    case 'power-need': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">${POWER_NEED[e.why] ?? ''}</div>`, 2400, 'need'); break;
+    case 'fortune-agree': {
+      const [x, y] = nodePos(S.hud?.fortune?.sign ?? IDS[0]);
+      burst(x, y, [C.gold, C.paper], 10, 4);
+      break;
+    }
+    case 'fortune-luck':
+      card({ key: 'luck', icon: '✨', title: `<b>${esc(e.nickname)}</b> xin vía ${esc(e.owner)}`, sub: `quẻ ${esc(e.level)} · cả hai nhận bụi sao`, color: C.gold, ms: 2200 });
       break;
     case 'combine':
       card({ key: 'card', icon: '🔮', title: `<b>${esc(e.nickname)}</b> ghép ${e.count} thẻ ${esc(SIGN[e.from].label)}`, sub: 'thành 1 thẻ Tinh Tú ✨', color: EDITION.star.color });
@@ -1458,11 +1597,6 @@ function onFx(e) {
       }
       break;
     }
-    case 'collection': {
-      const best = e.best && EDITION[e.best.edition];
-      card({ key: 'collection', icon: e.best ? cardHtml(e.best) : '🃏', title: `Bộ thẻ của <b>${esc(e.nickname)}</b>: ${e.unique}/${e.total}`, sub: e.unique ? `hiếm nhất: ${esc(best.label)} · ${esc(SIGN[e.best.sign].label)}${e.setDone ? ' · đủ 12 cung 🏆' : ''}` : 'chưa có thẻ — chờ rương sao rồi gõ “nhận” nhé!', color: best?.color ?? C.teal, ms: 3600 });
-      break;
-    }
     case 'set-complete':
       celebrate({ key: 'card', badge: '🏆 ĐỦ 12 CUNG', icon: '🃏', title: esc(e.nickname), sub: 'đã gom đủ thẻ cả 12 cung hoàng đạo!', color: gold, ms: 4200, compact: true });
       break;
@@ -1494,7 +1628,7 @@ function onFx(e) {
       card({ key: 'act', icon: `<span class="gf">${e.hour.glyph}</span>`, title: `Màn ${e.no}/${e.of} · Giờ ${esc(e.hour.label)}`, sub: `★ ${esc(e.hour.head)} sau ${mmss(e.headInMs)} · ${esc(e.hour.rule)}`, color: e.hour.color, ms: 4200 });
       break;
     case 'head-start':
-      if (['run', 'elite', 'tug', 'roast', 'chaos'].includes(e.id)) break; // these announce themselves
+      if (['elite', 'tug', 'roast', 'chaos', 'mystery', 'starcatch'].includes(e.id)) break; // these announce themselves
       celebrate({ key: 'head', badge: '★ SỰ KIỆN CHÍNH', icon: HEAD_ICON[e.id] ?? '★', title: esc(e.label), sub: HEAD_HOW[e.id] ?? '', color: S.cosmos?.hour?.color ?? gold, ms: 4200, compact: true });
       break;
     case 'head-end':
@@ -1546,7 +1680,7 @@ function onFx(e) {
       if (e.frame) celebrate({ key: 'pass', badge: `📒 SỔ SAO CẤP ${e.level}`, extra: `<div class="duo">${avatarHtml(e, `av big frame-${e.frame}`)}</div>`, title: esc(e.nickname), sub: `nhận ${esc(e.reward)}`, color: FRAME_COLOR[e.frame], ms: 3600, compact: true });
       else if (on('title')) card({ key: 'pass', icon: '📒', title: `<b>${esc(e.nickname)}</b> lên Sổ Sao cấp ${e.level}`, sub: `nhận ${esc(e.reward)}`, color: color(e.sign), ms: 2400 });
       break;
-    case 'pass-show': card({ key: 'pass', icon: '📒', title: `Sổ Sao của <b>${esc(e.nickname)}</b>: cấp ${e.level}/${e.max}`, sub: `${e.xp}/${e.need} kinh nghiệm${e.next ? ` · cấp sau: ${esc(e.next)}` : ' · đã tối đa 👑'}`, color: C.gold, ms: 3600 }); break;
+
     // --- vòng quay bóc phốt and the hour's quest ---
     case 'roast-start': roastWheel(e); break;
     case 'roast-end': {
@@ -1567,41 +1701,30 @@ function onFx(e) {
       speak('Nhiệm vụ giờ hoàn thành');
       break;
     // --- Hành trình Tầng Trời ---
-    case 'run-start':
-      celebrate({ key: 'run', badge: '♄ HÀNH TRÌNH TẦNG TRỜI', icon: '🪐', title: `Lượt ${e.no} · ${e.floors} tầng${e.ascension ? ` · Thăng thiên ${e.ascension}` : ''}`, sub: `cả phòng là một đoàn · gõ <b>A/B/C</b> để chọn cửa · comment, thả tim để đánh${e.best ? ` · kỷ lục kênh: tầng ${e.best}` : ''}`, color: '#8EC0B9', ms: 4600 });
-      speak('Hành trình tầng trời bắt đầu');
+    // --- the two short games ---
+    case 'mystery-start':
+      celebrate({ key: 'mystery', badge: '🕵️ CUNG BÍ ẨN', icon: '❓', title: 'Đoán xem cung nào?', sub: `gợi ý 1: ${esc(e.clue)} · gõ tên cung · 3 người đúng đầu tiên nhận ngọc`, color: '#B48CF2', ms: 3400, compact: true });
       break;
-    case 'run-door': card({ key: 'run', icon: e.icon, title: `Tầng ${e.floor}/${e.of}: <b>${esc(e.label)}</b>`, sub: RUN_DOOR_HOW[e.door] ?? '', color: '#8EC0B9', ms: 2600 }); break;
-    case 'run-fight': quake(); card({ key: 'run', icon: e.door === 'boss' ? '🪐' : e.door === 'elite' ? '💀' : '⚔️', title: `<b>${esc(e.name)}</b> chặn đường!`, sub: `${fmt(e.hp)} máu · ${e.seconds} giây · comment · thả tim để đánh`, color: '#E97A66', ms: 3000 }); break;
-    case 'run-won':
-      burst(CX, CY, [gold, C.paper, C.teal], 70, 11);
-      card({ key: 'run', icon: '⚔️', title: `Hạ <b>${esc(e.name)}</b>!`, sub: `${e.mvp ? `MVP ${esc(e.mvp.nickname)} · ${fmt(e.mvp.dmg)} sát thương` : 'cả đoàn cùng đánh'}${e.finisher ? ` · kết liễu: ${esc(e.finisher.nickname)}` : ''}`, color: gold, ms: 2800 });
+    case 'mystery-win': {
+      const [x, y] = spotOf(e.userId, e.sign);
+      burst(x, y, [C.gold, '#B48CF2', '#fff'], e.rank === 1 ? 70 : 30, 9);
+      card({ key: 'mystery', icon: ['🥇', '🥈', '🥉'][e.rank - 1], title: `<b>${esc(e.nickname)}</b> đoán trúng!`, sub: `ngay ở gợi ý ${e.clue}${e.rank === 1 ? ' · +2 ngọc' : ' · +1 ngọc'}`, color: '#B48CF2', ms: 2400 });
       break;
-    case 'run-boon':
-      celebrate({ key: 'run', badge: 'ẤN CHÒM SAO', icon: `<span class="gf">${SIGN[e.sign].glyph}︎</span>`, title: esc(e.label), sub: `${esc(e.text)} · fan ${esc(SIGN[e.sign].label)} đánh +50%${e.resonance.length ? `<br>✦ ${e.resonance.map(r => `${esc(r.label)}: ${esc(r.text)}`).join(' · ')}` : ''}`, color: color(e.sign), ms: 3600, compact: true });
+    }
+    case 'mystery-end': {
+      const s = SIGN[e.sign], [x, y] = nodePos(e.sign);
+      burst(x, y, [color(e.sign), C.gold, '#fff'], 80, 10);
+      celebrate({ key: 'mystery', badge: '🕵️ ĐÁP ÁN', mascotSign: e.sign, title: esc(s.label), sub: e.winners.length ? `đoán trúng: ${e.winners.map(w => esc(w.nickname)).join(', ')}` : 'chưa ai đoán ra — lần sau nhé!', color: color(e.sign), ms: 3600, compact: true });
       break;
-    case 'run-attack':
-      if (e.dmg) { quake(); floats.push({ x: CX, y: CY + 120 * Z, t: 0, text: `Đoàn -${fmt(e.dmg)}`, col: C.accent }); }
-      else floats.push({ x: CX, y: CY + 120 * Z, t: 0, text: e.blocked === 'capricorn' ? 'Ma Kết chặn đòn!' : 'Khiên Đất chặn đòn!', col: '#9fd3ff' });
+    }
+    case 'catch': {
+      const [x, y] = spotOf(e.userId, e.sign);
+      burst(x, y, [C.gold, '#fff'], 24, 6);
+      floats.push({ x, y: y - 30, t: 0, text: `${e.nickname} hứng “${e.word}” ${['🥇', '🥈', '🥉'][e.rank - 1] ?? '⭐'}`, col: C.gold });
       break;
-    case 'run-crit': floats.push({ x: CX + rnd(-120, 120) * Z, y: CY - 60 * Z, t: 0, text: `${e.nickname} -${fmt(e.dmg)}!`, col: C.gold }); break;
-    case 'run-down':
-      celebrate({ key: 'run', badge: '💀 ĐOÀN GỤC NGÃ', icon: '🕯️', title: 'Gõ “hồi sinh”!', sub: `cần ${e.need} người trong ${e.seconds} giây — chỉ một lần mỗi hành trình`, color: '#B48CF2', ms: 3200, compact: true });
-      break;
-    case 'run-revive':
-      burst(CX, CY, [C.gold, C.paper, '#B48CF2'], 90, 12);
-      card({ key: 'run', icon: '✨', title: e.free ? 'Ấn Song Ngư hồi sinh cả đoàn!' : 'Cả đoàn đứng dậy!', sub: e.free ? `máu ${e.hp}/${e.max}` : `nhờ ${e.names.map(esc).join(', ')}${e.count > e.names.length ? ` +${e.count - e.names.length}` : ''}`, color: gold, ms: 3200 });
-      break;
-    case 'run-chest': card({ key: 'run', icon: '🎁', title: 'Rương tầng trời!', sub: `${e.people} lữ khách mỗi người +1 ngọc`, color: gold }); break;
-    case 'run-rest': card({ key: 'run', icon: '🔥', title: `Đền nghỉ: hồi ${e.heal} máu`, sub: `đoàn còn ${e.hp}/${e.max}`, color: '#ff9f43' }); break;
-    case 'run-fled': quake(); card({ key: 'run', icon: '💨', title: `<b>${esc(e.name)}</b> trốn thoát`, sub: `đoàn mất ${e.dmg} máu · còn ${e.hp}/${e.max}`, color: '#B48CF2' }); break;
-    case 'run-event': card({ key: 'run', icon: '❓', title: esc(e.title ?? 'Kỳ ngộ'), sub: `${esc(e.choice)}${e.curse ? ` · mang ${esc(e.curse.label)}` : ''}`, color: e.curse ? '#B48CF2' : C.teal, ms: 3400 }); break;
-    case 'run-end':
-      sfx(e.cleared ? 'cleared' : 'fall');
-      if (e.cleared) { meteorShower(34); for (let i = 0; i < 6; i++) setTimeout(() => burst(rnd(150, 930), rnd(WHEEL_T + 80, LAYOUT.wheelB - 80), [gold, C.paper, C.accent, C.teal], 90, 13), i * 260); }
-      celebrate({ key: 'run', badge: e.cleared ? '🏆 CHINH PHỤC TẦNG TRỜI' : '🕳 HẾT HÀNH TRÌNH', mascotSign: e.mvp?.sign ?? 'capricorn', mood: e.cleared ? 'win' : 'panic',
-        title: e.cleared ? `Thăng thiên ${e.ascension}!` : `Dừng ở tầng ${e.floor}/${e.of}`,
-        sub: `${e.fighters} lữ khách${e.mvp ? ` · MVP ${esc(e.mvp.nickname)}` : ''} · kỷ lục kênh: tầng ${e.best}${e.reward ? ` · mỗi người +${e.reward} ánh sao` : ''}${e.unlocked ? `<br>🔓 mở khoá ${esc(e.unlocked.label)}: ${esc(e.unlocked.text)}` : ''}`, ms: 5600 });
+    }
+    case 'catch-end':
+      celebrate({ key: 'starcatch', badge: '🌠 HỨNG SAO BĂNG', icon: '🏆', title: e.top[0] ? esc(e.top[0].nickname) : 'Hết mưa sao', sub: e.top.length ? e.top.map(x => `${esc(x.nickname)} ${x.catches} sao`).join(' · ') + ' · hạng nhất +1 ngọc' : 'chưa ai hứng được — lần sau nhanh tay nhé!', color: C.gold, ms: 3600, compact: true });
       break;
   }
 }

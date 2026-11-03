@@ -2,7 +2,7 @@
 // quarter hour by default) for a short window; viewers who are there and comment "nhận" get one card. A
 // countdown to the next chest is always on screen, so there is always a reason to stay a few more minutes.
 // Collections live on the viewer and last across nights; "khoe thẻ" shows yours on stream.
-import { EDITION, CARD_TOTAL, cardId, parseCard } from './public/cards.js';
+import { EDITION, cardId, parseCard } from './public/cards.js';
 
 export const CARD_DEFAULTS = Object.freeze({
   chestEveryMinutes: 15, // 0 turns the chest off
@@ -80,17 +80,6 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials, hourE
     return true;
   }
 
-  // "khoe thẻ": the viewer's collection on stream (rate-limited per viewer).
-  function show(u, v) {
-    if (now() - (v.showAt ?? 0) < cfg.showCooldownSeconds * 1000) return;
-    v.showAt = now();
-    const ids = Object.keys(v.cards ?? {});
-    const best = ids.map(parseCard).sort((a, b) => EDITION[b.edition].rarity - EDITION[a.edition].rarity)[0] ?? null;
-    const editions = {};
-    for (const { edition } of ids.map(parseCard)) editions[edition] = (editions[edition] ?? 0) + 1;
-    onEvent({ type: 'collection', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, unique: ids.length, total: CARD_TOTAL, best, editions, setDone: Boolean(v.setDone) });
-  }
-
   // "ghép thẻ": three copies of a plain card become one Tinh Tú card of the same sign (own sign first).
   function combine(u, v) {
     const own = cardId(v.sign, 'base');
@@ -130,5 +119,5 @@ export function createCards({ st, cfg, now, rng, onEvent, signs, specials, hourE
       : { open: false, inMs: Number.isFinite(scheduled) ? scheduled - t : null };
   }
 
-  return { claim, show, give, draw, combine, tick, view, openNow: () => { if (!isOpen()) open(); }, isOpen };
+  return { claim, give, draw, combine, tick, view, openNow: () => { if (!isOpen()) open(); }, isOpen };
 }

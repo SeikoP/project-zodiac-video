@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
-import { ALL_HOUR_PLANETS as HOUR_PLANETS } from './hours-table.mjs';
+import { ALL_HOUR_PLANETS as HOUR_PLANETS, HOUR_PLANETS as HOUR_PLANETS_DEFAULT, HOURS, HEADS, HEAD_QUEST, hourEdition } from './hours-table.mjs';
 
 const HOUR = 3600000;
 const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
@@ -67,16 +67,16 @@ test('minute 5 of an act brings the hour\'s headliner: an elite boss in the hour
   assert.equal(s.game.state.boss.elite, true);
 });
 
-test('the hour of Saturn starts the sky run at minute 2, and A/B/C comments vote its doors', () => {
-  const s = setup('saturn', {}, 1.95);
+test('the hour of Saturn plays hứng sao băng at mid-act, and typing the falling word catches it', () => {
+  const s = setup('saturn', {}, 4.95);
   s.crowd();
   s.advance(5_000);
-  assert.equal(s.of('run-start').length, 1);
-  assert.equal(s.game.state.run.phase.kind, 'door');
-  s.game.chat({ userId: 'u0', nickname: 'U0', comment: 'a' });
-  assert.equal(s.game.state.run.phase.votes[0], 1);
-  assert.equal(s.game.state.viewers.u0.sign, 'leo'); // a vote is not a sign pick
-  assert.ok(s.game.snapshot().cosmos.run);
+  const [star] = s.of('catch-star');
+  assert.ok(star);
+  s.game.chat({ userId: 'u0', nickname: 'U0', comment: star.word });
+  assert.equal(s.of('catch').length, 1);
+  assert.equal(s.game.state.viewers.u0.sign, 'leo');
+  assert.ok(s.game.snapshot().cosmos.starcatch);
 });
 
 test('đêm se duyên pairs two viewers with a score, and the act closes with its MVP', () => {
@@ -144,4 +144,42 @@ test('by default two planets take 5-minute turns, and a planet\'s headliner move
     heads.push(hour.head);
   }
   assert.notEqual(heads[0], heads[1]);
+});
+
+test('every headliner belongs to one of the two planets that take turns', () => {
+  const used = [...HOURS.mars.heads, ...HOURS.venus.heads];
+  assert.deepEqual([...used].sort(), Object.keys(HEADS).sort());
+  assert.equal(new Set(used).size, used.length);
+  assert.deepEqual(HOUR_PLANETS_DEFAULT, ['mars', 'venus']);
+});
+
+test('in the default 5-minute turns, each of the ten headliners comes round within 100 minutes', () => {
+  const seen = new Set();
+  for (let n = 0; n < 20; n++) seen.add(defaultGame(turnAt(n)).snapshot().cosmos.hour.head);
+  assert.deepEqual([...seen].sort(), Object.values(HEADS).map(h => h.label).sort());
+});
+
+// default cycle: 5-minute turns, mars on even turns; turn 70000 starts a visit count divisible by 5 (mars heads[0])
+const turnAt = n => 5 * 60000 * (70000 + n) + 1000;
+const defaultGame = t => createGame({ config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, readSky: sky, onEvent: () => {} });
+
+test('the quest follows a headliner that has its own goal: catches in hứng sao băng, right answers in a quiz chain', () => {
+  for (const [n, head, unit] of [[0, 'elite', HOURS.mars.quest.unit], [4, 'starcatch', HEAD_QUEST.starcatch.unit], [8, 'quizchain', HEAD_QUEST.quizchain.unit], [1, 'mystery', HEAD_QUEST.mystery.unit]]) {
+    const game = defaultGame(turnAt(n));
+    game.chat({ userId: 'a', nickname: 'A', comment: 'Sư Tử' });
+    game.tick();
+    const { hour, quest } = game.snapshot().cosmos;
+    assert.equal(hour.head, HEADS[head].label, `turn ${n}`);
+    assert.equal(quest?.unit, unit, head);
+  }
+  assert.equal(HEAD_QUEST.starcatch.stat, 'catches');
+  assert.equal(HEAD_QUEST.quizchain.stat, 'correct');
+});
+
+test('a planet hour also drops the card edition of the planet it took over', () => {
+  assert.deepEqual([hourEdition('mars', 0.1), hourEdition('mars', 0.9)], ['h-mars', 'h-saturn']);
+  assert.deepEqual([hourEdition('venus', 0.1), hourEdition('venus', 0.9)], ['h-venus', 'h-mercury']);
+  assert.equal(hourEdition('mercury', 0.9), 'h-mercury');
+  assert.equal(hourEdition('sun', 0.9), 'h-saturn', 'a borrowed theme drops the editions of its theme');
+  assert.equal(hourEdition(null, 0.5), null);
 });

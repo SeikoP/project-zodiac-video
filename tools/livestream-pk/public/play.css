@@ -24,9 +24,6 @@
 #planets .pt text { font: 400 22px 'Segoe UI Symbol', 'Noto Sans Symbols', sans-serif; fill: var(--ink); text-anchor: middle; dominant-baseline: middle; }
 #planets .pt.retro circle { stroke: #8a4fd6; stroke-width: 4; fill: #efe4ff; }
 #planets .pt text.rx { font: 900 15px var(--ui); fill: #8a4fd6; }
-.ringlabel { position: absolute; left: 12px; bottom: 6px; display: flex; flex-direction: column; padding: 6px 14px; border-radius: 16px; background: rgba(22, 29, 33, .55); border: 2px solid rgba(246, 240, 230, .3); }
-.ringlabel b { font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--paper); line-height: 1.1; }
-.ringlabel span { font-size: 17px; font-weight: 800; color: var(--gold); }
 
 /* avatars: the TikTok picture, or the initial on a coloured disc */
 .av { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: rgba(47, 60, 68, .12); }
@@ -59,13 +56,22 @@
 @keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -700px); opacity: 0; } }
 @keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes blessPop { 40% { transform: scale(1.12); } }
-.floating-greeting { position: absolute; top: 1110px; width: 340px; min-height: 82px; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 3px solid var(--ink); border-radius: 24px 18px 24px 8px; background: var(--card); color: var(--ink); box-shadow: 0 6px 0 rgba(22,29,33,.3); animation: rise-greeting 9s cubic-bezier(.3,.1,.4,1) forwards; }
-.floating-greeting > div { flex: 1; min-width: 0; }
-.floating-greeting b { display: block; font-family: var(--hand); font-size: 26px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.floating-greeting span:not(.fg-icon) { display: block; margin-top: 3px; font-size: 16px; font-weight: 800; color: var(--soft-ink); white-space: nowrap; }
-.floating-greeting .fg-icon { font-size: 38px; }
-.floating-greeting .av { width: 46px; height: 46px; border-width: 2px; font-size: 21px; }
-@keyframes rise-greeting { 0% { transform: translate(0, 0); opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { transform: translate(var(--sway), -640px); opacity: 0; } }
+/* lời chào ghé thăm: a glowing paper star (not a lantern) rises with "Chào <tên>!" and the room's "chào" count */
+.greet-star { position: absolute; top: 1080px; width: 230px; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: rise-greet 13s cubic-bezier(.3, .1, .4, 1) forwards; }
+.greet-star .gs-star { position: relative; width: 132px; height: 126px; display: grid; place-items: center; filter: drop-shadow(0 0 18px rgba(255, 220, 120, .9)); animation: gsTwirl 3.4s ease-in-out infinite; }
+.greet-star .gs-star::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fffbe6 0%, #ffe7a1 45%, #f2c45c 100%); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.greet-star .gs-star .av { position: relative; }
+.greet-star .gs-star .av { width: 50px; height: 50px; margin-top: 10px; border: 3px solid #fff; font-size: 22px; }
+.greet-star .gs-txt { padding: 4px 14px; border-radius: 16px; background: var(--card); border: 2px solid var(--gold); color: var(--ink); text-align: center; max-width: 260px; }
+.greet-star .gs-txt b { display: block; font-family: var(--hand); font-weight: 400; font-size: 26px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.greet-star .gs-txt span { display: block; font-size: 14px; font-weight: 800; color: var(--soft-ink); }
+.greet-star .gs-count { padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .75); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.greet-star .gs-count em { font-style: normal; color: #fff; }
+.greet-star.pop .gs-star { animation: gsTwirl 3.4s ease-in-out infinite, blessPop .5s; }
+.greet-star.done .gs-star { filter: drop-shadow(0 0 30px #fff) drop-shadow(0 0 16px var(--gold)); }
+.greet-star.done .gs-count { background: var(--gold); color: var(--ink); }
+@keyframes rise-greet { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 86% { opacity: 1; } 100% { transform: translate(var(--sway), -760px); opacity: 0; } }
+@keyframes gsTwirl { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(8deg) scale(1.05); } }
 
 /* the wish wall in the top bar */
 .wall { display: flex; align-items: stretch; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
@@ -123,15 +129,6 @@
 @keyframes quake { 20% { transform-origin: top left; translate: -10px 6px; } 40% { translate: 9px -7px; } 60% { translate: -6px 4px; } 80% { translate: 4px -2px; } }
 
 /* Nhiệt phòng (bottom-left, above the wheel label) and the fan club on stage (bottom-right) */
-.heat { position: absolute; left: 12px; bottom: 72px; width: 228px; padding: 7px 12px 8px; border-radius: 16px; background: rgba(22, 29, 33, .72); border: 2px solid var(--hc, #8EC0B9); color: var(--paper); }
-.heat .hh { display: flex; align-items: baseline; gap: 6px; }
-.heat .hh b { font-size: 17px; font-weight: 900; white-space: nowrap; }
-.heat .hh em { font-style: normal; font-size: 20px; font-weight: 900; color: var(--hc, #8EC0B9); white-space: nowrap; }
-.heat .hbar { height: 12px; margin: 5px 0 4px; border-radius: 6px; background: rgba(255, 255, 255, .15); overflow: hidden; }
-.heat .hbar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); transition: transform .4s; background: linear-gradient(90deg, #F2C45C, var(--hc, #8EC0B9)); }
-.heat span { display: block; font-size: 13px; font-weight: 700; color: rgba(246, 240, 230, .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.heat.hot { animation: heatGlow 1s ease-in-out infinite; }
-@keyframes heatGlow { 50% { box-shadow: 0 0 22px var(--hc); } }
 .fanbox { position: absolute; right: 12px; bottom: 6px; width: 215px; padding: 7px 10px; border-radius: 16px; background: rgba(60, 14, 34, .78); border: 2px solid #FFD45E; color: var(--paper); display: none; }
 .fanbox.on { display: block; animation: popc .4s; }
 .fanbox b { display: block; font-size: 15px; font-weight: 900; color: #FFD45E; margin-bottom: 4px; }
@@ -182,35 +179,16 @@
 .pairfx .av.big { width: 130px; height: 130px; border: 5px solid #F2A7C3; }
 .pairfx b { font-family: var(--hand); font-weight: 400; font-size: 72px; color: #F2A7C3; text-shadow: 0 0 24px #F2A7C3; animation: popc .6s cubic-bezier(.2, 1.6, .4, 1); }
 
-/* --- Hành trình Tầng Trời in the centre circle ------------------------------------------------- */
-#arena.runmode { background: radial-gradient(circle at 50% 38%, #3d4f63 0%, #22303b 60%, #121a20 100%); color: var(--paper); gap: 6px; padding: 30px 40px; }
-#arena.runmode.rage { background: radial-gradient(circle at 50% 38%, #5a2e3d 0%, #2b1620 60%, #160a10 100%); }
-#arena.runmode .ak { font-size: 22px; letter-spacing: 2px; color: #8EC0B9; }
-#arena .party { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-#arena .hp.php { width: 380px; height: 28px; border-color: #8EC0B9; }
-#arena .hp.php i { background: linear-gradient(90deg, #6fbf8f, #9CC67A); }
-#arena .hp.php b { font-size: 17px; }
-#arena .boons { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 440px; min-height: 30px; }
-#arena .boons .bn { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--el); color: var(--ink); font-size: 18px; border: 2px solid var(--paper); }
-#arena .boons .rs { padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--el) 35%, transparent); border: 2px solid var(--el); font-size: 14px; font-weight: 800; }
-#arena .boons .cs { padding: 2px 8px; border-radius: 10px; background: rgba(180, 140, 242, .25); border: 2px solid #B48CF2; font-size: 14px; font-weight: 800; color: #d9c6ff; }
-#arena .stagebox { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 470px; }
-#arena .vt { font-family: var(--hand); font-size: 34px; line-height: 1.05; color: var(--gold); text-align: center; }
-#arena .doors { display: grid; gap: 6px; width: 100%; }
-#arena .door { display: flex; align-items: center; gap: 10px; padding: 5px 12px; border-radius: 16px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el, rgba(246, 240, 230, .4)); text-align: left; transition: background .2s, transform .2s; }
-#arena .door.lead { background: rgba(242, 196, 92, .22); border-color: var(--gold); transform: scale(1.03); }
-#arena .door b { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: var(--ink); font-size: 22px; font-weight: 900; }
-#arena .door span { flex: 1; min-width: 0; font-size: 21px; font-weight: 800; line-height: 1.15; }
-#arena .door small { display: block; font-size: 15px; font-weight: 700; color: rgba(246, 240, 230, .75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#arena .door em { flex: none; font-style: normal; font-size: 24px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
-#arena .doors.event .door span { font-size: 18px; }
-#arena .foe { height: 110px; display: grid; place-items: center; animation: bossFloat 2.6s ease-in-out infinite; }
-#arena .foe span { font-size: 96px; line-height: 1; }
-#arena .foe img { height: 120px; }
-#arena .fn { font-family: var(--hand); font-size: 34px; line-height: 1; }
-#arena .hp.ehp { width: 400px; height: 30px; }
-#arena.runmode .sub { color: rgba(246, 240, 230, .85); font-size: 19px; text-align: center; }
-#arena.runmode .cap { color: var(--gold); }
+/* --- Cung bí ẩn and Hứng sao băng in the centre circle ------------------------------------------- */
+#arena.mysterymode, #arena.starcatchmode { background: radial-gradient(circle at 50% 35%, #3a2f5c 0%, #1d2230 70%); color: var(--paper); }
+#arena .mq { font-family: var(--hand); font-size: 96px; line-height: 1; color: #B48CF2; text-shadow: 0 0 24px #B48CF2; animation: blessPop 1.6s infinite; }
+#arena .clues { margin: 0; padding: 0 0 0 26px; max-width: 440px; font-size: 21px; font-weight: 800; line-height: 1.3; }
+#arena .clues li.new { color: var(--gold); animation: popc .45s cubic-bezier(.2, 1.6, .4, 1); }
+#arena .word { font-family: var(--hand); font-size: 110px; line-height: 1.05; color: var(--gold); text-shadow: 0 0 30px rgba(242, 196, 92, .9); }
+#arena .word.drop { animation: wordDrop .6s cubic-bezier(.2, 1.4, .4, 1); }
+#arena.mysterymode .sub, #arena.starcatchmode .sub { color: rgba(246, 240, 230, .88); font-size: 19px; font-weight: 700; text-align: center; max-width: 460px; }
+#arena.mysterymode .sub b, #arena.starcatchmode .sub b { color: var(--gold); }
+@keyframes wordDrop { from { transform: translateY(-160px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* --- vòng quay bóc phốt: the wheel's own nodes spin; a pointer marks the top ----------------------- */
 #wheel.roasting::before { content: '▼'; position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 6; font-size: 60px; line-height: 1; color: #ff7a45; text-shadow: 0 4px 0 #161d21, 0 0 24px #ff7a45; }
@@ -245,3 +223,54 @@
 .av.frame-silver { border: 5px solid #dfe7ec !important; box-shadow: 0 0 18px #dfe7ec; }
 .av.frame-gold { border: 5px solid #FFD45E !important; box-shadow: 0 0 22px #FFD45E; }
 .av.frame-star { border: 5px solid #c9a7ff !important; box-shadow: 0 0 26px #c9a7ff, 0 0 46px #FFD45E; }
+
+/* bàn quẻ: the tube shakes, then the reading opens; a topic leads; the room's "chuẩn" / "xin vía" count below */
+#fortune .shake { font-size: 96px; line-height: 1.1; animation: tubeShake .18s ease-in-out infinite alternate; }
+#fortune .reveal { display: none; }
+#fortune.opened .shake { display: none; }
+#fortune.opened .reveal { display: block; animation: popc .45s cubic-bezier(.2, 1.6, .4, 1); }
+#fortune .focus { margin: 4px 0 6px; padding: 8px 14px; border-radius: 18px; background: rgba(242, 196, 92, .28); border: 2px solid var(--gold); text-align: left; }
+#fortune .focus b { display: block; font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--accent); }
+#fortune .focus p { font-size: 19px; font-weight: 700; line-height: 1.25; margin-top: 3px; }
+#fortune .room { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+#fortune .room span { padding: 3px 12px; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 16px; font-weight: 800; }
+#fortune .room b { color: var(--gold); }
+@keyframes tubeShake { from { transform: rotate(-14deg) translateY(0); } to { transform: rotate(14deg) translateY(-6px); } }
+
+/* kho báu: the vault, everything a viewer owns in one panel to show off */
+#hero .vault { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 26px; border-radius: 30px; background: rgba(22, 29, 33, .82); border: 3px solid var(--hc, #F2C45C); box-shadow: 0 0 40px color-mix(in srgb, var(--hc, #F2C45C) 55%, transparent); color: var(--paper); max-width: 900px; }
+#hero .vault .vhead { display: flex; align-items: center; gap: 14px; }
+#hero .vault .vhead .vm { height: 110px; }
+#hero .vault .vhead b { display: block; font-family: var(--hand); font-weight: 400; font-size: 44px; color: var(--gold); line-height: 1; }
+#hero .vault .vhead span { font-size: 19px; font-weight: 800; }
+#hero .vault .vres { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+#hero .vault .vres span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px 4px 6px; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 24px; font-weight: 900; }
+#hero .vault .vres .resimg { width: 38px; height: 38px; }
+#hero .vault .vres .vempty { font-size: 18px; font-weight: 700; }
+#hero .vault .vcards { display: flex; gap: 14px; }
+#hero .vault .vstats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#hero .vault .vstats span { padding: 3px 12px; border-radius: 999px; background: rgba(242, 196, 92, .22); font-size: 18px; font-weight: 800; }
+#hero .vault .vnext { font-size: 17px; font-weight: 800; color: var(--gold); }
+
+/* the centre as the main stage: the night's journey, what comes next, the element teams */
+#center .kick { padding: 2px 14px; border-radius: 999px; background: var(--ink); color: var(--gold); font-size: 16px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+#center .jbar { width: 300px; height: 16px; border-radius: 8px; background: rgba(47, 60, 68, .15); overflow: hidden; }
+#center .jbar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #F2C45C, #E97A66); transition: width .6s; }
+#center .jdots { display: flex; gap: 10px; }
+#center .jdots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); background: transparent; }
+#center .jdots i.done { background: var(--gold); }
+#center .jdots i.now { background: var(--accent); animation: blessPop 1.2s infinite; }
+#center .elrace { display: flex; flex-direction: column; gap: 8px; width: 360px; }
+#center .elrace .el { display: grid; grid-template-columns: 96px 1fr 70px; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; }
+#center .elrace .el b { height: 18px; border-radius: 9px; background: rgba(47, 60, 68, .12); overflow: hidden; }
+#center .elrace .el b i { display: block; height: 100%; background: var(--c); border-radius: 9px; }
+#center .elrace .el em { font-style: normal; text-align: right; }
+#center .elrace .el.lead span { color: var(--c); }
+/* giờ sinh tử: the last ten seconds of a fight */
+#doom { position: absolute; left: 50%; top: 50%; z-index: 6; display: none; transform: translate(-50%, -50%); flex-direction: column; align-items: center; pointer-events: none; }
+#doom.on { display: flex; animation: doomBeat 1s ease-in-out infinite; }
+#doom b { font-family: var(--hand); font-weight: 400; font-size: 190px; line-height: 1; color: #ff3d3d; text-shadow: 0 0 30px rgba(255, 61, 61, .8), 0 6px 0 #2F3C44; }
+#doom span { padding: 4px 18px; border-radius: 999px; background: #ff3d3d; color: #fff; font-size: 26px; font-weight: 900; }
+@keyframes doomBeat { 50% { transform: translate(-50%, -50%) scale(1.12); } }
+#wheel:has(#doom.on) #center .slide, #wheel:has(#doom.on) #arena > * { opacity: .18; transition: opacity .3s; }
+.bar .no { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 4px; border-radius: 50%; background: var(--ink); color: var(--gold); font-size: 18px; font-weight: 900; }

@@ -124,3 +124,40 @@ test('isolated LIVE simulator serves its UI and refuses real TikTok connections'
     fs.rmSync(work, { recursive: true, force: true });
   }
 });
+
+test('the main LIVE server has no rehearsal API and tells the panel it is not the simulator', { timeout: 20000 }, async () => {
+  const [port, sharePort] = await freePorts();
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-main-test-'));
+  const { PK_SIMULATOR, ...rest } = process.env;
+  const env = { ...rest, PK_PORT: String(port), PK_SHARE_PORT: String(sharePort), PK_DATA_DIR: path.join(work, 'data'), PK_LOG_DIR: path.join(work, 'logs'), PK_NO_TIKTOK: '1' };
+  const child = spawn(process.execPath, ['server.mjs'], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = '';
+  child.stdout.on('data', chunk => { output += chunk; });
+  child.stderr.on('data', chunk => { output += chunk; });
+  const exited = once(child, 'exit');
+  try {
+    let ready = false;
+    for (let i = 0; i < 80 && child.exitCode === null; i++) {
+      try { if ((await fetch(`http://127.0.0.1:${port}/`)).status === 200) { ready = true; break; } } catch { /* still starting */ }
+      await pause(100);
+    }
+    assert.equal(ready, true, `Server did not start. Output: ${output}`);
+    for (const route of ['sim/chat', 'sim/member', 'sim/gift', 'sim/like', 'sim/social', 'sim/crowd', 'sim/storm']) {
+      const r = await fetch(`http://127.0.0.1:${port}/api/${route}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ user: 'x', comment: 'sư tử' }) });
+      assert.equal(r.status, 404, route);
+    }
+    const events = new AbortController();
+    const stream = await fetch(`http://127.0.0.1:${port}/events`, { signal: events.signal });
+    const reader = stream.body.getReader();
+    let text = '';
+    while (!/event: meta\ndata: .*\n/.test(text)) text += new TextDecoder().decode((await reader.read()).value);
+    events.abort();
+    assert.equal(JSON.parse(text.match(/event: meta\ndata: (.*)\n/)[1]).simulator, false);
+  } finally {
+    child.kill('SIGTERM');
+    await Promise.race([exited, pause(1500)]);
+    if (child.exitCode === null) child.kill('SIGKILL');
+    await Promise.race([exited, pause(1500)]);
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+});

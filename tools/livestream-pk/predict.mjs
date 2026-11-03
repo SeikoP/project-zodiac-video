@@ -33,7 +33,7 @@ export function createPredict({ st, cfg, now, onEvent }) {
     return true;
   }
 
-  // winner: 0 or 1, or null to refund everyone
+  // winner: 0 or 1, or null to refund everyone (also refunded when nobody guessed right: a stake is never lost to the house)
   function resolve(key, winner) {
     const p = st.predict;
     if (!p || p.key !== key) return;
@@ -41,13 +41,14 @@ export function createPredict({ st, cfg, now, onEvent }) {
     const all = Object.entries(p.bets), total = p.pool[0] + p.pool[1];
     const right = winner === null ? [] : all.filter(([, b]) => b.i === winner);
     const winPool = right.reduce((s, [, b]) => s + b.stake, 0);
+    const refund = winner === null || !right.length;
     const payouts = [];
     for (const [id, b] of all) {
       const v = st.viewers?.[id];
       if (!v) continue;
       let pay = 0;
-      if (winner === null) pay = b.stake;
-      else if (b.i === winner) pay = cfg.predictBonus + (winPool ? Math.round(total * b.stake / winPool) : Math.round(total / right.length));
+      if (refund) pay = b.stake;
+      else if (b.i === winner) pay = cfg.predictBonus + (winPool ? Math.floor(total * b.stake / winPool) : Math.floor(total / right.length));
       if (pay) { bagOf(v).dust += pay; payouts.push([b.nickname, pay]); }
     }
     payouts.sort((x, y) => y[1] - x[1]);
@@ -66,6 +67,5 @@ export function createPredict({ st, cfg, now, onEvent }) {
     for (const b of Object.values(p.bets)) n[b.i]++;
     return { key: p.key, q: p.q, options: p.options.map((label, i) => ({ key: 'AB'[i], label, n: n[i], pool: p.pool[i] })), open: now() < p.closesAt, closesInMs: Math.max(0, p.closesAt - now()) };
   };
-  const purge = prefix => { if (st.predict) for (const id of Object.keys(st.predict.bets)) if (id.startsWith(prefix)) { const b = st.predict.bets[id]; st.predict.pool[b.i] -= b.stake; delete st.predict.bets[id]; } };
-  return { open, chat, resolve, tick, view, purge, active: () => st.predict?.key ?? null };
+  return { open, chat, resolve, tick, view, active: () => st.predict?.key ?? null };
 }

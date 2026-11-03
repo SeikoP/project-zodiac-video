@@ -46,3 +46,16 @@ test('game events become readable lines; drain returns each line once', () => {
   assert.equal(m.drain().length, 0);
   assert.match(m.all()[1].text, /ARIES đã sáng \(nhờ LEO\)/);
 });
+
+test('skipped events (rehearsal viewers on the real server) are neither counted nor logged', () => {
+  const m = createMonitor({ now: () => 1_000_000 });
+  const tapped = m.tap(fakeGame(), { skip: e => String(e.userId).startsWith('sim:') });
+  tapped.gift({ userId: 'sim:x', nickname: 'X', giftName: 'Galaxy', diamonds: 1000, count: 1 });
+  tapped.chat({ userId: 'sim:x', nickname: 'X', comment: 'hi' });
+  tapped.like({ userId: 'sim:x', count: 50 });
+  tapped.social({ userId: 'sim:x', kind: 'follow' });
+  tapped.chat({ userId: 'real', nickname: 'R', comment: 'hi' });
+  const s = m.stats();
+  assert.deepEqual([s.diamonds, s.rates.gift.total, s.rates.chat.total, s.rates.like.total, s.rates.follow.total], [0, 0, 1, 0, 0]);
+  assert.deepEqual(m.all().map(e => e.kind), ['chat']);
+});

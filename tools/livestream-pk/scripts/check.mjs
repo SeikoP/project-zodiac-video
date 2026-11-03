@@ -106,7 +106,7 @@ const stateFile = path.join(root, 'data', 'state.json');
 if (fs.existsSync(stateFile)) {
   const st = readJson(stateFile);
   const sim = st instanceof Error ? 0 : Object.keys(st.viewers ?? {}).filter(id => id.startsWith('sim:')).length;
-  sim ? warn(`data/state.json còn ${sim} người xem diễn tập — sẽ tự xoá khi kết nối live thật (hoặc bấm "Xoá toàn bộ" ở bảng điều khiển)`) : ok('Dữ liệu đã lưu không có người xem diễn tập');
+  sim ? warn(`data/state.json còn ${sim} người xem diễn tập — sẽ tự xoá khi server LIVE khởi động`) : ok('Dữ liệu đã lưu không có người xem diễn tập');
 }
 
 // 7. TikTok (optional, needs network) ----------------------------------------------------------------------------------------

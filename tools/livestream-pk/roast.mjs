@@ -67,6 +67,5 @@ export function createRoast({ st, cfg, now, rng, onEvent, present, shine, lucky 
     const r = st.roast;
     return r && { sign: r.sign, protests: Object.keys(r.protest).length, need: r.need, agree: Object.keys(r.agree).length, remainingMs: Math.max(0, r.endsAt - now()), spinning: now() < r.startedAt + cfg.roastSpinMs };
   };
-  const purge = prefix => { if (st.roast) for (const m of [st.roast.protest, st.roast.agree]) for (const id of Object.keys(m)) if (id.startsWith(prefix)) delete m[id]; };
-  return { start, chat, tick, view, purge };
+  return { start, chat, tick, view };
 }
