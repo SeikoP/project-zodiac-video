@@ -309,7 +309,18 @@ function spotOf(userId, sign) { return orbitSpots.get(userId) ?? (sign ? nodePos
 // Tonight's viewers shine gold with their name; the others stay dim. A new star flies down from its owner's
 // mascot; the big "điểm danh" moment flies tonight's stars in from above. Positions come from the server (0..1).
 const SKY_Y = LAYOUT.zone + 74, SKY_H = FRAME_HEIGHT - SKY_Y - 46;
-const starPoint = s => [50 + s.x * 980, SKY_Y + s.y * SKY_H];
+// Keep visitor stars inside one centered cluster instead of scattering them across the full sky.
+// Stored x/y values stay deterministic; this polar projection maps them into a compact ellipse.
+const starPoint = s => {
+  const angle = s.x * Math.PI * 2;
+  const radius = Math.sqrt(Math.max(0, Math.min(1, s.y)));
+  const clusterRadiusX = 250;
+  const clusterRadiusY = Math.min(135, SKY_H * .28);
+  return [
+    CX + Math.cos(angle) * clusterRadiusX * radius,
+    SKY_Y + SKY_H * .5 + Math.sin(angle) * clusterRadiusY * radius,
+  ];
+};
 const flare = new Map(), landing = new Set(); // userId -> until (ms); stars still in flight are not drawn yet
 let flights = [], hereIds = new Set();
 function fly(userId, from, to, c, name, delay = 0) {
