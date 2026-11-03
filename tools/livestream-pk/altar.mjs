@@ -41,7 +41,7 @@ export function createAltar({ st, cfg, now, onEvent, touch, signs, pickSign, shi
   // Shows a reading: a viewer's (req.userId) or a "quẻ chung" for a sign (userId null).
   function show(req) {
     const sign = signs[req.sign] ? req.sign : pickSign();
-    st.fortune = { ...req, sign, ...drawFortune({ seed: req.userId ?? 'room', sign, element: signs[sign].element, now: now(), topic: req.topic ?? null }), agree: {}, luck: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
+    st.fortune = { ...req, sign, ...drawFortune({ seed: req.userId ?? 'room', sign, element: signs[sign].element, now: now(), topic: req.topic ?? null }), agree: {}, vias: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
     touch('hud');
     onEvent({ type: 'fortune', userId: req.userId ?? null, sign, topic: req.topic ?? null });
   }
@@ -61,12 +61,12 @@ export function createAltar({ st, cfg, now, onEvent, touch, signs, pickSign, shi
       return true;
     }
     if (LUCK_RE.test(t) && LUCKY_LEVELS.has(f.level)) {
-      if (f.luck[u.userId]) return true;
-      f.luck[u.userId] = v.nickname;
+      if (f.vias[u.userId]) return true;
+      f.vias[u.userId] = v.nickname;
       dust(u, v, cfg.fortuneLuckDust, 'fortune');
       if (owner) dust({ userId: f.userId }, owner, 1, 'fortune');
       touch('hud');
-      onEvent({ type: 'fortune-luck', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, owner: f.nickname, level: f.level, count: Object.keys(f.luck).length });
+      onEvent({ type: 'fortune-luck', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, owner: f.nickname, level: f.level, count: Object.keys(f.vias).length });
       return true;
     }
     return false;
@@ -79,6 +79,6 @@ export function createAltar({ st, cfg, now, onEvent, touch, signs, pickSign, shi
     return false;
   }
 
-  const view = t => st.fortune && (({ agree, luck, ...f }) => ({ ...f, agree: Object.keys(agree ?? {}).length, luck: Object.keys(luck ?? {}).length, lucky: LUCKY_LEVELS.has(f.level), remainingMs: Math.max(0, f.endsAt - t) }))(st.fortune);
+  const view = t => st.fortune && (({ agree, vias, ...f }) => ({ ...f, agree: Object.keys(agree ?? {}).length, vias: Object.keys(vias ?? {}).length, lucky: LUCKY_LEVELS.has(f.level), remainingMs: Math.max(0, f.endsAt - t) }))(st.fortune);
   return { request, show, chat, tick, view };
 }

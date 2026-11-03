@@ -8,9 +8,11 @@ Một sân khấu dưới bầu trời sao: người xem bước vào sân bằn
 |---|---|---|
 | Comment **tên cung**, **số 1–12**, hoặc **ngày sinh** (vd `12/8`) | Linh vật của cung (áo in ký hiệu) bước vào sân, có tên người xem | — |
 | Comment bất kỳ | — | +2 (mỗi người 5 giây/lần) |
-| **xin quẻ** / gieo quẻ / xin xăm | Lắc ống quẻ trên Đài Sao, mở tờ *Quẻ hoàng đạo hôm nay* (tình cảm, công việc, tài lộc, may mắn, lời nhắn, màu · số · giờ vàng) | +3 |
+| **xin quẻ** / gieo quẻ / xin xăm (thêm **tình duyên** / **công việc** / **tiền bạc** để hỏi một chuyện) | Ống quẻ lắc, rồi mở tờ *Quẻ hoàng đạo hôm nay* (tình cảm, công việc, tài lộc, may mắn, lời nhắn, màu · số · giờ vàng); hỏi một chuyện thì chuyện đó lên đầu kèm 2 dòng riêng. Cả phòng gõ **chuẩn** (chủ quẻ +1 bụi sao mỗi người) và, với quẻ Thượng/Đại Cát, **xin vía** (cả hai nhận bụi sao) | +3 |
 | **ước …** / mong … / cầu mong … | Một chiếc đèn ước bay lên trời mang dòng chữ của họ | — |
-| **nhảy** / quẩy | Linh vật của họ nhảy | — |
+| **kho** / khoe / khoe thẻ / sổ sao | Màn **Kho báu**: cấp linh vật, bụi sao · ngọc · mảnh trăng, 3 thẻ hiếm nhất, số thẻ /120, Sổ Sao, bingo và chi phí lên cấp (mỗi người 30 giây/lần) | — |
+| **tung ngọc** (khi có boss, kéo co hay quái Tầng Trời) | Tiêu 1 viên ngọc (ưu tiên ngọc cung mình): đòn mạnh như một món quà 20 xu, nổ sáng trên sân | — |
+| **thắp trăng** | Tiêu 1 mảnh trăng: trăng sáng thêm 20% mục tiêu | — |
 | Thả tim | Tim bay lên, **trăng lên dần** (5 tim = 1 ánh sao) | +1 / 5 tim |
 | Follow / Share | Chuông sao ngân | +20 (mỗi đêm một lần) |
 | Quà < 10 xu | Spotlight + lấp lánh quanh nhân vật | 5 / xu |
@@ -92,7 +94,7 @@ Thẻ bài, Sổ Sao và dự đoán **không bao giờ đổi trực tiếp b�
 
 **Kho tài nguyên & nâng cấp linh vật** (`bag.mjs`)
 - Mỗi người xem có kho riêng, giữ qua các đêm: **✦ Bụi sao** (rơi theo mọi ánh sao bạn tạo ra), **4 loại ngọc nguyên tố** — Hỏa · Thổ · Phong · Thủy (đánh boss: 2 viên, MVP 4 · nhận rương: 1 · trả lời đúng câu đố: 1 · sửa sóng Thủy Nghịch: 1, luôn là ngọc của nguyên tố cung bạn) và **🌙 Mảnh trăng** (có mặt lúc trăng rằm, hoặc điều ước được cả phòng chúc phúc).
-- Gõ **“nâng cấp”**: tiêu bụi sao + ngọc (+ mảnh trăng từ Lv4) để linh vật lên **Lv2 → Lv5**. Linh vật to hơn, có hào quang màu theo cấp trên vòng, avatar có viền và nhãn "Lv", và mọi hành động được thêm 6% ánh sao mỗi cấp. Thiếu thì hiện "còn thiếu …". Gõ **“kho”** để kho hiện lên sóng; **“ghép thẻ”** đổi 3 thẻ Thường giống nhau thành 1 thẻ Tinh Tú.
+- Gõ **“nâng cấp”**: tiêu bụi sao + ngọc (+ mảnh trăng từ Lv4) để linh vật lên **Lv2 → Lv5**. Linh vật to hơn, có hào quang màu theo cấp trên vòng, avatar có viền và nhãn "Lv", và mọi hành động được thêm 6% ánh sao mỗi cấp. Thiếu thì hiện "còn thiếu …". Gõ **“kho”** (hay “khoe”, “khoe thẻ”, “sổ sao”) để mở **một kho chung** gồm tài nguyên, thẻ, Sổ Sao và bingo; tài nguyên dùng được trong các sự kiện (“tung ngọc”, “thắp trăng”); **“ghép thẻ”** đổi 3 thẻ Thường giống nhau thành 1 thẻ Tinh Tú.
 
 **Đèn ước có lời nhắn và được chúc phúc**
 - “ước …” thả một **đèn lồng giấy có ghi lời ước** (bỏ chữ "ước" ở đầu), avatar và tên người ước bay chậm qua bầu trời; dải "Điều ước" ở khung dưới giữ 3 điều ước gần nhất.
@@ -100,7 +102,7 @@ Thẻ bài, Sổ Sao và dự đoán **không bao giờ đổi trực tiếp b�
 
 **Đổi cung**: ai đã có cung thì giữ cung đó; bình luận có tên cung khác ("Sư Tử đỉnh quá") **không** làm đổi đội. Muốn đổi thì gõ **"đổi Sư Tử"**, "đổi sang 7", "chuyển qua cung Bảo Bình", hoặc chỉ gõ đúng tên cung. Lần sửa đầu tiên (chọn nhầm) được đổi ngay; các lần sau cách nhau 30 giây (`switchCooldownSeconds`) để không nhảy cung đuổi theo sao may mắn; cung đang bị boss đóng băng thì không đổi được. Màn hình xác nhận "đổi cung A → B".
 
-**Sao chào mừng**: người vừa vào phòng xuất hiện như một **sao chổi lớn** (quầng sáng vàng, đuôi dài, tên đi kèm) bay qua bánh xe và đậu đúng ngôi sao của họ ở **rìa cụm sao cộng đồng**, kèm khung avatar "Chào <tên>! ✨ · cả nhà gõ “chào” 0/3". Giống điều ước: trong 30 giây (`welcomeWindowSeconds`), đủ 3 người khác gõ "chào" / "xin chào" / "hi" / "hello" / "welcome" (`welcomeNeed`) thì ngôi sao bừng sáng, khung chuyển vàng ghi tên người đã chào, người mới nhận +5 bụi sao (`welcomeDust`). "chào" đi tới người mới nhất còn mở; mỗi người chào một lần, không tự chào mình.
+**Lời chào ghé thăm**: người vừa vào phòng được chào giống một điều ước nhưng bằng **ngôi sao giấy phát sáng** (không phải đèn lồng) bay lên, mang dòng "Chào <tên>! · vừa ghé đêm hội ✨" và bộ đếm "gõ “chào” 0/3". Cùng lúc **ngôi sao của họ (có avatar) xuất hiện ở rìa quỹ đạo quanh bánh xe**, giữa màn hình, nên ai cũng thấy mình vừa "xuất hiện". Mỗi lời "chào" làm sao lóe sáng; trong 30 giây (`welcomeWindowSeconds`), đủ 3 người khác gõ "chào" / "xin chào" / "hi" / "hello" / "welcome" (`welcomeNeed`) thì sao bừng vàng, người mới nhận +5 bụi sao (`welcomeDust`). Hết lượt chào, sao bay xuống chỗ của nó ở bầu trời cộng đồng. "chào" đi tới người mới nhất còn mở; mỗi người chào một lần, không tự chào mình.
 
 **Fanclub**: thư viện TikTok gửi kèm cấp fanclub của phòng (`user.fansClub`) và cờ người đăng ký. Thành viên fanclub/người đăng ký: màn chào riêng lần đầu mỗi đêm ("♥ FANCLUB … · LV n — X đã đến!"), avatar viền vàng kèm nhãn ♥cấp trên vòng, khung "Fanclub có mặt" ở góc phải dưới vòng, **+10% ánh sao (+1%/cấp, tối đa +30%)**, người đăng ký +10%, và đặc quyền **"gọi sao"**: gọi sao may mắn cho cung của mình, một lần mỗi đêm. Người không ở fanclub gõ "gọi sao" sẽ thấy lời mời tham gia fanclub. Khi diễn tập, cứ người xem giả lập thứ 7 là thành viên fanclub để xem trước giao diện.
 

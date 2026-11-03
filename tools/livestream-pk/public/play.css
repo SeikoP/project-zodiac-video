@@ -56,18 +56,22 @@
 @keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -700px); opacity: 0; } }
 @keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes blessPop { 40% { transform: scale(1.12); } }
-/* sao chào mừng: the badge over a newcomer's star on the rim of the community cluster, waiting for the room's "chào" */
-.welcome-star { position: absolute; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px; border: 3px solid var(--gold); border-radius: 999px; background: rgba(22, 29, 33, .86); color: var(--paper); box-shadow: 0 0 22px rgba(242, 196, 92, .55); white-space: nowrap; animation: welcome-in .5s 1.2s both, welcome-out .6s var(--wait, 31s) forwards; }
-.welcome-star::after { content: ''; position: absolute; left: 50%; bottom: -14px; border: 8px solid transparent; border-top-color: var(--gold); transform: translateX(-50%); }
-.welcome-star .av { width: 46px; height: 46px; border-width: 2px; font-size: 21px; }
-.welcome-star b { display: block; font-family: var(--hand); font-weight: 400; font-size: 26px; line-height: 1.05; color: var(--gold); max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.welcome-star span { display: block; font-size: 16px; font-weight: 800; }
-.welcome-star em { font-style: normal; color: var(--gold); }
-.welcome-star.pop > * { animation: blessPop .5s; }
-.welcome-star.done { background: var(--gold); color: var(--ink); animation: welcome-out .6s 5s forwards; }
-.welcome-star.done b { color: var(--ink); }
-@keyframes welcome-in { from { opacity: 0; transform: translate(-50%, -60%) scale(.6); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
-@keyframes welcome-out { to { opacity: 0; transform: translate(-50%, -140%); } }
+/* lời chào ghé thăm: a glowing paper star (not a lantern) rises with "Chào <tên>!" and the room's "chào" count */
+.greet-star { position: absolute; top: 1080px; width: 230px; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: rise-greet 13s cubic-bezier(.3, .1, .4, 1) forwards; }
+.greet-star .gs-star { position: relative; width: 132px; height: 126px; display: grid; place-items: center; filter: drop-shadow(0 0 18px rgba(255, 220, 120, .9)); animation: gsTwirl 3.4s ease-in-out infinite; }
+.greet-star .gs-star::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fffbe6 0%, #ffe7a1 45%, #f2c45c 100%); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.greet-star .gs-star .av { position: relative; }
+.greet-star .gs-star .av { width: 50px; height: 50px; margin-top: 10px; border: 3px solid #fff; font-size: 22px; }
+.greet-star .gs-txt { padding: 4px 14px; border-radius: 16px; background: var(--card); border: 2px solid var(--gold); color: var(--ink); text-align: center; max-width: 260px; }
+.greet-star .gs-txt b { display: block; font-family: var(--hand); font-weight: 400; font-size: 26px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.greet-star .gs-txt span { display: block; font-size: 14px; font-weight: 800; color: var(--soft-ink); }
+.greet-star .gs-count { padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .75); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.greet-star .gs-count em { font-style: normal; color: #fff; }
+.greet-star.pop .gs-star { animation: gsTwirl 3.4s ease-in-out infinite, blessPop .5s; }
+.greet-star.done .gs-star { filter: drop-shadow(0 0 30px #fff) drop-shadow(0 0 16px var(--gold)); }
+.greet-star.done .gs-count { background: var(--gold); color: var(--ink); }
+@keyframes rise-greet { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 86% { opacity: 1; } 100% { transform: translate(var(--sway), -760px); opacity: 0; } }
+@keyframes gsTwirl { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(8deg) scale(1.05); } }
 
 /* the wish wall in the top bar */
 .wall { display: flex; align-items: stretch; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
@@ -238,3 +242,31 @@
 .av.frame-silver { border: 5px solid #dfe7ec !important; box-shadow: 0 0 18px #dfe7ec; }
 .av.frame-gold { border: 5px solid #FFD45E !important; box-shadow: 0 0 22px #FFD45E; }
 .av.frame-star { border: 5px solid #c9a7ff !important; box-shadow: 0 0 26px #c9a7ff, 0 0 46px #FFD45E; }
+
+/* bàn quẻ: the tube shakes, then the reading opens; a topic leads; the room's "chuẩn" / "xin vía" count below */
+#fortune .shake { font-size: 96px; line-height: 1.1; animation: tubeShake .18s ease-in-out infinite alternate; }
+#fortune .reveal { display: none; }
+#fortune.opened .shake { display: none; }
+#fortune.opened .reveal { display: block; animation: popc .45s cubic-bezier(.2, 1.6, .4, 1); }
+#fortune .focus { margin: 4px 0 6px; padding: 8px 14px; border-radius: 18px; background: rgba(242, 196, 92, .28); border: 2px solid var(--gold); text-align: left; }
+#fortune .focus b { display: block; font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--accent); }
+#fortune .focus p { font-size: 19px; font-weight: 700; line-height: 1.25; margin-top: 3px; }
+#fortune .room { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 6px; }
+#fortune .room span { padding: 3px 12px; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 16px; font-weight: 800; }
+#fortune .room b { color: var(--gold); }
+@keyframes tubeShake { from { transform: rotate(-14deg) translateY(0); } to { transform: rotate(14deg) translateY(-6px); } }
+
+/* kho báu: the vault, everything a viewer owns in one panel to show off */
+#hero .vault { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 26px; border-radius: 30px; background: rgba(22, 29, 33, .82); border: 3px solid var(--hc, #F2C45C); box-shadow: 0 0 40px color-mix(in srgb, var(--hc, #F2C45C) 55%, transparent); color: var(--paper); max-width: 900px; }
+#hero .vault .vhead { display: flex; align-items: center; gap: 14px; }
+#hero .vault .vhead .vm { height: 110px; }
+#hero .vault .vhead b { display: block; font-family: var(--hand); font-weight: 400; font-size: 44px; color: var(--gold); line-height: 1; }
+#hero .vault .vhead span { font-size: 19px; font-weight: 800; }
+#hero .vault .vres { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+#hero .vault .vres span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px 4px 6px; border-radius: 999px; background: rgba(255, 255, 255, .12); font-size: 24px; font-weight: 900; }
+#hero .vault .vres .resimg { width: 38px; height: 38px; }
+#hero .vault .vres .vempty { font-size: 18px; font-weight: 700; }
+#hero .vault .vcards { display: flex; gap: 14px; }
+#hero .vault .vstats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+#hero .vault .vstats span { padding: 3px 12px; border-radius: 999px; background: rgba(242, 196, 92, .22); font-size: 18px; font-weight: 800; }
+#hero .vault .vnext { font-size: 17px; font-weight: 800; color: var(--gold); }

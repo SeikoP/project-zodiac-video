@@ -128,3 +128,15 @@ test('"nhảy" is no longer a command', () => {
   assert.equal(parseAction('nhảy'), null);
   assert.equal(parseAction('quẩy lên'), null);
 });
+
+test('the room\'s "xin vía" count never hides the reading\'s own luck line', () => {
+  const s = setup();
+  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
+  s.say('a', 'xin quẻ');
+  s.advance(1000);
+  s.game.state.fortune.level = 'Đại Cát';
+  s.say('b', 'xin vía');
+  const f = s.game.snapshot().hud.fortune;
+  assert.equal(typeof f.luck, 'string');
+  assert.equal(f.vias, 1);
+});

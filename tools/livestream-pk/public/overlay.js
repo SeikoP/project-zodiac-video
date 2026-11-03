@@ -103,21 +103,27 @@ function buildRace() {
 // Each line has to fit its half of the strip on a phone: a short command, then at most ~28 characters.
 const TIPS = [
   [ICON.heart, 'Thả tim', 'trăng lên rằm'],
-  [ICON.comment, '“xin quẻ”', 'quẻ riêng của bạn'],
+  [ICON.comment, '“xin quẻ tình duyên”', 'quẻ riêng hôm nay'],
   [ICON.comment, '“ước …”', 'thả đèn ước lên trời'],
   [ICON.gift, 'Tặng quà', 'ánh sao cho cung bạn'],
-  [ICON.comment, '“nâng cấp”', 'linh vật lên cấp'],
-  [ICON.comment, '“kho”', 'xem đồ bạn đã có'],
-  [ICON.comment, '“đổi Sư Tử”', 'chọn nhầm? đổi cung'],
-  [ICON.comment, '“khoe thẻ”', 'khoe bộ thẻ của bạn'],
+  [ICON.comment, '“kho”', 'khoe đồ · thẻ · cấp'],
+  [ICON.comment, '“tung ngọc”', 'đòn mạnh khi đánh boss'],
   [ICON.follow, 'Fanclub: “gọi sao”', 'sao may mắn cho cung bạn'],
 ];
 let tipI = 0, lastTip = '';
 function renderJoin() {
-  const c = S.cosmos, wish = c?.wishes?.find(w => w.open);
-  const tip = c?.boss ? ['⚔️', 'Đánh Sao Chổi!', 'chat · thả tim = sát thương', 'hot']
+  const c = S.cosmos, h = S.hud, wish = c?.wishes?.find(w => w.open), hi = c?.welcomes?.[0], f = h?.fortune;
+  // what to type right now, most urgent first: every live event says how to join it
+  const tip = h?.quiz ? ['🧠', 'Gõ A, B hoặc C', 'trả lời câu đố · 3 người nhanh nhất', 'hot']
     : c?.chest.open ? ['🎁', 'Gõ “nhận”', `lấy thẻ · còn ${Math.ceil(c.chest.remainingMs / 1000)}s`, 'hot']
+    : c?.predict?.open ? ['🔮', 'Gõ “đoán A” / “đoán B”', 'đoán đúng nhận bụi sao', 'hot']
+    : c?.boss ? ['⚔️', 'Chat để đánh Sao Chổi', 'có ngọc? gõ “tung ngọc” 💥', 'hot']
+    : c?.tug ? ['🪢', 'Chat để kéo co', 'fan 2 cung đang đấu · “tung ngọc” = kéo mạnh', 'hot']
+    : c?.run?.vote ? ['🪐', 'Gõ A, B hoặc C', 'chọn đường cho cả đoàn', 'hot']
+    : c?.run?.enemy ? ['🪐', 'Chat để đánh quái', '“tung ngọc” = đòn mạnh', 'hot']
     : c?.chaos ? ['☿', 'Gõ “thuận”', `sửa sóng · ${c.chaos.got}/${c.chaos.need} người`, 'hot']
+    : f?.userId ? (f.lucky ? ['✨', 'Gõ “xin vía”', `quẻ ${f.level} của ${f.nickname} · cả hai nhận bụi sao`, 'hot'] : ['🙏', 'Gõ “chuẩn”', `nếu quẻ của ${f.nickname} đúng · ${f.agree} người`, 'hot'])
+    : hi ? ['👋', 'Gõ “chào”', `chào ${hi.nickname} · ${hi.greetings}/${c.welcomeNeed}`, 'hot']
     : wish ? ['🙏', 'Gõ “chúc”', `cho ${wish.nickname} · ${wish.blessings}/${c.blessNeed}`, 'hot']
     : TIPS[tipI % TIPS.length];
   const html = `<span class="ji">${tip[0]}</span><div><b>${esc(tip[1])}</b><span>${esc(tip[2])}</span></div>`;
@@ -239,33 +245,66 @@ function releaseLantern(e) {
   el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-lantern') el.remove(); });
   box.append(el);
 }
-// Sao chào mừng: a newcomer's star streaks in as a big comet and lands on the rim of the community cluster, where
-// a badge with their avatar asks the room to say “chào”. Enough greetings and the star bursts gold (like a wish).
+// Lời chào ghé thăm: like a wish, but a glowing paper star instead of a lantern. It rises over the frame carrying
+// “Chào <tên>!” and the room's “chào” count, while the newcomer's own star (their avatar) appears on the rim of the
+// centre orbit, right round the wheel where everyone looks. Each “chào” makes it flash; enough of them and it bursts
+// gold. When the welcome is over the star drifts down to its place in the community sky.
+const GREET_X = [120, 800, 460];
+let greetSlot = 0;
+const visitors = new Map(); // userId -> the newcomer's star on the orbit rim
+// the rim: an ellipse just outside the mascots, on the sides and below the wheel (the top belongs to the top card)
+const rimPoint = x => { const a = Math.PI * (-0.12 + 1.24 * x); return [CX + Math.cos(a) * (STAND + 62), CY + Math.sin(a) * (STAND + 44)]; };
 function releaseGreeting(e) {
-  const to = starPoint(e);
-  fly(e.userId, [rnd(160, 920), WHEEL_T + 30], to, e.sign ? color(e.sign) : C.gold, `✦ ${e.nickname}`, 0, { comet: true });
   const box = $('lanterns');
-  const old = [...box.querySelectorAll('.welcome-star')];
+  const old = [...box.querySelectorAll('.greet-star')];
   while (old.length >= 3) old.shift().remove();
   const el = document.createElement('div');
-  el.className = 'welcome-star';
+  el.className = 'greet-star';
   el.dataset.id = `g${e.id}`;
-  el.style.left = `${Math.max(150, Math.min(930, to[0]))}px`;
-  el.style.top = `${to[1] - 64}px`;
-  el.style.setProperty('--wait', `${(e.seconds ?? 30) + 1}s`);
-  el.innerHTML = `${avatarHtml(e)}<div><b>Chào ${esc(e.nickname)}! ✨</b><span>cả nhà gõ “chào” · <em>0</em>/${e.need ?? 3}</span></div>`;
-  el.addEventListener('animationend', ev => { if (ev.animationName === 'welcome-out') el.remove(); });
+  el.style.left = `${GREET_X[greetSlot++ % GREET_X.length] + rnd(-24, 24)}px`;
+  el.style.setProperty('--sway', `${rnd(-50, 50)}px`);
+  el.innerHTML = `<div class="gs-star">${avatarHtml(e, 'av')}</div><div class="gs-txt"><b>Chào ${esc(e.nickname)}!</b><span>vừa ghé đêm hội ✨</span></div>`
+    + `<div class="gs-count">👋 gõ “chào” · <em>0</em>/${e.need ?? 3}</div>`;
+  el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-greet') el.remove(); });
   box.append(el);
+  const [x, y] = rimPoint(e.x ?? Math.random());
+  visitors.set(e.userId, { ...e, x, y, c: e.sign ? color(e.sign) : C.gold, born: Date.now(), until: Date.now() + (e.seconds ?? 30) * 1000, flash: 0, done: false });
+  burst(x, y, [C.gold, '#fff', C.paper], 40, 7);
 }
 function greetStar(e, done = false) {
   const el = $('lanterns').querySelector(`[data-id="g${e.id}"]`);
-  const s = S.stars.find(x => x.userId === e.userId);
-  if (s) { const [x, y] = starPoint(s); flare.set(e.userId, Date.now() + (done ? 6000 : 1200)); burst(x, y, done ? [C.gold, '#fff', C.paper] : [C.gold], done ? 70 : 14, done ? 9 : 4); }
+  const vs = visitors.get(e.userId);
+  if (vs) {
+    vs.flash = Date.now() + (done ? 1500 : 700);
+    burst(vs.x, vs.y, done ? [C.gold, '#fff', C.paper] : [C.gold, C.paper], done ? 90 : 16, done ? 11 : 5);
+    if (done) { vs.done = true; vs.until = Date.now() + 5000; }
+  }
   if (!el) return;
   const em = el.querySelector('em');
   if (em) em.textContent = e.count;
   el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
-  if (done) { el.classList.add('done'); el.querySelector('span').textContent = `⭐ ${e.greeters.slice(0, 3).join(', ')}${e.count > 3 ? '…' : ''} đã chào · +${e.dust} bụi sao`; }
+  if (done) { el.classList.add('done'); el.querySelector('.gs-count').textContent = `⭐ ${e.greeters.slice(0, 3).join(', ')}${e.count > 3 ? '…' : ''} đã chào · +${e.dust} bụi sao`; }
+}
+const starPath = (x, y, r1, r2, rot = 0) => { fx.beginPath(); for (let i = 0; i < 10; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? r2 : r1; fx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } fx.closePath(); };
+function drawVisitors(t) {
+  const now = Date.now();
+  for (const [id, v] of visitors) {
+    if (now >= v.until) {
+      visitors.delete(id);
+      const s = S.stars.find(x => x.userId === id);
+      if (s) fly(id, [v.x, v.y], starPoint(s), v.c, '', 0);
+      continue;
+    }
+    const grow = Math.min(1, (now - v.born) / 500), lit = v.flash > now || v.done, pulse = 1 + .08 * Math.sin(t / 220);
+    const r = (lit ? 46 : 36) * grow * pulse;
+    fx.globalAlpha = lit ? .45 : .25; fx.fillStyle = C.gold;
+    fx.beginPath(); fx.arc(v.x, v.y, r * 1.5, 0, 7); fx.fill();
+    fx.globalAlpha = 1; fx.fillStyle = v.done ? C.gold : 'rgba(255, 240, 200, .95)';
+    starPath(v.x, v.y, r, r * .48, t / 2400); fx.fill();
+    drawAvatar(v, v.x, v.y, 17 * grow, v.done ? C.gold : v.c);
+    drawLabel(label(v.done ? `✨ ${v.nickname}` : `✦ ${v.nickname}`, v.done ? 20 : 17, C.gold), v.x, v.y + r + 4);
+  }
+  fx.globalAlpha = 1;
 }
 function blessLantern(e, done = false) {
   const el = $('lanterns').querySelector(`[data-id="${e.id}"]`);
@@ -345,10 +384,10 @@ const starPoint = s => {
 };
 const flare = new Map(), landing = new Set(); // userId -> until (ms); stars still in flight are not drawn yet
 let flights = [], hereIds = new Set();
-function fly(userId, from, to, c, name, delay = 0, { comet = false } = {}) {
+function fly(userId, from, to, c, name, delay = 0) {
   if (flights.length >= 24) return;
   landing.add(userId);
-  flights.push({ userId, x0: from[0], y0: from[1], x1: to[0], y1: to[1], c, name, t: -delay, trail: [], comet });
+  flights.push({ userId, x0: from[0], y0: from[1], x1: to[0], y1: to[1], c, name, t: -delay, trail: [] });
 }
 function drawCommunitySky(t, dt) {
   const now = Date.now();
@@ -370,13 +409,11 @@ function drawCommunitySky(t, dt) {
     f.t += dt / 80; // slow enough to read the name on the way down
     if (f.t < 0) continue;
     const e = 1 - (1 - Math.min(1, f.t)) ** 3, x = f.x0 + (f.x1 - f.x0) * e, y = f.y0 + (f.y1 - f.y0) * e - Math.sin(e * Math.PI) * 120;
-    const k = f.comet ? 2 : 1; // a welcome comet: twice the trail, a glowing head and a bigger name
-    f.trail.push([x, y]); if (f.trail.length > 16 * k) f.trail.shift();
-    f.trail.forEach(([px, py], i) => { fx.globalAlpha = i / f.trail.length * .9; fx.fillStyle = i % 3 || !f.comet ? f.c : C.gold; fx.beginPath(); fx.arc(px, py, (2 + i * .45 / k) * k, 0, 7); fx.fill(); });
-    if (f.comet) { fx.globalAlpha = .35; fx.fillStyle = C.gold; fx.beginPath(); fx.arc(x, y, 30, 0, 7); fx.fill(); }
-    fx.globalAlpha = 1; fx.fillStyle = '#fff'; fx.beginPath(); fx.arc(x, y, 7 * k, 0, 7); fx.fill();
-    if (f.name) drawLabel(label(f.name, 18 + 6 * (k - 1), C.gold), x, y + 10 * k);
-    if (f.t >= 1) { landing.delete(f.userId); flare.set(f.userId, Date.now() + 3500 * k); burst(f.x1, f.y1, [f.c, C.gold, C.paper], 26 * k, 6 * k); }
+    f.trail.push([x, y]); if (f.trail.length > 16) f.trail.shift();
+    f.trail.forEach(([px, py], i) => { fx.globalAlpha = i / f.trail.length * .9; fx.fillStyle = f.c; fx.beginPath(); fx.arc(px, py, 2 + i * .45, 0, 7); fx.fill(); });
+    fx.globalAlpha = 1; fx.fillStyle = '#fff'; fx.beginPath(); fx.arc(x, y, 7, 0, 7); fx.fill();
+    if (f.name) drawLabel(label(f.name, 18, C.gold), x, y + 10);
+    if (f.t >= 1) { landing.delete(f.userId); flare.set(f.userId, Date.now() + 3500); burst(f.x1, f.y1, [f.c, C.gold, C.paper], 26, 6); }
   }
   fx.globalAlpha = 1;
 }
@@ -518,6 +555,7 @@ function frame(t) {
   fx.globalAlpha = 1;
   drawCommunitySky(t, dt);
   drawHourFx(t, dt);
+  drawVisitors(t);
 
   // viewers stand just outside the zodiac band by their sign (up to 2 per sign, the rest are "+n" on the node):
   // their mascot (bigger, with a halo, as it levels up), their own TikTok avatar on its shoulder, and their name
@@ -893,13 +931,41 @@ function demo(e) {
   if (e.demo === 'wish') releaseLantern({ id: `demo-${Date.now()}`, ...host, demo: true, text: SAMPLE_WISHES[Math.floor(Math.random() * SAMPLE_WISHES.length)] });
 }
 
-const LOOT_WHY = { bingo: 'bingo!', pass: 'Sổ Sao', quest: 'nhiệm vụ giờ', run: 'Hành trình Tầng Trời', boss: 'chiến lợi phẩm Sao Chổi', chest: 'từ rương sao', quiz: 'trả lời đúng câu đố', chaos: 'sửa sóng Thủy Nghịch', moon: 'có mặt lúc trăng rằm', wish: 'điều ước được chúc phúc' };
+const LOOT_WHY = { welcome: 'được cả phòng chào đón', fortune: 'quẻ được khen chuẩn', bingo: 'bingo!', pass: 'Sổ Sao', quest: 'nhiệm vụ giờ', run: 'Hành trình Tầng Trời', boss: 'chiến lợi phẩm Sao Chổi', chest: 'từ rương sao', quiz: 'trả lời đúng câu đố', chaos: 'sửa sóng Thủy Nghịch', moon: 'có mặt lúc trăng rằm', wish: 'điều ước được chúc phúc' };
 const mmss = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 // One card of the collection: the sign's mascot on paper framed in the edition's colour.
 function cardHtml(card, { big = false, name = '' } = {}) {
   const ed = EDITION[card.edition] ?? EDITION.base, s = SIGN[card.sign];
   return `<div class="zc${big ? ' big' : ''}${ed.foil ? ' foil' : ''}" style="--ed:${ed.color}"><span class="zg gf">${s.glyph}︎</span><img src="${mascot(card.sign, ed.rarity >= 3 ? 'hype' : 'idle')}" alt="">`
     + `${name ? `<span class="zn">${esc(name)}</span>` : ''}<span class="zl">${esc(ed.id === 'base' ? s.label : ed.label)}</span></div>`;
+}
+
+const POWER_NEED = { 'no-fight': 'ngọc chỉ dùng khi đang đánh boss, kéo co hay Tầng Trời', 'no-gem': 'chưa có ngọc: đánh boss, mở rương, trả lời đúng để nhận', 'no-moon': 'chưa có mảnh trăng: có mặt lúc trăng rằm, ước được chúc phúc' };
+function showVault(e) {
+  const res = Object.entries(e.bag ?? {}).filter(([k, n]) => n && RES[k]);
+  const best = e.cards.best ?? [], rare = best[0] && (EDITION[best[0].edition]?.rarity ?? 0) >= 3;
+  const extra = `<div class="vault">
+    <div class="vhead">${avatarHtml(e, 'av big')}${e.sign ? `<img class="vm" src="${mascot(e.sign, rare ? 'hype' : 'win')}" alt="">` : ''}<div><b>Lv${e.level}${e.level >= 5 ? ' 👑' : ''}</b><span>${esc(e.title ?? '')}${e.sign ? ` · ${esc(SIGN[e.sign].label)}` : ''}</span></div></div>
+    <div class="vres">${res.length ? res.map(([k, n]) => `<span><img class="resimg" src="${RES[k].img}" alt="">${fmt(Math.floor(n))}</span>`).join('') : '<span class="vempty">kho trống · chơi để nhận bụi sao, ngọc</span>'}</div>
+    ${best.length ? `<div class="vcards">${best.map(c => cardHtml(c, { big: true })).join('')}</div>` : ''}
+    <div class="vstats"><span>🃏 ${e.cards.unique}/${e.cards.total} thẻ${e.cards.setDone ? ' · đủ 12 cung 🏆' : ''}</span>${e.pass ? `<span>📒 Sổ Sao ${e.pass.level}/${e.pass.max}</span>` : ''}${e.bingo ? `<span>🎯 bingo ${e.bingo.marked}/9</span>` : ''}</div>
+    ${e.next ? `<div class="vnext">lên Lv${e.level + 1}: ${e.next.dust} bụi · ${e.next.gems} ${RES[e.next.gem].label}${e.next.moon ? ` · ${e.next.moon} mảnh trăng` : ''} → gõ “nâng cấp”</div>` : ''}
+  </div>`;
+  celebrate({ key: 'vault', badge: '🎒 KHO BÁU', extra, title: esc(e.nickname), sub: 'gõ “kho” để khoe kho của bạn', color: rare ? EDITION[best[0].edition].color : C.gold, ms: 5200, compact: true });
+  if (rare) { const [x, y] = spotOf(e.userId, e.sign); burst(x, y, [EDITION[best[0].edition].color, C.gold, '#fff'], 80, 10); }
+}
+// "tung ngọc" / "thắp trăng": a resource spent in the room's event, shown where it lands
+function power(e) {
+  const r = RES[e.res];
+  if (e.kind === 'moon') {
+    const m = $('moon').getBoundingClientRect(), st = stage.getBoundingClientRect(), k = st.width / 1080;
+    burst((m.left + m.width / 2 - st.left) / k, (m.top + m.height / 2 - st.top) / k, ['#FFE7A1', C.gold, '#fff'], 60, 8);
+    card({ key: 'power', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(e.nickname)}</b> thắp trăng!`, sub: 'một mảnh trăng · trăng sáng thêm 20% 🌕', color: r.color, ms: 2600 });
+    return;
+  }
+  const where = e.target === 'boss' || e.target === 'run' ? [CX, CY] : spotOf(e.userId, e.sign);
+  burst(where[0], where[1], [r.color, C.gold, '#fff'], 110, 13);
+  card({ key: 'power', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(e.nickname)}</b> tung ${esc(r.label)}! 💥`, sub: e.target === 'tug' ? 'cú kéo cực mạnh cho cung mình' : 'đòn mạnh như một món quà · gõ “tung ngọc” khi có ngọc', color: r.color, ms: 2600 });
 }
 
 let skyKey = '';
@@ -1134,23 +1200,45 @@ function revealPoll(e) {
   burst(x, y, [color(e.winner), C.gold, C.paper], 60, 9);
 }
 
+// Bàn quẻ: the bamboo tube shakes for a moment, then the stick lands and the reading opens. A topic ("xin quẻ tình
+// duyên") leads with that topic and two more lines on it. Under the reading the room's answer counts up live:
+// "chuẩn" for any reading, "xin vía" on a Thượng / Đại Cát one.
+const TOPIC = { love: ['❤️', 'Tình duyên'], work: ['💼', 'Công việc'], money: ['💰', 'Tiền bạc'], luck: ['🍀', 'May mắn'] };
+let fortuneOpen = 0;
+function fortuneRoom(f) {
+  const el = $('fortune').querySelector('.room');
+  if (!el || !f.userId) return;
+  el.innerHTML = `<span>🙏 <b>${f.agree}</b> người thấy chuẩn · gõ “chuẩn”</span>${f.lucky ? `<span>✨ <b>${f.vias}</b> người xin vía · gõ “xin vía”</span>` : ''}`;
+}
 function renderFortune(f) {
   if (!f) { if (shownFortune) { sfx('fortuneEnd'); shownFortune = null; } return; }
   const key = `${f.userId}|${f.sign}|${f.endsAt}`;
-  if (key === shownFortune) return;
+  if (key === shownFortune) return fortuneRoom(f);
   shownFortune = key;
   sfx('fortune');
   const m = $('fortune'), s = SIGN[f.sign];
-  m.innerHTML = `<div class="k">🎋 Quẻ hoàng đạo hôm nay</div>
-    <div class="who"><img src="${mascot(f.sign, 'hype')}" alt=""><span>${f.nickname ? esc(f.nickname) + ' · ' : 'Quẻ chung cho '}<span class="gf">${s.glyph}\uFE0E</span> ${esc(s.label)}</span></div>
-    <div class="lvl">${f.level}</div>
-    <div class="lines"><p>❤️ ${esc(f.love)}</p><p>💼 ${esc(f.work)}</p><p>💰 ${esc(f.money)}</p><p>🍀 ${esc(f.luck)}</p></div>
-    <div class="lucky"><span>Màu: ${esc(f.color)}</span><span>Số: ${f.number}</span>${f.hour ? `<span>Giờ vàng: ${esc(f.hour)}</span>` : ''}</div>
-    <div class="fine">${f.tip ? `“${esc(f.tip)}” · ` : ''}chỉ mang tính giải trí</div>`;
+  const rest = ['love', 'work', 'money', 'luck'].filter(k => !(f.focus && k === f.topic));
+  m.innerHTML = `<div class="k">🎋 Quẻ hoàng đạo hôm nay${f.topic ? ` · ${TOPIC[f.topic][1]}` : ''}</div>
+    <div class="who"><img src="${mascot(f.sign, 'hype')}" alt=""><span>${f.nickname ? esc(f.nickname) + ' · ' : 'Quẻ chung cho '}<span class="gf">${s.glyph}︎</span> ${esc(s.label)}</span></div>
+    <div class="shake">🎋</div>
+    <div class="reveal">
+      <div class="lvl">${f.level}</div>
+      ${f.focus ? `<div class="focus"><b>${TOPIC[f.topic][0]} ${TOPIC[f.topic][1]}</b><p>${esc(f[f.topic])}</p>${f.focus.map(l => `<p>${esc(l)}</p>`).join('')}</div>` : ''}
+      <div class="lines">${rest.map(k => `<p>${TOPIC[k][0]} ${esc(f[k])}</p>`).join('')}</div>
+      <div class="lucky"><span>Màu: ${esc(f.color)}</span><span>Số: ${f.number}</span>${f.hour ? `<span>Giờ vàng: ${esc(f.hour)}</span>` : ''}</div>
+      ${f.userId ? '<div class="room"></div>' : ''}
+      <div class="fine">${f.tip ? `“${esc(f.tip)}” · ` : ''}chỉ mang tính giải trí</div>
+    </div>`;
+  m.classList.remove('opened');
   go(modal('fortune', () => Boolean(S.hud?.fortune)));
-  const [x, y] = nodePos(f.sign);
-  burst(x, y, [C.gold, C.paper, color(f.sign)], 40, 7);
-  speak(`${f.nickname ? f.nickname : 'Cung ' + s.label}, quẻ hôm nay: ${f.level}. ${f.love} ${f.luck}`);
+  fortuneRoom(f);
+  clearTimeout(fortuneOpen);
+  fortuneOpen = setTimeout(() => {
+    m.classList.add('opened');
+    const [x, y] = nodePos(f.sign);
+    burst(x, y, f.lucky ? [C.gold, '#fff', '#ff6b3d'] : [C.gold, C.paper, color(f.sign)], f.lucky ? 90 : 40, f.lucky ? 11 : 7);
+  }, 1200);
+  speak(`${f.nickname ? f.nickname : 'Cung ' + s.label}, quẻ hôm nay: ${f.level}. ${f.topic ? f[f.topic] : f.love} ${f.luck}`);
 }
 
 function renderQuiz(q) {
@@ -1199,17 +1287,17 @@ const sfx = createSfx(params.has('sfx') ? Number(params.get('sfx')) : 0.3);
 const music = createMusic({ volume: params.has('music') ? Number(params.get('music')) : 0.22, onBlocked: () => { if (params.has('soundbtn')) $('sound').classList.add('on'); } }); // viewers cannot click the stream: the button is only for testing in a normal browser (?soundbtn=1)
 addEventListener('pointerdown', () => music.resume(), { once: true }); // a normal browser tab still starts the music on the first click
 $('sound').onclick = () => { music.resume(); sfx('welcome'); $('sound').classList.remove('on'); };
-const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak', dance: 'dance',
+const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak',
   swaps: 'flow', 'boss-hits': 'bossHit', 'boss-start': 'bossStart', 'boss-freeze': 'boop', 'boss-rescue': 'lit', 'boss-blocked': 'follow', 'boss-heal': 'luckyEnd', 'boss-defeated': 'wheel', 'boss-escaped': 'moonEnd',
-  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', collection: 'title', 'set-complete': 'title',
-  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', bag: 'boop', combine: 'lit', 'upgrade-need': 'boop',
+  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
+  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', combine: 'lit', 'upgrade-need': 'boop',
   fans: 'milestone', 'fan-call': 'lucky', 'heat-up': 'overtake', demo: 'boop', 'switch-wait': 'boop',
   'birth-sky': 'lucky', 'star-born': 'starFly', showtime: 'milestone',
   'hour-start': 'hourStart', 'act-open': 'actOpen', 'head-start': 'headStart', 'head-end': 'actClose', 'act-close': 'actClose', pair: 'pair',
   'run-start': 'headStart', 'run-vote': 'boop', 'run-door': 'door', 'run-fight': 'bossStart', 'run-won': 'lit', 'run-boon': 'boon', 'run-attack': 'runHit',
   'run-down': 'fall', 'run-revive': 'revive', 'run-chest': 'chestOpen', 'run-rest': 'moon', 'run-event': 'sparkle', 'run-fled': 'moonEnd',
   'roast-start': 'spin', 'quest-done': 'cleared', 'tug-start': 'headStart', 'tug-yank': 'runHit', 'tug-end': 'cleared', 'predict-open': 'pollStart', 'predict-end': 'poll',
-  bingo: 'cleared', 'bingo-card': 'cardFlip', 'pass-up': 'boon', 'pass-show': 'boop' };
+  bingo: 'cleared', 'bingo-card': 'cardFlip', 'pass-up': 'boon' };
 const BIG = new Set(['meteor', 'wheel', 'moon', 'milestone', 'night', 'firework', 'hourStart', 'headStart', 'bossStart', 'fall', 'revive']); // the music ducks under these
 const gold = C.gold;
 function onFx(e) {
@@ -1219,7 +1307,7 @@ function onFx(e) {
   else if (e.type === 'bells') sound = e.people[0].kind === 'share' ? 'share' : 'follow';
   else if (e.type === 'milestone' && e.count === 1) sound = 'welcome';
   if (e.type === 'gift' && e.count >= 5) sfx('combo', e.count);
-  const MINOR = { dance: 'dance', flows: 'flow', 'title-up': 'title', streak: 'streak', overtake: 'overtake', wish: 'wish', hearts: 'hearts' };
+  const MINOR = { flows: 'flow', 'title-up': 'title', streak: 'streak', overtake: 'overtake', wish: 'wish', hearts: 'hearts' };
   if (MINOR[e.type] && !on(MINOR[e.type])) sound = null;
   if (e.type === 'milestone' && ![1, 100].includes(e.count) && (!on('milestone') || e.count < 100)) sound = null;
   if (sound) { sfx(sound, arg); if (BIG.has(sound)) music.duck(); }
@@ -1233,12 +1321,6 @@ function onFx(e) {
       if (p.from) spotlight(`<div class="duo"><img src="${mascot(p.sign, 'hype')}" alt="">${avatarHtml(p, 'av big')}</div><div class="cap">${esc(p.nickname)}</div><div class="sub">đổi cung ${G(p.from)} ${esc(SIGN[p.from].label)} → ${G(p.sign)} ${esc(SIGN[p.sign].label)} ✓</div>`, 2200, 'join');
       else if (on('join')) spotlight(`<div class="duo"><img src="${mascot(p.sign, 'hype')}" alt="">${avatarHtml(p, 'av big')}</div><div class="cap">${esc(p.nickname)}</div><div class="sub">vào đội ${G(p.sign)} ${esc(SIGN[p.sign].label)} ✨${e.more ? ` · +${e.more} người` : ''}<br><small>nhầm? gõ “đổi” + tên cung</small></div>`, 1800, 'join');
       for (const q of e.people) { const [x, y] = nodePos(q.sign); burst(x, y, [color(q.sign), C.paper], 16, 5); }
-      break;
-    }
-    case 'dance': {
-      for (const id of e.userIds) dancing.set(id, Date.now() + 4000);
-      const v = S.stage.find(x => x.userId === e.userIds[0]);
-      if (v && on('dance')) spotlight(`<img src="${mascot(v.sign, 'hype')}" alt=""><div class="cap">${esc(v.nickname)}</div><div class="sub">💃 nhảy cùng cung ${esc(SIGN[v.sign].label)}${e.userIds.length > 1 ? ` · +${e.userIds.length - 1} người` : ''}</div>`, 1800, 'dance');
       break;
     }
     case 'hearts': {
@@ -1284,8 +1366,16 @@ function onFx(e) {
     case 'upgrade-need':
       spotlight(`<div class="duo"><img src="${mascot(e.sign, 'panic')}" alt="">${avatarHtml(e, 'av big')}</div><div class="cap">${esc(e.nickname)} · Lv${e.level}</div><div class="sub">còn thiếu ${Object.entries(e.missing).map(([k, n]) => `${n} ${RES[k].label}`).join(', ')}</div>`, 2600, 'need');
       break;
-    case 'bag':
-      card({ key: 'bag', icon: avatarHtml(e, 'av'), title: `Kho của <b>${esc(e.nickname)}</b> · Lv${e.level}`, sub: `<span class="bagrow">${Object.entries(e.bag).filter(([, n]) => n).map(([k, n]) => `<img class="resimg sm" src="${RES[k].img}" alt="">${fmt(n)}`).join(' ') || 'trống'}</span>${e.next ? ` · lên Lv${e.level + 1}: ${e.next.dust} bụi, ${e.next.gems} ${RES[e.next.gem].label}${e.next.moon ? `, ${e.next.moon} mảnh trăng` : ''}` : e.level >= 5 ? ' · cấp tối đa 👑' : ' · chọn cung để nâng cấp'}`, color: C.gold, ms: 4200 });
+    case 'vault': showVault(e); break;
+    case 'power': power(e); break;
+    case 'power-need': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">${POWER_NEED[e.why] ?? ''}</div>`, 2400, 'need'); break;
+    case 'fortune-agree': {
+      const [x, y] = nodePos(S.hud?.fortune?.sign ?? IDS[0]);
+      burst(x, y, [C.gold, C.paper], 10, 4);
+      break;
+    }
+    case 'fortune-luck':
+      card({ key: 'luck', icon: '✨', title: `<b>${esc(e.nickname)}</b> xin vía ${esc(e.owner)}`, sub: `quẻ ${esc(e.level)} · cả hai nhận bụi sao`, color: C.gold, ms: 2200 });
       break;
     case 'combine':
       card({ key: 'card', icon: '🔮', title: `<b>${esc(e.nickname)}</b> ghép ${e.count} thẻ ${esc(SIGN[e.from].label)}`, sub: 'thành 1 thẻ Tinh Tú ✨', color: EDITION.star.color });
@@ -1462,11 +1552,6 @@ function onFx(e) {
       }
       break;
     }
-    case 'collection': {
-      const best = e.best && EDITION[e.best.edition];
-      card({ key: 'collection', icon: e.best ? cardHtml(e.best) : '🃏', title: `Bộ thẻ của <b>${esc(e.nickname)}</b>: ${e.unique}/${e.total}`, sub: e.unique ? `hiếm nhất: ${esc(best.label)} · ${esc(SIGN[e.best.sign].label)}${e.setDone ? ' · đủ 12 cung 🏆' : ''}` : 'chưa có thẻ — chờ rương sao rồi gõ “nhận” nhé!', color: best?.color ?? C.teal, ms: 3600 });
-      break;
-    }
     case 'set-complete':
       celebrate({ key: 'card', badge: '🏆 ĐỦ 12 CUNG', icon: '🃏', title: esc(e.nickname), sub: 'đã gom đủ thẻ cả 12 cung hoàng đạo!', color: gold, ms: 4200, compact: true });
       break;
@@ -1550,7 +1635,7 @@ function onFx(e) {
       if (e.frame) celebrate({ key: 'pass', badge: `📒 SỔ SAO CẤP ${e.level}`, extra: `<div class="duo">${avatarHtml(e, `av big frame-${e.frame}`)}</div>`, title: esc(e.nickname), sub: `nhận ${esc(e.reward)}`, color: FRAME_COLOR[e.frame], ms: 3600, compact: true });
       else if (on('title')) card({ key: 'pass', icon: '📒', title: `<b>${esc(e.nickname)}</b> lên Sổ Sao cấp ${e.level}`, sub: `nhận ${esc(e.reward)}`, color: color(e.sign), ms: 2400 });
       break;
-    case 'pass-show': card({ key: 'pass', icon: '📒', title: `Sổ Sao của <b>${esc(e.nickname)}</b>: cấp ${e.level}/${e.max}`, sub: `${e.xp}/${e.need} kinh nghiệm${e.next ? ` · cấp sau: ${esc(e.next)}` : ' · đã tối đa 👑'}`, color: C.gold, ms: 3600 }); break;
+
     // --- vòng quay bóc phốt and the hour's quest ---
     case 'roast-start': roastWheel(e); break;
     case 'roast-end': {
