@@ -228,3 +228,22 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+
+  livestream-pk:
+    name: integration / livestream-pk
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tools/livestream-pk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install livestream tool dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run livestream unit and simulator tests
+        run: npm test
+      - name: Run isolated end-to-end smoke test
+        run: npm run smoke
