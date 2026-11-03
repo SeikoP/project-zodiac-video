@@ -50,6 +50,7 @@ try {
   const bad = await post('ingest', { type: 'nope' });
   check(bad.ok === false, 'sự kiện sai bị từ chối, server vẫn sống');
   check((await fetch(`http://127.0.0.1:${port}/control`)).status === 200 && (await fetch(`http://127.0.0.1:${port}/`)).status === 200, 'trang overlay và bảng điều khiển mở được');
+  check((await fetch(`http://127.0.0.1:${port}/simulator`)).status === 200, 'màn hình TikTok LIVE Simulator được phục vụ');
   const mp3 = fs.existsSync(path.join(root, 'public/sfx/manifest.json')) ? await fetch(`http://127.0.0.1:${port}/sfx/manifest.json`) : null;
   check(!mp3 || mp3.status === 200, 'gói hiệu ứng âm thanh được phục vụ');
 
