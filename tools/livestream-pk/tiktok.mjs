@@ -37,7 +37,8 @@ export const chatOf = d => ({ ...userOf(d), comment: String(d?.content ?? d?.com
 export const likeOf = d => ({ ...userOf(d), count: num(d?.count, d?.likeCount) });
 export const socialOf = (d, kind) => ({ ...userOf(d), kind });
 // TikTok's own id for a message (common.msgId); the connector can hand the same message over again after a reconnect.
-export const msgIdOf = d => { const id = d?.common?.msgId ?? d?.msgId; return id === undefined || id === null || id === '' ? null : String(id); };
+// ("0" is the protobuf default for a message that carries none)
+export const msgIdOf = d => { const id = String(d?.common?.msgId ?? d?.msgId ?? ''); return id === '' || id === '0' ? null : id; };
 
 export const viewersOf = d => num(d?.viewerCount, d?.totalUser, d?.total);
 
@@ -72,7 +73,7 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   const joinAllowed = () => { const s = Math.floor(Date.now() / 1000); if (s !== joinSec) { joinSec = s; joinN = 0; } return ++joinN <= 5; };
 
   // Messages already handed to the game: two rotating sets keep the last 5000–10000 ids, across reconnects to the same room.
-  let seenNow = new Set(), seenBefore = new Set();
+  let seenNow = new Set(), seenBefore = new Set(), seenRoom = null;
   const seen = d => {
     const id = msgIdOf(d);
     if (id === null) return false;
@@ -126,7 +127,7 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
     status: () => ({ ...status }),
     async connect(username) {
       const room = String(username).replace(/^@/, '').trim();
-      if (room !== status.username) { seenNow = new Set(); seenBefore = new Set(); }
+      if (room !== seenRoom) { seenNow = new Set(); seenBefore = new Set(); seenRoom = room; }
       await this.disconnect();
       wanted = room;
       delay = 5000;

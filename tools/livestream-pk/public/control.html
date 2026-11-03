@@ -18,6 +18,7 @@
   section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
   h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   h2 small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  [hidden] { display: none !important; } /* author display rules (.line) would otherwise beat the hidden attribute */
   .line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   input, select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; }
   button { font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }

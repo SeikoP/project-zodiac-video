@@ -162,3 +162,29 @@ test('duplicate TikTok messages (same msgId) reach the game once, also across a 
   conns.at(-1).emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
   assert.equal(calls.chat, 5, 'another room starts with a fresh memory');
 });
+
+test('the protobuf default msgId "0" is not a real id', () => {
+  assert.equal(msgIdOf({ common: { msgId: '0' } }), null);
+  assert.equal(msgIdOf({ common: { msgId: 0 } }), null);
+});
+
+test('messages whose msgId is the protobuf default "0" are never dropped', async () => {
+  const conn = fakeConnection();
+  let chats = 0;
+  const bridge = createTikTokBridge({ game: { chat: () => { chats++; } }, log: () => {}, connect: () => conn });
+  await bridge.connect('@room');
+  for (let i = 0; i < 3; i++) conn.emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '0' } });
+  assert.equal(chats, 3);
+});
+
+test('Ngắt then Kết nối to the same room keeps the duplicate memory', async () => {
+  const conns = [];
+  let chats = 0;
+  const bridge = createTikTokBridge({ game: { chat: () => { chats++; } }, log: () => {}, connect: () => { const c = fakeConnection(); conns.push(c); return c; } });
+  await bridge.connect('@room');
+  conns[0].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '9' } });
+  await bridge.disconnect();
+  await bridge.connect('room');
+  conns[1].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '9' } });
+  assert.equal(chats, 1);
+});
