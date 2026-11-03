@@ -15,7 +15,7 @@ export const SQUARES = Object.freeze([
   ['lucky', 'Sao may mắn', '⭐', e => e.type === 'lucky-start'],
   ['chest', 'Rương mở', '🎁', e => e.type === 'chest-open'],
   ['birth', 'Bầu trời ngày sinh', '🌌', e => e.type === 'birth-sky'],
-  ['floor', 'Đoàn thắng 1 tầng', '🪐', e => e.type === 'run-won'],
+  ['mystery', 'Giải được cung bí ẩn', '🕵️', e => e.type === 'mystery-win' && e.rank === 1],
   ['quiz', 'Có người đoán đúng câu đố', '🧠', e => e.type === 'quiz-end' && e.winners?.length > 0],
   ['wish', 'Điều ước thành sao', '🏮', e => e.type === 'wish-blessed'],
   ['level', 'Có người lên cấp', '⬆️', e => e.type === 'level-up'],
@@ -29,7 +29,7 @@ export const SQUARES = Object.freeze([
 ]);
 const BY_ID = Object.fromEntries(SQUARES.map(s => [s.at(0), s]));
 // the event types any square listens to: everything else (thousands of small 'light' and 'likes' events) is skipped at once
-const TYPES = new Set(['boss-defeated', 'pair', 'roast-end', 'quest-done', 'moon-full', 'lucky-start', 'chest-open', 'birth-sky', 'run-won', 'quiz-end', 'wish-blessed', 'level-up', 'tug-end', 'gift', 'wheel-complete', 'heat-up', 'lit', 'star-born', 'predict-end']);
+const TYPES = new Set(['boss-defeated', 'pair', 'roast-end', 'quest-done', 'moon-full', 'lucky-start', 'chest-open', 'birth-sky', 'mystery-win', 'quiz-end', 'wish-blessed', 'level-up', 'tug-end', 'gift', 'wheel-complete', 'heat-up', 'lit', 'star-born', 'predict-end']);
 const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 const hash = s => { let h = 2166136261; for (const c of String(s)) h = Math.imul(h ^ c.codePointAt(0), 16777619); return h >>> 0; };
 

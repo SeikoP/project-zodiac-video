@@ -179,35 +179,16 @@
 .pairfx .av.big { width: 130px; height: 130px; border: 5px solid #F2A7C3; }
 .pairfx b { font-family: var(--hand); font-weight: 400; font-size: 72px; color: #F2A7C3; text-shadow: 0 0 24px #F2A7C3; animation: popc .6s cubic-bezier(.2, 1.6, .4, 1); }
 
-/* --- Hành trình Tầng Trời in the centre circle ------------------------------------------------- */
-#arena.runmode { background: radial-gradient(circle at 50% 38%, #3d4f63 0%, #22303b 60%, #121a20 100%); color: var(--paper); gap: 6px; padding: 30px 40px; }
-#arena.runmode.rage { background: radial-gradient(circle at 50% 38%, #5a2e3d 0%, #2b1620 60%, #160a10 100%); }
-#arena.runmode .ak { font-size: 22px; letter-spacing: 2px; color: #8EC0B9; }
-#arena .party { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-#arena .hp.php { width: 380px; height: 28px; border-color: #8EC0B9; }
-#arena .hp.php i { background: linear-gradient(90deg, #6fbf8f, #9CC67A); }
-#arena .hp.php b { font-size: 17px; }
-#arena .boons { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 440px; min-height: 30px; }
-#arena .boons .bn { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--el); color: var(--ink); font-size: 18px; border: 2px solid var(--paper); }
-#arena .boons .rs { padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--el) 35%, transparent); border: 2px solid var(--el); font-size: 14px; font-weight: 800; }
-#arena .boons .cs { padding: 2px 8px; border-radius: 10px; background: rgba(180, 140, 242, .25); border: 2px solid #B48CF2; font-size: 14px; font-weight: 800; color: #d9c6ff; }
-#arena .stagebox { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 470px; }
-#arena .vt { font-family: var(--hand); font-size: 34px; line-height: 1.05; color: var(--gold); text-align: center; }
-#arena .doors { display: grid; gap: 6px; width: 100%; }
-#arena .door { display: flex; align-items: center; gap: 10px; padding: 5px 12px; border-radius: 16px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el, rgba(246, 240, 230, .4)); text-align: left; transition: background .2s, transform .2s; }
-#arena .door.lead { background: rgba(242, 196, 92, .22); border-color: var(--gold); transform: scale(1.03); }
-#arena .door b { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: var(--ink); font-size: 22px; font-weight: 900; }
-#arena .door span { flex: 1; min-width: 0; font-size: 21px; font-weight: 800; line-height: 1.15; }
-#arena .door small { display: block; font-size: 15px; font-weight: 700; color: rgba(246, 240, 230, .75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#arena .door em { flex: none; font-style: normal; font-size: 24px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right; }
-#arena .doors.event .door span { font-size: 18px; }
-#arena .foe { height: 110px; display: grid; place-items: center; animation: bossFloat 2.6s ease-in-out infinite; }
-#arena .foe span { font-size: 96px; line-height: 1; }
-#arena .foe img { height: 120px; }
-#arena .fn { font-family: var(--hand); font-size: 34px; line-height: 1; }
-#arena .hp.ehp { width: 400px; height: 30px; }
-#arena.runmode .sub { color: rgba(246, 240, 230, .85); font-size: 19px; text-align: center; }
-#arena.runmode .cap { color: var(--gold); }
+/* --- Cung bí ẩn and Hứng sao băng in the centre circle ------------------------------------------- */
+#arena.mysterymode, #arena.starcatchmode { background: radial-gradient(circle at 50% 35%, #3a2f5c 0%, #1d2230 70%); color: var(--paper); }
+#arena .mq { font-family: var(--hand); font-size: 96px; line-height: 1; color: #B48CF2; text-shadow: 0 0 24px #B48CF2; animation: blessPop 1.6s infinite; }
+#arena .clues { margin: 0; padding: 0 0 0 26px; max-width: 440px; font-size: 21px; font-weight: 800; line-height: 1.3; }
+#arena .clues li.new { color: var(--gold); animation: popc .45s cubic-bezier(.2, 1.6, .4, 1); }
+#arena .word { font-family: var(--hand); font-size: 110px; line-height: 1.05; color: var(--gold); text-shadow: 0 0 30px rgba(242, 196, 92, .9); }
+#arena .word.drop { animation: wordDrop .6s cubic-bezier(.2, 1.4, .4, 1); }
+#arena.mysterymode .sub, #arena.starcatchmode .sub { color: rgba(246, 240, 230, .88); font-size: 19px; font-weight: 700; text-align: center; max-width: 460px; }
+#arena.mysterymode .sub b, #arena.starcatchmode .sub b { color: var(--gold); }
+@keyframes wordDrop { from { transform: translateY(-160px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* --- vòng quay bóc phốt: the wheel's own nodes spin; a pointer marks the top ----------------------- */
 #wheel.roasting::before { content: '▼'; position: absolute; left: 50%; top: 70px; transform: translateX(-50%); z-index: 6; font-size: 60px; line-height: 1; color: #ff7a45; text-shadow: 0 4px 0 #161d21, 0 0 24px #ff7a45; }
@@ -292,3 +273,4 @@
 #doom span { padding: 4px 18px; border-radius: 999px; background: #ff3d3d; color: #fff; font-size: 26px; font-weight: 900; }
 @keyframes doomBeat { 50% { transform: translate(-50%, -50%) scale(1.12); } }
 #wheel:has(#doom.on) #center .slide, #wheel:has(#doom.on) #arena > * { opacity: .18; transition: opacity .3s; }
+.bar .no { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 4px; border-radius: 50%; background: var(--ink); color: var(--gold); font-size: 18px; font-weight: 900; }

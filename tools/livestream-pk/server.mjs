@@ -170,8 +170,8 @@ const API = {
   // giờ hành tinh: hold one hour for 60 minutes (or back to the real sky with no planet), start the headliner now
   'hour/set': b => game.forceHour(['mars', 'venus', 'mercury', 'saturn'].includes(b.planet) ? b.planet : null),
   'headline/start': () => game.startHead(),
-  'run/start': () => game.startRun(),
-  'run/stop': () => game.stopRun(),
+  'mystery/start': () => game.startHead('mystery'),
+  'starcatch/start': () => game.startHead('starcatch'),
   pair: () => game.makePair(),
   roast: b => game.startRoast(b.sign),
   'tug/start': () => game.startTug(),

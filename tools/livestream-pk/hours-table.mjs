@@ -15,15 +15,15 @@ export const HOURS = Object.freeze({
   mars: {
     label: 'Sao Hỏa', glyph: '♂', color: '#E97A66', theme: 'đấu trường & thử thách', mood: 'upbeat',
     allow: { boss: true, lucky: true, quiz: true, poll: true, reading: true }, shows: ['starcall', 'meteor', 'birth'],
-    rules: { gift: 1.5, comment: 1.2, quiz: 2, run: 1.5 }, ruleText: 'quà · câu đố · tầng trời mạnh hơn',
-    heads: ['elite', 'tug', 'run', 'chaos', 'quizchain'], cards: ['h-mars', 'h-saturn'],
+    rules: { gift: 1.5, comment: 1.2, quiz: 2 }, ruleText: 'quà · bình luận · câu đố mạnh hơn',
+    heads: ['elite', 'tug', 'starcatch', 'chaos', 'quizchain'], cards: ['h-mars', 'h-saturn'],
     quest: { stat: 'comments', base: 40, per: 6, unit: 'bình luận', reward: 'gem', rewardText: 'mưa lửa · mỗi người +1 ngọc' },
   },
   venus: {
     label: 'Sao Kim', glyph: '♀', color: '#F2A7C3', theme: 'hội ngộ & huyền bí', mood: 'upbeat',
     allow: { lucky: true, poll: true, quiz: true, reading: true }, shows: ['pair', 'roast', 'starcall', 'birth'],
     rules: { follow: 2, share: 2, pair: 2, checkin: 2 }, ruleText: 'theo dõi · chia sẻ · chuỗi đêm x2',
-    heads: ['matchmaking', 'roast', 'chestrain', 'moonnight', 'final'], cards: ['h-venus', 'h-mercury'],
+    heads: ['matchmaking', 'roast', 'mystery', 'chestrain', 'moonnight', 'final'], cards: ['h-venus', 'h-mercury'],
     quest: { stat: 'blessings', base: 5, per: 1, unit: 'lời chúc phúc', reward: 'dust', rewardText: 'mưa hoa · mỗi người +10 bụi sao' },
   },
   mercury: {
@@ -36,9 +36,9 @@ export const HOURS = Object.freeze({
   saturn: {
     label: 'Sao Thổ', glyph: '♄', color: '#8EC0B9', theme: 'thử thách', mood: 'calm',
     allow: { reading: true, lucky: true, poll: true, quiz: true }, shows: ['starcall', 'birth'],
-    rules: { checkin: 2, run: 1.5 }, ruleText: 'thưởng chuỗi đêm x2',
-    heads: ['run', 'final'],
-    quest: { stat: 'floors', base: 4, per: 0, unit: 'tầng trời vượt qua', reward: 'moon', rewardText: 'vành đai sáng · mỗi người +1 mảnh trăng' },
+    rules: { checkin: 2 }, ruleText: 'thưởng chuỗi đêm x2',
+    heads: ['starcatch', 'final'],
+    quest: { stat: 'catches', base: 6, per: 0.5, unit: 'sao băng hứng được', reward: 'moon', rewardText: 'vành đai sáng · mỗi người +1 mảnh trăng' },
   },
 });
 // The planets that take turns for now; the others stay defined above and join by being added here (or via config `hourPlanets`).
@@ -56,12 +56,14 @@ export const HEADS = Object.freeze({
   quizchain: { label: 'Đố nhanh liên hoàn', icon: '🧠' },
   chaos: { label: 'Thủy Nghịch', icon: '🌀' },
   moonnight: { label: 'Đêm trăng', icon: '🌕' },
-  run: { label: 'Hành trình Tầng Trời', icon: '🪐' },
+  mystery: { label: 'Cung bí ẩn', icon: '🕵️' },
+  starcatch: { label: 'Hứng sao băng', icon: '🌠' },
   final: { label: 'Chung kết đua sao', icon: '👑' },
 });
 // A headliner with a goal of its own sets the act's quest while it is the act's headliner.
 export const HEAD_QUEST = Object.freeze({
-  run: HOURS.saturn.quest,
+  starcatch: HOURS.saturn.quest,
+  mystery: HOURS.mercury.quest,
   quizchain: HOURS.mercury.quest,
 });
 
@@ -73,8 +75,8 @@ export function hourEdition(planet, r) {
   return eds[Math.min(eds.length - 1, Math.floor(r * eds.length))];
 }
 
-// minute of the act a headliner starts (a run needs longer than the others); `act` = the act's length in minutes
-export const headAt = (id, act = 10) => (id === 'run' ? act * 0.2 : act * 0.5);
+// minute of the act a headliner starts; `act` = the act's length in minutes
+export const headAt = (id, act = 10) => act * 0.5;
 
 // Ghép đôi: how two elements get along (entertainment only, every pairing gets a kind line).
 const PAIRS = {

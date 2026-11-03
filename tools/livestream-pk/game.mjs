@@ -29,7 +29,7 @@ import { readSky as readRealSky, boonFor, BOON_CAP } from './sky.mjs';
 import { signOfDate, parseBirthDate, birthChart, readChart } from './birth.mjs';
 import { createHours } from './hours.mjs';
 import { HOURS, HOUR_PLANETS, THEME_OF, HEADS, HEAD_QUEST, headAt, hourEdition, pairing } from './hours-table.mjs';
-import { createRun, RUN_DEFAULTS } from './run.mjs';
+import { createMystery, createStarcatch, MINIGAME_DEFAULTS } from './minigames.mjs';
 import { createRoast, ROAST_DEFAULTS } from './roast.mjs';
 import { createTug, TUG_DEFAULTS } from './tug.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
@@ -168,7 +168,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   pairEverySeconds: 25,
   pairLight: 10,
   quizChainLength: 5,
-  ...RUN_DEFAULTS,
+  ...MINIGAME_DEFAULTS,
   ...ROAST_DEFAULTS,
   ...TUG_DEFAULTS,
   ...PREDICT_DEFAULTS,
@@ -319,7 +319,7 @@ export function emptyState() {
     wishNo: 0,
     // the hours, acts and headliners, and what is playing right now (null when nothing is)
     hourForce: null, hourAnnounced: null, act: { key: null, phase: null, light: {} }, head: null, quest: null,
-    run: null, runMeta: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
+    mystery: null, starcatch: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
   };
 }
 
@@ -503,7 +503,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   };
   if (!st.nextChaosAt) scheduleChaos();
   function startChaos() {
-    if (st.chaos || st.boss || st.run || st.tug) return null;
+    if (st.chaos || st.boss || st.tug) return null;
     // never more than the viewers actually there (a room of two can still fix it)
     const need = Math.max(1, Math.min(12, stage.size, Math.max(cfg.chaosFixMin, Math.ceil(stage.size * cfg.chaosFixShare))));
     st.chaos = { endsAt: now() + cfg.chaosSeconds * 1000, need, fixers: {}, real: Boolean(sky?.mercuryRetro) };
@@ -545,7 +545,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.nextBossAt ||= cfg.bossEverySeconds ? now() + cfg.bossEverySeconds * 500 : Infinity; // the first one comes half as soon
   let bossWas = Boolean(st.boss);
   function startBoss() {
-    const b = st.chaos || st.run || st.tug ? null : boss.start(Math.max(3, stage.size));
+    const b = st.chaos || st.tug ? null : boss.start(Math.max(3, stage.size));
     if (b) bossWas = true;
     return b;
   }
@@ -572,7 +572,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // --- resources used in the room's events ---
-  const FIGHTS = [['boss', () => st.boss], ['tug', () => st.tug], ['run', () => st.run?.phase?.kind === 'fight']];
+  const FIGHTS = [['boss', () => st.boss], ['tug', () => st.tug]];
   const powerReady = v => now() - (v.powerAt ?? 0) >= cfg.powerCooldownSeconds * 1000;
   function powerNeed(u, v, why) {
     if (now() - (v.powerHintAt ?? 0) < cfg.powerCooldownSeconds * 1000) return;
@@ -592,7 +592,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     onEvent({ type: 'power', kind: 'gem', res, target, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
     if (target === 'boss') boss.hit(u, v, 'gift', cfg.gemPowerDiamonds);
     else if (target === 'tug') tug.pull(u, v, 'gift', cfg.gemPowerDiamonds);
-    else run.hit(u, v, 'gift', cfg.gemPowerDiamonds);
   }
   // "thắp trăng": one moon shard raises the moon by a share of its goal
   function moonPower(u, v) {
@@ -604,20 +603,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     raiseMoon(Math.round(st.moon.goal * cfg.moonShardShare));
   }
 
-  // --- Hành trình Tầng Trời: the roguelike run (run.mjs) ----------------------------------------------
-  const run = createRun({
-    st, cfg, now, dayKey: () => dayKey(now()),
-    onEvent: e => { if (e.type === 'run-won') questAdd('floors'); onEvent(e); },
-    present: () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign),
-    gem: (id, v, n) => gem({ userId: id }, v, n, 'run'),
-    reward: (id, floors, cleared) => {
-      const v = st.viewers[id];
-      if (!v) return;
-      v.runBest = Math.max(v.runBest ?? 0, floors);
-      if (floors) shine({ userId: id }, v, cfg.runLightPerFloor * floors, 'run');
-      if (cleared) bag.add({ userId: id }, v, 'moon', 1, 'run');
-    },
-  });
+  // --- two short headliners (minigames.mjs): Cung bí ẩn and Hứng sao băng ---
+  const mystery = createMystery({ st, cfg, now, rng, onEvent, parseSign, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat) });
+  const starcatch = createStarcatch({ st, cfg, now, rng, onEvent, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat),
+    dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why), shine: (u, v, n, why) => shine(u, v, n, why) });
 
   // --- vòng quay bóc phốt (roast.mjs) ---------------------------------------------------------------
   const roast = createRoast({
@@ -651,7 +640,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [k, at] of cued) if (t - at > 600000) cued.delete(k);
     const b = st.boss;
     if (b && b.hp > 0 && b.hp <= b.max * 0.25) cue('boss-low', 'Sao Chổi chỉ còn 1/4 máu! Hô cả phòng chat dồn dập, ai có ngọc thì gõ “tung ngọc” để kết liễu.', `boss-low@${b.startedAt}`);
-    const fights = [['boss', b && b.hp > 0 && b.endsAt, 'trận Sao Chổi'], ['tug', st.tug && st.tug.endsAt, 'kéo co'], ['run', st.run?.phase?.kind === 'fight' && st.run.phase.endsAt, 'trận Tầng Trời']];
+    const fights = [['boss', b && b.hp > 0 && b.endsAt, 'trận Sao Chổi'], ['tug', st.tug && st.tug.endsAt, 'kéo co']];
     for (const [id, endsAt, name] of fights) if (endsAt && endsAt - t <= 15000 && endsAt > t) cue('last-seconds', `Còn 15 giây ${name}! Đếm ngược cùng cả phòng — mỗi comment, mỗi tim đều tính.`, `last@${id}@${endsAt}`);
     if (!partying() && st.moon.light >= st.moon.goal * 0.85) cue('moon-near', 'Trăng sắp tròn rồi — rủ cả nhà thả tim thêm chút nữa để mở tiệc trăng!', `moon@${st.night.no}@${st.moon.full}`);
     const act = actView();
@@ -677,8 +666,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // predictions open before a big outcome and settle when it is known
     if (e.type === 'tug-start') predict.open({ key: 'tug', q: `${label(e.a)} hay ${label(e.b)} thắng kéo co?`, options: [label(e.a), label(e.b)], closesAt: now() + e.warmup * 1000 });
     else if (e.type === 'tug-end') predict.resolve('tug', e.winner === e.a ? 0 : e.winner === e.b ? 1 : null);
-    else if (e.type === 'run-start') predict.open({ key: 'run', q: 'Đoàn có vượt qua tầng 3?', options: ['Có', 'Không'], closesAt: now() + 25000 });
-    else if (e.type === 'run-end') predict.resolve('run', e.cleared || e.floors >= 3 ? 0 : 1);
     else if (e.type === 'head-start' && e.id === 'elite') predict.open({ key: 'elite', q: 'Cả phòng hạ được Boss tinh anh?', options: ['Hạ được', 'Nó trốn thoát'], closesAt: now() + 20000 });
     else if (e.type === 'boss-defeated') predict.resolve('elite', 0);
     else if (e.type === 'boss-escaped') predict.resolve('elite', 1);
@@ -752,14 +739,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const phase = m < 1 ? 'open' : m < headAt(currentHead(t), ACT_MIN) ? 'play' : m < CLOSE_AT ? 'head' : 'close';
     if (key !== st.act.key) {
       st.act = { key, phase: null, light: {} };
-      if (roomLive() && !st.run) onEvent({ type: 'act-open', ...actView(), hour: hourView() });
+      if (roomLive()) onEvent({ type: 'act-open', ...actView(), hour: hourView() });
     }
     // the headliner waits (and retries every tick) while a quiz, poll or reading is open, so they never overlap
     if (phase === 'head' && !st.act.headDone && roomLive() && !st.quiz && !st.poll && !st.fortune && startHead()) st.act.headDone = true;
     if (phase === st.act.phase) return;
     st.act.phase = phase;
     touch('cosmos');
-    if (phase === 'close') { endHead(); if (roomLive() && !st.run) actClose(); }
+    if (phase === 'close') { endHead(); if (roomLive()) actClose(); }
   }
   function actView() {
     if (!hour) return null;
@@ -780,7 +767,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // Headliners: the hour's list in turn, one per act, from headAt() to CLOSE_AT. The host can start one any time.
   function startHead(id = currentHead()) {
-    if (!id || !HEADS[id] || st.head || st.boss || st.chaos || st.run || st.roast || st.tug) return null;
+    if (!id || !HEADS[id] || st.head || st.boss || st.chaos || st.roast || st.tug || st.mystery || st.starcatch) return null;
     const t = now(), m = minuteInAct(t);
     const endsAt = t + Math.max(90000, (m < CLOSE_AT && hour ? CLOSE_AT - m : 3) * 60000);
     st.head = { id, startedAt: t, endsAt };
@@ -792,7 +779,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', sign: pickEventSign() }); }
     else if (id === 'final') Object.assign(st.head, { base: { ...st.wheel.given }, wheel: st.wheel.no });
     else if (id === 'chestrain') { cards.openNow(); st.head.chests = [t + 60000, t + 120000]; }
-    else if (id === 'run') { if (!run.start()) { st.head = null; return null; } }
+    else if (id === 'mystery') { if (!mystery.start()) { st.head = null; return null; } }
+    else if (id === 'starcatch') { if (!starcatch.start()) { st.head = null; return null; } }
     else if (id === 'roast') { if (!roast.start()) { st.head = null; return null; } }
     else if (id === 'chaos') { if (!startChaos()) { st.head = null; return null; } }
     else if (id === 'tug') { if (!tug.start()) { st.head = null; return null; } }
@@ -800,11 +788,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     onEvent({ type: 'head-start', id, label: HEADS[id].label, planet: hour?.planet ?? null, seconds: Math.round((endsAt - t) / 1000) });
     return st.head;
   }
+  const PLAYS_OUT = new Set(['roast', 'chaos', 'tug', 'mystery', 'starcatch']); // headliners that run to their own end
   function headTick(t) {
     const h = st.head;
     if (!h) return;
     // these play to their own end
-    if (h.id === 'run' || h.id === 'roast' || h.id === 'chaos' || h.id === 'tug') { if (!st[h.id]) endHead(); return; }
+    if (PLAYS_OUT.has(h.id)) { if (!st[h.id]) endHead(); return; }
     if (t >= h.endsAt && !(h.id === 'quizchain' && st.quiz)) return endHead();
     if (h.id === 'matchmaking' && t >= h.nextAt) { h.nextAt = t + cfg.pairEverySeconds * 1000; makePair(); }
     if (h.id === 'quizchain') {
@@ -816,7 +805,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
   function endHead() {
     const h = st.head;
-    if (!h || (['run', 'roast', 'chaos', 'tug'].includes(h.id) && st[h.id])) return;
+    if (!h || (PLAYS_OUT.has(h.id) && st[h.id])) return;
     st.head = null;
     touch('cosmos');
     const out = { type: 'head-end', id: h.id, label: HEADS[h.id].label };
@@ -1083,7 +1072,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (rehearsalOnly(u)) return;
     const v = viewer(u);
     if (st.quiz && answerQuiz(u, v)) return;
-    if (st.run && run.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // A/B/C while the party votes
+    if ((st.mystery && mystery.chat(u, v, u.comment)) || (st.starcatch && starcatch.chat(u, v, u.comment))) { addHeat(u.userId, 1); raiseMoon(1); return; } // a guess or a catch
     if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a sign is being roasted
     if (st.predict && predict.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // "đoán A"
     const sign = parseSign(u.comment);
@@ -1121,7 +1110,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (action === 'fix') fixChaos(u, v);
     else if (action === 'bingo') bingo.show(u, v);
     boss.hit(u, v, 'comment');
-    run.hit(u, v, 'comment');
     tug.pull(u, v, 'comment');
     raiseMoon(1);
     if (v.sign && now() - v.lastCommentAt >= cfg.commentCooldownSeconds * 1000) {
@@ -1223,7 +1211,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     recordGift(u, v, count, diamonds);
     thank(u, v);
     boss.hit(u, v, 'gift', diamonds);
-    run.hit(u, v, 'gift', diamonds);
     tug.pull(u, v, 'gift', diamonds);
     // the giver: a golden aura on the wheel for a while, and a patron's star in the community sky
     const tierBefore = patronTier(v);
@@ -1243,7 +1230,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const n = Math.max(0, u.count | 0);
     raiseMoon(n);
     boss.hit(u, v, 'like', n);
-    run.hit(u, v, 'like', n);
     tug.pull(u, v, 'like', n);
     questAdd('likes', n);
     addHeat(u.userId, Math.ceil(n / 15));
@@ -1264,7 +1250,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     v.bonusNight[kind] = st.night.no;
     thank(u, v);
     boss.hit(u, v, kind);
-    run.hit(u, v, kind);
     tug.pull(u, v, kind);
     addHeat(u.userId, 3);
     raiseMoon(20);
@@ -1402,15 +1387,16 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // The real sky, Thủy Nghịch, the boss (they never overlap) and the chest. Readings wait while the boss is up.
     if (t - skyAt >= 60000) refreshSky();
     const active = t - st.lastActivityAt < 60000, busy = st.quiz || st.poll || st.fortune;
-    // the hour's acts and headliner; the run (if one is on) plays before anything else may start
+    // the hour's acts and headliner
     actTick(t);
     questTick();
-    run.tick();
+    mystery.tick(t);
+    starcatch.tick(t);
     roast.tick();
     tug.tick();
     predict.tick();
     headTick(t);
-    const playing = st.run || st.head || st.roast || st.tug;
+    const playing = st.head || st.roast || st.tug || st.mystery || st.starcatch;
     if (st.chaos && t >= st.chaos.endsAt) endChaos(false);
     else if (!st.chaos && !st.boss && t >= st.nextChaosAt) { if (active && stage.size && allow('chaos') && !playing) startChaos(); else scheduleChaos(); }
     // bossWas spans ticks: a boss beaten by a gift ends between two ticks, not inside boss.tick()
@@ -1420,12 +1406,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (hadBoss && !st.boss) st.nextBossAt = cfg.bossEverySeconds ? t + cfg.bossEverySeconds * 1000 : Infinity;
     if (!st.boss && !st.chaos && !busy && active && stage.size && t >= st.nextBossAt) { if (allow('boss') && !playing) startBoss(); else st.nextBossAt = t + 60000; }
     if (cfg.showEverySeconds && t >= st.nextShowAt) {
-      // the boss, Thủy Nghịch, readings, the run and a headliner are big moments already: the show waits behind them.
+      // the boss, Thủy Nghịch, readings and a headliner are big moments already: the show waits behind them.
       // A quiet room still gets it (that is when a newcomer needs something to watch), just not an abandoned one.
       if (!st.boss && !st.chaos && !busy && !playing && t - st.lastActivityAt < 600000 && stage.size) runShow();
       else { st.nextShowAt = t + 15000; touch('cosmos'); }
     }
-    if (st.boss || hadBoss || st.run) touch('cosmos');
+    if (st.boss || hadBoss || st.mystery || st.starcatch) touch('cosmos');
     if (cards.tick(st.lastActivityAt)) touch('cosmos');
     rollHeat();
     const hl = heatLevelOf(heatScore());
@@ -1528,7 +1514,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         hour: hourView(),
         act: actView(),
         head: st.head && { id: st.head.id, label: HEADS[st.head.id].label, remainingMs: Math.max(0, st.head.endsAt - t), left: st.head.left ?? null },
-        run: run.view(),
+        mystery: mystery.view(t),
+        starcatch: starcatch.view(t),
         quest: questView(),
         roast: roast.view(),
         tug: tug.view(),
@@ -1557,7 +1544,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function changes(seen = {}) {
     const out = {};
     const timers = partying() || st.fortune || st.quiz || st.lucky || st.poll;
-    const cosmosTimers = st.chaos || st.boss || cards.isOpen() || st.run || st.head || st.roast || st.tug || st.predict;
+    const cosmosTimers = st.chaos || st.boss || cards.isOpen() || st.mystery || st.starcatch || st.head || st.roast || st.tug || st.predict;
     for (const [name, build] of Object.entries(parts)) {
       if (seen[name] === ver[name] && !(timers && name === 'hud') && !(cosmosTimers && name === 'cosmos')) continue;
       seen[name] = ver[name];
@@ -1603,5 +1590,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, startChaos, endChaos, openChest: cards.openNow, forceHour, startHead, makePair, startRun: () => (st.boss || st.chaos || st.tug ? null : run.start()), startTug: () => (st.boss || st.chaos || st.run ? null : tug.start()), startRoast: sign => (st.boss || st.chaos || st.run ? null : roast.start(sign)), stopRun: () => run.stop(), hour: hourView, tick, changes, snapshot, newNight, resetAll, pruneViewers, sky: () => sky, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, startChaos, endChaos, openChest: cards.openNow, forceHour, startHead, makePair, startTug: () => (st.boss || st.chaos ? null : tug.start()), startRoast: sign => (st.boss || st.chaos ? null : roast.start(sign)), hour: hourView, tick, changes, snapshot, newNight, resetAll, pruneViewers, sky: () => sky, state: st, config: cfg };
 }

@@ -67,16 +67,16 @@ test('minute 5 of an act brings the hour\'s headliner: an elite boss in the hour
   assert.equal(s.game.state.boss.elite, true);
 });
 
-test('the hour of Saturn starts the sky run at minute 2, and A/B/C comments vote its doors', () => {
-  const s = setup('saturn', {}, 1.95);
+test('the hour of Saturn plays hứng sao băng at mid-act, and typing the falling word catches it', () => {
+  const s = setup('saturn', {}, 4.95);
   s.crowd();
   s.advance(5_000);
-  assert.equal(s.of('run-start').length, 1);
-  assert.equal(s.game.state.run.phase.kind, 'door');
-  s.game.chat({ userId: 'u0', nickname: 'U0', comment: 'a' });
-  assert.equal(s.game.state.run.phase.votes[0], 1);
-  assert.equal(s.game.state.viewers.u0.sign, 'leo'); // a vote is not a sign pick
-  assert.ok(s.game.snapshot().cosmos.run);
+  const [star] = s.of('catch-star');
+  assert.ok(star);
+  s.game.chat({ userId: 'u0', nickname: 'U0', comment: star.word });
+  assert.equal(s.of('catch').length, 1);
+  assert.equal(s.game.state.viewers.u0.sign, 'leo');
+  assert.ok(s.game.snapshot().cosmos.starcatch);
 });
 
 test('đêm se duyên pairs two viewers with a score, and the act closes with its MVP', () => {
@@ -163,8 +163,8 @@ test('in the default 5-minute turns, each of the ten headliners comes round with
 const turnAt = n => 5 * 60000 * (70000 + n) + 1000;
 const defaultGame = t => createGame({ config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, readSky: sky, onEvent: () => {} });
 
-test('the quest follows a headliner that has its own goal: floors in a sky run, right answers in a quiz chain', () => {
-  for (const [n, head, unit] of [[0, 'elite', HOURS.mars.quest.unit], [4, 'run', HEAD_QUEST.run.unit], [8, 'quizchain', HEAD_QUEST.quizchain.unit], [1, 'matchmaking', HOURS.venus.quest.unit]]) {
+test('the quest follows a headliner that has its own goal: catches in hứng sao băng, right answers in a quiz chain', () => {
+  for (const [n, head, unit] of [[0, 'elite', HOURS.mars.quest.unit], [4, 'starcatch', HEAD_QUEST.starcatch.unit], [8, 'quizchain', HEAD_QUEST.quizchain.unit], [1, 'mystery', HEAD_QUEST.mystery.unit]]) {
     const game = defaultGame(turnAt(n));
     game.chat({ userId: 'a', nickname: 'A', comment: 'Sư Tử' });
     game.tick();
@@ -172,7 +172,7 @@ test('the quest follows a headliner that has its own goal: floors in a sky run, 
     assert.equal(hour.head, HEADS[head].label, `turn ${n}`);
     assert.equal(quest?.unit, unit, head);
   }
-  assert.equal(HEAD_QUEST.run.stat, 'floors');
+  assert.equal(HEAD_QUEST.starcatch.stat, 'catches');
   assert.equal(HEAD_QUEST.quizchain.stat, 'correct');
 });
 

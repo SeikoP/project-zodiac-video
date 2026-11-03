@@ -9,7 +9,7 @@ export const CHAPTERS = Object.freeze([
   { id: 'gather', icon: '✨', label: 'Tụ hội', goal: 'người chọn cung', need: 5, on: e => e.type === 'join' },
   { id: 'lit', icon: '🌟', label: 'Thắp sáng', goal: 'chòm sao bừng sáng', need: 3, on: e => e.type === 'lit' },
   { id: 'moon', icon: '🌕', label: 'Gọi trăng rằm', goal: 'lần trăng tròn', need: 1, on: e => e.type === 'moon-full' },
-  { id: 'win', icon: '⚔️', label: 'Chiến thắng', goal: 'trận thắng (boss, kéo co, tầng trời)', need: 2, on: e => e.type === 'boss-defeated' || (e.type === 'tug-end' && e.winner) || e.type === 'run-won' },
+  { id: 'win', icon: '⚔️', label: 'Chiến thắng', goal: 'chiến công (hạ boss, kéo co, giải cung bí ẩn)', need: 2, on: e => e.type === 'boss-defeated' || (e.type === 'tug-end' && e.winner) || (e.type === 'mystery-win' && e.rank === 1) },
   { id: 'wheel', icon: '👑', label: 'Đại hội sao', goal: 'vòng hoàng đạo trọn vẹn', need: 1, on: e => e.type === 'wheel-complete' },
 ]);
 export const ELEMENTS = Object.freeze(['fire', 'earth', 'air', 'water']);

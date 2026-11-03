@@ -61,8 +61,8 @@ test('bingo: a free centre, squares marked for everyone on stage, a line pays a 
   assert.equal(card[4].label, 'Có mặt');
   assert.equal(card[4].marked, true);
   // every square listens to an event type the quick filter lets through
-  const types = ['boss-defeated', 'pair', 'roast-end', 'quest-done', 'moon-full', 'lucky-start', 'chest-open', 'birth-sky', 'run-won', 'quiz-end', 'wish-blessed', 'level-up', 'tug-end', 'gift', 'wheel-complete', 'heat-up', 'lit', 'star-born', 'predict-end'];
-  for (const sq of SQUARES) assert.ok(types.some(type => sq[3]({ type, winners: [1], winner: 'leo', right: 1, level: 3, tier: 'meteor' })), sq[0]);
+  const types = ['boss-defeated', 'pair', 'roast-end', 'quest-done', 'moon-full', 'lucky-start', 'chest-open', 'birth-sky', 'mystery-win', 'quiz-end', 'wish-blessed', 'level-up', 'tug-end', 'gift', 'wheel-complete', 'heat-up', 'lit', 'star-born', 'predict-end'];
+  for (const sq of SQUARES) assert.ok(types.some(type => sq[3]({ type, winners: [1], winner: 'leo', right: 1, rank: 1, level: 3, tier: 'meteor' })), sq[0]);
 });
 
 test('sổ sao: starlight is experience; levels pay out and 10 brings a silver frame', () => {
@@ -102,17 +102,12 @@ test('a gift leaves a golden aura on the giver and grows a patron star', () => {
   assert.equal(snap.stars.find(x => x.userId === 'a').patron, 2);
 });
 
-test('"Xoá toàn bộ" also clears a run, a tug, a prediction and the channel record', () => {
+test('"Xoá toàn bộ" also clears a tug, a prediction and a headliner in play', () => {
   const s = setup();
   for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình'], ['c', 'Song Ngư']]) s.say(id, sign);
   s.game.startTug();
-  s.game.state.runMeta = { best: 5, runs: 9, clears: 2, ascension: 2, unlocked: ['aries'] };
   s.game.resetAll();
-  for (const k of ['tug', 'predict', 'run', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
-  const r = s.game.startRun();
-  assert.equal(r.no, 1); // a fresh record after the reset
-  assert.equal(s.game.state.runMeta.runs, 0);
+  for (const k of ['tug', 'predict', 'mystery', 'starcatch', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);
 });
 
 // predict and bingo on their own: a bare state, a fixed clock, events collected
@@ -170,7 +165,7 @@ function bingoRig(ids) {
   for (const id of ids) b.cardOf(id, st.viewers[id]);
   return { st, b, events, gems, onStage };
 }
-const ALL = SQUARES.map(s => ({ boss: { type: 'boss-defeated' }, pair: { type: 'pair' }, roast: { type: 'roast-end' }, quest: { type: 'quest-done' }, moon: { type: 'moon-full' }, lucky: { type: 'lucky-start' }, chest: { type: 'chest-open' }, birth: { type: 'birth-sky' }, floor: { type: 'run-won' }, quiz: { type: 'quiz-end', winners: ['x'] }, wish: { type: 'wish-blessed' }, level: { type: 'level-up' }, tug: { type: 'tug-end', winner: 'leo' }, gift: { type: 'gift', tier: 'sparkle' }, fireworks: { type: 'wheel-complete' }, heat: { type: 'heat-up', level: 3 }, lit: { type: 'lit' }, newstar: { type: 'star-born' }, predict: { type: 'predict-end', right: 1 } }[s[0]]));
+const ALL = SQUARES.map(s => ({ boss: { type: 'boss-defeated' }, pair: { type: 'pair' }, roast: { type: 'roast-end' }, quest: { type: 'quest-done' }, moon: { type: 'moon-full' }, lucky: { type: 'lucky-start' }, chest: { type: 'chest-open' }, birth: { type: 'birth-sky' }, mystery: { type: 'mystery-win', rank: 1 }, quiz: { type: 'quiz-end', winners: ['x'] }, wish: { type: 'wish-blessed' }, level: { type: 'level-up' }, tug: { type: 'tug-end', winner: 'leo' }, gift: { type: 'gift', tier: 'sparkle' }, fireworks: { type: 'wheel-complete' }, heat: { type: 'heat-up', level: 3 }, lit: { type: 'lit' }, newstar: { type: 'star-born' }, predict: { type: 'predict-end', right: 1 } }[s[0]]));
 
 test('bingo: every event a whole card needs completes it for several viewers at once, one bingo event and gem per line', () => {
   const r = bingoRig(['a', 'b']);
