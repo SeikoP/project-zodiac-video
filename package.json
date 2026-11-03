@@ -1,0 +1,7 @@
+{
+  "name": "project-zodiac-video",
+  "private": true,
+  "scripts": {
+    "live": "npm --prefix tools/livestream-pk run live"
+  }
+}
