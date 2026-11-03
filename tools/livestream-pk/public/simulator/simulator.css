@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 :root{color-scheme:dark;--bg:#0a0d14;--panel:#111722;--panel2:#151e2c;--line:#263244;--muted:#8996a8;--text:#eef3fa;--accent:#9c8cff;--mint:#74e0c1;--danger:#ff8585;--font:Manrope,system-ui,sans-serif}
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(ellipse at 30% -20%,#27314c 0,transparent 42%),var(--bg);color:var(--text);font:14px/1.5 var(--font)}
