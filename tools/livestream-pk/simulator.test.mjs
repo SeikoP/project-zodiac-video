@@ -83,12 +83,12 @@ test('isolated LIVE simulator serves its UI and refuses real TikTok connections'
     let eventBuffer = '';
     const nextSimulatorEvent = async () => {
       for (;;) {
-        const boundary = eventBuffer.indexOf('\\n\\n');
+        const boundary = eventBuffer.indexOf('\n\n');
         if (boundary >= 0) {
           const block = eventBuffer.slice(0, boundary);
           eventBuffer = eventBuffer.slice(boundary + 2);
-          if (block.startsWith('event: sim-event\\n')) {
-            const data = block.split('\\n').find(line => line.startsWith('data: '));
+          if (block.startsWith('event: sim-event\n')) {
+            const data = block.split('\n').find(line => line.startsWith('data: '));
             if (data) return JSON.parse(data.slice(6));
           }
           continue;
