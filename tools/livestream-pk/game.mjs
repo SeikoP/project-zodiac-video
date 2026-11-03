@@ -111,6 +111,9 @@ export const DEFAULT_CONFIG = Object.freeze({
   adaptiveCrowd: true,
   crowdFloor: 0.2,
   crowdFull: 12,
+  // a room that fills up mid-round raises the goals it set while small: every crowdRetuneSeconds, up to ×crowdRetuneStep, never down (0 = off)
+  crowdRetuneSeconds: 30,
+  crowdRetuneStep: 1.25,
   autoQuiz: true,
   quietSeconds: 45,
   // the real sky: planets standing in a sign boost its fans' starlight; a real full moon fills the game's moon twice as fast
@@ -362,6 +365,20 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const moonGoalFor = full => Math.max(cfg.adaptiveCrowd ? 60 : 1, Math.round(cfg.moonGoal * Math.pow(cfg.moonGrowth, full) * crowdFactor()));
   st.wheel.cost ||= wheelCost(st.wheel.no);
   st.moon.goal ||= moonGoalFor(0);
+  // Raises the wheel and moon goals toward what the room's size calls for now; never lowers them.
+  let lastRetuneAt = now();
+  function retuneGoals(t) {
+    if (!cfg.adaptiveCrowd || !cfg.crowdRetuneSeconds || t - lastRetuneAt < cfg.crowdRetuneSeconds * 1000) return;
+    lastRetuneAt = t;
+    const raise = (cur, target) => (target > cur ? Math.min(target, Math.ceil(cur * cfg.crowdRetuneStep)) : cur);
+    // once a constellation is lit the wheel cost stays put: raising it would dim a sign the room already lit
+    const anyLit = Object.values(st.wheel.light).some(l => l >= st.wheel.cost);
+    const wheel = anyLit ? st.wheel.cost : raise(st.wheel.cost, wheelCost(st.wheel.no)), moon = raise(st.moon.goal, moonGoalFor(st.moon.full));
+    if (wheel === st.wheel.cost && moon === st.moon.goal) return;
+    st.wheel.cost = wheel;
+    st.moon.goal = moon;
+    touch('hud', 'cosmos');
+  }
 
   const newViewer = nickname => ({ nickname, avatar: '', sign: null, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 });
 
@@ -1229,6 +1246,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function tick() {
     tickNo++;
     const t = now();
+    retuneGoals(t);
     if (st.moon.partyUntil && t >= st.moon.partyUntil) {
       st.moon.partyUntil = 0;
       touch('hud');

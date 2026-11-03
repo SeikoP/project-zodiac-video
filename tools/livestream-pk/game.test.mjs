@@ -439,3 +439,41 @@ test('the gift board counts the night, names the top gifter and fires a shared g
   assert.equal(of(events, 'gift-goal').length, 2);
   assert.equal(game.snapshot().gifts.top.nickname, 'a', 'a has given most now');
 });
+
+test('crowd goals ratchet up by at most 25% per retune and never fall', () => {
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0 });
+  const goals = () => [game.state.wheel.cost, game.state.moon.goal];
+  const [w0, m0] = goals();
+  assert.deepEqual([w0, m0], [48, 120]); // an empty room starts at the 0.2 floor
+  for (let i = 0; i < 22; i++) game.chat(u(`v${i}`, { comment: 'Sư Tử' }));
+  advance(10_000);
+  assert.deepEqual(goals(), [w0, m0], 'nothing changes before the first retune');
+  advance(20_000);
+  assert.deepEqual(goals(), [Math.ceil(w0 * 1.25), Math.ceil(m0 * 1.25)]);
+  advance(10_000);
+  assert.deepEqual(goals(), [Math.ceil(w0 * 1.25), Math.ceil(m0 * 1.25)], 'at most one step per 30 s');
+  for (let i = 0; i < 12; i++) advance(30_000);
+  assert.deepEqual(goals(), [240, 600], 'reaches the full-room goal and stops there');
+  assert.equal(of(events, 'moon-full').length + of(events, 'wheel-complete').length, 0);
+  advance(61 * 60_000); // everyone goes quiet and leaves the stage
+  advance(30_000);
+  assert.deepEqual(goals(), [240, 600], 'a goal never falls');
+});
+
+test('crowdRetuneSeconds: 0 keeps the goal set when it was set', () => {
+  const { game, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0, crowdRetuneSeconds: 0 });
+  for (let i = 0; i < 22; i++) game.chat(u(`v${i}`, { comment: 'Sư Tử' }));
+  for (let i = 0; i < 5; i++) advance(30_000);
+  assert.deepEqual([game.state.wheel.cost, game.state.moon.goal], [48, 120]);
+});
+
+test('a retune never dims a constellation that is already lit', () => {
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0, lightPerDiamond: 1 });
+  game.chat(u('a', { comment: 'Sư Tử' }));
+  game.gift(u('a', { diamonds: 48, count: 1 })); // exactly the small-room cost
+  assert.equal(of(events, 'lit').length, 1);
+  for (let i = 0; i < 22; i++) game.chat(u(`v${i}`, { comment: 'Bảo Bình' }));
+  for (let i = 0; i < 5; i++) advance(30_000);
+  assert.ok(game.state.wheel.light.leo >= game.state.wheel.cost, 'Sư Tử stays lit');
+  assert.ok(game.state.moon.goal > 120, 'the moon still follows the room');
+});
