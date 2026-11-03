@@ -1,5 +1,6 @@
-// What each hour of the show does. Four themed hours rotate (Hỏa → Kim → Thủy → Thổ, one per clock hour by default),
-// each with 2–3 headliners that take turns act by act, so an hour never repeats the same big event. More planets can be
+// What each hour of the show does. Two themed hours take turns by default (Hỏa ↔ Kim, 5 minutes each), and between
+// them they carry all ten headliners, five each, in turn act by act, so every big event comes round within ~50 minutes.
+// Thủy and Thổ keep their own entries for "real" mode or config `hourPlanets`; Hỏa and Kim took over their events. More planets can be
 // added later; in "real" planetary-hour mode the other three planets borrow a theme (THEME_OF).
 // Only the AUTOMATIC events are limited here; whatever a viewer types (xin quẻ, ước, nâng cấp, nhận, khoe thẻ…),
 // gifts, likes and follows work in every hour.
@@ -7,20 +8,22 @@
 //   shows   the kinds of the ~75 s big moment, in turn (birth/pair/roast fall back when they can't run)
 //   rules   starlight multipliers by kind ("all" = every viewer action), sharing the x3 cap with the real-sky boons
 //   heads   the headliners, one per 10-minute act in turn, from headAt() minutes in until the act closes (minute 8.5)
-//   quest   nhiệm vụ giờ: a goal the whole room reaches by taking part, base + per viewer on stage
+//   quest   nhiệm vụ giờ: a goal the whole room reaches by taking part, base + per viewer on stage (HEAD_QUEST overrides it
+//           while a headliner with its own goal plays)
+//   cards   the card editions that drop in this hour (default: its own)
 export const HOURS = Object.freeze({
   mars: {
-    label: 'Sao Hỏa', glyph: '♂', color: '#E97A66', theme: 'đấu trường', mood: 'upbeat',
-    allow: { boss: true, lucky: true, quiz: true, poll: true }, shows: ['starcall', 'meteor'],
-    rules: { gift: 1.5, comment: 1.2 }, ruleText: 'mọi đòn mạnh hơn',
-    heads: ['elite', 'tug'],
+    label: 'Sao Hỏa', glyph: '♂', color: '#E97A66', theme: 'đấu trường & thử thách', mood: 'upbeat',
+    allow: { boss: true, lucky: true, quiz: true, poll: true, reading: true }, shows: ['starcall', 'meteor', 'birth'],
+    rules: { gift: 1.5, comment: 1.2, quiz: 2, run: 1.5 }, ruleText: 'quà · câu đố · tầng trời mạnh hơn',
+    heads: ['elite', 'tug', 'run', 'chaos', 'quizchain'], cards: ['h-mars', 'h-saturn'],
     quest: { stat: 'comments', base: 40, per: 6, unit: 'bình luận', reward: 'gem', rewardText: 'mưa lửa · mỗi người +1 ngọc' },
   },
   venus: {
-    label: 'Sao Kim', glyph: '♀', color: '#F2A7C3', theme: 'hội ngộ', mood: 'upbeat',
-    allow: { lucky: true, poll: true, quiz: true, reading: true }, shows: ['pair', 'roast', 'starcall'],
-    rules: { follow: 2, share: 2, pair: 2 }, ruleText: 'theo dõi · chia sẻ x2',
-    heads: ['matchmaking', 'roast', 'chestrain'],
+    label: 'Sao Kim', glyph: '♀', color: '#F2A7C3', theme: 'hội ngộ & huyền bí', mood: 'upbeat',
+    allow: { lucky: true, poll: true, quiz: true, reading: true }, shows: ['pair', 'roast', 'starcall', 'birth'],
+    rules: { follow: 2, share: 2, pair: 2, checkin: 2 }, ruleText: 'theo dõi · chia sẻ · chuỗi đêm x2',
+    heads: ['matchmaking', 'roast', 'chestrain', 'moonnight', 'final'], cards: ['h-venus', 'h-mercury'],
     quest: { stat: 'blessings', base: 5, per: 1, unit: 'lời chúc phúc', reward: 'dust', rewardText: 'mưa hoa · mỗi người +10 bụi sao' },
   },
   mercury: {
@@ -56,6 +59,20 @@ export const HEADS = Object.freeze({
   run: { label: 'Hành trình Tầng Trời', icon: '🪐' },
   final: { label: 'Chung kết đua sao', icon: '👑' },
 });
+// A headliner with a goal of its own sets the act's quest while it is the act's headliner.
+export const HEAD_QUEST = Object.freeze({
+  run: HOURS.saturn.quest,
+  quizchain: HOURS.mercury.quest,
+});
+
+// The card edition an hour drops: one of its theme's editions, picked by r in [0, 1); null outside the hours.
+export function hourEdition(planet, r) {
+  if (!planet) return null;
+  const h = HOURS[planet] ?? HOURS[THEME_OF[planet]];
+  const eds = h?.cards ?? [`h-${HOURS[planet] ? planet : THEME_OF[planet] ?? planet}`];
+  return eds[Math.min(eds.length - 1, Math.floor(r * eds.length))];
+}
+
 // minute of the act a headliner starts (a run needs longer than the others); `act` = the act's length in minutes
 export const headAt = (id, act = 10) => (id === 'run' ? act * 0.2 : act * 0.5);
 

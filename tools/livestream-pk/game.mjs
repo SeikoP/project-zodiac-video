@@ -26,7 +26,7 @@ import { occasionOn } from './public/occasions.js';
 import { readSky as readRealSky, boonFor, BOON_CAP } from './sky.mjs';
 import { signOfDate, parseBirthDate, birthChart, readChart } from './birth.mjs';
 import { createHours } from './hours.mjs';
-import { HOURS, HOUR_PLANETS, THEME_OF, HEADS, headAt, pairing } from './hours-table.mjs';
+import { HOURS, HOUR_PLANETS, THEME_OF, HEADS, HEAD_QUEST, headAt, hourEdition, pairing } from './hours-table.mjs';
 import { createRun, RUN_DEFAULTS } from './run.mjs';
 import { createRoast, ROAST_DEFAULTS } from './roast.mjs';
 import { createTug, TUG_DEFAULTS } from './tug.mjs';
@@ -528,7 +528,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // Sky editions a chest can drop right now: Thủy Nghịch during the chaos or a real retrograde, Trăng Tròn on a real full moon.
-  const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [...(st.chaos || sky?.mercuryRetro ? ['retro'] : []), ...(sky?.moon.full ? ['fullmoon'] : [])], hourEdition: () => (hour ? `h-${hour.planet}` : null) });
+  const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [...(st.chaos || sky?.mercuryRetro ? ['retro'] : []), ...(sky?.moon.full ? ['fullmoon'] : [])], hourEdition: () => hourEdition(hour?.planet, rng()) });
   const bag = createBag({ cfg, now, onEvent, elementOf: id => SIGN[id].element });
   // one gem of the viewer's own element (what their next level needs)
   const gem = (u, v, n, why) => { if (v?.sign) bag.add(u, v, SIGN[v.sign].element, n, why); };
@@ -663,7 +663,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const nx = nextHour ? HOURS[hour.next] : H(), nextHead = nextHour ? nx.heads[0] : currentHead(nextAt);
     // the act's MVP takes home this hour's card
     const mvp = top[0] && st.viewers[top[0][0]];
-    if (mvp?.sign) cards.give({ userId: top[0][0] }, mvp, `${mvp.sign}:h-${hour.planet}`, 'mvp');
+    if (mvp?.sign) cards.give({ userId: top[0][0] }, mvp, `${mvp.sign}:${hourEdition(hour.planet, rng())}`, 'mvp');
     onEvent({ type: 'act-close', top: top.map(([id, light]) => ({ userId: id, nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar, sign: st.viewers[id].sign, light })),
       next: { planet: nextHour ? hour.next : hour.planet, label: nx.label, glyph: nx.glyph, head: HEADS[nextHead].label, newHour: nextHour } });
   }
@@ -750,9 +750,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // Nhiệm vụ giờ: one goal per hour the whole room reaches just by taking part (comments, blessings, right answers,
   // hearts, starlight, cards, floors — never gifts). Everyone on stage shares the reward.
   function questTick() {
-    const q = H()?.quest, key = hour && `${hour.planet}@${hour.startsAt}`;
+    const q = (hour && HEAD_QUEST[currentHead()]) || H()?.quest, key = hour && `${hour.planet}@${hour.startsAt}`;
     if (!q || st.quest?.key === key) return;
-    st.quest = { key, stat: q.stat, goal: Math.max(1, Math.round(q.base + q.per * Math.max(1, stage.size))), got: 0, done: false };
+    const { stat, unit, reward, rewardText } = q;
+    st.quest = { key, stat, unit, reward, rewardText, goal: Math.max(1, Math.round(q.base + q.per * Math.max(1, stage.size))), got: 0, done: false };
     touch('cosmos');
   }
   function questAdd(stat, n = 1) {
@@ -765,16 +766,16 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const h = H(), people = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
     for (const [id, v] of people) {
       const u = { userId: id };
-      if (h.quest.reward === 'gem') gem(u, v, 1, 'quest');
-      else if (h.quest.reward === 'dust') bag.add(u, v, 'dust', 10, 'quest');
-      else if (h.quest.reward === 'moon') bag.add(u, v, 'moon', 1, 'quest');
+      if (q.reward === 'gem') gem(u, v, 1, 'quest');
+      else if (q.reward === 'dust') bag.add(u, v, 'dust', 10, 'quest');
+      else if (q.reward === 'moon') bag.add(u, v, 'moon', 1, 'quest');
       else shine(u, v, 20, 'quest');
     }
-    onEvent({ type: 'quest-done', planet: hour.planet, glyph: h.glyph, color: h.color, goal: q.goal, unit: h.quest.unit, reward: h.quest.rewardText, people: people.length });
+    onEvent({ type: 'quest-done', planet: hour.planet, glyph: h.glyph, color: h.color, goal: q.goal, unit: q.unit, reward: q.rewardText, people: people.length });
   }
   const questView = () => {
     const q = st.quest, h = H();
-    return q && h?.quest && q.key === `${hour.planet}@${hour.startsAt}` ? { got: q.got, goal: q.goal, done: q.done, unit: h.quest.unit, reward: h.quest.rewardText, glyph: h.glyph, color: h.color } : null;
+    return q && h?.quest && q.key === `${hour.planet}@${hour.startsAt}` ? { got: q.got, goal: q.goal, done: q.done, unit: q.unit ?? h.quest.unit, reward: q.rewardText ?? h.quest.rewardText, glyph: h.glyph, color: h.color } : null;
   };
 
   // --- wishes the room can bless --------------------------------------------------------------------
