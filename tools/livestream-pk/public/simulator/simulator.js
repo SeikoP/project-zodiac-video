@@ -85,16 +85,55 @@ function updateScenarioStatus(text, active = false) {
   $('scenarioStatus').textContent = text;
   $('stopScenario').disabled = !active;
 }
+function handleSimEvent(event) {
+  const name = event.user?.nickname || 'Người xem';
+  switch (event.kind) {
+    case 'member':
+      viewers++;
+      pushSystem(name + ' vừa tham gia LIVE');
+      log(name + ' vừa tham gia phòng');
+      phoneToast(name + ' đã vào phòng');
+      break;
+    case 'chat':
+      comments++;
+      pushChat(name, event.comment || '');
+      log(name + ': ' + (event.comment || ''), 'chat');
+      break;
+    case 'like':
+      likes += Number(event.count) || 0;
+      if (event.count) floatHearts(event.count);
+      log(name + ' thả ' + (Number(event.count) || 0) + ' tim');
+      break;
+    case 'gift': {
+      const label = String(event.giftName || 'Rose') + ' ×' + (Number(event.count) || 1);
+      pushChat(name, 'đã tặng ' + label, 'chat-gift');
+      phoneToast('🎁 ' + name + ' · ' + label);
+      log(name + ' tặng ' + label + ' (' + ((Number(event.diamonds) || 0) * (Number(event.count) || 1)) + ' xu)');
+      break;
+    }
+    case 'social': {
+      const title = event.kind === 'share' ? 'đã chia sẻ LIVE' : 'đã theo dõi kênh';
+      pushSystem(name + ' ' + title);
+      log(name + ' ' + title);
+      phoneToast(event.kind === 'share' ? '↗ Đã share' : '＋ Đã follow');
+      break;
+    }
+  }
+  updateStats();
+}
+// All simulator actions, including bulk-crowd events, are reflected from the server event stream.
+const simStream = new EventSource('/events');
+simStream.addEventListener('sim-event', message => {
+  try { handleSimEvent(JSON.parse(message.data)); }
+  catch (error) { log('Không đọc được sự kiện mô phỏng: ' + error.message); }
+});
+simStream.onerror = () => { $('scenarioStatus').textContent = 'Mất kết nối simulator · đang thử lại'; };
 
 async function sendComment(value = $('commentText').value, name = currentName()) {
   const comment = String(value || '').trim();
   if (!comment) return;
   try {
     await api('sim/chat', { user: name, comment });
-    comments++;
-    pushChat(name, comment);
-    log(name + ': ' + comment, 'chat');
-    updateStats();
     $('commentText').value = '';
     $('phoneComment').value = '';
   } catch (error) {
@@ -105,20 +144,13 @@ async function sendComment(value = $('commentText').value, name = currentName())
 async function joinRoom(name = currentName()) {
   try {
     await api('sim/member', { user: name });
-    viewers++;
-    pushSystem(name + ' vừa tham gia LIVE');
-    log(name + ' vừa tham gia phòng');
-    phoneToast(name + ' đã vào phòng');
-    updateStats();
+    // The simulator event stream updates the mock TikTok UI and counters.
   } catch (error) { log('Lỗi join: ' + error.message); }
 }
 async function sendLikes(count = 10, name = currentName()) {
   try {
     await api('sim/like', { user: name, count });
-    likes += count;
-    floatHearts(count);
-    log(name + ' thả ' + count + ' tim');
-    updateStats();
+    // The simulator event stream reflects likes in the phone preview.
   } catch (error) { log('Lỗi tim: ' + error.message); }
 }
 async function sendGift() {
@@ -126,19 +158,13 @@ async function sendGift() {
   const count = Math.max(1, Math.min(99, Number($('giftCount').value) || 1));
   try {
     await api('sim/gift', { user: currentName(), diamonds, giftName, count });
-    const label = giftName + ' ×' + count;
-    pushChat(currentName(), 'đã tặng ' + label, 'chat-gift');
-    phoneToast('🎁 ' + currentName() + ' · ' + label);
-    log(currentName() + ' tặng ' + label + ' (' + (Number(diamonds) * count) + ' xu)');
+    // The simulator event stream renders the gift notification.
   } catch (error) { log('Lỗi quà: ' + error.message); }
 }
 async function social(kind) {
   try {
     await api('sim/social', { user: currentName(), kind });
-    const title = kind === 'follow' ? 'đã theo dõi kênh' : 'đã chia sẻ LIVE';
-    pushSystem(currentName() + ' ' + title);
-    log(currentName() + ' ' + title);
-    phoneToast(kind === 'follow' ? '＋ Đã follow' : '↗ Đã share');
+    // The simulator event stream renders follow/share notifications.
   } catch (error) { log('Lỗi ' + kind + ': ' + error.message); }
 }
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -156,7 +182,6 @@ async function runScenario(name) {
       }
     } else if (name === 'busy') {
       await api('sim/crowd', { count: 30, giftRate: 0.12 });
-      viewers = Math.min(999999, viewers + 30); updateStats();
       if (!alive()) return;
       for (let i = 1; i <= 8; i++) {
         await step(() => sendComment(['sư tử', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'song ngư'][i % 6], 'Fan' + i));
@@ -167,9 +192,6 @@ async function runScenario(name) {
       for (const [d, g, count] of [[1, 'Rose', 1], [5, 'Finger Heart', 3], [30, 'Doughnut', 2], [100, 'Hand Hearts', 1], [1000, 'Galaxy', 1]]) {
         await step(() => api('sim/gift', { user: 'TopFan', diamonds: d, giftName: g, count }));
         if (!alive()) return;
-        pushChat('TopFan', 'đã tặng ' + g + ' ×' + count, 'chat-gift');
-        phoneToast('🎁 ' + g + ' ×' + count);
-        log('TopFan tặng ' + g + ' ×' + count);
         await wait(700);
       }
     } else if (name === 'game') {
@@ -189,7 +211,6 @@ async function runScenario(name) {
       }
     } else if (name === 'crowd') {
       await api('sim/crowd', { count: 100, giftRate: 0.05 });
-      viewers = Math.min(999999, viewers + 100); updateStats();
       pushSystem('100 người xem giả lập đã vào phòng');
       log('Tạo 100 người xem, có comment/tim/quà ngẫu nhiên');
     }
