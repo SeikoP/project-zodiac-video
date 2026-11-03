@@ -216,7 +216,7 @@ const handler = shared => async (req, res) => {
   if (shared ? !['GET', 'HEAD'].includes(req.method) : !trusted(req)) return void res.writeHead(shared ? 405 : 403).end('forbidden');
   let url;
   try { url = new URL(req.url, 'http://x'); } catch { return void res.writeHead(400).end('bad request'); }
-  if (shared && (url.pathname.startsWith('/api/') || HOST_ONLY.has(url.pathname))) return void res.writeHead(404).end('not found');
+  if (shared && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/simulator') || HOST_ONLY.has(url.pathname))) return void res.writeHead(404).end('not found');
   if (url.pathname === '/events') {
     res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
     const client = { seen: {}, host: !shared, send: (event, data) => sse(res, event, data), busy: () => res.writableNeedDrain };
