@@ -98,9 +98,9 @@ const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30]
 const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó', 'chúc', 'chúc phúc nha', 'nâng cấp', 'kho', 'ước có người yêu thương mình'];
 // every seventh rehearsal viewer is a fan club member, so the fan club look can be rehearsed too
 const sim = name => {
-  const nickname = String(name ?? 'Người xem').replace(/[\\u0000-\\u001f\\u007f]/g, '').trim().slice(0, 32) || 'Người xem';
-  const n = Number(nickname.match(/\\d+$/)?.[0]);
-  return { userId: `sim:${nickname}`, nickname, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
+  const nickname = String(name ?? 'Người xem').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 32) || 'Người xem';
+  const n = Number(nickname.match(/\d+$/)?.[0]);
+  return { userId: \`sim:\${nickname}\`, nickname, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
 };
 const simulated = recorded.wrap(tapped);
 function simulatorEvent(kind, data, mirror = true) {
