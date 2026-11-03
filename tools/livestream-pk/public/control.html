@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đêm Hội Control</title>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+  :root { --bg: #F6F0E6; --card: #FFFDF9; --ink: #2F3C44; --muted: #5C6B75; --line: #D0C1B3; --accent: #435064; --accent-ink: #FFFDF9; --danger: #A8432F; --ok: #3E7F76; --gold: #B7860B; --warn: #B7620B; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1d262c; --card: #2F3C44; --ink: #F6F0E6; --muted: #C9BFB1; --line: #435064; --accent: #8EC0B9; --accent-ink: #1d262c; --danger: #E97A66; --ok: #8EC0B9; --gold: #F2C45C; --warn: #F2A65C; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 16px 16px 40px; display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); }
+  .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; } .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: 1 / -1; }
+  @media (max-width: 980px) { .c4, .c5, .c6, .c7, .c8 { grid-column: 1 / -1; } }
+  h1 { grid-column: 1 / -1; margin: 0; font-family: 'Patrick Hand', 'Segoe Print', cursive; font-weight: 400; font-size: 30px; }
+  h1 small { font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 8px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  h2 small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+  .line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  input, select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); min-width: 0; }
+  button { font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  button.chip { padding: 3px 10px; border-radius: 99px; font-size: 13px; }
+  button.chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  label { display: inline-flex; gap: 6px; align-items: center; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 13px; font-weight: 600; background: var(--bg); border: 1px solid var(--line); }
+  .pill.live, .pill.good { color: var(--ok); border-color: var(--ok); }
+  .pill.hot { color: var(--gold); border-color: var(--gold); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.bad { color: var(--danger); border-color: var(--danger); }
+  .muted { color: var(--muted); font-size: 13px; }
+  p { margin: 6px 0; }
+  .meter { height: 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; flex: 1; min-width: 80px; }
+  .meter i { display: block; height: 100%; background: var(--gold); transition: width .4s; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 2px 6px; }
+  td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td.r, th.r { text-align: right; }
+  td.r { font-weight: 700; }
+  code { background: var(--bg); padding: 1px 6px; border-radius: 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  @media (max-width: 700px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .kpi b { display: block; font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12px; color: var(--muted); }
+  .health { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+  .health.good { border-color: var(--ok); } .health.warn { border-color: var(--warn); } .health.bad { border-color: var(--danger); }
+  .health b { font-size: 15px; }
+  .sw { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .sw label { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: start; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+  .sw label span { font-weight: 600; } .sw label small { grid-column: 2; color: var(--muted); font-size: 12px; font-weight: 400; }
+  .feed { height: 360px; overflow-y: auto; font-size: 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  .feed div { display: grid; grid-template-columns: 62px 56px 1fr; gap: 8px; padding: 3px 8px; border-bottom: 1px solid var(--line); }
+  .feed time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .k { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+  .k-chat { color: var(--muted); } .k-gift { color: var(--danger); } .k-like { color: var(--danger); } .k-follow, .k-share { color: var(--ok); }
+  .k-sky { color: var(--gold); } .k-game { color: var(--accent); } .k-system { color: var(--warn); }
+  .bar { position: relative; height: 18px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; min-width: 90px; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--gold); opacity: .55; transition: width .4s; }
+  .bar span { position: relative; font-size: 11px; font-weight: 700; padding-left: 6px; }
+  tr.lead td { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+  tr.lucky td:first-child::after { content: ' ⭐'; }
+  .now p { margin: 4px 0; }
+  .wide { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Đêm Hội Hoàng Đạo — bảng điều khiển <small>overlay: <code id="overlayUrl"></code> (1080×1920)</small></h1>
+
+  <section class="c12">
+    <h2>Tình trạng live <small id="clock"></small></h2>
+    <div class="health" id="health"><b>Đang chờ dữ liệu…</b></div>
+    <div class="kpis">
+      <div class="kpi"><b id="kChat">0</b><span>bình luận / phút · <i id="tChat">0</i> tổng</span></div>
+      <div class="kpi"><b id="kLike">0</b><span>tim / phút · <i id="tLike">0</i> tổng</span></div>
+      <div class="kpi"><b id="kGift">0</b><span>lượt quà / phút · <i id="tGift">0</i> tổng</span></div>
+      <div class="kpi"><b id="kCoins">0</b><span>xu quà đêm nay</span></div>
+      <div class="kpi"><b id="kSocial">0</b><span>theo dõi + chia sẻ / phút · <i id="tSocial">0</i> tổng</span></div>
+    </div>
+  </section>
+
+  <section class="c4">
+    <h2>Kết nối TikTok</h2>
+    <div class="line">
+      <input id="user" placeholder="username TikTok (không cần @)" style="flex:1">
+      <button class="primary" id="connect">Kết nối</button>
+      <button id="disconnect">Ngắt</button>
+    </div>
+    <div class="line"><span class="pill" id="ttState">off</span><span class="pill" id="ttViewers"></span></div>
+    <p class="muted" id="ttDetail"></p>
+    <p class="muted">Bạn phải đang live thì mới kết nối được. Mất kết nối sẽ tự thử lại (5s → 60s).</p>
+  </section>
+
+  <section class="c4">
+    <h2>Đêm hội</h2>
+    <div class="line"><b id="nightNo"></b><span class="pill" id="visitors"></span><span class="pill" id="onStage"></span><span class="pill" id="occasion" hidden></span></div>
+    <div class="line"><span class="muted">Trăng:</span><div class="meter"><i id="moonBar"></i></div><span class="pill" id="moonTxt"></span></div>
+    <div class="line"><span class="muted">Sao may mắn:</span><span class="pill" id="luckyTxt"></span></div>
+    <div class="line"><span class="muted">Vòng:</span><div class="meter"><i id="wheelBar" style="background:var(--ok)"></i></div><span class="pill" id="wheelTxt"></span></div>
+    <p class="muted" id="pending"></p>
+    <p class="muted" id="quiet"></p>
+  </section>
+
+  <section class="c4 now">
+    <h2>Đang diễn ra trên sóng</h2>
+    <div id="now" class="muted">—</div>
+  </section>
+
+  <section class="c5">
+    <h2>Điều khiển</h2>
+    <div class="line">
+      <button class="primary" id="newNight">Bắt đầu đêm mới</button>
+      <button id="quiz">❓ Câu đố</button>
+      <button id="poll">🗳 Bình chọn vui</button>
+    </div>
+    <div class="line">
+      <select id="fortuneSign"><option value="">Quẻ chung: cung ngẫu nhiên</option></select>
+      <button id="fortune">🎋 Gieo quẻ chung</button>
+    </div>
+    <div class="line">
+      <select id="luckySign"><option value="">Sao may mắn: cung ngẫu nhiên (nửa dưới)</option></select>
+      <button id="lucky">⭐ Gọi sao may mắn</button>
+    </div>
+    <div class="line"><button id="musicSkip">⏭ Bài khác</button><button id="musicMute">🔇 Tắt/bật nhạc</button></div>
+    <div class="line">
+      <label><input type="checkbox" id="autoQuiz"> Tự ra câu đố / quẻ / bình chọn khi phòng im</label>
+      <label><input type="checkbox" id="showWishText"> Hiện chữ của đèn ước</label>
+    </div>
+    <p class="muted">Đua sao chạy liên tục; hết vòng, cung rực rỡ nhất được đội vương miện. Sao may mắn tự xuất hiện khoảng mỗi 100 giây. Nhạc xoay vòng từ <code>assets/music</code>.</p>
+  </section>
+
+  <section class="c7">
+    <h2>Hiển thị sự kiện trên màn hình <small>công tắc có hiệu lực ngay, được nhớ cho lần sau</small></h2>
+    <div class="sw" id="shows"></div>
+    <p class="muted">Luôn hiện: quà tặng (kèm số ánh sao), theo dõi / chia sẻ, cung được thắp sáng, vòng trọn, trăng rằm, sao may mắn, quẻ, câu đố, bình chọn.</p>
+  </section>
+
+  <section class="c7">
+    <h2>Đua sao &amp; bầu trời <small id="raceMeta"></small></h2>
+    <table>
+      <thead><tr><th>#</th><th>Cung</th><th class="r">Ánh sao vòng này</th><th>Chòm sao</th><th class="r">Người</th><th class="r">Vương miện</th></tr></thead>
+      <tbody id="raceBody"></tbody>
+    </table>
+  </section>
+
+  <section class="c5">
+    <h2>Người trên sân <small id="stageMeta"></small></h2>
+    <table><tbody id="stageBody"></tbody></table>
+    <h2 style="margin-top:14px">Cảm ơn gần đây</h2>
+    <table><tbody id="thanksBody"></tbody></table>
+  </section>
+
+  <section class="c12">
+    <h2>Nhật ký sự kiện <small id="feedMeta"></small></h2>
+    <div class="line" id="feedFilter"></div>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <section class="c12">
+    <h2>Gợi ý lời dẫn</h2>
+    <div class="line" id="promptTabs"></div>
+    <p id="promptText" style="font-size:20px;font-weight:600;line-height:1.4;margin:6px 0 10px;min-height:56px"></p>
+    <div class="line"><button class="primary" id="promptNext">Gợi ý khác</button><button id="promptCopy">Sao chép</button><span class="muted" id="promptMeta"></span></div>
+    <p class="muted">Mẹo: giữ phòng nói chuyện bằng câu hỏi ngắn; cảm ơn người xem thay vì xin quà (TikTok không cho phép dụ dỗ tặng quà).</p>
+  </section>
+
+  <section class="c12">
+    <h2>Diễn tập <small>người xem giả lập — chỉ để thử, đừng dùng khi đang live thật</small></h2>
+    <div class="line">
+      <input id="simUser" value="fan_test" style="width:140px">
+      <input id="simComment" placeholder="vd: sư tử / xin quẻ / ước … / nhảy / A" style="width:280px">
+      <button id="simChat">Gửi comment</button>
+      <select id="simGift">
+        <option value="1|Rose">Rose (1)</option><option value="5|Finger Heart">Finger Heart (5)</option><option value="30|Doughnut">Doughnut (30)</option>
+        <option value="100|Hand Hearts">Hand Hearts (100)</option><option value="1000|Galaxy">Galaxy (1000)</option>
+      </select>
+      <input id="simCount" type="number" value="1" min="1" style="width:70px">
+      <button id="simSend">Tặng quà</button>
+      <button id="simLike">❤️ x50</button>
+      <button id="simFollow">Follow</button>
+      <button id="simShare">Share</button>
+      <button id="crowd">Thêm đám đông</button>
+      <button id="storm">Phòng đông 300/giây</button><button id="stormStop">Dừng</button>
+    </div>
+    <div class="line"><button class="danger" id="reset">Xoá toàn bộ (bầu trời, danh hiệu, mọi đêm)</button></div>
+  </section>
+</main>
+
+<script type="module">
+import { fmt, esc, subscribe, api, clock } from '/shared.js';
+import { PROMPT_GROUPS } from '/host-prompts.js';
+const $ = id => document.getElementById(id);
+$('overlayUrl').textContent = `${location.origin}/`;
+try { $('user').value = localStorage.getItem('pk-user') || ''; } catch {}
+
+// ---- buttons ----
+$('connect').onclick = () => { try { localStorage.setItem('pk-user', $('user').value); } catch {} api('tiktok/connect', { username: $('user').value }); };
+$('disconnect').onclick = () => api('tiktok/disconnect');
+$('newNight').onclick = () => confirm('Bắt đầu đêm mới? Trăng và mốc follow/share về 0; bầu trời và danh hiệu được giữ.') && api('night/new');
+$('quiz').onclick = () => api('quiz/start');
+$('poll').onclick = () => api('poll/start');
+$('fortune').onclick = () => api('fortune/sign', { sign: $('fortuneSign').value });
+$('lucky').onclick = () => api('lucky/start', { sign: $('luckySign').value });
+$('musicSkip').onclick = () => api('music/skip');
+$('musicMute').onclick = () => api('music/mute');
+for (const k of ['autoQuiz', 'showWishText']) $(k).onchange = () => api('settings', { [k]: $(k).checked });
+$('reset').onclick = () => confirm('Xoá toàn bộ? Mọi chòm sao, danh hiệu và lịch sử sẽ mất.') && api('reset');
+const who = () => $('simUser').value;
+$('simChat').onclick = () => api('sim/chat', { user: who(), comment: $('simComment').value });
+$('simSend').onclick = () => { const [diamonds, giftName] = $('simGift').value.split('|'); api('sim/gift', { user: who(), diamonds, giftName, count: $('simCount').value }); };
+$('simLike').onclick = () => api('sim/like', { user: who(), count: 50 });
+$('simFollow').onclick = () => api('sim/social', { user: who(), kind: 'follow' });
+$('simShare').onclick = () => api('sim/social', { user: who(), kind: 'share' });
+$('crowd').onclick = () => api('sim/crowd');
+$('storm').onclick = () => api('sim/storm', { perSecond: 300 });
+$('stormStop').onclick = () => api('sim/storm', { perSecond: 0 });
+
+// ---- host prompts: shuffled per group, never repeating until the group has been used up ----
+const decks = {};
+let group = PROMPT_GROUPS[0][0], current = '';
+const draw = key => {
+  const list = PROMPT_GROUPS.find(g => g[0] === key)[2];
+  if (!decks[key]?.length) decks[key] = [...list].sort(() => Math.random() - 0.5);
+  return decks[key].pop();
+};
+function showPrompt(next = true) {
+  if (next) current = draw(group);
+  $('promptText').textContent = current;
+  $('promptMeta').textContent = `${PROMPT_GROUPS.find(g => g[0] === group)[2].length} gợi ý trong nhóm này`;
+}
+$('promptTabs').innerHTML = PROMPT_GROUPS.map(([key, name]) => `<button data-g="${key}">${name}</button>`).join('');
+$('promptTabs').onclick = e => { const b = e.target.closest('button[data-g]'); if (!b) return; group = b.dataset.g; showPrompt(); };
+$('promptNext').onclick = () => showPrompt();
+$('promptCopy').onclick = () => navigator.clipboard?.writeText(current);
+showPrompt();
+
+// ---- which minor announcements appear on screen ----
+const SHOWS = [
+  ['join', 'Người vào đội', 'Dòng "X vào đội Y" ở giữa vòng mỗi khi có người chọn cung.'],
+  ['wish', 'Đèn ước', 'Thẻ có chữ lời ước của người xem (chữ còn tuỳ công tắc "Hiện chữ của đèn ước").'],
+  ['overtake', 'Cung vượt lên hạng 1', 'Thẻ báo khi cung đang dẫn bị vượt.'],
+  ['hearts', 'Tim nổi lên từ mặt trăng', 'Mặt trăng nảy lên và thả tim mỗi khi có người thả tim.'],
+  ['milestone', 'Mốc người xem 100, 200, …', 'Mốc 10/25/50 người luôn bị bỏ qua; người đầu tiên luôn được chào.'],
+  ['dance', 'Người nhảy', 'Chú thích "nhảy cùng cung …" (linh vật vẫn nhảy dù tắt).'],
+  ['flow', 'Ánh sao lan sang cung khác', 'Dòng giải thích khi cung đã sáng chia ánh sao dư (sao chổi vẫn bay).'],
+  ['title', 'Lên danh hiệu', 'Thẻ "X lên hạng!" khi người xem đổi danh hiệu.'],
+  ['streak', 'Chuỗi đêm trở lại', 'Thẻ "X trở lại · chuỗi N đêm".'],
+];
+$('shows').innerHTML = SHOWS.map(([k, name, help]) => `<label><input type="checkbox" data-show="${k}"><span>${name}</span><small>${help}</small></label>`).join('');
+$('shows').onchange = e => { const k = e.target.dataset.show; if (k) api('settings', { show: { [k]: e.target.checked } }); };
+
+// ---- live state ----
+const S = { signs: [], config: {}, hud: null, sky: null, race: null, stage: [], thanks: [], tiktok: null, stats: null };
+const sign = id => S.signs.find(s => s.id === id);
+const sname = id => (sign(id) ? `${sign(id).glyph}︎ ${sign(id).label}` : id);
+const ago = ms => (ms < 1500 ? 'vừa xong' : ms < 60000 ? `${Math.round(ms / 1000)} giây trước` : `${Math.round(ms / 60000)} phút trước`);
+
+function renderHealth() {
+  const t = S.tiktok, st = S.stats;
+  let cls = 'warn', msg = 'Chưa kết nối TikTok', detail = 'Bấm Kết nối khi đã bấm phát live.';
+  if (t?.state === 'live') {
+    cls = 'good'; msg = `Đang nhận dữ liệu từ @${t.username}`; detail = st?.lastAgo == null ? 'Chưa có sự kiện nào kể từ khi kết nối — nếu phòng đang có người, kiểm tra tiktok-schema.json.' : `Sự kiện gần nhất: ${ago(st.lastAgo)}`;
+    if (st?.lastAgo != null && st.lastAgo > 120000) { cls = 'warn'; msg = `Đã kết nối nhưng ${ago(st.lastAgo)} chưa có sự kiện nào`; detail = 'Phòng có thể đang vắng; nếu đông mà vẫn im, thử Ngắt rồi Kết nối lại.'; }
+  } else if (t?.state === 'connecting') { cls = 'warn'; msg = 'Đang kết nối…'; detail = t.detail || ''; }
+  else if (t?.state === 'retrying') { cls = 'bad'; msg = 'Mất kết nối — đang tự thử lại'; detail = t.detail || ''; }
+  else if (t?.state === 'ended') { cls = 'bad'; msg = 'Live đã kết thúc'; detail = t.detail || ''; }
+  else if (st?.lastAgo != null && st.lastAgo < 60000) { cls = 'hot'; msg = 'Đang chạy diễn tập (người xem giả lập)'; detail = 'Chưa nối TikTok.'; }
+  $('health').className = `health ${cls}`;
+  $('health').innerHTML = `<b>${esc(msg)}</b><span class="muted">${esc(detail)}</span>`;
+  $('ttState').textContent = t?.state === 'live' ? `● live @${t.username}` : (t?.state ?? 'off');
+  $('ttState').className = `pill${t?.state === 'live' ? ' live' : t?.state === 'retrying' ? ' bad' : ''}`;
+  $('ttViewers').textContent = t?.state === 'live' ? `${fmt(t.viewers)} đang xem` : 'chưa live';
+  $('ttDetail').textContent = t?.detail || '';
+}
+
+function renderStats() {
+  const st = S.stats;
+  if (!st) return;
+  const r = st.rates;
+  $('kChat').textContent = fmt(r.chat.perMin); $('tChat').textContent = fmt(r.chat.total);
+  $('kLike').textContent = fmt(r.like.perMin); $('tLike').textContent = fmt(r.like.total);
+  $('kGift').textContent = fmt(r.gift.perMin); $('tGift').textContent = fmt(r.gift.total);
+  $('kCoins').textContent = fmt(st.diamonds);
+  $('kSocial').textContent = fmt(r.follow.perMin + r.share.perMin); $('tSocial').textContent = fmt(r.follow.total + r.share.total);
+  renderHealth();
+}
+
+function renderHud() {
+  const h = S.hud;
+  if (!h) return;
+  $('nightNo').textContent = `Đêm ${h.night.no}`;
+  $('visitors').textContent = `${fmt(h.night.visitors)} người ghé`;
+  $('onStage').textContent = `${S.stage.length} người trên sân`;
+  $('occasion').hidden = !h.occasion; if (h.occasion) $('occasion').textContent = `🎉 ${h.occasion.name}`;
+  const party = h.moon.partyMs > 0;
+  $('moonBar').style.width = `${party ? 100 : Math.min(100, (h.moon.light / h.moon.goal) * 100)}%`;
+  $('moonTxt').textContent = party ? `TRĂNG RẰM · ${Math.ceil(h.moon.partyMs / 1000)}s` : `${fmt(h.moon.light)}/${fmt(h.moon.goal)} · rằm ${h.moon.full} lần`;
+  $('moonTxt').className = `pill${party ? ' hot' : ''}`;
+  $('luckyTxt').textContent = h.lucky ? `⭐ ${sname(h.lucky.sign)} x${h.lucky.multiplier} · ${Math.ceil(h.lucky.remainingMs / 1000)}s` : `sau ${clock(h.luckyInMs)}`;
+  $('luckyTxt').className = `pill${h.lucky ? ' hot' : ''}`;
+  $('pending').textContent = h.pendingLight ? `${fmt(h.pendingLight)} ánh sao đang chờ người tặng chọn cung` : '';
+  $('quiet').textContent = `Tương tác gần nhất: ${Math.round(h.quietMs / 1000)}s trước · phòng im ${S.config.quietSeconds}s thì tự ra câu đố/quẻ/bình chọn.`;
+  const now = [];
+  if (h.fortune) now.push(`<p>🎋 <b>Quẻ ${esc(h.fortune.level)}</b> cho ${h.fortune.nickname ? esc(h.fortune.nickname) : `cung ${esc(sname(h.fortune.sign))}`} · còn ${Math.ceil(h.fortune.remainingMs / 1000)}s</p>`);
+  if (h.fortuneQueue) now.push(`<p>${h.fortuneQueue} người đang xếp hàng chờ quẻ</p>`);
+  if (h.quiz) now.push(`<p>❓ <b>${esc(h.quiz.q)}</b><br>${h.quiz.options.map((o, i) => `${'ABCD'[i]}. ${esc(o)}`).join(' · ')}<br>còn ${Math.ceil(h.quiz.remainingMs / 1000)}s · ${h.quiz.tries} người trả lời${h.quiz.winners.length ? ` · đúng: ${h.quiz.winners.map(w => esc(w.nickname)).join(', ')}` : ''}</p>`);
+  if (h.poll) now.push(`<p>🗳 <b>${esc(h.poll.q)}</b><br>còn ${Math.ceil(h.poll.remainingMs / 1000)}s · ${h.poll.total} phiếu${h.poll.total ? ` · dẫn đầu ${esc(sname(Object.entries(h.poll.votes).sort((a, b) => b[1] - a[1])[0][0]))}` : ''}</p>`);
+  if (h.lucky) now.push(`<p>⭐ Sao may mắn: <b>${esc(sname(h.lucky.sign))}</b> (x${h.lucky.multiplier})</p>`);
+  if (h.moon.partyMs > 0) now.push(`<p>🌕 Trăng rằm: ánh sao x2 thêm ${Math.ceil(h.moon.partyMs / 1000)}s</p>`);
+  $('now').innerHTML = now.join('') || '<p>Chưa có gì đặc biệt — vòng hoàng đạo và đua sao đang chạy.</p>';
+  for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(S.config[k]);
+}
+
+function renderRace() {
+  const r = S.race, sky = S.sky;
+  if (!r || !sky) return;
+  const count = {};
+  for (const v of S.stage) count[v.sign] = (count[v.sign] ?? 0) + 1;
+  const top = Math.max(1, r.order[0].given);
+  $('raceMeta').textContent = `vòng ${r.wheel} · ${sky.litCount}/12 chòm đã sáng · tổng ${fmt(r.total)} ánh sao`;
+  $('wheelBar').style.width = `${(sky.litCount / 12) * 100}%`;
+  $('wheelTxt').textContent = `vòng ${r.wheel} · ${sky.litCount}/12`;
+  $('raceBody').innerHTML = r.order.map(x => {
+    const s = sky.sky.find(k => k.id === x.id);
+    const lucky = S.hud?.lucky?.sign === x.id;
+    return `<tr class="${x.rank === 1 && x.given > 0 ? 'lead' : ''}${lucky ? ' lucky' : ''}"><td>${x.rank}</td><td>${esc(sname(x.id))}</td>
+      <td class="r"><div class="bar"><i style="width:${(x.given / top) * 100}%"></i><span>${fmt(x.given)}</span></div></td>
+      <td><div class="bar"><i style="width:${s.progress * 100}%;background:var(--ok)"></i><span>${s.lit ? 'đã sáng' : `${Math.floor(s.progress * 100)}%`}</span></div></td>
+      <td class="r">${count[x.id] ?? 0}</td><td class="r">${x.crowns ? `🏆 ${x.crowns}` : '—'}</td></tr>`;
+  }).join('');
+}
+
+function renderPeople() {
+  $('onStage').textContent = `${S.stage.length} người trên sân`;
+  $('stageMeta').textContent = `${S.stage.length} người`;
+  $('stageBody').innerHTML = [...S.stage].reverse().slice(0, 14).map(v => `<tr><td>${esc(v.nickname)}</td><td class="muted">${esc(sname(v.sign))}</td><td class="muted">${esc(v.title)}${v.streak >= 2 ? ` · 🔥${v.streak}` : ''}${v.crowns ? ` · 👑${v.crowns}` : ''}</td></tr>`).join('') || '<tr><td class="muted">Chưa có ai chọn cung.</td></tr>';
+  $('thanksBody').innerHTML = S.thanks.map(t => `<tr><td>${esc(t.nickname)}</td><td class="muted">${t.sign ? esc(sname(t.sign)) : 'chưa chọn cung'}</td></tr>`).join('') || '<tr><td class="muted">Chưa có.</td></tr>';
+}
+
+// ---- event log ----
+const KIND_NAMES = { all: 'Tất cả', chat: 'Bình luận', gift: 'Quà', like: 'Tim', follow: 'Theo dõi', share: 'Chia sẻ', sky: 'Bầu trời', game: 'Trò chơi', system: 'Hệ thống' };
+let kind = 'all', log = [];
+$('feedFilter').innerHTML = Object.entries(KIND_NAMES).map(([k, n]) => `<button class="chip${k === kind ? ' on' : ''}" data-k="${k}">${n}</button>`).join('');
+$('feedFilter').onclick = e => { const b = e.target.closest('[data-k]'); if (!b) return; kind = b.dataset.k; for (const c of $('feedFilter').children) c.classList.toggle('on', c.dataset.k === kind); renderFeed(true); };
+const hhmmss = t => new Date(t).toLocaleTimeString('vi-VN', { hour12: false });
+const row = e => `<div data-id="${e.id}"><time>${hhmmss(e.t)}</time><span class="k k-${e.kind}">${KIND_NAMES[e.kind] ?? e.kind}</span><span>${esc(e.text)}</span></div>`;
+function renderFeed(all = false) {
+  const feed = $('feed'), stick = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 30;
+  const list = log.filter(e => kind === 'all' || e.kind === kind);
+  $('feedMeta').textContent = `${list.length} dòng gần nhất (giữ tối đa 120)`;
+  feed.innerHTML = list.map(row).join('') || '<div><span></span><span></span><span class="muted">Chưa có gì.</span></div>';
+  if (all || stick) feed.scrollTop = feed.scrollHeight;
+}
+
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-VN', { hour12: false }); }, 1000);
+
+subscribe({
+  meta: m => {
+    S.config = m.config;
+    if (!S.signs.length) {
+      S.signs = m.signs;
+      const opts = m.signs.map(s => `<option value="${s.id}">${s.glyph} ${esc(s.label)}</option>`).join('');
+      $('fortuneSign').innerHTML = '<option value="">Quẻ chung: cung ngẫu nhiên</option>' + opts;
+      $('luckySign').innerHTML = '<option value="">Sao may mắn: cung ngẫu nhiên (nửa dưới)</option>' + opts;
+    }
+    for (const c of document.querySelectorAll('[data-show]')) if (document.activeElement !== c) c.checked = m.config.show?.[c.dataset.show] !== false;
+    for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(m.config[k]);
+  },
+  tiktok: t => { S.tiktok = t; renderHealth(); },
+  stats: s => { S.stats = s; if (s.tiktok) S.tiktok = s.tiktok; renderStats(); },
+  log: m => { log = m.reset ? m.entries : [...log, ...m.entries].slice(-120); renderFeed(m.reset); },
+  frame: f => {
+    const p = f.parts;
+    if (p.hud) { S.hud = p.hud; }
+    if (p.sky) S.sky = p.sky;
+    if (p.race) S.race = p.race;
+    if (p.stage) { S.stage = p.stage; renderPeople(); }
+    if (p.thanks) { S.thanks = p.thanks; renderPeople(); }
+    if (p.hud || p.stage) renderHud();
+    if (p.race || p.sky || p.stage || p.hud) renderRace();
+  },
+});
+</script>
+</body>
+</html>

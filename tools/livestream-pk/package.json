@@ -1,0 +1,20 @@
+{
+  "name": "zodiac-livestream-pk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "live": "node scripts/live.mjs",
+    "check": "node scripts/check.mjs",
+    "setup": "node scripts/check.mjs --init",
+    "test": "node --test",
+    "audio": "node scripts/fetch-audio.mjs",
+    "obs": "node scripts/setup-obs.mjs",
+    "replay": "node scripts/replay.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "share": "node scripts/share.mjs"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "2.5.0"
+  }
+}
