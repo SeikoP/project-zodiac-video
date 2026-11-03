@@ -7,6 +7,7 @@
 <link rel="preload" href="/fonts/PatrickHand-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <link rel="stylesheet" href="/overlay.css">
+<link rel="stylesheet" href="/cosmos.css">
 </head>
 <body>
 <div id="stage">
@@ -15,6 +16,7 @@
   <section id="top">
     <div class="trow">
       <div class="brand"><small id="kicker">Đêm 1</small><b>Đêm Hội <em>Hoàng Đạo</em></b></div>
+      <div class="chest" id="chest"><span class="ci">🎁</span><div class="ct"><b id="chestT">–:––</b><span id="chestS">rương sao</span></div></div>
       <div class="moon" id="moon">
       <svg viewBox="0 0 120 120"><defs><clipPath id="moonFill"><rect id="moonRect" x="0" y="120" width="120" height="120"/></clipPath>
         <radialGradient id="moonGrad" cx="40%" cy="35%"><stop offset="0" stop-color="#fffbe6"/><stop offset=".7" stop-color="#ffe7a1"/><stop offset="1" stop-color="#f3c35a"/></radialGradient></defs>
@@ -26,6 +28,7 @@
     </div>
     <div class="qtop"><b id="wheelTitle">Vòng hoàng đạo thứ 1</b><span id="wheelCount">0/12 chòm đã sáng</span></div>
     <div class="dots" id="dots"></div>
+    <div class="skyrow" id="skyrow"></div>
     <div id="race"></div>
     <div class="call" id="call"></div>
   </section>
@@ -33,6 +36,7 @@
   <section id="wheel">
     <svg class="ring" viewBox="420 464 624 866" id="ring"></svg>
     <div id="center"></div>
+    <div id="arena"></div>
   </section>
 
   <section id="waiting">

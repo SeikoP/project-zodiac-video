@@ -9,10 +9,10 @@
 // Pure logic: the game owns the state object (so it is saved with everything else) and hands out the rewards.
 
 export const ROLES = Object.freeze({
-  fire: 'quà chí mạng x2',
-  earth: 'bình luận dựng khiên',
-  air: 'bình luận liên tục → combo',
-  water: 'thả tim sát thương x3',
+  fire: 'quà x2',
+  earth: 'comment = khiên',
+  air: 'comment combo',
+  water: 'tim x3',
 });
 
 export const BOSS_DEFAULTS = Object.freeze({

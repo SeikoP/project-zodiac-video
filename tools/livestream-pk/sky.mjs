@@ -20,9 +20,10 @@ export const BOON_CAP = 3;
 // What a viewer does (as opposed to rewards the game hands out); "all" planets boost only these.
 const ACTIONS = new Set(['comment', 'like', 'gift', 'follow', 'share', 'quiz', 'poll', 'fortune']);
 
+// [phase angle below, name, icon, short name for tight spots]
 const PHASES = [
-  [22.5, 'Trăng non', '🌑'], [67.5, 'Trăng lưỡi liềm', '🌒'], [112.5, 'Trăng thượng huyền', '🌓'], [157.5, 'Trăng gần rằm', '🌔'],
-  [202.5, 'Trăng tròn', '🌕'], [247.5, 'Trăng sau rằm', '🌖'], [292.5, 'Trăng hạ huyền', '🌗'], [337.5, 'Trăng tàn', '🌘'], [360, 'Trăng non', '🌑'],
+  [22.5, 'Trăng non', '🌑', 'Trăng non'], [67.5, 'Trăng lưỡi liềm', '🌒', 'Lưỡi liềm'], [112.5, 'Trăng thượng huyền', '🌓', 'Thượng huyền'], [157.5, 'Trăng gần rằm', '🌔', 'Gần rằm'],
+  [202.5, 'Trăng tròn', '🌕', 'Trăng tròn'], [247.5, 'Trăng sau rằm', '🌖', 'Sau rằm'], [292.5, 'Trăng hạ huyền', '🌗', 'Hạ huyền'], [337.5, 'Trăng tàn', '🌘', 'Trăng tàn'], [360, 'Trăng non', '🌑', 'Trăng non'],
 ];
 
 function longitude(body, date) {
@@ -44,14 +45,14 @@ export function readSky(t) {
     return { id: p.id, sign: signAt(lon), deg: Math.floor(lon % 30), retro };
   });
   const phaseDeg = Astronomy.MoonPhase(date);
-  const [, phase, icon] = PHASES.find(([max]) => phaseDeg < max);
+  const [, phase, icon, short] = PHASES.find(([max]) => phaseDeg < max);
   // the Moon's next sign: it moves ~0.5°/h, so the hourly speed gives the time to the next 30° boundary
   const moonLon = longitude('Moon', date), speed = diff(moonLon, longitude('Moon', later));
   const toNext = 30 - (moonLon % 30);
   return {
     at: t,
     planets,
-    moon: { phase, icon, deg: Math.round(phaseDeg), full: Math.abs(phaseDeg - 180) < 12, new: phaseDeg < 12 || phaseDeg > 348, nextSign: ZODIAC[(ZODIAC.indexOf(signAt(moonLon)) + 1) % 12], nextInMs: Math.round((toNext / speed) * 3600000) },
+    moon: { phase, short, icon, deg: Math.round(phaseDeg), full: Math.abs(phaseDeg - 180) < 12, new: phaseDeg < 12 || phaseDeg > 348, nextSign: ZODIAC[(ZODIAC.indexOf(signAt(moonLon)) + 1) % 12], nextInMs: Math.round((toNext / speed) * 3600000) },
     mercuryRetro: planets.find(p => p.id === 'mercury').retro,
   };
 }

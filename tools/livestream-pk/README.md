@@ -27,6 +27,23 @@ Một sân khấu dưới bầu trời sao: người xem bước vào sân bằn
 - **Chuỗi đêm**: quay lại đêm liền kề thì được thưởng ánh sao ở hành động đầu tiên (5 × số đêm liên tiếp, tối đa 40) và hiện thông báo "trở lại · chuỗi N đêm". Bỏ lỡ một đêm thì chuỗi về 1.
 - Huy hiệu 👑, danh hiệu và bảng mùa giữ qua các buổi live; đếm ngược "sao may mắn sau …" luôn hiện để người xem có lý do ở lại.
 
+**Bầu trời thật** (`sky.mjs`, thư viện `astronomy-engine`, tính offline)
+- Server tính vị trí **thật** của Mặt Trời, Mặt Trăng, Sao Thủy, Kim, Hỏa, Mộc, Thổ trên vòng hoàng đạo mỗi phút, hành tinh nào đang **nghịch hành (℞)**, pha trăng và lúc Mặt Trăng sang cung kế tiếp. Dải dưới thanh tiến độ hiện "☉ Bọ Cạp · ☿ Bọ Cạp ℞ · …"; ký hiệu hành tinh cũng gắn lên đúng cung trên bánh xe, và tâm vòng thỉnh thoảng giải thích "Sao Thủy ở Bọ Cạp — fan Bọ Cạp: bình luận x2".
+- **Chiếu mệnh**: fan của cung có hành tinh đứng được nhân ánh sao cho đúng loại hành động hành tinh đó cai quản — Mặt Trời: mọi hành động x1.5 · Mặt Trăng: thả tim x2 · Sao Thủy: bình luận/câu đố/bình chọn x2 · Sao Kim: theo dõi/chia sẻ x2 · Sao Hỏa: quà x1.5 · Sao Mộc: mọi hành động x1.25 · Sao Thổ: thưởng chuỗi đêm x2 (cộng dồn, tối đa x3). Đêm **trăng tròn thật** thì trăng trong game lên nhanh gấp đôi. Tắt bằng `"skyBoons": false`.
+
+**Thủy Nghịch** (hỗn loạn có kiểm soát)
+- Trong ~40 giây, ánh sao của mọi người **đi lạc sang cung đối diện** (Sư Tử → Bảo Bình…), cả ở bảng đua lẫn bầu trời: bánh xe quay ngược, màn hình ngả tím, sao chổi bay chéo vòng. Cả phòng gõ **“thuận”** (hoặc “sửa sóng”) — đủ số người (nửa số người trên sân, tối thiểu 3) là sửa xong, mỗi người sửa được +5 ánh sao.
+- Khi **Sao Thủy nghịch hành thật** thì đến khoảng mỗi 8 phút (và overlay ghi rõ "Sao Thủy đang nghịch hành thật"); ngoài đợt đó khoảng mỗi 25 phút. Host gọi/dừng bằng nút ☿ ở bảng điều khiển. `chaosEverySeconds`, `chaosEveryRetroSeconds` = 0 để chỉ gọi tay.
+
+**Boss Sao Chổi Đen** (cả phòng cùng đánh, ~2,5 phút, khoảng mỗi 10 phút khi phòng có người)
+- Máu theo số người trên sân. Comment, thả tim, tặng quà, follow/share đều gây sát thương; mỗi **nguyên tố** một vai: **Lửa** quà chí mạng x2 · **Đất** mỗi comment +1 khiên · **Khí** comment liên tục tạo combo (tới +150%) · **Nước** thả tim sát thương x3.
+- Mỗi ~22 giây (dưới 1/3 máu: ~14 giây) boss **đóng băng** cung đang đánh mạnh nhất: cung đó không gây sát thương cho tới khi đủ fan của chính cung đó comment để phá băng (1–3 người); không ai cứu trong 12 giây thì boss hồi 12% máu. Khiên đủ 10 thì chặn đòn thay vì bị đóng băng.
+- Thắng: ai góp sức cũng +30 ánh sao và **1 thẻ**; MVP nhận thẻ **Diệt Sao Chổi**; overlay vinh danh MVP từng nguyên tố. Hết giờ: boss trốn thoát. Trong lúc đánh boss, quẻ chờ tới sau trận.
+
+**Rương sao & bộ thẻ Hoàng Đạo** (giữ chân trong buổi và kéo quay lại)
+- Rương mở đúng **:00, :15, :30, :45** (đồng hồ đếm ngược luôn ở góc trên), mở 25 giây; gõ **“nhận”** để lấy 1 thẻ — chỉ người đang có mặt mới lấy được. Không ai hoạt động 10 phút thì rương bỏ lượt.
+- 60 thẻ = 12 cung × 5 bản: Thường · **Tinh Tú** (hiếm) · **Thủy Nghịch** (ánh kim, chỉ rơi khi đang Thủy Nghịch hoặc Sao Thủy nghịch hành thật) · **Trăng Tròn** (ánh kim, chỉ đêm trăng tròn thật) · **Diệt Sao Chổi** (MVP boss). Gom đủ 12 cung được vinh danh. Gõ **“khoe thẻ”** để bộ sưu tập hiện lên sóng (mỗi người 1 lần/phút). Thẻ **không bán**, không đổi bằng quà.
+
 **Icon khớp với TikTok**: phần hướng dẫn và thông báo dùng đúng biểu tượng các nút bên phải màn hình TikTok LIVE (bình luận, thả tim, tặng quà, theo dõi, chia sẻ) và đơn vị "xu".
 
 **Mục tiêu chung**

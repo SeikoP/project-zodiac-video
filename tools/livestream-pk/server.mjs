@@ -17,6 +17,8 @@ import { listMusic } from './music.mjs';
 import { createTikTokBridge } from './tiktok.mjs';
 import { createDiagnostics, ingest } from './diagnostics.mjs';
 import { createMonitor } from './monitor.mjs';
+import { PLANETS } from './sky.mjs';
+import { ROLES } from './boss.mjs';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(dir, 'public');
@@ -44,7 +46,7 @@ const tapped = monitor.tap(game); // everything a viewer does (TikTok or rehears
 const diag = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
-const meta = () => ({ signs: SIGNS, config: game.config, music: { calm: music.calm, upbeat: music.upbeat } });
+const meta = () => ({ signs: SIGNS, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
 
 // A client is one open overlay/panel page: { send(event, data), seen, busy(), host }. Normally it is a server-sent-events
 // stream; behind a quick tunnel (which does not stream SSE) the page polls /poll and gets its queued messages instead.
@@ -92,7 +94,7 @@ const body = req => new Promise(resolve => {
 });
 
 const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30], ['Hand Hearts', 100], ['Galaxy', 1000]];
-const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên'];
+const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó'];
 const sim = name => ({ userId: `sim:${name}`, nickname: name });
 // A crowd of `size` simulated viewers doing typical things; used by the panel and the load test.
 function simulateCrowd(size = 6, giftRate = 0.3) {
@@ -127,6 +129,10 @@ const API = {
   'quiz/start': () => game.startQuiz(),
   'fortune/sign': b => game.showFortune({ userId: null, nickname: null, avatar: '', sign: SIGNS.some(s => s.id === b.sign) ? b.sign : SIGNS[Math.floor(Math.random() * 12)].id }),
   'lucky/start': b => game.startLucky(b.sign),
+  'boss/start': () => game.startBoss(),
+  'chaos/start': () => game.startChaos(),
+  'chaos/end': () => game.endChaos(false),
+  'chest/open': () => game.openChest(),
   settings: b => {
     for (const k of ['autoQuiz', 'showWishText']) if (typeof b[k] === 'boolean') game.config[k] = b[k];
     for (const [k, v] of Object.entries(b.show ?? {})) if (k in game.config.show && typeof v === 'boolean') game.config.show[k] = v;

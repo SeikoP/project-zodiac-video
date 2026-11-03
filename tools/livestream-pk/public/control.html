@@ -126,6 +126,8 @@
       <select id="luckySign"><option value="">Sao may mắn: cung ngẫu nhiên (nửa dưới)</option></select>
       <button id="lucky">⭐ Gọi sao may mắn</button>
     </div>
+    <div class="line"><button id="boss">☄ Gọi Sao Chổi Đen</button><button id="chaos">☿ Thủy Nghịch</button><button id="chaosEnd">Dừng Thủy Nghịch</button><button id="chest">🎁 Mở rương sao</button></div>
+    <p class="muted" id="cosmosTxt"></p>
     <div class="line"><button id="musicSkip">⏭ Bài khác</button><button id="musicMute">🔇 Tắt/bật nhạc</button></div>
     <div class="line">
       <label><input type="checkbox" id="autoQuiz"> Tự ra câu đố / quẻ / bình chọn khi phòng im</label>
@@ -206,6 +208,10 @@ $('quiz').onclick = () => api('quiz/start');
 $('poll').onclick = () => api('poll/start');
 $('fortune').onclick = () => api('fortune/sign', { sign: $('fortuneSign').value });
 $('lucky').onclick = () => api('lucky/start', { sign: $('luckySign').value });
+$('boss').onclick = () => api('boss/start');
+$('chaos').onclick = () => api('chaos/start');
+$('chaosEnd').onclick = () => api('chaos/end');
+$('chest').onclick = () => api('chest/open');
 $('musicSkip').onclick = () => api('music/skip');
 $('musicMute').onclick = () => api('music/mute');
 for (const k of ['autoQuiz', 'showWishText']) $(k).onchange = () => api('settings', { [k]: $(k).checked });
@@ -316,6 +322,19 @@ function renderHud() {
   for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(S.config[k]);
 }
 
+// The real sky, the boss, Thủy Nghịch and the chest, in one status line for the host.
+const mmss = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
+function renderCosmos(c) {
+  const parts = [];
+  if (c.sky) parts.push(`Trời thật: ${c.sky.planets.map(p => `${S.planets?.find(x => x.id === p.id)?.glyph ?? p.id}${p.retro ? '℞' : ''} ${sign(p.sign)?.label ?? p.sign}`).join(' · ')} · ${c.sky.moon.icon} ${c.sky.moon.phase}`);
+  if (c.boss) parts.push(`☄ Boss ${c.boss.hp}/${c.boss.max} máu · ${mmss(c.boss.remainingMs)}${c.boss.frozen ? ` · đang đóng băng ${sign(c.boss.frozen.sign)?.label} (${c.boss.frozen.got}/${c.boss.frozen.need})` : ''}`);
+  else if (c.bossInMs != null) parts.push(`☄ Boss sau ${mmss(c.bossInMs)}`);
+  if (c.chaos) parts.push(`☿ Thủy Nghịch ${Math.ceil(c.chaos.remainingMs / 1000)}s · ${c.chaos.got}/${c.chaos.need} "thuận"`);
+  else if (c.chaosInMs != null) parts.push(`☿ Thủy Nghịch sau ${mmss(c.chaosInMs)}`);
+  parts.push(c.chest.open ? `🎁 Rương đang mở · ${c.chest.claims} người nhận` : c.chest.inMs != null ? `🎁 Rương sau ${mmss(c.chest.inMs)}` : '🎁 Rương tắt');
+  $('cosmosTxt').textContent = parts.join('  |  ');
+}
+
 function renderRace() {
   const r = S.race, sky = S.sky;
   if (!r || !sky) return;
@@ -362,6 +381,7 @@ setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-V
 subscribe({
   meta: m => {
     S.config = m.config;
+    S.planets = m.planets;
     if (!S.signs.length) {
       S.signs = m.signs;
       const opts = m.signs.map(s => `<option value="${s.id}">${s.glyph} ${esc(s.label)}</option>`).join('');
@@ -383,6 +403,7 @@ subscribe({
     if (p.thanks) { S.thanks = p.thanks; renderPeople(); }
     if (p.hud || p.stage) renderHud();
     if (p.race || p.sky || p.stage || p.hud) renderRace();
+    if (p.cosmos) renderCosmos(p.cosmos);
   },
 });
 </script>
