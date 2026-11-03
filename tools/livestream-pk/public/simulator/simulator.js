@@ -237,7 +237,7 @@ $('stressStart').addEventListener('click', async () => {
   try {
     await api('sim/storm', { perSecond: 300 });
     updateScenarioStatus('Đang tải cao · 300 người xem/giây', true);
-    log('Bắt đầu stress test 300 event/giây');
+    log('Bắt đầu stress test 300 người xem/giây');
   } catch (error) { log('Không chạy được stress test: ' + error.message); }
 });
 document.querySelectorAll('[data-host]').forEach(button => button.addEventListener('click', async () => {
