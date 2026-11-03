@@ -367,24 +367,50 @@ test('a saved state with leftover sim: viewers loads without them', () => {
   assert.deepEqual(Object.keys(again.state.viewers), ['real']);
 });
 
-test('a poll counts one vote per viewer, does not move existing teams, and names the winning sign', () => {
+test('a poll offers four numbered options; "1"–"4" is a vote, once each, and never moves or makes a team', () => {
   const { game, events, advance } = setup({ pollSeconds: 20, pollLight: 3, commentLight: 0 });
   game.chat(u('a', { comment: 'sư tử' }));
   game.chat(u('b', { comment: 'aries' }));
   game.startPoll();
-  game.chat(u('a', { comment: 'bọ cạp' })); // vote, stays in leo
-  game.chat(u('a', { comment: 'leo' })); // second vote ignored
-  game.chat(u('b', { comment: 'bọ cạp' }));
-  game.chat(u('c', { comment: 'leo' })); // no team yet: votes and joins
+  const p = game.snapshot().hud.poll;
+  assert.equal(p.options.length, 4);
+  assert.equal(new Set(p.options.map(o => o.sign)).size, 4, 'four different signs to choose from');
+  game.chat(u('a', { comment: '2' })); // a vote, a stays in leo
+  game.chat(u('a', { comment: '3' })); // a second vote is ignored
+  game.chat(u('b', { comment: 'số 2' }));
+  game.chat(u('c', { comment: '2' })); // no team yet: votes, does not join
+  game.chat(u('d', { comment: 'bọ cạp' })); // a sign name still joins a newcomer, but is not a vote
   assert.equal(game.state.viewers.a.sign, 'leo');
-  assert.equal(game.state.viewers.c.sign, 'leo');
-  assert.equal(game.snapshot().hud.poll.votes.scorpio, 2);
+  assert.equal(game.state.viewers.c?.sign ?? null, null);
+  assert.equal(game.state.viewers.d.sign, 'scorpio');
+  assert.deepEqual(game.snapshot().hud.poll.options.map(o => o.n), [0, 3, 0, 0]);
   advance(20000);
   const end = of(events, 'poll-end')[0];
-  assert.deepEqual([end.winner, end.votes, end.total], ['scorpio', 2, 3]);
+  assert.deepEqual([end.winner, end.votes, end.total], [1, 3, 3]);
+  assert.equal(end.option.label, p.options[1].label);
   assert.equal(game.state.poll, null);
-  assert.equal(light(game, 'leo'), 3); // a voted with a team (+3); c had none yet, so no light
+  assert.equal(light(game, 'leo'), 3); // a voted with a team (+3); c had none, so no light
   assert.equal(light(game, 'aries'), 3); // b
+});
+
+test('a poll can let the room pick the next headliner of the other planet', () => {
+  let t = 5 * 60000 * 70000 + 1000;
+  const events = [];
+  const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
+  game.chat(u('a', { comment: 'Sư Tử' }));
+  assert.equal(game.snapshot().cosmos.hour.planet, 'mars');
+  game.startPoll();
+  const p = game.snapshot().hud.poll;
+  assert.equal(p.kind, 'next');
+  assert.equal(p.options.length, 4);
+  game.chat(u('a', { comment: '4' }));
+  for (let i = 0; i < 12; i++) { t += 1000; game.tick(); }
+  const end = of(events, 'poll-end')[0];
+  assert.equal(end.kind, 'next');
+  const picked = end.option.head;
+  t += 5 * 60000; game.tick(); // venus's turn
+  assert.equal(game.snapshot().cosmos.hour.planet, 'venus');
+  assert.equal(game.snapshot().cosmos.act.head, picked, 'the voted headliner plays this turn');
 });
 
 test('quiet rooms mostly read a sign, with a quiz and a poll now and then', () => {

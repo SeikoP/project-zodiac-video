@@ -107,6 +107,8 @@ export const DEFAULT_CONFIG = Object.freeze({
   recordEvents: false, // keep logs/events-<date>.jsonl of everything TikTok sent (for npm run replay)
   pollSeconds: 20,
   pollLight: 3,
+  // every this many polls (with the planetary hours on) the room picks the other planet's next headliner instead
+  pollNextEvery: 3,
   // a small room gets smaller goals: wheel and moon scale with the viewers on stage (floor .2, full at 12)
   adaptiveCrowd: true,
   crowdFloor: 0.2,
@@ -248,6 +250,8 @@ const COMBINE_RE = /\bghep the\b/;
 const VAULT_RE = /^\s*(kho|tui|tui do|xem kho|kho do|khoe|khoe kho|so sao|xem so sao|so sao cua toi)[\s!.]*$|\b(khoe the|bo the|xem the)\b/;
 const GEM_POWER_RE = /^\s*(tung ngoc|nem ngoc|dung ngoc)\b/;
 const MOON_POWER_RE = /^\s*(thap trang|dot trang)\b/;
+const VOTE_RE = /^\s*(?:so|chon|phieu|bau)?\s*([1-4])\s*[!.]*$/;
+export const parseVote = comment => { const m = norm(comment).match(VOTE_RE); return m ? Number(m[1]) - 1 : null; };
 const WELCOME_RE = /^\s*(xin chao|chao mung|chao|hi|hello|helo|welcome)\b/;
 const BLESS_RE = /^\s*(chuc|chuc phuc|thanh hien thuc|thanh su|amen|\+1)\b/;
 // what the house mascots demonstrate in a quiet room, in turn
@@ -717,7 +721,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!hour) return null;
     const h = H(), n = HOURS[hour.next];
     return { planet: hour.planet, label: h.label, glyph: h.glyph, color: h.color, theme: h.theme, mood: h.mood, rule: h.ruleText, head: HEADS[currentHead()].label, heads: h.heads.map(id => HEADS[id].label), startsAt: hour.startsAt, endsAt: hour.endsAt, forced: Boolean(hour.forced),
-      next: { planet: hour.next, label: n.label, glyph: n.glyph, head: HEADS[n.heads[0]].label } };
+      next: { planet: hour.next, label: n.label, glyph: n.glyph, color: n.color, head: HEADS[n.heads[0]].label } };
   }
   function forceHour(planet) {
     const t = now();
@@ -738,7 +742,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // when a planet's turn is a single act, the headliner moves on each time the planet comes round again
   const visits = () => (hour && !hour.forced && cfg.hourMode === 'cycle' ? Math.floor(Math.floor(hour.startsAt / (cfg.hourMinutes * 60000)) / cfg.hourPlanets.length) * Math.max(1, Math.round((hour.endsAt - hour.startsAt) / ACT)) : 0);
   const actIndex = (t = now()) => (hour ? visits() + Math.max(0, Math.ceil((Math.floor(t / ACT) * ACT - hour.startsAt) / ACT)) : 0);
-  const currentHead = (t = now()) => { const heads = H()?.heads ?? []; return heads[actIndex(t) % heads.length]; };
+  // a headliner the room voted for plays in its planet's next turn (st.headVote: { planet, id, from, until })
+  const voted = t => { const v = st.headVote; return v && hour?.planet === v.planet && t >= v.from && t < v.until ? v.id : null; };
+  const currentHead = (t = now()) => { const heads = H()?.heads ?? []; return voted(t) ?? heads[actIndex(t) % heads.length]; };
   const roomLive = () => stage.size > 0 && now() - st.lastActivityAt < 600000;
   function actTick(t) {
     if (!hour) return;
@@ -1081,8 +1087,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a sign is being roasted
     if (st.predict && predict.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // "đoán A"
     const sign = parseSign(u.comment);
-    // While a poll runs, naming a sign is a vote; it only joins a team for viewers who have none yet.
-    if (st.poll && sign && !st.poll.voted[u.userId]) castVote(u, v, sign);
+    // While a poll runs, "1"–"4" is a vote (never a team pick); sign names still join newcomers as usual.
+    const vote = st.poll ? parseVote(u.comment) : null;
+    if (vote !== null) { if (!st.poll.voted[u.userId] && vote < st.poll.options.length) castVote(u, v, vote); addHeat(u.userId, 1); return; }
     addHeat(u.userId, 1);
     if (!v.sign) { if (sign) join(u, v, sign); }
     else if (!st.poll) switchSign(u, v, parseSwitch(u.comment));
@@ -1287,16 +1294,36 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // --- poll: a light "which sign…?" question the whole room answers -----------------------------------
+  // Bình chọn: four numbered options, "1"–"4" to vote. A "which sign…?" question offers four signs; every
+  // pollNextEvery-th poll (with the hours on) asks which headliner the other planet should play next.
+  function pollOptions(entry) {
+    if (entry?.kind === 'next' && hour) {
+      const n = HOURS[hour.next], start = Math.max(0, n.heads.indexOf(currentHead(hour.endsAt)));
+      const heads = [...n.heads.slice(start), ...n.heads.slice(0, start)].slice(0, 4);
+      return { kind: 'next', q: `Lượt ${n.label} tới, cả phòng muốn chơi gì?`, options: heads.map(id => ({ label: HEADS[id].label, head: id })) };
+    }
+    if (typeof entry === 'string') {
+      const pool = SIGNS.map(s => s.id), picks = [];
+      while (picks.length < 4) picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+      return { kind: 'sign', q: entry, options: picks.map(id => ({ label: SIGN[id].label, sign: id })) };
+    }
+    return { kind: 'custom', q: entry.q, options: entry.options.slice(0, 4).map(label => ({ label })) };
+  }
   function startPoll() {
     if (!polls.length || st.poll || st.quiz || st.fortune) return null;
-    st.poll = { q: polls[st.pollCursor++ % polls.length], endsAt: now() + cfg.pollSeconds * 1000, votes: zeros(), voted: {}, total: 0 };
+    const n = st.pollCursor++;
+    let entry = hour && cfg.pollNextEvery && n % cfg.pollNextEvery === cfg.pollNextEvery - 1 ? { kind: 'next' } : polls[n % polls.length];
+    if (entry?.kind === 'next' && !hour) entry = polls.find(p => p?.kind !== 'next'); // no hours: nothing to pick
+    if (!entry) return null;
+    const p = pollOptions(entry);
+    st.poll = { ...p, endsAt: now() + cfg.pollSeconds * 1000, votes: p.options.map(() => 0), voted: {}, total: 0, planet: hour?.next ?? null, from: hour?.endsAt ?? 0, slot: hour ? hour.endsAt - hour.startsAt : 0 };
     touch('hud');
-    onEvent({ type: 'poll-start', q: st.poll.q });
+    onEvent({ type: 'poll-start', q: p.q, kind: p.kind, options: p.options });
     return st.poll;
   }
-  function castVote(u, v, sign) {
+  function castVote(u, v, i) {
     st.poll.voted[u.userId] = true;
-    st.poll.votes[sign]++;
+    st.poll.votes[i]++;
     st.poll.total++;
     touch('hud');
     if (v.sign) shine(u, v, cfg.pollLight, 'poll');
@@ -1306,8 +1333,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!p) return;
     st.poll = null;
     touch('hud');
-    const ranked = SIGNS.map(x => ({ id: x.id, n: p.votes[x.id] })).sort((a, b) => b.n - a.n || ORDER[a.id] - ORDER[b.id]);
-    onEvent({ type: 'poll-end', q: p.q, total: p.total, winner: p.total ? ranked[0].id : null, votes: ranked[0].n });
+    const top = Math.max(...p.votes), winner = p.total ? p.votes.indexOf(top) : null;
+    const option = winner === null ? null : p.options[winner];
+    if (p.kind === 'next' && option) st.headVote = { planet: p.planet, id: option.head, from: p.from, until: p.from + p.slot };
+    onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, sign: option?.sign ?? null });
   }
 
   // --- quiz -------------------------------------------------------------
@@ -1448,7 +1477,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         quiz: q && { q: q.q, options: q.options, remainingMs: Math.max(0, q.endsAt - t), winners: q.winners, tries: Object.keys(q.answered).length },
         lucky: st.lucky && { sign: st.lucky.sign, remainingMs: Math.max(0, st.lucky.endsAt - t), multiplier: cfg.luckyMultiplier },
         luckyInMs: st.lucky ? 0 : Math.max(0, st.nextLuckyAt - t),
-        poll: st.poll && { q: st.poll.q, remainingMs: Math.max(0, st.poll.endsAt - t), votes: { ...st.poll.votes }, total: st.poll.total },
+        poll: st.poll && { q: st.poll.q, kind: st.poll.kind, options: st.poll.options.map((o, i) => ({ ...o, n: st.poll.votes[i] })), remainingMs: Math.max(0, st.poll.endsAt - t), total: st.poll.total },
         pendingLight: Object.values(st.pending).reduce((a, b) => a + b, 0),
         quietMs: t - st.lastActivityAt,
       };
