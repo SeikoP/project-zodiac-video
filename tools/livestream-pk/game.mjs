@@ -223,7 +223,9 @@ export function parseAction(comment) {
 
 // Wish text shown on stream: no links/numbers-as-contacts, and blocked words hide the text.
 export function cleanWish(comment, blockedWords) {
-  const text = String(comment ?? '').replace(/https?:\/\/\S+|\S+\.(com|vn|net)\S*/gi, '').replace(/\d{6,}/g, '').trim().slice(0, 70);
+  const clean = String(comment ?? '').replace(/https?:\/\/\S+|\S+\.(com|vn|net)\S*/gi, '').replace(/\d{6,}/g, '').replace(/\s+/g, ' ').trim();
+  // long wishes end on a whole word, never in the middle of one
+  const text = clean.length <= 100 ? clean : clean.slice(0, 100).replace(/\s+\S*$/, '');
   const words = new Set(text.normalize('NFC').toLowerCase().split(/[^\p{L}\p{N}]+/u));
   return blockedWords.some(w => words.has(w)) ? null : text;
 }

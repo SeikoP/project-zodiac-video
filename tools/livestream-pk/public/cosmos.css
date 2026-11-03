@@ -56,9 +56,9 @@
 #arena .meta .cb { color: #fff; background: var(--accent); padding: 0 10px; border-radius: 10px; }
 #arena .st { min-height: 56px; max-width: 470px; font-size: 22px; font-weight: 800; line-height: 1.25; color: var(--paper); }
 #arena .st.ice { color: #bfe6ff; }
-#arena .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; width: 440px; }
-#arena .role { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el); font-size: 19px; font-weight: 800; text-align: left; white-space: nowrap; overflow: hidden; }
-#arena .role b { flex: none; color: var(--el); font-size: 20px; }
+#arena .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; width: 470px; }
+#arena .role { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el); font-size: 16px; font-weight: 800; text-align: left; white-space: nowrap; overflow: hidden; }
+#arena .role b { flex: none; color: var(--el); font-size: 17px; }
 #arena .role span { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: rgba(246, 240, 230, .85); }
 #arena .role em { flex: none; margin-left: auto; font-style: normal; color: #fff; font-variant-numeric: tabular-nums; }
 #arena .big { font-size: 84px; line-height: 1; animation: wobble .8s ease-in-out infinite; }

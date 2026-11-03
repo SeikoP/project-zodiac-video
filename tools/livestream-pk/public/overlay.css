@@ -61,7 +61,7 @@ body.transparent, body.transparent #stage { background: transparent; }
 .rc.lead { border-color: var(--accent); }
 
 /* zodiac wheel — the whole width under the top card */
-#wheel { position: absolute; left: 32px; top: 350px; width: 1016px; height: 1050px; }
+#wheel { position: absolute; left: 32px; top: 326px; width: 1016px; height: 1050px; }
 #wheel svg.ring { position: absolute; inset: 0; }
 .spin { transform-box: fill-box; transform-origin: 50% 50%; animation: spin 140s linear infinite; }
 .node { position: absolute; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -92,7 +92,7 @@ body.transparent, body.transparent #stage { background: transparent; }
 
 /* waiting layout: shown instead of the wheel while nobody is on stage — a greeting, the line of viewers who
    have not picked a sign yet, and the 12 seats to pick from. */
-#waiting { position: absolute; left: 32px; top: 352px; width: 1016px; height: 1048px; z-index: 13; display: none; flex-direction: column; gap: 16px; }
+#waiting { position: absolute; left: 32px; top: 326px; width: 1016px; height: 1048px; z-index: 13; display: none; flex-direction: column; gap: 16px; }
 #waiting.on { display: flex; animation: fadein .3s; }
 .wgreet { flex: none; height: 168px; display: flex; align-items: center; gap: 20px; padding: 0 26px 0 22px; border-radius: var(--note); background: var(--card); color: var(--ink);
   border: 3px solid var(--ink); box-shadow: 0 8px 0 rgba(22, 29, 33, .4); }
@@ -222,9 +222,9 @@ body.transparent, body.transparent #stage { background: transparent; }
 #conn.on { display: block; }
 
 /* modals over the body area */
-#scrim { position: absolute; left: 36px; right: 36px; top: 352px; height: 1048px; z-index: 20; display: none; background: rgba(22, 29, 33, .5); }
+#scrim { position: absolute; left: 36px; right: 36px; top: 326px; height: 1048px; z-index: 20; display: none; background: rgba(22, 29, 33, .5); }
 #scrim.on { display: block; animation: fadein .3s; }
-.modal { position: absolute; left: 56px; right: 56px; top: 380px; z-index: 25; display: none; padding: 16px 24px 14px; border-radius: 36px 28px 38px 30px / 30px 38px 28px 36px; text-align: center;
+.modal { position: absolute; left: 56px; right: 56px; top: 350px; z-index: 25; display: none; padding: 16px 24px 14px; border-radius: 36px 28px 38px 30px / 30px 38px 28px 36px; text-align: center;
   background: var(--card); border: 3px solid var(--ink); color: var(--ink); box-shadow: 0 10px 0 rgba(22, 29, 33, .5); }
 .modal.on { display: block; animation: rise .3s; }
 .modal .k { font-family: var(--hand); font-weight: 400; font-size: 18px; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; }
@@ -250,7 +250,7 @@ body.transparent, body.transparent #stage { background: transparent; }
 .modal .win { margin-top: 4px; font-size: 18px; font-weight: 800; color: color-mix(in srgb, var(--teal) 50%, var(--ink)); min-height: 24px; }
 
 /* celebration (level 3): the big moments take the whole body area */
-#hero { position: absolute; left: 36px; right: 36px; top: 352px; height: 1048px; z-index: 22; display: none; pointer-events: none; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+#hero { position: absolute; left: 36px; right: 36px; top: 326px; height: 1048px; z-index: 22; display: none; pointer-events: none; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
   background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--hc, #F2C45C) 36%, rgba(22, 29, 33, .92)), rgba(22, 29, 33, .84) 60%, rgba(22, 29, 33, .6)); }
 #hero.on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; animation: fadein .22s; }
 #hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 1400px; height: 1400px; margin: -700px 0 0 -700px; opacity: .6; animation: spin 28s linear infinite;

@@ -42,7 +42,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 // Layout: one merged top card (title, moon, goal, top-3 ranking), then the wheel as a full-width dial.
 // The outer band (BAND) is the zodiac itself: each sign's arc fills as its constellation lights, and the real
 // planets sit on it at their true longitude. Viewers' mascots stand just outside it.
-const WHEEL_L = 32, WHEEL_T = 350, WHEEL_W = 1016, WHEEL_H = 1050;
+const WHEEL_L = 32, WHEEL_T = 326, WHEEL_W = 1016, WHEEL_H = 1050;
 const CX = WHEEL_L + WHEEL_W / 2, CY = WHEEL_T + WHEEL_H / 2, R = 360, BAND = R + 70, STAND = R + 114;
 const on = key => S.config?.show?.[key] !== false;
 const IDS = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
@@ -225,7 +225,7 @@ function releaseLantern(e) {
   el.dataset.id = e.id;
   el.style.left = `${LANTERN_X[lanternSlot++ % LANTERN_X.length] + rnd(-30, 30)}px`; // three lanes, so lanterns never stack
   el.style.setProperty('--sway', `${rnd(-60, 60)}px`);
-  el.innerHTML = `<img class="lb" src="/art/lantern.svg" alt=""><div class="lt">${e.text ? `<b>${esc(e.text)}</b>` : '<b class="secret">điều ước bí mật ✨</b>'}</div>`
+  el.innerHTML = `<img class="lb" src="/art/lantern.svg" alt=""><div class="lt${e.text?.length > 70 ? ' xlong' : e.text?.length > 34 ? ' long' : ''}">${e.text ? `<b>${esc(e.text)}</b>` : '<b class="secret">điều ước bí mật ✨</b>'}</div>`
     + `<div class="lw">${avatarHtml(e)}<span>${esc(e.nickname)}</span></div>`
     + (e.demo ? '<div class="lbless">🎓 đèn mẫu của linh vật</div>' : `<div class="lbless">🙏 gõ “chúc” · <em>0</em>/${e.need}</div>`);
   el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-lantern') el.remove(); });
@@ -539,18 +539,13 @@ function renderLobby(l) {
   greetedKey = key;
 }
 
-// The gift board: progress to the room's shared goal, the night's totals, who gave most, and the last gifts as chips.
-let lastGiftKey = '';
+// The gift board: progress to the room's shared goal, the night's totals and who gave most (each gift itself
+// already gets its own card when it lands).
 function renderGifts(g) {
   $('gnums').textContent = `${fmt(g.goal.sum)}/${fmt(g.goal.goal)} xu`;
   $('gfill').style.transform = `scaleX(${Math.min(1, g.goal.sum / g.goal.goal).toFixed(3)})`;
   $('gstat').innerHTML = `<b>${fmt(g.count)}</b> quà đêm nay · <b>${fmt(g.diamonds)}</b> xu`;
   $('gtop').innerHTML = g.top ? `👑 tặng nhiều nhất: <b>${esc(g.top.nickname)}</b> (${fmt(g.top.diamonds)} xu)` : 'tặng quà để mở màn nhé 🎁';
-  const key = g.recent.map(r => r.nickname + r.giftName + r.count).join('|');
-  $('thanks').innerHTML = g.recent.length
-    ? g.recent.slice(0, 3).map((r, i) => `<div class="gc${i === 0 && key !== lastGiftKey ? ' fresh' : ''}"><div class="gi">${r.giftImage ? `<img src="${esc(r.giftImage)}" alt="">` : ICON.gift}</div><div class="gt"><b>${esc(r.giftName || 'Quà')}${r.count > 1 ? ` x${r.count}` : ''}</b><span>${esc(r.nickname)}</span></div></div>`).join('')
-    : '<span class="empty">Chưa có quà — món quà đầu tiên sẽ lên đây! 🎁</span>';
-  lastGiftKey = key;
 }
 
 let shownOccasion = false, shownFortune = null, quizReveal = 0, lastQuizTick = 0, pollReveal = 0;
@@ -736,7 +731,7 @@ function renderWishes(list) {
   if (key === wishKey) return;
   wishKey = key;
   $('wishwall').innerHTML = list.length
-    ? list.slice(0, 3).map(w => `<div class="ww${w.blessed ? ' done' : w.open ? ' open' : ''}">${avatarHtml(w)}<div><b>${w.text ? `“${esc(w.text)}”` : 'điều ước bí mật ✨'}</b><span>${esc(w.nickname)} · ${w.blessed ? '⭐ cả phòng đã chúc phúc' : w.open ? `gõ “chúc” · ${w.blessings}/${S.cosmos?.blessNeed ?? 3}` : `${w.blessings} lời chúc`}</span></div></div>`).join('')
+    ? list.slice(0, 2).map(w => `<div class="ww${w.blessed ? ' done' : w.open ? ' open' : ''}">${avatarHtml(w)}<div><b>${w.text ? `“${esc(w.text)}”` : 'điều ước bí mật ✨'}</b><span>${esc(w.nickname)} · ${w.blessed ? '⭐ cả phòng đã chúc phúc' : w.open ? `gõ “chúc” · ${w.blessings}/${S.cosmos?.blessNeed ?? 3}` : `${w.blessings} lời chúc`}</span></div></div>`).join('')
     : '<span class="empty">Gõ “ước …” để thả đèn ước — cả phòng sẽ chúc phúc cho bạn 🏮</span>';
 }
 
