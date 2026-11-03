@@ -156,6 +156,7 @@ async function runScenario(name) {
       }
     } else if (name === 'busy') {
       await api('sim/crowd', { count: 30, giftRate: 0.12 });
+      viewers = Math.min(999999, viewers + 30); updateStats();
       if (!alive()) return;
       for (let i = 1; i <= 8; i++) {
         await step(() => sendComment(['sư tử', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'song ngư'][i % 6], 'Fan' + i));
@@ -188,6 +189,7 @@ async function runScenario(name) {
       }
     } else if (name === 'crowd') {
       await api('sim/crowd', { count: 100, giftRate: 0.05 });
+      viewers = Math.min(999999, viewers + 100); updateStats();
       pushSystem('100 người xem giả lập đã vào phòng');
       log('Tạo 100 người xem, có comment/tim/quà ngẫu nhiên');
     }
@@ -234,7 +236,7 @@ $('stopScenario').addEventListener('click', stopScenario);
 $('stressStart').addEventListener('click', async () => {
   try {
     await api('sim/storm', { perSecond: 300 });
-    updateScenarioStatus('Đang tải cao · 300 event/giây', true);
+    updateScenarioStatus('Đang tải cao · 300 người xem/giây', true);
     log('Bắt đầu stress test 300 event/giây');
   } catch (error) { log('Không chạy được stress test: ' + error.message); }
 });
