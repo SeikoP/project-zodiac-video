@@ -66,6 +66,5 @@ export function createPredict({ st, cfg, now, onEvent }) {
     for (const b of Object.values(p.bets)) n[b.i]++;
     return { key: p.key, q: p.q, options: p.options.map((label, i) => ({ key: 'AB'[i], label, n: n[i], pool: p.pool[i] })), open: now() < p.closesAt, closesInMs: Math.max(0, p.closesAt - now()) };
   };
-  const purge = prefix => { if (st.predict) for (const id of Object.keys(st.predict.bets)) if (id.startsWith(prefix)) { const b = st.predict.bets[id]; st.predict.pool[b.i] -= b.stake; delete st.predict.bets[id]; } };
-  return { open, chat, resolve, tick, view, purge, active: () => st.predict?.key ?? null };
+  return { open, chat, resolve, tick, view, active: () => st.predict?.key ?? null };
 }

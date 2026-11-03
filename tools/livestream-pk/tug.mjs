@@ -72,6 +72,5 @@ export function createTug({ st, cfg, now, onEvent, present, shine }) {
     const t = now(), side = s => Object.entries(g.power).filter(([id]) => g.names[id][1] === s).length;
     return { a: g.a, b: g.b, pos: Math.round(g.pos), warmupMs: Math.max(0, g.startsAt - t), remainingMs: Math.max(0, g.endsAt - t), pullersA: side(g.a), pullersB: side(g.b) };
   };
-  const purge = prefix => { if (st.tug) for (const id of Object.keys(st.tug.power)) if (id.startsWith(prefix)) { delete st.tug.power[id]; delete st.tug.names[id]; } };
-  return { start, pull, tick, view, purge, end };
+  return { start, pull, tick, view, end };
 }

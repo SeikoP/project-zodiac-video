@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, parseSign, parseAction, cleanWish, titleOf, DEFAULT_CONFIG, SIGNS } from './game.mjs';
+import { createGame, emptyState, parseSign, parseAction, cleanWish, titleOf, DEFAULT_CONFIG, SIGNS } from './game.mjs';
 import { createDirector } from './director.mjs';
 import { drawFortune } from './fortunes.mjs';
 import { giftOf } from './tiktok.mjs';
@@ -321,16 +321,50 @@ test('visitor milestones are announced once each', () => {
   assert.equal(of(events, 'milestone')[0].nickname, 'm1');
 });
 
-test('purgeSim removes rehearsal viewers from the stage, pending light and the thank-you bar', () => {
-  const { game } = setup({ commentLight: 0 });
-  game.chat(u('sim:fan1', { comment: 'leo' }));
-  game.chat(u('real1', { comment: 'leo' }));
-  game.gift(u('sim:fan1', { diamonds: 5 }));
-  game.gift(u('sim:fan9', { diamonds: 5 })); // no sign yet: held as pending
-  assert.equal(game.purgeSim(), 2);
-  assert.deepEqual(game.snapshot().stage.map(c => c.userId), ['real1']);
-  assert.equal(game.snapshot().hud.pendingLight, 0);
-  assert.deepEqual(game.snapshot().thanks, []);
+const SIM_COMMENTS = ['Sư Tử', '12/8', 'ước thi đỗ', 'nhận', 'chúc', 'đánh nó', 'kéo!', 'đoán A', 'A', 'nâng cấp', 'kho', 'bingo', 'xin quẻ', 'khoe thẻ'];
+function simStorm(game) {
+  for (const id of ['sim:x', 'sim:y']) {
+    game.member(u(id));
+    for (const comment of SIM_COMMENTS) game.chat(u(id, { comment }));
+    game.gift(u(id, { diamonds: 1000, count: 3, giftName: 'Galaxy' }));
+    game.like(u(id, { count: 500 }));
+    game.social(u(id, { kind: 'follow' }));
+    game.social(u(id, { kind: 'share' }));
+  }
+}
+for (const [what, begin] of [['boss', g => g.startBoss()], ['tug', g => g.startTug()], ['run', g => g.startRun()]]) {
+  test(`outside rehearsal, sim: viewers change nothing, even mid ${what}`, () => {
+    const { game, events } = setup();
+    for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Sư Tử'], ['c', 'Bảo Bình'], ['d', 'Bảo Bình']]) game.chat(u(id, { comment: sign }));
+    begin(game);
+    assert.ok(game.state[what], `${what} should be running`);
+    const before = structuredClone(game.state), n = events.length;
+    simStorm(game);
+    assert.deepEqual(game.state, before);
+    assert.equal(events.length, n);
+  });
+}
+
+test('rehearsal mode still plays sim: viewers', () => {
+  const { game } = setup({ rehearsal: true });
+  game.chat(u('sim:x', { comment: 'Sư Tử' }));
+  assert.equal(game.state.viewers['sim:x'].sign, 'leo');
+});
+
+test('real ids containing "sim" are not dropped', () => {
+  const { game } = setup();
+  game.chat(u('simon', { comment: 'Sư Tử' }));
+  assert.equal(game.state.viewers.simon.sign, 'leo');
+});
+
+test('a saved state with leftover sim: viewers loads without them', () => {
+  const state = emptyState();
+  const { game } = setup();
+  game.chat(u('real', { comment: 'Sư Tử' }));
+  Object.assign(state, structuredClone(game.state));
+  state.viewers['sim:old'] = structuredClone(state.viewers.real);
+  const again = createGame({ state, config: { hours: false } });
+  assert.deepEqual(Object.keys(again.state.viewers), ['real']);
 });
 
 test('a poll counts one vote per viewer, does not move existing teams, and names the winning sign', () => {

@@ -41,7 +41,8 @@ const director = createDirector(config.limits);
 const MUSIC_DIR = path.resolve(dir, config.musicDir ?? '../../assets/music');
 const music = listMusic({ dir: MUSIC_DIR, exclude: config.musicExclude, upbeat: config.musicUpbeat });
 const monitor = createMonitor({ label: id => SIGNS.find(s => s.id === id)?.label ?? id });
-const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show } }, state, quiz, polls: POLLS, onEvent: e => { director.push(e); monitor.note(e); dirty = true; } });
+const SIMULATOR = process.env.PK_SIMULATOR === '1'; // the isolated rehearsal server (npm run simulator)
+const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show }, rehearsal: SIMULATOR }, state, quiz, polls: POLLS, onEvent: e => { director.push(e); monitor.note(e); dirty = true; } });
 const tapped = monitor.tap(game); // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
 const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
 const diag = recorded;
@@ -185,7 +186,7 @@ const API = {
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time
   'tiktok/connect': b => {
     if (process.env.PK_SIMULATOR === '1') throw new Error('TikTok connection is disabled in the isolated simulator.');
-    const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username);
+    return tiktok.connect(b.username);
   },
   'tiktok/disconnect': () => tiktok.disconnect(),
   // Simulated viewers, for rehearsing without going live. Don't use them while actually live.
@@ -313,7 +314,7 @@ const handler = shared => async (req, res) => {
 
 http.createServer(handler(false)).listen(PORT, '127.0.0.1', () => {
   console.log(`Đêm Hội Hoàng Đạo running:\n  overlay  http://127.0.0.1:${PORT}/\n  control  http://127.0.0.1:${PORT}/control`);
-  if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) { game.purgeSim(); tiktok.connect(config.tiktokUsername); }
+  if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) tiktok.connect(config.tiktokUsername);
 });
 // Read-only copy of the overlay for a tunnel; still bound to localhost, the tunnel client connects from this machine.
 http.createServer(handler(true)).listen(SHARE_PORT, '127.0.0.1', () => console.log(`  chia sẻ overlay (chỉ xem, cho tunnel)  http://127.0.0.1:${SHARE_PORT}/`))

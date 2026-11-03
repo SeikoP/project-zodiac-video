@@ -59,6 +59,7 @@ const MILESTONES = [1, 10, 25, 50, 100, 200, 300, 500, 1000, 2000, 5000];
 const zeros = () => Object.fromEntries(SIGNS.map(s => [s.id, 0]));
 
 export const DEFAULT_CONFIG = Object.freeze({
+  rehearsal: false, // only the isolated simulator plays "sim:" viewers; everywhere else they are ignored at the door
   // starlight per action
   commentLight: 2,
   commentCooldownSeconds: 5,
@@ -318,7 +319,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.wishes ??= [];
   st.wishNo ??= 0;
   st.greetingNo ??= 0;
+  if (!cfg.rehearsal) for (const id of Object.keys(st.viewers)) if (id.startsWith('sim:')) delete st.viewers[id]; // left by older versions
   st.nextLuckyAt ||= now() + cfg.luckyEverySeconds * 1000;
+  const rehearsalOnly = u => !cfg.rehearsal && String(u?.userId ?? '').startsWith('sim:');
   const partying = () => now() < st.moon.partyUntil;
 
   // Version counters let the server send a part only when it changed.
@@ -399,6 +402,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // A join is only greeted: nothing persistent is created, so lurkers don't count as visitors.
   let greeted = new Set(), greetedNo = 0;
   function member(u) {
+    if (rehearsalOnly(u)) return false;
     if (!u?.userId || u.userId === 'unknown') return false;
     if (greetedNo !== st.night.no) { greeted = new Set(); greetedNo = st.night.no; }
     if (greeted.has(u.userId)) return false;
@@ -927,6 +931,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const fanMult = v => 1 + (v.fanLevel ? Math.min(cfg.fanBonusMax, cfg.fanBonus + cfg.fanBonusPerLevel * v.fanLevel) : 0) + (v.subscriber ? cfg.subscriberBonus : 0);
 
   function chat(u) {
+    if (rehearsalOnly(u)) return;
     const v = viewer(u);
     if (st.quiz && answerQuiz(u, v)) return;
     if (st.run && run.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // A/B/C while the party votes
@@ -1077,6 +1082,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   function gift(u) {
+    if (rehearsalOnly(u)) return;
     const v = viewer(u);
     const count = Math.max(1, u.count | 0);
     const diamonds = Math.max(0, u.diamonds) * count;
@@ -1100,6 +1106,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // Likes are the "gõ mõ" of this room: every tap raises the moon.
   function like(u) {
+    if (rehearsalOnly(u)) return;
     const v = viewer(u);
     const n = Math.max(0, u.count | 0);
     raiseMoon(n);
@@ -1117,6 +1124,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // Follow and share ring the bell every time but pay once per viewer per night.
   function social(u) {
+    if (rehearsalOnly(u)) return;
     const v = viewer(u);
     const kind = u.kind === 'share' ? 'share' : 'follow';
     onEvent({ type: 'bell', kind, userId: u.userId, nickname: v.nickname, sign: v.sign });
@@ -1437,25 +1445,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  // Removes the rehearsal viewers ("sim:" ids) so a real live starts without them on stage or in the thank-you bar.
-  function purgeSim() {
-    let n = 0;
-    for (const id of Object.keys(st.viewers)) if (id.startsWith('sim:')) { delete st.viewers[id]; delete st.pending[id]; stage.delete(id); lobby.delete(id); n++; }
-    st.thanks = st.thanks.filter(t => !t.userId.startsWith('sim:'));
-    st.gifts.recent = st.gifts.recent.filter(r => !r.userId.startsWith('sim:'));
-    st.fortuneQueue = st.fortuneQueue.filter(f => !f.userId.startsWith('sim:'));
-    boss.purge('sim:');
-    run.purge('sim:');
-    roast.purge('sim:');
-    tug.purge('sim:');
-    predict.purge('sim:');
-    if (st.act) for (const id of Object.keys(st.act.light)) if (id.startsWith('sim:')) delete st.act.light[id];
-    if (st.chaos) for (const id of Object.keys(st.chaos.fixers)) if (id.startsWith('sim:')) delete st.chaos.fixers[id];
-    st.chest.recent = [];
-    st.wishes = st.wishes.filter(w => !w.userId.startsWith('sim:'));
-    touch('hud', 'stage', 'thanks', 'race', 'lobby', 'gifts', 'cosmos', 'stars');
-    return n;
-  }
-
-  return { startPoll, endPoll, purgeSim, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, startChaos, endChaos, openChest: cards.openNow, forceHour, startHead, makePair, startRun: () => (st.boss || st.chaos || st.tug ? null : run.start()), startTug: () => (st.boss || st.chaos || st.run ? null : tug.start()), startRoast: sign => (st.boss || st.chaos || st.run ? null : roast.start(sign)), stopRun: () => run.stop(), hour: hourView, tick, changes, snapshot, newNight, resetAll, pruneViewers, sky: () => sky, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, startChaos, endChaos, openChest: cards.openNow, forceHour, startHead, makePair, startRun: () => (st.boss || st.chaos || st.tug ? null : run.start()), startTug: () => (st.boss || st.chaos || st.run ? null : tug.start()), startRoast: sign => (st.boss || st.chaos || st.run ? null : roast.start(sign)), stopRun: () => run.stop(), hour: hourView, tick, changes, snapshot, newNight, resetAll, pruneViewers, sky: () => sky, state: st, config: cfg };
 }

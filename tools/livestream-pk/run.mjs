@@ -410,6 +410,5 @@ export function createRun({ st, cfg, now, onEvent, dayKey, present, reward, gem 
   }
 
   const stop = () => { if (st.run) end(false); };
-  const purge = prefix => { if (st.run) for (const id of Object.keys(st.run.party)) if (id.startsWith(prefix)) delete st.run.party[id]; };
-  return { start, chat, hit, tick, view, stop, purge, active: () => Boolean(st.run), meta: M };
+  return { start, chat, hit, tick, view, stop, active: () => Boolean(st.run), meta: M };
 }
