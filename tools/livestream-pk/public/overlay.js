@@ -239,20 +239,33 @@ function releaseLantern(e) {
   el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-lantern') el.remove(); });
   box.append(el);
 }
-const GREETING_X = [70, 680, 360];
-let greetingSlot = 0;
+// Sao chào mừng: a newcomer's star streaks in as a big comet and lands on the rim of the community cluster, where
+// a badge with their avatar asks the room to say “chào”. Enough greetings and the star bursts gold (like a wish).
 function releaseGreeting(e) {
+  const to = starPoint(e);
+  fly(e.userId, [rnd(160, 920), WHEEL_T + 30], to, e.sign ? color(e.sign) : C.gold, `✦ ${e.nickname}`, 0, { comet: true });
   const box = $('lanterns');
-  const old = [...box.querySelectorAll('.floating-greeting')];
+  const old = [...box.querySelectorAll('.welcome-star')];
   while (old.length >= 3) old.shift().remove();
   const el = document.createElement('div');
-  el.className = 'floating-greeting';
+  el.className = 'welcome-star';
   el.dataset.id = `g${e.id}`;
-  el.style.left = `${GREETING_X[greetingSlot++ % GREETING_X.length] + rnd(-18, 18)}px`;
-  el.style.setProperty('--sway', `${rnd(-40, 40)}px`);
-  el.innerHTML = `<span class="fg-icon">👋</span><div><b>Chào ${esc(e.nickname)}!</b><span>Chúc bạn xem live thật vui ✨</span></div>${avatarHtml(e)}`;
-  el.addEventListener('animationend', ev => { if (ev.animationName === 'rise-greeting') el.remove(); });
+  el.style.left = `${Math.max(150, Math.min(930, to[0]))}px`;
+  el.style.top = `${to[1] - 64}px`;
+  el.style.setProperty('--wait', `${(e.seconds ?? 30) + 1}s`);
+  el.innerHTML = `${avatarHtml(e)}<div><b>Chào ${esc(e.nickname)}! ✨</b><span>cả nhà gõ “chào” · <em>0</em>/${e.need ?? 3}</span></div>`;
+  el.addEventListener('animationend', ev => { if (ev.animationName === 'welcome-out') el.remove(); });
   box.append(el);
+}
+function greetStar(e, done = false) {
+  const el = $('lanterns').querySelector(`[data-id="g${e.id}"]`);
+  const s = S.stars.find(x => x.userId === e.userId);
+  if (s) { const [x, y] = starPoint(s); flare.set(e.userId, Date.now() + (done ? 6000 : 1200)); burst(x, y, done ? [C.gold, '#fff', C.paper] : [C.gold], done ? 70 : 14, done ? 9 : 4); }
+  if (!el) return;
+  const em = el.querySelector('em');
+  if (em) em.textContent = e.count;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  if (done) { el.classList.add('done'); el.querySelector('span').textContent = `⭐ ${e.greeters.slice(0, 3).join(', ')}${e.count > 3 ? '…' : ''} đã chào · +${e.dust} bụi sao`; }
 }
 function blessLantern(e, done = false) {
   const el = $('lanterns').querySelector(`[data-id="${e.id}"]`);
@@ -332,10 +345,10 @@ const starPoint = s => {
 };
 const flare = new Map(), landing = new Set(); // userId -> until (ms); stars still in flight are not drawn yet
 let flights = [], hereIds = new Set();
-function fly(userId, from, to, c, name, delay = 0) {
+function fly(userId, from, to, c, name, delay = 0, { comet = false } = {}) {
   if (flights.length >= 24) return;
   landing.add(userId);
-  flights.push({ userId, x0: from[0], y0: from[1], x1: to[0], y1: to[1], c, name, t: -delay, trail: [] });
+  flights.push({ userId, x0: from[0], y0: from[1], x1: to[0], y1: to[1], c, name, t: -delay, trail: [], comet });
 }
 function drawCommunitySky(t, dt) {
   const now = Date.now();
@@ -357,11 +370,13 @@ function drawCommunitySky(t, dt) {
     f.t += dt / 80; // slow enough to read the name on the way down
     if (f.t < 0) continue;
     const e = 1 - (1 - Math.min(1, f.t)) ** 3, x = f.x0 + (f.x1 - f.x0) * e, y = f.y0 + (f.y1 - f.y0) * e - Math.sin(e * Math.PI) * 120;
-    f.trail.push([x, y]); if (f.trail.length > 16) f.trail.shift();
-    f.trail.forEach(([px, py], i) => { fx.globalAlpha = i / f.trail.length * .9; fx.fillStyle = f.c; fx.beginPath(); fx.arc(px, py, 2 + i * .45, 0, 7); fx.fill(); });
-    fx.globalAlpha = 1; fx.fillStyle = '#fff'; fx.beginPath(); fx.arc(x, y, 7, 0, 7); fx.fill();
-    if (f.name) drawLabel(label(f.name, 18, C.gold), x, y + 10);
-    if (f.t >= 1) { landing.delete(f.userId); flare.set(f.userId, Date.now() + 3500); burst(f.x1, f.y1, [f.c, C.gold, C.paper], 26, 6); }
+    const k = f.comet ? 2 : 1; // a welcome comet: twice the trail, a glowing head and a bigger name
+    f.trail.push([x, y]); if (f.trail.length > 16 * k) f.trail.shift();
+    f.trail.forEach(([px, py], i) => { fx.globalAlpha = i / f.trail.length * .9; fx.fillStyle = i % 3 || !f.comet ? f.c : C.gold; fx.beginPath(); fx.arc(px, py, (2 + i * .45 / k) * k, 0, 7); fx.fill(); });
+    if (f.comet) { fx.globalAlpha = .35; fx.fillStyle = C.gold; fx.beginPath(); fx.arc(x, y, 30, 0, 7); fx.fill(); }
+    fx.globalAlpha = 1; fx.fillStyle = '#fff'; fx.beginPath(); fx.arc(x, y, 7 * k, 0, 7); fx.fill();
+    if (f.name) drawLabel(label(f.name, 18 + 6 * (k - 1), C.gold), x, y + 10 * k);
+    if (f.t >= 1) { landing.delete(f.userId); flare.set(f.userId, Date.now() + 3500 * k); burst(f.x1, f.y1, [f.c, C.gold, C.paper], 26 * k, 6 * k); }
   }
   fx.globalAlpha = 1;
 }
@@ -1187,7 +1202,7 @@ $('sound').onclick = () => { music.resume(); sfx('welcome'); $('sound').classLis
 const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak', dance: 'dance',
   swaps: 'flow', 'boss-hits': 'bossHit', 'boss-start': 'bossStart', 'boss-freeze': 'boop', 'boss-rescue': 'lit', 'boss-blocked': 'follow', 'boss-heal': 'luckyEnd', 'boss-defeated': 'wheel', 'boss-escaped': 'moonEnd',
   'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', collection: 'title', 'set-complete': 'title',
-  'wish-bless': 'sparkle', 'wish-blessed': 'lit', loots: 'sparkle', 'level-up': 'title', bag: 'boop', combine: 'lit', 'upgrade-need': 'boop',
+  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', bag: 'boop', combine: 'lit', 'upgrade-need': 'boop',
   fans: 'milestone', 'fan-call': 'lucky', 'heat-up': 'overtake', demo: 'boop', 'switch-wait': 'boop',
   'birth-sky': 'lucky', 'star-born': 'starFly', showtime: 'milestone',
   'hour-start': 'hourStart', 'act-open': 'actOpen', 'head-start': 'headStart', 'head-end': 'actClose', 'act-close': 'actClose', pair: 'pair',
@@ -1210,6 +1225,8 @@ function onFx(e) {
   if (sound) { sfx(sound, arg); if (BIG.has(sound)) music.duck(); }
   switch (e.type) {
     case 'greeting': releaseGreeting(e); break;
+    case 'welcome-hi': greetStar(e); break;
+    case 'welcome-done': greetStar(e, true); break;
     case 'joins': {
       const p = e.people.at(-1);
       // a switch is always shown (the viewer is waiting to see it worked); plain joins follow the panel's switch

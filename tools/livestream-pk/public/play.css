@@ -56,13 +56,18 @@
 @keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -700px); opacity: 0; } }
 @keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes blessPop { 40% { transform: scale(1.12); } }
-.floating-greeting { position: absolute; top: 1110px; width: 340px; min-height: 82px; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 3px solid var(--ink); border-radius: 24px 18px 24px 8px; background: var(--card); color: var(--ink); box-shadow: 0 6px 0 rgba(22,29,33,.3); animation: rise-greeting 9s cubic-bezier(.3,.1,.4,1) forwards; }
-.floating-greeting > div { flex: 1; min-width: 0; }
-.floating-greeting b { display: block; font-family: var(--hand); font-size: 26px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.floating-greeting span:not(.fg-icon) { display: block; margin-top: 3px; font-size: 16px; font-weight: 800; color: var(--soft-ink); white-space: nowrap; }
-.floating-greeting .fg-icon { font-size: 38px; }
-.floating-greeting .av { width: 46px; height: 46px; border-width: 2px; font-size: 21px; }
-@keyframes rise-greeting { 0% { transform: translate(0, 0); opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { transform: translate(var(--sway), -640px); opacity: 0; } }
+/* sao chào mừng: the badge over a newcomer's star on the rim of the community cluster, waiting for the room's "chào" */
+.welcome-star { position: absolute; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px; border: 3px solid var(--gold); border-radius: 999px; background: rgba(22, 29, 33, .86); color: var(--paper); box-shadow: 0 0 22px rgba(242, 196, 92, .55); white-space: nowrap; animation: welcome-in .5s 1.2s both, welcome-out .6s var(--wait, 31s) forwards; }
+.welcome-star::after { content: ''; position: absolute; left: 50%; bottom: -14px; border: 8px solid transparent; border-top-color: var(--gold); transform: translateX(-50%); }
+.welcome-star .av { width: 46px; height: 46px; border-width: 2px; font-size: 21px; }
+.welcome-star b { display: block; font-family: var(--hand); font-weight: 400; font-size: 26px; line-height: 1.05; color: var(--gold); max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
+.welcome-star span { display: block; font-size: 16px; font-weight: 800; }
+.welcome-star em { font-style: normal; color: var(--gold); }
+.welcome-star.pop > * { animation: blessPop .5s; }
+.welcome-star.done { background: var(--gold); color: var(--ink); animation: welcome-out .6s 5s forwards; }
+.welcome-star.done b { color: var(--ink); }
+@keyframes welcome-in { from { opacity: 0; transform: translate(-50%, -60%) scale(.6); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
+@keyframes welcome-out { to { opacity: 0; transform: translate(-50%, -140%); } }
 
 /* the wish wall in the top bar */
 .wall { display: flex; align-items: stretch; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }

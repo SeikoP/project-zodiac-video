@@ -496,3 +496,45 @@ test('a saved state loads without leftover sim: entries in the thank-you bar, re
   assert.ok(s.thanks.length + s.gifts.recent.length > 0, 'the real viewer is still thanked');
   assert.equal(s.gifts.top?.nickname, 'real', 'the top supporter is a real viewer');
 });
+
+test('parseAction reads a greeting: "chào", "xin chào", "hi", "hello", "welcome"', () => {
+  for (const c of ['chào', 'Chào bạn mới', 'xin chào', 'hi', 'Hello!', 'welcome', 'chào mừng']) assert.equal(parseAction(c), 'welcome', c);
+  for (const c of ['chúc', 'chao ôi đẹp quá'.replace('chao ôi', 'trời ơi'), 'hihi']) assert.notEqual(parseAction(c), 'welcome', c);
+});
+
+test('a newcomer arrives as a star at the rim of the cluster, and the room\'s "chào" lights it up', () => {
+  const { game, events } = setup({ welcomeNeed: 3, welcomeWindowSeconds: 30, welcomeDust: 5 });
+  for (const id of ['a', 'b', 'c']) game.chat(u(id, { comment: 'Sư Tử' }));
+  game.member(u('new', { avatar: '' }));
+  const g = of(events, 'greeting')[0];
+  assert.equal(g.userId, 'new');
+  assert.deepEqual([g.need, g.seconds], [3, 30]);
+  assert.ok(g.x >= 0 && g.x < 1 && g.y >= 0 && g.y <= 1, 'carries the star position');
+  assert.deepEqual([g.x, g.y], [game.state.viewers.new.star.x, game.state.viewers.new.star.y]);
+  game.chat(u('new', { comment: 'chào' })); // greeting yourself does not count
+  game.chat(u('a', { comment: 'chào' }));
+  game.chat(u('a', { comment: 'chào bạn' })); // once each
+  game.chat(u('b', { comment: 'hi' }));
+  assert.deepEqual(of(events, 'welcome-hi').map(e => e.count), [1, 2]);
+  game.chat(u('c', { comment: 'hello' }));
+  const done = of(events, 'welcome-done');
+  assert.equal(done.length, 1);
+  assert.equal(done[0].userId, 'new');
+  assert.deepEqual(done[0].greeters, ['a', 'b', 'c']);
+  assert.equal(game.state.viewers.new.bag.dust, 5);
+  game.chat(u('d', { comment: 'chào' }));
+  assert.equal(of(events, 'welcome-hi').length, 2, 'a lit welcome takes no more');
+});
+
+test('a welcome closes after its window; a "chào" goes to the newest open one', () => {
+  const { game, events, advance } = setup({ welcomeNeed: 3, welcomeWindowSeconds: 30 });
+  game.chat(u('a', { comment: 'Sư Tử' }));
+  game.member(u('n1'));
+  advance(31_000);
+  game.chat(u('a', { comment: 'chào' }));
+  assert.equal(of(events, 'welcome-hi').length, 0);
+  game.member(u('n2'));
+  game.member(u('n3'));
+  game.chat(u('a', { comment: 'chào' }));
+  assert.equal(of(events, 'welcome-hi')[0].nickname, 'n3');
+});

@@ -133,6 +133,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   blessWindowSeconds: 45,
   blessNeed: 3,
   blessDust: 3,
+  // a newcomer lands as a star; enough "chào" from the room within the window and it lights up (+bụi sao for them)
+  welcomeWindowSeconds: 30,
+  welcomeNeed: 3,
+  welcomeDust: 5,
   switchCooldownSeconds: 30, // "đổi <cung>": at most this often, so the lucky star can't be chased sign to sign
   // "bầu trời ngày sinh": a birthday comment shows that day's real sky (once per viewer per cooldown)
   birthSky: true,
@@ -235,6 +239,7 @@ const CARDS_RE = /\b(khoe the|bo the|xem the)\b/;
 const UPGRADE_RE = /\b(nang cap|len cap|len lv|up lv)\b/;
 const COMBINE_RE = /\bghep the\b/;
 const BAG_RE = /^\s*(kho|tui|tui do|xem kho|kho do)[\s!.]*$/;
+const WELCOME_RE = /^\s*(xin chao|chao mung|chao|hi|hello|helo|welcome)\b/;
 const BLESS_RE = /^\s*(chuc|chuc phuc|thanh hien thuc|thanh su|amen|\+1)\b/;
 // what the house mascots demonstrate in a quiet room, in turn
 export const DEMOS = ['join', 'wish', 'fortune', 'upgrade', 'bless', 'chest', 'switch'];
@@ -251,6 +256,7 @@ export function parseAction(comment) {
   if (COMBINE_RE.test(t)) return 'combine';
   if (BAG_RE.test(t)) return 'bag';
   if (BLESS_RE.test(t)) return 'bless';
+  if (WELCOME_RE.test(t)) return 'welcome';
   if (CALL_RE.test(t)) return 'call';
   if (BINGO_RE.test(t)) return 'bingo';
   if (PASS_RE.test(t)) return 'pass';
@@ -297,6 +303,7 @@ export function emptyState() {
     boss: null, // see boss.mjs
     nextBossAt: 0,
     chest: { no: 0, openUntil: 0, claimed: {}, recent: [] },
+    welcomes: [], // newcomers' stars the room can greet, newest first: { id, userId, nickname, avatar, at, greeters: { userId: nickname }, done }
     wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, sign, text, at, blessers: { userId: nickname }, blessed }
     wishNo: 0,
     // the hours, acts and headliners, and what is playing right now (null when nothing is)
@@ -320,6 +327,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.lucky ??= null;
   st.gifts ??= freshGifts();
   st.wishes ??= [];
+  st.welcomes ??= [];
   st.wishNo ??= 0;
   st.greetingNo ??= 0;
   // rehearsal viewers left in a saved state by older versions: off the stage lists before the first real viewer arrives
@@ -327,7 +335,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const sim = id => String(id ?? '').startsWith('sim:');
     for (const map of [st.viewers, st.pending, st.gifts.by]) for (const id of Object.keys(map ?? {})) if (sim(id)) delete map[id];
     st.gifts.top = Object.values(st.gifts.by).reduce((top, b) => (!top || b.diamonds >= top.diamonds ? { nickname: b.nickname, diamonds: b.diamonds } : top), null);
-    for (const k of ['thanks', 'wishes', 'fortuneQueue']) st[k] = (st[k] ?? []).filter(x => !sim(x.userId));
+    for (const k of ['thanks', 'wishes', 'welcomes', 'fortuneQueue']) st[k] = (st[k] ?? []).filter(x => !sim(x.userId));
     st.gifts.recent = st.gifts.recent.filter(x => !sim(x.userId));
   }
   st.nextLuckyAt ||= now() + cfg.luckyEverySeconds * 1000;
@@ -433,13 +441,17 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     greeted.add(u.userId);
     const nickname = st.viewers[u.userId]?.nickname ?? cleanName(u.nickname || u.userId, cfg.blockedWords);
     const avatar = safeAvatar(u.avatar) || st.viewers[u.userId]?.avatar || '';
-    onEvent({ type: 'greeting', id: ++st.greetingNo, userId: u.userId, nickname, avatar });
     // a newcomer is a quiet star in the community sky from the moment they walk in; not a visitor, not in the lobby
     const v = (st.viewers[u.userId] ??= { ...newViewer(nickname), avatar, lastSeenAt: now() });
     if (!v.star) {
       v.star = { x: rng(), y: rng(), at: now(), unsigned: true };
       touch('stars');
     }
+    // their star flies in and lands on the rim of the cluster; the room's "chào" lights it up (like blessing a wish)
+    const w = { id: ++st.greetingNo, userId: u.userId, nickname, avatar, at: now(), greeters: {}, done: false };
+    st.welcomes.unshift(w);
+    st.welcomes.length = Math.min(st.welcomes.length, 6);
+    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname, avatar, sign: v.sign, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
     return true;
   }
 
@@ -778,6 +790,20 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return q && h?.quest && q.key === `${hour.planet}@${hour.startsAt}` ? { got: q.got, goal: q.goal, done: q.done, unit: q.unit ?? h.quest.unit, reward: q.rewardText ?? h.quest.rewardText, glyph: h.glyph, color: h.color } : null;
   };
 
+  // --- newcomers the room can greet: "chào" goes to the newest open welcome that isn't your own -------------------
+  function welcome(u, v) {
+    const t = now();
+    const w = st.welcomes.find(x => !x.done && x.userId !== u.userId && !x.greeters[u.userId] && t - x.at < cfg.welcomeWindowSeconds * 1000);
+    if (!w) return;
+    w.greeters[u.userId] = v.nickname;
+    const count = Object.keys(w.greeters).length;
+    if (count < cfg.welcomeNeed) return void onEvent({ type: 'welcome-hi', id: w.id, userId: w.userId, nickname: w.nickname, by: v.nickname, count, need: cfg.welcomeNeed });
+    w.done = true;
+    const owner = st.viewers[w.userId];
+    if (owner) bag.add({ userId: w.userId }, owner, 'dust', cfg.welcomeDust, 'welcome');
+    onEvent({ type: 'welcome-done', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, sign: owner?.sign ?? null, greeters: Object.values(w.greeters).slice(0, 5), count, dust: cfg.welcomeDust });
+  }
+
   // --- wishes the room can bless --------------------------------------------------------------------
   function bless(u, v) {
     const t = now();
@@ -989,6 +1015,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (action === 'combine' && v.sign) cards.combine(u, v);
     else if (action === 'bag') bag.show(u, v);
     else if (action === 'bless') bless(u, v);
+    else if (action === 'welcome') welcome(u, v);
     else if (action === 'call') fanCall(u, v);
     else if (action === 'cards') cards.show(u, v);
     else if (action === 'fix') fixChaos(u, v);
