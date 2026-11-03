@@ -14,6 +14,8 @@ export const DEFAULT_LIMITS = Object.freeze({
   titles: 1,
   bells: 1,
   streaks: 2,
+  hits: 4, // named boss hits per frame (crits first); the rest only count toward each sign's total
+  cards: 4,
 });
 
 export function createDirector(limits = {}) {
@@ -21,7 +23,7 @@ export function createDirector(limits = {}) {
   let f = fresh();
 
   function fresh() {
-    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
+    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
   }
 
   function push(e) {
@@ -39,6 +41,20 @@ export function createDirector(limits = {}) {
         break;
       }
       case 'flow': f.flows.set(`${e.from}>${e.to}`, (f.flows.get(`${e.from}>${e.to}`) ?? 0) + e.amount); break;
+      case 'swap': f.swaps.set(e.from, e.to); break; // Thủy Nghịch: one stray comet per sign per frame
+      case 'boss-hit': {
+        f.hitSigns.set(e.sign, (f.hitSigns.get(e.sign) ?? 0) + e.dmg);
+        if (f.hits.length < L.hits) f.hits.push(e);
+        else if (e.crit) { const i = f.hits.findIndex(h => !h.crit); if (i >= 0) f.hits[i] = e; }
+        break;
+      }
+      case 'card': {
+        // rare cards always make it; plain ones fill the remaining slots
+        if (f.cards.length < L.cards) f.cards.push(e);
+        else if (e.card.edition !== 'base') { const i = f.cards.findIndex(c => c.card.edition === 'base'); if (i >= 0) f.cards[i] = e; else f.moreCards++; }
+        else f.moreCards++;
+        break;
+      }
       case 'lit': f.lit.push({ sign: e.sign, by: e.by }); break;
       case 'title-up': if (f.titles.length < L.titles) f.titles.push(e); break;
       case 'bell': if (f.bells.length < L.bells) f.bells.push({ userId: e.userId, nickname: e.nickname, kind: e.kind }); else f.moreBells++; break;
@@ -57,6 +73,9 @@ export function createDirector(limits = {}) {
     for (const tier of ['meteor', 'firework', 'sparkle']) for (const g of f.gifts[tier]) fx.push({ type: 'gift', tier, ...g });
     if (f.hearts.size) fx.push({ type: 'hearts', from: [...f.hearts].map(([userId, count]) => ({ userId, count })) });
     if (f.flows.size) fx.push({ type: 'flows', flows: [...f.flows].map(([k, amount]) => { const [from, to] = k.split('>'); return { from, to, amount }; }) });
+    if (f.swaps.size) fx.push({ type: 'swaps', swaps: [...f.swaps].map(([from, to]) => ({ from, to })) });
+    if (f.hitSigns.size) fx.push({ type: 'boss-hits', hits: f.hits, bySign: Object.fromEntries(f.hitSigns) });
+    if (f.cards.length) fx.push({ type: 'cards', cards: f.cards, more: f.moreCards });
     for (const l of f.lit) fx.push({ type: 'lit', ...l });
     for (const t of f.titles) fx.push({ type: 'title-up', userId: t.userId, nickname: t.nickname, sign: t.sign, title: t.title });
     if (f.bells.length) fx.push({ type: 'bells', people: f.bells, more: f.moreBells });

@@ -42,7 +42,7 @@ const fakeConnection = () => Object.assign(new EventEmitter(), { connect: async 
 
 test('end to end: TikTok events reach the game (join by comment, likes raise the moon, gifts and follows light the sky)', async () => {
   const conn = fakeConnection(), logs = [];
-  const game = createGame({ rng: () => 0, config: { adaptiveCrowd: false, autoQuiz: false, quietSeconds: 9999, checkinPerNight: 0, luckyEverySeconds: 1e9, moonGoal: 1e9, constellationCost: 1000, commentLight: 2, lightPerDiamond: 5 } });
+  const game = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, adaptiveCrowd: false, autoQuiz: false, quietSeconds: 9999, checkinPerNight: 0, luckyEverySeconds: 1e9, moonGoal: 1e9, constellationCost: 1000, commentLight: 2, lightPerDiamond: 5 } });
   const statuses = [];
   const bridge = createTikTokBridge({ game, connect: () => conn, log: m => logs.push(m), onStatus: s => statuses.push(s.state) });
   await bridge.connect('@someone');
@@ -104,7 +104,7 @@ test('diagnostics: schema probe records field names only, and a recorded night c
     assert.ok(schema.chat.user.includes('displayId'));
     assert.ok(!JSON.stringify(schema).includes('bí mật'));
 
-    const rec = createGame({ rng: () => 0, config: { autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
+    const rec = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
     const wrapped = diag.wrap(rec);
     wrapped.chat({ userId: '5', nickname: 'An', avatar: '', comment: 'song ngư' });
     wrapped.gift({ userId: '5', nickname: 'An', avatar: '', diamonds: 10, count: 2, giftName: 'Rose' });
@@ -114,7 +114,7 @@ test('diagnostics: schema probe records field names only, and a recorded night c
     const lines = fs.readFileSync(diag.eventsFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
     assert.deepEqual(lines.map(l => l.type), ['chat', 'gift', 'like', 'social']);
 
-    const replayed = createGame({ rng: () => 0, config: { autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
+    const replayed = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
     for (const l of lines) ingest(replayed, l);
     assert.deepEqual(replayed.state.wheel.light, rec.state.wheel.light);
     assert.equal(replayed.state.viewers['5'].lifetime, rec.state.viewers['5'].lifetime);

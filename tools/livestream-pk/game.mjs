@@ -23,6 +23,9 @@ import { CONSTELLATIONS } from './public/constellations.js';
 import { drawFortune, dayKey } from './fortunes.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { occasionOn } from './public/occasions.js';
+import { readSky as readRealSky, boonFor } from './sky.mjs';
+import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
+import { createCards, CARD_DEFAULTS } from './cards.mjs';
 
 export const SIGNS = Object.freeze([
   { id: 'aries', label: 'Bạch Dương', glyph: '♈', element: 'fire' },
@@ -39,6 +42,7 @@ export const SIGNS = Object.freeze([
   { id: 'pisces', label: 'Song Ngư', glyph: '♓', element: 'water' },
 ]);
 const SIGN = Object.fromEntries(SIGNS.map(s => [s.id, s]));
+const OPPOSITE = Object.fromEntries(SIGNS.map((s, i) => [s.id, SIGNS[(i + 6) % 12].id]));
 const ORDER = Object.fromEntries(SIGNS.map((s, i) => [s.id, i]));
 // Visitor counts that get a small celebration.
 const MILESTONES = [1, 10, 25, 50, 100, 200, 300, 500, 1000, 2000, 5000];
@@ -98,6 +102,18 @@ export const DEFAULT_CONFIG = Object.freeze({
   crowdFull: 12,
   autoQuiz: true,
   quietSeconds: 45,
+  // the real sky: planets standing in a sign boost its fans' starlight; a real full moon fills the game's moon twice as fast
+  skyBoons: true,
+  // Thủy Nghịch: for a while every sign's starlight lands on its opposite sign, until enough viewers comment "thuận".
+  // It comes often while Mercury is really retrograde, rarely otherwise. 0 = only when the host calls it.
+  chaosEverySeconds: 1500,
+  chaosEveryRetroSeconds: 480,
+  chaosSeconds: 40,
+  chaosFixMin: 3,
+  chaosFixShare: 0.5, // of the viewers on stage, capped at 12
+  chaosFixLight: 5,
+  ...BOSS_DEFAULTS,
+  ...CARD_DEFAULTS,
   // which minor announcements the overlay shows; the big ones (gifts, follows, lit signs, readings, quizzes) are always on
   show: { join: true, dance: false, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
@@ -149,9 +165,15 @@ export function parseSign(comment) {
 const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
 const DANCE_RE = /\b(nhay|quay|dance)\b/;
 const WISH_RE = /^\s*(uoc|mong|nguyen|cau (nguyen|mong|cho|chuc))\b/;
+const CLAIM_RE = /^\s*(nhan|nhan the|nhan ruong|mo ruong)[\s!.]*$/;
+const FIX_RE = /\b(thuan hanh|sua song)\b|^\s*thuan\b/;
+const CARDS_RE = /\b(khoe the|bo the|xem the)\b/;
 export function parseAction(comment) {
   const t = norm(comment);
   if (WISH_RE.test(t)) return 'wish';
+  if (CLAIM_RE.test(t)) return 'claim';
+  if (FIX_RE.test(t)) return 'fix';
+  if (CARDS_RE.test(t)) return 'cards';
   if (FORTUNE_RE.test(t)) return 'fortune';
   if (DANCE_RE.test(t)) return 'dance';
   return null;
@@ -187,10 +209,16 @@ export function emptyState() {
     pollCursor: 0,
     quietUntil: 0,
     lastActivityAt: 0,
+    chaos: null, // Thủy Nghịch: { endsAt, need, fixers: { userId: nickname }, real }
+    nextChaosAt: 0,
+    boss: null, // see boss.mjs
+    nextBossAt: 0,
+    chest: { no: 0, openUntil: 0, claimed: {}, recent: [] },
   };
 }
 
-export function createGame({ config = {}, state = emptyState(), quiz = [], polls = [], now = () => Date.now(), rng = Math.random, onEvent = () => {} } = {}) {
+// readSky(t) gives the real sky (sky.mjs); tests pass their own, or null for none.
+export function createGame({ config = {}, state = emptyState(), quiz = [], polls = [], now = () => Date.now(), rng = Math.random, onEvent = () => {}, readSky = readRealSky } = {}) {
   const cfg = { ...DEFAULT_CONFIG, ...config, show: { ...DEFAULT_CONFIG.show, ...config.show } };
   const st = state;
   st.night.startedAt ??= now();
@@ -203,7 +231,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const partying = () => now() < st.moon.partyUntil;
 
   // Version counters let the server send a part only when it changed.
-  const ver = { hud: 1, race: 1, sky: 1, stage: 1, thanks: 1, lobby: 1, gifts: 1 };
+  const ver = { hud: 1, race: 1, sky: 1, stage: 1, thanks: 1, lobby: 1, gifts: 1, cosmos: 1 };
   const touch = (...parts) => { for (const p of parts) ver[p]++; };
 
   // The stage: most recently active viewers with a sign, oldest first (Map keeps insertion order).
@@ -266,7 +294,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   function raiseMoon(amount) {
     if (partying() || amount <= 0) return;
-    st.moon.light += amount;
+    st.moon.light += cfg.skyBoons && sky?.moon.full ? amount * 2 : amount;
     touch('hud');
     if (st.moon.light < st.moon.goal) return;
     st.moon.full++;
@@ -275,6 +303,65 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.moon.partyUntil = now() + cfg.partySeconds * 1000;
     onEvent({ type: 'moon-full', count: st.moon.full, seconds: cfg.partySeconds, multiplier: cfg.partyMultiplier });
   }
+
+  // --- the real sky, Thủy Nghịch, the boss and the star chest ---------------------------------------------
+  // The sky is recomputed once a minute; a failure just leaves the last one (or none) in place.
+  let sky = null, skyAt = 0;
+  function refreshSky() {
+    skyAt = now();
+    if (!readSky) return;
+    try { sky = readSky(now()); touch('cosmos'); } catch (e) { console.error('[sky]', e?.message ?? e); }
+  }
+  refreshSky();
+
+  const scheduleChaos = () => {
+    const every = sky?.mercuryRetro ? cfg.chaosEveryRetroSeconds : cfg.chaosEverySeconds;
+    st.nextChaosAt = every ? now() + every * 1000 * (0.8 + 0.4 * rng()) : Infinity;
+  };
+  if (!st.nextChaosAt) scheduleChaos();
+  function startChaos() {
+    if (st.chaos || st.boss) return null;
+    const need = Math.min(12, Math.max(cfg.chaosFixMin, Math.ceil(stage.size * cfg.chaosFixShare)));
+    st.chaos = { endsAt: now() + cfg.chaosSeconds * 1000, need, fixers: {}, real: Boolean(sky?.mercuryRetro) };
+    touch('cosmos');
+    onEvent({ type: 'chaos-start', seconds: cfg.chaosSeconds, need, real: st.chaos.real });
+    return st.chaos;
+  }
+  function fixChaos(u, v) {
+    const c = st.chaos;
+    if (!c || c.fixers[u.userId]) return;
+    c.fixers[u.userId] = v.nickname;
+    touch('cosmos');
+    if (Object.keys(c.fixers).length >= c.need) endChaos(true);
+  }
+  function endChaos(fixed) {
+    const c = st.chaos;
+    if (!c) return;
+    st.chaos = null; // first, so the fixers' reward lands on their own sign
+    scheduleChaos();
+    touch('cosmos');
+    const ids = Object.keys(c.fixers);
+    if (fixed) for (const id of ids) if (st.viewers[id]) shine({ userId: id }, st.viewers[id], cfg.chaosFixLight, 'chaos');
+    onEvent({ type: fixed ? 'chaos-fixed' : 'chaos-end', fixers: ids.slice(0, 5).map(id => c.fixers[id]), count: ids.length });
+  }
+
+  const boss = createBoss({
+    st, cfg, now, onEvent,
+    elementOf: id => SIGN[id].element,
+    signsOnStage: () => [...new Set([...stage.keys()].map(id => st.viewers[id]?.sign).filter(Boolean))],
+    fansOf: sign => { let n = 0; for (const id of stage.keys()) if (st.viewers[id]?.sign === sign) n++; return n; },
+    reward: (userId, mvp) => {
+      const v = st.viewers[userId];
+      if (!v?.sign) return;
+      shine({ userId }, v, cfg.bossReward, 'boss');
+      cards.give({ userId }, v, cards.draw(v, mvp ? 'boss' : undefined), 'boss');
+    },
+  });
+  st.nextBossAt ||= cfg.bossEverySeconds ? now() + cfg.bossEverySeconds * 500 : Infinity; // the first one comes half as soon
+  const startBoss = () => (st.chaos ? null : boss.start(Math.max(3, stage.size)));
+
+  // Sky editions a chest can drop right now: Thủy Nghịch during the chaos or a real retrograde, Trăng Tròn on a real full moon.
+  const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [...(st.chaos || sky?.mercuryRetro ? ['retro'] : []), ...(sky?.moon.full ? ['fullmoon'] : [])] });
 
   // --- the shared sky --------------------------------------------------------
   const cost = () => st.wheel.cost;
@@ -342,17 +429,21 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (kind === 'gift' || kind === 'follow' || kind === 'share' || kind === 'quiz') st.pending[u.userId] = (st.pending[u.userId] ?? 0) + base;
       return 0;
     }
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1));
+    const boon = cfg.skyBoons ? boonFor(sky, v.sign, kind) : { mult: 1, by: [] };
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * boon.mult);
     const before = v.lifetime;
     v.lifetime += amount;
     if (v.wheelNo !== st.wheel.no) { v.wheelNo = st.wheel.no; v.wheelLight = 0; }
     v.wheelLight += amount;
-    st.wheel.given[v.sign] += amount; // counted before pour so it still lands in a wheel that completes right now
-    st.season.light[v.sign] += amount;
+    // during Thủy Nghịch the light goes astray: it lands on the opposite sign, in the race and in the sky
+    const to = st.chaos ? OPPOSITE[v.sign] : v.sign;
+    st.wheel.given[to] += amount; // counted before pour so it still lands in a wheel that completes right now
+    st.season.light[to] += amount;
     touch('race');
-    checkOvertake(v.sign);
-    pour(v.sign, amount);
-    onEvent({ type: 'light', kind, userId: u.userId, sign: v.sign, amount });
+    checkOvertake(to);
+    pour(to, amount);
+    if (to !== v.sign) onEvent({ type: 'swap', from: v.sign, to, amount });
+    onEvent({ type: 'light', kind, userId: u.userId, sign: v.sign, amount, boon: boon.by.length ? boon.by : undefined });
     if (titleOf(before) !== titleOf(v.lifetime)) onEvent({ type: 'title-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime) });
     return amount;
   }
@@ -387,6 +478,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (action === 'wish') wish(u, v);
     else if (action === 'fortune') requestFortune(u, v);
     else if (action === 'dance' && v.sign) onEvent({ type: 'dance', userId: u.userId, sign: v.sign });
+    else if (action === 'claim') cards.claim(u, v);
+    else if (action === 'cards') cards.show(u, v);
+    else if (action === 'fix') fixChaos(u, v);
+    boss.hit(u, v, 'comment');
     raiseMoon(1);
     if (v.sign && now() - v.lastCommentAt >= cfg.commentCooldownSeconds * 1000) {
       v.lastCommentAt = now();
@@ -450,6 +545,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     onEvent({ type: 'gift', tier, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, giftName: u.giftName, giftImage: u.giftImage ?? '', count, diamonds });
     recordGift(u, v, count, diamonds);
     thank(u, v);
+    boss.hit(u, v, 'gift', diamonds);
     raiseMoon(diamonds * 2);
     return shine(u, v, diamonds * cfg.lightPerDiamond, 'gift');
   }
@@ -459,6 +555,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const v = viewer(u);
     const n = Math.max(0, u.count | 0);
     raiseMoon(n);
+    boss.hit(u, v, 'like', n);
     onEvent({ type: 'likes', userId: u.userId, sign: v.sign, count: n });
     if (!cfg.likesPerLight || !v.sign) return 0;
     const total = v.likeCarry + n;
@@ -474,6 +571,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (v.bonusNight[kind] === st.night.no) return 0;
     v.bonusNight[kind] = st.night.no;
     thank(u, v);
+    boss.hit(u, v, kind);
     raiseMoon(20);
     return shine(u, v, kind === 'share' ? cfg.shareLight : cfg.followLight, kind);
   }
@@ -571,11 +669,22 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (luckyTick !== lastLuckyTick) { lastLuckyTick = luckyTick; touch('hud'); }
     if (st.fortune && t >= st.fortune.endsAt) { st.fortune = null; touch('hud'); }
     if (st.poll && t >= st.poll.endsAt) endPoll();
-    if (!st.fortune && !st.quiz && !st.poll && st.fortuneQueue.length) showFortune(st.fortuneQueue.shift());
+    // The real sky, Thủy Nghịch, the boss (they never overlap) and the chest. Readings wait while the boss is up.
+    if (t - skyAt >= 60000) refreshSky();
+    const active = t - st.lastActivityAt < 60000, busy = st.quiz || st.poll || st.fortune;
+    if (st.chaos && t >= st.chaos.endsAt) endChaos(false);
+    else if (!st.chaos && !st.boss && t >= st.nextChaosAt) { if (active && stage.size) startChaos(); else scheduleChaos(); }
+    const hadBoss = Boolean(st.boss);
+    boss.tick();
+    if (hadBoss && !st.boss) st.nextBossAt = cfg.bossEverySeconds ? t + cfg.bossEverySeconds * 1000 : Infinity;
+    if (!st.boss && !st.chaos && !busy && active && stage.size && t >= st.nextBossAt) startBoss();
+    if (st.boss || hadBoss) touch('cosmos');
+    if (cards.tick(st.lastActivityAt)) touch('cosmos');
+    if (!st.fortune && !st.quiz && !st.poll && !st.boss && st.fortuneQueue.length) showFortune(st.fortuneQueue.shift());
     if (st.quiz && t >= st.quiz.endsAt) endQuiz();
     // Quiet room: mostly a sign's reading of the day; a quiz and a light poll come once each per eight
     // turns (about every six minutes), so they leave room for gifts, lit signs and the other events.
-    if (!st.quiz && !st.fortune && !st.poll && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
+    if (!st.quiz && !st.fortune && !st.poll && !st.boss && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
       const turn = st.quietTurn++;
       st.quietUntil = t + 45000;
       const kind = [1, 1, 1, 0, 1, 1, 1, 2][turn % 8]; // 6× fortune, 1× quiz, 1× poll
@@ -635,6 +744,19 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       const g = st.gifts;
       return { count: g.count, diamonds: g.diamonds, top: g.top, goal: { sum: g.goalSum, goal: giftGoal(), no: g.goalNo }, recent: g.recent.map(({ nickname, avatar, giftName, giftImage, count }) => ({ nickname, avatar, giftName, giftImage, count })) };
     },
+    // the real sky (planets, moon phase, retrograde), Thủy Nghịch, the boss and the star chest
+    cosmos: () => {
+      const t = now(), c = st.chaos;
+      return {
+        sky: sky && { planets: sky.planets, moon: sky.moon, mercuryRetro: sky.mercuryRetro },
+        boons: cfg.skyBoons,
+        chaos: c && { remainingMs: Math.max(0, c.endsAt - t), need: c.need, got: Object.keys(c.fixers).length, fixers: Object.values(c.fixers).slice(-3), real: c.real },
+        chaosInMs: c || !Number.isFinite(st.nextChaosAt) ? null : Math.max(0, st.nextChaosAt - t),
+        boss: boss.view(),
+        bossInMs: st.boss || !Number.isFinite(st.nextBossAt) ? null : Math.max(0, st.nextBossAt - t),
+        chest: cards.view(),
+      };
+    },
     // first eight in line for the waiting-queue layout, plus how many wait in all and who arrived last (to greet)
     lobby: () => {
       const ids = [...lobby.keys()], pick = id => ({ nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar });
@@ -647,8 +769,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function changes(seen = {}) {
     const out = {};
     const timers = partying() || st.fortune || st.quiz || st.lucky || st.poll;
+    const cosmosTimers = st.chaos || st.boss || cards.isOpen();
     for (const [name, build] of Object.entries(parts)) {
-      if (seen[name] === ver[name] && !(timers && name === 'hud')) continue;
+      if (seen[name] === ver[name] && !(timers && name === 'hud') && !(cosmosTimers && name === 'cosmos')) continue;
       seen[name] = ver[name];
       out[name] = build();
     }
@@ -678,7 +801,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.moon.goal = moonGoalFor(0);
     leader = null;
     st.nextLuckyAt = now() + cfg.luckyEverySeconds * 1000;
-    touch('hud', 'race', 'sky', 'stage', 'thanks', 'lobby', 'gifts');
+    st.nextBossAt = cfg.bossEverySeconds ? now() + cfg.bossEverySeconds * 500 : Infinity;
+    scheduleChaos();
+    touch('hud', 'race', 'sky', 'stage', 'thanks', 'lobby', 'gifts', 'cosmos');
     onEvent({ type: 'reset' });
   }
 
@@ -695,9 +820,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.thanks = st.thanks.filter(t => !t.userId.startsWith('sim:'));
     st.gifts.recent = st.gifts.recent.filter(r => !r.userId.startsWith('sim:'));
     st.fortuneQueue = st.fortuneQueue.filter(f => !f.userId.startsWith('sim:'));
-    touch('hud', 'stage', 'thanks', 'race', 'lobby', 'gifts');
+    boss.purge('sim:');
+    if (st.chaos) for (const id of Object.keys(st.chaos.fixers)) if (id.startsWith('sim:')) delete st.chaos.fixers[id];
+    st.chest.recent = [];
+    touch('hud', 'stage', 'thanks', 'race', 'lobby', 'gifts', 'cosmos');
     return n;
   }
 
-  return { startPoll, endPoll, purgeSim, chat, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, tick, changes, snapshot, newNight, resetAll, pruneViewers, state: st, config: cfg };
+  return { startPoll, endPoll, purgeSim, chat, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, startChaos, endChaos, openChest: cards.openNow, tick, changes, snapshot, newNight, resetAll, pruneViewers, sky: () => sky, state: st, config: cfg };
 }
