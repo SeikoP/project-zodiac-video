@@ -73,6 +73,8 @@ export async function commitPhase02Step(workspace,evidenceFile){
    if(hash(await readFile(statePath))!==hash(raw))throw new Error('STATE_CHANGED_CONCURRENTLY');
    await rename(temp,statePath);
   }finally{await rm(temp,{force:true});}
+  const committed=result.phases[phaseId].steps[evidence.step_id];
+  await writeFile(path.join(dir,`phase02-${evidence.step_id}-commit.json`),JSON.stringify({format:'zodiac-phase02-step-commit@1',phase_id:phaseId,step_id:evidence.step_id,committed_at:new Date().toISOString(),evidence_sha256:hash(JSON.stringify(evidence)),source_state_sha256:hash(raw),resulting_state_sha256:hash(await readFile(statePath)),outputs:committed.outputs,operations:(result.operations??[]).filter(op=>op.step_id===evidence.step_id),not_a_phase_pass:true},null,2)+'\n');
   return {status:'STATE_STEP_COMMITTED',step:evidence.step_id,phase_status:result.phases[phaseId].status};
  }finally{await lease.close();await rm(path.join(dir,'.phase02-state-write.lock'),{force:true});}
 }

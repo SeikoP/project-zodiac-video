@@ -14,6 +14,7 @@ import {migrateLegacyJob5} from '../../core/model/migrate-production-model.mjs';
 import {validateStoryObjectWorkspace} from '../../features/story-object/validate-story-object.mjs';
 
 import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
+import {resolveHandoffLayout} from './handoff-preflight.mjs';
 const sha=buf=>createHash('sha256').update(buf).digest('hex');
 const fail=(code,detail='')=>{throw new Error(code+(detail?' '+detail:''));};
 const recordFor=(state,phase)=>state?.review_receipts?.find(r=>r.phase_id===phase&&r.status==='APPROVED'&&r.proof?.kind==='user_message'&&typeof r.proof?.ref==='string'&&r.proof.ref.trim()&&!r.proof.ref.includes('<'));
@@ -118,7 +119,10 @@ export function assertAuthoringProjection(source,ir){
   if(!isDeepStrictEqual(original.spatial_bindings??[],compiled.spatial_bindings??[]))problems.push(`${original.id}_spatial`);
   if(!isDeepStrictEqual(original.occlusion_relations??[],compiled.occlusion_relations??[]))problems.push(`${original.id}_occlusion`);
   for(const field of ['performance_context','layout_contract','render_density_budget']){
-   if(field in original&&!isDeepStrictEqual(original[field],compiled[field]))problems.push(`${original.id}_${field}`);
+   // The Job@5 compiler always resolves layout_contract against the handoff defaults,
+   // while authored layouts stay partial by design; compare the same resolved form.
+   const authored=field==='layout_contract'?resolveHandoffLayout(original[field]):original[field];
+   if(field in original&&!isDeepStrictEqual(authored,compiled[field]))problems.push(`${original.id}_${field}`);
   }
   if((original.events??[]).length!==compiled.events?.length)problems.push(`${original.id}_event_count`);
   for(let j=0;j<(original.events??[]).length;j++){

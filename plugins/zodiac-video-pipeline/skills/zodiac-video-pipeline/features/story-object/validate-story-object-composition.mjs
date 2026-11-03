@@ -89,7 +89,11 @@ export async function validateStoryObjectCompositionWorkspace(workspace,{writeRe
   readFile(path.join(a,'pipeline-state.json'),'utf8').catch(e=>e.code==='ENOENT'?null:Promise.reject(e))
  ]);
  const state=stateText?JSON.parse(stateText):{};
- const intent=await readFile(path.join(a,'visual-intent.json'),'utf8').then(JSON.parse).catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(intent?.story_object_decision?.mode==='omitted'){if(state.flags?.story_object_required===true)throw Error('STORY_OBJECT_DECISION_FLAG_CONFLICT');if(!intent.story_object_decision.reason?.trim()||!intent.story_object_decision.review_ref?.trim())throw Error('STORY_OBJECT_DECISION_INVALID');return {format:'zodiac-story-object-composition-qc@2',status:'OMITTED_EXPLICIT',issues:[]};}
+ const intent=await readFile(path.join(a,'visual-intent.json'),'utf8').then(JSON.parse).catch(e=>{if(e.code==='ENOENT')return null;throw e;});
+ // Fresh narrative_visual@1 authoring states its decision in narrative_visual_decision,
+ // the same field compileVisualIntent reads; legacy authoring keeps story_object_decision.
+ const decision=intent?.taxonomy_version==='narrative_visual@1'?intent.narrative_visual_decision:intent?.story_object_decision;
+ if(decision?.mode==='omitted'){if(state.flags?.story_object_required===true)throw Error('STORY_OBJECT_DECISION_FLAG_CONFLICT');if(!decision.reason?.trim()||!decision.review_ref?.trim())throw Error('STORY_OBJECT_DECISION_INVALID');return {format:'zodiac-story-object-composition-qc@2',status:'OMITTED_EXPLICIT',issues:[]};}
  // Existing sealed jobs / older plugin releases remain importable.
  const required=Boolean(freshV2411(state));
  if(!spec){
