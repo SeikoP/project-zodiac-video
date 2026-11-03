@@ -36,6 +36,9 @@ export function userOf(data) {
 export const chatOf = d => ({ ...userOf(d), comment: String(d?.content ?? d?.comment ?? '') });
 export const likeOf = d => ({ ...userOf(d), count: num(d?.count, d?.likeCount) });
 export const socialOf = (d, kind) => ({ ...userOf(d), kind });
+// TikTok's own id for a message (common.msgId); the connector can hand the same message over again after a reconnect.
+export const msgIdOf = d => { const id = d?.common?.msgId ?? d?.msgId; return id === undefined || id === null || id === '' ? null : String(id); };
+
 export const viewersOf = d => num(d?.viewerCount, d?.totalUser, d?.total);
 
 // Returns null while a streakable gift is still repeating; the final event carries the count.
@@ -68,6 +71,17 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   let joinSec = 0, joinN = 0;
   const joinAllowed = () => { const s = Math.floor(Date.now() / 1000); if (s !== joinSec) { joinSec = s; joinN = 0; } return ++joinN <= 5; };
 
+  // Messages already handed to the game: two rotating sets keep the last 5000–10000 ids, across reconnects to the same room.
+  let seenNow = new Set(), seenBefore = new Set();
+  const seen = d => {
+    const id = msgIdOf(d);
+    if (id === null) return false;
+    if (seenNow.has(id) || seenBefore.has(id)) return true;
+    seenNow.add(id);
+    if (seenNow.size > 5000) { seenBefore = seenNow; seenNow = new Set(); }
+    return false;
+  };
+
   const handle = (type, fn) => d => {
     try { probe(type, d); fn(d); } catch (e) { log(`[tiktok] bad ${type} event ignored: ${e?.message ?? e}`); }
   };
@@ -79,12 +93,12 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
       enableExtendedGiftInfo: false,
       ...(process.env.EULERSTREAM_API_KEY ? { signApiKey: process.env.EULERSTREAM_API_KEY } : {}),
     }));
-    c.on(WebcastEvent.CHAT, handle('chat', d => game.chat(chatOf(d))));
-    c.on(WebcastEvent.MEMBER, handle('member', d => { if (joinAllowed()) game.member(userOf(d)); }));
-    c.on(WebcastEvent.GIFT, handle('gift', d => { const g = giftOf(d); if (g) game.gift(g); }));
-    c.on(WebcastEvent.LIKE, handle('like', d => game.like(likeOf(d))));
-    c.on(WebcastEvent.FOLLOW, handle('follow', d => game.social(socialOf(d, 'follow'))));
-    c.on(WebcastEvent.SHARE, handle('share', d => game.social(socialOf(d, 'share'))));
+    c.on(WebcastEvent.CHAT, handle('chat', d => { if (!seen(d)) game.chat(chatOf(d)); }));
+    c.on(WebcastEvent.MEMBER, handle('member', d => { if (!seen(d) && joinAllowed()) game.member(userOf(d)); }));
+    c.on(WebcastEvent.GIFT, handle('gift', d => { const g = giftOf(d); if (g && !seen(d)) game.gift(g); }));
+    c.on(WebcastEvent.LIKE, handle('like', d => { if (!seen(d)) game.like(likeOf(d)); }));
+    c.on(WebcastEvent.FOLLOW, handle('follow', d => { if (!seen(d)) game.social(socialOf(d, 'follow')); }));
+    c.on(WebcastEvent.SHARE, handle('share', d => { if (!seen(d)) game.social(socialOf(d, 'share')); }));
     c.on(WebcastEvent.ROOM_USER, handle('roomUser', d => set({ viewers: viewersOf(d) })));
     c.on(WebcastEvent.STREAM_END, () => { set({ state: 'ended', detail: 'Live đã kết thúc' }); wanted = null; });
     c.on(ControlEvent.DISCONNECTED, () => { if (c === conn && wanted) schedule('Mất kết nối'); });
@@ -111,8 +125,10 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   return {
     status: () => ({ ...status }),
     async connect(username) {
+      const room = String(username).replace(/^@/, '').trim();
+      if (room !== status.username) { seenNow = new Set(); seenBefore = new Set(); }
       await this.disconnect();
-      wanted = String(username).replace(/^@/, '').trim();
+      wanted = room;
       delay = 5000;
       await open();
     },

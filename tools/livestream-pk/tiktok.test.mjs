@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { WebcastEvent } from 'tiktok-live-connector';
+import { WebcastEvent, ControlEvent } from 'tiktok-live-connector';
 import { createGame } from './game.mjs';
-import { createTikTokBridge, chatOf, likeOf, giftOf, userOf, viewersOf } from './tiktok.mjs';
+import { createTikTokBridge, chatOf, likeOf, giftOf, userOf, viewersOf, msgIdOf } from './tiktok.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { createDiagnostics, ingest } from './diagnostics.mjs';
 
@@ -120,4 +120,45 @@ test('diagnostics: schema probe records field names only, and a recorded night c
     assert.equal(replayed.state.viewers['5'].lifetime, rec.state.viewers['5'].lifetime);
     assert.throws(() => ingest(replayed, { type: 'nope' }), /unknown event type/);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('msgIdOf reads the message id from common.msgId or msgId', () => {
+  assert.equal(msgIdOf({ common: { msgId: 12n } }), '12');
+  assert.equal(msgIdOf({ msgId: '7' }), '7');
+  assert.equal(msgIdOf({}), null);
+  assert.equal(msgIdOf(null), null);
+});
+
+test('duplicate TikTok messages (same msgId) reach the game once, also across a reconnect', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const conns = [];
+  const calls = { chat: 0, gift: 0, like: 0, social: 0, member: 0 };
+  const game = Object.fromEntries(Object.keys(calls).map(k => [k, () => { calls[k]++; }]));
+  const bridge = createTikTokBridge({ game, log: () => {}, connect: () => { const c = fakeConnection(); conns.push(c); return c; } });
+  const withId = (d, id) => ({ ...d, common: { msgId: id } });
+  await bridge.connect('@room');
+  const c = conns[0];
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '2'));
+  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'leo'));
+  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'leo'));
+  assert.equal(calls.chat, 4);
+  c.emit(WebcastEvent.GIFT, withId(gift(2, { type: 1, repeatCount: 3, repeatEnd: 1 }), 'g1'));
+  c.emit(WebcastEvent.GIFT, withId(gift(2, { type: 1, repeatCount: 3, repeatEnd: 1 }), 'g1'));
+  assert.equal(calls.gift, 1);
+  for (const [ev, d] of [[WebcastEvent.LIKE, like(1, 5)], [WebcastEvent.FOLLOW, { user: user(1, 'Lan') }], [WebcastEvent.SHARE, { user: user(1, 'Lan') }], [WebcastEvent.MEMBER, { user: user(3, 'Mai') }]])
+    for (let i = 0; i < 2; i++) c.emit(ev, withId(d, `${ev}-x`));
+  assert.deepEqual([calls.like, calls.social, calls.member], [1, 2, 1]);
+
+  c.emit(ControlEvent.DISCONNECTED);
+  t.mock.timers.tick(5000);
+  await new Promise(r => setImmediate(r));
+  assert.equal(conns.length, 2, 'the bridge reconnected');
+  conns[1].emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  assert.equal(calls.chat, 4, 'a replay after the reconnect is still a duplicate');
+
+  await bridge.connect('@other');
+  conns.at(-1).emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  assert.equal(calls.chat, 5, 'another room starts with a fresh memory');
 });
