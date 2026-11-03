@@ -185,9 +185,11 @@ export function parseSwitch(comment) {
   const t = norm(comment).trim();
   const m = t.match(/^(doi|chuyen)\s+(?:sang\s+|qua\s+|ve\s+|thanh\s+)?(?:cung\s+)?(.+)$/);
   if (m) return parseSign(m[2]);
+  // only Vietnamese names count here: the English ids include everyday words ("leo" = climb)
   const whole = squash(comment);
-  return whole ? ALIASES.find(([alias]) => alias === whole)?.[1] ?? null : null;
+  return whole ? SWITCH_NAMES.find(([alias]) => alias === whole)?.[1] ?? null : null;
 }
+const SWITCH_NAMES = [...SIGNS.map(s => [squash(s.label), s.id]), ...Object.entries(EXTRA_ALIASES)];
 
 // Keyword actions, matched on accent-free words.
 const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
@@ -547,6 +549,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // A clear "đổi <cung>" moves the viewer to another sign (light already given stays where it landed).
   function switchSign(u, v, to) {
     if (!to || to === v.sign) return;
+    // a sign frozen by the boss is stuck until its fans break the ice
+    if (st.boss?.frozen?.sign === v.sign) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, sign: v.sign, to, frozen: true });
     const wait = cfg.switchCooldownSeconds * 1000 - (now() - (v.switchAt ?? 0));
     if (wait > 0) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, sign: v.sign, to, seconds: Math.ceil(wait / 1000) });
     join(u, v, to);
@@ -559,7 +563,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (now() - (v.callHintAt ?? 0) > 60000) { v.callHintAt = now(); onEvent({ type: 'fan-only', userId: u.userId, nickname: v.nickname, sign: v.sign }); }
       return;
     }
-    if (v.callNight === st.night.no || st.lucky) return;
+    if (v.callNight === st.night.no) return;
+    if (st.lucky) return onEvent({ type: 'fan-call-wait', userId: u.userId, nickname: v.nickname, seconds: Math.ceil((st.lucky.endsAt - now()) / 1000) });
     v.callNight = st.night.no;
     onEvent({ type: 'fan-call', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.fanLevel ?? 0, club: v.fanClub ?? '' });
     startLucky(v.sign);
@@ -571,7 +576,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function rollHeat() {
     const slot = Math.floor(now() / 2000);
     if (!heat.at) heat.at = slot;
-    for (; heat.at < slot && heat.at > slot - 11; heat.at++) { heat.buckets.shift(); heat.buckets.push(0); heat.per.clear(); }
+    const gap = slot - heat.at;
+    if (gap <= 0) return;
+    if (gap >= heat.buckets.length) heat.buckets.fill(0); // a long gap (sleep, stall): the whole window is cold
+    else for (let i = 0; i < gap; i++) { heat.buckets.shift(); heat.buckets.push(0); }
+    heat.per.clear(); // the per-viewer cap counts within one bucket
     heat.at = slot;
   }
   function addHeat(userId, n) {
@@ -906,6 +915,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // the real sky (planets, moon phase, retrograde), Thủy Nghịch, the boss and the star chest
     cosmos: () => {
       const t = now(), c = st.chaos;
+      const fansHere = [];
+      for (const id of stage.keys()) { const v = st.viewers[id]; if (v?.fanLevel || v?.subscriber) fansHere.push(v); }
       return {
         sky: sky && { planets: sky.planets, moon: sky.moon, mercuryRetro: sky.mercuryRetro },
         boons: cfg.skyBoons,
@@ -917,8 +928,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
         blessNeed: cfg.blessNeed,
         heat: { level: heat.level, score: heatScore(), levels: cfg.heatLevels, multiplier: heatMult() },
-        fans: [...stage.keys()].map(id => st.viewers[id]).filter(v => v?.fanLevel || v?.subscriber).sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
-        fanCount: [...stage.keys()].filter(id => st.viewers[id]?.fanLevel || st.viewers[id]?.subscriber).length,
+        fans: fansHere.sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
+        fanCount: fansHere.length,
       };
     },
     // first eight in line for the waiting-queue layout, plus how many wait in all and who arrived last (to greet)

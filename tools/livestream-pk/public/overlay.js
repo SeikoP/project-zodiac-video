@@ -479,7 +479,8 @@ function giftCard(e, sign) {
 const heroEl = $('hero');
 function celebrate({ key, badge = '', icon = '', glyphs = '', mascotSign = null, mood = 'win', title, sub = '', extra = '', color: hc = C.gold, ms = 3200, compact = false }) {
   // while the boss is up the arena stays in view: other celebrations shrink to the announcement strip
-  if (S.cosmos?.boss && key !== 'boss') return card({ key, icon: icon || '✨', title: `${badge ? `${badge} · ` : ''}${title}`, sub, color: hc, ms: Math.min(ms, 3200) });
+  // (the strip keeps the celebration's picture — a gift, the chest, an avatar — as its icon)
+  if (S.cosmos?.boss && key !== 'boss') return card({ key, icon: icon || extra.match(/<img[^>]*>|<span class="av[^"]*"[^>]*>[^<]*<\/span>/)?.[0] || '✨', title: `${badge ? `${badge} · ` : ''}${title}`, sub, color: hc, ms: Math.min(ms, 3200) });
   go({
     key, level: LV.BIG, ms,
     show: () => {
@@ -1019,7 +1020,8 @@ function onFx(e) {
     case 'need-sign':
       spotlight(`<div class="duo"><img src="${mascot('leo', 'idle')}" alt="">${avatarHtml(e, 'av big')}</div><div class="cap">${esc(e.nickname)}</div><div class="sub">chọn cung trước đã: comment tên cung hoặc ngày sinh, rồi ${NEED_FOR[e.for] ?? 'gõ lại lệnh'} nhé!</div>`, 2400, 'need');
       break;
-    case 'switch-wait': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">vừa đổi cung rồi — ${e.seconds} giây nữa mới đổi sang ${esc(SIGN[e.to].label)} được nhé</div>`, 2200, 'need'); break;
+    case 'switch-wait': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">${e.frozen ? `${esc(SIGN[e.sign].label)} đang bị đóng băng — phá băng xong mới đổi cung được` : `vừa đổi cung rồi — ${e.seconds} giây nữa mới đổi sang ${esc(SIGN[e.to].label)} được nhé`}</div>`, 2200, 'need'); break;
+    case 'fan-call-wait': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">đang có sao may mắn — ${e.seconds} giây nữa gõ lại “gọi sao” nhé ♥</div>`, 2200, 'need'); break;
     // --- fan club ---
     case 'fans': {
       const f = e.fans[0];

@@ -98,3 +98,23 @@ test('commands that need a sign say which one, instead of doing nothing', () => 
   game.chat(u('a', { comment: 'xin quẻ' }));
   assert.deepEqual(of(events, 'need-sign').map(e => e.for), ['upgrade', 'fortune']);
 });
+
+test('review fixes: "leo" alone is not a switch; a frozen sign cannot switch away; heat cools after a long gap; gọi sao waits out a running star', () => {
+  assert.equal(parseSwitch('leo'), null);
+  const { game, events, advance } = setup({ heatLevels: [2, 100, 200, 300], bossHpMin: 1e6, bossAttackSeconds: 1, luckySeconds: 20 });
+  game.chat(u('a', { comment: 'kim ngưu', fanLevel: 2 }));
+  game.chat(u('b', { comment: 'kim ngưu' }));
+  advance(100);
+  assert.equal(game.changes({}).cosmos.heat.level, 1);
+  game.startBoss();
+  advance(1500);
+  assert.equal(game.state.boss.frozen.sign, 'taurus');
+  game.chat(u('b', { comment: 'đổi sư tử' }));
+  assert.equal(game.state.viewers.b.sign, 'taurus');
+  assert.equal(of(events, 'switch-wait')[0].frozen, true);
+  game.startLucky('pisces');
+  game.chat(u('a', { comment: 'gọi sao' }));
+  assert.equal(of(events, 'fan-call-wait').length, 1);
+  advance(60000); // one long jump: the whole window is old
+  assert.equal(game.changes({}).cosmos.heat.level, 0);
+});
