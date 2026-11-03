@@ -11,7 +11,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = 4871 + Math.floor(Math.random() * 100);
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-smoke-'));
 // run a private copy of the data/logs folders so a real night's state is never touched
-const env = { ...process.env, PK_PORT: String(port), PK_RECORD: '1', PK_DATA_DIR: path.join(work, 'data'), PK_LOG_DIR: path.join(work, 'logs') };
+const env = { ...process.env, PK_PORT: String(port), PK_RECORD: '1', PK_NO_TIKTOK: '1', PK_DATA_DIR: path.join(work, 'data'), PK_LOG_DIR: path.join(work, 'logs') };
 const results = [];
 const check = (ok, msg) => { results.push(ok); console.log(`  ${ok ? '✔' : '✖'} ${msg}`); };
 const post = (route, body) => fetch(`http://127.0.0.1:${port}/api/${route}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) }).then(r => r.json());
