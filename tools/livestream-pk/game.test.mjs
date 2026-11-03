@@ -477,3 +477,22 @@ test('a retune never dims a constellation that is already lit', () => {
   assert.ok(game.state.wheel.light.leo >= game.state.wheel.cost, 'Sư Tử stays lit');
   assert.ok(game.state.moon.goal > 120, 'the moon still follows the room');
 });
+
+test('a saved state loads without leftover sim: entries in the thank-you bar, recent gifts, wishes, pending light or fortune queue', () => {
+  const { game } = setup({ rehearsal: true, commentLight: 0 });
+  for (const id of ['sim:old', 'real']) {
+    game.chat(u(id, { comment: 'Sư Tử' }));
+    game.gift(u(id, { diamonds: 5, giftName: 'Rose' }));
+    game.chat(u(id, { comment: 'ước thi đỗ' }));
+  }
+  game.gift(u('sim:nosign', { diamonds: 5 })); // held as pending light
+  game.gift(u('sim:old', { diamonds: 50, giftName: 'Rose' })); // the night's top supporter, for now
+  const state = structuredClone(game.state);
+  const again = createGame({ state, config: { hours: false } });
+  const s = again.state, sim = x => String(x?.userId ?? '').startsWith('sim:');
+  assert.equal(Object.keys(s.pending).some(id => id.startsWith('sim:')), false, 'pending');
+  for (const k of ['thanks', 'wishes', 'fortuneQueue']) assert.equal(s[k].some(sim), false, k);
+  assert.equal(s.gifts.recent.some(sim), false, 'gifts.recent');
+  assert.ok(s.thanks.length + s.gifts.recent.length > 0, 'the real viewer is still thanked');
+  assert.equal(s.gifts.top?.nickname, 'real', 'the top supporter is a real viewer');
+});

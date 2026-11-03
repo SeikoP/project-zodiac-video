@@ -322,7 +322,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.wishes ??= [];
   st.wishNo ??= 0;
   st.greetingNo ??= 0;
-  if (!cfg.rehearsal) for (const id of Object.keys(st.viewers)) if (id.startsWith('sim:')) delete st.viewers[id]; // left by older versions
+  // rehearsal viewers left in a saved state by older versions: off the stage lists before the first real viewer arrives
+  if (!cfg.rehearsal) {
+    const sim = id => String(id ?? '').startsWith('sim:');
+    for (const map of [st.viewers, st.pending, st.gifts.by]) for (const id of Object.keys(map ?? {})) if (sim(id)) delete map[id];
+    st.gifts.top = Object.values(st.gifts.by).reduce((top, b) => (!top || b.diamonds >= top.diamonds ? { nickname: b.nickname, diamonds: b.diamonds } : top), null);
+    for (const k of ['thanks', 'wishes', 'fortuneQueue']) st[k] = (st[k] ?? []).filter(x => !sim(x.userId));
+    st.gifts.recent = st.gifts.recent.filter(x => !sim(x.userId));
+  }
   st.nextLuckyAt ||= now() + cfg.luckyEverySeconds * 1000;
   const rehearsalOnly = u => !cfg.rehearsal && String(u?.userId ?? '').startsWith('sim:');
   const partying = () => now() < st.moon.partyUntil;

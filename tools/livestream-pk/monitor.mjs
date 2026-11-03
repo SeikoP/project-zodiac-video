@@ -30,18 +30,19 @@ export function createMonitor({ now = () => Date.now(), label = id => id, max = 
     if (likeAcc && now() - likeAt >= 4000) { add('like', `❤ +${likeAcc} lượt thả tim`); likeAcc = 0; likeAt = now(); }
   }
 
-  // Wraps viewer actions so the host can see what reached the room.
-  const tap = game => ({
-    chat: e => { hit('chat'); add('chat', `${short(e.nickname || e.userId, 24)}: ${short(e.comment, 80)}`); return game.chat(e); },
-    member: e => { const fresh = game.member(e); if (fresh) add('member', `${short(e.nickname || e.userId, 24)} ghé thăm`); return fresh; },
+  // Wraps viewer actions so the host can see what reached the room. skip(e): forward without counting or logging.
+  const tap = (game, { skip = () => false } = {}) => ({
+    chat: e => { if (skip(e)) return game.chat(e); hit('chat'); add('chat', `${short(e.nickname || e.userId, 24)}: ${short(e.comment, 80)}`); return game.chat(e); },
+    member: e => { if (skip(e)) return game.member(e); const fresh = game.member(e); if (fresh) add('member', `${short(e.nickname || e.userId, 24)} ghé thăm`); return fresh; },
     gift: e => {
+      if (skip(e)) return game.gift(e);
       const coins = (Number(e.diamonds) || 0) * (Number(e.count) || 1);
       hit('gift'); diamonds += coins;
       add('gift', `${short(e.nickname || e.userId, 24)} tặng ${short(e.giftName, 30)}${(e.count || 1) > 1 ? ` x${e.count}` : ''} (${coins} xu)`, { coins });
       return game.gift(e);
     },
-    like: e => { const n = Number(e.count) || 0; hit('like', n); if (!likeAcc) likeAt = now(); likeAcc += n; flushLikes(); return game.like(e); },
-    social: e => { const k = e.kind === 'share' ? 'share' : 'follow'; hit(k); add(k, `${short(e.nickname || e.userId, 24)} ${k === 'share' ? 'chia sẻ buổi live' : 'theo dõi kênh'}`); return game.social(e); },
+    like: e => { if (skip(e)) return game.like(e); const n = Number(e.count) || 0; hit('like', n); if (!likeAcc) likeAt = now(); likeAcc += n; flushLikes(); return game.like(e); },
+    social: e => { if (skip(e)) return game.social(e); const k = e.kind === 'share' ? 'share' : 'follow'; hit(k); add(k, `${short(e.nickname || e.userId, 24)} ${k === 'share' ? 'chia sẻ buổi live' : 'theo dõi kênh'}`); return game.social(e); },
   });
 
   // Game-side events worth a line in the log (the quiet ones are left out).

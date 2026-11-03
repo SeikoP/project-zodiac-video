@@ -43,7 +43,7 @@ const music = listMusic({ dir: MUSIC_DIR, exclude: config.musicExclude, upbeat: 
 const monitor = createMonitor({ label: id => SIGNS.find(s => s.id === id)?.label ?? id });
 const SIMULATOR = process.env.PK_SIMULATOR === '1'; // the isolated rehearsal server (npm run simulator)
 const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show }, rehearsal: SIMULATOR }, state, quiz, polls: POLLS, onEvent: e => { director.push(e); monitor.note(e); dirty = true; } });
-const tapped = monitor.tap(game); // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
+const tapped = monitor.tap(game, { skip: e => !SIMULATOR && String(e?.userId ?? '').startsWith('sim:') }); // the game ignores rehearsal viewers here, so the host's numbers do too // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
 const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(dir, 'logs'), record: Boolean(config.recordEvents || process.env.PK_RECORD) });
 const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);

@@ -24,9 +24,6 @@
 #planets .pt text { font: 400 22px 'Segoe UI Symbol', 'Noto Sans Symbols', sans-serif; fill: var(--ink); text-anchor: middle; dominant-baseline: middle; }
 #planets .pt.retro circle { stroke: #8a4fd6; stroke-width: 4; fill: #efe4ff; }
 #planets .pt text.rx { font: 900 15px var(--ui); fill: #8a4fd6; }
-.ringlabel { position: absolute; left: 12px; bottom: 6px; display: flex; flex-direction: column; padding: 6px 14px; border-radius: 16px; background: rgba(22, 29, 33, .55); border: 2px solid rgba(246, 240, 230, .3); }
-.ringlabel b { font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--paper); line-height: 1.1; }
-.ringlabel span { font-size: 17px; font-weight: 800; color: var(--gold); }
 
 /* avatars: the TikTok picture, or the initial on a coloured disc */
 .av { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: rgba(47, 60, 68, .12); }
@@ -123,15 +120,6 @@
 @keyframes quake { 20% { transform-origin: top left; translate: -10px 6px; } 40% { translate: 9px -7px; } 60% { translate: -6px 4px; } 80% { translate: 4px -2px; } }
 
 /* Nhiệt phòng (bottom-left, above the wheel label) and the fan club on stage (bottom-right) */
-.heat { position: absolute; left: 12px; bottom: 72px; width: 228px; padding: 7px 12px 8px; border-radius: 16px; background: rgba(22, 29, 33, .72); border: 2px solid var(--hc, #8EC0B9); color: var(--paper); }
-.heat .hh { display: flex; align-items: baseline; gap: 6px; }
-.heat .hh b { font-size: 17px; font-weight: 900; white-space: nowrap; }
-.heat .hh em { font-style: normal; font-size: 20px; font-weight: 900; color: var(--hc, #8EC0B9); white-space: nowrap; }
-.heat .hbar { height: 12px; margin: 5px 0 4px; border-radius: 6px; background: rgba(255, 255, 255, .15); overflow: hidden; }
-.heat .hbar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); transition: transform .4s; background: linear-gradient(90deg, #F2C45C, var(--hc, #8EC0B9)); }
-.heat span { display: block; font-size: 13px; font-weight: 700; color: rgba(246, 240, 230, .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.heat.hot { animation: heatGlow 1s ease-in-out infinite; }
-@keyframes heatGlow { 50% { box-shadow: 0 0 22px var(--hc); } }
 .fanbox { position: absolute; right: 12px; bottom: 6px; width: 215px; padding: 7px 10px; border-radius: 16px; background: rgba(60, 14, 34, .78); border: 2px solid #FFD45E; color: var(--paper); display: none; }
 .fanbox.on { display: block; animation: popc .4s; }
 .fanbox b { display: block; font-size: 15px; font-weight: 900; color: #FFD45E; margin-bottom: 4px; }

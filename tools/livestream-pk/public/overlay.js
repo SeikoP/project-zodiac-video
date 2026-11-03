@@ -702,8 +702,6 @@ function celebrate({ key, badge = '', icon = '', glyphs = '', mascotSign = null,
 
 // --- part renderers (called only when a part changed) ----------------------------------------------------
 function renderSky(sky) {
-  $('wheelTitle').textContent = `Vòng hoàng đạo thứ ${sky.wheel}`;
-  $('wheelCount').textContent = `🎯 Thắp sáng 12 cung · ${sky.litCount}/12`;
   $('missionProgress').setAttribute('stroke-dasharray', `${(sky.sky.reduce((sum, s) => sum + s.progress, 0) / 12).toFixed(3)} 1`);
   for (const s of sky.sky) {
     const n = nodes[s.id];
@@ -844,16 +842,6 @@ const HEAT = [
   { name: 'Bùng cháy', color: '#ff6b3d' }, { name: 'Siêu tân tinh', color: '#ff3d7f' },
 ];
 
-// Nhiệt phòng (bottom-left of the wheel): the level, a bar to the next one, the bonus it gives.
-function renderHeat(h) {
-  if (!h) return;
-  const lv = HEAT[h.level], lo = h.levels[h.level - 1] ?? 0, hi = h.levels[h.level];
-  $('heat').style.setProperty('--hc', lv.color);
-  $('heat').classList.toggle('hot', h.level >= 3);
-  $('heatName').textContent = h.level ? `${lv.name} x${h.multiplier}` : lv.name;
-  $('heatFill').style.transform = `scaleX(${hi ? Math.min(1, (h.score - lo) / (hi - lo)).toFixed(3) : 1})`;
-  $('heatSub').textContent = hi ? `nhiệt phòng · còn ${Math.max(1, hi - h.score)} lượt nữa` : 'nóng nhất rồi, giữ lửa nào!';
-}
 // The fan club members on stage right now, with their level (bottom-right of the wheel).
 let fanKey = '';
 function renderFans(c) {
@@ -909,7 +897,6 @@ function renderCosmos(c) {
     renderPlanets(c.sky);
   }
   renderWishes(c.wishes ?? []);
-  renderHeat(c.heat);
   renderFans(c);
   renderJoin();
   // the chest: a countdown, wobbling in the last minute, then OPEN

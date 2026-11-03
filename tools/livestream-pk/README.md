@@ -102,7 +102,7 @@ Thẻ bài, Sổ Sao và dự đoán **không bao giờ đổi trực tiếp b�
 
 **Fanclub**: thư viện TikTok gửi kèm cấp fanclub của phòng (`user.fansClub`) và cờ người đăng ký. Thành viên fanclub/người đăng ký: màn chào riêng lần đầu mỗi đêm ("♥ FANCLUB … · LV n — X đã đến!"), avatar viền vàng kèm nhãn ♥cấp trên vòng, khung "Fanclub có mặt" ở góc phải dưới vòng, **+10% ánh sao (+1%/cấp, tối đa +30%)**, người đăng ký +10%, và đặc quyền **"gọi sao"**: gọi sao may mắn cho cung của mình, một lần mỗi đêm. Người không ở fanclub gõ "gọi sao" sẽ thấy lời mời tham gia fanclub. Khi diễn tập, cứ người xem giả lập thứ 7 là thành viên fanclub để xem trước giao diện.
 
-**Nhiệt phòng**: tổng hoạt động của cả phòng trong 20 giây gần nhất (mỗi người tối đa 6 điểm / 2 giây, nên một người spam không đủ làm nóng). Bậc Yên ả → Ấm lên x1.1 → Nóng x1.25 → Bùng cháy x1.5 → Siêu tân tinh x2 ánh sao cho mọi người; lên bậc có thông báo, thanh nhiệt ở góc trái dưới vòng.
+**Nhiệt phòng**: tổng hoạt động của cả phòng trong 20 giây gần nhất (mỗi người tối đa 6 điểm / 2 giây, nên một người spam không đủ làm nóng). Bậc Yên ả → Ấm lên x1.1 → Nóng x1.25 → Bùng cháy x1.5 → Siêu tân tinh x2 ánh sao cho mọi người; lên bậc có thông báo trên màn hình.
 
 **Linh vật dẫn chơi (khi phòng im)**: thay vì bot giả làm người xem (TikTok coi tương tác giả là vi phạm, và người xem phát hiện ra thì mất lòng tin), 3/8 lượt lúc phòng im là **linh vật của kênh làm mẫu một lệnh**, có nhãn "🎓 linh vật dẫn chơi": vào đội, ước (thả "đèn mẫu của linh vật"), xin quẻ, nâng cấp, chúc, nhận rương, đổi cung. Khi chưa ai vào vòng, linh vật hiện ở khung chào của hàng đợi. Tắt bằng `"demoTurns": false`.
 
