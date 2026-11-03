@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 220">
+  <!-- Sao Chổi Đen: a dark comet with a burning tail, horns of ice and two angry eyes -->
+  <defs>
+    <radialGradient id="core" cx="40%" cy="35%"><stop offset="0" stop-color="#8f6bc2"/><stop offset=".6" stop-color="#3a1f5c"/><stop offset="1" stop-color="#170c26"/></radialGradient>
+    <linearGradient id="tail" x1="0" x2="1"><stop offset="0" stop-color="#E97A66" stop-opacity="0"/><stop offset=".6" stop-color="#E97A66" stop-opacity=".8"/><stop offset="1" stop-color="#F2C45C"/></linearGradient>
+    <linearGradient id="tail2" x1="0" x2="1"><stop offset="0" stop-color="#B48CF2" stop-opacity="0"/><stop offset="1" stop-color="#B48CF2" stop-opacity=".9"/></linearGradient>
+  </defs>
+  <path d="M0 50 C80 70 140 86 186 92 L186 136 C130 146 70 168 6 196 C70 150 96 130 104 118 C70 96 40 76 0 50 Z" fill="url(#tail)"/>
+  <path d="M30 96 C90 104 140 108 186 110 L186 122 C140 126 90 132 36 140 C80 124 84 116 30 96 Z" fill="url(#tail2)"/>
+  <path d="M172 56 L160 18 L192 46 Z M244 52 L262 14 L256 54 Z" fill="#bfe6ff" stroke="#2F3C44" stroke-width="4" stroke-linejoin="round"/>
+  <circle class="core" cx="212" cy="114" r="72" fill="url(#core)" stroke="#F6F0E6" stroke-width="5"/>
+  <path d="M176 112 C190 120 200 120 206 110 M248 112 C234 120 224 120 218 110" fill="none" stroke="#2F3C44" stroke-width="3"/>
+  <path d="M170 88 L202 102 M254 88 L222 102" stroke="#F6F0E6" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="190" cy="114" rx="12" ry="11" fill="#ff5a5a"/><ellipse cx="234" cy="114" rx="12" ry="11" fill="#ff5a5a"/>
+  <circle cx="193" cy="111" r="4" fill="#fff"/><circle cx="237" cy="111" r="4" fill="#fff"/>
+  <path d="M186 152 L196 144 L206 152 L216 144 L226 152 L236 144" fill="none" stroke="#F6F0E6" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="160" cy="150" r="5" fill="#F2C45C"/><circle cx="268" cy="80" r="4" fill="#F2C45C"/><circle cx="276" cy="150" r="6" fill="#B48CF2"/>
+</svg>

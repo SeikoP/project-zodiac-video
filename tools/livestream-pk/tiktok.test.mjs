@@ -1,0 +1,123 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { EventEmitter } from 'node:events';
+import { WebcastEvent } from 'tiktok-live-connector';
+import { createGame } from './game.mjs';
+import { createTikTokBridge, chatOf, likeOf, giftOf, userOf, viewersOf } from './tiktok.mjs';
+import { cleanName, safeAvatar } from './names.mjs';
+import { createDiagnostics, ingest } from './diagnostics.mjs';
+
+// Payloads shaped like the connector's real output: TikTok's protobuf field names (see tiktok-live-proto v3).
+const user = (id, nickname, displayId = `h_${id}`) => ({ id: String(id), nickname, displayId, avatarThumb: { urlList: [`https://p16-sign-va.tiktokcdn.com/obj/${id}.jpeg`] } });
+const chat = (id, nickname, content) => ({ user: user(id, nickname), content });
+const like = (id, count) => ({ user: user(id, 'Lan'), count, total: '9999' });
+const gift = (id, { type = 2, diamondCount = 1, repeatCount = 1, repeatEnd = 0, name = 'Rose' } = {}) => ({ user: user(id, 'Huy'), giftId: '5655', repeatCount, repeatEnd, gift: { type, diamondCount, name, image: { urlList: ['https://p16.tiktokcdn.com/g.png'] } } });
+
+test('parsers read TikTok\'s real field names: content, count, displayId, gift.diamondCount', () => {
+  assert.deepEqual(chatOf(chat(1, 'Lan', 'sư tử')), { userId: '1', nickname: 'Lan', avatar: 'https://p16-sign-va.tiktokcdn.com/obj/1.jpeg', comment: 'sư tử' });
+  assert.equal(likeOf(like(1, 15)).count, 15);
+  assert.equal(viewersOf({ totalUser: 321 }), 321);
+  const g = giftOf(gift(2, { diamondCount: 30, repeatCount: 3, name: 'Doughnut' }));
+  assert.deepEqual([g.diamonds, g.count, g.giftName, g.userId], [30, 3, 'Doughnut', '2']);
+});
+
+test('parsers still accept the older flattened shapes from the connector README', () => {
+  assert.equal(chatOf({ user: { userId: '7', nickname: 'A', profilePictureUrl: 'x' }, comment: 'leo' }).comment, 'leo');
+  assert.equal(likeOf({ user: { userId: '7' }, likeCount: 8 }).count, 8);
+  assert.equal(giftOf({ user: { userId: '7' }, giftDetails: { giftType: 2, diamondCount: 5, giftName: 'Heart' }, repeatCount: 2 }).diamonds, 5);
+  assert.equal(userOf({}).userId, 'unknown');
+});
+
+test('streakable gifts count once, when the streak ends, with the final repeat count', () => {
+  assert.equal(giftOf(gift(3, { type: 1, repeatCount: 4, repeatEnd: 0 })), null);
+  assert.equal(giftOf(gift(3, { type: 1, repeatCount: 5, repeatEnd: 1 })).count, 5);
+  assert.equal(giftOf(gift(3, { type: 2, repeatCount: 1, repeatEnd: 0 })).count, 1); // non-streak gifts are final immediately
+});
+
+// A stand-in for TikTokLiveConnection: same events, no network.
+const fakeConnection = () => Object.assign(new EventEmitter(), { connect: async () => ({ roomId: 'r1' }), disconnect: async () => {} });
+
+test('end to end: TikTok events reach the game (join by comment, likes raise the moon, gifts and follows light the sky)', async () => {
+  const conn = fakeConnection(), logs = [];
+  const game = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, adaptiveCrowd: false, autoQuiz: false, quietSeconds: 9999, checkinPerNight: 0, luckyEverySeconds: 1e9, moonGoal: 1e9, constellationCost: 1000, commentLight: 2, lightPerDiamond: 5 } });
+  const statuses = [];
+  const bridge = createTikTokBridge({ game, connect: () => conn, log: m => logs.push(m), onStatus: s => statuses.push(s.state) });
+  await bridge.connect('@someone');
+  assert.equal(bridge.status().state, 'live');
+
+  conn.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'em là sư tử nè'));
+  assert.equal(game.state.viewers['1'].sign, 'leo');
+  conn.emit(WebcastEvent.LIKE, like(1, 12));
+  assert.equal(game.state.moon.light, 1 + 12); // the comment (+1) and the burst of 12 likes
+  conn.emit(WebcastEvent.GIFT, gift(1, { diamondCount: 10 }));
+  assert.ok(game.state.wheel.light.leo >= 50);
+  const before = game.state.wheel.light.leo;
+  conn.emit(WebcastEvent.FOLLOW, { user: user(1, 'Lan') });
+  assert.equal(game.state.wheel.light.leo, before + 20);
+  conn.emit(WebcastEvent.ROOM_USER, { viewerCount: 87 });
+  assert.equal(bridge.status().viewers, 87);
+
+  conn.emit(WebcastEvent.CHAT, null); // a malformed event must not throw or stop the show
+  conn.emit(WebcastEvent.GIFT, { gift: 'nonsense' });
+  assert.ok(logs.length === 0 || logs.every(l => /bad|connected/.test(l)));
+  conn.emit(WebcastEvent.CHAT, chat(2, 'Huy', 'ma kết'));
+  assert.equal(game.state.viewers['2'].sign, 'capricorn');
+});
+
+test('viewer names and avatars are cleaned before they can reach the screen', () => {
+  const blocked = ['vcl', 'địt'];
+  assert.equal(cleanName('  Nguyễn‮  Văn​ A ', blocked), 'Nguyễn Văn A');
+  assert.equal(cleanName('', blocked), 'Người xem');
+  assert.equal(cleanName('shop gia re 0912345678', blocked), 'Người xem');
+  assert.equal(cleanName('xem tại abc.com', blocked), 'Người xem');
+  assert.equal(cleanName('VCL con tôm', blocked), 'Người xem ẩn danh');
+  assert.equal(cleanName('dit me', ['địt']), 'Người xem'.length ? cleanName('dit me', ['địt']) : '');
+  assert.equal(cleanName('A'.repeat(50), []).length, 32);
+  assert.equal(cleanName('😀'.repeat(40), []).replaceAll('😀', 'x').length, 32);
+  assert.equal(safeAvatar('https://p16-sign-va.tiktokcdn.com/a.jpeg'), 'https://p16-sign-va.tiktokcdn.com/a.jpeg');
+  assert.equal(safeAvatar('http://p16.tiktokcdn.com/a.jpeg'), '');
+  assert.equal(safeAvatar('https://evil.example/a.jpeg'), '');
+  assert.equal(safeAvatar('https://tiktokcdn.com.evil.example/a.jpeg'), '');
+  assert.equal(safeAvatar('javascript:alert(1)'), '');
+});
+
+test('the game applies the same cleaning to every source', () => {
+  const game = createGame({ config: { autoQuiz: false, quietSeconds: 9999 } });
+  game.chat({ userId: 'x', nickname: 'Bad‮Name vcl', avatar: 'https://evil.example/a.png', comment: 'leo' });
+  assert.equal(game.state.viewers.x.nickname, 'Người xem ẩn danh');
+  assert.equal(game.state.viewers.x.avatar, '');
+  game.chat({ userId: 'y', nickname: 'Lan', avatar: 'https://p19.tiktokcdn-us.com/b.jpeg', comment: 'leo' });
+  assert.equal(game.state.viewers.y.avatar, 'https://p19.tiktokcdn-us.com/b.jpeg');
+});
+
+test('diagnostics: schema probe records field names only, and a recorded night can be replayed', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-diag-'));
+  try {
+    const diag = createDiagnostics({ dir, record: true, now: () => Date.UTC(2026, 10, 5, 12) });
+    diag.probe('chat', chat(1, 'Lan', 'bí mật không được lưu'));
+    diag.probe('chat', chat(2, 'Huy', 'x'));
+    const schema = JSON.parse(fs.readFileSync(path.join(dir, 'tiktok-schema.json'), 'utf8'));
+    assert.deepEqual(schema.chat.fields, ['content', 'user']);
+    assert.ok(schema.chat.user.includes('displayId'));
+    assert.ok(!JSON.stringify(schema).includes('bí mật'));
+
+    const rec = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
+    const wrapped = diag.wrap(rec);
+    wrapped.chat({ userId: '5', nickname: 'An', avatar: '', comment: 'song ngư' });
+    wrapped.gift({ userId: '5', nickname: 'An', avatar: '', diamonds: 10, count: 2, giftName: 'Rose' });
+    wrapped.like({ userId: '5', nickname: 'An', avatar: '', count: 20 });
+    wrapped.social({ userId: '5', nickname: 'An', avatar: '', kind: 'follow' });
+    await diag.close();
+    const lines = fs.readFileSync(diag.eventsFile, 'utf8').trim().split('\n').map(l => JSON.parse(l));
+    assert.deepEqual(lines.map(l => l.type), ['chat', 'gift', 'like', 'social']);
+
+    const replayed = createGame({ rng: () => 0, config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, luckyEverySeconds: 1e9 } });
+    for (const l of lines) ingest(replayed, l);
+    assert.deepEqual(replayed.state.wheel.light, rec.state.wheel.light);
+    assert.equal(replayed.state.viewers['5'].lifetime, rec.state.viewers['5'].lifetime);
+    assert.throws(() => ingest(replayed, { type: 'nope' }), /unknown event type/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

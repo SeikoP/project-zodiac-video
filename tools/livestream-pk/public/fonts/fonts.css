@@ -1,0 +1,8 @@
+/* Channel brand face (zodiac-paper-doodle-meme-v4). Self-hosted so OBS works offline. */
+@font-face {
+  font-family: 'Patrick Hand';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/PatrickHand-Regular.ttf') format('truetype');
+}

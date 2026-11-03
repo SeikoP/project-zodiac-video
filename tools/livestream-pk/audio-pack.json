@@ -1,0 +1,313 @@
+{
+  "source": "Mixkit",
+  "licenseName": "Mixkit Stock Music Free License / Mixkit Sound Effects Free License",
+  "licenseUrl": "https://mixkit.co/license/",
+  "retrieved": "2026-11-03",
+  "music": [
+    {
+      "id": 927,
+      "title": "This Our Year! (Happy New Year!)",
+      "artist": "Michael Ramir C.",
+      "genre": "Pop",
+      "seconds": 142,
+      "mood": "upbeat",
+      "file": "mixkit-this-our-year-happy-new-year-927.mp3"
+    },
+    {
+      "id": 288,
+      "title": "One More Dance",
+      "artist": "Arulo",
+      "genre": "Pop",
+      "seconds": 100,
+      "mood": "upbeat",
+      "file": "mixkit-one-more-dance-288.mp3"
+    },
+    {
+      "id": 1048,
+      "title": "Turn This Up a Little Louder!",
+      "artist": "Michael Ramir C.",
+      "genre": "Pop",
+      "seconds": 113,
+      "mood": "upbeat",
+      "file": "mixkit-turn-this-up-a-little-louder-1048.mp3"
+    },
+    {
+      "id": 970,
+      "title": "Night Sky Hip Hop",
+      "artist": "Michael Ramir C.",
+      "genre": "Pop",
+      "seconds": 257,
+      "mood": "upbeat",
+      "file": "mixkit-night-sky-hip-hop-970.mp3"
+    },
+    {
+      "id": 1147,
+      "title": "Midnight Funk",
+      "artist": "Michael Ramir C.",
+      "genre": "Pop",
+      "seconds": 107,
+      "mood": "upbeat",
+      "file": "mixkit-midnight-funk-1147.mp3"
+    },
+    {
+      "id": 1012,
+      "title": "Take this Higher",
+      "artist": "Michael Ramir C.",
+      "genre": "EDM",
+      "seconds": 99,
+      "mood": "upbeat",
+      "file": "mixkit-take-this-higher-1012.mp3"
+    },
+    {
+      "id": 5,
+      "title": "Feeling Happy",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 148,
+      "mood": "upbeat",
+      "file": "mixkit-feeling-happy-5.mp3"
+    },
+    {
+      "id": 2,
+      "title": "Comical",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 114,
+      "mood": "upbeat",
+      "file": "mixkit-comical-2.mp3"
+    },
+    {
+      "id": 15,
+      "title": "Keep Smiling",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 106,
+      "mood": "upbeat",
+      "file": "mixkit-keep-smiling-15.mp3"
+    },
+    {
+      "id": 9,
+      "title": "Kidding Around",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 107,
+      "mood": "upbeat",
+      "file": "mixkit-kidding-around-9.mp3"
+    },
+    {
+      "id": 6,
+      "title": "Fun and Games",
+      "artist": "Ahjay Stelino",
+      "genre": "Film Score",
+      "seconds": 139,
+      "mood": "upbeat",
+      "file": "mixkit-fun-and-games-6.mp3"
+    },
+    {
+      "id": 10,
+      "title": "Playful",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 151,
+      "mood": "upbeat",
+      "file": "mixkit-playful-10.mp3"
+    },
+    {
+      "id": 11,
+      "title": "Just Kidding",
+      "artist": "Ahjay Stelino",
+      "genre": "Children",
+      "seconds": 179,
+      "mood": "upbeat",
+      "file": "mixkit-just-kidding-11.mp3"
+    },
+    {
+      "id": 822,
+      "title": "Banjo Man in Africa",
+      "artist": "Michael Ramir C.",
+      "genre": "Children",
+      "seconds": 90,
+      "mood": "upbeat",
+      "file": "mixkit-banjo-man-in-africa-822.mp3"
+    },
+    {
+      "id": 780,
+      "title": "Okay",
+      "artist": "Michael Ramir C.",
+      "genre": "Ska",
+      "seconds": 120,
+      "mood": "upbeat",
+      "file": "mixkit-okay-780.mp3"
+    },
+    {
+      "id": 647,
+      "title": "Fun Jazz",
+      "artist": "Francisco Alvear",
+      "genre": "Lounge",
+      "seconds": 141,
+      "mood": "upbeat",
+      "file": "mixkit-fun-jazz-647.mp3"
+    }
+  ],
+  "sfx": [
+    {
+      "id": 871,
+      "tags": "magic sparkle fairy",
+      "file": "mixkit-sfx-871.mp3"
+    },
+    {
+      "id": 3062,
+      "tags": "sparkle magic fairy bell",
+      "file": "mixkit-sfx-3062.mp3"
+    },
+    {
+      "id": 3104,
+      "tags": "fireworks",
+      "file": "mixkit-sfx-3104.mp3"
+    },
+    {
+      "id": 3103,
+      "tags": "fireworks whistle explosion",
+      "file": "mixkit-sfx-3103.mp3"
+    },
+    {
+      "id": 2989,
+      "tags": "festive fireworks sparkle",
+      "file": "mixkit-sfx-2989.mp3"
+    },
+    {
+      "id": 2350,
+      "tags": "magic whoosh orchestra",
+      "file": "mixkit-sfx-2350.mp3"
+    },
+    {
+      "id": 3109,
+      "tags": "chimes bell ding",
+      "file": "mixkit-sfx-3109.mp3"
+    },
+    {
+      "id": 1108,
+      "tags": "chimes",
+      "file": "mixkit-sfx-1108.mp3"
+    },
+    {
+      "id": 270,
+      "tags": "win magic intro sweep",
+      "file": "mixkit-sfx-270.mp3"
+    },
+    {
+      "id": 216,
+      "tags": "win coin arcade",
+      "file": "mixkit-sfx-216.mp3"
+    },
+    {
+      "id": 482,
+      "tags": "clapping applause cheer",
+      "file": "mixkit-sfx-482.mp3"
+    },
+    {
+      "id": 592,
+      "tags": "bell magic",
+      "file": "mixkit-sfx-592.mp3"
+    },
+    {
+      "id": 939,
+      "tags": "magic bell ding",
+      "file": "mixkit-sfx-939.mp3"
+    },
+    {
+      "id": 949,
+      "tags": "game-show correct",
+      "file": "mixkit-sfx-949.mp3"
+    },
+    {
+      "id": 867,
+      "tags": "fairy magic falling",
+      "file": "mixkit-sfx-867.mp3"
+    },
+    {
+      "id": 952,
+      "tags": "game-show notification correct",
+      "file": "mixkit-sfx-952.mp3"
+    }
+  ],
+  "roles": {
+    "sparkle": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-871.mp3",
+        "mixkit-sfx-3062.mp3"
+      ]
+    },
+    "firework": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-3104.mp3",
+        "mixkit-sfx-3103.mp3",
+        "mixkit-sfx-2989.mp3"
+      ]
+    },
+    "meteor": {
+      "gain": 1,
+      "files": [
+        "mixkit-sfx-2350.mp3"
+      ]
+    },
+    "lit": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-3109.mp3",
+        "mixkit-sfx-1108.mp3"
+      ]
+    },
+    "wheel": {
+      "gain": 1,
+      "files": [
+        "mixkit-sfx-270.mp3"
+      ]
+    },
+    "milestone": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-216.mp3",
+        "mixkit-sfx-482.mp3"
+      ]
+    },
+    "title": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-482.mp3"
+      ]
+    },
+    "moon": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-592.mp3"
+      ]
+    },
+    "fortune": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-939.mp3"
+      ]
+    },
+    "quiz": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-949.mp3"
+      ]
+    },
+    "lucky": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-867.mp3"
+      ]
+    },
+    "poll": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-952.mp3"
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260">
+  <!-- Đèn ước: a paper sky lantern, ink outline in the channel's doodle style; the wish text is laid over the body -->
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="58%" r="60%"><stop offset="0" stop-color="#fff6d6"/><stop offset=".55" stop-color="#ffd27a"/><stop offset="1" stop-color="#f29a4a"/></radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="100" cy="120" rx="100" ry="120" fill="url(#halo)"/>
+  <path d="M52 34 C66 18 134 18 148 34 L176 176 C178 196 150 214 100 214 C50 214 22 196 24 176 Z" fill="url(#glow)" stroke="#2F3C44" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M74 26 C70 80 64 150 60 210 M126 26 C130 80 136 150 140 210" fill="none" stroke="#c9702e" stroke-width="2.5" stroke-dasharray="6 6" opacity=".7"/>
+  <path d="M30 150 C70 160 130 160 170 150" fill="none" stroke="#c9702e" stroke-width="2.5" opacity=".6"/>
+  <path d="M60 214 L64 232 C80 240 120 240 136 232 L140 214" fill="#E97A66" stroke="#2F3C44" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M100 238 C96 246 104 252 100 258" fill="none" stroke="#F2C45C" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="100" cy="226" r="7" fill="#fff3b0" stroke="#2F3C44" stroke-width="3"/>
+</svg>

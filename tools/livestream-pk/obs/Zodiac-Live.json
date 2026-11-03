@@ -1,0 +1,80 @@
+{
+  "name": "Zodiac Live",
+  "current_scene": "Dem Hoi",
+  "current_program_scene": "Dem Hoi",
+  "scene_order": [
+    {
+      "name": "Dem Hoi"
+    }
+  ],
+  "sources": [
+    {
+      "id": "browser_source",
+      "versioned_id": "browser_source",
+      "name": "Overlay Dem Hoi",
+      "uuid": "3f1c8a52-7d0e-4b6a-9c11-5a2e6b7d9001",
+      "muted": false,
+      "volume": 1.0,
+      "enabled": true,
+      "settings": {
+        "url": "http://127.0.0.1:4848/",
+        "width": 1080,
+        "height": 1920,
+        "fps_custom": true,
+        "fps": 30,
+        "css": "",
+        "reroute_audio": true,
+        "restart_when_active": true,
+        "shutdown": false,
+        "is_local_file": false
+      }
+    },
+    {
+      "id": "scene",
+      "versioned_id": "scene",
+      "name": "Dem Hoi",
+      "uuid": "3f1c8a52-7d0e-4b6a-9c11-5a2e6b7d9002",
+      "muted": false,
+      "volume": 1.0,
+      "enabled": true,
+      "settings": {
+        "id_counter": 1,
+        "custom_size": false,
+        "items": [
+          {
+            "name": "Overlay Dem Hoi",
+            "source_uuid": "3f1c8a52-7d0e-4b6a-9c11-5a2e6b7d9001",
+            "id": 1,
+            "visible": true,
+            "locked": false,
+            "pos": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "rot": 0.0,
+            "align": 5,
+            "bounds_type": 0,
+            "bounds_align": 0,
+            "bounds": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "crop_left": 0,
+            "crop_top": 0,
+            "crop_right": 0,
+            "crop_bottom": 0
+          }
+        ]
+      }
+    }
+  ],
+  "groups": [],
+  "transitions": [],
+  "quick_transitions": [],
+  "modules": {},
+  "version": 2
+}

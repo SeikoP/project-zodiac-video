@@ -1,0 +1,129 @@
+/* How to join (top), the zodiac band, viewers' avatars, wish lanterns, the bag, and the arena's modes.
+   Same rules as overlay.css: only transform/opacity animate. */
+
+.chest img.ci { width: 66px; height: 56px; object-fit: contain; }
+
+/* "Cách tham gia": step 1 is always the same, step 2 is what to do right now */
+.join { display: flex; gap: 10px; margin: 4px 0 8px; height: 78px; }
+.join > div { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0 14px 0 10px; border-radius: 20px 16px 22px 18px / 18px 22px 16px 20px; border: 3px solid var(--ink); }
+.join .j1 { flex: 1.25 1 0; background: color-mix(in srgb, var(--gold) 45%, #fff); }
+.join .j2 { flex: 1 1 0; background: rgba(47, 60, 68, .06); }
+.join .j2.hot { background: color-mix(in srgb, var(--accent) 30%, #fff); border-color: var(--accent); animation: joinPulse 1.4s ease-in-out infinite; }
+.join .jn { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--card); font-size: 21px; font-weight: 900; }
+.join .ji { flex: none; font-size: 30px; line-height: 1; display: grid; place-items: center; }
+.join .ji .ico, .join .ji svg { width: 32px; height: 32px; }
+.join div > div { min-width: 0; }
+.join b { display: block; font-size: 24px; font-weight: 900; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.join b em { font-style: normal; color: var(--accent); }
+.join span:not(.jn):not(.ji) { display: block; font-size: 16px; font-weight: 700; color: var(--soft-ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes joinPulse { 50% { transform: scale(1.025); } }
+
+/* the zodiac band: each sign's arc fills as its constellation lights; lit arcs glow; real planets sit on it */
+.arc { transition: stroke-dasharray .6s; }
+.arc.lit { filter: none; stroke-width: 20; }
+#planets .pt circle { fill: var(--card); stroke: var(--ink); stroke-width: 3; }
+#planets .pt text { font: 400 22px 'Segoe UI Symbol', 'Noto Sans Symbols', sans-serif; fill: var(--ink); text-anchor: middle; dominant-baseline: middle; }
+#planets .pt.retro circle { stroke: #8a4fd6; stroke-width: 4; fill: #efe4ff; }
+#planets .pt text.rx { font: 900 15px var(--ui); fill: #8a4fd6; }
+.ringlabel { position: absolute; left: 12px; bottom: 6px; display: flex; flex-direction: column; padding: 6px 14px; border-radius: 16px; background: rgba(22, 29, 33, .55); border: 2px solid rgba(246, 240, 230, .3); }
+.ringlabel b { font-family: var(--hand); font-weight: 400; font-size: 24px; color: var(--paper); line-height: 1.1; }
+.ringlabel span { font-size: 17px; font-weight: 800; color: var(--gold); }
+
+/* avatars: the TikTok picture, or the initial on a coloured disc */
+.av { flex: none; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 3px solid var(--ink); background: rgba(47, 60, 68, .12); }
+.av.ini { display: grid; place-items: center; background: hsl(var(--h) 55% 62%); color: var(--ink); font-size: 28px; font-weight: 900; }
+.av.big { width: 96px; height: 96px; font-size: 46px; border-width: 4px; }
+.wp .av { width: 56px; height: 56px; }
+.wwave .wav { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; font-size: 46px; font-weight: 900; color: var(--ink); background: hsl(var(--h, 40) 55% 62%); }
+.wwave:has(.wav) { animation: none; }
+.duo { position: relative; display: flex; align-items: flex-end; justify-content: center; }
+#center .duo img:first-child, #hero .duo img:first-child { height: 200px; }
+.duo .av.big { position: absolute; right: -54px; top: 4px; box-shadow: 0 4px 0 rgba(22, 29, 33, .35); }
+
+/* đèn ước: lanterns with the wish written on them rise across the whole frame */
+#lanterns { position: absolute; inset: 0; z-index: 15; pointer-events: none; overflow: hidden; } /* over the wheel and the waiting line; they stop below the top card */
+.lantern { position: absolute; top: 1040px; width: 196px; height: 256px; animation: rise-lantern 15s cubic-bezier(.3, .1, .4, 1) forwards; }
+.lantern .lb { position: absolute; inset: 0; width: 100%; height: 100%; animation: lanternSway 3.2s ease-in-out infinite; transform-origin: 50% 0; }
+.lantern .lt { position: absolute; left: 34px; right: 34px; top: 52px; height: 106px; display: flex; align-items: center; justify-content: center; text-align: center; }
+.lantern .lt b { font-family: var(--hand); font-weight: 400; font-size: 24px; line-height: 1.1; color: #6b2d10; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.lantern .lt b.secret { font-size: 24px; color: #8a4a20; }
+.lantern .lw { position: absolute; left: 50%; top: 254px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: 999px; background: var(--card); border: 2px solid var(--ink); color: var(--ink); font-size: 17px; font-weight: 800; white-space: nowrap; max-width: 260px; }
+.lantern .lw .av { width: 32px; height: 32px; border-width: 2px; font-size: 16px; }
+.lantern .lw span { overflow: hidden; text-overflow: ellipsis; }
+.lantern .lbless { position: absolute; left: 50%; top: 294px; transform: translateX(-50%); padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .7); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
+.lantern .lbless em { font-style: normal; color: #fff; }
+.lantern.pop .lb { animation: lanternSway 3.2s ease-in-out infinite, blessPop .5s; }
+.lantern.blessed .lb { filter: none; }
+.lantern.blessed::before { content: '⭐'; position: absolute; left: 50%; top: -30px; transform: translateX(-50%); font-size: 52px; animation: popc .5s; }
+.lantern.blessed .lbless { background: var(--gold); color: var(--ink); }
+@keyframes rise-lantern { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(var(--sway), -700px); opacity: 0; } }
+@keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes blessPop { 40% { transform: scale(1.12); } }
+
+/* the wish wall in the base card */
+.wall { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); min-height: 74px; }
+.wall h3 { margin: 0; font-size: 26px; white-space: nowrap; }
+#wishwall { flex: 1; min-width: 0; display: flex; gap: 10px; }
+.ww { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 16px; background: rgba(242, 196, 92, .18); border: 2px solid var(--line); }
+.ww .av { width: 42px; height: 42px; border-width: 2px; font-size: 20px; }
+.ww div { min-width: 0; }
+.ww b { display: block; font-family: var(--hand); font-weight: 400; font-size: 22px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ww span { display: block; font-size: 14px; font-weight: 800; color: var(--soft-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ww.open { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, #fff); }
+.ww.done { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 40%, #fff); }
+#hero .wishstar { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 760px; }
+#hero .wishstar b { font-family: var(--hand); font-weight: 400; font-size: 46px; line-height: 1.15; color: #FFE7A1; text-align: center; text-shadow: 0 3px 0 #161d21; }
+
+/* resources */
+.resimg { width: 64px; height: 64px; }
+.resimg.sm { width: 26px; height: 26px; vertical-align: -6px; margin-left: 6px; }
+.ev .ic .resimg { width: 70px; height: 70px; }
+.ev .ic .av { width: 92px; height: 92px; border: 0; font-size: 44px; }
+.bagrow { color: var(--ink); }
+
+/* arena: the boss, Thủy Nghịch, the chest */
+#arena .boss { width: 270px; height: 190px; animation: bossFloat 2.6s ease-in-out infinite; }
+#arena .boss img { width: 100%; height: 100%; animation: bossIn .8s cubic-bezier(.2, 1.5, .4, 1); }
+#arena .boss .rage-tag { position: absolute; right: -10px; top: 0; padding: 2px 10px; border-radius: 10px; background: #c43c3c; color: #fff; font-style: normal; font-size: 16px; font-weight: 900; letter-spacing: 1px; display: none; }
+#arena.rage { background: radial-gradient(circle at 50% 38%, #7a2338 0%, #3a0f1c 58%, #1c060c 100%); }
+#arena.rage .boss .rage-tag { display: block; animation: wobble .5s ease-in-out infinite; }
+#arena .role img { flex: none; width: 24px; height: 24px; }
+#arena.chaosmode { background: radial-gradient(circle at 50% 42%, #7d52c9 0%, #3d1f73 60%, #1d0e38 100%); }
+#arena .merc { font-size: 150px; line-height: 1; color: #efe4ff; text-shadow: 0 0 30px #b48cf2; animation: spin 2.6s linear infinite reverse; }
+#arena .fixbar { width: 400px; height: 26px; border-radius: 13px; border: 3px solid var(--paper); overflow: hidden; background: rgba(255, 255, 255, .12); }
+#arena .fixbar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, #b48cf2, #fff); transition: transform .3s; }
+#arena.chaosmode .cap { color: #fff; }
+#arena.chaosmode .sub { color: #e6d8ff; font-size: 21px; line-height: 1.3; }
+#arena.chestmode { background: radial-gradient(circle at 50% 40%, #fff7dc 0%, #ffe7a1 55%, #f2c45c 100%); color: var(--ink); }
+#arena .chestimg { width: 190px; height: 190px; animation: chestBounce 1.2s ease-in-out infinite; }
+#hero .chestimg.big { width: 300px; height: 300px; animation: popc .55s cubic-bezier(.2, 1.6, .4, 1); }
+#hero .bossimg { width: 420px; height: 300px; animation: bossIn .9s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes bossFloat { 50% { transform: translateY(-10px); } }
+@keyframes bossIn { from { transform: translate(-300px, -260px) scale(.3) rotate(-30deg); opacity: 0; } }
+@keyframes chestBounce { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-14px) rotate(-3deg); } 60% { transform: translateY(0) rotate(3deg); } }
+#stage.quake { animation: quake .45s; }
+@keyframes quake { 20% { transform-origin: top left; translate: -10px 6px; } 40% { translate: 9px -7px; } 60% { translate: -6px 4px; } 80% { translate: 4px -2px; } }
+
+/* Nhiệt phòng (bottom-left, above the wheel label) and the fan club on stage (bottom-right) */
+.heat { position: absolute; left: 12px; bottom: 72px; width: 228px; padding: 7px 12px 8px; border-radius: 16px; background: rgba(22, 29, 33, .72); border: 2px solid var(--hc, #8EC0B9); color: var(--paper); }
+.heat .hh { display: flex; align-items: baseline; gap: 6px; }
+.heat .hh b { font-size: 17px; font-weight: 900; white-space: nowrap; }
+.heat .hh em { font-style: normal; font-size: 20px; font-weight: 900; color: var(--hc, #8EC0B9); white-space: nowrap; }
+.heat .hbar { height: 12px; margin: 5px 0 4px; border-radius: 6px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.heat .hbar i { display: block; height: 100%; transform-origin: left; transform: scaleX(0); transition: transform .4s; background: linear-gradient(90deg, #F2C45C, var(--hc, #8EC0B9)); }
+.heat span { display: block; font-size: 13px; font-weight: 700; color: rgba(246, 240, 230, .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heat.hot { animation: heatGlow 1s ease-in-out infinite; }
+@keyframes heatGlow { 50% { box-shadow: 0 0 22px var(--hc); } }
+.fanbox { position: absolute; right: 12px; bottom: 6px; width: 215px; padding: 7px 10px; border-radius: 16px; background: rgba(60, 14, 34, .78); border: 2px solid #FFD45E; color: var(--paper); display: none; }
+.fanbox.on { display: block; animation: popc .4s; }
+.fanbox b { display: block; font-size: 15px; font-weight: 900; color: #FFD45E; margin-bottom: 4px; }
+.fanbox > div { display: grid; grid-template-columns: 30px 1fr; gap: 3px 6px; align-items: center; }
+.fanbox .av { width: 28px; height: 28px; border-width: 2px; font-size: 14px; }
+.fanbox span { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fanbox span em { font-style: normal; color: #FFD45E; }
+.av.fanring { border-color: #FFD45E; box-shadow: 0 0 0 3px #c43c6a; }
+.ev.heat { background: linear-gradient(100deg, color-mix(in srgb, var(--ec) 60%, #fff) 0%, var(--card) 62%); }
+
+/* the house mascots' how-to cards are tagged so they never read as a viewer */
+#center .demo-tag { padding: 3px 14px; border-radius: 999px; background: var(--teal); color: var(--ink); font-size: 18px; font-weight: 900; }
+#center .sub small { font-size: 20px; color: var(--accent); }

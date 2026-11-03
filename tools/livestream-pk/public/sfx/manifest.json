@@ -1,0 +1,81 @@
+{
+  "roles": {
+    "sparkle": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-871.mp3",
+        "mixkit-sfx-3062.mp3"
+      ]
+    },
+    "firework": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-3104.mp3",
+        "mixkit-sfx-3103.mp3",
+        "mixkit-sfx-2989.mp3"
+      ]
+    },
+    "meteor": {
+      "gain": 1,
+      "files": [
+        "mixkit-sfx-2350.mp3"
+      ]
+    },
+    "lit": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-3109.mp3",
+        "mixkit-sfx-1108.mp3"
+      ]
+    },
+    "wheel": {
+      "gain": 1,
+      "files": [
+        "mixkit-sfx-270.mp3"
+      ]
+    },
+    "milestone": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-216.mp3",
+        "mixkit-sfx-482.mp3"
+      ]
+    },
+    "title": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-482.mp3"
+      ]
+    },
+    "moon": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-592.mp3"
+      ]
+    },
+    "fortune": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-939.mp3"
+      ]
+    },
+    "quiz": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-949.mp3"
+      ]
+    },
+    "lucky": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-867.mp3"
+      ]
+    },
+    "poll": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-952.mp3"
+      ]
+    }
+  }
+}

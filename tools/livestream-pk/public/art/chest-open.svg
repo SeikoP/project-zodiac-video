@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  <!-- Rương sao (open): the lid thrown back, starlight pouring out -->
+  <defs><radialGradient id="light" cx="50%" cy="100%" r="90%"><stop offset="0" stop-color="#fff6d6"/><stop offset=".5" stop-color="#ffe7a1" stop-opacity=".8"/><stop offset="1" stop-color="#ffe7a1" stop-opacity="0"/></radialGradient></defs>
+  <path d="M40 140 L0 10 L240 10 L200 140 Z" fill="url(#light)"/>
+  <ellipse cx="120" cy="228" rx="96" ry="10" fill="#161d21" opacity=".25"/>
+  <path d="M30 38 C40 10 200 10 210 38 L218 104 L22 104 Z" fill="#cf8a48" stroke="#2F3C44" stroke-width="6" stroke-linejoin="round" transform="translate(0 -6) rotate(-8 120 104)"/>
+  <path d="M100 18 L98 96 M140 18 L142 96" stroke="#F2C45C" stroke-width="12" transform="translate(0 -6) rotate(-8 120 104)"/>
+  <path d="M26 132 L214 132 L206 218 C206 224 200 228 194 228 L46 228 C40 228 34 224 34 218 Z" fill="#b8743a" stroke="#2F3C44" stroke-width="6" stroke-linejoin="round"/>
+  <ellipse cx="120" cy="132" rx="94" ry="16" fill="#3a2516" stroke="#2F3C44" stroke-width="6"/>
+  <ellipse cx="120" cy="128" rx="70" ry="10" fill="#ffe7a1"/>
+  <path d="M100 140 L100 228 M140 140 L140 228" stroke="#F2C45C" stroke-width="14"/>
+  <rect x="98" y="142" width="44" height="40" rx="10" fill="#F2C45C" stroke="#2F3C44" stroke-width="5"/>
+  <path d="M84 96 l5 11 12 1 -9 8 3 12 -11 -7 -11 7 3 -12 -9 -8 12 -1z" fill="#fff6d6" stroke="#2F3C44" stroke-width="2.5"/>
+  <path d="M150 70 l4 9 10 1 -8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 10 -1z" fill="#F2C45C" stroke="#2F3C44" stroke-width="2.5"/>
+  <circle cx="120" cy="60" r="6" fill="#fff6d6"/><circle cx="60" cy="80" r="4" fill="#fff6d6"/><circle cx="184" cy="100" r="5" fill="#fff6d6"/>
+</svg>
