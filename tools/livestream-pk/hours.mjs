@@ -35,10 +35,10 @@ export function createHours({ lat = 10.82, lon = 106.63, tz = 7 } = {}) {
     return { planet, startsAt: Math.round(startsAt), endsAt: Math.round(startsAt + len), next: CHALDEAN[(CHALDEAN.indexOf(planet) + 1) % 7], night: !day, index: i };
   }
 
-  // A plain rotation: one planet per clock hour, through `planets` (default: all seven in the Chaldean order).
-  function cycle(t, planets = CHALDEAN) {
-    const n = Math.floor(t / HOUR), k = planets.length, planet = planets[((n % k) + k) % k];
-    return { planet, startsAt: n * HOUR, endsAt: (n + 1) * HOUR, next: planets[(((n + 1) % k) + k) % k], night: false, index: n % 24 };
+  // A plain rotation: one planet per `slot` ms (default a clock hour), through `planets` (default: all seven in the Chaldean order).
+  function cycle(t, planets = CHALDEAN, slot = HOUR) {
+    const n = Math.floor(t / slot), k = planets.length, planet = planets[((n % k) + k) % k];
+    return { planet, startsAt: n * slot, endsAt: (n + 1) * slot, next: planets[(((n + 1) % k) + k) % k], night: false, index: n % 24 };
   }
 
   return { real, cycle };

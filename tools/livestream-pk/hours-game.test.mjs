@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
-import { HOUR_PLANETS } from './hours-table.mjs';
+import { ALL_HOUR_PLANETS as HOUR_PLANETS } from './hours-table.mjs';
 
 const HOUR = 3600000;
 const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
@@ -12,7 +12,7 @@ function setup(planet, config = {}, minute = 1) {
   let t = at(planet, minute);
   const events = [];
   const game = createGame({
-    config: { hourMode: 'cycle', bossEverySeconds: 60, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
+    config: { hourMode: 'cycle', hourMinutes: 60, hourPlanets: HOUR_PLANETS, bossEverySeconds: 60, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
     now: () => t, rng: () => 0.3, readSky: sky, onEvent: e => events.push(e),
   });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
@@ -57,8 +57,8 @@ test('a new hour is announced once, with what comes next', () => {
   assert.equal(s.game.snapshot().cosmos.hour.planet, 'mercury');
 });
 
-test('minute 10 of an act brings the hour\'s headliner: an elite boss in the hour of Mars', () => {
-  const s = setup('mars', { bossEverySeconds: 0 }, 9.9);
+test('minute 5 of an act brings the hour\'s headliner: an elite boss in the hour of Mars', () => {
+  const s = setup('mars', { bossEverySeconds: 0 }, 4.9);
   s.crowd();
   s.advance(15_000);
   const head = s.of('head-start');
@@ -67,8 +67,8 @@ test('minute 10 of an act brings the hour\'s headliner: an elite boss in the hou
   assert.equal(s.game.state.boss.elite, true);
 });
 
-test('the hour of Saturn starts the sky run at minute 5, and A/B/C comments vote its doors', () => {
-  const s = setup('saturn', {}, 4.95);
+test('the hour of Saturn starts the sky run at minute 2, and A/B/C comments vote its doors', () => {
+  const s = setup('saturn', {}, 1.95);
   s.crowd();
   s.advance(5_000);
   assert.equal(s.of('run-start').length, 1);
@@ -80,7 +80,7 @@ test('the hour of Saturn starts the sky run at minute 5, and A/B/C comments vote
 });
 
 test('đêm se duyên pairs two viewers with a score, and the act closes with its MVP', () => {
-  const s = setup('venus', { pairEverySeconds: 25 }, 9.95);
+  const s = setup('venus', { pairEverySeconds: 25 }, 4.95);
   s.crowd();
   s.advance(40_000);
   const pairs = s.of('pair');
@@ -122,7 +122,7 @@ test('nhiệm vụ giờ: the room fills the hour\'s goal by taking part and eve
 });
 
 test('the act\'s MVP takes home a card of the hour', () => {
-  const s = setup('venus', {}, 12.85);
+  const s = setup('venus', {}, 8.35);
   s.advance(1_000); // the act begins first
   s.crowd();
   s.game.chat({ userId: 'u2', nickname: 'U2', comment: 'mình góp nè' });
@@ -130,4 +130,18 @@ test('the act\'s MVP takes home a card of the hour', () => {
   const card = s.events.find(e => e.type === 'card' && e.why === 'mvp');
   assert.ok(card);
   assert.equal(card.card.edition, 'h-venus');
+});
+
+test('by default two planets take 5-minute turns, and a planet\'s headliner moves on each time it comes round', () => {
+  const SLOT = 5 * 60000, heads = [];
+  for (let visit = 0; visit < 2; visit++) {
+    let t = SLOT * (2 * (7000 + visit)) + 1000; // slot n belongs to ['mars', 'venus'][n % 2]
+    const game = createGame({ config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, readSky: sky, onEvent: () => {} });
+    const { hour } = game.snapshot().cosmos;
+    assert.equal(hour.planet, 'mars');
+    assert.equal(hour.next.planet, 'venus');
+    assert.equal(hour.endsAt - hour.startsAt, SLOT);
+    heads.push(hour.head);
+  }
+  assert.notEqual(heads[0], heads[1]);
 });

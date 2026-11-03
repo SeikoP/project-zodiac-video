@@ -703,9 +703,7 @@ function renderStage(list) {
     if (extra > 0) nodes[id].more.textContent = `+${extra}`;
     nodes[id].el.classList.toggle('waiting', !counts[id]); // empty signs stay empty: no mascot, dashed node
   }
-  // nobody on stage → the queue replaces the wheel entirely (no mascots, no centre card behind it)
-  $('waiting').classList.toggle('on', !list.length);
-  $('wheel').classList.toggle('empty', !list.length);
+  // no waiting-queue layout: viewers who have not picked a sign are quiet stars in the community sky, and the wheel stays
 }
 
 // The line: first come first served, up to eight viewers. The newest arrival is greeted by name for a few seconds.
