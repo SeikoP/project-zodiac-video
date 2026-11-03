@@ -61,13 +61,13 @@
 @keyframes blessPop { 40% { transform: scale(1.12); } }
 
 /* the wish wall in the base card */
-.wall { display: flex; align-items: stretch; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
-.wall h3 { margin: 0; align-self: center; font-size: 26px; line-height: 1.1; width: 90px; }
+.wall { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); min-height: 74px; }
+.wall h3 { margin: 0; font-size: 26px; white-space: nowrap; }
 #wishwall { flex: 1; min-width: 0; display: flex; gap: 10px; }
 .ww { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 16px; background: rgba(242, 196, 92, .18); border: 2px solid var(--line); }
 .ww .av { width: 42px; height: 42px; border-width: 2px; font-size: 20px; }
 .ww div { min-width: 0; }
-.ww b { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--hand); font-weight: 400; font-size: 21px; line-height: 1.12; word-break: break-word; } /* the whole wish: at most 100 characters, four lines */
+.ww b { display: block; font-family: var(--hand); font-weight: 400; font-size: 22px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ww span { display: block; font-size: 14px; font-weight: 800; color: var(--soft-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ww.open { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, #fff); }
 .ww.done { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 40%, #fff); }
@@ -127,12 +127,3 @@
 /* the house mascots' how-to cards are tagged so they never read as a viewer */
 #center .demo-tag { padding: 3px 14px; border-radius: 999px; background: var(--teal); color: var(--ink); font-size: 18px; font-weight: 900; }
 #center .sub small { font-size: 20px; color: var(--accent); }
-
-/* the real sky's planet chips live in the base card now, under the gift goal */
-.skybase { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: 2px dashed var(--line); }
-.skybase h3 { margin: 0; font-size: 24px; white-space: nowrap; }
-.skybase .skyrow { flex: 1; min-width: 0; margin: 0; }
-/* long wishes get smaller writing so the whole wish fits on the lantern */
-.lantern .lt.long, .lantern .lt.xlong { top: 44px; height: 128px; }
-.lantern .lt.long b { font-size: 19px; -webkit-line-clamp: 6; }
-.lantern .lt.xlong b { font-size: 16px; -webkit-line-clamp: 8; }
