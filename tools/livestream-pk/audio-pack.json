@@ -229,6 +229,101 @@
       "id": 952,
       "tags": "game-show notification correct",
       "file": "mixkit-sfx-952.mp3"
+    },
+    {
+      "id": 2629,
+      "tags": "magic astral sweep",
+      "file": "mixkit-sfx-2629.mp3"
+    },
+    {
+      "id": 224,
+      "tags": "elegant door announcement",
+      "file": "mixkit-sfx-224.mp3"
+    },
+    {
+      "id": 566,
+      "tags": "drum roll",
+      "file": "mixkit-sfx-566.mp3"
+    },
+    {
+      "id": 2059,
+      "tags": "game level completed",
+      "file": "mixkit-sfx-2059.mp3"
+    },
+    {
+      "id": 937,
+      "tags": "happy bells notification",
+      "file": "mixkit-sfx-937.mp3"
+    },
+    {
+      "id": 869,
+      "tags": "fairy sparkle whoosh",
+      "file": "mixkit-sfx-869.mp3"
+    },
+    {
+      "id": 2066,
+      "tags": "video game treasure",
+      "file": "mixkit-sfx-2066.mp3"
+    },
+    {
+      "id": 227,
+      "tags": "ominous drums",
+      "file": "mixkit-sfx-227.mp3"
+    },
+    {
+      "id": 2072,
+      "tags": "small hit in a game",
+      "file": "mixkit-sfx-2072.mp3"
+    },
+    {
+      "id": 1528,
+      "tags": "magical stone slide",
+      "file": "mixkit-sfx-1528.mp3"
+    },
+    {
+      "id": 2062,
+      "tags": "game experience level increased",
+      "file": "mixkit-sfx-2062.mp3"
+    },
+    {
+      "id": 2055,
+      "tags": "boxer getting hit",
+      "file": "mixkit-sfx-2055.mp3"
+    },
+    {
+      "id": 2042,
+      "tags": "player losing or failing",
+      "file": "mixkit-sfx-2042.mp3"
+    },
+    {
+      "id": 2583,
+      "tags": "magical light transition",
+      "file": "mixkit-sfx-2583.mp3"
+    },
+    {
+      "id": 2645,
+      "tags": "game spinning machine",
+      "file": "mixkit-sfx-2645.mp3"
+    },
+    {
+      "id": 579,
+      "tags": "drum joke accent",
+      "file": "mixkit-sfx-579.mp3"
+    },
+    {
+      "id": 422,
+      "tags": "small crowd laugh and applause",
+      "file": "mixkit-sfx-422.mp3"
+    },
+    {
+      "id": 555,
+      "tags": "achievement win drums",
+      "file": "mixkit-sfx-555.mp3"
+    },
+    {
+      "id": 3175,
+      "tags": "thin metal card deck shuffle",
+      "file": "mixkit-sfx-3175.mp3"
     }
   ],
   "roles": {
@@ -307,6 +402,120 @@
       "gain": 0.9,
       "files": [
         "mixkit-sfx-952.mp3"
+      ]
+    },
+    "hourStart": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-2629.mp3"
+      ]
+    },
+    "actOpen": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-224.mp3"
+      ]
+    },
+    "headStart": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-566.mp3"
+      ]
+    },
+    "actClose": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-2059.mp3"
+      ]
+    },
+    "pair": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-937.mp3"
+      ]
+    },
+    "starFly": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-869.mp3"
+      ]
+    },
+    "chestOpen": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-2066.mp3"
+      ]
+    },
+    "bossStart": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-227.mp3"
+      ]
+    },
+    "bossHit": {
+      "gain": 0.7,
+      "files": [
+        "mixkit-sfx-2072.mp3"
+      ]
+    },
+    "door": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-1528.mp3"
+      ]
+    },
+    "boon": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-2062.mp3"
+      ]
+    },
+    "runHit": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-2055.mp3"
+      ]
+    },
+    "fall": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-2042.mp3"
+      ]
+    },
+    "revive": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-2583.mp3"
+      ]
+    },
+    "spin": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-2645.mp3"
+      ]
+    },
+    "roast": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-579.mp3"
+      ]
+    },
+    "laugh": {
+      "gain": 0.8,
+      "files": [
+        "mixkit-sfx-422.mp3"
+      ]
+    },
+    "cleared": {
+      "gain": 1.0,
+      "files": [
+        "mixkit-sfx-555.mp3"
+      ]
+    },
+    "cardFlip": {
+      "gain": 0.9,
+      "files": [
+        "mixkit-sfx-3175.mp3"
       ]
     }
   }

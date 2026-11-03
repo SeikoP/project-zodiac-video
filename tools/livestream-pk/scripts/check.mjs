@@ -30,8 +30,8 @@ if (initAt >= 0) {
 }
 
 // 1. Node ----------------------------------------------------------------------------------------------
-const major = Number(process.versions.node.split('.')[0]);
-major >= 20 ? ok(`Node ${process.versions.node}`) : bad(`Node ${process.versions.node} quá cũ — cần Node 20 trở lên`);
+const [major, minor] = process.versions.node.split('.').map(Number);
+major > 22 || (major === 22 && minor >= 9) || (major === 20 && minor >= 19) ? ok(`Node ${process.versions.node}`) : bad(`Node ${process.versions.node} quá cũ — cần Node 20.19 hoặc 22.9 trở lên`);
 
 // 2. dependencies ------------------------------------------------------------------------------------------
 fs.existsSync(path.join(root, 'node_modules', 'tiktok-live-connector')) ? ok('Đã cài thư viện (node_modules)') : bad('Chưa cài thư viện — chạy: npm install');
@@ -116,7 +116,10 @@ if (online) {
     try {
       const { TikTokLiveConnection } = await import('tiktok-live-connector');
       // fetchIsLive() needs a connected state in this library version, so try a real (read-only) connect instead.
-      const conn = new TikTokLiveConnection(user, { processInitialData: false });
+      const conn = new TikTokLiveConnection(user, {
+        processInitialData: false,
+        ...(process.env.EULERSTREAM_API_KEY ? { signApiKey: process.env.EULERSTREAM_API_KEY } : {}),
+      });
       let live = false;
       try {
         await Promise.race([conn.connect(), new Promise((_, rej) => setTimeout(() => rej(new Error('quá thời gian chờ 20s')), 20000))]);

@@ -23,6 +23,52 @@ Một sân khấu dưới bầu trời sao: người xem bước vào sân bằn
 - Hết vòng (đủ 12 chòm sáng), cung rực rỡ nhất được **đội vương miện** (đếm theo mùa) và fan đã góp ánh sao nhận **huy hiệu 👑** cùng một ít điểm danh hiệu. Vẫn là hợp tác: ánh sao dư của cung đã sáng chảy sang cung còn tối.
 - **Sao may mắn** (mỗi ~100 giây, 20 giây): một cung ở nửa dưới bảng đua được ánh sao x2, để cung nhỏ vẫn có cửa vượt lên. Host có thể gọi thêm bằng nút ở bảng điều khiển.
 
+**Bầu trời ngày sinh, ngôi sao mang tên bạn, màn lớn định kỳ** (`birth.mjs`)
+- Comment ngắn là ngày sinh (`12/8`, `12/8/1998`, `12-8-98`, `12 tháng 8 năm 2001`) → màn **"Bầu trời ngày sinh"**: vòng 12 cung thu nhỏ, avatar người xem ở giữa, các hành tinh bay vào đúng vị trí **thật** ngày hôm đó (tính offline như bầu trời hiện tại), kèm 3 dòng: Mặt Trăng (trong lòng), Sao Kim (khi yêu), Sao Hỏa (khi bắt tay vào việc). Chỉ có ngày/tháng thì hiện Mặt Trời và mời gõ thêm năm. **Năm sinh chỉ dùng để tính, không hiện trên sóng và không lưu** (chỉ lưu cung của các hành tinh). Mỗi người một lần mỗi 10 phút (`birthCooldownSeconds`); tắt bằng `"birthSky": false`.
+- Ai chọn cung lần đầu được một **ngôi sao mang tên mình** bay xuống "Bầu trời cộng đồng" (phần dưới khung) và ở đó qua các đêm; người đang có mặt thì sao vàng, sáng hơn, tên to hơn. Hiện tối đa `starsShown` (90) sao, ưu tiên người ghé gần nhất.
+- **Màn lớn mỗi ~75 giây** (`showEverySeconds`, 0 = tắt) khi sân có người và phòng có hoạt động trong 10 phút gần đây, lần lượt: **điểm danh sao** (sao tên của người đang có mặt bay ngang vòng về chỗ của mình) ↔ **bầu trời ngày sinh** của một người có mặt đã gõ ngày sinh đủ năm (chưa ai gõ thì là mưa sao băng). Đồng hồ đếm ngược ở thẻ trên ("✦ 0:42 · điểm danh sao"). Đang có boss/Thủy Nghịch/quẻ/câu đố thì màn lớn lùi 15 giây.
+
+**Giờ Hành Tinh** (`hours.mjs`, `hours-table.mjs`): mỗi buổi live đi qua các "giờ" chủ đề thay vì mọi sự kiện xoay tua cùng lúc.
+- Hiện xoay vòng **2 hành tinh**, mỗi lượt **5 phút** (`"hourMinutes": 5`): ♂ Hỏa → ♀ Kim (`"hourMode": "cycle"`, mặc định). Mỗi lượt là một màn; mỗi hành tinh có 2–3 sự kiện chính thay phiên qua từng lượt quay lại. Thủy và Thổ đã có sẵn trong `hours-table.mjs`, thêm vào xoay vòng bằng `"hourPlanets": ["mars","venus","mercury","saturn"]` (hoặc sửa `HOUR_PLANETS`); thêm hành tinh mới thì thêm một mục vào `hours-table.mjs`. `"hourMode": "real"` = theo giờ hành tinh thật (mặt trời mọc/lặn tại `skyPlace`); khi đó Mặt Trời, Mộc, Trăng mượn chủ đề của Hỏa, Kim, Thủy. `"hours": false` = tắt (mọi sự kiện như cũ).
+- Mỗi giờ **chỉ cho một số sự kiện tự động** chạy, có **luật nhân ánh sao** riêng (chung trần x3 với bầu trời thật), kiểu màn lớn 75 giây riêng và một **nhiệm vụ giờ**. Lệnh người xem gõ, quà, tim, follow luôn hoạt động ở mọi giờ.
+
+| Giờ | Sự kiện tự động | Luật | Sự kiện chính (thay phiên mỗi màn) | Nhiệm vụ giờ |
+|---|---|---|---|---|
+| ♂ Sao Hỏa · đấu trường | boss, sao may mắn | mọi đòn mạnh hơn | Boss tinh anh · Kéo co cung | bình luận |
+| ♀ Sao Kim · hội ngộ | sao may mắn, bình chọn | theo dõi · chia sẻ x2 | Đêm se duyên · Vòng quay bóc phốt · Mưa rương | lời chúc phúc |
+| ☿ Sao Thủy · trí tuệ & huyền bí | câu đố, bình chọn, quẻ chung | bình luận · câu đố x2 | Đố nhanh liên hoàn · Thủy Nghịch · Đêm trăng | câu trả lời đúng |
+| ♄ Sao Thổ · thử thách | quẻ chung, sao may mắn | thưởng chuỗi đêm x2 | Hành trình Tầng Trời (từ phút 5) · Chung kết đua sao | tầng trời vượt qua |
+
+- **Màn 5 phút** (một lượt hành tinh): phút 0 mở màn, phút 2,5–4,25 sự kiện chính (Hành trình Tầng Trời từ phút 1), phút 4,25–5 **kết màn** với MVP (nhiều ánh sao nhất trong màn, nhận thẻ của giờ) và giới thiệu màn/giờ sau. Sự kiện chính chờ nếu đang có câu đố/bình chọn/quẻ, và không có câu đố/bình chọn nào mở chen vào lúc nó sắp diễn. Thẻ trên ghi "♀ GIỜ SAO KIM · 23:10 · MÀN 2/4", nền trời ngả màu hành tinh; dòng gợi ý đếm ngược "sắp tới: ★ … sau 2:10".
+- Bảng điều khiển: chọn giờ (giữ 60 phút) hoặc về xoay vòng tự động, "★ Sự kiện chính ngay", "🪐 Bắt đầu / Dừng Hành trình", "💞 Ghép đôi", "🔥 Vòng quay bóc phốt", "🪢 Kéo co cung".
+- **Mỗi giờ một diện mạo**: hành tinh cai quản là một quả cầu phát sáng chạy quanh vòng vàng của bánh xe; vầng sáng quanh vòng tròn giữa đổi màu theo hành tinh; và "thời tiết" riêng — ♂ tàn lửa bay lên · ♀ tim hồng rơi · ☿ tia chớp quanh vòng · ♄ vành đai nghiêng quanh tâm. (Các chấm hành tinh thật trên quỹ đạo linh vật đã bỏ; thêm `?planets=1` để hiện lại.)
+- **Nhiệm vụ giờ** (thay cho thanh "Quà chung"): một mục tiêu cả phòng đạt được chỉ bằng tham gia, theo số người trên sân; đạt thì mọi người có mặt nhận ngọc / bụi sao / mảnh trăng. Quà chung (`giftGoal`) mặc định **tắt**.
+
+**Các cơ chế kết hợp**
+- **Vòng quay bóc phốt** (`roast.mjs`): **chính bánh xe 12 cung** quay rồi dừng, cung bị bóc phốt nằm dưới mũi tên ▼ trên đỉnh, vòng tròn giữa đọc câu "phốt" (60 câu); 2,5 giây sau các nút **nhảy về vị trí cũ** (linh vật tạm rời vòng khi đang quay). Fan cung đó gõ **"oan"** để minh oan (+15 ánh sao mỗi người), cung khác gõ **"chuẩn"**; không minh oan được thì cung đó được **sao may mắn an ủi**.
+- **Kéo co cung** (`tug.mjs`, sự kiện chính giờ Hỏa): hai cung đông fan nhất kéo một sợi dây sao trong vòng giữa; comment, tim, follow kéo về phía cung mình; đội ít người kéo mạnh hơn mỗi người (x0,5–x2) để vẫn có cửa thắng. Quà là một **"giật mạnh!"** có tên người kéo.
+- **Dự đoán** (`predict.mjs`): trước kéo co ("cung nào thắng?"), Hành trình ("đoàn qua tầng 3?") và Boss tinh anh ("hạ được không?"), gõ **"đoán A" / "đoán B"**. **Đoán miễn phí, không đặt cược gì**; đoán đúng được bụi sao (`predictBonus`). (`predictStake` > 0 bật chế độ góp bụi sao chung — mặc định tắt vì dễ bị hiểu là cá cược.)
+- **Bingo Hoàng Đạo** (`bingo.mjs`): mỗi người một thẻ 3×3 mỗi đêm (ô giữa "Có mặt"), mỗi ô là một chuyện xảy ra trong phòng (hạ boss, có cặp đôi, bóc phốt, trăng rằm, một món quà xuất hiện, pháo hoa…). Ô được đánh dấu cho mọi người **đang có mặt** khi chuyện đó xảy ra — ở lại lâu là kín thẻ. Mỗi hàng +1 ngọc, kín thẻ +1 mảnh trăng. Gõ **"bingo"** để xem thẻ.
+- **Sổ Sao** (`pass.mjs`): sổ theo tháng, 30 cấp, kinh nghiệm = ánh sao bạn tạo ra; mỗi cấp có bụi sao, vài cấp có ngọc/thẻ/mảnh trăng; cấp 10/20/30 có **khung avatar bạc/vàng/Tinh Tú** trên vòng cho hết mùa. Chỉ một nhánh miễn phí, không bán gì. Gõ **"sổ sao"** để xem.
+- **Pity thẻ**: 10 lần nhận rương liền không ra thẻ hiếm thì lần sau chắc chắn ra thẻ **Hoàng Kim**; khi còn ≤3 lần, thẻ nhận hiện "còn N lần tới Hoàng Kim".
+- **Bộ thẻ**: 5 bản cổ điển + Hoàng Kim + 4 bản Giờ Hành Tinh (chỉ rơi trong giờ của nó, 30% mỗi lần nhận rương; MVP mỗi màn nhận một lá) = **120 thẻ**.
+
+**Quà tặng trong game (không xin quà)**: không chữ nào trên màn hình bảo người xem tặng quà; hướng dẫn chỉ nhắc comment và thả tim. Quà vẫn có tác dụng lớn và được ghi nhận, nên ai tặng cũng thấy rõ giá trị:
+- người tặng có **vầng sáng vàng** quanh linh vật 90 giây (`auraSeconds`) và **ngôi sao bảo trợ** to hơn, viền vàng trong Bầu trời cộng đồng (theo tổng xu trọn đời: 10 / 100 / 1.000);
+- quà là đòn mạnh nhất ở boss, Hành trình, kéo co; người ra **cú kết liễu** được xướng tên; kéo co có "giật mạnh!";
+- quà tạo ánh sao, ánh sao là kinh nghiệm Sổ Sao; Bingo có ô "Một món quà xuất hiện" / "Pháo hoa rực trời" (đánh dấu cho cả phòng, không riêng người tặng).
+Thẻ bài, Sổ Sao và dự đoán **không bao giờ đổi trực tiếp bằng quà**.
+- **Câu đố dễ hơn**: 2/3 câu là loại nhìn là biết (ký hiệu ♌ là cung nào, 🦀 là cung nào, nguyên tố, ngày sinh, thứ tự).
+
+**Hành trình Tầng Trời** (`run.mjs`, sự kiện chính giờ Thổ, roguelike cả phòng là một đoàn; có Dự đoán "đoàn qua tầng 3?"). Lấy ý từ các game nổi tiếng:
+- *Slay the Spire*: mỗi tầng 2–3 cửa (⚔ quái · 💀 tinh anh · 🎁 rương · ❓ kỳ ngộ · 🔥 đền nghỉ), tầng cuối là Chúa tể; **Thăng thiên** sau mỗi lần chinh phục (quái mạnh hơn, thêm tầng); bản đồ cùng ngày giống nhau cho mọi người.
+- *Choice Chamber / Twitch Plays*: chat **gõ A/B/C** để chọn cửa, chọn ấn, quyết kỳ ngộ (mỗi người một phiếu, đổi ý được, hoà thì lấy lựa chọn đầu).
+- *Hades*: thắng một tầng thì chọn 1 trong 3 **ấn chòm sao** (mỗi cung một ấn: Bạch Dương comment x2, Sư Tử quà x2, Song Ngư tự hồi sinh…); 2 ấn cùng nguyên tố mở **cộng hưởng**; kỳ ngộ có thể đổi **lời nguyền** lấy phần thưởng. Fan của cung có ấn đánh +50%.
+- *Rogue Legacy / Dead Cells*: thua vẫn mở khoá thêm ấn cho các lượt sau, kênh giữ kỷ lục tầng.
+- Đánh nhau dùng vai nguyên tố như boss (Lửa quà chí mạng, Nước tim x3, Đất comment = khiên, Khí combo). Đoàn gục thì cả phòng gõ **"hồi sinh"** (một lần mỗi lượt) — **không bao giờ hồi sinh bằng quà**. Hết lượt: mỗi người góp sức nhận ánh sao theo số tầng + 1 ngọc, chinh phục được thêm mảnh trăng.
+
+**Bố cục theo màn hình TikTok**: trên điện thoại cao, TikTok đặt luồng 9:16 sát đáy và **khung chat che khoảng 37% dưới** (từ y≈1200 của khung 1080×1920). Mọi thứ cần đọc nằm trên vạch đó: thẻ trên (có thêm dòng **Quà chung** mỏng ở cuối thẻ), bánh xe tự thu nhỏ cho vừa (y 330–1192). Phần dưới chỉ là Bầu trời cộng đồng (trang trí, bị chat che vẫn không sao). Dải đen phía trên trong app TikTok nằm **ngoài** khung hình phát nên overlay không vẽ vào được; muốn lấp nó thì phải phát khung cao hơn (1080×2400, dùng `?phone=1`) nếu LIVE Studio cho chọn kích thước đó.
+
 **Giữ chân người xem**
 - **Chuỗi đêm**: quay lại đêm liền kề thì được thưởng ánh sao ở hành động đầu tiên (5 × số đêm liên tiếp, tối đa 40) và hiện thông báo "trở lại · chuỗi N đêm". Bỏ lỡ một đêm thì chuỗi về 1.
 - Huy hiệu 👑, danh hiệu và bảng mùa giữ qua các buổi live; đếm ngược "sao may mắn sau …" luôn hiện để người xem có lý do ở lại.
@@ -77,6 +123,7 @@ Một sân khấu dưới bầu trời sao: người xem bước vào sân bằn
 
 - **Nhạc nền xoay vòng**: 19 bài toàn vui nhộn, sôi động (khoảng 40 phút) — 16 bài Mixkit trong `assets/music/livestream/upbeat/` (6 bài pop/EDM và 10 bài vui như *Comical*, *Kidding Around*, *Fun Jazz*, *Banjo Man in Africa*) cộng 3 bài vui sẵn có của kênh (`andriih-fun`, `andriih-funny`, `alex-morgan…blooper-comedy`). Đã bỏ nhóm nhạc nhẹ; hai bài `background.mp3` và `mixkit-secret-garden` của kênh bị loại khỏi live bằng `musicExclude` (vẫn dùng cho video). Chuyển bài bằng cross-fade 3,5 giây, không lặp cùng một bài hai lần liên tiếp, tự **giảm nhỏ** khi có hiệu ứng lớn (mưa sao băng, pháo hoa, trăng rằm, hoàn thành vòng…). Thư mục `calm/` và `upbeat/` quyết định nhóm (hiện chỉ dùng `upbeat/`); file lẻ ở `assets/music` thì tên có chữ `fun` là sôi động, `comedy`-only/`sfx` có thể bị bỏ qua. Chỉnh bằng `musicDir`, `musicExclude`, `musicUpbeat` trong `config.json`.
 - **Gói âm thanh miễn phí** (`audio-pack.json`): 14 bài nhạc + 16 hiệu ứng thu thật từ [Mixkit](https://mixkit.co/license/) (giấy phép Mixkit Free: dùng miễn phí kể cả thương mại, không cần ghi nguồn; **không** đăng ký Content ID, không bán lại/phát tán nguyên bản). Mình chưa đọc được nguyên văn giấy phép (trang tải bằng JavaScript), nên bạn hãy đọc một lần ở liên kết trên. Danh sách bài, tác giả, ID và nơi dùng nằm ở `assets/music/livestream/LICENSES.md` và `public/sfx/LICENSES.md`. Các file mp3 không được đưa vào git (bị `.gitignore` loại): trên máy khác chạy `npm run audio` để tải lại (~84 MB), hoặc `npm run audio -- --from <thư mục>` để chép từ bản đã tải.
+- **Hiệu ứng âm thanh cho các sự kiện mới** (19 bản thu Mixkit thêm vào `audio-pack.json`, tải bằng `npm run audio`): chuông thiên thể đổi giờ, kèn mở màn, trống dồn sự kiện chính, hoàn thành màn, chuông ghép đôi, sao bay, mở rương, trống boss, đòn trúng, cửa đá, nhận ấn, đoàn bị đánh, gục ngã, hồi sinh, máy quay vòng, "ba-dum-tss" bóc phốt, tiếng cả phòng cười, trống chiến thắng, lật thẻ.
 - **Hiệu ứng âm thanh**: lấp lánh, pháo hoa, mưa sao băng, chòm sao sáng, hoàn thành vòng, mốc người ghé thăm, lên danh hiệu, trăng rằm, mở quẻ, sao may mắn, câu đố đúng và bình chọn dùng **bản thu thật**; các âm còn lại (nốt riêng mỗi cung khi vào vòng, tim, nhảy, combo, đếm giây, follow, share…) là âm tổng hợp ~30 loại. Thiếu file nào thì tự dùng bản tổng hợp. Giới hạn 8 âm mỗi giây.
 - `?sfx=0` tắt hiệu ứng, `?sfx=0.5` chỉnh âm lượng; `?music=0` tắt nhạc, `?music=0.3` chỉnh âm lượng. Bảng điều khiển có nút **Bài khác** và **Tắt/bật nhạc**. Overlay không hiện nút bật nhạc (người xem không bấm được). Khi thử trong trình duyệt thường mà bị chặn tự phát, bấm một lần vào trang, hoặc thêm `?soundbtn=1` để hiện nút; trong OBS không bị chặn. Trong OBS tick **Control audio via OBS** (bản import sẵn đã bật) để tiếng vào luồng phát.
 - **Mốc người ghé thăm**: người đầu tiên (có lời chào riêng), 10, 25, 50, 100, 200, 300, 500, 1.000… mỗi đêm có thông báo ăn mừng.
@@ -109,9 +156,9 @@ npm run live                            # kiểm tra, chạy server, mở bảng
 ```
 
 - `npm run check` kiểm tra Node, thư viện, config (khoá gõ sai, sai kiểu), câu đố, 60 hình linh vật, font, cổng, quyền ghi dữ liệu và người xem diễn tập còn sót lại. Thêm `-- --online` để hỏi TikTok xem tài khoản có đang live không. Có lỗi ✖ thì `npm run live` từ chối chạy.
-- Overlay: **`http://127.0.0.1:4848/`** làm **Browser Source** 1080×1920 trong OBS / TikTok LIVE Studio (tắt "Shutdown source when not visible"; FPS 30).
+- Overlay: trong TikTok LIVE Studio, thêm nguồn Web/Browser/Link tới **`http://127.0.0.1:4848/`** (`?safe=1` cũ giờ không còn tác dụng: bố cục mặc định đã chừa chỗ cho chat TikTok). Bố cục khung cao dùng `?phone=1` với nguồn 1080×2400; khung live và nguồn phải cùng tỷ lệ.
 
-**Chưa tính vùng an toàn (làm giao diện trước, chỉnh sau).** Bố cục dùng cả khung 1080×1920: **thẻ trên cùng** (tên đêm + trăng + mục tiêu 12 chòm + top 3 xếp hạng + dòng gợi ý, y 40–300); **bánh xe** (y 330–1400) với **vòng tròn giữa 580px làm sân khấu** — mọi thông báo nhỏ (ai vừa vào, nhảy, thẻ giới thiệu từng cung) chiếu ở đây, chữ 50/27px; mỗi nút cung 104px có ký hiệu + tên, linh vật đứng ngoài nút để không che tên; **thẻ sự kiện** cao 150px (y 1416) nhuộm màu theo từng loại sự kiện, biểu tượng 104px nảy vào; **thẻ dưới** (y 1586) gồm thanh **Quà chung**, 3 quà gần đây và Cách chơi. Khi cần tính lại vùng an toàn, dời thẻ trên/dưới rồi thu bánh xe (`WHEEL_*`, `R` trong `overlay.js`).
+**Bố cục 1080×1920:** **thẻ trên cùng** (y 20–~320: tên đêm, rương, trăng, đồng hồ màn lớn, cách tham gia, top 3, dòng gợi ý, điều ước, Quà chung); **bánh xe** thu theo hệ số `Z` cho vừa y 330–1192 (bánh xe dựng trong hệ 1016×1050 riêng, `LAYOUT`/`Z`/`at()`/`local()` trong `overlay.js`); **thẻ sự kiện** nằm giữa vòng; từ y 1210 trở xuống là **Bầu trời cộng đồng** (khu bị chat che). `?phone=1` cùng cách chia cho khung 1080×2400 (thẻ trên từ y 345 vì đầu khung nằm dưới thanh tiêu đề TikTok, bánh xe 662–1672, bầu trời từ 1700).
 
 **Quà tặng.** Quà nhỏ hiện thẻ vàng 150px (ảnh quà lắc lư, tên quà cỡ lớn, avatar + tên người tặng, bong bóng combo); quà từ `fireworkDiamonds` xu trở lên chiếm cả bánh xe. Ngoài ra có **Quà chung**: mọi quà trong đêm cộng dồn vào một thanh mục tiêu (`giftGoal` = 30 xu, mỗi lần đạt mục tiêu sau lớn gấp `giftGoalGrowth` = 1.4) — đầy thì cả phòng được một màn **mưa sao băng**. Dưới thanh có tổng quà đêm nay, người tặng nhiều nhất và 3 quà gần nhất (ảnh quà lấy từ TikTok).
 
@@ -125,7 +172,9 @@ npm run live                            # kiểm tra, chạy server, mở bảng
 
 **OBS (Windows, tự động):** `npm run obs` tạo profile **Zodiac Live** (1080×1920, 30 FPS, 4500 kbps) và nhập cảnh dựng sẵn vào `%APPDATA%\obs-studio` (chỉ thêm file mới, không đụng stream key hay profile cũ; thêm `-- --force` để ghi đè). Stream Key TikTok bạn tự dán ở Settings ▸ Stream.
 
-**OBS (thủ công):** import `obs/Zodiac-Live.json` (Scene Collection → Import) để có sẵn cảnh "Dem Hoi" với Browser Source 1080×1920, 30 FPS, bật âm thanh qua OBS. Rồi vào Settings → Video đặt *Base* và *Output* = **1080×1920** (phần này OBS không cho import theo cảnh). Nếu dùng TikTok LIVE Studio, thêm nguồn **Web/Browser** với địa chỉ `http://127.0.0.1:4848/?safe=1`.
+**TikTok LIVE Studio:** trong scene đang live, thêm nguồn **Web/Browser/Link** với URL `http://127.0.0.1:4848/`. Nếu LIVE Studio cho đặt canvas dọc tùy chỉnh 9:20, dùng `http://127.0.0.1:4848/?phone=1` và đặt cả canvas lẫn nguồn ở **1080×2400**; nếu canvas vẫn là 9:16, nguồn cao hơn sẽ bị co hoặc cắt theo canvas.
+
+**OBS (thủ công):** import `obs/Zodiac-Live.json` (Scene Collection → Import) để có sẵn cảnh "Dem Hoi" với Browser Source 1080×1920, 30 FPS, bật âm thanh qua OBS. Rồi vào Settings → Video đặt *Base* và *Output* = **1080×1920** (phần này OBS không cho import theo cảnh).
 
 **Chạy production:** `npm run live` giám sát server — nếu server sập sẽ tự khởi động lại sau 2 giây (điểm lưu 10 giây một lần nên gần như không mất gì; quá 5 lần trong 10 phút thì dừng hẳn để bạn xem log). Log ghi ở `logs/live-<ngày>.log`. Mỗi lần **Bắt đầu đêm mới** tự sao lưu `data/backup-night-N.json` (giữ 14 bản gần nhất).
 
@@ -172,5 +221,9 @@ Thông báo bị ngắt sẽ bị bỏ (đã cũ), riêng quẻ/câu đố đư�
 - **Quẻ luôn miễn phí** (chỉ cần comment), mỗi người một quẻ mỗi ngày, có ghi "chỉ mang tính giải trí". Quà kích hoạt hiệu ứng và cộng ánh sao cho cung người tặng — không bán quẻ và không hứa quẻ tốt. Đừng hứa "tặng quà để được quẻ tốt" — vừa phản cảm, vừa trái [nguyên tắc kiếm tiền LIVE của TikTok](https://www.tiktok.com/live/creators/en-US/rules_and_guidance/live_monetization_guidelines) về dụ dỗ tặng quà.
 - Đèn ước hiển thị chữ người xem: link và dãy số dài bị bỏ, từ trong `blockedWords` làm đèn chỉ hiện "điều ước bí mật". Có thể tắt hẳn chữ trong bảng điều khiển.
 - Dùng thư viện **không chính thức** `tiktok-live-connector` (đọc luồng live công khai qua username). TikTok đổi giao thức thì có thể hỏng tạm thời; thư viện gửi yêu cầu ký qua dịch vụ Euler Stream bên thứ ba.
+- Kết nối live cần khóa Euler Stream có quyền ký TikTok LIVE: điền `EULERSTREAM_API_KEY` trong `.env` (file này được Git bỏ qua). Quyền ký hiện là add-on trên gói Business; nếu thiếu, log sẽ báo `requires a Business plan` và app sẽ không nhận được sự kiện. Không ghi khóa vào `config.json`.
+- Biến môi trường tuỳ chọn: `PK_NO_TIKTOK=1` chạy server mà không kết nối TikTok (phòng sẽ trống); `PK_FRAME_MS` đổi nhịp đẩy dữ liệu tới overlay (mặc định 250 ms).
+- Cách phát hiện tại: **TikTok LIVE Studio** (nguồn Link qua `npm run share`), không dùng OBS. Phần OBS bên dưới chỉ để tham khảo, không tự động sửa hay mở OBS.
+- Máy yếu: thêm `?lite=1` vào địa chỉ overlay (canvas 1x, 24 fps, bỏ đổ bóng/blur CSS); `&fps=NN` đổi số khung hình.
 - Server chỉ nghe trên `127.0.0.1` vì API điều khiển không có mật khẩu.
 - Các nút "Diễn tập" chỉ để thử; dùng khi đang live thật sẽ hiện người xem giả trên sóng (kết nối TikTok sẽ tự xoá người xem diễn tập còn lại).

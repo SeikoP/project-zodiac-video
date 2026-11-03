@@ -11,17 +11,6 @@
 .chest.open .ct b { color: var(--accent); }
 .chest.open .ct span { color: var(--ink); }
 
-/* where the real planets stand right now, and the real moon phase */
-.skyrow { display: flex; gap: 6px; margin: 0 0 8px; height: 36px; }
-.sp { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 3px; padding: 0 5px; border-radius: 10px; background: rgba(47, 60, 68, .07);
-  border: 1.5px solid transparent; font-size: 17px; font-weight: 800; white-space: nowrap; overflow: hidden; }
-.sp .gl { flex: none; font-size: 21px; color: var(--el, var(--ink)); }
-.sp .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.sp .rx { flex: none; color: #8a4fd6; font-size: 15px; }
-.sp.retro { border-color: #b48cf2; background: rgba(180, 140, 242, .16); }
-.sp.moonph { background: rgba(242, 196, 92, .22); }
-.sp.full { border-color: var(--gold); }
-
 /* Thủy Nghịch: the dial turns the wrong way, fast, the signs shiver and the whole sky takes a violet cast */
 #stage.retro .spin { animation-duration: 18s; animation-direction: reverse; }
 #stage::after { content: ''; position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .8s;
@@ -56,9 +45,9 @@
 #arena .meta .cb { color: #fff; background: var(--accent); padding: 0 10px; border-radius: 10px; }
 #arena .st { min-height: 56px; max-width: 470px; font-size: 22px; font-weight: 800; line-height: 1.25; color: var(--paper); }
 #arena .st.ice { color: #bfe6ff; }
-#arena .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; width: 440px; }
-#arena .role { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el); font-size: 19px; font-weight: 800; text-align: left; white-space: nowrap; overflow: hidden; }
-#arena .role b { flex: none; color: var(--el); font-size: 20px; }
+#arena .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; width: 470px; }
+#arena .role { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el); font-size: 16px; font-weight: 800; text-align: left; white-space: nowrap; overflow: hidden; }
+#arena .role b { flex: none; color: var(--el); font-size: 17px; }
 #arena .role span { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: rgba(246, 240, 230, .85); }
 #arena .role em { flex: none; margin-left: auto; font-style: normal; color: #fff; font-variant-numeric: tabular-nums; }
 #arena .big { font-size: 84px; line-height: 1; animation: wobble .8s ease-in-out infinite; }

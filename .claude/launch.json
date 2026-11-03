@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "livestream-pk",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/livestream-pk/server.mjs"],
+      "port": 4848
+    },
+    {
+      "name": "livestream-pk-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/livestream-pk/server.mjs"],
+      "env": { "PK_PORT": "4860", "PK_SHARE_PORT": "4861", "PK_DATA_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/data", "PK_LOG_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/logs" },
+      "port": 4860,
+      "autoPort": false
+    }
+  ]
+}

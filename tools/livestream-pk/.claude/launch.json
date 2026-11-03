@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "livestream-pk-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.mjs"],
+      "env": {
+        "PK_PORT": "4860",
+        "PK_SHARE_PORT": "4861",
+        "PK_DATA_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/data",
+        "PK_LOG_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/logs",
+        "PK_NO_TIKTOK": "1",
+        "PK_NO_OPEN": "1"
+      },
+      "port": 4860
+    }
+  ]
+}

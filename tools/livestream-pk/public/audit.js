@@ -19,7 +19,7 @@ export function runAudit() {
     if (['hidden', 'clip'].includes(cs.overflowY) && el.scrollHeight > el.clientHeight + 2 && !el.matches(`${clampOk},#event,#center,.slide,.node,#wheel`)) out.push(`CLIPPED ${name(el)} ${el.scrollHeight}>${el.clientHeight}`);
   }
   const box = sel => { const e = document.querySelector(sel); if (!e || getComputedStyle(e).display === 'none') return null; const r = e.getBoundingClientRect(); return { sel, t: (r.top - sr.top) / k, b: (r.bottom - sr.top) / k, l: (r.left - sr.left) / k, r: (r.right - sr.left) / k }; };
-  const blocks = ['#top', '#event', '#base'].map(box).filter(Boolean);
+  const blocks = ['#top', '#event', '#skyzone'].map(box).filter(Boolean);
   for (let i = 0; i < blocks.length; i++) for (let j = i + 1; j < blocks.length; j++) {
     const a = blocks[i], b = blocks[j];
     if (a.t < b.b - 1 && b.t < a.b - 1 && a.l < b.r && b.l < a.r) out.push(`OVERLAP ${a.sel} × ${b.sel}`);

@@ -30,9 +30,10 @@ export function createMonitor({ now = () => Date.now(), label = id => id, max = 
     if (likeAcc && now() - likeAt >= 4000) { add('like', `❤ +${likeAcc} lượt thả tim`); likeAcc = 0; likeAt = now(); }
   }
 
-  // Wraps anything with chat/gift/like/social so every viewer action is counted and logged.
+  // Wraps viewer actions so the host can see what reached the room.
   const tap = game => ({
     chat: e => { hit('chat'); add('chat', `${short(e.nickname || e.userId, 24)}: ${short(e.comment, 80)}`); return game.chat(e); },
+    member: e => { const fresh = game.member(e); if (fresh) add('member', `${short(e.nickname || e.userId, 24)} ghé thăm`); return fresh; },
     gift: e => {
       const coins = (Number(e.diamonds) || 0) * (Number(e.count) || 1);
       hit('gift'); diamonds += coins;

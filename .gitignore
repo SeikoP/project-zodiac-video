@@ -23,3 +23,5 @@ assets/music/content-review-v3.md
 
 # exported, descriptively named videos (zodiac-library videos)
 /videos/
+.env
+/.release

@@ -42,7 +42,25 @@ function run() {
     setTimeout(run, 2000);
   });
 }
-for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stopping = true; child?.kill(sig); setTimeout(() => process.exit(0), 1500); });
+function stop(sig) {
+  if (stopping) return;
+  stopping = true;
+  if (!child || child.exitCode !== null) {
+    log.end();
+    return process.exit(0);
+  }
+
+  // On Windows, forwarding SIGINT to a child Node process can leave it orphaned.
+  child.kill(process.platform === 'win32' ? 'SIGTERM' : sig);
+  const forceKill = setTimeout(() => {
+    if (child && child.exitCode === null) child.kill('SIGKILL');
+  }, 1000);
+  const giveUp = setTimeout(() => process.exit(1), 2500);
+  child.once('exit', () => { clearTimeout(forceKill); clearTimeout(giveUp); });
+  forceKill.unref();
+  giveUp.unref();
+}
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => stop(sig));
 run();
 
 setTimeout(() => {

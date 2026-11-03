@@ -8,7 +8,7 @@ const fail=m=>{throw new Error('RUNTIME_PRODUCTION_COMPILE_INVALID: '+m);};
 const clone=x=>JSON.parse(JSON.stringify(x));
 const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const allowedLineageModes=new Set(['direct_copy','derived_copy','semantic_variant','composite']);
-const allowedSourceLibraries=new Set(['zodiac-visual-grammar-v4']);
+const allowedSourceLibraries=new Set(['zodiac-visual-grammar-v4','zodiac-asset-library-v4']);
 const demoFontStack=['Patrick Hand','Segoe Print','cursive'];
 const demoCssFontFamily='"Patrick Hand", "Segoe Print", cursive';
 const canonicalBrandOverlay={
@@ -228,6 +228,8 @@ export function projectProduction(source,designMarkdown){
     }));
     const events=(scene.events??[]).map(event=>{
       const clean=Object.fromEntries(['id','target','action','state_before','state_after','trigger','motion','sfx','mechanism','performance'].filter(k=>k in event).map(k=>[k,clone(event[k])]));
+      // authoring v4 spells the trigger kind `type`; runtime v1 reads `source`.
+      if(isObj(clean.trigger)&&clean.trigger.source===undefined&&typeof clean.trigger.type==='string')clean.trigger={...clean.trigger,source:clean.trigger.type};
       return materializeEventRuntimeDefaults(clean,motion,24);
     });
     validateProgressionDensity(scene,events);

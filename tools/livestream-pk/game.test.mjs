@@ -45,7 +45,7 @@ const QUIZ = [{ q: 'Cung đầu tiên?', options: ['Bạch Dương', 'Song Ngư'
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { hours: false, skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -160,7 +160,7 @@ test('follow/share ring the bell every time but pay once a night', () => {
 });
 
 test('a quiet room mostly shows a reading for a sign, with a quiz now and then', () => {
-  const { game, advance } = setup({ demoTurns: false, autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ hours: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   advance(45000);
   assert.equal(game.state.fortune.userId, null, 'a reading comes first');
   advance(45000);
@@ -264,10 +264,10 @@ test('the stage holds only the most recent viewers and drops idle ones', () => {
 test('changes() returns only parts that moved since the caller last looked', () => {
   const { game } = setup();
   const seen = {};
-  assert.deepEqual(Object.keys(game.changes(seen)).sort(), ['cosmos', 'gifts', 'hud', 'lobby', 'race', 'sky', 'stage', 'thanks']);
+  assert.deepEqual(Object.keys(game.changes(seen)).sort(), ['cosmos', 'gifts', 'hud', 'lobby', 'race', 'sky', 'stage', 'stars', 'thanks']);
   assert.deepEqual(game.changes(seen), {});
   game.chat(u('r', { comment: 'leo' }));
-  assert.deepEqual(Object.keys(game.changes(seen)).sort(), ['hud', 'lobby', 'race', 'sky', 'stage']);
+  assert.deepEqual(Object.keys(game.changes(seen)).sort(), ['hud', 'lobby', 'race', 'sky', 'stage', 'stars']); // a first sign also lights the viewer's named star
 });
 
 test('handlers stay fast with a large saved audience', () => {
@@ -354,7 +354,7 @@ test('a poll counts one vote per viewer, does not move existing teams, and names
 });
 
 test('quiet rooms mostly read a sign, with a quiz and a poll now and then', () => {
-  const { game, advance } = setup({ demoTurns: false, autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ hours: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   const kinds = [];
   for (let i = 0; i < 8; i++) {
     advance(45000);
