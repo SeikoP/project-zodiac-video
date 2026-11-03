@@ -48,7 +48,7 @@ const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(di
 const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
-const meta = () => ({ signs: SIGNS, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
+const meta = () => ({ signs: SIGNS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
 
 // A client is one open overlay/panel page: { send(event, data), seen, busy(), host }. Normally it is a server-sent-events
 // stream; behind a quick tunnel (which does not stream SSE) the page polls /poll and gets its queued messages instead.
@@ -181,15 +181,16 @@ const API = {
     broadcast('meta', meta());
     try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoQuiz: game.config.autoQuiz, showWishText: game.config.showWishText, show: game.config.show })); } catch (e) { console.error('[settings]', e.message); }
   },
-  // Connecting to a real room drops any rehearsal viewers first.
   // Feed one recorded event (see npm run replay); same path as a real TikTok event.
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time
   'tiktok/connect': b => {
-    if (process.env.PK_SIMULATOR === '1') throw new Error('TikTok connection is disabled in the isolated simulator.');
+    if (SIMULATOR) throw new Error('TikTok connection is disabled in the isolated simulator.');
     return tiktok.connect(b.username);
   },
   'tiktok/disconnect': () => tiktok.disconnect(),
-  // Simulated viewers, for rehearsing without going live. Don't use them while actually live.
+};
+// Simulated viewers exist only in the isolated simulator process (npm run simulator), never on the real LIVE server.
+if (SIMULATOR) Object.assign(API, {
   'sim/member': b => simMember(sim(b.user)),
   'sim/chat': b => { const user = sim(b.user); return simChat(user, String(b.comment ?? '').slice(0, 500)); },
   'sim/gift': b => { const user = sim(b.user); return simGift(user, { diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1, giftName: String(b.giftName || 'Rose').slice(0, 64) }); },
@@ -204,7 +205,7 @@ const API = {
     if (perSecond) storm = setInterval(() => simulateCrowd(perSecond / 10, 0.05, { mirror: false }), 100);
     return { perSecond };
   },
-};
+});
 
 function serveMusic(req, res, name) {
   const file = path.join(MUSIC_DIR, name);

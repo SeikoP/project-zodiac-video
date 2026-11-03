@@ -178,8 +178,9 @@
   </section>
 
   <section class="c12">
-    <h2>Diễn tập <small>người xem giả lập — chỉ để thử, đừng dùng khi đang live thật</small></h2>
-    <div class="line">
+    <h2>Diễn tập <small>người xem giả lập — chỉ có trong simulator</small></h2>
+    <p class="muted" id="simHint">Diễn tập: chạy <b>npm run simulator</b> (server riêng, không đụng tới LIVE thật).</p>
+    <div class="line" id="simTools" hidden>
       <input id="simUser" value="fan_test" style="width:140px">
       <input id="simComment" placeholder="vd: sư tử / xin quẻ / ước … / nhảy / A" style="width:280px">
       <button id="simChat">Gửi comment</button>
@@ -397,6 +398,8 @@ setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-V
 
 subscribe({
   meta: m => {
+    $('simTools').hidden = !m.simulator;
+    $('simHint').hidden = Boolean(m.simulator);
     S.config = m.config;
     S.planets = m.planets;
     if (!S.signs.length) {

@@ -189,15 +189,15 @@ Thư viện kết nối là bản không chính thức, nên cách duy nhất bi
 
 ### Checklist trước giờ phát
 1. `npm run check -- --online` không còn ✖.
-2. Mở bảng điều khiển → **Diễn tập** (thêm đám đông, quà, tim, follow/share, "xin quẻ", câu đố) xem overlay trong OBS/Studio không bị che chữ; thử `?audit=1`.
-3. Bấm **Xoá toàn bộ** để bầu trời về 0 (người xem diễn tập tự được xoá khi kết nối thật, nhưng ánh sao họ tạo ra thì chỉ mất khi xoá toàn bộ).
+2. Diễn tập bằng `npm run simulator` (thêm đám đông, quà, tim, follow/share, "xin quẻ", câu đố) xem overlay trong OBS/Studio không bị che chữ; thử `?audit=1`.
+3. Nếu muốn bắt đầu từ đầu, bấm **Xoá toàn bộ** để bầu trời về 0. Diễn tập chạy ở server riêng nên không để lại gì trong dữ liệu LIVE.
 4. Bắt đầu phát trên TikTok, rồi mới bấm **Kết nối** (hoặc đã đặt `tiktokUsername` thì tự kết nối). Chờ trạng thái `● live`.
 5. Nhờ một tài khoản phụ thử: comment tên cung, thả tim, tặng quà nhỏ nhất → xem điểm có tăng và có thông báo.
 6. Mỗi buổi mới: **Bắt đầu đêm mới** (giữ bầu trời, danh hiệu và huy hiệu).
 - Nếu mất mạng giữa chừng: overlay hiện dải đỏ "Mất kết nối với máy chủ" sau 4 giây; kết nối TikTok tự thử lại (5s → 60s). Điểm lưu mỗi 10 giây ở `data/state.json`.
 
 ### Các thành phần
-- Bảng điều khiển: `http://127.0.0.1:4848/control` — **tình trạng live** (đang nhận dữ liệu hay im, bình luận/tim/quà mỗi phút, tổng xu quà), kết nối TikTok, trạng thái đêm (trăng, sao may mắn, vòng), **bảng đua sao + tiến độ 12 chòm + số người mỗi cung**, người trên sân, nhật ký sự kiện có lọc theo loại, điều khiển (đêm mới, câu đố, bình chọn, quẻ chung, sao may mắn, nhạc), **công tắc bật/tắt từng sự kiện nhỏ trên màn hình** (được nhớ ở `data/settings.json`) và diễn tập (kể cả **mưa người xem 300/giây**). Nhật ký chứa tên và bình luận thật nên chỉ gửi cho bảng điều khiển trên máy bạn, không bao giờ qua địa chỉ chia sẻ.
+- Bảng điều khiển: `http://127.0.0.1:4848/control` — **tình trạng live** (đang nhận dữ liệu hay im, bình luận/tim/quà mỗi phút, tổng xu quà), kết nối TikTok, trạng thái đêm (trăng, sao may mắn, vòng), **bảng đua sao + tiến độ 12 chòm + số người mỗi cung**, người trên sân, nhật ký sự kiện có lọc theo loại, điều khiển (đêm mới, câu đố, bình chọn, quẻ chung, sao may mắn, nhạc), **công tắc bật/tắt từng sự kiện nhỏ trên màn hình** (được nhớ ở `data/settings.json`). Các nút diễn tập (kể cả **mưa người xem 300/giây**) chỉ hiện trong `npm run simulator`. Nhật ký chứa tên và bình luận thật nên chỉ gửi cho bảng điều khiển trên máy bạn, không bao giờ qua địa chỉ chia sẻ.
 - `config.example.json` → `config.json`: chỉnh mọi con số (ánh sao, ngưỡng quà, mục tiêu trăng, sao may mắn, chuỗi đêm…), `tiktokUsername`, `blockedWords` (chặn chữ trên đèn ước).
 - Linh vật `public/mascots/` dựng từ bộ nhân vật của pipeline video (`asset-library-v4/characters`, áo in ký hiệu cung). Dựng lại: `node build-mascots.mjs`.
 - Font hiển thị Patrick Hand tự host ở `public/fonts/` (OFL) — overlay không cần mạng để tải font.
@@ -226,7 +226,7 @@ Thông báo bị ngắt sẽ bị bỏ (đã cũ), riêng quẻ/câu đố đư�
 - Cách phát hiện tại: **TikTok LIVE Studio** (nguồn Link qua `npm run share`), không dùng OBS. Phần OBS bên dưới chỉ để tham khảo, không tự động sửa hay mở OBS.
 - Máy yếu: thêm `?lite=1` vào địa chỉ overlay (canvas 1x, 24 fps, bỏ đổ bóng/blur CSS); `&fps=NN` đổi số khung hình.
 - Server chỉ nghe trên `127.0.0.1` vì API điều khiển không có mật khẩu.
-- Các nút "Diễn tập" chỉ để thử; dùng khi đang live thật sẽ hiện người xem giả trên sóng (kết nối TikTok sẽ tự xoá người xem diễn tập còn lại).
+- Server LIVE chính (cổng 4848) không có API diễn tập (`sim/*` trả 404) và bỏ qua mọi người xem `sim:` ngay từ cửa vào, nên diễn tập không thể chạm tới boss, kéo co, quà, trăng, mùa hay kho của LIVE thật. Diễn tập chỉ bằng `npm run simulator`.
 
 ## TikTok LIVE Simulator (diễn tập giao diện)
 
