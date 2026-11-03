@@ -85,7 +85,7 @@ setInterval(async () => {
 }, 10000);
 
 const TYPES = { '.json': 'application/json; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg', '.md': 'text/markdown; charset=utf-8', '.txt': 'text/plain; charset=utf-8' };
-const ROUTES = { '/': 'overlay.html', '/overlay': 'overlay.html', '/control': 'control.html' };
+const ROUTES = { '/': 'overlay.html', '/overlay': 'overlay.html', '/control': 'control.html', '/simulator': 'simulator/index.html' };
 
 const body = req => new Promise(resolve => {
   let s = '';
@@ -155,14 +155,18 @@ const API = {
   // Connecting to a real room drops any rehearsal viewers first.
   // Feed one recorded event (see npm run replay); same path as a real TikTok event.
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time
-  'tiktok/connect': b => { const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username); },
+  'tiktok/connect': b => {
+    if (process.env.PK_SIMULATOR === '1') throw new Error('TikTok connection is disabled in the isolated simulator.');
+    const n = game.purgeSim(); if (n) console.log(`[setup] removed ${n} rehearsal viewers`); return tiktok.connect(b.username);
+  },
   'tiktok/disconnect': () => tiktok.disconnect(),
   // Simulated viewers, for rehearsing without going live. Don't use them while actually live.
-  'sim/chat': b => tapped.chat({ ...sim(b.user), comment: b.comment }),
+  'sim/member': b => game.member(sim(b.user)),
+  'sim/chat': b => tapped.chat({ ...sim(b.user), comment: String(b.comment ?? '').slice(0, 500) }),
   'sim/gift': b => tapped.gift({ ...sim(b.user), diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1, giftName: b.giftName || 'Rose' }),
   'sim/like': b => tapped.like({ ...sim(b.user), count: Number(b.count) || 15 }),
   'sim/social': b => tapped.social({ ...sim(b.user), kind: b.kind }),
-  'sim/crowd': () => simulateCrowd(6),
+  'sim/crowd': b => simulateCrowd(Math.min(100, Math.max(1, Number(b.count) || 6)), Math.max(0, Math.min(1, Number(b.giftRate ?? 0.3)))),
   // Busy-room rehearsal: `perSecond` simulated viewers act every second until stopped.
   'sim/storm': b => {
     clearInterval(storm);
