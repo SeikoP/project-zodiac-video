@@ -167,7 +167,16 @@ function drawBackground() {
   g.setTransform(K, 0, 0, K, 0, 0);
   g.clearRect(0, 0, 1080, FRAME_HEIGHT);
   g.fillStyle = C.paper;
-  for (const [a, x, y, r] of skyStars) { g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  const clusterY = LAYOUT.zone + 74;
+  const clusterH = FRAME_HEIGHT - clusterY - 46;
+  const clusterRX = 280, clusterRY = Math.min(152, clusterH * .31);
+  const clusterCY = clusterY + clusterH * .5;
+  for (const [a, x, y, r] of skyStars) {
+    // Leave the visitor-star cluster clear: only named, recorded visitors are drawn there.
+    const nx = (x - CX) / clusterRX, ny = (y - clusterCY) / clusterRY;
+    if (nx * nx + ny * ny < 1) continue;
+    g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
   g.globalAlpha = 1;
 }
 
