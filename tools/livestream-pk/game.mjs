@@ -22,6 +22,7 @@
 import { CONSTELLATIONS } from './public/constellations.js';
 import { dayKey } from './fortunes.mjs';
 import { createAltar, ALTAR_DEFAULTS } from './altar.mjs';
+import { createJourney, JOURNEY_DEFAULTS } from './journey.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { occasionOn } from './public/occasions.js';
 import { readSky as readRealSky, boonFor, BOON_CAP } from './sky.mjs';
@@ -129,6 +130,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   ...CARD_DEFAULTS,
   ...BAG_DEFAULTS,
   ...ALTAR_DEFAULTS,
+  ...JOURNEY_DEFAULTS,
   // "kho" (also "khoe", "khoe thẻ", "sổ sao"): everything a viewer owns in one panel, once per this many seconds each
   vaultCooldownSeconds: 30,
   // resources used in the room's events: "tung ngọc" in a fight hits like a gift of this many coins; "thắp trăng"
@@ -629,8 +631,45 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const bingo = createBingo({ st, cfg, now, onEvent, stageIds: () => stage.keys(), gem: (u, v, n) => gem(u, v, n, 'bingo'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'bingo') });
   const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => cards.give(u, v, cards.draw(v), 'pass') });
   const label = id => SIGN[id]?.label ?? id;
+  // --- hành trình đêm & đội nguyên tố (journey.mjs) ---
+  const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), elementOf: id => SIGN[id].element, dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
+
+  // --- lời dẫn cho host: one line at each climax, sent only to the host's panel (never on stream) ---
+  const cued = new Map(); // once-key -> time it was said
+  function cue(key, text, once = key) {
+    if (cued.has(once)) return;
+    cued.set(once, now());
+    onEvent({ type: 'host-cue', key, text });
+  }
+  const EL_LABEL = { fire: 'Hỏa', earth: 'Thổ', air: 'Phong', water: 'Thủy' };
+  let tugSide = 0, tugFlips = 0, tugFlipAt = 0;
+  function cueTick(t) {
+    for (const [k, at] of cued) if (t - at > 600000) cued.delete(k);
+    const b = st.boss;
+    if (b && b.hp > 0 && b.hp <= b.max * 0.25) cue('boss-low', 'Sao Chổi chỉ còn 1/4 máu! Hô cả phòng chat dồn dập, ai có ngọc thì gõ “tung ngọc” để kết liễu.', `boss-low@${b.startedAt}`);
+    const fights = [['boss', b && b.hp > 0 && b.endsAt, 'trận Sao Chổi'], ['tug', st.tug && st.tug.endsAt, 'kéo co'], ['run', st.run?.phase?.kind === 'fight' && st.run.phase.endsAt, 'trận Tầng Trời']];
+    for (const [id, endsAt, name] of fights) if (endsAt && endsAt - t <= 15000 && endsAt > t) cue('last-seconds', `Còn 15 giây ${name}! Đếm ngược cùng cả phòng — mỗi comment, mỗi tim đều tính.`, `last@${id}@${endsAt}`);
+    if (!partying() && st.moon.light >= st.moon.goal * 0.85) cue('moon-near', 'Trăng sắp tròn rồi — rủ cả nhà thả tim thêm chút nữa để mở tiệc trăng!', `moon@${st.night.no}@${st.moon.full}`);
+    const act = actView();
+    if (act && act.phase === 'play' && act.headInMs > 0 && act.headInMs <= 30000) cue('head-soon', `30 giây nữa: ${act.headLabel}. Giới thiệu luật cho người mới vào nhé.`, `head@${Math.floor(t / 60000 / 10)}@${act.head}`);
+    // kéo co đảo chiều: the rope crosses the middle
+    const g2 = st.tug;
+    if (!g2 || t < g2.startsAt) { tugSide = 0; return; }
+    const side = Math.sign(Math.round(g2.pos));
+    if (side && tugSide && side !== tugSide && t - tugFlipAt >= 5000) {
+      const lead = side < 0 ? g2.a : g2.b, other = side < 0 ? g2.b : g2.a;
+      tugFlipAt = t;
+      onEvent({ type: 'tug-flip', lead, other, pos: Math.round(g2.pos) });
+      cue('tug-flip', `Đảo chiều! ${SIGN[lead].label} vừa lật thế kéo co — fan ${SIGN[other].label} ơi, kéo lại!`, `flip@${g2.startsAt}@${++tugFlips}`);
+    }
+    if (side) tugSide = side;
+  }
+
   listen = e => {
+    journey.note(e);
     bingo.note(e);
+    if (e.type === 'chapter') cue('chapter', `Xong chặng ${e.no}/${e.of}: ${e.label}! ${e.next ? `Chặng tiếp: ${e.next.label} — cần ${e.next.need} ${e.next.goal}.` : 'Cả hành trình đêm nay đã trọn vẹn, cảm ơn cả nhà!'}`, `chapter@${st.night.no}@${e.no}`);
+    else if (e.type === 'element-lead') cue('element-lead', `Đảo chiều! Đội ${EL_LABEL[e.element]} vượt lên dẫn đầu đêm nay — đội ${EL_LABEL[e.prev]} ơi, gỡ lại nào!`, `lead@${now()}`);
     // predictions open before a big outcome and settle when it is known
     if (e.type === 'tug-start') predict.open({ key: 'tug', q: `${label(e.a)} hay ${label(e.b)} thắng kéo co?`, options: [label(e.a), label(e.b)], closesAt: now() + e.warmup * 1000 });
     else if (e.type === 'tug-end') predict.resolve('tug', e.winner === e.a ? 0 : e.winner === e.b ? 1 : null);
@@ -1316,6 +1355,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     tickNo++;
     const t = now();
     retuneGoals(t);
+    cueTick(t);
     if (st.moon.partyUntil && t >= st.moon.partyUntil) {
       st.moon.partyUntil = 0;
       touch('hud');
@@ -1464,6 +1504,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         roast: roast.view(),
         tug: tug.view(),
         predict: predict.view(),
+        journey: journey.view(),
       };
     },
     // the community sky: a named star for everyone who ever picked a sign, most recently seen first

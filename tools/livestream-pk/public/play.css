@@ -270,3 +270,25 @@
 #hero .vault .vstats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 #hero .vault .vstats span { padding: 3px 12px; border-radius: 999px; background: rgba(242, 196, 92, .22); font-size: 18px; font-weight: 800; }
 #hero .vault .vnext { font-size: 17px; font-weight: 800; color: var(--gold); }
+
+/* the centre as the main stage: the night's journey, what comes next, the element teams */
+#center .kick { padding: 2px 14px; border-radius: 999px; background: var(--ink); color: var(--gold); font-size: 16px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+#center .jbar { width: 300px; height: 16px; border-radius: 8px; background: rgba(47, 60, 68, .15); overflow: hidden; }
+#center .jbar i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, #F2C45C, #E97A66); transition: width .6s; }
+#center .jdots { display: flex; gap: 10px; }
+#center .jdots i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); background: transparent; }
+#center .jdots i.done { background: var(--gold); }
+#center .jdots i.now { background: var(--accent); animation: blessPop 1.2s infinite; }
+#center .elrace { display: flex; flex-direction: column; gap: 8px; width: 360px; }
+#center .elrace .el { display: grid; grid-template-columns: 96px 1fr 70px; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; }
+#center .elrace .el b { height: 18px; border-radius: 9px; background: rgba(47, 60, 68, .12); overflow: hidden; }
+#center .elrace .el b i { display: block; height: 100%; background: var(--c); border-radius: 9px; }
+#center .elrace .el em { font-style: normal; text-align: right; }
+#center .elrace .el.lead span { color: var(--c); }
+/* giờ sinh tử: the last ten seconds of a fight */
+#doom { position: absolute; left: 50%; top: 50%; z-index: 6; display: none; transform: translate(-50%, -50%); flex-direction: column; align-items: center; pointer-events: none; }
+#doom.on { display: flex; animation: doomBeat 1s ease-in-out infinite; }
+#doom b { font-family: var(--hand); font-weight: 400; font-size: 190px; line-height: 1; color: #ff3d3d; text-shadow: 0 0 30px rgba(255, 61, 61, .8), 0 6px 0 #2F3C44; }
+#doom span { padding: 4px 18px; border-radius: 999px; background: #ff3d3d; color: #fff; font-size: 26px; font-weight: 900; }
+@keyframes doomBeat { 50% { transform: translate(-50%, -50%) scale(1.12); } }
+#wheel:has(#doom.on) #center .slide, #wheel:has(#doom.on) #arena > * { opacity: .18; transition: opacity .3s; }

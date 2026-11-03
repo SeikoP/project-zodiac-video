@@ -172,6 +172,7 @@
 
   <section class="c12">
     <h2>Gợi ý lời dẫn</h2>
+    <div id="cues" style="margin:4px 0 10px"><p class="muted">🎙 Lời dẫn theo cao trào sẽ hiện ở đây (boss sắp gục, đảo chiều kéo co, 15 giây cuối, trăng sắp tròn, xong chặng…).</p></div>
     <div class="line" id="promptTabs"></div>
     <p id="promptText" style="font-size:20px;font-weight:600;line-height:1.4;margin:6px 0 10px;min-height:56px"></p>
     <div class="line"><button class="primary" id="promptNext">Gợi ý khác</button><button id="promptCopy">Sao chép</button><span class="muted" id="promptMeta"></span></div>
@@ -412,6 +413,17 @@ subscribe({
     for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(m.config[k]);
   },
   tiktok: t => { S.tiktok = t; renderHealth(); },
+  // lời dẫn theo cao trào: the newest on top, highlighted for a few seconds, the last three kept
+  cue: c => {
+    const box = $('cues');
+    box.querySelector('.muted')?.remove();
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:20px;font-weight:700;line-height:1.35;margin:4px 0;padding:8px 12px;border-radius:12px;background:#F2C45C;color:#2F3C44;transition:background 2s';
+    p.textContent = `🎙 ${new Date().toLocaleTimeString('vi-VN', { hour12: false })} · ${c.text}`;
+    box.prepend(p);
+    setTimeout(() => { p.style.background = 'rgba(242,196,92,.25)'; p.style.color = 'inherit'; }, 4000);
+    while (box.children.length > 3) box.lastElementChild.remove();
+  },
   stats: s => { S.stats = s; if (s.tiktok) S.tiktok = s.tiktok; renderStats(); },
   log: m => { log = m.reset ? m.entries : [...log, ...m.entries].slice(-120); renderFeed(m.reset); },
   frame: f => {

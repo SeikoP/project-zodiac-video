@@ -680,33 +680,51 @@ const paintCenter = (html, force = false) => { if (holdCenter() && !force) retur
 function spotlight(html, ms = 1800, key = 'spot') {
   go({ key, level: LV.TICK, ms, show: () => { paintCenter(html); centerUntil = Date.now() + ms + 400; } });
 }
-// while the lane is free the centre introduces a sign or invites the signs still waiting
+// The centre is the main stage. While the lane is free it never shows filler: it turns between the night's journey
+// (the chapter in progress, so a newcomer sees at once what the room is doing), what comes on the stage next, the
+// element teams' race, and — when a sign is still empty — an invitation to take its seat.
+const EL = { fire: ['🔥', 'Hỏa', '#E97A66'], earth: ['🌿', 'Thổ', '#8EC0B9'], air: ['💨', 'Phong', '#B48CF2'], water: ['💧', 'Thủy', '#6FA8DC'] };
+function journeyCard(j) {
+  const pct = Math.round(100 * j.got / j.need);
+  const dots = Array.from({ length: j.of }, (_, i) => `<i class="${i < j.no - 1 || j.done ? 'done' : i === j.no - 1 ? 'now' : ''}"></i>`).join('');
+  return `<div class="kick">Hành trình đêm · chặng ${j.no}/${j.of}</div><div class="ico-g">${j.icon}</div><div class="cap">${esc(j.label)}</div>`
+    + `<div class="sub">${j.done ? 'cả hành trình đã trọn vẹn 👑' : `${j.got}/${j.need} ${esc(j.goal)}`}</div><div class="jbar"><i style="width:${j.done ? 100 : pct}%"></i></div><div class="jdots">${dots}</div>`;
+}
+function elementsCard(e) {
+  const max = Math.max(1, ...Object.values(e.light));
+  return `<div class="kick">Đội nguyên tố đêm nay</div><div class="elrace">${Object.entries(EL).map(([k, [icon, name, col]]) => `<div class="el${k === e.lead ? ' lead' : ''}" style="--c:${col}"><span>${icon} ${name}</span><b><i style="width:${Math.round(100 * e.light[k] / max)}%"></i></b><em>${fmt(e.light[k])}</em></div>`).join('')}</div>`
+    + `<div class="sub">${e.lead ? `${EL[e.lead][0]} Đội ${EL[e.lead][1]} dẫn đầu · ánh sao của cả đội` : 'comment tên cung để vào đội'}</div>`;
+}
 setInterval(() => {
   const t = Date.now();
   if (!lane.idle() || t < centerUntil || !S.sky) return;
-  // now and then the centre explains the wheel itself
-  if (attractI % 20 === 10) {
-    attractI++;
-    paintCenter(`<div class="ico-g">🌌</div><div class="cap">Vòng hoàng đạo</div><div class="sub">mỗi cung một cung tròn ngoài, sáng dần theo ánh sao cả đội góp · chấm tròn là hành tinh thật đang đứng lúc này</div>`);
-    centerUntil = t + 5000;
+  const c = S.cosmos, j = c?.journey, act = c?.act, slot = attractI++ % 4;
+  if (j && slot % 2 === 0) { paintCenter(journeyCard(j)); centerUntil = t + 5200; return; }
+  if (slot === 1 && act?.headLabel && act.headInMs > 0) {
+    paintCenter(`<div class="kick">Sắp diễn ra</div><div class="ico-g">★</div><div class="cap">${esc(act.headLabel)}</div><div class="sub">sau ${mmss(act.headInMs)} · ở lại để cùng chơi!</div>`);
+    centerUntil = t + 4200;
     return;
   }
-  // every third card explains one planet of the real sky: where it stands right now and what it gives that sign's fans
-  const planets = S.cosmos?.sky?.planets;
-  if (planets && S.cosmos.boons && attractI % 3 === 2) {
-    const p = planets[(attractI / 3 | 0) % planets.length], d = PLANET(p.id), s = SIGN[p.sign];
-    attractI++;
-    paintCenter(`<div class="ico-g gf">${d.glyph}</div><div class="cap">${esc(d.label)} ở ${esc(s.label)}</div><div class="sub">${p.retro ? '℞ đang nghịch hành · ' : ''}fan ${esc(s.label)}: ${esc(d.boon)} x${d.mult}<br>trời thật lúc này ✨</div>`);
-    centerUntil = t + 4000;
-    return;
-  }
-  const waiting = S.sky.waiting, id = attractI % 2 === 0 && waiting.length ? waiting[(attractI / 2) % waiting.length | 0] : IDS[attractI % 12];
-  const s = SIGN[id], empty = !S.stage.some(v => v.sign === id);
-  attractI++;
-  // a sign's mascot only shows once somebody has picked it; an empty seat shows just its glyph
-  paintCenter(`${empty ? `<div class="ico-g gf">${s.glyph}︎</div>` : `<img src="${mascot(id, 'idle')}" alt="">`}<div class="cap">${esc(s.label)}</div><div class="sub">${empty ? `Comment “${IDS.indexOf(id) + 1}” để giữ chỗ ✨` : esc(pickLine(id))}</div>`);
+  if (slot === 3 && j?.elements?.lead) { paintCenter(elementsCard(j.elements)); centerUntil = t + 4800; return; }
+  // an empty seat: invite its sign (the one waiting longest first)
+  const id = S.sky.waiting?.[(attractI / 4 | 0) % Math.max(1, S.sky.waiting.length)] ?? IDS.find(x => !S.stage.some(v => v.sign === x));
+  if (!id) { if (j) { paintCenter(journeyCard(j)); centerUntil = t + 4000; } return; }
+  const s = SIGN[id];
+  paintCenter(`<div class="ico-g gf">${s.glyph}︎</div><div class="cap">${esc(s.label)}</div><div class="sub">còn trống chỗ · comment “${IDS.indexOf(id) + 1}” để vào đội ${esc(EL[s.element]?.[1] ?? '')} ✨</div>`);
   centerUntil = t + 3500;
 }, 250);
+
+// Giờ sinh tử: the last ten seconds of any fight (boss, tug of war, a floor of the sky run) count down in red over the centre.
+let doomAt = 0, doomShown = 0;
+setInterval(() => {
+  const el = $('doom'), left = doomAt - Date.now(), sec = Math.ceil(left / 1000);
+  if (!(left > 0 && left <= 10000)) { if (doomShown) { el.className = ''; el.textContent = ''; doomShown = 0; } return; }
+  if (sec === doomShown) return;
+  doomShown = sec;
+  el.className = 'on';
+  el.innerHTML = `<b>${sec}</b><span>giây sinh tử!</span>`;
+  sfx('quizTick');
+}, 100);
 
 // level 1: one announcement strip with an icon, a title and an optional line under it, plus a countdown bar
 const eventEl = $('event');
@@ -971,6 +989,9 @@ function power(e) {
 let skyKey = '';
 function renderCosmos(c) {
   S.cosmos = c;
+  // the fight that ends soonest sets the "giờ sinh tử" countdown
+  const ends = [c.boss?.remainingMs, c.tug && !c.tug.warmupMs ? c.tug.remainingMs : null, c.run?.enemy?.remainingMs].filter(ms => ms > 0);
+  doomAt = ends.length ? Date.now() + Math.min(...ends) : 0;
   // Keep the real planets on the wheel; their separate top-bar row is intentionally omitted.
   const key = c.sky ? JSON.stringify([c.sky.planets, c.sky.moon.phase]) : '';
   if (key !== skyKey) {
@@ -1289,7 +1310,7 @@ addEventListener('pointerdown', () => music.resume(), { once: true }); // a norm
 $('sound').onclick = () => { music.resume(); sfx('welcome'); $('sound').classList.remove('on'); };
 const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak',
   swaps: 'flow', 'boss-hits': 'bossHit', 'boss-start': 'bossStart', 'boss-freeze': 'boop', 'boss-rescue': 'lit', 'boss-blocked': 'follow', 'boss-heal': 'luckyEnd', 'boss-defeated': 'wheel', 'boss-escaped': 'moonEnd',
-  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
+  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', chapter: 'wheel', 'journey-done': 'moon', 'element-lead': 'overtake', 'tug-flip': 'overtake', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
   'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', combine: 'lit', 'upgrade-need': 'boop',
   fans: 'milestone', 'fan-call': 'lucky', 'heat-up': 'overtake', demo: 'boop', 'switch-wait': 'boop',
   'birth-sky': 'lucky', 'star-born': 'starFly', showtime: 'milestone',
@@ -1355,6 +1376,24 @@ function onFx(e) {
       const l = e.loot[0], r = RES[l.res];
       if (l.why === 'moon' && e.loot.length + e.more > 1) card({ key: 'loot', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `Cả sân nhận ${r.label}!`, sub: `${e.loot.length + e.more} người có mặt lúc trăng rằm · dùng để nâng cấp linh vật`, color: '#FFE7A1' });
       else card({ key: 'loot', icon: `<img class="resimg" src="${r.img}" alt="">`, title: `<b>${esc(l.nickname)}</b> nhận ${l.n} ${r.label}`, sub: `${LOOT_WHY[l.why] ?? ''}${e.loot.length + e.more > 1 ? ` · +${e.loot.length + e.more - 1} người nữa` : ''} · gõ “kho” để xem`, color: r.color, ms: 2600 });
+      break;
+    }
+    // --- hành trình đêm, đội nguyên tố, đảo chiều ---
+    case 'chapter':
+      meteorShower(e.next ? 10 : 30);
+      celebrate({ key: 'chapter', badge: `${e.icon} CHẶNG ${e.no}/${e.of} HOÀN THÀNH`, icon: e.icon, title: esc(e.label), sub: `cả sân +${e.dust} bụi sao (${e.people} người)${e.next ? ` · chặng tiếp: ${e.next.icon} ${esc(e.next.label)}: ${e.next.need} ${esc(e.next.goal)}` : ''}`, color: C.gold, ms: 4200, compact: true });
+      break;
+    case 'journey-done':
+      celebrate({ key: 'chapter', badge: '👑 TRỌN HÀNH TRÌNH ĐÊM NAY', icon: '🌌', title: 'Cả phòng đã đi hết 5 chặng!', sub: `${e.people} người trên sân nhận 1 mảnh trăng 🌙 · cảm ơn cả nhà`, color: '#FFE7A1', ms: 5200, compact: true });
+      break;
+    case 'element-lead': {
+      const [icon, name, col] = EL[e.element], [, prev] = EL[e.prev];
+      card({ key: 'lead', icon, title: `Đảo chiều! Đội <b>${name}</b> dẫn đầu`, sub: `vượt đội ${prev} · fan ${prev} ơi, gỡ lại nào!`, color: col, ms: 3000 });
+      break;
+    }
+    case 'tug-flip': {
+      burst(CX, CY, [color(e.lead), C.gold, '#fff'], 70, 10);
+      card({ key: 'flip', icon: '🪢', title: `Đảo chiều! <b>${esc(SIGN[e.lead].label)}</b> lật thế`, sub: `fan ${esc(SIGN[e.other].label)} ơi, kéo lại!`, color: color(e.lead), ms: 2400 });
       break;
     }
     case 'level-up': {
