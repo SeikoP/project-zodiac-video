@@ -100,7 +100,7 @@ const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp 
 const sim = name => {
   const nickname = String(name ?? 'Người xem').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 32) || 'Người xem';
   const n = Number(nickname.match(/\d+$/)?.[0]);
-  return { userId: \`sim:\${nickname}\`, nickname, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
+  return { userId: 'sim:' + nickname, nickname, ...(n && n % 7 === 0 ? { fanLevel: 3 + (n % 9), fanClub: 'Hội Sao' } : {}) };
 };
 const simulated = recorded.wrap(tapped);
 function simulatorEvent(kind, data, mirror = true) {
