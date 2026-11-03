@@ -309,11 +309,11 @@ function spotOf(userId, sign) { return orbitSpots.get(userId) ?? (sign ? nodePos
 // Tonight's viewers shine gold with their name; the others stay dim. A new star flies down from its owner's
 // mascot; the big "điểm danh" moment flies tonight's stars in from above. Positions come from the server (0..1).
 const SKY_Y = LAYOUT.zone + 74, SKY_H = FRAME_HEIGHT - SKY_Y - 46;
-// Keep visitor stars inside one centered cluster instead of scattering them across the full sky.
-// Stored x/y values stay deterministic; this polar projection maps them into a compact ellipse.
+// Visitor stars form a loose ring around the edge of one centered ellipse.
+// Keep the middle open; each point represents a real viewer with a saved community star.
 const starPoint = s => {
   const angle = s.x * Math.PI * 2;
-  const radius = Math.sqrt(Math.max(0, Math.min(1, s.y)));
+  const radius = .82 + Math.max(0, Math.min(1, s.y)) * .18;
   const clusterRadiusX = 250;
   const clusterRadiusY = Math.min(135, SKY_H * .28);
   return [
