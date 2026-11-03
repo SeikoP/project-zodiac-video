@@ -10,12 +10,14 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-async function freePort() {
-  const server = net.createServer();
-  await new Promise((resolve, reject) => server.once('error', reject).listen(0, '127.0.0.1', resolve));
-  const port = server.address().port;
-  await new Promise(resolve => server.close(resolve));
-  return port;
+async function freePorts() {
+  const servers = [net.createServer(), net.createServer()];
+  await Promise.all(servers.map(server => new Promise((resolve, reject) => {
+    server.once('error', reject).listen(0, '127.0.0.1', resolve);
+  })));
+  const ports = servers.map(server => server.address().port);
+  await Promise.all(servers.map(server => new Promise(resolve => server.close(resolve))));
+  return ports;
 }
 async function post(port, route, body = {}) {
   const response = await fetch(`http://127.0.0.1:${port}/api/${route}`, {
@@ -27,9 +29,7 @@ async function post(port, route, body = {}) {
 }
 
 test('isolated LIVE simulator serves its UI and refuses real TikTok connections', { timeout: 20000 }, async () => {
-  const port = await freePort();
-  let sharePort = await freePort();
-  while (sharePort === port) sharePort = await freePort();
+  const [port, sharePort] = await freePorts();
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'pk-simulator-test-'));
   const env = {
     ...process.env,
