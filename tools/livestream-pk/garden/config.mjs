@@ -4,7 +4,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   // One Seed Zone rendered as two visual wings × 8 shelves × 6 pots = 96 active seats.
   tierWidth: 1940, tierHeight: 2300, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
   activeCapacity: 96, modulesPerRow: 1, moduleCapacity: 96, potsPerShelf: 6, shelvesPerModule: 8,
-  rackWings: 2, shelvesPerWing: 8, rackWingGapX: 180,
+  rackWings: 2, shelvesPerWing: 8, rackWingGapX: 220,
   potSpacingX: 140, shelfSpacingY: 250, moduleGapX: 220, moduleGapY: 200,
   zoneMarginX: 180, zoneMarginY: 260, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
