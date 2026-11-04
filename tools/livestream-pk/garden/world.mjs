@@ -10,13 +10,16 @@ export function emptyGardenState(now = Date.now()) {
   return { v: 4, ver: 0, users: {}, plots: {}, thefts: [], event: null, session: null, night: nightOf(now), lastTick: now, hearts: null };
 }
 
-// Stable physical coordinates: one continuous 16-level rack, six pots per shelf.
+// Stable slot identity, two visual wings inside one Seed Zone.
 export function plotLayout(slot, cfg) {
-  const row = Math.floor(slot / cfg.potsPerShelf);
+  const logicalRow = Math.floor(slot / cfg.potsPerShelf);
+  const wing = Math.floor(logicalRow / cfg.shelvesPerWing);
+  const row = logicalRow % cfg.shelvesPerWing;
   const col = slot % cfg.potsPerShelf;
-  const x = cfg.zoneMarginX + col * cfg.potSpacingX;
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const x = cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX) + col * cfg.potSpacingX;
   const y = cfg.zoneMarginY + row * cfg.shelfSpacingY;
-  return { module: 0, moduleCol: 0, moduleRow: 0, row, col, x, y,
+  return { module: 0, moduleCol: 0, moduleRow: 0, logicalRow, wing, row, col, x, y,
     shelfY: y + cfg.potBottomOffset + cfg.potShelfGap };
 }
 
