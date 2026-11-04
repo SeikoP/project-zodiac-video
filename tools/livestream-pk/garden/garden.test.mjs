@@ -31,7 +31,7 @@ test('a player plants, the crop ripens over time, and hái pays gold and xp', ()
   s.user('a').gold = 20;
   s.say('a', 'trồng rau');
   assert.equal(s.plot('a').crop.type, 'rau');
-  for (let i = 0; i < 40; i++) { s.advance(5000); s.plot('a').water = 1; s.plot('a').lastActive = Date.UTC(2026, 10, 4, 12) + (i + 1) * 5000; }
+  for (let i = 0; i < 121; i++) { s.advance(5000); s.plot('a').water = 1; s.plot('a').lastActive = Date.UTC(2026, 10, 4, 12) + (i + 1) * 5000; }
   s.advance(1000);
   s.say('a', 'hái');
   assert.equal(s.plot('a').crop, null);
@@ -80,12 +80,14 @@ test('a gift acts on the garden and never pays gold', () => {
   assert.equal(s.user('a').gold, 20, 'a gift does not pay gold');
 });
 
-test('like, social and member never change the game', () => {
+test('likes only change hearts and do not seat users', () => {
   const s = setup();
   const before = JSON.stringify(s.garden.state);
   s.garden.like({ userId: 'z', count: 5 });
   s.garden.social({ userId: 'z', kind: 'follow' });
-  assert.equal(JSON.stringify(s.garden.state), before);
+  assert.notEqual(JSON.stringify(s.garden.state), before);
+  assert.equal(Object.keys(s.garden.state.users).length, 0);
+  assert.equal(s.garden.state.hearts.total, 5);
 });
 
 test('changes() sends everything first, then only plots that changed', () => {
