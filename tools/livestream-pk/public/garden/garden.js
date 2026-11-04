@@ -56,10 +56,18 @@ const DECOR_ART = [
   '/garden/assets/decor-windchime.svg',
   '/garden/assets/decor-lantern.svg',
 ];
+const POT_ART = {
+  clay: '/garden/assets/pot-clay.svg',
+  glazed: '/garden/assets/pot-glazed.svg',
+  banded: '/garden/assets/pot-banded.svg',
+  royal: '/garden/assets/pot-royal.svg',
+  astral: '/garden/assets/pot-astral.svg',
+};
+const POT_LABEL = { clay: 'Đất nung', glazed: 'Men lá', banded: 'Viền đồng', royal: 'Bệ ngọc', astral: 'Tinh tú' };
 const CROP_ART = {
-  rau: '/garden/assets/crop-rau.svg',
-  huongduong: '/garden/assets/crop-huongduong.svg',
-  nammay: '/garden/assets/crop-nammay.svg',
+  rau: { common: '/garden/assets/crop-rau.svg', lush: '/garden/assets/crop-rau-lush.svg', golden: '/garden/assets/crop-rau-golden.svg' },
+  huongduong: { common: '/garden/assets/crop-huongduong.svg', lush: '/garden/assets/crop-huongduong-lush.svg', golden: '/garden/assets/crop-huongduong-golden.svg' },
+  nammay: { common: '/garden/assets/crop-nammay.svg', lush: '/garden/assets/crop-nammay-lush.svg', golden: '/garden/assets/crop-nammay-golden.svg' },
 };
 const artCache = new Map();
 function gardenArt(src) {
@@ -113,6 +121,8 @@ function handleFx(fx) {
     case 'plant': sfx('sparkle'); break;
     case 'harvest': sfx('sparkle'); if (fx.count > 3) say(`${fx.count} người vừa hái`); break;
     case 'pest-cleared': sfx('sparkle'); break;
+    case 'weed-cleared': sfx('sparkle'); if (fx.count > 2) say(`${fx.count} người vừa nhổ cỏ`); break;
+    case 'fertilize': sfx('sparkle'); if (fx.count > 2) say(`${fx.count} chậu vừa được bón phân`); break;
     case 'title': sfx('title'); show(`${fx.nickname ?? 'Người làm vườn'} nhận danh hiệu`, fx.titles?.join(' · ') ?? '', 5000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm phiên · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'} · Tiếp theo: ${fx.competition?.milestone?.label ?? '—'}`, 6000); break;
     case 'event-start': sfx('actOpen'); break;
@@ -373,21 +383,46 @@ function drawRipeCrop(type, stage) {
 }
 
 function drawPlot(p, lod) {
+  if (!p.owner || !p.awake) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
-  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = p.awake ? 1 : .58;
+  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = 1;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // Saucer + pot + soil share the same perspective as the shelf, making the crop feel planted.
-  ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
-  ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
-  ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-  ctx.globalAlpha = .24; ctx.fillStyle = C.card; ctx.beginPath(); ctx.roundRect(-27, 23, 54, 8, 4); ctx.fill(); ctx.globalAlpha = 1;
-  ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke();
+
+  const potImage = gardenArt(POT_ART[p.potTier] ?? POT_ART.clay);
+  if (potImage) ctx.drawImage(potImage, -52, -4, 104, 62);
+  else {
+    ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
+    ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
+    ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill();
+  }
+
   if (p.crop) {
-    const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]) : null;
-    if (cropImage) ctx.drawImage(cropImage, -43, -85, 86, 86);
+    const variant = p.crop.variant ?? 'common';
+    if (variant === 'golden') {
+      ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = C.ochre; ctx.shadowColor = C.ochre; ctx.shadowBlur = 22;
+      ctx.beginPath(); ctx.arc(0, -42, 45, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    } else if (variant === 'lush') {
+      ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(0, -38, 39, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
+    if (cropImage) ctx.drawImage(cropImage, -49, -96, 98, 98);
     else drawRipeCrop(p.crop.type, p.stage ?? 0);
+
+    if (p.crop.weeds) {
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      for (const x of [-28, -17, 22, 31]) {
+        ctx.beginPath(); ctx.moveTo(x, 9); ctx.quadraticCurveTo(x - 8, -2, x - 4, -13); ctx.stroke();
+        drawLeaf(x - 4, -9, 8, x < 0 ? -.9 : .9, C.teal);
+      }
+    }
+    if (p.crop.fertilized) {
+      ctx.globalAlpha = .82;
+      drawSparkle(-36, -54, 7, C.ochre); drawSparkle(35, -38, 5, C.ochre);
+      ctx.globalAlpha = 1;
+    }
   }
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
@@ -408,7 +443,7 @@ function drawPlot(p, lod) {
     const labelY = at.y + size * .55;
     const fontSize = focused ? 29 : 18;
     const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
-    const title = focused ? `${shortName} · Lv${p.owner.level}` : shortName;
+    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     const maxW = focused ? 280 : 112, h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
@@ -434,6 +469,7 @@ function drawPlot(p, lod) {
 }
 
 function drawDot(p) {
+  if (!p.owner || !p.awake) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), r = Math.max(4, 47 * cam.zoom);
   ctx.beginPath(); ctx.ellipse(at.x, at.y, r * 1.08, r * .84, -.08, 0, Math.PI * 2);
   ctx.fillStyle = !p.crop ? C.paper : p.stage >= 3 ? (p.crop.type === 'nammay' ? C.coral : C.ochre) : C.teal;
