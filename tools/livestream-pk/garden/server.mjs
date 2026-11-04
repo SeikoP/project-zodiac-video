@@ -55,7 +55,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     coalescer.push(out);
     saver.markDirty();
   };
-  const newGarden = () => createGarden({ config: full.garden, state, now, onEvent });
+  const newGarden = () => createGarden({ config: full.garden, state, now, onEvent, onStateChange: () => saver.markDirty() });
   garden = newGarden();
   camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
 
