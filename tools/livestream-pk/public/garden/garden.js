@@ -1,7 +1,7 @@
 // Vườn Mây: the channel's paper-doodle style drawn directly on the canvas; no generated image assets.
 import { createMusic } from '../music.js';
 import { createSfx } from '../sfx.js';
-import { createAvatarCache, displayNickname, easeCamera, lodOf, plotPos, rackGeometry, visiblePlots, worldToScreen } from './view.js';
+import { createAvatarCache, displayNickname, easeCamera, lodOf, overviewLabelWidth, plotPos, rackGeometry, visiblePlots, worldToScreen } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
@@ -532,7 +532,7 @@ function drawPlotLabel(p) {
     const shortName = displayNickname(p.owner.nickname, focused ? 1.25 : cam.zoom);
     const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const maxW = focused ? 360 : cam.zoom < .65 ? 78 : 112, h = focused ? 40 : 27;
+    const maxW = focused ? 360 : overviewLabelWidth(meta.cfg, cam.zoom), h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
     ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
     const labelX = focused ? VP.w / 2 : at.x;
