@@ -6,7 +6,7 @@ handoff context; preserve exact narration, scope and genuine Content Review.
 1. Select current components through `references/asset-library-v4/selection-guide.md`.
    Render `features/asset-selection/build-current-asset-review.mjs` when comparing
    choices. It uses native compiler output and exact masters, not episode examples.
-2. Author Visual Intent, actual episode cast plan, Director beats, explicit
+2. Fill the complete authoring skeleton before drawing: Scene Plan, actual episode cast plan, Director beats, context/background decision, physical-prop participation, explicit
    required/optional/omitted Narrative Visual decision and narrative reasons. Character
    identity is fixed across states. Use performed actions to plan state assets
    before generation; never create duplicates then merge finished SVGs.
@@ -38,7 +38,7 @@ separately pinned snapshot to resume an approved historical job; do not use
 `legacy` or `selected_cues` to bypass current selection. An asset retirement or
 compiler change invalidates dependent cache/preview hashes before reuse.
 
-Before any native asset compilation, fill per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
+Before any native asset compilation, `validate-phase02-authoring-completeness.mjs` must PASS, then fill/verify per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
 
 ## Mandatory storytelling readiness for fresh Phase 2
 
