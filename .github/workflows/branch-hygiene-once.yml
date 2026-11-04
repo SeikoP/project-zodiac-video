@@ -21,7 +21,7 @@ jobs:
             const manifest = JSON.parse(fs.readFileSync('docs/branch-hygiene/2026-11-05-exact-merged-heads.json', 'utf8'));
             const owner = 'SeikoP', repo = 'project-zodiac-video';
             if (manifest.format !== 'zodiac-branch-cleanup@1' || manifest.repository !== owner+'/'+repo ||
-                manifest.original_branch_count !== 187 || manifest.candidates.length > 160 ||
+                manifest.original_branch_count !== 188 || manifest.candidates.length > 160 ||
                 manifest.candidate_count !== manifest.candidates.length) throw Error('INVALID_CLEANUP_MANIFEST');
             const open = await github.paginate(github.rest.pulls.list, {owner, repo, state:'open', per_page:100});
             const openHeads = new Set(open.filter(p => p.head.repo?.full_name === owner+'/'+repo).map(p => p.head.ref));
