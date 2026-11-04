@@ -10,7 +10,7 @@ export function designToken(markdown){
  if(token.id!=='zodiac-paper-doodle-meme-v4'||token.version!=='4.0'||token.hard_style_lock!==true||token.handmade_profile!=='human-stroke-v2')throw new Error('COMPOSITION_STYLE_DRIFT');
  return token;
 }
-const roles=new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
+const roles=new Set(['background','character','interactive_prop','story_object','foreground_environment','effect','caption','overlay']);
 export function validateComposition(production,plan,token){
  const issues=[];const add=(code,scene_id,entity_id,detail)=>issues.push({code,scene_id,entity_id,detail});
  const uniqueIds=(items,code,sceneId)=>{const seen=new Set();for(const item of items){if(seen.has(item?.id))add(code,sceneId,item?.id);seen.add(item?.id);}};
