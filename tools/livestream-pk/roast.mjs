@@ -142,7 +142,8 @@ export function createRoast({ st, cfg, now, rng = Math.random, onEvent, ctx, rew
     const r = st.roast;
     if (!r) return null;
     const counts = reactions(r).counts();
-    return { userId: r.userId, nickname: r.nickname, avatar: r.avatar, team: r.team, protests: counts.oan, need: r.need, agree: counts.chuan, remainingMs: Math.max(0, r.endsAt - now()), spinning: now() < r.startedAt + cfg.roastSpinMs };
+    const pick = r.pick && { team: r.pick.team, nickname: viewerOf(r.pick.userId)?.nickname ?? '', remainingMs: Math.max(0, r.pick.until - now()) };
+    return { userId: r.userId, nickname: r.nickname, avatar: r.avatar, team: r.team, line: r.line, again: Boolean(r.respun), pick: pick ?? null, protests: counts.oan, need: r.need, agree: counts.chuan, remainingMs: Math.max(0, r.endsAt - now()), spinning: now() < r.startedAt + cfg.roastSpinMs, spinLeftMs: Math.max(0, r.startedAt + cfg.roastSpinMs - now()), spinMs: cfg.roastSpinMs };
   };
 
   return { id: 'roast', needs, start, chat, tick, gift, view, end: finish, isDone: () => !st.roast };

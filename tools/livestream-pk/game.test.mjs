@@ -74,6 +74,14 @@ test('joining puts the viewer on stage; comments light their team, with a cooldo
   assert.deepEqual(game.snapshot().stage.map(c => [c.userId, c.team]), [['a', 'red']]);
 });
 
+test('a visitor who only joins is already on a team and on stage, with no comment', () => {
+  const { game } = setup();
+  game.member(u('lurk'));
+  assert.ok(TEAM_IDS.includes(game.state.viewers.lurk.team), 'auto-picked a team on arrival');
+  assert.deepEqual(game.snapshot().stage.map(c => [c.userId, c.team]), [['lurk', game.state.viewers.lurk.team]]);
+  assert.equal(game.state.night.visitors, 1);
+});
+
 test('a lit team passes extra light to the dimmest dark one', () => {
   const { game, events } = setup({ teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('b', { comment: 'đỏ' }));

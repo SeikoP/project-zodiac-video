@@ -1,6 +1,6 @@
 // Kho tài nguyên: what a viewer collects by playing, and what they spend it on.
 //   ✦ Điểm sáng (key dust) — a little with every bit of starlight they shed
-//   Ngọc phe (Đỏ · Vàng · Xanh lá · Xanh dương) — from the boss, the chest, quizzes and fixing Thủy Nghịch
+//   Ngọc phe (Đỏ · Vàng · Xanh · Lam) — from the boss, the chest, quizzes and fixing Thủy Nghịch
 //   🌙 Mảnh trăng — for being there when the moon is full, and for a wish the room blessed
 // "nâng cấp" spends them to raise the viewer's mascot a level (Lv1–Lv5): a bigger halo on the wheel and a little
 // more starlight on everything they do. "kho" shows the bag on stream. Bags last across nights.
@@ -9,8 +9,8 @@ export const RESOURCES = Object.freeze({
   dust: { label: 'Điểm sáng', icon: '✦' },
   red: { label: 'Ngọc Đỏ', icon: '🔴' },
   yellow: { label: 'Ngọc Vàng', icon: '🟡' },
-  green: { label: 'Ngọc Xanh lá', icon: '🟢' },
-  blue: { label: 'Ngọc Xanh dương', icon: '🔵' },
+  green: { label: 'Ngọc Xanh', icon: '🟢' },
+  blue: { label: 'Ngọc Lam', icon: '🔵' },
   moon: { label: 'Mảnh trăng', icon: '🌙' },
 });
 

@@ -130,7 +130,7 @@ export const FORTUNE_COLORS = COLORS;
 
 // day: a day key ('2026-11-03') or any timestamp of that day. userId null = the room's own reading.
 // topic ('love' | 'work' | 'money' | null): the viewer asked about one thing; that section comes first in `order` and
-// `focus` adds two more lines on it. `tip` is the same text as `note` (what the overlay already reads).
+// `focus` adds two more lines on it.
 export function drawFortune({ userId = null, day, topic = null }) {
   const key = typeof day === 'number' ? dayKey(day) : String(day);
   let h = hash(`${userId ?? 'room'}|${key}`);
@@ -150,7 +150,6 @@ export function drawFortune({ userId = null, day, topic = null }) {
     number: 1 + next(99),
     hour: HOURS[next(HOURS.length)],
   };
-  reading.tip = reading.note;
   reading.order = [...FORTUNE_TOPICS];
   if (!topic || !['love', 'work', 'money'].includes(topic)) return reading;
   // two more lines on the asked topic, none repeating the reading's own line on it (drawn last: the rest stays the same)

@@ -25,7 +25,7 @@ export const SIGN_DATA = {
     lines: ['Hai cái đầu, một trăm ý tưởng.', 'Nói chuyện với ai cũng như quen từ kiếp trước.', 'Chán nhanh nhưng học cũng nhanh không kém.', 'Một phút trước còn nghiêm túc, phút sau đã đùa.', 'Tab trình duyệt luôn mở nhiều hơn ví tiền.'],
   },
   cancer: {
-    en: 'Cancer', from: [21, 6], to: [22, 7], symbol: 'Con cua', mode: 'cardinal', planet: 'Mặt Trăng', color: 'Xanh lá', numbers: [4, 6],
+    en: 'Cancer', from: [21, 6], to: [22, 7], symbol: 'Con cua', mode: 'cardinal', planet: 'Mặt Trăng', color: 'Xanh', numbers: [4, 6],
     match: ['scorpio', 'pisces', 'taurus'], opposite: 'capricorn',
     lines: ['Vỏ cứng bên ngoài, trái tim mềm bên trong.', 'Nhớ sinh nhật của tất cả mọi người, kể cả người cũ.', 'Nấu ăn là cách nói “tớ thương cậu”.', 'Cảm xúc lên xuống theo trăng, nhưng luôn quay về nhà.', 'Đi ngang cho an toàn, nhưng đến đích thì chắc.'],
   },
@@ -50,7 +50,7 @@ export const SIGN_DATA = {
     lines: ['Im lặng là chiến thuật, không phải đầu hàng.', 'Ít nói nhưng nhìn ra tất cả mọi thứ.', 'Đã tin ai thì trung thành đến cùng.', 'Bí ẩn, và rất thích mọi người đoán sai.', 'Cảm xúc sâu như đáy hồ, ít ai thấy được.'],
   },
   sagittarius: {
-    en: 'Sagittarius', from: [22, 11], to: [21, 12], symbol: 'Cung thủ', mode: 'mutable', planet: 'Sao Mộc', color: 'Xanh dương', numbers: [3, 5, 8], aka: ['Cung Thủ', 'Xạ Thủ'],
+    en: 'Sagittarius', from: [22, 11], to: [21, 12], symbol: 'Cung thủ', mode: 'mutable', planet: 'Sao Mộc', color: 'Lam', numbers: [3, 5, 8], aka: ['Cung Thủ', 'Xạ Thủ'],
     match: ['aries', 'leo', 'aquarius'], opposite: 'gemini',
     lines: ['Bắn mũi tên thật xa rồi chạy theo phiêu lưu.', 'Lạc quan đến mức cả nhóm bị lây.', 'Nói thẳng, mau quên, ít khi giận lâu.', 'Vali luôn để sẵn, vé rẻ là đi.', 'Học cái gì cũng bằng cách đi thử.'],
   },

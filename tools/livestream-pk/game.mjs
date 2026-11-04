@@ -375,7 +375,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return v;
   }
 
-  // A join is only greeted: nothing persistent is created, so lurkers don't count as visitors.
+  // A join is greeted and also puts the visitor straight on a team and on stage, so nobody has to comment first.
   let greeted = new Set(), greetedNo = 0;
   function member(u) {
     if (rehearsalOnly(u)) return false;
@@ -383,20 +383,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (greetedNo !== st.night.no) { greeted = new Set(); greetedNo = st.night.no; }
     if (greeted.has(u.userId)) return false;
     greeted.add(u.userId);
-    const nickname = st.viewers[u.userId]?.nickname ?? cleanName(u.nickname || u.userId, cfg.blockedWords);
-    const avatar = safeAvatar(u.avatar) || st.viewers[u.userId]?.avatar || '';
-    // a newcomer is a quiet star in the community sky from the moment they walk in; not a visitor, no team yet
-    const v = (st.viewers[u.userId] ??= { ...newViewer(nickname), avatar, lastSeenAt: now() });
-    if (!v.star) {
-      v.star = { x: rng(), y: rng(), at: now(), unsigned: true };
-      touch('stars');
-    }
+    const v = viewer(u);
     // their star flies in and lands on the rim of the cluster; the room's "chào" lights it up (like blessing a wish)
-    const w = { id: ++st.greetingNo, userId: u.userId, nickname, avatar, at: now(), greeters: {}, done: false, kr: {} };
+    const w = { id: ++st.greetingNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, at: now(), greeters: {}, done: false, kr: {} };
     welcomeRound(w).open(null);
     st.welcomes.unshift(w);
     st.welcomes.length = Math.min(st.welcomes.length, 6);
-    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname, avatar, team: v.team, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
+    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
     return true;
   }
 

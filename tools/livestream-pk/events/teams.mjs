@@ -9,7 +9,7 @@ export { TEAMS, TEAM_IDS };
 export const normText = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd');
 
 const clean = s => normText(s).replace(/[^a-z0-9]+/g, ' ').trim();
-const NAMES = { do: 'red', vang: 'yellow', 'xanh la': 'green', 'xanh duong': 'blue' };
+const NAMES = { do: 'red', vang: 'yellow', xanh: 'green', lam: 'blue', 'xanh la': 'green', 'xanh duong': 'blue' };
 const byName = s => NAMES[s] ?? null;
 const byDigit = s => (/^[1-4]$/.test(s) ? TEAM_IDS[Number(s) - 1] : null);
 

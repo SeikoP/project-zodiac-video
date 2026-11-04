@@ -11,8 +11,8 @@ export const ELEMENT = {
 export const TEAM_LINES = {
   red: 'Đỏ rực như lửa trại: hô to là cả sân nghe thấy.',
   yellow: 'Vàng như nắng sớm: có mặt là sáng cả phòng.',
-  green: 'Xanh lá bình tĩnh mà bền: càng về sau càng mạnh.',
-  blue: 'Xanh dương êm như sóng, nhưng dồn lại thì cả biển.',
+  green: 'Xanh bình tĩnh mà bền: càng về sau càng mạnh.',
+  blue: 'Lam êm như sóng, nhưng dồn lại thì cả biển.',
 };
 
 export const mascot = (team, mood = 'idle') => `/mascots/${team}-${mood}.svg`;

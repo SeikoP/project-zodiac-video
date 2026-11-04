@@ -178,7 +178,7 @@ async function runScenario(name) {
   const step = async fn => { if (!alive()) return; await fn(); };
   try {
     if (name === 'warmup') {
-      for (const [person, comment] of [['Minh', 'đỏ'], ['An', 'vàng'], ['Huy', 'xanh lá'], ['Linh', 'xanh dương']]) {
+      for (const [person, comment] of [['Minh', 'đỏ'], ['An', 'vàng'], ['Huy', 'xanh'], ['Linh', 'lam']]) {
         await step(() => joinRoom(person)); await wait(300);
         await step(() => sendComment(comment, person)); await wait(550);
       }
@@ -186,7 +186,7 @@ async function runScenario(name) {
       await api('sim/crowd', { count: 30, giftRate: 0.12 });
       if (!alive()) return;
       for (let i = 1; i <= 8; i++) {
-        await step(() => sendComment(['đỏ', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'xanh dương'][i % 6], 'Fan' + i));
+        await step(() => sendComment(['đỏ', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'lam'][i % 6], 'Fan' + i));
         await wait(140);
       }
       log('Đã tạo 30 người xem giả lập');

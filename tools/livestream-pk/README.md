@@ -249,6 +249,8 @@ npm run simulator
 
 Trình duyệt mở `http://127.0.0.1:4850/simulator`. Simulator có khung LIVE 9:16, overlay thật của game trong iframe, giao diện chat TikTok giả lập, join, tim, quà/combo, follow, share, lượt xem và event feed. Có các kịch bản người mới vào, phòng sôi động, mưa quà, gameplay, spam chat, 100 người xem và stress test 300 người xem/giây.
 
+Bảng điều khiển `http://127.0.0.1:4848/control` cũng có tab **🧪 Diễn tập** nhúng sẵn màn hình này — chạy `npm run simulator` song song rồi bấm tab. Nếu simulator ở máy/cổng khác, mở `/control?sim=http://host:port`.
+
 Tương tác được gửi vào cùng logic `game.mjs` qua các API `sim/*`; overlay preview cập nhật qua luồng frame bình thường. Đây là mô phỏng phía client/server local, không phải giao diện TikTok chính thức và không giả lập giao thức mạng nội bộ của ứng dụng TikTok.
 
 **Cách ly an toàn:** `npm run simulator` khởi chạy tiến trình server thứ hai trên cổng 4850 (có thể đổi bằng `PK_SIM_PORT`), đặt `PK_SIMULATOR=1`, `PK_NO_TIKTOK=1`, dùng `.simulator-data/` và `.simulator-logs/`. API kết nối TikTok thật bị khóa trong tiến trình này. Dữ liệu sản xuất vẫn ở `data/` và `logs/`. Dừng bằng Ctrl+C. Không đưa URL Simulator vào nguồn Link chia sẻ công khai.

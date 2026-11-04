@@ -100,7 +100,7 @@ const body = req => new Promise(resolve => {
 
 const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30], ['Hand Hearts', 100], ['Galaxy', 1000]];
 const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó', 'chúc', 'chúc phúc nha', 'nâng cấp', 'kho', 'ước có người yêu thương mình'];
-const SIM_TEAM_WORDS = ['đỏ', 'vàng', 'xanh lá', 'xanh dương', '1', '2', '3', '4']; // what a newcomer types to pick a team
+const SIM_TEAM_WORDS = ['đỏ', 'vàng', 'xanh', 'lam', '1', '2', '3', '4']; // what a newcomer types to pick a team
 // every seventh rehearsal viewer is a fan club member, so the fan club look can be rehearsed too
 const sim = name => {
   const nickname = String(name ?? 'Người xem').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 32) || 'Người xem';

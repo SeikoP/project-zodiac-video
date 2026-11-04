@@ -16,7 +16,8 @@ test('parseTeam reads a whole-sentence team name or digit', () => {
   assert.equal(parseTeam('5'), null);
   assert.equal(parseTeam('do an gi'), null);
   assert.equal(parseTeam('cho do vao day'), null);
-  assert.equal(parseTeam('xanh'), null);
+  assert.equal(parseTeam('xanh'), 'green');
+  assert.equal(parseTeam('lam'), 'blue');
 });
 
 test('parseSwitchTeam needs a switch word or a bare colour name', () => {

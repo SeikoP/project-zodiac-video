@@ -68,7 +68,7 @@ export function createTikTokBridge({ game, log = console.log, onStatus = () => {
   const set = patch => { Object.assign(status, patch); onStatus({ ...status }); };
 
   // One guard for every handler: a malformed event is logged and skipped, never allowed to crash the show.
-  // Joins arrive in bursts and only drive a greeting card: let a few through per second, drop the rest.
+  // Joins arrive in bursts and now put a visitor on a team and on stage: let a few through per second, drop the rest.
   let joinSec = 0, joinN = 0;
   const joinAllowed = () => { const s = Math.floor(Date.now() / 1000); if (s !== joinSec) { joinSec = s; joinN = 0; } return ++joinN <= 5; };
 

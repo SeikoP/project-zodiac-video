@@ -67,11 +67,25 @@
   tr.lucky td:first-child::after { content: ' ⭐'; }
   .now p { margin: 4px 0; }
   .wide { grid-column: 1 / -1; }
+  /* one UI, two tabs: live control and the rehearsal simulator (its own server and data) */
+  .tabs { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .tabs button { border-radius: 99px; }
+  .tabs button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .tabs a { margin-left: auto; font-size: 13px; }
+  body.simtab main > section:not(#simPane) { display: none; }
+  #simPane iframe { display: block; width: 100%; height: calc(100vh - 210px); min-height: 480px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+  #simPane .line { margin: 0 0 10px; }
+  #simPane .line a { margin-left: auto; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Đêm Hội Sao — bảng điều khiển <small>overlay: <code id="overlayUrl"></code> (1080×1920) · <a href="/simulator" target="_blank" rel="noopener">Mở LIVE Simulator ↗</a></small></h1>
+  <h1>Đêm Hội Sao — bảng điều khiển <small>overlay: <code id="overlayUrl"></code> (1080×1920)</small></h1>
+  <nav class="tabs">
+    <button class="on" id="tabLive">🎛 Điều khiển</button>
+    <button id="tabSim">🧪 Diễn tập</button>
+    <a href="/" target="_blank" rel="noopener">Mở overlay ↗</a>
+  </nav>
 
   <section class="c12">
     <h2>Tình trạng live <small id="clock"></small></h2>
@@ -199,6 +213,14 @@
     </div>
     <div class="line"><button class="danger" id="reset">Xoá toàn bộ (bầu trời, danh hiệu, mọi đêm)</button></div>
   </section>
+
+  <section class="c12" id="simPane" hidden>
+    <div class="line">
+      <span class="muted">Diễn tập chạy trên server riêng (cổng 4850), dữ liệu tách khỏi LIVE. Trống? Chạy <code>npm run simulator</code>.</span>
+      <a id="simOpen" target="_blank" rel="noopener">Mở tab riêng ↗</a>
+    </div>
+    <iframe id="simFrame" title="Diễn tập" loading="lazy"></iframe>
+  </section>
 </main>
 
 <script type="module">
@@ -207,6 +229,27 @@ import { PROMPT_GROUPS } from '/host-prompts.js';
 const $ = id => document.getElementById(id);
 $('overlayUrl').textContent = `${location.origin}/`;
 try { $('user').value = localStorage.getItem('pk-user') || ''; } catch {}
+
+// ---- one UI, two tabs: live control + the rehearsal simulator (own server, own data) ----
+// A different PC/port? open /control?sim=http://host:4860
+const simQuery = new URLSearchParams(location.search).get('sim');
+const simBase = (simQuery || (location.port === '4850' ? location.origin : `${location.protocol}//${location.hostname}:4850`)).replace(/\/$/, '');
+function showTab(sim) {
+  document.body.classList.toggle('simtab', sim);
+  $('simPane').hidden = !sim;
+  $('tabLive').classList.toggle('on', !sim);
+  $('tabSim').classList.toggle('on', sim);
+  if (sim) {
+    if (!$('simFrame').src) $('simFrame').src = `${simBase}/simulator`;
+    $('simOpen').href = `${simBase}/simulator`;
+  }
+  const url = new URL(location.href);
+  if (sim) url.searchParams.set('tab', 'sim'); else url.searchParams.delete('tab');
+  try { history.replaceState(null, '', url); } catch {}
+}
+$('tabLive').onclick = () => showTab(false);
+$('tabSim').onclick = () => showTab(true);
+if (new URLSearchParams(location.search).get('tab') === 'sim') showTab(true);
 
 // ---- buttons ----
 $('connect').onclick = () => { try { localStorage.setItem('pk-user', $('user').value); } catch {} api('tiktok/connect', { username: $('user').value }); };

@@ -15,7 +15,7 @@
     "share": "node scripts/share.mjs",
     "reset-night": "node scripts/reset-night.mjs",
     "garden": "node --env-file-if-exists=.env garden/server.mjs",
-    "simulator": "node --env-file-if-exists=.env scripts/simulator.mjs"
+    "simulator": "node scripts/simulator.mjs"
   },
   "dependencies": {
     "tiktok-live-connector": "2.5.0"

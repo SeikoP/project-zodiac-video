@@ -17,7 +17,8 @@ const env = {
   PK_SIMULATOR: '1',
   PK_NO_TIKTOK: '1',
 };
-const child = spawn(process.execPath, ['--env-file-if-exists=.env', path.join(root, 'server.mjs')], {
+delete env.EULERSTREAM_API_KEY; // offline: never carry the live key, even when it is exported in the shell
+const child = spawn(process.execPath, [path.join(root, 'server.mjs')], {
   cwd: root, env, stdio: 'inherit',
 });
 let stopping = false;

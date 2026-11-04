@@ -1,4 +1,4 @@
-/* The real sky, Thủy Nghịch, the boss and the star chest. Same rules as overlay.css: only transform/opacity animate. */
+/* The boss, the star chest and the arena. Same rules as overlay.css: only transform/opacity animate. */
 
 /* the star chest countdown, between the title and the moon */
 .chest { display: flex; align-items: center; gap: 8px; padding: 0 14px 0 18px; border-left: 2px dashed var(--line); }
@@ -11,21 +11,10 @@
 .chest.open .ct b { color: var(--accent); }
 .chest.open .ct span { color: var(--ink); }
 
-/* Thủy Nghịch: the dial turns the wrong way, fast, the signs shiver and the whole sky takes a violet cast */
-#stage.retro .spin { animation-duration: 18s; animation-direction: reverse; }
-#stage::after { content: ''; position: absolute; inset: 0; z-index: 9; pointer-events: none; opacity: 0; transition: opacity .8s;
-  background: radial-gradient(ellipse at 50% 45%, rgba(150, 90, 230, 0) 30%, rgba(150, 90, 230, .34) 100%); }
-#stage.retro::after { opacity: 1; animation: retroPulse 1.6s ease-in-out infinite; }
-#stage.retro .node { animation: jitter 2.4s ease-in-out infinite; }
-#stage.retro .node:nth-of-type(odd) { animation-delay: -1.2s; }
-.call.chaos { color: #6b2fbf; }
-.call.chaos b { color: #4a1d8f; }
 .call.boss b { color: var(--accent); }
-@keyframes retroPulse { 50% { opacity: .55; } }
-@keyframes jitter { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-3px, 2px); } 50% { transform: translate(2px, -2px); } 75% { transform: translate(3px, 1px); } }
 
-/* the arena takes over the centre of the wheel during the boss fight, or while the chest is open */
-#arena { position: absolute; left: 50%; top: 50%; width: 580px; height: 580px; margin: -290px 0 0 -290px; border-radius: 50%; overflow: hidden; z-index: 3; display: none;
+/* the arena takes over the centre of the wheel during the boss fight, a tug, a short game, the lucky wheel or the open chest */
+#arena { position: absolute; left: 50%; top: 50%; width: var(--halo); height: var(--halo); margin: calc(var(--halo) / -2) 0 0 calc(var(--halo) / -2); border-radius: 50%; overflow: hidden; z-index: 3; display: none;
   border: 4px solid var(--ink); box-shadow: 0 12px 0 rgba(22, 29, 33, .45); color: var(--paper); text-align: center;
   background: radial-gradient(circle at 50% 38%, #4b2d6e 0%, #241632 58%, #140c1c 100%); }
 #arena.on { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; animation: fadein .3s; }
@@ -45,11 +34,6 @@
 #arena .meta .cb { color: #fff; background: var(--accent); padding: 0 10px; border-radius: 10px; }
 #arena .st { min-height: 56px; max-width: 470px; font-size: 22px; font-weight: 800; line-height: 1.25; color: var(--paper); }
 #arena .st.ice { color: #bfe6ff; }
-#arena .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; width: 470px; }
-#arena .role { display: flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, .08); border: 2px solid var(--el); font-size: 16px; font-weight: 800; text-align: left; white-space: nowrap; overflow: hidden; }
-#arena .role b { flex: none; color: var(--el); font-size: 17px; }
-#arena .role span { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: rgba(246, 240, 230, .85); }
-#arena .role em { flex: none; margin-left: auto; font-style: normal; color: #fff; font-variant-numeric: tabular-nums; }
 #arena .big { font-size: 84px; line-height: 1; animation: wobble .8s ease-in-out infinite; }
 #arena .cap { font-family: var(--hand); font-size: 46px; line-height: 1.1; }
 #arena .sub { font-size: 24px; font-weight: 800; color: var(--soft-ink); }
@@ -57,25 +41,3 @@
 .node.frozen { border-color: #bfe6ff; box-shadow: 0 0 0 5px #9fd3ff, 0 0 30px #9fd3ff; opacity: 1; }
 .node.frozen::before { content: '❄'; position: absolute; left: -26px; top: -18px; font-size: 30px; }
 @keyframes bossHit { 30% { transform: translate(8px, -4px) rotate(4deg) scale(.96); } 60% { transform: translate(-6px, 3px) rotate(-3deg); } }
-
-/* a card of the collection (chest drops, boss rewards, "khoe thẻ") */
-.zc { position: relative; flex: none; width: 96px; height: 136px; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  background: linear-gradient(170deg, #fffdf9 0%, color-mix(in srgb, var(--ed) 40%, #fffdf9) 100%); border: 4px solid var(--ed); color: var(--ink); box-shadow: 0 5px 0 rgba(22, 29, 33, .35);
-  animation: cardIn .5s cubic-bezier(.2, 1.5, .4, 1) backwards; }
-.zc img { position: absolute; top: 8px; left: 50%; height: 84px; transform: translateX(-50%); }
-.zc .zg { position: absolute; top: 4px; left: 6px; font-size: 18px; color: var(--ink); }
-.zc .zn { position: relative; font-size: 12px; font-weight: 800; padding: 0 4px 2px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.zc .zl { position: relative; width: 100%; padding: 2px 0 3px; background: var(--ed); font-size: 13px; font-weight: 900; line-height: 1.1; text-align: center; white-space: nowrap; overflow: hidden; }
-.zc.foil::after { content: ''; position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, .85) 50%, transparent 60%); animation: foil 2.2s ease-in-out infinite; }
-.zc.big { width: 170px; height: 240px; border-radius: 18px; border-width: 6px; }
-.zc.big img { height: 150px; top: 14px; }
-.zc.big .zg { font-size: 30px; }
-.zc.big .zl { font-size: 22px; }
-.zc.big .zn { font-size: 18px; }
-.ev .ic .zc { width: 72px; height: 100px; border-width: 3px; box-shadow: none; animation: none; }
-.ev .ic .zc img { height: 60px; top: 5px; }
-.ev .ic .zc .zl { font-size: 10px; }
-.ev .ic .zc .zg, .ev .ic .zc .zn { display: none; }
-#hero .cards { display: flex; gap: 16px; }
-@keyframes cardIn { from { transform: rotateY(90deg) scale(.6); opacity: 0; } }
-@keyframes foil { from { transform: translateX(-60%); } to { transform: translateX(60%); } }
