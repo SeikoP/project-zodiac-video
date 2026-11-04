@@ -101,7 +101,14 @@ function handleFx(fx) {
     case 'joined': {
       sfx('sparkle', 0, { duck:.9, ms:500 });
       if (fx.plotId) float('sparkle', fx.plotId);
-      if (fx.count > 3) say(`${fx.count} người vừa nhận chậu`, 3600);
+      if (fx.count === 1 && fx.seats?.length === 1) {
+        const seat = fx.seats[0];
+        say(`${seat.nickname || 'Người xem'} · chậu #${String(seat.slot + 1).padStart(3, '0')}`, 4000);
+      } else if (fx.count > 1) {
+        const sample = (fx.seats ?? []).slice(0, 2)
+          .map(v => `${v.nickname} #${String(v.slot + 1).padStart(3, '0')}`).join(' · ');
+        say(`${fx.count} người vào Khu Gieo Hạt${sample ? ' · ' + sample : ''}`, 4000);
+      }
       break;
     }
     case 'gift':
@@ -528,6 +535,12 @@ function drawPlotLabel(p) {
       ctx.fillStyle = 'rgba(255,253,249,.96)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.roundRect(labelX - sw / 2, sy, sw, 34, 10); ctx.fill(); ctx.stroke();
       ctx.fillStyle = p.crop?.pest || p.crop?.weeds ? C.coral : C.softInk; ctx.fillText(status, labelX, sy + 2);
+       const action = actionHintFor(p);
+       ctx.font = `22px ${FONT}`;
+       const ctaWidth = Math.min(570, ctx.measureText(action).width + 30), ctaY = sy + 42;
+       ctx.fillStyle = C.ochre; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+       ctx.beginPath(); ctx.roundRect(labelX - ctaWidth / 2, ctaY, ctaWidth, 36, 10); ctx.fill(); ctx.stroke();
+       ctx.fillStyle = C.ink; ctx.fillText(action, labelX, ctaY + 3);
     }
 
     if (cam.zoom < .82) { ctx.restore(); return; }
