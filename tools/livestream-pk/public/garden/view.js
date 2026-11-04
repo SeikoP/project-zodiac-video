@@ -21,6 +21,22 @@ export function slotLayout(slot, cfg) {
     y: cfg.zoneMarginY + row * cfg.shelfSpacingY };
 }
 
+export function rackGeometry(cfg) {
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const top = cfg.zoneMarginY - 166;
+  const bottom = cfg.zoneMarginY + (cfg.shelvesPerWing - 1) * cfg.shelfSpacingY
+    + cfg.potBottomOffset + cfg.potShelfGap + 54;
+  const wings = Array.from({ length: cfg.rackWings }, (_, wing) => {
+    const firstX = cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX);
+    return { index: wing, firstX, left: firstX - 76, right: firstX + spanX + 76, top, bottom };
+  });
+  return {
+    spanX,
+    wings,
+    outer: { left: wings[0].left, right: wings.at(-1).right, top, bottom },
+  };
+}
+
 export function plotPos(plot, { cfg }) {
   const p = slotLayout(plot.slot, cfg);
   return { x: p.x, y: p.y };
