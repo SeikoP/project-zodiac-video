@@ -180,6 +180,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     'session/finish': () => garden.competition.finish(),
     sim: b => {
       const user = { userId: 'sim:' + String(b.user?.userId ?? 'x').slice(0, 48), nickname: String(b.user?.nickname ?? 'Người xem').slice(0, 32), avatar: '' };
+      if (b.kind === 'like') return garden.like({ count: Number(b.count) || 1 });
       if (b.kind === 'gift') return garden.gift({ ...user, diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1 });
       return garden.chat({ ...user, comment: String(b.comment ?? '').slice(0, 120) });
     },
