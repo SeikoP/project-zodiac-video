@@ -27,7 +27,9 @@ test('heart milestones rotate care, community, luck and then care', () => {
   assert.equal(garden.state.hearts.step, 1);
   garden.like({ count: 400 });
   assert.equal(garden.state.hearts.step, 2);
+  const oldGold = garden.state.users.owner.gold;
   garden.like({ count: 500 });
+  assert.equal(garden.state.users.owner.gold, oldGold + 2);
   assert.equal(garden.state.hearts.step, 0);
   assert.deepEqual(events.filter(e => e.type === 'heart-milestone').map(e => e.kind), ['care','community','luck']);
 });
