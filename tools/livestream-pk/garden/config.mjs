@@ -18,7 +18,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   eventMinMs: 180000, eventMaxMs: 300000, rainMs: 30000, rainMult: 2, pestStormMs: 20000, stormShare: 0.5, stormPass: 0.8, stormReward: 5,
   merchantMs: 60000, merchantMult: 2, goldenMs: 30000, goldenMult: 2,
   // camera
-  camera: Object.freeze({ holdMinMs: 2000, giftHoldMs: 4000, lowGiftHoldMs: 2500, stealHoldMs: 3000, levelHoldMs: 2500, queueMax: 8, giftTtlMs: 15000, ttlMs: 6000, mergeMs: 1500, gapMs: 1000, quotaWindowMs: 60000, quotaMin: 2, idleHoldMs: 8000, eventHoldMs: 4000, zoomWorld: 0.34, zoomTier: 0.4, zoomClose: 1 }),
+  camera: Object.freeze({ holdMinMs: 2000, giftHoldMs: 4000, lowGiftHoldMs: 2500, stealHoldMs: 3000, levelHoldMs: 2500, queueMax: 8, giftTtlMs: 15000, ttlMs: 6000, mergeMs: 1500, gapMs: 1000, quotaWindowMs: 60000, quotaMin: 2, idleHoldMs: 8000, eventHoldMs: 4000, zoomWorld: 0.72, zoomTier: 1.05, zoomClose: 1.55 }),
 });
 
 export const gardenConfig = (over = {}) => ({ ...GARDEN_DEFAULTS, ...over, camera: { ...GARDEN_DEFAULTS.camera, ...over.camera } });
