@@ -10,13 +10,22 @@ on:
           - 01-content
           - 02-visual-production
           - 03-handoff
+  push:
+    branches:
+      - main
+    paths:
+      - docs/zodiac-plugin-release.json
 permissions:
   contents: read
 jobs:
   source:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        phase: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.phase) || '["01-content","02-visual-production","03-handoff"]') }}
     env:
-      BUNDLE_PHASE: ${{ github.event.inputs.phase }}
+      BUNDLE_PHASE: ${{ matrix.phase }}
     steps:
       - uses: actions/checkout@v4
         with:
