@@ -4,15 +4,40 @@
     {
       "name": "livestream-pk",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["tools/livestream-pk/server.mjs"],
+      "runtimeArgs": [
+        "tools/livestream-pk/server.mjs"
+      ],
       "port": 4848
     },
     {
       "name": "livestream-pk-preview",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["tools/livestream-pk/server.mjs"],
-      "env": { "PK_PORT": "4860", "PK_SHARE_PORT": "4861", "PK_DATA_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/data", "PK_LOG_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/logs" },
+      "runtimeArgs": [
+        "tools/livestream-pk/server.mjs"
+      ],
+      "env": {
+        "PK_PORT": "4860",
+        "PK_SHARE_PORT": "4861",
+        "PK_DATA_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/data",
+        "PK_LOG_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/pk-preview/logs"
+      },
       "port": 4860,
+      "autoPort": false
+    },
+    {
+      "name": "vuon-may-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "tools/livestream-pk/garden/server.mjs"
+      ],
+      "env": {
+        "PK_NO_TIKTOK": "1",
+        "PK_GARDEN_PORT": "4862",
+        "PK_GARDEN_SHARE_PORT": "4863",
+        "PK_DATA_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/vuon-may-preview/data",
+        "PK_LOG_DIR": "C:/Users/bungm/AppData/Local/Temp/claude/vuon-may-preview/logs"
+      },
+      "port": 4862,
       "autoPort": false
     }
   ]
