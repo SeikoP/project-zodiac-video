@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeCtx, addUser } from './testkit.mjs';
 import { giftTier, applyGift } from './gifts.mjs';
-import { ensureUser, TIERS } from './world.mjs';
+import { ensureUser } from './world.mjs';
 import { stageOf } from './crops.mjs';
 
 const grow = (plot, progress = 0.1) => { plot.crop = { type: 'rau', progress, ripeAt: null, pest: false, stolen: 0 }; };
@@ -31,7 +31,7 @@ test('star lifts the givers growing crop exactly one stage', () => {
 
 test('rain lifts every growing crop in the garden, not only the givers', () => {
   const k = makeCtx();
-  const a = addUser(k.ctx, 'a'), b = addUser(k.ctx, 'b', { tier: 'cloud-2' });
+  const a = addUser(k.ctx, 'a'), b = addUser(k.ctx, 'b');
   grow(a.plot); grow(b.plot, 0.3);
   applyGift(k.ctx, a.user, { diamonds: 100, count: 1 });
   assert.equal(b.plot.crop.progress, 0.55);
@@ -40,7 +40,7 @@ test('rain lifts every growing crop in the garden, not only the givers', () => {
 
 test('tree plants one golden tree per player however many times they give, and also rains', () => {
   const k = makeCtx();
-  const a = addUser(k.ctx, 'a'), b = addUser(k.ctx, 'b', { tier: 'cloud-2' });
+  const a = addUser(k.ctx, 'a'), b = addUser(k.ctx, 'b');
   grow(b.plot, 0.3);
   applyGift(k.ctx, a.user, { diamonds: 1000, count: 1 });
   applyGift(k.ctx, a.user, { diamonds: 1500, count: 1 });
@@ -73,12 +73,10 @@ test('a giver with no plot is seated first so the gift shows', () => {
   assert.ok(u.seat);
 });
 
-test('when every terrace is full of growing crops the gift still shows, with no plot', () => {
-  const k = makeCtx();
-  for (const { id: tier } of TIERS) for (let n = 0; n < 108; n++) grow(addUser(k.ctx, `${tier}-${n}`, { tier }).plot);
-  const u = ensureUser(k.ctx, { userId: 'late', nickname: 'L', avatar: '' });
-  const r = applyGift(k.ctx, u, { diamonds: 100, count: 1 });
-  assert.equal(r.plotId, null);
-  assert.equal(k.events.at(-1).tier, 'rain');
-  assert.equal(k.events.at(-1).plotId, null);
+test('when all 96 Seed Zone pots have growing crops the gift still shows with no plot', () => {
+  const k=makeCtx();
+  for(let n=0;n<k.ctx.cfg.activeCapacity;n++)grow(addUser(k.ctx,`u-${n}`).plot);
+  const u=ensureUser(k.ctx,{userId:'late',nickname:'L',avatar:''});
+  const r=applyGift(k.ctx,u,{diamonds:100,count:1});
+  assert.equal(r.plotId,null);assert.equal(k.events.at(-1).tier,'rain');assert.equal(k.events.at(-1).plotId,null);
 });

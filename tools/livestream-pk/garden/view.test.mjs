@@ -12,8 +12,8 @@ test('lodOf: dots when zoomed out, plots in the middle, close-up when zoomed in'
   assert.deepEqual([0.2, 0.29, 0.3, 0.4, 1.24, 1.25, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close', 'close']);
 });
 
-test('plotPos agrees with the server layout for every terrace', () => {
-  for (const { id: tier } of TIERS) for (const slot of [0, 7, 35, 107]) assert.deepEqual(plotPos({ tier, slot }, meta), plotCenter(tier, slot, cfg));
+test('plotPos agrees with the Seed Zone module layout', () => {
+  for (const slot of [0, 5, 6, 23, 24, 47, 48, 95]) assert.deepEqual(plotPos({ tier:'cloud-1', slot }, meta), plotCenter('cloud-1', slot, cfg));
 });
 
 test('easeCamera starts at from, ends exactly at to, and passes between', () => {
@@ -34,15 +34,15 @@ test('worldToScreen puts the camera centre in the middle of the frame', () => {
 const owned = (tier, slot, awake = true) => ({ id: `${tier}:${slot}`, tier, slot, owner: { userId: `${tier}${slot}` }, awake });
 
 test('far overview uses dots; normal overview keeps crops readable', () => {
-  const plots = [owned('cloud-1', 0), owned('cloud-2', 3), owned('cloud-3', 5)];
+  const plots = [owned('cloud-1', 0), owned('cloud-1', 24), owned('cloud-1', 48)];
   const far = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.29 }, VP, meta);
   assert.deepEqual([far.detail.length, far.dots.length], [0, 3]);
   const readable = visiblePlots([plots[0]], { x: plotPos(plots[0], meta).x, y: plotPos(plots[0], meta).y, zoom: 0.38 }, VP, meta);
   assert.equal(readable.detail.length, 1);
 });
 
-test('at terrace zoom only plots inside the frame are drawn in detail', () => {
-  const near = owned('cloud-1', 0), far = owned('cloud-4', 0);
+test('at close rack zoom only plots inside the frame are drawn in detail', () => {
+  const near = owned('cloud-1', 0), far = owned('cloud-1', 95);
   const c = plotPos(near, meta);
   const v = visiblePlots([near, far], { x: c.x, y: c.y, zoom: cfg.camera.zoomTier }, VP, meta);
   assert.deepEqual(v.detail.map(p => p.id), ['cloud-1:0']);

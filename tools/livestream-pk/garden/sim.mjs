@@ -14,12 +14,12 @@ const GIFTS = [1, 1, 1, 1, 1, 5, 5, 10, 10, 30, 100, 1000]; // mostly small, lik
 function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const p95 = xs => { const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(s.length * 0.95))] ?? 0; };
 
-export function runLoad({ users = 432, seconds = 120, giftsPerMin = 6, seed = 1 } = {}) {
+export function runLoad({ users = 24, seconds = 120, giftsPerMin = 2, seed = 1 } = {}) {
   const rng = mulberry(seed);
   let t = Date.UTC(2026, 10, 4, 12);
   const events = [];
   const garden = createGarden({ now: () => t, rng, onEvent: e => events.push(e) });
-  const camera = createCamera({ cfg: garden.cfg, now: () => t });
+  const camera = createCamera({ cfg: garden.cfg, now: () => t, getPlots: () => Object.values(garden.state.plots).filter(p => p.owner) });
   const coalescer = createCoalescer({ now: () => t });
   const ids = Array.from({ length: users }, (_, i) => `u${i}`);
   ids.forEach((id, i) => garden.chat({ userId: id, nickname: `Người ${i}`, avatar: '', comment: 'chào' }));
@@ -36,6 +36,7 @@ export function runLoad({ users = 432, seconds = 120, giftsPerMin = 6, seed = 1 
     const a = performance.now();
     garden.tick();
     const shot = camera.tick();
+    if (shot?.kind === 'event' && shot.eventKind) garden.events.present(shot.eventKind);
     tickMs.push(performance.now() - a);
     coalescer.flush();
     frameBytes.push(JSON.stringify(garden.changes(seen)).length);
@@ -65,7 +66,7 @@ async function live(url, users, seconds) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : fallback; };
-  const users = Number(arg('users', 432)), seconds = Number(arg('seconds', 120)), url = arg('url', '');
+  const users = Math.min(96, Number(arg('users', 24))), seconds = Number(arg('seconds', 120)), url = arg('url', '');
   if (url) await live(url, users, seconds);
   else console.log(runLoad({ users, seconds }));
 }
