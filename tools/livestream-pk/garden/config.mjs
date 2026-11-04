@@ -1,11 +1,11 @@
 // Every number of the Vườn Mây spec in one place; config.json's "garden" section overrides any of them.
 export const GARDEN_DEFAULTS = Object.freeze({
   // One visible Seed Zone, tuned for a real <100-viewer LIVE.
-  // Four rack modules × 24 pots = 96 active seats. Legacy cloud-* saves migrate into this zone.
-  tierWidth: 2580, tierHeight: 2200, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
-  activeCapacity: 96, modulesPerRow: 2, moduleCapacity: 24, potsPerShelf: 6, shelvesPerModule: 4,
+  // One continuous rack, 16 shelves × 6 pots = 96 active seats. Legacy cloud-* saves migrate into this zone.
+  tierWidth: 1320, tierHeight: 3900, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
+  activeCapacity: 96, modulesPerRow: 1, moduleCapacity: 96, potsPerShelf: 6, shelvesPerModule: 16,
   potSpacingX: 170, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 200,
-  zoneMarginX: 220, zoneMarginY: 250, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
+  zoneMarginX: 230, zoneMarginY: 260, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000, plotSyncMs: 5000,
@@ -31,7 +31,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
     stealHoldMs: 6000, levelHoldMs: 5600, eventHoldMs: 7600, stableMinMs: 4400,
     queueMax: 7, giftTtlMs: 42000, ttlMs: 28000, mergeMs: 2200,
     quotaWindowMs: 60000, quotaMin: 2, easeMs: 1450, overviewEaseMs: 1700,
-    zoomWorld: 0.38, zoomTier: 0.82, zoomClose: 1.5,
+    zoomWorld: 0.3, zoomTier: 0.82, zoomClose: 1.5,
   }),
 });
 
