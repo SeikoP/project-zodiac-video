@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, replace
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -37,7 +38,7 @@ from .runner import run_structured_command, run_payload_audit_with_cache_recover
 from .progress import tracked_units, reset_unit_progress, track_render_segment_frames
 from .state import save_state
 from .timing import TimingArtifact, ensure_timing_artifact
-from .voice import VoiceArtifact, ensure_voice_artifact
+from .voice import VoiceArtifact, ensure_voice_artifact, request_scene_voice_regeneration
 
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -656,6 +657,24 @@ class StudioV2Executor:
             code="AUTHORING_IR_INVALID",
             stage="PACKAGE",
         )
+
+        # Backfill scene-only recovery for workspaces that failed timing before
+        # the regeneration-request mechanism existed.
+        prior_timing = controller.state.steps[TIMING]
+        prior_error = prior_timing.error if isinstance(prior_timing.error, dict) else {}
+        prior_message = str(prior_error.get("message") or "")
+        if (
+            prior_timing.status == "FAILED"
+            and prior_error.get("code") == "TIMING_ALIGNMENT_FAILED"
+            and "ALIGNMENT_MISMATCH" in prior_message
+        ):
+            match = re.search(r"\b(S\d+)(?:\.wav|\b)", prior_message)
+            if match:
+                request_scene_voice_regeneration(
+                    workspace,
+                    match.group(1),
+                    reason="TIMING_ALIGNMENT_FAILED",
+                )
 
         self._begin_step(VOICE, cancel_event)
         try:
