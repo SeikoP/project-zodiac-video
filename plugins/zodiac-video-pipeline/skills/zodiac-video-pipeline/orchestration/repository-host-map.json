@@ -1,0 +1,31 @@
+{
+  "format": "zodiac-repository-host-map@1",
+  "note": "Repository-checkout provider guidance. Active phase manifests and capability registry remain authoritative. This mapping never waives capability invocation, validators, receipts or approvals.",
+  "capabilities": {
+    "exa_discovery": {
+      "use": "Invoke the repository-configured Exa provider adapter for discovery. If unavailable, follow only the fallback order in the active phase manifest and capability registry.",
+      "receipt": "proof.kind=tool_result",
+      "guidance": "references/research-and-viral-tools.md"
+    },
+    "parallel_verify": {
+      "use": "Invoke the repository-configured independent verification provider. If unavailable, follow only the fallback order in the active phase manifest and capability registry.",
+      "receipt": "proof.kind=tool_result",
+      "guidance": "references/research-and-viral-tools.md"
+    },
+    "firecrawl_extract": {
+      "use": "Invoke the repository-configured Firecrawl adapter only when this conditional capability is active. If unavailable, block as required by the manifest.",
+      "receipt": "proof.kind=tool_result",
+      "guidance": "references/research-and-viral-tools.md"
+    },
+    "vidiq_reference_analysis": {
+      "use": "Invoke the repository-configured vidIQ adapter only when this conditional capability is active. If unavailable, block and request the required provider; do not substitute.",
+      "receipt": "proof.kind=tool_result",
+      "guidance": "references/research-and-viral-tools.md"
+    },
+    "viral_analysis": {
+      "use": "Use the repository-approved viral-analysis guidance only when the capability is active. Treat its output as editorial guidance, never as Zodiac evidence.",
+      "receipt": "proof.kind=tool_result",
+      "guidance": "references/research-and-viral-tools.md"
+    }
+  }
+}

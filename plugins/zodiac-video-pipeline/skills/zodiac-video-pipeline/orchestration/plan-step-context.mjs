@@ -10,7 +10,7 @@ import {conditionApplies} from '../core/policy/resolve-capability-route.mjs';
 import {loadCurrentPolicy} from '../core/policy/current-policy.mjs';
 import {capabilitiesForStep} from '../core/policy/capability-registry.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const hostMap=JSON.parse(readFileSync(path.join(skill,'orchestration/chatgpt-host-map.json'),'utf8'));
+const hostMap=JSON.parse(readFileSync(path.join(skill,'orchestration/repository-host-map.json'),'utf8'));
 const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02-visual-production.json','03-handoff':'03-handoff.json'};
 export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',role='draft',selected_asset_ids=null,meme_selected=flags.meme_selected??false,environment_mode='canvas',policy=null,asset_needs=[],capabilityIndex=null,coverageMatrix=null}={}) {
  const step=manifest?.steps?.find(s=>s.id===stepId);

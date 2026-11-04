@@ -12,8 +12,8 @@ A copied Studio prompt is a snapshot of the selected workspace, episode scope, t
 
 Use the installed `defaultPrompt`, router, current phase manifest and `plan-step-context.mjs`. Derive the first incomplete step from the current state and manifest; do not blindly repeat the copied step pointer. Honor that step's active capabilities, required inputs/outputs, context boundaries and gates; validate durable outputs and receipts before committing the step. The linked series tracker reports progress only; it does not approve narration, visuals, cover or a phase transition.
 
-## Execution source after refactor
-On ChatGPT, read orchestration/execution-bootstrap.md before native execution and use a verified **phase-scoped execution bundle** for the current phase. Never clone/download the whole repository as runtime context. A repository file listing, skill read, or connector response is not executable source on the host filesystem. Source transport must not bypass the active router, phase manifest, validator order, source hashes, or review gates.
+## Execution source in the repository
+When operating from this repository checkout, read orchestration/execution-bootstrap.md and run the verified scripts directly from this checkout. Pin every execution to the current Git commit and verify source hashes before native compilation. Load only the bounded references returned by plan-step-context.mjs; the full repository is not episode context. Repository execution does not waive the active router, phase manifest, validator order, source hashes, review gates or genuine user approvals. The ChatGPT-installed variant instead uses a verified phase-scoped execution bundle; do not apply repository-checkout transport instructions inside ChatGPT.
 
 Phase 01: use references/episode-formats.md and references/phase01-briefing.md. Distinguish episode format from the character_deconstruction story engine. Use bounded independent evidence, one coherent Story Spine and authentic Content Review. Narrative 2.1 is for fresh scoped episodes.
 
@@ -35,4 +35,4 @@ Load only what the current task needs.
 | --- | --- |
 | Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
 | Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |
-| Capability providers and fallbacks | references/chatgpt-runtime.md |
+| Repository execution and capability providers | references/repository-runtime.md |

@@ -11,7 +11,7 @@ test('every step plan resolves to files on disk; host URIs are never listed as r
   for(const ref of plan.required_references){assert.ok(!/^[a-z]+:\/\//i.test(ref),`${p}/${s} lists host URI ${ref}`);assert.ok(existsSync(path.join(skill,ref)),`${p}/${s} missing ${ref}`);}
   assert.ok(existsSync(path.join(skill,plan.phase_guidance)),plan.phase_guidance);}
 });
-test('ChatGPT host notes cover every external capability the evidence step requires',async()=>{
+test('Repository host notes cover every external capability the evidence step requires',async()=>{
  const plan=await loadStepContext('01-content','evidence',(await template()).flags);
  assert.deepEqual(plan.host_capability_notes.map(n=>n.capability_id).sort(),['exa_discovery','parallel_verify']);
  assert.ok(plan.host_guidance_references.length>=1);
