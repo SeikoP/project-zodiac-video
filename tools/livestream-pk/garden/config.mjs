@@ -1,11 +1,12 @@
 // Every number of the Vườn Mây spec in one place; config.json's "garden" section overrides any of them.
 export const GARDEN_DEFAULTS = Object.freeze({
   // One visible Seed Zone, tuned for a real <100-viewer LIVE.
-  // One continuous rack, 16 shelves × 6 pots = 96 active seats. Legacy cloud-* saves migrate into this zone.
-  tierWidth: 1320, tierHeight: 3900, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
-  activeCapacity: 96, modulesPerRow: 1, moduleCapacity: 96, potsPerShelf: 6, shelvesPerModule: 16,
-  potSpacingX: 170, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 200,
-  zoneMarginX: 230, zoneMarginY: 260, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
+  // One Seed Zone rendered as two visual wings × 8 shelves × 6 pots = 96 active seats.
+  tierWidth: 1940, tierHeight: 2300, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
+  activeCapacity: 96, modulesPerRow: 1, moduleCapacity: 96, potsPerShelf: 6, shelvesPerModule: 8,
+  rackWings: 2, shelvesPerWing: 8, rackWingGapX: 220,
+  potSpacingX: 140, shelfSpacingY: 250, moduleGapX: 220, moduleGapY: 200,
+  zoneMarginX: 180, zoneMarginY: 260, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000, plotSyncMs: 5000,

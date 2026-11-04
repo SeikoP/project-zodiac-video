@@ -71,13 +71,26 @@ test('locking clears pending beats',()=>{
  assert.equal(r.cam.state().queue.length,0);assert.equal(r.cam.tick(),null);
 });
 
-test('overview fits the complete 16-shelf structure even with only one occupant', () => {
+test('overview fits the complete two-wing structure even with only one occupant', () => {
   const r = rig([{ tier: 'cloud-1', slot: 0, owner: 'a' }]);
   const shot = r.cam.tick();
   const firstY = cfg.zoneMarginY - 166;
-  const lastY = cfg.zoneMarginY + 15 * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap + 54;
+  const lastY = cfg.zoneMarginY + (cfg.shelvesPerWing - 1) * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap + 54;
   const screenY = world => (world - shot.y) * shot.zoom + 960;
-  assert.ok(screenY(firstY) > 260, 'first shelf stays below top HUD');
-  assert.ok(screenY(lastY) < 1760, 'last shelf stays above lower HUD');
+  assert.ok(screenY(firstY) > 240, 'rack stays below top HUD');
+  assert.ok(screenY(lastY) < 1600, 'rack stays above lower feed area');
   assert.equal(shot.zoom >= cfg.camera.zoomWorld, true);
+});
+
+test('overview spreads both visual rack wings across most of the portrait play area', () => {
+  const plots = [{tier:'cloud-1',slot:0,owner:'a'},{tier:'cloud-1',slot:48,owner:'b'}];
+  const r = rig(plots), shot = r.cam.tick();
+  const left = { x: cfg.zoneMarginX, y: cfg.zoneMarginY };
+  const right = { x: cfg.zoneMarginX + (cfg.potsPerShelf - 1) * cfg.potSpacingX + (cfg.rackWingGapX ?? 0), y: cfg.zoneMarginY };
+  const bottomLeft = { x: left.x, y: cfg.zoneMarginY + 7 * cfg.shelfSpacingY };
+  const sx = p => (p.x - shot.x) * shot.zoom + 540;
+  const sy = p => (p.y - shot.y) * shot.zoom + 960;
+  assert.ok(sx(right) - sx(left) > 420, 'left/right wings visibly separate');
+  assert.ok(sy(bottomLeft) - sy(left) > 700, 'eight shelves use substantial vertical space');
+  assert.ok(shot.zoom >= .45, 'overview no longer shrinks into a thin tower');
 });

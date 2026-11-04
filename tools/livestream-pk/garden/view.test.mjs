@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lodOf, easeCamera, visiblePlots, worldToScreen, plotPos, createAvatarCache } from '../public/garden/view.js';
+import * as view from '../public/garden/view.js';
+import fs from 'node:fs';
+const { lodOf, easeCamera, visiblePlots, worldToScreen, plotPos, createAvatarCache } = view;
 import { gardenConfig } from './config.mjs';
 import { TIERS, plotCenter } from './world.mjs';
 
@@ -78,4 +80,46 @@ test('sleeping plots are excluded entirely from rendering', () => {
   const v = visiblePlots([awake, sleeping], { x: c.x, y: c.y, zoom: .5 }, VP, meta);
   assert.deepEqual(v.detail.map(p => p.id), [awake.id]);
   assert.equal(v.dots.length, 0);
+});
+
+test('logical row eight wraps to a right visual wing at the same vertical shelf', () => {
+  const left = plotPos(owned('cloud-1', 0), meta);
+  const right = plotPos(owned('cloud-1', 48), meta);
+  assert.ok(right.x - left.x > cfg.potSpacingX * 5);
+  assert.equal(right.y, left.y);
+});
+
+test('overview identity is an adaptive nickname and never a public slot code', () => {
+  assert.equal(typeof view.displayNickname, 'function');
+  assert.equal(view.displayNickname('Nguyễn Minh Anh', .5), 'Nguyễn…');
+  assert.equal(view.displayNickname('Nguyễn Minh Anh', .82), 'Nguyễn Min…');
+  assert.equal(view.displayNickname('Mai', .5), 'Mai');
+  assert.equal(view.displayNickname('🌱Vườn Mây', .5).startsWith('🌱'), true);
+  assert.equal(view.displayNickname('', .5), 'Người xem');
+});
+
+test('Garden join notices do not expose slot-number identity', () => {
+  const source = fs.readFileSync(new URL('../public/garden/garden.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /chậu #|padStart\(3, '0'\)/);
+});
+
+test('rackGeometry describes one outer frame containing two separated shelf wings', () => {
+  assert.equal(typeof view.rackGeometry, 'function');
+  const rack = view.rackGeometry(cfg);
+  assert.equal(rack.wings.length, 2);
+  assert.ok(rack.wings[0].right < rack.wings[1].left, 'visual wings have a readable center gap');
+  assert.ok(rack.outer.left < plotPos(owned('cloud-1', 0), meta).x);
+  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 95), meta).x);
+  assert.equal(rack.wings[0].top, rack.wings[1].top);
+  assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
+  assert.ok(rack.outer.right - rack.outer.left > 1500, 'greenhouse fills most of the usable width before camera scaling');
+});
+
+test('dense overview label width always leaves a gap between adjacent pots', () => {
+  assert.equal(typeof view.overviewLabelWidth, 'function');
+  for (const zoom of [.45, .55, .65, .82]) {
+    const width = view.overviewLabelWidth(cfg, zoom);
+    assert.ok(width + 6 <= cfg.potSpacingX * zoom, `labels overlap at zoom ${zoom}`);
+    assert.ok(width >= 48, 'labels remain large enough to carry a short nickname');
+  }
 });

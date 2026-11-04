@@ -1,12 +1,45 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
 export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
+export function displayNickname(nickname, zoom = 1) {
+  const clean = String(nickname ?? '').trim();
+  if (!clean) return 'Người xem';
+  const max = zoom < .65 ? 6 : zoom < 1.25 ? 10 : 16;
+  const chars = [...clean];
+  if (chars.length <= max) return clean;
+  return chars.slice(0, max).join('').trimEnd() + '…';
+}
+
+export function overviewLabelWidth(cfg, zoom) {
+  const spacing = Math.max(0, Number(cfg?.potSpacingX) || 0) * Math.max(0, Number(zoom) || 0);
+  return Math.max(48, Math.min(112, spacing - 6));
+}
+
 export function slotLayout(slot, cfg) {
-  const row = Math.floor(slot / cfg.potsPerShelf);
+  const logicalRow = Math.floor(slot / cfg.potsPerShelf);
+  const wing = Math.floor(logicalRow / cfg.shelvesPerWing);
+  const row = logicalRow % cfg.shelvesPerWing;
   const col = slot % cfg.potsPerShelf;
-  return { module: 0, moduleCol: 0, moduleRow: 0, row, col,
-    x: cfg.zoneMarginX + col * cfg.potSpacingX,
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  return { module: 0, moduleCol: 0, moduleRow: 0, logicalRow, wing, row, col,
+    x: cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX) + col * cfg.potSpacingX,
     y: cfg.zoneMarginY + row * cfg.shelfSpacingY };
+}
+
+export function rackGeometry(cfg) {
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const top = cfg.zoneMarginY - 166;
+  const bottom = cfg.zoneMarginY + (cfg.shelvesPerWing - 1) * cfg.shelfSpacingY
+    + cfg.potBottomOffset + cfg.potShelfGap + 54;
+  const wings = Array.from({ length: cfg.rackWings }, (_, wing) => {
+    const firstX = cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX);
+    return { index: wing, firstX, left: firstX - 76, right: firstX + spanX + 76, top, bottom };
+  });
+  return {
+    spanX,
+    wings,
+    outer: { left: wings[0].left, right: wings.at(-1).right, top, bottom },
+  };
 }
 
 export function plotPos(plot, { cfg }) {

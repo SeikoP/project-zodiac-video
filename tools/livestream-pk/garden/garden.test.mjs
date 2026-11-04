@@ -148,3 +148,9 @@ test('view data exposes pot tier and crop visual state', () => {
   assert.equal(plot.crop.variant, 'common');
   assert.equal(plot.crop.fertilized, false);
 });
+
+test('meta exposes the two-wing rack geometry required by the browser renderer', () => {
+  const s = setup();
+  const cfg = s.garden.meta().cfg;
+  assert.deepEqual([cfg.rackWings, cfg.shelvesPerWing, cfg.rackWingGapX], [2, 8, 220]);
+});

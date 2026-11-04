@@ -104,7 +104,8 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: {
       tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow,
       plotCell: ctx.cfg.plotCell, activeCapacity: ctx.cfg.activeCapacity, modulesPerRow: ctx.cfg.modulesPerRow, moduleCapacity: ctx.cfg.moduleCapacity,
-      potsPerShelf: ctx.cfg.potsPerShelf, shelvesPerModule: ctx.cfg.shelvesPerModule, potSpacingX: ctx.cfg.potSpacingX, shelfSpacingY: ctx.cfg.shelfSpacingY,
+      potsPerShelf: ctx.cfg.potsPerShelf, shelvesPerModule: ctx.cfg.shelvesPerModule, rackWings: ctx.cfg.rackWings, shelvesPerWing: ctx.cfg.shelvesPerWing,
+      rackWingGapX: ctx.cfg.rackWingGapX, potSpacingX: ctx.cfg.potSpacingX, shelfSpacingY: ctx.cfg.shelfSpacingY,
       moduleGapX: ctx.cfg.moduleGapX, moduleGapY: ctx.cfg.moduleGapY, zoneMarginX: ctx.cfg.zoneMarginX, zoneMarginY: ctx.cfg.zoneMarginY,
       potScale: ctx.cfg.potScale, potBottomOffset: ctx.cfg.potBottomOffset, potShelfGap: ctx.cfg.potShelfGap,
       tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera,
