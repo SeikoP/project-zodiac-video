@@ -31,7 +31,7 @@ addEventListener('resize', fit); fit();
 
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
-let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null, welcomed = false;
+let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
 const visualEvent = () => serverEvent && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
@@ -174,7 +174,6 @@ function onMessage(event, data) {
     hint.textContent = 'Bình luận để nhận chậu · trồng · tưới · hái';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
     music.resume();
-    if (!welcomed) { welcomed = true; say('Vườn Mây đang mở · bình luận để nhận chậu', 6500); }
   } else if (event === 'reset') {
     plots.clear(); floaters.length = 0; serverEvent = null; presentedEventKind = null;
     say('Vườn mô phỏng đã làm mới', 4200);
@@ -630,7 +629,7 @@ function drawFloaters(now) {
 let lastFrameAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!meta || now - lastFrameAt < 1000 / 30 - 2) return;
+  if (!meta || now - lastFrameAt < 1000 / 45 - 2) return;
   lastFrameAt = now;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[visualEvent()?.kind] ?? '#E7EFE7';
