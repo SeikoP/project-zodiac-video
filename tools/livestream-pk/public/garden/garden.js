@@ -176,14 +176,14 @@ function onMessage(event, data) {
     music.resume();
     if (!welcomed) { welcomed = true; say('Vườn Mây đang mở · bình luận để nhận chậu', 6500); }
   } else if (event === 'reset') {
-    plots.clear(); floaters.length = 0; serverEvent = null;
+    plots.clear(); floaters.length = 0; serverEvent = null; presentedEventKind = null;
     say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
       if (!serverEvent) presentedEventKind = null;
-      music.setMood(shownEvent?.kind === 'golden' || shownEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
     }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
