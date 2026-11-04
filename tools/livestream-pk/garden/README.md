@@ -84,3 +84,14 @@ The active scene is now presence-driven rather than seat-driven. A seated player
 Player level is visible through five pot families: **Đất nung → Men lá → Viền đồng → Bệ ngọc → Tinh tú** at levels 1 / 3 / 5 / 7 / 9.
 
 Planting can produce **Thường / Sum suê / Ánh kim** crop variants. Higher-level players have better variant odds; variants have intentionally different silhouettes and harvest multipliers. The care loop also adds **bón phân** (one-time paid growth/yield boost) and **nhổ cỏ** (weeds slow growth and reduce yield until cleared), alongside watering, pests, harvesting, stealing and protection.
+
+
+### Seed Zone v5
+
+The live-facing garden is now one **Khu Gieo Hạt** with four 24-seat rack modules (A–D), arranged 2×2. Each module has four shelves with six pots per shelf. Horizontal pot spacing and vertical shelf spacing are independent; pots anchor to an explicit shelf surface, and a thin shelf front lip is rendered after the pots so the rack no longer cuts through plants.
+
+Legacy cloud-2..4 saves migrate into the 96-seat Seed Zone while preserving user progression and crop state for the most recent seated players.
+
+Camera joins no longer move the camera. Join is an overview pulse at the new pot. Presentation beats are capped at seven and each close shot has separate travel and stable-reading time; the stable window is never consumed by camera motion.
+
+Simulator room controls now **set** 12/24/48/72/96 players instead of accumulating bots. Normal/Busy/Stress profiles separate realistic LIVE review from load testing.

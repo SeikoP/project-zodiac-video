@@ -27,8 +27,8 @@ export const GARDEN_DEFAULTS = Object.freeze({
   merchantMs: 60000, merchantMult: 2, goldenMs: 30000, goldenMult: 2,
   // camera
   camera: Object.freeze({
-    holdMinMs: 5200, welcomeHoldMs: 6000, giftHoldMs: 7000, lowGiftHoldMs: 5600,
-    stealHoldMs: 6500, levelHoldMs: 6000, eventHoldMs: 9000,
+    holdMinMs: 4600, welcomeHoldMs: 0, giftHoldMs: 6200, lowGiftHoldMs: 5000,
+    stealHoldMs: 6000, levelHoldMs: 5600, eventHoldMs: 7600, stableMinMs: 4400,
     queueMax: 7, giftTtlMs: 42000, ttlMs: 28000, mergeMs: 2200,
     quotaWindowMs: 60000, quotaMin: 2, easeMs: 1450, overviewEaseMs: 1700,
     zoomWorld: 0.38, zoomTier: 0.82, zoomClose: 1.5,

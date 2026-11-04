@@ -59,77 +59,61 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   garden = newGarden();
   camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
 
-  // Simulator room director: creates persistent fake viewers and lets them play naturally
-  // so the overlay can be reviewed as a living room rather than a one-person button demo.
-  const BOT_NAMES = ['An','Bảo','Chi','Duy','Giang','Hà','Hải','Hân','Huy','Khanh','Lan','Linh','Mai','Minh','My','Nam','Nga','Ngân','Ngọc','Nhi','Phúc','Quân','Quỳnh','Sơn','Thảo','Trang','Trúc','Tuấn','Vy','Yến'];
-  const AUTO_ACTIONS = ['tưới', 'tưới', 'bón phân', 'nhổ cỏ', 'bắt sâu', 'vườn', 'trộm'];
-  let autoTimer = null, autoSeq = 0, autoCursor = 0, autoPulse = 0, autoFeature = 0, autoFeatureBoosts = 0;
-  const autoUsers = new Map();
-  const autoStatus = () => ({ running: Boolean(autoTimer), bots: autoUsers.size });
-  const autoUser = i => {
-    const n = autoSeq++;
-    return { userId: `auto-${n}`, nickname: `${BOT_NAMES[n % BOT_NAMES.length]} ${Math.floor(n / BOT_NAMES.length) + 1}`, avatar: '' };
+  // Simulator room director: room-size profiles model a real LIVE instead of accumulating stress bots forever.
+  const BOT_NAMES=['An','Bảo','Chi','Duy','Giang','Hà','Hải','Hân','Huy','Khanh','Lan','Linh','Mai','Minh','My','Nam','Nga','Ngân','Ngọc','Nhi','Phúc','Quân','Quỳnh','Sơn','Thảo','Trang','Trúc','Tuấn','Vy','Yến'];
+  const AUTO_PROFILES={
+    normal:{id:'normal',intervalMs:1200,actionsPerPulse:2,giftEvery:55,mediumGiftEvery:0,stealEvery:32},
+    busy:{id:'busy',intervalMs:1000,actionsPerPulse:4,giftEvery:32,mediumGiftEvery:90,stealEvery:22},
+    stress:{id:'stress',intervalMs:700,actionsPerPulse:8,giftEvery:12,mediumGiftEvery:45,stealEvery:12},
   };
-  const addAutoUsers = count => {
-    if (!simulator) throw new Error('simulator-only');
-    const added = [];
-    for (let i = 0; i < Math.max(1, Math.min(120, Number(count) || 12)); i++) {
-      const user = autoUser(i);
-      autoUsers.set(user.userId, user);
-      // Match /api/sim IDs so manual and autoplay simulator users share the same namespace.
-      garden.chat({ ...user, userId: 'sim:' + user.userId, comment: 'trồng rau' });
-      added.push(user);
-    }
+  let autoTimer=null,autoSeq=0,autoCursor=0,autoPulse=0,autoProfile='normal';
+  const autoUsers=new Map();
+  const autoStatus=()=>({running:Boolean(autoTimer),bots:autoUsers.size,profile:autoProfile,target:autoUsers.size});
+  const autoUser=()=>{const n=autoSeq++;return{userId:`auto-${n}`,nickname:`${BOT_NAMES[n%BOT_NAMES.length]} ${Math.floor(n/BOT_NAMES.length)+1}`,avatar:''};};
+  const addOneAuto=()=>{const user=autoUser();autoUsers.set(user.userId,user);garden.chat({...user,userId:'sim:'+user.userId,comment:'trồng rau'});return user;};
+  const removeOneAuto=()=>{
+    const entry=[...autoUsers.entries()].at(-1); if(!entry)return false;
+    const [id,user]=entry,stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
+    if(plot){plot.owner=null;plot.crop=null;plot.sleeping=false;plot.deco=[];plot.ver=++state.ver;}
+    if(stored)stored.seat=null;
+    autoUsers.delete(id);return true;
+  };
+  const setAutoRoom=(count,profile=autoProfile)=>{
+    if(!simulator)throw new Error('simulator-only');
+    const target=Math.max(1,Math.min(garden.cfg.activeCapacity,Number(count)||24));
+    if(AUTO_PROFILES[profile])autoProfile=profile;
+    while(autoUsers.size<target)addOneAuto();
+    while(autoUsers.size>target)removeOneAuto();
     saver.markDirty();
-    return added.length;
-  };
-  const autoStep = () => {
-    if (!simulator || !autoUsers.size) return;
-    const users = [...autoUsers.values()];
-    const batch = Math.max(1, Math.min(12, Math.ceil(users.length / 8)));
-    for (let k = 0; k < batch; k++) {
-      const user = users[autoCursor++ % users.length];
-      const stored = state.users['sim:' + user.userId];
-      const seat = stored?.seat;
-      const plot = seat && state.plots[`${seat.tier}:${seat.slot}`];
-      let comment;
-      if (!plot?.crop) comment = stored?.level >= 2 && (autoCursor + k) % 5 === 0 ? 'trồng hướng dương' : 'trồng rau';
-      else if (plot.crop.progress >= 1) comment = 'hái';
-      else if (plot.crop.pest) comment = 'bắt sâu';
-      else if (plot.crop.weeds) comment = 'nhổ cỏ';
-      else if (!plot.crop.fertilized && stored?.gold >= garden.cfg.fertilizeCost && (autoCursor + k) % 4 === 0) comment = 'bón phân';
-      else comment = AUTO_ACTIONS[(autoCursor + k * 3) % AUTO_ACTIONS.length];
-      garden.chat({ ...user, userId: 'sim:' + user.userId, comment });
-    }
-    // Review pulse: accelerate one featured pot through its real gift/stage rules so a
-    // tester sees a complete plant → grow → ripe → harvest loop within seconds, not minutes.
-    autoPulse++;
-    if (autoPulse % 5 === 0) {
-      const featuredPool = users.slice(0, Math.min(users.length, 8));
-      const user = featuredPool[autoFeature % featuredPool.length];
-      const stored = state.users['sim:' + user.userId];
-      const seat = stored?.seat;
-      const plot = seat && state.plots[`${seat.tier}:${seat.slot}`];
-      if (plot?.crop && plot.crop.progress < 1) {
-        garden.gift({ ...user, userId: 'sim:' + user.userId, diamonds: 5, count: 1 });
-        if (++autoFeatureBoosts >= 3) { autoFeature++; autoFeatureBoosts = 0; }
-      } else {
-        autoFeature++; autoFeatureBoosts = 0;
-      }
-    }
-    // A rarer medium gift exercises the event/overview treatment as well.
-    if (autoPulse % 45 === 0) {
-      const user = users[autoPulse % users.length];
-      garden.gift({ ...user, userId: 'sim:' + user.userId, diamonds: 100, count: 1 });
-    }
-  };
-  const startAuto = () => {
-    if (!simulator) throw new Error('simulator-only');
-    if (!autoUsers.size) addAutoUsers(24);
-    if (!autoTimer) autoTimer = setInterval(autoStep, 900);
     return autoStatus();
   };
-  const stopAuto = () => { if (autoTimer) clearInterval(autoTimer); autoTimer = null; return autoStatus(); };
+  const autoStep=()=>{
+    if(!simulator||!autoUsers.size)return;
+    const profile=AUTO_PROFILES[autoProfile]??AUTO_PROFILES.normal,users=[...autoUsers.values()];
+    const batch=Math.min(users.length,profile.actionsPerPulse);
+    for(let k=0;k<batch;k++){
+      const user=users[autoCursor++%users.length],stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
+      let comment;
+      if(!plot?.crop)comment=stored?.level>=2&&(autoCursor+k)%6===0?'trồng hướng dương':'trồng rau';
+      else if(plot.crop.progress>=1)comment='hái';
+      else if(plot.crop.pest)comment='bắt sâu';
+      else if(plot.crop.weeds)comment='nhổ cỏ';
+      else if(!plot.crop.fertilized&&stored?.gold>=garden.cfg.fertilizeCost&&(autoCursor+k)%5===0)comment='bón phân';
+      else if(profile.stealEvery&&autoPulse%profile.stealEvery===0&&k===0)comment='trộm';
+      else comment=(autoCursor+k)%3===0?'vườn':'tưới';
+      garden.chat({...user,userId:'sim:'+user.userId,comment});
+    }
+    autoPulse++;
+    if(profile.giftEvery&&autoPulse%profile.giftEvery===0){
+      const user=users[autoPulse%users.length];garden.gift({...user,userId:'sim:'+user.userId,diamonds:5,count:1});
+    }
+    if(profile.mediumGiftEvery&&autoPulse%profile.mediumGiftEvery===0){
+      const user=users[(autoPulse+3)%users.length];garden.gift({...user,userId:'sim:'+user.userId,diamonds:100,count:1});
+    }
+  };
+  const restartAutoTimer=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=setInterval(autoStep,(AUTO_PROFILES[autoProfile]??AUTO_PROFILES.normal).intervalMs);};
+  const startAuto=(profile=autoProfile)=>{if(!simulator)throw new Error('simulator-only');if(AUTO_PROFILES[profile])autoProfile=profile;if(!autoUsers.size)setAutoRoom(24,autoProfile);if(!autoTimer)restartAutoTimer();return autoStatus();};
+  const stopAuto=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=null;return autoStatus();};
   const meta = () => ({ ...garden.meta(), music: { calm: music.calm, upbeat: music.upbeat } });
   const status = () => {
     const plots = Object.values(state.plots), crops = plots.filter(p => p.owner && p.crop);
@@ -155,7 +139,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   };
   const reset = async () => {
     if (!simulator) throw new Error('reset-simulator-only');
-    stopAuto(); autoUsers.clear(); autoSeq = autoCursor = autoPulse = autoFeature = autoFeatureBoosts = 0;
+    stopAuto(); autoUsers.clear(); autoSeq = autoCursor = autoPulse = 0; autoProfile = 'normal';
     Object.assign(state, emptyGardenState(now()));
     coalescer = createCoalescer({ now });
     garden = newGarden();
@@ -200,8 +184,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     },
     'sim-room': b => {
       const action = String(b.action ?? 'status');
-      if (action === 'add') { const added = addAutoUsers(b.count); return { ...autoStatus(), added }; }
-      if (action === 'start') return startAuto();
+      if (action === 'add' || action === 'set') return setAutoRoom(b.count, String(b.profile ?? autoProfile));
+      if (action === 'start') return startAuto(String(b.profile ?? autoProfile));
       if (action === 'stop') return stopAuto();
       if (action === 'burst') { autoStep(); return autoStatus(); }
       return autoStatus();

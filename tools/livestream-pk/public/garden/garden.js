@@ -101,9 +101,9 @@ function handleFx(fx) {
   if (!C) return;
   switch (fx.type) {
     case 'joined': {
-      sfx('join', 0, { duck: .86, ms: 700 });
-      const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'khu vườn';
-      if (fx.count > 2) say(`${fx.count} người vừa vào · ${tier}`, 4500);
+      sfx('sparkle', 0, { duck:.9, ms:500 });
+      if (fx.plotId) float('sparkle', fx.plotId);
+      if (fx.count > 3) say(`${fx.count} người vừa nhận chậu`, 3600);
       break;
     }
     case 'gift':
@@ -171,7 +171,7 @@ async function refreshStatus() {
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
-    hint.textContent = 'Bình luận để nhận chậu · trồng · tưới · hái';
+    hint.textContent = 'Mỗi người = 1 chậu · bình luận để vào Khu Gieo Hạt';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
     music.resume();
   } else if (event === 'reset') {
@@ -213,8 +213,10 @@ function onMessage(event, data) {
       sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
     }
     focusPlot = data.plotId ?? null;
-    focusAt = performance.now(); focusMs = data.holdMs ?? 5200;
-    shotAt = performance.now();
+    const now = performance.now();
+    focusAt = now + Math.max(0, Number(data.travelMs) || cameraEaseMs);
+    focusMs = Math.max(0, Number(data.stableMs) || 4600);
+    shotAt = now;
   }
 }
 
@@ -614,7 +616,7 @@ function renderEventHero() {
 }
 
 function drawFocus(now) {
-  if (!focusPlot || now - focusAt > focusMs) return;
+  if (!focusPlot || now < focusAt || now - focusAt > focusMs) return;
   const plot = plots.get(focusPlot);
   if (!plot) return;
   const at = worldToScreen(plotPos(plot, meta), cam, VP), age = (now - focusAt) / Math.max(1, focusMs);
