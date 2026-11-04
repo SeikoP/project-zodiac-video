@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 const feed = $('eventFeed');
 const chatOverlay = $('chatOverlay');
+import { TEAMS } from '/teams.js';
 let viewers = 1200, comments = 0, likes = 0, scenarioRun = 0, toastTimer;
 
 function clock() {
@@ -177,7 +178,7 @@ async function runScenario(name) {
   const step = async fn => { if (!alive()) return; await fn(); };
   try {
     if (name === 'warmup') {
-      for (const [person, comment] of [['Minh', 'bạch dương'], ['An', 'xin quẻ'], ['Huy', 'ước thi đỗ'], ['Linh', 'sư tử']]) {
+      for (const [person, comment] of [['Minh', 'đỏ'], ['An', 'vàng'], ['Huy', 'xanh lá'], ['Linh', 'xanh dương']]) {
         await step(() => joinRoom(person)); await wait(300);
         await step(() => sendComment(comment, person)); await wait(550);
       }
@@ -185,7 +186,7 @@ async function runScenario(name) {
       await api('sim/crowd', { count: 30, giftRate: 0.12 });
       if (!alive()) return;
       for (let i = 1; i <= 8; i++) {
-        await step(() => sendComment(['sư tử', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'song ngư'][i % 6], 'Fan' + i));
+        await step(() => sendComment(['đỏ', 'xin quẻ', 'nhảy', 'ước bình an', 'A', 'xanh dương'][i % 6], 'Fan' + i));
         await wait(140);
       }
       log('Đã tạo 30 người xem giả lập');
@@ -207,7 +208,7 @@ async function runScenario(name) {
       await step(() => sendComment('đánh nó', 'Mai'));
     } else if (name === 'spam') {
       for (let i = 1; i <= 20 && alive(); i++) {
-        await sendComment(['xin quẻ', 'sư tử', 'nhảy', 'hay quá', 'ước may mắn'][i % 5], 'Spam' + (i % 4));
+        await sendComment(['xin quẻ', 'vàng', 'nhảy', 'hay quá', 'ước may mắn'][i % 5], 'Spam' + (i % 4));
         await wait(90);
       }
     } else if (name === 'crowd') {
@@ -235,6 +236,7 @@ $('chatForm').addEventListener('submit', event => {
 });
 $('sendComment').addEventListener('click', () => sendComment());
 $('commentText').addEventListener('keydown', event => { if (event.key === 'Enter') sendComment(); });
+$('teamButtons').innerHTML = TEAMS.map(t => `<button data-comment="${t.label.toLowerCase()}" style="border-color:${t.color}">${t.glyph} ${t.label}</button>`).join('');
 document.querySelectorAll('[data-comment]').forEach(button => button.addEventListener('click', () => sendComment(button.dataset.comment)));
 $('joinButton').addEventListener('click', () => joinRoom());
 $('likeButton').addEventListener('click', () => sendLikes(10));
@@ -265,7 +267,7 @@ $('stressStart').addEventListener('click', async () => {
 document.querySelectorAll('[data-host]').forEach(button => button.addEventListener('click', async () => {
   const route = button.dataset.host;
   try {
-    await api(route, route === 'fortune/sign' ? { sign: '' } : {});
+    await api(route, route === 'fortune/team' ? { team: '' } : {});
     phoneToast('Đã kích hoạt: ' + button.textContent.trim());
     log('Host action: ' + button.textContent.trim());
   } catch (error) { log('Host action lỗi: ' + error.message); }

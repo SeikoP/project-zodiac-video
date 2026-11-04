@@ -340,3 +340,25 @@ body.transparent, body.transparent #stage { background: transparent; }
 
 /* ?lite=1: drop the expensive paint effects */
 .lite *, .lite *::before, .lite *::after { box-shadow: none !important; filter: none !important; backdrop-filter: none !important; text-shadow: none !important; }
+
+/* --- four team arcs (the wheel's ring), team icons on badges and bars --- */
+.qa path { fill: none; }
+.qt { stroke: var(--el); stroke-width: 64; opacity: .2; }
+.qg { stroke: var(--el); stroke-width: 98; opacity: 0; transition: opacity .8s; }
+.qa.lit .qg { opacity: .3; }
+.qf { stroke: var(--el); stroke-width: 64; stroke-dasharray: 0 1; transition: stroke-dasharray .8s, opacity .8s; }
+.qa.lit .qf { opacity: 1 !important; }
+.node .ti { position: relative; z-index: 1; width: 44px; height: 44px; margin-top: -4px; }
+.node .more { font-variant-numeric: tabular-nums; }
+#race .rc { font-size: 18px; gap: 4px; padding: 0 8px; }
+#race .rc .rk { width: 26px; font-size: 15px; }
+#race .rc .v { font-size: 17px; }
+.rc .ti { flex: none; width: 28px; height: 28px; }
+#center img.ti, .elrace .ti { width: 26px; height: 26px; vertical-align: -6px; }
+#center .elrace .el { grid-template-columns: 130px 1fr 70px; }
+.ev .ic img.ti { width: 100%; height: 100%; object-fit: contain; }
+/* step 1 of "Cách tham gia" is a full sentence: let it wrap to two lines instead of being cut */
+.join .j1 { flex: 1.5 1 0; }
+.join .j1 b { white-space: normal; font-size: 19px; line-height: 1.12; }
+/* the team circles are emoji: the symbol font would draw them as grey patterns */
+.gf { font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Symbol', 'Noto Sans Symbols', 'Apple Symbols', sans-serif; }

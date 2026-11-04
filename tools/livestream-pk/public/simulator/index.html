@@ -33,7 +33,7 @@
           <div class="live-header">
             <div class="profile-row">
               <div class="profile-avatar">☼</div>
-              <div class="profile-copy"><strong>Đêm Hội Hoàng Đạo</strong><span>✦ 12.8K người theo dõi</span></div>
+              <div class="profile-copy"><strong>Đêm Hội Sao</strong><span>✦ 12.8K người theo dõi</span></div>
               <button class="follow-mini" id="headerFollow">+ Follow</button>
             </div>
             <div class="live-metrics"><span class="live-badge"><i></i> LIVE</span><span id="viewerPill">1.2K</span><span class="metric-icon">♡</span></div>
@@ -51,8 +51,8 @@
           </div>
 
           <div class="live-caption">
-            <strong>Đêm Hội Hoàng Đạo</strong>
-            <span>Chọn cung của bạn và cùng thắp sáng bầu trời ✨</span>
+            <strong>Đêm Hội Sao</strong>
+            <span>Comment bất kỳ để vào cuộc, hoặc gõ 1–4 chọn phe ✨</span>
           </div>
 
           <form class="mock-composer" id="chatForm">
@@ -76,9 +76,9 @@
         <label class="field-label" for="viewerName">Tên người xem</label>
         <input class="field" id="viewerName" value="Lan" maxlength="32">
         <label class="field-label" for="commentText">Nội dung bình luận</label>
-        <div class="composer-row"><input class="field" id="commentText" maxlength="300" placeholder="Ví dụ: sư tử, xin quẻ, ước thi đỗ"><button class="primary-button" id="sendComment">Gửi</button></div>
+        <div class="composer-row"><input class="field" id="commentText" maxlength="300" placeholder="Ví dụ: đỏ, xanh lá, ước thi đỗ"><button class="primary-button" id="sendComment">Gửi</button></div>
         <div class="quick-comments">
-          <button data-comment="sư tử">Sư Tử</button><button data-comment="xin quẻ">Xin quẻ</button><button data-comment="ước thi đỗ">Ước</button><button data-comment="nhảy">Nhảy</button><button data-comment="A">Vote A</button>
+          <span id="teamButtons" style="display:contents"></span><button data-comment="xin quẻ">Xin quẻ</button><button data-comment="ước thi đỗ">Ước</button><button data-comment="nhảy">Nhảy</button><button data-comment="A">Vote A</button>
         </div>
         <div class="inline-actions">
           <button id="joinButton">＋ Vào phòng</button><button id="likeButton">♥ Thả tim ×10</button>
@@ -111,7 +111,7 @@
       <section class="panel-card">
         <div class="card-heading"><div><span class="eyebrow">03 · SCENARIOS</span><h2>Kịch bản diễn tập</h2></div><button class="quiet-button" id="stopScenario" disabled>■ Dừng</button></div>
         <div class="scenario-grid">
-          <button class="scenario-button" data-scenario="warmup"><b>01</b><span>Người mới vào<small>Join + comment cung</small></span><i>↗</i></button>
+          <button class="scenario-button" data-scenario="warmup"><b>01</b><span>Người mới vào<small>Join + chọn phe</small></span><i>↗</i></button>
           <button class="scenario-button" data-scenario="busy"><b>02</b><span>Phòng sôi động<small>30 người tương tác</small></span><i>↗</i></button>
           <button class="scenario-button" data-scenario="gifts"><b>03</b><span>Mưa quà tặng<small>Combo đến Galaxy</small></span><i>↗</i></button>
           <button class="scenario-button" data-scenario="game"><b>04</b><span>Test gameplay<small>Quẻ · vote · boss</small></span><i>↗</i></button>
@@ -128,8 +128,7 @@
         <div class="card-heading"><div><span class="eyebrow">04 · HOST ACTIONS</span><h2>Kích hoạt tính năng</h2></div></div>
         <div class="host-actions">
           <button data-host="quiz/start">❓ Câu đố</button><button data-host="poll/start">🗳 Bình chọn</button>
-          <button data-host="fortune/sign">🎋 Quẻ chung</button><button data-host="boss/start">☄ Boss</button>
-          <button data-host="run/start">🪐 Hành trình</button>
+          <button data-host="fortune/team">🎋 Quẻ chung</button><button data-host="boss/start">☄ Boss</button>
         </div>
       </section>
 
