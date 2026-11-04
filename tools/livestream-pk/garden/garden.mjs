@@ -12,8 +12,8 @@ import { createCompetition } from './competition.mjs';
 import { bump, emptyGardenState, ensureUser, isAwake, managePresence, migrateSeedZone, TIERS, seat, touch } from './world.mjs';
 import { potTierOf } from './progress.mjs';
 
-export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, state = emptyGardenState(now()) } = {}) {
-  const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), limiter: createLimiter(now) };
+export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, onStateChange = () => {}, state = emptyGardenState(now()) } = {}) {
+  const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), markDirty: onStateChange, limiter: createLimiter(now) };
   migrateSeedZone(ctx);
   const competition = createCompetition({ state, now });
   ctx.mods = () => modifiers(ctx);
@@ -86,7 +86,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     state, cfg: ctx.cfg, events, competition,
     chat,
     gift: g => applyGift(ctx, ensureUser(ctx, g), g),
-    like: data => applyHearts(ctx, data), social() {}, member() {},
+    like: data => { const result = applyHearts(ctx, data); if (result.ok) ctx.markDirty(); return result; }, social() {}, member() {},
     tick() { managePresence(ctx); tickPlots(ctx); tickHearts(ctx); tickSteal(ctx); events.tick(); expire(); },
     changes(seen) {
       const parts = {}, plots = {};
