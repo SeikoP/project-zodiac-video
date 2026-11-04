@@ -29,7 +29,7 @@ export function createCamera({ cfg, now }) {
       const zoom = clamp(Math.min(WIDTH / (Math.abs(a.x - b.x) + 480), HEIGHT / (Math.abs(a.y - b.y) + 480)), c.zoomIsland, c.zoomClose);
       return { ...base, kind: e.type, priority: 3, island: a.island, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, zoom, holdMs: c.stealHoldMs };
     }
-    if (e.type === 'levelup' || (e.type === 'ripe' && e.crop === 'linhthao')) {
+    if (e.type === 'levelup' || (e.type === 'ripe' && (e.first || e.crop === 'linhthao'))) {
       const p = plotAt(e.plotId);
       return { ...base, kind: e.type, priority: 4, island: p.island, x: p.x, y: p.y, zoom: 1.6, holdMs: c.levelHoldMs };
     }
@@ -89,9 +89,10 @@ export function createCamera({ cfg, now }) {
     tick() {
       if (locked) return null;
       const t = now();
-      if (current && t < current.until) return null;
+      const idleYields = current?.kind === 'idle' && queue.length && t - current.startedAt >= c.holdMinMs; // a drift is filler: a real moment may cut it short
+      if (current && t < current.until && !idleYields) return null;
       queue = queue.filter(q => t - q.at <= q.ttl);
-      if (queue.length && current && current.kind !== 'gap') return start({ kind: 'gap', priority: 9, island: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.gapMs, gift: false });
+      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, island: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.gapMs, gift: false });
       return start(choose() ?? idleShot());
     },
     state: () => ({ queue: queue.map(q => ({ ...q })), current: current && { ...current }, locked }),

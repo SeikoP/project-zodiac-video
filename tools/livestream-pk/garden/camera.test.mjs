@@ -127,3 +127,22 @@ test('a gift from a player with no plot is shown as a wide shot', () => {
   const s = r.cam.tick();
   assert.deepEqual([s.priority, s.zoom], [1, 0.3]);
 });
+
+test('a players first ripe crop is a moment worth a shot; later ordinary ripe crops are not', () => {
+  const r = rig();
+  r.cam.push({ type: 'ripe', plotId: 'leo:1', crop: 'rau', first: false });
+  assert.equal(r.cam.state().queue.length, 0);
+  r.cam.push({ type: 'ripe', plotId: 'leo:1', crop: 'rau', first: true });
+  const s = r.cam.tick();
+  assert.deepEqual([s.kind, s.priority], ['ripe', 4]);
+});
+
+test('an idle drift gives way to a real moment after the minimum hold, without a gap shot', () => {
+  const r = rig();
+  assert.equal(r.cam.tick().kind, 'idle');
+  r.cam.push(steal('aries:1', 'aries:8'));
+  r.advance(1999);
+  assert.equal(r.cam.tick(), null);
+  r.advance(2);
+  assert.equal(r.cam.tick().kind, 'steal');
+});

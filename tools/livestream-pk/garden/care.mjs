@@ -37,7 +37,7 @@ export function water(ctx, user, target = user) {
   plot.water = 1;
   if (plot.crop.progress < 1) {
     plot.crop.progress = Math.min(1, plot.crop.progress + ctx.cfg.waterBoost);
-    if (plot.crop.progress >= 1) { plot.crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: target.userId, crop: plot.crop.type }); }
+    if (plot.crop.progress >= 1) { plot.crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: target.userId, crop: plot.crop.type, first: target.stats.harvest === 0 }); }
   }
   touch(ctx, user);
   if (helping) {
@@ -90,7 +90,7 @@ export function tickPlots(ctx) {
     if (crop.progress < 1) {
       if (!crop.pest && ctx.rng() < cfg.pestChancePerSec * dt / 1000) { crop.pest = true; ctx.emit({ type: 'pest', plotId: plot.id, userId: plot.owner }); }
       crop.progress += dt / CROPS[crop.type].growMs * (plot.water > 0 ? 1 : cfg.dryGrowth) * (crop.pest ? cfg.pestGrowth : 1) * m.grow;
-      if (crop.progress >= 1) { crop.progress = 1; crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: plot.owner, crop: crop.type }); }
+      if (crop.progress >= 1) { crop.progress = 1; crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: plot.owner, crop: crop.type, first: ctx.state.users[plot.owner]?.stats.harvest === 0 }); }
     }
     bump(ctx, plot);
   }

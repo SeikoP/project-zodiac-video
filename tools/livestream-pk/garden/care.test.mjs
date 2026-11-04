@@ -118,3 +118,15 @@ test('advanceStage jumps to the next stage threshold and stops at ripe', () => {
   advanceStage(crop, 9); assert.equal(crop.ripeAt, 5);
   assert.equal(CROPS.linhthao.minLevel, 4);
 });
+
+test('the ripe event says whether it is the owners first crop', () => {
+  const k = ready();
+  plant(k.ctx, k.user, 'rau');
+  for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
+  assert.equal(k.events.find(e => e.type === 'ripe').first, true);
+  harvest(k.ctx, k.user);
+  k.events.length = 0;
+  plant(k.ctx, k.user, 'rau');
+  for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
+  assert.equal(k.events.find(e => e.type === 'ripe').first, false);
+});
