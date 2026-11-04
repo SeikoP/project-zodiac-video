@@ -192,5 +192,40 @@ class StudioV2VoiceTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "VOICE_GENERATION_FAILED")
 
 
+    def test_scene_regeneration_request_regenerates_only_requested_scene(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "narration.txt").write_text("xin chao\nbo cap\n", encoding="utf-8")
+            fake = FakeGenerator()
+            first = ensure_voice_artifact(
+                root,
+                ir_document(),
+                voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo"},
+                engine_version="vieneu-test-1",
+                generator=fake,
+            )
+            first_hashes = dict(first.scene_hashes)
+            request = root / ".runtime" / "voice-regeneration-request.json"
+            request.write_text(
+                json.dumps({"version": 1, "scene_ids": ["S02"], "reason": "TIMING_ALIGNMENT_FAILED"}),
+                encoding="utf-8",
+            )
+            second = ensure_voice_artifact(
+                root,
+                ir_document(),
+                voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo"},
+                engine_version="vieneu-test-1",
+                generator=fake,
+            )
+            self.assertFalse(second.reused)
+            self.assertEqual(second.cache_reason, "PARTIAL_REUSE")
+            self.assertEqual(second.reused_scenes, 1)
+            self.assertEqual(second.generated_scenes, 1)
+            self.assertEqual(second.scene_hashes["S01"], first_hashes["S01"])
+            self.assertFalse(request.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
