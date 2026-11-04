@@ -250,5 +250,35 @@ class StudioV2TimingTests(unittest.TestCase):
             self.assertEqual(caught.exception.code, "TIMING_ALIGNMENT_FAILED")
 
 
+    def test_double_alignment_mismatch_requests_only_failed_scene_voice_regeneration(self):
+        from tools.studio_v2.timing import _align_cached_scenes
+        from tools.zodiac_local import AlignmentMismatchError
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            voice = voice_artifact(root)
+            production = {"scenes": [{"id": "S01", "voice": "xin chao"}]}
+            primary, medium = object(), object()
+            def load(name, *args, **kwargs):
+                return primary if name == "small" else medium
+            def align(model, *args):
+                raise AlignmentMismatchError(
+                    "mismatch",
+                    expected=["xin", "chao"],
+                    heard=["xin", "roi", "thoi", "chao"],
+                    coverage_gap=False,
+                )
+            with patch("tools.studio_v2.timing.require_word_aligner_installed"), \
+                 patch("tools.studio_v2.timing.load_word_aligner", side_effect=load), \
+                 patch("tools.studio_v2.timing._align_scene_words", side_effect=align), \
+                 patch("tools.zodiac_local._emit_tts_log"):
+                with self.assertRaises(Exception):
+                    _align_cached_scenes(root, production, voice, {"model": "small"}, "test")
+            request = json.loads(
+                (root / ".runtime" / "voice-regeneration-request.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(request["scene_ids"], ["S01"])
+            self.assertEqual(request["reason"], "TIMING_ALIGNMENT_FAILED")
+
+
 if __name__ == "__main__":
     unittest.main()
