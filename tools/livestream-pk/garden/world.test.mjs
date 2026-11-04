@@ -19,6 +19,8 @@ test('rack geometry gives six spaced pots and four shelves per module', () => {
   assert.equal(nextModule.moduleCol, 1);
   assert.equal(nextModule.moduleRow, 0);
   assert.equal(shelfSurface(0, ctx.cfg) - plotCenter('cloud-1', 0, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
+  assert.ok(Math.abs(ctx.cfg.potBottomOffset - 58 * ctx.cfg.potScale) < 1, 'SVG pot bottom and shelf anchor share one world scale');
+  assert.ok(ctx.cfg.shelfSpacingY >= 200, 'each plant stage has vertical breathing room');
 });
 
 test('seat fills one Seed Zone and never opens legacy cloud tiers', () => {

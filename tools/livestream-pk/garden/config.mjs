@@ -5,7 +5,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   tierWidth: 2580, tierHeight: 2200, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
   activeCapacity: 96, modulesPerRow: 2, moduleCapacity: 24, potsPerShelf: 6, shelvesPerModule: 4,
   potSpacingX: 170, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 200,
-  zoneMarginX: 220, zoneMarginY: 250, potBottomOffset: 58, potShelfGap: 2,
+  zoneMarginX: 220, zoneMarginY: 250, potScale: 1.05, potBottomOffset: 61, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000, plotSyncMs: 5000,

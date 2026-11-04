@@ -438,8 +438,8 @@ function drawRipeCrop(type, stage) {
 
 function drawPlot(p, lod) {
   if (!p.owner || !p.awake) return;
-  const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
-  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = 1;
+  const at = worldToScreen(plotPos(p, meta), cam, VP), renderScale = meta.cfg.potScale ?? 1.05, size = 100 * renderScale * cam.zoom;
+  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(renderScale * cam.zoom, renderScale * cam.zoom); ctx.globalAlpha = 1;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   const potImage = gardenArt(POT_ART[p.potTier] ?? POT_ART.clay);
