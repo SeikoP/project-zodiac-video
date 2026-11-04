@@ -76,8 +76,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     for (let i = 0; i < Math.max(1, Math.min(120, Number(count) || 12)); i++) {
       const user = autoUser(i);
       autoUsers.set(user.userId, user);
-      // Plant immediately when possible; the normal chat path still owns seating/economy rules.
-      garden.chat({ ...user, comment: i % 5 === 4 ? 'trồng hướng dương' : 'trồng rau' });
+      // Match /api/sim IDs so manual and autoplay simulator users share the same namespace.
+      garden.chat({ ...user, userId: 'sim:' + user.userId, comment: i % 5 === 4 ? 'trồng hướng dương' : 'trồng rau' });
       added.push(user);
     }
     saver.markDirty();
