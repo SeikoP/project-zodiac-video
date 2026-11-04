@@ -1,6 +1,14 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
 export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
+export function displayNickname(nickname, zoom = 1) {
+  const clean = String(nickname ?? '').trim() || 'Người xem';
+  const max = zoom < .65 ? 6 : zoom < 1.25 ? 10 : 16;
+  const chars = [...clean];
+  if (chars.length <= max) return clean;
+  return chars.slice(0, max).join('').trimEnd() + '…';
+}
+
 export function slotLayout(slot, cfg) {
   const logicalRow = Math.floor(slot / cfg.potsPerShelf);
   const wing = Math.floor(logicalRow / cfg.shelvesPerWing);
