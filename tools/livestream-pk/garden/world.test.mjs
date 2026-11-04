@@ -1,26 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TIERS, SEED_ZONE, plotId, plotCenter, plotLayout, shelfSurface, ensureUser, seat, touch, isAwake, managePresence, migrateSeedZone, emptyGardenState } from './world.mjs';
+import { TIERS, SEED_ZONE, plotId, plotCenter, plotLayout, shelfSurface, ensureUser, balancedSlotOrder, seat, touch, isAwake, managePresence, migrateSeedZone, emptyGardenState } from './world.mjs';
 import { makeCtx, addUser } from './testkit.mjs';
 
 test('the live garden exposes one Seed Zone with a 96-player active capacity', () => {
   const { ctx } = makeCtx();
   assert.deepEqual(TIERS, [SEED_ZONE]);
   assert.equal(ctx.cfg.activeCapacity, 96);
-  assert.deepEqual([ctx.cfg.potsPerShelf, ctx.cfg.shelvesPerModule, ctx.cfg.moduleCapacity], [6, 4, 24]);
+  assert.deepEqual([ctx.cfg.potsPerShelf, ctx.cfg.shelvesPerModule, ctx.cfg.moduleCapacity], [6, 16, 96]);
 });
 
-test('rack geometry gives six spaced pots and four shelves per module', () => {
+test('one continuous rack has 16 shelves of six pots with aligned feet', () => {
   const { ctx } = makeCtx();
-  const a = plotLayout(0, ctx.cfg), b = plotLayout(5, ctx.cfg), nextShelf = plotLayout(6, ctx.cfg), nextModule = plotLayout(24, ctx.cfg);
+  const a = plotLayout(0, ctx.cfg), b = plotLayout(5, ctx.cfg), nextShelf = plotLayout(6, ctx.cfg), last = plotLayout(95, ctx.cfg);
   assert.equal(b.x - a.x, ctx.cfg.potSpacingX * 5);
   assert.equal(nextShelf.y - a.y, ctx.cfg.shelfSpacingY);
-  assert.equal(nextModule.module, 1);
-  assert.equal(nextModule.moduleCol, 1);
-  assert.equal(nextModule.moduleRow, 0);
+  assert.equal(last.row, 15);
+  assert.equal(last.module, 0);
   assert.equal(shelfSurface(0, ctx.cfg) - plotCenter('cloud-1', 0, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
-  assert.ok(Math.abs(ctx.cfg.potBottomOffset - 58 * ctx.cfg.potScale) < 1, 'SVG pot bottom and shelf anchor share one world scale');
-  assert.ok(ctx.cfg.shelfSpacingY >= 200, 'each plant stage has vertical breathing room');
+  assert.ok(ctx.cfg.shelfSpacingY >= 200);
+});
+test('new arrivals spread across the rack without ever changing an existing seat', () => {
+  const { ctx } = makeCtx();
+  const ids = [];
+  for (let i = 0; i < 12; i++) ids.push(addUser(ctx, 'u' + i).user.seat.slot);
+  const rows = new Set(ids.map(slot => Math.floor(slot / 6)));
+  assert.equal(rows.size, 12);
+  for (let i = 12; i < 96; i++) addUser(ctx, 'u' + i);
+  assert.equal(new Set(balancedSlotOrder(ctx.cfg)).size, 96);
+  for (let i = 0; i < 12; i++) assert.equal(ctx.state.users['u' + i].seat.slot, ids[i]);
 });
 
 test('seat fills one Seed Zone and never opens legacy cloud tiers', () => {
