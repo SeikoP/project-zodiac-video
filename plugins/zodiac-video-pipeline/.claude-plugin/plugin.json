@@ -1,6 +1,0 @@
-{
-  "name": "zodiac-video-pipeline",
-  "version": "2.6.1",
-  "description": "Zodiac native visual pipeline, episode formats and Job@5 handoff (Claude edition; the ChatGPT manifest in plugin.json is unchanged).",
-  "author": {"name": "Personal"}
-}

@@ -1,0 +1,27 @@
+name: Zodiac ChatGPT plugin release archive
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate release consistency
+        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/release/validate-release-consistency.mjs plugins/zodiac-video-pipeline
+      - name: Read plugin version
+        id: meta
+        run: |
+          version="$(node -p "JSON.parse(require('fs').readFileSync('plugins/zodiac-video-pipeline/plugin.json','utf8')).version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Create plugin archive
+        run: |
+          cd plugins/zodiac-video-pipeline
+          zip -qr "$RUNNER_TEMP/zodiac-video-pipeline-plugin.zip" plugin.json .codex-plugin skills
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-pipeline-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/zodiac-video-pipeline-plugin.zip
+          if-no-files-found: error
+          retention-days: 1

@@ -13,9 +13,7 @@ A copied Studio prompt is a snapshot of the selected workspace, episode scope, t
 Use the installed `defaultPrompt`, router, current phase manifest and `plan-step-context.mjs`. Derive the first incomplete step from the current state and manifest; do not blindly repeat the copied step pointer. Honor that step's active capabilities, required inputs/outputs, context boundaries and gates; validate durable outputs and receipts before committing the step. The linked series tracker reports progress only; it does not approve narration, visuals, cover or a phase transition.
 
 ## Execution source after refactor
-**On Claude (Claude Code / Cowork) the skill folder is on disk: run the scripts from this skill root and skip bundle staging. Read references/claude-runtime.md first; it overrides the transport rules below. A normal Claude run never reports SOURCE_TRANSPORT_UNAVAILABLE.** Router order, manifests, validators, receipts and review gates still apply unchanged.
-
-On hosts without the skill on disk (ChatGPT), read orchestration/execution-bootstrap.md before native execution and use a verified **phase-scoped execution bundle** for the current phase. Never clone/download the whole repository as runtime context. A repository file listing, skill read, or connector response is not executable source on the host filesystem. Source transport must not bypass the active router, phase manifest, validator order, source hashes, or review gates.
+On ChatGPT, read orchestration/execution-bootstrap.md before native execution and use a verified **phase-scoped execution bundle** for the current phase. Never clone/download the whole repository as runtime context. A repository file listing, skill read, or connector response is not executable source on the host filesystem. Source transport must not bypass the active router, phase manifest, validator order, source hashes, or review gates.
 
 Phase 01: use references/episode-formats.md and references/phase01-briefing.md. Distinguish episode format from the character_deconstruction story engine. Use bounded independent evidence, one coherent Story Spine and authentic Content Review. Narrative 2.1 is for fresh scoped episodes.
 
@@ -28,7 +26,7 @@ Phase 03: use phases/phase03/run-phase03-production.mjs or its verified current 
 Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Missing choices block; no legacy/selected-cues fallback. Historical job recovery requires its separately pinned external snapshot. Fresh production has no Scene Set. Legacy Scene Set rendering is compatibility-only, requiring verified historical job input; character placement always remains independent.
 
 ## Never rely on remembered guidance
-Context is lost between steps and sessions. Before **every** step, and whenever unsure where the run stands, run `node orchestration/resume-brief.mjs <workspace>` (read-only). It derives the first incomplete step from `.authoring/pipeline-state.json` and lists exactly which reference files to read now, the capabilities with their Claude equivalents, the required outputs and the forbidden context. Read those files in full, then act. It creates no approval and replaces neither the phase manifest nor the validators.
+Context is lost between steps and sessions. Before **every** step, and whenever unsure where the run stands, run `node orchestration/resume-brief.mjs <workspace>` (read-only). It derives the first incomplete step from `.authoring/pipeline-state.json` and lists exactly which reference files to read now, the capabilities with the current host-tool guidance, the required outputs and the forbidden context. Read those files in full, then act. It creates no approval and replaces neither the phase manifest nor the validators.
 
 ## Where to read next
 Load only what the current task needs.
@@ -37,4 +35,4 @@ Load only what the current task needs.
 | --- | --- |
 | Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
 | Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |
-| Running on Claude (tool equivalents, model per task) | references/claude-runtime.md |
+| Capability providers and fallbacks | references/chatgpt-runtime.md |
