@@ -38,7 +38,7 @@ separately pinned snapshot to resume an approved historical job; do not use
 `legacy` or `selected_cues` to bypass current selection. An asset retirement or
 compiler change invalidates dependent cache/preview hashes before reuse.
 
-Before any native asset compilation, `validate-phase02-authoring-completeness.mjs` must PASS, then fill/verify per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
+Before any native asset compilation, bind every Episode Cast `role=member` character to `zodiac-glyph-shirt` with `zodiac_sign_id=member_id`; then `validate-phase02-authoring-completeness.mjs` must PASS, then fill/verify per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
 
 ## Mandatory storytelling readiness for fresh Phase 2
 
