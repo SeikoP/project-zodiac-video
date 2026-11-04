@@ -163,6 +163,8 @@ npm run setup -- ten_tiktok_cua_ban     # tạo config.json + kiểm tra
 npm run live                            # kiểm tra, chạy server, mở bảng điều khiển
 ```
 
+- Bắt đầu đêm mới: `npm run reset-night` (chạy thử, chỉ liệt kê) rồi `npm run reset-night -- --apply` để xóa `state.json`, `backup-night-*.json`, `settings.json` (giữ nguyên dữ liệu vườn).
+
 - `npm run check` kiểm tra Node, thư viện, config (khoá gõ sai, sai kiểu), câu đố, 60 hình linh vật, font, cổng, quyền ghi dữ liệu và người xem diễn tập còn sót lại. Thêm `-- --online` để hỏi TikTok xem tài khoản có đang live không. Có lỗi ✖ thì `npm run live` từ chối chạy.
 - Overlay: trong TikTok LIVE Studio, thêm nguồn Web/Browser/Link tới **`http://127.0.0.1:4848/`** (`?safe=1` cũ giờ không còn tác dụng: bố cục mặc định đã chừa chỗ cho chat TikTok). Bố cục khung cao dùng `?phone=1` với nguồn 1080×2400; khung live và nguồn phải cùng tỷ lệ.
 

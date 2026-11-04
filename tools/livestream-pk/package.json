@@ -13,6 +13,7 @@
     "replay": "node scripts/replay.mjs",
     "smoke": "node scripts/smoke.mjs",
     "share": "node scripts/share.mjs",
+    "reset-night": "node scripts/reset-night.mjs",
     "garden": "node --env-file-if-exists=.env garden/server.mjs",
     "simulator": "node --env-file-if-exists=.env scripts/simulator.mjs"
   },
