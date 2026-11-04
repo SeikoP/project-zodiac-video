@@ -7,7 +7,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   graceMs: 120000, oldYield: 0.5,
   waterDecayMs: 60000, dryGrowth: 0.5, waterBoost: 0.06, waterCooldownMs: 15000,
   pestChancePerSec: 0.003, pestGrowth: 0.6, pestYield: 0.7,
-  careGapMs: 1500, helpXp: 2, helpGold: 1, helpCooldownMs: 30000, seedCostRate: 0.4,
+  careGapMs: 1500, startGold: 20, helpXp: 2, helpGold: 1, helpCooldownMs: 30000, seedCostRate: 0.4,
   // stealing
   stealFrac: 0.2, stealMaxPerCrop: 2, stealCooldownMs: 20000, stealPerVictimMax: 3, stealVictimWindowMs: 600000,
   catchWindowMs: 10000, caughtBanMs: 60000, dogMs: 600000, dogCost: 30,

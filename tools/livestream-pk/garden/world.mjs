@@ -21,7 +21,7 @@ export const bump = (ctx, plot) => { plot.ver = ++ctx.state.ver; };
 
 export function ensureUser(ctx, { userId, nickname, avatar }) {
   const users = ctx.state.users;
-  const u = (users[userId] ??= { userId, nickname: '', avatar: '', sign: null, level: 1, xp: 0, gold: 0, seat: null, deco: [], lastSeen: ctx.now(), stats: { harvest: 0, steal: 0, caught: 0 }, dogNight: null });
+  const u = (users[userId] ??= { userId, nickname: '', avatar: '', sign: null, level: 1, xp: 0, gold: ctx.cfg.startGold, seat: null, deco: [], lastSeen: ctx.now(), stats: { harvest: 0, steal: 0, caught: 0 }, dogNight: null });
   if (nickname) u.nickname = nickname;
   if (avatar) u.avatar = avatar;
   if (!u.nickname) u.nickname = `Người xem ${String(userId).slice(-4)}`;
