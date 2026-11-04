@@ -56,10 +56,9 @@ The phase manifests stay the only source for per-step capabilities, outputs and
 gates. This resume loop adds no second orchestration engine and never creates approval.
 
 ## Phase 01
-Use `references/phase01-briefing.md` and the selected episode format. Fresh
-scoped episodes use Narrative 2.1, sourced claims and one coherent Story Spine.
-The series tracker is a ledger; only minimized selected scope enters authoring.
-Commit actual authored files with real checks through `commit-phase01-step.mjs`.
+Use `references/phase01-briefing.md` and the selected episode format. Fresh scoped episodes use Narrative 2.1, sourced claims and one coherent Story Spine. The series tracker is a ledger; only minimized selected scope enters authoring. Commit actual authored files with real checks through `commit-phase01-step.mjs`.
+
+**Autopilot rule:** after scope is known, do not stop between Evidence, Concept and Narration for user confirmation. Research, candidate competition, concept selection, hook/story-spine construction, QC repairs and validator retries are internal work. Ask only when scope is materially ambiguous or when the completed Narration reaches the single Content Review boundary. If the user explicitly asks to choose among options, surface them; otherwise the Content Engine selects the winner and continues.
 
 ## Phase 01 → Phase 02
 Run `phase02-transition-gate.mjs` until AUTHORING_READY, read its handoff_context
@@ -72,10 +71,9 @@ selection uses `references/asset-library-v4/selection-guide.md`; generate the
 native catalog surface through `features/asset-selection/build-current-asset-review.mjs`.
 No old package, sign example, identity or environment is an automatic default.
 
-Author Visual Intent and the actual episode cast plan. Select character identity
-once; state changes only pose/expression. Plan actions and state assets before SVG generation. No post-generation deduplication. Fresh runs use canvas-native backgrounds; Scene Set is compatibility-only and must never be selected for fresh authoring. Foreground characters keep independent composition and physical support. Scene Accents are optional canvas-relative context cues and never enclose actors; Narrative Visuals do not replace the background.
+Author only the canonical `.authoring/visual-intent.json`. The explicit episode cast mapping, Scene Plan, Director beats, art direction, semantic asset decisions and scene events live in that source. Run `write-phase02-authoring.mjs` to project production, Character Assembly, Visual Grammar, Asset Plan, Director Plan, Art Direction and Episode Cast Plan. Never hand-edit a projection; projection drift is a blocker. Select character identity once; state changes only pose/expression. Plan actions and state assets before SVG generation. No post-generation deduplication. Fresh runs use canvas-native backgrounds; Scene Set is compatibility-only and must never be selected for fresh authoring. Foreground characters keep independent composition and physical support. Scene Accents are optional canvas-relative context cues and never enclose actors; Narrative Visuals do not replace the background.
 
-Before `phase02-execute.mjs`, fill the Phase-2 authoring completeness structure: Scene Plan → Director Plan → cast/character assembly → context/background decision → physical prop participation → Narrative Visual decision/entities → per-beat visual coverage → scene events. Missing any required layer blocks before native asset compilation. Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
+Before `phase02-execute.mjs`, fill the semantic completeness structure **inside Visual Intent**: Scene Plan → cast/character identity → context/background decision → physical prop participation → Narrative Visual decision/entities → director beats → per-beat visual coverage → scene events. The compiler expands those decisions into the derived plans. Missing any required layer blocks before native asset compilation. Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
 all manifest capabilities, selected meme/prop work and Director/native QC.
 NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED is not Visual Review PASS. Compile
 scene-complete review frames and two actual endpoints per event, validate them,
