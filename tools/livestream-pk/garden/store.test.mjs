@@ -25,9 +25,9 @@ test('a saved garden loads back with growing crops, thefts and users intact', as
   assert.equal(back.thefts.length, 1);
 });
 
-test('a missing file gives an empty v3 terrace garden', () => {
+test('a missing file gives an empty v4 Seed Zone garden', () => {
   const s = loadState(tmp());
-  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [3, 0, []]);
+  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [4, 0, []]);
 });
 
 test('a corrupt or truncated file gives an empty garden instead of crashing', () => {
@@ -35,7 +35,7 @@ test('a corrupt or truncated file gives an empty garden instead of crashing', ()
   fs.writeFileSync(file, '{"v":1,"users":{"a":');
   assert.equal(Object.keys(loadState(file).users).length, 0);
   fs.writeFileSync(file, '[1,2,3]');
-  assert.equal(loadState(file).v, 3);
+  assert.equal(loadState(file).v, 4);
 });
 
 test('a v1 island save moves player progress and crops to the cloud terraces', () => {
@@ -87,4 +87,19 @@ test('pruneUsers drops one-time visitors after 7 days but keeps anyone who harve
   assert.equal(k.ctx.state.users.visitor, undefined);
   assert.equal(k.ctx.state.plots[visitor.plot.id].owner, null, 'their plot is free again');
   assert.ok(k.ctx.state.users.farmer);
+});
+
+
+test('a v4 Seed Zone save round-trips without being sent through legacy migration', async () => {
+  const file = tmp();
+  const k = makeCtx();
+  const a = addUser(k.ctx, 'seed', { gold: 42, level: 7 });
+  a.plot.crop = { type:'huongduong', progress:.61, ripeAt:null, pest:false, weeds:false, fertilized:true, stolen:0, variant:'lush' };
+  const saver = createSaver({ file, getState: () => k.ctx.state });
+  await saver.flush(); saver.stop();
+  const back = loadState(file);
+  assert.equal(back.v, 4);
+  assert.deepEqual(back.users.seed.seat, { tier:'cloud-1', slot:0 });
+  assert.equal(back.plots['cloud-1:0'].crop.variant, 'lush');
+  assert.equal(back.users.seed.level, 7);
 });

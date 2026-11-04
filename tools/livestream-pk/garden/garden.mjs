@@ -8,11 +8,12 @@ import { createEvents, modifiers } from './events.mjs';
 import { applyGift } from './gifts.mjs';
 import { catchThief, dog, steal, tickSteal } from './steal.mjs';
 import { createCompetition } from './competition.mjs';
-import { bump, emptyGardenState, ensureUser, isAwake, managePresence, TIERS, seat, touch } from './world.mjs';
+import { bump, emptyGardenState, ensureUser, isAwake, managePresence, migrateSeedZone, TIERS, seat, touch } from './world.mjs';
 import { potTierOf } from './progress.mjs';
 
 export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, state = emptyGardenState(now()) } = {}) {
   const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), limiter: createLimiter(now) };
+  migrateSeedZone(ctx);
   const competition = createCompetition({ state, now });
   ctx.mods = () => modifiers(ctx);
   const events = createEvents(ctx);
@@ -99,7 +100,11 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     },
     meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: {
       tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow,
-      plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera,
+      plotCell: ctx.cfg.plotCell, activeCapacity: ctx.cfg.activeCapacity, modulesPerRow: ctx.cfg.modulesPerRow, moduleCapacity: ctx.cfg.moduleCapacity,
+      potsPerShelf: ctx.cfg.potsPerShelf, shelvesPerModule: ctx.cfg.shelvesPerModule, potSpacingX: ctx.cfg.potSpacingX, shelfSpacingY: ctx.cfg.shelfSpacingY,
+      moduleGapX: ctx.cfg.moduleGapX, moduleGapY: ctx.cfg.moduleGapY, zoneMarginX: ctx.cfg.zoneMarginX, zoneMarginY: ctx.cfg.zoneMarginY,
+      potScale: ctx.cfg.potScale, potBottomOffset: ctx.cfg.potBottomOffset, potShelfGap: ctx.cfg.potShelfGap,
+      tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera,
       graceMs: ctx.cfg.graceMs, sleepAfterMs: ctx.cfg.sleepAfterMs, evictAfterMs: ctx.cfg.evictAfterMs,
       rainMs: ctx.cfg.rainMs, rainMult: ctx.cfg.rainMult, pestStormMs: ctx.cfg.pestStormMs,
       merchantMs: ctx.cfg.merchantMs, merchantMult: ctx.cfg.merchantMult, goldenMs: ctx.cfg.goldenMs, goldenMult: ctx.cfg.goldenMult,

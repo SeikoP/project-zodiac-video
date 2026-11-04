@@ -66,8 +66,9 @@ function renderStatus(s) {
   $('activity').textContent = `${s.event ?? 'Không sự kiện'} · ${s.camera.current ?? 'camera chờ'}`;
   cameraLocked = Boolean(s.camera.locked);
   $('cameraLock').textContent = cameraLocked ? 'Mở khóa camera' : 'Khóa camera';
-  const auto = s.autoplay ?? { running: false, bots: 0 };
-  $('autoStatus').textContent = auto.bots ? `${auto.bots} bot · ${auto.running ? 'đang tự chơi' : 'đang dừng'}` : 'Chưa có bot';
+  const auto = s.autoplay ?? { running:false,bots:0,profile:'normal' };
+  $('autoStatus').textContent = auto.bots ? `${auto.bots} bot · ${auto.profile ?? 'normal'} · ${auto.running ? 'đang tự chơi' : 'đang dừng'}` : 'Chưa có bot';
+  if ($('autoProfile') && auto.profile) $('autoProfile').value = auto.profile;
   $('autoLamp').classList.toggle('on', Boolean(auto.running));
   $('autoStart').disabled = !simulator || Boolean(auto.running);
   $('autoStop').disabled = !simulator || !auto.running;
@@ -137,16 +138,16 @@ async function roomAction(action, rest = {}) {
   return result;
 }
 $('addBots').addEventListener('click', async () => {
-  const count = Math.max(1, Math.min(120, Number($('autoCount').value) || 24));
+  const count=Math.max(1,Math.min(96,Number($('autoCount').value)||24)),profile=$('autoProfile')?.value??'normal';
   try {
-    const result = await roomAction('add', { count });
-    $('actionResult').textContent = `Đã thêm ${result.added} người chơi tự động. Tổng: ${result.bots}.`;
-    log(`Simulator thêm ${result.added} bot vào vườn.`, 'demo');
-  } catch (e) { $('actionResult').textContent = `Không thêm được bot: ${e.message}`; }
+    const result=await roomAction('set',{count,profile});
+    $('actionResult').textContent=`Đã đặt phòng thành ${result.bots} người · ${result.profile}.`;
+    log(`Simulator đặt quy mô ${result.bots} bot · ${result.profile}.`,'demo');
+  } catch(e){$('actionResult').textContent=`Không đặt được phòng: ${e.message}`;}
 });
 $('autoStart').addEventListener('click', async () => {
   try {
-    const result = await roomAction('start');
+    const result = await roomAction('start', { profile: $('autoProfile')?.value ?? 'normal' });
     $('actionResult').textContent = `Phòng tự chơi đang chạy với ${result.bots} bot.`;
     log(`Bật tự chơi · ${result.bots} bot.`, 'demo');
   } catch (e) { $('actionResult').textContent = `Không bật được tự chơi: ${e.message}`; }

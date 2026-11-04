@@ -89,17 +89,23 @@
         <div class="auto-room-copy">
           <div class="eyebrow">PHÒNG TỰ CHƠI</div>
           <h2>Mô phỏng nhiều người cùng lúc</h2>
-          <p>Tạo người chơi giả, để họ tự trồng, tưới, bắt sâu, hái, trộm và thỉnh thoảng gửi quà. Dùng để xem camera và mật độ thật trên overlay.</p>
+          <p>Đặt đúng quy mô phòng cần thử. Normal mô phỏng nhịp LIVE thật; Busy và Stress chỉ dùng khi cần ép tải.</p>
         </div>
         <div class="auto-room-controls">
-          <label for="autoCount">Thêm người</label>
+          <label for="autoCount">Quy mô phòng</label>
           <select id="autoCount" data-sim-only>
             <option value="12">12 người</option>
             <option value="24" selected>24 người</option>
             <option value="48">48 người</option>
+            <option value="72">72 người</option>
             <option value="96">96 người</option>
           </select>
-          <button id="addBots" type="button" data-sim-only>Thêm vào vườn</button>
+          <select id="autoProfile" data-sim-only aria-label="Nhịp mô phỏng">
+            <option value="normal" selected>Normal · giống LIVE</option>
+            <option value="busy">Busy · đông</option>
+            <option value="stress">Stress · ép tải</option>
+          </select>
+          <button id="addBots" type="button" data-sim-only>Đặt quy mô</button>
           <button id="autoStart" class="primary" type="button" data-sim-only>Bật tự chơi</button>
           <button id="autoStop" type="button" data-sim-only>Dừng</button>
         </div>

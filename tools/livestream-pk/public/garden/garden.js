@@ -32,15 +32,10 @@ addEventListener('resize', fit); fit();
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
 let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
-const visualEvent = () => serverEvent && presentedEventKind === serverEvent.kind ? serverEvent : null;
+const visualEvent = () => serverEvent?.phase === 'active' && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
-const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
-const TIER_SCENES = [
-  { rail: '#B8D6C4', trim: '#8EC0B9', flag: '#EBC49E' },
-  { rail: '#D9C7A9', trim: '#A9CDBF', flag: '#F2C45C' },
-  { rail: '#E9D38C', trim: '#E3A17F', flag: '#F2C45C' },
-  { rail: '#C8C4D7', trim: '#9FBDB6', flag: '#DDB6BA' },
-];
+const POT_ACCENT = '#EBC49E';
+const SEED_SCENE = { rail:'#B8D6C4', trim:'#8EC0B9', flag:'#EBC49E' };
 const eventNames = { rain: 'Mưa tưới', pests: 'Đợt sâu bệnh', merchant: 'Chợ phiên', golden: 'Giờ vàng' };
 const EVENT_ART = {
   rain: '/garden/assets/event-rain.svg',
@@ -68,6 +63,7 @@ const CROP_ART = {
   nammay: { common: '/garden/assets/crop-nammay.svg', lush: '/garden/assets/crop-nammay-lush.svg', golden: '/garden/assets/crop-nammay-golden.svg' },
 };
 const artCache = new Map();
+const ALL_ART=[...Object.values(EVENT_ART),...DECOR_ART,...Object.values(POT_ART),...Object.values(CROP_ART).flatMap(v=>Object.values(v))];
 function gardenArt(src) {
   if (!src) return null;
   if (!artCache.has(src)) {
@@ -79,6 +75,7 @@ function gardenArt(src) {
   const image = artCache.get(src);
   return image.complete && image.naturalWidth ? image : null;
 }
+const preloadGardenArt=()=>ALL_ART.forEach(src=>gardenArt(src));
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
@@ -101,9 +98,9 @@ function handleFx(fx) {
   if (!C) return;
   switch (fx.type) {
     case 'joined': {
-      sfx('join', 0, { duck: .86, ms: 700 });
-      const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'khu vườn';
-      if (fx.count > 2) say(`${fx.count} người vừa vào · ${tier}`, 4500);
+      sfx('sparkle', 0, { duck:.9, ms:500 });
+      if (fx.plotId) float('sparkle', fx.plotId);
+      if (fx.count > 3) say(`${fx.count} người vừa nhận chậu`, 3600);
       break;
     }
     case 'gift':
@@ -120,7 +117,8 @@ function handleFx(fx) {
     case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
     case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
-    case 'event-start':
+    case 'event-start': break;
+    case 'event-active':
       music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
       break;
     case 'event-end':
@@ -168,21 +166,33 @@ async function refreshStatus() {
   } catch { /* the live Garden stream continues without the optional status ribbon */ }
 }
 
+function actionHintFor(p) {
+  if (!p?.crop) return 'Gõ “trồng rau” để bắt đầu';
+  if (p.crop.pest) return 'CÓ SÂU · gõ “bắt sâu” để cứu cây';
+  if (p.crop.weeds) return 'CÓ CỎ · gõ “nhổ cỏ” để cây lớn lại';
+  if ((p.stage ?? 0) >= 3) return 'CÂY CHÍN · gõ “hái” để nhận vàng + XP';
+  if (p.water < .25) return 'ĐẤT KHÔ · gõ “tưới”';
+  if (!p.crop.fertilized) return 'Gõ “bón phân” để tăng tốc';
+  return 'Tiếp tục chăm cây · chờ cây chín';
+}
+
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
-    hint.textContent = 'Bình luận để nhận chậu · trồng · tưới · hái';
+    hint.textContent = 'Mỗi người = 1 chậu · bình luận để vào Khu Gieo Hạt';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
+    preloadGardenArt();
     music.resume();
   } else if (event === 'reset') {
     plots.clear(); floaters.length = 0; serverEvent = null; presentedEventKind = null;
     say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
+    if (focusPlot && data.parts.plots?.[focusPlot]) hint.textContent = actionHintFor(data.parts.plots[focusPlot]);
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
       if (!serverEvent) presentedEventKind = null;
-      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+      if (serverEvent?.phase === 'active') music.setMood(serverEvent.kind === 'golden' || serverEvent.kind === 'pests' ? 'upbeat' : 'calm');
     }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
@@ -204,17 +214,23 @@ function onMessage(event, data) {
     };
     shotLabel.textContent = labels[data.kind] ?? 'VƯỜN MÂY';
     shotLabel.classList.toggle('active', data.kind !== 'overview');
+    const focused = data.plotId ? plots.get(data.plotId) : null;
+    hint.textContent = data.kind === 'overview'
+      ? 'Mỗi người = 1 chậu · bình luận để vào Khu Gieo Hạt'
+      : actionHintFor(focused);
     if (data.kind === 'event' && data.eventKind) {
       presentedEventKind = data.eventKind;
-      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
+      const role = ({ rain: 'actOpen', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
       sfx(role, null, { duck: .28, ms: 2800 });
     } else if (data.kind === 'gift') {
-      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[data.giftKind] ?? 'milestone';
+      const role = ({ dew: 'sparkle', star: 'milestone', rain: 'firework', tree: 'starFly' })[data.giftKind] ?? 'milestone';
       sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
     }
     focusPlot = data.plotId ?? null;
-    focusAt = performance.now(); focusMs = data.holdMs ?? 5200;
-    shotAt = performance.now();
+    const now = performance.now();
+    focusAt = now + Math.max(0, Number(data.travelMs) || cameraEaseMs);
+    focusMs = Math.max(0, Number(data.stableMs) || 4600);
+    shotAt = now;
   }
 }
 
@@ -300,49 +316,72 @@ function drawVine(x1, y1, x2, y2) {
   ctx.restore();
 }
 
-function drawTier(tier, index) {
-  const cfg = meta.cfg;
-  const center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
-  const s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
-  const bays = 3, rows = Math.ceil(cfg.plotsPerTier / cfg.plotsPerRow);
-  const bayCols = cfg.plotsPerRow / bays, bayW = bayCols * cfg.plotCell, totalW = cfg.plotsPerRow * cfg.plotCell;
-  const shelfStart = -(rows - 1) * cfg.plotCell / 2 - 18;
-  const roofY = shelfStart - 155, deckY = shelfStart + (rows - 1) * cfg.plotCell + 72;
-  ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+function moduleGeometry(module, cfg) {
+  const moduleCol = module % cfg.modulesPerRow, moduleRow = Math.floor(module / cfg.modulesPerRow);
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
+  const firstX = cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX);
+  const firstY = cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY);
+  return {
+    firstX, firstY, spanX, spanY,
+    left: firstX - 76, right: firstX + spanX + 76,
+    top: firstY - 166,
+    bottom: firstY + spanY + cfg.potBottomOffset + cfg.potShelfGap + 54,
+  };
+}
 
-  ctx.fillStyle = C.shadow;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY + 26, totalW + 140, 88, 28); ctx.fill();
-  ctx.fillStyle = scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
+function visibleModuleCount(active) {
+  if (!active.length) return 1;
+  return Math.min(Math.ceil(meta.cfg.activeCapacity / meta.cfg.moduleCapacity), Math.max(...active.map(p => Math.floor(p.slot / meta.cfg.moduleCapacity))) + 1);
+}
 
-  for (let bay = 0; bay < bays; bay++) {
-    const bx = -totalW / 2 + bayW * (bay + .5);
-    const left = bx - bayW / 2 + 24, right = bx + bayW / 2 - 24;
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(left, roofY + 34); ctx.quadraticCurveTo(bx, roofY - 72, right, roofY + 34); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22; ctx.stroke();
+function drawTier(tier, index, active) {
+  const cfg = meta.cfg, scene = SEED_SCENE;
+  const modules = visibleModuleCount(active);
+  for (let module = 0; module < modules; module++) {
+    const g = moduleGeometry(module, cfg);
+    const center = worldToScreen({ x: (g.left + g.right) / 2, y: (g.top + g.bottom) / 2 }, cam, VP);
+    const s = cam.zoom, w = g.right - g.left, h = g.bottom - g.top;
+    ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s); ctx.translate(-w / 2, -h / 2);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-    for (const x of [left, right]) {
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, roofY + 34); ctx.lineTo(x, deckY + 10); ctx.stroke();
-      ctx.strokeStyle = scene.rail; ctx.lineWidth = 15; ctx.stroke();
+    // Back frame. Shelves are behind pots; a thin front lip is drawn after crops in drawShelfFronts().
+    ctx.fillStyle = 'rgba(255,253,249,.72)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.roundRect(0, 0, w, h, 28); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 18;
+    ctx.beginPath(); ctx.moveTo(18, 62); ctx.quadraticCurveTo(w / 2, -24, w - 18, 62); ctx.stroke();
+
+    for (let row = 0; row < cfg.shelvesPerModule; row++) {
+      const anchorY = (cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY);
+      const shelfWorldY = anchorY + cfg.potBottomOffset + cfg.potShelfGap;
+      const shelfY = shelfWorldY - g.top;
+      ctx.fillStyle = C.shadow;
+      ctx.beginPath(); ctx.roundRect(28, shelfY + 11, w - 56, 26, 10); ctx.fill();
+      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.roundRect(28, shelfY, w - 56, 18, 9); ctx.fill(); ctx.stroke();
     }
 
-    for (let row = 0; row < rows; row++) {
-      const shelfY = shelfStart + row * cfg.plotCell;
-      ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(left + 18, shelfY + 13, bayW - 84, 31, 12); ctx.fill();
-      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.roundRect(left + 18, shelfY, bayW - 84, 30, 12); ctx.fill(); ctx.stroke();
+    const label = String.fromCharCode(65 + module);
+    ctx.fillStyle = module % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(w / 2 - 142, 22, 284, 48, 12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = `bold 30px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`Khu Gieo Hạt · ${label}`, w / 2, 47);
+    ctx.restore();
+  }
+}
+
+function drawShelfFronts(active) {
+  const cfg = meta.cfg, modules = visibleModuleCount(active);
+  ctx.save();
+  for (let module = 0; module < modules; module++) {
+    const g = moduleGeometry(module, cfg);
+    for (let row = 0; row < cfg.shelvesPerModule; row++) {
+      const anchorY = cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY;
+      const y = anchorY + cfg.potBottomOffset + cfg.potShelfGap + 7;
+      const a = worldToScreen({ x:g.left + 28, y }, cam, VP), b = worldToScreen({ x:g.right - 28, y }, cam, VP);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 5 * cam.zoom); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
-
-    const signW = Math.min(370, bayW - 80);
-    ctx.fillStyle = bay % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.roundRect(bx - signW / 2, roofY - 46, signW, 58, 14); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.font = `bold 34px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, roofY - 17);
-
-    const deco = gardenArt(DECOR_ART[(index + bay) % DECOR_ART.length]);
-    if (deco) { ctx.save(); ctx.globalAlpha = .9; ctx.drawImage(deco, right - 105, roofY + 58, 86, 86); ctx.restore(); }
   }
   ctx.restore();
 }
@@ -399,8 +438,8 @@ function drawRipeCrop(type, stage) {
 
 function drawPlot(p, lod) {
   if (!p.owner || !p.awake) return;
-  const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
-  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = 1;
+  const at = worldToScreen(plotPos(p, meta), cam, VP), renderScale = meta.cfg.potScale ?? 1.05, size = 100 * renderScale * cam.zoom;
+  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(renderScale * cam.zoom, renderScale * cam.zoom); ctx.globalAlpha = 1;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   const potImage = gardenArt(POT_ART[p.potTier] ?? POT_ART.clay);
@@ -409,8 +448,8 @@ function drawPlot(p, lod) {
     ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
     ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
-    ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = POT_ACCENT; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENT; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill();
   }
 
@@ -424,7 +463,21 @@ function drawPlot(p, lod) {
     }
     const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
     if (cropImage) ctx.drawImage(cropImage, -49, -96, 98, 98);
-    else drawRipeCrop(p.crop.type, p.stage ?? 0);
+    else {
+      drawRipeCrop(p.crop.type, p.stage ?? 0);
+      if ((p.stage ?? 0) < 3 && variant === 'lush') {
+        drawLeaf(-17,-31,12,-1.05,C.teal); drawLeaf(17,-37,11,.9,C.teal);
+      } else if ((p.stage ?? 0) < 3 && variant === 'golden') {
+        drawLeaf(-12,-29,11,-.9,C.ochre); drawSparkle(22,-44,6,C.ochre);
+      }
+    }
+
+    if (p.water < .22) {
+      ctx.strokeStyle=C.coral;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(-14,5);ctx.lineTo(-5,10);ctx.lineTo(2,5);ctx.lineTo(12,10);ctx.stroke();
+    } else if (p.water > .65) {
+      ctx.fillStyle=C.teal;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(-30,4,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }
 
     if (p.crop.weeds) {
       ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
@@ -565,38 +618,47 @@ function drawAtmosphere(now, activeTierIds) {
   }
 }
 
-function renderEventHero() {
-  const e = visualEvent();
-  stage.classList.toggle('event-live', Boolean(e));
-  eventHero.classList.toggle('on', Boolean(e));
-  eventHero.setAttribute('aria-hidden', String(!e));
-  if (!e) return;
+let lastEventDomAt=0,lastEventDomKey='';
+function renderEventHero(now) {
+  const e=visualEvent(),key=e?`${e.kind}:${e.phase}:${e.startedAt}`:'none';
+  if(key===lastEventDomKey && now-lastEventDomAt<250)return;
+  lastEventDomAt=now;lastEventDomKey=key;
+  stage.classList.toggle('event-live',Boolean(e));
+  eventHero.classList.toggle('on',Boolean(e));
+  eventHero.setAttribute('aria-hidden',String(!e));
+  if(!e)return;
 
-  const src = EVENT_ART[e.kind] ?? '';
-  if (eventArt.getAttribute('src') !== src) eventArt.setAttribute('src', src);
-  eventArt.alt = eventNames[e.kind] ?? 'Sự kiện';
-  eventHero.dataset.kind = e.kind;
-  eventHeroTitle.textContent = eventNames[e.kind] ?? e.kind;
-  eventHeroHint.textContent = meta.copy?.eventHint?.[e.kind] ?? '';
+  const src=EVENT_ART[e.kind]??'';
+  if(eventArt.getAttribute('src')!==src)eventArt.setAttribute('src',src);
+  eventArt.alt=eventNames[e.kind]??'Sự kiện';
+  eventHero.dataset.kind=e.kind;
+  eventHeroTitle.textContent=eventNames[e.kind]??e.kind;
+  const activeFor=Math.max(0,Date.now()-Number(e.startedAt||Date.now()));
+  eventHero.classList.toggle('compact',activeFor>3500);
 
-  const key = { rain: 'rainMs', pests: 'pestStormMs', merchant: 'merchantMs', golden: 'goldenMs' }[e.kind];
-  const duration = Math.max(1, Number(meta.cfg?.[key]) || 1);
-  const remaining = Math.max(0, Number(e.endsAt || 0) - Date.now());
-  let progress = Math.max(0, Math.min(1, remaining / duration));
-  let metaText = `Còn ${Math.ceil(remaining / 1000)} giây`;
-  if (e.kind === 'pests' && Number(e.total) > 0) {
-    const cleared = Number(e.cleared) || 0;
-    progress = Math.max(0, Math.min(1, cleared / e.total));
-    metaText = `${cleared}/${e.total} ổ sâu đã dọn · còn ${Math.ceil(remaining / 1000)} giây`;
-  } else if (e.kind === 'rain') metaText = `Tăng trưởng ×${meta.cfg.rainMult} · ${metaText}`;
-  else if (e.kind === 'golden') metaText = `Vàng ×${meta.cfg.goldenMult} · ${metaText}`;
-  else if (e.kind === 'merchant') metaText = `Giá thu mua ×${meta.cfg.merchantMult} · ${metaText}`;
-  eventHeroMeta.textContent = metaText;
-  eventMeterFill.style.width = `${Math.round(progress * 100)}%`;
+  const cropLabel=e.crop&&(meta.crops?.[e.crop]?.label??e.crop);
+  const hints={
+    rain:`Cây lớn ×${meta.cfg.rainMult} · tiếp tục chăm cây`,
+    pests:'Gõ “bắt sâu” để cùng cứu vườn',
+    merchant:cropLabel?`${cropLabel} ×${meta.cfg.merchantMult} vàng · cây chín? gõ “hái”`:'Chợ đang chọn cây thu mua',
+    golden:`Thu hoạch ×${meta.cfg.goldenMult} vàng · gõ “hái”`,
+  };
+  eventHeroHint.textContent=hints[e.kind]??'';
+
+  const keyMs={rain:'rainMs',pests:'pestStormMs',merchant:'merchantMs',golden:'goldenMs'}[e.kind];
+  const duration=Math.max(1,Number(meta.cfg?.[keyMs])||1),remaining=Math.max(0,Number(e.endsAt||0)-Date.now());
+  let progress=Math.max(0,Math.min(1,remaining/duration));
+  let metaText=`Còn ${Math.ceil(remaining/1000)} giây`;
+  if(e.kind==='pests'&&Number(e.total)>0){
+    const cleared=Number(e.cleared)||0;progress=Math.max(0,Math.min(1,cleared/e.total));
+    metaText=`${cleared}/${e.total} ổ sâu đã dọn · ${Math.ceil(remaining/1000)}s`;
+  } else if(e.kind==='merchant'&&cropLabel) metaText=`${cropLabel} ×${meta.cfg.merchantMult} · ${Math.ceil(remaining/1000)}s`;
+  eventHeroMeta.textContent=metaText;
+  eventMeterFill.style.width=`${Math.round(progress*100)}%`;
 }
 
 function drawFocus(now) {
-  if (!focusPlot || now - focusAt > focusMs) return;
+  if (!focusPlot || now < focusAt || now - focusAt > focusMs) return;
   const plot = plots.get(focusPlot);
   if (!plot) return;
   const at = worldToScreen(plotPos(plot, meta), cam, VP), age = (now - focusAt) / Math.max(1, focusMs);
@@ -629,8 +691,10 @@ function drawFloaters(now) {
 let lastFrameAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!meta || now - lastFrameAt < 1000 / 45 - 2) return;
-  lastFrameAt = now;
+  if (!meta) return;
+  const moving=now-shotAt<cameraEaseMs+120,eventLive=Boolean(visualEvent()),fps=moving||eventLive?45:floaters.length?30:20;
+  if(now-lastFrameAt<1000/fps-2)return;
+  lastFrameAt=now;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[visualEvent()?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
@@ -639,16 +703,17 @@ function frame(now) {
   const active = [...plots.values()].filter(p => p.owner && p.awake);
   const activeTierIds = new Set(active.map(p => p.tier));
   if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
-  meta.tiers.forEach((tier, i) => { if (activeTierIds.has(tier.id)) drawTier(tier, i); });
+  drawTier(meta.tiers[0], 0, active);
   drawAtmosphere(now, activeTierIds);
 
   const { detail, dots } = visiblePlots(active, cam, VP, meta);
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));
+  drawShelfFronts(active);
   drawFocus(now);
   drawFloaters(now);
-  renderEventHero();
+  renderEventHero(now);
 }
 requestAnimationFrame(frame);
 connect();

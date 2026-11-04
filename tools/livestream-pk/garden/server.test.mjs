@@ -33,20 +33,22 @@ test('the page is served and a simulated viewer shows up in the first poll', asy
   } finally { await s.close(); }
 });
 
-test('simulator can populate a room and start or stop autonomous players', async () => {
+test('simulator sets room size and realism profile instead of accumulating bots', async () => {
   const { s, base } = await boot();
   try {
-    const added = await (await post(base + '/api/sim-room', { action: 'add', count: 6 })).json();
-    assert.equal(added.result.added, 6);
-    assert.deepEqual(added.result, { running: false, bots: 6, added: 6 });
+    const set6 = await (await post(base + '/api/sim-room', { action:'set', count:6, profile:'normal' })).json();
+    assert.deepEqual(set6.result, { running:false, bots:6, profile:'normal', target:6 });
 
-    const started = await (await post(base + '/api/sim-room', { action: 'start' })).json();
-    assert.deepEqual(started.result, { running: true, bots: 6 });
+    const set3 = await (await post(base + '/api/sim-room', { action:'set', count:3, profile:'busy' })).json();
+    assert.deepEqual(set3.result, { running:false, bots:3, profile:'busy', target:3 });
+
+    const started = await (await post(base + '/api/sim-room', { action:'start', profile:'busy' })).json();
+    assert.deepEqual(started.result, { running:true, bots:3, profile:'busy', target:3 });
     const status = await (await fetch(base + '/api/status')).json();
-    assert.deepEqual(status.autoplay, { running: true, bots: 6 });
+    assert.deepEqual(status.autoplay, { running:true, bots:3, profile:'busy', target:3 });
 
-    const stopped = await (await post(base + '/api/sim-room', { action: 'stop' })).json();
-    assert.deepEqual(stopped.result, { running: false, bots: 6 });
+    const stopped = await (await post(base + '/api/sim-room', { action:'stop' })).json();
+    assert.deepEqual(stopped.result, { running:false, bots:3, profile:'busy', target:3 });
   } finally { await s.close(); }
 });
 

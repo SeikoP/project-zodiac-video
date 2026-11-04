@@ -103,12 +103,12 @@ test('changes() sends everything first, then only plots that changed', () => {
   assert.equal(next.plots[s.plot('a').id].owner.nickname, 'A');
 });
 
-test('a viewer who cannot get a plot (all terraces full of growing crops) leaves no record behind', () => {
-  const s = setup({ plotsPerTier: 1 });
-  for (let i = 0; i < 4; i++) s.say('p' + i, 'trồng rau');
-  assert.equal(Object.values(s.garden.state.users).filter(u => u.seat).length, 4);
-  s.say('late', 'trồng rau');
-  assert.equal(s.garden.state.users.late, undefined);
+test('a viewer who cannot get a plot when the Seed Zone is full of crops leaves no record behind', () => {
+  const s = setup({ activeCapacity: 2 });
+  s.say('p0','trồng rau'); s.advance(2000); s.say('p1','trồng rau');
+  assert.equal(Object.values(s.garden.state.users).filter(u=>u.seat).length,2);
+  s.advance(2000); s.say('late','trồng rau');
+  assert.equal(s.garden.state.users.late,undefined);
 });
 
 
