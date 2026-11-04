@@ -9,6 +9,7 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
  const issues=[],add=(code,scene_id,detail)=>issues.push({code,...(scene_id?{scene_id}:{}),...(detail?{detail}:{})});
  if(run_mode!=='fresh')return {format:'zodiac-phase02-authoring-completeness@1',status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const scenes=production?.scenes??[],ids=scenes.map(s=>s.id);
+ if(!intent)add('PHASE02_VISUAL_INTENT_REQUIRED');
  const plan=intent?.scene_plan;
  if(!plan||!Array.isArray(plan.scenes)||plan.scenes.length!==ids.length||plan.scenes.some((s,i)=>s.id!==ids[i]))add('PHASE02_SCENE_PLAN_REQUIRED');
  if(intent?.story_object_plan)add('PHASE02_LEGACY_STORY_OBJECT_FORBIDDEN');
@@ -41,9 +42,10 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
 export async function validatePhase02AuthoringCompletenessWorkspace(root){
  root=path.resolve(root);
  const load=async rel=>JSON.parse(await readFile(path.join(root,rel),'utf8'));
+ const optional=async rel=>load(rel).catch(e=>e.code==='ENOENT'?null:Promise.reject(e));
  const [state,intent,production,art,director,character]=await Promise.all([
-  load('.authoring/pipeline-state.json'),load('.authoring/visual-intent.json'),load('production.json'),
-  load('.authoring/scene-art-direction.json'),load('.authoring/director-plan.json'),load('.authoring/character-assembly-plan.json')
+  load('.authoring/pipeline-state.json'),optional('.authoring/visual-intent.json'),load('production.json'),
+  optional('.authoring/scene-art-direction.json'),optional('.authoring/director-plan.json'),optional('.authoring/character-assembly-plan.json')
  ]);
  return validatePhase02AuthoringCompleteness({run_mode:state.run_mode,intent,production,art,director,character});
 }
