@@ -316,72 +316,41 @@ function drawVine(x1, y1, x2, y2) {
   ctx.restore();
 }
 
-function moduleGeometry(module, cfg) {
-  const moduleCol = module % cfg.modulesPerRow, moduleRow = Math.floor(module / cfg.modulesPerRow);
-  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
-  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
-  const firstX = cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX);
-  const firstY = cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY);
-  return {
-    firstX, firstY, spanX, spanY,
-    left: firstX - 76, right: firstX + spanX + 76,
-    top: firstY - 166,
-    bottom: firstY + spanY + cfg.potBottomOffset + cfg.potShelfGap + 54,
-  };
-}
-
-function visibleModuleCount(active) {
-  if (!active.length) return 1;
-  return Math.min(Math.ceil(meta.cfg.activeCapacity / meta.cfg.moduleCapacity), Math.max(...active.map(p => Math.floor(p.slot / meta.cfg.moduleCapacity))) + 1);
-}
-
-function drawTier(tier, index, active) {
-  const cfg = meta.cfg, scene = SEED_SCENE;
-  const modules = visibleModuleCount(active);
-  for (let module = 0; module < modules; module++) {
-    const g = moduleGeometry(module, cfg);
-    const center = worldToScreen({ x: (g.left + g.right) / 2, y: (g.top + g.bottom) / 2 }, cam, VP);
-    const s = cam.zoom, w = g.right - g.left, h = g.bottom - g.top;
-    ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s); ctx.translate(-w / 2, -h / 2);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-
-    // Back frame. Shelves are behind pots; a thin front lip is drawn after crops in drawShelfFronts().
-    ctx.fillStyle = 'rgba(255,253,249,.72)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.roundRect(0, 0, w, h, 28); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 18;
-    ctx.beginPath(); ctx.moveTo(18, 62); ctx.quadraticCurveTo(w / 2, -24, w - 18, 62); ctx.stroke();
-
-    for (let row = 0; row < cfg.shelvesPerModule; row++) {
-      const anchorY = (cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY);
-      const shelfWorldY = anchorY + cfg.potBottomOffset + cfg.potShelfGap;
-      const shelfY = shelfWorldY - g.top;
-      ctx.fillStyle = C.shadow;
-      ctx.beginPath(); ctx.roundRect(28, shelfY + 11, w - 56, 26, 10); ctx.fill();
-      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.roundRect(28, shelfY, w - 56, 18, 9); ctx.fill(); ctx.stroke();
-    }
-
-    const label = String.fromCharCode(65 + module);
-    ctx.fillStyle = module % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(w / 2 - 142, 22, 284, 48, 12); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.font = `bold 30px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`Khu Gieo Hạt · ${label}`, w / 2, 47);
-    ctx.restore();
+// One physically continuous rack: 16 shelves × 6 positions.
+function drawTier(_tier, _index, _active) {
+  const cfg = meta.cfg, s = cam.zoom, scene = SEED_SCENE;
+  const left = cfg.zoneMarginX - 76, right = cfg.zoneMarginX + (cfg.potsPerShelf - 1) * cfg.potSpacingX + 76;
+  const top = cfg.zoneMarginY - 166;
+  const bottom = cfg.zoneMarginY + (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap + 54;
+  const w = right - left, h = bottom - top;
+  const center = worldToScreen({ x: (left + right) / 2, y: (top + bottom) / 2 }, cam, VP);
+  ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s); ctx.translate(-w / 2, -h / 2);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.fillStyle = 'rgba(255,253,249,.72)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+  ctx.beginPath(); ctx.roundRect(0, 0, w, h, 28); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = scene.rail; ctx.lineWidth = 18;
+  ctx.beginPath(); ctx.moveTo(18, 62); ctx.quadraticCurveTo(w / 2, -24, w - 18, 62); ctx.stroke();
+  for (let row = 0; row < cfg.shelvesPerModule; row++) {
+    const shelfY = cfg.zoneMarginY + row * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap - top;
+    ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(28, shelfY + 11, w - 56, 26, 10); ctx.fill();
+    ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(28, shelfY, w - 56, 18, 9); ctx.fill(); ctx.stroke();
   }
+  ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(w / 2 - 142, 22, 284, 48, 12); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.font = `bold 30px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('Khu Gieo Hạt', w / 2, 47);
+  ctx.restore();
 }
 
-function drawShelfFronts(active) {
-  const cfg = meta.cfg, modules = visibleModuleCount(active);
+function drawShelfFronts() {
+  const cfg = meta.cfg, left = cfg.zoneMarginX - 48, right = cfg.zoneMarginX + (cfg.potsPerShelf - 1) * cfg.potSpacingX + 48;
   ctx.save();
-  for (let module = 0; module < modules; module++) {
-    const g = moduleGeometry(module, cfg);
-    for (let row = 0; row < cfg.shelvesPerModule; row++) {
-      const anchorY = cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY;
-      const y = anchorY + cfg.potBottomOffset + cfg.potShelfGap + 7;
-      const a = worldToScreen({ x:g.left + 28, y }, cam, VP), b = worldToScreen({ x:g.right - 28, y }, cam, VP);
-      ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 5 * cam.zoom); ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-    }
+  for (let row = 0; row < cfg.shelvesPerModule; row++) {
+    const y = cfg.zoneMarginY + row * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap + 7;
+    const a = worldToScreen({ x: left, y }, cam, VP), b = worldToScreen({ x: right, y }, cam, VP);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 5 * cam.zoom); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
   }
   ctx.restore();
 }
@@ -506,18 +475,25 @@ function drawPlot(p, lod) {
     ctx.beginPath(); ctx.moveTo(-40, -17); ctx.lineTo(-35, -28); ctx.lineTo(-30, -18); ctx.lineTo(-19, -16); ctx.lineTo(-27, -9); ctx.lineTo(-25, 1); ctx.lineTo(-35, -4); ctx.lineTo(-44, 1); ctx.lineTo(-42, -9); ctx.lineTo(-50, -16); ctx.closePath(); ctx.fillStyle = C.ochre; ctx.fill(); ctx.stroke();
   }
   ctx.restore();
-  if (p.owner && cam.zoom >= .82) {
+
+}
+
+function drawPlotLabel(p) {
+  if (!p.owner || !p.awake) return;
+  const at = worldToScreen(plotPos(p, meta), cam, VP), renderScale = meta.cfg.potScale ?? 1.05, size = 100 * renderScale * cam.zoom;
+  if (p.owner && cam.zoom >= .27) {
     const focused = focusPlot === p.id && cam.zoom >= 1.25;
-    const labelY = at.y + size * .55;
-    const fontSize = focused ? 29 : 18;
+    const labelY = focused ? 1390 : at.y + size * .55;
+    const fontSize = focused ? 29 : cam.zoom < .82 ? 16 : 18;
     const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
-    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
+    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : cam.zoom < .82 ? `#${String(p.slot + 1).padStart(3, '0')}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const maxW = focused ? 360 : 112, h = focused ? 40 : 27;
+    const maxW = focused ? 360 : cam.zoom < .82 ? 64 : 112, h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
     ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
-    ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, h, focused ? 11 : 8); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + (focused ? 3 : 2));
+    const labelX = focused ? VP.w / 2 : at.x;
+    ctx.beginPath(); ctx.roundRect(labelX - w / 2, labelY, w, h, focused ? 11 : 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.fillText(title, labelX, labelY + (focused ? 3 : 2));
 
     if (focused) {
       const stageName = ['Hạt', 'Mầm', 'Đang lớn', 'Chín', 'Quá lứa'][p.stage ?? 0] ?? 'Đang lớn';
@@ -528,10 +504,11 @@ function drawPlot(p, lod) {
       ctx.font = `22px ${FONT}`;
       const sw = Math.min(390, ctx.measureText(status).width + 24), sy = labelY + 45;
       ctx.fillStyle = 'rgba(255,253,249,.96)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.roundRect(at.x - sw / 2, sy, sw, 34, 10); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = p.crop?.pest || p.crop?.weeds ? C.coral : C.softInk; ctx.fillText(status, at.x, sy + 2);
+      ctx.beginPath(); ctx.roundRect(labelX - sw / 2, sy, sw, 34, 10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.crop?.pest || p.crop?.weeds ? C.coral : C.softInk; ctx.fillText(status, labelX, sy + 2);
     }
 
+    if (cam.zoom < .82) { ctx.restore(); return; }
     const avatarR = focused ? Math.max(26, size * .16) : Math.max(12, size * .095);
     const avatarX = at.x - size * .28, avatarY = at.y - size * .62;
     // A small plant-label stake physically connects identity to the pot.
@@ -711,6 +688,7 @@ function frame(now) {
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));
   drawShelfFronts(active);
+  detail.forEach(drawPlotLabel); // Screen-space identity is always above the shelf lip.
   drawFocus(now);
   drawFloaters(now);
   renderEventHero(now);
