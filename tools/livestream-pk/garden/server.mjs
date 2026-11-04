@@ -58,6 +58,60 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const newGarden = () => createGarden({ config: full.garden, state, now, onEvent });
   garden = newGarden();
   camera = createCamera({ cfg: garden.cfg, now });
+
+  // Simulator room director: creates persistent fake viewers and lets them play naturally
+  // so the overlay can be reviewed as a living room rather than a one-person button demo.
+  const BOT_NAMES = ['An','Bảo','Chi','Duy','Giang','Hà','Hải','Hân','Huy','Khanh','Lan','Linh','Mai','Minh','My','Nam','Nga','Ngân','Ngọc','Nhi','Phúc','Quân','Quỳnh','Sơn','Thảo','Trang','Trúc','Tuấn','Vy','Yến'];
+  const AUTO_ACTIONS = ['tưới', 'tưới', 'tưới', 'bắt sâu', 'vườn', 'trộm'];
+  let autoTimer = null, autoSeq = 0, autoCursor = 0;
+  const autoUsers = new Map();
+  const autoStatus = () => ({ running: Boolean(autoTimer), bots: autoUsers.size });
+  const autoUser = i => {
+    const n = autoSeq++;
+    return { userId: `auto-${n}`, nickname: `${BOT_NAMES[n % BOT_NAMES.length]} ${Math.floor(n / BOT_NAMES.length) + 1}`, avatar: '' };
+  };
+  const addAutoUsers = count => {
+    if (!simulator) throw new Error('simulator-only');
+    const added = [];
+    for (let i = 0; i < Math.max(1, Math.min(120, Number(count) || 12)); i++) {
+      const user = autoUser(i);
+      autoUsers.set(user.userId, user);
+      // Plant immediately when possible; the normal chat path still owns seating/economy rules.
+      garden.chat({ ...user, comment: i % 5 === 4 ? 'trồng hướng dương' : 'trồng rau' });
+      added.push(user);
+    }
+    saver.markDirty();
+    return added.length;
+  };
+  const autoStep = () => {
+    if (!simulator || !autoUsers.size) return;
+    const users = [...autoUsers.values()];
+    const batch = Math.max(1, Math.min(12, Math.ceil(users.length / 8)));
+    for (let k = 0; k < batch; k++) {
+      const user = users[(autoCursor++ + k) % users.length];
+      const stored = state.users['sim:' + user.userId];
+      const seat = stored?.seat;
+      const plot = seat && state.plots[`${seat.tier}:${seat.slot}`];
+      let comment;
+      if (!plot?.crop) comment = stored?.level >= 2 && (autoCursor + k) % 5 === 0 ? 'trồng hướng dương' : 'trồng rau';
+      else if (plot.crop.progress >= 1) comment = 'hái';
+      else if (plot.crop.pest) comment = 'bắt sâu';
+      else comment = AUTO_ACTIONS[(autoCursor + k * 3) % AUTO_ACTIONS.length];
+      garden.chat({ ...user, userId: 'sim:' + user.userId, comment });
+    }
+    // Rare gifts are enough to exercise close-ups without making the camera permanently gift-driven.
+    if (autoCursor % 23 === 0) {
+      const user = users[autoCursor % users.length];
+      garden.gift({ ...user, userId: 'sim:' + user.userId, diamonds: autoCursor % 92 === 0 ? 100 : 5, count: 1 });
+    }
+  };
+  const startAuto = () => {
+    if (!simulator) throw new Error('simulator-only');
+    if (!autoUsers.size) addAutoUsers(24);
+    if (!autoTimer) autoTimer = setInterval(autoStep, 900);
+    return autoStatus();
+  };
+  const stopAuto = () => { if (autoTimer) clearInterval(autoTimer); autoTimer = null; return autoStatus(); };
   const meta = () => ({ ...garden.meta(), music: { calm: music.calm, upbeat: music.upbeat } });
   const status = () => {
     const plots = Object.values(state.plots), crops = plots.filter(p => p.owner && p.crop);
@@ -65,6 +119,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const cam = camera.state();
     return {
       simulator,
+      autoplay: autoStatus(),
       viewers: players.length,
       players: players.map(u => ({ nickname: u.nickname, level: u.level, tier: u.seat.tier })),
       planted: crops.length,
@@ -77,6 +132,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   };
   const reset = async () => {
     if (!simulator) throw new Error('reset-simulator-only');
+    stopAuto(); autoUsers.clear(); autoSeq = autoCursor = 0;
     Object.assign(state, emptyGardenState(now()));
     coalescer = createCoalescer({ now });
     garden = newGarden();
@@ -118,6 +174,14 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       const user = { userId: 'sim:' + String(b.user?.userId ?? 'x').slice(0, 48), nickname: String(b.user?.nickname ?? 'Người xem').slice(0, 32), avatar: '' };
       if (b.kind === 'gift') return garden.gift({ ...user, diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1 });
       return garden.chat({ ...user, comment: String(b.comment ?? '').slice(0, 120) });
+    },
+    'sim-room': b => {
+      const action = String(b.action ?? 'status');
+      if (action === 'add') return { ...autoStatus(), added: addAutoUsers(b.count) };
+      if (action === 'start') return startAuto();
+      if (action === 'stop') return stopAuto();
+      if (action === 'burst') { autoStep(); return autoStatus(); }
+      return autoStatus();
     },
     reset,
   };
@@ -200,7 +264,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const api = url.pathname.startsWith('/api/') && Object.hasOwn(API, url.pathname.slice(5)) && API[url.pathname.slice(5)];
     if (api && req.method === 'POST') {
       const route = url.pathname.slice(5);
-      if (!simulator && ['sim', 'reset'].includes(route)) return void res.writeHead(403, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'simulator-only' }));
+      if (!simulator && ['sim', 'sim-room', 'reset'].includes(route)) return void res.writeHead(403, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'simulator-only' }));
       try {
         const result = await api(await readBody(req));
         saver.markDirty();
@@ -229,7 +293,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   return {
     port: boundPort, url: `http://127.0.0.1:${boundPort}/`, garden, camera,
     async close() {
-      clearInterval(frame); clearInterval(reaper);
+      clearInterval(frame); clearInterval(reaper); stopAuto();
       await bridge?.disconnect?.();
       await saver.flush(); saver.stop();
       for (const c of hub.clients) c.wake?.();
