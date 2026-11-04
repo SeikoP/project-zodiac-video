@@ -47,7 +47,9 @@ export function createCamera({ cfg, now }) {
     if (locked) return;
     const cand = candidate(e);
     if (!cand) return;
-    const same = cand.tier && queue.find(q => q.tier === cand.tier && cand.at - q.at <= c.mergeMs);
+    // Only adjacent gift moments merge into a terrace montage. Welcome/theft/catch shots
+    // keep their identity, and a big gift never gets diluted into a generic tier shot.
+    const same = cand.type === 'gift' && cand.tier && queue.find(q => q.type === 'gift' && q.tier === cand.tier && cand.at - q.at <= c.mergeMs);
     if (same) {
       Object.assign(same, { kind: 'tier', priority: Math.min(same.priority, cand.priority), x: (same.x + cand.x) / 2, y: (same.y + cand.y) / 2, plotId: null, zoom: c.zoomTier, holdMs: Math.max(same.holdMs, cand.holdMs), gift: same.gift && cand.gift, ttl: Math.max(same.ttl, cand.ttl) });
       return;

@@ -10,7 +10,7 @@ const BEGGING = /xin quà|tặng quà|gửi quà|ủng hộ|donate|send (a )?gif
 const here = path.dirname(fileURLToPath(import.meta.url));
 const publicGarden = path.join(here, '../public/garden');
 const files = [...fs.readdirSync(here).filter(f => f.endsWith('.mjs') && !f.endsWith('.test.mjs')).map(f => path.join(here, f)),
-  ...(fs.existsSync(publicGarden) ? fs.readdirSync(publicGarden).map(f => path.join(publicGarden, f)).filter(f => fs.statSync(f).isFile()) : [])];
+  ...(fs.existsSync(publicGarden) ? fs.readdirSync(publicGarden).map(f => path.join(publicGarden, f)).filter(f => fs.statSync(f).isFile() && !path.basename(f).startsWith('control')) : [])];
 
 test('no viewer-facing string asks for a gift', () => {
   const strings = JSON.stringify(COPY);

@@ -123,18 +123,33 @@ export function tickPlots(ctx) {
   for (const plot of Object.values(ctx.state.plots)) {
     if (!plot.crop || !isAwake(ctx, plot)) continue;
     const crop = plot.crop;
+    const beforeStage = stageOf(crop, now, cfg);
+    let visibleChange = false;
     plot.water = Math.max(0, plot.water - dt / cfg.waterDecayMs);
     if (crop.progress < 1) {
-      if (!crop.pest && ctx.rng() < cfg.pestChancePerSec * dt / 1000) { crop.pest = true; ctx.emit({ type: 'pest', plotId: plot.id, userId: plot.owner }); }
+      if (!crop.pest && ctx.rng() < cfg.pestChancePerSec * dt / 1000) {
+        crop.pest = true; visibleChange = true;
+        ctx.emit({ type: 'pest', plotId: plot.id, userId: plot.owner });
+      }
       crop.progress += dt / CROPS[crop.type].growMs
         * (plot.water > 0 ? 1 : cfg.dryGrowth)
         * (crop.pest ? cfg.pestGrowth : 1)
         * (crop.weeds ? cfg.weedGrowth : 1)
         * (crop.fertilized ? cfg.fertilizedGrowth : 1)
         * m.grow;
-      if (crop.progress >= 1) { crop.progress = 1; crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: plot.owner, crop: crop.type, first: ctx.state.users[plot.owner]?.stats.harvest === 0 }); }
-      if (!crop.weeds && ctx.rng() > 1 - cfg.weedChancePerSec * dt / 1000) { crop.weeds = true; ctx.emit({ type: 'weed', plotId: plot.id, userId: plot.owner }); }
+      if (crop.progress >= 1) {
+        crop.progress = 1; crop.ripeAt = now; visibleChange = true;
+        ctx.emit({ type: 'ripe', plotId: plot.id, userId: plot.owner, crop: crop.type, first: ctx.state.users[plot.owner]?.stats.harvest === 0 });
+      }
+      if (!crop.weeds && ctx.rng() > 1 - cfg.weedChancePerSec * dt / 1000) {
+        crop.weeds = true; visibleChange = true;
+        ctx.emit({ type: 'weed', plotId: plot.id, userId: plot.owner });
+      }
     }
-    bump(ctx, plot);
+    if (stageOf(crop, now, cfg) !== beforeStage) visibleChange = true;
+    if (visibleChange || now - (plot.lastSyncAt ?? 0) >= cfg.plotSyncMs) {
+      plot.lastSyncAt = now;
+      bump(ctx, plot);
+    }
   }
 }

@@ -51,11 +51,13 @@ test('no more than 150 plots are drawn in detail, awake ones first', () => {
   const plots = [];
   for (let s = 0; s < 108; s++) plots.push(owned('cloud-1', s, s % 6 === 0));
   for (const { id: tier } of TIERS.slice(1, 3)) for (let s = 0; s < 108; s++) plots.push(owned(tier, s, false));
-  const c = { x: 1350, y: 600, zoom: 0.5 };
+  const c = { x: cfg.tierWidth / 2, y: cfg.tierHeight / 2, zoom: 0.5 };
   const v = visiblePlots(plots, c, VP, meta, 160, 20);
   assert.equal(v.detail.length, 20);
-  assert.ok(v.detail.slice(0, 18).every(p => p.awake), 'awake plots come first');
-  assert.ok(v.detail.slice(18).every(p => !p.awake));
+  const awakeInside = v.detail.filter(p => p.awake).length;
+  assert.ok(awakeInside > 0, 'the frame includes active pots');
+  assert.ok(v.detail.slice(0, awakeInside).every(p => p.awake), 'awake plots come first');
+  assert.ok(v.detail.slice(awakeInside).every(p => !p.awake));
   assert.ok(v.dots.length > 0);
 });
 

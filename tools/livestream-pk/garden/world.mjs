@@ -67,8 +67,14 @@ function evict(ctx, user, tier) {
 // Prefer a requested tier, then the least occupied ones; only empty plots are ever reclaimed.
 export function seat(ctx, user, preferred) {
   if (user.seat) return ctx.state.plots[plotId(user.seat.tier, user.seat.slot)];
-  const order = [...TIERS.map(x => x.id)].sort((a, b) => owned(ctx, a).length - owned(ctx, b).length);
-  if (TIERS.some(x => x.id === preferred)) order.unshift(...order.splice(order.indexOf(preferred), 1));
+  const validPreferred = TIERS.some(x => x.id === preferred) ? preferred : null;
+  if (validPreferred) {
+    const open = room(ctx, user, validPreferred);
+    if (open) return open;
+    const reclaimed = evict(ctx, user, validPreferred);
+    if (reclaimed) return reclaimed;
+  }
+  const order = TIERS.map(x => x.id).filter(id => id !== validPreferred).sort((a, b) => owned(ctx, a).length - owned(ctx, b).length);
   for (const tier of order) { const plot = room(ctx, user, tier); if (plot) return plot; }
   for (const tier of order) { const plot = evict(ctx, user, tier); if (plot) return plot; }
   return null;

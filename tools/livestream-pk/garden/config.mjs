@@ -4,7 +4,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   // camera reviews it as four 9-column greenhouse bays, so density drops without changing capacity or plot IDs.
   tierWidth: 4320, tierHeight: 820, plotsPerTier: 108, plotsPerRow: 36, plotCell: 110, tierMarginX: 180, tierMarginY: 230,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
-  sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000,
+  sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000, plotSyncMs: 5000,
   // growth and care
   graceMs: 120000, oldYield: 0.5,
   waterDecayMs: 60000, dryGrowth: 0.5, waterBoost: 0.06, waterCooldownMs: 15000,
