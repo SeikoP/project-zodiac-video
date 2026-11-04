@@ -138,7 +138,7 @@ async function roomAction(action, rest = {}) {
   return result;
 }
 $('addBots').addEventListener('click', async () => {
-  const count=Math.max(1,Math.min(96,Number($('autoCount').value)||24)),profile=$('autoProfile')?.value??'normal';
+  const count=Math.max(1,Math.min(48,Number($('autoCount').value)||24)),profile=$('autoProfile')?.value??'normal';
   try {
     const result=await roomAction('set',{count,profile});
     $('actionResult').textContent=`Đã đặt phòng thành ${result.bots} người · ${result.profile}.`;
