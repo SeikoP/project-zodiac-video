@@ -14,6 +14,8 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
  if(!plan||!Array.isArray(plan.scenes)||plan.scenes.length!==ids.length||plan.scenes.some((s,i)=>s.id!==ids[i]))add('PHASE02_SCENE_PLAN_REQUIRED');
  if(intent?.story_object_plan)add('PHASE02_LEGACY_STORY_OBJECT_FORBIDDEN');
  for(const s of intent?.scenes??[])if(s?.grammar?.environment?.scene_set_id)add('PHASE02_LEGACY_SCENE_SET_FORBIDDEN',s.id);
+ const allVisuals=scenes.flatMap(scene=>(scene.entities??[]).filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object'));
+ if(intent?.narrative_visual_decision?.mode==='required'&&!allVisuals.length)add('PHASE02_NARRATIVE_VISUAL_REQUIRED');
  const directorScenes=new Set((director?.beats??[]).map(b=>b.scene_id).filter(Boolean));
  const charIds=new Set((character?.characters??[]).map(c=>c.entity_id).filter(Boolean));
  for(const scene of scenes){
@@ -28,9 +30,7 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
    if(!events.some(e=>e.target===prop.id))add('PHASE02_PROP_EVENT_REQUIRED',scene.id,prop.id);
   }
   const visuals=(scene.entities??[]).filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object');
-  const narrativeRequired=intent?.narrative_visual_decision?.mode==='required'||visuals.length>0;
-  if(narrativeRequired){
-   if(!visuals.length)add('PHASE02_NARRATIVE_VISUAL_REQUIRED',scene.id);
+  if(visuals.length){
    for(const visual of visuals){
     if(!beats.some(b=>used(b.layers?.narrative_visual,visual.id)||used(b.layers?.story_object,visual.id)))add('PHASE02_NARRATIVE_VISUAL_COVERAGE_REQUIRED',scene.id,visual.id);
     if(!events.some(e=>e.target===visual.id&&e.state_before!==e.state_after))add('PHASE02_NARRATIVE_VISUAL_EVENT_REQUIRED',scene.id,visual.id);
