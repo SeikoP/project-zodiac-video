@@ -1,5 +1,5 @@
 // Planting, watering, pests, harvesting and the per-tick growth of every awake plot.
-import { CROPS, seedCost, stageOf } from './crops.mjs';
+import { CROPS, CROP_VARIANTS, cropVariant, seedCost, stageOf } from './crops.mjs';
 import { addGold, addXp, spendGold } from './progress.mjs';
 import { bump, isAwake, touch } from './world.mjs';
 
@@ -14,7 +14,7 @@ export function plant(ctx, user, cropId) {
   if (plot.crop) return fail('busy');
   if (user.level < crop.minLevel) return fail('level');
   if (!spendGold(user, seedCost(cropId, ctx.cfg))) return fail('gold');
-  plot.crop = { type: cropId, progress: 0, ripeAt: null, pest: false, stolen: 0 };
+  plot.crop = { type: cropId, progress: 0, ripeAt: null, pest: false, weeds: false, fertilized: false, stolen: 0, variant: cropVariant(user.level, ctx.rng()) };
   plot.water = 1;
   touch(ctx, user);
   ctx.emit({ type: 'plant', plotId: plot.id, userId: user.userId, crop: cropId });
@@ -60,13 +60,50 @@ export function catchPests(ctx, user) {
   return { ok: true, cleared: true };
 }
 
+export function clearWeeds(ctx, user) {
+  const plot = plotOf(ctx, user);
+  if (!plot?.crop?.weeds) return fail('no-weeds');
+  plot.crop.weeds = false;
+  touch(ctx, user);
+  addGold(user, 1);
+  gain(ctx, user, 1, plot);
+  ctx.emit({ type: 'weed-cleared', plotId: plot.id, userId: user.userId });
+  return { ok: true, gold: 1, xp: 1 };
+}
+
+export function fertilize(ctx, user) {
+  const plot = plotOf(ctx, user), now = ctx.now();
+  if (!plot?.crop) return fail('no-crop');
+  if (plot.crop.fertilized) return fail('already-fertilized');
+  if (!spendGold(user, ctx.cfg.fertilizeCost)) return fail('gold');
+  plot.crop.fertilized = true;
+  if (plot.crop.progress < 1) {
+    plot.crop.progress = Math.min(1, plot.crop.progress + ctx.cfg.fertilizeBoost);
+    if (plot.crop.progress >= 1) {
+      plot.crop.ripeAt = now;
+      ctx.emit({ type: 'ripe', plotId: plot.id, userId: user.userId, crop: plot.crop.type, first: user.stats.harvest === 0 });
+    }
+  }
+  touch(ctx, user);
+  ctx.emit({ type: 'fertilize', plotId: plot.id, userId: user.userId });
+  bump(ctx, plot);
+  return { ok: true, progress: plot.crop.progress };
+}
+
 export function harvest(ctx, user) {
   const plot = plotOf(ctx, user);
   if (!plot?.crop) return fail('no-crop');
   const stage = stageOf(plot.crop, ctx.now(), ctx.cfg);
   if (stage < 3) return fail('not-ripe');
-  const def = CROPS[plot.crop.type], m = mods(ctx);
-  const factor = (1 - ctx.cfg.stealFrac * plot.crop.stolen) * (plot.crop.pest ? ctx.cfg.pestYield : 1) * (stage === 4 ? ctx.cfg.oldYield : 1) * m.gold * (m.boost?.crop === def.id ? m.boost.mult : 1);
+  const def = CROPS[plot.crop.type], m = mods(ctx), variant = CROP_VARIANTS[plot.crop.variant] ?? CROP_VARIANTS.common;
+  const factor = (1 - ctx.cfg.stealFrac * plot.crop.stolen)
+    * (plot.crop.pest ? ctx.cfg.pestYield : 1)
+    * (plot.crop.weeds ? ctx.cfg.weedYield : 1)
+    * (plot.crop.fertilized ? ctx.cfg.fertilizedYield : 1)
+    * variant.yield
+    * (stage === 4 ? ctx.cfg.oldYield : 1)
+    * m.gold
+    * (m.boost?.crop === def.id ? m.boost.mult : 1);
   const gold = Math.max(1, Math.round(def.gold * factor));
   addGold(user, gold);
   user.stats.harvest++;
@@ -89,8 +126,14 @@ export function tickPlots(ctx) {
     plot.water = Math.max(0, plot.water - dt / cfg.waterDecayMs);
     if (crop.progress < 1) {
       if (!crop.pest && ctx.rng() < cfg.pestChancePerSec * dt / 1000) { crop.pest = true; ctx.emit({ type: 'pest', plotId: plot.id, userId: plot.owner }); }
-      crop.progress += dt / CROPS[crop.type].growMs * (plot.water > 0 ? 1 : cfg.dryGrowth) * (crop.pest ? cfg.pestGrowth : 1) * m.grow;
+      crop.progress += dt / CROPS[crop.type].growMs
+        * (plot.water > 0 ? 1 : cfg.dryGrowth)
+        * (crop.pest ? cfg.pestGrowth : 1)
+        * (crop.weeds ? cfg.weedGrowth : 1)
+        * (crop.fertilized ? cfg.fertilizedGrowth : 1)
+        * m.grow;
       if (crop.progress >= 1) { crop.progress = 1; crop.ripeAt = now; ctx.emit({ type: 'ripe', plotId: plot.id, userId: plot.owner, crop: crop.type, first: ctx.state.users[plot.owner]?.stats.harvest === 0 }); }
+      if (!crop.weeds && ctx.rng() > 1 - cfg.weedChancePerSec * dt / 1000) { crop.weeds = true; ctx.emit({ type: 'weed', plotId: plot.id, userId: plot.owner }); }
     }
     bump(ctx, plot);
   }

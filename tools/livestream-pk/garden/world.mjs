@@ -31,7 +31,7 @@ export function ensureUser(ctx, { userId, nickname, avatar }) {
   return u;
 }
 
-const plotAt = (ctx, tier, slot) => ctx.state.plots[plotId(tier, slot)] ??= { id: plotId(tier, slot), tier, slot, owner: null, crop: null, water: 1, lastActive: ctx.now(), dogUntil: 0, shieldUntil: 0, deco: [], ver: 0 };
+const plotAt = (ctx, tier, slot) => ctx.state.plots[plotId(tier, slot)] ??= { id: plotId(tier, slot), tier, slot, owner: null, crop: null, water: 1, lastActive: ctx.now(), sleeping: false, dogUntil: 0, shieldUntil: 0, deco: [], ver: 0 };
 const owned = (ctx, tier) => Object.values(ctx.state.plots).filter(p => p.tier === tier && p.owner);
 
 function take(ctx, user, plot) {
@@ -39,6 +39,7 @@ function take(ctx, user, plot) {
   plot.crop = null;
   plot.water = 1;
   plot.lastActive = ctx.now();
+  plot.sleeping = false;
   plot.dogUntil = plot.shieldUntil = 0;
   plot.deco = [...user.deco];
   user.seat = { tier: plot.tier, slot: plot.slot };
@@ -77,7 +78,32 @@ export function touch(ctx, user) {
   const plot = ctx.state.plots[plotId(user.seat.tier, user.seat.slot)];
   if (!plot) return;
   plot.lastActive = ctx.now();
+  plot.sleeping = false;
   bump(ctx, plot);
 }
 
-export const isAwake = (ctx, plot) => Boolean(plot.owner) && ctx.now() - plot.lastActive < ctx.cfg.sleepAfterMs;
+export const isAwake = (ctx, plot) => Boolean(plot.owner) && !plot.sleeping && ctx.now() - plot.lastActive < ctx.cfg.sleepAfterMs;
+
+export function managePresence(ctx) {
+  const now = ctx.now();
+  let sleeping = 0, evicted = 0;
+  for (const plot of Object.values(ctx.state.plots)) {
+    if (!plot.owner) continue;
+    const user = ctx.state.users[plot.owner];
+    if (!user) {
+      plot.owner = null; plot.crop = null; plot.sleeping = false; plot.deco = []; bump(ctx, plot);
+      continue;
+    }
+    const age = now - plot.lastActive;
+    if (age >= ctx.cfg.evictAfterMs) {
+      if (user.seat?.tier === plot.tier && user.seat?.slot === plot.slot) user.seat = null;
+      plot.owner = null; plot.crop = null; plot.water = 1; plot.wateredAt = null; plot.sleeping = false;
+      plot.dogUntil = plot.shieldUntil = 0; plot.deco = [];
+      bump(ctx, plot); evicted++; continue;
+    }
+    const nextSleeping = age >= ctx.cfg.sleepAfterMs;
+    if (Boolean(plot.sleeping) !== nextSleeping) { plot.sleeping = nextSleeping; bump(ctx, plot); }
+    if (nextSleeping) sleeping++;
+  }
+  return { sleeping, evicted };
+}

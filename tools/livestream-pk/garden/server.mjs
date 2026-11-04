@@ -62,7 +62,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   // Simulator room director: creates persistent fake viewers and lets them play naturally
   // so the overlay can be reviewed as a living room rather than a one-person button demo.
   const BOT_NAMES = ['An','Bảo','Chi','Duy','Giang','Hà','Hải','Hân','Huy','Khanh','Lan','Linh','Mai','Minh','My','Nam','Nga','Ngân','Ngọc','Nhi','Phúc','Quân','Quỳnh','Sơn','Thảo','Trang','Trúc','Tuấn','Vy','Yến'];
-  const AUTO_ACTIONS = ['tưới', 'tưới', 'tưới', 'bắt sâu', 'vườn', 'trộm'];
+  const AUTO_ACTIONS = ['tưới', 'tưới', 'bón phân', 'nhổ cỏ', 'bắt sâu', 'vườn', 'trộm'];
   let autoTimer = null, autoSeq = 0, autoCursor = 0, autoPulse = 0, autoFeature = 0, autoFeatureBoosts = 0;
   const autoUsers = new Map();
   const autoStatus = () => ({ running: Boolean(autoTimer), bots: autoUsers.size });
@@ -96,6 +96,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       if (!plot?.crop) comment = stored?.level >= 2 && (autoCursor + k) % 5 === 0 ? 'trồng hướng dương' : 'trồng rau';
       else if (plot.crop.progress >= 1) comment = 'hái';
       else if (plot.crop.pest) comment = 'bắt sâu';
+      else if (plot.crop.weeds) comment = 'nhổ cỏ';
+      else if (!plot.crop.fertilized && stored?.gold >= garden.cfg.fertilizeCost && (autoCursor + k) % 4 === 0) comment = 'bón phân';
       else comment = AUTO_ACTIONS[(autoCursor + k * 3) % AUTO_ACTIONS.length];
       garden.chat({ ...user, userId: 'sim:' + user.userId, comment });
     }
@@ -131,19 +133,24 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const meta = () => ({ ...garden.meta(), music: { calm: music.calm, upbeat: music.upbeat } });
   const status = () => {
     const plots = Object.values(state.plots), crops = plots.filter(p => p.owner && p.crop);
-    const players = Object.values(state.users).filter(u => u.seat);
+    const seated = Object.values(state.users).filter(u => u.seat);
+    const players = seated.filter(u => {
+      const p = state.plots[`${u.seat.tier}:${u.seat.slot}`];
+      return p && now() - p.lastActive < garden.cfg.sleepAfterMs;
+    });
     const cam = camera.state();
     return {
       simulator,
       autoplay: autoStatus(),
       viewers: players.length,
+      sleeping: seated.length - players.length,
       players: players.map(u => ({ nickname: u.nickname, level: u.level, tier: u.seat.tier })),
       planted: crops.length,
       ripe: crops.filter(p => p.crop.progress >= 1).length,
       event: state.event?.kind ?? null,
       camera: { locked: cam.locked, current: cam.current?.kind ?? null, pending: cam.queue.length },
       competition: garden.competition.status(),
-      tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && p.owner).length })),
+      tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs).length })),
     };
   };
   const reset = async () => {

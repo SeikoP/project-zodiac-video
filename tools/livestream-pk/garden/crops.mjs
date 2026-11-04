@@ -5,6 +5,19 @@ export const CROPS = Object.freeze({
   nammay: { id: 'nammay', label: 'Nấm mây', minLevel: 4, growMs: 480000, gold: 45, xp: 25 },
 });
 
+export const CROP_VARIANTS = Object.freeze({
+  common: Object.freeze({ id: 'common', label: 'Thường', yield: 1 }),
+  lush: Object.freeze({ id: 'lush', label: 'Sum suê', yield: 1.25 }),
+  golden: Object.freeze({ id: 'golden', label: 'Ánh kim', yield: 1.6 }),
+});
+
+export function cropVariant(level = 1, roll = 0) {
+  const lv = Math.max(1, Math.min(10, Number(level) || 1));
+  if (roll >= .99 - lv * .004) return 'golden';
+  if (roll >= .86 - lv * .015) return 'lush';
+  return 'common';
+}
+
 const fold = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').replace(/\s+/g, '').trim();
 export const cropByName = text => Object.keys(CROPS).find(id => fold(text).replaceAll(' ', '') === id) ?? null;
 export const seedCost = (id, cfg) => Math.round(CROPS[id].gold * cfg.seedCostRate);

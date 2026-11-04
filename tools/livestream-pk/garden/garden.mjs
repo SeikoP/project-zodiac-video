@@ -1,6 +1,6 @@
 // Vườn Mây: wires comments, gifts and time into the garden modules. The only place that knows how they fit together.
 import { gardenConfig } from './config.mjs';
-import { catchPests, harvest, plant, tickPlots, water } from './care.mjs';
+import { catchPests, clearWeeds, fertilize, harvest, plant, tickPlots, water } from './care.mjs';
 import { createLimiter, parseCommand, resolveMention } from './commands.mjs';
 import { COPY } from './copy.mjs';
 import { CROPS, stageOf } from './crops.mjs';
@@ -8,7 +8,8 @@ import { createEvents, modifiers } from './events.mjs';
 import { applyGift } from './gifts.mjs';
 import { catchThief, dog, steal, tickSteal } from './steal.mjs';
 import { createCompetition } from './competition.mjs';
-import { bump, emptyGardenState, ensureUser, TIERS, seat } from './world.mjs';
+import { bump, emptyGardenState, ensureUser, isAwake, managePresence, TIERS, seat, touch } from './world.mjs';
+import { potTierOf } from './progress.mjs';
 
 export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, state = emptyGardenState(now()) } = {}) {
   const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), limiter: createLimiter(now) };
@@ -26,6 +27,8 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       case 'plant': result = plant(ctx, user, cmd.arg ?? 'rau'); scoreAction = 'plant'; break;
       case 'water': result = water(ctx, user, target ?? user); scoreAction = target && target !== user ? 'help' : 'water'; break;
       case 'pest': result = catchPests(ctx, user); scoreAction = 'pest'; break;
+      case 'weed': result = clearWeeds(ctx, user); scoreAction = 'help'; break;
+      case 'fertilize': result = fertilize(ctx, user); scoreAction = 'water'; break;
       case 'harvest': result = harvest(ctx, user); scoreAction = 'harvest'; break;
       case 'steal': result = steal(ctx, user, target); break;
       case 'catch': result = catchThief(ctx, user); scoreAction = 'catch'; break;
@@ -56,6 +59,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       const award = competition.score(user, 'join');
       if (award?.titles.length) ctx.emit({ type: 'title', userId: user.userId, nickname: user.nickname, titles: award.titles, points: award.total });
     }
+    if (!cmd) touch(ctx, user);
     return { ...(cmd ? run(user, cmd) : { ok: true }), action: cmd?.cmd ?? 'chat', joined, plotId: user.seat && `${user.seat.tier}:${user.seat.slot}`, competition: competition.profile(user) };
   }
 
@@ -70,8 +74,10 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
   const view = p => {
     const o = p.owner && state.users[p.owner];
     return { id: p.id, tier: p.tier, slot: p.slot, owner: o && { userId: o.userId, nickname: o.nickname, avatar: o.avatar, level: o.level },
-      stage: p.crop ? stageOf(p.crop, now(), ctx.cfg) : null, crop: p.crop && { type: p.crop.type, progress: p.crop.progress, pest: p.crop.pest, stolen: p.crop.stolen },
-      water: p.water, dog: p.dogUntil > now(), shield: p.shieldUntil > now(), deco: p.deco, awake: Boolean(o) && now() - p.lastActive < ctx.cfg.sleepAfterMs };
+      potTier: o ? potTierOf(o.level).id : null,
+      stage: p.crop ? stageOf(p.crop, now(), ctx.cfg) : null,
+      crop: p.crop && { type: p.crop.type, progress: p.crop.progress, pest: Boolean(p.crop.pest), weeds: Boolean(p.crop.weeds), fertilized: Boolean(p.crop.fertilized), stolen: p.crop.stolen, variant: p.crop.variant ?? 'common' },
+      water: p.water, dog: p.dogUntil > now(), shield: p.shieldUntil > now(), deco: p.deco, awake: Boolean(o) && isAwake(ctx, p) };
   };
 
   return {
@@ -79,7 +85,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     chat,
     gift: g => applyGift(ctx, ensureUser(ctx, g), g),
     like() {}, social() {}, member() {},
-    tick() { tickPlots(ctx); tickSteal(ctx); events.tick(); expire(); },
+    tick() { managePresence(ctx); tickPlots(ctx); tickSteal(ctx); events.tick(); expire(); },
     changes(seen) {
       const parts = {}, plots = {};
       for (const p of Object.values(state.plots)) if (p.ver > (seen.ver ?? 0)) plots[p.id] = view(p);
@@ -91,7 +97,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (revision !== seen.competition) { seen.competition = revision; parts.competition = competition.status(); }
       return parts;
     },
-    meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: { tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow, plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs } }),
+    meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: { tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow, plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs, sleepAfterMs: ctx.cfg.sleepAfterMs, evictAfterMs: ctx.cfg.evictAfterMs } }),
     ctx,
   };
 }

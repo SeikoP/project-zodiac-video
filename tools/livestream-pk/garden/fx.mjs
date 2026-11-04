@@ -1,6 +1,6 @@
 // Many people doing the same small thing in the same moment become one effect ("23 people are watering"),
 // not 23 popups. One-off moments (gifts, thefts, level ups) pass straight through.
-const MERGE = new Set(['joined', 'water', 'help', 'plant', 'harvest', 'pest-cleared']);
+const MERGE = new Set(['joined', 'water', 'help', 'plant', 'harvest', 'pest-cleared', 'weed-cleared', 'fertilize']);
 const tierOf = e => (e.plotId ? String(e.plotId).split(':')[0] : null);
 
 export function createCoalescer({ windowMs = 250, now = Date.now } = {}) {
