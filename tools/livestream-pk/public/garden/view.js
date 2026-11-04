@@ -2,7 +2,8 @@
 export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
 export function displayNickname(nickname, zoom = 1) {
-  const clean = String(nickname ?? '').trim() || 'Người xem';
+  const clean = String(nickname ?? '').trim();
+  if (!clean) return 'Người xem';
   const max = zoom < .65 ? 6 : zoom < 1.25 ? 10 : 16;
   const chars = [...clean];
   if (chars.length <= max) return clean;
