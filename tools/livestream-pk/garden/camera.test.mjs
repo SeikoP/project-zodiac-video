@@ -81,3 +81,16 @@ test('overview fits the complete 16-shelf structure even with only one occupant'
   assert.ok(screenY(lastY) < 1760, 'last shelf stays above lower HUD');
   assert.equal(shot.zoom >= cfg.camera.zoomWorld, true);
 });
+
+test('overview spreads both visual rack wings across most of the portrait play area', () => {
+  const plots = [{tier:'cloud-1',slot:0,owner:'a'},{tier:'cloud-1',slot:48,owner:'b'}];
+  const r = rig(plots), shot = r.cam.tick();
+  const left = { x: cfg.zoneMarginX, y: cfg.zoneMarginY };
+  const right = { x: cfg.zoneMarginX + (cfg.potsPerShelf - 1) * cfg.potSpacingX + (cfg.rackWingGapX ?? 0), y: cfg.zoneMarginY };
+  const bottomLeft = { x: left.x, y: cfg.zoneMarginY + 7 * cfg.shelfSpacingY };
+  const sx = p => (p.x - shot.x) * shot.zoom + 540;
+  const sy = p => (p.y - shot.y) * shot.zoom + 960;
+  assert.ok(sx(right) - sx(left) > 420, 'left/right wings visibly separate');
+  assert.ok(sy(bottomLeft) - sy(left) > 700, 'eight shelves use substantial vertical space');
+  assert.ok(shot.zoom >= .45, 'overview no longer shrinks into a thin tower');
+});
