@@ -460,6 +460,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const chestIsOpen = () => now() < st.chest.openUntil;
   // extra: a gift opens one more chest even while one is open (the open one closes first); gold: Rương vàng
   function chestOpenNow({ extra = false, gold = false } = {}) {
+    // Ordinary chests must not cover the instructions of an active mini-game.
+    // Explicit gift-triggered extra chests retain their separate priority.
+    if (!extra && registry.live()) return false;
     const c = st.chest;
     if (chestIsOpen()) {
       if (!extra) return;
