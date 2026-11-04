@@ -5,7 +5,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const used=(layer,id)=>layer?.decision==='use'&&Array.isArray(layer.entity_ids)&&layer.entity_ids.includes(id);
-export function validatePhase02AuthoringCompleteness({run_mode,intent,production,art,director,character}={}){
+export function validatePhase02AuthoringCompleteness({run_mode,intent,production,art,director,character,episodeScope,episodeCast}={}){
  const issues=[],add=(code,scene_id,detail)=>issues.push({code,...(scene_id?{scene_id}:{}),...(detail?{detail}:{})});
  if(run_mode!=='fresh')return {format:'zodiac-phase02-authoring-completeness@1',status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const scenes=production?.scenes??[],ids=scenes.map(s=>s.id);
@@ -17,7 +17,25 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
  const allVisuals=scenes.flatMap(scene=>(scene.entities??[]).filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object'));
  if(intent?.narrative_visual_decision?.mode==='required'&&!allVisuals.length)add('PHASE02_NARRATIVE_VISUAL_REQUIRED');
  const directorScenes=new Set((director?.beats??[]).map(b=>b.scene_id).filter(Boolean));
- const charIds=new Set((character?.characters??[]).map(c=>c.entity_id).filter(Boolean));
+ const characterById=new Map((character?.characters??[]).map(c=>[c.entity_id,c]));
+ const charIds=new Set(characterById.keys());
+ if(Array.isArray(episodeCast?.bindings)){
+  for(const binding of episodeCast.bindings){
+   if(binding?.role!=='member')continue;
+   const spec=characterById.get(binding.entity_id);
+   if(!spec){
+    add('PHASE02_ZODIAC_MEMBER_CHARACTER_REQUIRED',undefined,`${binding.entity_id}:${binding.member_id}`);
+    continue;
+   }
+   if(spec.outfit_id!=='zodiac-glyph-shirt'){
+    add('PHASE02_ZODIAC_MEMBER_GLYPH_REQUIRED',undefined,`${binding.entity_id}:${binding.member_id}`);
+    continue;
+   }
+   if(spec.zodiac_sign_id!==binding.member_id){
+    add('PHASE02_ZODIAC_MEMBER_GLYPH_MISMATCH',undefined,`${binding.entity_id}:${binding.member_id}->${spec.zodiac_sign_id??'missing'}`);
+   }
+  }
+ }
  for(const scene of scenes){
   const sceneArt=art?.scenes?.find(s=>s.id===scene.id);
   if(!sceneArt?.visual_coverage?.beats?.length)add('PHASE02_VISUAL_COVERAGE_REQUIRED',scene.id);
@@ -43,11 +61,12 @@ export async function validatePhase02AuthoringCompletenessWorkspace(root){
  root=path.resolve(root);
  const load=async rel=>JSON.parse(await readFile(path.join(root,rel),'utf8'));
  const optional=async rel=>load(rel).catch(e=>e.code==='ENOENT'?null:Promise.reject(e));
- const [state,intent,production,art,director,character]=await Promise.all([
+ const [state,intent,production,art,director,character,episodeScope,episodeCast]=await Promise.all([
   load('.authoring/pipeline-state.json'),optional('.authoring/visual-intent.json'),load('production.json'),
-  optional('.authoring/scene-art-direction.json'),optional('.authoring/director-plan.json'),optional('.authoring/character-assembly-plan.json')
+  optional('.authoring/scene-art-direction.json'),optional('.authoring/director-plan.json'),optional('.authoring/character-assembly-plan.json'),
+  optional('.authoring/episode-scope.json'),optional('.authoring/episode-cast-plan.json')
  ]);
- return validatePhase02AuthoringCompleteness({run_mode:state.run_mode,intent,production,art,director,character});
+ return validatePhase02AuthoringCompleteness({run_mode:state.run_mode,intent,production,art,director,character,episodeScope,episodeCast});
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-authoring-completeness.mjs <workspace>');process.exit(2)}
