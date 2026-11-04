@@ -18,6 +18,14 @@
           "stage": "entry"
         },
         {
+          "id": "narrative_visual_presence_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-narrative-visual-presence.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
           "id": "visual_grammar_contract",
           "kind": "internal_reference",
           "when": "always",
@@ -290,6 +298,7 @@
       ],
       "gate_checks": [
         "precompile_seam",
+        "narrative_visual_presence",
         "production_contract",
         "visual_progression",
         "cast_diversity",

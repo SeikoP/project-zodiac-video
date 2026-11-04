@@ -3,7 +3,7 @@ import {access,readFile} from 'node:fs/promises';
 import path from 'node:path';import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));const libRoot=path.resolve(here,'../../references/asset-library-v4');const contract=JSON.parse(await readFile(path.join(libRoot,'semantic-asset-fit.json'),'utf8'));
 export function isStoryFacingObject(scene,entity,assets){
- if(entity.kind!=='object'||/^env_|^decor_|^ground_/u.test(String(entity.id??'')))return false;
+ if(entity.kind!=='object'||entity.role==='scene_accent'||/^env_|^decor_|^ground_/u.test(String(entity.id??'')))return false;
  const accent=scene.environment?.scene_accents?.find(a=>a.entity_id===entity.id&&a.id===entity.scene_asset_id);
  const states=Object.values(entity.states??{});
  const nativeAccent=entity.generated_by==='scene-set'&&entity.scene_asset_role==='scene_accent'&&accent&&states.length&&states.every(s=>s.asset===accent.asset&&assets?.[s.asset]?.category==='environment'&&assets[s.asset].lineage?.source_master===accent.id);

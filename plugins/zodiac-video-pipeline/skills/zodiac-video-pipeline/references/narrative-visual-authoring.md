@@ -19,3 +19,7 @@ On fresh runs a layer with no entity in the beat is derived as `omit` ("no entit
 | Brief, three concepts, SVG authoring | `zodiac-narrative-visual` | opus |
 | Kit lint, previews, receipts | `zodiac-gatekeeper` | haiku |
 | Blind readback | `zodiac-reviewer` | opus, sees only the frame and the line |
+
+## Blocking handoff rule
+
+`narrative_visual_decision.mode=required` is not satisfied by a standalone proposal SVG, a descriptive paragraph or a coverage layer marked `omit`. The authored `visual-intent.json` must own an entity, states, exact voice-anchor events, native kit-valid asset paths, narrative brief and explicit coverage. Run `validate-narrative-visual-presence.mjs` before precompile and record the native receipt. If a scene starts with a hidden graphic, judge the completed scene and the before/after event frames rather than relying on the entry contact sheet. `PASS` from the validator means structure and asset bytes exist; narrative readability and visual quality still require genuine review. Keep physical props and scene accents separate from the mental-image layer.

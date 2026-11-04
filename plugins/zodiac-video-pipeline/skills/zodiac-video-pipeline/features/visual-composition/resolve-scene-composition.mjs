@@ -6,7 +6,7 @@ import {resolveAccentStates} from '../../references/asset-library-v4/scene-set/r
 const load=async relative=>JSON.parse(await readFile(new URL(relative,import.meta.url),'utf8'));
 const sceneSetRegistry=await load('../../references/asset-library-v4/scene-set/index.json');
 const accentRegistry=await load('../../references/asset-library-v4/scene-set/accents/index.json');
-const roles=new Set(['background','character','interactive_prop','foreground_environment','effect','caption','overlay']);
+const roles=new Set(['background','character','interactive_prop','story_object','foreground_environment','effect','caption','overlay']);
 const result=issues=>({status:issues.length?'BLOCKED':'PASS',issues});
 function compilerEntity(production,scene,c){
  const locator=c.ownership?.locator;if(typeof locator!=='string')return null;
