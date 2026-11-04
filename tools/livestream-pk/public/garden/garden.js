@@ -1,7 +1,7 @@
 // Vườn Mây: the channel's paper-doodle style drawn directly on the canvas; no generated image assets.
 import { createMusic } from '../music.js';
 import { createSfx } from '../sfx.js';
-import { createAvatarCache, easeCamera, lodOf, plotPos, visiblePlots, worldToScreen } from './view.js';
+import { createAvatarCache, displayNickname, easeCamera, lodOf, plotPos, visiblePlots, worldToScreen } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
@@ -103,10 +103,10 @@ function handleFx(fx) {
       if (fx.plotId) float('sparkle', fx.plotId);
       if (fx.count === 1 && fx.seats?.length === 1) {
         const seat = fx.seats[0];
-        say(`${seat.nickname || 'Người xem'} · chậu #${String(seat.slot + 1).padStart(3, '0')}`, 4000);
+        say(`${displayNickname(seat.nickname, .82)} đã nhận chậu`, 4000);
       } else if (fx.count > 1) {
         const sample = (fx.seats ?? []).slice(0, 2)
-          .map(v => `${v.nickname} #${String(v.slot + 1).padStart(3, '0')}`).join(' · ');
+          .map(v => displayNickname(v.nickname, .82)).join(' · ');
         say(`${fx.count} người vào Khu Gieo Hạt${sample ? ' · ' + sample : ''}`, 4000);
       }
       break;
@@ -515,10 +515,10 @@ function drawPlotLabel(p) {
     const focused = focusPlot === p.id && cam.zoom >= 1.25;
     const labelY = focused ? 1390 : at.y + size * .55;
     const fontSize = focused ? 29 : cam.zoom < .82 ? 16 : 18;
-    const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
-    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : cam.zoom < .82 ? `#${String(p.slot + 1).padStart(3, '0')}` : shortName;
+    const shortName = displayNickname(p.owner.nickname, focused ? 1.25 : cam.zoom);
+    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const maxW = focused ? 360 : cam.zoom < .82 ? 64 : 112, h = focused ? 40 : 27;
+    const maxW = focused ? 360 : cam.zoom < .65 ? 78 : 112, h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
     ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
     const labelX = focused ? VP.w / 2 : at.x;
