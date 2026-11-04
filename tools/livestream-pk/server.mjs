@@ -164,12 +164,10 @@ const API = {
   'lucky/start': b => game.startLucky(b.sign),
   'boss/start': () => game.startBoss(),
   'chest/open': () => game.openChest(),
-  // giờ hành tinh: hold one hour for 60 minutes (or back to the real sky with no planet), start the headliner now
-  'hour/set': b => game.forceHour(['mars', 'venus', 'mercury', 'saturn'].includes(b.planet) ? b.planet : null),
-  'headline/start': () => game.startHead(),
-  'mystery/start': () => game.startHead('mystery'),
+  // Màn: start the current act's headliner now
+  'act/head': () => game.startHead(),
+  'mystery/start': () => game.startHead('guessobject'),
   'starcatch/start': () => game.startHead('starcatch'),
-  pair: () => game.makePair(),
   roast: b => game.startRoast(b.sign),
   'tug/start': () => game.startTug(),
   settings: b => {

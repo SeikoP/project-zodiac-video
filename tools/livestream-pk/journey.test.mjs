@@ -6,7 +6,7 @@ import { CHAPTERS, createJourney, JOURNEY_DEFAULTS } from './journey.mjs';
 function setup(config = {}) {
   let t = Date.UTC(2026, 10, 4, 12);
   const events = [];
-  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
+  const game = createGame({ config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id], journey: () => game.snapshot().cosmos.journey };

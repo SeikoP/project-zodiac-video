@@ -127,13 +127,12 @@
       <select id="luckySign"><option value="">Sao may mắn: cung ngẫu nhiên (nửa dưới)</option></select>
       <button id="lucky">⭐ Gọi sao may mắn</button>
     </div>
-    <div class="line"><button id="boss">☄ Gọi Sao Chổi Đen</button><button id="chaos">☿ Thủy Nghịch</button><button id="chaosEnd">Dừng Thủy Nghịch</button><button id="chest">🎁 Mở rương sao</button></div>
+    <div class="line"><button id="boss">☄ Gọi Sao Chổi Đen</button><button id="chest">🎁 Mở rương sao</button></div>
     <p class="muted" id="cosmosTxt"></p>
     <div class="line">
-      <select id="hourPick"><option value="">Giờ: xoay vòng tự động</option><option value="mars">♂ Sao Hỏa · Boss tinh anh, Kéo co</option><option value="venus">♀ Sao Kim · Se duyên, Bóc phốt, Mưa rương</option><option value="mercury">☿ Sao Thủy · Đố nhanh, Thủy Nghịch, Đêm trăng</option><option value="saturn">♄ Sao Thổ · Hành trình, Chung kết</option></select>
-      <button id="hourSet">Đặt giờ (60 phút)</button><button id="headStart">★ Sự kiện chính ngay</button>
+      <button id="headStart">★ Sự kiện chính ngay</button>
     </div>
-    <div class="line"><button id="mysteryNow">🕵️ Cung bí ẩn</button><button id="catchNow">🌠 Hứng sao băng</button><button id="pairNow">💞 Ghép đôi</button><button id="roastNow">🔥 Vòng quay bóc phốt</button><button id="tugNow">🪢 Kéo co cung</button></div>
+    <div class="line"><button id="mysteryNow">🕵️ Đoán vật</button><button id="catchNow">🌠 Hứng sao băng</button><button id="roastNow">🔥 Vòng quay bóc phốt</button><button id="tugNow">🪢 Kéo co cung</button></div>
     <p class="muted" id="hourTxt"></p>
     <div class="line"><button id="musicSkip">⏭ Bài khác</button><button id="musicMute">🔇 Tắt/bật nhạc</button></div>
     <div class="line">
@@ -218,14 +217,10 @@ $('poll').onclick = () => api('poll/start');
 $('fortune').onclick = () => api('fortune/sign', { sign: $('fortuneSign').value });
 $('lucky').onclick = () => api('lucky/start', { sign: $('luckySign').value });
 $('boss').onclick = () => api('boss/start');
-$('chaos').onclick = () => api('chaos/start');
-$('chaosEnd').onclick = () => api('chaos/end');
 $('chest').onclick = () => api('chest/open');
-$('hourSet').onclick = () => api('hour/set', { planet: $('hourPick').value || null });
-$('headStart').onclick = () => api('headline/start');
+$('headStart').onclick = () => api('act/head');
 $('mysteryNow').onclick = () => api('mystery/start');
 $('catchNow').onclick = () => api('starcatch/start');
-$('pairNow').onclick = () => api('pair');
 $('roastNow').onclick = () => api('roast');
 $('tugNow').onclick = () => api('tug/start');
 $('musicSkip').onclick = () => api('music/skip');
@@ -337,21 +332,18 @@ function renderHud() {
   for (const k of ['autoQuiz', 'showWishText']) if (document.activeElement !== $(k)) $(k).checked = Boolean(S.config[k]);
 }
 
-// The real sky, the boss, Thủy Nghịch and the chest, in one status line for the host.
+// The boss and the chest, in one status line for the host.
 const mmss = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 function renderCosmos(c) {
   const parts = [];
-  if (c.sky) parts.push(`Trời thật: ${c.sky.planets.map(p => `${S.planets?.find(x => x.id === p.id)?.glyph ?? p.id}${p.retro ? '℞' : ''} ${sign(p.sign)?.label ?? p.sign}`).join(' · ')} · ${c.sky.moon.icon} ${c.sky.moon.phase}`);
   if (c.boss) parts.push(`☄ Boss ${c.boss.hp}/${c.boss.max} máu · ${mmss(c.boss.remainingMs)}${c.boss.frozen ? ` · đang đóng băng ${sign(c.boss.frozen.sign)?.label} (${c.boss.frozen.got}/${c.boss.frozen.need})` : ''}`);
   else if (c.bossInMs != null) parts.push(`☄ Boss sau ${mmss(c.bossInMs)}`);
-  if (c.chaos) parts.push(`☿ Thủy Nghịch ${Math.ceil(c.chaos.remainingMs / 1000)}s · ${c.chaos.got}/${c.chaos.need} "thuận"`);
-  else if (c.chaosInMs != null) parts.push(`☿ Thủy Nghịch sau ${mmss(c.chaosInMs)}`);
   parts.push(c.chest.open ? `🎁 Rương đang mở · ${c.chest.claims} người nhận` : c.chest.inMs != null ? `🎁 Rương sau ${mmss(c.chest.inMs)}` : '🎁 Rương tắt');
   $('cosmosTxt').textContent = parts.join('  |  ');
-  const h = c.hour, m = c.mystery, k = c.starcatch;
-  $('hourTxt').textContent = h ? `${h.glyph} Giờ ${h.label}${h.forced ? ' (host chọn)' : ''} · đến ${new Date(h.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} · ${h.rule} · sự kiện chính: ${h.head}${c.act ? ` (màn ${c.act.no}/${c.act.of}, ${c.act.phase === 'head' ? 'đang diễn' : `sau ${mmss(c.act.headInMs)}`})` : ''} · tiếp: ${h.next.glyph} ${h.next.label}`
+  const h = c.act, m = c.mystery, k = c.starcatch;
+  $('hourTxt').textContent = h ? `${h.glyph} Màn ${h.label} · đến ${new Date(h.endsAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} · sự kiện chính: ${h.headLabel} (${h.phase === 'head' ? 'đang diễn' : `sau ${mmss(h.headInMs)}`}) · tiếp: ${h.next.glyph} ${h.next.label}`
     + (m ? `  |  🕵️ Cung bí ẩn · gợi ý ${m.clues.length}/${m.of} · ${m.winners.length} người đoán đúng` : '') + (k ? `  |  🌠 Sao băng ${k.round}/${k.of} · từ “${k.word}” · ${k.caught}/${k.need}` : '')
-    : 'Giờ hành tinh đang tắt (hours: false)';
+    : 'Màn đang tắt (acts: false)';
 }
 
 function renderRace() {
@@ -402,7 +394,6 @@ subscribe({
     $('simTools').hidden = !m.simulator;
     $('simHint').hidden = Boolean(m.simulator);
     S.config = m.config;
-    S.planets = m.planets;
     if (!S.signs.length) {
       S.signs = m.signs;
       const opts = m.signs.map(s => `<option value="${s.id}">${s.glyph} ${esc(s.label)}</option>`).join('');

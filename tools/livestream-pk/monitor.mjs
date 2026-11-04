@@ -69,9 +69,6 @@ export function createMonitor({ now = () => Date.now(), label = id => id, max = 
       case 'boss-heal': add('game', `Không ai phá băng ${label(e.sign)} — Sao Chổi hồi ${e.heal} máu`); break;
       case 'boss-defeated': add('game', `Hạ Sao Chổi sau ${e.seconds}s — ${e.fighters} người góp sức${e.mvp ? `, MVP ${short(e.mvp.nickname, 20)}` : ''}`); break;
       case 'boss-escaped': add('game', `Sao Chổi trốn thoát (còn ${Math.round(e.hpShare * 100)}% máu)`); break;
-      case 'chaos-start': add('sky', `Thủy Nghịch${e.real ? ' (Sao Thủy đang nghịch hành thật)' : ''} — cần ${e.need} người gõ "thuận"`); break;
-      case 'chaos-fixed': add('sky', `Đã sửa sóng — ${e.count} người gõ "thuận"`); break;
-      case 'chaos-end': add('sky', 'Thủy Nghịch tự hết'); break;
       case 'chest-open': add('game', `Rương sao #${e.no} mở (${e.seconds}s)`); break;
       case 'chest-close': add('game', `Rương sao #${e.no} đóng — ${e.claims} người nhận thẻ`); break;
       case 'set-complete': add('game', `${short(e.nickname, 24)} gom đủ 12 cung!`); break;

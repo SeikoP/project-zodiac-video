@@ -29,6 +29,8 @@
   "luckyEverySeconds": 100,
   "luckySeconds": 20,
   "luckyMultiplier": 2,
+  "acts": true,
+  "actMinutes": 5,
   "overtakeCooldownSeconds": 8,
   "fortuneSeconds": 6,
   "fortuneCooldownMinutes": 10,

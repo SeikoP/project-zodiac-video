@@ -26,8 +26,7 @@ import { createJourney, JOURNEY_DEFAULTS } from './journey.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { occasionOn } from './public/occasions.js';
 import { signOfDate } from './birth.mjs';
-import { createHours } from './hours.mjs';
-import { HOURS, HOUR_PLANETS, THEME_OF, HEADS, HEAD_QUEST, headAt, hourEdition, pairing } from './hours-table.mjs';
+import { ACTS, HEADS, HEAD_QUEST, createActs } from './acts.mjs';
 import { createMystery, createStarcatch, MINIGAME_DEFAULTS } from './minigames.mjs';
 import { createRoast, ROAST_DEFAULTS } from './roast.mjs';
 import { createTug, TUG_DEFAULTS } from './tug.mjs';
@@ -107,7 +106,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   recordEvents: false, // keep logs/events-<date>.jsonl of everything TikTok sent (for npm run replay)
   pollSeconds: 20,
   pollLight: 3,
-  // every this many polls (with the planetary hours on) the room picks the other planet's next headliner instead
+  // every this many polls (with the acts on) the room picks the next act's headliner instead
   pollNextEvery: 3,
   // a small room gets smaller goals: wheel and moon scale with the viewers on stage (floor .2, full at 12)
   adaptiveCrowd: true,
@@ -143,17 +142,11 @@ export const DEFAULT_CONFIG = Object.freeze({
   starsShown: 90,
   // a big moment at least this often while people are around (star roll call, a meteor shower); 0 = off
   showEverySeconds: 75,
-  // giờ hành tinh: themed hours (hourPlanets: Hỏa, Kim for now) take turns, hourMinutes each ("cycle"), or follow the
-  // real planetary hours ("real"). Each allows only some automatic events, has its own starlight rule and 2–3
-  // headliners taking turns act by act (hours-table.mjs). false = everything always on, as before.
-  hours: true,
-  hourMode: 'cycle',
-  hourMinutes: 5, // in "cycle" mode each planet's turn lasts this long (one act per turn)
-  hourPlanets: HOUR_PLANETS, // the planets in the rotation; more join by adding them here
-  skyPlace: { lat: 10.82, lon: 106.63, tz: 7 }, // where sunrise and sunset are computed (TP.HCM)
+  // Màn: the show runs in acts of actMinutes that take turns (acts.mjs); each opens, plays a headliner from its middle
+  // and closes with an MVP. false = no acts, everything always on.
+  acts: true,
+  actMinutes: 5,
   eliteHpFactor: 1.8,
-  pairEverySeconds: 25,
-  pairLight: 10,
   quizChainLength: 5,
   ...MINIGAME_DEFAULTS,
   ...ROAST_DEFAULTS,
@@ -300,8 +293,8 @@ export function emptyState() {
     welcomes: [], // newcomers' stars the room can greet, newest first: { id, userId, nickname, avatar, at, greeters: { userId: nickname }, done }
     wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, sign, text, at, blessers: { userId: nickname }, blessed }
     wishNo: 0,
-    // the hours, acts and headliners, and what is playing right now (null when nothing is)
-    hourForce: null, hourAnnounced: null, act: { key: null, phase: null, light: {} }, head: null, quest: null,
+    // the acts and headliners, and what is playing right now (null when nothing is)
+    act: { key: null, phase: null, light: {} }, head: null, quest: null,
     mystery: null, starcatch: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
   };
 }
@@ -491,7 +484,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return b;
   }
 
-  const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [], hourEdition: () => hourEdition(hour?.planet, rng()) });
+  const cards = createCards({ st, cfg, now, rng, onEvent, signs: SIGNS.map(s => s.id), specials: () => [] });
   const bag = createBag({ cfg, now, onEvent, elementOf: id => SIGN[id].element });
   // one gem of the viewer's own element (what their next level needs)
   const gem = (u, v, n, why) => { if (v?.sign) bag.add(u, v, SIGN[v.sign].element, n, why); };
@@ -613,73 +606,29 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // a patron's star: lifetime gifts (xu) make the giver's star in the community sky bigger and golden
   const patronTier = v => { const g = v.giftTotal ?? 0; return g >= 1000 ? 3 : g >= 100 ? 2 : g >= 10 ? 1 : 0; };
 
-  // --- giờ hành tinh: which automatic events may start, the starlight rule, the acts and their headliners -----
-  const hourCalc = createHours(cfg.skyPlace);
-  const baseChest = cfg.chestEveryMinutes;
-  const themed = p => (HOURS[p] ? p : THEME_OF[p] ?? cfg.hourPlanets[0]); // a planet without a theme yet borrows one
-  const nextTheme = p => cfg.hourPlanets[(cfg.hourPlanets.indexOf(p) + 1) % cfg.hourPlanets.length];
-  function hourNow() {
-    const t = now(), f = st.hourForce;
-    if (f && t < f.endsAt && HOURS[f.planet]) return { planet: f.planet, startsAt: f.startsAt, endsAt: f.endsAt, next: nextTheme(f.planet), forced: true };
-    const h = cfg.hourMode === 'real' ? hourCalc.real(t) : hourCalc.cycle(t, cfg.hourPlanets, cfg.hourMinutes * 60000);
-    return { ...h, planet: themed(h.planet), next: themed(h.next) };
-  }
-  let hour = cfg.hours ? hourNow() : null;
-  const H = () => (hour ? HOURS[hour.planet] : null);
-  const allow = kind => !hour || Boolean(H().allow[kind]);
-  const HOUR_ACTIONS = new Set(['comment', 'like', 'gift', 'follow', 'share', 'quiz', 'poll', 'fortune']);
-  const hourMult = kind => { const r = H()?.rules; return r ? r[kind] ?? (HOUR_ACTIONS.has(kind) ? r.all ?? 1 : 1) : 1; };
-  const luckyEvery = () => (H()?.luckyEvery ?? cfg.luckyEverySeconds) * 1000;
-  function applyHour() {
-    cfg.chestEveryMinutes = H()?.chestEvery ?? baseChest;
-    touch('cosmos', 'hud');
-  }
-  if (hour) applyHour();
-  function refreshHour() {
-    hour = cfg.hours ? hourNow() : null;
-    applyHour();
-    if (!hour) return;
-    const a = st.hourAnnounced;
-    if (a?.planet === hour.planet && a?.startsAt === hour.startsAt) return;
-    st.hourAnnounced = { planet: hour.planet, startsAt: hour.startsAt };
-    if (stage.size || lobby.size) onEvent({ type: 'hour-start', ...hourView() });
-  }
-  function hourView() {
-    if (!hour) return null;
-    const h = H(), n = HOURS[hour.next];
-    return { planet: hour.planet, label: h.label, glyph: h.glyph, color: h.color, theme: h.theme, mood: h.mood, rule: h.ruleText, head: HEADS[currentHead()].label, heads: h.heads.map(id => HEADS[id].label), startsAt: hour.startsAt, endsAt: hour.endsAt, forced: Boolean(hour.forced),
-      next: { planet: hour.next, label: n.label, glyph: n.glyph, color: n.color, head: HEADS[n.heads[0]].label } };
-  }
-  function forceHour(planet) {
-    const t = now();
-    st.hourForce = planet ? { planet, startsAt: t, endsAt: t + 3600000 } : null;
-    refreshHour();
-    return hourView();
-  }
-
-  // Acts: 10 minutes each (:00/:10/:20…). Minute 0 opens, the hour's headliner plays from headAt to CLOSE_AT,
-  // the last minutes close the act with its MVP (most starlight earned in the act).
-  // a planet's turn of 5 minutes is one act; longer hours are cut into acts of at most 10 minutes
-  const slotMin = cfg.hourMode === 'cycle' ? cfg.hourMinutes : 60, ACT_MIN = Math.min(10, slotMin);
-  const ACT = ACT_MIN * 60000, CLOSE_AT = ACT_MIN * 0.85;
+  // --- Màn: the acts, their headliners and their quest ------------------------------------------------------
+  // An act lasts cfg.actMinutes. Minute 0 opens it, its headliner plays from the middle (headAt) until CLOSE_AT, the
+  // last stretch closes it with its MVP (most starlight earned in the act). The acts take turns, each visit of an act
+  // moving on to the next headliner of its list.
+  const acts = createActs({ minutes: cfg.actMinutes });
+  const ACT_MIN = cfg.actMinutes, ACT = ACT_MIN * 60000, CLOSE_AT = ACT_MIN * 0.85;
+  let slot = cfg.acts ? acts.at(now()) : null; // { act, startsAt, endsAt, next, index } of the act running now
+  const luckyEvery = () => cfg.luckyEverySeconds * 1000;
   st.act ??= { key: null, phase: null, light: {} };
   const minuteInAct = t => (t % ACT) / 60000;
-  // the act's place in its hour (0-based) picks this act's headliner from the hour's list, in turn
-  // (ceil: an act that began just before an unaligned real hour still counts as that hour's first)
-  // when a planet's turn is a single act, the headliner moves on each time the planet comes round again
-  const visits = () => (hour && !hour.forced && cfg.hourMode === 'cycle' ? Math.floor(Math.floor(hour.startsAt / (cfg.hourMinutes * 60000)) / cfg.hourPlanets.length) * Math.max(1, Math.round((hour.endsAt - hour.startsAt) / ACT)) : 0);
-  const actIndex = (t = now()) => (hour ? visits() + Math.max(0, Math.ceil((Math.floor(t / ACT) * ACT - hour.startsAt) / ACT)) : 0);
-  // a headliner the room voted for plays in its planet's next turn (st.headVote: { planet, id, from, until })
-  const voted = t => { const v = st.headVote; return v && hour?.planet === v.planet && t >= v.from && t < v.until ? v.id : null; };
-  const currentHead = (t = now()) => { const heads = H()?.heads ?? []; return voted(t) ?? heads[actIndex(t) % heads.length]; };
+  const headOf = s_ => s_.act.heads[Math.floor(s_.index / ACTS.length) % s_.act.heads.length];
+  // a headliner the room voted for plays in its act's next turn (st.headVote: { act, id, from, until })
+  const voted = (s_, t) => { const v = st.headVote; return v && s_.act.id === v.act && t >= v.from && t < v.until ? v.id : null; };
+  const currentHead = (t = now()) => { if (!cfg.acts) return undefined; const s_ = acts.at(t); return voted(s_, t) ?? headOf(s_); };
   const roomLive = () => stage.size > 0 && now() - st.lastActivityAt < 600000;
   function actTick(t) {
-    if (!hour) return;
-    const key = Math.floor(t / ACT), m = minuteInAct(t), h = H();
-    const phase = m < 1 ? 'open' : m < headAt(currentHead(t), ACT_MIN) ? 'play' : m < CLOSE_AT ? 'head' : 'close';
+    if (!slot) return;
+    if (t >= slot.endsAt) { slot = acts.at(t); touch('cosmos', 'hud'); }
+    const key = Math.floor(t / ACT), m = minuteInAct(t);
+    const phase = m < 1 ? 'open' : m < acts.headAt() ? 'play' : m < CLOSE_AT ? 'head' : 'close';
     if (key !== st.act.key) {
       st.act = { key, phase: null, light: {} };
-      if (roomLive()) onEvent({ type: 'act-open', ...actView(), hour: hourView() });
+      if (roomLive()) onEvent({ type: 'act-open', ...actView() });
     }
     // the headliner waits (and retries every tick) while a quiz, poll or reading is open, so they never overlap
     if (phase === 'head' && !st.act.headDone && roomLive() && !st.quiz && !st.poll && !st.fortune && startHead()) st.act.headDone = true;
@@ -688,53 +637,51 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('cosmos');
     if (phase === 'close') { endHead(); if (roomLive()) actClose(); }
   }
+  const actInfo = (s_, head) => ({ id: s_.act.id, label: s_.act.label, color: s_.act.color, glyph: '★', head: HEADS[head].label });
   function actView() {
-    if (!hour) return null;
-    const t = now(), key = Math.floor(t / ACT);
-    const head = currentHead(t);
-    return { no: actIndex(t) + 1, of: Math.max(1, Math.round((hour.endsAt - hour.startsAt) / ACT)), phase: st.act.phase, head, headLabel: HEADS[head].label, headInMs: Math.max(0, key * ACT + headAt(head, ACT_MIN) * 60000 - t), endsInMs: (key + 1) * ACT - t };
+    if (!slot) return null;
+    const t = now(), key = Math.floor(t / ACT), head = currentHead(t);
+    return { ...actInfo(slot, head), no: slot.index + 1, heads: slot.act.heads.map(id => HEADS[id].label), startsAt: slot.startsAt, endsAt: slot.endsAt, phase: st.act.phase, head, headLabel: HEADS[head].label, headInMs: Math.max(0, key * ACT + acts.headAt() * 60000 - t), endsInMs: (key + 1) * ACT - t,
+      next: actInfo({ act: slot.next }, headOf({ act: slot.next, index: slot.index + 1 })) };
   }
   function actClose() {
     const top = Object.entries(st.act.light).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([id]) => st.viewers[id]);
-    const nextAt = (Math.floor(now() / ACT) + 1) * ACT, nextHour = nextAt >= hour.endsAt;
-    const nx = nextHour ? HOURS[hour.next] : H(), nextHead = nextHour ? nx.heads[0] : currentHead(nextAt);
-    // the act's MVP takes home this hour's card
+    // the act's MVP takes home a card
     const mvp = top[0] && st.viewers[top[0][0]];
-    if (mvp?.sign) cards.give({ userId: top[0][0] }, mvp, `${mvp.sign}:${hourEdition(hour.planet, rng())}`, 'mvp');
+    if (mvp?.sign) cards.give({ userId: top[0][0] }, mvp, cards.draw(mvp, 'boss'), 'mvp');
     onEvent({ type: 'act-close', top: top.map(([id, light]) => ({ userId: id, nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar, sign: st.viewers[id].sign, light })),
-      next: { planet: nextHour ? hour.next : hour.planet, label: nx.label, glyph: nx.glyph, head: HEADS[nextHead].label, newHour: nextHour } });
+      next: { act: slot.next.id, label: slot.next.label, glyph: '★', head: HEADS[headOf({ act: slot.next, index: slot.index + 1 })].label } });
   }
 
-  // Headliners: the hour's list in turn, one per act, from headAt() to CLOSE_AT. The host can start one any time.
+  // Headliners: the act's list in turn, one per act, from headAt() to CLOSE_AT. The host can start one any time.
+  // Those that play to their own end keep their state under st[OWN_END[id]]; "Đoán vật" is still the old mystery game.
+  const OWN_END = { roast: 'roast', tug: 'tug', guessobject: 'mystery', starcatch: 'starcatch' };
   function startHead(id = currentHead()) {
     if (!id || !HEADS[id] || st.head || st.boss || st.roast || st.tug || st.mystery || st.starcatch) return null;
     const t = now(), m = minuteInAct(t);
-    const endsAt = t + Math.max(90000, (m < CLOSE_AT && hour ? CLOSE_AT - m : 3) * 60000);
+    const endsAt = t + Math.max(90000, (m < CLOSE_AT && slot ? CLOSE_AT - m : 3) * 60000);
     st.head = { id, startedAt: t, endsAt };
     if (id === 'elite') {
       if (!boss.start(Math.round(Math.max(3, stage.size) * cfg.eliteHpFactor))) { st.head = null; return null; }
       st.boss.elite = true;
-    } else if (id === 'matchmaking') st.head.nextAt = t + 4000;
-    else if (id === 'quizchain') Object.assign(st.head, { left: cfg.quizChainLength, nextAt: t + 2000, streaks: {}, best: null, inQuiz: false });
+    } else if (id === 'quizchain') Object.assign(st.head, { left: cfg.quizChainLength, nextAt: t + 2000, streaks: {}, best: null, inQuiz: false });
     else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', sign: pickEventSign() }); }
     else if (id === 'final') Object.assign(st.head, { base: { ...st.wheel.given }, wheel: st.wheel.no });
     else if (id === 'chestrain') { cards.openNow(); st.head.chests = [t + 60000, t + 120000]; }
-    else if (id === 'mystery') { if (!mystery.start()) { st.head = null; return null; } }
+    else if (id === 'guessobject') { if (!mystery.start()) { st.head = null; return null; } }
     else if (id === 'starcatch') { if (!starcatch.start()) { st.head = null; return null; } }
     else if (id === 'roast') { if (!roast.start()) { st.head = null; return null; } }
     else if (id === 'tug') { if (!tug.start()) { st.head = null; return null; } }
     touch('cosmos');
-    onEvent({ type: 'head-start', id, label: HEADS[id].label, planet: hour?.planet ?? null, seconds: Math.round((endsAt - t) / 1000) });
+    onEvent({ type: 'head-start', id, label: HEADS[id].label, act: slot?.act.id ?? null, seconds: Math.round((endsAt - t) / 1000) });
     return st.head;
   }
-  const PLAYS_OUT = new Set(['roast', 'tug', 'mystery', 'starcatch']); // headliners that run to their own end
   function headTick(t) {
     const h = st.head;
     if (!h) return;
     // these play to their own end
-    if (PLAYS_OUT.has(h.id)) { if (!st[h.id]) endHead(); return; }
+    if (OWN_END[h.id]) { if (!st[OWN_END[h.id]]) endHead(); return; }
     if (t >= h.endsAt && !(h.id === 'quizchain' && st.quiz)) return endHead();
-    if (h.id === 'matchmaking' && t >= h.nextAt) { h.nextAt = t + cfg.pairEverySeconds * 1000; makePair(); }
     if (h.id === 'quizchain') {
       if (h.inQuiz && !st.quiz) { h.inQuiz = false; h.nextAt = t + 3500; }
       if (!st.quiz && !st.poll && h.left > 0 && t >= h.nextAt && startQuiz()) { h.left--; h.inQuiz = true; }
@@ -744,7 +691,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
   function endHead() {
     const h = st.head;
-    if (!h || (PLAYS_OUT.has(h.id) && st[h.id])) return;
+    if (!h || (OWN_END[h.id] && st[OWN_END[h.id]])) return;
     st.head = null;
     touch('cosmos');
     const out = { type: 'head-end', id: h.id, label: HEADS[h.id].label };
@@ -768,27 +715,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     onEvent(out);
   }
 
-  // Ghép đôi định mệnh: two viewers on stage, a compatibility score from their elements, a little starlight for both.
-  function makePair() {
-    const list = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
-    if (list.length < 2) return null;
-    const i = Math.floor(rng() * list.length);
-    let j = Math.floor(rng() * (list.length - 1));
-    if (j >= i) j++;
-    const [[ia, a], [ib, b]] = [list[i], list[j]];
-    const salt = [...`${ia}|${ib}`].reduce((h, c) => (h * 31 + c.codePointAt(0)) >>> 0, 7);
-    const { score, line } = pairing(SIGN[a.sign].element, SIGN[b.sign].element, salt);
-    shine({ userId: ia }, a, cfg.pairLight, 'pair');
-    shine({ userId: ib }, b, cfg.pairLight, 'pair');
-    const who = (id, v) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
-    onEvent({ type: 'pair', a: who(ia, a), b: who(ib, b), score, line });
-    return { score };
-  }
-
-  // Nhiệm vụ giờ: one goal per hour the whole room reaches just by taking part (comments, blessings, right answers,
+  // Nhiệm vụ Màn: one goal per act the whole room reaches just by taking part (comments, blessings, right answers,
   // hearts, starlight, cards, floors — never gifts). Everyone on stage shares the reward.
   function questTick() {
-    const q = (hour && HEAD_QUEST[currentHead()]) || H()?.quest, key = hour && `${hour.planet}@${hour.startsAt}`;
+    const q = slot && (HEAD_QUEST[currentHead()] || slot.act.quest), key = slot && `${slot.act.id}@${slot.startsAt}`;
     if (!q || st.quest?.key === key) return;
     const { stat, unit, reward, rewardText } = q;
     st.quest = { key, stat, unit, reward, rewardText, goal: Math.max(1, Math.round(q.base + q.per * Math.max(1, stage.size))), got: 0, done: false };
@@ -796,12 +726,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
   function questAdd(stat, n = 1) {
     const q = st.quest;
-    if (!q || q.done || q.stat !== stat || !(n > 0) || q.key !== (hour && `${hour.planet}@${hour.startsAt}`)) return;
+    if (!q || q.done || q.stat !== stat || !(n > 0) || q.key !== (slot && `${slot.act.id}@${slot.startsAt}`)) return;
     q.got = Math.min(q.goal, q.got + n);
     touch('cosmos');
     if (q.got < q.goal) return;
     q.done = true;
-    const h = H(), people = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
+    const people = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
     for (const [id, v] of people) {
       const u = { userId: id };
       if (q.reward === 'gem') gem(u, v, 1, 'quest');
@@ -809,11 +739,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       else if (q.reward === 'moon') bag.add(u, v, 'moon', 1, 'quest');
       else shine(u, v, 20, 'quest');
     }
-    onEvent({ type: 'quest-done', planet: hour.planet, glyph: h.glyph, color: h.color, goal: q.goal, unit: q.unit, reward: q.rewardText, people: people.length });
+    onEvent({ type: 'quest-done', act: slot.act.id, glyph: '★', color: slot.act.color, goal: q.goal, unit: q.unit, reward: q.rewardText, people: people.length });
   }
   const questView = () => {
-    const q = st.quest, h = H();
-    return q && h?.quest && q.key === `${hour.planet}@${hour.startsAt}` ? { got: q.got, goal: q.goal, done: q.done, unit: q.unit ?? h.quest.unit, reward: q.rewardText ?? h.quest.rewardText, glyph: h.glyph, color: h.color } : null;
+    const q = st.quest;
+    return q && slot && q.key === `${slot.act.id}@${slot.startsAt}` ? { got: q.got, goal: q.goal, done: q.done, unit: q.unit, reward: q.rewardText, glyph: '★', color: slot.act.color } : null;
   };
 
   // --- newcomers the room can greet: "chào" goes to the newest open welcome that isn't your own -------------------
@@ -1067,11 +997,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // --- the big moment every ~75 s: a roll call of tonight's stars or a meteor shower ----
   st.nextShowAt ||= now() + (cfg.showEverySeconds || 0) * 1000;
   const presentWith = test => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v && test(v));
-  // the hour picks the kinds (in turn); a kind that can't run right now falls back to one that can
+  // the kinds come in turn; a kind that can't run right now falls back to one that can
   function showKind(want) {
-    const kinds = H()?.shows ?? ['starcall', 'meteor'];
+    const kinds = ['starcall', 'meteor'];
     const k = want ?? kinds[(st.showNo ?? 0) % kinds.length];
-    if (k === 'pair') return presentWith(v => v.sign).length >= 2 ? 'pair' : 'starcall';
     if (k === 'roast') return presentWith(v => v.sign).length ? 'roast' : 'starcall';
     return k;
   }
@@ -1081,7 +1010,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!want) st.showNo = (st.showNo ?? 0) + 1;
     st.nextShowAt = now() + cfg.showEverySeconds * 1000;
     touch('cosmos');
-    if (kind === 'pair') return makePair();
     if (kind === 'roast') return roast.start();
     const people = presentWith(v => v.star).slice(-12).map(([id, v]) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, x: v.star.x, y: v.star.y }));
     onEvent({ type: 'showtime', kind: kind === 'starcall' && people.length ? 'starcall' : 'meteor', people });
@@ -1191,12 +1119,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // --- poll: a light "which sign…?" question the whole room answers -----------------------------------
   // Bình chọn: four numbered options, "1"–"4" to vote. A "which sign…?" question offers four signs; every
-  // pollNextEvery-th poll (with the hours on) asks which headliner the other planet should play next.
+  // pollNextEvery-th poll (with the acts on) asks which headliner the next act should play.
   function pollOptions(entry) {
-    if (entry?.kind === 'next' && hour) {
-      const n = HOURS[hour.next], start = Math.max(0, n.heads.indexOf(currentHead(hour.endsAt)));
+    if (entry?.kind === 'next' && slot) {
+      const n = slot.next, start = Math.max(0, n.heads.indexOf(currentHead(slot.endsAt)));
       const heads = [...n.heads.slice(start), ...n.heads.slice(0, start)].slice(0, 4);
-      return { kind: 'next', q: `Lượt ${n.label} tới, cả phòng muốn chơi gì?`, options: heads.map(id => ({ label: HEADS[id].label, head: id })) };
+      return { kind: 'next', q: `Màn ${n.label} tới, cả phòng muốn chơi gì?`, options: heads.map(id => ({ label: HEADS[id].label, head: id })) };
     }
     if (typeof entry === 'string') {
       const pool = SIGNS.map(s => s.id), picks = [];
@@ -1208,11 +1136,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function startPoll() {
     if (!polls.length || st.poll || st.quiz || st.fortune) return null;
     const n = st.pollCursor++;
-    let entry = hour && cfg.pollNextEvery && n % cfg.pollNextEvery === cfg.pollNextEvery - 1 ? { kind: 'next' } : polls[n % polls.length];
-    if (entry?.kind === 'next' && !hour) entry = polls.find(p => p?.kind !== 'next'); // no hours: nothing to pick
+    let entry = slot && cfg.pollNextEvery && n % cfg.pollNextEvery === cfg.pollNextEvery - 1 ? { kind: 'next' } : polls[n % polls.length];
+    if (entry?.kind === 'next' && !slot) entry = polls.find(p => p?.kind !== 'next'); // no acts: nothing to pick
     if (!entry) return null;
     const p = pollOptions(entry);
-    st.poll = { ...p, endsAt: now() + cfg.pollSeconds * 1000, votes: p.options.map(() => 0), voted: {}, total: 0, planet: hour?.next ?? null, from: hour?.endsAt ?? 0, slot: hour ? hour.endsAt - hour.startsAt : 0 };
+    st.poll = { ...p, endsAt: now() + cfg.pollSeconds * 1000, votes: p.options.map(() => 0), voted: {}, total: 0, act: slot?.next.id ?? null, from: slot?.endsAt ?? 0, slot: slot ? slot.endsAt - slot.startsAt : 0 };
     touch('hud');
     onEvent({ type: 'poll-start', q: p.q, kind: p.kind, options: p.options });
     return st.poll;
@@ -1231,7 +1159,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('hud');
     const top = Math.max(...p.votes), winner = p.total ? p.votes.indexOf(top) : null;
     const option = winner === null ? null : p.options[winner];
-    if (p.kind === 'next' && option) st.headVote = { planet: p.planet, id: option.head, from: p.from, until: p.from + p.slot };
+    if (p.kind === 'next' && option) st.headVote = { act: p.act, id: option.head, from: p.from, until: p.from + p.slot };
     onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, sign: option?.sign ?? null });
   }
 
@@ -1288,16 +1216,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     // Lucky star: starts on a timer while people are around; the countdown is published once a second
     // (every 10s while waiting), not on every tick.
-    if (hour && (t >= hour.endsAt || (st.hourForce && t >= st.hourForce.endsAt && hour.forced))) { if (st.hourForce && t >= st.hourForce.endsAt) st.hourForce = null; refreshHour(); }
-    else if (hour && !st.hourAnnounced) refreshHour();
     if (st.lucky) { if (t >= st.lucky.endsAt) endLucky(); }
-    else if (t >= st.nextLuckyAt && t - st.lastActivityAt < 60000) { if (allow('lucky')) startLucky(); else st.nextLuckyAt = t + luckyEvery(); }
+    else if (t >= st.nextLuckyAt && t - st.lastActivityAt < 60000) startLucky();
     const luckyTick = st.lucky ? Math.ceil((st.lucky.endsAt - t) / 1000) : 1000 + Math.ceil((st.nextLuckyAt - t) / 10000);
     if (luckyTick !== lastLuckyTick) { lastLuckyTick = luckyTick; touch('hud'); }
     if (st.poll && t >= st.poll.endsAt) endPoll();
     // The boss and the chest. Readings wait while the boss is up.
     const active = t - st.lastActivityAt < 60000, busy = st.quiz || st.poll || st.fortune;
-    // the hour's acts and headliner
+    // the act and its headliner
     actTick(t);
     questTick();
     mystery.tick(t);
@@ -1312,7 +1238,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     boss.tick();
     bossWas = Boolean(st.boss);
     if (hadBoss && !st.boss) st.nextBossAt = cfg.bossEverySeconds ? t + cfg.bossEverySeconds * 1000 : Infinity;
-    if (!st.boss && !busy && active && stage.size && t >= st.nextBossAt) { if (allow('boss') && !playing) startBoss(); else st.nextBossAt = t + 60000; }
+    if (!st.boss && !busy && active && stage.size && t >= st.nextBossAt) { if (!playing) startBoss(); else st.nextBossAt = t + 60000; }
     if (cfg.showEverySeconds && t >= st.nextShowAt) {
       // the boss, readings and a headliner are big moments already: the show waits behind them.
       // A quiet room still gets it (that is when a newcomer needs something to watch), just not an abandoned one.
@@ -1336,10 +1262,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!st.quiz && !st.fortune && !st.poll && !st.boss && !playing && !headWaiting && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
       const turn = st.quietTurn++;
       st.quietUntil = t + 45000;
-      // 3× a house mascot shows a command, 3× a sign's reading, 1× quiz, 1× poll — whichever of those the hour allows
+      // 3× a house mascot shows a command, 3× a sign's reading, 1× quiz, 1× poll — whichever of those can run
       let kind = (cfg.demoTurns ? [3, 1, 3, 0, 1, 3, 1, 2] : [1, 1, 1, 0, 1, 1, 1, 2])[turn % 8];
-      const ok = k => k === 3 ? cfg.demoTurns : allow(['quiz', 'reading', 'poll'][k]);
-      if (!ok(kind)) kind = [1, 0, 2, 3].find(ok) ?? -1;
+      if (kind === 3 && !cfg.demoTurns) kind = 1;
       if (kind === 0 && cfg.autoQuiz && quiz.length) startQuiz();
       else if (kind === 2 && polls.length) startPoll();
       else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], sign: pickEventSign() });
@@ -1415,7 +1340,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         fans: fansHere.sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
         fanCount: fansHere.length,
         show: cfg.showEverySeconds ? { inMs: Math.max(0, st.nextShowAt - t), kind: nextShowKind() } : null,
-        hour: hourView(),
         act: actView(),
         head: st.head && { id: st.head.id, label: HEADS[st.head.id].label, remainingMs: Math.max(0, st.head.endsAt - t), left: st.head.left ?? null },
         mystery: mystery.view(t),
@@ -1493,5 +1417,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: cards.openNow, forceHour, startHead, makePair, startTug: () => (st.boss ? null : tug.start()), startRoast: sign => (st.boss ? null : roast.start(sign)), hour: hourView, tick, changes, snapshot, newNight, resetAll, pruneViewers, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: cards.openNow, startHead, startTug: () => (st.boss ? null : tug.start()), startRoast: sign => (st.boss ? null : roast.start(sign)), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, state: st, config: cfg };
 }

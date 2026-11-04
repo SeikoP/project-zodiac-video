@@ -7,7 +7,7 @@ const OFF = { bossEverySeconds: 0, chestEveryMinutes: 0 };
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, onEvent: e => events.push(e), config: { acts: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); }, at: () => t };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -184,7 +184,6 @@ test('director keeps the crits and the rare cards when a frame overflows', () =>
   const d = createDirector({ hits: 2, cards: 2 });
   for (let i = 0; i < 5; i++) d.push({ type: 'boss-hit', userId: `h${i}`, sign: 'leo', dmg: 10, crit: i === 4 });
   for (let i = 0; i < 5; i++) d.push({ type: 'card', userId: `c${i}`, card: { sign: 'leo', edition: i === 4 ? 'star' : 'base' } });
-  d.push({ type: 'swap', from: 'leo', to: 'aquarius', amount: 2 });
   const fx = d.flush();
   const hits = fx.find(e => e.type === 'boss-hits');
   assert.equal(hits.bySign.leo, 50);
@@ -192,5 +191,4 @@ test('director keeps the crits and the rare cards when a frame overflows', () =>
   const cards = fx.find(e => e.type === 'cards');
   assert.ok(cards.cards.some(c => c.card.edition === 'star'));
   assert.equal(cards.more, 2);
-  assert.deepEqual(fx.find(e => e.type === 'swaps').swaps, [{ from: 'leo', to: 'aquarius' }]);
 });

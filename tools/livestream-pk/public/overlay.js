@@ -474,9 +474,9 @@ function spawnWeather(p) {
   return { x: rnd(0, 1080), y: rnd(top, bot), vx: rnd(-.5, -.2), vy: rnd(-.05, .05), r: rnd(1, 2.2), life: 300, c: '#8EC0B9' };
 }
 function drawHourFx(t, dt) {
-  const h = S.cosmos?.hour;
+  const h = S.cosmos?.act;
   if (!h) return;
-  const p = h.planet;
+  const p = h.id === 'arena' ? 'mars' : 'venus'; // the two acts borrow the old Hỏa and Kim weather until the overlay rework
   if (p !== weatherOf) { weatherOf = p; weather = []; }
   // the fixed shapes of a few hours, behind everything else
   if (p === 'saturn') {
@@ -504,7 +504,7 @@ function drawHourFx(t, dt) {
   // planet waits at the top. When the hour changes the whole orbit flashes in the new colour.
   const now = Date.now(), span = Math.max(1, h.endsAt - h.startsAt), left = Math.max(0, Math.min(1, (h.endsAt - now) / span));
   const nextColor = h.next?.color ?? C.paper, top = -Math.PI / 2, end = top + Math.PI * 2 * left, rr = HOUR_R * Z;
-  if (h.planet !== clockOf) { if (clockOf) { clockFlash = now + 1600; burst(CX, CY - rr, [h.color, C.gold, '#fff'], 60, 8); } clockOf = h.planet; }
+  if (h.id !== clockOf) { if (clockOf) { clockFlash = now + 1600; burst(CX, CY - rr, [h.color, C.gold, '#fff'], 60, 8); } clockOf = h.id; }
   const flash = Math.max(0, (clockFlash - now) / 1600);
   fx.save();
   fx.lineCap = 'round';
@@ -528,7 +528,7 @@ function drawHourFx(t, dt) {
 }
 
 // --- giờ hành tinh and the run: how each headliner and door is played, in one line ---------------------
-const HEAD_ICON = { elite: '☄️', tug: '🪢', matchmaking: '💞', roast: '🔥', quizchain: '🧠', chaos: '🌀', moonnight: '🌕', final: '👑', chestrain: '🎁', mystery: '🕵️', starcatch: '🌠' };
+const HEAD_ICON = { elite: '☄️', tug: '🪢', matchmaking: '💞', roast: '🔥', quizchain: '🧠', chaos: '🌀', moonnight: '🌕', final: '👑', chestrain: '🎁', mystery: '🕵️', guessobject: '🕵️', starcatch: '🌠' };
 const HEAD_HOW = {
   matchmaking: 'mỗi 25 giây ghép một đôi trên sân — comment để được gọi tên',
   quizchain: `${S.config?.quizChainLength ?? 5} câu liền · trả lời đúng liên tiếp để giữ chuỗi`,
@@ -855,7 +855,7 @@ function renderQuest(q) {
 let shownOccasion = false, shownFortune = null, quizReveal = 0, lastQuizTick = 0, pollReveal = 0;
 function renderHud(h) {
   $('wvis').textContent = fmt(h.night.visitors);
-  if (!S.cosmos?.hour) $('kicker').textContent = `Đêm ${h.night.no} · ${h.occasion ? h.occasion.name : `${fmt(h.night.visitors)} người ghé thăm`}`;
+  if (!S.cosmos?.act) $('kicker').textContent = `Đêm ${h.night.no} · ${h.occasion ? h.occasion.name : `${fmt(h.night.visitors)} người ghé thăm`}`;
   if (h.occasion && !shownOccasion) { shownOccasion = true; celebrate({ key: 'occasion', badge: 'HÔM NAY', icon: '🎉', title: esc(h.occasion.name), sub: esc(h.occasion.greeting), ms: 5000, compact: true }); }
   const party = h.moon.partyMs > 0, pct = party ? 1 : h.moon.light / h.moon.goal;
   $('moonRect').setAttribute('y', String(120 - 120 * pct));
@@ -906,7 +906,7 @@ function renderCall() {
   else if (cz?.starcatch) { kind = 'boss'; html = `🌠 <b>Hứng sao băng</b> · sao ${cz.starcatch.round}/${cz.starcatch.of} · gõ “${esc(cz.starcatch.word ?? '')}”`; }
   else if (cz?.head) html = `★ <b>${esc(cz.head.label)}</b> đang diễn ra · ${mmss(Math.max(0, S.headEnd - Date.now()))}`;
   else if (h.lucky) html = `⭐ <b>Sao may mắn: ${esc(SIGN[h.lucky.sign].label)}</b> · ánh sao x${h.lucky.multiplier} · ${Math.ceil(h.lucky.remainingMs / 1000)}s`;
-  else if (cz?.act && cz.hour && cz.act.phase === 'play' && S.headAt - Date.now() < 300000) html = `${cz.hour.glyph} sắp tới: <b>★ ${esc(cz.hour.head)}</b> sau ${mmss(Math.max(0, S.headAt - Date.now()))} · ${esc(cz.hour.rule)}`;
+  else if (cz?.act && cz.act.phase === 'play' && S.headAt - Date.now() < 300000) html = `${cz.act.glyph} sắp tới: <b>★ ${esc(cz.act.headLabel)}</b> sau ${mmss(Math.max(0, S.headAt - Date.now()))}`;
   else {
     // the boss countdown takes over from the lucky star's once it is under two minutes away
     const next = cz?.bossInMs != null && cz.bossInMs < 120000 ? ` · ☄ <b>Sao Chổi Đen sau ${clock(cz.bossInMs)}</b>` : h.luckyInMs > 0 ? ` · ⭐ sao may mắn sau ${clock(Math.ceil(h.luckyInMs / 10000) * 10000)}` : '';
@@ -1060,11 +1060,11 @@ setInterval(renderShow, 250);
 // The planetary hour on the top card's first line ("♀ GIỜ SAO KIM · CÒN 23:10 · MÀN 2/4"), its colour on the sky.
 let hourKey = '';
 function renderHourline() {
-  const h = S.cosmos?.hour;
+  const h = S.cosmos?.act;
   if (!h) return;
-  const a = S.cosmos.act, left = Math.max(0, h.endsAt - Date.now());
-  $('kicker').innerHTML = `<span class="hk" style="color:${h.color}">${h.glyph} Giờ ${esc(h.label)}</span> · ${mmss(left)}${a ? ` · màn ${a.no}/${a.of}` : ''}`;
-  if (hourKey !== h.planet) { hourKey = h.planet; stage.style.setProperty('--hour', h.color); stage.classList.add('hourly'); }
+  const a = h, left = Math.max(0, h.endsAt - Date.now());
+  $('kicker').innerHTML = `<span class="hk" style="color:${h.color}">${h.glyph} Màn ${esc(h.label)}</span> · ${mmss(left)}`;
+  if (hourKey !== h.id) { hourKey = h.id; stage.style.setProperty('--hour', h.color); stage.classList.add('hourly'); }
   renderCall(); // the headliner countdown in the hint line
 }
 
@@ -1619,17 +1619,12 @@ function onFx(e) {
       }
       break;
     // --- giờ hành tinh: a new hour, the 15-minute acts, their headliners ---
-    case 'hour-start':
-      meteorShower(16);
-      celebrate({ key: 'hour', badge: `${e.glyph} GIỜ ${e.label.toUpperCase()}`, icon: `<span class="gf">${e.glyph}</span>`, title: `Giờ ${esc(e.label)} · ${esc(e.theme)}`, sub: `${esc(e.rule)} · sự kiện chính: ${esc(e.head)}<br>tiếp theo: ${e.next.glyph} Giờ ${esc(e.next.label)} · ${esc(e.next.head)}`, color: e.color, ms: 5200 });
-      speak(`Bắt đầu giờ ${e.label}`);
-      break;
     case 'act-open':
-      card({ key: 'act', icon: `<span class="gf">${e.hour.glyph}</span>`, title: `Màn ${e.no}/${e.of} · Giờ ${esc(e.hour.label)}`, sub: `★ ${esc(e.hour.head)} sau ${mmss(e.headInMs)} · ${esc(e.hour.rule)}`, color: e.hour.color, ms: 4200 });
+      card({ key: 'act', icon: `<span class="gf">${e.glyph}</span>`, title: `Màn ${esc(e.label)}`, sub: `★ ${esc(e.headLabel)} sau ${mmss(e.headInMs)}`, color: e.color, ms: 4200 });
       break;
     case 'head-start':
-      if (['elite', 'tug', 'roast', 'chaos', 'mystery', 'starcatch'].includes(e.id)) break; // these announce themselves
-      celebrate({ key: 'head', badge: '★ SỰ KIỆN CHÍNH', icon: HEAD_ICON[e.id] ?? '★', title: esc(e.label), sub: HEAD_HOW[e.id] ?? '', color: S.cosmos?.hour?.color ?? gold, ms: 4200, compact: true });
+      if (['elite', 'tug', 'roast', 'guessobject', 'starcatch'].includes(e.id)) break; // these announce themselves
+      celebrate({ key: 'head', badge: '★ SỰ KIỆN CHÍNH', icon: HEAD_ICON[e.id] ?? '★', title: esc(e.label), sub: HEAD_HOW[e.id] ?? '', color: S.cosmos?.act?.color ?? gold, ms: 4200, compact: true });
       break;
     case 'head-end':
       if (e.id === 'final' && e.winner) {
@@ -1641,7 +1636,7 @@ function onFx(e) {
     case 'act-close': {
       if (!e.top.length) break;
       const m = e.top[0];
-      celebrate({ key: 'act', badge: '🎬 KẾT MÀN', extra: `<div class="duo">${m.sign ? `<img src="${mascot(m.sign, 'win')}" alt="">` : ''}${avatarHtml(m, 'av big')}</div>`, title: `MVP: ${esc(m.nickname)}`, sub: `+${fmt(m.light)} ánh sao trong màn${e.top[1] ? ` · 2. ${esc(e.top[1].nickname)}` : ''}${e.top[2] ? ` · 3. ${esc(e.top[2].nickname)}` : ''}<br>tiếp theo: ${e.next.glyph} ${e.next.newHour ? `Giờ ${esc(e.next.label)} · ` : ''}${esc(e.next.head)}`, color: S.cosmos?.hour?.color ?? gold, ms: 4600, compact: true });
+      celebrate({ key: 'act', badge: '🎬 KẾT MÀN', extra: `<div class="duo">${m.sign ? `<img src="${mascot(m.sign, 'win')}" alt="">` : ''}${avatarHtml(m, 'av big')}</div>`, title: `MVP: ${esc(m.nickname)}`, sub: `+${fmt(m.light)} ánh sao trong màn${e.top[1] ? ` · 2. ${esc(e.top[1].nickname)}` : ''}${e.top[2] ? ` · 3. ${esc(e.top[2].nickname)}` : ''}<br>tiếp theo: ${e.next.glyph} Màn ${esc(e.next.label)} · ${esc(e.next.head)}`, color: S.cosmos?.act?.color ?? gold, ms: 4600, compact: true });
       break;
     }
     case 'pair': {

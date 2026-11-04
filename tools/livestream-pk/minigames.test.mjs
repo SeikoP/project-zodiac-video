@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
-import { HEADS, HOURS, HEAD_QUEST } from './hours-table.mjs';
+import { ACTS, HEADS, HEAD_QUEST } from './acts.mjs';
 import { CATCH_WORDS } from './minigames.mjs';
 
 function setup(config = {}) {
   let t = Date.UTC(2026, 10, 4, 12);
   const events = [];
-  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
+  const game = createGame({ config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { for (let left = ms; left > 0; left -= 500) { t += Math.min(500, left); game.tick(); } };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
@@ -16,18 +16,18 @@ const crowd = s => { for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo B
 
 test('the roguelike sky run is gone; the two new headliners take its place', () => {
   assert.equal(HEADS.run, undefined);
-  assert.ok(HEADS.mystery && HEADS.starcatch);
-  assert.ok(HOURS.mars.heads.includes('starcatch'));
-  assert.ok(HOURS.venus.heads.includes('mystery'));
+  assert.ok(HEADS.guessobject && HEADS.starcatch);
+  assert.ok(ACTS.find(a => a.id === 'arena').heads.includes('starcatch'));
+  assert.ok(ACTS.find(a => a.id === 'reunion').heads.includes('guessobject'));
   assert.equal(HEAD_QUEST.starcatch.stat, 'catches');
-  assert.equal(HEAD_QUEST.mystery.stat, 'correct');
+  assert.equal(HEAD_QUEST.guessobject.stat, 'correct');
 });
 
 // --- Cung bí ẩn: a hidden sign, a clue every few seconds, the first three right guesses win ---
 test('cung bí ẩn: clues come one by one; a sign name is a guess, once per clue each; three winners', () => {
   const s = setup({ mysteryClueSeconds: 10, mysteryClues: 5 });
   crowd(s);
-  s.game.startHead('mystery');
+  s.game.startHead('guessobject');
   const [start] = s.of('mystery-start');
   assert.ok(start.clue && start.of === 5);
   const answer = s.game.state.mystery.sign;
@@ -53,7 +53,7 @@ test('cung bí ẩn: clues come one by one; a sign name is a guess, once per clu
 test('cung bí ẩn ends after its last clue if nobody finds it', () => {
   const s = setup({ mysteryClueSeconds: 10, mysteryClues: 3, mysteryLastSeconds: 12 });
   crowd(s);
-  s.game.startHead('mystery');
+  s.game.startHead('guessobject');
   s.advance(10_000 * 2 + 12_500);
   const end = s.of('mystery-end')[0];
   assert.ok(end);

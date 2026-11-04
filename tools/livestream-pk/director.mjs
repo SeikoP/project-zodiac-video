@@ -25,7 +25,7 @@ export function createDirector(limits = {}) {
   let f = fresh();
 
   function fresh() {
-    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), swaps: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, loot: [], moreLoot: 0, fans: [], moreFans: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
+    return { joins: [], moreJoins: 0, dances: new Set(), wishes: [], gifts: { sparkle: [], firework: [], meteor: [] }, hearts: new Map(), flows: new Map(), hits: [], hitSigns: new Map(), cards: [], moreCards: 0, loot: [], moreLoot: 0, fans: [], moreFans: 0, lit: [], titles: [], bells: [], moreBells: 0, streaks: [], other: [] };
   }
 
   function push(e) {
@@ -44,7 +44,6 @@ export function createDirector(limits = {}) {
         break;
       }
       case 'flow': f.flows.set(`${e.from}>${e.to}`, (f.flows.get(`${e.from}>${e.to}`) ?? 0) + e.amount); break;
-      case 'swap': f.swaps.set(e.from, e.to); break; // Thủy Nghịch: one stray comet per sign per frame
       case 'boss-hit': {
         f.hitSigns.set(e.sign, (f.hitSigns.get(e.sign) ?? 0) + e.dmg);
         if (f.hits.length < L.hits) f.hits.push(e);
@@ -77,7 +76,6 @@ export function createDirector(limits = {}) {
     for (const tier of ['meteor', 'firework', 'sparkle']) for (const g of f.gifts[tier]) fx.push({ type: 'gift', tier, ...g });
     if (f.hearts.size) fx.push({ type: 'hearts', from: [...f.hearts].map(([userId, count]) => ({ userId, count })) });
     if (f.flows.size) fx.push({ type: 'flows', flows: [...f.flows].map(([k, amount]) => { const [from, to] = k.split('>'); return { from, to, amount }; }) });
-    if (f.swaps.size) fx.push({ type: 'swaps', swaps: [...f.swaps].map(([from, to]) => ({ from, to })) });
     if (f.hitSigns.size) fx.push({ type: 'boss-hits', hits: f.hits, bySign: Object.fromEntries(f.hitSigns) });
     if (f.cards.length) fx.push({ type: 'cards', cards: f.cards, more: f.moreCards });
     if (f.loot.length) fx.push({ type: 'loots', loot: f.loot, more: f.moreLoot });

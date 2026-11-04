@@ -45,7 +45,7 @@ const QUIZ = [{ q: 'Cung đầu tiên?', options: ['Bạch Dương', 'Song Ngư'
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -160,7 +160,7 @@ test('follow/share ring the bell every time but pay once a night', () => {
 });
 
 test('a quiet room mostly shows a reading for a sign, with a quiz now and then', () => {
-  const { game, advance } = setup({ hours: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ acts: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   advance(45000);
   assert.equal(game.state.fortune.userId, null, 'a reading comes first');
   advance(45000);
@@ -332,7 +332,7 @@ function simStorm(game) {
     game.social(u(id, { kind: 'share' }));
   }
 }
-for (const [what, begin] of [['boss', g => g.startBoss()], ['tug', g => g.startTug()], ['mystery', g => g.startHead('mystery')], ['starcatch', g => g.startHead('starcatch')]]) {
+for (const [what, begin] of [['boss', g => g.startBoss()], ['tug', g => g.startTug()], ['mystery', g => g.startHead('guessobject')], ['starcatch', g => g.startHead('starcatch')]]) {
   test(`outside rehearsal, sim: viewers change nothing, even mid ${what}`, () => {
     const { game, events } = setup();
     for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Sư Tử'], ['c', 'Bảo Bình'], ['d', 'Bảo Bình']]) game.chat(u(id, { comment: sign }));
@@ -363,7 +363,7 @@ test('a saved state with leftover sim: viewers loads without them', () => {
   game.chat(u('real', { comment: 'Sư Tử' }));
   Object.assign(state, structuredClone(game.state));
   state.viewers['sim:old'] = structuredClone(state.viewers.real);
-  const again = createGame({ state, config: { hours: false } });
+  const again = createGame({ state, config: { acts: false } });
   assert.deepEqual(Object.keys(again.state.viewers), ['real']);
 });
 
@@ -393,12 +393,12 @@ test('a poll offers four numbered options; "1"–"4" is a vote, once each, and n
   assert.equal(light(game, 'aries'), 3); // b
 });
 
-test('a poll can let the room pick the next headliner of the other planet', () => {
+test('a poll can let the room pick the next headliner of the other act', () => {
   let t = 5 * 60000 * 70000 + 1000;
   const events = [];
   const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
   game.chat(u('a', { comment: 'Sư Tử' }));
-  assert.equal(game.snapshot().cosmos.hour.planet, 'mars');
+  assert.equal(game.snapshot().cosmos.act.id, 'arena');
   game.startPoll();
   const p = game.snapshot().hud.poll;
   assert.equal(p.kind, 'next');
@@ -408,13 +408,13 @@ test('a poll can let the room pick the next headliner of the other planet', () =
   const end = of(events, 'poll-end')[0];
   assert.equal(end.kind, 'next');
   const picked = end.option.head;
-  t += 5 * 60000; game.tick(); // venus's turn
-  assert.equal(game.snapshot().cosmos.hour.planet, 'venus');
+  t += 5 * 60000; game.tick(); // the reunion's turn
+  assert.equal(game.snapshot().cosmos.act.id, 'reunion');
   assert.equal(game.snapshot().cosmos.act.head, picked, 'the voted headliner plays this turn');
 });
 
 test('quiet rooms mostly read a sign, with a quiz and a poll now and then', () => {
-  const { game, advance } = setup({ hours: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
+  const { game, advance } = setup({ acts: false, demoTurns: false, autoQuiz: true, quietSeconds: 45 });
   const kinds = [];
   for (let i = 0; i < 8; i++) {
     advance(45000);
@@ -514,7 +514,7 @@ test('a saved state loads without leftover sim: entries in the thank-you bar, re
   game.gift(u('sim:nosign', { diamonds: 5 })); // held as pending light
   game.gift(u('sim:old', { diamonds: 50, giftName: 'Rose' })); // the night's top supporter, for now
   const state = structuredClone(game.state);
-  const again = createGame({ state, config: { hours: false } });
+  const again = createGame({ state, config: { acts: false } });
   const s = again.state, sim = x => String(x?.userId ?? '').startsWith('sim:');
   assert.equal(Object.keys(s.pending).some(id => id.startsWith('sim:')), false, 'pending');
   for (const k of ['thanks', 'wishes', 'fortuneQueue']) assert.equal(s[k].some(sim), false, k);
