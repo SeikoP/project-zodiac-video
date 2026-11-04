@@ -1,5 +1,6 @@
 // A/B/C community heart rotation. Likes never seat viewers or execute care commands.
 import { bump, isAwake } from './world.mjs';
+import { addGold } from './progress.mjs';
 
 export const HEART_KINDS = Object.freeze(['care', 'community', 'luck']);
 export const HEART_MILESTONES = Object.freeze([100, 500, 1000]);
@@ -31,9 +32,14 @@ export function applyHearts(ctx, data) {
     } else if (kind === 'community') {
       for (const plot of eligible) boost(ctx, plot, .01);
     }
-    // Luck is a visual, non-economic celebration; it cannot create an undeserved player reward.
+    let luckyPlot = null;
+    if (kind === 'luck') {
+      const participants = Object.values(ctx.state.plots).filter(p => p.owner && isAwake(ctx,p) && ctx.state.users[p.owner]);
+      luckyPlot = participants.length ? participants[Math.floor(ctx.rng() * participants.length)] : null;
+      if (luckyPlot) addGold(ctx.state.users[luckyPlot.owner], 2);
+    }
     h.revision++;
-    ctx.emit({ type: 'heart-milestone', kind, step: h.step, total: h.total });
+    ctx.emit({ type: 'heart-milestone', kind, step: h.step, total: h.total, plotId: luckyPlot?.id ?? null });
     effects.push(kind);
   }
   h.revision++;
