@@ -10,6 +10,11 @@ export function displayNickname(nickname, zoom = 1) {
   return chars.slice(0, max).join('').trimEnd() + '…';
 }
 
+export function overviewLabelWidth(cfg, zoom) {
+  const spacing = Math.max(0, Number(cfg?.potSpacingX) || 0) * Math.max(0, Number(zoom) || 0);
+  return Math.max(48, Math.min(112, spacing - 6));
+}
+
 export function slotLayout(slot, cfg) {
   const logicalRow = Math.floor(slot / cfg.potsPerShelf);
   const wing = Math.floor(logicalRow / cfg.shelvesPerWing);
