@@ -162,7 +162,7 @@ def _error_detail(error: dict[str, Any] | None) -> str:
         import re
         match = re.search(r"\b(S\d+)(?:\.wav|\b)", message)
         scene = match.group(1) if match else "scene không xác định"
-        message = f"{scene}: lời đọc và ASR chưa khớp. Xem nhật ký và kiểm tra WAV."
+        message = f"{scene}: lời đọc và ASR chưa khớp. Tiếp tục sẽ tạo lại riêng scene này rồi căn timing lại."
     elif code == "TIMING_ALIGNMENT_FAILED" and "TIMING_REVIEW_REQUIRED" in message:
         import re
         match = re.search(r"\b(S\d+)(?:\.wav|\b)", message)
