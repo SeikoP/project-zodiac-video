@@ -14,3 +14,7 @@ Commit each step with commit-phase01-step.mjs <root> <evidence-file>. Include ex
 For fresh scoped runs read episode-formats.md. Compile Narrative2.1 into zodiac-episode-writer-brief@1, selected evidence and exact member lenses; never alias the group to sign. Keep 10KB hard budget and rhythm_direction. Draft excludes pool; review challenges each spoken identity plus shared thesis/ranking order.
 
 creative_direction preserves compact user intent, including humor, restraint, narrative freedom and exclusions; compiler carries it unchanged and fingerprints extras. Do not lose creative instructions while minimizing context.
+
+
+## Review surface policy
+Phase 1 creates no user-facing ZIP. Present concept selection, final Narration, compact QC and review status directly in chat. Keep workspace/state/receipt artifacts internal; expose a specific diagnostic file only when it helps resolve a concrete issue. Packaging belongs exclusively to Phase 3.

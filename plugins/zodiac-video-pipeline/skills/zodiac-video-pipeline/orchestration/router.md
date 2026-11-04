@@ -73,12 +73,9 @@ native catalog surface through `features/asset-selection/build-current-asset-rev
 No old package, sign example, identity or environment is an automatic default.
 
 Author Visual Intent and the actual episode cast plan. Select character identity
-once; state changes only pose/expression. Plan actions and state assets before
-SVG generation. No post-generation deduplication. Scene-set provides depth;
-foreground characters have independent composition and physical support; the scene-set supplies only rear pictorial depth. Accents stay
-inside the selected wall; story objects do not replace the background.
+once; state changes only pose/expression. Plan actions and state assets before SVG generation. No post-generation deduplication. Fresh runs use canvas-native backgrounds; Scene Set is compatibility-only and must never be selected for fresh authoring. Foreground characters keep independent composition and physical support. Scene Accents are optional canvas-relative context cues and never enclose actors; Narrative Visuals do not replace the background.
 
-Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
+Before `phase02-execute.mjs`, fill the Phase-2 authoring completeness structure: Scene Plan → Director Plan → cast/character assembly → context/background decision → physical prop participation → Narrative Visual decision/entities → per-beat visual coverage → scene events. Missing any required layer blocks before native asset compilation. Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
 all manifest capabilities, selected meme/prop work and Director/native QC.
 NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED is not Visual Review PASS. Compile
 scene-complete review frames and two actual endpoints per event, validate them,
@@ -98,5 +95,4 @@ Local runner owns TTS, measured timing, Remotion, captions, cover rasterization,
 audio and MP4 acceptance. Native review, ZIP readiness and final media readiness
 are separate. A missing runner is not a producer blocker. Recover a verified
 existing ZIP through `commit-phase03-release.mjs`; do not export duplicates.
-Content creates no assets or ZIP; Phase 02 creates no ZIP; only Phase-03 export
-owns packaging. `zodiac-publish-bundle.zip` is forbidden.
+Content creates no assets or ZIP; Phase 01 and Phase 02 create no user-facing ZIP. Their normal output surface is direct chat text/images plus specific diagnostic files only when needed. Only Phase-03 export owns packaging. `zodiac-publish-bundle.zip` is forbidden.

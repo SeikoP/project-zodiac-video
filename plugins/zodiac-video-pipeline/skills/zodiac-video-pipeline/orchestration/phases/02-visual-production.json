@@ -26,6 +26,14 @@
           "stage": "entry"
         },
         {
+          "id": "phase02_authoring_completeness",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-phase02-authoring-completeness.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
           "id": "visual_grammar_contract",
           "kind": "internal_reference",
           "when": "always",
@@ -299,6 +307,7 @@
       "gate_checks": [
         "precompile_seam",
         "narrative_visual_presence",
+        "authoring_completeness",
         "production_contract",
         "visual_progression",
         "cast_diversity",
