@@ -9,6 +9,7 @@ const stage = document.getElementById('stage'), feed = document.getElementById('
 const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
 const heartKind = document.getElementById('heartKind'), heartCount = document.getElementById('heartCount'), heartFill = document.getElementById('heartFill');
 const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders');
+const focusCard = document.getElementById('focusCard'), focusName = document.getElementById('focusName'), focusStatus = document.getElementById('focusStatus'), focusAction = document.getElementById('focusAction'), focusKicker = document.getElementById('focusKicker');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
 const volume = (key, fallback) => { const n = Number(params.get(key)); return params.has(key) && Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback; };
@@ -64,7 +65,8 @@ const CROP_ART = {
   nammay: { common: '/garden/assets/crop-nammay.svg', lush: '/garden/assets/crop-nammay-lush.svg', golden: '/garden/assets/crop-nammay-golden.svg' },
 };
 const artCache = new Map();
-const ALL_ART=[...Object.values(EVENT_ART),...DECOR_ART,...Object.values(POT_ART),...Object.values(CROP_ART).flatMap(v=>Object.values(v))];
+const POT_SOIL_FRONT = '/garden/assets/pot-soil-front.svg';
+const ALL_ART=[...Object.values(EVENT_ART),...DECOR_ART,...Object.values(POT_ART),...Object.values(CROP_ART).flatMap(v=>Object.values(v)),POT_SOIL_FRONT];
 function gardenArt(src) {
   if (!src) return null;
   if (!artCache.has(src)) {
@@ -80,8 +82,9 @@ const preloadGardenArt=()=>ALL_ART.forEach(src=>gardenArt(src));
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
-function say(text, ms = 6500) {
+function say(text, ms = 6500, tone = 'normal') {
   const li = el('li', text);
+  li.dataset.tone = tone;
   feed.append(li);
   while (feed.children.length > 2) feed.firstChild.remove();
   setTimeout(() => li.remove(), ms);
@@ -112,22 +115,22 @@ function handleFx(fx) {
       break;
     }
     case 'gift':
-      if (fx.tier === 'tree' || fx.tier === 'rain') say(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, 5200);
+      if (fx.tier === 'tree' || fx.tier === 'rain') say(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, 5200, 'hero');
       break;
-    case 'steal': sfx('cardFlip'); say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId)), 5200); float('coin', fx.plotId); break;
-    case 'catch': sfx('cleared'); say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId)), 5200); float('sparkle', fx.plotId); break;
+    case 'steal': sfx('cardFlip'); say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId)), 5200, 'important'); float('coin', fx.plotId); break;
+    case 'catch': sfx('cleared'); say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId)), 5200, 'important'); float('sparkle', fx.plotId); break;
     case 'dog-bark': sfx('bossHit', null, { duck: .82, ms: 700 }); break;
-    case 'levelup': sfx('milestone', null, { duck: .5, ms: 1800 }); say(C.levelUp(nameOf(fx.plotId), fx.level), 5200); float('sparkle', fx.plotId); break;
+    case 'levelup': sfx('milestone', null, { duck: .5, ms: 1800 }); say(C.levelUp(nameOf(fx.plotId), fx.level), 5600, 'hero'); float('sparkle', fx.plotId); break;
     case 'plant': sfx('sparkle', null, { duck: .9, ms: 500 }); break;
     case 'harvest': sfx('cleared', null, { duck: .75, ms: 1000 }); break;
     case 'pest-cleared': sfx('cleared', null, { duck: .82, ms: 800 }); break;
     case 'weed-cleared': sfx('cardFlip', null, { duck: .86, ms: 600 }); break;
     case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
-    case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
+    case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000, 'hero'); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
     case 'heart-milestone': {
       const label = { care:'Tim chăm cây', community:'Sức sống khu vườn', luck:'Tim may mắn' }[fx.kind] ?? 'Tim cộng đồng';
-      say(fx.kind === 'luck' && fx.plotId ? `${label} · +2 vàng` : label, 2800);
+      say(fx.kind === 'luck' && fx.plotId ? `${label} · +2 vàng` : label, 3200, fx.kind === 'luck' ? 'important' : 'normal');
       if (fx.plotId) float('sparkle', fx.plotId);
       break;
     }
@@ -197,6 +200,26 @@ function actionHintFor(p) {
   return 'Tiếp tục chăm cây · chờ cây chín';
 }
 
+
+function focusStatusFor(p) {
+  if (!p?.crop) return 'Chậu trống · sẵn sàng gieo hạt';
+  const cropName = meta?.crops?.[p.crop.type]?.label ?? p.crop.type;
+  const stageName = ['Hạt','Mầm','Đang lớn','Chín','Quá lứa'][p.stage ?? 0] ?? 'Đang lớn';
+  return `${cropName} · ${stageName}`;
+}
+function updateFocusCard(kind, plot) {
+  const showCard = Boolean(plot && kind !== 'overview');
+  focusCard.classList.toggle('on', showCard);
+  focusCard.setAttribute('aria-hidden', String(!showCard));
+  if (!showCard) return;
+  const tier = plot.potTier ?? 'clay';
+  focusCard.dataset.tier = tier;
+  focusKicker.textContent = ({ clay:'CHẬU ĐẤT NUNG', glazed:'CHẬU MEN LÁ', banded:'CHẬU VIỀN ĐỒNG', royal:'CHẬU BỆ NGỌC', astral:'CHẬU TINH TÚ' })[tier] ?? 'CHẬU ĐANG ĐƯỢC CHÚ Ý';
+  focusName.textContent = displayNickname(plot.owner?.nickname, 1.25);
+  focusStatus.textContent = focusStatusFor(plot);
+  focusAction.textContent = actionHintFor(plot);
+}
+
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
@@ -209,6 +232,7 @@ function onMessage(event, data) {
     say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
+    if (focusPlot && plots.get(focusPlot)) updateFocusCard('focus', plots.get(focusPlot));
     if (focusPlot && data.parts.plots?.[focusPlot]) hint.textContent = actionHintFor(data.parts.plots[focusPlot]);
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
@@ -249,6 +273,7 @@ function onMessage(event, data) {
       sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
     }
     focusPlot = data.plotId ?? null;
+    updateFocusCard(data.kind, focused);
     const now = performance.now();
     focusAt = now + Math.max(0, Number(data.travelMs) || cameraEaseMs);
     focusMs = Math.max(0, Number(data.stableMs) || 4600);
@@ -461,7 +486,7 @@ function drawPlot(p, lod) {
   if (p.crop) {
     // Soil contact shadow makes the stem visibly grow from this pot, not float above it.
     ctx.save(); ctx.fillStyle = 'rgba(53,73,56,.45)';
-    ctx.beginPath(); ctx.ellipse(0, 8, 14, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.beginPath(); ctx.ellipse(0, 15, 15, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
     const variant = p.crop.variant ?? 'common';
     if (variant === 'golden') {
       ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = C.ochre; ctx.shadowColor = C.ochre; ctx.shadowBlur = 22;
@@ -470,9 +495,9 @@ function drawPlot(p, lod) {
       ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(0, -38, 39, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
     const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
-    if (cropImage) ctx.drawImage(cropImage, -49, -90, 98, 98);
+    if (cropImage) ctx.drawImage(cropImage, -49, -83, 98, 98);
     else {
-      drawRipeCrop(p.crop.type, p.stage ?? 0);
+      ctx.save(); ctx.translate(0, 5); drawRipeCrop(p.crop.type, p.stage ?? 0); ctx.restore();
       if ((p.stage ?? 0) < 3 && variant === 'lush') {
         drawLeaf(-17,-31,12,-1.05,C.teal); drawLeaf(17,-37,11,.9,C.teal);
       } else if ((p.stage ?? 0) < 3 && variant === 'golden') {
@@ -501,9 +526,13 @@ function drawPlot(p, lod) {
     }
   }
   if (p.crop) {
-    // Pot front rim overlaps only the root contact point; shelf lip remains below the foot.
-    ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(0, 8, 33, 6, 0, 0, Math.PI); ctx.stroke(); ctx.restore();
+    // Soil-front layer occludes only the lowest crop pixels so the plant reads as emerging from the pot.
+    const soilFront = gardenArt(POT_SOIL_FRONT);
+    if (soilFront) ctx.drawImage(soilFront, -52, 3, 104, 24);
+    else {
+      ctx.save(); ctx.fillStyle = '#8C6650'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(0, 15, 33, 6, 0, 0, Math.PI); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
   }
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
