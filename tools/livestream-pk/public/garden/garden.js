@@ -5,24 +5,22 @@ import { createAvatarCache, easeCamera, lodOf, plotPos, visiblePlots, worldToScr
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
-const stage = document.getElementById('stage'), banner = document.getElementById('banner'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
+const stage = document.getElementById('stage'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
 const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
-const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders'), audioToggle = document.getElementById('audioToggle');
+const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
 const volume = (key, fallback) => { const n = Number(params.get(key)); return params.has(key) && Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback; };
-const music = createMusic({ volume: volume('music', 0.18) }), playSfx = createSfx(volume('sfx', 0.18));
-music.toggleMute();
-let soundEnabled = false, audioOn = false;
-const sfx = (name, arg) => { if (soundEnabled) playSfx(name, arg); };
-audioToggle.addEventListener('click', () => {
-  audioOn = !audioOn;
-  soundEnabled = audioOn;
-  music.toggleMute();
-  if (audioOn) { music.resume(); playSfx('boop'); }
-  audioToggle.textContent = audioOn ? '♫ Tắt âm thanh' : '♫ Bật âm thanh';
-  audioToggle.setAttribute('aria-pressed', String(audioOn));
-});
+const music = createMusic({ volume: volume('music', 0.16) }), playSfx = createSfx(volume('sfx', 0.2));
+const sfx = (name, arg, { duck = .72, ms = 1500 } = {}) => {
+  if (duck < 1) music.duck(duck, ms);
+  playSfx(name, arg);
+};
+// No visible audio control: LIVE/OBS attempts playback automatically. A normal browser that
+// blocks autoplay unlocks on the first interaction anywhere, without adding overlay chrome.
+const unlockAudio = () => music.resume();
+addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
+addEventListener('keydown', unlockAudio, { once: true, capture: true });
 const fit = () => {
   const scale = Math.min(innerWidth / VP.w, innerHeight / VP.h);
   stage.style.transform = `scale(${scale})`;
@@ -32,9 +30,8 @@ const fit = () => {
 addEventListener('resize', fit); fit();
 
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
-const plots = new Map(), floaters = [], avatars = createAvatarCache(200);
-let cam = { x: 650, y: 600, zoom: 1.05 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
-const EASE_MS = 850;
+const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
+let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, welcomed = false;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
 const TIER_SCENES = [
@@ -84,18 +81,14 @@ function gardenArt(src) {
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
-function say(text) {
+function say(text, ms = 6500) {
   const li = el('li', text);
   feed.append(li);
-  while (feed.children.length > 4) feed.firstChild.remove();
-  setTimeout(() => li.remove(), 12000);
+  while (feed.children.length > 2) feed.firstChild.remove();
+  setTimeout(() => li.remove(), ms);
 }
-let bannerTimer = 0;
 function show(title, sub = '', ms = 3500) {
-  banner.replaceChildren(document.createTextNode(title), ...(sub ? [el('small', sub)] : []));
-  banner.classList.add('on');
-  clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(() => banner.classList.remove('on'), ms);
+  say(sub ? `${title} · ${sub}` : title, Math.min(7000, ms));
 }
 
 const nameOf = id => plots.get(id)?.owner?.nickname ?? 'Ai đó';
@@ -107,26 +100,38 @@ function handleFx(fx) {
   if (!C) return;
   switch (fx.type) {
     case 'joined': {
-      sfx('join');
+      sfx('join', 0, { duck: .86, ms: 700 });
       const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'khu vườn';
-      if (fx.count > 1) say(`${fx.count} người vừa vào vườn · ${tier}`);
-      else show(C.joined(fx.names?.[0] ?? 'bạn'), C.joinedHint(tier), 5500);
+      if (fx.count > 2) say(`${fx.count} người vừa vào · ${tier}`, 4500);
       break;
     }
-    case 'gift': sfx('milestone'); show(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, fx.tier === 'tree' ? 'Thần thụ nở rộ trên tầng mây' : '', fx.tier === 'tree' || fx.tier === 'rain' ? 4200 : 2600); break;
-    case 'steal': say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId))); float('coin', fx.plotId); break;
-    case 'catch': say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId))); float('sparkle', fx.plotId); break;
-    case 'dog-bark': say(C.bark(nameOf(fx.plotId))); break;
-    case 'levelup': sfx('milestone'); say(C.levelUp(nameOf(fx.plotId), fx.level)); float('sparkle', fx.plotId); break;
-    case 'plant': sfx('sparkle'); break;
-    case 'harvest': sfx('sparkle'); if (fx.count > 3) say(`${fx.count} người vừa hái`); break;
-    case 'pest-cleared': sfx('sparkle'); break;
-    case 'weed-cleared': sfx('sparkle'); if (fx.count > 2) say(`${fx.count} người vừa nhổ cỏ`); break;
-    case 'fertilize': sfx('sparkle'); if (fx.count > 2) say(`${fx.count} chậu vừa được bón phân`); break;
-    case 'title': sfx('title'); show(`${fx.nickname ?? 'Người làm vườn'} nhận danh hiệu`, fx.titles?.join(' · ') ?? '', 5000); break;
-    case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm phiên · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'} · Tiếp theo: ${fx.competition?.milestone?.label ?? '—'}`, 6000); break;
-    case 'event-start': sfx('actOpen'); break;
-    case 'water': case 'help': if (fx.count > 3) say(`${fx.count} người đang tưới`); break;
+    case 'gift': {
+      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[fx.tier] ?? 'milestone';
+      sfx(role, null, { duck: fx.tier === 'tree' || fx.tier === 'rain' ? .35 : .68, ms: fx.tier === 'tree' ? 2800 : 1600 });
+      if (fx.tier === 'tree' || fx.tier === 'rain') say(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, 5200);
+      break;
+    }
+    case 'steal': sfx('cardFlip'); say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId)), 5200); float('coin', fx.plotId); break;
+    case 'catch': sfx('cleared'); say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId)), 5200); float('sparkle', fx.plotId); break;
+    case 'dog-bark': sfx('bossHit', null, { duck: .82, ms: 700 }); break;
+    case 'levelup': sfx('milestone', null, { duck: .5, ms: 1800 }); say(C.levelUp(nameOf(fx.plotId), fx.level), 5200); float('sparkle', fx.plotId); break;
+    case 'plant': sfx('sparkle', null, { duck: .9, ms: 500 }); break;
+    case 'harvest': sfx('cleared', null, { duck: .75, ms: 1000 }); break;
+    case 'pest-cleared': sfx('cleared', null, { duck: .82, ms: 800 }); break;
+    case 'weed-cleared': sfx('cardFlip', null, { duck: .86, ms: 600 }); break;
+    case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
+    case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
+    case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
+    case 'event-start': {
+      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[fx.kind] ?? 'actOpen';
+      music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
+      sfx(role, null, { duck: .28, ms: 2800 });
+      break;
+    }
+    case 'event-end':
+      sfx(fx.ok === false ? 'fall' : 'actClose', null, { duck: .48, ms: 1800 });
+      music.setMood('calm');
+      break;
     default:
   }
 }
@@ -170,25 +175,41 @@ async function refreshStatus() {
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
-    hint.textContent = data.copy.howTo;
+    hint.textContent = 'Bình luận để nhận chậu · trồng · tưới · hái';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
-    if (!welcomed) { welcomed = true; show(data.copy.welcome, data.copy.howTo, 6500); }
+    music.resume();
+    if (!welcomed) { welcomed = true; say('Vườn Mây đang mở · bình luận để nhận chậu', 6500); }
   } else if (event === 'reset') {
     plots.clear(); floaters.length = 0; serverEvent = null;
-    show('Vườn mô phỏng đã làm mới', 'Bắt đầu bằng một bình luận hoặc “trồng rau”.', 4200);
+    say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
-    if ('event' in data.parts) serverEvent = data.parts.event;
-    if ('event' in data.parts) music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+    if ('event' in data.parts) {
+      serverEvent = data.parts.event;
+      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+    }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
   } else if (event === 'shot') {
     from = cam;
     to = { x: data.x, y: data.y, zoom: data.zoom };
-    shotLabel.textContent = ({ idle: 'ĐANG DẠO VƯỜN', welcome: 'CHÀO NGƯỜI LÀM VƯỜN', gift: 'KHOẢNH KHẮC ĐẶC BIỆT', tier: 'VƯỜN ĐANG SÔI ĐỘNG', steal: 'CÓ TRỘM TRONG VƯỜN', catch: 'BẮT QUẢ TANG', levelup: 'LÊN CẤP', ripe: 'CÂY ĐÃ CHÍN', event: 'SỰ KIỆN TOÀN VƯỜN', gap: 'CHUYỂN CẢNH' })[data.kind] ?? 'VƯỜN MÂY';
-    shotLabel.classList.toggle('active', data.kind !== 'idle' && data.kind !== 'gap');
+    cameraEaseMs = Math.max(600, Number(data.easeMs) || 1800);
+    const owner = data.plotId ? plots.get(data.plotId)?.owner?.nickname : data.nickname;
+    const giftName = data.giftKind && meta?.copy?.gifts?.[data.giftKind];
+    const labels = {
+      overview: `TOÀN CẢNH · ${[...plots.values()].filter(p => p.owner && p.awake).length} CHẬU`,
+      welcome: owner ? `CHÀO ${owner.toUpperCase()}` : 'NGƯỜI MỚI VÀO VƯỜN',
+      gift: owner ? `${owner.toUpperCase()} · ${giftName ?? 'QUÀ VƯỜN'}` : (giftName ?? 'KHOẢNH KHẮC ĐẶC BIỆT'),
+      steal: 'TRỘM CÂY',
+      catch: 'BẮT QUẢ TANG',
+      levelup: owner ? `${owner.toUpperCase()} · LÊN CẤP` : 'LÊN CẤP',
+      ripe: owner ? `${owner.toUpperCase()} · CÂY CHÍN` : 'CÂY ĐÃ CHÍN',
+      event: `SỰ KIỆN · ${eventNames[data.eventKind] ?? 'TOÀN VƯỜN'}`,
+    };
+    shotLabel.textContent = labels[data.kind] ?? 'VƯỜN MÂY';
+    shotLabel.classList.toggle('active', data.kind !== 'overview');
     focusPlot = data.plotId ?? null;
-    focusAt = performance.now(); focusMs = data.holdMs ?? 3500;
+    focusAt = performance.now(); focusMs = data.holdMs ?? 5200;
     shotAt = performance.now();
   }
 }
@@ -279,55 +300,45 @@ function drawTier(tier, index) {
   const cfg = meta.cfg;
   const center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
   const s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
-  const bayCols = cfg.plotsPerRow / 4, bayW = bayCols * cfg.plotCell, totalW = bayW * 4;
+  const bays = 3, rows = Math.ceil(cfg.plotsPerTier / cfg.plotsPerRow);
+  const bayCols = cfg.plotsPerRow / bays, bayW = bayCols * cfg.plotCell, totalW = cfg.plotsPerRow * cfg.plotCell;
+  const shelfStart = -(rows - 1) * cfg.plotCell / 2 - 18;
+  const roofY = shelfStart - 155, deckY = shelfStart + (rows - 1) * cfg.plotCell + 72;
   ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   ctx.fillStyle = C.shadow;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 175, totalW + 140, 88, 28); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY + 26, totalW + 140, 88, 28); ctx.fill();
   ctx.fillStyle = scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 150, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
-  ctx.globalAlpha = .22; ctx.fillStyle = C.card;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 25, 164, totalW + 50, 18, 9); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
 
-  for (let bay = 0; bay < 4; bay++) {
+  for (let bay = 0; bay < bays; bay++) {
     const bx = -totalW / 2 + bayW * (bay + .5);
     const left = bx - bayW / 2 + 24, right = bx + bayW / 2 - 24;
-
     ctx.strokeStyle = C.ink; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22;
-    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left, roofY + 34); ctx.quadraticCurveTo(bx, roofY - 72, right, roofY + 34); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22; ctx.stroke();
 
     for (const x of [left, right]) {
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, -220); ctx.lineTo(x, 160); ctx.stroke();
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, roofY + 34); ctx.lineTo(x, deckY + 10); ctx.stroke();
       ctx.strokeStyle = scene.rail; ctx.lineWidth = 15; ctx.stroke();
     }
 
-    for (let row = 0; row < 3; row++) {
-      const shelfY = -94 + row * cfg.plotCell;
+    for (let row = 0; row < rows; row++) {
+      const shelfY = shelfStart + row * cfg.plotCell;
       ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(left + 18, shelfY + 13, bayW - 84, 31, 12); ctx.fill();
-      ctx.fillStyle = row === 1 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.roundRect(left + 18, shelfY, bayW - 84, 30, 12); ctx.fill(); ctx.stroke();
     }
 
-    const signW = 330;
+    const signW = Math.min(370, bayW - 80);
     ctx.fillStyle = bay % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.roundRect(bx - signW / 2, -278, signW, 58, 14); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(bx - signW / 2, roofY - 46, signW, 58, 14); ctx.fill(); ctx.stroke();
     ctx.fillStyle = C.ink; ctx.font = `bold 34px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, -248);
+    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, roofY - 17);
 
     const deco = gardenArt(DECOR_ART[(index + bay) % DECOR_ART.length]);
-    if (deco) {
-      ctx.save(); ctx.globalAlpha = .92;
-      ctx.drawImage(deco, right - 115, -205, 92, 92);
-      ctx.restore();
-    }
-  }
-
-  ctx.strokeStyle = 'rgba(47,60,68,.35)'; ctx.lineWidth = 6;
-  for (const x of [-totalW * .36, -totalW * .12, totalW * .12, totalW * .36]) {
-    ctx.beginPath(); ctx.moveTo(x, 232); ctx.lineTo(x - 28, 314); ctx.stroke();
+    if (deco) { ctx.save(); ctx.globalAlpha = .9; ctx.drawImage(deco, right - 105, roofY + 58, 86, 86); ctx.restore(); }
   }
   ctx.restore();
 }
@@ -445,11 +456,24 @@ function drawPlot(p, lod) {
     const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
     const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const maxW = focused ? 280 : 112, h = focused ? 40 : 27;
+    const maxW = focused ? 360 : 112, h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
     ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
     ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, h, focused ? 11 : 8); ctx.fill(); ctx.stroke();
     ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + (focused ? 3 : 2));
+
+    if (focused) {
+      const stageName = ['Hạt', 'Mầm', 'Đang lớn', 'Chín', 'Quá lứa'][p.stage ?? 0] ?? 'Đang lớn';
+      const cropName = p.crop ? (meta.crops?.[p.crop.type]?.label ?? p.crop.type) : 'Chưa trồng';
+      const variant = p.crop?.variant === 'golden' ? 'Ánh kim' : p.crop?.variant === 'lush' ? 'Sum suê' : '';
+      const alert = p.crop?.pest ? ' · Có sâu' : p.crop?.weeds ? ' · Có cỏ' : p.crop?.fertilized ? ' · Đã bón phân' : '';
+      const status = p.crop ? `${cropName} · ${stageName}${variant ? ` · ${variant}` : ''}${alert}` : cropName;
+      ctx.font = `22px ${FONT}`;
+      const sw = Math.min(390, ctx.measureText(status).width + 24), sy = labelY + 45;
+      ctx.fillStyle = 'rgba(255,253,249,.96)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(at.x - sw / 2, sy, sw, 34, 10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.crop?.pest || p.crop?.weeds ? C.coral : C.softInk; ctx.fillText(status, at.x, sy + 2);
+    }
 
     const avatarR = focused ? Math.max(26, size * .16) : Math.max(12, size * .095);
     const avatarX = at.x - size * .28, avatarY = at.y - size * .62;
@@ -481,13 +505,14 @@ function drawSparkle(x, y, r, color = C.ochre) {
   ctx.fillStyle = color; ctx.fill();
 }
 
-function drawAtmosphere(now) {
+function drawAtmosphere(now, activeTierIds) {
   const cfg = meta.cfg, t = reduceMotion ? 0 : now;
 
   meta.tiers.forEach((tier, i) => {
-    const y = i * cfg.tierHeight + cfg.tierHeight / 2;
-    for (let bay = 0; bay < 4; bay++) {
-      const x = cfg.tierWidth * (.14 + bay * .24);
+    if (!activeTierIds.has(tier.id)) return;
+    const y = i * cfg.tierHeight + cfg.tierHeight / 2, bays = 3;
+    for (let bay = 0; bay < bays; bay++) {
+      const x = cfg.tierWidth * ((bay + 1) / (bays + 1));
       const at = worldToScreen({ x: x + Math.sin(t / 2600 + bay) * 24, y: y - 250 }, cam, VP);
       ctx.globalAlpha = .28;
       drawSparkle(at.x, at.y, Math.max(3, 10 * cam.zoom), bay % 2 ? C.ochre : C.teal);
@@ -596,16 +621,23 @@ function drawFloaters(now) {
   }
 }
 
+let lastFrameAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!meta) return;
-  cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, EASE_MS);
+  if (!meta || now - lastFrameAt < 1000 / 30 - 2) return;
+  lastFrameAt = now;
+  cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   drawBackdrop(now);
-  meta.tiers.forEach(drawTier);
-  drawAtmosphere(now);
-  const { detail, dots } = visiblePlots([...plots.values()], cam, VP, meta);
+
+  const active = [...plots.values()].filter(p => p.owner && p.awake);
+  const activeTierIds = new Set(active.map(p => p.tier));
+  if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
+  meta.tiers.forEach((tier, i) => { if (activeTierIds.has(tier.id)) drawTier(tier, i); });
+  drawAtmosphere(now, activeTierIds);
+
+  const { detail, dots } = visiblePlots(active, cam, VP, meta);
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));

@@ -48,7 +48,7 @@ Garden chỉ mở một cổng local cho overlay, control, âm thanh và simulat
 
 Sự kiện vườn: Mưa mây, Bão sâu, Thương lái đến và Giờ vàng. Màn hình không hiện lời kêu gọi gửi quà.
 
-Camera dạo qua 12 cụm chậu cây (4 tầng × 3 khung ngang) khi vườn yên để chậu, avatar và tên chủ vẫn đọc được trên màn hình điện thoại. Người mới, quà, cây chín và lên cấp được đưa về đúng chậu; khoảnh khắc quan trọng có vòng sáng lớn và vùng xung quanh tối nhẹ. Sự kiện toàn vườn vẫn dùng khung overview riêng kèm lớp hiệu ứng mưa, sâu, thương lái hoặc giờ vàng. Cách trình diễn thay đổi nhưng tọa độ ô, quyền sở hữu và save hiện tại không đổi. Có thể khóa camera bằng `POST /api/camera-lock {"on":true}` hoặc gọi sự kiện bằng `POST /api/event {"type":"rain"|"pests"|"merchant"|"golden"}`.
+Camera không còn tự “dạo vườn”. Khi yên, nó giữ một **toàn cảnh ổn định của vùng đang có người chơi**. Các khoảnh khắc quan trọng đi vào hàng chờ, chuyển cảnh 1.8–2.2 giây và giữ shot 5–9 giây để người xem đọc rõ tên, loại chậu, loại cây, giai đoạn, biến thể và tình trạng sâu/cỏ/phân. Sự kiện toàn vườn dùng chính overview này, đồng bộ event card, hiệu ứng nền, camera, nhạc và SFX. Có thể khóa camera bằng `POST /api/camera-lock {"on":true}` hoặc gọi sự kiện bằng `POST /api/event {"type":"rain"|"pests"|"merchant"|"golden"}`.
 
 ## Thi đua và danh hiệu
 
@@ -58,7 +58,7 @@ Danh hiệu cá nhân được giữ qua các phiên: **Người gieo mây** sau
 
 ## Âm thanh
 
-Garden dùng playlist calm/upbeat, bộ phát cross-fade và hiệu ứng từ dự án. Nhấn **Bật âm thanh** trong overlay để bật/tắt âm thanh. Có thể cấu hình theo query: `?music=0` hoặc `?music=0.3`; `?sfx=0` hoặc `?sfx=0.2`. Mặc định âm lượng thấp; trình duyệt có thể chặn tự phát cho đến khi người vận hành nhấn nút.
+Garden tự dùng playlist calm/upbeat và sample pack trong `/sfx/manifest.json`; không còn nút âm thanh trên overlay ở cả LIVE lẫn simulator. Event start/end, quà, thu hoạch, bón phân, dọn sâu/cỏ và lên cấp dùng các role âm thanh tương ứng, đồng thời duck/cross-fade nhạc nền theo nhịp hình. Có thể tắt hoặc chỉnh bằng URL: `?music=0` / `?music=0.3`, `?sfx=0` / `?sfx=0.2`. OBS Browser Source thường tự phát được; trình duyệt thường sẽ tự unlock khi có tương tác đầu tiên trên trang.
 
 ## Diễn tập
 
@@ -68,9 +68,9 @@ node --test garden/*.test.mjs
 ```
 
 
-### Garden visual architecture v2
+### Garden visual architecture v3
 
-The 432 persistent seats are unchanged. Each 108-seat district now lays out as **3 rows × 36 columns**, and the camera treats it as four **9 × 3 greenhouse bays**. This halves the visible row count from the former six-row terrace while keeping plot IDs and save compatibility stable.
+The 432 persistent IDs remain as a hard ceiling, but the product is tuned for a normal **<100-viewer LIVE**. Each district is back to a compact **18 × 6** arrangement and new players fill the first district before another opens. Empty districts are not rendered, so a 20–90 person room no longer looks like a 400-seat venue.
 
 The former cloud-island foundation is no longer the primary structure. Each district is a connected elevated conservatory deck with four readable bays, repeated signage, structural rails, and a dedicated decorative SVG. Ripe crops and the four field events also use a reusable SVG asset library under `public/garden/assets/`.
 

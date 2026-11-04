@@ -9,7 +9,7 @@ const meta = { tiers: TIERS, cfg };
 const VP = { w: 1080, h: 1920 };
 
 test('lodOf: dots when zoomed out, plots in the middle, close-up when zoomed in', () => {
-  assert.deepEqual([0.3, 0.4, 0.49, 0.9, 1.79, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close']);
+  assert.deepEqual([0.2, 0.29, 0.3, 0.4, 1.24, 1.25, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close', 'close']);
 });
 
 test('plotPos agrees with the server layout for every terrace', () => {
@@ -71,4 +71,13 @@ test('the avatar cache starts loading on first ask, hands the image back once lo
   cache.get('a');
   assert.equal(made.length, 4, 'a was evicted when c arrived and had to be created again');
   assert.equal(cache.get(''), null);
+});
+
+
+test('sleeping plots are excluded entirely from rendering', () => {
+  const awake = owned('cloud-1', 0, true), sleeping = owned('cloud-1', 1, false);
+  const c = plotPos(awake, meta);
+  const v = visiblePlots([awake, sleeping], { x: c.x, y: c.y, zoom: .5 }, VP, meta);
+  assert.deepEqual(v.detail.map(p => p.id), [awake.id]);
+  assert.equal(v.dots.length, 0);
 });
