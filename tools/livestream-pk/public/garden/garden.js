@@ -32,8 +32,9 @@ addEventListener('resize', fit); fit();
 
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(200);
-let cam = { x: 1350, y: 2400, zoom: 0.34 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
-const EASE_MS = 600;
+let cam = { x: 650, y: 600, zoom: 1.05 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
+const EASE_MS = 850;
+let shotKind = 'idle';
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const eventNames = { rain: 'Mưa mây', pests: 'Bão sâu', merchant: 'Thương lái', golden: 'Giờ vàng' };
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
@@ -138,6 +139,9 @@ function onMessage(event, data) {
   } else if (event === 'shot') {
     from = cam;
     to = { x: data.x, y: data.y, zoom: data.zoom };
+    shotKind = data.kind;
+    document.getElementById('shotLabel').textContent = ({ idle: 'ĐANG DẠO VƯỜN', welcome: 'CHÀO NGƯỜI LÀM VƯỜN', gift: 'KHOẢNH KHẮC ĐẶC BIỆT', tier: 'VƯỜN ĐANG SÔI ĐỘNG', steal: 'CÓ TRỘM TRONG VƯỜN', catch: 'BẮT QUẢ TANG', levelup: 'LÊN CẤP', ripe: 'CÂY ĐÃ CHÍN', event: 'SỰ KIỆN TOÀN VƯỜN' })[data.kind] ?? 'VƯỜN MÂY';
+    document.getElementById('shotLabel').classList.toggle('active', data.kind !== 'idle' && data.kind !== 'gap');
     focusPlot = data.plotId ?? null;
     focusAt = performance.now(); focusMs = data.holdMs ?? 3500;
     shotAt = performance.now();
@@ -266,7 +270,7 @@ function drawRipeCrop(type, stage) {
 }
 
 function drawPlot(p, lod) {
-  const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * .82 * cam.zoom;
+  const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
   ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = p.awake ? 1 : .58;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.ellipse(0, 43, 40, 8, -.06, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
@@ -288,14 +292,14 @@ function drawPlot(p, lod) {
     ctx.beginPath(); ctx.moveTo(-40, -17); ctx.lineTo(-35, -28); ctx.lineTo(-30, -18); ctx.lineTo(-19, -16); ctx.lineTo(-27, -9); ctx.lineTo(-25, 1); ctx.lineTo(-35, -4); ctx.lineTo(-44, 1); ctx.lineTo(-42, -9); ctx.lineTo(-50, -16); ctx.closePath(); ctx.fillStyle = C.ochre; ctx.fill(); ctx.stroke();
   }
   ctx.restore();
-  if (p.owner && lod === 'close') {
+  if (p.owner && cam.zoom >= .82) {
     const labelY = at.y + size * .56;
-    ctx.save(); ctx.font = `36px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const title = `${p.owner.nickname.slice(0, 15)}  ·  cấp ${p.owner.level}`;
-    const w = Math.min(520, ctx.measureText(title).width + 34);
+    ctx.save(); ctx.font = `${Math.max(24, Math.min(34, 27 * cam.zoom))}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const title = `${p.owner.nickname.slice(0, 12)} · Lv${p.owner.level}`;
+    const w = Math.min(310, ctx.measureText(title).width + 22);
     ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(at.x - w / 2, labelY); ctx.lineTo(at.x + w / 2, labelY - 2); ctx.lineTo(at.x + w / 2 - 3, labelY + 48); ctx.lineTo(at.x - w / 2 + 2, labelY + 46); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + 4);
+    ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, 38, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + 3);
     const img = avatars.get(p.owner.avatar);
     if (img) { ctx.beginPath(); ctx.arc(at.x, at.y - size * .75, size * .18, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(img, at.x - size * .18, at.y - size * .93, size * .36, size * .36); }
     ctx.restore();
@@ -342,8 +346,8 @@ function drawFocus(now) {
   const plot = plots.get(focusPlot);
   if (!plot) return;
   const at = worldToScreen(plotPos(plot, meta), cam, VP), age = (now - focusAt) / Math.max(1, focusMs);
-  const radius = Math.max(28, meta.cfg.plotCell * .72 * cam.zoom) + (reduceMotion ? 0 : Math.sin(now / 130) * 4);
-  ctx.save(); ctx.globalAlpha = Math.max(.18, 1 - age * .65); ctx.strokeStyle = C.ochre; ctx.lineWidth = 6; ctx.setLineDash([11, 8]);
+  const radius = Math.max(80, meta.cfg.plotCell * .9 * cam.zoom) + (reduceMotion ? 0 : Math.sin(now / 130) * 12);
+  ctx.save(); ctx.globalAlpha = Math.max(.22, 1 - age * .65); ctx.strokeStyle = C.ochre; ctx.lineWidth = 12; ctx.shadowColor = C.ochre; ctx.shadowBlur = 28; ctx.setLineDash([20, 10]);
   ctx.beginPath(); ctx.arc(at.x, at.y, radius, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
 }
 
@@ -364,7 +368,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   if (!meta) return;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, EASE_MS);
-  ctx.fillStyle = serverEvent?.kind === 'rain' ? C.teal : C.paper;
+  ctx.fillStyle = serverEvent?.kind === 'rain' ? '#D8EDE8' : '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   for (let i = 0; i < meta.tiers.length - 1; i++) {
     const y = (i + 1) * meta.cfg.tierHeight;
