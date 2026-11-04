@@ -34,13 +34,8 @@ const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
 let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
 const visualEvent = () => serverEvent?.phase === 'active' && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
-const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
-const TIER_SCENES = [
-  { rail: '#B8D6C4', trim: '#8EC0B9', flag: '#EBC49E' },
-  { rail: '#D9C7A9', trim: '#A9CDBF', flag: '#F2C45C' },
-  { rail: '#E9D38C', trim: '#E3A17F', flag: '#F2C45C' },
-  { rail: '#C8C4D7', trim: '#9FBDB6', flag: '#DDB6BA' },
-];
+const POT_ACCENT = '#EBC49E';
+const SEED_SCENE = { rail:'#B8D6C4', trim:'#8EC0B9', flag:'#EBC49E' };
 const eventNames = { rain: 'Mưa tưới', pests: 'Đợt sâu bệnh', merchant: 'Chợ phiên', golden: 'Giờ vàng' };
 const EVENT_ART = {
   rain: '/garden/assets/event-rain.svg',
@@ -335,9 +330,14 @@ function moduleGeometry(module, cfg) {
   };
 }
 
-function drawTier(tier, index) {
-  const cfg = meta.cfg, scene = TIER_SCENES[0];
-  const modules = Math.ceil(cfg.activeCapacity / cfg.moduleCapacity);
+function visibleModuleCount(active) {
+  if (!active.length) return 1;
+  return Math.min(Math.ceil(meta.cfg.activeCapacity / meta.cfg.moduleCapacity), Math.max(...active.map(p => Math.floor(p.slot / meta.cfg.moduleCapacity))) + 1);
+}
+
+function drawTier(tier, index, active) {
+  const cfg = meta.cfg, scene = SEED_SCENE;
+  const modules = visibleModuleCount(active);
   for (let module = 0; module < modules; module++) {
     const g = moduleGeometry(module, cfg);
     const center = worldToScreen({ x: (g.left + g.right) / 2, y: (g.top + g.bottom) / 2 }, cam, VP);
@@ -370,8 +370,8 @@ function drawTier(tier, index) {
   }
 }
 
-function drawShelfFronts() {
-  const cfg = meta.cfg, modules = Math.ceil(cfg.activeCapacity / cfg.moduleCapacity);
+function drawShelfFronts(active) {
+  const cfg = meta.cfg, modules = visibleModuleCount(active);
   ctx.save();
   for (let module = 0; module < modules; module++) {
     const g = moduleGeometry(module, cfg);
@@ -448,8 +448,8 @@ function drawPlot(p, lod) {
     ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
     ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
-    ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.fill(); ctx.stroke();
+    ctx.fillStyle = POT_ACCENT; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENT; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill();
   }
 
@@ -703,14 +703,14 @@ function frame(now) {
   const active = [...plots.values()].filter(p => p.owner && p.awake);
   const activeTierIds = new Set(active.map(p => p.tier));
   if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
-  drawTier(meta.tiers[0], 0);
+  drawTier(meta.tiers[0], 0, active);
   drawAtmosphere(now, activeTierIds);
 
   const { detail, dots } = visiblePlots(active, cam, VP, meta);
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));
-  drawShelfFronts();
+  drawShelfFronts(active);
   drawFocus(now);
   drawFloaters(now);
   renderEventHero(now);
