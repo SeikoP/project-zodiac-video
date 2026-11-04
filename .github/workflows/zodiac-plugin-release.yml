@@ -1,6 +1,13 @@
 name: Zodiac ChatGPT plugin release archive
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - plugins/zodiac-video-pipeline/plugin.json
+      - plugins/zodiac-video-pipeline/.codex-plugin/plugin.json
+      - plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json
 permissions:
   contents: read
 jobs:
