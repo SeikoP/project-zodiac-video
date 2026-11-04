@@ -246,16 +246,26 @@ def _align_cached_scenes(
                         )
                     words = _align_scene_words(fallback_model, path, scene["voice"])
                 except (AlignmentMismatchError, PipelineError) as retry_error:
-                    request_scene_voice_regeneration(
-                        workspace,
-                        scene_id,
-                        reason="TIMING_ALIGNMENT_FAILED",
-                    )
+                    if isinstance(retry_error, AlignmentMismatchError):
+                        request_scene_voice_regeneration(
+                            workspace,
+                            scene_id,
+                            reason="TIMING_ALIGNMENT_FAILED",
+                        )
+                        remediation = (
+                            "The next Continue run will regenerate only this scene; "
+                            "valid scene caches remain."
+                        )
+                    else:
+                        remediation = (
+                            "Review this WAV/ASR failure before retrying; "
+                            "valid scene caches remain."
+                        )
                     raise PipelineError(
                         f"TIMING_REVIEW_REQUIRED: {scene_id}. "
                         f"Primary ({primary_model}): {first_error}. "
                         f"Fallback (medium): {retry_error}. "
-                        "The next Continue run will regenerate only this scene; valid scene caches remain."
+                        f"{remediation}"
                     ) from retry_error
                 _emit_tts_log(f"TIMING VERIFIED {scene_id}: medium ASR accepted")
             _write_json_atomic(
