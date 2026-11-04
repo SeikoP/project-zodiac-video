@@ -31,7 +31,8 @@ addEventListener('resize', fit); fit();
 
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
-let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, welcomed = false;
+let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null, welcomed = false;
+const visualEvent = () => serverEvent && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
 const TIER_SCENES = [
@@ -105,12 +106,9 @@ function handleFx(fx) {
       if (fx.count > 2) say(`${fx.count} người vừa vào · ${tier}`, 4500);
       break;
     }
-    case 'gift': {
-      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[fx.tier] ?? 'milestone';
-      sfx(role, null, { duck: fx.tier === 'tree' || fx.tier === 'rain' ? .35 : .68, ms: fx.tier === 'tree' ? 2800 : 1600 });
+    case 'gift':
       if (fx.tier === 'tree' || fx.tier === 'rain') say(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, 5200);
       break;
-    }
     case 'steal': sfx('cardFlip'); say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId)), 5200); float('coin', fx.plotId); break;
     case 'catch': sfx('cleared'); say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId)), 5200); float('sparkle', fx.plotId); break;
     case 'dog-bark': sfx('bossHit', null, { duck: .82, ms: 700 }); break;
@@ -122,14 +120,12 @@ function handleFx(fx) {
     case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
     case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
-    case 'event-start': {
-      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[fx.kind] ?? 'actOpen';
+    case 'event-start':
       music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
-      sfx(role, null, { duck: .28, ms: 2800 });
       break;
-    }
     case 'event-end':
-      sfx(fx.ok === false ? 'fall' : 'actClose', null, { duck: .48, ms: 1800 });
+      if (presentedEventKind === fx.kind) sfx(fx.ok === false ? 'fall' : 'actClose', null, { duck: .48, ms: 1800 });
+      presentedEventKind = null;
       music.setMood('calm');
       break;
     default:
@@ -186,7 +182,8 @@ function onMessage(event, data) {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
-      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+      if (!serverEvent) presentedEventKind = null;
+      music.setMood(shownEvent?.kind === 'golden' || shownEvent?.kind === 'pests' ? 'upbeat' : 'calm');
     }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
@@ -208,6 +205,14 @@ function onMessage(event, data) {
     };
     shotLabel.textContent = labels[data.kind] ?? 'VƯỜN MÂY';
     shotLabel.classList.toggle('active', data.kind !== 'overview');
+    if (data.kind === 'event' && data.eventKind) {
+      presentedEventKind = data.eventKind;
+      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
+      sfx(role, null, { duck: .28, ms: 2800 });
+    } else if (data.kind === 'gift') {
+      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[data.giftKind] ?? 'milestone';
+      sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
+    }
     focusPlot = data.plotId ?? null;
     focusAt = performance.now(); focusMs = data.holdMs ?? 5200;
     shotAt = performance.now();
@@ -245,7 +250,7 @@ function cloudPath(width, height) {
 
 function drawBackdrop(now) {
   const sky = ctx.createLinearGradient(0, 0, 0, VP.h);
-  sky.addColorStop(0, serverEvent?.kind === 'golden' ? '#F5E1A3' : '#DCEBE4');
+  sky.addColorStop(0, visualEvent()?.kind === 'golden' ? '#F5E1A3' : '#DCEBE4');
   sky.addColorStop(.56, '#F6F0E6');
   sky.addColorStop(1, '#D8E1D5');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VP.w, VP.h);
@@ -520,7 +525,8 @@ function drawAtmosphere(now, activeTierIds) {
     }
   });
 
-  if (serverEvent?.kind === 'rain') {
+  const shownEvent = visualEvent();
+  if (shownEvent?.kind === 'rain') {
     const wash = ctx.createLinearGradient(0, 0, 0, VP.h);
     wash.addColorStop(0, 'rgba(70,119,139,.20)'); wash.addColorStop(1, 'rgba(142,192,185,.08)');
     ctx.fillStyle = wash; ctx.fillRect(0, 0, VP.w, VP.h);
@@ -529,14 +535,14 @@ function drawAtmosphere(now, activeTierIds) {
       const x = (i * 79 + (t / 13) % 1160) % 1160 - 40, y = (i * 113 + (t / 7) % 2020) % 2020 - 40;
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 17, y + 44); ctx.stroke();
     }
-  } else if (serverEvent?.kind === 'golden') {
+  } else if (shownEvent?.kind === 'golden') {
     const g = ctx.createRadialGradient(VP.w / 2, 650, 80, VP.w / 2, 650, 850);
     g.addColorStop(0, 'rgba(242,196,92,.28)'); g.addColorStop(1, 'rgba(242,196,92,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.globalAlpha = .82;
     for (let i = 0; i < 44; i++) drawSparkle((i * 137 + 31 + t / 28) % 1080, (i * 281 + 67 + t / 80) % 1920, 6 + (i % 4) * 3, C.ochre);
     ctx.globalAlpha = 1;
-  } else if (serverEvent?.kind === 'pests') {
+  } else if (shownEvent?.kind === 'pests') {
     ctx.fillStyle = 'rgba(233,122,102,.10)'; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.save(); ctx.strokeStyle = 'rgba(233,122,102,.72)'; ctx.lineWidth = 18; ctx.setLineDash([34, 22]);
     ctx.beginPath(); ctx.moveTo(18, 360); ctx.lineTo(18, 1720); ctx.moveTo(VP.w - 18, 360); ctx.lineTo(VP.w - 18, 1720); ctx.stroke(); ctx.restore();
@@ -547,7 +553,7 @@ function drawAtmosphere(now, activeTierIds) {
       ctx.beginPath(); ctx.ellipse(0, 0, 10, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-5, -10); ctx.lineTo(-12, -18); ctx.moveTo(5, -10); ctx.lineTo(12, -18); ctx.stroke(); ctx.restore();
     }
-  } else if (serverEvent?.kind === 'merchant') {
+  } else if (shownEvent?.kind === 'merchant') {
     ctx.fillStyle = 'rgba(242,196,92,.08)'; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.save(); ctx.strokeStyle = C.coral; ctx.lineWidth = 7; ctx.setLineDash([26, 14]);
     ctx.beginPath(); ctx.moveTo(60, 510); ctx.quadraticCurveTo(540, 610, 1020, 510); ctx.stroke(); ctx.restore();
@@ -561,7 +567,7 @@ function drawAtmosphere(now, activeTierIds) {
 }
 
 function renderEventHero() {
-  const e = serverEvent;
+  const e = visualEvent();
   stage.classList.toggle('event-live', Boolean(e));
   eventHero.classList.toggle('on', Boolean(e));
   eventHero.setAttribute('aria-hidden', String(!e));
@@ -627,7 +633,7 @@ function frame(now) {
   if (!meta || now - lastFrameAt < 1000 / 30 - 2) return;
   lastFrameAt = now;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
-  ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
+  ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[visualEvent()?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   drawBackdrop(now);
 

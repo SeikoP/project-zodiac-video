@@ -96,7 +96,7 @@ export function createCamera({ cfg, now, getPlots = () => [] }) {
     return best;
   }
 
-  const overviewShot = () => ({ kind: 'overview', priority: 9, ...overviewTarget(), holdMs: Infinity, easeMs: c.overviewEaseMs, gift: false });
+  const overviewShot = () => ({ kind: 'overview', priority: 9, ...overviewTarget(), holdMs: 0, easeMs: c.overviewEaseMs, gift: false });
 
   function start(shot) {
     const t = now();
