@@ -33,15 +33,15 @@ export function createBag({ cfg, now, onEvent, elementOf }) {
   // What the next level costs this viewer (null at the top).
   function nextCost(v) {
     const lv = levelOf(v);
-    if (lv >= LEVEL_MAX || !v.sign) return null;
-    return { dust: cfg.levelDust[lv - 1], gem: elementOf(v.sign), gems: cfg.levelGems[lv - 1], moon: cfg.levelMoon[lv - 1] };
+    if (lv >= LEVEL_MAX || !v.team) return null;
+    return { dust: cfg.levelDust[lv - 1], gem: elementOf(v.team), gems: cfg.levelGems[lv - 1], moon: cfg.levelMoon[lv - 1] };
   }
 
   function add(u, v, res, n, why) {
     if (!n) return;
     const bag = bagOf(v);
     bag[res] = (bag[res] ?? 0) + n;
-    if (res !== 'dust') onEvent({ type: 'loot', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, res, n, why });
+    if (res !== 'dust') onEvent({ type: 'loot', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, res, n, why });
   }
   const fromLight = (v, amount) => { bagOf(v).dust += Math.ceil(amount * cfg.dustPerLight); };
 
@@ -57,7 +57,7 @@ export function createBag({ cfg, now, onEvent, elementOf }) {
     if (Object.keys(missing).length) {
       if (now() - (v.hintAt ?? 0) >= cfg.upgradeHintCooldownSeconds * 1000) {
         v.hintAt = now();
-        onEvent({ type: 'upgrade-need', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: levelOf(v), missing });
+        onEvent({ type: 'upgrade-need', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: levelOf(v), missing });
       }
       return false;
     }
@@ -65,7 +65,7 @@ export function createBag({ cfg, now, onEvent, elementOf }) {
     bag[cost.gem] -= cost.gems;
     bag.moon -= cost.moon;
     v.level = levelOf(v) + 1;
-    onEvent({ type: 'level-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.level });
+    onEvent({ type: 'level-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: v.level });
     return true;
   }
 

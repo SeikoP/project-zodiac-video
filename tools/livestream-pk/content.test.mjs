@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { SIGNS } from './game.mjs';
+import { SIGNS } from './signs-legacy.mjs';
+import { TEAM_IDS } from './game.mjs';
 import { SIGN_DATA, insideDates } from './public/signs.js';
 import { buildQuizBank } from './quizbank.mjs';
 import { drawFortune, poolSize, FORTUNE_TOPICS } from './fortunes.mjs';
 
+// the boss still plays the four element roles (red fire, yellow earth, green air, blue water); the readings draw on them too
+const ELEMENT = { red: 'fire', yellow: 'earth', green: 'air', blue: 'water' };
 const extra = JSON.parse(fs.readFileSync(new URL('./quiz.json', import.meta.url), 'utf8'));
 
 test('every sign has complete, consistent reference data', () => {
@@ -40,23 +43,23 @@ test('daily readings vary a lot across viewers, are stable within a day, and nev
   const now = Date.UTC(2026, 10, 3, 5);
   const seen = {};
   for (let i = 0; i < 300; i++) {
-    const f = drawFortune({ seed: `user${i}`, sign: 'leo', element: 'fire', now });
+    const f = drawFortune({ seed: `user${i}`, team: 'red', element: 'fire', now });
     for (const t of FORTUNE_TOPICS) (seen[t] ??= new Set()).add(f[t]);
     assert.equal(new Set(FORTUNE_TOPICS.map(t => f[t])).size, 4);
     assert.ok(f.tip && f.color && f.hour && Number.isInteger(f.number));
   }
   for (const t of FORTUNE_TOPICS) assert.ok(seen[t].size >= 12, `${t}: ${seen[t].size} distinct lines`);
-  const a = drawFortune({ seed: 'x', sign: 'leo', element: 'fire', now });
-  assert.deepEqual(a, drawFortune({ seed: 'x', sign: 'leo', element: 'fire', now: now + 3600e3 * 6 }));
-  assert.notDeepEqual(a, drawFortune({ seed: 'x', sign: 'leo', element: 'fire', now: now + 86400e3 }));
-  for (const s of SIGNS) for (const t of FORTUNE_TOPICS) assert.ok(poolSize(t, s.id, s.element) >= 18, `${s.id}/${t}`);
+  const a = drawFortune({ seed: 'x', team: 'red', element: 'fire', now });
+  assert.deepEqual(a, drawFortune({ seed: 'x', team: 'red', element: 'fire', now: now + 3600e3 * 6 }));
+  assert.notDeepEqual(a, drawFortune({ seed: 'x', team: 'red', element: 'fire', now: now + 86400e3 }));
+  for (const id of TEAM_IDS) for (const t of FORTUNE_TOPICS) assert.ok(poolSize(t, id, ELEMENT[id]) >= 18, `${id}/${t}`);
 });
 
-test('two different signs rarely get the same line on the same day', () => {
+test('two different teams rarely get the same line on the same day', () => {
   const now = Date.UTC(2026, 10, 3, 5);
   let same = 0, total = 0;
   for (let i = 0; i < 200; i++) {
-    const a = drawFortune({ seed: `u${i}`, sign: 'aries', element: 'fire', now }), b = drawFortune({ seed: `u${i}`, sign: 'pisces', element: 'water', now });
+    const a = drawFortune({ seed: `u${i}`, team: 'red', element: 'fire', now }), b = drawFortune({ seed: `u${i}`, team: 'blue', element: 'water', now });
     for (const t of FORTUNE_TOPICS) { total++; if (a[t] === b[t]) same++; }
   }
   assert.ok(same / total < 0.05, `${same}/${total}`);
@@ -97,7 +100,7 @@ test('occasions: fixed, lunar-table and computed dates, and readings may use the
   assert.equal(occasionOn('2026-11-27').name, 'Black Friday'); // 4th Friday of Nov 2026
   assert.equal(occasionOn('2026-11-04'), null);
   const day = Date.UTC(2026, 10, 19, 20); // 20/11 in Vietnam (UTC+7)
-  const f = Array.from({ length: 60 }, (_, i) => drawFortune({ seed: `u${i}`, sign: 'leo', element: 'fire', now: day }));
+  const f = Array.from({ length: 60 }, (_, i) => drawFortune({ seed: `u${i}`, team: 'red', element: 'fire', now: day }));
   const tip = occasionOn('2026-11-20').tip;
   assert.ok(f.some(x => x.tip === tip), 'some readings use the occasion tip');
   assert.ok(f.some(x => x.tip !== tip), 'not all of them');
@@ -121,9 +124,9 @@ test('poll bank: empty until the colour-team polls arrive, and nothing in it is 
 });
 
 test('no reading ever contains an empty or missing line (guards against holes in the text banks)', () => {
-  for (const s of SIGNS) for (let i = 0; i < 120; i++) {
-    const f = drawFortune({ seed: `seed${i}`, sign: s.id, element: s.element, now: Date.UTC(2026, 10, 1 + (i % 28), 5) });
-    for (const k of ['level', 'love', 'work', 'money', 'luck', 'tip', 'color', 'hour']) assert.ok(typeof f[k] === 'string' && f[k].length >= (k === 'color' ? 2 : 4), `${s.id} ${k}`); // colours can be short, like “Đỏ”
+  for (const id of TEAM_IDS) for (let i = 0; i < 120; i++) {
+    const f = drawFortune({ seed: `seed${i}`, team: id, element: ELEMENT[id], now: Date.UTC(2026, 10, 1 + (i % 28), 5) });
+    for (const k of ['level', 'love', 'work', 'money', 'luck', 'tip', 'color', 'hour']) assert.ok(typeof f[k] === 'string' && f[k].length >= (k === 'color' ? 2 : 4), `${id} ${k}`); // colours can be short, like “Đỏ”
     assert.ok(Number.isInteger(f.number) && f.number > 0);
   }
 });

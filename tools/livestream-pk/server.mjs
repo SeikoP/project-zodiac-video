@@ -1,4 +1,4 @@
-// Local server for Đêm Hội Hoàng Đạo (TikTok LIVE interactive overlay).
+// Local server for Đêm Hội Sao (TikTok LIVE interactive overlay).
 //   http://127.0.0.1:4848/          overlay (OBS / TikTok LIVE Studio browser source, 1080×1920)
 //   http://127.0.0.1:4848/control   control panel for the host
 // Binds to localhost only: the control API has no auth.
@@ -9,7 +9,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createGame, emptyState, SIGNS } from './game.mjs';
+import { createGame, emptyState, acceptState, TEAMS } from './game.mjs';
 import { createDirector } from './director.mjs';
 import { buildQuizBank } from './quizbank.mjs';
 import { POLLS } from './polls.mjs';
@@ -30,16 +30,20 @@ const readJson = (f, fallback) => { try { return JSON.parse(fs.readFileSync(f, '
 const config = readJson(path.join(dir, 'config.json'), {});
 // the quiz bank may be empty (the colour-team questions come later): the game then simply never opens a quiz.
 const quiz = buildQuizBank({ extra: readJson(path.join(dir, 'quiz.json'), []) });
-const state = { ...emptyState(), ...readJson(STATE_FILE, {}) };
+// A state (or settings file) saved by the 12-sign game has no schema 2: it is dropped and a fresh night starts.
+const savedState = readJson(STATE_FILE, null);
+const accepted = acceptState(savedState);
+if (savedState && !accepted) console.log('[state] bỏ state.json cũ (không có schema 2)');
+const state = accepted ? { ...emptyState(), ...accepted } : emptyState();
 const SETTINGS_FILE = path.join(DATA, 'settings.json'); // the panel's switches survive a restart
-const saved = readJson(SETTINGS_FILE, {});
+const saved = acceptState(readJson(SETTINGS_FILE, null)) ?? {};
 
 let dirty = false;
 const director = createDirector(config.limits);
 // Background music: the channel's own licensed tracks (assets/music) unless musicDir says otherwise.
 const MUSIC_DIR = path.resolve(dir, config.musicDir ?? '../../assets/music');
 const music = listMusic({ dir: MUSIC_DIR, exclude: config.musicExclude, upbeat: config.musicUpbeat });
-const monitor = createMonitor({ label: id => SIGNS.find(s => s.id === id)?.label ?? id });
+const monitor = createMonitor({ label: id => TEAMS.find(t => t.id === id)?.label ?? id });
 const SIMULATOR = process.env.PK_SIMULATOR === '1'; // the isolated rehearsal server (npm run simulator)
 const game = createGame({ config: { ...config, ...saved, show: { ...config.show, ...saved.show }, rehearsal: SIMULATOR }, state, quiz, polls: POLLS, onEvent: e => { if (e.type === 'host-cue') return void broadcast('cue', e, true); director.push(e); monitor.note(e); dirty = true; } }); // a host cue is for the host's panel only, never the stream
 const tapped = monitor.tap(game, { skip: e => !SIMULATOR && String(e?.userId ?? '').startsWith('sim:') }); // the game ignores rehearsal viewers here, so the host's numbers do too // everything a viewer does (TikTok or rehearsal) passes through here to be counted and logged
@@ -47,7 +51,7 @@ const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(di
 const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
-const meta = () => ({ signs: SIGNS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, roles: ROLES });
+const meta = () => ({ teams: TEAMS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, roles: ROLES });
 
 // A client is one open overlay/panel page: { send(event, data), seen, busy(), host }. Normally it is a server-sent-events
 // stream; behind a quick tunnel (which does not stream SSE) the page polls /poll and gets its queued messages instead.
@@ -96,6 +100,7 @@ const body = req => new Promise(resolve => {
 
 const GIFTS = [['Rose', 1], ['TikTok', 1], ['Finger Heart', 5], ['Doughnut', 30], ['Hand Hearts', 100], ['Galaxy', 1000]];
 const SIM_LINES = ['xin quẻ', 'nhảy đi', 'ước thi đỗ', 'ước gặp được người thương', 'hay quá', '❤️❤️', 'cầu mong bình an', 'quẩy lên', 'nhận', 'thuận', 'khoe thẻ', 'đánh nó', 'chúc', 'chúc phúc nha', 'nâng cấp', 'kho', 'ước có người yêu thương mình'];
+const SIM_TEAM_WORDS = ['đỏ', 'vàng', 'xanh lá', 'xanh dương', '1', '2', '3', '4']; // what a newcomer types to pick a team
 // every seventh rehearsal viewer is a fan club member, so the fan club look can be rehearsed too
 const sim = name => {
   const nickname = String(name ?? 'Người xem').replace(/[\x00-\x1f\x7f]/g, '').trim().slice(0, 32) || 'Người xem';
@@ -133,7 +138,7 @@ function simulateCrowd(size = 6, giftRate = 0.3, { mirror = true } = {}) {
   for (let i = 0; i < size; i++) {
     const user = sim(`fan${1 + Math.floor(Math.random() * Math.max(30, size * 3))}`);
     simMember(user, mirror);
-    simChat(user, String(1 + Math.floor(Math.random() * 12)), mirror);
+    simChat(user, SIM_TEAM_WORDS[Math.floor(Math.random() * SIM_TEAM_WORDS.length)], mirror);
     if (Math.random() < 0.4) simChat(user, SIM_LINES[Math.floor(Math.random() * SIM_LINES.length)], mirror);
     simLike(user, Math.floor(Math.random() * 40), mirror);
     if (Math.random() < giftRate) {
@@ -148,7 +153,7 @@ const API = {
     // keep a copy of the saved state before each new night (last 14 kept), so a bad night can be rolled back
     try {
       if (fs.existsSync(STATE_FILE)) {
-        fs.copyFileSync(STATE_FILE, path.join(DATA, `backup-night-${game.state.night.no}.json`));
+        fs.writeFileSync(path.join(DATA, `backup-night-${game.state.night.no}.json`), JSON.stringify(game.state)); // carries schema 2
         const old = fs.readdirSync(DATA).filter(f => /^backup-night-\d+\.json$/.test(f)).sort((a, b) => parseInt(b.match(/\d+/)[0]) - parseInt(a.match(/\d+/)[0])).slice(14);
         for (const f of old) fs.unlinkSync(path.join(DATA, f));
       }
@@ -160,21 +165,21 @@ const API = {
   'music/mute': () => broadcast('cmd', { type: 'music-mute' }),
   reset: () => game.resetAll(),
   'quiz/start': () => game.startQuiz(),
-  'fortune/sign': b => game.showFortune({ userId: null, nickname: null, avatar: '', sign: b.sign }),
-  'lucky/start': b => game.startLucky(b.sign),
+  'fortune/team': b => game.showFortune({ userId: null, nickname: null, avatar: '', team: b.team }),
+  'lucky/start': b => game.startLucky(b.team),
   'boss/start': () => game.startBoss(),
   'chest/open': () => game.openChest(),
   // Màn: start the current act's headliner now
   'act/head': () => game.startHead(),
   'mystery/start': () => game.startHead('guessobject'),
   'starcatch/start': () => game.startHead('starcatch'),
-  roast: b => game.startRoast(b.sign),
+  roast: b => game.startRoast(b.team),
   'tug/start': () => game.startTug(),
   settings: b => {
     for (const k of ['autoQuiz', 'showWishText']) if (typeof b[k] === 'boolean') game.config[k] = b[k];
     for (const [k, v] of Object.entries(b.show ?? {})) if (k in game.config.show && typeof v === 'boolean') game.config.show[k] = v;
     broadcast('meta', meta());
-    try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ autoQuiz: game.config.autoQuiz, showWishText: game.config.showWishText, show: game.config.show })); } catch (e) { console.error('[settings]', e.message); }
+    try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ schema: 2, autoQuiz: game.config.autoQuiz, showWishText: game.config.showWishText, show: game.config.show })); } catch (e) { console.error('[settings]', e.message); }
   },
   // Feed one recorded event (see npm run replay); same path as a real TikTok event.
   ingest: b => ingest(b.replay ? tapped : diag.wrap(tapped), b), // replayed events are not recorded a second time

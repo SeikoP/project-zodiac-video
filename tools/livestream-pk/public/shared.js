@@ -7,23 +7,15 @@ export const ELEMENT = {
   water: { color: '#94AAC8', name: 'Nước' },
 };
 
-// One line per sign for the spotlight cards shown while the room is quiet.
-export const SIGN_LINES = {
-  aries: 'Lao lên trước, nghĩ sau — mà toàn về nhất.',
-  taurus: 'Chậm mà chắc, đã giữ là không buông.',
-  gemini: 'Hai cái đầu, một trăm ý tưởng.',
-  cancer: 'Vỏ cứng bên ngoài, trái tim mềm bên trong.',
-  leo: 'Sân khấu này sinh ra để Sư Tử toả sáng.',
-  virgo: 'Chi tiết nhỏ nhất cũng không lọt khỏi mắt.',
-  libra: 'Cân bằng mọi thứ… trừ việc chọn ăn gì.',
-  scorpio: 'Im lặng là chiến thuật, không phải đầu hàng.',
-  sagittarius: 'Bắn mũi tên thật xa rồi chạy theo phiêu lưu.',
-  capricorn: 'Leo từng bước, đỉnh nào cũng chinh phục.',
-  aquarius: 'Khác người chính là siêu năng lực.',
-  pisces: 'Mơ mộng thôi, chứ trực giác thì không đùa.',
+// One line per colour team for the spotlight cards shown while the room is quiet.
+export const TEAM_LINES = {
+  red: 'Đỏ rực như lửa trại: hô to là cả sân nghe thấy.',
+  yellow: 'Vàng như nắng sớm: có mặt là sáng cả phòng.',
+  green: 'Xanh lá bình tĩnh mà bền: càng về sau càng mạnh.',
+  blue: 'Xanh dương êm như sóng, nhưng dồn lại thì cả biển.',
 };
 
-export const mascot = (sign, mood = 'idle') => `/mascots/${sign}-${mood}.svg`;
+export const mascot = (team, mood = 'idle') => `/mascots/${team}-${mood}.svg`;
 export const fmt = n => Math.round(Number(n || 0)).toLocaleString('vi-VN');
 export const clock = ms => { const s = Math.ceil(ms / 1000); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; };
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

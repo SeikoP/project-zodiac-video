@@ -17,7 +17,7 @@ function setup(act, config = {}, minute = 1, visit = 0) {
     now: () => t, rng: () => 0.3, onEvent: e => events.push(e),
   });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
-  const crowd = () => { for (const [i, s] of ['Sư Tử', 'Bảo Bình', 'Kim Ngưu', 'Cự Giải'].entries()) game.chat({ userId: `u${i}`, nickname: `U${i}`, comment: s }); };
+  const crowd = () => { for (const [i, s] of ['đỏ', 'vàng', 'xanh lá', 'xanh dương'].entries()) game.chat({ userId: `u${i}`, nickname: `U${i}`, comment: s }); };
   return { game, events, advance, crowd, of: type => events.filter(e => e.type === type), now: () => t };
 }
 
@@ -95,13 +95,13 @@ test('nhiệm vụ Màn: the room fills the act\'s goal by taking part and every
   assert.equal(q.unit, 'bình luận');
   assert.equal(q.got, 0);
   // one comment each counts (a viewer's comments only count every few seconds, so spamming doesn't fill it)
-  for (let i = 0; i < q.goal; i++) s.game.chat({ userId: `n${i}`, nickname: `N${i}`, comment: 'Sư Tử' });
+  for (let i = 0; i < q.goal; i++) s.game.chat({ userId: `n${i}`, nickname: `N${i}`, comment: 'đỏ' });
   const done = s.of('quest-done');
   assert.equal(done.length, 1);
   assert.ok(done[0].people >= 4);
   const gems = b => b.fire + b.earth + b.air + b.water;
   assert.ok(gems(s.game.state.viewers[`n${q.goal - 1}`].bag) >= 1);
-  s.game.chat({ userId: 'late', nickname: 'Late', comment: 'Sư Tử' });
+  s.game.chat({ userId: 'late', nickname: 'Late', comment: 'đỏ' });
   assert.equal(s.of('quest-done').length, 1); // once per act
 });
 
@@ -133,7 +133,7 @@ test('every headliner belongs to exactly one act and each comes round within 40 
 test('the quest follows a headliner that has its own goal: catches in hứng sao băng, right answers in a quiz chain', () => {
   for (const [act, visit, head, unit] of [['arena', 0, 'elite', 'bình luận'], ['arena', 2, 'starcatch', 'sao băng hứng được'], ['arena', 3, 'quizchain', 'câu trả lời đúng'], ['reunion', 1, 'guessobject', 'câu trả lời đúng']]) {
     const game = createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => at(act, 1, visit), rng: () => 0.3, onEvent: () => {} });
-    game.chat({ userId: 'a', nickname: 'A', comment: 'Sư Tử' });
+    game.chat({ userId: 'a', nickname: 'A', comment: 'đỏ' });
     game.tick();
     const { act: view, quest } = game.snapshot().cosmos;
     assert.equal(view.headLabel, HEADS[head].label, head);

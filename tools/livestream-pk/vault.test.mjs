@@ -16,7 +16,7 @@ function setup(config = {}) {
 test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer owns', () => {
   for (const c of ['kho', 'túi đồ', 'sổ sao', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
   const s = setup();
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   Object.assign(s.v('a').bag, { dust: 120, fire: 2, moon: 1 });
   s.say('a', 'khoe');
   const [e] = s.of('vault');
@@ -34,7 +34,7 @@ test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer
 // --- tài nguyên dùng qua sự kiện ---
 test('"tung ngọc" spends one gem for a big hit in a fight; none without a fight or a gem', () => {
   const s = setup({ gemPowerDiamonds: 20 });
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Sư Tử'], ['c', 'Bảo Bình'], ['d', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'đỏ'], ['c', 'xanh dương'], ['d', 'xanh dương']]) s.say(id, team);
   s.v('a').bag.fire = 1;
   s.say('a', 'tung ngọc');
   assert.equal(s.v('a').bag.fire, 1, 'no fight: the gem is kept');
@@ -53,7 +53,7 @@ test('"tung ngọc" spends one gem for a big hit in a fight; none without a figh
 
 test('"tung ngọc" uses another element\'s gem when the viewer has none of their own', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
   s.v('a').bag.water = 2;
   s.game.startBoss();
   s.say('a', 'tung ngọc');
@@ -63,7 +63,7 @@ test('"tung ngọc" uses another element\'s gem when the viewer has none of thei
 
 test('"thắp trăng" spends a moon shard to raise the moon by a fifth of its goal', () => {
   const s = setup({ moonGoal: 600 });
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   s.v('a').bag.moon = 1;
   const before = s.game.state.moon.light;
   s.say('a', 'thắp trăng');
@@ -85,7 +85,7 @@ test('parseFortuneTopic reads the topic a viewer asks about', () => {
 
 test('a reading on a topic carries a focus with two lines on it', () => {
   const s = setup();
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   s.say('a', 'xin quẻ tình duyên');
   s.advance(1000);
   const f = s.game.snapshot().hud.fortune;
@@ -96,7 +96,7 @@ test('a reading on a topic carries a focus with two lines on it', () => {
 
 test('during a reading the room can say "chuẩn" (the owner gets bụi sao) and, on a great reading, "xin vía"', () => {
   const s = setup({ fortuneTrueDust: 1, fortuneLuckDust: 2 });
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình'], ['c', 'Song Ngư']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương'], ['c', 'xanh lá']]) s.say(id, team);
   s.say('a', 'xin quẻ');
   s.advance(1000);
   assert.ok(s.game.state.fortune, 'the reading is on');
@@ -126,7 +126,7 @@ test('"nhảy" is no longer a command', () => {
 
 test('the room\'s "xin vía" count never hides the reading\'s own luck line', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
   s.say('a', 'xin quẻ');
   s.advance(1000);
   s.game.state.fortune.level = 'Đại Cát';

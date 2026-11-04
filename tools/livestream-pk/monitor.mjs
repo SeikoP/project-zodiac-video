@@ -48,31 +48,31 @@ export function createMonitor({ now = () => Date.now(), label = id => id, max = 
   // Game-side events worth a line in the log (the quiet ones are left out).
   function note(e) {
     switch (e.type) {
-      case 'join': add('game', `${short(e.nickname, 24)} vào đội ${label(e.sign)}`, { sign: e.sign }); break;
-      case 'lit': add('sky', `${label(e.sign)} đã sáng${e.by !== e.sign ? ` (nhờ ${label(e.by)})` : ''}`, { sign: e.sign }); break;
+      case 'join': add('game', `${short(e.nickname, 24)} vào đội ${label(e.team)}`, { team: e.team }); break;
+      case 'lit': add('sky', `${label(e.team)} đã sáng${e.by !== e.team ? ` (nhờ ${label(e.by)})` : ''}`, { team: e.team }); break;
       case 'wheel-complete': add('sky', `Vòng ${e.no} trọn — ${e.winner ? label(e.winner) : 'không ai'} rực rỡ nhất`); break;
-      case 'overtake': add('sky', `${label(e.sign)} vượt ${label(e.from)} lên hạng 1`, { sign: e.sign }); break;
+      case 'overtake': add('sky', `${label(e.team)} vượt ${label(e.from)} lên hạng 1`, { team: e.team }); break;
       case 'moon-full': add('sky', `Trăng rằm lần ${e.count} — ánh sao x${e.multiplier} trong ${e.seconds}s`); break;
-      case 'lucky-start': add('sky', `Sao may mắn: ${label(e.sign)} (x${e.multiplier}, ${e.seconds}s)`, { sign: e.sign }); break;
+      case 'lucky-start': add('sky', `Sao may mắn: ${label(e.team)} (x${e.multiplier}, ${e.seconds}s)`, { team: e.team }); break;
       case 'quiz-start': add('game', 'Câu đố bắt đầu'); break;
       case 'quiz-end': add('game', `Câu đố xong — đáp án ${e.answer}, ${e.winners.length} người đúng${e.winners.length ? `: ${e.winners.map(w => short(w.nickname, 16)).join(', ')}` : ''}`); break;
       case 'poll-start': add('game', `Bình chọn: ${short(e.q, 60)}`); break;
       case 'poll-end': add('game', e.winner ? `Bình chọn xong — ${label(e.winner)} thắng (${e.votes}/${e.total} phiếu)` : 'Bình chọn xong — chưa ai bình chọn'); break;
-      case 'fortune': add('game', e.userId ? 'Một người nhận quẻ' : `Quẻ chung cho ${label(e.sign)}`); break;
+      case 'fortune': add('game', e.userId ? 'Một người nhận quẻ' : `Quẻ chung cho ${label(e.team)}`); break;
       case 'wish': add('game', `${short(e.nickname, 24)} thả đèn ước${e.text ? `: ${short(e.text, 50)}` : ' (bí mật)'}`); break;
       case 'milestone': add('game', `Mốc người xem thứ ${e.count}`); break;
       case 'night-start': add('system', `Bắt đầu đêm ${e.no}`); break;
       case 'boss-start': add('game', `Sao Chổi Đen xuất hiện — ${e.hp} máu, ${e.seconds}s`); break;
-      case 'boss-freeze': add('game', `Sao Chổi đóng băng ${label(e.sign)} — cần ${e.need} fan comment để phá băng`, { sign: e.sign }); break;
-      case 'boss-rescue': add('game', `${short(e.nickname, 24)} phá băng cho ${label(e.sign)}`, { sign: e.sign }); break;
-      case 'boss-blocked': add('game', `Khiên chặn đòn nhắm vào ${label(e.sign)}`); break;
-      case 'boss-heal': add('game', `Không ai phá băng ${label(e.sign)} — Sao Chổi hồi ${e.heal} máu`); break;
+      case 'boss-freeze': add('game', `Sao Chổi đóng băng ${label(e.team)} — cần ${e.need} fan comment để phá băng`, { team: e.team }); break;
+      case 'boss-rescue': add('game', `${short(e.nickname, 24)} phá băng cho ${label(e.team)}`, { team: e.team }); break;
+      case 'boss-blocked': add('game', `Khiên chặn đòn nhắm vào ${label(e.team)}`); break;
+      case 'boss-heal': add('game', `Không ai phá băng ${label(e.team)} — Sao Chổi hồi ${e.heal} máu`); break;
       case 'boss-defeated': add('game', `Hạ Sao Chổi sau ${e.seconds}s — ${e.fighters} người góp sức${e.mvp ? `, MVP ${short(e.mvp.nickname, 20)}` : ''}`); break;
       case 'boss-escaped': add('game', `Sao Chổi trốn thoát (còn ${Math.round(e.hpShare * 100)}% máu)`); break;
       case 'chest-open': add('game', `Rương sao #${e.no} mở (${e.seconds}s)`); break;
       case 'chest-close': add('game', `Rương sao #${e.no} đóng — ${e.claims} người nhận thẻ`); break;
       case 'set-complete': add('game', `${short(e.nickname, 24)} gom đủ 12 cung!`); break;
-      case 'level-up': add('game', `${short(e.nickname, 24)} nâng linh vật lên Lv${e.level}`, { sign: e.sign }); break;
+      case 'level-up': add('game', `${short(e.nickname, 24)} nâng linh vật lên Lv${e.level}`, { team: e.team }); break;
       case 'wish-blessed': add('game', `Điều ước của ${short(e.nickname, 24)} được ${e.count} người chúc phúc`); break;
       case 'combine': add('game', `${short(e.nickname, 24)} ghép ${e.count} thẻ ${label(e.from)} thành Tinh Tú`); break;
       case 'reset': add('system', 'Đã xoá toàn bộ dữ liệu'); break;

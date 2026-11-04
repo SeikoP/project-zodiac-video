@@ -23,28 +23,28 @@ test('keywords for the bag, upgrades and blessing a wish', () => {
 
 test('starlight drops stardust into the bag', () => {
   const { game } = setup({ commentLight: 10, dustPerLight: 0.5 });
-  game.chat(u('a', { comment: 'leo' }));
+  game.chat(u('a', { comment: 'đỏ' }));
   assert.equal(game.state.viewers.a.bag.dust, 5);
 });
 
 test('"nâng cấp" says what is missing, then levels up once the bag holds enough, and the level adds starlight', () => {
   const { game, events } = setup({ commentLight: 10, levelDust: [5, 999, 999, 999], levelGems: [1, 1, 1, 1], levelMoon: [0, 0, 0, 0], levelBonus: 0.5, commentCooldownSeconds: 0 });
-  game.chat(u('a', { comment: 'leo' }));
+  game.chat(u('a', { comment: 'đỏ' }));
   game.chat(u('a', { comment: 'nâng cấp' }));
   assert.deepEqual(of(events, 'upgrade-need')[0].missing, { fire: 1 });
   game.state.viewers.a.bag.fire = 1;
   game.chat(u('a', { comment: 'nâng cấp' }));
   assert.equal(of(events, 'level-up')[0].level, 2);
   assert.equal(game.state.viewers.a.bag.fire, 0);
-  const before = game.state.wheel.given.leo;
+  const before = game.state.wheel.given.red;
   game.chat(u('a', { comment: 'hay' }));
-  assert.equal(game.state.wheel.given.leo - before, 15); // 10 × 1.5
+  assert.equal(game.state.wheel.given.red - before, 15); // 10 × 1.5
   assert.equal(game.changes({}).stage.find(v => v.userId === 'a').level, 2);
 });
 
 test('gems come from the quiz, the boss and the chest; moon shards from a full moon', () => {
   const { game, advance } = setup({ passXpPerLevel: 1e9, moonGoal: 5, adaptiveCrowd: false, bossHpMin: 10, bossHpPerViewer: 1, bossDiamondDamage: 5, chestEveryMinutes: 15 });
-  game.chat(u('a', { comment: 'song ngư' }));
+  game.chat(u('a', { comment: 'xanh dương' }));
   game.like(u('a', { count: 10 }));
   assert.equal(game.state.viewers.a.bag.moon, 1);
   game.startBoss();
@@ -58,8 +58,8 @@ test('gems come from the quiz, the boss and the chest; moon shards from a full m
 });
 
 test('a wish the room blesses becomes a star: blessers get stardust, the wisher a moon shard', () => {
-  const { game, events, advance } = setup({ blessNeed: 2, blessDust: 3, blessWindowSeconds: 30 });
-  game.chat(u('w', { comment: 'leo' }));
+  const { game, events, advance } = setup({ blessNeed: 2, blessDust: 3, blessWindowSeconds: 30, commentLight: 0 }) // commentLight 0: a newcomer's comment sheds starlight now, which adds dust;
+  game.chat(u('w', { comment: 'đỏ' }));
   game.chat(u('w', { comment: 'ước thi đỗ đại học' }));
   assert.equal(of(events, 'wish')[0].text, 'thi đỗ đại học');
   game.chat(u('w', { comment: 'chúc' })); // not your own wish
@@ -82,7 +82,7 @@ test('a wish the room blesses becomes a star: blessers get stardust, the wisher 
 
 test('a gift big enough for several shared gift goals fills them all, with one celebration', () => {
   const { game, events } = setup({ giftGoal: 10, giftGoalGrowth: 1 });
-  game.chat(u('a', { comment: 'leo' }));
+  game.chat(u('a', { comment: 'đỏ' }));
   game.gift(u('a', { diamonds: 35, count: 1 }));
   assert.equal(of(events, 'gift-goal').length, 1);
   assert.equal(game.state.gifts.goalNo, 3);

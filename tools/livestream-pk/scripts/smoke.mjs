@@ -36,15 +36,15 @@ try {
   }).catch(() => {});
 
   const u = (id, nick) => ({ userId: id, nickname: nick, avatar: 'https://p16.tiktokcdn.com/a.jpeg' });
-  await post('ingest', { type: 'chat', ...u('1', 'Lan'), comment: 'em là sư tử' });
+  await post('ingest', { type: 'chat', ...u('1', 'Lan'), comment: 'đỏ' });
   await post('ingest', { type: 'like', ...u('1', 'Lan'), count: 30 });
   await post('ingest', { type: 'gift', ...u('1', 'Lan'), diamonds: 30, count: 1, giftName: 'Doughnut' });
   await post('ingest', { type: 'social', ...u('1', 'Lan'), kind: 'follow' });
   await sleep(900);
   const lastPart = key => frames.map(f => f.parts?.[key]).filter(Boolean).at(-1);
   const stage = lastPart('stage') ?? [], sky = lastPart('sky');
-  check(stage.some(v => v.userId === '1' && v.sign === 'leo'), 'bình luận "sư tử" đưa người xem vào cung Sư Tử');
-  check(sky?.sky?.find(s => s.id === 'leo')?.progress > 0, 'quà + follow thắp sáng chòm Sư Tử');
+  check(stage.some(v => v.userId === '1' && v.team === 'red'), 'bình luận "đỏ" đưa người xem vào phe Đỏ');
+  check(sky?.sky?.find(s => s.id === 'red')?.progress > 0, 'quà + follow thắp sáng phe Đỏ');
   check(frames.some(f => f.fx?.some(e => e.type === 'gift')), 'overlay nhận hiệu ứng quà');
 
   const bad = await post('ingest', { type: 'nope' });

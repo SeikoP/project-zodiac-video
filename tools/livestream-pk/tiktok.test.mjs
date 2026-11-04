@@ -25,7 +25,7 @@ test('parsers read TikTok\'s real field names: content, count, displayId, gift.d
 });
 
 test('parsers still accept the older flattened shapes from the connector README', () => {
-  assert.equal(chatOf({ user: { userId: '7', nickname: 'A', profilePictureUrl: 'x' }, comment: 'leo' }).comment, 'leo');
+  assert.equal(chatOf({ user: { userId: '7', nickname: 'A', profilePictureUrl: 'x' }, comment: 'đỏ' }).comment, 'đỏ');
   assert.equal(likeOf({ user: { userId: '7' }, likeCount: 8 }).count, 8);
   assert.equal(giftOf({ user: { userId: '7' }, giftDetails: { giftType: 2, diamondCount: 5, giftName: 'Heart' }, repeatCount: 2 }).diamonds, 5);
   assert.equal(userOf({}).userId, 'unknown');
@@ -48,23 +48,23 @@ test('end to end: TikTok events reach the game (join by comment, likes raise the
   await bridge.connect('@someone');
   assert.equal(bridge.status().state, 'live');
 
-  conn.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'em là sư tử nè'));
-  assert.equal(game.state.viewers['1'].sign, 'leo');
+  conn.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'đỏ'));
+  assert.equal(game.state.viewers['1'].team, 'red');
   conn.emit(WebcastEvent.LIKE, like(1, 12));
   assert.equal(game.state.moon.light, 1 + 12); // the comment (+1) and the burst of 12 likes
   conn.emit(WebcastEvent.GIFT, gift(1, { diamondCount: 10 }));
-  assert.ok(game.state.wheel.light.leo >= 50);
-  const before = game.state.wheel.light.leo;
+  assert.ok(game.state.wheel.light.red >= 50);
+  const before = game.state.wheel.light.red;
   conn.emit(WebcastEvent.FOLLOW, { user: user(1, 'Lan') });
-  assert.equal(game.state.wheel.light.leo, before + 20);
+  assert.equal(game.state.wheel.light.red, before + 20);
   conn.emit(WebcastEvent.ROOM_USER, { viewerCount: 87 });
   assert.equal(bridge.status().viewers, 87);
 
   conn.emit(WebcastEvent.CHAT, null); // a malformed event must not throw or stop the show
   conn.emit(WebcastEvent.GIFT, { gift: 'nonsense' });
   assert.ok(logs.length === 0 || logs.every(l => /bad|connected/.test(l)));
-  conn.emit(WebcastEvent.CHAT, chat(2, 'Huy', 'ma kết'));
-  assert.equal(game.state.viewers['2'].sign, 'capricorn');
+  conn.emit(WebcastEvent.CHAT, chat(2, 'Huy', 'xanh dương'));
+  assert.equal(game.state.viewers['2'].team, 'blue');
 });
 
 test('viewer names and avatars are cleaned before they can reach the screen', () => {
@@ -86,10 +86,10 @@ test('viewer names and avatars are cleaned before they can reach the screen', ()
 
 test('the game applies the same cleaning to every source', () => {
   const game = createGame({ config: { acts: false, autoQuiz: false, quietSeconds: 9999 } });
-  game.chat({ userId: 'x', nickname: 'Bad‮Name vcl', avatar: 'https://evil.example/a.png', comment: 'leo' });
+  game.chat({ userId: 'x', nickname: 'Bad‮Name vcl', avatar: 'https://evil.example/a.png', comment: 'đỏ' });
   assert.equal(game.state.viewers.x.nickname, 'Người xem ẩn danh');
   assert.equal(game.state.viewers.x.avatar, '');
-  game.chat({ userId: 'y', nickname: 'Lan', avatar: 'https://p19.tiktokcdn-us.com/b.jpeg', comment: 'leo' });
+  game.chat({ userId: 'y', nickname: 'Lan', avatar: 'https://p19.tiktokcdn-us.com/b.jpeg', comment: 'đỏ' });
   assert.equal(game.state.viewers.y.avatar, 'https://p19.tiktokcdn-us.com/b.jpeg');
 });
 
@@ -138,11 +138,11 @@ test('duplicate TikTok messages (same msgId) reach the game once, also across a 
   const withId = (d, id) => ({ ...d, common: { msgId: id } });
   await bridge.connect('@room');
   const c = conns[0];
-  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
-  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
-  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '2'));
-  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'leo'));
-  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'leo'));
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'đỏ'), '1'));
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'đỏ'), '1'));
+  c.emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'đỏ'), '2'));
+  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'đỏ'));
+  c.emit(WebcastEvent.CHAT, chat(1, 'Lan', 'đỏ'));
   assert.equal(calls.chat, 4);
   c.emit(WebcastEvent.GIFT, withId(gift(2, { type: 1, repeatCount: 3, repeatEnd: 1 }), 'g1'));
   c.emit(WebcastEvent.GIFT, withId(gift(2, { type: 1, repeatCount: 3, repeatEnd: 1 }), 'g1'));
@@ -155,11 +155,11 @@ test('duplicate TikTok messages (same msgId) reach the game once, also across a 
   t.mock.timers.tick(5000);
   await new Promise(r => setImmediate(r));
   assert.equal(conns.length, 2, 'the bridge reconnected');
-  conns[1].emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  conns[1].emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'đỏ'), '1'));
   assert.equal(calls.chat, 4, 'a replay after the reconnect is still a duplicate');
 
   await bridge.connect('@other');
-  conns.at(-1).emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'leo'), '1'));
+  conns.at(-1).emit(WebcastEvent.CHAT, withId(chat(1, 'Lan', 'đỏ'), '1'));
   assert.equal(calls.chat, 5, 'another room starts with a fresh memory');
 });
 
@@ -173,7 +173,7 @@ test('messages whose msgId is the protobuf default "0" are never dropped', async
   let chats = 0;
   const bridge = createTikTokBridge({ game: { chat: () => { chats++; } }, log: () => {}, connect: () => conn });
   await bridge.connect('@room');
-  for (let i = 0; i < 3; i++) conn.emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '0' } });
+  for (let i = 0; i < 3; i++) conn.emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'đỏ'), common: { msgId: '0' } });
   assert.equal(chats, 3);
 });
 
@@ -182,9 +182,9 @@ test('Ngắt then Kết nối to the same room keeps the duplicate memory', asyn
   let chats = 0;
   const bridge = createTikTokBridge({ game: { chat: () => { chats++; } }, log: () => {}, connect: () => { const c = fakeConnection(); conns.push(c); return c; } });
   await bridge.connect('@room');
-  conns[0].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '9' } });
+  conns[0].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'đỏ'), common: { msgId: '9' } });
   await bridge.disconnect();
   await bridge.connect('room');
-  conns[1].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'leo'), common: { msgId: '9' } });
+  conns[1].emit(WebcastEvent.CHAT, { ...chat(1, 'Lan', 'đỏ'), common: { msgId: '9' } });
   assert.equal(chats, 1);
 });

@@ -26,7 +26,7 @@ export function createPass({ cfg, now, onEvent, seasonOf, gem, moon, card }) {
   }
 
   function addXp(u, v, amount) {
-    if (!v.sign || amount <= 0) return;
+    if (!v.team || amount <= 0) return;
     const p = passOf(v);
     if (p.level >= cfg.passMaxLevel) return;
     p.xp += amount;
@@ -39,7 +39,7 @@ export function createPass({ cfg, now, onEvent, seasonOf, gem, moon, card }) {
       if (r.moon) moon(u, v, r.moon);
       if (r.card) card(u, v);
       if (r.frame && (FRAME_RANK[r.frame] ?? 0) > (FRAME_RANK[p.frame] ?? 0)) p.frame = r.frame;
-      onEvent({ type: 'pass-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: p.level, reward: r.label, frame: r.frame ?? null });
+      onEvent({ type: 'pass-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: p.level, reward: r.label, frame: r.frame ?? null });
     }
   }
 

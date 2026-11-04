@@ -2,7 +2,7 @@
 // one thing and the reading adds two lines on it. While a viewer's reading is on screen the room joins in:
 //   "chuẩn" / "linh" / "đúng"  the reading rings true — its owner gets a little bụi sao for each one (once per person)
 //   "xin vía" / "hút vía"       on a Thượng Cát / Đại Cát reading, borrow some of its luck — bụi sao for both
-// When the room is quiet the host can show a "quẻ chung" for a sign (no owner: nothing to agree with).
+// When the room is quiet the host can show a "quẻ chung" for a team (no owner: nothing to agree with).
 import { drawFortune } from './fortunes.mjs';
 
 // accent-free lower case, the same as game.mjs's norm (not imported: game.mjs imports this module)
@@ -24,26 +24,26 @@ const AGREE_RE = /^\s*(chuan|linh|dung)\b/;
 const LUCK_RE = /^\s*(xin via|hut via|xin loc)\b/;
 const LUCKY_LEVELS = new Set(['Thượng Cát', 'Đại Cát']);
 
-// signs: SIGN by id ({ element }); pickSign(): a sign for a "quẻ chung"; shine(u, v, n, why); dust(u, v, n, why)
-export function createAltar({ st, cfg, now, onEvent, touch, signs, pickSign, shine, dust }) {
+// teams: SIGN by id ({ element }); pickTeam(): a team for a "quẻ chung"; shine(u, v, n, why); dust(u, v, n, why)
+export function createAltar({ st, cfg, now, onEvent, touch, teams, pickTeam, shine, dust }) {
   st.fortuneQueue ??= [];
 
   function request(u, v, comment) {
-    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'fortune' });
+    if (!v.team) return onEvent({ type: 'need-team', userId: u.userId, nickname: v.nickname, for: 'fortune' });
     if (now() - (v.fortuneAt ?? 0) < cfg.fortuneCooldownMinutes * 60000) return;
     if (st.fortuneQueue.some(f => f.userId === u.userId) || st.fortuneQueue.length >= cfg.fortuneQueueMax) return;
     v.fortuneAt = now();
-    st.fortuneQueue.push({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, topic: parseFortuneTopic(comment) });
+    st.fortuneQueue.push({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, topic: parseFortuneTopic(comment) });
     touch('hud');
     shine(u, v, cfg.fortuneLight, 'fortune');
   }
 
-  // Shows a reading: a viewer's (req.userId) or a "quẻ chung" for a sign (userId null).
+  // Shows a reading: a viewer's (req.userId) or a "quẻ chung" for a team (userId null).
   function show(req) {
-    const sign = signs[req.sign] ? req.sign : pickSign();
-    st.fortune = { ...req, sign, ...drawFortune({ seed: req.userId ?? 'room', sign, element: signs[sign].element, now: now(), topic: req.topic ?? null }), agree: {}, vias: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
+    const team = teams[req.team] ? req.team : pickTeam();
+    st.fortune = { ...req, team, ...drawFortune({ seed: req.userId ?? 'room', team, element: teams[team].element, now: now(), topic: req.topic ?? null }), agree: {}, vias: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
     touch('hud');
-    onEvent({ type: 'fortune', userId: req.userId ?? null, sign, topic: req.topic ?? null });
+    onEvent({ type: 'fortune', userId: req.userId ?? null, team, topic: req.topic ?? null });
   }
 
   // The room's answer to the reading on screen. Returns true when the comment was one.
@@ -66,7 +66,7 @@ export function createAltar({ st, cfg, now, onEvent, touch, signs, pickSign, shi
       dust(u, v, cfg.fortuneLuckDust, 'fortune');
       if (owner) dust({ userId: f.userId }, owner, 1, 'fortune');
       touch('hud');
-      onEvent({ type: 'fortune-luck', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, owner: f.nickname, level: f.level, count: Object.keys(f.vias).length });
+      onEvent({ type: 'fortune-luck', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, owner: f.nickname, level: f.level, count: Object.keys(f.vias).length });
       return true;
     }
     return false;

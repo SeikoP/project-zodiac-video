@@ -1,16 +1,17 @@
-// Đêm Hội Hoàng Đạo — a zodiac festival for TikTok LIVE where all 12 signs share one sky and race
-// gently for the brightest wheel. Pure logic, no I/O.
+// Đêm Hội Sao — a festival for TikTok LIVE where four colour teams (đỏ, vàng, xanh lá, xanh dương) share one sky and
+// race gently for the brightest wheel. Pure logic, no I/O.
 //
 // The whole room shares one sky:
-//   • Viewers comment a sign name (or 1-12) and join that sign.
-//   • Everything they do sheds "ánh sao" (starlight) into their sign's wheel slot.
-//   • A sign that is already lit passes the extra light on to the dimmest one still dark
-//     ("ánh sao lan toả"), so every sign helps the others.
-//   • When all 12 are lit, the zodiac wheel completes: a celebration, then a new, slightly bigger wheel.
+//   • A viewer's first action puts them on a team: the colour they named, or the smallest team when that one
+//     already has more than twice the smallest (events/roster.mjs). "đổi <màu>" moves them later.
+//   • Everything they do sheds "ánh sao" (starlight) into their team's wheel slot.
+//   • A team that is already lit passes the extra light on to the dimmest one still dark
+//     ("ánh sao lan toả"), so every team helps the others.
+//   • When all 4 are lit, the wheel completes: a celebration, then a new, slightly bigger wheel.
 //   • Likes and activity raise one shared moon; a full moon throws a party.
 // The race ("Đua sao") is always on, no rounds to start: every bit of light a viewer sheds also counts
-// for their sign's share of the current wheel. All 12 signs are ranked live; when the wheel completes the
-// brightest sign is crowned (season crowns + a badge for the fans who helped). To keep it fair and
+// for their team's share of the current wheel. All 4 teams are ranked live; when the wheel completes the
+// brightest team is crowned (season crowns + a badge for the fans who helped). To keep it fair and
 // worth coming back for: a "lucky star" rotates through the lower half of the race for a short x2 window,
 // returning viewers get a streak bonus, and everything is a team score, never a ranking of people.
 // Comment keywords (from the "chùa online" / "sàn nhạc" trends, in an astrology frame):
@@ -32,31 +33,26 @@ import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { createPass, PASS_DEFAULTS } from './pass.mjs';
 import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
 import { createBag, BAG_DEFAULTS } from './bag.mjs';
+import { TEAMS, TEAM_IDS, parseTeam, parseSwitchTeam } from './events/teams.mjs';
+import { createRoster } from './events/roster.mjs';
 
-// how many stars each sign shows on the sky part (the drawings themselves left with the old overlay)
-const STARS_PER_SIGN = 8;
+export { TEAMS, TEAM_IDS };
+// the 12 signs and their parser are not part of the team game; Vườn Mây (garden/) still imports them from here
+export * from './signs-legacy.mjs';
 
-export const SIGNS = Object.freeze([
-  { id: 'aries', label: 'Bạch Dương', glyph: '♈', element: 'fire' },
-  { id: 'taurus', label: 'Kim Ngưu', glyph: '♉', element: 'earth' },
-  { id: 'gemini', label: 'Song Tử', glyph: '♊', element: 'air' },
-  { id: 'cancer', label: 'Cự Giải', glyph: '♋', element: 'water' },
-  { id: 'leo', label: 'Sư Tử', glyph: '♌', element: 'fire' },
-  { id: 'virgo', label: 'Xử Nữ', glyph: '♍', element: 'earth' },
-  { id: 'libra', label: 'Thiên Bình', glyph: '♎', element: 'air' },
-  { id: 'scorpio', label: 'Bọ Cạp', glyph: '♏', element: 'water' },
-  { id: 'sagittarius', label: 'Nhân Mã', glyph: '♐', element: 'fire' },
-  { id: 'capricorn', label: 'Ma Kết', glyph: '♑', element: 'earth' },
-  { id: 'aquarius', label: 'Bảo Bình', glyph: '♒', element: 'air' },
-  { id: 'pisces', label: 'Song Ngư', glyph: '♓', element: 'water' },
-]);
+// how many stars each team shows on the sky part (the drawings themselves left with the old overlay)
+const STARS_PER_TEAM = 8;
+// boss.mjs, bag.mjs and journey.mjs still speak in the four elements (Task 9 moves them onto the shared blocks):
+// red burns, yellow stands firm like earth, green breathes like air, blue flows like water
+const ROLE = Object.freeze({ red: 'fire', yellow: 'earth', green: 'air', blue: 'water' });
+const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, { ...t, element: ROLE[t.id] }]));
+
 // the room's heat, the Fanclub and the level multiply the light of every action, together at most this much
 const LIGHT_CAP = 3;
-const SIGN = Object.fromEntries(SIGNS.map(s => [s.id, s]));
-const ORDER = Object.fromEntries(SIGNS.map((s, i) => [s.id, i]));
+const ORDER = Object.fromEntries(TEAM_IDS.map((id, i) => [id, i]));
 // Visitor counts that get a small celebration.
 const MILESTONES = [1, 10, 25, 50, 100, 200, 300, 500, 1000, 2000, 5000];
-const zeros = () => Object.fromEntries(SIGNS.map(s => [s.id, 0]));
+const zeros = () => Object.fromEntries(TEAM_IDS.map(id => [id, 0]));
 
 export const DEFAULT_CONFIG = Object.freeze({
   rehearsal: false, // only the isolated simulator plays "sim:" viewers; everywhere else they are ignored at the door
@@ -69,7 +65,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   lightPerDiamond: 5,
   quizRewards: [40, 25, 15],
   // the shared sky
-  signLightCost: 240, // light to light one sign on the first wheel
+  signLightCost: 720, // light to light one team on the first wheel (x3 of the 12-sign game: four teams carry the wheel)
   wheelGrowth: 0.5, // each new wheel costs this much more (0.5 → ×1.5, ×2, …)
   // moon (room-wide goal)
   moonGoal: 600,
@@ -85,7 +81,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   // retention: streak check-in, wheel crown, lucky star
   checkinPerNight: 5, // light per night of streak (first action of the night)
   checkinMax: 40,
-  crownLifetime: 50, // lifetime light for each fan who helped the crowned sign
+  crownLifetime: 50, // lifetime light for each fan who helped the crowned team
   luckyEverySeconds: 100,
   luckySeconds: 20,
   luckyMultiplier: 2,
@@ -138,8 +134,8 @@ export const DEFAULT_CONFIG = Object.freeze({
   welcomeWindowSeconds: 30,
   welcomeNeed: 3,
   welcomeDust: 5,
-  switchCooldownSeconds: 30, // "đổi <cung>": at most this often, so the lucky star can't be chased sign to sign
-  // every viewer who picks a sign gets a star with their name on the community sky (kept across nights)
+  switchCooldownSeconds: 30, // "đổi <màu>": at most this often (the first correction is free), so the lucky star can't be chased team to team
+  // every viewer who picks a team gets a star with their name on the community sky (kept across nights)
   starsShown: 90,
   // a big moment at least this often while people are around (star roll call, a meteor shower); 0 = off
   showEverySeconds: 75,
@@ -165,7 +161,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   heatMultipliers: [1, 1.1, 1.25, 1.5, 2],
   // quiet room: some of the turns are the house mascots showing a command (clearly labelled as mascots)
   demoTurns: true,
-  // which minor announcements the overlay shows; the big ones (gifts, follows, lit signs, readings, quizzes) are always on
+  // which minor announcements the overlay shows; the big ones (gifts, follows, lit teams, readings, quizzes) are always on
   show: { join: true, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
 
@@ -174,41 +170,6 @@ export const titleOf = points => TITLES.find(([min]) => points >= min)[1];
 
 export const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd');
 const squash = s => norm(s).replace(/[^a-z0-9]/g, '');
-// Other common Vietnamese names for a sign.
-const EXTRA_ALIASES = { thienyet: 'scorpio', hocap: 'scorpio', thannong: 'scorpio', trinhnu: 'virgo', sonduong: 'capricorn' };
-const ALIASES = [
-  ...SIGNS.flatMap(s => [[squash(s.label), s.id], [squash(s.id), s.id]]),
-  ...Object.entries(EXTRA_ALIASES),
-].sort((a, b) => b[0].length - a[0].length);
-
-// Returns the sign a comment names, or null. A bare number 1-12 (optionally "#3", "số 3")
-// picks by order; a sign name anywhere in the comment wins.
-export function parseSign(comment) {
-  const raw = String(comment ?? '').trim();
-  const num = raw.match(/^(?:#|so\s*|số\s*)?(\d{1,2})$/i);
-  if (num) return SIGNS[Number(num[1]) - 1]?.id ?? null;
-  const text = squash(raw);
-  if (!text) return null;
-  let best = null;
-  for (const [alias, id] of ALIASES) {
-    const at = text.indexOf(alias);
-    if (at >= 0 && (!best || at < best.at)) best = { at, id };
-  }
-  return best?.id ?? null;
-}
-
-// A viewer who already has a sign keeps it unless they clearly ask for another: "đổi Sư Tử", "đổi sang 7",
-// "chuyển qua cung Bảo Bình", or a comment that is nothing but a sign's name. "Sư Tử đỉnh quá" from a Kim Ngưu
-// fan is cheering, not switching.
-export function parseSwitch(comment) {
-  const t = norm(comment).trim();
-  const m = t.match(/^(doi|chuyen)\s+(?:sang\s+|qua\s+|ve\s+|thanh\s+)?(?:cung\s+)?(.+)$/);
-  if (m) return parseSign(m[2]);
-  // only Vietnamese names count here: the English ids include everyday words ("leo" = climb)
-  const whole = squash(comment);
-  return whole ? SWITCH_NAMES.find(([alias]) => alias === whole)?.[1] ?? null : null;
-}
-const SWITCH_NAMES = [...SIGNS.map(s => [squash(s.label), s.id]), ...Object.entries(EXTRA_ALIASES)];
 
 // Keyword actions, matched on accent-free words.
 const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
@@ -251,17 +212,21 @@ export function cleanWish(comment, blockedWords) {
 
 const freshGifts = () => ({ count: 0, diamonds: 0, top: null, by: {}, recent: [], goalSum: 0, goalNo: 0 });
 
+// The saved state of the 12-sign game cannot be played as colour teams: only schema 2 is accepted, anything else starts fresh.
+export const SCHEMA = 2;
+export const acceptState = raw => (raw?.schema === SCHEMA ? raw : null);
+
 export function emptyState() {
   return {
+    schema: SCHEMA,
     night: { no: 1, startedAt: null, visitors: 0 },
-    viewers: {}, // userId -> { nickname, avatar, sign, lifetime, lastSeenAt, lastCommentAt, likeCarry, bonusNight, fortuneAt, wishAt, night }
-    pending: {}, // userId -> light waiting for a sign
-    wheel: { no: 1, light: zeros(), given: zeros() }, // given: light each sign's fans poured in (the race)
+    viewers: {}, // userId -> { nickname, avatar, team, lifetime, lastSeenAt, lastCommentAt, likeCarry, bonusNight, fortuneAt, wishAt, night }
+    wheel: { no: 1, light: zeros(), given: zeros() }, // given: light each team's fans poured in (the race)
     season: { light: zeros(), crowns: zeros() },
-    lucky: null, // { sign, endsAt }
+    lucky: null, // { team, endsAt }
     nextLuckyAt: 0,
     moon: { light: 0, goal: 0, full: 0, partyUntil: 0 },
-    thanks: [], // recent supporters, newest first: { userId, nickname, avatar, sign }
+    thanks: [], // recent supporters, newest first: { userId, nickname, avatar, team }
     gifts: freshGifts(), // this night's gifts: totals, top gifter, the last few, progress to the shared goal
     greetingNo: 0,
     fortune: null,
@@ -277,7 +242,7 @@ export function emptyState() {
     nextBossAt: 0,
     chest: { no: 0, openUntil: 0, claimed: {}, recent: [] },
     welcomes: [], // newcomers' stars the room can greet, newest first: { id, userId, nickname, avatar, at, greeters: { userId: nickname }, done }
-    wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, sign, text, at, blessers: { userId: nickname }, blessed }
+    wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, team, text, at, blessers: { userId: nickname }, blessed }
     wishNo: 0,
     // the acts and headliners, and what is playing right now (null when nothing is)
     act: { key: null, phase: null, light: {} }, head: null, quest: null,
@@ -305,7 +270,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // rehearsal viewers left in a saved state by older versions: off the stage lists before the first real viewer arrives
   if (!cfg.rehearsal) {
     const sim = id => String(id ?? '').startsWith('sim:');
-    for (const map of [st.viewers, st.pending, st.gifts.by]) for (const id of Object.keys(map ?? {})) if (sim(id)) delete map[id];
+    for (const map of [st.viewers, st.gifts.by]) for (const id of Object.keys(map ?? {})) if (sim(id)) delete map[id];
     st.gifts.top = Object.values(st.gifts.by).reduce((top, b) => (!top || b.diamonds >= top.diamonds ? { nickname: b.nickname, diamonds: b.diamonds } : top), null);
     for (const k of ['thanks', 'wishes', 'welcomes', 'fortuneQueue']) st[k] = (st[k] ?? []).filter(x => !sim(x.userId));
     st.gifts.recent = st.gifts.recent.filter(x => !sim(x.userId));
@@ -315,15 +280,17 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const partying = () => now() < st.moon.partyUntil;
 
   // Version counters let the server send a part only when it changed.
-  const ver = { hud: 1, race: 1, sky: 1, stage: 1, thanks: 1, lobby: 1, gifts: 1, cosmos: 1, stars: 1 };
+  const ver = { hud: 1, race: 1, sky: 1, stage: 1, thanks: 1, gifts: 1, cosmos: 1, stars: 1 };
   const touch = (...parts) => { for (const p of parts) ver[p]++; };
 
-  // The stage: most recently active viewers with a sign, oldest first (Map keeps insertion order).
+  // The stage: most recently active viewers (every viewer has a team), oldest first (Map keeps insertion order).
   const stage = new Map();
-  const signsOnStage = () => [...new Set([...stage.keys()].map(id => st.viewers[id]?.sign).filter(id => SIGN[id]))];
-  const pickEventSign = () => {
-    const present = signsOnStage();
-    const choices = present.length ? present : SIGNS.map(s => s.id);
+  // who is on which team (events/roster.mjs); rebuilt by resetAll because that replaces st.viewers
+  let roster = createRoster({ viewers: st.viewers, stage });
+  const teamsOnStage = () => [...new Set([...stage.keys()].map(id => st.viewers[id]?.team).filter(id => TEAM[id]))];
+  const pickEventTeam = () => {
+    const present = teamsOnStage();
+    const choices = present.length ? present : TEAM_IDS;
     return choices[Math.floor(rng() * choices.length)];
   };
   // Moving to the back is O(1); only arrivals and departures count as a change for the overlay.
@@ -333,18 +300,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (stage.size > cfg.crowdMax) stage.delete(stage.keys().next().value);
     if (changed) touch('stage');
   }
-
-  // The lobby: viewers who showed up (comment, like, gift…) but have not picked a sign yet, first come first served.
-  // The overlay shows it as the waiting-queue layout while nobody is on stage; picking a sign moves a viewer to the stage.
-  const LOBBY_MAX = 60;
-  const lobby = new Map();
-  function inLobby(userId) {
-    if (lobby.has(userId)) return;
-    lobby.set(userId, true);
-    if (lobby.size > LOBBY_MAX) lobby.delete(lobby.keys().next().value);
-    touch('lobby');
-  }
-  function outOfLobby(userId) { if (lobby.delete(userId)) touch('lobby'); }
 
   // Small rooms get smaller goals so a single viewer still sees progress.
   const crowdFactor = () => (cfg.adaptiveCrowd ? Math.min(1, Math.max(cfg.crowdFloor, stage.size / cfg.crowdFull)) : 1);
@@ -358,7 +313,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!cfg.adaptiveCrowd || !cfg.crowdRetuneSeconds || t - lastRetuneAt < cfg.crowdRetuneSeconds * 1000) return;
     lastRetuneAt = t;
     const raise = (cur, target) => (target > cur ? Math.min(target, Math.ceil(cur * cfg.crowdRetuneStep)) : cur);
-    // once a sign is lit the wheel cost stays put: raising it would dim a sign the room already lit
+    // once a team is lit the wheel cost stays put: raising it would dim a team the room already lit
     const anyLit = Object.values(st.wheel.light).some(l => l >= st.wheel.cost);
     const wheel = anyLit ? st.wheel.cost : raise(st.wheel.cost, wheelCost(st.wheel.no)), moon = raise(st.moon.goal, moonGoalFor(st.moon.full));
     if (wheel === st.wheel.cost && moon === st.moon.goal) return;
@@ -367,20 +322,26 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('hud', 'cosmos');
   }
 
-  const newViewer = nickname => ({ nickname, avatar: '', sign: null, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 });
+  const newViewer = nickname => ({ nickname, avatar: '', team: null, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 });
 
-  function viewer(u) {
+  // `wanted`: the colour a first comment named (null for anything else). Every viewer is on a team from their first action.
+  function viewer(u, wanted = null) {
     const name = cleanName(u.nickname || u.userId, cfg.blockedWords);
     const v = (st.viewers[u.userId] ??= newViewer(name));
     if (u.nickname) v.nickname = name;
     const avatar = safeAvatar(u.avatar);
     if (avatar) v.avatar = avatar;
+    if (!v.team) {
+      const { team, redirected } = roster.place(wanted, st.wheel.given);
+      join(u, v, team);
+      if (redirected) onEvent({ type: 'team-balance', userId: u.userId, nickname: v.nickname, avatar: v.avatar, wanted, team });
+    }
     // fan club level / subscriber come with chat and gift events; a like without them doesn't clear them
     if (u.fanLevel) { v.fanLevel = u.fanLevel; v.fanClub = cleanName(u.fanClub || '', cfg.blockedWords); }
     if (u.subscriber) v.subscriber = true;
     if ((v.fanLevel || v.subscriber) && v.fanNight !== st.night.no) {
       v.fanNight = st.night.no;
-      onEvent({ type: 'fan-arrive', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.fanLevel ?? 0, club: v.fanClub ?? '', subscriber: Boolean(v.subscriber) });
+      onEvent({ type: 'fan-arrive', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: v.fanLevel ?? 0, club: v.fanClub ?? '', subscriber: Boolean(v.subscriber) });
       touch('cosmos');
     }
     if (v.night !== st.night.no) {
@@ -394,12 +355,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     v.lastSeenAt = now();
     st.lastActivityAt = now();
-    if (v.sign) onStage(u.userId); else inLobby(u.userId);
-    // someone still choosing a sign already gets a pale star in the community sky; picking a sign makes it theirs (see join)
-    if (!v.star) {
-      v.star = { x: rng(), y: rng(), at: now(), unsigned: true };
-      touch('stars');
-    }
+    onStage(u.userId);
     return v;
   }
 
@@ -413,7 +369,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     greeted.add(u.userId);
     const nickname = st.viewers[u.userId]?.nickname ?? cleanName(u.nickname || u.userId, cfg.blockedWords);
     const avatar = safeAvatar(u.avatar) || st.viewers[u.userId]?.avatar || '';
-    // a newcomer is a quiet star in the community sky from the moment they walk in; not a visitor, not in the lobby
+    // a newcomer is a quiet star in the community sky from the moment they walk in; not a visitor, no team yet
     const v = (st.viewers[u.userId] ??= { ...newViewer(nickname), avatar, lastSeenAt: now() });
     if (!v.star) {
       v.star = { x: rng(), y: rng(), at: now(), unsigned: true };
@@ -423,14 +379,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const w = { id: ++st.greetingNo, userId: u.userId, nickname, avatar, at: now(), greeters: {}, done: false };
     st.welcomes.unshift(w);
     st.welcomes.length = Math.min(st.welcomes.length, 6);
-    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname, avatar, sign: v.sign, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
+    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname, avatar, team: v.team, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
     return true;
   }
 
   function thank(u, v) {
     const i = st.thanks.findIndex(t => t.userId === u.userId);
     if (i >= 0) st.thanks.splice(i, 1);
-    st.thanks.unshift({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
+    st.thanks.unshift({ userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team });
     st.thanks.length = Math.min(st.thanks.length, cfg.thanksMax);
     touch('thanks');
   }
@@ -451,12 +407,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // --- the boss and the star chest ---------------------------------------------
   const boss = createBoss({
     st, cfg, now, onEvent,
-    elementOf: id => SIGN[id].element,
-    signsOnStage,
-    fansOf: sign => { let n = 0; for (const id of stage.keys()) if (st.viewers[id]?.sign === sign) n++; return n; },
+    elementOf: id => TEAM[id].element,
+    teamsOnStage,
+    fansOf: team => { let n = 0; for (const id of stage.keys()) if (st.viewers[id]?.team === team) n++; return n; },
     reward: (userId, mvp) => {
       const v = st.viewers[userId];
-      if (!v?.sign) return;
+      if (!v?.team) return;
       shine({ userId }, v, cfg.bossReward, 'boss');
       bag.add({ userId }, v, 'dust', mvp ? 15 : 5, 'boss');
       gem({ userId }, v, mvp ? 4 : 2, 'boss');
@@ -488,7 +444,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // "nhận" while the chest is open: one share per viewer per chest. Returns true when the comment was a claim.
   function chestClaim(u, v) {
     if (!chestIsOpen() || st.chest.claimed[u.userId]) return false;
-    if (!v.sign) { onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'chest' }); return true; }
     st.chest.claimed[u.userId] = true;
     bag.add(u, v, 'dust', cfg.chestDust, 'chest');
     st.chest.recent.unshift({ nickname: v.nickname, dust: cfg.chestDust });
@@ -518,19 +473,19 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: Object.keys(c.claimed).length, recent: c.recent }
       : { open: false, inMs: Number.isFinite(chestScheduled) ? chestScheduled - t : null };
   }
-  const bag = createBag({ cfg, now, onEvent, elementOf: id => SIGN[id].element });
+  const bag = createBag({ cfg, now, onEvent, elementOf: id => TEAM[id].element });
   // one gem of the viewer's own element (what their next level needs)
-  const gem = (u, v, n, why) => { if (v?.sign) bag.add(u, v, SIGN[v.sign].element, n, why); };
+  const gem = (u, v, n, why) => { if (v?.team) bag.add(u, v, TEAM[v.team].element, n, why); };
   // --- bàn quẻ (altar.mjs): "xin quẻ", and the room's "chuẩn" / "xin vía" while a reading is on ---
-  const altar = createAltar({ st, cfg, now, onEvent, touch, signs: SIGN, pickSign: () => pickEventSign(), shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
+  const altar = createAltar({ st, cfg, now, onEvent, touch, teams: TEAM, pickTeam: () => pickEventTeam(), shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
   const showFortune = req => altar.show(req);
 
   // --- kho chung: resources, level and Sổ Sao in one panel ("kho", "khoe", "sổ sao") ---
   function showVault(u, v) {
     if (now() - (v.vaultAt ?? 0) < cfg.vaultCooldownSeconds * 1000) return;
     v.vaultAt = now();
-    const p = v.sign ? pass.view(v) : null;
-    onEvent({ type: 'vault', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: bag.levelOf(v), bag: { ...(v.bag ?? {}) }, next: bag.nextCost(v),
+    const p = v.team ? pass.view(v) : null;
+    onEvent({ type: 'vault', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: bag.levelOf(v), bag: { ...(v.bag ?? {}) }, next: bag.nextCost(v),
       pass: p, title: titleOf(v.lifetime) });
   }
 
@@ -544,50 +499,50 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
   // "tung ngọc": one gem (own element first) lands like a gift on the fight that is on
   function gemPower(u, v) {
-    if (!v.sign || !powerReady(v)) return;
+    if (!v.team || !powerReady(v)) return;
     const target = FIGHTS.find(([, on]) => on())?.[0];
     if (!target) return powerNeed(u, v, 'no-fight');
-    const held = v.bag ?? {}, own = SIGN[v.sign].element;
+    const held = v.bag ?? {}, own = TEAM[v.team].element;
     const res = (held[own] ?? 0) > 0 ? own : ['fire', 'earth', 'air', 'water'].find(k => (held[k] ?? 0) > 0);
     if (!res) return powerNeed(u, v, 'no-gem');
     v.powerAt = now();
     held[res]--;
-    onEvent({ type: 'power', kind: 'gem', res, target, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
+    onEvent({ type: 'power', kind: 'gem', res, target, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team });
     if (target === 'boss') boss.hit(u, v, 'gift', cfg.gemPowerDiamonds);
     else if (target === 'tug') tug.pull(u, v, 'gift', cfg.gemPowerDiamonds);
   }
   // "thắp trăng": one moon shard raises the moon by a share of its goal
   function moonPower(u, v) {
-    if (!v.sign || !powerReady(v)) return;
+    if (!v.team || !powerReady(v)) return;
     if (!(v.bag?.moon > 0)) return powerNeed(u, v, 'no-moon');
     v.powerAt = now();
     v.bag.moon--;
-    onEvent({ type: 'power', kind: 'moon', res: 'moon', target: 'moon', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign });
+    onEvent({ type: 'power', kind: 'moon', res: 'moon', target: 'moon', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team });
     raiseMoon(Math.round(st.moon.goal * cfg.moonShardShare));
   }
 
   // --- two short headliners (minigames.mjs): Cung bí ẩn and Hứng sao băng ---
-  const mystery = createMystery({ st, cfg, now, rng, onEvent, parseSign, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat) });
+  const mystery = createMystery({ st, cfg, now, rng, onEvent, parseGuess: parseSwitchTeam, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat) });
   const starcatch = createStarcatch({ st, cfg, now, rng, onEvent, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat),
     dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why), shine: (u, v, n, why) => shine(u, v, n, why) });
 
   // --- vòng quay bóc phốt (roast.mjs) ---------------------------------------------------------------
   const roast = createRoast({
     st, cfg, now, rng, onEvent,
-    present: () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign),
+    present: () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.team),
     shine: (id, n, kind) => { const v = st.viewers[id]; if (v) shine({ userId: id }, v, n, kind); },
-    lucky: sign => (st.lucky ? null : startLucky(sign)),
+    lucky: team => (st.lucky ? null : startLucky(team)),
   });
 
   // --- kéo co, dự đoán, sổ sao (tug.mjs, predict.mjs, pass.mjs) ------------------------------
-  const onStageNow = () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
+  const onStageNow = () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.team);
   const shineId = (id, n, kind) => { const v = st.viewers[id]; if (v) shine({ userId: id }, v, n, kind); };
   const tug = createTug({ st, cfg, now, onEvent, present: onStageNow, shine: shineId });
   const predict = createPredict({ st, cfg, now, onEvent });
   const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => bag.add(u, v, 'dust', 15, 'pass') });
-  const label = id => SIGN[id]?.label ?? id;
+  const label = id => TEAM[id]?.label ?? id;
   // --- hành trình đêm & đội nguyên tố (journey.mjs) ---
-  const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), elementOf: id => SIGN[id].element, dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
+  const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), elementOf: id => TEAM[id].element, dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
 
   // --- lời dẫn cho host: one line at each climax, sent only to the host's panel (never on stream) ---
   const cued = new Map(); // once-key -> time it was said
@@ -615,7 +570,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       const lead = side < 0 ? g2.a : g2.b, other = side < 0 ? g2.b : g2.a;
       tugFlipAt = t;
       onEvent({ type: 'tug-flip', lead, other, pos: Math.round(g2.pos) });
-      cue('tug-flip', `Đảo chiều! ${SIGN[lead].label} vừa lật thế kéo co — fan ${SIGN[other].label} ơi, kéo lại!`, `flip@${g2.startsAt}@${++tugFlips}`);
+      cue('tug-flip', `Đảo chiều! ${TEAM[lead].label} vừa lật thế kéo co — fan ${TEAM[other].label} ơi, kéo lại!`, `flip@${g2.startsAt}@${++tugFlips}`);
     }
     if (side) tugSide = side;
   }
@@ -676,8 +631,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const top = Object.entries(st.act.light).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([id]) => st.viewers[id]);
     // the act's MVP takes home a little bụi sao
     const mvp = top[0] && st.viewers[top[0][0]];
-    if (mvp?.sign) bag.add({ userId: top[0][0] }, mvp, 'dust', 10, 'mvp');
-    onEvent({ type: 'act-close', top: top.map(([id, light]) => ({ userId: id, nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar, sign: st.viewers[id].sign, light })),
+    if (mvp?.team) bag.add({ userId: top[0][0] }, mvp, 'dust', 10, 'mvp');
+    onEvent({ type: 'act-close', top: top.map(([id, light]) => ({ userId: id, nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar, team: st.viewers[id].team, light })),
       next: { act: slot.next.id, label: slot.next.label, glyph: '★', head: HEADS[headOf({ act: slot.next, index: slot.index + 1 })].label } });
   }
 
@@ -693,7 +648,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (!boss.start(Math.round(Math.max(3, stage.size) * cfg.eliteHpFactor))) { st.head = null; return null; }
       st.boss.elite = true;
     } else if (id === 'quizchain') Object.assign(st.head, { left: cfg.quizChainLength, nextAt: t + 2000, streaks: {}, best: null, inQuiz: false });
-    else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', sign: pickEventSign() }); }
+    else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', team: pickEventTeam() }); }
     else if (id === 'final') Object.assign(st.head, { base: { ...st.wheel.given }, wheel: st.wheel.no });
     else if (id === 'chestrain') { chestOpenNow(); st.head.chests = [t + 60000, t + 120000]; }
     else if (id === 'guessobject') { if (!mystery.start()) { st.head = null; return null; } }
@@ -725,12 +680,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const out = { type: 'head-end', id: h.id, label: HEADS[h.id].label };
     if (h.id === 'final') {
       const base = h.wheel === st.wheel.no ? h.base : zeros();
-      const gains = SIGNS.map(s => ({ id: s.id, gain: st.wheel.given[s.id] - (base[s.id] ?? 0) })).sort((a, b) => b.gain - a.gain || ORDER[a.id] - ORDER[b.id]);
+      const gains = TEAM_IDS.map(id => ({ id, gain: st.wheel.given[id] - (base[id] ?? 0) })).sort((a, b) => b.gain - a.gain || ORDER[a.id] - ORDER[b.id]);
       if (gains[0].gain > 0) {
         const winner = gains[0].id;
         st.season.crowns[winner]++;
         let fans = 0;
-        for (const id of stage.keys()) { const v = st.viewers[id]; if (v?.sign === winner) { v.crowns = (v.crowns ?? 0) + 1; fans++; } }
+        for (const id of stage.keys()) { const v = st.viewers[id]; if (v?.team === winner) { v.crowns = (v.crowns ?? 0) + 1; fans++; } }
         Object.assign(out, { winner, fans, podium: gains.slice(0, 3) });
         touch('race');
       }
@@ -759,7 +714,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('cosmos');
     if (q.got < q.goal) return;
     q.done = true;
-    const people = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
+    const people = [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.team);
     for (const [id, v] of people) {
       const u = { userId: id };
       if (q.reward === 'gem') gem(u, v, 1, 'quest');
@@ -785,7 +740,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     w.done = true;
     const owner = st.viewers[w.userId];
     if (owner) bag.add({ userId: w.userId }, owner, 'dust', cfg.welcomeDust, 'welcome');
-    onEvent({ type: 'welcome-done', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, sign: owner?.sign ?? null, greeters: Object.values(w.greeters).slice(0, 5), count, dust: cfg.welcomeDust });
+    onEvent({ type: 'welcome-done', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, team: owner?.team ?? null, greeters: Object.values(w.greeters).slice(0, 5), count, dust: cfg.welcomeDust });
   }
 
   // --- wishes the room can bless --------------------------------------------------------------------
@@ -803,7 +758,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     w.blessed = true;
     const owner = st.viewers[w.userId];
     if (owner) bag.add({ userId: w.userId }, owner, 'moon', 1, 'wish');
-    onEvent({ type: 'wish-blessed', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessers: Object.values(w.blessers).slice(0, 5), count });
+    onEvent({ type: 'wish-blessed', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, team: w.team, text: w.text, blessers: Object.values(w.blessers).slice(0, 5), count });
   }
 
   // --- the shared sky --------------------------------------------------------
@@ -811,44 +766,44 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const isLit = id => st.wheel.light[id] >= cost();
   function dimmest() {
     let best = null;
-    for (const s of SIGNS) if (!isLit(s.id) && (!best || st.wheel.light[s.id] < st.wheel.light[best])) best = s.id;
+    for (const id of TEAM_IDS) if (!isLit(id) && (!best || st.wheel.light[id] < st.wheel.light[best])) best = id;
     return best;
   }
 
-  // Pours light into `sign`; once it is lit the rest flows to the dimmest sign still dark.
-  function pour(sign, amount) {
+  // Pours light into `team`; once it is lit the rest flows to the dimmest team still dark.
+  function pour(team, amount) {
     let rest = amount;
     touch('sky');
     while (rest > 0) {
-      const target = isLit(sign) ? dimmest() : sign;
+      const target = isLit(team) ? dimmest() : team;
       if (!target) break;
       const add = Math.min(rest, cost() - st.wheel.light[target]);
       st.wheel.light[target] += add;
       rest -= add;
-      if (target !== sign) onEvent({ type: 'flow', from: sign, to: target, amount: add });
+      if (target !== team) onEvent({ type: 'flow', from: team, to: target, amount: add });
       if (isLit(target)) {
-        onEvent({ type: 'lit', sign: target, by: sign });
-        if (SIGNS.every(s => isLit(s.id))) completeWheel();
+        onEvent({ type: 'lit', team: target, by: team });
+        if (TEAM_IDS.every(isLit)) completeWheel();
       }
     }
   }
 
-  // --- the race: all 12 signs ranked by the light their fans poured into this wheel -------------
-  const rank = () => SIGNS.map(x => ({ id: x.id, given: st.wheel.given[x.id] })).sort((a, b) => b.given - a.given || ORDER[a.id] - ORDER[b.id]);
+  // --- the race: all 4 teams ranked by the light their fans poured into this wheel -------------
+  const rank = () => TEAM_IDS.map(id => ({ id, given: st.wheel.given[id] })).sort((a, b) => b.given - a.given || ORDER[a.id] - ORDER[b.id]);
   let leader = null, lastOvertake = 0;
-  function checkOvertake(sign) {
+  function checkOvertake(team) {
     const g = st.wheel.given;
     leader ??= rank()[0].id;
-    if (sign === leader || g[sign] <= g[leader]) return;
+    if (team === leader || g[team] <= g[leader]) return;
     const from = leader;
-    leader = sign;
+    leader = team;
     if (g[from] > 0 && now() - lastOvertake > cfg.overtakeCooldownSeconds * 1000) {
       lastOvertake = now();
-      onEvent({ type: 'overtake', sign, from });
+      onEvent({ type: 'overtake', team, from });
     }
   }
 
-  // The brightest sign of a finished wheel is crowned; the fans who helped it get a badge and a little lifetime light.
+  // The brightest team of a finished wheel is crowned; the fans who helped it get a badge and a little lifetime light.
   function completeWheel() {
     const no = st.wheel.no, ranked = rank();
     const winner = ranked[0].given > 0 ? ranked[0].id : null;
@@ -856,7 +811,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (winner) {
       st.season.crowns[winner]++;
       for (const v of Object.values(st.viewers)) {
-        if (v.wheelNo === no && v.sign === winner && v.wheelLight > 0) { v.crowns = (v.crowns ?? 0) + 1; v.lifetime += cfg.crownLifetime; crowned++; }
+        if (v.wheelNo === no && v.team === winner && v.wheelLight > 0) { v.crowns = (v.crowns ?? 0) + 1; v.lifetime += cfg.crownLifetime; crowned++; }
       }
     }
     onEvent({ type: 'wheel-complete', no, winner, podium: ranked.slice(0, 3), crowned });
@@ -865,14 +820,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('race');
   }
 
-  // Credits `base` light to the viewer's sign (doubled during the moon party).
+  // Credits `base` light to the viewer's team (doubled during the moon party).
   function shine(u, v, base, kind) {
     if (base <= 0) return 0;
-    if (!v.sign) {
-      if (kind === 'gift' || kind === 'follow' || kind === 'share' || kind === 'quiz') st.pending[u.userId] = (st.pending[u.userId] ?? 0) + base;
-      return 0;
-    }
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.sign === v.sign ? cfg.luckyMultiplier : 1) * Math.min(LIGHT_CAP, bag.bonus(v) * heatMult() * fanMult(v))); // the room's heat, the Fanclub and the level share one cap
+    if (!v.team) return 0;
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.team === v.team ? cfg.luckyMultiplier : 1) * Math.min(LIGHT_CAP, bag.bonus(v) * heatMult() * fanMult(v))); // the room's heat, the Fanclub and the level share one cap
     if (st.act) st.act.light[u.userId] = (st.act.light[u.userId] ?? 0) + amount;
     if (kind !== 'quest') questAdd('light', amount);
     pass.addXp(u, v, amount);
@@ -881,59 +833,53 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     bag.fromLight(v, amount);
     if (v.wheelNo !== st.wheel.no) { v.wheelNo = st.wheel.no; v.wheelLight = 0; }
     v.wheelLight += amount;
-    const to = v.sign;
+    const to = v.team;
     st.wheel.given[to] += amount; // counted before pour so it still lands in a wheel that completes right now
     st.season.light[to] += amount;
     touch('race');
     checkOvertake(to);
     pour(to, amount);
-    onEvent({ type: 'light', kind, userId: u.userId, sign: v.sign, amount });
-    if (titleOf(before) !== titleOf(v.lifetime)) onEvent({ type: 'title-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime) });
+    onEvent({ type: 'light', kind, userId: u.userId, team: v.team, amount });
+    if (titleOf(before) !== titleOf(v.lifetime)) onEvent({ type: 'title-up', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, title: titleOf(v.lifetime) });
     return amount;
   }
 
-  function join(u, v, sign) {
-    if (v.sign === sign) return;
-    const from = v.sign;
-    v.sign = sign;
+  function join(u, v, team) {
+    if (v.team === team) return;
+    const from = v.team;
+    v.team = team;
     if (from) v.switchAt = now(); // the first correction is free; only later switches wait for the cooldown
-    outOfLobby(u.userId);
     onStage(u.userId, true);
-    onEvent({ type: 'join', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign, from });
+    onEvent({ type: 'join', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team, from });
     if (!v.star || v.star.unsigned) {
       v.star = { x: v.star?.x ?? rng(), y: v.star?.y ?? rng(), at: now() };
       touch('stars');
-      onEvent({ type: 'star-born', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign, x: v.star.x, y: v.star.y });
-    }
-    const held = st.pending[u.userId];
-    if (held) {
-      delete st.pending[u.userId];
-      shine(u, v, held, 'pending');
+      onEvent({ type: 'star-born', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team, x: v.star.x, y: v.star.y });
     }
   }
 
-  // A clear "đổi <cung>" moves the viewer to another sign (light already given stays where it landed).
-  function switchSign(u, v, to) {
-    if (!to || to === v.sign) return;
-    // a sign frozen by the boss is stuck until its fans break the ice
-    if (st.boss?.frozen?.sign === v.sign) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, sign: v.sign, to, frozen: true });
+  // A clear "đổi <màu>" moves the viewer to another team (light already given stays where it landed).
+  function switchTeam(u, v, to) {
+    if (!to || to === v.team) return;
+    // a team frozen by the boss is stuck until its fans break the ice: nobody leaves it, nobody joins it
+    const frozen = st.boss?.frozen?.team;
+    if (frozen && (frozen === v.team || frozen === to)) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, team: v.team, to, frozen: true });
     const wait = cfg.switchCooldownSeconds * 1000 - (now() - (v.switchAt ?? 0));
-    if (wait > 0) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, sign: v.sign, to, seconds: Math.ceil(wait / 1000) });
+    if (wait > 0) return onEvent({ type: 'switch-wait', userId: u.userId, nickname: v.nickname, team: v.team, to, seconds: Math.ceil(wait / 1000) });
     join(u, v, to);
   }
 
-  // "gọi sao": a fan club member or subscriber calls the lucky star onto their own sign, once a night.
+  // "gọi sao": a fan club member or subscriber calls the lucky star onto their own team, once a night.
   function fanCall(u, v) {
-    if (!v.sign) return onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'call' });
     if (!v.fanLevel && !v.subscriber) {
-      if (now() - (v.callHintAt ?? 0) > 60000) { v.callHintAt = now(); onEvent({ type: 'fan-only', userId: u.userId, nickname: v.nickname, sign: v.sign }); }
+      if (now() - (v.callHintAt ?? 0) > 60000) { v.callHintAt = now(); onEvent({ type: 'fan-only', userId: u.userId, nickname: v.nickname, team: v.team }); }
       return;
     }
     if (v.callNight === st.night.no) return;
     if (st.lucky) return onEvent({ type: 'fan-call-wait', userId: u.userId, nickname: v.nickname, seconds: Math.ceil((st.lucky.endsAt - now()) / 1000) });
     v.callNight = st.night.no;
-    onEvent({ type: 'fan-call', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, level: v.fanLevel ?? 0, club: v.fanClub ?? '' });
-    startLucky(v.sign);
+    onEvent({ type: 'fan-call', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: v.fanLevel ?? 0, club: v.fanClub ?? '' });
+    startLucky(v.team);
   }
 
   // --- Nhiệt phòng: activity over the last 20 seconds, in 2-second buckets ---------------------------
@@ -963,23 +909,24 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   function chat(u) {
     if (rehearsalOnly(u)) return;
-    const v = viewer(u);
+    // Someone with no team yet is placed by their first comment: a colour name or a number 1-4 picks it (events/roster.mjs may
+    // redirect to the smallest team). Someone who already has a team only changes it with "đổi <màu>" or a bare colour name.
+    // While a poll runs, "1"–"4" is a vote, never a team pick.
+    const had = Boolean(st.viewers[u.userId]?.team);
+    const vote = st.poll ? parseVote(u.comment) : null;
+    const v = viewer(u, had || vote !== null ? null : parseSwitchTeam(u.comment) ?? parseTeam(u.comment));
     if (st.quiz && answerQuiz(u, v)) return;
     if ((st.mystery && mystery.chat(u, v, u.comment)) || (st.starcatch && starcatch.chat(u, v, u.comment))) { addHeat(u.userId, 1); raiseMoon(1); return; } // a guess or a catch
-    if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a sign is being roasted
+    if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a team is being roasted
     if (st.predict && predict.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // "đoán A"
-    const sign = parseSign(u.comment);
-    // While a poll runs, "1"–"4" is a vote (never a team pick); sign names still join newcomers as usual.
-    const vote = st.poll ? parseVote(u.comment) : null;
     if (vote !== null) { if (!st.poll.voted[u.userId] && vote < st.poll.options.length) castVote(u, v, vote); addHeat(u.userId, 1); return; }
     addHeat(u.userId, 1);
-    if (!v.sign) { if (sign) join(u, v, sign); }
-    else if (!st.poll) switchSign(u, v, parseSwitch(u.comment));
-    if (v.sign && v.checkin) {
+    if (had && !st.poll) switchTeam(u, v, parseSwitchTeam(u.comment));
+    if (v.checkin) {
       const bonus = v.checkin;
       v.checkin = 0;
       shine(u, v, bonus, 'checkin');
-      if (v.streak >= 2) onEvent({ type: 'streak', userId: u.userId, nickname: v.nickname, sign: v.sign, streak: v.streak, amount: bonus });
+      if (v.streak >= 2) onEvent({ type: 'streak', userId: u.userId, nickname: v.nickname, team: v.team, streak: v.streak, amount: bonus });
     }
     altar.chat(u, v, u.comment); // "chuẩn" / "xin vía" while a reading is on screen
     const action = parseAction(u.comment);
@@ -990,7 +937,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       chestClaim(u, v);
       if (!had && st.chest.claimed[u.userId]) { gem(u, v, 1, 'chest'); questAdd('claims'); }
     }
-    else if (action === 'upgrade') { if (v.sign) bag.upgrade(u, v); else onEvent({ type: 'need-sign', userId: u.userId, nickname: v.nickname, for: 'upgrade' }); }
+    else if (action === 'upgrade') bag.upgrade(u, v);
     else if (action === 'vault') showVault(u, v);
     else if (action === 'gem-power') gemPower(u, v);
     else if (action === 'moon-power') moonPower(u, v);
@@ -1000,7 +947,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     boss.hit(u, v, 'comment');
     tug.pull(u, v, 'comment');
     raiseMoon(1);
-    if (v.sign && now() - v.lastCommentAt >= cfg.commentCooldownSeconds * 1000) {
+    if (v.team && now() - v.lastCommentAt >= cfg.commentCooldownSeconds * 1000) {
       v.lastCommentAt = now();
       questAdd('comments'); // at most one per viewer per few seconds, so spamming doesn't fill it
       shine(u, v, cfg.commentLight, 'comment');
@@ -1013,11 +960,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const text = cfg.showWishText ? cleanWish(u.comment, cfg.blockedWords) : null;
     // the lantern carries the wish without its "ước…" opening, so it reads like the wish itself
     const shown = text && text.replace(/^\s*(ước|mong|nguyện|cầu (nguyện|mong|cho|chúc))\s*(gì\s*)?(là\s*)?/iu, '').trim();
-    const w = { id: ++st.wishNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, text: shown || text, at: now(), blessers: {}, blessed: false };
+    const w = { id: ++st.wishNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, text: shown || text, at: now(), blessers: {}, blessed: false };
     st.wishes.unshift(w);
     st.wishes.length = Math.min(st.wishes.length, 6);
     touch('cosmos');
-    onEvent({ type: 'wish', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, text: w.text, need: cfg.blessNeed, seconds: cfg.blessWindowSeconds });
+    onEvent({ type: 'wish', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, text: w.text, need: cfg.blessNeed, seconds: cfg.blessWindowSeconds });
   }
 
   // --- the big moment every ~75 s: a roll call of tonight's stars or a meteor shower ----
@@ -1027,7 +974,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function showKind(want) {
     const kinds = ['starcall', 'meteor'];
     const k = want ?? kinds[(st.showNo ?? 0) % kinds.length];
-    if (k === 'roast') return presentWith(v => v.sign).length ? 'roast' : 'starcall';
+    if (k === 'roast') return presentWith(v => v.team).length ? 'roast' : 'starcall';
     return k;
   }
   const nextShowKind = () => showKind();
@@ -1037,7 +984,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.nextShowAt = now() + cfg.showEverySeconds * 1000;
     touch('cosmos');
     if (kind === 'roast') return roast.start();
-    const people = presentWith(v => v.star).slice(-12).map(([id, v]) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, x: v.star.x, y: v.star.y }));
+    const people = presentWith(v => v.star).slice(-12).map(([id, v]) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, team: v.team, x: v.star.x, y: v.star.y }));
     onEvent({ type: 'showtime', kind: kind === 'starcall' && people.length ? 'starcall' : 'meteor', people });
   }
 
@@ -1062,7 +1009,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       g.goalSum -= reached;
       g.goalNo++;
     }
-    if (reached) onEvent({ type: 'gift-goal', no: g.goalNo, goal: reached, nickname: v.nickname, sign: v.sign });
+    if (reached) onEvent({ type: 'gift-goal', no: g.goalNo, goal: reached, nickname: v.nickname, team: v.team });
     touch('gifts');
   }
 
@@ -1072,7 +1019,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const count = Math.max(1, u.count | 0);
     const diamonds = Math.max(0, u.diamonds) * count;
     const tier = diamonds >= cfg.meteorDiamonds ? 'meteor' : diamonds >= cfg.fireworkDiamonds ? 'firework' : 'sparkle';
-    onEvent({ type: 'gift', tier, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, giftName: u.giftName, giftImage: u.giftImage ?? '', count, diamonds });
+    onEvent({ type: 'gift', tier, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, giftName: u.giftName, giftImage: u.giftImage ?? '', count, diamonds });
     recordGift(u, v, count, diamonds);
     thank(u, v);
     boss.hit(u, v, 'gift', diamonds);
@@ -1098,8 +1045,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     tug.pull(u, v, 'like', n);
     questAdd('likes', n);
     addHeat(u.userId, Math.ceil(n / 15));
-    onEvent({ type: 'likes', userId: u.userId, sign: v.sign, count: n });
-    if (!cfg.likesPerLight || !v.sign) return 0;
+    onEvent({ type: 'likes', userId: u.userId, team: v.team, count: n });
+    if (!cfg.likesPerLight || !v.team) return 0;
     const total = v.likeCarry + n;
     v.likeCarry = total % cfg.likesPerLight;
     return shine(u, v, Math.floor(total / cfg.likesPerLight), 'like');
@@ -1110,7 +1057,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (rehearsalOnly(u)) return;
     const v = viewer(u);
     const kind = u.kind === 'share' ? 'share' : 'follow';
-    onEvent({ type: 'bell', kind, userId: u.userId, nickname: v.nickname, sign: v.sign });
+    onEvent({ type: 'bell', kind, userId: u.userId, nickname: v.nickname, team: v.team });
     if (v.bonusNight[kind] === st.night.no) return 0;
     v.bonusNight[kind] = st.night.no;
     thank(u, v);
@@ -1121,30 +1068,30 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return shine(u, v, kind === 'share' ? cfg.shareLight : cfg.followLight, kind);
   }
 
-  // --- lucky star: a short x2 window for a sign from the lower half of the race --------------------
-  function startLucky(sign) {
-    if (!SIGN[sign]) {
-      const present = new Set(signsOnStage());
-      const low = rank().slice(6).filter(r => !present.size || present.has(r.id));
+  // --- lucky star: a short x2 window for a team from the lower half of the race --------------------
+  function startLucky(team) {
+    if (!TEAM[team]) {
+      const present = new Set(teamsOnStage());
+      const low = rank().slice(Math.floor(TEAM_IDS.length / 2)).filter(r => !present.size || present.has(r.id));
       const choices = low.length ? low : rank().filter(r => present.has(r.id));
-      sign = choices[Math.floor(rng() * choices.length)].id;
+      team = choices[Math.floor(rng() * choices.length)].id;
     }
-    st.lucky = { sign, endsAt: now() + cfg.luckySeconds * 1000 };
+    st.lucky = { team, endsAt: now() + cfg.luckySeconds * 1000 };
     touch('hud');
-    onEvent({ type: 'lucky-start', sign, seconds: cfg.luckySeconds, multiplier: cfg.luckyMultiplier });
+    onEvent({ type: 'lucky-start', team, seconds: cfg.luckySeconds, multiplier: cfg.luckyMultiplier });
     return st.lucky;
   }
   function endLucky() {
     if (!st.lucky) return;
-    const sign = st.lucky.sign;
+    const team = st.lucky.team;
     st.lucky = null;
     st.nextLuckyAt = now() + luckyEvery();
     touch('hud');
-    onEvent({ type: 'lucky-end', sign });
+    onEvent({ type: 'lucky-end', team });
   }
 
-  // --- poll: a light "which sign…?" question the whole room answers -----------------------------------
-  // Bình chọn: four numbered options, "1"–"4" to vote. A "which sign…?" question offers four signs; every
+  // --- poll: a light "which team…?" question the whole room answers -----------------------------------
+  // Bình chọn: four numbered options, "1"–"4" to vote. A "which team…?" question offers four teams; every
   // pollNextEvery-th poll (with the acts on) asks which headliner the next act should play.
   function pollOptions(entry) {
     if (entry?.kind === 'next' && slot) {
@@ -1153,9 +1100,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       return { kind: 'next', q: `Màn ${n.label} tới, cả phòng muốn chơi gì?`, options: heads.map(id => ({ label: HEADS[id].label, head: id })) };
     }
     if (typeof entry === 'string') {
-      const pool = SIGNS.map(s => s.id), picks = [];
+      const pool = TEAMS.map(s => s.id), picks = [];
       while (picks.length < 4) picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-      return { kind: 'sign', q: entry, options: picks.map(id => ({ label: SIGN[id].label, sign: id })) };
+      return { kind: 'team', q: entry, options: picks.map(id => ({ label: TEAM[id].label, team: id })) };
     }
     return { kind: 'custom', q: entry.q, options: entry.options.slice(0, 4).map(label => ({ label })) };
   }
@@ -1176,7 +1123,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.poll.votes[i]++;
     st.poll.total++;
     touch('hud');
-    if (v.sign) shine(u, v, cfg.pollLight, 'poll');
+    if (v.team) shine(u, v, cfg.pollLight, 'poll');
   }
   function endPoll() {
     const p = st.poll;
@@ -1186,7 +1133,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const top = Math.max(...p.votes), winner = p.total ? p.votes.indexOf(top) : null;
     const option = winner === null ? null : p.options[winner];
     if (p.kind === 'next' && option) st.headVote = { act: p.act, id: option.head, from: p.from, until: p.from + p.slot };
-    onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, sign: option?.sign ?? null });
+    onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, team: option?.team ?? null });
   }
 
   // --- quiz -------------------------------------------------------------
@@ -1208,13 +1155,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const chain = st.head?.id === 'quizchain' ? st.head : null; // đố nhanh liên hoàn: answers in a row
     if (chain) {
       const n = chain.streaks[u.userId] = letter === st.quiz.answer ? (chain.streaks[u.userId] ?? 0) + 1 : 0;
-      if (n && n > (chain.best?.streak ?? 0)) chain.best = { userId: u.userId, nickname: v.nickname, sign: v.sign, streak: n };
+      if (n && n > (chain.best?.streak ?? 0)) chain.best = { userId: u.userId, nickname: v.nickname, team: v.team, streak: n };
     }
     if (letter !== st.quiz.answer) return true;
     questAdd('correct');
     const reward = cfg.quizRewards[st.quiz.winners.length];
     if (reward === undefined) return true;
-    st.quiz.winners.push({ nickname: v.nickname, sign: v.sign, reward });
+    st.quiz.winners.push({ nickname: v.nickname, team: v.team, reward });
     thank(u, v);
     shine(u, v, reward, 'quiz');
     gem(u, v, 1, 'quiz');
@@ -1283,19 +1230,19 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     altar.tick(t, !st.quiz && !st.poll && !st.boss);
     if (st.quiz && t >= st.quiz.endsAt) endQuiz();
-    // Quiet room: mostly a sign's reading of the day; a quiz and a light poll come once each per eight
-    // turns (about every six minutes), so they leave room for gifts, lit signs and the other events.
+    // Quiet room: mostly a team's reading of the day; a quiz and a light poll come once each per eight
+    // turns (about every six minutes), so they leave room for gifts, lit teams and the other events.
     const headWaiting = st.act?.phase === 'head' && !st.act.headDone; // don't open a quiz/poll in the way of the headliner
     if (!st.quiz && !st.fortune && !st.poll && !st.boss && !playing && !headWaiting && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
       const turn = st.quietTurn++;
       st.quietUntil = t + 45000;
-      // 3× a house mascot shows a command, 3× a sign's reading, 1× quiz, 1× poll — whichever of those can run
+      // 3× a house mascot shows a command, 3× a team's reading, 1× quiz, 1× poll — whichever of those can run
       let kind = (cfg.demoTurns ? [3, 1, 3, 0, 1, 3, 1, 2] : [1, 1, 1, 0, 1, 1, 1, 2])[turn % 8];
       if (kind === 3 && !cfg.demoTurns) kind = 1;
       if (kind === 0 && cfg.autoQuiz && quiz.length) startQuiz();
       else if (kind === 2 && polls.length) startPoll();
-      else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], sign: pickEventSign() });
-      else if (kind >= 0) showFortune({ userId: null, nickname: null, avatar: '', sign: pickEventSign() });
+      else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], team: pickEventTeam() });
+      else if (kind >= 0) showFortune({ userId: null, nickname: null, avatar: '', team: pickEventTeam() });
     }
     // Drop viewers who went quiet from the stage (at most crowdMax entries to look at).
     const cutoff = t - cfg.presenceMinutes * 60000;
@@ -1303,10 +1250,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if ((st.viewers[id]?.lastSeenAt ?? 0) >= cutoff) break;
       stage.delete(id);
       touch('stage');
-    }
-    for (const id of lobby.keys()) {
-      if ((st.viewers[id]?.lastSeenAt ?? 0) >= cutoff) break;
-      outOfLobby(id);
     }
   }
 
@@ -1321,10 +1264,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         fortune: altar.view(t),
         fortuneQueue: st.fortuneQueue.length,
         quiz: q && { q: q.q, options: q.options, remainingMs: Math.max(0, q.endsAt - t), winners: q.winners, tries: Object.keys(q.answered).length },
-        lucky: st.lucky && { sign: st.lucky.sign, remainingMs: Math.max(0, st.lucky.endsAt - t), multiplier: cfg.luckyMultiplier },
+        lucky: st.lucky && { team: st.lucky.team, remainingMs: Math.max(0, st.lucky.endsAt - t), multiplier: cfg.luckyMultiplier },
         luckyInMs: st.lucky ? 0 : Math.max(0, st.nextLuckyAt - t),
         poll: st.poll && { q: st.poll.q, kind: st.poll.kind, options: st.poll.options.map((o, i) => ({ ...o, n: st.poll.votes[i] })), remainingMs: Math.max(0, st.poll.endsAt - t), total: st.poll.total },
-        pendingLight: Object.values(st.pending).reduce((a, b) => a + b, 0),
         quietMs: t - st.lastActivityAt,
       };
     },
@@ -1334,18 +1276,18 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     },
     sky: () => {
       const c = cost();
-      const sky = SIGNS.map(s => {
+      const sky = TEAMS.map(s => {
         const progress = Math.min(1, st.wheel.light[s.id] / c);
-        return { id: s.id, progress, lit: progress >= 1, stars: Math.floor(progress * STARS_PER_SIGN) };
+        return { id: s.id, progress, lit: progress >= 1, stars: Math.floor(progress * STARS_PER_TEAM) };
       });
       return { wheel: st.wheel.no, litCount: sky.filter(s => s.lit).length, sky, waiting: sky.filter(s => !s.lit).sort((a, b) => a.progress - b.progress || ORDER[a.id] - ORDER[b.id]).slice(0, 3).map(s => s.id) };
     },
     stage: () => [...stage.keys()].map(id => {
       const v = st.viewers[id];
-      return { userId: id, nickname: v.nickname, avatar: v.avatar, sign: v.sign, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1, fan: v.fanLevel ?? 0, sub: Boolean(v.subscriber),
+      return { userId: id, nickname: v.nickname, avatar: v.avatar, team: v.team, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1, fan: v.fanLevel ?? 0, sub: Boolean(v.subscriber),
         aura: (v.auraUntil ?? 0) > now() ? v.auraUntil : 0, frame: pass.frameOf(v) };
     }),
-    thanks: () => st.thanks.map(({ nickname, avatar, sign }) => ({ nickname, avatar, sign })),
+    thanks: () => st.thanks.map(({ nickname, avatar, team }) => ({ nickname, avatar, team })),
     gifts: () => {
       const g = st.gifts;
       return { count: g.count, diamonds: g.diamonds, top: g.top, goal: { sum: g.goalSum, goal: giftGoal(), no: g.goalNo }, recent: g.recent.map(({ nickname, avatar, giftName, giftImage, count }) => ({ nickname, avatar, giftName, giftImage, count })) };
@@ -1359,7 +1301,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         boss: boss.view(),
         bossInMs: st.boss || !Number.isFinite(st.nextBossAt) ? null : Math.max(0, st.nextBossAt - t),
         chest: chestView(),
-        wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, sign: w.sign, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
+        wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, team: w.team, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
         blessNeed: cfg.blessNeed,
         welcomes: st.welcomes.filter(w => !w.done && t - w.at < cfg.welcomeWindowSeconds * 1000).slice(0, 3).map(w => ({ id: w.id, nickname: w.nickname, greetings: Object.keys(w.greeters).length })),
         welcomeNeed: cfg.welcomeNeed,
@@ -1378,17 +1320,12 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         journey: journey.view(),
       };
     },
-    // the community sky: a named star for everyone who ever picked a sign, most recently seen first
+    // the community sky: a named star for everyone who ever picked a team, most recently seen first
     stars: () => {
       const list = [];
       for (const [id, v] of Object.entries(st.viewers)) if (v.star) list.push([id, v]);
       list.sort((a, b) => b[1].lastSeenAt - a[1].lastSeenAt);
-      return list.slice(0, cfg.starsShown).map(([id, v]) => ({ userId: id, nickname: v.nickname, sign: v.sign, x: v.star.x, y: v.star.y, mag: Math.min(5, 1 + Math.floor(Math.log2(1 + v.lifetime / 50))), patron: patronTier(v) }));
-    },
-    // first eight in line for the waiting-queue layout, plus how many wait in all and who arrived last (to greet)
-    lobby: () => {
-      const ids = [...lobby.keys()], pick = id => ({ nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar });
-      return { total: ids.length, people: ids.slice(0, 8).map(pick), latest: ids.length ? pick(ids.at(-1)) : null };
+      return list.slice(0, cfg.starsShown).map(([id, v]) => ({ userId: id, nickname: v.nickname, team: v.team, x: v.star.x, y: v.star.y, mag: Math.min(5, 1 + Math.floor(Math.log2(1 + v.lifetime / 50))), patron: patronTier(v) }));
     },
   };
 
@@ -1415,12 +1352,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function newNight() {
     st.night = { no: st.night.no + 1, startedAt: now(), visitors: 0 };
     stage.clear();
-    lobby.clear();
     st.moon = { light: 0, goal: moonGoalFor(0), full: 0, partyUntil: 0 };
-    st.pending = {};
     st.thanks = [];
     st.gifts = freshGifts();
-    touch('hud', 'stage', 'thanks', 'lobby', 'gifts', 'stars');
+    touch('hud', 'stage', 'thanks', 'gifts', 'stars');
     onEvent({ type: 'night-start', no: st.night.no });
   }
 
@@ -1428,13 +1363,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     Object.assign(st, { ...emptyState(), lastActivityAt: now(), quizCursor: st.quizCursor });
     st.night.startedAt = now();
     stage.clear();
-    lobby.clear();
+    roster = createRoster({ viewers: st.viewers, stage }); // resetting replaced st.viewers
     st.wheel.cost = wheelCost(1);
     st.moon.goal = moonGoalFor(0);
     leader = null;
     st.nextLuckyAt = now() + luckyEvery();
     st.nextBossAt = cfg.bossEverySeconds ? now() + cfg.bossEverySeconds * 500 : Infinity;
-    touch('hud', 'race', 'sky', 'stage', 'thanks', 'lobby', 'gifts', 'cosmos', 'stars');
+    touch('hud', 'race', 'sky', 'stage', 'thanks', 'gifts', 'cosmos', 'stars');
     onEvent({ type: 'reset' });
   }
 
@@ -1444,5 +1379,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: chestOpenNow, startHead, startTug: () => (st.boss ? null : tug.start()), startRoast: sign => (st.boss ? null : roast.start(sign)), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: chestOpenNow, startHead, startTug: () => (st.boss ? null : tug.start()), startRoast: team => (st.boss ? null : roast.start(team)), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
 }

@@ -39,12 +39,12 @@ test('rates only count the last minute, and likes are summarised instead of logg
 
 test('game events become readable lines; drain returns each line once', () => {
   const m = createMonitor({ label: id => id.toUpperCase() });
-  m.note({ type: 'join', nickname: 'Hoa', sign: 'leo' });
-  m.note({ type: 'lit', sign: 'aries', by: 'leo' });
+  m.note({ type: 'join', nickname: 'Hoa', team: 'red' });
+  m.note({ type: 'lit', team: 'yellow', by: 'red' });
   m.note({ type: 'dance' }); // too minor to log
   assert.equal(m.drain().length, 2);
   assert.equal(m.drain().length, 0);
-  assert.match(m.all()[1].text, /ARIES đã sáng \(nhờ LEO\)/);
+  assert.match(m.all()[1].text, /YELLOW đã sáng \(nhờ RED\)/);
 });
 
 test('skipped events (rehearsal viewers on the real server) are neither counted nor logged', () => {

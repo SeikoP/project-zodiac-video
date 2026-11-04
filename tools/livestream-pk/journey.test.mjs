@@ -9,9 +9,14 @@ function setup(config = {}) {
   const game = createGame({ config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
-  return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id], journey: () => game.snapshot().cosmos.journey };
+  // a viewer already on `team` and on stage, whatever the balance would have said
+  const seat = (id, team) => {
+    game.state.viewers[id] = { nickname: id.toUpperCase(), avatar: '', team, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 };
+    game.like({ userId: id, nickname: id.toUpperCase(), count: 0 });
+  };
+  return { game, events, say, seat, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id], journey: () => game.snapshot().cosmos.journey };
 }
-const SIGNS5 = ['Sư Tử', 'Bạch Dương', 'Bảo Bình', 'Kim Ngưu', 'Song Ngư'];
+const FIVE = ['đỏ', 'vàng', 'xanh lá', 'xanh dương', 'đỏ'];
 
 // --- hành trình đêm: one story in five chapters ---
 test('the night is a journey of five chapters, the first is gathering the room', () => {
@@ -24,10 +29,10 @@ test('the night is a journey of five chapters, the first is gathering the room',
 
 test('a chapter completes from what the room does, pays everyone on stage and opens the next', () => {
   const s = setup({ journeyDust: 10 });
-  SIGNS5.slice(0, 4).forEach((sign, i) => s.say(`u${i}`, sign));
+  FIVE.slice(0, 4).forEach((team, i) => s.say(`u${i}`, team));
   assert.equal(s.journey().got, 4);
   const before = s.v('u0').bag.dust;
-  s.say('u4', SIGNS5[4]);
+  s.say('u4', FIVE[4]);
   const [c] = s.of('chapter');
   assert.deepEqual([c.no, c.id, c.next.id], [1, 'gather', 'lit']);
   assert.equal(c.people, 5);
@@ -37,8 +42,8 @@ test('a chapter completes from what the room does, pays everyone on stage and op
 
 test('the last chapter ends the journey with a moon shard for everyone on stage; a new night starts over', () => {
   const events = [], paid = { dust: {}, moon: {} };
-  const st = { night: { no: 1 }, viewers: { a: { nickname: 'A', sign: 'leo' }, b: { nickname: 'B', sign: 'aries' } } };
-  const j = createJourney({ st, cfg: JOURNEY_DEFAULTS, now: () => 0, onEvent: e => events.push(e), stageIds: () => ['a', 'b'][Symbol.iterator](), elementOf: s => ({ leo: 'fire', aries: 'fire' })[s],
+  const st = { night: { no: 1 }, viewers: { a: { nickname: 'A', team: 'red' }, b: { nickname: 'B', team: 'yellow' } } };
+  const j = createJourney({ st, cfg: JOURNEY_DEFAULTS, now: () => 0, onEvent: e => events.push(e), stageIds: () => ['a', 'b'][Symbol.iterator](), elementOf: s => ({ red: 'fire', yellow: 'earth' })[s],
     dust: (u, v, n) => { paid.dust[u.userId] = (paid.dust[u.userId] ?? 0) + n; }, moon: u => { paid.moon[u.userId] = (paid.moon[u.userId] ?? 0) + 1; } });
   const feed = { gather: { type: 'join' }, lit: { type: 'lit' }, moon: { type: 'moon-full' }, win: { type: 'boss-defeated' }, wheel: { type: 'wheel-complete' } };
   for (const c of CHAPTERS) for (let i = 0; i < c.need; i++) j.note(feed[c.id]);
@@ -55,8 +60,8 @@ test('the last chapter ends the journey with a moon shard for everyone on stage;
 // --- đội nguyên tố: the four elements race through the night, a lead change is announced ---
 test('the four element teams race on starlight; a new leader is announced once', () => {
   const s = setup({ elementLeadCooldownSeconds: 0, commentLight: 5 });
-  s.say('f', 'Sư Tử'); // fire
-  s.say('w', 'Song Ngư'); // water
+  s.say('f', 'đỏ'); // red plays fire
+  s.say('w', 'xanh dương'); // blue plays water
   const el = () => s.game.snapshot().cosmos.journey.elements;
   s.advance(6000); s.say('f', 'hay quá');
   assert.equal(el().lead, 'fire');
@@ -71,7 +76,7 @@ test('the four element teams race on starlight; a new leader is announced once',
 // --- kịch tính & lời dẫn: host cues on every climax, the tug's reversals ---
 test('host cues come on the climaxes: a boss near the end, the last seconds of a fight', () => {
   const s = setup({ bossSeconds: 60 });
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
   s.game.startBoss();
   s.game.state.boss.hp = Math.floor(s.game.state.boss.max * 0.2);
   s.advance(1000);
@@ -85,7 +90,7 @@ test('host cues come on the climaxes: a boss near the end, the last seconds of a
 
 test('a tug of war that changes hands is a reversal: the room and the host hear it', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Sư Tử'], ['c', 'Bảo Bình'], ['d', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'red'], ['b', 'red'], ['c', 'blue'], ['d', 'blue']]) s.seat(id, team);
   const g = s.game.startTug();
   s.advance(16_000);
   s.game.state.tug.pos = -20; // side a leads
@@ -103,7 +108,7 @@ test('a tug of war that changes hands is a reversal: the room and the host hear 
 
 test('host cues are host-only material: the moon nearly full and the next headliner are cued too', () => {
   const s = setup({ moonGoal: 100 });
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   s.game.like({ userId: 'a', nickname: 'A', count: 88 });
   s.advance(1000);
   assert.ok(s.of('host-cue').some(c => c.key === 'moon-near'));

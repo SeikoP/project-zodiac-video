@@ -1,9 +1,9 @@
 // Two short headliners, one rule each, played by commenting:
-//   Cung bí ẩn    a hidden sign; a clue every mysteryClueSeconds (element, quality, ruler, symbol, dates). A sign
+//   Phe bí ẩn     a hidden team; a clue every mysteryClueSeconds (warm or cool, what the colour is of, its place, its name). A colour
 //                 name is a guess (once per clue each, never a team change); the first three right win gems.
 //   Hứng sao băng a word rides a falling star each round; the first catchWinners to type it catch it (bụi sao and
 //                 starlight); after catchRounds stars, whoever caught most wins a gem.
-import { SIGN_DATA, MODES, ELEMENT_LABEL } from './public/signs.js';
+import { TEAMS, TEAM_IDS } from './events/teams.mjs';
 
 export const MINIGAME_DEFAULTS = Object.freeze({
   mysteryClues: 5,
@@ -19,46 +19,46 @@ export const MINIGAME_DEFAULTS = Object.freeze({
 
 export const CATCH_WORDS = Object.freeze(['sao', 'trăng', 'lộc', 'phúc', 'vui', 'may', 'sáng', 'mơ', 'thương', 'an', 'cười', 'mây']);
 const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').trim();
-const dm = ([d, m]) => `${d}/${m}`;
-// what can be said about a sign without naming it, vaguest first
+// what can be said about a team without naming it, vaguest first
+const THING = { red: 'quả táo chín', yellow: 'mặt trời', green: 'lá cây', blue: 'bầu trời' };
+const label = id => TEAMS.find(t => t.id === id).label;
 const CLUES = [
-  id => `Thuộc nguyên tố ${ELEMENT_LABEL[ELEMENT_OF[id]]}`,
-  id => `Tính chất: ${MODES[SIGN_DATA[id].mode]}`,
-  id => `Hành tinh chủ quản: ${SIGN_DATA[id].planet}`,
-  id => `Biểu tượng: ${SIGN_DATA[id].symbol}`,
-  id => `Sinh từ ${dm(SIGN_DATA[id].from)} đến ${dm(SIGN_DATA[id].to)}`,
+  id => `Màu ${id === 'red' || id === 'yellow' ? 'ấm' : 'mát'}`,
+  id => `Màu của ${THING[id]}`,
+  id => `Đứng thứ ${TEAM_IDS.indexOf(id) + 1} trong bảng phe`,
+  id => `Tên phe có ${label(id).replace(/s/g, '').length} chữ cái`,
+  id => `Tên phe bắt đầu bằng chữ “${label(id)[0]}”`,
 ];
-const ELEMENT_OF = { aries: 'fire', leo: 'fire', sagittarius: 'fire', taurus: 'earth', virgo: 'earth', capricorn: 'earth', gemini: 'air', libra: 'air', aquarius: 'air', cancer: 'water', scorpio: 'water', pisces: 'water' };
 
-// parseSign(text) -> sign id | null; gem(u, v, n, why); dust(u, v, n, why); shine(u, v, n, why); quest(stat)
-export function createMystery({ st, cfg, now, rng, onEvent, parseSign, gem, quest }) {
+// parseGuess(text) -> team id | null; gem(u, v, n, why); dust(u, v, n, why); shine(u, v, n, why); quest(stat)
+export function createMystery({ st, cfg, now, rng, onEvent, parseGuess, gem, quest }) {
   function start() {
     if (st.mystery) return null;
-    const ids = Object.keys(SIGN_DATA), sign = ids[Math.floor(rng() * ids.length)];
+    const team = TEAM_IDS[Math.floor(rng() * TEAM_IDS.length)];
     const of = Math.min(cfg.mysteryClues, CLUES.length);
-    st.mystery = { sign, clue: 1, of, nextAt: now() + cfg.mysteryClueSeconds * 1000, endsAt: of > 1 ? 0 : now() + cfg.mysteryLastSeconds * 1000, guessed: {}, winners: [] };
-    onEvent({ type: 'mystery-start', clue: CLUES[0](sign), of });
+    st.mystery = { team, clue: 1, of, nextAt: now() + cfg.mysteryClueSeconds * 1000, endsAt: of > 1 ? 0 : now() + cfg.mysteryLastSeconds * 1000, guessed: {}, winners: [] };
+    onEvent({ type: 'mystery-start', clue: CLUES[0](team), of });
     return st.mystery;
   }
   function end() {
     const m = st.mystery;
     st.mystery = null;
-    onEvent({ type: 'mystery-end', sign: m.sign, winners: m.winners });
+    onEvent({ type: 'mystery-end', team: m.team, winners: m.winners });
   }
-  // a guess while the mystery is on; returns true when the comment named a sign (it never joins or switches a team)
+  // a guess while the mystery is on; returns true when the comment named a team (it never joins or switches a team)
   function chat(u, v, text) {
     const m = st.mystery;
     if (!m) return false;
-    const guess = parseSign(text);
+    const guess = parseGuess(text);
     if (!guess) return false;
     if (m.guessed[u.userId] === m.clue || m.winners.some(w => w.userId === u.userId)) return true;
     m.guessed[u.userId] = m.clue;
-    if (guess !== m.sign) return true;
+    if (guess !== m.team) return true;
     const rank = m.winners.length + 1;
     m.winners.push({ userId: u.userId, nickname: v.nickname, rank });
-    if (v.sign) gem(u, v, cfg.mysteryGems[rank - 1] ?? 1, 'mystery');
+    if (v.team) gem(u, v, cfg.mysteryGems[rank - 1] ?? 1, 'mystery');
     quest('correct');
-    onEvent({ type: 'mystery-win', rank, userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, clue: m.clue });
+    onEvent({ type: 'mystery-win', rank, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, clue: m.clue });
     if (rank >= cfg.mysteryGems.length) end();
     return true;
   }
@@ -68,11 +68,11 @@ export function createMystery({ st, cfg, now, rng, onEvent, parseSign, gem, ques
     if (m.endsAt) { if (t >= m.endsAt) end(); return; }
     if (t < m.nextAt) return;
     m.clue++;
-    onEvent({ type: 'mystery-clue', no: m.clue, of: m.of, text: CLUES[m.clue - 1](m.sign) });
+    onEvent({ type: 'mystery-clue', no: m.clue, of: m.of, text: CLUES[m.clue - 1](m.team) });
     if (m.clue >= m.of) m.endsAt = t + cfg.mysteryLastSeconds * 1000; // the last clue: a little longer, then the answer
     else m.nextAt = t + cfg.mysteryClueSeconds * 1000;
   }
-  const view = t => st.mystery && { clues: Array.from({ length: st.mystery.clue }, (_, i) => CLUES[i](st.mystery.sign)), of: st.mystery.of, winners: st.mystery.winners.map(({ nickname, rank }) => ({ nickname, rank })),
+  const view = t => st.mystery && { clues: Array.from({ length: st.mystery.clue }, (_, i) => CLUES[i](st.mystery.team)), of: st.mystery.of, winners: st.mystery.winners.map(({ nickname, rank }) => ({ nickname, rank })),
     nextInMs: st.mystery.endsAt ? 0 : Math.max(0, st.mystery.nextAt - t), remainingMs: st.mystery.endsAt ? Math.max(0, st.mystery.endsAt - t) : null };
   return { start, chat, tick, view };
 }
@@ -97,7 +97,7 @@ export function createStarcatch({ st, cfg, now, rng, onEvent, dust, shine, gem, 
     st.starcatch = null;
     const top = Object.entries(c.score).map(([userId, s]) => ({ userId, ...s })).sort((a, b) => b.catches - a.catches).slice(0, 3);
     const best = top[0] && st.viewers[top[0].userId];
-    if (best?.sign) gem({ userId: top[0].userId }, best, 1, 'catch');
+    if (best?.team) gem({ userId: top[0].userId }, best, 1, 'catch');
     onEvent({ type: 'catch-end', top });
   }
   function chat(u, v, text) {
@@ -108,9 +108,9 @@ export function createStarcatch({ st, cfg, now, rng, onEvent, dust, shine, gem, 
     const s = (c.score[u.userId] ??= { nickname: v.nickname, catches: 0 });
     s.catches++;
     dust(u, v, cfg.catchDust, 'catch');
-    if (v.sign) shine(u, v, cfg.catchLight, 'catch');
+    if (v.team) shine(u, v, cfg.catchLight, 'catch');
     quest('catches');
-    onEvent({ type: 'catch', userId: u.userId, nickname: v.nickname, avatar: v.avatar, sign: v.sign, rank: c.caught.length, word: c.word, round: c.round });
+    onEvent({ type: 'catch', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, rank: c.caught.length, word: c.word, round: c.round });
     return true;
   }
   function tick(t) {

@@ -2,7 +2,7 @@
 // Deterministic per (viewer, sign, day): asking again the same day returns the same reading.
 // Each line comes from one of three pools — the sign's own lines, its element's lines, or generic
 // ones — so two readings of the same sign still differ, and two signs rarely share a line.
-import { SIGN_DATA } from './public/signs.js';
+import { TEAMS } from './events/teams.mjs';
 import { occasionOn } from './public/occasions.js';
 
 const LEVELS = [['Thượng Cát', 10], ['Đại Cát', 20], ['Trung Cát', 30], ['Tiểu Cát', 25], ['Bình An', 15]];
@@ -195,20 +195,21 @@ export function dayKey(ms) {
 
 export const FORTUNE_TOPICS = ['love', 'work', 'money', 'luck'];
 // Number of distinct lines a topic can draw from for one sign (used by tests and the setup check).
-export const poolSize = (topic, sign, element) => new Set([...GENERIC[topic], ...ELEMENT_LINES[topic][element], ...SIGN_LINES[topic][sign]]).size;
+export const poolSize = (topic, team, element) => new Set([...GENERIC[topic], ...ELEMENT_LINES[topic][element], ...(SIGN_LINES[topic][team] ?? [])]).size;
 
 // topic ('love' | 'work' | 'money' | null): the viewer asked about one thing; `focus` adds two more lines on it.
-export function drawFortune({ seed, sign, element, now, topic = null }) {
-  let h = hash(`${seed}|${sign}|${dayKey(now)}`);
+export function drawFortune({ seed, team, element, now, topic = null }) {
+  let h = hash(`${seed}|${team}|${dayKey(now)}`);
   const next = n => { const v = h % n; h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; return v; };
   let roll = next(100), level = LEVELS[0][0];
   for (const [name, weight] of LEVELS) { if (roll < weight) { level = name; break; } roll -= weight; }
   const line = topic => {
     const r = next(10);
-    const pool = r < 4 ? SIGN_LINES[topic][sign] : r < 7 ? ELEMENT_LINES[topic][element] : GENERIC[topic];
+    const own = SIGN_LINES[topic][team]; // the old per-sign lines: a colour team has none until its own lines are written
+    const pool = r < 4 && own ? own : r < 7 ? ELEMENT_LINES[topic][element] : GENERIC[topic];
     return pool[next(pool.length)];
   };
-  const data = SIGN_DATA[sign];
+  const at = Math.max(0, TEAMS.findIndex(t => t.id === team)), data = { color: TEAMS[at].label, numbers: [at + 1, at + 5] };
   const occasion = occasionOn(dayKey(now));
   const colors = [data.color, ...ELEMENT_COLORS[element]];
   const reading = {

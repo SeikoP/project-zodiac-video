@@ -15,7 +15,7 @@ export const CHAPTERS = Object.freeze([
 export const ELEMENTS = Object.freeze(['fire', 'earth', 'air', 'water']);
 export const JOURNEY_DEFAULTS = Object.freeze({ journeyDust: 10, elementLeadCooldownSeconds: 90 });
 
-// stageIds(): viewer ids on stage; dust(u, v, n) / moon(u, v): rewards; elementOf(sign)
+// stageIds(): viewer ids on stage; dust(u, v, n) / moon(u, v): rewards; elementOf(team)
 export function createJourney({ st, cfg, now, onEvent, stageIds, dust, moon, elementOf }) {
   // both reset with the night
   const J = () => {
@@ -23,11 +23,11 @@ export function createJourney({ st, cfg, now, onEvent, stageIds, dust, moon, ele
     if (st.elements?.night !== st.night.no) st.elements = { night: st.night.no, light: Object.fromEntries(ELEMENTS.map(k => [k, 0])), lead: null, leadAt: 0 };
     return st.journey;
   };
-  const onStage = () => [...stageIds()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.sign);
+  const onStage = () => [...stageIds()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.team);
 
   function note(e) {
     const j = J();
-    if (e.type === 'light' && e.sign && e.amount > 0) lightUp(elementOf(e.sign), e.amount);
+    if (e.type === 'light' && e.team && e.amount > 0) lightUp(elementOf(e.team), e.amount);
     const c = CHAPTERS[j.i];
     if (j.done || !c?.on(e)) return;
     j.got = Math.min(c.need, j.got + 1);

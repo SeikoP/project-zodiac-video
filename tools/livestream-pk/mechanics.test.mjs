@@ -10,14 +10,19 @@ function setup(config = {}) {
   const game = createGame({ config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e6, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { t += ms; game.tick(); };
-  return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
+  return { game, events, say, seat: seatIn(game), advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
 }
+// a viewer already on `team` and on stage, whatever the balance would have said (events/roster.mjs redirects a crowded team)
+const seatIn = game => (id, team) => {
+  game.state.viewers[id] = { nickname: id.toUpperCase(), avatar: '', team, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 };
+  game.like({ userId: id, nickname: id.toUpperCase(), count: 0 });
+};
 
 test('kéo co: the two biggest teams pull after a warm-up; gifts give a big, named pull; the leaning side wins', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Sư Tử'], ['c', 'Bảo Bình'], ['d', 'Bảo Bình'], ['e', 'Song Ngư']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'red'], ['b', 'red'], ['c', 'blue'], ['d', 'blue'], ['e', 'green']]) s.seat(id, team);
   const g = s.game.startTug();
-  assert.deepEqual([g.a, g.b].sort(), ['aquarius', 'leo']);
+  assert.deepEqual([g.a, g.b].sort(), ['blue', 'red']);
   s.say('a', 'kéo!'); // still warming up
   assert.equal(s.game.state.tug.pos, 0);
   s.advance(16_000);
@@ -26,33 +31,33 @@ test('kéo co: the two biggest teams pull after a warm-up; gifts give a big, nam
   s.say('a', 'kéo!');
   s.advance(80_000);
   const end = s.of('tug-end')[0];
-  assert.equal(end.winner, 'aquarius');
+  assert.equal(end.winner, 'blue');
   assert.equal(end.mvpB?.nickname ?? end.mvpA?.nickname, end.winner === g.b ? end.mvpB.nickname : end.mvpA.nickname);
 });
 
 test('dự đoán: guessing is free ("đoán A"), one guess each, and a right guess pays bụi sao', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
   s.v('a').bag.dust = 50; s.v('b').bag.dust = 50;
   const g = s.game.startTug();
-  const leoIs = g.a === 'leo' ? 'a' : 'b', aquaIs = leoIs === 'a' ? 'b' : 'a';
-  s.say('a', `đoán ${leoIs}`);
-  s.say('b', `đoán ${aquaIs}`);
-  s.say('a', `đoán ${aquaIs}`); // a second guess is ignored
+  const redIs = g.a === 'red' ? 'a' : 'b', blueIs = redIs === 'a' ? 'b' : 'a';
+  s.say('a', `đoán ${redIs}`);
+  s.say('b', `đoán ${blueIs}`);
+  s.say('a', `đoán ${blueIs}`); // a second guess is ignored
   assert.equal(s.v('a').bag.dust, 50); // nothing staked
   assert.deepEqual(s.game.snapshot().cosmos.predict.options.map(o => o.n), [1, 1]);
   s.advance(16_000);
   for (let i = 0; i < 8; i++) { s.say('a', `kéo ${i}`); s.advance(1600); }
   s.advance(80_000);
   const end = s.of('predict-end')[0];
-  assert.equal(end.answer, 'Sư Tử');
+  assert.equal(end.answer, 'Đỏ');
   assert.equal(end.right, 1);
   assert.ok(s.v('a').bag.dust > 50);
 });
 
 test('sổ sao: starlight is experience; levels pay out and 10 brings a silver frame', () => {
   const s = setup({ passXpPerLevel: 1 });
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   for (let i = 0; i < 12; i++) { s.advance(6000); s.say('a', `chào ${i}`); }
   const ups = s.of('pass-up');
   assert.ok(ups.length >= 4);
@@ -66,7 +71,7 @@ test('sổ sao: starlight is experience; levels pay out and 10 brings a silver f
 
 test('chest: each "nhận" pays 15 bụi sao once per chest', () => {
   const s = setup({ chestEveryMinutes: 15 });
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   const before = s.v('a').bag.dust;
   s.game.openChest();
   s.say('a', 'nhận');
@@ -77,7 +82,7 @@ test('chest: each "nhận" pays 15 bụi sao once per chest', () => {
 
 test('a gift leaves a golden aura on the giver and grows a patron star', () => {
   const s = setup();
-  s.say('a', 'Sư Tử');
+  s.say('a', 'đỏ');
   s.game.gift({ userId: 'a', nickname: 'A', diamonds: 100, count: 1, giftName: 'Rose' });
   const snap = s.game.snapshot();
   assert.ok(snap.stage.find(x => x.userId === 'a').aura > 0);
@@ -86,7 +91,7 @@ test('a gift leaves a golden aura on the giver and grows a patron star', () => {
 
 test('"Xoá toàn bộ" also clears a tug, a prediction and a headliner in play', () => {
   const s = setup();
-  for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình'], ['c', 'Song Ngư']]) s.say(id, sign);
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương'], ['c', 'xanh lá']]) s.say(id, team);
   s.game.startTug();
   s.game.resetAll();
   for (const k of ['tug', 'predict', 'mystery', 'starcatch', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);

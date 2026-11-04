@@ -12,7 +12,7 @@ function setup(config = {}) {
   const advance = ms => { for (let left = ms; left > 0; left -= 500) { t += Math.min(500, left); game.tick(); } };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
 }
-const crowd = s => { for (const [id, sign] of [['a', 'Sư Tử'], ['b', 'Bảo Bình'], ['c', 'Song Ngư']]) s.say(id, sign); };
+const crowd = s => { for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương'], ['c', 'xanh lá']]) s.say(id, team); };
 
 test('the roguelike sky run is gone; the two new headliners take its place', () => {
   assert.equal(HEADS.run, undefined);
@@ -23,21 +23,21 @@ test('the roguelike sky run is gone; the two new headliners take its place', () 
   assert.equal(HEAD_QUEST.guessobject.stat, 'correct');
 });
 
-// --- Cung bí ẩn: a hidden sign, a clue every few seconds, the first three right guesses win ---
-test('cung bí ẩn: clues come one by one; a sign name is a guess, once per clue each; three winners', () => {
+// --- Phe bí ẩn: a hidden team, a clue every few seconds, the first three right guesses win ---
+test('phe bí ẩn: clues come one by one; a colour name is a guess, once per clue each; three winners', () => {
   const s = setup({ mysteryClueSeconds: 10, mysteryClues: 5 });
   crowd(s);
   s.game.startHead('guessobject');
   const [start] = s.of('mystery-start');
   assert.ok(start.clue && start.of === 5);
-  const answer = s.game.state.mystery.sign;
-  const wrong = answer === 'leo' ? 'Bảo Bình' : 'Sư Tử';
+  const answer = s.game.state.mystery.team;
+  const wrong = answer === 'red' ? 'xanh dương' : 'đỏ';
   s.say('a', wrong);
-  s.say('a', 'Song Tử'); // a second guess on the same clue is ignored
-  assert.equal(s.v('a').sign, 'leo', 'guessing never changes your team');
+  s.say('a', 'xanh lá'); // a second guess on the same clue is ignored
+  assert.equal(s.v('a').team, 'red', 'guessing never changes your team');
   s.advance(10_000);
   assert.equal(s.of('mystery-clue').length, 1);
-  const label = { aries: 'Bạch Dương', taurus: 'Kim Ngưu', gemini: 'Song Tử', cancer: 'Cự Giải', leo: 'Sư Tử', virgo: 'Xử Nữ', libra: 'Thiên Bình', scorpio: 'Bọ Cạp', sagittarius: 'Nhân Mã', capricorn: 'Ma Kết', aquarius: 'Bảo Bình', pisces: 'Song Ngư' }[answer];
+  const label = { red: 'đỏ', yellow: 'vàng', green: 'xanh lá', blue: 'xanh dương' }[answer];
   const gems = id => ['fire', 'earth', 'air', 'water'].reduce((n, k) => n + (s.v(id).bag[k] ?? 0), 0);
   const g0 = gems('b');
   for (const id of ['b', 'c', 'a', 'd']) s.say(id, label);
@@ -45,7 +45,7 @@ test('cung bí ẩn: clues come one by one; a sign name is a guess, once per clu
   assert.deepEqual(wins.map(w => [w.rank, w.userId]), [[1, 'b'], [2, 'c'], [3, 'a']]);
   assert.equal(gems('b') - g0, 2);
   const end = s.of('mystery-end')[0];
-  assert.equal(end.sign, answer);
+  assert.equal(end.team, answer);
   assert.equal(end.winners.length, 3);
   assert.equal(s.game.state.mystery, null);
 });
