@@ -66,3 +66,12 @@ Garden dùng playlist calm/upbeat, bộ phát cross-fade và hiệu ứng từ d
 node garden/sim.mjs --users 300 --seconds 120
 node --test garden/*.test.mjs
 ```
+
+
+### Garden visual architecture v2
+
+The 432 persistent seats are unchanged. Each 108-seat district now lays out as **3 rows × 36 columns**, and the camera treats it as four **9 × 3 greenhouse bays**. This halves the visible row count from the former six-row terrace while keeping plot IDs and save compatibility stable.
+
+The former cloud-island foundation is no longer the primary structure. Each district is a connected elevated conservatory deck with four readable bays, repeated signage, structural rails, and a dedicated decorative SVG. Ripe crops and the four field events also use a reusable SVG asset library under `public/garden/assets/`.
+
+Field events are hero moments rather than only ambient filters: the overlay gets a dedicated event card, illustrated art, countdown/progress meter, edge effects, and a readable camera shot on one greenhouse district. The ordinary notification banner occupies a separate safe zone so it cannot cover the event card.

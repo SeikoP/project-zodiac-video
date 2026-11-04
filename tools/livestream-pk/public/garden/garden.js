@@ -6,6 +6,7 @@ import { createAvatarCache, easeCamera, lodOf, plotPos, visiblePlots, worldToScr
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
 const stage = document.getElementById('stage'), banner = document.getElementById('banner'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
+const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
 const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders'), audioToggle = document.getElementById('audioToggle');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
@@ -42,7 +43,36 @@ const TIER_SCENES = [
   { rail: '#E9D38C', trim: '#E3A17F', flag: '#F2C45C' },
   { rail: '#C8C4D7', trim: '#9FBDB6', flag: '#DDB6BA' },
 ];
-const eventNames = { rain: 'Mưa mây', pests: 'Bão sâu', merchant: 'Thương lái', golden: 'Giờ vàng' };
+const eventNames = { rain: 'Mưa tưới', pests: 'Đợt sâu bệnh', merchant: 'Chợ phiên', golden: 'Giờ vàng' };
+const EVENT_ART = {
+  rain: '/garden/assets/event-rain.svg',
+  pests: '/garden/assets/event-pests.svg',
+  merchant: '/garden/assets/event-merchant.svg',
+  golden: '/garden/assets/event-golden.svg',
+};
+const DECOR_ART = [
+  '/garden/assets/decor-watering-can.svg',
+  '/garden/assets/decor-birdhouse.svg',
+  '/garden/assets/decor-windchime.svg',
+  '/garden/assets/decor-lantern.svg',
+];
+const CROP_ART = {
+  rau: '/garden/assets/crop-rau.svg',
+  huongduong: '/garden/assets/crop-huongduong.svg',
+  nammay: '/garden/assets/crop-nammay.svg',
+};
+const artCache = new Map();
+function gardenArt(src) {
+  if (!src) return null;
+  if (!artCache.has(src)) {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = src;
+    artCache.set(src, image);
+  }
+  const image = artCache.get(src);
+  return image.complete && image.naturalWidth ? image : null;
+}
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
@@ -70,7 +100,7 @@ function handleFx(fx) {
   switch (fx.type) {
     case 'joined': {
       sfx('join');
-      const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'mây';
+      const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'khu vườn';
       if (fx.count > 1) say(`${fx.count} người vừa vào vườn · ${tier}`);
       else show(C.joined(fx.names?.[0] ?? 'bạn'), C.joinedHint(tier), 5500);
       break;
@@ -85,7 +115,7 @@ function handleFx(fx) {
     case 'pest-cleared': sfx('sparkle'); break;
     case 'title': sfx('title'); show(`${fx.nickname ?? 'Người làm vườn'} nhận danh hiệu`, fx.titles?.join(' · ') ?? '', 5000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm phiên · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'} · Tiếp theo: ${fx.competition?.milestone?.label ?? '—'}`, 6000); break;
-    case 'event-start': sfx('actOpen'); show(C.events[fx.kind], C.eventHint[fx.kind], 4500); break;
+    case 'event-start': sfx('actOpen'); break;
     case 'water': case 'help': if (fx.count > 3) say(`${fx.count} người đang tưới`); break;
     default:
   }
@@ -122,7 +152,7 @@ async function refreshStatus() {
     if (!response.ok) return;
     const status = await response.json();
     audienceCount.textContent = `${status.viewers} người đang giữ vườn`;
-    eventLabel.textContent = status.event ? `Sự kiện · ${eventNames[status.event] ?? status.event}` : 'Vườn trên mây đang yên bình';
+    eventLabel.textContent = status.event ? `Sự kiện · ${eventNames[status.event] ?? status.event}` : 'Nhà kính đang yên bình';
     if (status.competition) renderCompetition(status.competition);
   } catch { /* the live Garden stream continues without the optional status ribbon */ }
 }
@@ -184,26 +214,32 @@ function cloudPath(width, height) {
 
 function drawBackdrop(now) {
   const sky = ctx.createLinearGradient(0, 0, 0, VP.h);
-  sky.addColorStop(0, serverEvent?.kind === 'golden' ? '#F5E7B4' : '#EAF2EC');
-  sky.addColorStop(.55, '#F6F0E6');
-  sky.addColorStop(1, '#E1E9DE');
+  sky.addColorStop(0, serverEvent?.kind === 'golden' ? '#F5E1A3' : '#DCEBE4');
+  sky.addColorStop(.56, '#F6F0E6');
+  sky.addColorStop(1, '#D8E1D5');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VP.w, VP.h);
 
-  const drift = reduceMotion ? 0 : Math.sin(now / 5000) * 18;
-  ctx.save(); ctx.globalAlpha = .55;
-  ctx.beginPath(); ctx.arc(860 + drift, 460, 118, 0, Math.PI * 2); ctx.fillStyle = C.ochre; ctx.fill();
-  ctx.globalAlpha = .28;
-  for (const [x, y, w] of [[120,500,260],[780,900,330],[170,1450,290]]) {
-    ctx.save(); ctx.translate(x - drift * .6, y); cloudPath(w, w * .32); ctx.fillStyle = C.card; ctx.fill(); ctx.restore();
+  const drift = reduceMotion ? 0 : Math.sin(now / 5200) * 16;
+  ctx.save();
+  ctx.globalAlpha = .38;
+  ctx.fillStyle = C.ochre;
+  ctx.beginPath(); ctx.arc(850 + drift, 370, 112, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.globalAlpha = .08;
+  for (let x = -80; x < VP.w + 120; x += 180) {
+    ctx.beginPath(); ctx.moveTo(x + drift * .25, 250); ctx.lineTo(x - 80 + drift * .25, VP.h); ctx.stroke();
+  }
+  for (let y = 420; y < VP.h; y += 260) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VP.w, y + 70); ctx.stroke();
   }
   ctx.restore();
 
-  // A pair of hanging vines frame the whole vertical garden and visually connects every terrace.
-  ctx.save(); ctx.strokeStyle = 'rgba(47,60,68,.18)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  for (const side of [58, VP.w - 58]) {
-    ctx.beginPath(); ctx.moveTo(side, -20); ctx.bezierCurveTo(side + (side < VP.w / 2 ? 45 : -45), 520, side - (side < VP.w / 2 ? 35 : -35), 1180, side, VP.h + 20); ctx.stroke();
-    for (let y = 270; y < VP.h; y += 310) {
-      ctx.save(); ctx.globalAlpha = .32; drawLeaf(side + (side < VP.w / 2 ? 12 : -12), y, 20, side < VP.w / 2 ? -.8 : .8, y % 620 ? C.teal : C.ochre); ctx.restore();
+  ctx.save(); ctx.strokeStyle = 'rgba(47,60,68,.16)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  for (const side of [62, VP.w - 62]) {
+    const dir = side < VP.w / 2 ? 1 : -1;
+    ctx.beginPath(); ctx.moveTo(side, -20); ctx.bezierCurveTo(side + dir * 52, 520, side - dir * 30, 1180, side, VP.h + 30); ctx.stroke();
+    for (let y = 240; y < VP.h; y += 285) {
+      ctx.save(); ctx.globalAlpha = .38; drawLeaf(side + dir * 10, y, 22, dir < 0 ? .8 : -.8, y % 570 ? C.teal : C.ochre); ctx.restore();
     }
   }
   ctx.restore();
@@ -230,59 +266,60 @@ function drawVine(x1, y1, x2, y2) {
 }
 
 function drawTier(tier, index) {
-  const cfg = meta.cfg, center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
-  const width = cfg.tierWidth - 150, height = 900, s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
+  const cfg = meta.cfg;
+  const center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
+  const s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
+  const bayCols = cfg.plotsPerRow / 4, bayW = bayCols * cfg.plotCell, totalW = bayW * 4;
   ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-  // Cloud foundation: this is now only the floating base. The greenhouse frame and shelves
-  // above it are the primary structure, so pots no longer look like unrelated icons.
-  cloudPath(width, height); ctx.fillStyle = C.shadow; ctx.fill();
-  ctx.save(); ctx.translate(0, -20); cloudPath(width, height); ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke(); ctx.restore();
-  ctx.save(); ctx.globalAlpha = .34;
-  ctx.beginPath(); ctx.moveTo(-width * .42, 90); ctx.quadraticCurveTo(-width * .1, 165, width * .05, 105); ctx.quadraticCurveTo(width * .28, 35, width * .42, 105); ctx.lineTo(width * .40, 280); ctx.quadraticCurveTo(0, 350, -width * .40, 270); ctx.closePath();
-  ctx.fillStyle = scene.trim; ctx.fill(); ctx.restore();
+  ctx.fillStyle = C.shadow;
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 175, totalW + 140, 88, 28); ctx.fill();
+  ctx.fillStyle = scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 150, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = .22; ctx.fillStyle = C.card;
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 25, 164, totalW + 50, 18, 9); ctx.fill(); ctx.globalAlpha = 1;
 
-  // Greenhouse / balcony frame.
-  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 11;
-  ctx.beginPath(); ctx.moveTo(-1110, -330); ctx.quadraticCurveTo(0, -445, 1110, -330); ctx.stroke();
-  ctx.strokeStyle = scene.rail; ctx.lineWidth = 24;
-  ctx.beginPath(); ctx.moveTo(-1110, -330); ctx.quadraticCurveTo(0, -445, 1110, -330); ctx.stroke();
-  ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
-  for (const x of [-1040, -350, 350, 1040]) {
-    ctx.beginPath(); ctx.moveTo(x, -335); ctx.lineTo(x, 365); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 14; ctx.stroke();
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+  for (let bay = 0; bay < 4; bay++) {
+    const bx = -totalW / 2 + bayW * (bay + .5);
+    const left = bx - bayW / 2 + 24, right = bx + bayW / 2 - 24;
+
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22;
+    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
+
+    for (const x of [left, right]) {
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, -220); ctx.lineTo(x, 160); ctx.stroke();
+      ctx.strokeStyle = scene.rail; ctx.lineWidth = 15; ctx.stroke();
+    }
+
+    for (let row = 0; row < 3; row++) {
+      const shelfY = -94 + row * cfg.plotCell;
+      ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(left + 18, shelfY + 13, bayW - 84, 31, 12); ctx.fill();
+      ctx.fillStyle = row === 1 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.roundRect(left + 18, shelfY, bayW - 84, 30, 12); ctx.fill(); ctx.stroke();
+    }
+
+    const signW = 330;
+    ctx.fillStyle = bay % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.roundRect(bx - signW / 2, -278, signW, 58, 14); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = `bold 34px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, -248);
+
+    const deco = gardenArt(DECOR_ART[(index + bay) % DECOR_ART.length]);
+    if (deco) {
+      ctx.save(); ctx.globalAlpha = .92;
+      ctx.drawImage(deco, right - 115, -205, 92, 92);
+      ctx.restore();
+    }
   }
 
-  // Six continuous shelves line up exactly with the six plot rows.
-  for (let row = 0; row < 6; row++) {
-    const y = -242 + row * cfg.plotCell;
-    ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(-1090, y + 13, 2180, 34, 15); ctx.fill();
-    ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.roundRect(-1090, y, 2180, 34, 14); ctx.fill(); ctx.stroke();
-    ctx.globalAlpha = .28; ctx.fillStyle = scene.trim; ctx.fillRect(-1020, y + 7, 2040, 8); ctx.globalAlpha = 1;
-  }
-
-  // Top garland and hanging tags make the architecture read as one garden room.
-  ctx.strokeStyle = scene.trim; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.moveTo(-960, -318); ctx.quadraticCurveTo(-480, -255, 0, -315); ctx.quadraticCurveTo(480, -375, 960, -318); ctx.stroke();
-  for (const x of [-820, -410, 410, 820]) {
-    ctx.beginPath(); ctx.moveTo(x, -310); ctx.lineTo(x, -265); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.stroke();
-    ctx.fillStyle = x < 0 ? scene.flag : scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(x - 22, -266, 44, 52, 8); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(47,60,68,.35)'; ctx.lineWidth = 6;
+  for (const x of [-totalW * .36, -totalW * .12, totalW * .12, totalW * .36]) {
+    ctx.beginPath(); ctx.moveTo(x, 232); ctx.lineTo(x - 28, 314); ctx.stroke();
   }
   ctx.restore();
-  ctx.restore();
-
-  const tag = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + 185 }, cam, VP), tagW = 620 * s, tagH = 112 * s;
-  ctx.save(); ctx.translate(tag.x, tag.y); ctx.rotate(index % 2 ? .008 : -.012);
-  ctx.fillStyle = scene.flag; ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 6 * s);
-  ctx.beginPath(); ctx.roundRect(-tagW / 2, -tagH / 2, tagW, tagH, Math.max(8, 22 * s)); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = C.ink; ctx.font = `bold ${Math.max(23, 72 * s)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${String(index + 1).padStart(2, '0')} · ${tier.label}`, 0, 1);
-  ctx.restore();
-  drawTierLandmark(index);
 }
 
 function drawTierLandmark(index) {
@@ -347,7 +384,11 @@ function drawPlot(p, lod) {
   ctx.globalAlpha = .24; ctx.fillStyle = C.card; ctx.beginPath(); ctx.roundRect(-27, 23, 54, 8, 4); ctx.fill(); ctx.globalAlpha = 1;
   ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke();
-  if (p.crop) drawRipeCrop(p.crop.type, p.stage ?? 0);
+  if (p.crop) {
+    const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]) : null;
+    if (cropImage) ctx.drawImage(cropImage, -43, -85, 86, 86);
+    else drawRipeCrop(p.crop.type, p.stage ?? 0);
+  }
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(24, -18); ctx.lineTo(20, -23); ctx.moveTo(37, -18); ctx.lineTo(41, -23); ctx.stroke();
@@ -405,43 +446,87 @@ function drawSparkle(x, y, r, color = C.ochre) {
 }
 
 function drawAtmosphere(now) {
-  const cfg = meta.cfg;
+  const cfg = meta.cfg, t = reduceMotion ? 0 : now;
+
   meta.tiers.forEach((tier, i) => {
     const y = i * cfg.tierHeight + cfg.tierHeight / 2;
-    const drift = reduceMotion ? 0 : Math.sin(now / 3200 + i * 1.3) * 70;
-    for (const [x, dy] of [[cfg.tierWidth * .18, -390], [cfg.tierWidth * .78, 390]]) {
-      const at = worldToScreen({ x: x + drift, y: y + dy }, cam, VP);
-      ctx.save(); ctx.translate(at.x, at.y); ctx.scale(cam.zoom, cam.zoom); ctx.globalAlpha = .38;
-      cloudPath(170, 68); ctx.fillStyle = C.card; ctx.fill(); ctx.strokeStyle = C.teal; ctx.lineWidth = 4; ctx.stroke(); ctx.restore();
+    for (let bay = 0; bay < 4; bay++) {
+      const x = cfg.tierWidth * (.14 + bay * .24);
+      const at = worldToScreen({ x: x + Math.sin(t / 2600 + bay) * 24, y: y - 250 }, cam, VP);
+      ctx.globalAlpha = .28;
+      drawSparkle(at.x, at.y, Math.max(3, 10 * cam.zoom), bay % 2 ? C.ochre : C.teal);
+      ctx.globalAlpha = 1;
     }
-    const a = worldToScreen({ x: cfg.tierWidth * .12, y: y - 300 }, cam, VP), b = worldToScreen({ x: cfg.tierWidth * .88, y: y + 330 }, cam, VP);
-    const pulse = reduceMotion ? .45 : .35 + (Math.sin(now / 1100 + i * 1.7) + 1) * .12;
-    ctx.globalAlpha = pulse; drawSparkle(a.x, a.y, Math.max(3, 15 * cam.zoom)); drawSparkle(b.x, b.y, Math.max(3, 12 * cam.zoom), C.coral); ctx.globalAlpha = 1;
   });
-  const t = reduceMotion ? 0 : now;
+
   if (serverEvent?.kind === 'rain') {
-    ctx.fillStyle = 'rgba(142,192,185,.12)'; ctx.fillRect(0, 0, VP.w, VP.h);
-    ctx.strokeStyle = 'rgba(67,80,100,.52)'; ctx.lineWidth = 3;
-    for (let i = 0; i < 42; i++) { const x = (i * 79 + (t / 18) % 1080) % 1080, y = (i * 113 + (t / 9) % 1920) % 1920; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 13, y + 34); ctx.stroke(); }
+    const wash = ctx.createLinearGradient(0, 0, 0, VP.h);
+    wash.addColorStop(0, 'rgba(70,119,139,.20)'); wash.addColorStop(1, 'rgba(142,192,185,.08)');
+    ctx.fillStyle = wash; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.strokeStyle = 'rgba(52,79,94,.58)'; ctx.lineWidth = 4;
+    for (let i = 0; i < 56; i++) {
+      const x = (i * 79 + (t / 13) % 1160) % 1160 - 40, y = (i * 113 + (t / 7) % 2020) % 2020 - 40;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 17, y + 44); ctx.stroke();
+    }
   } else if (serverEvent?.kind === 'golden') {
-    ctx.fillStyle = 'rgba(242,196,92,.14)'; ctx.fillRect(0, 0, VP.w, VP.h);
-    ctx.globalAlpha = .72; for (let i = 0; i < 34; i++) drawSparkle((i * 137 + 31 + t / 35) % 1080, (i * 281 + 67) % 1920, 5 + (i % 4) * 3, C.ochre); ctx.globalAlpha = 1;
+    const g = ctx.createRadialGradient(VP.w / 2, 650, 80, VP.w / 2, 650, 850);
+    g.addColorStop(0, 'rgba(242,196,92,.28)'); g.addColorStop(1, 'rgba(242,196,92,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.globalAlpha = .82;
+    for (let i = 0; i < 44; i++) drawSparkle((i * 137 + 31 + t / 28) % 1080, (i * 281 + 67 + t / 80) % 1920, 6 + (i % 4) * 3, C.ochre);
+    ctx.globalAlpha = 1;
   } else if (serverEvent?.kind === 'pests') {
-    ctx.fillStyle = 'rgba(233,122,102,.09)'; ctx.fillRect(0, 0, VP.w, VP.h);
-    for (let i = 0; i < 24; i++) {
-      const x = (i * 173 + 70 + t / 22) % 1160 - 40, y = (i * 257 + 120 + Math.sin(t / 350 + i) * 45) % 1880;
-      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t / 240 + i) * .4);
+    ctx.fillStyle = 'rgba(233,122,102,.10)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.save(); ctx.strokeStyle = 'rgba(233,122,102,.72)'; ctx.lineWidth = 18; ctx.setLineDash([34, 22]);
+    ctx.beginPath(); ctx.moveTo(18, 360); ctx.lineTo(18, 1720); ctx.moveTo(VP.w - 18, 360); ctx.lineTo(VP.w - 18, 1720); ctx.stroke(); ctx.restore();
+    for (let i = 0; i < 30; i++) {
+      const x = (i * 173 + 70 + t / 18) % 1160 - 40, y = (i * 257 + 120 + Math.sin(t / 300 + i) * 55) % 1880;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t / 210 + i) * .45);
       ctx.fillStyle = C.coral; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.ellipse(0, 0, 9, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-4, -10); ctx.lineTo(-10, -17); ctx.moveTo(4, -10); ctx.lineTo(10, -17); ctx.stroke(); ctx.restore();
+      ctx.beginPath(); ctx.ellipse(0, 0, 10, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-5, -10); ctx.lineTo(-12, -18); ctx.moveTo(5, -10); ctx.lineTo(12, -18); ctx.stroke(); ctx.restore();
     }
   } else if (serverEvent?.kind === 'merchant') {
-    ctx.fillStyle = 'rgba(242,196,92,.07)'; ctx.fillRect(0, 0, VP.w, VP.h);
-    ctx.strokeStyle = C.coral; ctx.lineWidth = 5; ctx.setLineDash([24, 16]);
-    for (let y = 450; y <= 1450; y += 500) { ctx.beginPath(); ctx.moveTo(-20, y); ctx.quadraticCurveTo(540, y + 70, 1100, y); ctx.stroke(); }
-    ctx.setLineDash([]);
-    ctx.globalAlpha = .75; for (let i = 0; i < 20; i++) drawSparkle((i * 191 + 61) % 1080, (i * 313 + 93 + t / 50) % 1920, 7 + (i % 3) * 2, i % 2 ? C.ochre : C.coral); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(242,196,92,.08)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.save(); ctx.strokeStyle = C.coral; ctx.lineWidth = 7; ctx.setLineDash([26, 14]);
+    ctx.beginPath(); ctx.moveTo(60, 510); ctx.quadraticCurveTo(540, 610, 1020, 510); ctx.stroke(); ctx.restore();
+    ctx.globalAlpha = .86;
+    for (let i = 0; i < 26; i++) {
+      const x = (i * 191 + 61) % 1080, y = (i * 313 + 93 + t / 44) % 1920;
+      drawSparkle(x, y, 8 + (i % 3) * 2, i % 2 ? C.ochre : C.coral);
+    }
+    ctx.globalAlpha = 1;
   }
+}
+
+function renderEventHero() {
+  const e = serverEvent;
+  stage.classList.toggle('event-live', Boolean(e));
+  eventHero.classList.toggle('on', Boolean(e));
+  eventHero.setAttribute('aria-hidden', String(!e));
+  if (!e) return;
+
+  const src = EVENT_ART[e.kind] ?? '';
+  if (eventArt.getAttribute('src') !== src) eventArt.setAttribute('src', src);
+  eventArt.alt = eventNames[e.kind] ?? 'Sự kiện';
+  eventHero.dataset.kind = e.kind;
+  eventHeroTitle.textContent = eventNames[e.kind] ?? e.kind;
+  eventHeroHint.textContent = meta.copy?.eventHint?.[e.kind] ?? '';
+
+  const key = { rain: 'rainMs', pests: 'pestStormMs', merchant: 'merchantMs', golden: 'goldenMs' }[e.kind];
+  const duration = Math.max(1, Number(meta.cfg?.[key]) || 1);
+  const remaining = Math.max(0, Number(e.endsAt || 0) - Date.now());
+  let progress = Math.max(0, Math.min(1, remaining / duration));
+  let metaText = `Còn ${Math.ceil(remaining / 1000)} giây`;
+  if (e.kind === 'pests' && Number(e.total) > 0) {
+    const cleared = Number(e.cleared) || 0;
+    progress = Math.max(0, Math.min(1, cleared / e.total));
+    metaText = `${cleared}/${e.total} ổ sâu đã dọn · còn ${Math.ceil(remaining / 1000)} giây`;
+  } else if (e.kind === 'rain') metaText = `Tăng trưởng ×${meta.cfg.rainMult} · ${metaText}`;
+  else if (e.kind === 'golden') metaText = `Vàng ×${meta.cfg.goldenMult} · ${metaText}`;
+  else if (e.kind === 'merchant') metaText = `Giá thu mua ×${meta.cfg.merchantMult} · ${metaText}`;
+  eventHeroMeta.textContent = metaText;
+  eventMeterFill.style.width = `${Math.round(progress * 100)}%`;
 }
 
 function drawFocus(now) {
@@ -482,10 +567,6 @@ function frame(now) {
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   drawBackdrop(now);
-  for (let i = 0; i < meta.tiers.length - 1; i++) {
-    const y = (i + 1) * meta.cfg.tierHeight;
-    drawVine(meta.cfg.tierWidth - 240, y - 430, meta.cfg.tierWidth - 350, y + 430);
-  }
   meta.tiers.forEach(drawTier);
   drawAtmosphere(now);
   const { detail, dots } = visiblePlots([...plots.values()], cam, VP, meta);
@@ -494,6 +575,7 @@ function frame(now) {
   detail.forEach(p => drawPlot(p, lod));
   drawFocus(now);
   drawFloaters(now);
+  renderEventHero();
 }
 requestAnimationFrame(frame);
 connect();
