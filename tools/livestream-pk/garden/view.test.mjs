@@ -79,3 +79,10 @@ test('sleeping plots are excluded entirely from rendering', () => {
   assert.deepEqual(v.detail.map(p => p.id), [awake.id]);
   assert.equal(v.dots.length, 0);
 });
+
+test('logical row eight wraps to a right visual wing at the same vertical shelf', () => {
+  const left = plotPos(owned('cloud-1', 0), meta);
+  const right = plotPos(owned('cloud-1', 48), meta);
+  assert.ok(right.x - left.x > cfg.potSpacingX * 5);
+  assert.equal(right.y, left.y);
+});
