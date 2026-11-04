@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeCtx, addUser } from './testkit.mjs';
-import { plant, water, catchPests, harvest, tickPlots } from './care.mjs';
-import { CROPS, cropByName, seedCost, stageOf, advanceStage } from './crops.mjs';
+import { plant, water, catchPests, clearWeeds, fertilize, harvest, tickPlots } from './care.mjs';
+import { CROPS, CROP_VARIANTS, cropByName, cropVariant, seedCost, stageOf, advanceStage } from './crops.mjs';
 
 // move the clock in 1s steps, ticking the garden each step (the server ticks every 150ms; 1s is enough here)
 const run = (k, ms) => { for (let left = ms; left > 0; left -= 1000) { k.advance(Math.min(1000, left)); tickPlots(k.ctx); } };
@@ -129,4 +129,37 @@ test('the ripe event says whether it is the owners first crop', () => {
   plant(k.ctx, k.user, 'rau');
   for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
   assert.equal(k.events.find(e => e.type === 'ripe').first, false);
+});
+
+
+test('fertilizer costs gold once, boosts progress and marks the crop', () => {
+  const k = ready(100);
+  plant(k.ctx, k.user, 'rau');
+  const before = k.plot.crop.progress;
+  assert.equal(fertilize(k.ctx, k.user).ok, true);
+  assert.equal(k.user.gold, 93, '4 seed + 3 fertilizer');
+  assert.ok(k.plot.crop.progress > before);
+  assert.equal(k.plot.crop.fertilized, true);
+  assert.equal(fertilize(k.ctx, k.user).reason, 'already-fertilized');
+});
+
+test('weeds are actionable and clearing them rewards active care', () => {
+  const k = ready(100);
+  plant(k.ctx, k.user, 'rau');
+  k.plot.crop.weeds = true;
+  const before = [k.user.gold, k.user.xp];
+  assert.deepEqual(clearWeeds(k.ctx, k.user), { ok: true, gold: 1, xp: 1 });
+  assert.equal(k.plot.crop.weeds, false);
+  assert.deepEqual([k.user.gold, k.user.xp], [before[0] + 1, before[1] + 1]);
+  assert.equal(clearWeeds(k.ctx, k.user).reason, 'no-weeds');
+});
+
+test('crop variants are distinct and affect harvest value', () => {
+  assert.deepEqual([cropVariant(1, .5), cropVariant(1, .9), cropVariant(1, .99)], ['common', 'lush', 'golden']);
+  const k = makeCtx({ rng: () => .99 });
+  const { user, plot } = addUser(k.ctx, 'rare', { gold: 100, level: 1 });
+  plant(k.ctx, user, 'rau');
+  assert.equal(plot.crop.variant, 'golden');
+  plot.crop.progress = 1; plot.crop.ripeAt = k.ctx.now();
+  assert.equal(harvest(k.ctx, user).gold, Math.round(CROPS.rau.gold * CROP_VARIANTS.golden.yield));
 });

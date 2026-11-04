@@ -110,3 +110,39 @@ test('a viewer who cannot get a plot (all terraces full of growing crops) leaves
   s.say('late', 'trồng rau');
   assert.equal(s.garden.state.users.late, undefined);
 });
+
+
+test('ordinary chat wakes a sleeping player and inactivity eventually frees the visible pot', () => {
+  const s = setup({ sleepAfterMs: 100, evictAfterMs: 400 });
+  s.say('a', 'xin chào');
+  const id = s.plot('a').id;
+  s.advance(150);
+  assert.equal(s.garden.state.plots[id].sleeping, true);
+  s.say('a', 'tôi vẫn ở đây');
+  assert.equal(s.garden.state.plots[id].sleeping, false);
+  s.advance(450);
+  assert.equal(s.user('a').seat, null);
+  assert.equal(s.garden.state.plots[id].owner, null);
+});
+
+test('new care commands add decisions beyond water and harvest', () => {
+  const s = setup();
+  s.say('a', 'trồng rau');
+  s.advance(2000);
+  assert.equal(s.say('a', 'bón phân').ok, true);
+  s.plot('a').crop.weeds = true;
+  s.advance(2000);
+  assert.equal(s.say('a', 'nhổ cỏ').ok, true);
+});
+
+test('view data exposes pot tier and crop visual state', () => {
+  const s = setup();
+  s.say('a', 'trồng rau');
+  s.user('a').level = 7;
+  const seen = {};
+  const first = s.garden.changes(seen);
+  const plot = first.plots[s.plot('a').id];
+  assert.equal(plot.potTier, 'royal');
+  assert.equal(plot.crop.variant, 'common');
+  assert.equal(plot.crop.fertilized, false);
+});

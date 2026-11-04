@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LEVEL_XP, levelOf, addXp, addGold, spendGold } from './progress.mjs';
+import { LEVEL_XP, POT_TIERS, levelOf, potTierOf, addXp, addGold, spendGold } from './progress.mjs';
 
 test('levelOf walks the XP table and caps at 10', () => {
   assert.deepEqual([0, 29, 30, 89, 90, 3000, 1e9].map(levelOf), [1, 1, 2, 2, 3, 10, 10]);
@@ -21,4 +21,10 @@ test('spendGold refuses what the player does not have', () => {
   assert.equal(spendGold(u, 5), true);
   addGold(u, 3);
   assert.equal(u.gold, 3);
+});
+
+
+test('pot tier visibly tracks player level progression', () => {
+  assert.deepEqual([1, 3, 5, 7, 9, 10].map(level => potTierOf(level).id), ['clay', 'glazed', 'banded', 'royal', 'astral', 'astral']);
+  assert.equal(POT_TIERS.length, 5);
 });
