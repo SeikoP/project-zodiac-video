@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {planSafeParallel,runSafeParallel} from '../../core/performance/safe-parallel-scheduler.mjs';
+const task=(id,reads=[],writes=[],dependencies=[])=>({id,reads,writes,dependencies});
+test('independent read-only preflight gates run together',()=>{const p=planSafeParallel([task('seam',['production'],['seam-receipt']),task('character',['production']),task('art',['production'],['art-receipt'])]);assert.deepEqual(p.batches,[['seam','character','art']]);});
+test('conflicting outputs and read-write races are serialized',()=>{const p=planSafeParallel([task('a',[],['result']),task('b',['result'],[]),task('c',[],['result'])]);assert.deepEqual(p.batches,[['a'],['b'],['c']]);});
+test('dependency order and bounded concurrency',()=>{const p=planSafeParallel([task('a'),task('b'),task('c',[],[],['a','b'])],{maxConcurrency:2});assert.deepEqual(p.batches,[['a','b'],['c']]);});
+test('missing dependency, cycle, unknown write ownership rejected',()=>{assert.throws(()=>planSafeParallel([task('a',[],[],['no'])]),/MISSING/);assert.throws(()=>planSafeParallel([task('a',[],[],['b']),task('b',[],[],['a'])]),/CYCLE/);assert.throws(()=>planSafeParallel([{id:'a',reads:[],dependencies:[]}]),/CONTRACT/);});
+test('failure blocks downstream but returns all independent results',async()=>{const seen=[];const r=await runSafeParallel([task('a'),task('b'),task('c',[],[],['a'])],{execute:async t=>{seen.push(t.id);if(t.id==='a')throw Error('fail');return 'ok';}});assert.equal(r.status,'BLOCKED');assert.deepEqual(seen,['a','b']);assert.equal(r.results.length,2);});
