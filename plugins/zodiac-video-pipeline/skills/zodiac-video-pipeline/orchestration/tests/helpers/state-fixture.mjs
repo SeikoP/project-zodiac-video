@@ -1,10 +1,12 @@
 // Test-only manifest evidence; never used by production orchestration.
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'../..');
 const validator=path.join(root,'validate-pipeline-state.mjs');
+const sha=x=>createHash('sha256').update(x).digest('hex');
 const index=JSON.parse(await readFile(path.join(root,'phase-index.json'),'utf8'));
 const manifests=new Map();for(const item of index.phases)manifests.set(item.id,JSON.parse(await readFile(path.join(root,item.manifest),'utf8')));
 const currentPluginVersion=JSON.parse(await readFile(path.resolve(root,'../../..','plugin.json'),'utf8')).version;
@@ -26,7 +28,7 @@ export async function writeStateFixture(workspace,overrides={}){
    const def=manifest.steps.find(x=>x.id===stepId),cap=[...(def.required_capabilities??[]),...(def.conditional_capabilities??[])].find(x=>x.id===r.capability_id);
    const rel=`validator-receipts/${phaseId}-${stepId}-${r.capability_id}.json`;r.proof.receipt_path=rel;
    const abs=path.join(stateDir,rel);await mkdir(path.dirname(abs),{recursive:true});
-   await writeFile(abs,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:r.capability_id,validator:cap.tool_locator,args:cap.required_arg_suffixes??[],executed_at:'2026-10-10T00:00:00.000Z',exit_code:0,status:'PASS'}));
+   const validatorPath=path.resolve(root,'..',cap.tool_locator);const validatorBytes=await readFile(validatorPath);const args=cap.required_arg_suffixes??[];await writeFile(abs,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:r.capability_id,validator:cap.tool_locator,validator_sha256:sha(validatorBytes),args,args_sha256:sha(Buffer.from(JSON.stringify(args))),executed_at:'2026-10-10T00:00:00.000Z',exit_code:0,status:'PASS'}));
   }
  }
  await writeFile(path.join(stateDir,'pipeline-state.json'),JSON.stringify(state));
