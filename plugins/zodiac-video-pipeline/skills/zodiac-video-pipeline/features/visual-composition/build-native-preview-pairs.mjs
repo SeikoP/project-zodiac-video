@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Producer-side two-endpoint animation inspection. This is NOT a Remotion frame renderer.
-import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,realpath,access} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -50,6 +50,36 @@ async function frameHtml(root,scene,target,event,phase,assets,cache,assessment,s
  const meta=`${esc(scene.id)} / ${esc(event.id)} · ${phase==='before'?'BEFORE':'AFTER'}`;
  return `<!doctype html><html lang="vi"><meta charset="utf-8"><title>${meta}</title><style>*{box-sizing:border-box}html,body{margin:0;background:#f6f0e6}.canvas{position:relative;width:1080px;height:1920px;overflow:hidden;background:#f6f0e6}.meta{position:absolute;left:20px;top:10px;z-index:100;font:26px sans-serif;color:#2f3c44;background:#fffdf9db;padding:8px}</style><div class="canvas">${ordered(items).map(x=>x.html).join('')}<div class="meta">${meta}</div></div></html>`;
 }
+const fileExists=p=>access(p).then(()=>true,()=>false);
+async function previewSceneFingerprint(root,scene,assets){
+ const refs=new Set();for(const e of scene.entities??[])for(const st of Object.values(e.states??{}))if(st.asset)refs.add(st.asset);
+ const assetHashes={};for(const id of [...refs].sort()){
+  const a=assets?.[id];if(!a?.path)fail('PREVIEW_ASSET_MISSING',id+' lacks asset path');
+  const rel=a.path.replaceAll('\\','/');
+  if(rel.startsWith('/')||rel.split('/').includes('..')||rel.includes(':')||!rel.toLowerCase().endsWith('.svg'))fail('PREVIEW_ASSET_PATH_UNSAFE',rel);
+  const abs=path.resolve(root,rel),real=await realpath(abs).catch(e=>{if(e.code==='ENOENT')fail('PREVIEW_ASSET_MISSING',rel);throw e;});
+  if(!real.startsWith(path.resolve(root)+path.sep))fail('PREVIEW_ASSET_PATH_UNSAFE',rel);
+  assetHashes[rel]=sha(await readFile(real));
+ }
+ return {input_sha256:sha(JSON.stringify(scene)),asset_hashes:assetHashes};
+}
+async function readPreviewSceneCache(root,out,scene,assets,compilerSha){
+ const fp=await previewSceneFingerprint(root,scene,assets);const file=path.join(root,'.authoring','cache','previews',scene.id+'.json');let record;try{record=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT')return {hit:false,reason:'MISS_NOT_RECORDED',fp,file};throw e;}
+ if(record.input_sha256!==fp.input_sha256)return {hit:false,reason:'MISS_INPUT_CHANGED',fp,file};
+ if(record.compiler_sha256!==compilerSha)return {hit:false,reason:'MISS_COMPILER_CHANGED',fp,file};
+ if(JSON.stringify(record.asset_hashes)!==JSON.stringify(fp.asset_hashes))return {hit:false,reason:'MISS_ASSET_CHANGED',fp,file};
+ // Never trust cached file names, an empty output inventory, or stale event metadata.
+ // On a hit every expected scene/event endpoint must already exist and match its SHA.
+ const expectedNames=['scene-'+scene.id+'-before.html','scene-'+scene.id+'-after.html',...(scene.events??[]).flatMap(ev=>[scene.id+'_'+ev.id+'-before.html',scene.id+'_'+ev.id+'-after.html'])].sort();
+ const actualNames=Object.keys(record.output_sha256??{}).sort();
+ if(!scene.events.every(ev=>validId(ev.id))||JSON.stringify(expectedNames)!==JSON.stringify(actualNames)||record.scene_frame?.scene_id!==scene.id||record.pairs?.length!==scene.events.length||record.pairs.some((pair,i)=>pair.event_id!==scene.events[i].id||pair.scene_id!==scene.id))return {hit:false,reason:'MISS_OUTPUT_TAMPERED',fp,file};
+ for(const [name,digest] of Object.entries(record.output_sha256??{})){const target=path.join(out,name);if(!await fileExists(target))return {hit:false,reason:'MISS_OUTPUT_MISSING',fp,file};if(sha(await readFile(target))!==digest)return {hit:false,reason:'MISS_OUTPUT_TAMPERED',fp,file};}
+ return {hit:true,reason:'HIT_EXACT',fp,file,record};
+}
+async function writePreviewSceneCache(file,{scene,fp,compilerSha,pairs,sceneFrame,outputNames,out}){
+ const output_sha256={};for(const name of outputNames)output_sha256[name]=sha(await readFile(path.join(out,name)));
+ await mkdir(path.dirname(file),{recursive:true});await writeFile(file,JSON.stringify({format:'zodiac-preview-scene-cache@1',scene_id:scene.id,input_sha256:fp.input_sha256,compiler_sha256:compilerSha,asset_hashes:fp.asset_hashes,output_sha256,pairs,scene_frame:sceneFrame},null,2)+'\n','utf8');
+}
 async function sceneFrameHtml(root,scene,states,assets,cache,label){
  const ids=new Set(),items=[];
  for(const e of scene.entities??[]){
@@ -69,9 +99,11 @@ export async function buildNativePairs(workspace,{outDir=path.join(workspace,'.a
  const raw=await readFile(file,'utf8');const production=JSON.parse(raw);const isJob5=production.format?.startsWith('zodiac-authoring-ir@')??false;
  if(!Array.isArray(production.scenes)||!production.scenes.length)fail('PREVIEW_SCENES_MISSING','No scenes');
  if(!production.assets||typeof production.assets!=='object')fail('PREVIEW_ASSETS_MISSING','No asset registry');
- const out=path.resolve(outDir);await mkdir(out,{recursive:true});const cache=new Map(),pairs=[],sceneFrames=[],allNames=new Set(),frameCanvases=new Map();
+ const out=path.resolve(outDir);await mkdir(out,{recursive:true});const compilerSha=sha(await readFile(fileURLToPath(import.meta.url))),cache=new Map(),pairs=[],sceneFrames=[],allNames=new Set(),frameCanvases=new Map(),reusedAssetHashes=new Map(),cacheEvents=[];
  for(const scene of production.scenes){if(!validId(scene.id))fail('PREVIEW_SCENE_ID_INVALID',String(scene.id));if(!Array.isArray(scene.events))fail('PREVIEW_EVENTS_MISSING',scene.id);
-  for(const ev of scene.events)if(!(scene.entities??[]).some(e=>e.id===ev.target))fail('PREVIEW_EVENT_TARGET_MISSING',scene.id+'/'+ev.id);const traces=traceSceneStates(scene);
+  for(const ev of scene.events)if(!(scene.entities??[]).some(e=>e.id===ev.target))fail('PREVIEW_EVENT_TARGET_MISSING',scene.id+'/'+ev.id);const traces=traceSceneStates(scene);const previewCache=await readPreviewSceneCache(root,out,scene,production.assets,compilerSha);cacheEvents.push({scene_id:scene.id,reason:previewCache.reason});
+  if(previewCache.hit){for(const [rel,digest] of Object.entries(previewCache.record.asset_hashes??{}))reusedAssetHashes.set(rel,digest);for(const name of Object.keys(previewCache.record.output_sha256??{})){const html=await readFile(path.join(out,name),'utf8');frameCanvases.set(name,html.slice(html.indexOf('<div class=\"canvas\">'),html.lastIndexOf('</html>')));}for(const pair of previewCache.record.pairs??[]){allNames.add(pair.scene_id+'_'+pair.event_id);pairs.push(pair);}sceneFrames.push(previewCache.record.scene_frame);continue;}
+  const pairStart=pairs.length;
   for(const [eventIndex,ev] of scene.events.entries()){if(!validId(ev.id))fail('PREVIEW_EVENT_ID_INVALID',String(ev.id));const key=`${scene.id}_${ev.id}`;if(allNames.has(key))fail('PREVIEW_DUPLICATE_EVENT',key);allNames.add(key);
    const e=(scene.entities??[]).find(x=>x.id===ev.target);if(!e)fail('PREVIEW_EVENT_TARGET_MISSING',`${scene.id}/${ev.id}/${ev.target}`);
    const before=stateOf(e,ev.state_before),after=stateOf(e,ev.state_after),motion=eventPreset(ev);
@@ -86,7 +118,8 @@ export async function buildNativePairs(workspace,{outDir=path.join(workspace,'.a
   const finalStates=traces.at(-1)?.after??initialStates;
   const sceneNames={before:'scene-'+scene.id+'-before.html',after:'scene-'+scene.id+'-after.html'},sceneHashes={};
   for(const phase of ['before','after']){const states=phase==='before'?initialStates:finalStates;const html=await sceneFrameHtml(root,scene,states,production.assets,cache,phase.toUpperCase());await writeFile(path.join(out,sceneNames[phase]),html,'utf8');sceneHashes[phase+'_sha256']=sha(html);frameCanvases.set(sceneNames[phase],html.slice(html.indexOf('<div class="canvas">'),html.lastIndexOf('</html>')));}
-  sceneFrames.push({scene_id:scene.id,before:sceneNames.before,after:sceneNames.after,initial_states:initialStates,final_states:finalStates,...sceneHashes});
+  const sceneFrame={scene_id:scene.id,before:sceneNames.before,after:sceneNames.after,initial_states:initialStates,final_states:finalStates,...sceneHashes};sceneFrames.push(sceneFrame);
+  const scenePairs=pairs.slice(pairStart),outputNames=[sceneNames.before,sceneNames.after,...scenePairs.flatMap(x=>[x.before,x.after])];await writePreviewSceneCache(previewCache.file,{scene,fp:previewCache.fp,compilerSha,pairs:scenePairs,sceneFrame,outputNames,out});
  }
  if(!pairs.length)fail('PREVIEW_EVENTS_EMPTY','No semantic events to inspect');
  // A single-file viewer: no iframe, no data: image, no external image or script requests.
@@ -95,7 +128,8 @@ export async function buildNativePairs(workspace,{outDir=path.join(workspace,'.a
  const rows=pairs.map(p=>`<section><h2>${esc(p.scene_id)} · ${esc(p.event_id)} — ${esc(p.target)}</h2><p>Preset: <b>${esc(p.motion)}</b> · ${p.kind==='motion_only'?'Authored peak-motion cue, temporal/easing parity must be checked in runner':p.kind==='static_hold'?'Static hold: intentional pose, not animated':p.kind==='actor_state_slide'?'Authored slide endpoints; temporal/easing QA required in runner':'Authored state/visibility change'}</p><div class="pair">${panel(p.before,'BEFORE',p.state_before)}${panel(p.after,'AFTER',p.state_after)}</div></section>`).join('');
  const html=`<!doctype html><html lang="vi"><meta charset="utf-8"><title>Native scene-complete + semantic preview</title><meta name="viewport" content="width=device-width"><style>*{box-sizing:border-box}body{margin:16px auto;padding:0 16px;max-width:1100px;background:#f6f0e6;color:#2f3c44;font:15px system-ui}section{border-top:2px solid #d0c1b3;margin:18px 0;padding:6px 0}h2{font-size:18px}.pair{display:flex;flex-wrap:wrap;gap:14px}figure{margin:0;background:#fffdf9;padding:10px}.view{width:270px;height:480px;overflow:hidden;border:1px solid #d0c1b3}.scaled{width:1080px;height:1920px;transform:scale(.25);transform-origin:top left}.canvas{position:relative;width:1080px;height:1920px;overflow:hidden;background:#f6f0e6}.meta{position:absolute;left:20px;top:10px;z-index:100;font:26px sans-serif;color:#2f3c44;background:#fffdf9db;padding:8px}figcaption{text-align:center;font-weight:700;padding-top:4px}</style><h1>Scene-complete visual review</h1><p>All authored entities are shown for every scene before/after its semantic event chain. Uses EXACT production asset SVGs and authored transforms.</p><main>${sceneRows}</main><h1>Event semantic endpoint pairs</h1><p>These are <b>semantic endpoints, not timed Remotion frames.</b> Motion-only events still require runner temporal QA.</p><main>${rows}</main></html>`;
  await writeFile(path.join(out,'index.html'),html,'utf8');
- const receipt={format:'zodiac-native-preview-pairs@2',source: path.relative(root,file),source_sha256:sha(raw),scope:'native_visual_review_only',renderer_faithful:false,review_surface:'scene_complete_plus_event_pairs',description:'Complete scene entry/final snapshots plus two authored semantic endpoint snapshots per event. Runtime frames and motion-only visual amplitudes are local-runner owned.',scene_count:production.scenes.length,scene_frames:sceneFrames,scene_frame_files:sceneFrames.length*2,event_pairs:pairs.length,frame_files:pairs.length*2,motion_only_count:pairs.filter(x=>x.kind==='motion_only').length,static_hold_count:pairs.filter(x=>x.kind==='static_hold').length,transition_count:pairs.filter(x=>['state_or_visibility_change','actor_state_slide'].includes(x.kind)).length,asset_count:cache.size,assets_sha256:Object.fromEntries([...cache].map(([abs,value])=>[path.relative(root,abs).replaceAll('\\','/'),value.sha256])),index_sha256:sha(html),pairs};
+ const mergedAssetHashes={...Object.fromEntries(reusedAssetHashes),...Object.fromEntries([...cache].map(([abs,value])=>[path.relative(root,abs).replaceAll('\\','/'),value.sha256]))};
+ const receipt={format:'zodiac-native-preview-pairs@2',source: path.relative(root,file),source_sha256:sha(raw),scope:'native_visual_review_only',renderer_faithful:false,review_surface:'scene_complete_plus_event_pairs',description:'Complete scene entry/final snapshots plus two authored semantic endpoint snapshots per event. Runtime frames and motion-only visual amplitudes are local-runner owned.',scene_count:production.scenes.length,scene_frames:sceneFrames,scene_frame_files:sceneFrames.length*2,event_pairs:pairs.length,frame_files:pairs.length*2,motion_only_count:pairs.filter(x=>x.kind==='motion_only').length,static_hold_count:pairs.filter(x=>x.kind==='static_hold').length,transition_count:pairs.filter(x=>['state_or_visibility_change','actor_state_slide'].includes(x.kind)).length,asset_count:Object.keys(mergedAssetHashes).length,assets_sha256:mergedAssetHashes,cache:{reused_scenes:cacheEvents.filter(x=>x.reason==='HIT_EXACT').map(x=>x.scene_id),rebuilt_scenes:cacheEvents.filter(x=>x.reason!=='HIT_EXACT').map(x=>x.scene_id),events:cacheEvents},index_sha256:sha(html),pairs};
  if(authoring_lineage)receipt.authoring_lineage=authoring_lineage;
  receipt.structural_status='STRUCTURAL_PASS';receipt.creative_status='CREATIVE_REVIEW_REQUIRED';receipt.runtime_status='RUNTIME_QA_PENDING';
  await writeFile(path.join(out,'preview-report.json'),JSON.stringify(receipt,null,2)+'\n','utf8');

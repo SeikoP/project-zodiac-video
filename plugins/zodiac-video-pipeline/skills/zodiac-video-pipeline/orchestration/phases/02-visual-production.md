@@ -41,3 +41,21 @@ Before any native asset compilation, bind every Episode Cast `role=member` chara
 ## Mandatory storytelling readiness for fresh Phase 2
 
 Before `visual_compile` can commit, run `features/visual-composition/validate-narrative-visual-presence.mjs <workspace>` as a required gate. A declared `narrative_visual_decision.mode=required` must have genuine scene entities with safe authored SVG assets, narration-grounded transitions, an authored narrative brief and an explicit `visual_coverage.narrative_visual=use` selection. Proposal files by themselves do not count. Fail closed on absent SVGs, missing briefs or mismatched roles; never invent a Visual Review approval. This gate checks actual presence and provenance, not whether the image succeeds editorially. Reviewers must inspect the **scene after** snapshots and event endpoints, not just scene entry frames where a visual may intentionally be hidden. Canvas accents are separate environmental depth cues, never enclosing Scene Sets or physical supports. The licensed runtime `story_object` projection of fresh `narrative_visual` must be accepted by composition validators, without relabeling an accent as a story object.
+
+
+## Incremental cache contract
+
+Phase 02 computational reuse is content-addressed and dependency-aware. Never treat file existence as a cache hit. Reuse is valid only when the semantic input fingerprint, selected dependency/compiler fingerprint, referenced asset hashes, and output hashes match.
+
+The cache lives under `.authoring/cache/`. Visual Intent remains the only fresh-run authored visual source; cache metadata and generated projections are compiler-owned.
+
+Human Content Review and Visual Review receipts are not cache entries. Any change to a review-bound source invalidates the corresponding approval independently of whether unaffected computational nodes can be reused.
+
+Expected invalidation:
+- changing one Narrative Visual dirties that asset, its scene composition, its scene preview/event frames, and the review aggregate;
+- changing character identity dirties the character asset and only scenes/previews that reference it;
+- unrelated scenes/assets remain reusable;
+- missing or tampered cached outputs are rebuilt;
+- compiler/validator changes invalidate affected PASS entries.
+
+Use `phase02-execute.mjs --run --no-cache` for a full rebuild comparison. Normal logs should summarize reused/rebuilt nodes and reason codes; hashes are debug detail.

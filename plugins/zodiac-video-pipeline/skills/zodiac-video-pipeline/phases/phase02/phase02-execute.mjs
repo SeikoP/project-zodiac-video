@@ -13,13 +13,14 @@ import os from 'node:os';
 import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
 import {selectedPhase02Dependencies,selectedStepDependencyFiles} from './phase02-selected-dependencies.mjs';
+import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
 const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
 const requestedWorkspace=arg('--workspace');
-if(!requestedWorkspace){console.error('Usage: node phase02-execute.mjs --workspace <dir> [--source-root <plugin-root|skill-root>] [--snapshot <snapshot.json> --restore-target <plugin-root>] [--run] [--force]');process.exit(2);}
+if(!requestedWorkspace){console.error('Usage: node phase02-execute.mjs --workspace <dir> [--source-root <plugin-root|skill-root>] [--snapshot <snapshot.json> --restore-target <plugin-root>] [--run] [--force] [--no-cache]');process.exit(2);}
 const workspace=path.resolve(requestedWorkspace);
-const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),force=argv.includes('--force')||finalizeManifest;
+const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),noCache=argv.includes('--no-cache'),force=argv.includes('--force')||finalizeManifest||noCache;
 if(finalizeManifest&&!running)throw Error('FINALIZE_MANIFEST_REQUIRES_RUN');
 await verifyIntentWorkspace(workspace,{revalidateNativeOutput:finalizeManifest});
 await mkdir(path.join(workspace,'.authoring'),{recursive:true});const nativeLease=running?await acquireAuthoringLease(path.join(workspace,'.authoring/.phase02-native.lock'),{run_id:'phase02-native',host_id:os.hostname()}):null;
@@ -89,7 +90,8 @@ const steps=[
  {id:'visual_quality',src:'features/visual-composition/validate-visual-quality.mjs',args:[workspace],required:[],validator:true},
  {id:'publish_prep',src:'features/publish/validate-publish-prep.mjs',args:[workspace],required:[],validator:true},
 ];
-const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).digest('hex').slice(0,20),format:'zodiac-phase02-execution@1',phase:'02-visual-production',at:reportedAt,workspace,mode:running?'run':'inspect',status:'BLOCKED',source:{},issues:[],steps:[],checkpoint:'not_checked'};
+const semanticCache=await readCacheGraph(workspace).catch(()=>({semantic_dirty:[]}));
+const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).digest('hex').slice(0,20),format:'zodiac-phase02-execution@1',phase:'02-visual-production',at:reportedAt,workspace,mode:running?'run':'inspect',cache_mode:noCache?'disabled':'enabled',semantic_dirty:semanticCache.semantic_dirty??[],status:'BLOCKED',source:{},issues:[],steps:[],checkpoint:'not_checked'};
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
@@ -254,13 +256,14 @@ else{
   if(step.validator)required.push(path.join(workspace,'.authoring/native-validator-'+step.id+'.json'));
   const cached=cache.steps?.[step.id];
   const outputsSig=required.length?await signature(required):sha('no-output-files');
-  if(!force&&before!==null&&outputsSig!==null&&cached?.status==='PASS'&&cached.after_input_sha===before&&cached.output_sha===outputsSig){report.steps.push({id:step.id,status:'SKIPPED_REUSED',input_hash:before,output_hash:outputsSig,evidence:'verified_post_input_and_output_hash',previous_command:cached.command});continue;}
+  if(!force&&before!==null&&outputsSig!==null&&cached?.status==='PASS'&&cached.after_input_sha===before&&cached.output_sha===outputsSig){report.steps.push({id:step.id,status:'SKIPPED_REUSED',cache_reason:CACHE_REASON.HIT_EXACT,input_hash:before,output_hash:outputsSig,evidence:'verified_post_input_and_output_hash',previous_command:cached.command});continue;}
   if(before===null){const error={id:step.id,status:'BLOCKED',reason:'INPUT_UNREADABLE_OR_MISSING'};report.steps.push(error);fail('NATIVE_STEP_INPUT_MISSING',{step:step.id});break;}
   const receiptRel='.authoring/native-validator-'+step.id+'.json';
   const commandFile=step.validator?path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs'):absolute;
   const commandArgs=step.validator?[step.id,path.join(workspace,receiptRel),absolute,...args]:args;
   const result=nodeRun(commandFile,commandArgs);
-  const extra={id:step.id,input_hash:before,...result};
+  const cache_reason=noCache?CACHE_REASON.BYPASS_NO_CACHE:!cached?CACHE_REASON.MISS_NOT_RECORDED:cached.after_input_sha!==before?CACHE_REASON.MISS_INPUT_CHANGED:cached.output_sha!==outputsSig?CACHE_REASON.MISS_OUTPUT_TAMPERED:CACHE_REASON.MISS_DEPENDENCY_CHANGED;
+  const extra={id:step.id,input_hash:before,cache_reason,...result};
   if(result.status==='PASS'&&step.id==='character_write'){
    required.push(...await workspaceAssetPaths('character'));
    const check=await findNativeCharAssets();extra.missing_character_asset_refs=check.missing;
