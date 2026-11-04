@@ -74,7 +74,7 @@ export function seat(ctx, user, preferred) {
     const reclaimed = evict(ctx, user, validPreferred);
     if (reclaimed) return reclaimed;
   }
-  const order = TIERS.map(x => x.id).filter(id => id !== validPreferred).sort((a, b) => owned(ctx, a).length - owned(ctx, b).length);
+  const order = TIERS.map(x => x.id).filter(id => id !== validPreferred);
   for (const tier of order) { const plot = room(ctx, user, tier); if (plot) return plot; }
   for (const tier of order) { const plot = evict(ctx, user, tier); if (plot) return plot; }
   return null;

@@ -57,7 +57,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   };
   const newGarden = () => createGarden({ config: full.garden, state, now, onEvent });
   garden = newGarden();
-  camera = createCamera({ cfg: garden.cfg, now });
+  camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
 
   // Simulator room director: creates persistent fake viewers and lets them play naturally
   // so the overlay can be reviewed as a living room rather than a one-person button demo.
@@ -159,7 +159,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     Object.assign(state, emptyGardenState(now()));
     coalescer = createCoalescer({ now });
     garden = newGarden();
-    camera = createCamera({ cfg: garden.cfg, now });
+    camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
     lastShot = null;
     for (const c of hub.clients) c.seen = {};
     hub.broadcast('reset', { ok: true });

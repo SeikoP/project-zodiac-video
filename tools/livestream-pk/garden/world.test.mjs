@@ -7,14 +7,14 @@ test('four cloud terraces stack vertically with room for 432 viewers', () => {
   assert.equal(TIERS.length, 4);
   assert.equal(TIERS.reduce((n, t) => n + 108, 0), 432);
   const { ctx } = makeCtx();
-  assert.deepEqual(tierCenter('cloud-3', ctx.cfg), { x: 2160, y: 2050 });
+  assert.deepEqual(tierCenter('cloud-3', ctx.cfg), { x: 1350, y: 3000 });
 });
 
-test('plot centers follow the 36-column, three-row district layout', () => {
+test('plot centers follow the compact 18-column, six-row district layout', () => {
   const { ctx } = makeCtx();
-  assert.deepEqual(plotCenter('cloud-1', 0, ctx.cfg), { x: 235, y: 285 });
-  assert.deepEqual(plotCenter('cloud-1', 37, ctx.cfg), { x: 345, y: 395 });
-  assert.equal(plotId('cloud-1', 37), 'cloud-1:37');
+  assert.deepEqual(plotCenter('cloud-1', 0, ctx.cfg), { x: 330, y: 300 });
+  assert.deepEqual(plotCenter('cloud-1', 19, ctx.cfg), { x: 450, y: 420 });
+  assert.equal(plotId('cloud-1', 19), 'cloud-1:19');
 });
 
 test('seat returns the same plot and honors a requested cloud terrace', () => {
@@ -90,4 +90,12 @@ test('seat short-circuits after one allocation instead of creating a plot on eve
   assert.equal(plot.id, 'cloud-1:0');
   assert.equal(user.seat.tier, 'cloud-1');
   assert.equal(Object.values(ctx.state.plots).filter(p => p.owner === 'solo').length, 1);
+});
+
+
+test('a normal small room fills the first district before opening another one', () => {
+  const { ctx } = makeCtx();
+  for (let i = 0; i < 99; i++) addUser(ctx, 'u' + i);
+  assert.equal(Object.values(ctx.state.users).filter(u => u.seat?.tier === 'cloud-1').length, 99);
+  assert.equal(Object.values(ctx.state.users).filter(u => u.seat?.tier !== 'cloud-1').length, 0);
 });

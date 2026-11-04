@@ -97,7 +97,13 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (revision !== seen.competition) { seen.competition = revision; parts.competition = competition.status(); }
       return parts;
     },
-    meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: { tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow, plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs, sleepAfterMs: ctx.cfg.sleepAfterMs, evictAfterMs: ctx.cfg.evictAfterMs } }),
+    meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: {
+      tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow,
+      plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera,
+      graceMs: ctx.cfg.graceMs, sleepAfterMs: ctx.cfg.sleepAfterMs, evictAfterMs: ctx.cfg.evictAfterMs,
+      rainMs: ctx.cfg.rainMs, rainMult: ctx.cfg.rainMult, pestStormMs: ctx.cfg.pestStormMs,
+      merchantMs: ctx.cfg.merchantMs, merchantMult: ctx.cfg.merchantMult, goldenMs: ctx.cfg.goldenMs, goldenMult: ctx.cfg.goldenMult,
+    } }),
     ctx,
   };
 }
