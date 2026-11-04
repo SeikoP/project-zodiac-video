@@ -12,23 +12,19 @@ function setup(config = {}) {
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
 }
 
-// --- kho chung: one "kho" for resources, level, cards, Sổ Sao and bingo ---
-test('"kho", "khoe thẻ", "bộ thẻ", "sổ sao" all open the one vault, with everything a viewer owns', () => {
-  for (const c of ['kho', 'túi đồ', 'khoe thẻ', 'bộ thẻ', 'sổ sao', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
+// --- kho chung: one "kho" for resources, level and Sổ Sao ---
+test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer owns', () => {
+  for (const c of ['kho', 'túi đồ', 'sổ sao', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
   const s = setup();
   s.say('a', 'Sư Tử');
   Object.assign(s.v('a').bag, { dust: 120, fire: 2, moon: 1 });
-  s.v('a').cards = { 'leo:base': 2, 'leo:gold': 1, 'aries:star': 1 };
-  s.say('a', 'khoe thẻ');
+  s.say('a', 'khoe');
   const [e] = s.of('vault');
   assert.equal(e.nickname, 'A');
   assert.equal(e.level, 1);
   assert.equal(e.bag.dust, 120);
-  assert.equal(e.cards.unique, 3);
-  assert.equal(e.cards.total, 120);
-  assert.deepEqual(e.cards.best.map(c => c.edition), ['gold', 'star', 'base'], 'rarest first, at most three');
+  assert.ok(!('cards' in e) && !('bingo' in e), 'no card or bingo data any more');
   assert.ok(e.pass && e.pass.level >= 1);
-  assert.ok(e.bingo && e.bingo.marked >= 1);
   assert.ok(e.next, 'what the next level costs');
   s.say('a', 'kho');
   assert.equal(s.of('vault').length, 1, 'once per cooldown');

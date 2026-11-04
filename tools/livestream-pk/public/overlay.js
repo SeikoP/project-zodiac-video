@@ -10,7 +10,6 @@ import { ICON } from '/icons.js';
 import { createSfx } from '/sfx.js';
 import { createMusic } from '/music.js';
 import { createLane } from '/lane.js';
-import { EDITION, CARD_TOTAL } from '/cards.js';
 
 const $ = id => document.getElementById(id);
 const C = { paper: '#F6F0E6', gold: '#F2C45C', accent: '#E97A66', teal: '#8EC0B9' };
@@ -539,28 +538,8 @@ const HEAD_HOW = {
   starcatch: 'mỗi ngôi sao băng mang một chữ · gõ đúng chữ đó thật nhanh để hứng',
 };
 
-// --- bầu trời ngày sinh: that day's planets on a small chart, the viewer's face in the middle -----------
-const SHOW_LABEL = { starcall: 'điểm danh sao', birth: 'bầu trời ngày sinh', meteor: 'mưa sao băng' };
-function birthSky(e) {
-  const deg = a => (a - 90) * Math.PI / 180, pt = (r, a) => [r * Math.cos(deg(a)), r * Math.sin(deg(a))];
-  let svg = '<circle class="ring" r="172"/><circle class="ring" r="124"/>';
-  IDS.forEach((id, i) => {
-    const [x1, y1] = pt(124, i * 30), [x2, y2] = pt(172, i * 30), [gx, gy] = pt(149, i * 30 + 15);
-    svg += `<line class="tick" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="sg${id === e.sun ? ' sun' : ''}" x="${gx}" y="${gy}">${SIGN[id].glyph}︎</text>`;
-  });
-  const used = {};
-  e.planets.forEach((p, i) => {
-    const n = used[p.sign] = (used[p.sign] ?? 0) + 1, r = n % 2 ? 96 : 64; // planets sharing a sign step inwards
-    const [x, y] = pt(r, IDS.indexOf(p.sign) * 30 + (p.deg ?? 15) + (n - 1) * 6);
-    svg += `<g class="pl ${p.id}" style="--dx:${x.toFixed(0)}px;--dy:${y.toFixed(0)}px;animation-delay:${(.3 + i * .18).toFixed(2)}s"><circle cx="${x}" cy="${y}" r="20"/><text x="${x}" y="${y + 1}">${PLANET(p.id).glyph}</text></g>`;
-  });
-  const chart = `<div class="bchart"><svg viewBox="-180 -180 360 360">${svg}</svg><div class="me">${avatarHtml(e, 'av')}</div></div>`;
-  const lines = e.full
-    ? e.lines.map(l => `<p><b>${PLANET(l.planet).glyph} ${esc(l.title)} · ${esc(SIGN[l.sign].label)}:</b> ${esc(l.text)}</p>`).join('')
-    : `<p><b>☉ Mặt Trời ở ${esc(SIGN[e.sun].label)}</b> · ${esc(pickLine(e.sun))}</p><p class="hint">gõ thêm năm sinh, vd “12/8/1998”, để xem cả bầu trời ✨</p>`;
-  celebrate({ key: 'birth', badge: '🌌 BẦU TRỜI NGÀY SINH', extra: chart, title: e.replay ? `Ngày ${esc(e.nickname)} chào đời…` : `${esc(e.nickname)} chào đời dưới bầu trời này`, sub: `<div class="blines">${lines}</div>`, color: color(e.sun), ms: e.full ? 8500 : 5200, compact: true });
-  speak(e.full ? `Bầu trời ngày ${e.nickname} chào đời` : `${e.nickname}, Mặt Trời ở ${SIGN[e.sun].label}`);
-}
+const SHOW_LABEL = { starcall: 'điểm danh sao', meteor: 'mưa sao băng' };
+
 
 let lastFrame = 0;
 function frame(t) {
@@ -971,26 +950,16 @@ function demo(e) {
 
 const LOOT_WHY = { welcome: 'được cả phòng chào đón', fortune: 'quẻ được khen chuẩn', bingo: 'bingo!', pass: 'Sổ Sao', quest: 'nhiệm vụ giờ', mystery: 'đoán trúng cung bí ẩn', catch: 'hứng nhiều sao băng nhất', boss: 'chiến lợi phẩm Sao Chổi', chest: 'từ rương sao', quiz: 'trả lời đúng câu đố', chaos: 'sửa sóng Thủy Nghịch', moon: 'có mặt lúc trăng rằm', wish: 'điều ước được chúc phúc' };
 const mmss = ms => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
-// One card of the collection: the sign's mascot on paper framed in the edition's colour.
-function cardHtml(card, { big = false, name = '' } = {}) {
-  const ed = EDITION[card.edition] ?? EDITION.base, s = SIGN[card.sign];
-  return `<div class="zc${big ? ' big' : ''}${ed.foil ? ' foil' : ''}" style="--ed:${ed.color}"><span class="zg gf">${s.glyph}︎</span><img src="${mascot(card.sign, ed.rarity >= 3 ? 'hype' : 'idle')}" alt="">`
-    + `${name ? `<span class="zn">${esc(name)}</span>` : ''}<span class="zl">${esc(ed.id === 'base' ? s.label : ed.label)}</span></div>`;
-}
-
 const POWER_NEED = { 'no-fight': 'ngọc chỉ dùng khi đang đánh boss, kéo co hay Tầng Trời', 'no-gem': 'chưa có ngọc: đánh boss, mở rương, trả lời đúng để nhận', 'no-moon': 'chưa có mảnh trăng: có mặt lúc trăng rằm, ước được chúc phúc' };
 function showVault(e) {
   const res = Object.entries(e.bag ?? {}).filter(([k, n]) => n && RES[k]);
-  const best = e.cards.best ?? [], rare = best[0] && (EDITION[best[0].edition]?.rarity ?? 0) >= 3;
   const extra = `<div class="vault">
-    <div class="vhead">${avatarHtml(e, 'av big')}${e.sign ? `<img class="vm" src="${mascot(e.sign, rare ? 'hype' : 'win')}" alt="">` : ''}<div><b>Lv${e.level}${e.level >= 5 ? ' 👑' : ''}</b><span>${esc(e.title ?? '')}${e.sign ? ` · ${esc(SIGN[e.sign].label)}` : ''}</span></div></div>
+    <div class="vhead">${avatarHtml(e, 'av big')}${e.sign ? `<img class="vm" src="${mascot(e.sign, 'win')}" alt="">` : ''}<div><b>Lv${e.level}${e.level >= 5 ? ' 👑' : ''}</b><span>${esc(e.title ?? '')}${e.sign ? ` · ${esc(SIGN[e.sign].label)}` : ''}</span></div></div>
     <div class="vres">${res.length ? res.map(([k, n]) => `<span><img class="resimg" src="${RES[k].img}" alt="">${fmt(Math.floor(n))}</span>`).join('') : '<span class="vempty">kho trống · chơi để nhận bụi sao, ngọc</span>'}</div>
-    ${best.length ? `<div class="vcards">${best.map(c => cardHtml(c, { big: true })).join('')}</div>` : ''}
-    <div class="vstats"><span>🃏 ${e.cards.unique}/${e.cards.total} thẻ${e.cards.setDone ? ' · đủ 12 cung 🏆' : ''}</span>${e.pass ? `<span>📒 Sổ Sao ${e.pass.level}/${e.pass.max}</span>` : ''}${e.bingo ? `<span>🎯 bingo ${e.bingo.marked}/9</span>` : ''}</div>
+    <div class="vstats">${e.pass ? `<span>📒 Sổ Sao ${e.pass.level}/${e.pass.max}</span>` : ''}</div>
     ${e.next ? `<div class="vnext">lên Lv${e.level + 1}: ${e.next.dust} bụi · ${e.next.gems} ${RES[e.next.gem].label}${e.next.moon ? ` · ${e.next.moon} mảnh trăng` : ''} → gõ “nâng cấp”</div>` : ''}
   </div>`;
-  celebrate({ key: 'vault', badge: '🎒 KHO BÁU', extra, title: esc(e.nickname), sub: 'gõ “kho” để khoe kho của bạn', color: rare ? EDITION[best[0].edition].color : C.gold, ms: 5200, compact: true });
-  if (rare) { const [x, y] = spotOf(e.userId, e.sign); burst(x, y, [EDITION[best[0].edition].color, C.gold, '#fff'], 80, 10); }
+  celebrate({ key: 'vault', badge: '🎒 KHO BÁU', extra, title: esc(e.nickname), sub: 'gõ “kho” để khoe kho của bạn', color: C.gold, ms: 5200, compact: true });
 }
 // "tung ngọc" / "thắp trăng": a resource spent in the room's event, shown where it lands
 function power(e) {
@@ -1141,9 +1110,9 @@ function renderArena(c) {
   } else if (mode === 'chest') {
     const ch = c.chest;
     a.querySelector('.cap').innerHTML = `Gõ <b>“nhận”</b> · ${Math.ceil(ch.remainingMs / 1000)}s`;
-    a.querySelector('.sub').textContent = ch.claims ? `${fmt(ch.claims)} người đã nhận thẻ` : 'mỗi người một thẻ — có thẻ hiếm!';
-    const key = ch.recent.map(r => r.nickname + r.card.sign + r.card.edition).join('|');
-    if (key !== claimKey) { claimKey = key; a.querySelector('.claims').innerHTML = ch.recent.slice(0, 4).map(r => cardHtml(r.card, { name: r.nickname })).join(''); }
+    a.querySelector('.sub').textContent = ch.claims ? `${fmt(ch.claims)} người đã nhận bụi sao` : 'mỗi người một phần bụi sao';
+    const key = ch.recent.map(r => r.nickname).join('|');
+    if (key !== claimKey) { claimKey = key; a.querySelector('.claims').innerHTML = ch.recent.slice(0, 4).map(r => `<span class="zn">${esc(r.nickname)} +${r.dust}</span>`).join(''); }
   }
 }
 // Cung bí ẩn and Hứng sao băng in the centre circle: the clues so far (or the falling word), the winners, a timer.
@@ -1182,8 +1151,7 @@ function renderTug(a, g, fresh) {
   a.querySelector('.tp').textContent = g.warmupMs > 0 ? '' : `${g.pullersA} người kéo · ${g.pullersB} người kéo`;
   return true;
 }
-// Bingo Hoàng Đạo: the 3×3 card, marked squares lit.
-const bingoGrid = card => `<div class="bingo">${card.map(q => `<span class="${q.marked ? 'on' : ''}" title="${esc(q.label)}">${q.icon}</span>`).join('')}</div>`;
+
 
 
 function bossShake() { const b = $('bossFig'); if (!b) return; b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }
@@ -1317,14 +1285,14 @@ addEventListener('pointerdown', () => music.resume(), { once: true }); // a norm
 $('sound').onclick = () => { music.resume(); sfx('welcome'); $('sound').classList.remove('on'); };
 const SOUND = { 'gift-goal': 'meteor', wish: 'wish', lit: 'lit', 'wheel-complete': 'wheel', 'moon-full': 'moon', 'moon-end': 'moonEnd', 'lucky-start': 'lucky', 'lucky-end': 'luckyEnd', overtake: 'overtake', 'quiz-end': 'quiz', 'poll-start': 'pollStart', 'poll-end': 'poll', milestone: 'milestone', 'night-start': 'night', 'need-sign': 'boop', flows: 'flow', 'title-up': 'title', streak: 'streak',
   swaps: 'flow', 'boss-hits': 'bossHit', 'boss-start': 'bossStart', 'boss-freeze': 'boop', 'boss-rescue': 'lit', 'boss-blocked': 'follow', 'boss-heal': 'luckyEnd', 'boss-defeated': 'wheel', 'boss-escaped': 'moonEnd',
-  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', cards: 'cardFlip', chapter: 'wheel', 'journey-done': 'moon', 'element-lead': 'overtake', 'tug-flip': 'overtake', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
-  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', combine: 'lit', 'upgrade-need': 'boop',
+  'chaos-start': 'meteor', 'chaos-fixed': 'moon', 'chaos-end': 'luckyEnd', 'chest-open': 'chestOpen', chapter: 'wheel', 'journey-done': 'moon', 'element-lead': 'overtake', 'tug-flip': 'overtake', vault: 'title', power: 'meteor', 'fortune-luck': 'sparkle', 'set-complete': 'title',
+  'wish-bless': 'sparkle', 'wish-blessed': 'lit', 'welcome-done': 'lit', loots: 'sparkle', 'level-up': 'title', 'upgrade-need': 'boop',
   fans: 'milestone', 'fan-call': 'lucky', 'heat-up': 'overtake', demo: 'boop', 'switch-wait': 'boop',
-  'birth-sky': 'lucky', 'star-born': 'starFly', showtime: 'milestone',
+  'star-born': 'starFly', showtime: 'milestone',
   'hour-start': 'hourStart', 'act-open': 'actOpen', 'head-start': 'headStart', 'head-end': 'actClose', 'act-close': 'actClose', pair: 'pair',
   'mystery-start': 'headStart', 'mystery-clue': 'boop', 'mystery-win': 'quiz', 'mystery-end': 'cleared', 'catch-star': 'starFly', catch: 'sparkle', 'catch-end': 'cleared',
   'roast-start': 'spin', 'quest-done': 'cleared', 'tug-start': 'headStart', 'tug-yank': 'runHit', 'tug-end': 'cleared', 'predict-open': 'pollStart', 'predict-end': 'poll',
-  bingo: 'cleared', 'bingo-card': 'cardFlip', 'pass-up': 'boon' };
+  'pass-up': 'boon' };
 const BIG = new Set(['meteor', 'wheel', 'moon', 'milestone', 'night', 'firework', 'hourStart', 'headStart', 'bossStart', 'fall', 'revive']); // the music ducks under these
 const gold = C.gold;
 function onFx(e) {
@@ -1422,10 +1390,6 @@ function onFx(e) {
     case 'fortune-luck':
       card({ key: 'luck', icon: '✨', title: `<b>${esc(e.nickname)}</b> xin vía ${esc(e.owner)}`, sub: `quẻ ${esc(e.level)} · cả hai nhận bụi sao`, color: C.gold, ms: 2200 });
       break;
-    case 'combine':
-      card({ key: 'card', icon: '🔮', title: `<b>${esc(e.nickname)}</b> ghép ${e.count} thẻ ${esc(SIGN[e.from].label)}`, sub: 'thành 1 thẻ Tinh Tú ✨', color: EDITION.star.color });
-      break;
-    case 'combine-need': spotlight(`<div class="cap">${esc(e.nickname)}</div><div class="sub">cần ${e.need} thẻ Thường giống nhau để ghép — chờ rương sao nhé!</div>`, 2200, 'need'); break;
     case 'gift': {
       const sign = e.sign ?? signOf(e.userId), [x, y] = spotOf(e.userId, sign), col = sign ? color(sign) : gold;
       const what = esc(e.giftName ?? 'quà'), who = esc(e.nickname);
@@ -1585,23 +1549,7 @@ function onFx(e) {
     case 'chest-open':
       celebrate({ key: 'chest', badge: '🎁 RƯƠNG SAO', extra: '<img class="chestimg big" src="/art/chest-open.svg" alt="">', title: 'Rương sao đã mở!', sub: `gõ “nhận” trong ${e.seconds} giây — mỗi người một thẻ, có thẻ hiếm`, color: gold, ms: 3000, compact: true });
       break;
-    case 'cards': {
-      // a foil card gets a celebration; a star card an announcement; plain ones just show in the open chest
-      const best = e.cards.reduce((a, b) => (EDITION[b.card.edition].rarity > EDITION[a.card.edition].rarity ? b : a));
-      const ed = EDITION[best.card.edition];
-      if (ed.rarity >= 3) {
-        meteorShower(12);
-        celebrate({ key: 'card', badge: `THẺ ${ed.label.toUpperCase()}`, extra: `<div class="cards">${cardHtml(best.card, { big: true })}</div>`, title: esc(best.nickname), sub: `${best.isNew ? 'thẻ mới! · ' : ''}bộ sưu tập ${best.unique}/${CARD_TOTAL}`, color: ed.color, ms: 4200, compact: true });
-      } else if (ed.rarity === 2 || !S.cosmos?.chest.open) {
-        card({ key: 'card', icon: cardHtml(best.card), title: `<b>${esc(best.nickname)}</b> nhận thẻ ${esc(ed.label)}`, sub: `${esc(SIGN[best.card.sign].label)}${best.isNew ? ' · thẻ mới!' : ''} · bộ sưu tập ${best.unique}/${CARD_TOTAL}${best.why === 'chest' && best.pityLeft <= 3 ? ` · còn ${best.pityLeft} lần tới Hoàng Kim` : ''}${e.more ? ` · +${e.more} người nữa` : ''}`, color: ed.color, ms: 3000 });
-      }
-      break;
-    }
-    case 'set-complete':
-      celebrate({ key: 'card', badge: '🏆 ĐỦ 12 CUNG', icon: '🃏', title: esc(e.nickname), sub: 'đã gom đủ thẻ cả 12 cung hoàng đạo!', color: gold, ms: 4200, compact: true });
-      break;
-    // --- bầu trời ngày sinh, the named stars and the big moment every ~75 s ---
-    case 'birth-sky': birthSky(e); break;
+    // --- the named stars and the big moment every ~75 s ---
     case 'star-born': {
       fly(e.userId, spotOf(e.userId, e.sign), starPoint(e), color(e.sign), e.nickname, 0.6);
       card({ key: 'star', icon: '⭐', title: `<b>${esc(e.nickname)}</b> có ngôi sao riêng!`, sub: 'sao mang tên bạn ở bầu trời cộng đồng phía dưới · quay lại là sao sáng lên ✨', color: color(e.sign), ms: 3200 });
@@ -1645,7 +1593,7 @@ function onFx(e) {
       celebrate({ key: 'pair', badge: '💞 GHÉP ĐÔI ĐỊNH MỆNH', extra: `<div class="pairfx">${avatarHtml(e.a, 'av big')}<b>${e.score}%</b>${avatarHtml(e.b, 'av big')}</div>`, title: `${esc(e.a.nickname)} × ${esc(e.b.nickname)}`, sub: `${G(e.a.sign)} ${esc(SIGN[e.a.sign].label)} × ${G(e.b.sign)} ${esc(SIGN[e.b.sign].label)} · ${esc(e.line)}`, color: '#F2A7C3', ms: 4200, compact: true });
       break;
     }
-    // --- kéo co, dự đoán, bingo, sổ sao ---
+    // --- kéo co, dự đoán, sổ sao ---
     case 'tug-start':
       celebrate({ key: 'tug', badge: '🪢 KÉO CO CUNG', icon: '🪢', title: `${esc(SIGN[e.a].label)} ⟷ ${esc(SIGN[e.b].label)}`, sub: `fan hai cung comment · thả tim để kéo · ai cũng đoán được: gõ “đoán A” / “đoán B”`, color: color(e.a), ms: 3600, compact: true });
       break;
@@ -1666,11 +1614,6 @@ function onFx(e) {
       if (e.winner === null) break;
       card({ key: 'predict', icon: '🔮', title: `Đáp án: <b>${esc(e.answer)}</b>`, sub: `${e.right}/${e.guesses} người đoán trúng${e.top[0] ? ` · ${esc(e.top[0][0])} +${e.top[0][1]} bụi sao` : ''}`, color: '#B48CF2', ms: 3600 });
       break;
-    case 'bingo':
-      burst(CX, CY, [C.gold, C.paper, color(e.sign)], 70, 11);
-      celebrate({ key: 'bingo', badge: e.full ? '🎉 BINGO TRỌN THẺ!' : `🎉 BINGO${e.lines > 1 ? ` x${e.lines}` : ''}!`, extra: bingoGrid(e.card), title: esc(e.nickname), sub: e.full ? 'cả thẻ đã kín · +1 mảnh trăng' : '+1 ngọc · gõ “bingo” để xem thẻ của bạn', color: C.gold, ms: 3600, compact: true });
-      break;
-    case 'bingo-card': card({ key: 'bingo', icon: bingoGrid(e.card), title: `Thẻ bingo của <b>${esc(e.nickname)}</b>`, sub: `${e.marked}/9 ô${e.lines ? ` · ${e.lines} hàng` : ''} · ở lại để kín thẻ`, color: C.gold, ms: 4200, kind: 'bingocard' }); break;
     case 'pass-up':
       if (e.frame) celebrate({ key: 'pass', badge: `📒 SỔ SAO CẤP ${e.level}`, extra: `<div class="duo">${avatarHtml(e, `av big frame-${e.frame}`)}</div>`, title: esc(e.nickname), sub: `nhận ${esc(e.reward)}`, color: FRAME_COLOR[e.frame], ms: 3600, compact: true });
       else if (on('title')) card({ key: 'pass', icon: '📒', title: `<b>${esc(e.nickname)}</b> lên Sổ Sao cấp ${e.level}`, sub: `nhận ${esc(e.reward)}`, color: color(e.sign), ms: 2400 });

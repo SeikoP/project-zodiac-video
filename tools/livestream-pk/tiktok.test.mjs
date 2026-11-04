@@ -42,7 +42,7 @@ const fakeConnection = () => Object.assign(new EventEmitter(), { connect: async 
 
 test('end to end: TikTok events reach the game (join by comment, likes raise the moon, gifts and follows light the sky)', async () => {
   const conn = fakeConnection(), logs = [];
-  const game = createGame({ rng: () => 0, config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, adaptiveCrowd: false, autoQuiz: false, quietSeconds: 9999, checkinPerNight: 0, luckyEverySeconds: 1e9, moonGoal: 1e9, constellationCost: 1000, commentLight: 2, lightPerDiamond: 5 } });
+  const game = createGame({ rng: () => 0, config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, adaptiveCrowd: false, autoQuiz: false, quietSeconds: 9999, checkinPerNight: 0, luckyEverySeconds: 1e9, moonGoal: 1e9, signLightCost: 1000, commentLight: 2, lightPerDiamond: 5 } });
   const statuses = [];
   const bridge = createTikTokBridge({ game, connect: () => conn, log: m => logs.push(m), onStatus: s => statuses.push(s.state) });
   await bridge.connect('@someone');

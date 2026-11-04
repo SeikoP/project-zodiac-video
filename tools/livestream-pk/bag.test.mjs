@@ -12,10 +12,9 @@ const setup = (config = {}) => {
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
 const of = (events, type) => events.filter(e => e.type === type);
 
-test('keywords for the bag, upgrades, combining cards and blessing a wish', () => {
+test('keywords for the bag, upgrades and blessing a wish', () => {
   assert.equal(parseAction('nâng cấp'), 'upgrade');
   assert.equal(parseAction('lên cấp đi'), 'upgrade');
-  assert.equal(parseAction('ghép thẻ'), 'combine');
   assert.equal(parseAction('kho'), 'vault');
   assert.equal(parseAction('kho báu ở đâu'), null);
   assert.equal(parseAction('chúc bạn thành công'), 'bless');
@@ -56,17 +55,6 @@ test('gems come from the quiz, the boss and the chest; moon shards from a full m
   advance(60000);
   game.chat(u('a', { comment: 'nhận' }));
   assert.equal(game.state.viewers.a.bag.water, 5);
-});
-
-test('"ghép thẻ" turns three plain copies into one Tinh Tú of that sign', () => {
-  const { game, events } = setup();
-  game.chat(u('a', { comment: 'leo' }));
-  game.state.viewers.a.cards = { 'aries:base': 3, 'leo:base': 1 };
-  game.chat(u('a', { comment: 'ghép thẻ' }));
-  assert.deepEqual(game.state.viewers.a.cards, { 'leo:base': 1, 'aries:star': 1 });
-  assert.equal(of(events, 'combine')[0].from, 'aries');
-  game.chat(u('a', { comment: 'ghép thẻ' }));
-  assert.equal(of(events, 'combine-need').length, 1);
 });
 
 test('a wish the room blesses becomes a star: blessers get stardust, the wisher a moon shard', () => {

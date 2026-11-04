@@ -10,7 +10,7 @@ export const PROMPT_GROUPS = [
     'Mình bật nhạc nhẹ nhé, ai vừa xong việc ghé vào thư giãn cùng mình một chút.',
     'Hôm nay có quẻ hoàng đạo miễn phí: gõ “xin quẻ” sau khi chọn cung, mỗi người một quẻ mỗi ngày.',
     'Bạn nào đã quay lại hôm qua, hôm nay gõ cung để nhận thưởng chuỗi đêm nhé!',
-    'Nếu chưa biết mình cung nào, cứ comment ngày sinh dạng 12/8, mình đưa bạn vào đúng cung.',
+    'Chưa biết chọn cung nào? Cứ gõ một số từ 1 đến 12, mình đưa bạn vào đội ngay.',
   ]],
   ['engage', 'Giữ chân, trò chuyện', [
     'Cho mình hỏi nhanh: cung nào ở đây hay đến trễ nhất? Comment tên cung nha!',

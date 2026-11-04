@@ -63,7 +63,7 @@ const extra = readJson(path.join(root, 'quiz.json'));
 if (extra instanceof Error) bad(`quiz.json lỗi: ${extra.message}`);
 else {
   const bank = buildQuizBank({ extra });
-  bank.length >= 100 ? ok(`Ngân hàng câu đố: ${bank.length} câu (${extra.length} câu viết tay)`) : warn(`Ngân hàng câu đố chỉ có ${bank.length} câu`);
+  bank.length ? ok(`Ngân hàng câu đố: ${bank.length} câu (${extra.length} câu viết tay)`) : ok('Ngân hàng câu đố đang trống (câu đố phe màu sẽ thêm sau) — game sẽ không mở câu đố');
 }
 
 // 5. assets ---------------------------------------------------------------------------------------------------------

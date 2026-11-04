@@ -28,7 +28,7 @@ const STATE_FILE = path.join(DATA, 'state.json');
 
 const readJson = (f, fallback) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return fallback; } };
 const config = readJson(path.join(dir, 'config.json'), {});
-// ~200 generated questions from the sign data plus the hand-written trivia, in a fresh order each launch.
+// the quiz bank may be empty (the colour-team questions come later): the game then simply never opens a quiz.
 const quiz = buildQuizBank({ extra: readJson(path.join(dir, 'quiz.json'), []) });
 const state = { ...emptyState(), ...readJson(STATE_FILE, {}) };
 const SETTINGS_FILE = path.join(DATA, 'settings.json'); // the panel's switches survive a restart

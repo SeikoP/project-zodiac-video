@@ -81,7 +81,7 @@ test('a full enough shield blocks the attack instead of a freeze', () => {
   assert.equal(game.state.boss.shield, 0);
 });
 
-test('beating the boss pays everyone who hit it, and the top hitter gets the boss card', () => {
+test('beating the boss pays everyone who hit it, and the top hitter gets the bigger bụi sao share', () => {
   const { game, events } = setup({ bossHpMin: 100, bossHpPerViewer: 1, bossReward: 30, bossDiamondDamage: 5 });
   game.chat(u('big', { comment: 'leo' }));
   game.chat(u('small', { comment: 'pisces' }));
@@ -94,8 +94,7 @@ test('beating the boss pays everyone who hit it, and the top hitter gets the bos
   assert.equal(won.mvps.fire.nickname, 'big');
   assert.equal(won.mvps.water.nickname, 'small');
   assert.equal(game.state.boss, null);
-  assert.ok(game.state.viewers.big.cards['leo:boss']);
-  assert.equal(Object.keys(game.state.viewers.small.cards).length, 1);
+  assert.ok(game.state.viewers.big.bag.dust >= game.state.viewers.small.bag.dust + 10, 'the MVP is paid 15 dust, the others 5');
   assert.ok(of(events, 'light').some(e => e.kind === 'boss' && e.userId === 'small' && e.amount === 30));
 });
 
@@ -130,11 +129,12 @@ test('readings wait while the boss is up', () => {
   assert.ok(game.state.fortune);
 });
 
-test('the star chest opens on the quarter hour while people are around; one card per viewer per chest', () => {
+test('the star chest opens on the quarter hour while people are around; one share per viewer per chest', () => {
   const { game, events, advance } = setup({ chestEveryMinutes: 15, chestOpenSeconds: 20 });
   game.chat(u('a', { comment: 'leo' }));
   game.chat(u('a', { comment: 'nhận' }));
-  assert.equal(of(events, 'card').length, 0); // not open yet
+  const dustBefore = game.state.viewers.a.bag.dust;
+  assert.equal(game.state.chest.claimed.a, undefined); // not open yet
   assert.equal(game.changes({}).cosmos.chest.inMs, 14 * 60000);
   advance(13 * 60000);
   game.chat(u('a', { comment: 'vẫn ở đây' }));
@@ -143,9 +143,9 @@ test('the star chest opens on the quarter hour while people are around; one card
   game.chat(u('a', { comment: 'nhận' }));
   game.chat(u('a', { comment: 'nhận!' }));
   game.chat(u('b', { comment: 'nhận' })); // no sign yet
-  const cards = of(events, 'card');
-  assert.equal(cards.length, 1);
-  assert.deepEqual(cards[0].card, { sign: 'leo', edition: 'star' }); // rng 0: own sign, and the lowest roll (no sky edition without a sky)
+  assert.equal(Object.keys(game.state.chest.claimed).length, 1);
+  assert.equal(game.state.viewers.a.bag.dust - dustBefore >= 15, true, 'the claim pays 15 bụi sao');
+  assert.deepEqual(game.state.chest.recent, [{ nickname: 'a', dust: 15 }]);
   assert.equal(of(events, 'need-sign').at(-1).userId, 'b');
   advance(21000);
   assert.equal(of(events, 'chest-close')[0].claims, 1);
@@ -157,27 +157,26 @@ test('nobody around: the chest skips its turn', () => {
   assert.equal(of(events, 'chest-open').length, 0);
 });
 
-test('"khoe thẻ" shows a viewer\'s collection in the vault, at most once per cooldown each', () => {
+test('"kho" shows a viewer vault, at most once per cooldown each', () => {
   const { game, events, advance } = setup({ chestEveryMinutes: 15, vaultCooldownSeconds: 60 });
   advance(14 * 60000 - 1000);
   game.chat(u('a', { comment: 'leo' }));
   advance(1000);
   game.chat(u('a', { comment: 'nhận' }));
-  game.chat(u('a', { comment: 'khoe thẻ nè' }));
-  game.chat(u('a', { comment: 'khoe thẻ' }));
+  game.chat(u('a', { comment: 'kho nè' }));
+  game.chat(u('a', { comment: 'kho' }));
   const shown = of(events, 'vault');
   assert.equal(shown.length, 1);
-  assert.equal(shown[0].cards.unique, 1);
-  assert.equal(shown[0].cards.total, 120); // 12 signs × (5 classic + Hoàng Kim + 4 themed-hour editions)
+  assert.ok(!('cards' in shown[0]) && !('bingo' in shown[0]));
 });
 
-test('keywords: "nhận" claims, "khoe thẻ" shows; "nhân mã" is still just a sign', () => {
+test('keywords: "nhận" claims, "kho" shows; "nhân mã" is still just a sign', () => {
   assert.equal(parseAction('nhận'), 'claim');
   assert.equal(parseAction('Mở rương!'), 'claim');
   assert.equal(parseAction('nhân mã'), null);
   assert.equal(parseAction('nhận xét hay'), null);
-  assert.equal(parseAction('khoe thẻ'), 'vault');
-  assert.equal(parseAction('xem thẻ của mình'), 'vault');
+  assert.equal(parseAction('khoe kho'), 'vault');
+  assert.equal(parseAction('xem thẻ của mình'), null);
 });
 
 test('director keeps the crits and the rare cards when a frame overflows', () => {

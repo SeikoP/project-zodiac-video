@@ -4,7 +4,6 @@
 // Lucky colours/numbers and compatible signs are entertainment-grade, taken from common lists.
 // Shared by the server (Node) and the overlay (browser).
 
-import { PROFILES, PROFILE_LABELS } from './profiles.js';
 
 export const MODES = { cardinal: 'Khởi xướng', fixed: 'Kiên định', mutable: 'Linh hoạt' };
 export const ELEMENT_LABEL = { fire: 'Lửa', earth: 'Đất', air: 'Khí', water: 'Nước' };
@@ -82,19 +81,14 @@ export function insideDates(id) {
   return [addDays(from, 5), subDays(to, 5)].map(([d, m]) => `${pad(d)}/${m}`);
 }
 
-// "Did you know" cards per sign for quiet moments. `lap` rotates which items of each list are shown,
+// "Did you know" cards per sign for quiet moments. `lap` is kept for the callers;
 // so the same sign's card reads differently the next time round.
-const pick = (list, n, lap) => Array.from({ length: Math.min(n, list.length) }, (_, k) => list[(k + lap * n) % list.length]);
 export function factCards(id, labelOf, elementOf, lap = 0) {
-  const s = SIGN_DATA[id], p = PROFILES[id];
+  const s = SIGN_DATA[id];
   const el = ELEMENT_LABEL[elementOf(id)];
   return [
     `${s.symbol} · nguyên tố ${el} · nhóm ${MODES[s.mode]}`,
     `Hợp với ${s.match.slice(0, 2).map(labelOf).join(', ')} · đối cung ${labelOf(s.opposite)}`,
     `Chủ tinh ${s.planet} · màu may mắn ${s.color.toLowerCase()} · số ${s.numbers[0]}`,
-    `${PROFILE_LABELS.strengths}: ${pick(p.strengths, 3, lap).join(' · ')}`,
-    `${PROFILE_LABELS.quirks}: ${pick(p.quirks, 2, lap).join(' · ')}`,
-    `${PROFILE_LABELS.love}: ${pick(p.love, 1, lap)[0].toLowerCase()}`,
-    `${PROFILE_LABELS.jobs}: ${pick(p.jobs, 3, 0).join(' · ').toLowerCase()}`,
   ];
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, emptyState, parseSign, parseAction, cleanWish, titleOf, DEFAULT_CONFIG, SIGNS } from './game.mjs';
+import { createGame, emptyState, parseSign, parseAction, cleanWish, titleOf, DEFAULT_CONFIG, SIGNS, DEMOS } from './game.mjs';
 import { createDirector } from './director.mjs';
 import { drawFortune } from './fortunes.mjs';
 import { giftOf } from './tiktok.mjs';
@@ -14,15 +14,32 @@ test('parseSign reads names with or without accents, and numbers 1-12', () => {
   assert.equal(parseSign('hello'), null);
 });
 
-test('parseSign reads a birthday as day/month', () => {
-  assert.equal(parseSign('12/8'), 'leo');
-  assert.equal(parseSign('sinh 12-8 nha'), 'leo');
-  assert.equal(parseSign('20/1'), 'aquarius');
-  assert.equal(parseSign('19/1'), 'capricorn');
-  assert.equal(parseSign('22/12'), 'capricorn');
-  assert.equal(parseSign('21/12'), 'sagittarius');
-  assert.equal(parseSign('8/20'), 'leo'); // tolerate month/day
-  assert.equal(parseSign('32/13'), null);
+test('a birthday is no longer read: it picks no sign and reveals nothing', () => {
+  for (const c of ['12/8', 'sinh 12-8 nha', '20/1', '8/20', '12 tháng 8']) assert.equal(parseSign(c), null, c);
+  const events = [];
+  const game = createGame({ now: () => Date.UTC(2026, 10, 3, 12), rng: () => 0, onEvent: e => events.push(e), config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false } });
+  game.chat({ userId: 'b1', nickname: 'b1', comment: '12/8' });
+  assert.equal(game.state.viewers.b1.sign ?? null, null);
+  assert.deepEqual(events.filter(e => /^birth/.test(e.type)), []);
+  assert.ok(!events.some(e => e.type === 'show' && e.kind === 'birth'));
+});
+
+test('cards, bingo and birth are gone from the saved state', () => {
+  const st = emptyState();
+  for (const k of ['cards', 'bingo', 'birth']) assert.ok(!(k in st), k);
+});
+
+test('with an empty quiz bank startQuiz() is false and nothing opens', () => {
+  const game = createGame({ now: () => Date.UTC(2026, 10, 3, 12), rng: () => 0, quiz: [], config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: true } });
+  assert.equal(game.startQuiz(), false);
+  assert.equal(game.state.quiz, null);
+});
+
+test('card and bingo comments are ordinary chat now', () => {
+  for (const c of ['bingo', 'khoe thẻ', 'ghép thẻ', 'xem thẻ']) assert.equal(parseAction(c), null, c);
+  assert.equal(parseAction('sổ sao'), 'vault');
+  assert.equal(parseAction('kho'), 'vault');
+  assert.ok(!DEMOS.includes('bingo'));
 });
 
 test('parseAction finds keywords without tripping on everyday words', () => {
@@ -63,7 +80,7 @@ test('joining puts the viewer on stage; comments light their sign, with a cooldo
 });
 
 test('a lit constellation passes extra light to the dimmest dark one', () => {
-  const { game, events } = setup({ constellationCost: 100, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ signLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('b', { comment: 'leo' }));
   game.chat(u('c', { comment: 'aries' }));
   game.gift(u('c', { diamonds: 30 })); // aries 30
@@ -76,7 +93,7 @@ test('a lit constellation passes extra light to the dimmest dark one', () => {
 });
 
 test('lighting all 12 completes the wheel and starts a bigger one', () => {
-  const { game, events } = setup({ constellationCost: 10, wheelGrowth: 0.5, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ signLightCost: 10, wheelGrowth: 0.5, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('d', { comment: 'pisces' }));
   game.gift(u('d', { diamonds: 125 })); // 12 × 10 = 120 completes wheel 1, 5 left for pisces on wheel 2 (cost 15)
   assert.deepEqual(of(events, 'wheel-complete').map(e => e.no), [1]);
@@ -183,7 +200,7 @@ test('quiz rewards the first correct answers', () => {
 });
 
 test('the race ranks all 12 signs live and crowns the brightest sign when the wheel completes', () => {
-  const { game, events } = setup({ constellationCost: 10, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ signLightCost: 10, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('a', { comment: 'leo' }));
   game.chat(u('b', { comment: 'aries' }));
   game.gift(u('b', { diamonds: 4 }));
@@ -425,10 +442,10 @@ test('quiet rooms mostly read a sign, with a quiz and a poll now and then', () =
 });
 
 test('small rooms get smaller goals; they scale with viewers on stage', () => {
-  const small = setup({ adaptiveCrowd: true, constellationCost: 240, crowdFloor: 0.2, crowdFull: 12, moonGoal: 600 }).game;
+  const small = setup({ adaptiveCrowd: true, signLightCost: 240, crowdFloor: 0.2, crowdFull: 12, moonGoal: 600 }).game;
   assert.equal(small.state.wheel.cost, 48);
   assert.equal(small.state.moon.goal, 120);
-  const { game } = setup({ adaptiveCrowd: true, constellationCost: 240, crowdFloor: 0.2, crowdFull: 12, lightPerDiamond: 1, commentLight: 0 });
+  const { game } = setup({ adaptiveCrowd: true, signLightCost: 240, crowdFloor: 0.2, crowdFull: 12, lightPerDiamond: 1, commentLight: 0 });
   for (let i = 0; i < 12; i++) game.chat(u(`v${i}`, { comment: 'leo' }));
   game.gift(u('v0', { diamonds: 600 })); // 12 × 48 completes the first wheel; the next one is priced for 12 viewers
   assert.equal(game.state.wheel.no, 2);
@@ -467,7 +484,7 @@ test('the gift board counts the night, names the top gifter and fires a shared g
 });
 
 test('crowd goals ratchet up by at most 25% per retune and never fall', () => {
-  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0 });
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0 });
   const goals = () => [game.state.wheel.cost, game.state.moon.goal];
   const [w0, m0] = goals();
   assert.deepEqual([w0, m0], [48, 120]); // an empty room starts at the 0.2 floor
@@ -487,14 +504,14 @@ test('crowd goals ratchet up by at most 25% per retune and never fall', () => {
 });
 
 test('crowdRetuneSeconds: 0 keeps the goal set when it was set', () => {
-  const { game, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0, crowdRetuneSeconds: 0 });
+  const { game, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0, crowdRetuneSeconds: 0 });
   for (let i = 0; i < 22; i++) game.chat(u(`v${i}`, { comment: 'Sư Tử' }));
   for (let i = 0; i < 5; i++) advance(30_000);
   assert.deepEqual([game.state.wheel.cost, game.state.moon.goal], [48, 120]);
 });
 
 test('a retune never dims a constellation that is already lit', () => {
-  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, constellationCost: 240, presenceMinutes: 60, commentLight: 0, lightPerDiamond: 1 });
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0, lightPerDiamond: 1 });
   game.chat(u('a', { comment: 'Sư Tử' }));
   game.gift(u('a', { diamonds: 48, count: 1 })); // exactly the small-room cost
   assert.equal(of(events, 'lit').length, 1);

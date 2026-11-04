@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
-import { SQUARES, createBingo, BINGO_DEFAULTS } from './bingo.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { passReward } from './pass.mjs';
 
@@ -51,19 +50,6 @@ test('dự đoán: guessing is free ("đoán A"), one guess each, and a right gu
   assert.ok(s.v('a').bag.dust > 50);
 });
 
-test('bingo: a free centre, squares marked for everyone on stage, a line pays a gem', () => {
-  const s = setup();
-  s.say('a', 'Sư Tử');
-  s.say('a', 'bingo');
-  const card = s.of('bingo-card')[0].card;
-  assert.equal(card.length, 9);
-  assert.equal(card[4].label, 'Có mặt');
-  assert.equal(card[4].marked, true);
-  // every square listens to an event type the quick filter lets through
-  const types = ['boss-defeated', 'pair', 'roast-end', 'quest-done', 'moon-full', 'lucky-start', 'chest-open', 'birth-sky', 'mystery-win', 'quiz-end', 'wish-blessed', 'level-up', 'tug-end', 'gift', 'wheel-complete', 'heat-up', 'lit', 'star-born', 'predict-end'];
-  for (const sq of SQUARES) assert.ok(types.some(type => sq[3]({ type, winners: [1], winner: 'leo', right: 1, rank: 1, level: 3, tier: 'meteor' })), sq[0]);
-});
-
 test('sổ sao: starlight is experience; levels pay out and 10 brings a silver frame', () => {
   const s = setup({ passXpPerLevel: 1 });
   s.say('a', 'Sư Tử');
@@ -78,18 +64,15 @@ test('sổ sao: starlight is experience; levels pay out and 10 brings a silver f
   assert.equal(s.game.snapshot().stage.find(x => x.userId === 'a').frame, s.v('a').pass.level >= 10 ? 'silver' : null);
 });
 
-test('pity: ten chest cards without a rare one make the next one Hoàng Kim', () => {
+test('chest: each "nhận" pays 15 bụi sao once per chest', () => {
   const s = setup({ chestEveryMinutes: 15 });
   s.say('a', 'Sư Tử');
-  let gold = null;
-  for (let i = 0; i < 11 && !gold; i++) {
-    s.game.openChest();
-    s.say('a', 'nhận');
-    gold = s.events.find(e => e.type === 'card' && e.card.edition === 'gold');
-    s.advance(30_000);
-  }
-  assert.ok(gold);
-  assert.equal(s.v('a').pity, 0);
+  const before = s.v('a').bag.dust;
+  s.game.openChest();
+  s.say('a', 'nhận');
+  s.say('a', 'nhận');
+  assert.equal(s.v('a').bag.dust - before >= 15 && s.v('a').bag.dust - before < 30, true);
+  assert.equal(s.events.filter(e => e.type === 'card').length, 0);
 });
 
 test('a gift leaves a golden aura on the giver and grows a patron star', () => {
@@ -109,7 +92,7 @@ test('"Xoá toàn bộ" also clears a tug, a prediction and a headliner in play'
   for (const k of ['tug', 'predict', 'mystery', 'starcatch', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);
 });
 
-// predict and bingo on their own: a bare state, a fixed clock, events collected
+// predict on its own: a bare state, a fixed clock, events collected
 function predictRig(config = {}) {
   let t = 0;
   const events = [];
@@ -154,37 +137,4 @@ test('predict: several right guessers each get the bonus; second guesses, late g
   assert.deepEqual([r.dust('a'), r.dust('c'), r.dust('d')], [10, 0, 0]);
   const end = r.events.find(e => e.type === 'predict-end');
   assert.deepEqual([end.guesses, end.right], [3, 2]);
-});
-
-function bingoRig(ids) {
-  const events = [], gems = {};
-  const st = { night: { no: 1 }, viewers: Object.fromEntries(ids.map(id => [id, { nickname: id, sign: 'leo' }])) };
-  const onStage = new Set(ids);
-  const b = createBingo({ st, cfg: BINGO_DEFAULTS, now: () => 0, onEvent: e => events.push(e), stageIds: () => onStage.keys(), gem: u => { gems[u.userId] = (gems[u.userId] ?? 0) + 1; }, moon: () => {} });
-  for (const id of ids) b.cardOf(id, st.viewers[id]);
-  return { st, b, events, gems, onStage };
-}
-const ALL = SQUARES.map(s => ({ boss: { type: 'boss-defeated' }, pair: { type: 'pair' }, roast: { type: 'roast-end' }, quest: { type: 'quest-done' }, moon: { type: 'moon-full' }, lucky: { type: 'lucky-start' }, chest: { type: 'chest-open' }, birth: { type: 'birth-sky' }, mystery: { type: 'mystery-win', rank: 1 }, quiz: { type: 'quiz-end', winners: ['x'] }, wish: { type: 'wish-blessed' }, level: { type: 'level-up' }, tug: { type: 'tug-end', winner: 'leo' }, gift: { type: 'gift', tier: 'sparkle' }, fireworks: { type: 'wheel-complete' }, heat: { type: 'heat-up', level: 3 }, lit: { type: 'lit' }, newstar: { type: 'star-born' }, predict: { type: 'predict-end', right: 1 } }[s[0]]));
-
-test('bingo: every event a whole card needs completes it for several viewers at once, one bingo event and gem per line', () => {
-  const r = bingoRig(['a', 'b']);
-  for (const e of ALL) r.b.note(e);
-  for (const id of ['a', 'b']) assert.equal(r.st.viewers[id].bingo.full, true, id);
-  for (const id of ['a', 'b']) {
-    assert.ok(r.gems[id] >= 1, id); // cards differ per viewer, so each gets its own number of bingo steps
-    assert.equal(r.events.filter(e => e.type === 'bingo' && e.userId === id).length, r.gems[id], id);
-  }
-});
-
-test('bingo: the same event twice adds nothing, and a viewer who left the stage is not marked', () => {
-  const r = bingoRig(['a', 'b']);
-  const sq = r.st.viewers.a.bingo.squares.find(s => s !== 'free');
-  const e = ALL[SQUARES.findIndex(s => s[0] === sq)];
-  r.onStage.delete('b');
-  const bBefore = structuredClone(r.st.viewers.b.bingo);
-  r.b.note(e);
-  const once = structuredClone(r.st.viewers.a.bingo);
-  r.b.note(e);
-  assert.deepEqual(r.st.viewers.a.bingo, once);
-  assert.deepEqual(r.st.viewers.b.bingo, bBefore);
 });

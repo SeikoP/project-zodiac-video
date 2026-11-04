@@ -78,7 +78,7 @@ test('the act closes with its MVP and the headliner ends', () => {
   assert.ok(close[0].top[0].nickname);
   assert.equal(close[0].next.label, 'Hội ngộ');
   assert.equal(s.game.state.head, null);
-  assert.ok(s.events.find(e => e.type === 'card' && e.why === 'mvp'));
+  assert.ok(s.game.state.viewers[close[0].top[0].userId].bag.dust >= 10, 'the act MVP takes home some bụi sao');
 });
 
 test('acts: false leaves everything on and no act running', () => {

@@ -13,7 +13,7 @@
     25,
     15
   ],
-  "constellationCost": 240,
+  "signLightCost": 240,
   "wheelGrowth": 0.5,
   "moonGoal": 600,
   "moonGrowth": 1.5,

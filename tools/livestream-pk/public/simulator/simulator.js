@@ -177,7 +177,7 @@ async function runScenario(name) {
   const step = async fn => { if (!alive()) return; await fn(); };
   try {
     if (name === 'warmup') {
-      for (const [person, comment] of [['Minh', 'bạch dương'], ['An', 'xin quẻ'], ['Huy', 'ước thi đỗ'], ['Linh', '12/8/1998']]) {
+      for (const [person, comment] of [['Minh', 'bạch dương'], ['An', 'xin quẻ'], ['Huy', 'ước thi đỗ'], ['Linh', 'sư tử']]) {
         await step(() => joinRoom(person)); await wait(300);
         await step(() => sendComment(comment, person)); await wait(550);
       }

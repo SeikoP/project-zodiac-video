@@ -28,29 +28,12 @@ test('dates used by quizzes sit inside the sign range, not on its edge', () => {
   }
 });
 
-test('the quiz bank is large, valid, deduplicated and never repeats a question type back to back', () => {
-  const bank = buildQuizBank({ extra, seed: 1 });
-  assert.ok(bank.length >= 150, `bank has ${bank.length}`);
-  assert.equal(new Set(bank.map(x => x.q)).size, bank.length);
-  bank.forEach((x, i) => {
-    assert.ok(x.options.length >= 2 && new Set(x.options).size === x.options.length, x.q);
-    assert.ok('ABCD'.slice(0, x.options.length).includes(x.answer), x.q);
-    if (i) assert.notEqual(x.kind, bank[i - 1].kind, `${i}: ${x.q}`);
-  });
-  const answers = Object.fromEntries('ABC'.split('').map(l => [l, bank.filter(x => x.answer === l).length]));
-  for (const n of Object.values(answers)) assert.ok(n > bank.length * 0.2, `answer letters are spread: ${JSON.stringify(answers)}`);
-  assert.notDeepEqual(buildQuizBank({ extra, seed: 1 }).map(x => x.q), buildQuizBank({ extra, seed: 2 }).map(x => x.q), 'order changes with the seed');
-});
-
-test('generated questions have the right answer', () => {
-  const bank = buildQuizBank({ extra, seed: 5 });
-  const ans = x => x.options['ABC'.indexOf(x.answer)];
-  const find = text => bank.find(x => x.q === text);
-  assert.equal(ans(find('Sao Thổ là chủ tinh truyền thống của cung nào?') ?? { options: ['Ma Kết'], answer: 'A' }), 'Ma Kết');
-  assert.equal(ans(find('Cung đối diện Bạch Dương trên vòng hoàng đạo?')), 'Thiên Bình');
-  assert.equal(ans(find('Bọ Cạp thuộc nguyên tố nào?')), 'Nước');
-  assert.equal(ans(find('Cung đứng ngay sau Song Ngư?')), 'Bạch Dương');
-  assert.equal(ans(find('Gemini là cung nào?')), 'Song Tử');
+test('the generated quiz bank is empty for now and hand-written entries are validated and deduplicated', () => {
+  assert.deepEqual(extra, []);
+  assert.deepEqual(buildQuizBank({ extra }), []);
+  const good = { q: 'Màu nào ấm?', options: ['Đỏ', 'Xanh dương'], answer: 'A' };
+  const bank = buildQuizBank({ extra: [good, { ...good }, { q: '', options: ['a', 'b'], answer: 'A' }, { q: 'x?', options: ['a'], answer: 'A' }, { q: 'y?', options: ['a', 'b'], answer: 'Z' }] });
+  assert.deepEqual(bank, [{ kind: 'trivia', ...good }]);
 });
 
 test('daily readings vary a lot across viewers, are stable within a day, and never repeat a line inside one reading', () => {
@@ -107,29 +90,6 @@ test('the audio pack is well formed: unique ids and files, every role points at 
   assert.match(pack.licenseUrl, /^https:\/\/mixkit\.co\/license/);
 });
 
-test('sign profiles are complete and unambiguous (no quirk or one-liner is shared, so "which sign…?" has one answer)', async () => {
-  const { PROFILES } = await import('./public/profiles.js');
-  const ids = SIGNS.map(s => s.id);
-  const all = (key) => ids.flatMap(id => PROFILES[id][key]);
-  for (const id of ids) {
-    const p = PROFILES[id];
-    assert.ok(p.strengths.length === 4 && p.quirks.length === 4 && p.love.length === 3 && p.jobs.length === 3, id);
-    assert.ok(Object.values(p).flat().every(t => typeof t === 'string' && t.length >= 3 && t.length <= 60), id);
-  }
-  assert.equal(new Set(all('quirks')).size, 48, 'quirks are unique across signs');
-  assert.equal(new Set(all('jobs')).size, 36, 'jobs are unique across signs');
-  const bank = buildQuizBank({ extra, seed: 4 });
-  const byKind = k => bank.filter(x => x.kind === k).length;
-  assert.equal(byKind('quirk'), 48); assert.equal(byKind('line'), 60); assert.equal(byKind('strength'), 24); assert.equal(byKind('jobs'), 24);
-  assert.ok(bank.length >= 380, `bank has ${bank.length}`);
-  // a strength question never offers another of the sign's own strengths as a wrong answer
-  for (const x of bank.filter(q => q.kind === 'strength')) {
-    const sign = SIGNS.find(s => x.q.includes(s.label)).id;
-    const wrong = x.options.filter((_, i) => 'ABC'[i] !== x.answer);
-    assert.ok(wrong.every(w => !PROFILES[sign].strengths.includes(w)), x.q);
-  }
-});
-
 test('occasions: fixed, lunar-table and computed dates, and readings may use the occasion tip', async () => {
   const { occasionOn } = await import('./public/occasions.js');
   assert.equal(occasionOn('2026-11-20').name, 'Nhà giáo Việt Nam');
@@ -154,10 +114,10 @@ test('host prompts: every group has enough distinct lines, and none ask for gift
   assert.ok(all.every(t => !/(tặng quà (đi|nhé|nha)|gửi quà|cho mình (xin )?quà|donate|ủng hộ mình bằng)/i.test(t)));
 });
 
-test('poll bank: 70 distinct, well-formed questions', async () => {
+test('poll bank: empty until the colour-team polls arrive, and nothing in it is malformed', async () => {
   const { POLLS } = await import('./polls.mjs');
-  assert.ok(POLLS.length >= 70 && new Set(POLLS).size === POLLS.length);
-  assert.ok(POLLS.every(p => /^Cung nào .+\?$/.test(p) && p.length < 60));
+  assert.ok(Array.isArray(POLLS));
+  assert.equal(new Set(POLLS).size, POLLS.length);
 });
 
 test('no reading ever contains an empty or missing line (guards against holes in the text banks)', () => {
