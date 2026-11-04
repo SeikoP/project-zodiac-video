@@ -102,3 +102,15 @@ test('Garden join notices do not expose slot-number identity', () => {
   const source = fs.readFileSync(new URL('../public/garden/garden.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /chậu #|padStart\(3, '0'\)/);
 });
+
+test('rackGeometry describes one outer frame containing two separated shelf wings', () => {
+  assert.equal(typeof view.rackGeometry, 'function');
+  const rack = view.rackGeometry(cfg);
+  assert.equal(rack.wings.length, 2);
+  assert.ok(rack.wings[0].right < rack.wings[1].left, 'visual wings have a readable center gap');
+  assert.ok(rack.outer.left < plotPos(owned('cloud-1', 0), meta).x);
+  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 95), meta).x);
+  assert.equal(rack.wings[0].top, rack.wings[1].top);
+  assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
+  assert.ok(rack.outer.right - rack.outer.left > 1500, 'greenhouse fills most of the usable width before camera scaling');
+});
