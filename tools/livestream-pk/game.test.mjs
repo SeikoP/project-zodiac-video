@@ -581,3 +581,29 @@ test('a welcome closes after its window; a "chào" goes to the newest open one',
   game.chat(u('a', { comment: 'chào' }));
   assert.equal(of(events, 'welcome-hi')[0].nickname, 'n3');
 });
+
+test('picking a sign gives the viewer a named star that stays', () => {
+  const events = [];
+  const g = createGame({ config: { acts: false }, now: () => 1_000_000, rng: () => 0.25, onEvent: e => events.push(e) });
+  g.chat({ userId: 'a', nickname: 'An', comment: 'Sư Tử' });
+  assert.equal(events.filter(e => e.type === 'star-born').length, 1);
+  g.chat({ userId: 'a', nickname: 'An', comment: 'đổi Bảo Bình' });
+  assert.equal(events.filter(e => e.type === 'star-born').length, 1);
+  const stars = g.snapshot().stars;
+  assert.equal(stars.length, 1);
+  assert.equal(stars[0].nickname, 'An');
+  assert.equal(stars[0].x, 0.25);
+});
+
+test('a big moment comes on schedule: star roll call, then a meteor shower', () => {
+  let t = 1_000_000;
+  const events = [];
+  const g = createGame({ config: { acts: false, showEverySeconds: 75, bossEverySeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999 }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
+  g.chat({ userId: 'a', nickname: 'An', comment: 'Sư Tử' });
+  assert.ok(g.snapshot().cosmos.show.inMs > 0);
+  t += 76_000; g.chat({ userId: 'a', nickname: 'An', comment: 'hi' }); g.tick();
+  const first = events.filter(e => e.type === 'showtime');
+  assert.equal(first.length, 1);
+  assert.equal(first[0].kind, 'starcall');
+  assert.equal(first[0].people[0].nickname, 'An');
+});
