@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// Persist a real agent-authored, four-part Phase02 payload with an immutable
-// approved narration precondition; never generate fictional creative inputs.
+// Persist the canonical agent-authored Visual Intent and deterministically project
+// all Phase02 derived plans with an immutable approved narration precondition.
+// Legacy four-part payloads remain compatibility-only; fresh authoring should use
+// zodiac-visual-intent@1 and never hand-edit compiler-owned projections.
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir,open,rm,rename,lstat} from 'node:fs/promises';
 import path from 'node:path';
