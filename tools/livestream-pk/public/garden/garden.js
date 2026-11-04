@@ -36,6 +36,12 @@ let cam = { x: 650, y: 600, zoom: 1.05 }, from = cam, to = cam, shotAt = 0, serv
 const EASE_MS = 850;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
+const TIER_SCENES = [
+  { rail: '#B8D6C4', trim: '#8EC0B9', flag: '#EBC49E' },
+  { rail: '#D9C7A9', trim: '#A9CDBF', flag: '#F2C45C' },
+  { rail: '#E9D38C', trim: '#E3A17F', flag: '#F2C45C' },
+  { rail: '#C8C4D7', trim: '#9FBDB6', flag: '#DDB6BA' },
+];
 const eventNames = { rain: 'Mưa mây', pests: 'Bão sâu', merchant: 'Thương lái', golden: 'Giờ vàng' };
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
@@ -176,6 +182,33 @@ function cloudPath(width, height) {
   ctx.closePath();
 }
 
+function drawBackdrop(now) {
+  const sky = ctx.createLinearGradient(0, 0, 0, VP.h);
+  sky.addColorStop(0, serverEvent?.kind === 'golden' ? '#F5E7B4' : '#EAF2EC');
+  sky.addColorStop(.55, '#F6F0E6');
+  sky.addColorStop(1, '#E1E9DE');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, VP.w, VP.h);
+
+  const drift = reduceMotion ? 0 : Math.sin(now / 5000) * 18;
+  ctx.save(); ctx.globalAlpha = .55;
+  ctx.beginPath(); ctx.arc(860 + drift, 460, 118, 0, Math.PI * 2); ctx.fillStyle = C.ochre; ctx.fill();
+  ctx.globalAlpha = .28;
+  for (const [x, y, w] of [[120,500,260],[780,900,330],[170,1450,290]]) {
+    ctx.save(); ctx.translate(x - drift * .6, y); cloudPath(w, w * .32); ctx.fillStyle = C.card; ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+
+  // A pair of hanging vines frame the whole vertical garden and visually connects every terrace.
+  ctx.save(); ctx.strokeStyle = 'rgba(47,60,68,.18)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  for (const side of [58, VP.w - 58]) {
+    ctx.beginPath(); ctx.moveTo(side, -20); ctx.bezierCurveTo(side + (side < VP.w / 2 ? 45 : -45), 520, side - (side < VP.w / 2 ? 35 : -35), 1180, side, VP.h + 20); ctx.stroke();
+    for (let y = 270; y < VP.h; y += 310) {
+      ctx.save(); ctx.globalAlpha = .32; drawLeaf(side + (side < VP.w / 2 ? 12 : -12), y, 20, side < VP.w / 2 ? -.8 : .8, y % 620 ? C.teal : C.ochre); ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
 function drawLeaf(x, y, size, angle = 0, color = C.teal) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -198,31 +231,56 @@ function drawVine(x1, y1, x2, y2) {
 
 function drawTier(tier, index) {
   const cfg = meta.cfg, center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
-  const width = cfg.tierWidth - 150, height = 900, s = cam.zoom;
+  const width = cfg.tierWidth - 150, height = 900, s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
   ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
+
+  // Cloud foundation: this is now only the floating base. The greenhouse frame and shelves
+  // above it are the primary structure, so pots no longer look like unrelated icons.
   cloudPath(width, height); ctx.fillStyle = C.shadow; ctx.fill();
   ctx.save(); ctx.translate(0, -20); cloudPath(width, height); ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 9; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke(); ctx.restore();
-  ctx.save(); ctx.globalAlpha = .55;
-  ctx.beginPath(); ctx.moveTo(-width * .40, -height * .17); ctx.quadraticCurveTo(-width * .12, -height * .25, width * .02, -height * .16); ctx.quadraticCurveTo(width * .26, -height * .08, width * .40, -height * .16); ctx.lineTo(width * .39, height * .20); ctx.quadraticCurveTo(width * .06, height * .27, -width * .02, height * .20); ctx.quadraticCurveTo(-width * .24, height * .26, -width * .40, height * .17); ctx.closePath();
-  ctx.fillStyle = C.teal; ctx.fill(); ctx.restore();
-  // Soft garden benches visually connect the pots into one terrace instead of leaving
-  // 108 unrelated icons floating on a cloud.
-  ctx.save(); ctx.globalAlpha = .20;
+  ctx.save(); ctx.globalAlpha = .34;
+  ctx.beginPath(); ctx.moveTo(-width * .42, 90); ctx.quadraticCurveTo(-width * .1, 165, width * .05, 105); ctx.quadraticCurveTo(width * .28, 35, width * .42, 105); ctx.lineTo(width * .40, 280); ctx.quadraticCurveTo(0, 350, -width * .40, 270); ctx.closePath();
+  ctx.fillStyle = scene.trim; ctx.fill(); ctx.restore();
+
+  // Greenhouse / balcony frame.
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 11;
+  ctx.beginPath(); ctx.moveTo(-1110, -330); ctx.quadraticCurveTo(0, -445, 1110, -330); ctx.stroke();
+  ctx.strokeStyle = scene.rail; ctx.lineWidth = 24;
+  ctx.beginPath(); ctx.moveTo(-1110, -330); ctx.quadraticCurveTo(0, -445, 1110, -330); ctx.stroke();
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+  for (const x of [-1040, -350, 350, 1040]) {
+    ctx.beginPath(); ctx.moveTo(x, -335); ctx.lineTo(x, 365); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 14; ctx.stroke();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+  }
+
+  // Six continuous shelves line up exactly with the six plot rows.
   for (let row = 0; row < 6; row++) {
-    const y = -300 + row * cfg.plotCell + 48;
-    ctx.fillStyle = row % 2 ? C.ochre : C.teal;
-    ctx.beginPath(); ctx.roundRect(-1060, y, 2120, 28, 14); ctx.fill();
+    const y = -242 + row * cfg.plotCell;
+    ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(-1090, y + 13, 2180, 34, 15); ctx.fill();
+    ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.roundRect(-1090, y, 2180, 34, 14); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = .28; ctx.fillStyle = scene.trim; ctx.fillRect(-1020, y + 7, 2040, 8); ctx.globalAlpha = 1;
+  }
+
+  // Top garland and hanging tags make the architecture read as one garden room.
+  ctx.strokeStyle = scene.trim; ctx.lineWidth = 9;
+  ctx.beginPath(); ctx.moveTo(-960, -318); ctx.quadraticCurveTo(-480, -255, 0, -315); ctx.quadraticCurveTo(480, -375, 960, -318); ctx.stroke();
+  for (const x of [-820, -410, 410, 820]) {
+    ctx.beginPath(); ctx.moveTo(x, -310); ctx.lineTo(x, -265); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = x < 0 ? scene.flag : scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(x - 22, -266, 44, 52, 8); ctx.fill(); ctx.stroke();
   }
   ctx.restore();
   ctx.restore();
 
-  // A paper tag marks the level without bringing back sign names or sign symbols.
-  const tag = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + 220 }, cam, VP), tagW = 680 * s, tagH = 126 * s;
-  ctx.save(); ctx.translate(tag.x, tag.y); ctx.rotate(-.012);
-  ctx.beginPath(); ctx.moveTo(-tagW * .50, -tagH * .43); ctx.lineTo(tagW * .49, -tagH * .48); ctx.quadraticCurveTo(tagW * .52, 0, tagW * .48, tagH * .45); ctx.lineTo(-tagW * .48, tagH * .50); ctx.quadraticCurveTo(-tagW * .52, 0, -tagW * .50, -tagH * .43);
-  ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 6 * s); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = C.ink; ctx.font = `bold ${Math.max(23, 82 * s)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(`${String(index + 1).padStart(2, '0')}  ·  ${tier.label}`, 0, 0);
+  const tag = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + 185 }, cam, VP), tagW = 620 * s, tagH = 112 * s;
+  ctx.save(); ctx.translate(tag.x, tag.y); ctx.rotate(index % 2 ? .008 : -.012);
+  ctx.fillStyle = scene.flag; ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 6 * s);
+  ctx.beginPath(); ctx.roundRect(-tagW / 2, -tagH / 2, tagW, tagH, Math.max(8, 22 * s)); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.font = `bold ${Math.max(23, 72 * s)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(`${String(index + 1).padStart(2, '0')} · ${tier.label}`, 0, 1);
   ctx.restore();
   drawTierLandmark(index);
 }
@@ -281,10 +339,14 @@ function drawPlot(p, lod) {
   const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
   ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = p.awake ? 1 : .58;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.ellipse(0, 43, 40, 8, -.06, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-34, 4); ctx.quadraticCurveTo(-37, 1, -33, 11); ctx.lineTo(-26, 43); ctx.quadraticCurveTo(-2, 50, 28, 42); ctx.lineTo(34, 8); ctx.quadraticCurveTo(8, 15, -34, 4); ctx.closePath();
-  ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-34, 5); ctx.quadraticCurveTo(-2, 14, 34, 7); ctx.stroke();
+  // Saucer + pot + soil share the same perspective as the shelf, making the crop feel planted.
+  ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
+  ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+  ctx.globalAlpha = .24; ctx.fillStyle = C.card; ctx.beginPath(); ctx.roundRect(-27, 23, 54, 8, 4); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke();
   if (p.crop) drawRipeCrop(p.crop.type, p.stage ?? 0);
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
@@ -314,15 +376,17 @@ function drawPlot(p, lod) {
     ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + (focused ? 3 : 2));
 
     const avatarR = focused ? Math.max(26, size * .16) : Math.max(12, size * .095);
-    const avatarY = at.y - size * .69;
-    ctx.beginPath(); ctx.arc(at.x, avatarY, avatarR + 3, 0, Math.PI * 2); ctx.fillStyle = C.card; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5; ctx.stroke();
+    const avatarX = at.x - size * .28, avatarY = at.y - size * .62;
+    // A small plant-label stake physically connects identity to the pot.
+    ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5; ctx.beginPath(); ctx.moveTo(avatarX + avatarR * .2, avatarY + avatarR); ctx.lineTo(at.x - size * .18, at.y - size * .05); ctx.stroke();
+    ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR + 3, 0, Math.PI * 2); ctx.fillStyle = C.card; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5; ctx.stroke();
     const img = avatars.get(p.owner.avatar);
     if (img) {
-      ctx.save(); ctx.beginPath(); ctx.arc(at.x, avatarY, avatarR, 0, Math.PI * 2); ctx.clip();
-      ctx.drawImage(img, at.x - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(img, avatarX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2); ctx.restore();
     } else {
       ctx.fillStyle = C.slate; ctx.font = `bold ${Math.round(avatarR * 1.2)}px ${FONT}`; ctx.textBaseline = 'middle';
-      ctx.fillText((p.owner.nickname || '?').trim().slice(0, 1).toUpperCase(), at.x, avatarY + 1);
+      ctx.fillText((p.owner.nickname || '?').trim().slice(0, 1).toUpperCase(), avatarX, avatarY + 1);
     }
     ctx.restore();
   }
@@ -417,6 +481,7 @@ function frame(now) {
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, EASE_MS);
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
+  drawBackdrop(now);
   for (let i = 0; i < meta.tiers.length - 1; i++) {
     const y = (i + 1) * meta.cfg.tierHeight;
     drawVine(meta.cfg.tierWidth - 240, y - 430, meta.cfg.tierWidth - 350, y + 430);
