@@ -53,7 +53,14 @@ async function frameHtml(root,scene,target,event,phase,assets,cache,assessment,s
 const fileExists=p=>access(p).then(()=>true,()=>false);
 async function previewSceneFingerprint(root,scene,assets){
  const refs=new Set();for(const e of scene.entities??[])for(const st of Object.values(e.states??{}))if(st.asset)refs.add(st.asset);
- const assetHashes={};for(const id of [...refs].sort()){const a=assets?.[id];if(!a?.path)fail('PREVIEW_ASSET_MISSING',id+' lacks asset path');const rel=a.path.replaceAll('\\','/');const abs=path.resolve(root,rel);assetHashes[rel]=sha(await readFile(abs));}
+ const assetHashes={};for(const id of [...refs].sort()){
+  const a=assets?.[id];if(!a?.path)fail('PREVIEW_ASSET_MISSING',id+' lacks asset path');
+  const rel=a.path.replaceAll('\\','/');
+  if(rel.startsWith('/')||rel.split('/').includes('..')||rel.includes(':')||!rel.toLowerCase().endsWith('.svg'))fail('PREVIEW_ASSET_PATH_UNSAFE',rel);
+  const abs=path.resolve(root,rel),real=await realpath(abs).catch(e=>{if(e.code==='ENOENT')fail('PREVIEW_ASSET_MISSING',rel);throw e;});
+  if(!real.startsWith(path.resolve(root)+path.sep))fail('PREVIEW_ASSET_PATH_UNSAFE',rel);
+  assetHashes[rel]=sha(await readFile(real));
+ }
  return {input_sha256:sha(JSON.stringify(scene)),asset_hashes:assetHashes};
 }
 async function readPreviewSceneCache(root,out,scene,assets,compilerSha){
