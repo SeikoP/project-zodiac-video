@@ -114,3 +114,12 @@ test('rackGeometry describes one outer frame containing two separated shelf wing
   assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
   assert.ok(rack.outer.right - rack.outer.left > 1500, 'greenhouse fills most of the usable width before camera scaling');
 });
+
+test('dense overview label width always leaves a gap between adjacent pots', () => {
+  assert.equal(typeof view.overviewLabelWidth, 'function');
+  for (const zoom of [.45, .55, .65, .82]) {
+    const width = view.overviewLabelWidth(cfg, zoom);
+    assert.ok(width + 6 <= cfg.potSpacingX * zoom, `labels overlap at zoom ${zoom}`);
+    assert.ok(width >= 48, 'labels remain large enough to carry a short nickname');
+  }
+});
