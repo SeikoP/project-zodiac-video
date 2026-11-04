@@ -68,6 +68,7 @@ const CROP_ART = {
   nammay: { common: '/garden/assets/crop-nammay.svg', lush: '/garden/assets/crop-nammay-lush.svg', golden: '/garden/assets/crop-nammay-golden.svg' },
 };
 const artCache = new Map();
+const ALL_ART=[...Object.values(EVENT_ART),...DECOR_ART,...Object.values(POT_ART),...Object.values(CROP_ART).flatMap(v=>Object.values(v))];
 function gardenArt(src) {
   if (!src) return null;
   if (!artCache.has(src)) {
@@ -79,6 +80,7 @@ function gardenArt(src) {
   const image = artCache.get(src);
   return image.complete && image.naturalWidth ? image : null;
 }
+const preloadGardenArt=()=>ALL_ART.forEach(src=>gardenArt(src));
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
@@ -120,7 +122,8 @@ function handleFx(fx) {
     case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
     case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
-    case 'event-start':
+    case 'event-start': break;
+    case 'event-active':
       music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
       break;
     case 'event-end':
@@ -173,6 +176,7 @@ function onMessage(event, data) {
     meta = data;
     hint.textContent = 'Mỗi người = 1 chậu · bình luận để vào Khu Gieo Hạt';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
+    preloadGardenArt();
     music.resume();
   } else if (event === 'reset') {
     plots.clear(); floaters.length = 0; serverEvent = null; presentedEventKind = null;
@@ -182,7 +186,7 @@ function onMessage(event, data) {
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
       if (!serverEvent) presentedEventKind = null;
-      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+      if (serverEvent?.phase === 'active') music.setMood(serverEvent.kind === 'golden' || serverEvent.kind === 'pests' ? 'upbeat' : 'calm');
     }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
@@ -206,10 +210,10 @@ function onMessage(event, data) {
     shotLabel.classList.toggle('active', data.kind !== 'overview');
     if (data.kind === 'event' && data.eventKind) {
       presentedEventKind = data.eventKind;
-      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
+      const role = ({ rain: 'actOpen', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
       sfx(role, null, { duck: .28, ms: 2800 });
     } else if (data.kind === 'gift') {
-      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[data.giftKind] ?? 'milestone';
+      const role = ({ dew: 'sparkle', star: 'milestone', rain: 'firework', tree: 'starFly' })[data.giftKind] ?? 'milestone';
       sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
     }
     focusPlot = data.plotId ?? null;
@@ -444,7 +448,21 @@ function drawPlot(p, lod) {
     }
     const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
     if (cropImage) ctx.drawImage(cropImage, -49, -96, 98, 98);
-    else drawRipeCrop(p.crop.type, p.stage ?? 0);
+    else {
+      drawRipeCrop(p.crop.type, p.stage ?? 0);
+      if ((p.stage ?? 0) < 3 && variant === 'lush') {
+        drawLeaf(-17,-31,12,-1.05,C.teal); drawLeaf(17,-37,11,.9,C.teal);
+      } else if ((p.stage ?? 0) < 3 && variant === 'golden') {
+        drawLeaf(-12,-29,11,-.9,C.ochre); drawSparkle(22,-44,6,C.ochre);
+      }
+    }
+
+    if (p.water < .22) {
+      ctx.strokeStyle=C.coral;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(-14,5);ctx.lineTo(-5,10);ctx.lineTo(2,5);ctx.lineTo(12,10);ctx.stroke();
+    } else if (p.water > .65) {
+      ctx.fillStyle=C.teal;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(-30,4,4,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }
 
     if (p.crop.weeds) {
       ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
@@ -585,34 +603,43 @@ function drawAtmosphere(now, activeTierIds) {
   }
 }
 
-function renderEventHero() {
-  const e = visualEvent();
-  stage.classList.toggle('event-live', Boolean(e));
-  eventHero.classList.toggle('on', Boolean(e));
-  eventHero.setAttribute('aria-hidden', String(!e));
-  if (!e) return;
+let lastEventDomAt=0,lastEventDomKey='';
+function renderEventHero(now) {
+  const e=visualEvent(),key=e?`${e.kind}:${e.phase}:${e.startedAt}`:'none';
+  if(key===lastEventDomKey && now-lastEventDomAt<250)return;
+  lastEventDomAt=now;lastEventDomKey=key;
+  stage.classList.toggle('event-live',Boolean(e));
+  eventHero.classList.toggle('on',Boolean(e));
+  eventHero.setAttribute('aria-hidden',String(!e));
+  if(!e)return;
 
-  const src = EVENT_ART[e.kind] ?? '';
-  if (eventArt.getAttribute('src') !== src) eventArt.setAttribute('src', src);
-  eventArt.alt = eventNames[e.kind] ?? 'Sự kiện';
-  eventHero.dataset.kind = e.kind;
-  eventHeroTitle.textContent = eventNames[e.kind] ?? e.kind;
-  eventHeroHint.textContent = meta.copy?.eventHint?.[e.kind] ?? '';
+  const src=EVENT_ART[e.kind]??'';
+  if(eventArt.getAttribute('src')!==src)eventArt.setAttribute('src',src);
+  eventArt.alt=eventNames[e.kind]??'Sự kiện';
+  eventHero.dataset.kind=e.kind;
+  eventHeroTitle.textContent=eventNames[e.kind]??e.kind;
+  const activeFor=Math.max(0,Date.now()-Number(e.startedAt||Date.now()));
+  eventHero.classList.toggle('compact',activeFor>3500);
 
-  const key = { rain: 'rainMs', pests: 'pestStormMs', merchant: 'merchantMs', golden: 'goldenMs' }[e.kind];
-  const duration = Math.max(1, Number(meta.cfg?.[key]) || 1);
-  const remaining = Math.max(0, Number(e.endsAt || 0) - Date.now());
-  let progress = Math.max(0, Math.min(1, remaining / duration));
-  let metaText = `Còn ${Math.ceil(remaining / 1000)} giây`;
-  if (e.kind === 'pests' && Number(e.total) > 0) {
-    const cleared = Number(e.cleared) || 0;
-    progress = Math.max(0, Math.min(1, cleared / e.total));
-    metaText = `${cleared}/${e.total} ổ sâu đã dọn · còn ${Math.ceil(remaining / 1000)} giây`;
-  } else if (e.kind === 'rain') metaText = `Tăng trưởng ×${meta.cfg.rainMult} · ${metaText}`;
-  else if (e.kind === 'golden') metaText = `Vàng ×${meta.cfg.goldenMult} · ${metaText}`;
-  else if (e.kind === 'merchant') metaText = `Giá thu mua ×${meta.cfg.merchantMult} · ${metaText}`;
-  eventHeroMeta.textContent = metaText;
-  eventMeterFill.style.width = `${Math.round(progress * 100)}%`;
+  const cropLabel=e.crop&&(meta.crops?.[e.crop]?.label??e.crop);
+  const hints={
+    rain:`Cây lớn ×${meta.cfg.rainMult} · tiếp tục chăm cây`,
+    pests:'Gõ “bắt sâu” để cùng cứu vườn',
+    merchant:cropLabel?`${cropLabel} ×${meta.cfg.merchantMult} vàng · cây chín? gõ “hái”`:'Chợ đang chọn cây thu mua',
+    golden:`Thu hoạch ×${meta.cfg.goldenMult} vàng · gõ “hái”`,
+  };
+  eventHeroHint.textContent=hints[e.kind]??'';
+
+  const keyMs={rain:'rainMs',pests:'pestStormMs',merchant:'merchantMs',golden:'goldenMs'}[e.kind];
+  const duration=Math.max(1,Number(meta.cfg?.[keyMs])||1),remaining=Math.max(0,Number(e.endsAt||0)-Date.now());
+  let progress=Math.max(0,Math.min(1,remaining/duration));
+  let metaText=`Còn ${Math.ceil(remaining/1000)} giây`;
+  if(e.kind==='pests'&&Number(e.total)>0){
+    const cleared=Number(e.cleared)||0;progress=Math.max(0,Math.min(1,cleared/e.total));
+    metaText=`${cleared}/${e.total} ổ sâu đã dọn · ${Math.ceil(remaining/1000)}s`;
+  } else if(e.kind==='merchant'&&cropLabel) metaText=`${cropLabel} ×${meta.cfg.merchantMult} · ${Math.ceil(remaining/1000)}s`;
+  eventHeroMeta.textContent=metaText;
+  eventMeterFill.style.width=`${Math.round(progress*100)}%`;
 }
 
 function drawFocus(now) {
@@ -649,8 +676,10 @@ function drawFloaters(now) {
 let lastFrameAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!meta || now - lastFrameAt < 1000 / 45 - 2) return;
-  lastFrameAt = now;
+  if (!meta) return;
+  const moving=now-shotAt<cameraEaseMs+120,eventLive=Boolean(visualEvent()),fps=moving||eventLive?45:floaters.length?30:20;
+  if(now-lastFrameAt<1000/fps-2)return;
+  lastFrameAt=now;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
   ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[visualEvent()?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
@@ -669,7 +698,7 @@ function frame(now) {
   drawShelfFronts();
   drawFocus(now);
   drawFloaters(now);
-  renderEventHero();
+  renderEventHero(now);
 }
 requestAnimationFrame(frame);
 connect();

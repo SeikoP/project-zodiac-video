@@ -155,6 +155,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const frame = setInterval(() => {
     garden.tick();
     const shot = camera.tick();
+    if (shot?.kind === 'event' && shot.eventKind) garden.events.present(shot.eventKind);
     if (shot) { lastShot = shot; hub.broadcast('shot', shot); }
     const fx = coalescer.flush();
     for (const c of hub.clients) {
