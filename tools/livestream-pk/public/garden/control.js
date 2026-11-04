@@ -66,9 +66,16 @@ function renderStatus(s) {
   $('activity').textContent = `${s.event ?? 'Không sự kiện'} · ${s.camera.current ?? 'camera chờ'}`;
   cameraLocked = Boolean(s.camera.locked);
   $('cameraLock').textContent = cameraLocked ? 'Mở khóa camera' : 'Khóa camera';
+  const auto = s.autoplay ?? { running: false, bots: 0 };
+  $('autoStatus').textContent = auto.bots ? `${auto.bots} bot · ${auto.running ? 'đang tự chơi' : 'đang dừng'}` : 'Chưa có bot';
+  $('autoLamp').classList.toggle('on', Boolean(auto.running));
+  $('autoStart').disabled = !simulator || Boolean(auto.running);
+  $('autoStop').disabled = !simulator || !auto.running;
   $('connection').textContent = simulator ? 'Simulator sẵn sàng' : 'Control host sẵn sàng';
   $('connection').className = 'pill good';
   for (const button of document.querySelectorAll('[data-sim-only]')) button.disabled = !simulator || (button.id === 'runDemo' && demoRunning);
+  $('autoStart').disabled = !simulator || Boolean(auto.running);
+  $('autoStop').disabled = !simulator || !auto.running;
   const competition = s.competition ?? {}, session = competition.session;
   $('sessionTitle').textContent = competition.standings?.length ? `Phiên ${session.no}` : session?.previous?.podium?.length ? `Kết quả phiên ${session.previous.no}` : session ? `Phiên ${session.no} · chưa có điểm` : 'Đang chờ khách đầu tiên';
   const rows = competition.standings?.length ? competition.standings.slice(0, 5) : session?.previous?.podium ?? [];
@@ -122,6 +129,34 @@ document.querySelectorAll('[data-event]').forEach(button => button.addEventListe
 $('cameraLock').addEventListener('click', async () => {
   try { await request('camera-lock', { on: !cameraLocked }); await loadStatus(); }
   catch (e) { $('actionResult').textContent = `Không điều khiển được camera: ${e.message}`; }
+});
+async function roomAction(action, rest = {}) {
+  if (!simulator) return null;
+  const result = await request('sim-room', { action, ...rest });
+  await loadStatus();
+  return result;
+}
+$('addBots').addEventListener('click', async () => {
+  const count = Math.max(1, Math.min(120, Number($('autoCount').value) || 24));
+  try {
+    const result = await roomAction('add', { count });
+    $('actionResult').textContent = `Đã thêm ${result.added} người chơi tự động. Tổng: ${result.bots}.`;
+    log(`Simulator thêm ${result.added} bot vào vườn.`, 'demo');
+  } catch (e) { $('actionResult').textContent = `Không thêm được bot: ${e.message}`; }
+});
+$('autoStart').addEventListener('click', async () => {
+  try {
+    const result = await roomAction('start');
+    $('actionResult').textContent = `Phòng tự chơi đang chạy với ${result.bots} bot.`;
+    log(`Bật tự chơi · ${result.bots} bot.`, 'demo');
+  } catch (e) { $('actionResult').textContent = `Không bật được tự chơi: ${e.message}`; }
+});
+$('autoStop').addEventListener('click', async () => {
+  try {
+    const result = await roomAction('stop');
+    $('actionResult').textContent = `Đã dừng tự chơi · giữ nguyên ${result.bots} bot trong vườn.`;
+    log('Đã dừng phòng tự chơi.', 'demo');
+  } catch (e) { $('actionResult').textContent = `Không dừng được tự chơi: ${e.message}`; }
 });
 $('finishSession').addEventListener('click', async () => {
   if (!confirm('Kết thúc phiên LIVE hiện tại và trao danh hiệu cho top 3?')) return;
