@@ -163,3 +163,44 @@ test('host cues are host-only material: the moon nearly full and the next headli
   s.advance(1000);
   assert.ok(s.of('host-cue').some(c => c.key === 'moon-near'));
 });
+
+// --- gift abilities: progress and completing a chapter ---
+const giveTo = (s, id, diamonds) => s.game.gift({ userId: id, nickname: id.toUpperCase(), diamonds, count: 1 });
+
+test('progress adds steps to a chapter of several; a one-step chapter is left to its events; complete finishes the chapter', () => {
+  const s = setup();
+  FIVE.slice(0, 2).forEach((team, i) => s.say(`u${i}`, team));
+  assert.equal(s.journey().got, 2);
+  assert.equal(s.game.giftEventId(), 'journey');
+  giveTo(s, 'u0', 10); // 10 x 0.2 = 2 steps
+  assert.equal(s.journey().got, 4);
+  giveTo(s, 'u0', 2.5); // half a step: kept, shown rounded down
+  assert.equal(s.journey().got, 4);
+  giveTo(s, 'u0', 2.5);
+  assert.equal(s.of('chapter').length, 1, 'two halves make the fifth step');
+  assert.equal(s.journey().id, 'lit');
+  Object.assign(s.game.state.journey, { i: 2, got: 0, done: false }); // the moon chapter: one step
+  giveTo(s, 'u0', 50);
+  assert.equal(s.journey().id, 'moon', 'mid does not finish a one-step chapter');
+  giveTo(s, 'u0', 100);
+  assert.equal(s.journey().id, 'win', 'big completes it');
+});
+
+test('complete on the last chapter ends the journey (the moon shards are paid) and later gifts fall to the default path', () => {
+  const s = setup();
+  s.seat('a', 'red');
+  Object.assign(s.game.state.journey, { i: 4, got: 0, done: false });
+  giveTo(s, 'a', 100);
+  assert.equal(s.of('journey-done').length, 1);
+  assert.equal(s.game.giftEventId(), null);
+  const n = s.of('gift-ability').length;
+  giveTo(s, 'a', 100);
+  assert.equal(s.of('gift-ability').length, n);
+});
+
+test('the journey view stays whole numbers while a gift adds fractions', () => {
+  const s = setup();
+  s.seat('a', 'red');
+  giveTo(s, 'a', 3);
+  assert.equal(Number.isInteger(s.journey().got), true);
+});

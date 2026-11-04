@@ -156,3 +156,20 @@ test('a falsy start does not call end (the state it declined to touch may belong
   assert.equal(reg.start('a'), false);
   assert.equal(ended, 0);
 });
+
+test('registerGift / dispatchGift reach events that are not registry events; live() hides a finished event', () => {
+  const calls = [];
+  let done = false;
+  const reg = createRegistry({ cfg: { giftMid: 10, giftBig: 100 } });
+  reg.register({ id: 'x', start: () => true, isDone: () => done });
+  reg.registerGift('final', { mid: g => calls.push(g.diamonds) });
+  assert.deepEqual(reg.dispatchGift('final', { diamonds: 20 }), { tier: 'mid', handled: true });
+  assert.deepEqual(calls, [20]);
+  assert.equal(reg.dispatchGift(null, { diamonds: 20 }).handled, false);
+  assert.equal(reg.live(), null);
+  reg.start('x');
+  assert.equal(reg.live(), 'x');
+  done = true;
+  assert.equal(reg.active(), 'x');
+  assert.equal(reg.live(), null, 'finished, only waiting for the tick');
+});

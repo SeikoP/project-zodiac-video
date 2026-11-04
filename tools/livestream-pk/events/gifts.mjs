@@ -18,8 +18,9 @@ export function createGiftDispatcher({ cfg = {} } = {}) {
     const fn = g.eventId == null ? null : tables.get(g.eventId)?.[tier];
     if (typeof fn !== 'function') return { tier, handled: false };
     try {
-      fn({ user: g.user, viewer: g.viewer, team: g.team, diamonds: g.diamonds, tier });
-      return { tier, handled: true };
+      // an ability that finds nothing to act on (no lantern, an event already over) answers false: the gift then takes the ordinary path
+      const done = fn({ user: g.user, viewer: g.viewer, team: g.team, diamonds: g.diamonds, tier });
+      return { tier, handled: done !== false };
     } catch {
       return { tier, handled: false };
     }

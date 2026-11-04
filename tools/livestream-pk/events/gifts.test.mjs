@@ -57,3 +57,11 @@ test('dispatch with NaN diamonds runs the small ability, not big', () => {
   assert.deepEqual(d.dispatch({ ...base, eventId: 'boss', diamonds: NaN }), { tier: 'small', handled: true });
   assert.deepEqual(hit, ['small']);
 });
+
+test('a fn that answers false found nothing to act on: unhandled, so the ordinary path runs', () => {
+  const d = createGiftDispatcher({ cfg });
+  d.register('wish', { small: () => false, mid: () => {}, big: () => true });
+  assert.deepEqual(d.dispatch({ ...base, eventId: 'wish', diamonds: 1 }), { tier: 'small', handled: false });
+  assert.equal(d.dispatch({ ...base, eventId: 'wish', diamonds: 20 }).handled, true);
+  assert.equal(d.dispatch({ ...base, eventId: 'wish', diamonds: 200 }).handled, true);
+});

@@ -14,6 +14,7 @@
 import { createPhase } from './events/phase.mjs';
 import { createMeter } from './events/meter.mjs';
 import { TEAM_IDS } from './events/teams.mjs';
+import { ABILITY_DEFAULTS } from './events/abilities.mjs';
 
 export const ROLES = Object.freeze({
   red: 'Quà chí mạng x2',
@@ -104,14 +105,47 @@ export function createBoss({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     } else if (action === 'follow' || action === 'share') base = cfg.bossSocialDamage;
     const dmg = Math.round(base * mult);
     if (dmg <= 0) return 0;
+    strike(u, v, dmg, { crit, combo: team === 'green' && action === 'comment' ? b.combo : 0, kind: action });
+    return dmg;
+  }
+
+  // Lands dmg on the boss for this viewer: the hit, the team's tally and, when it kills, the finisher.
+  function strike(u, v, dmg, { crit = false, combo = 0, kind, ultimate = null }) {
+    const b = st.boss, team = v.team;
     b.hp = Math.max(0, b.hp - dmg);
     blocks().meter.add(u.userId, team, 'hit', dmg);
     b.nick[u.userId] = v.nickname;
     b.byTeam[team] = (b.byTeam[team] ?? 0) + dmg;
-    onEvent({ type: 'boss-hit', userId: u.userId, nickname: v.nickname, team, dmg, crit, combo: team === 'green' && action === 'comment' ? b.combo : 0 });
-    if (b.hp <= 0) defeat({ nickname: v.nickname, team, kind: action });
-    return dmg;
+    onEvent({ type: 'boss-hit', userId: u.userId, nickname: v.nickname, team, dmg, crit, combo, ...(ultimate && { ultimate: true }) });
+    if (b.hp <= 0) defeat({ nickname: v.nickname, team, kind, ...(ultimate && { ability: ultimate }) });
   }
+
+  // --- gift abilities (events/abilities.mjs) ---------------------------------------------------------------------
+  // mid: Đòn tuyệt kỹ — an extra hit of coins x bossUltFactor and bossUltShield shield for the room (the shield is the room's);
+  // big: Phá băng — the giver's team is thawed if it is frozen, then the same extra hit; whoever kills the boss is the finisher.
+  const num = k => cfg[k] ?? ABILITY_DEFAULTS[k];
+  const alive = g => Boolean(st.boss && st.boss.hp > 0 && g.viewer?.team);
+  function ultimateHit(g, id) {
+    const dmg = Math.round(g.diamonds * num('bossUltFactor'));
+    // a frozen team deals no damage, an ultimate included; the shield above still counts
+    if (dmg > 0 && st.boss.frozen?.team !== g.team) strike(g.user, g.viewer, dmg, { kind: 'gift', ultimate: id });
+  }
+  const gift = {
+    mid: g => {
+      if (!alive(g)) return false;
+      st.boss.shield = Math.min(cfg.bossShieldMax, st.boss.shield + num('bossUltShield'));
+      ultimateHit(g, 'ultimate');
+    },
+    big: g => {
+      if (!alive(g)) return false;
+      const b = st.boss;
+      if (b.frozen?.team === g.team) {
+        b.frozen = null;
+        onEvent({ type: 'boss-rescue', team: g.team, nickname: g.viewer.nickname, userId: g.user.userId, gift: true });
+      }
+      ultimateHit(g, 'thaw');
+    },
+  };
 
   // finisher: who landed the last blow (the overlay calls it "cú kết liễu")
   function defeat(finisher = null) {
@@ -187,5 +221,5 @@ export function createBoss({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     };
   }
 
-  return { id: 'boss', start, tick, contribute, view, end: () => { st.boss = null; cache = null; }, isDone: () => !st.boss, active: () => Boolean(st.boss) };
+  return { id: 'boss', start, tick, contribute, gift, view, end: () => { st.boss = null; cache = null; }, isDone: () => !st.boss, active: () => Boolean(st.boss) };
 }

@@ -6,18 +6,18 @@ import { createReward } from './reward.mjs';
 import { createRegistry } from './registry.mjs';
 
 // fake room: who is on stage and a fake clock
-function room(people, config = {}) {
-  let t = 1_000_000;
+function room(people, config = {}, from = null, at = 1_000_000) {
+  let t = at;
   const viewers = {}, stage = new Map();
   for (const [id, team] of people) { viewers[id] = { nickname: id.toUpperCase(), team }; stage.set(id, true); }
   const roster = createRoster({ viewers, stage });
   const events = [], paid = [];
   const reward = createReward({ sinks: { light: (u, v, n, why) => { paid.push([u.userId, n, why]); } } });
-  const st = { tug: null };
+  const st = from ?? { tug: null };
   const cfg = { ...TUG_DEFAULTS, ...config };
   const tug = createTug({ st, cfg, now: () => t, onEvent: e => events.push(e), ctx: { roster }, reward, viewerOf: id => viewers[id] });
   const u = id => ({ userId: id });
-  return { st, tug, roster, events, paid, viewers, stage, cfg, u, advance: ms => { t += ms; tug.tick(); }, of: type => events.filter(e => e.type === type) };
+  return { st, tug, roster, events, paid, viewers, stage, cfg, u, now: () => t, advance: ms => { t += ms; tug.tick(); }, of: type => events.filter(e => e.type === type) };
 }
 const FOUR = [['r1', 'red'], ['r2', 'red'], ['b1', 'blue'], ['b2', 'blue'], ['g1', 'green']];
 
@@ -130,4 +130,50 @@ test('view reports sides, warm-up and time left; null when idle', () => {
   r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment');
   const v = r.tug.view();
   assert.deepEqual([v.warmupMs, v.remainingMs, v.pullersA + v.pullersB], [0, 74_000, 1]);
+});
+
+// --- gift abilities ---
+const giftOf = (r, tier, id, diamonds) => r.tug.gift[tier]({ user: r.u(id), viewer: r.viewers[id], team: r.viewers[id].team, diamonds, tier });
+
+test('gift.mid / gift.big answer false before the pull starts, after the tug, or for a team that is not pulling', () => {
+  const r = room(FOUR);
+  assert.equal(giftOf(r, 'big', 'r1', 100), false, 'no tug yet');
+  r.tug.start();
+  assert.equal(giftOf(r, 'big', 'r1', 100), false, 'warm-up');
+  r.advance(16_000);
+  assert.notEqual(giftOf(r, 'mid', 'r1', 20), false);
+  r.viewers.g1.team = 'green';
+  assert.equal(giftOf(r, 'big', 'g1', 100), false, 'green is not on the rope');
+});
+
+test('gift.big sets st.tug.boost = { team, until } and the team pulls x tugBoostFactor until it ends; the latest boost replaces', () => {
+  const r = room(FOUR, { tugBoostSeconds: 60, tugBoostFactor: 2 });
+  r.tug.start(); r.advance(16_000);
+  giftOf(r, 'big', 'r1', 100);
+  assert.deepEqual(r.st.tug.boost, { team: 'red', until: r.st.tug.boost.until });
+  assert.equal(r.tug.view().boost.team, 'red');
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'follow'), 16, 'x2');
+  assert.equal(r.tug.contribute(r.u('b1'), r.viewers.b1, 'follow'), 8, 'blue is not boosted');
+  giftOf(r, 'big', 'b2', 100);
+  assert.equal(r.st.tug.boost.team, 'blue');
+  assert.equal(r.tug.contribute(r.u('r2'), r.viewers.r2, 'follow'), 8);
+  r.advance(61_000);
+  assert.equal(r.tug.view().boost, null);
+});
+
+test('one gift pulls at most tugGiftPullMax, so it cannot win the tug alone', () => {
+  const r = room(FOUR);
+  r.tug.start(); r.advance(16_000);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'gift', 500), 30);
+  assert.ok(r.st.tug);
+});
+
+test('tug.boost survives a JSON round trip mid-tug', () => {
+  const r = room(FOUR);
+  r.tug.start(); r.advance(16_000);
+  giftOf(r, 'big', 'r1', 100);
+  const saved = JSON.parse(JSON.stringify(r.st));
+  assert.deepEqual(saved.tug.boost, r.st.tug.boost);
+  const again = room(FOUR, {}, saved, r.now());
+  assert.equal(again.tug.contribute(again.u('r1'), again.viewers.r1, 'follow'), 16);
 });

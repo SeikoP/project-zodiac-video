@@ -69,6 +69,11 @@ export function createRegistry({ now = Date.now, onEvent = () => {}, cfg = {}, c
     return Number.isFinite(got) ? got : 0;
   };
   registry.gift = g => dispatcher.dispatch({ ...g, eventId: current });
+  // The headliners that are not registry events (the finale, the chest rain, the wish and the journey) bring their own table.
+  registry.registerGift = (id, table) => dispatcher.register(id, table);
+  registry.dispatchGift = (eventId, g) => dispatcher.dispatch({ ...g, eventId });
+  // The active event, unless it has finished and only waits for the next tick to be ended (a gift then must not reach it).
+  registry.live = () => (current !== null && !guard(current, 'isDone', () => defs.get(current)?.isDone?.(), false) ? current : null);
   registry.views = t => {
     const out = {};
     for (const [id, def] of defs) {

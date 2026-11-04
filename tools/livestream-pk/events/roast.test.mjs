@@ -264,3 +264,111 @@ test('a saved game mid-wheel keeps going after a restart', () => {
   const end = events.find(e => e.type === 'roast-end');
   assert.equal(end.cleared, true);
 });
+
+// --- gift abilities: tickets, the giver's pick, the second spin ---
+function wheel(people, { rng = () => 0, config = {}, st = null, at = 1_000_000 } = {}) {
+  let t = at;
+  const viewers = {}, stage = new Map();
+  for (const [id, team] of people) { viewers[id] = { nickname: id.toUpperCase(), avatar: '', team }; stage.set(id, true); }
+  const roster = createRoster({ viewers, stage });
+  const events = [];
+  const reward = createReward({ sinks: { light: () => {} } });
+  const state = st ?? { roast: null };
+  const roast = createRoast({ st: state, cfg: { ...ROAST_DEFAULTS, ...config }, now: () => t, rng, onEvent: e => events.push(e), ctx: { roster }, reward, viewerOf: id => viewers[id], lucky: () => null });
+  const give = (tier, id, diamonds = 20) => roast.gift[tier]({ user: { userId: id }, viewer: viewers[id], team: viewers[id].team, diamonds, tier });
+  return { st: state, roast, viewers, events, give, now: () => t, advance: ms => { t += ms; roast.tick(t); }, say: (id, text) => roast.chat({ userId: id }, viewers[id], text), of: type => events.filter(e => e.type === type) };
+}
+
+test('tickets weight the next pick by 1 + tickets and are spent when the wheel lands on that person', () => {
+  const people = [['a', 'red'], ['b', 'red'], ['c', 'blue']];
+  const none = wheel(people, { rng: () => 0.5 });
+  none.roast.start();
+  assert.equal(none.st.roast.userId, 'b', 'no tickets: the plain uniform pick (floor(0.5 x 3) = b)');
+  const w = wheel(people, { rng: () => 0.5 });
+  w.st.roastTickets.a = 3; // weights a:4 b:1 c:1 - half of 6 lands inside a
+  w.roast.start();
+  assert.equal(w.st.roast.userId, 'a');
+  assert.deepEqual(w.st.roastTickets, {}, 'spent');
+  const kept = wheel(people, { rng: () => 0.99 });
+  kept.st.roastTickets.a = 3;
+  kept.roast.start();
+  assert.equal(kept.st.roast.userId, 'c');
+  assert.deepEqual(kept.st.roastTickets, { a: 3 }, 'not picked: kept for next time');
+});
+
+test('gift.small adds one ticket per gift; it needs a team', () => {
+  const w = wheel([['a', 'red'], ['n', null]]);
+  w.give('small', 'a'); w.give('small', 'a');
+  assert.deepEqual(w.st.roastTickets, { a: 2 });
+  assert.equal(w.give('small', 'n'), false);
+});
+
+test('gift.mid opens the pick; a colour comment from the giver sends the wheel to that team (not a switch); once per wheel', () => {
+  const w = wheel([['a', 'red'], ['b', 'red'], ['c', 'blue'], ['d', 'green']]);
+  w.roast.start({ userId: 'a' });
+  assert.notEqual(w.give('mid', 'c'), false);
+  assert.equal(w.st.roast.pick.team, 'blue');
+  assert.equal(w.say('d', 'xanh lá'), false, 'someone else\'s colour comment is ordinary chat');
+  assert.equal(w.say('c', '2'), false, 'a bare digit is not a pick');
+  assert.equal(w.say('c', 'ĐỎ'), true);
+  assert.equal(w.st.roast.team, 'red');
+  assert.equal(w.st.roast.userId, 'b', 'the person it landed on is spared');
+  assert.equal(w.st.roast.respun, true);
+  assert.equal(w.st.roast.pick, undefined);
+  assert.equal(w.of('roast-start').at(-1).again, true);
+  assert.equal(w.give('mid', 'd'), false, 'once per wheel');
+  assert.equal(w.give('big', 'd'), false);
+});
+
+test('gift.mid with a team nobody is on, or no comment: the giver\'s own team', () => {
+  const w = wheel([['a', 'red'], ['c', 'blue'], ['d', 'blue']]);
+  w.roast.start({ userId: 'a' });
+  w.give('mid', 'c');
+  w.say('c', 'vàng'); // nobody on yellow
+  assert.equal(w.st.roast.team, 'blue');
+  const late = wheel([['a', 'red'], ['c', 'blue']]);
+  late.roast.start({ userId: 'a' });
+  late.give('mid', 'c');
+  late.advance(14_000);
+  assert.equal(late.st.roast.userId, 'a', 'still waiting for the pick');
+  late.advance(1_100);
+  assert.equal(late.st.roast.userId, 'c');
+});
+
+test('the pick keeps the wheel on until it is made even when the protest window would have ended', () => {
+  const w = wheel([['a', 'red'], ['c', 'blue']]);
+  w.roast.start({ userId: 'a' });
+  w.advance(24_000);
+  w.give('mid', 'c');
+  w.advance(5_000);
+  assert.equal(w.of('roast-end').length, 0);
+  w.advance(12_000);
+  assert.equal(w.st.roast.userId, 'c', 'the giver\'s team was spun');
+});
+
+test('gift.big re-rolls the whole wheel once, and answers false when there is no wheel', () => {
+  const w = wheel([['a', 'red'], ['b', 'red'], ['c', 'blue']]);
+  assert.equal(w.give('big', 'c', 200), false, 'no wheel is on');
+  w.roast.start({ userId: 'a' });
+  w.advance(6000);
+  w.say('b', 'oan');
+  assert.equal(w.give('big', 'c', 200), true);
+  assert.notEqual(w.st.roast.userId, 'a');
+  assert.equal(w.roast.view().protests, 0, 'a fresh round of reactions');
+  assert.equal(w.give('big', 'c', 200), false);
+  const lone = wheel([['a', 'red']]);
+  lone.roast.start();
+  assert.equal(lone.give('big', 'a', 200), true, 'a lone viewer: the wheel lands on them again');
+});
+
+test('roastTickets, pick and respun survive a JSON round trip', () => {
+  const w = wheel([['a', 'red'], ['b', 'red'], ['c', 'blue']]);
+  w.st.roastTickets.c = 2;
+  w.roast.start({ userId: 'a' });
+  w.give('mid', 'c');
+  const saved = JSON.parse(JSON.stringify(w.st));
+  const again = wheel([['a', 'red'], ['b', 'red'], ['c', 'blue']], { st: saved, at: w.now() });
+  assert.deepEqual(again.st.roastTickets, { c: 2 });
+  assert.equal(again.say('c', 'xanh dương'), true);
+  assert.equal(again.st.roast.team, 'blue');
+});

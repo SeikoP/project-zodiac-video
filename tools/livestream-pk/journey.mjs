@@ -31,8 +31,15 @@ export function createJourney({ st, cfg, now, onEvent, stageIds, dust, moon }) {
     if (e.type === 'light' && e.team && e.amount > 0) lightUp(e.team, e.amount);
     const c = CHAPTERS[j.i];
     if (j.done || !c?.on(e)) return;
-    j.got = Math.min(c.need, j.got + 1);
-    if (j.got < c.need) return;
+    add(1);
+  }
+
+  // `n` steps toward the chapter in progress (Infinity finishes it); false when there is nothing to advance
+  function add(n) {
+    const j = J(), c = CHAPTERS[j.i];
+    if (j.done || !c || !(n > 0)) return false;
+    j.got = Math.min(c.need, j.got + n);
+    if (j.got < c.need) return true;
     const people = onStage();
     for (const [id, v] of people) dust({ userId: id }, v, cfg.journeyDust);
     const next = CHAPTERS[j.i + 1] ?? null;
@@ -44,7 +51,16 @@ export function createJourney({ st, cfg, now, onEvent, stageIds, dust, moon }) {
       for (const [id, v] of people) moon({ userId: id }, v);
       onEvent({ type: 'journey-done', people: people.length });
     }
+    return true;
   }
+
+  // Gift abilities: a small or mid gift adds steps (a chapter of one step is left to the events that finish it), a big one finishes the chapter.
+  function progress(n) {
+    const j = J(), c = CHAPTERS[j.i];
+    return !j.done && Boolean(c) && c.need > 1 && add(n);
+  }
+  const complete = () => add(Infinity);
+  const finished = () => J().done;
 
   function lightUp(team, amount) {
     const E = st.teamRace;
@@ -61,8 +77,8 @@ export function createJourney({ st, cfg, now, onEvent, stageIds, dust, moon }) {
 
   function view() {
     const j = J(), c = CHAPTERS[Math.min(j.i, CHAPTERS.length - 1)];
-    return { no: Math.min(j.i + 1, CHAPTERS.length), of: CHAPTERS.length, id: c.id, label: c.label, icon: c.icon, goal: c.goal, got: j.done ? c.need : j.got, need: c.need, done: j.done,
+    return { no: Math.min(j.i + 1, CHAPTERS.length), of: CHAPTERS.length, id: c.id, label: c.label, icon: c.icon, goal: c.goal, got: j.done ? c.need : Math.floor(j.got), need: c.need, done: j.done,
       teams: { light: Object.fromEntries(TEAM_IDS.map(k => [k, Math.round(st.teamRace.light[k])])), lead: st.teamRace.lead } };
   }
-  return { note, view };
+  return { note, view, progress, complete, finished };
 }

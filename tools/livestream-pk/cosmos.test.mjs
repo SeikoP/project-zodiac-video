@@ -19,7 +19,7 @@ const seat = (game, id, team) => {
 };
 
 test('the boss: every team has its own part', () => {
-  const { game, events } = setup({ bossHpMin: 10000, bossCommentDamage: 6, bossLikeDamage: 0.5, bossDiamondDamage: 5 });
+  const { game, events } = setup({ bossHpMin: 10000, bossCommentDamage: 6, bossLikeDamage: 0.5, bossDiamondDamage: 5, bossUltFactor: 0, bossUltShield: 0 }); // the mid gift's ultimate is switched off here: this is the teams' own parts
   // each team has its own part
   for (const [id, team] of [['fire', 'đỏ'], ['earth', 'vàng'], ['air', 'xanh lá'], ['water', 'xanh dương']]) game.chat(u(id, { comment: team }));
   game.startBoss();
@@ -54,7 +54,7 @@ test('air comments build a combo while they keep coming; comments have a per-vie
 });
 
 test('the boss freezes the team hurting it most; its fans break the ice, or the boss heals', () => {
-  const { game, events, advance } = setup({ bossHpMin: 1000, bossAttackSeconds: 10, bossFreezeSeconds: 8, bossHealShare: 0.1, bossDiamondDamage: 5 });
+  const { game, events, advance } = setup({ bossHpMin: 1000, bossAttackSeconds: 10, bossFreezeSeconds: 8, bossHealShare: 0.1, bossDiamondDamage: 5, bossUltFactor: 0, bossUltShield: 0 }); // the ultimate has its own tests (events/abilities.test.mjs)
   seat(game, 'f1', 'red');
   seat(game, 'f2', 'red');
   seat(game, 'w', 'blue');

@@ -182,3 +182,56 @@ test('the registry routes contributions to the boss', () => {
   reg.tick(0);
   assert.equal(reg.active(), null, 'a boss gone from the state ends the event');
 });
+
+// --- gift abilities (the table is in events/abilities.test.mjs; here the boss's own hooks) ---
+import { ABILITY_DEFAULTS } from './abilities.mjs';
+const gift = (r, tier, id, diamonds) => r.boss.gift[tier]({ user: { userId: id }, viewer: r.viewers[id], team: r.viewers[id].team, diamonds, tier });
+
+test('gift.mid: shield rises by bossUltShield (capped at bossShieldMax) and the extra hit is diamonds x bossUltFactor', () => {
+  const r = room(ALL, { bossShieldMax: 5 });
+  r.boss.start(3);
+  const hp = r.st.boss.hp;
+  assert.notEqual(gift(r, 'mid', 'b1', 20), false);
+  assert.equal(r.st.boss.shield, ABILITY_DEFAULTS.bossUltShield);
+  assert.equal(hp - r.st.boss.hp, 60);
+  assert.deepEqual(r.of('boss-hit').at(-1), { type: 'boss-hit', userId: 'b1', nickname: 'B1', team: 'blue', dmg: 60, crit: false, combo: 0, ultimate: true });
+  gift(r, 'mid', 'b1', 20);
+  assert.equal(r.st.boss.shield, 5, 'capped');
+});
+
+test('gift.mid / gift.big answer false (the ordinary path) with no boss, a dead boss or a viewer without a team', () => {
+  const none = room(ALL);
+  for (const tier of ['mid', 'big']) assert.equal(gift(none, tier, 'b1', 50), false);
+  const r = room(ALL);
+  r.boss.start(3);
+  r.st.boss.hp = 0;
+  assert.equal(gift(r, 'mid', 'b1', 50), false);
+  r.st.boss.hp = 100;
+  r.viewers.b1.team = null;
+  assert.equal(gift(r, 'big', 'b1', 50), false);
+});
+
+test('gift.big thaws only the giver\'s team; the kill carries the ability in the finisher', () => {
+  const r = room(ALL);
+  r.boss.start(3);
+  r.st.boss.frozen = { team: 'red', until: 9e15, need: 2, rescuers: {} };
+  gift(r, 'big', 'g1', 100);
+  assert.equal(r.st.boss.frozen.team, 'red');
+  gift(r, 'big', 'r1', 100);
+  assert.equal(r.st.boss.frozen, null);
+  assert.equal(r.of('boss-rescue')[0].gift, true);
+  r.st.boss.hp = 50;
+  gift(r, 'big', 'y1', 100);
+  assert.deepEqual(r.of('boss-defeated')[0].finisher, { nickname: 'Y1', team: 'yellow', kind: 'gift', ability: 'thaw' });
+});
+
+test('a boss gift through the registry: the dispatcher reaches the boss table, tier by tier', () => {
+  const r = room(ALL);
+  const reg = createRegistry({ cfg: { giftMid: 10, giftBig: 100 } });
+  reg.register(r.boss);
+  reg.start('boss', 3);
+  const g = id => ({ user: { userId: id }, viewer: r.viewers[id], team: r.viewers[id].team });
+  assert.deepEqual(reg.gift({ ...g('b1'), diamonds: 5 }), { tier: 'small', handled: false });
+  assert.deepEqual(reg.gift({ ...g('b1'), diamonds: 50 }), { tier: 'mid', handled: true });
+  assert.deepEqual(reg.gift({ ...g('b1'), diamonds: 500 }), { tier: 'big', handled: true });
+});

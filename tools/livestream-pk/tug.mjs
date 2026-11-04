@@ -9,6 +9,7 @@
 
 import { createPhase } from './events/phase.mjs';
 import { createMeter } from './events/meter.mjs';
+import { ABILITY_DEFAULTS } from './events/abilities.mjs';
 
 export const TUG_DEFAULTS = Object.freeze({
   tugWarmupSeconds: 15,
@@ -48,6 +49,9 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     return cache;
   }
 
+  const num = k => cfg[k] ?? ABILITY_DEFAULTS[k];
+  const boosted = (g, team) => Boolean(g.boost && g.boost.team === team && now() < g.boost.until);
+
   const needs = c => Object.values((c ?? ctx).roster.counts()).filter(n => n > 0).length >= 2;
 
   function start() {
@@ -81,9 +85,13 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
       if (now() - (g.last[u.userId] ?? 0) < cfg.tugCommentCooldownMs) return 0;
       g.last[u.userId] = now();
       amount = 1;
-    } else if (action === 'gift') amount = cfg.tugDiamondPower > 0 ? Math.max(n, MIN_GIFT_PULL / cfg.tugDiamondPower) : 0;
-    else if (action === 'follow' || action === 'share') amount = 1;
+    } else if (action === 'gift') {
+      amount = cfg.tugDiamondPower > 0 ? Math.max(n, MIN_GIFT_PULL / cfg.tugDiamondPower) : 0;
+      // one gift never swings the knot more than tugGiftPullMax (before the boost), so a single gift cannot end the tug on its own
+      if (cfg.tugDiamondPower > 0) amount = Math.min(amount, num('tugGiftPullMax') / cfg.tugDiamondPower);
+    } else if (action === 'follow' || action === 'share') amount = 1;
     if (!(amount > 0)) return 0;
+    if (boosted(g, v.team)) amount *= num('tugBoostFactor'); // Tăng tốc
     const p = meter.add(u.userId, v.team, action, amount);
     if (!p) return 0;
     g.nick[u.userId] = v.nickname;
@@ -91,6 +99,22 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     if (meter.reached()) settle(true);
     return p;
   }
+
+  // --- gift abilities (events/abilities.mjs) ---
+  // mid: Giật mạnh — the gift's own pull, announced by name (contribute emits the tug-yank); big: Tăng tốc — the giver's team
+  // pulls x tugBoostFactor for tugBoostSeconds (st.tug.boost = { team, until }, the latest boost replaces the one before)
+  function pulling(g) {
+    if (!g.viewer?.team || !clock()) return false;
+    const { g: knot, phase } = blocks();
+    return phase.phase() === 'run' && (g.viewer.team === knot.a || g.viewer.team === knot.b);
+  }
+  const gift = {
+    mid: g => pulling(g),
+    big: g => {
+      if (!pulling(g)) return false;
+      st.tug.boost = { team: g.viewer.team, until: now() + num('tugBoostSeconds') * 1000 };
+    },
+  };
 
   function settle(early) {
     const b = blocks();
@@ -115,8 +139,8 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     if (!g) return null;
     const t = now(), warmupEnd = g.startedAt + cfg.tugWarmupSeconds * 1000, end = warmupEnd + cfg.tugSeconds * 1000;
     const side = team => Object.keys(g.power).filter(id => g.names[id] === team).length;
-    return { a: g.a, b: g.b, pos: Math.round(g.value), warmupMs: Math.max(0, warmupEnd - t), remainingMs: Math.max(0, end - t), pullersA: side(g.a), pullersB: side(g.b) };
+    return { a: g.a, b: g.b, pos: Math.round(g.value), warmupMs: Math.max(0, warmupEnd - t), remainingMs: Math.max(0, end - t), pullersA: side(g.a), pullersB: side(g.b), boost: boosted(g, g.boost?.team) ? { team: g.boost.team, remainingMs: g.boost.until - t } : null };
   };
 
-  return { id: 'tug', needs, start, tick, contribute, view, end: () => { if (st.tug) settle(false); }, isDone: () => !st.tug };
+  return { id: 'tug', needs, start, tick, contribute, gift, view, end: () => { if (st.tug) settle(false); }, isDone: () => !st.tug };
 }

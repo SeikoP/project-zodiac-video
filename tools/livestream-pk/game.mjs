@@ -41,6 +41,8 @@ import { TEAMS, TEAM_IDS, parseTeam, parseSwitchTeam } from './events/teams.mjs'
 import { createRoster } from './events/roster.mjs';
 import { createRegistry } from './events/registry.mjs';
 import { createReward } from './events/reward.mjs';
+import { GIFT_DEFAULTS } from './events/gifts.mjs';
+import { ABILITY_DEFAULTS, ABILITY_IDS, describeAbility } from './events/abilities.mjs';
 
 export { TEAMS, TEAM_IDS };
 // the 12 signs and their parser are not part of the team game; Vườn Mây (garden/) still imports them from here
@@ -151,6 +153,9 @@ export const DEFAULT_CONFIG = Object.freeze({
   ...MINIGAME_DEFAULTS,
   ...ROAST_DEFAULTS,
   ...TUG_DEFAULTS,
+  // gifts: below giftMid coins is a small gift, from giftBig a big one; what each tier does in each event is in events/abilities.mjs
+  ...GIFT_DEFAULTS,
+  ...ABILITY_DEFAULTS,
   ...PREDICT_DEFAULTS,
   ...PASS_DEFAULTS,
   auraSeconds: 90, // a gift leaves a golden aura round the giver's mascot this long
@@ -250,6 +255,8 @@ export function emptyState() {
     // the acts and headliners, and what is playing right now (null when nothing is)
     act: { key: null, phase: null, light: {} }, head: null, quest: null,
     guess: null, starcatch: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
+    roastTickets: {}, // userId -> tickets that weight the next Vòng quay pick (a small gift while it is on)
+    teamBoost: {}, // team -> { mult, until }: the finale's light multiplier from a mid gift
   };
 }
 
@@ -270,6 +277,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   st.welcomes ??= [];
   st.wishNo ??= 0;
   st.greetingNo ??= 0;
+  st.roastTickets ??= {};
+  st.teamBoost ??= {};
   // rehearsal viewers left in a saved state by older versions: off the stage lists before the first real viewer arrives
   if (!cfg.rehearsal) {
     const sim = id => String(id ?? '').startsWith('sim:');
@@ -441,30 +450,38 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const nextChestAt = () => (chestPeriod() ? Math.ceil((now() + 1) / chestPeriod()) * chestPeriod() : Infinity);
   let chestScheduled = nextChestAt(), chestShown = null;
   const chestIsOpen = () => now() < st.chest.openUntil;
-  function chestOpenNow() {
-    if (chestIsOpen()) return;
+  // extra: a gift opens one more chest even while one is open (the open one closes first); gold: Rương vàng
+  function chestOpenNow({ extra = false, gold = false } = {}) {
     const c = st.chest;
+    if (chestIsOpen()) {
+      if (!extra) return;
+      c.openUntil = 0;
+      onEvent({ type: 'chest-close', no: c.no, claims: chestRound().close().length, gold: Boolean(c.gold) });
+    }
+    c.gold = Boolean(gold);
     c.no++;
     c.openUntil = now() + cfg.chestOpenSeconds * 1000;
     c.kr = {};
     chestRound().open(null);
     c.recent = [];
-    onEvent({ type: 'chest-open', no: c.no, seconds: cfg.chestOpenSeconds });
-  }
-  // "nhận" while the chest is open: one share per viewer per chest. Returns true when the comment was a claim.
-  function chestClaim(u, v) {
-    if (!chestIsOpen() || chestRound().submit(u.userId, 'nhận') !== 'win') return false;
-    bag.add(u, v, 'dust', cfg.chestDust, 'chest');
-    st.chest.recent.unshift({ nickname: v.nickname, dust: cfg.chestDust });
-    st.chest.recent.length = Math.min(st.chest.recent.length, 4);
+    onEvent({ type: 'chest-open', no: c.no, seconds: cfg.chestOpenSeconds, ...(c.gold && { gold: true }) });
     return true;
+  }
+  // "nhận" while the chest is open: one share per viewer per chest. Returns the gems it pays (0 when the comment was not a claim).
+  function chestClaim(u, v) {
+    if (!chestIsOpen() || chestRound().submit(u.userId, 'nhận') !== 'win') return 0;
+    const gold = Boolean(st.chest.gold), dust = gold ? cfg.goldChestDust : cfg.chestDust;
+    bag.add(u, v, 'dust', dust, 'chest');
+    st.chest.recent.unshift({ nickname: v.nickname, dust });
+    st.chest.recent.length = Math.min(st.chest.recent.length, 4);
+    return gold ? cfg.goldChestGems : 1;
   }
   // Returns true when the countdown shown on screen moved (so the caller can resend it).
   function chestTick(activeSince) {
     const t = now(), c = st.chest;
     if (c.openUntil && t >= c.openUntil) {
       c.openUntil = 0;
-      onEvent({ type: 'chest-close', no: c.no, claims: chestRound().close().length });
+      onEvent({ type: 'chest-close', no: c.no, claims: chestRound().close().length, ...(c.gold && { gold: true }) });
     }
     if (t >= chestScheduled) {
       if (!chestIsOpen() && t - activeSince < cfg.chestIdleMinutes * 60000) chestOpenNow();
@@ -479,7 +496,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function chestView() {
     const t = now(), c = st.chest;
     return chestIsOpen()
-      ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: c.kr.winners.length, recent: c.recent }
+      ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: c.kr.winners.length, recent: c.recent, gold: Boolean(c.gold) }
       : { open: false, inMs: Number.isFinite(chestScheduled) ? chestScheduled - t : null };
   }
   const bag = createBag({ cfg, now, onEvent });
@@ -773,9 +790,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // --- wishes the room can bless --------------------------------------------------------------------
-  function bless(u, v) {
+  // A lantern still taking blessings, and the one closest to turning gold (most blessings; the newer one on a tie).
+  const openLanterns = () => st.wishes.filter(w => !w.blessed && now() - w.at < cfg.blessWindowSeconds * 1000);
+  const nearestLantern = () => openLanterns().reduce((best, w) => (!best || Object.keys(w.blessers).length > Object.keys(best.blessers).length ? w : best), null);
+  // byGift: a blessing that came with a gift - the nearest lantern first, and no bụi sao or quest progress for it
+  function bless(u, v, byGift = false) {
     let w = null, count = 0;
-    for (const x of st.wishes) {
+    const order = byGift ? [...st.wishes].sort((a, b) => Object.keys(b.blessers).length - Object.keys(a.blessers).length) : st.wishes;
+    for (const x of order) {
       if (x.blessed || x.userId === u.userId) continue;
       const round = blessRound(x);
       if (round.submit(u.userId, 'chúc') !== 'win') continue;
@@ -783,17 +805,23 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       count = round.winnersList().length;
       break;
     }
-    if (!w) return;
+    if (!w) return false;
     w.blessers[u.userId] = v.nickname; // names for the overlay; the round holds who and how many
-    bag.add(u, v, 'dust', cfg.blessDust);
-    questAdd('blessings');
+    if (!byGift) {
+      bag.add(u, v, 'dust', cfg.blessDust);
+      questAdd('blessings');
+    }
     touch('cosmos');
     onEvent({ type: 'wish-bless', id: w.id, nickname: v.nickname, avatar: v.avatar, wisher: w.nickname, count, need: cfg.blessNeed });
-    if (count < cfg.blessNeed) return;
+    if (count >= cfg.blessNeed) goldLantern(w, count, byGift);
+    return true;
+  }
+  function goldLantern(w, count, byGift = false) {
     w.blessed = true;
     const owner = st.viewers[w.userId];
     if (owner) bag.add({ userId: w.userId }, owner, 'moon', 1, 'wish');
-    onEvent({ type: 'wish-blessed', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, team: w.team, text: w.text, blessers: Object.values(w.blessers).slice(0, 5), count });
+    touch('cosmos');
+    onEvent({ type: 'wish-blessed', id: w.id, userId: w.userId, nickname: w.nickname, avatar: w.avatar, team: w.team, text: w.text, blessers: Object.values(w.blessers).slice(0, 5), count, ...(byGift && { gift: true }) });
   }
 
   // --- the shared sky --------------------------------------------------------
@@ -855,11 +883,19 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('race');
   }
 
+  // The finale's gift boost for a team (1 when it has none or it ran out); like the lucky star it sits outside the shared cap.
+  function teamBoostOf(team) {
+    const b = st.teamBoost[team];
+    if (!b) return 1;
+    if (now() >= b.until) { delete st.teamBoost[team]; return 1; }
+    return b.mult;
+  }
+
   // Credits `base` light to the viewer's team (doubled during the moon party).
   function shine(u, v, base, kind) {
     if (base <= 0) return 0;
     if (!v.team) return 0;
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.team === v.team ? cfg.luckyMultiplier : 1) * Math.min(LIGHT_CAP, bag.bonus(v) * heatMult() * fanMult(v))); // the room's heat, the Fanclub and the level share one cap
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.team === v.team ? cfg.luckyMultiplier : 1) * teamBoostOf(v.team) * Math.min(LIGHT_CAP, bag.bonus(v) * heatMult() * fanMult(v))); // the room's heat, the Fanclub and the level share one cap
     if (st.act) st.act.light[u.userId] = (st.act.light[u.userId] ?? 0) + amount;
     if (kind !== 'quest') questAdd('light', amount);
     pass.addXp(u, v, amount);
@@ -966,7 +1002,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (action === 'wish') wish(u, v);
     else if (action === 'fortune') altar.request(u, v, u.comment);
     else if (action === 'claim') {
-      if (chestClaim(u, v)) { gem(u, v, 1, 'chest'); questAdd('claims'); }
+      const gems = chestClaim(u, v);
+      if (gems) { gem(u, v, gems, 'chest'); questAdd('claims'); }
     }
     else if (action === 'upgrade') bag.upgrade(u, v);
     else if (action === 'vault') showVault(u, v);
@@ -1044,15 +1081,78 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     touch('gifts');
   }
 
+  // --- gift abilities (events/abilities.mjs): what a gift does in the event that is on ---------------------------
+  // The event a gift belongs to: the running registry event, else the headliner that is not one (the finale, the chest rain, the
+  // moon night - which is the wish), else the wish while a lantern waits, else the night journey; null when none of them is on.
+  function giftEventId() {
+    const live = registry.live();
+    if (live) return live;
+    const head = st.head?.id;
+    if (head === 'final' || head === 'chestrain') return head;
+    if (head === 'moonnight' || openLanterns().length) return 'wish';
+    return journey.finished() ? null : 'journey';
+  }
+  // Đua phe, a big gift: every team gets a stage of the wheel (raceAdvanceShare of its cost); the pour rules apply.
+  function advanceRace() {
+    const amount = Math.round(st.wheel.cost * cfg.raceAdvanceShare);
+    if (!(amount > 0)) return false;
+    for (const team of TEAM_IDS) { st.wheel.given[team] += amount; st.season.light[team] += amount; }
+    touch('race');
+    for (const team of TEAM_IDS) {
+      pour(team, amount);
+      onEvent({ type: 'light', kind: 'stage', team, amount });
+    }
+  }
+  const finale = () => st.head?.id === 'final';
+  registry.registerGift('final', {
+    mid: g => {
+      if (!finale() || !g.team) return false;
+      st.teamBoost[g.team] = { mult: cfg.raceBoostFactor, until: now() + cfg.raceBoostSeconds * 1000 };
+      touch('race');
+    },
+    big: () => (finale() ? advanceRace() : false),
+  });
+  registry.registerGift('chestrain', {
+    mid: () => (st.head?.id === 'chestrain' ? chestOpenNow({ extra: true }) : false),
+    big: () => (st.head?.id === 'chestrain' ? chestOpenNow({ extra: true, gold: true }) : false),
+  });
+  registry.registerGift('wish', {
+    small: g => bless(g.user, g.viewer, true),
+    mid: g => {
+      const w = nearestLantern();
+      if (!w || !g.viewer) return false;
+      w.blessers[g.user.userId] ??= g.viewer.nickname;
+      goldLantern(w, Math.max(Object.keys(w.blessers).length, cfg.blessNeed), true);
+    },
+    big: () => {
+      if (partying()) return false;
+      raiseMoon(st.moon.goal);
+    },
+  });
+  registry.registerGift('journey', {
+    small: g => journey.progress(g.diamonds * cfg.journeyGiftPerDiamond),
+    mid: g => journey.progress(g.diamonds * cfg.journeyGiftPerDiamond),
+    big: () => journey.complete(),
+  });
+  // Runs the ability of this gift's tier (before the gift itself counts, so a thaw or a boost applies to it too) and announces it.
+  function giftAbility(u, v, diamonds) {
+    const eventId = giftEventId();
+    const r = registry.dispatchGift(eventId, { user: u, viewer: v, team: v.team, diamonds });
+    if (!r.handled) return false;
+    onEvent({ type: 'gift-ability', event: eventId, tier: r.tier, ability: ABILITY_IDS[eventId]?.[r.tier] ?? null, text: describeAbility(eventId, r.tier), userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, diamonds });
+    return true;
+  }
+
   function gift(u) {
     if (rehearsalOnly(u)) return;
     const v = viewer(u);
     const count = Math.max(1, u.count | 0);
-    const diamonds = Math.max(0, u.diamonds) * count;
+    const diamonds = Math.max(0, Number.isFinite(u.diamonds) ? u.diamonds : 0) * count;
     const tier = diamonds >= cfg.meteorDiamonds ? 'meteor' : diamonds >= cfg.fireworkDiamonds ? 'firework' : 'sparkle';
     onEvent({ type: 'gift', tier, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, giftName: u.giftName, giftImage: u.giftImage ?? '', count, diamonds });
     recordGift(u, v, count, diamonds);
     thank(u, v);
+    if (diamonds > 0 && v.team) giftAbility(u, v, diamonds);
     registry.contribute('gift', u, v, diamonds);
     // the giver: a golden aura on the wheel for a while, and a patron's star in the community sky
     const tierBefore = patronTier(v);
@@ -1266,7 +1366,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     },
     race: () => {
       const r = rank(), total = r.reduce((a, b) => a + b.given, 0);
-      return { wheel: st.wheel.no, total, leader: total > 0 ? r[0].id : null, order: r.map((x, i) => ({ id: x.id, given: x.given, rank: i + 1, crowns: st.season.crowns[x.id] })) };
+      const boosts = Object.fromEntries(Object.entries(st.teamBoost).filter(([, b]) => now() < b.until).map(([k, b]) => [k, { mult: b.mult, remainingMs: b.until - now() }]));
+      return { wheel: st.wheel.no, total, leader: total > 0 ? r[0].id : null, boosts, order: r.map((x, i) => ({ id: x.id, given: x.given, rank: i + 1, crowns: st.season.crowns[x.id] })) };
     },
     sky: () => {
       const c = cost();
@@ -1349,6 +1450,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     st.moon = { light: 0, goal: moonGoalFor(0), full: 0, partyUntil: 0 };
     st.thanks = [];
     st.gifts = freshGifts();
+    st.teamBoost = {};
+    st.roastTickets = {};
     touch('hud', 'stage', 'thanks', 'gifts', 'stars');
     onEvent({ type: 'night-start', no: st.night.no });
   }
@@ -1373,5 +1476,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: chestOpenNow, startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: userId => (st.boss || !registry.start('roast', { userId }) ? null : st.roast), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, giftEventId, openChest: () => chestOpenNow(), startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: userId => (st.boss || !registry.start('roast', { userId }) ? null : st.roast), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
 }
