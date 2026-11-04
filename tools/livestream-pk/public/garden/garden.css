@@ -110,3 +110,35 @@ html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(-
   font-size:19px; overflow:hidden; }
 #heartBar i { position:absolute; left:8px; right:auto; bottom:6px; height:6px; width:0;
   border-radius:5px; background:var(--coral); transition:width .3s ease; }
+
+/* High-visibility moment card. Tier changes the accent, not the information layout. */
+#focusCard {
+  --tier-accent:var(--wood);
+  position:absolute; left:110px; right:110px; bottom:118px; z-index:9;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:14px 24px 16px; background:rgba(255,253,249,.97);
+  border:4px solid var(--ink); border-top:10px solid var(--tier-accent);
+  border-radius:22px; box-shadow:0 8px 0 rgba(47,60,68,.20),0 18px 48px rgba(47,60,68,.20);
+  opacity:0; transform:translateY(16px) scale(.96); pointer-events:none;
+  transition:opacity .24s ease,transform .3s cubic-bezier(.2,.8,.2,1),border-color .25s ease;
+}
+#focusCard.on { opacity:1; transform:none; }
+#focusCard[data-tier="glazed"] { --tier-accent:var(--teal); }
+#focusCard[data-tier="banded"] { --tier-accent:#D89B62; }
+#focusCard[data-tier="royal"] { --tier-accent:#7EA6C7; }
+#focusCard[data-tier="astral"] { --tier-accent:#B49AD8; }
+#focusKicker { padding:2px 9px 3px; background:var(--tier-accent); border:2px solid var(--ink); border-radius:8px; font-size:16px; letter-spacing:.06em; }
+#focusName { margin-top:2px; font-size:37px; line-height:1; font-weight:400; }
+#focusStatus { color:var(--soft-ink); font-size:22px; line-height:1.05; }
+#focusAction { margin-top:5px; padding:5px 14px 7px; background:var(--ochre); border:3px solid var(--ink); border-radius:11px; font-size:24px; line-height:1; font-weight:400; }
+
+#feed li[data-tone="important"] {
+  border-width:3px; border-left-width:10px; border-left-color:var(--ochre);
+  font-size:24px; padding:9px 16px 10px 18px; box-shadow:0 5px 0 rgba(47,60,68,.18);
+}
+#feed li[data-tone="hero"] {
+  border-width:4px; border-left-width:12px; border-left-color:var(--coral);
+  background:rgba(255,253,249,.98); font-size:27px; padding:11px 18px 12px 20px;
+  box-shadow:0 7px 0 rgba(47,60,68,.20),0 14px 34px rgba(47,60,68,.14);
+}
+@media (max-width:680px) { #focusCard { left:72px; right:72px; bottom:96px; } }
