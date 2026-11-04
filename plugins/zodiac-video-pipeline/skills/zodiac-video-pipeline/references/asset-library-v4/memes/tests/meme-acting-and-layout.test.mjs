@@ -10,7 +10,7 @@ import {compileProduction} from '../../scene-direction/compile-scene-direction.m
 const here=path.dirname(fileURLToPath(import.meta.url));
 
 test('character compiler supports meme facepalm crop without changing identity',()=>{
-  const identity={entity_id:'hero',body_profile:'lean_tall',hair_id:'side-part',outfit_id:'gemini-basic-clean',variant_seed:'series-a|hero'};
+  const identity={entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'plain-shirt',variant_seed:'series-a|hero'};
   const meme=compileCharacterSvg(identity,{pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'});
   const neutral=compileCharacterSvg(identity,{pose_id:'neutral',expression_id:'neutral'});
   assert.match(meme.svg,/viewBox="45 65 430 520"/u);
@@ -20,7 +20,7 @@ test('character compiler supports meme facepalm crop without changing identity',
 });
 
 test('cry expression compiles two eye-rooted tears into native v4 character art',()=>{
-  const identity={entity_id:'hero',body_profile:'lean_tall',hair_id:'side-part',outfit_id:'gemini-basic-clean',variant_seed:'series-a|hero'};
+  const identity={entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'plain-shirt',variant_seed:'series-a|hero'};
   const crying=compileCharacterSvg(identity,{pose_id:'cry-hug',expression_id:'cry',crop_id:'face-closeup'});
   const neutral=compileCharacterSvg(identity,{pose_id:'neutral',expression_id:'neutral'});
   const tears=crying.svg.match(/<g id="face_tears">([\s\S]*?)<\/g>/u)?.[1]??'';
@@ -37,7 +37,7 @@ test('all registered meme poses compile for every body profile with visible hand
   for(const poseId of ids){
     assert.ok(catalog.poses.some(x=>x.id===poseId),`catalog missing ${poseId}`);
     for(const body of catalog.body_profiles){
-      const result=compileCharacterSvg({entity_id:'hero',body_profile:body.id,hair_id:'side-part',outfit_id:'gemini-basic-clean',variant_seed:'a'},
+      const result=compileCharacterSvg({entity_id:'hero',body_profile:body.id,hair_id:'long-side-part',outfit_id:'plain-shirt',variant_seed:'a'},
         {pose_id:poseId,expression_id:poseId==='cry-hug'?'cry':'neutral'});
       for(const arm of ['left_arm','right_arm']){
         const group=result.svg.match(new RegExp(`<g id="${arm}">([\\s\\S]*?)<\\/g>`,'u'))?.[1]??'';
