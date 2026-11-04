@@ -2,13 +2,9 @@
 // "phe/team/chon" prefix), so "do an gi" or "cho do vao day" never move anybody. A bare digit picks a team (parseTeam,
 // for people with no team yet) but never switches one: switching needs "doi ..." or the exact colour name.
 
-export const TEAMS = Object.freeze([
-  Object.freeze({ id: 'red', label: 'Đỏ', color: '#e5484d', glyph: '🔴' }),
-  Object.freeze({ id: 'yellow', label: 'Vàng', color: '#f5c518', glyph: '🟡' }),
-  Object.freeze({ id: 'green', label: 'Xanh lá', color: '#30a46c', glyph: '🟢' }),
-  Object.freeze({ id: 'blue', label: 'Xanh dương', color: '#3e63dd', glyph: '🔵' }),
-]);
-export const TEAM_IDS = TEAMS.map(t => t.id);
+import { TEAMS, TEAM_IDS } from '../public/teams.js';
+
+export { TEAMS, TEAM_IDS };
 
 export const normText = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd');
 

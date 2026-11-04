@@ -67,9 +67,9 @@ else {
 }
 
 // 5. assets ---------------------------------------------------------------------------------------------------------
-const signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
-const missing = signs.flatMap(s => ['idle', 'hype', 'win', 'panic', 'sad'].map(m => `${s}-${m}.svg`)).filter(f => !fs.existsSync(path.join(root, 'public/mascots', f)));
-missing.length ? bad(`Thiếu ${missing.length} linh vật — chạy: node build-mascots.mjs`) : ok('Đủ 60 hình linh vật');
+const teams = ['red', 'yellow', 'green', 'blue'];
+const missing = teams.flatMap(s => ['idle', 'hype', 'win', 'panic', 'sad'].map(m => `${s}-${m}.svg`)).filter(f => !fs.existsSync(path.join(root, 'public/mascots', f)));
+missing.length ? bad(`Thiếu ${missing.length} linh vật — chạy: node build-mascots.mjs`) : ok('Đủ 20 hình linh vật');
 fs.existsSync(path.join(root, 'public/fonts/PatrickHand-Regular.ttf')) ? ok('Có font hiển thị') : warn('Thiếu public/fonts/PatrickHand-Regular.ttf — chữ tiêu đề sẽ dùng font dự phòng');
 const musicDir = path.resolve(root, cfg.musicDir ?? '../../assets/music');
 const { listMusic } = await import('../music.mjs');
