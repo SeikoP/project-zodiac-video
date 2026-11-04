@@ -1,6 +1,6 @@
 # Zodiac Release Workflow Without Temporary Branches Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Remove release-branch noise by running Zodiac archive/bundle workflows from authoritative main commits.
 
@@ -27,19 +27,26 @@
 ---
 
 ### Task 1: Regression contract for workflow triggers
-- [ ] Add a static test that fails while workflows are dispatch-only.
-- [ ] Assert plugin archive has main/path push trigger.
-- [ ] Assert source bundle has main/release-record push trigger and all-phase matrix.
-- [ ] Run the targeted Node test and observe RED.
+- [x] Add a static test that fails while workflows are dispatch-only.
+- [x] Assert plugin archive has main/path push trigger.
+- [x] Assert source bundle has main/release-record push trigger and all-phase matrix.
+- [x] Run the targeted Node test and observe RED.
 
 ### Task 2: Main-native release workflows
-- [ ] Update zodiac-plugin-release.yml with main/path trigger.
-- [ ] Update zodiac-source-bundle.yml with main/release-record trigger.
-- [ ] Use event-aware matrix: one manual phase vs all three push phases.
-- [ ] Run targeted test and relevant plugin-native suite; observe GREEN.
+- [x] Update zodiac-plugin-release.yml with main/path trigger.
+- [x] Update zodiac-source-bundle.yml with main/release-record trigger.
+- [x] Use event-aware matrix: one manual phase vs all three push phases.
+- [x] Run targeted test and relevant plugin-native suite; observe GREEN.
 
 ### Task 3: Repository cleanup
-- [ ] Merge the workflow change after CI verification.
-- [ ] Verify current plugin/release record remains unchanged.
-- [ ] Reset obsolete release-only branch refs to current main with force-with-lease.
-- [ ] Compare each cleaned branch to main and require ahead_by=0.
+- [x] Merge the workflow change after CI verification.
+- [x] Verify current plugin/release record remains unchanged.
+- [x] Reset obsolete release-only branch refs to current main with force-with-lease.
+- [x] Compare each cleaned branch to main and require ahead_by=0.
+
+
+## Completion evidence
+- Regression RED: PR #168 run 41903276410 failed both new release-trigger tests while workflows were dispatch-only.
+- Regression GREEN: PR #168 run 41903854242 passed both release-trigger tests; plugin-native and Python/unit suites passed. `integration / livestream-pk` remained the unrelated baseline failure also present on main.
+- Merge: PR #168 squash commit `0ee9fba4787f915cc1fa800269ca6c5a5a7f949f`.
+- Cleanup: all `release/zodiac-*`, `chore/zodiac-release-record-*`, and the implementation branch were verified to point at the same commit as main after force-with-lease cleanup.
