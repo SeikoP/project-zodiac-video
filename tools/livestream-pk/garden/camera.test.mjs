@@ -5,99 +5,98 @@ import { gardenConfig } from './config.mjs';
 import { plotCenter } from './world.mjs';
 
 const cfg = gardenConfig();
-function rig() {
+function rig(plots = []) {
   let t = 1_000_000;
-  const cam = createCamera({ cfg, now: () => t });
+  const cam = createCamera({ cfg, now: () => t, getPlots: () => plots });
   return { cam, advance: ms => { t += ms; } };
 }
-const gift = (tier, plotId = 'cloud-1:3') => ({ type: 'gift', tier, plotId, total: 1 });
+const gift = (tier, plotId = 'cloud-1:3') => ({ type: 'gift', tier, plotId, total: 1, nickname: 'Mai' });
 const steal = (plotId = 'cloud-1:1', thiefPlotId = 'cloud-1:8') => ({ type: 'steal', plotId, thiefPlotId });
 
-test('a tree gift frames the givers terrace for 4s and beats a theft waiting', () => {
-  const r = rig();
-  r.cam.push(steal('cloud-2:1', 'cloud-2:2'));
-  r.cam.push(gift('tree', 'cloud-1:3'));
+test('camera starts and stays on one stable overview when nothing happens', () => {
+  const r = rig([{ tier: 'cloud-1', slot: 0, owner: 'a' }, { tier: 'cloud-1', slot: 10, owner: 'b' }]);
   const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.priority, s.zoom, s.holdMs], ['gift', 1, cfg.camera.zoomClose, 4000]);
-  assert.deepEqual([s.x, s.y], [plotCenter('cloud-1', 3, cfg).x, plotCenter('cloud-1', 3, cfg).y]);
+  assert.equal(s.kind, 'overview');
+  assert.ok(s.zoom >= cfg.camera.zoomWorld && s.zoom <= cfg.camera.zoomTier);
+  r.advance(60_000);
+  assert.equal(r.cam.tick(), null, 'no garden tour or periodic camera movement');
 });
 
-test('a small gift stays on the giver pot for 2.5s', () => {
+test('a real moment leaves overview immediately, then stays for the full hold before returning home', () => {
+  const r = rig([{ tier: 'cloud-1', slot: 3, owner: 'a' }]);
+  assert.equal(r.cam.tick().kind, 'overview');
+  r.cam.push(gift('tree'));
+  const hero = r.cam.tick();
+  assert.deepEqual([hero.kind, hero.zoom, hero.holdMs], ['gift', cfg.camera.zoomClose, cfg.camera.giftHoldMs]);
+  r.advance(cfg.camera.giftHoldMs - 1);
+  assert.equal(r.cam.tick(), null);
+  r.advance(2);
+  assert.equal(r.cam.tick().kind, 'overview');
+});
+
+test('queued moments never replace a shot before its hold expires', () => {
+  const r = rig();
+  r.cam.push(gift('dew', 'cloud-1:1'));
+  assert.equal(r.cam.tick().kind, 'gift');
+  r.cam.push(steal('cloud-1:2', 'cloud-1:7'));
+  r.cam.push({ type: 'levelup', plotId: 'cloud-1:9' });
+  assert.equal(r.cam.state().queue.length, 2);
+  r.advance(cfg.camera.lowGiftHoldMs - 1);
+  assert.equal(r.cam.tick(), null);
+  r.advance(2);
+  assert.equal(r.cam.tick().kind, 'steal');
+});
+
+test('event start has first priority and uses the active-garden overview', () => {
+  const plots = [{ tier: 'cloud-1', slot: 0, owner: 'a' }, { tier: 'cloud-1', slot: 17, owner: 'b' }];
+  const r = rig(plots);
+  r.cam.push(gift('dew'));
+  r.cam.push({ type: 'event-start', kind: 'rain' });
+  const s = r.cam.tick();
+  assert.deepEqual([s.kind, s.priority, s.eventKind], ['event', 0, 'rain']);
+  assert.equal(s.holdMs, cfg.camera.eventHoldMs);
+});
+
+test('same-pot gift packets coalesce but different players remain separate queued moments', () => {
+  const r = rig();
+  r.cam.push(gift('dew', 'cloud-1:1'));
+  r.advance(300);
+  r.cam.push(gift('star', 'cloud-1:1'));
+  r.cam.push(gift('dew', 'cloud-1:2'));
+  assert.equal(r.cam.state().queue.length, 2);
+  assert.equal(r.cam.state().queue[0].giftKind, 'star');
+});
+
+test('arrival bursts cannot fill the whole camera queue', () => {
+  const r = rig();
+  for (let i = 0; i < 20; i++) r.cam.push({ type: 'joined', plotId: `cloud-1:${i}`, nickname: `U${i}` });
+  assert.equal(r.cam.state().queue.filter(q => q.kind === 'welcome').length, 2);
+});
+
+test('the queue keeps up to the configured number of meaningful moments', () => {
+  const r = rig();
+  for (let i = 0; i < 20; i++) r.cam.push(steal(`cloud-${i % 4 + 1}:1`, `cloud-${i % 4 + 1}:2`));
+  assert.equal(r.cam.state().queue.length, cfg.camera.queueMax);
+});
+
+test('a close shot exposes the slower easing duration to the overlay', () => {
   const r = rig();
   r.cam.push(gift('dew'));
   const s = r.cam.tick();
-  assert.deepEqual([s.priority, s.zoom, s.holdMs], [2, cfg.camera.zoomTier, 2500]);
-  assert.deepEqual([s.x, s.y], [plotCenter('cloud-1', 3, cfg).x, plotCenter('cloud-1', 3, cfg).y]);
+  assert.equal(s.easeMs, cfg.camera.easeMs);
+  assert.ok(s.holdMs > s.easeMs * 2, 'most of the shot is stable enough to read the crop');
 });
 
-test('a theft frames both plots', () => {
+test('a theft frames both pots without exceeding close zoom', () => {
   const r = rig();
   r.cam.push(steal('cloud-1:1', 'cloud-1:8'));
   const s = r.cam.tick();
   const a = plotCenter('cloud-1', 1, cfg), b = plotCenter('cloud-1', 8, cfg);
-  assert.equal(s.priority, 3);
   assert.deepEqual([s.x, s.y], [(a.x + b.x) / 2, (a.y + b.y) / 2]);
   assert.ok(s.zoom >= cfg.camera.zoomTier && s.zoom <= cfg.camera.zoomClose);
 });
 
-test('the shot does not change before 2s; then a 1s wide gap, then the next shot', () => {
-  const r = rig();
-  r.cam.push(gift('dew', 'cloud-1:1'));
-  assert.ok(r.cam.tick());
-  r.cam.push(gift('tree', 'cloud-2:2'));
-  r.advance(1999);
-  assert.equal(r.cam.tick(), null);
-  r.advance(1000);
-  const gap = r.cam.tick();
-  assert.deepEqual([gap.kind, gap.zoom, gap.holdMs], ['gap', cfg.camera.zoomTier, 1000]);
-  assert.equal(r.cam.tick(), null);
-  r.advance(1000);
-  assert.equal(r.cam.tick().kind, 'gift');
-});
-
-test('waiting events expire: a theft is dropped after 6s, a gift after 15s', () => {
-  const r = rig();
-  r.cam.push(gift('tree', 'cloud-1:1'));
-  r.cam.push(steal('cloud-2:1', 'cloud-2:2'));
-  r.cam.push(gift('dew', 'cloud-3:1'));
-  assert.equal(r.cam.tick().kind, 'gift'); // the tree
-  r.advance(6500 + 1000);
-  const kinds = [];
-  for (let i = 0; i < 6; i++) { const s = r.cam.tick(); if (s) kinds.push(s.kind); r.advance(1000); }
-  assert.ok(!kinds.includes('steal'), kinds.join());
-  assert.ok(kinds.includes('gift'), 'the 15s gift is still worth showing');
-});
-
-test('two events on the same terrace within 1.5s merge into one terrace shot', () => {
-  const r = rig();
-  r.cam.push(gift('dew', 'cloud-1:1'));
-  r.advance(500);
-  r.cam.push(gift('star', 'cloud-1:20'));
-  assert.equal(r.cam.state().queue.length, 1);
-  const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.zoom], ['tier', cfg.camera.zoomTier]);
-});
-
-test('lighting quota: after a gift shot, a waiting non-gift is shown before further gifts', () => {
-  const r = rig();
-  r.cam.push(gift('tree', 'cloud-1:1'));
-  assert.equal(r.cam.tick().kind, 'gift');
-  r.cam.push(gift('tree', 'cloud-2:1'));
-  r.cam.push({ type: 'levelup', plotId: 'cloud-3:4' });
-  r.advance(4000); assert.equal(r.cam.tick().kind, 'gap');
-  r.advance(1000);
-  assert.equal(r.cam.tick().kind, 'levelup');
-});
-
-test('the queue holds 8: the lowest priority is dropped when a ninth arrives', () => {
-  const r = rig();
-  for (let i = 0; i < 8; i++) r.cam.push(steal(`cloud-${i % 4 + 1}:1`, `cloud-${i % 4 + 1}:2`));
-  r.cam.push({ type: 'event-start', kind: 'rain' });
-  assert.equal(r.cam.state().queue.length, 8);
-  assert.ok(r.cam.state().queue.every(q => q.priority === 3));
-});
-
-test('locking holds the view and ignores events', () => {
+test('locking clears the queue and ignores new events', () => {
   const r = rig();
   r.cam.setLock(true);
   r.cam.push(gift('tree'));
@@ -106,50 +105,4 @@ test('locking holds the view and ignores events', () => {
   r.cam.setLock(false);
   r.cam.push(gift('tree'));
   assert.equal(r.cam.tick().kind, 'gift');
-});
-
-test('with nothing happening it tours readable pot groups every 8s', () => {
-  const r = rig();
-  const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.x, s.y, s.zoom], ['idle', cfg.tierWidth * .14, cfg.tierHeight / 2, cfg.camera.zoomTier]);
-  r.advance(7999);
-  assert.equal(r.cam.tick(), null);
-  r.advance(2);
-  const next = r.cam.tick();
-  assert.equal(next.kind, 'idle');
-  assert.ok(next.x > s.x, 'the idle camera advances to the next pot group');
-});
-
-test('a gift from a player with no plot is shown as a wide shot', () => {
-  const r = rig();
-  r.cam.push({ type: 'gift', tier: 'rain', plotId: null, total: 100 });
-  const s = r.cam.tick();
-  assert.deepEqual([s.priority, s.zoom], [1, cfg.camera.zoomWorld]);
-});
-
-test('a field event opens on a readable greenhouse district instead of the 432-plot overview', () => {
-  const r = rig();
-  r.cam.push({ type: 'event-start', kind: 'rain' });
-  const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.tier, s.zoom], ['event', 'cloud-1', cfg.camera.zoomTier]);
-  assert.equal(s.holdMs, 5200);
-});
-
-test('a players first ripe crop is a moment worth a shot; later ordinary ripe crops are not', () => {
-  const r = rig();
-  r.cam.push({ type: 'ripe', plotId: 'cloud-1:1', crop: 'rau', first: false });
-  assert.equal(r.cam.state().queue.length, 0);
-  r.cam.push({ type: 'ripe', plotId: 'cloud-1:1', crop: 'rau', first: true });
-  const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.priority], ['ripe', 4]);
-});
-
-test('an idle drift gives way to a real moment after the minimum hold, without a gap shot', () => {
-  const r = rig();
-  assert.equal(r.cam.tick().kind, 'idle');
-  r.cam.push(steal('cloud-1:1', 'cloud-1:8'));
-  r.advance(1999);
-  assert.equal(r.cam.tick(), null);
-  r.advance(2);
-  assert.equal(r.cam.tick().kind, 'steal');
 });

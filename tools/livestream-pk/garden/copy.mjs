@@ -2,11 +2,11 @@
 export const COPY = Object.freeze({
   title: 'Vườn Mây',
   welcome: 'Chào mừng tới Vườn Mây',
-  howTo: 'Gõ “trồng rau” để nhận ô đất · “tưới” chăm cây · “hái” khi cây chín',
+  howTo: '“trồng rau” · “tưới” · “bón phân” · “nhổ cỏ” · “bắt sâu” · “hái” khi chín',
   joined: name => `Chào ${name}, vườn của bạn đây!`,
   joinedHint: tier => `Tầng ${tier} · gõ “trồng rau” để gieo hạt`,
   gifts: Object.freeze({ dew: 'Giọt sương', star: 'Phân sao', rain: 'Mưa phép', tree: 'Thần thụ' }),
-  events: Object.freeze({ rain: 'Mưa mây', pests: 'Bão sâu', merchant: 'Thương lái đến', golden: 'Giờ vàng' }),
+  events: Object.freeze({ rain: 'Mưa tưới', pests: 'Đợt sâu bệnh', merchant: 'Chợ phiên', golden: 'Giờ vàng' }),
   eventHint: Object.freeze({ rain: 'Cả vườn lớn nhanh gấp đôi', pests: 'Cả phòng gõ "bắt sâu"!', merchant: 'Một loại cây được giá gấp đôi', golden: 'Hái được gấp đôi vàng' }),
   steal: (thief, victim) => `${thief} trộm cây của ${victim}`,
   caught: (victim, thief) => `${victim} bắt được ${thief}!`,

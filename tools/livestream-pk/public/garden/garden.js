@@ -5,24 +5,22 @@ import { createAvatarCache, easeCamera, lodOf, plotPos, visiblePlots, worldToScr
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
-const stage = document.getElementById('stage'), banner = document.getElementById('banner'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
+const stage = document.getElementById('stage'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
 const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
-const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders'), audioToggle = document.getElementById('audioToggle');
+const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
 const volume = (key, fallback) => { const n = Number(params.get(key)); return params.has(key) && Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback; };
-const music = createMusic({ volume: volume('music', 0.18) }), playSfx = createSfx(volume('sfx', 0.18));
-music.toggleMute();
-let soundEnabled = false, audioOn = false;
-const sfx = (name, arg) => { if (soundEnabled) playSfx(name, arg); };
-audioToggle.addEventListener('click', () => {
-  audioOn = !audioOn;
-  soundEnabled = audioOn;
-  music.toggleMute();
-  if (audioOn) { music.resume(); playSfx('boop'); }
-  audioToggle.textContent = audioOn ? '♫ Tắt âm thanh' : '♫ Bật âm thanh';
-  audioToggle.setAttribute('aria-pressed', String(audioOn));
-});
+const music = createMusic({ volume: volume('music', 0.16) }), playSfx = createSfx(volume('sfx', 0.2));
+const sfx = (name, arg, { duck = .72, ms = 1500 } = {}) => {
+  if (duck < 1) music.duck(duck, ms);
+  playSfx(name, arg);
+};
+// No visible audio control: LIVE/OBS attempts playback automatically. A normal browser that
+// blocks autoplay unlocks on the first interaction anywhere, without adding overlay chrome.
+const unlockAudio = () => music.resume();
+addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
+addEventListener('keydown', unlockAudio, { once: true, capture: true });
 const fit = () => {
   const scale = Math.min(innerWidth / VP.w, innerHeight / VP.h);
   stage.style.transform = `scale(${scale})`;
@@ -32,9 +30,9 @@ const fit = () => {
 addEventListener('resize', fit); fit();
 
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
-const plots = new Map(), floaters = [], avatars = createAvatarCache(200);
-let cam = { x: 650, y: 600, zoom: 1.05 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
-const EASE_MS = 850;
+const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
+let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
+const visualEvent = () => serverEvent && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
 const TIER_SCENES = [
@@ -56,10 +54,18 @@ const DECOR_ART = [
   '/garden/assets/decor-windchime.svg',
   '/garden/assets/decor-lantern.svg',
 ];
+const POT_ART = {
+  clay: '/garden/assets/pot-clay.svg',
+  glazed: '/garden/assets/pot-glazed.svg',
+  banded: '/garden/assets/pot-banded.svg',
+  royal: '/garden/assets/pot-royal.svg',
+  astral: '/garden/assets/pot-astral.svg',
+};
+const POT_LABEL = { clay: 'Đất nung', glazed: 'Men lá', banded: 'Viền đồng', royal: 'Bệ ngọc', astral: 'Tinh tú' };
 const CROP_ART = {
-  rau: '/garden/assets/crop-rau.svg',
-  huongduong: '/garden/assets/crop-huongduong.svg',
-  nammay: '/garden/assets/crop-nammay.svg',
+  rau: { common: '/garden/assets/crop-rau.svg', lush: '/garden/assets/crop-rau-lush.svg', golden: '/garden/assets/crop-rau-golden.svg' },
+  huongduong: { common: '/garden/assets/crop-huongduong.svg', lush: '/garden/assets/crop-huongduong-lush.svg', golden: '/garden/assets/crop-huongduong-golden.svg' },
+  nammay: { common: '/garden/assets/crop-nammay.svg', lush: '/garden/assets/crop-nammay-lush.svg', golden: '/garden/assets/crop-nammay-golden.svg' },
 };
 const artCache = new Map();
 function gardenArt(src) {
@@ -76,18 +82,14 @@ function gardenArt(src) {
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
 
-function say(text) {
+function say(text, ms = 6500) {
   const li = el('li', text);
   feed.append(li);
-  while (feed.children.length > 4) feed.firstChild.remove();
-  setTimeout(() => li.remove(), 12000);
+  while (feed.children.length > 2) feed.firstChild.remove();
+  setTimeout(() => li.remove(), ms);
 }
-let bannerTimer = 0;
 function show(title, sub = '', ms = 3500) {
-  banner.replaceChildren(document.createTextNode(title), ...(sub ? [el('small', sub)] : []));
-  banner.classList.add('on');
-  clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(() => banner.classList.remove('on'), ms);
+  say(sub ? `${title} · ${sub}` : title, Math.min(7000, ms));
 }
 
 const nameOf = id => plots.get(id)?.owner?.nickname ?? 'Ai đó';
@@ -99,24 +101,33 @@ function handleFx(fx) {
   if (!C) return;
   switch (fx.type) {
     case 'joined': {
-      sfx('join');
+      sfx('join', 0, { duck: .86, ms: 700 });
       const tier = meta.tiers.find(t => t.id === fx.tier)?.label ?? 'khu vườn';
-      if (fx.count > 1) say(`${fx.count} người vừa vào vườn · ${tier}`);
-      else show(C.joined(fx.names?.[0] ?? 'bạn'), C.joinedHint(tier), 5500);
+      if (fx.count > 2) say(`${fx.count} người vừa vào · ${tier}`, 4500);
       break;
     }
-    case 'gift': sfx('milestone'); show(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, fx.tier === 'tree' ? 'Thần thụ nở rộ trên tầng mây' : '', fx.tier === 'tree' || fx.tier === 'rain' ? 4200 : 2600); break;
-    case 'steal': say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId))); float('coin', fx.plotId); break;
-    case 'catch': say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId))); float('sparkle', fx.plotId); break;
-    case 'dog-bark': say(C.bark(nameOf(fx.plotId))); break;
-    case 'levelup': sfx('milestone'); say(C.levelUp(nameOf(fx.plotId), fx.level)); float('sparkle', fx.plotId); break;
-    case 'plant': sfx('sparkle'); break;
-    case 'harvest': sfx('sparkle'); if (fx.count > 3) say(`${fx.count} người vừa hái`); break;
-    case 'pest-cleared': sfx('sparkle'); break;
-    case 'title': sfx('title'); show(`${fx.nickname ?? 'Người làm vườn'} nhận danh hiệu`, fx.titles?.join(' · ') ?? '', 5000); break;
-    case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm phiên · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'} · Tiếp theo: ${fx.competition?.milestone?.label ?? '—'}`, 6000); break;
-    case 'event-start': sfx('actOpen'); break;
-    case 'water': case 'help': if (fx.count > 3) say(`${fx.count} người đang tưới`); break;
+    case 'gift':
+      if (fx.tier === 'tree' || fx.tier === 'rain') say(`${fx.nickname ?? 'Ai đó'} · ${C.gifts[fx.tier]}`, 5200);
+      break;
+    case 'steal': sfx('cardFlip'); say(C.steal(nameOf(fx.thiefPlotId), nameOf(fx.plotId)), 5200); float('coin', fx.plotId); break;
+    case 'catch': sfx('cleared'); say(C.caught(nameOf(fx.plotId), nameOf(fx.thiefPlotId)), 5200); float('sparkle', fx.plotId); break;
+    case 'dog-bark': sfx('bossHit', null, { duck: .82, ms: 700 }); break;
+    case 'levelup': sfx('milestone', null, { duck: .5, ms: 1800 }); say(C.levelUp(nameOf(fx.plotId), fx.level), 5200); float('sparkle', fx.plotId); break;
+    case 'plant': sfx('sparkle', null, { duck: .9, ms: 500 }); break;
+    case 'harvest': sfx('cleared', null, { duck: .75, ms: 1000 }); break;
+    case 'pest-cleared': sfx('cleared', null, { duck: .82, ms: 800 }); break;
+    case 'weed-cleared': sfx('cardFlip', null, { duck: .86, ms: 600 }); break;
+    case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
+    case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
+    case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
+    case 'event-start':
+      music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
+      break;
+    case 'event-end':
+      if (presentedEventKind === fx.kind) sfx(fx.ok === false ? 'fall' : 'actClose', null, { duck: .48, ms: 1800 });
+      presentedEventKind = null;
+      music.setMood('calm');
+      break;
     default:
   }
 }
@@ -160,25 +171,49 @@ async function refreshStatus() {
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
-    hint.textContent = data.copy.howTo;
+    hint.textContent = 'Bình luận để nhận chậu · trồng · tưới · hái';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
-    if (!welcomed) { welcomed = true; show(data.copy.welcome, data.copy.howTo, 6500); }
+    music.resume();
   } else if (event === 'reset') {
-    plots.clear(); floaters.length = 0; serverEvent = null;
-    show('Vườn mô phỏng đã làm mới', 'Bắt đầu bằng một bình luận hoặc “trồng rau”.', 4200);
+    plots.clear(); floaters.length = 0; serverEvent = null; presentedEventKind = null;
+    say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
-    if ('event' in data.parts) serverEvent = data.parts.event;
-    if ('event' in data.parts) music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+    if ('event' in data.parts) {
+      serverEvent = data.parts.event;
+      if (!serverEvent) presentedEventKind = null;
+      music.setMood(serverEvent?.kind === 'golden' || serverEvent?.kind === 'pests' ? 'upbeat' : 'calm');
+    }
     if (data.parts.competition) renderCompetition(data.parts.competition);
     for (const fx of data.fx ?? []) handleFx(fx);
   } else if (event === 'shot') {
     from = cam;
     to = { x: data.x, y: data.y, zoom: data.zoom };
-    shotLabel.textContent = ({ idle: 'ĐANG DẠO VƯỜN', welcome: 'CHÀO NGƯỜI LÀM VƯỜN', gift: 'KHOẢNH KHẮC ĐẶC BIỆT', tier: 'VƯỜN ĐANG SÔI ĐỘNG', steal: 'CÓ TRỘM TRONG VƯỜN', catch: 'BẮT QUẢ TANG', levelup: 'LÊN CẤP', ripe: 'CÂY ĐÃ CHÍN', event: 'SỰ KIỆN TOÀN VƯỜN', gap: 'CHUYỂN CẢNH' })[data.kind] ?? 'VƯỜN MÂY';
-    shotLabel.classList.toggle('active', data.kind !== 'idle' && data.kind !== 'gap');
+    cameraEaseMs = Math.max(600, Number(data.easeMs) || 1800);
+    const owner = data.plotId ? plots.get(data.plotId)?.owner?.nickname : data.nickname;
+    const giftName = data.giftKind && meta?.copy?.gifts?.[data.giftKind];
+    const labels = {
+      overview: `TOÀN CẢNH · ${[...plots.values()].filter(p => p.owner && p.awake).length} CHẬU`,
+      welcome: owner ? `CHÀO ${owner.toUpperCase()}` : 'NGƯỜI MỚI VÀO VƯỜN',
+      gift: owner ? `${owner.toUpperCase()} · ${giftName ?? 'QUÀ VƯỜN'}` : (giftName ?? 'KHOẢNH KHẮC ĐẶC BIỆT'),
+      steal: 'TRỘM CÂY',
+      catch: 'BẮT QUẢ TANG',
+      levelup: owner ? `${owner.toUpperCase()} · LÊN CẤP` : 'LÊN CẤP',
+      ripe: owner ? `${owner.toUpperCase()} · CÂY CHÍN` : 'CÂY ĐÃ CHÍN',
+      event: `SỰ KIỆN · ${eventNames[data.eventKind] ?? 'TOÀN VƯỜN'}`,
+    };
+    shotLabel.textContent = labels[data.kind] ?? 'VƯỜN MÂY';
+    shotLabel.classList.toggle('active', data.kind !== 'overview');
+    if (data.kind === 'event' && data.eventKind) {
+      presentedEventKind = data.eventKind;
+      const role = ({ rain: 'flow', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';
+      sfx(role, null, { duck: .28, ms: 2800 });
+    } else if (data.kind === 'gift') {
+      const role = ({ dew: 'flow', star: 'sparkle', rain: 'flow', tree: 'starFly' })[data.giftKind] ?? 'milestone';
+      sfx(role, null, { duck: data.giftKind === 'tree' || data.giftKind === 'rain' ? .35 : .68, ms: data.giftKind === 'tree' ? 2800 : 1600 });
+    }
     focusPlot = data.plotId ?? null;
-    focusAt = performance.now(); focusMs = data.holdMs ?? 3500;
+    focusAt = performance.now(); focusMs = data.holdMs ?? 5200;
     shotAt = performance.now();
   }
 }
@@ -214,7 +249,7 @@ function cloudPath(width, height) {
 
 function drawBackdrop(now) {
   const sky = ctx.createLinearGradient(0, 0, 0, VP.h);
-  sky.addColorStop(0, serverEvent?.kind === 'golden' ? '#F5E1A3' : '#DCEBE4');
+  sky.addColorStop(0, visualEvent()?.kind === 'golden' ? '#F5E1A3' : '#DCEBE4');
   sky.addColorStop(.56, '#F6F0E6');
   sky.addColorStop(1, '#D8E1D5');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VP.w, VP.h);
@@ -269,55 +304,45 @@ function drawTier(tier, index) {
   const cfg = meta.cfg;
   const center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
   const s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
-  const bayCols = cfg.plotsPerRow / 4, bayW = bayCols * cfg.plotCell, totalW = bayW * 4;
+  const bays = 3, rows = Math.ceil(cfg.plotsPerTier / cfg.plotsPerRow);
+  const bayCols = cfg.plotsPerRow / bays, bayW = bayCols * cfg.plotCell, totalW = cfg.plotsPerRow * cfg.plotCell;
+  const shelfStart = -(rows - 1) * cfg.plotCell / 2 - 18;
+  const roofY = shelfStart - 155, deckY = shelfStart + (rows - 1) * cfg.plotCell + 72;
   ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
   ctx.fillStyle = C.shadow;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 175, totalW + 140, 88, 28); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY + 26, totalW + 140, 88, 28); ctx.fill();
   ctx.fillStyle = scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, 150, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
-  ctx.globalAlpha = .22; ctx.fillStyle = C.card;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 25, 164, totalW + 50, 18, 9); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
 
-  for (let bay = 0; bay < 4; bay++) {
+  for (let bay = 0; bay < bays; bay++) {
     const bx = -totalW / 2 + bayW * (bay + .5);
     const left = bx - bayW / 2 + 24, right = bx + bayW / 2 - 24;
-
     ctx.strokeStyle = C.ink; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22;
-    ctx.beginPath(); ctx.moveTo(left, -220); ctx.quadraticCurveTo(bx, -320, right, -220); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left, roofY + 34); ctx.quadraticCurveTo(bx, roofY - 72, right, roofY + 34); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22; ctx.stroke();
 
     for (const x of [left, right]) {
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, -220); ctx.lineTo(x, 160); ctx.stroke();
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, roofY + 34); ctx.lineTo(x, deckY + 10); ctx.stroke();
       ctx.strokeStyle = scene.rail; ctx.lineWidth = 15; ctx.stroke();
     }
 
-    for (let row = 0; row < 3; row++) {
-      const shelfY = -94 + row * cfg.plotCell;
+    for (let row = 0; row < rows; row++) {
+      const shelfY = shelfStart + row * cfg.plotCell;
       ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(left + 18, shelfY + 13, bayW - 84, 31, 12); ctx.fill();
-      ctx.fillStyle = row === 1 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
+      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.roundRect(left + 18, shelfY, bayW - 84, 30, 12); ctx.fill(); ctx.stroke();
     }
 
-    const signW = 330;
+    const signW = Math.min(370, bayW - 80);
     ctx.fillStyle = bay % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.roundRect(bx - signW / 2, -278, signW, 58, 14); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(bx - signW / 2, roofY - 46, signW, 58, 14); ctx.fill(); ctx.stroke();
     ctx.fillStyle = C.ink; ctx.font = `bold 34px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, -248);
+    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, roofY - 17);
 
     const deco = gardenArt(DECOR_ART[(index + bay) % DECOR_ART.length]);
-    if (deco) {
-      ctx.save(); ctx.globalAlpha = .92;
-      ctx.drawImage(deco, right - 115, -205, 92, 92);
-      ctx.restore();
-    }
-  }
-
-  ctx.strokeStyle = 'rgba(47,60,68,.35)'; ctx.lineWidth = 6;
-  for (const x of [-totalW * .36, -totalW * .12, totalW * .12, totalW * .36]) {
-    ctx.beginPath(); ctx.moveTo(x, 232); ctx.lineTo(x - 28, 314); ctx.stroke();
+    if (deco) { ctx.save(); ctx.globalAlpha = .9; ctx.drawImage(deco, right - 105, roofY + 58, 86, 86); ctx.restore(); }
   }
   ctx.restore();
 }
@@ -373,21 +398,46 @@ function drawRipeCrop(type, stage) {
 }
 
 function drawPlot(p, lod) {
+  if (!p.owner || !p.awake) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), size = meta.cfg.plotCell * 1.1 * cam.zoom;
-  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = p.awake ? 1 : .58;
+  ctx.save(); ctx.translate(at.x, at.y); ctx.scale(size / 100, size / 100); ctx.globalAlpha = 1;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  // Saucer + pot + soil share the same perspective as the shelf, making the crop feel planted.
-  ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
-  ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
-  ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-  ctx.globalAlpha = .24; ctx.fillStyle = C.card; ctx.beginPath(); ctx.roundRect(-27, 23, 54, 8, 4); ctx.fill(); ctx.globalAlpha = 1;
-  ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke();
+
+  const potImage = gardenArt(POT_ART[p.potTier] ?? POT_ART.clay);
+  if (potImage) ctx.drawImage(potImage, -52, -4, 104, 62);
+  else {
+    ctx.beginPath(); ctx.ellipse(0, 47, 44, 9, -.03, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
+    ctx.beginPath(); ctx.roundRect(-38, 39, 76, 10, 5); ctx.fillStyle = C.paper; ctx.strokeStyle = C.ink; ctx.lineWidth = 5; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-35, 8); ctx.lineTo(-27, 42); ctx.quadraticCurveTo(0, 52, 28, 42); ctx.lineTo(35, 8); ctx.closePath();
+    ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(-40, 1, 80, 14, 7); ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, 8, 30, 6, 0, 0, Math.PI * 2); ctx.fillStyle = '#8C6650'; ctx.fill();
+  }
+
   if (p.crop) {
-    const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]) : null;
-    if (cropImage) ctx.drawImage(cropImage, -43, -85, 86, 86);
+    const variant = p.crop.variant ?? 'common';
+    if (variant === 'golden') {
+      ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = C.ochre; ctx.shadowColor = C.ochre; ctx.shadowBlur = 22;
+      ctx.beginPath(); ctx.arc(0, -42, 45, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    } else if (variant === 'lush') {
+      ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(0, -38, 39, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
+    if (cropImage) ctx.drawImage(cropImage, -49, -96, 98, 98);
     else drawRipeCrop(p.crop.type, p.stage ?? 0);
+
+    if (p.crop.weeds) {
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      for (const x of [-28, -17, 22, 31]) {
+        ctx.beginPath(); ctx.moveTo(x, 9); ctx.quadraticCurveTo(x - 8, -2, x - 4, -13); ctx.stroke();
+        drawLeaf(x - 4, -9, 8, x < 0 ? -.9 : .9, C.teal);
+      }
+    }
+    if (p.crop.fertilized) {
+      ctx.globalAlpha = .82;
+      drawSparkle(-36, -54, 7, C.ochre); drawSparkle(35, -38, 5, C.ochre);
+      ctx.globalAlpha = 1;
+    }
   }
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
@@ -408,13 +458,26 @@ function drawPlot(p, lod) {
     const labelY = at.y + size * .55;
     const fontSize = focused ? 29 : 18;
     const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
-    const title = focused ? `${shortName} · Lv${p.owner.level}` : shortName;
+    const title = focused ? `${shortName} · Lv${p.owner.level} · ${POT_LABEL[p.potTier] ?? 'Đất nung'}` : shortName;
     ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const maxW = focused ? 280 : 112, h = focused ? 40 : 27;
+    const maxW = focused ? 360 : 112, h = focused ? 40 : 27;
     const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
     ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
     ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, h, focused ? 11 : 8); ctx.fill(); ctx.stroke();
     ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + (focused ? 3 : 2));
+
+    if (focused) {
+      const stageName = ['Hạt', 'Mầm', 'Đang lớn', 'Chín', 'Quá lứa'][p.stage ?? 0] ?? 'Đang lớn';
+      const cropName = p.crop ? (meta.crops?.[p.crop.type]?.label ?? p.crop.type) : 'Chưa trồng';
+      const variant = p.crop?.variant === 'golden' ? 'Ánh kim' : p.crop?.variant === 'lush' ? 'Sum suê' : '';
+      const alert = p.crop?.pest ? ' · Có sâu' : p.crop?.weeds ? ' · Có cỏ' : p.crop?.fertilized ? ' · Đã bón phân' : '';
+      const status = p.crop ? `${cropName} · ${stageName}${variant ? ` · ${variant}` : ''}${alert}` : cropName;
+      ctx.font = `22px ${FONT}`;
+      const sw = Math.min(390, ctx.measureText(status).width + 24), sy = labelY + 45;
+      ctx.fillStyle = 'rgba(255,253,249,.96)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(at.x - sw / 2, sy, sw, 34, 10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = p.crop?.pest || p.crop?.weeds ? C.coral : C.softInk; ctx.fillText(status, at.x, sy + 2);
+    }
 
     const avatarR = focused ? Math.max(26, size * .16) : Math.max(12, size * .095);
     const avatarX = at.x - size * .28, avatarY = at.y - size * .62;
@@ -434,6 +497,7 @@ function drawPlot(p, lod) {
 }
 
 function drawDot(p) {
+  if (!p.owner || !p.awake) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), r = Math.max(4, 47 * cam.zoom);
   ctx.beginPath(); ctx.ellipse(at.x, at.y, r * 1.08, r * .84, -.08, 0, Math.PI * 2);
   ctx.fillStyle = !p.crop ? C.paper : p.stage >= 3 ? (p.crop.type === 'nammay' ? C.coral : C.ochre) : C.teal;
@@ -445,13 +509,14 @@ function drawSparkle(x, y, r, color = C.ochre) {
   ctx.fillStyle = color; ctx.fill();
 }
 
-function drawAtmosphere(now) {
+function drawAtmosphere(now, activeTierIds) {
   const cfg = meta.cfg, t = reduceMotion ? 0 : now;
 
   meta.tiers.forEach((tier, i) => {
-    const y = i * cfg.tierHeight + cfg.tierHeight / 2;
-    for (let bay = 0; bay < 4; bay++) {
-      const x = cfg.tierWidth * (.14 + bay * .24);
+    if (!activeTierIds.has(tier.id)) return;
+    const y = i * cfg.tierHeight + cfg.tierHeight / 2, bays = 3;
+    for (let bay = 0; bay < bays; bay++) {
+      const x = cfg.tierWidth * ((bay + 1) / (bays + 1));
       const at = worldToScreen({ x: x + Math.sin(t / 2600 + bay) * 24, y: y - 250 }, cam, VP);
       ctx.globalAlpha = .28;
       drawSparkle(at.x, at.y, Math.max(3, 10 * cam.zoom), bay % 2 ? C.ochre : C.teal);
@@ -459,7 +524,8 @@ function drawAtmosphere(now) {
     }
   });
 
-  if (serverEvent?.kind === 'rain') {
+  const shownEvent = visualEvent();
+  if (shownEvent?.kind === 'rain') {
     const wash = ctx.createLinearGradient(0, 0, 0, VP.h);
     wash.addColorStop(0, 'rgba(70,119,139,.20)'); wash.addColorStop(1, 'rgba(142,192,185,.08)');
     ctx.fillStyle = wash; ctx.fillRect(0, 0, VP.w, VP.h);
@@ -468,14 +534,14 @@ function drawAtmosphere(now) {
       const x = (i * 79 + (t / 13) % 1160) % 1160 - 40, y = (i * 113 + (t / 7) % 2020) % 2020 - 40;
       ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 17, y + 44); ctx.stroke();
     }
-  } else if (serverEvent?.kind === 'golden') {
+  } else if (shownEvent?.kind === 'golden') {
     const g = ctx.createRadialGradient(VP.w / 2, 650, 80, VP.w / 2, 650, 850);
     g.addColorStop(0, 'rgba(242,196,92,.28)'); g.addColorStop(1, 'rgba(242,196,92,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.globalAlpha = .82;
     for (let i = 0; i < 44; i++) drawSparkle((i * 137 + 31 + t / 28) % 1080, (i * 281 + 67 + t / 80) % 1920, 6 + (i % 4) * 3, C.ochre);
     ctx.globalAlpha = 1;
-  } else if (serverEvent?.kind === 'pests') {
+  } else if (shownEvent?.kind === 'pests') {
     ctx.fillStyle = 'rgba(233,122,102,.10)'; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.save(); ctx.strokeStyle = 'rgba(233,122,102,.72)'; ctx.lineWidth = 18; ctx.setLineDash([34, 22]);
     ctx.beginPath(); ctx.moveTo(18, 360); ctx.lineTo(18, 1720); ctx.moveTo(VP.w - 18, 360); ctx.lineTo(VP.w - 18, 1720); ctx.stroke(); ctx.restore();
@@ -486,7 +552,7 @@ function drawAtmosphere(now) {
       ctx.beginPath(); ctx.ellipse(0, 0, 10, 14, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(-5, -10); ctx.lineTo(-12, -18); ctx.moveTo(5, -10); ctx.lineTo(12, -18); ctx.stroke(); ctx.restore();
     }
-  } else if (serverEvent?.kind === 'merchant') {
+  } else if (shownEvent?.kind === 'merchant') {
     ctx.fillStyle = 'rgba(242,196,92,.08)'; ctx.fillRect(0, 0, VP.w, VP.h);
     ctx.save(); ctx.strokeStyle = C.coral; ctx.lineWidth = 7; ctx.setLineDash([26, 14]);
     ctx.beginPath(); ctx.moveTo(60, 510); ctx.quadraticCurveTo(540, 610, 1020, 510); ctx.stroke(); ctx.restore();
@@ -500,7 +566,7 @@ function drawAtmosphere(now) {
 }
 
 function renderEventHero() {
-  const e = serverEvent;
+  const e = visualEvent();
   stage.classList.toggle('event-live', Boolean(e));
   eventHero.classList.toggle('on', Boolean(e));
   eventHero.setAttribute('aria-hidden', String(!e));
@@ -560,16 +626,23 @@ function drawFloaters(now) {
   }
 }
 
+let lastFrameAt = 0;
 function frame(now) {
   requestAnimationFrame(frame);
-  if (!meta) return;
-  cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, EASE_MS);
-  ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
+  if (!meta || now - lastFrameAt < 1000 / 45 - 2) return;
+  lastFrameAt = now;
+  cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
+  ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[visualEvent()?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   drawBackdrop(now);
-  meta.tiers.forEach(drawTier);
-  drawAtmosphere(now);
-  const { detail, dots } = visiblePlots([...plots.values()], cam, VP, meta);
+
+  const active = [...plots.values()].filter(p => p.owner && p.awake);
+  const activeTierIds = new Set(active.map(p => p.tier));
+  if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
+  meta.tiers.forEach((tier, i) => { if (activeTierIds.has(tier.id)) drawTier(tier, i); });
+  drawAtmosphere(now, activeTierIds);
+
+  const { detail, dots } = visiblePlots(active, cam, VP, meta);
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));

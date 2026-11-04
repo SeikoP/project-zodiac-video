@@ -18,7 +18,7 @@ export function createEvents(ctx) {
 
   function start(kind) {
     const now = ctx.now();
-    const e = (state.event = { kind, endsAt: now + cfg[DURATION[kind]] });
+    const e = (state.event = { kind, startedAt: now, endsAt: now + cfg[DURATION[kind]] });
     if (kind === 'merchant') e.crop = Object.keys(CROPS)[Math.floor(ctx.rng() * Object.keys(CROPS).length)];
     if (kind === 'pests') {
       const sick = Object.values(state.plots).filter(p => p.crop && p.crop.progress < 1 && isAwake(ctx, p));
@@ -28,7 +28,7 @@ export function createEvents(ctx) {
       Object.assign(e, { total: hit.length, cleared: 0, participants: {} });
     }
     last = kind;
-    ctx.emit({ type: 'event-start', kind, endsAt: e.endsAt, crop: e.crop ?? null, total: e.total ?? null });
+    ctx.emit({ type: 'event-start', kind, startedAt: e.startedAt, endsAt: e.endsAt, crop: e.crop ?? null, total: e.total ?? null });
   }
 
   function end() {

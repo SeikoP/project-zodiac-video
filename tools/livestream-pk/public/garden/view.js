@@ -1,7 +1,7 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
 // meta = { tiers: { id, label }[], cfg: { tierWidth, tierHeight, plotCell, plotsPerRow, tierMarginX, tierMarginY } } from the server.
 
-export const lodOf = zoom => (zoom < 0.42 ? 'dot' : zoom < 1.8 ? 'plot' : 'close');
+export const lodOf = zoom => (zoom < 0.3 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
 // Same layout as garden/world.mjs plotCenter (a test keeps the two in step).
 export function plotPos(plot, { tiers, cfg }) {
@@ -13,15 +13,15 @@ export function plotPos(plot, { tiers, cfg }) {
 export function easeCamera(from, to, elapsedMs, easeMs = 600) {
   const t = Math.min(1, Math.max(0, elapsedMs / easeMs));
   if (t >= 1) return { ...to };
-  const s = t * t * (3 - 2 * t);
+  const s = t * t * t * (t * (t * 6 - 15) + 10);
   return { x: from.x + (to.x - from.x) * s, y: from.y + (to.y - from.y) * s, zoom: from.zoom * (to.zoom / from.zoom) ** s };
 }
 
 export const worldToScreen = (p, cam, vp) => ({ x: (p.x - cam.x) * cam.zoom + vp.w / 2, y: (p.y - cam.y) * cam.zoom + vp.h / 2 });
 
 // Which owned plots to draw: in detail (awake ones first, nearest the centre first, at most maxDetail) or as dots.
-export function visiblePlots(plots, cam, vp, meta, margin = 160, maxDetail = 150) {
-  const owned = plots.filter(p => p.owner);
+export function visiblePlots(plots, cam, vp, meta, margin = 160, maxDetail = 120) {
+  const owned = plots.filter(p => p.owner && p.awake !== false);
   if (lodOf(cam.zoom) === 'dot') return { detail: [], dots: owned };
   const hw = vp.w / 2 / cam.zoom + margin, hh = vp.h / 2 / cam.zoom + margin;
   const inside = [];

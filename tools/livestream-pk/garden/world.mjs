@@ -31,7 +31,7 @@ export function ensureUser(ctx, { userId, nickname, avatar }) {
   return u;
 }
 
-const plotAt = (ctx, tier, slot) => ctx.state.plots[plotId(tier, slot)] ??= { id: plotId(tier, slot), tier, slot, owner: null, crop: null, water: 1, lastActive: ctx.now(), dogUntil: 0, shieldUntil: 0, deco: [], ver: 0 };
+const plotAt = (ctx, tier, slot) => ctx.state.plots[plotId(tier, slot)] ??= { id: plotId(tier, slot), tier, slot, owner: null, crop: null, water: 1, lastActive: ctx.now(), sleeping: false, dogUntil: 0, shieldUntil: 0, deco: [], ver: 0 };
 const owned = (ctx, tier) => Object.values(ctx.state.plots).filter(p => p.tier === tier && p.owner);
 
 function take(ctx, user, plot) {
@@ -39,6 +39,7 @@ function take(ctx, user, plot) {
   plot.crop = null;
   plot.water = 1;
   plot.lastActive = ctx.now();
+  plot.sleeping = false;
   plot.dogUntil = plot.shieldUntil = 0;
   plot.deco = [...user.deco];
   user.seat = { tier: plot.tier, slot: plot.slot };
@@ -66,9 +67,17 @@ function evict(ctx, user, tier) {
 // Prefer a requested tier, then the least occupied ones; only empty plots are ever reclaimed.
 export function seat(ctx, user, preferred) {
   if (user.seat) return ctx.state.plots[plotId(user.seat.tier, user.seat.slot)];
-  const order = [...TIERS.map(x => x.id)].sort((a, b) => owned(ctx, a).length - owned(ctx, b).length);
-  if (TIERS.some(x => x.id === preferred)) order.unshift(...order.splice(order.indexOf(preferred), 1));
-  return order.map(tier => room(ctx, user, tier)).find(Boolean) ?? order.map(tier => evict(ctx, user, tier)).find(Boolean) ?? null;
+  const validPreferred = TIERS.some(x => x.id === preferred) ? preferred : null;
+  if (validPreferred) {
+    const open = room(ctx, user, validPreferred);
+    if (open) return open;
+    const reclaimed = evict(ctx, user, validPreferred);
+    if (reclaimed) return reclaimed;
+  }
+  const order = TIERS.map(x => x.id).filter(id => id !== validPreferred);
+  for (const tier of order) { const plot = room(ctx, user, tier); if (plot) return plot; }
+  for (const tier of order) { const plot = evict(ctx, user, tier); if (plot) return plot; }
+  return null;
 }
 
 export function touch(ctx, user) {
@@ -77,7 +86,32 @@ export function touch(ctx, user) {
   const plot = ctx.state.plots[plotId(user.seat.tier, user.seat.slot)];
   if (!plot) return;
   plot.lastActive = ctx.now();
+  plot.sleeping = false;
   bump(ctx, plot);
 }
 
-export const isAwake = (ctx, plot) => Boolean(plot.owner) && ctx.now() - plot.lastActive < ctx.cfg.sleepAfterMs;
+export const isAwake = (ctx, plot) => Boolean(plot.owner) && !plot.sleeping && ctx.now() - plot.lastActive < ctx.cfg.sleepAfterMs;
+
+export function managePresence(ctx) {
+  const now = ctx.now();
+  let sleeping = 0, evicted = 0;
+  for (const plot of Object.values(ctx.state.plots)) {
+    if (!plot.owner) continue;
+    const user = ctx.state.users[plot.owner];
+    if (!user) {
+      plot.owner = null; plot.crop = null; plot.sleeping = false; plot.deco = []; bump(ctx, plot);
+      continue;
+    }
+    const age = now - plot.lastActive;
+    if (age >= ctx.cfg.evictAfterMs) {
+      if (user.seat?.tier === plot.tier && user.seat?.slot === plot.slot) user.seat = null;
+      plot.owner = null; plot.crop = null; plot.water = 1; plot.wateredAt = null; plot.sleeping = false;
+      plot.dogUntil = plot.shieldUntil = 0; plot.deco = [];
+      bump(ctx, plot); evicted++; continue;
+    }
+    const nextSleeping = age >= ctx.cfg.sleepAfterMs;
+    if (Boolean(plot.sleeping) !== nextSleeping) { plot.sleeping = nextSleeping; bump(ctx, plot); }
+    if (nextSleeping) sleeping++;
+  }
+  return { sleeping, evicted };
+}

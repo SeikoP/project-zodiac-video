@@ -1,93 +1,110 @@
-// The camera director. The server decides every shot (so it is testable); the page only eases toward it.
-// Gifts get the best shots, but the light is shared: once a gift has been shown, a waiting non-gift moment
-// (first ripe crop, level up, a catch) is shown before more gifts until two of them were shown in the last minute.
+// Deliberate camera director for a small LIVE room: stay on a stable active-garden overview,
+ // queue meaningful moments, then hold each close shot long enough to understand the player's crop.
 import { TIERS, plotCenter, tierCenter } from './world.mjs';
 
-const PRIORITY = { gift: 1, steal: 3, catch: 3, levelup: 4, ripe: 4, 'event-start': 5 };
-const WIDTH = 1080, HEIGHT = 1920;
+const WIDTH = 1080, VIEW_HEIGHT = 1320;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-export function createCamera({ cfg, now }) {
+export function createCamera({ cfg, now, getPlots = () => [] }) {
   const c = cfg.camera;
-  const worldCenter = { x: cfg.tierWidth / 2, y: TIERS.length * cfg.tierHeight / 2 };
-  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  let queue = [], current = null, locked = false, shown = [], idleIndex = 0, eventIndex = 0;
+  let queue = [], current = null, locked = false, shown = [];
 
   const split = id => { const [tier, slot] = String(id).split(':'); return { tier, slot: Number(slot) }; };
   const plotAt = id => { const p = split(id); return { tier: p.tier, ...plotCenter(p.tier, p.slot, cfg) }; };
 
-  function candidate(e) {
-    const t = now(), base = { at: t, type: e.type, plotId: e.plotId, ttl: e.type === 'gift' ? c.giftTtlMs : c.ttlMs, gift: e.type === 'gift' };
-    if (e.type === 'joined') {
-      const p = plotAt(e.plotId);
-      return { ...base, kind: 'welcome', priority: 2, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.giftHoldMs };
+  function overviewTarget() {
+    const active = getPlots().filter(p => p?.owner);
+    if (!active.length) {
+      const p = tierCenter(TIERS[0].id, cfg);
+      return { tier: TIERS[0].id, x: p.x, y: p.y - 120 / c.zoomWorld, zoom: c.zoomWorld };
     }
+    const pts = active.map(p => ({ p, ...plotCenter(p.tier, p.slot, cfg) }));
+    const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x));
+    const minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
+    const width = Math.max(cfg.plotCell * 5, maxX - minX + cfg.plotCell * 3.4);
+    const height = Math.max(cfg.plotCell * 5, maxY - minY + cfg.plotCell * 3.6);
+    const zoom = clamp(Math.min(WIDTH / width, VIEW_HEIGHT / height) * .88, c.zoomWorld, c.zoomTier);
+    const tier = pts.every(p => p.p.tier === pts[0].p.tier) ? pts[0].p.tier : null;
+    return { tier, x: (minX + maxX) / 2, y: (minY + maxY) / 2 - 120 / zoom, zoom };
+  }
+
+  function baseOf(e) {
+    return { at: now(), type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,
+      ttl: e.type === 'gift' ? c.giftTtlMs : c.ttlMs, gift: e.type === 'gift' };
+  }
+
+  function candidate(e) {
+    const base = baseOf(e);
+    if (e.type === 'event-start') return { ...base, kind: 'event', priority: 0, ...overviewTarget(), holdMs: c.eventHoldMs, easeMs: c.overviewEaseMs, eventKind: e.kind };
     if (e.type === 'gift') {
-      if (!e.plotId) return { ...base, kind: 'gift', priority: 1, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.giftHoldMs };
-      const big = e.tier === 'rain' || e.tier === 'tree', p = plotAt(e.plotId);
-      return { ...base, kind: 'gift', priority: big ? 1 : 2, tier: p.tier, x: p.x, y: p.y, zoom: big ? c.zoomClose : c.zoomTier, holdMs: big ? c.giftHoldMs : c.lowGiftHoldMs };
+      if (!e.plotId) return { ...base, kind: 'gift', priority: 1, ...overviewTarget(), holdMs: c.giftHoldMs, easeMs: c.overviewEaseMs, giftKind: e.tier };
+      const p = plotAt(e.plotId), big = e.tier === 'rain' || e.tier === 'tree';
+      return { ...base, kind: 'gift', priority: big ? 1 : 2, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose,
+        holdMs: big ? c.giftHoldMs : c.lowGiftHoldMs, easeMs: c.easeMs, giftKind: e.tier };
     }
     if (e.type === 'steal' || e.type === 'catch') {
       const a = plotAt(e.plotId), b = e.thiefPlotId ? plotAt(e.thiefPlotId) : a;
-      const zoom = clamp(Math.min(WIDTH / (Math.abs(a.x - b.x) + 480), HEIGHT / (Math.abs(a.y - b.y) + 480)), c.zoomTier, c.zoomClose);
-      return { ...base, kind: e.type, priority: 3, tier: a.tier, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, zoom, holdMs: c.stealHoldMs };
+      const zoom = clamp(Math.min(WIDTH / (Math.abs(a.x - b.x) + 520), VIEW_HEIGHT / (Math.abs(a.y - b.y) + 520)), c.zoomTier, c.zoomClose);
+      return { ...base, kind: e.type, priority: 2, tier: a.tier, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, zoom, holdMs: c.stealHoldMs, easeMs: c.easeMs };
     }
     if (e.type === 'levelup' || (e.type === 'ripe' && (e.first || e.crop === 'nammay'))) {
       const p = plotAt(e.plotId);
-      return { ...base, kind: e.type, priority: 4, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.levelHoldMs };
+      return { ...base, kind: e.type, priority: 3, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.levelHoldMs, easeMs: c.easeMs };
     }
-    if (e.type === 'event-start') {
-      const tier = TIERS[eventIndex++ % TIERS.length];
-      const p = tierCenter(tier.id, cfg);
-      return { ...base, kind: 'event', priority: 5, tier: tier.id, x: p.x, y: p.y, zoom: c.zoomTier, holdMs: Math.max(c.eventHoldMs, 5200) };
+    if (e.type === 'joined') {
+      const p = plotAt(e.plotId);
+      return { ...base, kind: 'welcome', priority: 4, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.welcomeHoldMs, easeMs: c.easeMs };
     }
     return null;
+  }
+
+  function trim() {
+    const t = now();
+    queue = queue.filter(q => t - q.at <= q.ttl);
+    if (queue.length <= c.queueMax) return;
+    queue.sort((a, b) => a.priority - b.priority || a.at - b.at);
+    queue.length = c.queueMax;
   }
 
   function push(e) {
     if (locked) return;
     const cand = candidate(e);
     if (!cand) return;
-    const same = cand.tier && queue.find(q => q.tier === cand.tier && cand.at - q.at <= c.mergeMs);
-    if (same) {
-      Object.assign(same, { kind: 'tier', priority: Math.min(same.priority, cand.priority), x: (same.x + cand.x) / 2, y: (same.y + cand.y) / 2, plotId: null, zoom: c.zoomTier, holdMs: Math.max(same.holdMs, cand.holdMs), gift: same.gift && cand.gift, ttl: Math.max(same.ttl, cand.ttl) });
-      return;
+    // A wave of arrivals must not monopolize the camera; keep at most two pending welcomes.
+    if (cand.kind === 'welcome' && queue.filter(q => q.kind === 'welcome').length >= 2) return;
+    // Repeated gift packets for the same pot inside a short window are one visual moment.
+    if (cand.kind === 'gift' && cand.plotId) {
+      const same = queue.find(q => q.kind === 'gift' && q.plotId === cand.plotId && cand.at - q.at <= c.mergeMs);
+      if (same) {
+        Object.assign(same, { at: cand.at, priority: Math.min(same.priority, cand.priority), holdMs: Math.max(same.holdMs, cand.holdMs),
+          giftKind: cand.giftKind, ttl: Math.max(same.ttl, cand.ttl) });
+        return;
+      }
     }
     queue.push(cand);
-    if (queue.length > c.queueMax) {
-      const worst = queue.reduce((w, q) => (q.priority > w.priority || (q.priority === w.priority && q.at < w.at) ? q : w));
-      queue.splice(queue.indexOf(worst), 1);
-    }
+    trim();
   }
 
   function choose() {
-    const t = now();
-    queue = queue.filter(q => t - q.at <= q.ttl);
+    trim();
     if (!queue.length) return null;
-    shown = shown.filter(s => t - s.t <= c.quotaWindowMs);
-    const nonGift = shown.filter(s => !s.gift).length, gifts = shown.filter(s => s.gift).length;
+    shown = shown.filter(s => now() - s.t <= c.quotaWindowMs);
+    const gifts = shown.filter(s => s.gift).length, nonGift = shown.filter(s => !s.gift).length;
     const pool = gifts >= 1 && nonGift < c.quotaMin && queue.some(q => !q.gift) ? queue.filter(q => !q.gift) : queue;
-    const best = pool.reduce((b, q) => (q.priority < b.priority || (q.priority === b.priority && q.at < b.at) ? q : b));
+    const best = pool.reduce((a, b) => (b.priority < a.priority || (b.priority === a.priority && b.at < a.at) ? b : a));
     queue.splice(queue.indexOf(best), 1);
     return best;
   }
 
-  function idleShot() {
-    // Each logical tier has four greenhouse bays. One bay is only 9 × 3 plots, so names,
-    // crop state and ownership stay readable even when all 432 persistent slots are occupied.
-    const bays = 4;
-    const index = idleIndex++ % (TIERS.length * bays);
-    const tier = TIERS[Math.floor(index / bays)];
-    const bay = index % bays;
-    const x = cfg.tierWidth * (.14 + bay * .24);
-    return { kind: 'idle', priority: 9, tier: tier.id, x, y: tierCenter(tier.id, cfg).y, zoom: c.zoomTier, holdMs: c.idleHoldMs, gift: false };
-  }
+  const overviewShot = () => ({ kind: 'overview', priority: 9, ...overviewTarget(), holdMs: 0, easeMs: c.overviewEaseMs, gift: false });
 
   function start(shot) {
     const t = now();
-    current = { ...shot, startedAt: t, until: t + (shot.kind === 'gap' ? shot.holdMs : Math.max(shot.holdMs, c.holdMinMs)) };
-    if (shot.kind !== 'gap' && shot.kind !== 'idle') shown.push({ t, gift: shot.gift });
+    const hold = shot.kind === 'overview' ? Infinity : Math.max(shot.holdMs, c.holdMinMs);
+    current = { ...shot, startedAt: t, until: hold === Infinity ? Infinity : t + hold };
+    if (shot.kind !== 'overview') shown.push({ t, gift: shot.gift });
     const { at, ttl, gift, type, ...out } = shot;
-    return { ...out, label: type ?? shot.kind };
+    return { ...out, label: type ?? shot.kind, pending: queue.length };
   }
 
   return {
@@ -95,12 +112,15 @@ export function createCamera({ cfg, now }) {
     setLock(on) { locked = Boolean(on); if (locked) queue = []; },
     tick() {
       if (locked) return null;
+      trim();
       const t = now();
-      const idleYields = current?.kind === 'idle' && queue.length && t - current.startedAt >= c.holdMinMs; // a drift is filler: a real moment may cut it short
-      if (current && t < current.until && !idleYields) return null;
-      queue = queue.filter(q => t - q.at <= q.ttl);
-      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, tier: current.tier ?? null, x: current.x, y: current.y, zoom: c.zoomTier, holdMs: c.gapMs, gift: false });
-      return start(choose() ?? idleShot());
+      // Overview is home base: any queued real moment can leave it immediately.
+      if (current?.kind === 'overview' && queue.length) return start(choose());
+      if (current && t < current.until) return null;
+      const next = choose();
+      if (next) return start(next);
+      if (!current || current.kind !== 'overview') return start(overviewShot());
+      return null;
     },
     state: () => ({ queue: queue.map(q => ({ ...q })), current: current && { ...current }, locked }),
   };

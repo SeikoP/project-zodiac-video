@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TIERS, plotId, plotCenter, tierCenter, ensureUser, seat, touch, isAwake, emptyGardenState } from './world.mjs';
+import { TIERS, plotId, plotCenter, tierCenter, ensureUser, seat, touch, isAwake, managePresence, emptyGardenState } from './world.mjs';
 import { makeCtx, addUser } from './testkit.mjs';
 
 test('four cloud terraces stack vertically with room for 432 viewers', () => {
@@ -10,7 +10,7 @@ test('four cloud terraces stack vertically with room for 432 viewers', () => {
   assert.deepEqual(tierCenter('cloud-3', ctx.cfg), { x: 1350, y: 3000 });
 });
 
-test('plot centers follow the 18-column layout inside a terrace', () => {
+test('plot centers follow the compact 18-column, six-row district layout', () => {
   const { ctx } = makeCtx();
   assert.deepEqual(plotCenter('cloud-1', 0, ctx.cfg), { x: 330, y: 300 });
   assert.deepEqual(plotCenter('cloud-1', 19, ctx.cfg), { x: 450, y: 420 });
@@ -52,10 +52,10 @@ test('nobody is evicted while every plot has a crop', () => {
   assert.equal(seat(ctx, u), null);
 });
 
-test('isAwake flips at 300000ms without activity and touch wakes the plot', () => {
+test('isAwake flips at the short active window and touch wakes the plot', () => {
   const { ctx, advance } = makeCtx();
   const { user, plot } = addUser(ctx, 'a');
-  advance(299_999);
+  advance(ctx.cfg.sleepAfterMs - 1);
   assert.equal(isAwake(ctx, plot), true);
   advance(2);
   assert.equal(isAwake(ctx, plot), false);
@@ -63,7 +63,39 @@ test('isAwake flips at 300000ms without activity and touch wakes the plot', () =
   assert.equal(isAwake(ctx, plot), true);
 });
 
+test('presence manager hides inactive pots then releases the seat while keeping progression', () => {
+  const { ctx, advance } = makeCtx({ cfg: { sleepAfterMs: 100, evictAfterMs: 300 } });
+  const { user, plot } = addUser(ctx, 'a', { gold: 77, level: 5 });
+  advance(101);
+  assert.deepEqual(managePresence(ctx), { sleeping: 1, evicted: 0 });
+  assert.equal(plot.sleeping, true);
+  assert.ok(user.seat);
+  advance(200);
+  assert.deepEqual(managePresence(ctx), { sleeping: 0, evicted: 1 });
+  assert.equal(plot.owner, null);
+  assert.equal(user.seat, null);
+  assert.deepEqual([user.gold, user.level], [77, 5]);
+});
+
 test('emptyGardenState starts empty and versioned for the terrace layout', () => {
   const s = emptyGardenState(0);
   assert.deepEqual([s.v, s.ver, s.thefts, s.event, s.session], [3, 0, [], null, null]);
+});
+
+
+test('seat short-circuits after one allocation instead of creating a plot on every tier', () => {
+  const { ctx } = makeCtx();
+  const user = ensureUser(ctx, { userId: 'solo', nickname: 'Solo', avatar: '' });
+  const plot = seat(ctx, user);
+  assert.equal(plot.id, 'cloud-1:0');
+  assert.equal(user.seat.tier, 'cloud-1');
+  assert.equal(Object.values(ctx.state.plots).filter(p => p.owner === 'solo').length, 1);
+});
+
+
+test('a normal small room fills the first district before opening another one', () => {
+  const { ctx } = makeCtx();
+  for (let i = 0; i < 99; i++) addUser(ctx, 'u' + i);
+  assert.equal(Object.values(ctx.state.users).filter(u => u.seat?.tier === 'cloud-1').length, 99);
+  assert.equal(Object.values(ctx.state.users).filter(u => u.seat?.tier !== 'cloud-1').length, 0);
 });

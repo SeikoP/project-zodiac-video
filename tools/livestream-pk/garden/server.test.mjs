@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { startGardenServer } from './server.mjs';
 
-async function boot() {
+async function boot(over = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'garden-srv-'));
-  const s = await startGardenServer({ port: 0, dir, tiktok: false, simulator: true, log: () => {} });
+  const s = await startGardenServer({ port: 0, dir, tiktok: false, simulator: true, log: () => {}, ...over });
   return { s, base: `http://127.0.0.1:${s.port}` };
 }
 const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -50,16 +50,14 @@ test('simulator can populate a room and start or stop autonomous players', async
   } finally { await s.close(); }
 });
 
-test('a simulated gift reaches the camera as a shot on the next poll', async () => {
+test('a simulated gift is queued behind the current camera shot instead of interrupting it', async () => {
   const { s, base } = await boot();
   try {
     await post(base + '/api/sim', { kind: 'chat', user: { userId: 'x', nickname: 'Xuân' }, comment: 'chào' });
-    const first = await (await fetch(base + '/poll')).json();
+    await new Promise(r => setTimeout(r, 220));
     await post(base + '/api/sim', { kind: 'gift', user: { userId: 'x', nickname: 'Xuân' }, diamonds: 100, count: 1 });
-    await new Promise(r => setTimeout(r, 400));
-    const next = await (await fetch(`${base}/poll?id=${first.id}`)).json();
-    const shot = next.msgs.find(m => m.event === 'shot')?.data;
-    assert.equal(shot?.kind, 'gift');
+    const status = await (await fetch(base + '/api/status')).json();
+    assert.ok(status.camera.pending >= 1, 'gift waits instead of cutting the welcome shot');
   } finally { await s.close(); }
 });
 
