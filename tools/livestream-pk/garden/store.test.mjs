@@ -25,9 +25,9 @@ test('a saved garden loads back with growing crops, thefts and users intact', as
   assert.equal(back.thefts.length, 1);
 });
 
-test('a missing file gives an empty v3 terrace garden', () => {
+test('a missing file gives an empty v4 Seed Zone garden', () => {
   const s = loadState(tmp());
-  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [3, 0, []]);
+  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [4, 0, []]);
 });
 
 test('a corrupt or truncated file gives an empty garden instead of crashing', () => {
@@ -35,7 +35,7 @@ test('a corrupt or truncated file gives an empty garden instead of crashing', ()
   fs.writeFileSync(file, '{"v":1,"users":{"a":');
   assert.equal(Object.keys(loadState(file).users).length, 0);
   fs.writeFileSync(file, '[1,2,3]');
-  assert.equal(loadState(file).v, 3);
+  assert.equal(loadState(file).v, 4);
 });
 
 test('a v1 island save moves player progress and crops to the cloud terraces', () => {
