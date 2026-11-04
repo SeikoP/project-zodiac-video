@@ -10,6 +10,8 @@ test('parseCommand maps each verb, ignoring case and accents', () => {
   assert.equal(parseCommand('tưới').cmd, 'water');
   assert.deepEqual(parseCommand('tưới @Lan'), { cmd: 'water', arg: null, mention: 'lan' });
   assert.equal(parseCommand('bắt sâu').cmd, 'pest');
+  assert.equal(parseCommand('nhổ cỏ').cmd, 'weed');
+  assert.equal(parseCommand('bón phân').cmd, 'fertilize');
   assert.equal(parseCommand('hái').cmd, 'harvest');
   assert.equal(parseCommand('trộm').cmd, 'steal');
   assert.equal(parseCommand('trộm @Mai').mention, 'mai');

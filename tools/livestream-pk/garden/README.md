@@ -75,3 +75,12 @@ The 432 persistent seats are unchanged. Each 108-seat district now lays out as *
 The former cloud-island foundation is no longer the primary structure. Each district is a connected elevated conservatory deck with four readable bays, repeated signage, structural rails, and a dedicated decorative SVG. Ripe crops and the four field events also use a reusable SVG asset library under `public/garden/assets/`.
 
 Field events are hero moments rather than only ambient filters: the overlay gets a dedicated event card, illustrated art, countdown/progress meter, edge effects, and a readable camera shot on one greenhouse district. The ordinary notification banner occupies a separate safe zone so it cannot cover the event card.
+
+
+### Active-density, pot progression and care loop
+
+The active scene is now presence-driven rather than seat-driven. A seated player becomes visually dormant after **90 seconds** without chat/care/gift activity, and their pot stops rendering and growing. After **8 minutes** of continued inactivity the seat and crop are reclaimed, while the user's level, gold, titles and lifetime stats remain in the save; returning viewers simply receive a new seat.
+
+Player level is visible through five pot families: **Đất nung → Men lá → Viền đồng → Bệ ngọc → Tinh tú** at levels 1 / 3 / 5 / 7 / 9.
+
+Planting can produce **Thường / Sum suê / Ánh kim** crop variants. Higher-level players have better variant odds; variants have intentionally different silhouettes and harvest multipliers. The care loop also adds **bón phân** (one-time paid growth/yield boost) and **nhổ cỏ** (weeds slow growth and reduce yield until cleared), alongside watering, pests, harvesting, stealing and protection.

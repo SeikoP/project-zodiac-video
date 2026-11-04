@@ -3,11 +3,14 @@ export const GARDEN_DEFAULTS = Object.freeze({
   // Four persistent districts, 108 plots each. A district is 3 rows × 36 columns and the
   // camera reviews it as four 9-column greenhouse bays, so density drops without changing capacity or plot IDs.
   tierWidth: 4320, tierHeight: 820, plotsPerTier: 108, plotsPerRow: 36, plotCell: 110, tierMarginX: 180, tierMarginY: 230,
-  sleepAfterMs: 300000, tickMaxDtMs: 5000,
+  // Presence: inactive pots leave the active scene quickly, then release the seat later.
+  sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000,
   // growth and care
   graceMs: 120000, oldYield: 0.5,
   waterDecayMs: 60000, dryGrowth: 0.5, waterBoost: 0.06, waterCooldownMs: 15000,
   pestChancePerSec: 0.003, pestGrowth: 0.6, pestYield: 0.7,
+  weedChancePerSec: 0.0018, weedGrowth: 0.72, weedYield: 0.88,
+  fertilizeCost: 3, fertilizeBoost: 0.08, fertilizedGrowth: 1.18, fertilizedYield: 1.12,
   careGapMs: 1500, startGold: 20, helpXp: 2, helpGold: 1, helpCooldownMs: 30000, seedCostRate: 0.4,
   // stealing
   stealFrac: 0.2, stealMaxPerCrop: 2, stealCooldownMs: 20000, stealPerVictimMax: 3, stealVictimWindowMs: 600000,

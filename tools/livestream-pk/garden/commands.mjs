@@ -4,8 +4,8 @@ import { cropByName } from './crops.mjs';
 const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').replace(/\s+/g, ' ').trim();
 
 const VERBS = [ // longer phrases first: "bắt trộm" and "bắt sâu" must win over "trộm"
-  [/^bat\s+trom\b/, 'catch'], [/^bat\s+sau\b/, 'pest'], [/^tha\s+cho\b/, 'dog'], [/^trong\b/, 'plant'], [/^tuoi\b/, 'water'],
-  [/^hai\b/, 'harvest'], [/^trom\b/, 'steal'], [/^vuon\b/, 'card'],
+  [/^bat\s+trom\b/, 'catch'], [/^bat\s+sau\b/, 'pest'], [/^tha\s+cho\b/, 'dog'], [/^nho\s+co\b/, 'weed'], [/^bon\s+phan\b/, 'fertilize'],
+  [/^trong\b/, 'plant'], [/^tuoi\b/, 'water'], [/^hai\b/, 'harvest'], [/^trom\b/, 'steal'], [/^vuon\b/, 'card'],
 ];
 
 export function parseCommand(text) {
