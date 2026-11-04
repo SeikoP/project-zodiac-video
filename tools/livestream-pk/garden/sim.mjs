@@ -1,6 +1,6 @@
 // Rehearsal and load tool for Vườn Mây.
 //   node garden/sim.mjs                         offline load run (no network): prints tick time, frame size, camera shots
-//   node garden/sim.mjs --users 300 --url http://127.0.0.1:4858 [--seconds 120]
+//   node garden/sim.mjs --users 48 --url http://127.0.0.1:4858 [--seconds 120]
 //                                               fake viewers talk to a running server through /api/sim
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -66,7 +66,7 @@ async function live(url, users, seconds) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const arg = (name, fallback) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : fallback; };
-  const users = Math.min(96, Number(arg('users', 24))), seconds = Number(arg('seconds', 120)), url = arg('url', '');
+  const users = Math.min(48, Number(arg('users', 24))), seconds = Number(arg('seconds', 120)), url = arg('url', '');
   if (url) await live(url, users, seconds);
   else console.log(runLoad({ users, seconds }));
 }
