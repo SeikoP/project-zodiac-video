@@ -103,3 +103,11 @@ test('changes() sends everything first, then only plots that changed', () => {
   assert.deepEqual(Object.keys(next.plots), [s.plot('a').id]);
   assert.equal(next.plots[s.plot('a').id].owner.nickname, 'A');
 });
+
+test('a viewer who cannot get a plot (every island full of growing crops) leaves no record behind', () => {
+  const s = setup({ plotsPerIsland: 1 });
+  for (let i = 0; i < 12; i++) { s.say('p' + i, ['Bạch Dương', 'Kim Ngưu', 'Song Tử', 'Cự Giải', 'Sư Tử', 'Xử Nữ', 'Thiên Bình', 'Bọ Cạp', 'Nhân Mã', 'Ma Kết', 'Bảo Bình', 'Song Ngư'][i]); s.advance(2000); s.say('p' + i, 'trồng rau'); }
+  assert.equal(Object.values(s.garden.state.users).filter(u => u.seat).length, 12);
+  s.say('late', 'trồng rau');
+  assert.equal(s.garden.state.users.late, undefined);
+});

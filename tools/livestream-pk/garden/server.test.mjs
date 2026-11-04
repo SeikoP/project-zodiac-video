@@ -7,7 +7,7 @@ import { startGardenServer } from './server.mjs';
 
 async function boot() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'garden-srv-'));
-  const s = await startGardenServer({ port: 0, sharePort: 0, dir, tiktok: false });
+  const s = await startGardenServer({ port: 0, sharePort: 0, dir, tiktok: false, log: () => {} });
   return { s, base: `http://127.0.0.1:${s.port}`, share: `http://127.0.0.1:${s.sharePort}` };
 }
 const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });

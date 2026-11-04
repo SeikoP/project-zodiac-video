@@ -33,7 +33,7 @@ const readBody = req => new Promise(resolve => {
   req.on('end', () => { try { resolve(s ? JSON.parse(s) : {}); } catch { resolve({}); } });
 });
 
-export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), sharePort = Number(process.env.PK_GARDEN_SHARE_PORT || 4859), dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, now = Date.now } = {}) {
+export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), sharePort = Number(process.env.PK_GARDEN_SHARE_PORT || 4859), dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, now = Date.now, log = console.log } = {}) {
   const full = config ?? readJson(path.join(root, 'config.json'), {});
   const file = path.join(dir, 'garden-state.json');
   const state = loadState(file, now());
@@ -141,7 +141,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const listen = (server, p) => new Promise((resolve, reject) => { server.once('error', reject); server.listen(p, '127.0.0.1', () => resolve(server.address().port)); });
   const main = http.createServer(handler(false)), share = http.createServer(handler(true));
   const boundPort = await listen(main, port);
-  const boundShare = await listen(share, sharePort).catch(e => { console.error(`[garden] cổng chia sẻ ${sharePort}: ${e.message}`); return null; });
+  const boundShare = await listen(share, sharePort).catch(e => { log(`[garden] cổng chia sẻ ${sharePort}: ${e.message}`); return null; });
 
   let bridge = null;
   if (tiktok && full.tiktokUsername) {
@@ -150,7 +150,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     bridge = createTikTokBridge({ game: diag.wrap(garden), probe: diag.probe, onStatus: s => hub.broadcast('tiktok', s, true) });
     bridge.connect(full.tiktokUsername);
   }
-  console.log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/${boundShare ? `\n  chia sẻ (chỉ xem)  http://127.0.0.1:${boundShare}/` : ''}`);
+  log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/${boundShare ? `\n  chia sẻ (chỉ xem)  http://127.0.0.1:${boundShare}/` : ''}`);
 
   return {
     port: boundPort, sharePort: boundShare, url: `http://127.0.0.1:${boundPort}/`, garden, camera,

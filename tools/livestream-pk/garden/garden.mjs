@@ -40,8 +40,9 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (sign) seat(ctx, ensureUser(ctx, u), sign);
       return;
     }
+    const fresh = !user;
     user = ensureUser(ctx, u);
-    if (!user.seat && !seat(ctx, user)) return;
+    if (!user.seat && !seat(ctx, user)) { if (fresh) delete state.users[u.userId]; return; } // no room: do not keep a record for someone with no plot
     run(user, cmd);
   }
 

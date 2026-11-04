@@ -46,8 +46,8 @@ Server chọn cảnh (`garden/camera.mjs`), trang chỉ làm mượt. Quà lớn
 
 ## Hiệu năng đo được
 
-`node garden/sim.mjs --users 432 --seconds 600` (ngoại tuyến, đồng hồ giả, 432 người, ~6 quà/phút):
-`tick` p95 ≈ 0,6 ms · khung dữ liệu p95 ≈ 100 KB · 8 cảnh camera/phút (15 cảnh không-phải-quà trong 10 phút).
+`node garden/sim.mjs --users 432 --seconds 300` (ngoại tuyến, đồng hồ giả, 432 người, ~6 quà/phút):
+`tick` p95 ≈ 0,5 ms · khung dữ liệu p95 ≈ 90–100 KB · 8 cảnh camera/phút (9 cảnh không-phải-quà trong 5 phút).
 
 ## Chưa làm (để sau)
 
