@@ -5,7 +5,7 @@ import { createAvatarCache, easeCamera, lodOf, plotPos, visiblePlots, worldToScr
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
-const stage = document.getElementById('stage'), banner = document.getElementById('banner'), feed = document.getElementById('feed'), hint = document.getElementById('hint');
+const stage = document.getElementById('stage'), banner = document.getElementById('banner'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
 const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders'), audioToggle = document.getElementById('audioToggle');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
@@ -34,8 +34,8 @@ let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 
 const plots = new Map(), floaters = [], avatars = createAvatarCache(200);
 let cam = { x: 650, y: 600, zoom: 1.05 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
 const EASE_MS = 850;
-let shotKind = 'idle';
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
+const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
 const eventNames = { rain: 'Mưa mây', pests: 'Bão sâu', merchant: 'Thương lái', golden: 'Giờ vàng' };
 const FONT = '"Patrick Hand", "Segoe Print", cursive';
 const el = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
@@ -139,9 +139,8 @@ function onMessage(event, data) {
   } else if (event === 'shot') {
     from = cam;
     to = { x: data.x, y: data.y, zoom: data.zoom };
-    shotKind = data.kind;
-    document.getElementById('shotLabel').textContent = ({ idle: 'ĐANG DẠO VƯỜN', welcome: 'CHÀO NGƯỜI LÀM VƯỜN', gift: 'KHOẢNH KHẮC ĐẶC BIỆT', tier: 'VƯỜN ĐANG SÔI ĐỘNG', steal: 'CÓ TRỘM TRONG VƯỜN', catch: 'BẮT QUẢ TANG', levelup: 'LÊN CẤP', ripe: 'CÂY ĐÃ CHÍN', event: 'SỰ KIỆN TOÀN VƯỜN' })[data.kind] ?? 'VƯỜN MÂY';
-    document.getElementById('shotLabel').classList.toggle('active', data.kind !== 'idle' && data.kind !== 'gap');
+    shotLabel.textContent = ({ idle: 'ĐANG DẠO VƯỜN', welcome: 'CHÀO NGƯỜI LÀM VƯỜN', gift: 'KHOẢNH KHẮC ĐẶC BIỆT', tier: 'VƯỜN ĐANG SÔI ĐỘNG', steal: 'CÓ TRỘM TRONG VƯỜN', catch: 'BẮT QUẢ TANG', levelup: 'LÊN CẤP', ripe: 'CÂY ĐÃ CHÍN', event: 'SỰ KIỆN TOÀN VƯỜN', gap: 'CHUYỂN CẢNH' })[data.kind] ?? 'VƯỜN MÂY';
+    shotLabel.classList.toggle('active', data.kind !== 'idle' && data.kind !== 'gap');
     focusPlot = data.plotId ?? null;
     focusAt = performance.now(); focusMs = data.holdMs ?? 3500;
     shotAt = performance.now();
@@ -206,6 +205,15 @@ function drawTier(tier, index) {
   ctx.save(); ctx.globalAlpha = .55;
   ctx.beginPath(); ctx.moveTo(-width * .40, -height * .17); ctx.quadraticCurveTo(-width * .12, -height * .25, width * .02, -height * .16); ctx.quadraticCurveTo(width * .26, -height * .08, width * .40, -height * .16); ctx.lineTo(width * .39, height * .20); ctx.quadraticCurveTo(width * .06, height * .27, -width * .02, height * .20); ctx.quadraticCurveTo(-width * .24, height * .26, -width * .40, height * .17); ctx.closePath();
   ctx.fillStyle = C.teal; ctx.fill(); ctx.restore();
+  // Soft garden benches visually connect the pots into one terrace instead of leaving
+  // 108 unrelated icons floating on a cloud.
+  ctx.save(); ctx.globalAlpha = .20;
+  for (let row = 0; row < 6; row++) {
+    const y = -300 + row * cfg.plotCell + 48;
+    ctx.fillStyle = row % 2 ? C.ochre : C.teal;
+    ctx.beginPath(); ctx.roundRect(-1060, y, 2120, 28, 14); ctx.fill();
+  }
+  ctx.restore();
   ctx.restore();
 
   // A paper tag marks the level without bringing back sign names or sign symbols.
@@ -275,7 +283,7 @@ function drawPlot(p, lod) {
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.ellipse(0, 43, 40, 8, -.06, 0, Math.PI * 2); ctx.fillStyle = C.shadow; ctx.fill();
   ctx.beginPath(); ctx.moveTo(-34, 4); ctx.quadraticCurveTo(-37, 1, -33, 11); ctx.lineTo(-26, 43); ctx.quadraticCurveTo(-2, 50, 28, 42); ctx.lineTo(34, 8); ctx.quadraticCurveTo(8, 15, -34, 4); ctx.closePath();
-  ctx.fillStyle = C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = POT_ACCENTS[p.tier] ?? C.skin; ctx.strokeStyle = C.ink; ctx.lineWidth = 6; ctx.lineJoin = 'round'; ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(-34, 5); ctx.quadraticCurveTo(-2, 14, 34, 7); ctx.stroke();
   if (p.crop) drawRipeCrop(p.crop.type, p.stage ?? 0);
   if (p.crop?.pest) {
@@ -293,15 +301,29 @@ function drawPlot(p, lod) {
   }
   ctx.restore();
   if (p.owner && cam.zoom >= .82) {
-    const labelY = at.y + size * .56;
-    ctx.save(); ctx.font = `${Math.max(24, Math.min(34, 27 * cam.zoom))}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    const title = `${p.owner.nickname.slice(0, 12)} · Lv${p.owner.level}`;
-    const w = Math.min(310, ctx.measureText(title).width + 22);
-    ctx.fillStyle = C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, 38, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + 3);
+    const focused = focusPlot === p.id && cam.zoom >= 1.25;
+    const labelY = at.y + size * .55;
+    const fontSize = focused ? 29 : 18;
+    const shortName = p.owner.nickname.slice(0, focused ? 12 : 7);
+    const title = focused ? `${shortName} · Lv${p.owner.level}` : shortName;
+    ctx.save(); ctx.font = `${fontSize}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const maxW = focused ? 280 : 112, h = focused ? 40 : 27;
+    const w = Math.min(maxW, ctx.measureText(title).width + (focused ? 24 : 14));
+    ctx.fillStyle = focused ? C.ochre : 'rgba(255,253,249,.94)'; ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5;
+    ctx.beginPath(); ctx.roundRect(at.x - w / 2, labelY, w, h, focused ? 11 : 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.fillText(title, at.x, labelY + (focused ? 3 : 2));
+
+    const avatarR = focused ? Math.max(26, size * .16) : Math.max(12, size * .095);
+    const avatarY = at.y - size * .69;
+    ctx.beginPath(); ctx.arc(at.x, avatarY, avatarR + 3, 0, Math.PI * 2); ctx.fillStyle = C.card; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = focused ? 4 : 2.5; ctx.stroke();
     const img = avatars.get(p.owner.avatar);
-    if (img) { ctx.beginPath(); ctx.arc(at.x, at.y - size * .75, size * .18, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(img, at.x - size * .18, at.y - size * .93, size * .36, size * .36); }
+    if (img) {
+      ctx.save(); ctx.beginPath(); ctx.arc(at.x, avatarY, avatarR, 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(img, at.x - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2); ctx.restore();
+    } else {
+      ctx.fillStyle = C.slate; ctx.font = `bold ${Math.round(avatarR * 1.2)}px ${FONT}`; ctx.textBaseline = 'middle';
+      ctx.fillText((p.owner.nickname || '?').trim().slice(0, 1).toUpperCase(), at.x, avatarY + 1);
+    }
     ctx.restore();
   }
 }
@@ -332,12 +354,29 @@ function drawAtmosphere(now) {
     const pulse = reduceMotion ? .45 : .35 + (Math.sin(now / 1100 + i * 1.7) + 1) * .12;
     ctx.globalAlpha = pulse; drawSparkle(a.x, a.y, Math.max(3, 15 * cam.zoom)); drawSparkle(b.x, b.y, Math.max(3, 12 * cam.zoom), C.coral); ctx.globalAlpha = 1;
   });
+  const t = reduceMotion ? 0 : now;
   if (serverEvent?.kind === 'rain') {
-    ctx.strokeStyle = 'rgba(67,80,100,.45)'; ctx.lineWidth = 3;
-    const t = reduceMotion ? 0 : now;
-    for (let i = 0; i < 18; i++) { const x = (i * 79 + (t / 18) % 1080) % 1080, y = (i * 113 + (t / 9) % 1920) % 1920; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 11, y + 28); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(142,192,185,.12)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.strokeStyle = 'rgba(67,80,100,.52)'; ctx.lineWidth = 3;
+    for (let i = 0; i < 42; i++) { const x = (i * 79 + (t / 18) % 1080) % 1080, y = (i * 113 + (t / 9) % 1920) % 1920; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 13, y + 34); ctx.stroke(); }
   } else if (serverEvent?.kind === 'golden') {
-    ctx.globalAlpha = .6; for (let i = 0; i < 14; i++) drawSparkle((i * 137 + 31) % 1080, (i * 281 + 67) % 1920, 4 + (i % 3) * 2, C.ochre); ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(242,196,92,.14)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.globalAlpha = .72; for (let i = 0; i < 34; i++) drawSparkle((i * 137 + 31 + t / 35) % 1080, (i * 281 + 67) % 1920, 5 + (i % 4) * 3, C.ochre); ctx.globalAlpha = 1;
+  } else if (serverEvent?.kind === 'pests') {
+    ctx.fillStyle = 'rgba(233,122,102,.09)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    for (let i = 0; i < 24; i++) {
+      const x = (i * 173 + 70 + t / 22) % 1160 - 40, y = (i * 257 + 120 + Math.sin(t / 350 + i) * 45) % 1880;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t / 240 + i) * .4);
+      ctx.fillStyle = C.coral; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(0, 0, 9, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-4, -10); ctx.lineTo(-10, -17); ctx.moveTo(4, -10); ctx.lineTo(10, -17); ctx.stroke(); ctx.restore();
+    }
+  } else if (serverEvent?.kind === 'merchant') {
+    ctx.fillStyle = 'rgba(242,196,92,.07)'; ctx.fillRect(0, 0, VP.w, VP.h);
+    ctx.strokeStyle = C.coral; ctx.lineWidth = 5; ctx.setLineDash([24, 16]);
+    for (let y = 450; y <= 1450; y += 500) { ctx.beginPath(); ctx.moveTo(-20, y); ctx.quadraticCurveTo(540, y + 70, 1100, y); ctx.stroke(); }
+    ctx.setLineDash([]);
+    ctx.globalAlpha = .75; for (let i = 0; i < 20; i++) drawSparkle((i * 191 + 61) % 1080, (i * 313 + 93 + t / 50) % 1920, 7 + (i % 3) * 2, i % 2 ? C.ochre : C.coral); ctx.globalAlpha = 1;
   }
 }
 
@@ -347,8 +386,16 @@ function drawFocus(now) {
   if (!plot) return;
   const at = worldToScreen(plotPos(plot, meta), cam, VP), age = (now - focusAt) / Math.max(1, focusMs);
   const radius = Math.max(80, meta.cfg.plotCell * .9 * cam.zoom) + (reduceMotion ? 0 : Math.sin(now / 130) * 12);
-  ctx.save(); ctx.globalAlpha = Math.max(.22, 1 - age * .65); ctx.strokeStyle = C.ochre; ctx.lineWidth = 12; ctx.shadowColor = C.ochre; ctx.shadowBlur = 28; ctx.setLineDash([20, 10]);
-  ctx.beginPath(); ctx.arc(at.x, at.y, radius, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  ctx.save();
+  const dim = ctx.createRadialGradient(at.x, at.y, radius * .45, at.x, at.y, radius * 4.2);
+  dim.addColorStop(0, 'rgba(47,60,68,0)');
+  dim.addColorStop(.45, 'rgba(47,60,68,.04)');
+  dim.addColorStop(1, 'rgba(47,60,68,.25)');
+  ctx.fillStyle = dim; ctx.fillRect(0, 0, VP.w, VP.h);
+  ctx.globalAlpha = Math.max(.3, 1 - age * .58); ctx.strokeStyle = C.ochre; ctx.lineWidth = 12; ctx.shadowColor = C.ochre; ctx.shadowBlur = 30; ctx.setLineDash([20, 10]);
+  ctx.beginPath(); ctx.arc(at.x, at.y, radius, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]); ctx.lineWidth = 4; ctx.strokeStyle = C.card; ctx.beginPath(); ctx.arc(at.x, at.y, radius * .72, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
 }
 
 function drawFloaters(now) {
@@ -368,7 +415,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   if (!meta) return;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, EASE_MS);
-  ctx.fillStyle = serverEvent?.kind === 'rain' ? '#D8EDE8' : '#E7EFE7';
+  ctx.fillStyle = ({ rain: '#D8EDE8', pests: '#F1E0DA', merchant: '#F4E9D5', golden: '#F6EDCF' })[serverEvent?.kind] ?? '#E7EFE7';
   ctx.fillRect(0, 0, VP.w, VP.h);
   for (let i = 0; i < meta.tiers.length - 1; i++) {
     const y = (i + 1) * meta.cfg.tierHeight;
