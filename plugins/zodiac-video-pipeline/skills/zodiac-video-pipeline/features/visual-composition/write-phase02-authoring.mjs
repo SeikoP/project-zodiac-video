@@ -10,6 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {designToken} from './phase02-composition.mjs';
 import {compileVisualIntent,projectionPaths} from './compile-visual-intent.mjs';
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
+import {updatePhase02SemanticCache} from '../../core/cache/phase02-semantic-cache.mjs';
 import os from 'node:os';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const decode=async p=>JSON.parse(await readFile(p,'utf8'));
@@ -95,7 +96,8 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   if(sha(await readFile(statePath))!==sha(stateBytes))throw new Error('STATE_CHANGED_CONCURRENTLY');
   for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');if(sha(await readFile(tmp))!==o.sha256)throw Error('AUTHORING_STAGING_HASH_MISMATCH '+o.rel);staged.push({tmp,...o});}
   for(const o of staged){await rename(o.tmp,o.target);committed.push(o);if(sha(await readFile(o.target))!==o.sha256)throw Error('AUTHORING_COMMIT_HASH_MISMATCH '+o.rel);}
-  return {status:'AUTHORING_WRITTEN_NOT_COMPILED',files:outputs.map(o=>({path:o.rel,sha256:o.sha256})),next:'Run strict execution-preflight and native Phase02 compilers; do not mark PASS.'};
+  const cache_plan=generated?await updatePhase02SemanticCache(root,authored):null;
+  return {status:'AUTHORING_WRITTEN_NOT_COMPILED',files:outputs.map(o=>({path:o.rel,sha256:o.sha256})),cache:cache_plan?{changed:cache_plan.changed,dirty:cache_plan.dirty}:null,next:'Run strict execution-preflight and native Phase02 compilers; do not mark PASS.'};
  }catch(e){for(const o of committed.reverse())await rm(o.target,{force:true});throw e;}
  finally{for(const o of staged)await rm(o.tmp,{force:true});await lease.release();}
 }
