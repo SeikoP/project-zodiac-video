@@ -2,7 +2,7 @@
 
 Vườn cộng đồng gồm bốn tầng mây xếp dọc, mỗi tầng có 108 ô. Khi người xem bình luận lần đầu, họ tự nhận một ô ở tầng ít người nhất; không cần chọn cung, ngày sinh hay dùng lệnh tham gia. Lệnh đầu tiên vẫn được xử lý ngay, nên có thể bắt đầu bằng `trồng rau`.
 
-Giao diện 1080 × 1920 dùng token giấy thủ công của kênh (`zodiac-paper-doodle-meme-v4`) và font Patrick Hand đã có trong dự án. Mây, dây leo, chậu cây và hiệu ứng được vẽ bằng Canvas theo token; không dùng ảnh tạo sinh hay thêm thư viện ảnh.
+Giao diện 1080 × 1920 dùng token giấy thủ công của kênh (`zodiac-paper-doodle-meme-v4`) và font Patrick Hand đã có trong dự án. Mỗi tầng nay được trình bày như một ban công nhà kính nổi: khung chung, sáu kệ liên tục, giàn treo, dây leo và biển tầng cùng palette. Chậu có đĩa, đất, màu tầng và cọc avatar/tên gắn trực tiếp vào chậu để toàn cảnh đọc như một khu vườn thống nhất thay vì các asset rời. Toàn bộ vẫn được vẽ bằng Canvas, không thêm thư viện ảnh.
 
 Garden chạy độc lập, có tiến trình và dữ liệu riêng tại `data/garden-state.json`. Save v1 được chuyển sang bốn tầng mà vẫn giữ người chơi, ô đất, cây, vàng, cấp độ và lịch sử tương tác. Cây cũ `linhthao` được đổi tên thành `nammay` (Nấm mây). Người chỉ ghé một lần sẽ được dọn sau bảy ngày không hoạt động; ô chỉ được thu hồi sớm khi đang trống cây.
 
@@ -16,7 +16,7 @@ npm run garden
 - Bàn điều khiển: `http://127.0.0.1:4858/control` (xem bảng đua, khóa camera và gọi sự kiện).
 - Mỗi buổi live chỉ chạy một game kết nối TikTok.
 - Simulator: dừng Garden thường trước, rồi chạy `npm run garden:sim`; vẫn dùng đúng cổng `4858` và đúng hai URL trên. Hai chế độ không chạy đồng thời. Simulator không kết nối TikTok, không ghi vào save thật, và lưu riêng ở `data/garden-simulator`.
-- Control có bình luận/lệnh nhanh, quà thử, demo vòng chơi, reset simulator, khóa camera, gọi sự kiện và chốt phiên. Bình luận/quà giả lập, demo và reset chỉ bật trong simulator; khóa camera, sự kiện và chốt phiên dùng được ở Garden thường.
+- Control có bình luận/lệnh nhanh, quà thử, demo vòng chơi, **phòng tự chơi nhiều người**, reset simulator, khóa camera, gọi sự kiện và chốt phiên. Trong simulator có thể thêm 12/24/48/96 bot, bật hoặc dừng tự chơi; bot tự trồng, tưới, bắt sâu, hái, trộm và thỉnh thoảng gửi quà để kiểm tra camera/mật độ liên tục. Bình luận/quà giả lập, autoplay, demo và reset chỉ bật trong simulator; khóa camera, sự kiện và chốt phiên dùng được ở Garden thường.
 - Nếu cổng `4858` đang bận, hãy dừng tiến trình Garden cũ rồi khởi động chế độ cần dùng. Không mở cổng phụ cho simulator hoặc control.
 - Trình mô phỏng dòng lệnh vẫn dùng được: `node garden/sim.mjs --users 40 --url http://127.0.0.1:4858`.
 - Đổi cổng duy nhất bằng `PK_GARDEN_PORT`; đổi thư mục save simulator bằng `PK_GARDEN_SIM_DATA_DIR`.
