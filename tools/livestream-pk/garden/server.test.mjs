@@ -33,6 +33,23 @@ test('the page is served and a simulated viewer shows up in the first poll', asy
   } finally { await s.close(); }
 });
 
+test('simulator can populate a room and start or stop autonomous players', async () => {
+  const { s, base } = await boot();
+  try {
+    const added = await (await post(base + '/api/sim-room', { action: 'add', count: 6 })).json();
+    assert.equal(added.result.added, 6);
+    assert.deepEqual(added.result, { running: false, bots: 6, added: 6 });
+
+    const started = await (await post(base + '/api/sim-room', { action: 'start' })).json();
+    assert.deepEqual(started.result, { running: true, bots: 6 });
+    const status = await (await fetch(base + '/api/status')).json();
+    assert.deepEqual(status.autoplay, { running: true, bots: 6 });
+
+    const stopped = await (await post(base + '/api/sim-room', { action: 'stop' })).json();
+    assert.deepEqual(stopped.result, { running: false, bots: 6 });
+  } finally { await s.close(); }
+});
+
 test('a simulated gift reaches the camera as a shot on the next poll', async () => {
   const { s, base } = await boot();
   try {
