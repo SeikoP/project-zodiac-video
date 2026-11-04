@@ -13,7 +13,8 @@ export const CACHE_REASON=Object.freeze({
  MISS_OUTPUT_TAMPERED:'MISS_OUTPUT_TAMPERED',
  MISS_VALIDATOR_CHANGED:'MISS_VALIDATOR_CHANGED',
  INVALIDATED_BY_APPROVAL_CHANGE:'INVALIDATED_BY_APPROVAL_CHANGE',
- MISS_NOT_RECORDED:'MISS_NOT_RECORDED'
+ MISS_NOT_RECORDED:'MISS_NOT_RECORDED',
+ BYPASS_NO_CACHE:'BYPASS_NO_CACHE'
 });
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'&&!Buffer.isBuffer(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 export const sha256=x=>createHash('sha256').update(Buffer.isBuffer(x)||typeof x==='string'?x:JSON.stringify(canonical(x))).digest('hex');
