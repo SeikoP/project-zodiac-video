@@ -42,10 +42,10 @@
 - `startGardenServer({ port, dir, config, tiktok, simulator, now, log })` binds one HTTP server and returns `{ port, url, garden, camera, close }`.
 - `npm run garden:sim` selects simulator mode on the same default port `4858`, with its existing isolated save directory and TikTok disabled.
 
-- [ ] Remove the second `share` listener and all Garden `sharePort`/simulator-port overrides; serve `/`, `/control`, static assets and local APIs through the one listener.
-- [ ] Preserve simulator-only guards for fake viewer/gift and reset APIs; update only existing server assertions for one-port behavior.
-- [ ] Update run instructions to show simulator and normal Garden use `4858` in separate processes, never concurrently.
-- [ ] After the replacement command is ready, close the currently running old Garden simulator process on `4860/4861` so only one Garden port remains.
+- [x] Remove the second `share` listener and all Garden `sharePort`/simulator-port overrides; serve `/`, `/control`, static assets and local APIs through the one listener.
+- [x] Preserve simulator-only guards for fake viewer/gift and reset APIs; update only existing server assertions for one-port behavior.
+- [x] Update run instructions to show simulator and normal Garden use `4858` in separate processes, never concurrently.
+- [x] Restart the active Garden simulator on `4858`, preserving its save, so only one Garden listener remains.
 
 ### Task 2: Add session scoring and lasting titles
 
@@ -61,11 +61,11 @@
 - `finish()` closes the active session, snapshots top three and adds the matching persistent title once per viewer/session.
 - `createGarden()` exposes current competition standings and session state; successful game actions pass through it once.
 
-- [ ] Extend save v2 to v3 with one persisted active session and lifetime counters/titles; preserve all existing user and plot fields.
-- [ ] Score first entry, planting, personal care, helping another player, pest clearing, harvesting and protecting a garden; gifts and raw comments score zero.
-- [ ] Keep scores scoped to the active session; deterministic ties use harvest count then earlier score time.
-- [ ] Award lifetime podium and milestone titles without changing existing gold, XP or gift balance.
-- [ ] Ensure `finish()` returns no winner for an empty board and handles a one-player podium.
+- [x] Extend save v2 to v3 with one persisted active session and lifetime counters/titles; preserve all existing user and plot fields.
+- [x] Score first entry, planting, personal care, helping another player, pest clearing, harvesting and protecting a garden; gifts and raw comments score zero.
+- [x] Keep scores scoped to the active session; deterministic ties use harvest count then earlier score time.
+- [x] Award lifetime podium and milestone titles without changing existing gold, XP or gift balance.
+- [x] Ensure `finish()` returns no winner for an empty board and handles a one-player podium.
 
 ### Task 3: Make the local control panel operational
 
@@ -80,9 +80,9 @@
 - `POST /api/session/finish` snapshots standings and opens the next session; only local host requests can call it.
 - `POST /api/sim` and `POST /api/reset` remain simulator-only.
 
-- [ ] Add an always-available session status and finish/new-session action to `/control`; permit safe event and camera controls in either mode.
-- [ ] Keep viewer/gift simulation and save reset disabled in normal mode, with a direct same-port explanation and simulator command.
-- [ ] Show the live top three, personal score/title, connection mode and meaningful errors; avoid silent no-op buttons.
+- [x] Add an always-available session status and finish/new-session action to `/control`; permit safe event and camera controls in either mode.
+- [x] Keep viewer/gift simulation and save reset disabled in normal mode, with a direct same-port explanation and simulator command.
+- [x] Show the live top three, personal score/title, connection mode and meaningful errors; avoid silent no-op buttons.
 
 ### Task 4: Reuse PK music and sound effects
 
@@ -97,9 +97,9 @@
 - Garden metadata exposes existing `listMusic()` calm/upbeat playlists.
 - The existing `public/music.js` and `public/sfx.js` engines load from the same Garden origin; music files resolve only inside the fixed project `assets/music` directory.
 
-- [ ] Safely serve only normalized music paths inside `assets/music`; keep existing `public/sfx/manifest.json` and files on the same server.
-- [ ] Map Garden join/plant/harvest/title/event moments to existing sound roles and reuse crossfaded low-volume music.
-- [ ] Keep `?music=0` and `?sfx=0` mute controls; autoplay denial must not stop overlay rendering.
+- [x] Safely serve only normalized music paths inside `assets/music`; keep existing `public/sfx/manifest.json` and files on the same server.
+- [x] Map Garden join/plant/harvest/title/event moments to existing sound roles and reuse crossfaded low-volume music.
+- [x] Keep `?music=0` and `?sfx=0` mute controls; autoplay denial must not stop overlay rendering.
 
 ### Task 5: Reduce camera zoom and give the idle shot full context
 
@@ -113,8 +113,8 @@
 - Idle shots center the whole world and use `zoomWorld`.
 - Joined, ripe, level-up, gift and theft shots use tier/plot framing capped below the current `2.5x` close zoom.
 
-- [ ] Center idle shots at the four-tier world center; set `zoomWorld`, `zoomTier`, `zoomClose` and event focus values so the full world or intended tier/plot remains in frame.
-- [ ] Add a visible focus ring/highlight for target plots so moderate zoom still identifies the event.
+- [x] Center idle shots at the four-tier world center; set `zoomWorld`, `zoomTier`, `zoomClose` and event focus values so the full world or intended tier/plot remains in frame.
+- [x] Add a visible focus ring/highlight for target plots so moderate zoom still identifies the event.
 
 ### Task 6: Upgrade the Garden HUD and scene decoration
 
@@ -127,9 +127,9 @@
 **Interfaces:**
 - The existing Canvas remains the sole scene renderer; DOM overlays carry concise live data and interaction guidance.
 
-- [ ] Add a session podium, current leader's next milestone, session/event markers and a short command prompt within safe zones.
-- [ ] Give each cloud tier a small distinct vector landmark; add restrained drifting cloud/plant accents using existing token colors and paths.
-- [ ] Keep center-camera events visible, support reduced motion and avoid image/dependency additions.
+- [x] Add a session podium, current leader's next milestone, session/event markers and a short command prompt within safe zones.
+- [x] Give each cloud tier a small distinct vector landmark; add restrained drifting cloud/plant accents using existing token colors and paths.
+- [x] Keep center-camera events visible, support reduced motion and avoid image/dependency additions.
 
 ### Task 7: Update user instructions
 
@@ -137,8 +137,8 @@
 - Modify: `garden/README.md`
 - Update: `docs/superpowers/specs/2026-11-04-vuon-may-design.md` as superseded by the approved 2026-11-05 spec
 
-- [ ] Document one-port mode switching, session controls/scoring/titles, sound mute settings, and the current limits on OBS/LIVE validation.
+- [x] Document one-port mode switching, session controls/scoring/titles, sound mute settings, and the current limits on OBS/LIVE validation.
 
 ## Execution Notes
 
-Use the native execution path in this session; the available collaboration policy prohibits agent delegation. Existing focused tests are identified above for contract updates, but this plan does not authorize running tests in this turn.
+Use the native execution path in this session; the available collaboration policy prohibits agent delegation. Existing tests were updated where schema/camera expectations changed. The test suite was not run.

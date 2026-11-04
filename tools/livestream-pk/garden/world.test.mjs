@@ -65,5 +65,5 @@ test('isAwake flips at 300000ms without activity and touch wakes the plot', () =
 
 test('emptyGardenState starts empty and versioned for the terrace layout', () => {
   const s = emptyGardenState(0);
-  assert.deepEqual([s.v, s.ver, s.thefts, s.event], [2, 0, [], null]);
+  assert.deepEqual([s.v, s.ver, s.thefts, s.event, s.session], [3, 0, [], null, null]);
 });

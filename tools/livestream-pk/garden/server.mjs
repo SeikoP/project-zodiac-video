@@ -16,6 +16,7 @@ import { listMusic } from '../music.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(root, 'public');
+const MUSIC_DIR = path.resolve(root, '../../assets/music');
 const FRAME_MS = Number(process.env.PK_FRAME_MS) || 150;
 const TYPES = { '.json': 'application/json; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg' };
 const AUDIO_TYPES = { '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.m4a': 'audio/mp4' };
@@ -38,7 +39,7 @@ const readBody = req => new Promise(resolve => {
 
 export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, simulator = false, now = Date.now, log = console.log } = {}) {
   const full = config ?? readJson(path.join(root, 'config.json'), {});
-  const musicDir = path.resolve(root, full.musicDir ?? '../../assets/music');
+  const musicDir = MUSIC_DIR, musicRoot = fs.existsSync(MUSIC_DIR) ? fs.realpathSync(MUSIC_DIR) : MUSIC_DIR;
   const music = listMusic({ dir: musicDir, exclude: full.musicExclude, upbeat: full.musicUpbeat });
   const musicFiles = new Set([...music.calm, ...music.upbeat].map(track => track.file));
   const file = path.join(dir, 'garden-state.json');
@@ -133,18 +134,21 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   function serveMusic(req, res, name) {
     const rel = String(name).replaceAll('\\', '/');
     const file = path.resolve(musicDir, ...rel.split('/'));
-    if (!musicFiles.has(rel) || !file.startsWith(musicDir + path.sep) || !fs.existsSync(file)) return void res.writeHead(404).end('not found');
-    const size = fs.statSync(file).size, type = AUDIO_TYPES[path.extname(file).toLowerCase()];
+    if (!musicFiles.has(rel) || !file.startsWith(musicDir + path.sep)) return void res.writeHead(404).end('not found');
+    let realFile, stat;
+    try { realFile = fs.realpathSync(file); stat = fs.statSync(realFile); } catch { return void res.writeHead(404).end('not found'); }
+    if (!realFile.startsWith(musicRoot + path.sep) || !stat.isFile()) return void res.writeHead(404).end('not found');
+    const size = stat.size, type = AUDIO_TYPES[path.extname(realFile).toLowerCase()];
     const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
     if (!match) {
       res.writeHead(200, { 'content-type': type, 'content-length': size, 'accept-ranges': 'bytes', 'cache-control': 'max-age=86400' });
-      return void fs.createReadStream(file).pipe(res);
+      return void fs.createReadStream(realFile).pipe(res);
     }
     const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));
     const end = match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
     if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) return void res.writeHead(416, { 'content-range': `bytes */${size}` }).end();
     res.writeHead(206, { 'content-type': type, 'content-length': end - start + 1, 'content-range': `bytes ${start}-${end}/${size}`, 'accept-ranges': 'bytes' });
-    fs.createReadStream(file, { start, end }).pipe(res);
+    fs.createReadStream(realFile, { start, end }).pipe(res);
   }
 
   const handler = async (req, res) => {
@@ -237,9 +241,18 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const simulator = process.argv.includes('--simulator');
-  startGardenServer(simulator ? {
+  const running = startGardenServer(simulator ? {
     simulator: true,
     dir: process.env.PK_GARDEN_SIM_DATA_DIR ?? path.join(root, 'data', 'garden-simulator'),
     tiktok: false,
-  } : {}).catch(e => { console.error(e); process.exit(1); });
+  } : {});
+  let closing = false;
+  const shutdown = () => {
+    if (closing) return;
+    closing = true;
+    void running.then(server => server.close()).then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+  };
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+  running.catch(e => { console.error(e); process.exit(1); });
 }

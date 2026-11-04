@@ -38,7 +38,7 @@ function moveLegacy(raw) {
   }
   const thefts = (Array.isArray(raw.thefts) ? raw.thefts : []).map(t => ({ ...t, plotId: moveId(t.plotId) }));
   const event = raw.event ? { ...raw.event, ...(raw.event.crop === 'linhthao' && { crop: 'nammay' }) } : null;
-  return { ...raw, v: 2, users, plots, thefts, event };
+  return { ...raw, v: 3, users, plots, thefts, event };
 }
 
 export function loadState(file, now = Date.now()) {
@@ -80,7 +80,7 @@ export function createSaver({ file, getState, intervalMs = 10000, fs: io = fsp, 
 export function pruneUsers(state, now, days = 7) {
   for (const [id, u] of Object.entries(state.users)) {
     const idle = now - u.lastSeen > days * 86_400_000;
-    const nothing = !u.xp && !u.deco?.length && !u.stats?.harvest && !u.stats?.steal && !u.stats?.caught && !u.career?.points && !Object.keys(u.titles ?? {}).length;
+    const nothing = !u.xp && !u.deco?.length && !u.stats?.harvest && !u.stats?.steal && !u.stats?.caught && !Object.keys(u.titles ?? {}).length;
     if (!idle || !nothing) continue;
     if (u.seat) { const p = state.plots[`${u.seat.tier}:${u.seat.slot}`]; if (p) { p.owner = null; p.crop = null; } }
     delete state.users[id];

@@ -30,7 +30,7 @@ const fit = () => {
 };
 addEventListener('resize', fit); fit();
 
-let meta = null, competition = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
+let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(200);
 let cam = { x: 1350, y: 2400, zoom: 0.34 }, from = cam, to = cam, shotAt = 0, serverEvent = null, welcomed = false;
 const EASE_MS = 600;
@@ -85,7 +85,6 @@ function handleFx(fx) {
 }
 
 function renderCompetition(value) {
-  competition = value;
   const session = value?.session, current = value?.standings ?? [], previous = session?.previous?.podium ?? [];
   const rows = current.length ? current.slice(0, 3) : previous;
   sessionLabel.textContent = current.length ? `Phiên ${session.no}` : previous.length ? `Kết quả phiên ${session.previous.no}` : session ? `Phiên ${session.no} · chưa có điểm` : 'Chờ khách đầu tiên';
