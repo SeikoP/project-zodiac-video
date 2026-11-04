@@ -45,3 +45,15 @@ test('throwing fn is caught', () => {
   assert.deepEqual(d.dispatch({ ...base, eventId: 'boss', diamonds: 1 }), { tier: 'small', handled: false });
   assert.equal(n, 1);
 });
+
+test('malformed diamonds are always small', () => {
+  for (const d of [NaN, undefined, -5, Infinity, -Infinity]) assert.equal(giftTier(d, cfg), 'small');
+});
+
+test('dispatch with NaN diamonds runs the small ability, not big', () => {
+  const d = createGiftDispatcher({ cfg });
+  const hit = [];
+  d.register('boss', { small: () => hit.push('small'), big: () => hit.push('big') });
+  assert.deepEqual(d.dispatch({ ...base, eventId: 'boss', diamonds: NaN }), { tier: 'small', handled: true });
+  assert.deepEqual(hit, ['small']);
+});

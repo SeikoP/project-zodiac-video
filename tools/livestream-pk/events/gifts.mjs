@@ -5,7 +5,7 @@ export const GIFT_DEFAULTS = { giftMid: 10, giftBig: 100 };
 export function giftTier(diamonds, cfg = {}) {
   const mid = cfg.giftMid ?? GIFT_DEFAULTS.giftMid;
   const big = cfg.giftBig ?? GIFT_DEFAULTS.giftBig;
-  if (diamonds < mid) return 'small';
+  if (!Number.isFinite(diamonds) || diamonds < mid) return 'small';
   if (diamonds < big) return 'mid';
   return 'big';
 }

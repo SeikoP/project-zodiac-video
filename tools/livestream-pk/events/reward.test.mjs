@@ -31,10 +31,10 @@ test('returns what the sink returned; undefined falls back to n', () => {
   const a = make(1);
   assert.equal(a.r.grant(u, {}, 'light', 5, 'w'), 1);
   assert.equal(a.stats.a.w, 1);
-  const calls = [];
-  const r = createReward({ sinks: { light: () => undefined }, stats: {} });
+  const stats = {};
+  const r = createReward({ sinks: { light: () => undefined }, stats });
   assert.equal(r.grant(u, {}, 'light', 4, 'w'), 4);
-  assert.equal(calls.length, 0);
+  assert.equal(stats.a.w, 4);
 });
 
 test('unknown kind returns 0', () => {
