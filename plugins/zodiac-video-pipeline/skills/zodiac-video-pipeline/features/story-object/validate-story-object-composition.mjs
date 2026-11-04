@@ -4,6 +4,7 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {validateNarrativeVisualPresence} from '../visual-composition/validate-narrative-visual-presence.mjs';
 
 const MODES=new Set(['thought_metaphor','physical_interaction','visual_cutaway']);
 const SCENE_SIZE=1080*1920;
@@ -93,6 +94,14 @@ export async function validateStoryObjectCompositionWorkspace(workspace,{writeRe
  // Fresh narrative_visual@1 authoring states its decision in narrative_visual_decision,
  // the same field compileVisualIntent reads; legacy authoring keeps story_object_decision.
  const decision=intent?.taxonomy_version==='narrative_visual@1'?intent.narrative_visual_decision:intent?.story_object_decision;
+ // Native Narrative Visual is an independent V4 storytelling contract; the retired
+ // Story Object composition plan is not required for a genuine narrative_visual@1.
+ // Enforce authored presence/kit/coverage before the Phase-03 ZIP can be staged.
+ if(intent?.taxonomy_version==='narrative_visual@1'){
+  const visual=await validateNarrativeVisualPresence(root);
+  if(visual.status!=='PASS')throw Error('NARRATIVE_VISUAL_COMPOSITION_BLOCKED '+JSON.stringify(visual.issues));
+  return {format:'zodiac-story-object-composition-qc@2',status:'NARRATIVE_VISUAL_VALIDATED',checked:visual.authored_entities.length,issues:[],not_an_approval:true};
+ }
  if(decision?.mode==='omitted'){if(state.flags?.story_object_required===true)throw Error('STORY_OBJECT_DECISION_FLAG_CONFLICT');if(!decision.reason?.trim()||!decision.review_ref?.trim())throw Error('STORY_OBJECT_DECISION_INVALID');return {format:'zodiac-story-object-composition-qc@2',status:'OMITTED_EXPLICIT',issues:[]};}
  // Existing sealed jobs / older plugin releases remain importable.
  const required=Boolean(freshV2411(state));
