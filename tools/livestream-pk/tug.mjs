@@ -1,4 +1,4 @@
-// Kéo co cung: the two teams with the most fans on stage pull a rope of starlight. Comments, hearts, follows and gifts
+// Kéo co 2 phe: the two teams with the most fans on stage pull a rope of starlight. Comments, hearts, follows and gifts
 // pull for your own team; a small team pulls harder per person so it still has a chance. A short warm-up first, while
 // the room predicts the winner (predict.mjs). The knot reaching either end wins early; otherwise the side it leans to.
 // A big pull gets a "giật mạnh!" moment with the puller's name — the rope is the spectacle, nothing is asked for.

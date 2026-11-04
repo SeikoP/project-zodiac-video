@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   lightPerDiamond: 5,
   quizRewards: [40, 25, 15],
   // the shared sky
-  teamLightCost: 720, // light to light one team on the first wheel (x3 of the 12-sign game: four teams carry the wheel)
+  teamLightCost: 720, // light to light one team on the first wheel (four teams carry the wheel)
   wheelGrowth: 0.5, // each new wheel costs this much more (0.5 → ×1.5, ×2, …)
   // moon (room-wide goal)
   moonGoal: 600,
@@ -168,7 +168,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   show: { join: true, flow: false, title: false, streak: false, wish: true, overtake: true, milestone: true, hearts: true },
 });
 
-const TITLES = [[15000, 'Thiên Hà'], [3000, 'Chòm Sao'], [500, 'Sao Sáng'], [0, 'Tân Tinh']];
+const TITLES = [[15000, 'Thiên Hà'], [3000, 'Tinh Vân'], [500, 'Sao Sáng'], [0, 'Tân Tinh']];
 export const titleOf = points => TITLES.find(([min]) => points >= min)[1];
 
 export const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd');
@@ -215,7 +215,7 @@ export function cleanWish(comment, blockedWords) {
 
 const freshGifts = () => ({ count: 0, diamonds: 0, top: null, by: {}, recent: [], goalSum: 0, goalNo: 0 });
 
-// The saved state of the 12-sign game cannot be played as colour teams: only schema 2 is accepted, anything else starts fresh.
+// A saved state from before the colour teams cannot be played: only schema 2 is accepted, anything else starts fresh.
 export const SCHEMA = 2;
 export const acceptState = raw => (raw?.schema === SCHEMA ? raw : null);
 

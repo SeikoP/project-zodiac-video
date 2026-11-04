@@ -71,7 +71,6 @@ export function createMonitor({ now = () => Date.now(), label = id => id, max = 
       case 'boss-escaped': add('game', `Sao Chổi trốn thoát (còn ${Math.round(e.hpShare * 100)}% máu)`); break;
       case 'chest-open': add('game', `Rương sao #${e.no} mở (${e.seconds}s)`); break;
       case 'chest-close': add('game', `Rương sao #${e.no} đóng — ${e.claims} người nhận thẻ`); break;
-      case 'set-complete': add('game', `${short(e.nickname, 24)} gom đủ 12 cung!`); break;
       case 'level-up': add('game', `${short(e.nickname, 24)} nâng linh vật lên Lv${e.level}`, { team: e.team }); break;
       case 'wish-blessed': add('game', `Điều ước của ${short(e.nickname, 24)} được ${e.count} người chúc phúc`); break;
       case 'combine': add('game', `${short(e.nickname, 24)} ghép ${e.count} thẻ ${label(e.from)} thành Tinh Tú`); break;

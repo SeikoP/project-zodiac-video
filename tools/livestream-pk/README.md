@@ -125,7 +125,7 @@ Thẻ bài, Sổ Sao và dự đoán **không bao giờ đổi trực tiếp b�
 **Mục tiêu chung**
 - **12 chòm sao** sáng dần theo ánh sao của cộng đồng; đủ sao → chòm sao *thức giấc*. Cả 12 sáng → vòng hoàng đạo trọn, mở vòng mới lớn hơn.
 - **Trăng rằm**: cả phòng cùng thả tim/tương tác để trăng tròn → 40 giây ánh sao x2.
-- **Danh hiệu** trọn đời: Tân Tinh → Sao Sáng → Chòm Sao → Thiên Hà. Bầu trời, huy hiệu và danh hiệu giữ qua các buổi live; mỗi buổi bấm **Bắt đầu đêm mới** để làm lại trăng và các mốc follow/share.
+- **Danh hiệu** trọn đời: Tân Tinh → Sao Sáng → Tinh Vân → Thiên Hà. Bầu trời, huy hiệu và danh hiệu giữ qua các buổi live; mỗi buổi bấm **Bắt đầu đêm mới** để làm lại trăng và các mốc follow/share.
 
 ## Âm thanh, nhạc nền và khoảnh khắc ăn mừng
 

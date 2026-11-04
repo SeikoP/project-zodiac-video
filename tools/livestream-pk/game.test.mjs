@@ -318,6 +318,7 @@ test('director caps effects per frame and sums the routine ones', () => {
 test('titles follow lifetime light', () => {
   assert.equal(titleOf(0), 'Tân Tinh');
   assert.equal(titleOf(600), 'Sao Sáng');
+  assert.deepEqual([499, 500, 2999, 3000, 14999, 15000].map(titleOf), ['Tân Tinh', 'Sao Sáng', 'Sao Sáng', 'Tinh Vân', 'Tinh Vân', 'Thiên Hà']);
 });
 
 test('giftOf skips streak updates and reads the final repeat count', () => {
