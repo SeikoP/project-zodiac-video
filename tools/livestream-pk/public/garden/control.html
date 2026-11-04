@@ -84,6 +84,28 @@
         <div><b>Demo nhanh</b><small>Vào vườn → trồng → 3 lần phân sao → thu hoạch → giờ vàng</small></div>
         <button id="runDemo" class="primary" type="button" data-sim-only>Chạy demo</button>
       </div>
+
+      <div class="auto-room">
+        <div class="auto-room-copy">
+          <div class="eyebrow">PHÒNG TỰ CHƠI</div>
+          <h2>Mô phỏng nhiều người cùng lúc</h2>
+          <p>Tạo người chơi giả, để họ tự trồng, tưới, bắt sâu, hái, trộm và thỉnh thoảng gửi quà. Dùng để xem camera và mật độ thật trên overlay.</p>
+        </div>
+        <div class="auto-room-controls">
+          <label for="autoCount">Thêm người</label>
+          <select id="autoCount" data-sim-only>
+            <option value="12">12 người</option>
+            <option value="24" selected>24 người</option>
+            <option value="48">48 người</option>
+            <option value="96">96 người</option>
+          </select>
+          <button id="addBots" type="button" data-sim-only>Thêm vào vườn</button>
+          <button id="autoStart" class="primary" type="button" data-sim-only>Bật tự chơi</button>
+          <button id="autoStop" type="button" data-sim-only>Dừng</button>
+        </div>
+        <div class="auto-room-status"><span id="autoLamp" class="auto-lamp"></span><b id="autoStatus">Chưa có bot</b><small>Bot dùng save riêng của simulator và không kết nối TikTok.</small></div>
+      </div>
+
       <div class="reset-row"><span>Chỉ xóa dữ liệu của simulator.</span><button id="reset" type="button" class="danger" data-sim-only>Reset simulator</button></div>
     </section>
 
