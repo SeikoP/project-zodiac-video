@@ -1,0 +1,29 @@
+name: Fast Pipeline contract tests
+on:
+  push:
+    branches:
+      - feature/fast-pipeline-critical-path
+  pull_request:
+    paths:
+      - 'plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/performance/**'
+      - 'plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/**fast-pipeline**'
+      - 'plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/phase02/phase02-execute.mjs'
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: |
+          node --check plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/performance/critical-path.mjs
+          node --check plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/performance/safe-parallel-scheduler.mjs
+          node --check plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/performance/parallel-native-preflight.mjs
+          node --check plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/performance/compile-step-capsule.mjs
+          node --check plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/phase02/phase02-execute.mjs
+      - name: Fast Pipeline unit tests
+        run: |
+          node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/fast-pipeline-*.test.mjs
