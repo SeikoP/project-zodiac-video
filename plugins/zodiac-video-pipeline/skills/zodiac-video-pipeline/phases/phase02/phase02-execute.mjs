@@ -6,6 +6,11 @@ import {spawnSync} from 'node:child_process';
 import {statSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {performance} from 'node:perf_hooks';
+import {summarizeFastProfile} from '../../core/performance/critical-path.mjs';
+import {runParallelNativePreflight} from '../../core/performance/parallel-native-preflight.mjs';
+import {planBatchRepair} from '../../core/performance/batch-repair.mjs';
+import {recordEpisodeSpan} from '../../core/performance/episode-profiler.mjs';
 
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
 import {validateStepGraph,PHASE02_DEPENDENCIES,LEGACY_PHASE02_DEPENDENCIES,executionTrace,createRepairPlan} from '../../core/workflow/deterministic-execution.mjs';
@@ -14,6 +19,7 @@ import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
 import {selectedPhase02Dependencies,selectedStepDependencyFiles} from './phase02-selected-dependencies.mjs';
 import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
+const fastProfileStart=performance.now();
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
 const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
@@ -95,7 +101,7 @@ const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).diges
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;report.fast_repair_groups=report.issues.length?planBatchRepair(report.issues):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}report.fast_profile=summarizeFastProfile({started_ms:fastProfileStart,ended_ms:performance.now(),steps:report.steps,dependencies:PHASE02_DEPENDENCIES,preflight_wall_ms:(report.state_validation?.elapsed_ms??0)+(report.fast_preflight?.wall_ms??0)});await writeJson(path.join(workspace,'.authoring/fast-pipeline-profile.json'),report.fast_profile);if(running)await recordEpisodeSpan(workspace,{phase:'02-visual-production',stage:'native-execute',category:'native',duration_ms:report.fast_profile.wall_clock_ms,status:report.status}).catch(()=>{});await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
@@ -201,27 +207,20 @@ if(running&&report.issues.length===0){
  report.state_validation=validity;
  if(validity.status!=='PASS')fail('PIPELINE_STATE_VALIDATION_FAILED',{exit_code:validity.exit_code,stderr:validity.stderr});
  if(validity.status==='PASS'){
-  const receiptPath=path.join(workspace,'.authoring/native-validator-precompile_seam_validation.json');
-  const seam=nodeRun(path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs'),[
-   'precompile_seam_validation',receiptPath,path.join(source.skillRoot,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),workspace
-  ]);
-  report.precompile_seam=seam;report.precompile_seam_receipt=receiptPath;
-  if(seam.status!=='PASS')fail('PRECOMPILE_SEAM_BLOCKED',{exit_code:seam.exit_code,stdout:seam.stdout,stderr:seam.stderr});
- }
- if(validity.status==='PASS'&&report.issues.length===0){
   const state=JSON.parse(await readFile(statePath,'utf8'));
-  if(state.flags?.art_direction_required===true){
-   const artScript=path.join(source.skillRoot,'features/visual-composition/validate-phase02-art-direction.mjs');
-   const receiptPath=path.join(workspace,'.authoring/native-validator-phase02_art_direction_validation.json');
-   const art=nodeRun(path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs'),['phase02_art_direction_validation',receiptPath,artScript,workspace]);
-   report.art_direction_preflight=art;report.art_direction_receipt=receiptPath;
-   if(art.status!=='PASS')fail('ART_DIRECTION_PREFLIGHT_BLOCKED',{exit_code:art.exit_code,stdout:art.stdout,stderr:art.stderr});
+  // Independent, read-only validators write distinct receipts; critical state validation stays sequential.
+  const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,maxConcurrency:3});
+  report.fast_preflight={status:preflight.status,plan:preflight.plan,issues:preflight.issues,wall_ms:preflight.wall_ms,serial_equivalent_native_ms:preflight.serial_equivalent_native_ms};
+  report.precompile_seam=preflight.checks.seam;
+  report.precompile_seam_receipt=preflight.receipts.seam;
+  report.character_intent_preflight=preflight.checks.character;
+  if(preflight.checks.art){
+   report.art_direction_preflight=preflight.checks.art;
+   report.art_direction_receipt=preflight.receipts.art;
   }
- }
- if(validity.status==='PASS'&&report.issues.length===0){
-  const intent=nodeRun(path.join(source.skillRoot,'features/visual-composition/validate-character-intent-preflight.mjs'),[workspace]);
-  report.character_intent_preflight=intent;
-  if(intent.status!=='PASS')fail('CHARACTER_INTENT_PREFLIGHT_FAILED',{exit_code:intent.exit_code,stderr:intent.stderr});
+  if(preflight.checks.seam?.status!=='PASS')fail('PRECOMPILE_SEAM_BLOCKED',{exit_code:preflight.checks.seam?.exit_code??1,stderr:preflight.checks.seam?.stderr});
+  if(preflight.checks.art&&preflight.checks.art.status!=='PASS')fail('ART_DIRECTION_PREFLIGHT_BLOCKED',{exit_code:preflight.checks.art.exit_code,stderr:preflight.checks.art.stderr});
+  if(preflight.checks.character?.status!=='PASS')fail('CHARACTER_INTENT_PREFLIGHT_FAILED',{exit_code:preflight.checks.character?.exit_code??1,stderr:preflight.checks.character?.stderr});
  }
 }
 if(report.issues.length){report.status='BLOCKED';await finish();}

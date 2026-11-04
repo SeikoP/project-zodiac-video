@@ -34,6 +34,10 @@ never an implicit compatibility flag in the current library.
 - Reuse requires matching input, compiler, selected asset and output SHA-256.
   SKIPPED_REUSED creates neither approval nor export permission.
 
+## Fast execution overlay
+
+Use `orchestration/fast-pipeline.md` as an optional performance-only overlay; it never changes the three phases, required gates, or approval semantics. After `plan-step-context.mjs`, the agent may use `core/performance/compile-step-capsule.mjs` to receive the same current references in a bounded, SHA-verified bundle. Reuse/delta requires an explicit caller-held matching capsule ID; otherwise provide complete current references. Record agent/tool/review wait separately using `core/performance/fast-profile-cli.mjs` when observable. Native Phase 2 automatically records `.authoring/fast-pipeline-profile.json` and runs independent preflight validators concurrently with separate receipts; all required checks remain blocking.
+
 ## Contract-first resume loop
 
 Before each step, re-read `.authoring/pipeline-state.json`, resolve the phase through
