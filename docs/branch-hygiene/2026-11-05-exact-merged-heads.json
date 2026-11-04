@@ -4,7 +4,7 @@
   "audit_date": "2026-11-05",
   "safety_policy": "Exact matching PR head SHA, merged PR, no open PR, no release/protected/default branch; revalidate live immediately before deletion.",
   "original_branch_count": 188,
-  "candidate_count": 142,
+  "candidate_count": 143,
   "candidates": [
     {
       "branch": "audit/2026-10-13-pipeline-stabilization",
@@ -41,6 +41,12 @@
       "head_sha": "5ff09ecfe215dc4ccbdf670b325999d2e90d4fbb",
       "merged_pr": 13,
       "merged_at": "2026-10-06T11:12:45Z"
+    },
+    {
+      "branch": "chore/branch-hygiene-20261105",
+      "head_sha": "64ec05c6d9bf06720fee034f2f1b4c767308e7af",
+      "merged_pr": 177,
+      "note": "Exact head commit of merged PR #177"
     },
     {
       "branch": "chore/cleanup-docs",
@@ -739,6 +745,13 @@
       "merged_at": "2026-11-04T18:45:47Z"
     },
     {
+      "branch": "integration/fast-pipeline-clean-base",
+      "head_sha": "11f56b5d4a09a4a54204e052bddd4e19f22e1799",
+      "merged_pr": 174,
+      "head_alias_of": "feature/fast-pipeline-critical-path",
+      "note": "Exact same head commit as merged PR #174"
+    },
+    {
       "branch": "perf/prepare-cache",
       "head_sha": "bdc1be9c7867e7498752a258f92f3937b2620695",
       "merged_pr": 16,
@@ -749,12 +762,6 @@
       "head_sha": "7388a8b82a72e8db706ad10b0bb5a9a0106257ac",
       "merged_pr": 15,
       "merged_at": "2026-10-06T11:12:23Z"
-    },
-    {
-      "branch": "production-final-audit",
-      "head_sha": "d0197742a37f41f0272a2eb164efbd62689b3449",
-      "merged_pr": 42,
-      "merged_at": "2026-10-07T07:32:19Z"
     },
     {
       "branch": "refactor/deterministic-workflow-execution",
@@ -1800,5 +1807,6 @@
       "head_sha": "608c6dcb89a39eba3ebdcdcb23182842bd6d44f4",
       "protected": false
     }
-  ]
+  ],
+  "followup_reason": "Final cleanup: 141 branches deleted in first run; protect production-final-audit; delete two SHA-equivalent merged-PR temporary refs"
 }
