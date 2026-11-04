@@ -14,6 +14,7 @@ export const CACHE_REASON=Object.freeze({
  MISS_VALIDATOR_CHANGED:'MISS_VALIDATOR_CHANGED',
  INVALIDATED_BY_APPROVAL_CHANGE:'INVALIDATED_BY_APPROVAL_CHANGE',
  MISS_NOT_RECORDED:'MISS_NOT_RECORDED',
+ MISS_PREVIOUS_NOT_PASS:'MISS_PREVIOUS_NOT_PASS',
  BYPASS_NO_CACHE:'BYPASS_NO_CACHE'
 });
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'&&!Buffer.isBuffer(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
@@ -55,6 +56,7 @@ const mapEqual=(a={},b={})=>JSON.stringify(Object.fromEntries(Object.entries(a).
 export async function evaluateCacheNode(workspace,{nodeId,input,compiler,dependencies={},assets={},outputs=[],validator=false}){
  const graph=await readCacheGraph(workspace),previous=graph.nodes?.[nodeId],fp=nodeFingerprint({input,compiler,dependencies,assets});
  if(!previous)return {hit:false,reason:CACHE_REASON.MISS_NOT_RECORDED,fingerprint:fp,previous:null};
+ if(previous.status!=='PASS')return {hit:false,reason:CACHE_REASON.MISS_PREVIOUS_NOT_PASS,fingerprint:fp,previous};
  if(previous.input_sha256!==fp.input_sha256)return {hit:false,reason:CACHE_REASON.MISS_INPUT_CHANGED,fingerprint:fp,previous};
  if(previous.compiler_sha256!==fp.compiler_sha256)return {hit:false,reason:validator?CACHE_REASON.MISS_VALIDATOR_CHANGED:CACHE_REASON.MISS_COMPILER_CHANGED,fingerprint:fp,previous};
  if(!mapEqual(previous.dependency_sha256,fp.dependency_sha256))return {hit:false,reason:CACHE_REASON.MISS_DEPENDENCY_CHANGED,fingerprint:fp,previous};
