@@ -88,3 +88,18 @@ test('pruneUsers drops one-time visitors after 7 days but keeps anyone who harve
   assert.equal(k.ctx.state.plots[visitor.plot.id].owner, null, 'their plot is free again');
   assert.ok(k.ctx.state.users.farmer);
 });
+
+
+test('a v4 Seed Zone save round-trips without being sent through legacy migration', async () => {
+  const file = tmp();
+  const k = makeCtx();
+  const a = addUser(k.ctx, 'seed', { gold: 42, level: 7 });
+  a.plot.crop = { type:'huongduong', progress:.61, ripeAt:null, pest:false, weeds:false, fertilized:true, stolen:0, variant:'lush' };
+  const saver = createSaver({ file, getState: () => k.ctx.state });
+  await saver.flush(); saver.stop();
+  const back = loadState(file);
+  assert.equal(back.v, 4);
+  assert.deepEqual(back.users.seed.seat, { tier:'cloud-1', slot:0 });
+  assert.equal(back.plots['cloud-1:0'].crop.variant, 'lush');
+  assert.equal(back.users.seed.level, 7);
+});

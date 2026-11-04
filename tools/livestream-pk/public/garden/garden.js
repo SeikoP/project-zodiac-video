@@ -32,7 +32,7 @@ addEventListener('resize', fit); fit();
 let meta = null, lastSessionNo = null, focusPlot = null, focusAt = 0, focusMs = 0;
 const plots = new Map(), floaters = [], avatars = createAvatarCache(160);
 let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
-const visualEvent = () => serverEvent && presentedEventKind === serverEvent.kind ? serverEvent : null;
+const visualEvent = () => serverEvent?.phase === 'active' && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
 const POT_ACCENTS = { 'cloud-1': '#EBC49E', 'cloud-2': '#B8D6C4', 'cloud-3': '#F2D57D', 'cloud-4': '#DDB6BA' };
 const TIER_SCENES = [
@@ -171,6 +171,16 @@ async function refreshStatus() {
   } catch { /* the live Garden stream continues without the optional status ribbon */ }
 }
 
+function actionHintFor(p) {
+  if (!p?.crop) return 'Gõ “trồng rau” để bắt đầu';
+  if (p.crop.pest) return 'CÓ SÂU · gõ “bắt sâu” để cứu cây';
+  if (p.crop.weeds) return 'CÓ CỎ · gõ “nhổ cỏ” để cây lớn lại';
+  if ((p.stage ?? 0) >= 3) return 'CÂY CHÍN · gõ “hái” để nhận vàng + XP';
+  if (p.water < .25) return 'ĐẤT KHÔ · gõ “tưới”';
+  if (!p.crop.fertilized) return 'Gõ “bón phân” để tăng tốc';
+  return 'Tiếp tục chăm cây · chờ cây chín';
+}
+
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
@@ -183,6 +193,7 @@ function onMessage(event, data) {
     say('Vườn mô phỏng đã làm mới', 4200);
   } else if (event === 'frame') {
     for (const [id, p] of Object.entries(data.parts.plots ?? {})) plots.set(id, p);
+    if (focusPlot && data.parts.plots?.[focusPlot]) hint.textContent = actionHintFor(data.parts.plots[focusPlot]);
     if ('event' in data.parts) {
       serverEvent = data.parts.event;
       if (!serverEvent) presentedEventKind = null;
@@ -208,6 +219,10 @@ function onMessage(event, data) {
     };
     shotLabel.textContent = labels[data.kind] ?? 'VƯỜN MÂY';
     shotLabel.classList.toggle('active', data.kind !== 'overview');
+    const focused = data.plotId ? plots.get(data.plotId) : null;
+    hint.textContent = data.kind === 'overview'
+      ? 'Mỗi người = 1 chậu · bình luận để vào Khu Gieo Hạt'
+      : actionHintFor(focused);
     if (data.kind === 'event' && data.eventKind) {
       presentedEventKind = data.eventKind;
       const role = ({ rain: 'actOpen', pests: 'bossStart', merchant: 'chestOpen', golden: 'lucky' })[data.eventKind] ?? 'actOpen';

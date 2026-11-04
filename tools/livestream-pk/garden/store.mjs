@@ -46,9 +46,9 @@ export function loadState(file, now = Date.now()) {
   let raw;
   try { raw = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fresh; }
   if (!isObj(raw)) return fresh;
-  const migrated = raw.v === 2 || raw.v === 3 ? raw : moveLegacy(raw);
+  const migrated = raw.v === 2 || raw.v === 3 || raw.v === 4 ? raw : moveLegacy(raw);
   return {
-    ...fresh, ...migrated, v: 3,
+    ...fresh, ...migrated, v: migrated.v >= 4 ? 4 : 3,
     users: isObj(migrated.users) ? migrated.users : {},
     plots: isObj(migrated.plots) ? migrated.plots : {},
     thefts: Array.isArray(migrated.thefts) ? migrated.thefts : [],
