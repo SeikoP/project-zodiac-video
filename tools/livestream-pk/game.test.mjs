@@ -187,7 +187,7 @@ test('a quiet room mostly shows a reading for a team, with a quiz now and then',
 
 test('quiz rewards the first correct answers', () => {
   const { game } = setup({ quizRewards: [40, 25], commentLight: 0 });
-  for (const id of ['n', 'o', 'p']) seat(game, id, 'red');
+  for (const id of ['n', 'o', 'p']) game.chat(u(id, { comment: 'đỏ' })); // three friends can share a colour in a fresh room
   game.startQuiz();
   game.chat(u('n', { comment: 'b' }));
   game.chat(u('n', { comment: 'a' }));
