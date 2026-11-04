@@ -1,9 +1,9 @@
-// Four vertically stacked cloud terraces, with the same 432 persistent plots as the original garden.
+// Stable tier IDs preserve existing saves; only the visible garden districts were redesigned.
 export const TIERS = Object.freeze([
-  { id: 'cloud-1', label: 'Chân Mây' },
-  { id: 'cloud-2', label: 'Vườn Gió' },
-  { id: 'cloud-3', label: 'Nắng Vàng' },
-  { id: 'cloud-4', label: 'Đỉnh Mây' },
+  { id: 'cloud-1', label: 'Khu Gieo Hạt' },
+  { id: 'cloud-2', label: 'Hiên Lá' },
+  { id: 'cloud-3', label: 'Nhà Kính Nắng' },
+  { id: 'cloud-4', label: 'Vườn Đêm' },
 ]);
 
 export const plotId = (tier, slot) => `${tier}:${slot}`;

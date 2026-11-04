@@ -10,7 +10,7 @@ export function createCamera({ cfg, now }) {
   const c = cfg.camera;
   const worldCenter = { x: cfg.tierWidth / 2, y: TIERS.length * cfg.tierHeight / 2 };
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  let queue = [], current = null, locked = false, shown = [], idleIndex = 0;
+  let queue = [], current = null, locked = false, shown = [], idleIndex = 0, eventIndex = 0;
 
   const split = id => { const [tier, slot] = String(id).split(':'); return { tier, slot: Number(slot) }; };
   const plotAt = id => { const p = split(id); return { tier: p.tier, ...plotCenter(p.tier, p.slot, cfg) }; };
@@ -35,7 +35,11 @@ export function createCamera({ cfg, now }) {
       const p = plotAt(e.plotId);
       return { ...base, kind: e.type, priority: 4, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.levelHoldMs };
     }
-    if (e.type === 'event-start') return { ...base, kind: 'event', priority: 5, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.eventHoldMs };
+    if (e.type === 'event-start') {
+      const tier = TIERS[eventIndex++ % TIERS.length];
+      const p = tierCenter(tier.id, cfg);
+      return { ...base, kind: 'event', priority: 5, tier: tier.id, x: p.x, y: p.y, zoom: c.zoomTier, holdMs: Math.max(c.eventHoldMs, 5200) };
+    }
     return null;
   }
 
@@ -68,12 +72,13 @@ export function createCamera({ cfg, now }) {
   }
 
   function idleShot() {
-    // The wide 432-pot overview made every pot unreadable on a phone. Tour 12 readable
-    // showcase windows instead; plot coordinates and persisted ownership stay unchanged.
-    const index = idleIndex++ % (TIERS.length * 3);
-    const tier = TIERS[Math.floor(index / 3)];
-    const column = index % 3;
-    const x = cfg.tierWidth * (.24 + column * .26);
+    // Each logical tier has four greenhouse bays. One bay is only 9 × 3 plots, so names,
+    // crop state and ownership stay readable even when all 432 persistent slots are occupied.
+    const bays = 4;
+    const index = idleIndex++ % (TIERS.length * bays);
+    const tier = TIERS[Math.floor(index / bays)];
+    const bay = index % bays;
+    const x = cfg.tierWidth * (.14 + bay * .24);
     return { kind: 'idle', priority: 9, tier: tier.id, x, y: tierCenter(tier.id, cfg).y, zoom: c.zoomTier, holdMs: c.idleHoldMs, gift: false };
   }
 

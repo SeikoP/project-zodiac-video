@@ -111,7 +111,7 @@ test('locking holds the view and ignores events', () => {
 test('with nothing happening it tours readable pot groups every 8s', () => {
   const r = rig();
   const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.x, s.y, s.zoom], ['idle', cfg.tierWidth * .24, cfg.tierHeight / 2, cfg.camera.zoomTier]);
+  assert.deepEqual([s.kind, s.x, s.y, s.zoom], ['idle', cfg.tierWidth * .14, cfg.tierHeight / 2, cfg.camera.zoomTier]);
   r.advance(7999);
   assert.equal(r.cam.tick(), null);
   r.advance(2);
@@ -125,6 +125,14 @@ test('a gift from a player with no plot is shown as a wide shot', () => {
   r.cam.push({ type: 'gift', tier: 'rain', plotId: null, total: 100 });
   const s = r.cam.tick();
   assert.deepEqual([s.priority, s.zoom], [1, cfg.camera.zoomWorld]);
+});
+
+test('a field event opens on a readable greenhouse district instead of the 432-plot overview', () => {
+  const r = rig();
+  r.cam.push({ type: 'event-start', kind: 'rain' });
+  const s = r.cam.tick();
+  assert.deepEqual([s.kind, s.tier, s.zoom], ['event', 'cloud-1', cfg.camera.zoomTier]);
+  assert.equal(s.holdMs, 5200);
 });
 
 test('a players first ripe crop is a moment worth a shot; later ordinary ripe crops are not', () => {

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vườn Mây</title>
+<title>Vườn Mây · Nhà kính trên cao</title>
 <link rel="stylesheet" href="/garden/garden.css">
 </head>
 <body>
 <div id="stage">
   <canvas id="world" width="1080" height="1920"></canvas>
   <header id="top">
-    <div class="brand-row"><span class="brand">✦ bungmoto</span><span class="tag">vườn chung</span></div>
+    <div class="brand-row"><span class="brand">✦ bungmoto</span><span class="tag">nhà kính chung</span></div>
     <b>Vườn Mây</b>
     <span id="hint"></span>
     <div class="garden-status"><span class="live-dot" aria-hidden="true"></span><span id="audienceCount">Vườn đang mở</span><span id="eventLabel">Chờ người gieo hạt</span></div>
@@ -21,6 +21,16 @@
   </aside>
   <button id="audioToggle" type="button" aria-pressed="false" aria-label="Bật nhạc nền và hiệu ứng">♫ Bật âm thanh</button>
   <div id="shotLabel" aria-live="polite">ĐANG DẠO VƯỜN</div>
+  <section id="eventHero" aria-live="polite" aria-hidden="true">
+    <img id="eventArt" alt="">
+    <div class="event-copy">
+      <span class="event-kicker">SỰ KIỆN TOÀN VƯỜN</span>
+      <b id="eventHeroTitle">Sự kiện</b>
+      <span id="eventHeroHint"></span>
+      <div class="event-meter" aria-hidden="true"><i id="eventMeterFill"></i></div>
+      <small id="eventHeroMeta"></small>
+    </div>
+  </section>
   <div id="banner"></div>
   <ul id="feed"></ul>
 </div>

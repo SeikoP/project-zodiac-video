@@ -78,3 +78,51 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background:
   #banner { top: 560px; left: 36px; right: 36px; font-size: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { #shotLabel, #banner, #feed li { transition: none; animation: none; } }
+
+
+/* Greenhouse v2 safe zones */
+#top { left: 32px; right: auto; width: 610px; top: 24px; padding: 12px 22px 14px; }
+#top b { font-size: 48px; }
+#hint { max-width: 100%; font-size: 22px; }
+.garden-status { font-size: 20px; }
+#scoreboard { right: 32px; top: 24px; width: 340px; }
+#audioToggle { right: 36px; top: 276px; }
+#shotLabel { left: 36px; top: 286px; min-width: 205px; padding: 8px 15px 10px; font-size: 23px; }
+#shotLabel::before, #shotLabel::after { display: none; }
+#banner { left: 110px; right: 110px; top: 720px; font-size: 48px; }
+#feed { bottom: 32px; max-width: 760px; right: auto; }
+#feed li { font-size: 25px; }
+
+#eventHero {
+  --event-accent: var(--teal);
+  position: absolute;
+  left: 104px; right: 104px; top: 382px; z-index: 9;
+  min-height: 214px;
+  display: grid; grid-template-columns: 178px 1fr; align-items: center; gap: 22px;
+  padding: 20px 28px 22px 22px;
+  background: rgba(255,253,249,.975);
+  border: 5px solid var(--ink); border-top: 12px solid var(--event-accent);
+  border-radius: 30px 22px 31px 24px;
+  box-shadow: 0 11px 0 var(--shadow), 0 28px 70px rgba(47,60,68,.18);
+  opacity: 0; transform: translateY(-22px) scale(.95); pointer-events: none;
+  transition: opacity .2s ease, transform .26s cubic-bezier(.2,.8,.2,1);
+}
+#eventHero.on { opacity: 1; transform: none; }
+#eventHero[data-kind="pests"] { --event-accent: var(--coral); }
+#eventHero[data-kind="merchant"] { --event-accent: #E3A17F; }
+#eventHero[data-kind="golden"] { --event-accent: var(--ochre); }
+#eventArt { width: 168px; height: 168px; object-fit: contain; filter: drop-shadow(0 7px 0 rgba(47,60,68,.13)); }
+.event-copy { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.event-kicker { padding: 3px 9px 4px; border: 2px solid var(--ink); border-radius: 9px; background: var(--event-accent); font-size: 19px; line-height: 1; letter-spacing: .08em; }
+#eventHeroTitle { margin-top: 5px; font-size: 50px; line-height: .95; font-weight: 400; }
+#eventHeroHint { margin-top: 7px; color: var(--soft-ink); font-size: 25px; line-height: 1.05; }
+.event-meter { width: 100%; height: 16px; margin-top: 13px; overflow: hidden; background: var(--paper); border: 3px solid var(--ink); border-radius: 10px; }
+.event-meter i { display: block; width: 0; height: 100%; background: var(--event-accent); transition: width .25s linear; }
+#eventHeroMeta { margin-top: 5px; color: var(--ink); font-size: 20px; line-height: 1; }
+.event-live #banner { top: 670px; }
+
+@media (max-width: 680px) {
+  #top { left: 20px; width: 600px; }
+  #scoreboard { right: 20px; width: 335px; }
+  #eventHero { left: 72px; right: 72px; }
+}
