@@ -11,6 +11,10 @@ export function createCoalescer({ windowMs = 250, now = Date.now } = {}) {
       const tier = tierOf(e), key = `${e.type}|${tier}`;
       const g = groups.get(key) ?? { first: now(), fx: { type: e.type, tier, count: 0, names: [] } };
       g.fx.count++;
+      if (e.type === 'joined' && e.plotId) {
+        g.fx.seats ??= [];
+        if (g.fx.seats.length < 3) g.fx.seats.push({ nickname: e.nickname ?? '', slot: Number(String(e.plotId).split(':')[1]) });
+      }
       if (e.nickname && g.fx.names.length < 3 && !g.fx.names.includes(e.nickname)) g.fx.names.push(e.nickname);
       groups.set(key, g);
     },

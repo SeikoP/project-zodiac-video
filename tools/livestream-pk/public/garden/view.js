@@ -1,20 +1,12 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
-export const lodOf = zoom => (zoom < 0.3 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
+export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
 export function slotLayout(slot, cfg) {
-  const module = Math.floor(slot / cfg.moduleCapacity);
-  const within = slot % cfg.moduleCapacity;
-  const row = Math.floor(within / cfg.potsPerShelf);
-  const col = within % cfg.potsPerShelf;
-  const moduleCol = module % cfg.modulesPerRow;
-  const moduleRow = Math.floor(module / cfg.modulesPerRow);
-  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
-  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
-  return {
-    module, moduleCol, moduleRow, row, col,
-    x: cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX) + col * cfg.potSpacingX,
-    y: cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY) + row * cfg.shelfSpacingY,
-  };
+  const row = Math.floor(slot / cfg.potsPerShelf);
+  const col = slot % cfg.potsPerShelf;
+  return { module: 0, moduleCol: 0, moduleRow: 0, row, col,
+    x: cfg.zoneMarginX + col * cfg.potSpacingX,
+    y: cfg.zoneMarginY + row * cfg.shelfSpacingY };
 }
 
 export function plotPos(plot, { cfg }) {

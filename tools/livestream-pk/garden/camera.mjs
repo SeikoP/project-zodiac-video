@@ -12,18 +12,16 @@ export function createCamera({ cfg, now, getPlots = () => [] }) {
   const plotAt = id => { const p = split(id); return { tier: p.tier, ...plotCenter(p.tier, p.slot, cfg) }; };
 
   function overviewTarget() {
-    const active = getPlots().filter(p => p?.owner);
-    if (!active.length) {
-      const p = tierCenter(TIERS[0].id, cfg);
-      return { tier: TIERS[0].id, x: p.x, y: p.y - 90 / c.zoomWorld, zoom: c.zoomWorld };
-    }
-    const pts = active.map(p => ({ p, ...plotCenter(p.tier, p.slot, cfg) }));
-    const minX = Math.min(...pts.map(p => p.x)), maxX = Math.max(...pts.map(p => p.x));
-    const minY = Math.min(...pts.map(p => p.y)), maxY = Math.max(...pts.map(p => p.y));
-    const width = Math.max(cfg.potSpacingX * 3.5, maxX - minX + cfg.potSpacingX * 2.5);
-    const height = Math.max(cfg.shelfSpacingY * 2.6, maxY - minY + cfg.shelfSpacingY * 2.2);
-    const zoom = clamp(Math.min(WIDTH / width, VIEW_HEIGHT / height) * .9, c.zoomWorld, c.zoomTier);
-    return { tier: TIERS[0].id, x: (minX + maxX) / 2, y: (minY + maxY) / 2 - 80 / zoom, zoom };
+    // Fit all sixteen shelves, not only occupied slots: empty lower shelves are still part of the rack.
+    const left = cfg.zoneMarginX - 76;
+    const right = cfg.zoneMarginX + (cfg.potsPerShelf - 1) * cfg.potSpacingX + 76;
+    const top = cfg.zoneMarginY - 166;
+    const bottom = cfg.zoneMarginY + (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY
+      + cfg.potBottomOffset + cfg.potShelfGap + 54;
+    const width = right - left + 200, height = bottom - top + 240;
+    const zoom = clamp(Math.min(WIDTH / width, VIEW_HEIGHT / height) * .92, c.zoomWorld, c.zoomTier);
+    return { tier: TIERS[0].id, x: (left + right) / 2,
+      y: (top + bottom) / 2 - 80 / zoom, zoom };
   }
 
   const base = e => ({ at: now(), type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,

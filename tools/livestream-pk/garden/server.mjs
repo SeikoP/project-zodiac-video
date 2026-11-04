@@ -55,7 +55,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     coalescer.push(out);
     saver.markDirty();
   };
-  const newGarden = () => createGarden({ config: full.garden, state, now, onEvent });
+  const newGarden = () => createGarden({ config: full.garden, state, now, onEvent, onStateChange: () => saver.markDirty() });
   garden = newGarden();
   camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
 
@@ -180,6 +180,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     'session/finish': () => garden.competition.finish(),
     sim: b => {
       const user = { userId: 'sim:' + String(b.user?.userId ?? 'x').slice(0, 48), nickname: String(b.user?.nickname ?? 'Người xem').slice(0, 32), avatar: '' };
+      if (b.kind === 'like') return garden.like({ count: Number(b.count) || 1 });
       if (b.kind === 'gift') return garden.gift({ ...user, diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1 });
       return garden.chat({ ...user, comment: String(b.comment ?? '').slice(0, 120) });
     },

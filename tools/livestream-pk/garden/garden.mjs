@@ -6,13 +6,14 @@ import { COPY } from './copy.mjs';
 import { CROPS, stageOf } from './crops.mjs';
 import { createEvents, modifiers } from './events.mjs';
 import { applyGift } from './gifts.mjs';
+import { applyHearts, heartStatus, tickHearts } from './hearts.mjs';
 import { catchThief, dog, steal, tickSteal } from './steal.mjs';
 import { createCompetition } from './competition.mjs';
 import { bump, emptyGardenState, ensureUser, isAwake, managePresence, migrateSeedZone, TIERS, seat, touch } from './world.mjs';
 import { potTierOf } from './progress.mjs';
 
-export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, state = emptyGardenState(now()) } = {}) {
-  const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), limiter: createLimiter(now) };
+export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, onStateChange = () => {}, state = emptyGardenState(now()) } = {}) {
+  const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), markDirty: onStateChange, limiter: createLimiter(now) };
   migrateSeedZone(ctx);
   const competition = createCompetition({ state, now });
   ctx.mods = () => modifiers(ctx);
@@ -85,8 +86,8 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     state, cfg: ctx.cfg, events, competition,
     chat,
     gift: g => applyGift(ctx, ensureUser(ctx, g), g),
-    like() {}, social() {}, member() {},
-    tick() { managePresence(ctx); tickPlots(ctx); tickSteal(ctx); events.tick(); expire(); },
+    like: data => { const result = applyHearts(ctx, data); if (result.ok) ctx.markDirty(); return result; }, social() {}, member() {},
+    tick() { managePresence(ctx); tickPlots(ctx); tickHearts(ctx); tickSteal(ctx); events.tick(); expire(); },
     changes(seen) {
       const parts = {}, plots = {};
       for (const p of Object.values(state.plots)) if (p.ver > (seen.ver ?? 0)) plots[p.id] = view(p);
@@ -94,6 +95,8 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (Object.keys(plots).length) parts.plots = plots;
       const ev = JSON.stringify(state.event);
       if (ev !== seen.event) { seen.event = ev; parts.event = state.event; }
+      const heart = heartStatus(state);
+      if (seen.hearts !== heart.revision) { seen.hearts = heart.revision; parts.hearts = heart; }
       const revision = competition.revision();
       if (revision !== seen.competition) { seen.competition = revision; parts.competition = competition.status(); }
       return parts;

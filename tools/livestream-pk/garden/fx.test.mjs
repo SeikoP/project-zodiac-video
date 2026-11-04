@@ -29,3 +29,12 @@ test('one-off moments (gift, steal, level up) pass straight through, unmerged', 
   const out = co.flush();
   assert.deepEqual(out.map(o => o.type), ['gift', 'steal']);
 });
+
+test('grouped joins retain at most three stable pot addresses for discovery', () => {
+  const { co, advance } = rig();
+  for (let i = 0; i < 5; i++) co.push({ type: 'joined', plotId: 'cloud-1:' + i, nickname: 'Player' + i });
+  advance(250);
+  const [fx] = co.flush();
+  assert.equal(fx.count, 5);
+  assert.deepEqual(fx.seats.map(v => v.slot), [0, 1, 2]);
+});

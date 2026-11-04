@@ -70,3 +70,14 @@ test('locking clears pending beats',()=>{
  const r=rig();r.cam.push(gift('tree'));r.cam.setLock(true);
  assert.equal(r.cam.state().queue.length,0);assert.equal(r.cam.tick(),null);
 });
+
+test('overview fits the complete 16-shelf structure even with only one occupant', () => {
+  const r = rig([{ tier: 'cloud-1', slot: 0, owner: 'a' }]);
+  const shot = r.cam.tick();
+  const firstY = cfg.zoneMarginY - 166;
+  const lastY = cfg.zoneMarginY + 15 * cfg.shelfSpacingY + cfg.potBottomOffset + cfg.potShelfGap + 54;
+  const screenY = world => (world - shot.y) * shot.zoom + 960;
+  assert.ok(screenY(firstY) > 260, 'first shelf stays below top HUD');
+  assert.ok(screenY(lastY) < 1760, 'last shelf stays above lower HUD');
+  assert.equal(shot.zoom >= cfg.camera.zoomWorld, true);
+});
