@@ -1,5 +1,5 @@
 // Vườn Mây: wires comments, gifts and time into the garden modules. The only place that knows how they fit together.
-import { parseSign } from '../game.mjs';
+import { parseSign, SIGNS } from '../game.mjs';
 import { gardenConfig } from './config.mjs';
 import { catchPests, harvest, plant, tickPlots, water } from './care.mjs';
 import { createLimiter, parseCommand, resolveMention } from './commands.mjs';
@@ -57,7 +57,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
     const o = p.owner && state.users[p.owner];
     return { id: p.id, island: p.island, slot: p.slot, owner: o && { userId: o.userId, nickname: o.nickname, avatar: o.avatar, level: o.level, sign: o.sign },
       stage: p.crop ? stageOf(p.crop, now(), ctx.cfg) : null, crop: p.crop && { type: p.crop.type, progress: p.crop.progress, pest: p.crop.pest, stolen: p.crop.stolen },
-      water: p.water, dog: p.dogUntil > now(), shield: p.shieldUntil > now() || (o ? o.level <= ctx.cfg.shieldLevel : false), deco: p.deco, awake: Boolean(o) && now() - p.lastActive < ctx.cfg.sleepAfterMs };
+      water: p.water, dog: p.dogUntil > now(), shield: p.shieldUntil > now(), deco: p.deco, awake: Boolean(o) && now() - p.lastActive < ctx.cfg.sleepAfterMs };
   };
 
   return {
@@ -75,7 +75,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (ev !== seen.event) { seen.event = ev; parts.event = state.event; }
       return parts;
     },
-    meta: () => ({ islands: ISLANDS, copy: COPY, crops: CROPS, cfg: { plotCell: ctx.cfg.plotCell, plotsPerRow: ctx.cfg.plotsPerRow, islandSize: ctx.cfg.islandSize, islandCols: ctx.cfg.islandCols, islandMargin: ctx.cfg.islandMargin, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs } }),
+    meta: () => ({ islands: ISLANDS, signNames: Object.fromEntries(SIGNS.map(x => [x.id, x.label])), copy: COPY, crops: CROPS, cfg: { plotCell: ctx.cfg.plotCell, plotsPerRow: ctx.cfg.plotsPerRow, islandSize: ctx.cfg.islandSize, islandCols: ctx.cfg.islandCols, islandMargin: ctx.cfg.islandMargin, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs } }),
     ctx,
   };
 }

@@ -1,0 +1,20 @@
+/* Vườn Mây overlay: a 1080x1920 stage scaled to the window, same paper-and-ink look as the main overlay. */
+:root {
+  --paper: #F6F0E6; --card: #FFFDF9; --ink: #2F3C44; --soft-ink: #5C6B75; --sun: #F3C35A; --leaf: #6FAE6A;
+  --hand: 'Patrick Hand', 'Segoe UI', Arial, sans-serif;
+}
+@font-face { font-family: 'Patrick Hand'; src: url('/fonts/PatrickHand-Regular.ttf') format('truetype'); font-display: swap; }
+html, body { margin: 0; height: 100%; background: #0e1a24; overflow: hidden; font-family: var(--hand); color: var(--ink); }
+#stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: top left; overflow: hidden; background: #bfe3f2; }
+#world { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+#top { position: absolute; left: 36px; right: 36px; top: 24px; padding: 12px 22px; border-radius: 18px; background: var(--card); border: 2px solid var(--ink);
+  box-shadow: 0 7px 0 rgba(22, 29, 33, .38); display: flex; align-items: baseline; gap: 18px; z-index: 5; }
+#top b { font-weight: 400; font-size: 48px; line-height: 1; white-space: nowrap; }
+#hint { font-size: 24px; color: var(--soft-ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#banner { position: absolute; left: 60px; right: 60px; top: 150px; text-align: center; font-size: 64px; line-height: 1.05; z-index: 6; pointer-events: none;
+  text-shadow: 0 4px 0 rgba(255, 255, 255, .9), 0 0 18px rgba(255, 255, 255, .9); opacity: 0; transform: translateY(-14px); transition: opacity .25s, transform .25s; }
+#banner.on { opacity: 1; transform: none; }
+#banner small { display: block; font-size: 30px; color: var(--soft-ink); margin-top: 6px; }
+#feed { position: absolute; left: 36px; right: 36px; bottom: 36px; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+#feed li { align-self: flex-start; max-width: 100%; padding: 8px 18px; border-radius: 14px; background: rgba(255, 253, 249, .92); border: 2px solid var(--ink); font-size: 28px; animation: pop .3s ease-out; }
+@keyframes pop { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
