@@ -146,6 +146,7 @@ export function drawFortune({ userId = null, day, topic = null }) {
     money: line('money'),
     luck: line('luck'),
     note: occasion && next(100) < 35 ? occasion.tip : NOTES[next(NOTES.length)],
+    tip: occasion?.tip ?? null,
     color: COLORS[next(COLORS.length)],
     number: 1 + next(99),
     hour: HOURS[next(HOURS.length)],
