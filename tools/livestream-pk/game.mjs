@@ -31,6 +31,7 @@ import { createGuessObject } from './events/guess-object.mjs';
 import { createQuiz } from './events/quiz.mjs';
 import { createKeywordRound } from './events/keyword-round.mjs';
 import { createRoast, ROAST_DEFAULTS } from './roast.mjs';
+import { createReactions } from './events/reactions.mjs';
 import { createTug, TUG_DEFAULTS } from './tug.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { createPass, PASS_DEFAULTS } from './pass.mjs';
@@ -549,19 +550,16 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   registry.register(quizEvent);
 
   // --- vòng quay bóc phốt (roast.mjs) ---------------------------------------------------------------
-  const roast = createRoast({
-    st, cfg, now, rng, onEvent,
-    present: () => [...stage.keys()].map(id => [id, st.viewers[id]]).filter(([, v]) => v?.team),
-    shine: (id, n, kind) => { const v = st.viewers[id]; if (v) shine({ userId: id }, v, n, kind); },
-    lucky: team => (st.lucky ? null : startLucky(team)),
-  });
+  // Vòng quay may mắn is an EventDef: it picks one person on stage and the registry routes "oan" / "chuẩn" to it
+  const roast = createRoast({ st, cfg, now, rng, onEvent, ctx: eventCtx, reward, viewerOf, lucky: team => (st.lucky ? null : startLucky(team)) });
+  registry.register(roast);
 
   // --- kéo co, dự đoán, sổ sao (tug.mjs, predict.mjs, pass.mjs) ------------------------------
   const tug = createTug({ st, cfg, now, onEvent, ctx: eventCtx, reward, viewerOf });
   registry.register(tug);
   // whatever main event a saved night was in keeps running
-  registry.adopt(st.boss ? 'boss' : st.tug ? 'tug' : st.guess ? 'guessobject' : st.starcatch ? 'starcatch' : st.quiz ? 'quiz' : '');
-  const predict = createPredict({ st, cfg, now, onEvent });
+  registry.adopt(st.boss ? 'boss' : st.tug ? 'tug' : st.roast ? 'roast' : st.guess ? 'guessobject' : st.starcatch ? 'starcatch' : st.quiz ? 'quiz' : '');
+  const predict = createPredict({ st, cfg, now, onEvent, reward });
   const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => bag.add(u, v, 'dust', 15, 'pass') });
   const label = id => TEAM[id]?.label ?? id;
   // --- hành trình đêm & đội nguyên tố (journey.mjs) ---
@@ -677,7 +675,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (id === 'chestrain') { chestOpenNow(); st.head.chests = [t + 60000, t + 120000]; }
     else if (id === 'guessobject') { if (!registry.start('guessobject')) { st.head = null; return null; } }
     else if (id === 'starcatch') { if (!registry.start('starcatch')) { st.head = null; return null; } }
-    else if (id === 'roast') { if (!roast.start()) { st.head = null; return null; } }
+    else if (id === 'roast') { if (!registry.start('roast')) { st.head = null; return null; } }
     else if (id === 'tug') { if (!registry.start('tug')) { st.head = null; return null; } }
     touch('cosmos');
     onEvent({ type: 'head-start', id, label: HEADS[id].label, act: slot?.act.id ?? null, seconds: Math.round((endsAt - t) / 1000) });
@@ -957,9 +955,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const vote = st.poll ? parseVote(u.comment) : null;
     const v = viewer(u, had || vote !== null ? null : parseSwitchTeam(u.comment) ?? parseTeam(u.comment));
     if (registry.chat(u, v, u.comment)) { addHeat(u.userId, 1); raiseMoon(1); return; } // a quiz answer, a guess or a catch
-    if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a team is being roasted
     if (st.predict && predict.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // "đoán A"
-    if (vote !== null) { if (!st.poll.voted[u.userId] && vote < st.poll.options.length) castVote(u, v, vote); addHeat(u.userId, 1); return; }
+    if (vote !== null && vote < st.poll.options.length) { castVote(u, v, vote); addHeat(u.userId, 1); return; } // a number the poll has; any other line is ordinary chat
     addHeat(u.userId, 1);
     if (had && !st.poll) switchTeam(u, v, parseSwitchTeam(u.comment));
     if (v.checkin) {
@@ -1021,7 +1018,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!want) st.showNo = (st.showNo ?? 0) + 1;
     st.nextShowAt = now() + cfg.showEverySeconds * 1000;
     touch('cosmos');
-    if (kind === 'roast') return roast.start();
+    if (kind === 'roast') return registry.start('roast');
     const people = presentWith(v => v.star).slice(-12).map(([id, v]) => ({ userId: id, nickname: v.nickname, avatar: v.avatar, team: v.team, x: v.star.x, y: v.star.y }));
     onEvent({ type: 'showtime', kind: kind === 'starcall' && people.length ? 'starcall' : 'meteor', people });
   }
@@ -1142,21 +1139,23 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return { kind: 'custom', q: entry.q, options: entry.options.slice(0, 4).map(label => ({ label })) };
   }
   function startPoll() {
-    if (!polls.length || st.poll || st.quiz || st.fortune) return null;
+    if (!polls.length) return false; // nothing to ask
+    if (st.poll || st.quiz || st.fortune) return null;
     const n = st.pollCursor++;
     let entry = slot && cfg.pollNextEvery && n % cfg.pollNextEvery === cfg.pollNextEvery - 1 ? { kind: 'next' } : polls[n % polls.length];
     if (entry?.kind === 'next' && !slot) entry = polls.find(p => p?.kind !== 'next'); // no acts: nothing to pick
     if (!entry) return null;
     const p = pollOptions(entry);
-    st.poll = { ...p, endsAt: now() + cfg.pollSeconds * 1000, votes: p.options.map(() => 0), voted: {}, total: 0, act: slot?.next.id ?? null, from: slot?.endsAt ?? 0, slot: slot ? slot.endsAt - slot.startsAt : 0 };
+    st.poll = { ...p, endsAt: now() + cfg.pollSeconds * 1000, rx: {}, act: slot?.next.id ?? null, from: slot?.endsAt ?? 0, slot: slot ? slot.endsAt - slot.startsAt : 0 };
     touch('hud');
     onEvent({ type: 'poll-start', q: p.q, kind: p.kind, options: p.options });
     return st.poll;
   }
+  // the votes: one reactions group per option ("1"…"4"), one vote per person; state is st.poll.rx
+  const pollRx = p => createReactions({ groups: Object.fromEntries(p.options.map((_, i) => [String(i + 1), text => parseVote(text) === i])) }, (p.rx ??= {}));
+  const pollVotes = p => { const c = pollRx(p).counts(); return p.options.map((_, i) => c[String(i + 1)]); };
   function castVote(u, v, i) {
-    st.poll.voted[u.userId] = true;
-    st.poll.votes[i]++;
-    st.poll.total++;
+    if (pollRx(st.poll).react(u.userId, String(i + 1)) === null) return; // already voted
     touch('hud');
     if (v.team) shine(u, v, cfg.pollLight, 'poll');
   }
@@ -1165,10 +1164,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!p) return;
     st.poll = null;
     touch('hud');
-    const top = Math.max(...p.votes), winner = p.total ? p.votes.indexOf(top) : null;
+    const votes = pollVotes(p), total = votes.reduce((a, b) => a + b, 0), top = Math.max(...votes), winner = total ? votes.indexOf(top) : null;
     const option = winner === null ? null : p.options[winner];
     if (p.kind === 'next' && option) st.headVote = { act: p.act, id: option.head, from: p.from, until: p.from + p.slot };
-    onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, team: option?.team ?? null });
+    onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total, winner, option, votes: top, team: option?.team ?? null });
   }
 
   // --- quiz (events/quiz.mjs) -------------------------------------------------------------
@@ -1204,7 +1203,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // the act and its headliner
     actTick(t);
     questTick();
-    roast.tick();
     registry.tick(t); // the running boss or tug
     predict.tick();
     headTick(t);
@@ -1266,7 +1264,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         quiz: q && { q: q.q, options: q.options, remainingMs: Math.max(0, q.endsAt - t), winners: q.winners, tries: Object.keys(q.answered).length },
         lucky: st.lucky && { team: st.lucky.team, remainingMs: Math.max(0, st.lucky.endsAt - t), multiplier: cfg.luckyMultiplier },
         luckyInMs: st.lucky ? 0 : Math.max(0, st.nextLuckyAt - t),
-        poll: st.poll && { q: st.poll.q, kind: st.poll.kind, options: st.poll.options.map((o, i) => ({ ...o, n: st.poll.votes[i] })), remainingMs: Math.max(0, st.poll.endsAt - t), total: st.poll.total },
+        poll: st.poll && { q: st.poll.q, kind: st.poll.kind, options: st.poll.options.map((o, i) => ({ ...o, n: pollVotes(st.poll)[i] })), remainingMs: Math.max(0, st.poll.endsAt - t), total: pollVotes(st.poll).reduce((a, b) => a + b, 0) },
         quietMs: t - st.lastActivityAt,
       };
     },
@@ -1379,5 +1377,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: chestOpenNow, startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: team => (st.boss ? null : roast.start(team)), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
+  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, openChest: chestOpenNow, startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: userId => (st.boss || !registry.start('roast', { userId }) ? null : st.roast), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
 }

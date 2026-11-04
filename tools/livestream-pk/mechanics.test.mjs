@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
+import { createReward } from './events/reward.mjs';
 import { passReward } from './pass.mjs';
 
 function setup(config = {}) {
@@ -102,7 +103,8 @@ function predictRig(config = {}) {
   let t = 0;
   const events = [];
   const st = { viewers: {}, predict: null };
-  const p = createPredict({ st, cfg: { ...PREDICT_DEFAULTS, ...config }, now: () => t, onEvent: e => events.push(e) });
+  const reward = createReward({ sinks: { dust: (u, v, n) => { v.bag.dust += n; } } });
+  const p = createPredict({ st, cfg: { ...PREDICT_DEFAULTS, ...config }, now: () => t, onEvent: e => events.push(e), reward });
   const join = (id, dust) => (st.viewers[id] = { nickname: id, bag: { dust, fire: 0, earth: 0, air: 0, water: 0, moon: 0 } });
   p.open({ key: 'k', q: 'Ai thắng?', options: ['A', 'B'], closesAt: 10_000 });
   return { st, p, join, events, guess: (id, c) => p.chat({ userId: id }, st.viewers[id], c), at: ms => { t = ms; }, dust: id => st.viewers[id].bag.dust };

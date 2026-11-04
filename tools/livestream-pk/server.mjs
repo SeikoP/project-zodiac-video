@@ -173,7 +173,7 @@ const API = {
   'act/head': () => game.startHead(),
   'mystery/start': () => game.startHead('guessobject'),
   'starcatch/start': () => game.startHead('starcatch'),
-  roast: b => game.startRoast(b.team),
+  roast: b => game.startRoast(b.userId),
   'tug/start': () => game.startTug(),
   settings: b => {
     for (const k of ['autoQuiz', 'showWishText']) if (typeof b[k] === 'boolean') game.config[k] = b[k];
