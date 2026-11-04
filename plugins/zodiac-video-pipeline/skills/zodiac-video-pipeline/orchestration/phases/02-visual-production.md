@@ -6,10 +6,8 @@ handoff context; preserve exact narration, scope and genuine Content Review.
 1. Select current components through `references/asset-library-v4/selection-guide.md`.
    Render `features/asset-selection/build-current-asset-review.mjs` when comparing
    choices. It uses native compiler output and exact masters, not episode examples.
-2. Fill the complete authoring skeleton before drawing: Scene Plan, actual episode cast plan, Director beats, context/background decision, physical-prop participation, explicit
-   required/optional/omitted Narrative Visual decision and narrative reasons. Character
-   identity is fixed across states. Use performed actions to plan state assets
-   before generation; never create duplicates then merge finished SVGs.
+2. Author **one source of truth only**: `.authoring/visual-intent.json` (`zodiac-visual-intent@1`). Put the semantic choices there: Scene Plan, cast identity, scene goals/grammar, context/background decision, physical-prop participation, Narrative Visual decision/entities, director beats, art-direction coverage and scene events. Character identity is fixed across states. Use performed actions to plan state assets before generation; never create duplicates then merge finished SVGs.
+   Then run `write-phase02-authoring.mjs`. `compile-visual-intent.mjs` must project the intent deterministically into `production.json`, `asset-plan.json`, `visual-grammar-plan.json`, Character Assembly, Director Plan, Art Direction, Episode Cast Plan and any supported compatibility projection. These projection files are compiler-owned and must not be manually authored or patched by the agent.
 3. Run native compilers and manifest validators. Fresh production uses a simple
    canvas background, independently positioned characters, optional canvas-native
    Scene Accents, Narrative Visuals, physical props and effects. Do not select,
@@ -38,7 +36,7 @@ separately pinned snapshot to resume an approved historical job; do not use
 `legacy` or `selected_cues` to bypass current selection. An asset retirement or
 compiler change invalidates dependent cache/preview hashes before reuse.
 
-Before any native asset compilation, bind every Episode Cast `role=member` character to `zodiac-glyph-shirt` with `zodiac_sign_id=member_id`; then `validate-phase02-authoring-completeness.mjs` must PASS, then fill/verify per-beat visual_coverage in Visual Intent art_direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
+Before any native asset compilation, bind every Episode Cast `role=member` character to `zodiac-glyph-shirt` with `zodiac_sign_id=member_id` **inside Visual Intent**; then `write-phase02-authoring.mjs` projects the derived files, `validate-phase02-authoring-completeness.mjs` must PASS, and per-beat `visual_coverage` is verified from the projected Art Direction; see orchestration/scene-art-direction.md. The native seam requires every layer to be selected or explicitly omitted, with actual entity/state/event coverage. Ordinary narrative props and physical support must be considered separately from Narrative Visuals.
 
 ## Mandatory storytelling readiness for fresh Phase 2
 

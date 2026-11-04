@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// Persist a real agent-authored, four-part Phase02 payload with an immutable
-// approved narration precondition; never generate fictional creative inputs.
+// Persist the canonical agent-authored Visual Intent and deterministically project
+// all Phase02 derived plans with an immutable approved narration precondition.
+// Legacy four-part payloads remain compatibility-only; fresh authoring should use
+// zodiac-visual-intent@1 and never hand-edit compiler-owned projections.
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir,open,rm,rename,lstat} from 'node:fs/promises';
 import path from 'node:path';
@@ -13,6 +15,7 @@ const sha=b=>createHash('sha256').update(b).digest('hex');
 const decode=async p=>JSON.parse(await readFile(p,'utf8'));
 const normalized=s=>String(s).replaceAll('\r\n','\n').replaceAll('\r','\n').trimEnd();
 const fileMap=[['production','production.json'],['asset_plan','asset-plan.json'],['visual_grammar_plan','visual-grammar-plan.json'],['character_assembly_plan','.authoring/character-assembly-plan.json']];
+export function assertPhase02AuthoringSource(format,runMode){if(runMode==='fresh'&&format!=='zodiac-visual-intent@1')throw Error('FRESH_VISUAL_INTENT_REQUIRED');return true;}
 export function assessAuthoringPayload(payload,{narration,pluginVersion,state}){
  const issues=[];
  const fail=(code,detail={})=>issues.push({code,...detail});
@@ -67,6 +70,7 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   const manifest=await decode(pkg),statePath=path.join(dir,'pipeline-state.json'),stateBytes=await readFile(statePath),state=JSON.parse(stateBytes);
   const source=await readFile(path.join(root,'narration.txt'),'utf8');
   const authored=await decode(payloadPath);
+  assertPhase02AuthoringSource(authored.format,state.run_mode);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
   if(generated&&authored.taxonomy_version!=='narrative_visual@1'&&authored.story_object_decision?.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
   const payload=generated?{format:'zodiac-phase02-authored-handoff@1',plugin_version:manifest.version,approved_narration_sha256:authored.narration_sha256,production:generated.production,asset_plan:generated.asset_plan,visual_grammar_plan:generated.visual_grammar_plan,character_assembly_plan:generated.character_assembly}:authored;

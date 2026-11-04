@@ -1,6 +1,24 @@
 # Phase 1 — Content
 
-Finish Evidence → Concept → Narration, then enter `IN_REVIEW` for CONTENT REVIEW.
+Finish Evidence → Concept → Narration autonomously, then enter `IN_REVIEW` for CONTENT REVIEW.
+
+## Interaction policy
+Phase 1 is an autopilot authoring phase, not a sequence of approval prompts. Once the user has supplied enough scope to identify the episode/sign/topic, continue through Evidence → Concept → Narration → QC without stopping to ask permission between steps.
+
+Do **not** ask the user to:
+- approve research queries or individual evidence sources;
+- choose among concept candidates unless they explicitly asked to choose;
+- approve Story Spine, hook, narration outline, QC repairs, or validator retries separately;
+- confirm deterministic compiler/validator work.
+
+The Content Engine must compare candidates and select the strongest valid concept itself. If a candidate fails evidence/sign-swap/story-quality gates, repair or replace it and continue.
+
+Pause only when:
+1. the requested episode scope is materially ambiguous and cannot be resolved from the current request;
+2. a genuine creative fork would change the user's stated goal and there is no defensible default;
+3. the final Narration + compact QC is ready for the required Content Review.
+
+Technical failures are `BLOCKED`, not questions. Report the blocker with the concrete missing input or failed contract.
 
 1. **Evidence** — run fresh discovery/verification, write `evidence-ledger.json` + `evidence-summary.md`, then run `validate-evidence-contract.mjs <workspace>`. Evidence needs at least two independent source identities and their supported interpretation.
 2. **Concept + Story Engine (Zodiac-first)** — for new 2.4.13+ runs, generate three distinct `concept-candidates.json` premises and choose a winner using `references/content-quality-engine.md`. Link its ID in `narrative-plan.json.selected_concept_id`. Reject a weak story before polishing hook. Then decide `flags.viral_support_needed` from the current content task, before entering the concept step. Read `references/viral-routing-policy.md`. Invoke the installed Viral Analysis guidance **only if** that flag is true, recording a real `skill_read`/`plugin_result` receipt and an application summary. When false, do not invoke it and do not fabricate its receipt. A lean *internal editorial-mechanics* `viral-analysis.json` still exists for the unchanged Content Engine v2 downstream contract; it is **not** proof of an external Viral plugin invocation. Compile reference mechanics, Story Spine and writer brief. Run `validate-content-contract.mjs <workspace>` with exact lineage and resolvable evidence refs.
