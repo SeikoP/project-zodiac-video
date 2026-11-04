@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lodOf, easeCamera, visiblePlots, worldToScreen, plotPos, createAvatarCache } from '../public/garden/view.js';
+import * as view from '../public/garden/view.js';
+import fs from 'node:fs';
+const { lodOf, easeCamera, visiblePlots, worldToScreen, plotPos, createAvatarCache } = view;
 import { gardenConfig } from './config.mjs';
 import { TIERS, plotCenter } from './world.mjs';
 
@@ -85,4 +87,18 @@ test('logical row eight wraps to a right visual wing at the same vertical shelf'
   const right = plotPos(owned('cloud-1', 48), meta);
   assert.ok(right.x - left.x > cfg.potSpacingX * 5);
   assert.equal(right.y, left.y);
+});
+
+test('overview identity is an adaptive nickname and never a public slot code', () => {
+  assert.equal(typeof view.displayNickname, 'function');
+  assert.equal(view.displayNickname('Nguyễn Minh Anh', .5), 'Nguyễn…');
+  assert.equal(view.displayNickname('Nguyễn Minh Anh', .82), 'Nguyễn Min…');
+  assert.equal(view.displayNickname('Mai', .5), 'Mai');
+  assert.equal(view.displayNickname('🌱Vườn Mây', .5).startsWith('🌱'), true);
+  assert.equal(view.displayNickname('', .5), 'Người xem');
+});
+
+test('Garden join notices do not expose slot-number identity', () => {
+  const source = fs.readFileSync(new URL('../public/garden/garden.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /chậu #|padStart\(3, '0'\)/);
 });
