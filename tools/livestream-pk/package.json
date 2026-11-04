@@ -17,7 +17,6 @@
     "simulator": "node --env-file-if-exists=.env scripts/simulator.mjs"
   },
   "dependencies": {
-    "astronomy-engine": "2.1.19",
     "tiktok-live-connector": "2.5.0"
   }
 }

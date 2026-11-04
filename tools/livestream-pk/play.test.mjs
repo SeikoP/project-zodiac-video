@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { createGame, parseSwitch } from './game.mjs';
 import { userOf } from './tiktok.mjs';
 
-const OFF = { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0 };
+const OFF = { bossEverySeconds: 0, chestEveryMinutes: 0 };
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -62,7 +62,7 @@ test('the TikTok bridge reads fan club level and subscriber flags', () => {
 });
 
 test('Nhiệt phòng rises with what the whole room does and multiplies starlight; one spammer cannot heat it alone', () => {
-  const { game, events, advance } = setup({ heatLevels: [5, 10, 20, 40], heatMultipliers: [1, 2, 3, 4, 5], commentLight: 1, commentCooldownSeconds: 0 });
+  const { game, events, advance } = setup({ heatLevels: [5, 10, 20, 40], heatMultipliers: [1, 2, 3, 5, 5], commentLight: 1, commentCooldownSeconds: 0 });
   for (let i = 0; i < 50; i++) game.chat(u('spam', { comment: 'leo' }));
   advance(100);
   assert.equal(game.changes({}).cosmos.heat.level, 1); // capped at 6 per viewer per 2s
@@ -71,7 +71,7 @@ test('Nhiệt phòng rises with what the whole room does and multiplies starligh
   assert.equal(of(events, 'heat-up').at(-1).level, 3);
   const before = game.state.wheel.given.pisces;
   game.chat(u('v0', { comment: 'hay' }));
-  assert.equal(game.state.wheel.given.pisces - before, 4);
+  assert.equal(game.state.wheel.given.pisces - before, 3); // heat x5 is cut to the x3 cap on the room's total multiplier
   advance(21000);
   assert.equal(game.changes({}).cosmos.heat.level, 0); // it cools down
 });
@@ -81,15 +81,6 @@ test('a quiet room shows the house mascots demonstrating commands', () => {
   advance(45000);
   assert.equal(of(events, 'demo').length, 1);
   assert.ok(of(events, 'demo')[0].demo);
-});
-
-test('Thủy Nghịch never asks for more fixers than there are viewers', () => {
-  const { game, events } = setup({ chaosFixMin: 3 });
-  game.chat(u('a', { comment: 'leo' }));
-  game.startChaos();
-  assert.equal(of(events, 'chaos-start')[0].need, 1);
-  game.chat(u('a', { comment: 'thuận' }));
-  assert.equal(of(events, 'chaos-fixed').length, 1);
 });
 
 test('commands that need a sign say which one, instead of doing nothing', () => {

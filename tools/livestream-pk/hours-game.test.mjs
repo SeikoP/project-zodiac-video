@@ -4,7 +4,6 @@ import { createGame } from './game.mjs';
 import { ALL_HOUR_PLANETS as HOUR_PLANETS, HOUR_PLANETS as HOUR_PLANETS_DEFAULT, HOURS, HEADS, HEAD_QUEST, hourEdition } from './hours-table.mjs';
 
 const HOUR = 3600000;
-const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
 // "cycle" mode: clock hour n belongs to HOUR_PLANETS[n % 4]; start `minute` minutes into such an hour
 const at = (planet, minute = 1) => HOUR * (4 * 7000 + HOUR_PLANETS.indexOf(planet)) + minute * 60000;
 
@@ -12,8 +11,8 @@ function setup(planet, config = {}, minute = 1) {
   let t = at(planet, minute);
   const events = [];
   const game = createGame({
-    config: { hourMode: 'cycle', hourMinutes: 60, hourPlanets: HOUR_PLANETS, bossEverySeconds: 60, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
-    now: () => t, rng: () => 0.3, readSky: sky, onEvent: e => events.push(e),
+    config: { hourMode: 'cycle', hourMinutes: 60, hourPlanets: HOUR_PLANETS, bossEverySeconds: 60, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
+    now: () => t, rng: () => 0.3, onEvent: e => events.push(e),
   });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
   const crowd = () => { for (const [i, s] of ['Sư Tử', 'Bảo Bình', 'Kim Ngưu', 'Cự Giải'].entries()) game.chat({ userId: `u${i}`, nickname: `U${i}`, comment: s }); };
@@ -29,19 +28,6 @@ test('the boss only comes on its own in hours that allow it', () => {
   mars.crowd();
   mars.advance(90_000);
   assert.equal(mars.of('boss-start').length, 1);
-});
-
-test('the hour\'s rule multiplies the starlight of its kind of action', () => {
-  const lifetime = (planet, config) => {
-    const s = setup(planet, config);
-    s.game.chat({ userId: 'x', nickname: 'X', comment: 'Sư Tử' });
-    s.advance(10_000);
-    const before = s.game.state.viewers.x.lifetime;
-    s.game.chat({ userId: 'x', nickname: 'X', comment: 'hay quá' });
-    return s.game.state.viewers.x.lifetime - before;
-  };
-  assert.equal(lifetime('mercury'), 2 * lifetime('mercury', { hours: false })); // Sao Thủy: comments x2
-  assert.equal(lifetime('venus'), lifetime('venus', { hours: false }));
 });
 
 test('a new hour is announced once, with what comes next', () => {
@@ -136,7 +122,7 @@ test('by default two planets take 5-minute turns, and a planet\'s headliner move
   const SLOT = 5 * 60000, heads = [];
   for (let visit = 0; visit < 2; visit++) {
     let t = SLOT * (2 * (7000 + visit)) + 1000; // slot n belongs to ['mars', 'venus'][n % 2]
-    const game = createGame({ config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, readSky: sky, onEvent: () => {} });
+    const game = createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, onEvent: () => {} });
     const { hour } = game.snapshot().cosmos;
     assert.equal(hour.planet, 'mars');
     assert.equal(hour.next.planet, 'venus');
@@ -161,20 +147,7 @@ test('in the default 5-minute turns, each of the ten headliners comes round with
 
 // default cycle: 5-minute turns, mars on even turns; turn 70000 starts a visit count divisible by 5 (mars heads[0])
 const turnAt = n => 5 * 60000 * (70000 + n) + 1000;
-const defaultGame = t => createGame({ config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, readSky: sky, onEvent: () => {} });
-
-test('the quest follows a headliner that has its own goal: catches in hứng sao băng, right answers in a quiz chain', () => {
-  for (const [n, head, unit] of [[0, 'elite', HOURS.mars.quest.unit], [4, 'starcatch', HEAD_QUEST.starcatch.unit], [8, 'quizchain', HEAD_QUEST.quizchain.unit], [1, 'mystery', HEAD_QUEST.mystery.unit]]) {
-    const game = defaultGame(turnAt(n));
-    game.chat({ userId: 'a', nickname: 'A', comment: 'Sư Tử' });
-    game.tick();
-    const { hour, quest } = game.snapshot().cosmos;
-    assert.equal(hour.head, HEADS[head].label, `turn ${n}`);
-    assert.equal(quest?.unit, unit, head);
-  }
-  assert.equal(HEAD_QUEST.starcatch.stat, 'catches');
-  assert.equal(HEAD_QUEST.quizchain.stat, 'correct');
-});
+const defaultGame = t => createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => t, rng: () => 0.3, onEvent: () => {} });
 
 test('a planet hour also drops the card edition of the planet it took over', () => {
   assert.deepEqual([hourEdition('mars', 0.1), hourEdition('mars', 0.9)], ['h-mars', 'h-saturn']);

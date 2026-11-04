@@ -4,11 +4,10 @@ import { createGame } from './game.mjs';
 import { HEADS, HOURS, HEAD_QUEST } from './hours-table.mjs';
 import { CATCH_WORDS } from './minigames.mjs';
 
-const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
 function setup(config = {}) {
   let t = Date.UTC(2026, 10, 4, 12);
   const events = [];
-  const game = createGame({ config: { hours: false, skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, readSky: sky, onEvent: e => events.push(e) });
+  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { for (let left = ms; left > 0; left -= 500) { t += Math.min(500, left); game.tick(); } };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };

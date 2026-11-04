@@ -45,7 +45,7 @@ const QUIZ = [{ q: 'Cung đầu tiên?', options: ['Bạch Dương', 'Song Ngư'
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { hours: false, skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, quiz: QUIZ, polls: ['Cung nào nấu ăn ngon nhất?', 'Cung nào ngủ nướng giỏi nhất?'], onEvent: e => events.push(e), config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
@@ -396,7 +396,7 @@ test('a poll offers four numbered options; "1"–"4" is a vote, once each, and n
 test('a poll can let the room pick the next headliner of the other planet', () => {
   let t = 5 * 60000 * 70000 + 1000;
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
+  const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
   game.chat(u('a', { comment: 'Sư Tử' }));
   assert.equal(game.snapshot().cosmos.hour.planet, 'mars');
   game.startPoll();

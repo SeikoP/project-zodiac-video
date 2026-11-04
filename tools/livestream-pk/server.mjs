@@ -17,7 +17,6 @@ import { listMusic } from './music.mjs';
 import { createTikTokBridge } from './tiktok.mjs';
 import { createDiagnostics, ingest } from './diagnostics.mjs';
 import { createMonitor } from './monitor.mjs';
-import { PLANETS } from './sky.mjs';
 import { ROLES } from './boss.mjs';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +47,7 @@ const recorded = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(di
 const diag = recorded;
 if (diag.recording) console.log(`[diagnostics] recording events to ${diag.eventsFile}`);
 const tiktok = createTikTokBridge({ game: diag.wrap(tapped), probe: diag.probe, onStatus: s => { monitor.system(`TikTok: ${s.state}${s.detail ? ` — ${s.detail}` : ''}`); broadcast('tiktok', s); } });
-const meta = () => ({ signs: SIGNS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, planets: PLANETS.map(({ id, label, glyph, boon, mult }) => ({ id, label, glyph, boon, mult })), roles: ROLES });
+const meta = () => ({ signs: SIGNS, simulator: SIMULATOR, config: game.config, music: { calm: music.calm, upbeat: music.upbeat }, roles: ROLES });
 
 // A client is one open overlay/panel page: { send(event, data), seen, busy(), host }. Normally it is a server-sent-events
 // stream; behind a quick tunnel (which does not stream SSE) the page polls /poll and gets its queued messages instead.
@@ -164,8 +163,6 @@ const API = {
   'fortune/sign': b => game.showFortune({ userId: null, nickname: null, avatar: '', sign: b.sign }),
   'lucky/start': b => game.startLucky(b.sign),
   'boss/start': () => game.startBoss(),
-  'chaos/start': () => game.startChaos(),
-  'chaos/end': () => game.endChaos(false),
   'chest/open': () => game.openChest(),
   // giờ hành tinh: hold one hour for 60 minutes (or back to the real sky with no planet), start the headliner now
   'hour/set': b => game.forceHour(['mars', 'venus', 'mercury', 'saturn'].includes(b.planet) ? b.planet : null),

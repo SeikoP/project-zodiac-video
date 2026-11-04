@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, parseAction } from './game.mjs';
 
-const OFF = { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0 };
+const OFF = { bossEverySeconds: 0, chestEveryMinutes: 0 };
 const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, readSky: null, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); } };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });

@@ -1,82 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, parseAction } from './game.mjs';
-import { readSky, boonFor } from './sky.mjs';
 import { createDirector } from './director.mjs';
 
-// A sky the tests control: the Sun in Leo, the Moon in Pisces, Mercury retrograde in Aries.
-const SKY = { planets: [{ id: 'sun', sign: 'leo', deg: 5, retro: false }, { id: 'moon', sign: 'pisces', deg: 2, retro: false }, { id: 'mercury', sign: 'aries', deg: 9, retro: true }], moon: { full: false, phase: 'Trăng non', icon: '🌑' }, mercuryRetro: true };
-const OFF = { skyBoons: false, bossEverySeconds: 0, chaosEverySeconds: 0, chaosEveryRetroSeconds: 0, chestEveryMinutes: 0 };
-const setup = (config = {}, sky = null) => {
+const OFF = { bossEverySeconds: 0, chestEveryMinutes: 0 };
+const setup = (config = {}) => {
   let t = Date.UTC(2026, 10, 3, 12, 1);
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, readSky: sky && (() => sky), onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
+  const game = createGame({ now: () => t, rng: () => 0, onEvent: e => events.push(e), config: { hours: false, autoQuiz: false, quietSeconds: 9999, moonGoal: 1e9, checkinPerNight: 0, luckyEverySeconds: 1e9, adaptiveCrowd: false, ...OFF, ...config } });
   return { game, events, advance: ms => { t += ms; game.tick(); }, at: () => t };
 };
 const u = (id, extra) => ({ userId: id, nickname: id, ...extra });
 const of = (events, type) => events.filter(e => e.type === type);
-
-test('the real sky: the Sun in Scorpio and Mercury retrograde in early November 2026, direct again by mid-December', () => {
-  const nov = readSky(Date.UTC(2026, 10, 3, 12));
-  assert.equal(nov.planets.find(p => p.id === 'sun').sign, 'scorpio');
-  assert.equal(nov.mercuryRetro, true);
-  assert.equal(nov.planets.find(p => p.id === 'sun').retro, false);
-  const dec = readSky(Date.UTC(2026, 11, 15, 12));
-  assert.equal(dec.planets.find(p => p.id === 'sun').sign, 'sagittarius');
-  assert.equal(dec.mercuryRetro, false);
-  assert.equal(readSky(Date.UTC(2026, 10, 24, 12)).moon.full, true);
-  assert.ok(nov.moon.nextInMs > 0 && nov.moon.nextInMs < 3 * 86400000);
-});
-
-test('a planet boosts its sign for the actions it rules; the Sun boosts every action but not rewards', () => {
-  assert.equal(boonFor(SKY, 'leo', 'comment').mult, 1.5);
-  assert.equal(boonFor(SKY, 'leo', 'checkin').mult, 1);
-  assert.equal(boonFor(SKY, 'pisces', 'like').mult, 2);
-  assert.equal(boonFor(SKY, 'pisces', 'comment').mult, 1);
-  assert.deepEqual(boonFor(SKY, 'aries', 'comment').by, ['mercury']);
-  const crowded = { planets: ['sun', 'jupiter', 'moon'].map(id => ({ id, sign: 'leo' })) };
-  assert.equal(boonFor(crowded, 'leo', 'like').mult, 3); // 1.5 × 1.25 × 2 = 3.75, capped
-});
-
-test('the game applies sky boons to a sign\'s fans', () => {
-  const { game, events } = setup({ skyBoons: true, commentLight: 2 }, SKY);
-  game.chat(u('a', { comment: 'sư tử' }));
-  game.chat(u('b', { comment: 'kim ngưu' }));
-  assert.equal(game.state.wheel.given.leo, 3);
-  assert.equal(game.state.wheel.given.taurus, 2);
-  assert.deepEqual(of(events, 'light')[0].boon, ['sun']);
-});
-
-test('Thủy Nghịch sends starlight to the opposite sign until enough viewers comment "thuận"', () => {
-  const { game, events } = setup({ commentLight: 2, chaosFixMin: 2, chaosFixLight: 5 });
-  game.chat(u('a', { comment: 'sư tử' }));
-  game.chat(u('b', { comment: 'bảo bình' }));
-  game.startChaos();
-  assert.equal(of(events, 'chaos-start')[0].need, 2);
-  game.like(u('a', { count: 10 })); // 2 light from a Leo fan → Aquarius
-  assert.equal(game.state.wheel.given.aquarius, 2 + 2);
-  assert.deepEqual(of(events, 'swap')[0], { type: 'swap', from: 'leo', to: 'aquarius', amount: 2 });
-  game.chat(u('a', { comment: 'thuận' }));
-  game.chat(u('a', { comment: 'thuận' })); // the same viewer counts once
-  assert.ok(game.state.chaos);
-  game.chat(u('b', { comment: 'thuận hành!' }));
-  assert.equal(game.state.chaos, null);
-  const fixed = of(events, 'chaos-fixed')[0];
-  assert.deepEqual(fixed.fixers.sort(), ['a', 'b']);
-  assert.equal(game.state.wheel.given.leo, 2 + 5); // the reward lands on the fixer's own sign again
-});
-
-test('Thủy Nghịch that nobody fixes simply ends; it comes far more often while Mercury is really retrograde', () => {
-  const { game, events, advance } = setup({ chaosSeconds: 30 });
-  game.chat(u('a', { comment: 'leo' }));
-  game.startChaos();
-  advance(31000);
-  assert.equal(of(events, 'chaos-end').length, 1);
-  const retro = setup({ chaosEverySeconds: 1500, chaosEveryRetroSeconds: 300 }, SKY);
-  const calm = setup({ chaosEverySeconds: 1500, chaosEveryRetroSeconds: 300 }, { ...SKY, mercuryRetro: false });
-  assert.ok(retro.game.state.nextChaosAt - retro.at() <= 300000);
-  assert.ok(calm.game.state.nextChaosAt - calm.at() >= 1500000 * 0.8);
-});
 
 test('the boss: every element has its own part', () => {
   const { game, events } = setup({ bossHpMin: 10000, bossCommentDamage: 6, bossLikeDamage: 0.5, bossDiamondDamage: 5 });
@@ -236,14 +171,11 @@ test('"khoe thẻ" shows a viewer\'s collection in the vault, at most once per c
   assert.equal(shown[0].cards.total, 120); // 12 signs × (5 classic + Hoàng Kim + 4 themed-hour editions)
 });
 
-test('keywords: "nhận" claims, "thuận" fixes, "khoe thẻ" shows; "nhân mã" is still just a sign', () => {
+test('keywords: "nhận" claims, "khoe thẻ" shows; "nhân mã" is still just a sign', () => {
   assert.equal(parseAction('nhận'), 'claim');
   assert.equal(parseAction('Mở rương!'), 'claim');
   assert.equal(parseAction('nhân mã'), null);
   assert.equal(parseAction('nhận xét hay'), null);
-  assert.equal(parseAction('thuận'), 'fix');
-  assert.equal(parseAction('sửa sóng đi'), 'fix');
-  assert.equal(parseAction('mọi việc thuận lợi'), null);
   assert.equal(parseAction('khoe thẻ'), 'vault');
   assert.equal(parseAction('xem thẻ của mình'), 'vault');
 });

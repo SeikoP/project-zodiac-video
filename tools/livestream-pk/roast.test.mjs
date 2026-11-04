@@ -3,11 +3,10 @@ import assert from 'node:assert/strict';
 import { createGame } from './game.mjs';
 import { ROASTS } from './roast.mjs';
 
-const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
 function setup() {
   let t = 1_000_000;
   const events = [];
-  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e6 }, now: () => t, rng: () => 0, readSky: sky, onEvent: e => events.push(e) });
+  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e6 }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id, comment });
   const advance = ms => { t += ms; game.tick(); };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type) };

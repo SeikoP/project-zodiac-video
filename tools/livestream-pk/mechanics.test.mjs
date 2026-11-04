@@ -5,11 +5,10 @@ import { SQUARES, createBingo, BINGO_DEFAULTS } from './bingo.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { passReward } from './pass.mjs';
 
-const sky = () => ({ planets: [], moon: { full: false }, mercuryRetro: false });
 function setup(config = {}) {
   let t = 1_000_000;
   const events = [];
-  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chaosEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e6, ...config }, now: () => t, rng: () => 0, readSky: sky, onEvent: e => events.push(e) });
+  const game = createGame({ config: { hours: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e6, ...config }, now: () => t, rng: () => 0, onEvent: e => events.push(e) });
   const say = (id, comment) => game.chat({ userId: id, nickname: id.toUpperCase(), comment });
   const advance = ms => { t += ms; game.tick(); };
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
