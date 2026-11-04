@@ -2,10 +2,13 @@
 export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
 export function slotLayout(slot, cfg) {
-  const row = Math.floor(slot / cfg.potsPerShelf);
+  const logicalRow = Math.floor(slot / cfg.potsPerShelf);
+  const wing = Math.floor(logicalRow / cfg.shelvesPerWing);
+  const row = logicalRow % cfg.shelvesPerWing;
   const col = slot % cfg.potsPerShelf;
-  return { module: 0, moduleCol: 0, moduleRow: 0, row, col,
-    x: cfg.zoneMarginX + col * cfg.potSpacingX,
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  return { module: 0, moduleCol: 0, moduleRow: 0, logicalRow, wing, row, col,
+    x: cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX) + col * cfg.potSpacingX,
     y: cfg.zoneMarginY + row * cfg.shelfSpacingY };
 }
 
