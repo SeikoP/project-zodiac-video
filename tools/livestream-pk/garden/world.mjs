@@ -10,18 +10,30 @@ export function emptyGardenState(now = Date.now()) {
   return { v: 4, ver: 0, users: {}, plots: {}, thefts: [], event: null, session: null, night: nightOf(now), lastTick: now };
 }
 
+// Stable physical coordinates: one continuous 16-level rack, six pots per shelf.
 export function plotLayout(slot, cfg) {
-  const module = Math.floor(slot / cfg.moduleCapacity);
-  const within = slot % cfg.moduleCapacity;
-  const row = Math.floor(within / cfg.potsPerShelf);
-  const col = within % cfg.potsPerShelf;
-  const moduleCol = module % cfg.modulesPerRow;
-  const moduleRow = Math.floor(module / cfg.modulesPerRow);
-  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
-  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
-  const x = cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX) + col * cfg.potSpacingX;
-  const y = cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY) + row * cfg.shelfSpacingY;
-  return { module, moduleCol, moduleRow, row, col, x, y, shelfY: y + cfg.potBottomOffset + cfg.potShelfGap };
+  const row = Math.floor(slot / cfg.potsPerShelf);
+  const col = slot % cfg.potsPerShelf;
+  const x = cfg.zoneMarginX + col * cfg.potSpacingX;
+  const y = cfg.zoneMarginY + row * cfg.shelfSpacingY;
+  return { module: 0, moduleCol: 0, moduleRow: 0, row, col, x, y,
+    shelfY: y + cfg.potBottomOffset + cfg.potShelfGap };
+}
+
+// Fill distant shelves first without ever moving a seated player.
+// Bit reversal spreads 12, 24 or 48 sequential arrivals across the full rack.
+export function balancedSlotOrder(cfg) {
+  const rows = Math.ceil(cfg.activeCapacity / cfg.potsPerShelf);
+  const bits = Math.ceil(Math.log2(rows));
+  const reverse = n => { let out = 0; for (let i = 0; i < bits; i++) { out = (out << 1) | (n & 1); n >>= 1; } return out; };
+  const order = [...Array(rows).keys()].sort((a,b) => reverse(a) - reverse(b));
+  const slots = [];
+  for (let col = 0; col < cfg.potsPerShelf; col++)
+    for (const row of order) {
+      const slot = row * cfg.potsPerShelf + (col + row) % cfg.potsPerShelf;
+      if (slot < cfg.activeCapacity) slots.push(slot);
+    }
+  return slots;
 }
 
 export function tierCenter(_tier, cfg) {
@@ -73,7 +85,7 @@ function room(ctx, user) {
   const mine = occupied(ctx), n = ctx.cfg.activeCapacity;
   if (mine.length >= n) return null;
   const used = new Set(mine.map(p => p.slot));
-  for (let s = 0; s < n; s++) if (!used.has(s)) return take(ctx, user, plotAt(ctx, s));
+  for (const s of balancedSlotOrder(ctx.cfg)) if (s < n && !used.has(s)) return take(ctx, user, plotAt(ctx, s));
   return null;
 }
 
