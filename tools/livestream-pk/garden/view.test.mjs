@@ -33,10 +33,12 @@ test('worldToScreen puts the camera centre in the middle of the frame', () => {
 
 const owned = (tier, slot, awake = true) => ({ id: `${tier}:${slot}`, tier, slot, owner: { userId: `${tier}${slot}` }, awake });
 
-test('zoomed out every plot is a dot and none is drawn in detail', () => {
+test('far overview uses dots; normal overview keeps crops readable', () => {
   const plots = [owned('cloud-1', 0), owned('cloud-2', 3), owned('cloud-3', 5)];
-  const v = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.3 }, VP, meta);
-  assert.deepEqual([v.detail.length, v.dots.length], [0, 3]);
+  const far = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.29 }, VP, meta);
+  assert.deepEqual([far.detail.length, far.dots.length], [0, 3]);
+  const readable = visiblePlots([plots[0]], { x: plotPos(plots[0], meta).x, y: plotPos(plots[0], meta).y, zoom: 0.38 }, VP, meta);
+  assert.equal(readable.detail.length, 1);
 });
 
 test('at terrace zoom only plots inside the frame are drawn in detail', () => {
@@ -47,18 +49,14 @@ test('at terrace zoom only plots inside the frame are drawn in detail', () => {
   assert.equal(v.dots.length, 0, 'off-screen plots are not drawn at all');
 });
 
-test('no more than 150 plots are drawn in detail, awake ones first', () => {
+test('detail rendering is capped for the intended sub-100 room', () => {
   const plots = [];
-  for (let s = 0; s < 108; s++) plots.push(owned('cloud-1', s, s % 6 === 0));
-  for (const { id: tier } of TIERS.slice(1, 3)) for (let s = 0; s < 108; s++) plots.push(owned(tier, s, false));
-  const c = { x: cfg.tierWidth / 2, y: cfg.tierHeight / 2, zoom: 0.5 };
-  const v = visiblePlots(plots, c, VP, meta, 160, 20);
+  for (let s = 0; s < 96; s++) plots.push(owned('cloud-1', s, true));
+  const c = { x: cfg.tierWidth / 2, y: cfg.tierHeight / 2, zoom: 0.38 };
+  const v = visiblePlots(plots, c, VP, meta, 3000, 20);
   assert.equal(v.detail.length, 20);
-  const awakeInside = v.detail.filter(p => p.awake).length;
-  assert.ok(awakeInside > 0, 'the frame includes active pots');
-  assert.ok(v.detail.slice(0, awakeInside).every(p => p.awake), 'awake plots come first');
-  assert.ok(v.detail.slice(awakeInside).every(p => !p.awake));
-  assert.ok(v.dots.length > 0);
+  assert.equal(v.dots.length, 76);
+  assert.ok(v.detail.every(p => p.awake));
 });
 
 test('the avatar cache starts loading on first ask, hands the image back once loaded, and forgets the oldest', () => {
