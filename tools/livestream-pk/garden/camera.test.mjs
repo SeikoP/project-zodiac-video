@@ -82,7 +82,7 @@ test('overview fits the complete 16-shelf structure even with only one occupant'
   assert.equal(shot.zoom >= cfg.camera.zoomWorld, true);
 });
 
-test('overview spreads the two rack wings across most of the portrait play area', () => {
+test('overview spreads both visual rack wings across most of the portrait play area', () => {
   const plots = [{tier:'cloud-1',slot:0,owner:'a'},{tier:'cloud-1',slot:48,owner:'b'}];
   const r = rig(plots), shot = r.cam.tick();
   const left = { x: cfg.zoneMarginX, y: cfg.zoneMarginY };
