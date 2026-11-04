@@ -93,15 +93,15 @@ test('a tug of war that changes hands is a reversal: the room and the host hear 
   for (const [id, team] of [['a', 'red'], ['b', 'red'], ['c', 'blue'], ['d', 'blue']]) s.seat(id, team);
   const g = s.game.startTug();
   s.advance(16_000);
-  s.game.state.tug.pos = -20; // side a leads
+  s.game.state.tug.value = -20; // side a leads
   s.advance(1000);
   assert.equal(s.of('tug-flip').length, 0, 'taking the lead is not a reversal');
-  s.game.state.tug.pos = 15; // now side b
+  s.game.state.tug.value = 15; // now side b
   s.advance(1000);
   const [flip] = s.of('tug-flip');
   assert.deepEqual([flip.lead, flip.other], [g.b, g.a]);
   assert.ok(s.of('host-cue').some(c => c.key === 'tug-flip'));
-  s.game.state.tug.pos = -10; // straight back: too soon to call it again
+  s.game.state.tug.value = -10; // straight back: too soon to call it again
   s.advance(1000);
   assert.equal(s.of('tug-flip').length, 1);
 });

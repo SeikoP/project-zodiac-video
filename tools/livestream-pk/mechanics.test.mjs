@@ -24,7 +24,7 @@ test('kéo co: the two biggest teams pull after a warm-up; gifts give a big, nam
   const g = s.game.startTug();
   assert.deepEqual([g.a, g.b].sort(), ['blue', 'red']);
   s.say('a', 'kéo!'); // still warming up
-  assert.equal(s.game.state.tug.pos, 0);
+  assert.equal(s.game.state.tug.value, 0);
   s.advance(16_000);
   s.game.gift({ userId: 'c', nickname: 'C', diamonds: 10, count: 1, giftName: 'Rose' });
   assert.equal(s.of('tug-yank').length, 1);

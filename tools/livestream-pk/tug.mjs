@@ -2,6 +2,13 @@
 // pull for your own team; a small team pulls harder per person so it still has a chance. A short warm-up first, while
 // the room predicts the winner (predict.mjs). The knot reaching either end wins early; otherwise the side it leans to.
 // A big pull gets a "giật mạnh!" moment with the puller's name — the rope is the spectacle, nothing is asked for.
+//
+// An EventDef on the shared blocks (events/): a versus meter between the two teams, a phase clock, the roster for
+// head counts and the reward service for the payout. st.tug is plain JSON and is the state of both blocks:
+// { a, b, value (negative = team a ahead), power, names (userId -> team), startedAt, stage, nick, last }.
+
+import { createPhase } from './events/phase.mjs';
+import { createMeter } from './events/meter.mjs';
 
 export const TUG_DEFAULTS = Object.freeze({
   tugWarmupSeconds: 15,
@@ -15,62 +22,101 @@ export const TUG_DEFAULTS = Object.freeze({
   tugJoinLight: 5,
 });
 
-export function createTug({ st, cfg, now, onEvent, present, shine }) {
+const YANK_POWER = 10; // a gift pull this big is announced by name
+const MIN_GIFT_PULL = 3;
+
+export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
+  let cache = null;
+  // the blocks are built over whatever st.tug currently is (also one loaded from disk)
+  function blocks() {
+    const g = st.tug;
+    if (!g) return null;
+    if (cache?.g !== g) {
+      const weights = { comment: cfg.tugCommentPower, like: cfg.tugLikePower, gift: cfg.tugDiamondPower, follow: cfg.tugSocialPower, share: cfg.tugSocialPower };
+      // the smaller team pulls harder per person (between x0.5 and x2), so a team with two fans can still win
+      const balance = team => {
+        const c = ctx.roster.counts();
+        const mine = c[team] || 1, theirs = c[team === g.a ? g.b : g.a] || 1;
+        return Math.min(2, Math.max(0.5, Math.sqrt(theirs / mine)));
+      };
+      cache = {
+        g,
+        phase: createPhase({ now, warmupMs: cfg.tugWarmupSeconds * 1000, runMs: cfg.tugSeconds * 1000 }, g),
+        meter: createMeter({ kind: 'versus', teams: [g.a, g.b], clamp: 100, weights, balance }, g),
+      };
+    }
+    return cache;
+  }
+
+  const needs = c => Object.values((c ?? ctx).roster.counts()).filter(n => n > 0).length >= 2;
+
   function start() {
     if (st.tug) return null;
-    const fans = {};
-    for (const [, v] of present()) if (v.team) fans[v.team] = (fans[v.team] ?? 0) + 1;
-    const top = Object.entries(fans).sort((x, y) => y[1] - x[1]);
+    const top = Object.entries(ctx.roster.counts()).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]);
     if (top.length < 2) return null;
-    const t = now(), [a, b] = [top[0][0], top[1][0]];
-    st.tug = { a, b, pos: 0, startsAt: t + cfg.tugWarmupSeconds * 1000, endsAt: t + (cfg.tugWarmupSeconds + cfg.tugSeconds) * 1000, power: {}, names: {}, last: {} };
+    const [a, b] = [top[0][0], top[1][0]];
+    st.tug = { a, b, nick: {}, last: {} };
+    blocks().phase.start();
     onEvent({ type: 'tug-start', a, b, warmup: cfg.tugWarmupSeconds, seconds: cfg.tugSeconds });
     return st.tug;
   }
 
-  // One action for the viewer's side. kind: comment | like | gift | follow | share; n: likes, or diamonds for a gift.
-  function pull(u, v, kind, n = 0) {
-    const g = st.tug;
-    if (!g || now() < g.startsAt || (v.team !== g.a && v.team !== g.b)) return 0;
-    let p = 0;
-    if (kind === 'comment') {
+  // moves the clock forward; false once the tug has ended
+  function clock() {
+    const b = blocks();
+    if (!b) return false;
+    for (let r = b.phase.tick(); r; r = b.phase.tick()) {
+      if (r === 'ended') { settle(false); return false; }
+    }
+    return true;
+  }
+
+  // One action for the viewer's side. action: comment | like | gift | follow | share; n: likes, or diamonds for a gift.
+  function contribute(u, v, action, n = 0) {
+    if (!clock()) return 0;
+    const { g, phase, meter } = blocks();
+    if (phase.phase() !== 'run' || (v.team !== g.a && v.team !== g.b)) return 0;
+    let amount = n;
+    if (action === 'comment') {
       if (now() - (g.last[u.userId] ?? 0) < cfg.tugCommentCooldownMs) return 0;
       g.last[u.userId] = now();
-      p = cfg.tugCommentPower;
-    } else if (kind === 'like') p = n * cfg.tugLikePower;
-    else if (kind === 'gift') p = Math.max(3, n * cfg.tugDiamondPower);
-    else if (kind === 'follow' || kind === 'share') p = cfg.tugSocialPower;
+      amount = 1;
+    } else if (action === 'gift') amount = cfg.tugDiamondPower > 0 ? Math.max(n, MIN_GIFT_PULL / cfg.tugDiamondPower) : 0;
+    else if (action === 'follow' || action === 'share') amount = 1;
+    if (!(amount > 0)) return 0;
+    const p = meter.add(u.userId, v.team, action, amount);
     if (!p) return 0;
-    // the smaller team pulls harder per person (between x0.5 and x2), so a team with two fans can still win
-    const here = present(), mine = here.filter(([, x]) => x.team === v.team).length || 1, theirs = here.filter(([, x]) => x.team === (v.team === g.a ? g.b : g.a)).length || 1;
-    p *= Math.min(2, Math.max(0.5, Math.sqrt(theirs / mine)));
-    const dir = v.team === g.a ? -1 : 1;
-    g.pos = Math.max(-100, Math.min(100, g.pos + dir * p));
-    g.power[u.userId] = (g.power[u.userId] ?? 0) + p;
-    g.names[u.userId] = [v.nickname, v.team];
-    if (kind === 'gift' && p >= 10) onEvent({ type: 'tug-yank', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, power: Math.round(p) });
-    if (Math.abs(g.pos) >= 100) end();
+    g.nick[u.userId] = v.nickname;
+    if (action === 'gift' && p >= YANK_POWER) onEvent({ type: 'tug-yank', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, power: Math.round(p) });
+    if (meter.reached()) settle(true);
     return p;
   }
 
-  function end() {
-    const g = st.tug;
-    if (!g) return;
+  function settle(early) {
+    const b = blocks();
+    if (!b) return;
+    const { g, meter } = b;
     st.tug = null;
-    const winner = g.pos < 0 ? g.a : g.pos > 0 ? g.b : null;
-    const pullers = Object.entries(g.power).sort((x, y) => y[1] - x[1]);
-    for (const [id] of pullers) shine(id, g.names[id][1] === winner ? cfg.tugWinLight : cfg.tugJoinLight, 'tug');
-    const mvp = side => { const e = pullers.find(([id]) => g.names[id][1] === side); return e ? { nickname: g.names[e[0]][0], power: Math.round(e[1]) } : null; };
-    onEvent({ type: 'tug-end', a: g.a, b: g.b, winner, pos: Math.round(g.pos), pullers: pullers.length, mvpA: mvp(g.a), mvpB: mvp(g.b), early: Math.abs(g.pos) >= 100 });
+    cache = null;
+    const winner = g.value < 0 ? g.a : g.value > 0 ? g.b : null;
+    const pullers = Object.keys(g.power).sort((x, y) => g.power[y] - g.power[x]);
+    for (const id of pullers) {
+      const v = viewerOf(id);
+      if (v) reward.grant({ userId: id }, v, 'light', g.names[id] === winner ? cfg.tugWinLight : cfg.tugJoinLight, 'tug');
+    }
+    const mvp = team => { const e = meter.topBy(team); return e ? { nickname: g.nick[e[0]], power: Math.round(e[1]) } : null; };
+    onEvent({ type: 'tug-end', a: g.a, b: g.b, winner, pos: Math.round(g.value), pullers: pullers.length, mvpA: mvp(g.a), mvpB: mvp(g.b), early });
   }
 
-  function tick() { if (st.tug && now() >= st.tug.endsAt) end(); }
+  function tick() { clock(); }
 
   const view = () => {
     const g = st.tug;
     if (!g) return null;
-    const t = now(), side = s => Object.entries(g.power).filter(([id]) => g.names[id][1] === s).length;
-    return { a: g.a, b: g.b, pos: Math.round(g.pos), warmupMs: Math.max(0, g.startsAt - t), remainingMs: Math.max(0, g.endsAt - t), pullersA: side(g.a), pullersB: side(g.b) };
+    const t = now(), warmupEnd = g.startedAt + cfg.tugWarmupSeconds * 1000, end = warmupEnd + cfg.tugSeconds * 1000;
+    const side = team => Object.keys(g.power).filter(id => g.names[id] === team).length;
+    return { a: g.a, b: g.b, pos: Math.round(g.value), warmupMs: Math.max(0, warmupEnd - t), remainingMs: Math.max(0, end - t), pullersA: side(g.a), pullersB: side(g.b) };
   };
-  return { start, pull, tick, view, end };
+
+  return { id: 'tug', needs, start, tick, contribute, view, end: () => { if (st.tug) settle(false); }, isDone: () => !st.tug };
 }

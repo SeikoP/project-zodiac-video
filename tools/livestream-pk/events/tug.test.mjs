@@ -1,0 +1,133 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createTug, TUG_DEFAULTS } from '../tug.mjs';
+import { createRoster } from './roster.mjs';
+import { createReward } from './reward.mjs';
+import { createRegistry } from './registry.mjs';
+
+// fake room: who is on stage and a fake clock
+function room(people, config = {}) {
+  let t = 1_000_000;
+  const viewers = {}, stage = new Map();
+  for (const [id, team] of people) { viewers[id] = { nickname: id.toUpperCase(), team }; stage.set(id, true); }
+  const roster = createRoster({ viewers, stage });
+  const events = [], paid = [];
+  const reward = createReward({ sinks: { light: (u, v, n, why) => { paid.push([u.userId, n, why]); } } });
+  const st = { tug: null };
+  const cfg = { ...TUG_DEFAULTS, ...config };
+  const tug = createTug({ st, cfg, now: () => t, onEvent: e => events.push(e), ctx: { roster }, reward, viewerOf: id => viewers[id] });
+  const u = id => ({ userId: id });
+  return { st, tug, roster, events, paid, viewers, stage, cfg, u, advance: ms => { t += ms; tug.tick(); }, of: type => events.filter(e => e.type === type) };
+}
+const FOUR = [['r1', 'red'], ['r2', 'red'], ['b1', 'blue'], ['b2', 'blue'], ['g1', 'green']];
+
+test('needs is false (and start does not throw) unless two teams have people on stage', () => {
+  for (const people of [[], [['a', 'red']], [['a', 'red'], ['b', 'red'], ['c', 'red']]]) {
+    const r = room(people);
+    assert.equal(r.tug.needs({ roster: r.roster }), false);
+    assert.ok(!r.tug.start());
+    assert.equal(r.st.tug, null);
+    assert.equal(r.events.length, 0);
+  }
+  const ok = room(FOUR);
+  assert.equal(ok.tug.needs({ roster: ok.roster }), true);
+});
+
+test('registry refuses the tug with one team and starts it with two', () => {
+  const lone = room([['a', 'red'], ['b', 'red']]);
+  const reg = createRegistry({ ctx: { roster: lone.roster } });
+  reg.register(lone.tug);
+  assert.equal(reg.start('tug'), false);
+  lone.viewers.c = { nickname: 'C', team: 'blue' }; lone.stage.set('c', true);
+  assert.equal(reg.start('tug'), true);
+  assert.equal(reg.active(), 'tug');
+});
+
+test('the two biggest teams pull; warm-up first; per-viewer comment cooldown', () => {
+  const r = room(FOUR);
+  const g = r.tug.start();
+  assert.deepEqual([g.a, g.b].sort(), ['blue', 'red']);
+  assert.equal(r.of('tug-start')[0].warmup, 15);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment'), 0, 'still warming up');
+  r.advance(16_000);
+  assert.equal(r.tug.contribute(r.u('g1'), r.viewers.g1, 'comment'), 0, 'a third team does not pull');
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment'), 2);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment'), 0, 'cooldown');
+  r.advance(1600);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment'), 2);
+  assert.equal(r.st.tug.value, -4, 'the first team (a) pulls the knot negative');
+  assert.equal(r.tug.view().pos, -4);
+});
+
+test('a small team pulls up to x2 harder, a big one down to x0.5 (sqrt of the opposing/own head count)', () => {
+  const r = room([['b1', 'blue'], ['r1', 'red'], ['r2', 'red'], ['r3', 'red'], ['r4', 'red'], ['r5', 'red'], ['r6', 'red'], ['r7', 'red'], ['r8', 'red']]);
+  r.tug.start();
+  r.advance(16_000);
+  assert.equal(r.tug.contribute(r.u('b1'), r.viewers.b1, 'comment'), 4, '8 vs 1 is capped at x2');
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment'), 1, '1 vs 8 is floored at x0.5');
+  const e = room([['r1', 'red'], ['r2', 'red'], ['b1', 'blue'], ['b2', 'blue']]);
+  e.tug.start(); e.advance(16_000);
+  assert.equal(e.tug.contribute(e.u('r1'), e.viewers.r1, 'comment'), 2, 'equal teams: x1');
+  const m = room([['r1', 'red'], ['r2', 'red'], ['r3', 'red'], ['r4', 'red'], ['b1', 'blue']]);
+  m.tug.start(); m.advance(16_000);
+  assert.equal(m.tug.contribute(m.u('b1'), m.viewers.b1, 'comment'), 4, '4 vs 1: sqrt(4) = x2');
+  assert.ok(Math.abs(m.tug.contribute(m.u('r1'), m.viewers.r1, 'comment') - 1) < 1e-9, '1 vs 4: x0.5');
+});
+
+test('likes, follows, shares and gifts pull; a gift of power >= 10 is a named tug-yank', () => {
+  const r = room(FOUR);
+  r.tug.start(); r.advance(16_000);
+  assert.ok(Math.abs(r.tug.contribute(r.u('r1'), r.viewers.r1, 'like', 20) - 3) < 1e-9);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'follow'), 8);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'share'), 8);
+  assert.equal(r.tug.contribute(r.u('r1'), r.viewers.r1, 'gift', 1), 3, 'a tiny gift still pulls at least 3');
+  assert.equal(r.of('tug-yank').length, 0);
+  assert.equal(r.tug.contribute(r.u('b1'), r.viewers.b1, 'gift', 4), 10);
+  assert.deepEqual(r.of('tug-yank').map(e => [e.userId, e.nickname, e.team, e.power]), [['b1', 'B1', 'blue', 10]]);
+  assert.equal(r.tug.contribute(r.u('b2'), r.viewers.b2, 'gift', 2), 5);
+  assert.equal(r.of('tug-yank').length, 1, 'power 5 is not a yank');
+});
+
+test('the knot reaching an end wins early; winners get tugWinLight, the rest tugJoinLight; an MVP per team', () => {
+  const r = room(FOUR, { tugWinLight: 20, tugJoinLight: 5 });
+  const { a, b } = r.tug.start();
+  r.advance(16_000);
+  const side = team => ['r1', 'r2', 'b1', 'b2'].filter(id => r.viewers[id].team === team);
+  const [aFan, aFan2] = side(a), [bFan] = side(b);
+  r.tug.contribute(r.u(bFan), r.viewers[bFan], 'comment');
+  r.tug.contribute(r.u(aFan2), r.viewers[aFan2], 'follow');
+  assert.equal(r.of('tug-end').length, 0);
+  for (let i = 0; i < 20 && r.st.tug; i++) r.tug.contribute(r.u(aFan), r.viewers[aFan], 'gift', 10);
+  assert.equal(r.st.tug, null, 'finished the moment the knot hit the end');
+  const end = r.of('tug-end')[0];
+  assert.deepEqual([end.winner, end.a, end.b, end.early, end.pos], [a, a, b, true, -100]);
+  assert.equal(end.pullers, 3);
+  assert.equal(end.mvpA.nickname, aFan.toUpperCase());
+  assert.equal(end.mvpB.nickname, bFan.toUpperCase());
+  assert.equal(r.tug.isDone(), true);
+  assert.deepEqual(r.paid.map(([id, n]) => [id, n]).sort(), [[aFan, 20], [aFan2, 20], [bFan, 5]].sort());
+  assert.ok(r.paid.every(p => p[2] === 'tug'));
+  assert.equal(r.tug.contribute(r.u(aFan), r.viewers[aFan], 'comment'), 0, 'nothing after the end');
+});
+
+test('with nobody ahead at the end there is no winner; the clock ends it after warm-up + run', () => {
+  const r = room(FOUR);
+  r.tug.start();
+  r.advance(80_000);
+  assert.equal(r.of('tug-end').length, 0);
+  r.advance(11_000);
+  const end = r.of('tug-end')[0];
+  assert.deepEqual([end.winner, end.early, end.pos, end.pullers, end.mvpA, end.mvpB], [null, false, 0, 0, null, null]);
+  assert.equal(r.st.tug, null);
+});
+
+test('view reports sides, warm-up and time left; null when idle', () => {
+  const r = room(FOUR);
+  assert.equal(r.tug.view(), null);
+  r.tug.start();
+  assert.deepEqual([r.tug.view().warmupMs, r.tug.view().remainingMs], [15_000, 90_000]);
+  r.advance(16_000);
+  r.tug.contribute(r.u('r1'), r.viewers.r1, 'comment');
+  const v = r.tug.view();
+  assert.deepEqual([v.warmupMs, v.remainingMs, v.pullersA + v.pullersB], [0, 74_000, 1]);
+});

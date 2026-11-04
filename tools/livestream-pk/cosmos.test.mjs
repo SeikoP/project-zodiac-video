@@ -97,8 +97,8 @@ test('beating the boss pays everyone who hit it, and the top hitter gets the big
   const won = of(events, 'boss-defeated')[0];
   assert.equal(won.fighters, 2);
   assert.equal(won.mvp.nickname, 'big');
-  assert.equal(won.mvps.fire.nickname, 'big');
-  assert.equal(won.mvps.water.nickname, 'small');
+  assert.equal(won.mvps.red.nickname, 'big');
+  assert.equal(won.mvps.blue.nickname, 'small');
   assert.equal(game.state.boss, null);
   assert.ok(game.state.viewers.big.bag.dust >= game.state.viewers.small.bag.dust + 10, 'the MVP is paid 15 dust, the others 5');
   assert.ok(of(events, 'light').some(e => e.kind === 'boss' && e.userId === 'small' && e.amount === 30));
