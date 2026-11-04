@@ -103,7 +103,7 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       plotCell: ctx.cfg.plotCell, activeCapacity: ctx.cfg.activeCapacity, modulesPerRow: ctx.cfg.modulesPerRow, moduleCapacity: ctx.cfg.moduleCapacity,
       potsPerShelf: ctx.cfg.potsPerShelf, shelvesPerModule: ctx.cfg.shelvesPerModule, potSpacingX: ctx.cfg.potSpacingX, shelfSpacingY: ctx.cfg.shelfSpacingY,
       moduleGapX: ctx.cfg.moduleGapX, moduleGapY: ctx.cfg.moduleGapY, zoneMarginX: ctx.cfg.zoneMarginX, zoneMarginY: ctx.cfg.zoneMarginY,
-      potBottomOffset: ctx.cfg.potBottomOffset, potShelfGap: ctx.cfg.potShelfGap,
+      potScale: ctx.cfg.potScale, potBottomOffset: ctx.cfg.potBottomOffset, potShelfGap: ctx.cfg.potShelfGap,
       tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera,
       graceMs: ctx.cfg.graceMs, sleepAfterMs: ctx.cfg.sleepAfterMs, evictAfterMs: ctx.cfg.evictAfterMs,
       rainMs: ctx.cfg.rainMs, rainMult: ctx.cfg.rainMult, pestStormMs: ctx.cfg.pestStormMs,
