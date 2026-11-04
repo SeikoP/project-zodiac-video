@@ -28,10 +28,10 @@ test('plant takes the plot, refuses a second crop, a locked crop and an empty pu
   assert.equal(plant(k.ctx, low.user, 'huongduong').reason, 'level');
 });
 
-test('rau is ripe a little after 180s when kept watered, and old 120s later', () => {
+test('rau is ripe a little after 600s when kept watered, and old 120s later', () => {
   const k = ready();
   plant(k.ctx, k.user, 'rau');
-  for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
+  for (let i = 0; i < 602; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
   assert.equal(stageOf(k.plot.crop, k.ctx.now(), k.ctx.cfg), 3);
   for (let i = 0; i < 122; i++) { k.plot.lastActive = k.ctx.now(); run(k, 1000); }
   assert.equal(stageOf(k.plot.crop, k.ctx.now(), k.ctx.cfg), 4);
@@ -64,7 +64,7 @@ test('pests slow growth to 0.6, cost 30% of the harvest, and bắt sâu removes 
   plant(k.ctx, a.user, 'rau');
   k.advance(1000); tickPlots(k.ctx);
   assert.equal(a.plot.crop.pest, true);
-  assert.ok(Math.abs(a.plot.crop.progress - 1000 / 180000 * 0.6) < 1e-9);
+  assert.ok(Math.abs(a.plot.crop.progress - 1000 / 600000 * 0.6) < 1e-9);
   a.plot.crop.progress = 1; a.plot.crop.ripeAt = k.ctx.now();
   assert.equal(harvest(k.ctx, a.user).gold, 7);
   plant(k.ctx, a.user, 'rau');
@@ -98,7 +98,7 @@ test('a huge pause (laptop asleep) advances a crop by at most 5s', () => {
   plant(k.ctx, k.user, 'rau');
   k.advance(3_600_000); k.plot.lastActive = k.ctx.now();
   tickPlots(k.ctx);
-  assert.ok(k.plot.crop.progress <= 5000 / 180000 + 1e-9);
+  assert.ok(k.plot.crop.progress <= 5000 / 600000 + 1e-9);
 });
 
 test('a sleeping plot (no action for 5 minutes) does not grow', () => {
@@ -122,12 +122,12 @@ test('advanceStage jumps to the next stage threshold and stops at ripe', () => {
 test('the ripe event says whether it is the owners first crop', () => {
   const k = ready();
   plant(k.ctx, k.user, 'rau');
-  for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
+  for (let i = 0; i < 602; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
   assert.equal(k.events.find(e => e.type === 'ripe').first, true);
   harvest(k.ctx, k.user);
   k.events.length = 0;
   plant(k.ctx, k.user, 'rau');
-  for (let i = 0; i < 182; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
+  for (let i = 0; i < 602; i++) { k.plot.water = 1; run(k, 1000); k.plot.lastActive = k.ctx.now(); }
   assert.equal(k.events.find(e => e.type === 'ripe').first, false);
 });
 
