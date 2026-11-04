@@ -18,9 +18,9 @@ const seat = (game, id, team) => {
   game.like(u(id, { count: 0 }));
 };
 
-test('the boss: every element has its own part', () => {
+test('the boss: every team has its own part', () => {
   const { game, events } = setup({ bossHpMin: 10000, bossCommentDamage: 6, bossLikeDamage: 0.5, bossDiamondDamage: 5 });
-  // the boss still plays the four element roles: red is fire, yellow earth, green air, blue water
+  // each team has its own part
   for (const [id, team] of [['fire', 'đỏ'], ['earth', 'vàng'], ['air', 'xanh lá'], ['water', 'xanh dương']]) game.chat(u(id, { comment: team }));
   game.startBoss();
   assert.equal(of(events, 'boss-start').length, 1);

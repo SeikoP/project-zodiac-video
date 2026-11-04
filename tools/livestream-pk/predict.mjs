@@ -6,6 +6,7 @@
 // A reactions block (groups a / b, one guess per person) keeps who guessed what; st.predict is plain JSON:
 // { key, q, options, bets: {userId: {i, stake, nickname}}, pool: [a, b], closesAt, openedAt, rx }.
 import { createReactions } from './events/reactions.mjs';
+import { emptyBag } from './bag.mjs';
 
 export const PREDICT_DEFAULTS = Object.freeze({
   predictStake: 0, // free guesses (a stake would make it read like betting)
@@ -17,7 +18,7 @@ const GUESS = letter => new RegExp(`^\\s*(doan|du doan)\\s*(${letter})\\b`);
 const GROUPS = { a: text => GUESS('a|1').test(text), b: text => GUESS('b|2').test(text) };
 
 export function createPredict({ st, cfg, now, onEvent, reward }) {
-  const bagOf = v => (v.bag ??= { dust: 0, fire: 0, earth: 0, air: 0, water: 0, moon: 0 });
+  const bagOf = v => (v.bag ??= emptyBag());
   const reactions = p => createReactions({ groups: GROUPS }, (p.rx ??= {}));
 
   function open({ key, q, options, closesAt }) {

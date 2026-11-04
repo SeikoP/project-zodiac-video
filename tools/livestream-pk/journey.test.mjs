@@ -43,7 +43,7 @@ test('a chapter completes from what the room does, pays everyone on stage and op
 test('the last chapter ends the journey with a moon shard for everyone on stage; a new night starts over', () => {
   const events = [], paid = { dust: {}, moon: {} };
   const st = { night: { no: 1 }, viewers: { a: { nickname: 'A', team: 'red' }, b: { nickname: 'B', team: 'yellow' } } };
-  const j = createJourney({ st, cfg: JOURNEY_DEFAULTS, now: () => 0, onEvent: e => events.push(e), stageIds: () => ['a', 'b'][Symbol.iterator](), elementOf: s => ({ red: 'fire', yellow: 'earth' })[s],
+  const j = createJourney({ st, cfg: JOURNEY_DEFAULTS, now: () => 0, onEvent: e => events.push(e), stageIds: () => ['a', 'b'][Symbol.iterator](),
     dust: (u, v, n) => { paid.dust[u.userId] = (paid.dust[u.userId] ?? 0) + n; }, moon: u => { paid.moon[u.userId] = (paid.moon[u.userId] ?? 0) + 1; } });
   const feed = { gather: { type: 'join' }, lit: { type: 'lit' }, moon: { type: 'moon-full' }, win: { type: 'boss-defeated' }, wheel: { type: 'wheel-complete' } };
   for (const c of CHAPTERS) for (let i = 0; i < c.need; i++) j.note(feed[c.id]);
@@ -57,20 +57,70 @@ test('the last chapter ends the journey with a moon shard for everyone on stage;
   assert.deepEqual([j.view().no, j.view().got, j.view().done], [1, 0, false]);
 });
 
-// --- đội nguyên tố: the four elements race through the night, a lead change is announced ---
-test('the four element teams race on starlight; a new leader is announced once', () => {
-  const s = setup({ elementLeadCooldownSeconds: 0, commentLight: 5 });
-  s.say('f', 'đỏ'); // red plays fire
-  s.say('w', 'xanh dương'); // blue plays water
-  const el = () => s.game.snapshot().cosmos.journey.elements;
+// --- đua phe: the four colour teams race through the night, a lead change is announced ---
+test('the four teams race on starlight; a new leader is announced ("Đảo chiều!") once', () => {
+  const s = setup({ teamLeadCooldownSeconds: 0, commentLight: 5 });
+  s.say('f', 'đỏ');
+  s.say('w', 'xanh dương');
+  const race = () => s.game.snapshot().cosmos.journey.teams;
   s.advance(6000); s.say('f', 'hay quá');
-  assert.equal(el().lead, 'fire');
+  assert.equal(race().lead, 'red');
   s.game.gift({ userId: 'w', nickname: 'W', diamonds: 100, count: 1 });
-  assert.equal(el().lead, 'water');
-  const leads = s.of('element-lead');
-  assert.equal(leads.at(-1).element, 'water');
-  assert.equal(leads.at(-1).prev, 'fire');
-  assert.ok(el().light.water > el().light.fire);
+  assert.equal(race().lead, 'blue');
+  const leads = s.of('team-lead');
+  assert.equal(leads.at(-1).team, 'blue');
+  assert.equal(leads.at(-1).prev, 'red');
+  assert.ok(race().light.blue > race().light.red);
+  assert.ok(s.of('host-cue').some(c => c.key === 'team-lead' && /Đảo chiều/.test(c.text) && /phe/.test(c.text)));
+  assert.deepEqual(Object.keys(race().light), ['red', 'yellow', 'green', 'blue']);
+});
+
+test('a lead change is announced at most once per teamLeadCooldownSeconds (default 90)', () => {
+  assert.equal(JOURNEY_DEFAULTS.teamLeadCooldownSeconds, 90);
+  const s = setup({ commentLight: 0, lightPerDiamond: 1 });
+  s.say('f', 'đỏ'); s.say('w', 'xanh dương'); s.say('g', 'xanh lá');
+  const gift = (id, diamonds) => s.game.gift({ userId: id, nickname: id.toUpperCase(), diamonds, count: 1 });
+  gift('f', 10); // red leads: the first leader is never an "Đảo chiều"
+  gift('w', 20); // blue takes over, but the clock for the first announcement started when red led
+  assert.equal(s.of('team-lead').length, 0, 'inside the cooldown of the first lead');
+  s.advance(91_000);
+  gift('g', 30); // green overtakes after the cooldown
+  assert.deepEqual(s.of('team-lead').map(e => [e.team, e.prev]), [['green', 'blue']]);
+  s.advance(30_000);
+  gift('f', 100); // red again, but only 30 s after the last announcement
+  assert.equal(s.of('team-lead').length, 1);
+  s.advance(61_000);
+  gift('w', 200);
+  assert.deepEqual(s.of('team-lead').map(e => e.team), ['green', 'blue']);
+});
+
+test('chapter 5, Đại hội sao, completes when all 4 teams are lit — and chapter text speaks of phe, never cung or chòm', () => {
+  const s = setup({ teamLightCost: 10, lightPerDiamond: 1, commentLight: 0 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng'], ['c', 'xanh lá'], ['d', 'xanh dương']]) s.say(id, team);
+  Object.assign(s.game.state.journey, { i: 4, got: 0, done: false });
+  assert.equal(s.journey().id, 'wheel');
+  assert.match(s.journey().goal, /4 phe/);
+  for (const [id, n] of [['a', 10], ['b', 10], ['c', 10]]) s.game.gift({ userId: id, nickname: id, diamonds: n, count: 1 });
+  assert.equal(s.of('wheel-complete').length, 0);
+  assert.equal(s.journey().done, false, 'three lit teams are not enough');
+  s.game.gift({ userId: 'd', nickname: 'd', diamonds: 10, count: 1 });
+  assert.equal(s.of('wheel-complete').length, 1);
+  assert.equal(s.journey().done, true);
+  assert.deepEqual(s.of('chapter').map(c => c.id), ['wheel']);
+  assert.equal(s.of('journey-done').length, 1);
+  for (const c of CHAPTERS) assert.ok(!/cung|chòm|hoàng đạo|nguyên tố/i.test(c.label + c.goal), c.id);
+});
+
+test('the journey and the team race carry on through a JSON restart', () => {
+  const s = setup({ teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
+  s.game.gift({ userId: 'a', nickname: 'A', diamonds: 40, count: 1 });
+  const saved = JSON.parse(JSON.stringify(s.game.state));
+  const events = [];
+  const again = createGame({ state: saved, config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, luckyEverySeconds: 1e9, adaptiveCrowd: false, checkinPerNight: 0, teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 }, now: () => Date.UTC(2026, 10, 4, 12), rng: () => 0, onEvent: e => events.push(e) });
+  const j = again.snapshot().cosmos.journey;
+  assert.deepEqual([j.no, j.got, j.teams.lead, j.teams.light.red], [s.journey().no, s.journey().got, 'red', 40]);
+  assert.equal(again.state.wheel.light.red, 40);
 });
 
 // --- kịch tính & lời dẫn: host cues on every climax, the tug's reversals ---

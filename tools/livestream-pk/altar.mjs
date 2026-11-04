@@ -1,9 +1,10 @@
-// Bàn quẻ: "xin quẻ" queues a free daily reading for the viewer; "xin quẻ tình duyên / công việc / tiền bạc" asks about
+// Bàn quẻ (Quẻ may mắn): "xin quẻ" queues a free daily reading for the viewer; "xin quẻ tình duyên / công việc / tiền bạc" asks about
 // one thing and the reading adds two lines on it. While a viewer's reading is on screen the room joins in:
 //   "chuẩn" / "linh" / "đúng"  the reading rings true — its owner gets a little bụi sao for each one (once per person)
 //   "xin vía" / "hút vía"       on a Thượng Cát / Đại Cát reading, borrow some of its luck — bụi sao for both
-// When the room is quiet the host can show a "quẻ chung" for a team (no owner: nothing to agree with).
-import { drawFortune } from './fortunes.mjs';
+// When the room is quiet the host can show a "quẻ chung" (no owner: nothing to agree with). A reading belongs to a
+// person or to the room; it never depends on a team, so a viewer's team is only carried along for the badge on screen.
+import { drawFortune, dayKey } from './fortunes.mjs';
 
 // accent-free lower case, the same as game.mjs's norm (not imported: game.mjs imports this module)
 const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd');
@@ -24,8 +25,8 @@ const AGREE_RE = /^\s*(chuan|linh|dung)\b/;
 const LUCK_RE = /^\s*(xin via|hut via|xin loc)\b/;
 const LUCKY_LEVELS = new Set(['Thượng Cát', 'Đại Cát']);
 
-// teams: SIGN by id ({ element }); pickTeam(): a team for a "quẻ chung"; shine(u, v, n, why); dust(u, v, n, why)
-export function createAltar({ st, cfg, now, onEvent, touch, teams, pickTeam, shine, dust }) {
+// shine(u, v, n, why); dust(u, v, n, why)
+export function createAltar({ st, cfg, now, onEvent, touch, shine, dust }) {
   st.fortuneQueue ??= [];
 
   function request(u, v, comment) {
@@ -38,10 +39,10 @@ export function createAltar({ st, cfg, now, onEvent, touch, teams, pickTeam, shi
     shine(u, v, cfg.fortuneLight, 'fortune');
   }
 
-  // Shows a reading: a viewer's (req.userId) or a "quẻ chung" for a team (userId null).
+  // Shows a reading: a viewer's (req.userId) or a "quẻ chung" for the room (userId null).
   function show(req) {
-    const team = teams[req.team] ? req.team : pickTeam();
-    st.fortune = { ...req, team, ...drawFortune({ seed: req.userId ?? 'room', team, element: teams[team].element, now: now(), topic: req.topic ?? null }), agree: {}, vias: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
+    const team = req.team ?? null;
+    st.fortune = { ...req, team, ...drawFortune({ userId: req.userId ?? null, day: dayKey(now()), topic: req.topic ?? null }), agree: {}, vias: {}, endsAt: now() + cfg.fortuneSeconds * 1000 };
     touch('hud');
     onEvent({ type: 'fortune', userId: req.userId ?? null, team, topic: req.topic ?? null });
   }

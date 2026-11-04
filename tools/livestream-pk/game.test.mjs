@@ -75,7 +75,7 @@ test('joining puts the viewer on stage; comments light their team, with a cooldo
 });
 
 test('a lit team passes extra light to the dimmest dark one', () => {
-  const { game, events } = setup({ signLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('b', { comment: 'đỏ' }));
   game.chat(u('c', { comment: 'vàng' }));
   game.gift(u('c', { diamonds: 30 })); // yellow 30
@@ -88,7 +88,7 @@ test('a lit team passes extra light to the dimmest dark one', () => {
 });
 
 test('lighting all 4 completes the wheel and starts a bigger one', () => {
-  const { game, events } = setup({ signLightCost: 10, wheelGrowth: 0.5, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ teamLightCost: 10, wheelGrowth: 0.5, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('d', { comment: 'xanh dương' }));
   game.gift(u('d', { diamonds: 45 })); // 4 × 10 = 40 completes wheel 1, 5 left for blue on wheel 2 (cost 15)
   assert.deepEqual(of(events, 'wheel-complete').map(e => e.no), [1]);
@@ -147,8 +147,8 @@ test('fortunes queue one at a time, are free and the same all day; a newcomer ne
   assert.equal(game.state.fortune.userId, 'j');
   advance(9000);
   assert.equal(game.state.fortune.userId, 'k');
-  const a = drawFortune({ seed: 'j', team: 'red', element: 'fire', now: Date.UTC(2026, 10, 3, 1) });
-  const b = drawFortune({ seed: 'j', team: 'red', element: 'fire', now: Date.UTC(2026, 10, 3, 15) });
+  const a = drawFortune({ userId: 'j', day: Date.UTC(2026, 10, 3, 1) });
+  const b = drawFortune({ userId: 'j', day: Date.UTC(2026, 10, 3, 15) });
   assert.deepEqual(a, b);
 });
 
@@ -197,7 +197,7 @@ test('quiz rewards the first correct answers', () => {
 });
 
 test('the race ranks all 4 teams live and crowns the brightest team when the wheel completes', () => {
-  const { game, events } = setup({ signLightCost: 10, lightPerDiamond: 1, commentLight: 0 });
+  const { game, events } = setup({ teamLightCost: 10, lightPerDiamond: 1, commentLight: 0 });
   game.chat(u('a', { comment: 'đỏ' }));
   game.chat(u('b', { comment: 'vàng' }));
   game.gift(u('b', { diamonds: 4 }));
@@ -440,10 +440,10 @@ test('quiet rooms mostly read a team, with a quiz and a poll now and then', () =
 });
 
 test('small rooms get smaller goals; they scale with viewers on stage', () => {
-  const small = setup({ adaptiveCrowd: true, signLightCost: 240, crowdFloor: 0.2, crowdFull: 12, moonGoal: 600 }).game;
+  const small = setup({ adaptiveCrowd: true, teamLightCost: 240, crowdFloor: 0.2, crowdFull: 12, moonGoal: 600 }).game;
   assert.equal(small.state.wheel.cost, 48);
   assert.equal(small.state.moon.goal, 120);
-  const { game } = setup({ adaptiveCrowd: true, signLightCost: 240, crowdFloor: 0.2, crowdFull: 12, lightPerDiamond: 1, commentLight: 0 });
+  const { game } = setup({ adaptiveCrowd: true, teamLightCost: 240, crowdFloor: 0.2, crowdFull: 12, lightPerDiamond: 1, commentLight: 0 });
   for (let i = 0; i < 12; i++) game.chat(u(`v${i}`, { comment: 'đỏ' }));
   game.gift(u('v0', { diamonds: 600 })); // 4 × 48 completes the first wheel; the next one is priced for 12 viewers
   assert.equal(game.state.wheel.no, 2);
@@ -476,7 +476,7 @@ test('the gift board counts the night, names the top gifter and fires a shared g
 });
 
 test('crowd goals ratchet up by at most 25% per retune and never fall', () => {
-  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0 });
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, teamLightCost: 240, presenceMinutes: 60, commentLight: 0 });
   const goals = () => [game.state.wheel.cost, game.state.moon.goal];
   const [w0, m0] = goals();
   assert.deepEqual([w0, m0], [48, 120]); // an empty room starts at the 0.2 floor
@@ -496,14 +496,14 @@ test('crowd goals ratchet up by at most 25% per retune and never fall', () => {
 });
 
 test('crowdRetuneSeconds: 0 keeps the goal set when it was set', () => {
-  const { game, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0, crowdRetuneSeconds: 0 });
+  const { game, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, teamLightCost: 240, presenceMinutes: 60, commentLight: 0, crowdRetuneSeconds: 0 });
   for (let i = 0; i < 22; i++) game.chat(u(`v${i}`, { comment: 'đỏ' }));
   for (let i = 0; i < 5; i++) advance(30_000);
   assert.deepEqual([game.state.wheel.cost, game.state.moon.goal], [48, 120]);
 });
 
 test('a retune never dims a team that is already lit', () => {
-  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, signLightCost: 240, presenceMinutes: 60, commentLight: 0, lightPerDiamond: 1 });
+  const { game, events, advance } = setup({ adaptiveCrowd: true, moonGoal: 600, teamLightCost: 240, presenceMinutes: 60, commentLight: 0, lightPerDiamond: 1 });
   game.chat(u('a', { comment: 'đỏ' }));
   game.gift(u('a', { diamonds: 48, count: 1 })); // exactly the small-room cost
   assert.equal(of(events, 'lit').length, 1);
@@ -722,7 +722,7 @@ test('during Đoán vật a right guess is swallowed once and pays gems', () => 
   game.chat(u('a', { comment: answer }));
   assert.deepEqual(of(events, 'mystery-win').map(w => [w.userId, w.rank]), [['a', 1]]);
   assert.equal(light(game, 'red'), before, 'the winning guess is taken, not also a comment');
-  assert.ok(game.state.viewers.a.bag.fire >= 2, 'rank 1 gets 2 gems of the team element');
+  assert.ok(game.state.viewers.a.bag.red >= 2, 'rank 1 gets 2 gems of their team colour');
   game.chat(u('a', { comment: answer })); // nothing more to win
   assert.equal(of(events, 'mystery-win').length, 1);
 });
@@ -734,4 +734,69 @@ test('a right quiz answer raises the moon like the other keyword answers do', ()
   const before = game.state.moon.light;
   game.chat(u('a', { comment: game.state.quiz.answer }));
   assert.equal(game.state.moon.light - before, 1);
+});
+
+// --- Chung kết đua phe: the headliner on 4 teams ---
+test('the final headliner crowns the team that poured in the most light during it; the podium has up to 3 teams', () => {
+  const { game, events, advance } = setup({ commentLight: 0, lightPerDiamond: 1, teamLightCost: 1e6 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng'], ['c', 'xanh lá'], ['d', 'xanh dương']]) game.chat(u(id, { comment: team }));
+  game.gift(u('a', { diamonds: 500, count: 1 })); // before the final: does not count towards it
+  assert.ok(game.startHead('final'));
+  assert.equal(of(events, 'head-start').at(-1).id, 'final');
+  game.gift(u('b', { diamonds: 30, count: 1 }));
+  game.gift(u('c', { diamonds: 20, count: 1 }));
+  game.gift(u('d', { diamonds: 40, count: 1 }));
+  advance(200_000);
+  const end = of(events, 'head-end').find(e => e.id === 'final');
+  assert.equal(end.winner, 'blue');
+  assert.deepEqual(end.podium.map(p => p.id), ['blue', 'yellow', 'green']);
+  assert.equal(end.podium.length, 3);
+  assert.equal(end.fans, 1);
+  assert.equal(game.state.season.crowns.blue, 1);
+  assert.equal(game.state.viewers.d.crowns, 1);
+  assert.equal(game.state.viewers.a.crowns ?? 0, 0);
+});
+
+test('the final with no light poured in crowns nobody', () => {
+  const { game, events, advance } = setup();
+  game.chat(u('a', { comment: 'đỏ' }));
+  game.startHead('final');
+  advance(200_000);
+  const end = of(events, 'head-end').find(e => e.id === 'final');
+  assert.equal(end.winner, undefined);
+  assert.deepEqual(Object.values(game.state.season.crowns), [0, 0, 0, 0]);
+});
+
+test('the wheel and its lit teams survive a JSON restart, and finish through the same code', () => {
+  const { game } = setup({ teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng'], ['c', 'xanh lá'], ['d', 'xanh dương']]) game.chat(u(id, { comment: team }));
+  game.gift(u('a', { diamonds: 130, count: 1 })); // red lit, 30 flowed on to the dimmest team
+  const saved = JSON.parse(JSON.stringify(game.state));
+  const events = [];
+  const again = createGame({ state: saved, now: () => Date.UTC(2026, 10, 3, 12), rng: () => 0, onEvent: e => events.push(e), config: { acts: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, adaptiveCrowd: false, teamLightCost: 100, lightPerDiamond: 1, commentLight: 0 } });
+  assert.deepEqual(again.state.wheel, game.state.wheel);
+  for (const [id] of [['b'], ['c'], ['d']]) again.like(u(id, { count: 0 }));
+  again.gift(u('b', { diamonds: 100, count: 1 }));
+  again.gift(u('c', { diamonds: 100, count: 1 }));
+  again.gift(u('d', { diamonds: 100, count: 1 }));
+  assert.equal(of(events, 'wheel-complete').length, 1);
+  assert.equal(again.state.wheel.no, 2);
+});
+
+test('"xin quẻ tình duyên" shows that section first with two extra lines; a reading carries no sign, element or team text', () => {
+  const { game, events, advance } = setup({ fortuneSeconds: 9 });
+  game.chat(u('j', { comment: 'xin quẻ tình duyên' }));
+  advance(100);
+  const f = game.state.fortune;
+  assert.equal(f.userId, 'j');
+  assert.equal(f.order[0], 'love');
+  assert.equal(f.focus.length, 2);
+  assert.deepEqual(f, { ...f, ...drawFortune({ userId: 'j', day: new Date(Date.UTC(2026, 10, 3, 12)).toISOString().slice(0, 10), topic: 'love' }) });
+  for (const k of ['sign', 'element', 'mood']) assert.ok(!(k in f), k);
+  assert.equal(of(events, 'fortune').at(-1).topic, 'love');
+  // the room's own reading needs no team and no owner
+  game.showFortune({ userId: null, nickname: null, avatar: '' });
+  assert.equal(game.state.fortune.userId, null);
+  assert.equal(game.state.fortune.team, null);
+  assert.ok(game.state.fortune.love);
 });

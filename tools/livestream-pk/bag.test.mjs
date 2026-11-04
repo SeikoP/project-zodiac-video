@@ -31,11 +31,11 @@ test('"nâng cấp" says what is missing, then levels up once the bag holds enou
   const { game, events } = setup({ commentLight: 10, levelDust: [5, 999, 999, 999], levelGems: [1, 1, 1, 1], levelMoon: [0, 0, 0, 0], levelBonus: 0.5, commentCooldownSeconds: 0 });
   game.chat(u('a', { comment: 'đỏ' }));
   game.chat(u('a', { comment: 'nâng cấp' }));
-  assert.deepEqual(of(events, 'upgrade-need')[0].missing, { fire: 1 });
-  game.state.viewers.a.bag.fire = 1;
+  assert.deepEqual(of(events, 'upgrade-need')[0].missing, { red: 1 });
+  game.state.viewers.a.bag.red = 1;
   game.chat(u('a', { comment: 'nâng cấp' }));
   assert.equal(of(events, 'level-up')[0].level, 2);
-  assert.equal(game.state.viewers.a.bag.fire, 0);
+  assert.equal(game.state.viewers.a.bag.red, 0);
   const before = game.state.wheel.given.red;
   game.chat(u('a', { comment: 'hay' }));
   assert.equal(game.state.wheel.given.red - before, 15); // 10 × 1.5
@@ -49,12 +49,12 @@ test('gems come from the quiz, the boss and the chest; moon shards from a full m
   assert.equal(game.state.viewers.a.bag.moon, 1);
   game.startBoss();
   game.gift(u('a', { diamonds: 5, count: 1 }));
-  assert.equal(game.state.viewers.a.bag.water, 4); // the MVP's double share
+  assert.equal(game.state.viewers.a.bag.blue, 4); // the MVP's double share
   advance(13 * 60000);
   game.chat(u('a', { comment: 'còn đây' }));
   advance(60000);
   game.chat(u('a', { comment: 'nhận' }));
-  assert.equal(game.state.viewers.a.bag.water, 5);
+  assert.equal(game.state.viewers.a.bag.blue, 5);
 });
 
 test('a wish the room blesses becomes a star: blessers get stardust, the wisher a moon shard', () => {

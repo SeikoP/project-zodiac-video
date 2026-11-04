@@ -38,7 +38,7 @@ test('đoán vật: clues come one by one; once per clue each; aliases and accen
   assert.equal(s.of('mystery-win').length, 0);
   s.advance(10_000);
   assert.equal(s.of('mystery-clue').length, 1);
-  const gems = id => ['fire', 'earth', 'air', 'water'].reduce((n, k) => n + (s.v(id).bag[k] ?? 0), 0);
+  const gems = id => ['red', 'yellow', 'green', 'blue'].reduce((n, k) => n + (s.v(id).bag[k] ?? 0), 0);
   const g0 = gems('b');
   s.say('b', entry.aliases[0].toUpperCase());
   s.say('c', entry.answer);

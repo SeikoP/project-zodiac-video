@@ -17,7 +17,7 @@ test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer
   for (const c of ['kho', 'túi đồ', 'sổ sao', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
   const s = setup();
   s.say('a', 'đỏ');
-  Object.assign(s.v('a').bag, { dust: 120, fire: 2, moon: 1 });
+  Object.assign(s.v('a').bag, { dust: 120, red: 2, moon: 1 });
   s.say('a', 'khoe');
   const [e] = s.of('vault');
   assert.equal(e.nickname, 'A');
@@ -35,30 +35,30 @@ test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer
 test('"tung ngọc" spends one gem for a big hit in a fight; none without a fight or a gem', () => {
   const s = setup({ gemPowerDiamonds: 20 });
   for (const [id, team] of [['a', 'đỏ'], ['b', 'đỏ'], ['c', 'xanh dương'], ['d', 'xanh dương']]) s.say(id, team);
-  s.v('a').bag.fire = 1;
+  s.v('a').bag.red = 1;
   s.say('a', 'tung ngọc');
-  assert.equal(s.v('a').bag.fire, 1, 'no fight: the gem is kept');
+  assert.equal(s.v('a').bag.red, 1, 'no fight: the gem is kept');
   assert.equal(s.of('power-need').at(-1).why, 'no-fight');
   s.game.startBoss();
   const hp = s.game.state.boss.hp;
   s.say('a', 'tung ngọc');
-  assert.equal(s.v('a').bag.fire, 0);
+  assert.equal(s.v('a').bag.red, 0);
   assert.ok(s.game.state.boss.hp < hp - 5, 'a gem hits much harder than a comment');
   const p = s.of('power').at(-1);
-  assert.deepEqual([p.kind, p.res, p.target, p.nickname], ['gem', 'fire', 'boss', 'A']);
+  assert.deepEqual([p.kind, p.res, p.target, p.nickname], ['gem', 'red', 'boss', 'A']);
   s.advance(20_000);
   s.say('a', 'tung ngọc');
   assert.equal(s.of('power-need').at(-1).why, 'no-gem');
 });
 
-test('"tung ngọc" uses another element\'s gem when the viewer has none of their own', () => {
+test('"tung ngọc" uses another team\'s gem when the viewer has none of their own', () => {
   const s = setup();
   for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương']]) s.say(id, team);
-  s.v('a').bag.water = 2;
+  s.v('a').bag.blue = 2;
   s.game.startBoss();
   s.say('a', 'tung ngọc');
-  assert.equal(s.v('a').bag.water, 1);
-  assert.equal(s.of('power').at(-1).res, 'water');
+  assert.equal(s.v('a').bag.blue, 1);
+  assert.equal(s.of('power').at(-1).res, 'blue');
 });
 
 test('"thắp trăng" spends a moon shard to raise the moon by a fifth of its goal', () => {

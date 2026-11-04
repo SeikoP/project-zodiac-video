@@ -99,7 +99,7 @@ test('nhiệm vụ Màn: the room fills the act\'s goal by taking part and every
   const done = s.of('quest-done');
   assert.equal(done.length, 1);
   assert.ok(done[0].people >= 4);
-  const gems = b => b.fire + b.earth + b.air + b.water;
+  const gems = b => b.red + b.yellow + b.green + b.blue;
   assert.ok(gems(s.game.state.viewers[`n${q.goal - 1}`].bag) >= 1);
   s.game.chat({ userId: 'late', nickname: 'Late', comment: 'đỏ' });
   assert.equal(s.of('quest-done').length, 1); // once per act

@@ -3,6 +3,8 @@
 // silver / gold / starry frame round the viewer's avatar on the wheel for the rest of the season. There is one free
 // track: nothing in it is sold. "kho" / "sổ sao" shows your progress on stream.
 
+import { emptyBag } from './bag.mjs';
+
 export const PASS_DEFAULTS = Object.freeze({ passXpPerLevel: 40, passMaxLevel: 30 });
 
 // what a level pays on top of 5 bụi sao
@@ -34,7 +36,7 @@ export function createPass({ cfg, now, onEvent, seasonOf, gem, moon, card }) {
       p.xp -= need(p.level);
       p.level++;
       const r = passReward(p.level);
-      (v.bag ??= { dust: 0, fire: 0, earth: 0, air: 0, water: 0, moon: 0 }).dust += 5;
+      (v.bag ??= emptyBag()).dust += 5;
       if (r.gem) gem(u, v, r.gem);
       if (r.moon) moon(u, v, r.moon);
       if (r.card) card(u, v);

@@ -15,7 +15,7 @@
 // worth coming back for: a "lucky star" rotates through the lower half of the race for a short x2 window,
 // returning viewers get a streak bonus, and everything is a team score, never a ranking of people.
 // Comment keywords (from the "chùa online" / "sàn nhạc" trends, in an astrology frame):
-//   "xin quẻ" → a free daily zodiac reading on the altar · "ước …" → a wish lantern · "kho" → everything you own.
+//   "xin quẻ" → a free daily lucky reading (Quẻ may mắn) on the altar · "ước …" → a wish lantern · "kho" → everything you own.
 // Gifts trigger on-stage effects by size and are thanked by name, never ranked.
 //
 // Built for busy rooms: every handler is O(1) in the number of viewers; the stage keeps only the
@@ -36,7 +36,7 @@ import { createTug, TUG_DEFAULTS } from './tug.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { createPass, PASS_DEFAULTS } from './pass.mjs';
 import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
-import { createBag, BAG_DEFAULTS } from './bag.mjs';
+import { createBag, BAG_DEFAULTS, GEMS } from './bag.mjs';
 import { TEAMS, TEAM_IDS, parseTeam, parseSwitchTeam } from './events/teams.mjs';
 import { createRoster } from './events/roster.mjs';
 import { createRegistry } from './events/registry.mjs';
@@ -48,10 +48,7 @@ export * from './signs-legacy.mjs';
 
 // how many stars each team shows on the sky part (the drawings themselves left with the old overlay)
 const STARS_PER_TEAM = 8;
-// bag.mjs and journey.mjs still speak in the four elements (boss.mjs and tug.mjs are on teams now):
-// red burns, yellow stands firm like earth, green breathes like air, blue flows like water
-const ROLE = Object.freeze({ red: 'fire', yellow: 'earth', green: 'air', blue: 'water' });
-const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, { ...t, element: ROLE[t.id] }]));
+const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 
 // the room's heat, the Fanclub and the level multiply the light of every action, together at most this much
 const LIGHT_CAP = 3;
@@ -71,7 +68,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   lightPerDiamond: 5,
   quizRewards: [40, 25, 15],
   // the shared sky
-  signLightCost: 720, // light to light one team on the first wheel (x3 of the 12-sign game: four teams carry the wheel)
+  teamLightCost: 720, // light to light one team on the first wheel (x3 of the 12-sign game: four teams carry the wheel)
   wheelGrowth: 0.5, // each new wheel costs this much more (0.5 → ×1.5, ×2, …)
   // moon (room-wide goal)
   moonGoal: 600,
@@ -309,7 +306,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // Small rooms get smaller goals so a single viewer still sees progress.
   const crowdFactor = () => (cfg.adaptiveCrowd ? Math.min(1, Math.max(cfg.crowdFloor, stage.size / cfg.crowdFull)) : 1);
-  const wheelCost = no => Math.round(cfg.signLightCost * (1 + cfg.wheelGrowth * (no - 1)) * crowdFactor());
+  const wheelCost = no => Math.round(cfg.teamLightCost * (1 + cfg.wheelGrowth * (no - 1)) * crowdFactor());
   const moonGoalFor = full => Math.max(cfg.adaptiveCrowd ? 60 : 1, Math.round(cfg.moonGoal * Math.pow(cfg.moonGrowth, full) * crowdFactor()));
   st.wheel.cost ||= wheelCost(st.wheel.no);
   st.moon.goal ||= moonGoalFor(0);
@@ -485,11 +482,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: c.kr.winners.length, recent: c.recent }
       : { open: false, inMs: Number.isFinite(chestScheduled) ? chestScheduled - t : null };
   }
-  const bag = createBag({ cfg, now, onEvent, elementOf: id => TEAM[id].element });
-  // one gem of the viewer's own element (what their next level needs)
-  const gem = (u, v, n, why) => { if (v?.team) bag.add(u, v, TEAM[v.team].element, n, why); };
+  const bag = createBag({ cfg, now, onEvent });
+  // one gem of the viewer's own team colour (what their next level needs)
+  const gem = (u, v, n, why) => { if (v?.team) bag.add(u, v, v.team, n, why); };
   // --- bàn quẻ (altar.mjs): "xin quẻ", and the room's "chuẩn" / "xin vía" while a reading is on ---
-  const altar = createAltar({ st, cfg, now, onEvent, touch, teams: TEAM, pickTeam: () => pickEventTeam(), shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
+  const altar = createAltar({ st, cfg, now, onEvent, touch, shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
   const showFortune = req => altar.show(req);
 
   // --- kho chung: resources, level and Sổ Sao in one panel ("kho", "khoe", "sổ sao") ---
@@ -509,13 +506,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     v.powerHintAt = now();
     onEvent({ type: 'power-need', userId: u.userId, nickname: v.nickname, why });
   }
-  // "tung ngọc": one gem (own element first) lands like a gift on the fight that is on
+  // "tung ngọc": one gem (own team's gem first) lands like a gift on the fight that is on
   function gemPower(u, v) {
     if (!v.team || !powerReady(v)) return;
     const target = FIGHTS.find(([, on]) => on())?.[0];
     if (!target) return powerNeed(u, v, 'no-fight');
-    const held = v.bag ?? {}, own = TEAM[v.team].element;
-    const res = (held[own] ?? 0) > 0 ? own : ['fire', 'earth', 'air', 'water'].find(k => (held[k] ?? 0) > 0);
+    const held = v.bag ?? {}, own = v.team;
+    const res = (held[own] ?? 0) > 0 ? own : GEMS.find(k => (held[k] ?? 0) > 0);
     if (!res) return powerNeed(u, v, 'no-gem');
     v.powerAt = now();
     held[res]--;
@@ -532,7 +529,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     raiseMoon(Math.round(st.moon.goal * cfg.moonShardShare));
   }
 
-  // --- two short headliners (minigames.mjs): Cung bí ẩn and Hứng sao băng ---
+  // --- two short headliners (minigames.mjs): Đoán vật and Hứng sao băng ---
   // Đoán vật and Hứng sao băng are EventDefs like the boss; "đổi <màu>" and the room's commands are never taken as a guess
   const isCommand = text => parseAction(text) !== null || /^\s*(doi|chuyen)\s/.test(norm(text));
   const guess = createGuessObject({ st, cfg, now, rng, onEvent, reward, viewerOf, quest: stat => questAdd(stat), isCommand });
@@ -562,8 +559,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const predict = createPredict({ st, cfg, now, onEvent, reward });
   const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => bag.add(u, v, 'dust', 15, 'pass') });
   const label = id => TEAM[id]?.label ?? id;
-  // --- hành trình đêm & đội nguyên tố (journey.mjs) ---
-  const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), elementOf: id => TEAM[id].element, dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
+  // --- hành trình đêm & đua phe (journey.mjs) ---
+  const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
 
   // --- lời dẫn cho host: one line at each climax, sent only to the host's panel (never on stream) ---
   const cued = new Map(); // once-key -> time it was said
@@ -572,7 +569,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     cued.set(once, now());
     onEvent({ type: 'host-cue', key, text });
   }
-  const EL_LABEL = { fire: 'Hỏa', earth: 'Thổ', air: 'Phong', water: 'Thủy' };
   let tugSide = 0, tugFlips = 0, tugFlipAt = 0;
   function cueTick(t) {
     for (const [k, at] of cued) if (t - at > 600000) cued.delete(k);
@@ -600,7 +596,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   listen = e => {
     journey.note(e);
     if (e.type === 'chapter') cue('chapter', `Xong chặng ${e.no}/${e.of}: ${e.label}! ${e.next ? `Chặng tiếp: ${e.next.label} — cần ${e.next.need} ${e.next.goal}.` : 'Cả hành trình đêm nay đã trọn vẹn, cảm ơn cả nhà!'}`, `chapter@${st.night.no}@${e.no}`);
-    else if (e.type === 'element-lead') cue('element-lead', `Đảo chiều! Đội ${EL_LABEL[e.element]} vượt lên dẫn đầu đêm nay — đội ${EL_LABEL[e.prev]} ơi, gỡ lại nào!`, `lead@${now()}`);
+    else if (e.type === 'team-lead') cue('team-lead', `Đảo chiều! Phe ${label(e.team)} vượt lên dẫn đầu đêm nay — phe ${label(e.prev)} ơi, gỡ lại nào!`, `lead@${now()}`);
     // predictions open before a big outcome and settle when it is known
     if (e.type === 'tug-start') predict.open({ key: 'tug', q: `${label(e.a)} hay ${label(e.b)} thắng kéo co?`, options: [label(e.a), label(e.b)], closesAt: now() + e.warmup * 1000 });
     else if (e.type === 'tug-end') predict.resolve('tug', e.winner === e.a ? 0 : e.winner === e.b ? 1 : null);
@@ -670,7 +666,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (!startBoss(Math.round(Math.max(3, stage.size) * cfg.eliteHpFactor))) { st.head = null; return null; }
       st.boss.elite = true;
     } else if (id === 'quizchain') Object.assign(st.head, { left: cfg.quizChainLength, nextAt: t + 2000, streaks: {}, best: null, inQuiz: false });
-    else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', team: pickEventTeam() }); }
+    else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '' }); }
     else if (id === 'final') Object.assign(st.head, { base: { ...st.wheel.given }, wheel: st.wheel.no });
     else if (id === 'chestrain') { chestOpenNow(); st.head.chests = [t + 60000, t + 120000]; }
     else if (id === 'guessobject') { if (!registry.start('guessobject')) { st.head = null; return null; } }
@@ -1240,7 +1236,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (kind === 0 && cfg.autoQuiz && quiz.length) startQuiz();
       else if (kind === 2 && polls.length) startPoll();
       else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], team: pickEventTeam() });
-      else if (kind >= 0) showFortune({ userId: null, nickname: null, avatar: '', team: pickEventTeam() });
+      else if (kind >= 0) showFortune({ userId: null, nickname: null, avatar: '' });
     }
     // Drop viewers who went quiet from the stage (at most crowdMax entries to look at).
     const cutoff = t - cfg.presenceMinutes * 60000;

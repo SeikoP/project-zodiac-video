@@ -5,10 +5,10 @@ import { SIGNS } from './signs-legacy.mjs';
 import { TEAM_IDS } from './game.mjs';
 import { SIGN_DATA, insideDates } from './public/signs.js';
 import { buildQuizBank } from './quizbank.mjs';
-import { drawFortune, poolSize, FORTUNE_TOPICS } from './fortunes.mjs';
+import { drawFortune, FORTUNE_TOPICS, FORTUNE_POOLS, FORTUNE_NOTES, FORTUNE_COLORS, dayKey } from './fortunes.mjs';
 
-// the boss still plays the four element roles (red fire, yellow earth, green air, blue water); the readings draw on them too
-const ELEMENT = { red: 'fire', yellow: 'earth', green: 'air', blue: 'water' };
+// a reading speaks of no zodiac sign and no element
+const ZODIAC = /cung|bạch dương|kim ngưu|song tử|cự giải|sư tử|xử nữ|thiên bình|bọ cạp|nhân mã|ma kết|bảo bình|song ngư|nguyên tố|hoàng đạo|chiêm tinh|hành tinh/i;
 const extra = JSON.parse(fs.readFileSync(new URL('./quiz.json', import.meta.url), 'utf8'));
 
 test('every sign has complete, consistent reference data', () => {
@@ -39,30 +39,56 @@ test('the generated quiz bank is empty for now and hand-written entries are vali
   assert.deepEqual(bank, [{ kind: 'trivia', ...good }]);
 });
 
+const DAY = '2026-11-03';
+
 test('daily readings vary a lot across viewers, are stable within a day, and never repeat a line inside one reading', () => {
-  const now = Date.UTC(2026, 10, 3, 5);
   const seen = {};
   for (let i = 0; i < 300; i++) {
-    const f = drawFortune({ seed: `user${i}`, team: 'red', element: 'fire', now });
+    const f = drawFortune({ userId: `user${i}`, day: DAY });
     for (const t of FORTUNE_TOPICS) (seen[t] ??= new Set()).add(f[t]);
     assert.equal(new Set(FORTUNE_TOPICS.map(t => f[t])).size, 4);
-    assert.ok(f.tip && f.color && f.hour && Number.isInteger(f.number));
+    assert.ok(f.note && f.color && f.hour && Number.isInteger(f.number));
   }
   for (const t of FORTUNE_TOPICS) assert.ok(seen[t].size >= 12, `${t}: ${seen[t].size} distinct lines`);
-  const a = drawFortune({ seed: 'x', team: 'red', element: 'fire', now });
-  assert.deepEqual(a, drawFortune({ seed: 'x', team: 'red', element: 'fire', now: now + 3600e3 * 6 }));
-  assert.notDeepEqual(a, drawFortune({ seed: 'x', team: 'red', element: 'fire', now: now + 86400e3 }));
-  for (const id of TEAM_IDS) for (const t of FORTUNE_TOPICS) assert.ok(poolSize(t, id, ELEMENT[id]) >= 18, `${id}/${t}`);
+  const a = drawFortune({ userId: 'x', day: DAY });
+  assert.deepEqual(a, drawFortune({ userId: 'x', day: DAY }), 'same person, same day, same reading');
+  assert.deepEqual(a, drawFortune({ userId: 'x', day: Date.UTC(2026, 10, 3, 5) }), 'a timestamp of that day is the same day');
+  assert.notDeepEqual(a, drawFortune({ userId: 'x', day: '2026-11-04' }));
+  assert.notDeepEqual(a, drawFortune({ userId: 'y', day: DAY }));
+  assert.equal(drawFortune({ userId: null, day: DAY }).love.length > 3, true, 'the room gets a reading too');
+  assert.deepEqual(Object.keys(a).sort(), ['color', 'hour', 'level', 'love', 'luck', 'money', 'note', 'number', 'order', 'tip', 'work'].sort());
+  assert.equal(dayKey(Date.UTC(2026, 10, 3, 5)), DAY);
 });
 
-test('two different teams rarely get the same line on the same day', () => {
-  const now = Date.UTC(2026, 10, 3, 5);
-  let same = 0, total = 0;
-  for (let i = 0; i < 200; i++) {
-    const a = drawFortune({ seed: `u${i}`, team: 'red', element: 'fire', now }), b = drawFortune({ seed: `u${i}`, team: 'blue', element: 'water', now });
-    for (const t of FORTUNE_TOPICS) { total++; if (a[t] === b[t]) same++; }
+test('a topic puts that section first with two extra lines of its own; no topic keeps the plain order', () => {
+  assert.deepEqual(drawFortune({ userId: 'x', day: DAY }).order, ['love', 'work', 'money', 'luck']);
+  assert.equal(drawFortune({ userId: 'x', day: DAY }).focus, undefined);
+  for (const t of ['love', 'work', 'money']) for (let i = 0; i < 60; i++) {
+    const f = drawFortune({ userId: `u${i}`, day: DAY, topic: t });
+    assert.equal(f.order[0], t);
+    assert.deepEqual([...f.order].sort(), ['love', 'luck', 'money', 'work']);
+    assert.equal(f.topic, t);
+    assert.equal(f.focus.length, 2);
+    assert.equal(new Set([f[t], ...f.focus]).size, 3, 'the extra lines are new ones');
+    for (const l of f.focus) assert.ok(FORTUNE_POOLS[t].includes(l));
+    const plain = drawFortune({ userId: `u${i}`, day: DAY });
+    for (const k of ['love', 'work', 'money', 'luck', 'note', 'color', 'number', 'hour']) assert.equal(f[k], plain[k], 'asking about a topic changes nothing else');
   }
-  assert.ok(same / total < 0.05, `${same}/${total}`);
+});
+
+test('the reading pools: at least 24 distinct lines per section, 40 notes, no repeats, and not a word of zodiac or elements', () => {
+  for (const t of FORTUNE_TOPICS) {
+    assert.ok(FORTUNE_POOLS[t].length >= 24, `${t}: ${FORTUNE_POOLS[t].length}`);
+    assert.equal(new Set(FORTUNE_POOLS[t]).size, FORTUNE_POOLS[t].length, `${t} repeats a line`);
+  }
+  assert.ok(FORTUNE_NOTES.length >= 40);
+  assert.equal(new Set(FORTUNE_NOTES).size, FORTUNE_NOTES.length);
+  const all = [...Object.values(FORTUNE_POOLS).flat(), ...FORTUNE_NOTES, ...FORTUNE_COLORS];
+  for (const l of all) assert.ok(!ZODIAC.test(l), l);
+  for (let i = 0; i < 200; i++) {
+    const f = drawFortune({ userId: `s${i}`, day: `2026-11-${String(1 + (i % 28)).padStart(2, '0')}`, topic: [null, 'love', 'work', 'money'][i % 4] });
+    for (const v of Object.values(f)) for (const l of [v].flat()) if (typeof l === 'string') assert.ok(!ZODIAC.test(l), l);
+  }
 });
 
 test('listMusic reads livestream/calm and livestream/upbeat folders plus loose files, and skips comedy clips', async () => {
@@ -100,10 +126,10 @@ test('occasions: fixed, lunar-table and computed dates, and readings may use the
   assert.equal(occasionOn('2026-11-27').name, 'Black Friday'); // 4th Friday of Nov 2026
   assert.equal(occasionOn('2026-11-04'), null);
   const day = Date.UTC(2026, 10, 19, 20); // 20/11 in Vietnam (UTC+7)
-  const f = Array.from({ length: 60 }, (_, i) => drawFortune({ seed: `u${i}`, team: 'red', element: 'fire', now: day }));
+  const f = Array.from({ length: 60 }, (_, i) => drawFortune({ userId: `u${i}`, day }));
   const tip = occasionOn('2026-11-20').tip;
-  assert.ok(f.some(x => x.tip === tip), 'some readings use the occasion tip');
-  assert.ok(f.some(x => x.tip !== tip), 'not all of them');
+  assert.ok(f.some(x => x.note === tip), 'some readings use the occasion tip');
+  assert.ok(f.some(x => x.note !== tip), 'not all of them');
 });
 
 test('host prompts: every group has enough distinct lines, and none ask for gifts', async () => {
@@ -124,9 +150,9 @@ test('poll bank: empty until the colour-team polls arrive, and nothing in it is 
 });
 
 test('no reading ever contains an empty or missing line (guards against holes in the text banks)', () => {
-  for (const id of TEAM_IDS) for (let i = 0; i < 120; i++) {
-    const f = drawFortune({ seed: `seed${i}`, team: id, element: ELEMENT[id], now: Date.UTC(2026, 10, 1 + (i % 28), 5) });
-    for (const k of ['level', 'love', 'work', 'money', 'luck', 'tip', 'color', 'hour']) assert.ok(typeof f[k] === 'string' && f[k].length >= (k === 'color' ? 2 : 4), `${id} ${k}`); // colours can be short, like “Đỏ”
+  for (let i = 0; i < 400; i++) {
+    const f = drawFortune({ userId: `seed${i}`, day: Date.UTC(2026, 10, 1 + (i % 28), 5) });
+    for (const k of ['level', 'love', 'work', 'money', 'luck', 'note', 'color', 'hour']) assert.ok(typeof f[k] === 'string' && f[k].length >= (k === 'color' ? 2 : 4), k); // colours can be short, like “Đỏ”
     assert.ok(Number.isInteger(f.number) && f.number > 0);
   }
 });
