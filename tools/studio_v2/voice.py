@@ -125,6 +125,59 @@ def _legacy_generator(
     )
 
 
+def _regeneration_request_path(workspace: Path) -> Path:
+    return Path(workspace) / ".runtime" / "voice-regeneration-request.json"
+
+
+def request_scene_voice_regeneration(
+    workspace: Path,
+    scene_id: str,
+    *,
+    reason: str = "TIMING_ALIGNMENT_FAILED",
+) -> None:
+    path = _regeneration_request_path(workspace)
+    scene_id = str(scene_id)
+    scene_ids: list[str] = []
+    try:
+        current = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(current, dict) and isinstance(current.get("scene_ids"), list):
+            scene_ids = [str(value) for value in current["scene_ids"] if str(value)]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        pass
+    if scene_id not in scene_ids:
+        scene_ids.append(scene_id)
+    _write_json_atomic(
+        path,
+        {"version": 1, "scene_ids": scene_ids, "reason": str(reason)},
+    )
+
+
+def _read_regeneration_request(workspace: Path) -> set[str]:
+    path = _regeneration_request_path(workspace)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return set()
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ControlPlaneError(
+            code="VOICE_REGENERATION_REQUEST_INVALID",
+            stage="VOICE",
+            message=f"cannot read scene regeneration request: {exc}",
+        ) from exc
+    if (
+        not isinstance(payload, dict)
+        or payload.get("version") != 1
+        or not isinstance(payload.get("scene_ids"), list)
+        or any(not isinstance(value, str) or not value for value in payload["scene_ids"])
+    ):
+        raise ControlPlaneError(
+            code="VOICE_REGENERATION_REQUEST_INVALID",
+            stage="VOICE",
+            message="scene regeneration request has invalid shape",
+        )
+    return set(payload["scene_ids"])
+
+
 def _meta_path(workspace: Path) -> Path:
     return Path(workspace) / ".runtime" / "voice-v2.json"
 
@@ -311,7 +364,15 @@ def ensure_voice_artifact(
                 },
             )
 
-    cached = None if force else _cached_artifact(workspace, input_key, scene_ids)
+    requested_scene_ids = _read_regeneration_request(workspace)
+    unknown_requested = requested_scene_ids.difference(scene_ids)
+    if unknown_requested:
+        raise ControlPlaneError(
+            code="VOICE_REGENERATION_REQUEST_INVALID",
+            stage="VOICE",
+            message=f"scene regeneration request names unknown scenes: {sorted(unknown_requested)}",
+        )
+    cached = None if force or requested_scene_ids else _cached_artifact(workspace, input_key, scene_ids)
     if cached is not None:
         record_scene_artifacts(cached.scene_hashes)
         meta = _read_meta(_meta_path(workspace))
@@ -329,7 +390,7 @@ def ensure_voice_artifact(
     dirty_scene_ids = []
     for scene_id in scene_ids:
         path = scene_wav_path(workspace, scene_id)
-        if force:
+        if force or scene_id in requested_scene_ids:
             dirty_scene_ids.append(scene_id)
             continue
         text_hash = canonical_hash(_normalized_words(scene_by_id[scene_id]["voice"]))
@@ -416,6 +477,8 @@ def ensure_voice_artifact(
 
     output_hash = file_sha256(output)
     record_scene_artifacts(scene_hashes, set(dirty_scene_ids))
+    if requested_scene_ids:
+        _regeneration_request_path(workspace).unlink(missing_ok=True)
     meta = {
         "version": 4,
         "speech_context_hashes": speech_hashes,
