@@ -8,8 +8,9 @@ import { COPY } from './copy.mjs';
 // the stream never asks for gifts; this scans everything a viewer could read
 const BEGGING = /xin quà|tặng quà|gửi quà|ủng hộ|donate|send (a )?gift|thả quà/i;
 const here = path.dirname(fileURLToPath(import.meta.url));
+const publicGarden = path.join(here, '../public/garden');
 const files = [...fs.readdirSync(here).filter(f => f.endsWith('.mjs') && !f.endsWith('.test.mjs')).map(f => path.join(here, f)),
-  ...(fs.existsSync(path.join(here, '../public/garden')) ? fs.readdirSync(path.join(here, '../public/garden')).map(f => path.join(here, '../public/garden', f)) : [])];
+  ...(fs.existsSync(publicGarden) ? fs.readdirSync(publicGarden).map(f => path.join(publicGarden, f)).filter(f => fs.statSync(f).isFile()) : [])];
 
 test('no viewer-facing string asks for a gift', () => {
   const strings = JSON.stringify(COPY);

@@ -200,7 +200,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     },
     'sim-room': b => {
       const action = String(b.action ?? 'status');
-      if (action === 'add') return { ...autoStatus(), added: addAutoUsers(b.count) };
+      if (action === 'add') { const added = addAutoUsers(b.count); return { ...autoStatus(), added }; }
       if (action === 'start') return startAuto();
       if (action === 'stop') return stopAuto();
       if (action === 'burst') { autoStep(); return autoStatus(); }

@@ -81,3 +81,13 @@ test('emptyGardenState starts empty and versioned for the terrace layout', () =>
   const s = emptyGardenState(0);
   assert.deepEqual([s.v, s.ver, s.thefts, s.event, s.session], [3, 0, [], null, null]);
 });
+
+
+test('seat short-circuits after one allocation instead of creating a plot on every tier', () => {
+  const { ctx } = makeCtx();
+  const user = ensureUser(ctx, { userId: 'solo', nickname: 'Solo', avatar: '' });
+  const plot = seat(ctx, user);
+  assert.equal(plot.id, 'cloud-1:0');
+  assert.equal(user.seat.tier, 'cloud-1');
+  assert.equal(Object.values(ctx.state.plots).filter(p => p.owner === 'solo').length, 1);
+});

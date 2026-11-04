@@ -69,7 +69,9 @@ export function seat(ctx, user, preferred) {
   if (user.seat) return ctx.state.plots[plotId(user.seat.tier, user.seat.slot)];
   const order = [...TIERS.map(x => x.id)].sort((a, b) => owned(ctx, a).length - owned(ctx, b).length);
   if (TIERS.some(x => x.id === preferred)) order.unshift(...order.splice(order.indexOf(preferred), 1));
-  return order.map(tier => room(ctx, user, tier)).find(Boolean) ?? order.map(tier => evict(ctx, user, tier)).find(Boolean) ?? null;
+  for (const tier of order) { const plot = room(ctx, user, tier); if (plot) return plot; }
+  for (const tier of order) { const plot = evict(ctx, user, tier); if (plot) return plot; }
+  return null;
 }
 
 export function touch(ctx, user) {
