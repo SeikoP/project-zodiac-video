@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {validateStoryObjectCompositionWorkspace} from '../../features/story-object/validate-story-object-composition.mjs';
+import {validateStoryObjectCompositionWorkspace} from '../../../features/story-object/validate-story-object-composition.mjs';
 
 // Regression: Phase-03 native Narrative Visual must not require the retired
 // Story Object composition plan. This static guard complements the workspace E2E.
-const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..');
 test('handoff accepts projected narrative visual asset category',async()=>{
  const source=await readFile(path.join(skill,'phases/phase03/validate-handoff-workspace-v2.mjs'),'utf8');
  assert.match(source,/category==='story_object'/u);
