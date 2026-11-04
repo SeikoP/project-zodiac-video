@@ -3,16 +3,16 @@ import { CROPS, stageOf } from './crops.mjs';
 import { addGold, spendGold } from './progress.mjs';
 import { bump, isAwake, nightOf, touch } from './world.mjs';
 
-const plotOf = (ctx, user) => user.seat && ctx.state.plots[`${user.seat.island}:${user.seat.slot}`];
+const plotOf = (ctx, user) => user.seat && ctx.state.plots[`${user.seat.tier}:${user.seat.slot}`];
 const fail = reason => ({ ok: false, reason });
 const shielded = (ctx, user, plot) => user.level <= ctx.cfg.shieldLevel || plot.shieldUntil > ctx.now();
 const ripe = (ctx, plot) => plot.crop && stageOf(plot.crop, ctx.now(), ctx.cfg) === 3;
 let seq = 0;
 
-// a random open victim on the thief's own island
+// a random open victim on the thief's own terrace
 function pick(ctx, thief) {
   const mine = plotOf(ctx, thief), users = ctx.state.users;
-  const open = Object.values(ctx.state.plots).filter(p => p.island === mine.island && p.owner && p.owner !== thief.userId && isAwake(ctx, p) && ripe(ctx, p)
+  const open = Object.values(ctx.state.plots).filter(p => p.tier === mine.tier && p.owner && p.owner !== thief.userId && isAwake(ctx, p) && ripe(ctx, p)
     && p.dogUntil <= ctx.now() && !shielded(ctx, users[p.owner], p) && p.crop.stolen < ctx.cfg.stealMaxPerCrop);
   return open.length ? users[open[Math.floor(ctx.rng() * open.length)].owner] : null;
 }

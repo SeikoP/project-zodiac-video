@@ -4,14 +4,22 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import net from 'node:net';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const port = Number(process.env.PK_SIM_PORT || 4850);
-const sharePort = Number(process.env.PK_SIM_SHARE_PORT || port + 1);
+const occupied = await new Promise(resolve => {
+  const socket = net.createConnection({ host: '127.0.0.1', port });
+  socket.once('connect', () => { socket.destroy(); resolve(true); });
+  socket.once('error', () => resolve(false));
+});
+if (occupied) {
+  console.log(`Cổng ${port} đang được dùng. Mở http://127.0.0.1:${port}/simulator hoặc dừng bản cũ; không mở thêm bản khác.`);
+  process.exit(0);
+}
 const env = {
   ...process.env,
   PK_PORT: String(port),
-  PK_SHARE_PORT: String(sharePort),
   PK_DATA_DIR: path.resolve(process.env.PK_SIM_DATA_DIR || path.join(root, '.simulator-data')),
   PK_LOG_DIR: path.resolve(process.env.PK_SIM_LOG_DIR || path.join(root, '.simulator-logs')),
   PK_SIMULATOR: '1',

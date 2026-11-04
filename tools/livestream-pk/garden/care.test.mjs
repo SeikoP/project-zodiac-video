@@ -6,12 +6,12 @@ import { CROPS, cropByName, seedCost, stageOf, advanceStage } from './crops.mjs'
 
 // move the clock in 1s steps, ticking the garden each step (the server ticks every 150ms; 1s is enough here)
 const run = (k, ms) => { for (let left = ms; left > 0; left -= 1000) { k.advance(Math.min(1000, left)); tickPlots(k.ctx); } };
-const ready = (gold = 100, island = 'leo', level = 1) => { const k = makeCtx(); const p = addUser(k.ctx, 'a', { gold, level, island }); return { ...k, ...p }; };
+const ready = (gold = 100, tier = 'cloud-1', level = 1) => { const k = makeCtx(); const p = addUser(k.ctx, 'a', { gold, level, tier }); return { ...k, ...p }; };
 
 test('cropByName understands accents and spacing', () => {
   assert.equal(cropByName('Rau'), 'rau');
   assert.equal(cropByName('hướng dương'), 'huongduong');
-  assert.equal(cropByName('linh thao'), 'linhthao');
+  assert.equal(cropByName('nấm mây'), 'nammay');
   assert.equal(cropByName('xyz'), null);
   assert.equal(seedCost('rau', { seedCostRate: 0.4 }), 4);
 });
@@ -21,10 +21,10 @@ test('plant takes the plot, refuses a second crop, a locked crop and an empty pu
   assert.equal(plant(k.ctx, k.user, 'rau').ok, true);
   assert.equal(k.user.gold, 96);
   assert.equal(plant(k.ctx, k.user, 'rau').reason, 'busy');
-  const poor = addUser(k.ctx, 'b', { gold: 0, island: 'leo' });
+  const poor = addUser(k.ctx, 'b', { gold: 0, tier: 'cloud-1' });
   assert.equal(plant(k.ctx, poor.user, 'rau').reason, 'gold');
   assert.equal(poor.plot.crop, null);
-  const low = addUser(k.ctx, 'c', { gold: 100, island: 'leo' });
+  const low = addUser(k.ctx, 'c', { gold: 100, tier: 'cloud-1' });
   assert.equal(plant(k.ctx, low.user, 'huongduong').reason, 'level');
 });
 
@@ -51,7 +51,7 @@ test('an old crop pays half; a ripe one pays full gold and xp and frees the plot
 
 test('a dry plot grows at half speed', () => {
   const k = makeCtx();
-  const a = addUser(k.ctx, 'a', { gold: 9, island: 'leo' }), b = addUser(k.ctx, 'b', { gold: 9, island: 'leo' });
+  const a = addUser(k.ctx, 'a', { gold: 9, tier: 'cloud-1' }), b = addUser(k.ctx, 'b', { gold: 9, tier: 'cloud-1' });
   plant(k.ctx, a.user, 'rau'); plant(k.ctx, b.user, 'rau');
   a.plot.water = 0;
   k.advance(4000); tickPlots(k.ctx);
@@ -60,7 +60,7 @@ test('a dry plot grows at half speed', () => {
 
 test('pests slow growth to 0.6, cost 30% of the harvest, and bắt sâu removes them', () => {
   const k = makeCtx({ rng: () => 0 });
-  const a = addUser(k.ctx, 'a', { gold: 9, island: 'leo' });
+  const a = addUser(k.ctx, 'a', { gold: 9, tier: 'cloud-1' });
   plant(k.ctx, a.user, 'rau');
   k.advance(1000); tickPlots(k.ctx);
   assert.equal(a.plot.crop.pest, true);
@@ -76,7 +76,7 @@ test('pests slow growth to 0.6, cost 30% of the harvest, and bắt sâu removes 
 
 test('helping a neighbour water pays both in xp and the helper one gold, once per 30s', () => {
   const k = makeCtx();
-  const a = addUser(k.ctx, 'a', { gold: 9, island: 'leo' }), b = addUser(k.ctx, 'b', { gold: 9, island: 'leo' });
+  const a = addUser(k.ctx, 'a', { gold: 9, tier: 'cloud-1' }), b = addUser(k.ctx, 'b', { gold: 9, tier: 'cloud-1' });
   plant(k.ctx, b.user, 'rau');
   assert.equal(water(k.ctx, a.user, b.user).ok, true);
   assert.deepEqual([a.user.xp, b.user.xp, a.user.gold], [2, 2, 10]);
@@ -116,7 +116,7 @@ test('advanceStage jumps to the next stage threshold and stops at ripe', () => {
   advanceStage(crop, 5); assert.equal(crop.progress, 0.55);
   advanceStage(crop, 5); assert.deepEqual([crop.progress, crop.ripeAt], [1, 5]);
   advanceStage(crop, 9); assert.equal(crop.ripeAt, 5);
-  assert.equal(CROPS.linhthao.minLevel, 4);
+  assert.equal(CROPS.nammay.minLevel, 4);
 });
 
 test('the ripe event says whether it is the owners first crop', () => {

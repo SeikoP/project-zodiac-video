@@ -15,6 +15,7 @@
     "share": "node scripts/share.mjs",
     "reset-night": "node scripts/reset-night.mjs",
     "garden": "node --env-file-if-exists=.env garden/server.mjs",
+    "garden:sim": "node garden/server.mjs --simulator",
     "simulator": "node scripts/simulator.mjs"
   },
   "dependencies": {

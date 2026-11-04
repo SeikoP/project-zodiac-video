@@ -50,19 +50,12 @@
 @keyframes lanternSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
 @keyframes blessPop { 40% { transform: scale(1.12); } }
 /* lời chào ghé thăm: a glowing paper star (not a lantern) rises with "Chào <tên>!" and the room's "chào" count */
-.greet-star { position: absolute; top: 1080px; width: 230px; display: flex; flex-direction: column; align-items: center; gap: 6px; animation: rise-greet 13s cubic-bezier(.3, .1, .4, 1) forwards; }
-.greet-star .gs-star { position: relative; width: 132px; height: 126px; display: grid; place-items: center; filter: drop-shadow(0 0 18px rgba(255, 220, 120, .9)); animation: gsTwirl 3.4s ease-in-out infinite; }
-.greet-star .gs-star::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #fffbe6 0%, #ffe7a1 45%, #f2c45c 100%); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-.greet-star .gs-star .av { position: relative; }
-.greet-star .gs-star .av { width: 50px; height: 50px; margin-top: 10px; border: 3px solid #fff; font-size: 22px; }
-.greet-star .gs-txt { padding: 4px 14px; border-radius: 16px; background: var(--card); border: 2px solid var(--gold); color: var(--ink); text-align: center; max-width: 260px; }
-.greet-star .gs-txt b { display: block; font-family: var(--hand); font-weight: 400; font-size: 26px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.greet-star .gs-txt span { display: block; font-size: 14px; font-weight: 800; color: var(--soft-ink); }
-.greet-star .gs-count { padding: 2px 12px; border-radius: 999px; background: rgba(22, 29, 33, .75); color: var(--gold); font-size: 16px; font-weight: 800; white-space: nowrap; }
-.greet-star .gs-count em { font-style: normal; color: #fff; }
-.greet-star.pop .gs-star { animation: gsTwirl 3.4s ease-in-out infinite, blessPop .5s; }
-.greet-star.done .gs-star { filter: drop-shadow(0 0 30px #fff) drop-shadow(0 0 16px var(--gold)); }
-.greet-star.done .gs-count { background: var(--gold); color: var(--ink); }
+ .welcome-note { position: absolute; left: 130px; right: 130px; top: calc(var(--top) + 286px); display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 22px; background: #fff8e8; color: #293c52; border: 2px solid #d7bc80; border-radius: 20px; box-shadow: 0 6px 0 #111b2955; animation: fadein .25s; }
+.welcome-note .gs-txt { min-width: 0; }
+.welcome-note .gs-txt b { display: block; font: 800 27px/1.3 var(--ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.welcome-note .gs-txt span, .welcome-note .gs-count { display: block; font: 600 21px/1.4 var(--ui); }
+.welcome-note .gs-count { max-width: 300px; }
+.welcome-note.done { border-color: #6c9d88; }
 @keyframes rise-greet { 0% { transform: translate(0, 0); opacity: 0; } 6% { opacity: 1; } 86% { opacity: 1; } 100% { transform: translate(var(--sway), -760px); opacity: 0; } }
 @keyframes gsTwirl { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(8deg) scale(1.05); } }
 
@@ -264,13 +257,11 @@
 #center .elrace .el b i { display: block; height: 100%; background: var(--c); border-radius: 10px; }
 #center .elrace .el em { font-style: normal; text-align: right; }
 #center .elrace .el.lead span { color: var(--c); }
-/* giờ sinh tử: the last ten seconds of a fight */
-#doom { position: absolute; left: 50%; top: 50%; z-index: 6; display: none; transform: translate(-50%, -50%); flex-direction: column; align-items: center; pointer-events: none; }
-#doom.on { display: flex; animation: doomBeat 1s ease-in-out infinite; }
-#doom b { font-family: var(--hand); font-weight: 400; font-size: 190px; line-height: 1; color: #ff3d3d; text-shadow: 0 0 30px rgba(255, 61, 61, .8), 0 6px 0 #2F3C44; }
-#doom span { padding: 4px 18px; border-radius: 999px; background: #ff3d3d; color: #fff; font-size: 26px; font-weight: 900; }
-@keyframes doomBeat { 50% { transform: translate(-50%, -50%) scale(1.12); } }
-#wheel:has(#doom.on) #center .slide, #wheel:has(#doom.on) #arena > * { opacity: .18; transition: opacity .3s; }
+/* Last seconds sit above the event, never dim its content. */
+#doom { position: absolute; left: 50%; top: calc(50% - 405px); z-index: 6; display: none; transform: translateX(-50%); align-items: center; gap: 14px; padding: 10px 22px; border: 2px solid #f6bc86; border-radius: 16px; background: #773e32; color: #fff4dc; pointer-events: none; white-space: nowrap; }
+#doom.on { display: flex; }
+#doom b { font: 900 34px/1 var(--ui); font-variant-numeric: tabular-nums; }
+#doom span { font: 700 23px/1.2 var(--ui); }
 .bar .no { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 4px; border-radius: 50%; background: var(--ink); color: var(--gold); font-size: 18px; font-weight: 900; }
 
 /* team icons wherever a team is named in a line of text */
@@ -330,3 +321,125 @@
 .modal .qrow.done i u { background: var(--teal); }
 .modal .ptitles { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
 .modal .ptitles span { padding: 3px 14px; border-radius: 999px; background: rgba(242, 196, 92, .4); border: 2px solid var(--gold); font-size: 20px; font-weight: 800; }
+
+/* Solo-first stage: one invitation and one activity, team details stay secondary. */
+.quick-room #top { padding: 18px 24px; }
+.quick-room .trow { height: 52px; }
+.quick-room .brand b { font-size: 34px; }
+.quick-room .brand small { font-size: 16px; }
+.quick-room #top .join { height: auto; margin: 6px 0 8px; }
+.quick-room .j1 { flex: 1 1 0; }
+.quick-room .j1 b { font-size: 18px; white-space: normal; }
+.quick-room #jcmd { min-height: 100px; margin: 0; border: 0; background: transparent; }
+.quick-room #jcmd b { font-size: 38px; line-height: 1.2; }
+.quick-room #jcmd span:not(.ji) { font-size: 23px; }
+.quick-room #race { height: 38px; opacity: .8; }
+.quick-room .rc { font-size: 17px; }
+.quick-room #ring, .quick-room #halo { opacity: .76; }
+.quick-room .node { opacity: .82; }
+.quick-room #center { border-radius: 50%; width: 650px; height: 650px; }
+.quick-room #arena { border-radius: 38px; width: 760px; height: 690px; }
+.quick-room #arena { margin: -345px 0 0 -380px; border: 3px solid var(--gold); }
+.quick-room #center .slide { padding: 35px; }
+.quick-room #center .cap { font-size: 48px; }
+.quick-room #center .sub, .quick-room #arena .sub { font-size: 27px; line-height: 1.45; }
+.quick-room #center img { max-height: 230px; }
+.quick-room #arena .word { font-size: 100px; }
+.quick-room #arena .ak { font-size: 31px; }
+@media (prefers-reduced-motion: reduce) {
+  #stage *, #stage *::before, #stage *::after { animation: none !important; transition: none !important; }
+}
+
+/* One event surface for both the short rounds and host-triggered activities. */
+#stage { --event-edge: #F2C45C; }
+#arena, #center { border-radius: 44px; }
+#arena { padding: 30px 38px; gap: 16px; border: 3px solid var(--event-edge); background: radial-gradient(ellipse at 50% 0%, #354b65, #1c293b 75%); box-shadow: 0 12px 0 #111b29; }
+#arena.on { gap: 16px; }
+#arena .ak { letter-spacing: 1px; font: 800 28px var(--ui); color: #ffe5a5; }
+#arena .sub, #arena .st { color: #e5edf7; line-height: 1.4; overflow-wrap: anywhere; }
+#arena.chestmode .sub { color: var(--ink); }
+#arena .hp { width: 90%; height: 40px; border: 2px solid #b8c9df; background: #152032; }
+#arena .meta { flex-wrap: wrap; justify-content: center; gap: 10px; }
+#arena .roles { gap: 6px; opacity: .85; }
+#arena .word { padding: 14px 30px; border: 2px solid #ffe5a5; border-radius: 28px; background: #26384f; color: #fff1c9; text-shadow: 0 4px 0 #111b29; }
+#arena .clues { width: 100%; padding-left: 30px; text-align: left; }
+#arena .clues li { padding: 8px 12px; border-radius: 14px; background: #26384f; color: #e5edf7; font-size: 24px; line-height: 1.35; }
+#arena .clues li:last-child { background: #fff0c9; color: #243244; font-weight: 800; }
+#arena .mbar { width: 90%; }
+#arena .teams { gap: 12px; }
+#arena .rope { max-width: 90%; height: 28px; }
+#arena .claims { flex-wrap: wrap; justify-content: center; min-height: 70px; }
+#arena .zn { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modal { top: calc(var(--wheel-t) + 12px); left: 72px; right: 72px; max-height: calc(var(--wheel-b) - var(--wheel-t) - 24px); overflow: auto; padding: 24px 28px; border-radius: 30px; border: 3px solid #c9ab6c; box-shadow: 0 12px 0 #111b29; }
+.modal .k { color: #8b452c; font: 800 21px var(--ui); letter-spacing: 1px; }
+.modal h2 { margin: 12px 0; font: 800 36px/1.2 var(--ui); text-wrap: balance; }
+.modal .who { overflow-wrap: anywhere; }
+.modal .who > span { min-width: 0; }
+.modal .hint { padding: 12px 16px; border-radius: 16px; background: #fff0c9; font-size: 25px; line-height: 1.35; }
+.modal .opt, .modal .bar { min-height: 62px; height: auto; padding: 12px 16px; border-radius: 16px; font-size: 26px; }
+.modal .opt b, .modal .bar .no { flex: none; background: #293c52; color: #fff1c9; border-radius: 10px; }
+.modal .lines p { font-size: 22px; line-height: 1.4; padding: 10px 14px; }
+.modal .lucky { font-size: 20px; }
+.modal .fine { font-size: 18px; }
+.modal .qrow { padding: 10px 14px; border-radius: 14px; }
+#fortune .lvl { margin: 12px 0; }
+#scrim { top: var(--wheel-t); height: calc(var(--wheel-b) - var(--wheel-t)); border-radius: 30px; background: #111b29b8; }
+#hero .title, #hero .sub, #event .title { overflow-wrap: anywhere; }
+#conn { top: calc(var(--top) + 270px); max-width: 900px; white-space: normal; text-align: center; }
+
+/* Compact header: identity, one instruction, then a quiet team summary. */
+.quick-room #top { padding: 18px 24px 14px; border: 1px solid #cad1d7; border-radius: 24px; box-shadow: 0 5px 0 #111b2940; }
+.quick-room .trow { height: 44px; }
+.quick-room .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+.quick-room .brand b { font: 800 28px/1.2 var(--ui); order: -1; }
+.quick-room .brand small { font: 600 18px/1.3 var(--ui); letter-spacing: 0; text-transform: none; }
+.quick-room .trow { display: grid; grid-template-columns: minmax(205px, 1.2fr) minmax(155px, .82fr) minmax(190px, 1.05fr) minmax(150px, .82fr); gap: 8px; height: 72px; }
+.quick-room #top .trow { display: grid; grid-template-columns: minmax(205px, 1.2fr) minmax(155px, .82fr) minmax(190px, 1.05fr) minmax(150px, .82fr); gap: 8px; height: 72px; }
+.quick-room .brand { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+.quick-room .brand b { order: 0; font-size: 38px; }
+.quick-room .brand small { font-size: 16px; white-space: nowrap; }
+.quick-room .chest { min-width: 0; gap: 8px; padding: 0 8px; border-left: 1px dashed var(--line); }
+.quick-room .chest .ci { width: 48px; height: 48px; object-fit: contain; font-size: 40px; }
+.quick-room .chest .ct { min-width: 0; }
+.quick-room .chest .ct b, .quick-room .show b { font: 700 30px/1.05 var(--ui); }
+.quick-room .chest .ct span, .quick-room .show span { font-size: 16px; line-height: 1.15; }
+.quick-room .moon { min-width: 0; gap: 6px; padding: 0 6px; }
+.quick-room .moon svg { width: 60px; height: 60px; flex: none; }
+.quick-room .moontxt { width: auto; min-width: 0; }
+.quick-room .moontxt b { font: 700 30px/1 var(--ui); }
+.quick-room .moontxt span { display: block; font-size: 15px; line-height: 1.15; }
+.quick-room .show { min-width: 0; gap: 8px; padding: 0 6px; border-left: 1px dashed var(--line); }
+.quick-room .show i { font-size: 34px; }
+.quick-room .show > div { min-width: 0; }
+.quick-room #top .join { margin: 10px 0 12px; }
+.quick-room #jcmd { min-height: 92px; padding: 12px 18px; border-radius: 16px; background: #edf1f4; gap: 16px; }
+.quick-room #jcmd.hot { animation: none; background: #fff0c9; }
+.quick-room #jcmd b { font: 800 34px/1.25 var(--ui); white-space: normal; }
+.quick-room #jcmd span:not(.ji) { font: 600 22px/1.35 var(--ui); white-space: normal; }
+.quick-room #jcmd .ji { font-size: 27px; }
+.quick-room #race { height: 46px; opacity: 1; gap: 10px; }
+.quick-room .rc { border-radius: 10px; font-size: 20px; padding: 0 10px; }
+.quick-room .rc .rk { display: block; width: 22px; font-size: 16px; }
+.quick-room .rc .v { font-size: 18px; }
+.quick-room #center .slide { inset: 0; padding: 40px 44px; gap: 22px; }
+.quick-room #center .slide > img { width: 210px; height: 210px; object-fit: contain; flex: none; }
+.quick-room #center .kick { font: 700 23px/1.3 var(--ui); letter-spacing: 0; padding: 8px 18px; border-radius: 12px; background: #edf1f4; color: #435064; }
+.quick-room #center .cap { width: 100%; font: 800 40px/1.3 var(--ui); overflow-wrap: anywhere; }
+.quick-room #center .sub { max-width: 580px; font: 600 26px/1.5 var(--ui); }
+.quick-room #arena { padding: 36px 44px; }
+.quick-room #arena.on { gap: 22px; }
+.quick-room #arena .ak { font: 800 25px/1.3 var(--ui); letter-spacing: 0; }
+.quick-room #arena .word { font: 800 82px/1.2 var(--ui); min-width: 220px; }
+.quick-room #arena .sub { font: 600 25px/1.45 var(--ui); max-width: 620px; }
+.quick-room #arena .clues { display: grid; gap: 8px; margin: 0; }
+.quick-room #arena .clues li { font-size: 24px; }
+.quick-room #arena .clues li:last-child { font-size: 34px; line-height: 1.35; padding: 16px 20px; }
+.quick-room #arena.mysterymode { gap: 14px; }
+.quick-room #arena .cw, .quick-room #arena .mw { font-size: 30px; }
+.quick-room #arena .ct, .quick-room #arena .mt { font-size: 23px; color: #bac9db; }
+.quick-room #arena .mq { font-size: 90px; line-height: 1; }
+.quick-room .call { margin: 4px 0 2px; font-size: 20px; }
+.quick-room #quest { height: 32px; margin-top: 4px; }
+.quick-room .wall:not(:has(.ww)) { display: none; }
+.quick-room .fanbox { opacity: .9; }
+.quick-room .welcome-note { top: calc(var(--top) + 370px); }

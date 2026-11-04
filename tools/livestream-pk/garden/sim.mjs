@@ -8,7 +8,6 @@ import { createGarden } from './garden.mjs';
 import { createCamera } from './camera.mjs';
 import { createCoalescer } from './fx.mjs';
 
-const SIGN_WORDS = ['Bạch Dương', 'Kim Ngưu', 'Song Tử', 'Cự Giải', 'Sư Tử', 'Xử Nữ', 'Thiên Bình', 'Bọ Cạp', 'Nhân Mã', 'Ma Kết', 'Bảo Bình', 'Song Ngư'];
 const ACTIONS = ['trồng rau', 'trồng hướng dương', 'tưới', 'tưới', 'hái', 'bắt sâu', 'trộm', 'bắt trộm', 'thả chó', 'vườn'];
 const GIFTS = [1, 1, 1, 1, 1, 5, 5, 10, 10, 30, 100, 1000]; // mostly small, like a real room
 
@@ -23,7 +22,7 @@ export function runLoad({ users = 432, seconds = 120, giftsPerMin = 6, seed = 1 
   const camera = createCamera({ cfg: garden.cfg, now: () => t });
   const coalescer = createCoalescer({ now: () => t });
   const ids = Array.from({ length: users }, (_, i) => `u${i}`);
-  ids.forEach((id, i) => garden.chat({ userId: id, nickname: `Người ${i}`, avatar: '', comment: SIGN_WORDS[i % 12] }));
+  ids.forEach((id, i) => garden.chat({ userId: id, nickname: `Người ${i}`, avatar: '', comment: 'chào' }));
 
   const seen = {}, tickMs = [], frameBytes = [], shots = [], eventCounts = {}, shotKinds = {};
   garden.changes(seen);
@@ -53,7 +52,7 @@ export function runLoad({ users = 432, seconds = 120, giftsPerMin = 6, seed = 1 
 async function live(url, users, seconds) {
   const post = body => fetch(`${url}/api/sim`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
   const mk = i => ({ userId: `rehearsal-${i}`, nickname: `Người ${i}` });
-  for (let i = 0; i < users; i++) await post({ kind: 'chat', user: mk(i), comment: SIGN_WORDS[i % 12] });
+  for (let i = 0; i < users; i++) await post({ kind: 'chat', user: mk(i), comment: 'chào' });
   console.log(`${users} viewers joined; acting for ${seconds}s`);
   const end = Date.now() + seconds * 1000;
   while (Date.now() < end) {

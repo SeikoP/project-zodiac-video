@@ -12,10 +12,10 @@ export function makeCtx(over = {}) {
 }
 
 // A seated player; `level`/`gold` seed the record directly.
-export function addUser(ctx, id, { island = 'leo', level = 1, gold = 0 } = {}) {
+export function addUser(ctx, id, { tier = 'cloud-1', level = 1, gold = 0 } = {}) {
   const user = ensureUser(ctx, { userId: id, nickname: id.toUpperCase(), avatar: '' });
   user.level = level;
   user.gold = gold;
-  const plot = seat(ctx, user, island);
+  const plot = seat(ctx, user, tier);
   return { user, plot };
 }

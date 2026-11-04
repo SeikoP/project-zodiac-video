@@ -33,12 +33,12 @@ test('merchant doubles one crop only', () => {
   ev.force('merchant');
   const b = modifiers(k.ctx).boost;
   assert.equal(b.mult, 2);
-  assert.ok(['rau', 'huongduong', 'linhthao'].includes(b.crop));
+  assert.ok(['rau', 'huongduong', 'nammay'].includes(b.crop));
 });
 
 test('a pest storm puts pests on half the awake growing plots and rewards the room when 80% are cleared', () => {
   const k = makeCtx();
-  const users = Array.from({ length: 10 }, (_, i) => addUser(k.ctx, 'u' + i, { island: 'leo' }));
+  const users = Array.from({ length: 10 }, (_, i) => addUser(k.ctx, 'u' + i, { tier: 'cloud-1' }));
   users.forEach(u => grow(u.plot));
   const ev = createEvents(k.ctx);
   k.ctx.onPestCleared = id => ev.notePestCleared(id);
@@ -54,7 +54,7 @@ test('a pest storm puts pests on half the awake growing plots and rewards the ro
 
 test('a storm cleared by only 60% pays nothing', () => {
   const k = makeCtx();
-  const users = Array.from({ length: 10 }, (_, i) => addUser(k.ctx, 'u' + i, { island: 'leo' }));
+  const users = Array.from({ length: 10 }, (_, i) => addUser(k.ctx, 'u' + i, { tier: 'cloud-1' }));
   users.forEach(u => grow(u.plot));
   const ev = createEvents(k.ctx);
   k.ctx.onPestCleared = id => ev.notePestCleared(id);

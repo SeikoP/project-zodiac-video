@@ -150,6 +150,7 @@ export const DEFAULT_CONFIG = Object.freeze({
   // and closes with an MVP. false = no acts, everything always on.
   acts: true,
   actMinutes: 5,
+  smallRoom: true, // short solo-friendly rounds augment the automatic act schedule
   eliteHpFactor: 1.8,
   quizChainLength: 5,
   ...MINIGAME_DEFAULTS,
@@ -310,9 +311,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     return choices[Math.floor(rng() * choices.length)];
   };
   // Moving to the back is O(1); only arrivals and departures count as a change for the overlay.
-  function onStage(userId, changed = false) {
+  function onStage(userId, changed = false, arrival = false) {
     if (!stage.delete(userId)) changed = true;
-    stage.set(userId, true);
+    stage.set(userId, now() + (arrival ? 25000 : (cfg.smallRoom && cfg.acts ? Math.min(cfg.presenceMinutes * 60000, 90000) : cfg.presenceMinutes * 60000)));
     if (stage.size > cfg.crowdMax) stage.delete(stage.keys().next().value);
     if (changed) touch('stage');
   }
@@ -341,7 +342,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const newViewer = nickname => ({ nickname, avatar: '', team: null, lifetime: 0, lastSeenAt: 0, lastCommentAt: 0, likeCarry: 0, bonusNight: {}, fortuneAt: 0, wishAt: 0, night: 0 });
 
   // `wanted`: the colour a first comment named (null for anything else). Every viewer is on a team from their first action.
-  function viewer(u, wanted = null) {
+  function viewer(u, wanted = null, arrival = false) {
     const name = cleanName(u.nickname || u.userId, cfg.blockedWords);
     const v = (st.viewers[u.userId] ??= newViewer(name));
     if (u.nickname) v.nickname = name;
@@ -371,7 +372,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     v.lastSeenAt = now();
     st.lastActivityAt = now();
-    onStage(u.userId);
+    onStage(u.userId, false, arrival);
     return v;
   }
 
@@ -383,13 +384,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (greetedNo !== st.night.no) { greeted = new Set(); greetedNo = st.night.no; }
     if (greeted.has(u.userId)) return false;
     greeted.add(u.userId);
-    const v = viewer(u);
+    const v = viewer(u, null, true);
     // their star flies in and lands on the rim of the cluster; the room's "chào" lights it up (like blessing a wish)
-    const w = { id: ++st.greetingNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, at: now(), greeters: {}, done: false, kr: {} };
+    const w = { id: ++st.greetingNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, at: now(), need: cfg.smallRoom && cfg.acts ? Math.max(1, Math.min(cfg.welcomeNeed, stage.size - 1)) : cfg.welcomeNeed, greeters: {}, done: false, kr: {} };
     welcomeRound(w).open(null);
     st.welcomes.unshift(w);
     st.welcomes.length = Math.min(st.welcomes.length, 6);
-    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
+    touch('cosmos');
+    onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, x: v.star.x, y: v.star.y, need: w.need, seconds: cfg.welcomeWindowSeconds });
     return true;
   }
 
@@ -797,7 +799,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // --- newcomers the room can greet: "chào" goes to the newest open welcome that isn't your own -------------------
   // Each greeting and each wish is a keyword round (winners = the people who greeted / blessed). Ones saved before rounds get one from their names.
   const personRound = (w, names, need, seconds) => createKeywordRound({ now, match: () => true, winners: need, windowMs: seconds * 1000 }, w.kr ??= { open: true, openedAt: w.at, ctx: null, winners: Object.keys(names) });
-  const welcomeRound = w => personRound(w, w.greeters, cfg.welcomeNeed, cfg.welcomeWindowSeconds);
+  const welcomeRound = w => personRound(w, w.greeters, w.need ?? cfg.welcomeNeed, cfg.welcomeWindowSeconds);
   const blessRound = w => personRound(w, w.blessers, cfg.blessNeed, cfg.blessWindowSeconds);
   function welcome(u, v) {
     // the newest greeting this person can still join: the keyword round says who already greeted and when the window is over
@@ -812,7 +814,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     if (!w) return;
     w.greeters[u.userId] = v.nickname; // names for the overlay; the round holds who and how many
-    if (count < cfg.welcomeNeed) return void onEvent({ type: 'welcome-hi', id: w.id, userId: w.userId, nickname: w.nickname, by: v.nickname, count, need: cfg.welcomeNeed });
+    if (count < (w.need ?? cfg.welcomeNeed)) return void onEvent({ type: 'welcome-hi', id: w.id, userId: w.userId, nickname: w.nickname, by: v.nickname, count, need: w.need ?? cfg.welcomeNeed });
     w.done = true;
     const owner = st.viewers[w.userId];
     if (owner) bag.add({ userId: w.userId }, owner, 'dust', cfg.welcomeDust, 'welcome');
@@ -1009,11 +1011,15 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const heatMult = () => cfg.heatMultipliers[heat.level] ?? 1;
   const fanMult = v => 1 + (v.fanLevel ? Math.min(cfg.fanBonusMax, cfg.fanBonus + cfg.fanBonusPerLevel * v.fanLevel) : 0) + (v.subscriber ? cfg.subscriberBonus : 0);
 
+  let quickNextAt = 0, quickLastChat = 0, quickTurn = 0, quickRunning = false, quickSnapshotSecond = -1;
+  const quickMode = () => cfg.smallRoom && cfg.acts;
   function chat(u) {
     if (rehearsalOnly(u)) return;
     // Someone with no team yet is placed by their first comment: a colour name or a number 1-4 picks it (events/roster.mjs may
     // redirect to the smallest team). Someone who already has a team only changes it with "đổi <màu>" or a bare colour name.
     // While a poll runs, "1"–"4" is a vote, never a team pick.
+    quickLastChat = now();
+    if (!quickNextAt) quickNextAt = now() + 2500;
     const had = Boolean(st.viewers[u.userId]?.team);
     const vote = st.poll ? parseVote(u.comment) : null;
     const v = viewer(u, had || vote !== null ? null : parseSwitchTeam(u.comment) ?? parseTeam(u.comment));
@@ -1317,6 +1323,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function tick() {
     tickNo++;
     const t = now();
+    for (const [id, until] of stage) {
+      if (t < until) continue;
+      stage.delete(id);
+      touch('stage', 'cosmos', 'hud', 'stars');
+    }
     retuneGoals(t);
     cueTick(t);
     if (st.moon.partyUntil && t >= st.moon.partyUntil) {
@@ -1334,9 +1345,16 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // The boss and the chest. Readings wait while the boss is up.
     const active = t - st.lastActivityAt < 60000, busy = st.quiz || st.poll || st.fortune;
     // the act and its headliner
+    registry.tick(t); // finish the previous activity before scheduling the next
     actTick(t);
+    if (quickMode()) {
+      if (quickRunning && !registry.live()) { quickRunning = false; quickNextAt = t + 10000; touch('cosmos'); }
+      if (!quickRunning && quickNextAt && t >= quickNextAt && t - quickLastChat < 45000 && !busy && !st.head && !st.boss && !chestIsOpen() && !registry.live()) {
+        const id = quickTurn % 2 ? 'guessobject' : 'starcatch';
+        if (registry.start(id, id === 'starcatch' ? { rounds: 4 } : undefined)) { quickTurn++; quickRunning = true; touch('cosmos'); }
+      }
+    }
     questTick();
-    registry.tick(t); // the running boss or tug
     predict.tick();
     headTick(t);
     const playing = st.head || st.roast || st.tug || st.guess || st.starcatch;
@@ -1352,7 +1370,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       else { st.nextShowAt = t + 15000; touch('cosmos'); }
     }
     if (st.boss || hadBoss || st.guess || st.starcatch) touch('cosmos');
-    if (chestTick(st.lastActivityAt)) touch('cosmos');
+    if (quickMode() && Math.floor(t / 1000) !== quickSnapshotSecond) { quickSnapshotSecond = Math.floor(t / 1000); touch('cosmos'); }
+    if ((!quickMode() || (!busy && !playing && !quickRunning && !registry.live())) && chestTick(st.lastActivityAt)) touch('cosmos');
     rollHeat();
     const hl = heatLevelOf(heatScore());
     if (hl !== heat.level) {
@@ -1364,7 +1383,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // Quiet room: mostly a team's reading of the day; a quiz and a light poll come once each per eight
     // turns (about every six minutes), so they leave room for gifts, lit teams and the other events.
     const headWaiting = st.act?.phase === 'head' && !st.act.headDone; // don't open a quiz/poll in the way of the headliner
-    if (!st.quiz && !st.fortune && !st.poll && !st.boss && !playing && !headWaiting && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
+    if ((!quickMode() || (!quickRunning && !registry.live())) && !st.quiz && !st.fortune && !st.poll && !st.boss && !playing && !headWaiting && t - st.lastActivityAt >= cfg.quietSeconds * 1000 && t >= st.quietUntil) {
       const turn = st.quietTurn++;
       st.quietUntil = t + 45000;
       // 3× a house mascot shows a command, 3× a team's reading, 1× quiz, 1× poll — whichever of those can run
@@ -1380,13 +1399,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       minuteAt = t;
       for (const id of stage.keys()) { const v = st.viewers[id]; if (v) profile.track({ userId: id }, v, 'minutes'); }
     }
-    // Drop viewers who went quiet from the stage (at most crowdMax entries to look at).
-    const cutoff = t - cfg.presenceMinutes * 60000;
-    for (const id of stage.keys()) {
-      if ((st.viewers[id]?.lastSeenAt ?? 0) >= cutoff) break;
-      stage.delete(id);
-      touch('stage');
-    }
+
   }
 
   // --- snapshot parts -----------------------------------------------------------
@@ -1440,12 +1453,13 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         chest: chestView(),
         wishes: st.wishes.slice(0, 5).map(w => ({ id: w.id, nickname: w.nickname, avatar: w.avatar, team: w.team, text: w.text, blessed: w.blessed, blessings: Object.keys(w.blessers).length, open: !w.blessed && t - w.at < cfg.blessWindowSeconds * 1000 })),
         blessNeed: cfg.blessNeed,
-        welcomes: st.welcomes.filter(w => !w.done && t - w.at < cfg.welcomeWindowSeconds * 1000).slice(0, 3).map(w => ({ id: w.id, nickname: w.nickname, greetings: Object.keys(w.greeters).length })),
+        welcomes: st.welcomes.filter(w => !w.done && t - w.at < cfg.welcomeWindowSeconds * 1000).slice(0, 3).map(w => ({ id: w.id, nickname: w.nickname, need: w.need ?? cfg.welcomeNeed, greetings: Object.keys(w.greeters).length })),
         welcomeNeed: cfg.welcomeNeed,
         heat: { level: heat.level, score: heatScore(), levels: cfg.heatLevels, multiplier: heatMult() },
         fans: fansHere.sort((a, b) => (b.fanLevel ?? 0) - (a.fanLevel ?? 0)).slice(0, 3).map(v => ({ nickname: v.nickname, avatar: v.avatar, level: v.fanLevel ?? 0 })),
         fanCount: fansHere.length,
         show: cfg.showEverySeconds ? { inMs: Math.max(0, st.nextShowAt - t), kind: nextShowKind() } : null,
+        quick: quickMode() ? { nextInMs: quickRunning || !quickNextAt || t - quickLastChat >= 45000 ? null : Math.max(0, quickNextAt - t), next: quickTurn % 2 ? 'Đoán vật' : 'Hứng sao' } : null,
         act: actView(),
         head: st.head && { id: st.head.id, label: HEADS[st.head.id].label, remainingMs: Math.max(0, st.head.endsAt - t), left: st.head.left ?? null },
         mystery: guess.view(t),

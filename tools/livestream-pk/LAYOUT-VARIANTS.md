@@ -1,3 +1,5 @@
+> **Lưu trữ thiết kế cũ, không phải các bản đang vận hành.** Hiện chỉ dùng một overlay tại `/`, cùng giao diện cho LIVE và simulator. Diễn tập tại `http://127.0.0.1:4850/simulator`; không mở thêm cổng để chọn bố cục. `lite` chỉ giảm hiệu ứng; `phone` là tương thích khung cao, không phải phiên bản gameplay khác. Các hướng dẫn 12 cung dưới đây đã cũ.
+
 # 5 biến thể bố cục khung live 1080×1920
 
 Bản dựng Stitch: **https://stitch.withgoogle.com/projects/9979531318077856580**

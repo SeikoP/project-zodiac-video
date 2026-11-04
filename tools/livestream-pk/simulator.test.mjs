@@ -114,8 +114,7 @@ test('isolated LIVE simulator serves its UI and refuses real TikTok connections'
     assert.equal((await post(port, 'sim/crowd', { count: 100, giftRate: 0 })).body.ok, true);
     eventAbort.abort();
 
-    const sharedSimulator = await fetch(`http://127.0.0.1:${sharePort}/simulator`);
-    assert.equal(sharedSimulator.status, 404, 'the read-only public overlay route must not expose the simulator');
+    await assert.rejects(fetch(`http://127.0.0.1:${sharePort}/simulator`), 'simulator must not open a second listener');
   } finally {
     child.kill('SIGTERM');
     await Promise.race([exited, pause(1500)]);
@@ -160,4 +159,18 @@ test('the main LIVE server has no rehearsal API and tells the panel it is not th
     await Promise.race([exited, pause(1500)]);
     fs.rmSync(work, { recursive: true, force: true });
   }
+});
+
+
+test('simulator launcher refuses to create another instance on an occupied port', async () => {
+  const listener = net.createServer();
+  await new Promise(resolve => listener.listen(0, '127.0.0.1', resolve));
+  try {
+    const child = spawn(process.execPath, ['scripts/simulator.mjs'], { cwd: root, env: { ...process.env, PK_SIM_PORT: String(listener.address().port), PK_NO_OPEN: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    let output = '';
+    child.stdout.on('data', chunk => { output += chunk; });
+    const [code] = await once(child, 'exit');
+    assert.equal(code, 0);
+    assert.match(output, /không mở thêm/);
+  } finally { await new Promise(resolve => listener.close(resolve)); }
 });

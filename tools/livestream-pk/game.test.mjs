@@ -420,7 +420,7 @@ test('a poll offers four numbered options; "1"–"4" is a vote, once each, and n
 test('a poll can let the room pick the next headliner of the other act', () => {
   let t = 5 * 60000 * 70000 + 1000;
   const events = [];
-  const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
+  const game = createGame({ now: () => t, rng: () => 0, polls: [{ kind: 'next' }], onEvent: e => events.push(e), config: { smallRoom: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, pollSeconds: 10, luckyEverySeconds: 1e9 } });
   game.chat(u('a', { comment: 'đỏ' }));
   assert.equal(game.snapshot().cosmos.act.id, 'arena');
   game.startPoll();

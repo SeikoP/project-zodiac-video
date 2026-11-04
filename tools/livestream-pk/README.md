@@ -1,5 +1,7 @@
 # Đêm Hội Hoàng Đạo — game tương tác cho TikTok LIVE
 
+> **Phạm vi nâng cấp hiện tại (04/11/2026):** ưu tiên phòng dưới 100 người, mục tiêu hỗ trợ dưới 1.000. Kiểm tra trước bằng local/simulator; xác nhận LIVE qua OBS được hoãn vì chưa tiếp cận được. Xem [kế hoạch gameplay, giao diện, hiệu ứng và hướng dẫn xác nhận phát sóng sau](docs/live-upgrade-plan.md). Nội dung 12 cung bên dưới có phần đã cũ so với game 4 đội màu hiện tại; không dùng làm đặc tả cho đợt nâng cấp.
+
 Một sân khấu dưới bầu trời sao: người xem bước vào sân bằng linh vật cung của mình, gieo quẻ, thả đèn ước, nhảy, cùng thả tim cho trăng lên rằm, và cùng **đua sao** giữa cả 12 chòm. Game lấy cảm hứng từ hai trend đang hot — **sàn nhạc** (avatar người xem trên sàn, quà kích hoạt hiệu ứng) và **đi chùa online** (từ khoá → nghi thức trên màn hình, gõ mõ bằng tim, xin xăm có tờ giải) — nhưng đặt trong chủ đề chiêm tinh của kênh.
 
 ## Cách chơi
@@ -254,3 +256,22 @@ Bảng điều khiển `http://127.0.0.1:4848/control` cũng có tab **🧪 Di�
 Tương tác được gửi vào cùng logic `game.mjs` qua các API `sim/*`; overlay preview cập nhật qua luồng frame bình thường. Đây là mô phỏng phía client/server local, không phải giao diện TikTok chính thức và không giả lập giao thức mạng nội bộ của ứng dụng TikTok.
 
 **Cách ly an toàn:** `npm run simulator` khởi chạy tiến trình server thứ hai trên cổng 4850 (có thể đổi bằng `PK_SIM_PORT`), đặt `PK_SIMULATOR=1`, `PK_NO_TIKTOK=1`, dùng `.simulator-data/` và `.simulator-logs/`. API kết nối TikTok thật bị khóa trong tiến trình này. Dữ liệu sản xuất vẫn ở `data/` và `logs/`. Dừng bằng Ctrl+C. Không đưa URL Simulator vào nguồn Link chia sẻ công khai.
+
+
+## Chế độ chơi ngay (phòng ít người)
+
+Mặc định mở khi `acts` không tắt: bình luận đầu tiên được xếp đội và sau khoảng 2,5 giây mở Hứng sao (4 sao, mỗi sao 7 giây). Sau kết quả nghỉ 10 giây rồi luân phiên Đoán vật. Không cần đủ đội hoặc tặng quà để chơi. Khi không còn bình luận trong 45 giây, không mở lượt tự động mới; lượt đang chơi vẫn kết thúc bình thường.
+
+Chế độ này **bổ sung** vòng chơi nhanh vào lịch màn 5 phút hiện có: Sao Chổi, sao may mắn, rương, màn lớn, quẻ, câu đố, bình chọn và các sự kiện host gọi vẫn giữ nguyên. Topbar tiếp tục hiển thị rương, trăng, màn sắp tới, hạng 4 đội, lời dẫn và nhiệm vụ; vòng sao cùng linh vật vẫn hiện phía sau sân khấu. Đặt `smallRoom: false` để tắt vòng chơi nhanh và các điều chỉnh riêng cho phòng nhỏ. Dữ liệu người chơi không bị reset. Kiểm tra local bằng `npm run simulator`; OBS/LIVE chưa được xác nhận.
+
+
+### Một bản diễn tập duy nhất
+
+Dùng **http://127.0.0.1:4850/simulator**; panel cùng bản tại **http://127.0.0.1:4850/control**, overlay tại **http://127.0.0.1:4850/**. Simulator chỉ mở một cổng, không mở cổng chia sẻ. Chạy lại `npm run simulator` khi cổng bận sẽ báo dùng bản hiện có, không tạo bản mới hoặc tự chọn cổng khác. Nếu vừa đổi logic server, dừng bản cũ bằng Ctrl+C rồi chạy lại lệnh này. LIVE thật dùng 4848 và cổng chia sẻ riêng khi cần; không trộn dữ liệu LIVE với diễn tập. `LAYOUT-VARIANTS.md` chỉ là tài liệu thiết kế cũ, không phải danh sách phiên bản đang chạy.
+
+
+### Người đang hoạt động và lời chào
+
+Số người trên sân là **ước tính hoạt động**, không phải danh sách đang xem TikTok chính xác: connector hiện không cung cấp luồng rời phòng được ứng dụng xử lý. Người chỉ ghé tự rời sân sau 25 giây; trong chế độ chơi ngay, tương tác giữ người trên sân tối đa 90 giây (hoặc `presenceMinutes` nếu ngắn hơn). Chat/tim/quà tiếp theo đưa họ trở lại. Hồ sơ, điểm và đội đã chọn vẫn lưu, nhưng người hết thời gian không được tính vào quân số đội đang hoạt động. Chế độ màn cũ giữ thời gian tương tác theo `presenceMinutes`.
+
+Màn chào chỉ hiện một lời chúc ngắn, không còn sao bay/ảnh đại diện sao thứ hai. Phòng nhỏ chỉ cần một người khác gõ “chào” để hoàn tất lời chúc. Đồng hồ cuối lượt nằm phía trên sân khấu, không làm mờ hoặc che sự kiện.

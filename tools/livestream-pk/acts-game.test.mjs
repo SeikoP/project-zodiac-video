@@ -13,7 +13,7 @@ function setup(act, config = {}, minute = 1, visit = 0) {
   let t = at(act, minute, visit);
   const events = [];
   const game = createGame({
-    config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
+    config: { smallRoom: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false, ...config },
     now: () => t, rng: () => 0.3, onEvent: e => events.push(e),
   });
   const advance = ms => { for (let left = ms; left > 0; left -= 1000) { t += Math.min(1000, left); game.tick(); } };
@@ -109,7 +109,7 @@ test('nhiệm vụ Màn: the room fills the act\'s goal by taking part and every
 test('the acts take turns every five minutes and an act\'s headliner moves on each time it comes round', () => {
   const heads = [];
   for (let visit = 0; visit < 2; visit++) {
-    const game = createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => at('arena', 1, visit), rng: () => 0.3, onEvent: () => {} });
+    const game = createGame({ config: { smallRoom: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => at('arena', 1, visit), rng: () => 0.3, onEvent: () => {} });
     const view = game.snapshot().cosmos.act;
     assert.equal(view.id, 'arena');
     assert.equal(view.next.id, 'reunion');
@@ -125,7 +125,7 @@ test('every headliner belongs to exactly one act and each comes round within 40 
   assert.equal(new Set(used).size, used.length);
   const seen = new Set();
   for (let n = 0; n < 40; n++) {
-    const game = createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => (14000 + n) * SLOT + 1000, rng: () => 0.3, onEvent: () => {} });
+    const game = createGame({ config: { smallRoom: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => (14000 + n) * SLOT + 1000, rng: () => 0.3, onEvent: () => {} });
     seen.add(game.snapshot().cosmos.act.headLabel);
   }
   assert.deepEqual([...seen].sort(), Object.values(HEADS).map(h => h.label).sort());
@@ -133,7 +133,7 @@ test('every headliner belongs to exactly one act and each comes round within 40 
 
 test('the quest follows a headliner that has its own goal: catches in hứng sao băng, right answers in a quiz chain', () => {
   for (const [act, visit, head, unit] of [['arena', 0, 'elite', 'bình luận'], ['arena', 2, 'starcatch', 'sao băng hứng được'], ['arena', 3, 'quizchain', 'câu trả lời đúng'], ['reunion', 1, 'guessobject', 'câu trả lời đúng']]) {
-    const game = createGame({ config: { bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => at(act, 1, visit), rng: () => 0.3, onEvent: () => {} });
+    const game = createGame({ config: { smallRoom: false, bossEverySeconds: 0, chestEveryMinutes: 0, showEverySeconds: 0, autoQuiz: false, quietSeconds: 9999, demoTurns: false }, now: () => at(act, 1, visit), rng: () => 0.3, onEvent: () => {} });
     game.chat({ userId: 'a', nickname: 'A', comment: 'đỏ' });
     game.tick();
     const { act: view, quest } = game.snapshot().cosmos;

@@ -7,8 +7,8 @@ import { startGardenServer } from './server.mjs';
 
 async function boot() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'garden-srv-'));
-  const s = await startGardenServer({ port: 0, sharePort: 0, dir, tiktok: false, log: () => {} });
-  return { s, base: `http://127.0.0.1:${s.port}`, share: `http://127.0.0.1:${s.sharePort}` };
+  const s = await startGardenServer({ port: 0, dir, tiktok: false, simulator: true, log: () => {} });
+  return { s, base: `http://127.0.0.1:${s.port}` };
 }
 const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
@@ -18,7 +18,10 @@ test('the page is served and a simulated viewer shows up in the first poll', asy
     const page = await fetch(base + '/');
     assert.equal(page.status, 200);
     assert.match(await page.text(), /Vườn Mây/);
-    const r = await post(base + '/api/sim', { kind: 'chat', user: { userId: 'x', nickname: 'Xuân' }, comment: 'Sư Tử' });
+    const control = await fetch(base + '/control');
+    assert.equal(control.status, 200);
+    assert.match(await control.text(), /Bàn điều khiển/);
+    const r = await post(base + '/api/sim', { kind: 'chat', user: { userId: 'x', nickname: 'Xuân' }, comment: 'chào' });
     assert.equal(r.status, 200);
     const first = await (await fetch(base + '/poll')).json();
     const events = first.msgs.map(m => m.event);
@@ -33,7 +36,7 @@ test('the page is served and a simulated viewer shows up in the first poll', asy
 test('a simulated gift reaches the camera as a shot on the next poll', async () => {
   const { s, base } = await boot();
   try {
-    await post(base + '/api/sim', { kind: 'chat', user: { userId: 'x', nickname: 'Xuân' }, comment: 'Sư Tử' });
+    await post(base + '/api/sim', { kind: 'chat', user: { userId: 'x', nickname: 'Xuân' }, comment: 'chào' });
     const first = await (await fetch(base + '/poll')).json();
     await post(base + '/api/sim', { kind: 'gift', user: { userId: 'x', nickname: 'Xuân' }, diamonds: 100, count: 1 });
     await new Promise(r => setTimeout(r, 400));
@@ -43,13 +46,13 @@ test('a simulated gift reaches the camera as a shot on the next poll', async () 
   } finally { await s.close(); }
 });
 
-test('the share port is read-only: no API, no POST, but the overlay and poll work', async () => {
-  const { s, share } = await boot();
+test('Garden runs the overlay, control and poll through one port', async () => {
+  const { s, base } = await boot();
   try {
-    assert.equal((await fetch(share + '/')).status, 200);
-    assert.equal((await post(share + '/api/sim', { kind: 'chat' })).status, 405);
-    assert.equal((await fetch(share + '/api/sim')).status, 404);
-    assert.equal((await fetch(share + '/poll')).status, 200);
+    assert.equal((await fetch(base + '/')).status, 200);
+    assert.equal((await fetch(base + '/control')).status, 200);
+    assert.equal((await fetch(base + '/poll')).status, 200);
+    assert.equal(s.sharePort, undefined);
   } finally { await s.close(); }
 });
 

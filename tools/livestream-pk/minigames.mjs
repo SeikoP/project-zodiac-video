@@ -31,11 +31,11 @@ export function createStarcatch({ st, cfg, now, rng, onEvent, reward, viewerOf, 
     c.kr = {};
     star(c).open(c.word);
     c.nextAt = t + cfg.catchEverySeconds * 1000;
-    onEvent({ type: 'catch-star', round: c.round, of: cfg.catchRounds, word: c.word, seconds: cfg.catchEverySeconds });
+    onEvent({ type: 'catch-star', round: c.round, of: c.rounds ?? cfg.catchRounds, word: c.word, seconds: cfg.catchEverySeconds });
   }
-  function start() {
+  function start({ rounds = cfg.catchRounds } = {}) {
     if (st.starcatch) return null;
-    st.starcatch = { round: 0, word: null, nextAt: 0, score: {}, kr: {} };
+    st.starcatch = { rounds: Math.max(1, Math.min(cfg.catchRounds, Math.floor(rounds) || cfg.catchRounds)), round: 0, word: null, nextAt: 0, score: {}, kr: {} };
     try { round(now()); } catch (e) { st.starcatch = null; throw e; } // never leave a half-started event
     return st.starcatch;
   }
@@ -67,10 +67,10 @@ export function createStarcatch({ st, cfg, now, rng, onEvent, reward, viewerOf, 
   function tick(t) {
     const c = st.starcatch;
     if (!c || t < c.nextAt) return;
-    if (c.round >= cfg.catchRounds) return finish();
+    if (c.round >= (c.rounds ?? cfg.catchRounds)) return finish();
     round(t);
   }
-  const view = t => st.starcatch && { round: st.starcatch.round, of: cfg.catchRounds, word: st.starcatch.word, caught: star(st.starcatch).winnersList().length, need: cfg.catchWinners, nextInMs: Math.max(0, st.starcatch.nextAt - t),
+  const view = t => st.starcatch && { round: st.starcatch.round, of: st.starcatch.rounds ?? cfg.catchRounds, word: st.starcatch.word, caught: star(st.starcatch).winnersList().length, need: cfg.catchWinners, nextInMs: Math.max(0, st.starcatch.nextAt - t),
     top: Object.values(st.starcatch.score).sort((a, b) => b.catches - a.catches).slice(0, 3) };
   return { id: 'starcatch', start, chat, tick, view, end: finish, isDone: () => !st.starcatch };
 }

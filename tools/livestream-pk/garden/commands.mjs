@@ -1,6 +1,7 @@
 // Comments -> commands. A command is a short comment starting with a verb; anything else is just chat.
-import { norm } from '../game.mjs';
 import { cropByName } from './crops.mjs';
+
+const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').replace(/\s+/g, ' ').trim();
 
 const VERBS = [ // longer phrases first: "bắt trộm" and "bắt sâu" must win over "trộm"
   [/^bat\s+trom\b/, 'catch'], [/^bat\s+sau\b/, 'pest'], [/^tha\s+cho\b/, 'dog'], [/^trong\b/, 'plant'], [/^tuoi\b/, 'water'],

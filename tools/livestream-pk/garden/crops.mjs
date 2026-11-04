@@ -2,11 +2,11 @@
 export const CROPS = Object.freeze({
   rau: { id: 'rau', label: 'Rau', minLevel: 1, growMs: 180000, gold: 10, xp: 5 },
   huongduong: { id: 'huongduong', label: 'Hướng dương', minLevel: 2, growMs: 300000, gold: 22, xp: 12 },
-  linhthao: { id: 'linhthao', label: 'Linh thảo', minLevel: 4, growMs: 480000, gold: 45, xp: 25 },
+  nammay: { id: 'nammay', label: 'Nấm mây', minLevel: 4, growMs: 480000, gold: 45, xp: 25 },
 });
 
 const fold = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replaceAll('đ', 'd').replace(/\s+/g, '').trim();
-export const cropByName = text => Object.keys(CROPS).find(id => fold(text) === id) ?? null;
+export const cropByName = text => Object.keys(CROPS).find(id => fold(text).replaceAll(' ', '') === id) ?? null;
 export const seedCost = (id, cfg) => Math.round(CROPS[id].gold * cfg.seedCostRate);
 
 export const STAGE_AT = Object.freeze([0, 0.2, 0.55, 1]);

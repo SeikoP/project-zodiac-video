@@ -318,5 +318,5 @@ http.createServer(handler(false)).listen(PORT, '127.0.0.1', () => {
   if (config.tiktokUsername && !process.env.PK_NO_TIKTOK) tiktok.connect(config.tiktokUsername);
 });
 // Read-only copy of the overlay for a tunnel; still bound to localhost, the tunnel client connects from this machine.
-http.createServer(handler(true)).listen(SHARE_PORT, '127.0.0.1', () => console.log(`  chia sẻ overlay (chỉ xem, cho tunnel)  http://127.0.0.1:${SHARE_PORT}/`))
+if (!SIMULATOR) http.createServer(handler(true)).listen(SHARE_PORT, '127.0.0.1', () => console.log(`  chia sẻ overlay (chỉ xem, cho tunnel)  http://127.0.0.1:${SHARE_PORT}/`))
   .on('error', e => console.error(`[share] không mở được cổng ${SHARE_PORT}: ${e.message}`));

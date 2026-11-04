@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F6F0E6">
+<title>Vườn Mây · Bàn điều khiển</title>
+<link rel="stylesheet" href="/garden/control.css">
+</head>
+<body>
+<main class="shell">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">✦ bungmoto <span>·</span> GARDEN TEST LAB</div>
+      <h1>Vườn Mây <span id="mode" class="badge">Đang kết nối…</span></h1>
+      <p id="modeNotice" class="notice" aria-live="polite">Đang đọc trạng thái Garden…</p>
+    </div>
+    <nav aria-label="Điều hướng">
+      <a class="button quiet" href="/">Mở overlay</a>
+      <a class="button" href="/garden/control">Bàn điều khiển</a>
+    </nav>
+  </header>
+
+  <section class="stats" aria-label="Trạng thái khu vườn">
+    <article class="stat"><span>Người trong vườn</span><b id="viewers">—</b></article>
+    <article class="stat"><span>Ô đang có cây</span><b id="planted">—</b></article>
+    <article class="stat"><span>Cây đã chín</span><b id="ripe">—</b></article>
+    <article class="stat"><span>Sự kiện / camera</span><b id="activity">—</b></article>
+  </section>
+
+  <div class="layout">
+    <section class="panel controls">
+      <div class="panel-heading"><div><div class="eyebrow">TƯƠNG TÁC</div><h2>Thử như người xem</h2></div><span id="connection" class="pill">Đang nối…</span></div>
+
+      <div class="person-row">
+        <label for="nickname">Tên người xem giả lập</label>
+        <input id="nickname" value="Mai" maxlength="32" autocomplete="off">
+      </div>
+
+      <form id="chatForm" class="chat-form">
+        <label for="comment">Bình luận / lệnh</label>
+        <div class="input-row"><input id="comment" maxlength="120" placeholder="Ví dụ: trồng rau" autocomplete="off" required><button class="primary" type="submit" data-sim-only>Gửi bình luận</button></div>
+      </form>
+      <div class="quick-actions" aria-label="Lệnh nhanh">
+        <button type="button" data-comment="trồng rau" data-sim-only>Trồng rau</button>
+        <button type="button" data-comment="trồng hướng dương" data-sim-only>Hướng dương · cấp 2</button>
+        <button type="button" data-comment="trồng nấm mây" data-sim-only>Nấm mây · cấp 4</button>
+        <button type="button" data-comment="tưới" data-sim-only>Tưới</button>
+        <button type="button" data-comment="bắt sâu" data-sim-only>Bắt sâu</button>
+        <button type="button" data-comment="hái" data-sim-only>Hái</button>
+        <button type="button" data-comment="trộm" data-sim-only>Trộm</button>
+        <button type="button" data-comment="bắt trộm" data-sim-only>Bắt trộm</button>
+        <button type="button" data-comment="thả chó" data-sim-only>Thả chó</button>
+        <button type="button" data-comment="vườn" data-sim-only>Thẻ vườn</button>
+      </div>
+      <p id="actionResult" class="result" role="status" aria-live="polite">Chọn người xem, rồi gửi bình luận hoặc lệnh.</p>
+
+      <hr>
+      <div class="panel-heading compact"><div><div class="eyebrow">QUÀ THỬ</div><h2>Kiểm tra hiệu ứng quà</h2></div></div>
+      <div class="gift-row">
+        <label class="grow" for="diamonds">Giá trị mỗi quà</label>
+        <select id="diamonds" data-sim-only>
+          <option value="1">1 xu · Giọt sương</option>
+          <option value="5">5 xu · Phân sao</option>
+          <option value="100">100 xu · Mưa phép</option>
+          <option value="1000">1000 xu · Thần thụ</option>
+        </select>
+        <label class="count-label" for="giftCount">Số lượng</label>
+        <input id="giftCount" class="count" type="number" min="1" max="99" value="1" data-sim-only>
+        <button id="sendGift" class="primary" type="button" data-sim-only>Gửi quà</button>
+      </div>
+
+      <hr>
+      <div class="panel-heading compact"><div><div class="eyebrow">SỰ KIỆN & CAMERA</div><h2>Kiểm tra toàn vườn</h2></div></div>
+      <div class="event-actions">
+        <button type="button" data-event="rain">Mưa mây</button>
+        <button type="button" data-event="pests">Bão sâu</button>
+        <button type="button" data-event="merchant">Thương lái</button>
+        <button type="button" data-event="golden">Giờ vàng</button>
+        <button id="cameraLock" type="button">Khóa camera</button>
+      </div>
+
+      <div class="demo-row">
+        <div><b>Demo nhanh</b><small>Vào vườn → trồng → 3 lần phân sao → thu hoạch → giờ vàng</small></div>
+        <button id="runDemo" class="primary" type="button" data-sim-only>Chạy demo</button>
+      </div>
+      <div class="reset-row"><span>Chỉ xóa dữ liệu của simulator.</span><button id="reset" type="button" class="danger" data-sim-only>Reset simulator</button></div>
+    </section>
+
+    <aside class="side-column">
+      <section class="panel preview-panel">
+        <div class="panel-heading"><div><div class="eyebrow">XEM TRƯỚC</div><h2>Overlay đang chạy</h2></div><a href="/" target="_blank" rel="noopener">Mở lớn ↗</a></div>
+        <iframe id="preview" src="/" title="Xem trước overlay Vườn Mây"></iframe>
+        <div id="tiers" class="tiers" aria-label="Số người ở từng tầng"></div>
+      </section>
+      <section class="panel rank-panel">
+        <div class="panel-heading"><div><div class="eyebrow">THI ĐUA PHIÊN LIVE</div><h2 id="sessionTitle">Đang chờ khách đầu tiên</h2></div><span class="pill">Top 5</span></div>
+        <ol id="standings" class="standings"><li class="empty">Khách đầu tiên sẽ mở bảng đua.</li></ol>
+        <div class="finish-row"><button id="finishSession" type="button" class="primary" disabled>Chốt phiên và trao danh hiệu</button></div>
+        <p id="finishResult" class="result" role="status" aria-live="polite"></p>
+      </section>
+      <section class="panel feed-panel">
+        <div class="panel-heading"><div><div class="eyebrow">HOẠT ĐỘNG</div><h2>Sự kiện gần đây</h2></div><button id="clearFeed" class="quiet" type="button">Xóa log</button></div>
+        <ol id="feed" aria-live="polite"><li class="empty">Đang chờ người xem và sự kiện…</li></ol>
+      </section>
+    </aside>
+  </div>
+</main>
+<script type="module" src="/garden/control.js"></script>
+</body>
+</html>

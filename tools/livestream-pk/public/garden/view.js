@@ -1,13 +1,12 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
-// meta = { islands: string[], cfg: { plotCell, plotsPerRow, islandSize, islandCols, islandMargin } } from the server's `meta` message.
+// meta = { tiers: { id, label }[], cfg: { tierWidth, tierHeight, plotCell, plotsPerRow, tierMarginX, tierMarginY } } from the server.
 
-export const lodOf = zoom => (zoom < 0.5 ? 'dot' : zoom < 1.8 ? 'plot' : 'close');
+export const lodOf = zoom => (zoom < 0.42 ? 'dot' : zoom < 1.8 ? 'plot' : 'close');
 
 // Same layout as garden/world.mjs plotCenter (a test keeps the two in step).
-export function plotPos(plot, { islands, cfg }) {
-  const i = islands.indexOf(plot.island);
-  const ox = (i % cfg.islandCols) * cfg.islandSize, oy = Math.floor(i / cfg.islandCols) * cfg.islandSize;
-  return { x: ox + cfg.islandMargin + (plot.slot % cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2, y: oy + cfg.islandMargin + Math.floor(plot.slot / cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2 };
+export function plotPos(plot, { tiers, cfg }) {
+  const i = tiers.findIndex(t => t.id === plot.tier);
+  return { x: cfg.tierMarginX + (plot.slot % cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2, y: i * cfg.tierHeight + cfg.tierMarginY + Math.floor(plot.slot / cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2 };
 }
 
 // The camera between two shots: smoothstep in position, geometric in zoom (so zooming feels even).

@@ -231,9 +231,9 @@ $('overlayUrl').textContent = `${location.origin}/`;
 try { $('user').value = localStorage.getItem('pk-user') || ''; } catch {}
 
 // ---- one UI, two tabs: live control + the rehearsal simulator (own server, own data) ----
-// A different PC/port? open /control?sim=http://host:4860
+// Live panel uses the canonical simulator; a simulator panel stays on its own origin.
 const simQuery = new URLSearchParams(location.search).get('sim');
-const simBase = (simQuery || (location.port === '4850' ? location.origin : `${location.protocol}//${location.hostname}:4850`)).replace(/\/$/, '');
+let simBase = (simQuery || (location.port === '4850' ? location.origin : `${location.protocol}//${location.hostname}:4850`)).replace(/\/$/, '');
 function showTab(sim) {
   document.body.classList.toggle('simtab', sim);
   $('simPane').hidden = !sim;
@@ -434,6 +434,11 @@ setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('vi-V
 
 subscribe({
   meta: m => {
+    if (m.simulator && !simQuery) {
+      simBase = location.origin;
+      $('simOpen').href = `${simBase}/simulator`;
+      if ($('simFrame').getAttribute('src')) $('simFrame').src = `${simBase}/simulator`;
+    }
     $('simTools').hidden = !m.simulator;
     $('simHint').hidden = Boolean(m.simulator);
     S.config = m.config;

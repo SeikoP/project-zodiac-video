@@ -1,5 +1,4 @@
 // Vườn Mây: wires comments, gifts and time into the garden modules. The only place that knows how they fit together.
-import { parseSign, SIGNS } from '../game.mjs';
 import { gardenConfig } from './config.mjs';
 import { catchPests, harvest, plant, tickPlots, water } from './care.mjs';
 import { createLimiter, parseCommand, resolveMention } from './commands.mjs';
@@ -8,42 +7,56 @@ import { CROPS, stageOf } from './crops.mjs';
 import { createEvents, modifiers } from './events.mjs';
 import { applyGift } from './gifts.mjs';
 import { catchThief, dog, steal, tickSteal } from './steal.mjs';
-import { bump, emptyGardenState, ensureUser, ISLANDS, seat } from './world.mjs';
+import { createCompetition } from './competition.mjs';
+import { bump, emptyGardenState, ensureUser, TIERS, seat } from './world.mjs';
 
 export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, state = emptyGardenState(now()) } = {}) {
   const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), limiter: createLimiter(now) };
+  const competition = createCompetition({ state, now });
   ctx.mods = () => modifiers(ctx);
   const events = createEvents(ctx);
   ctx.onPestCleared = id => events.notePestCleared(id);
 
   function run(user, cmd) {
-    if (!ctx.limiter.allow(user.userId, 'care', ctx.cfg.careGapMs)) return;
+    if (!ctx.limiter.allow(user.userId, 'care', ctx.cfg.careGapMs)) return { ok: false, reason: 'cooldown' };
     const target = cmd.mention ? resolveMention(state, cmd.mention, user.userId) : null;
-    if (cmd.mention && !target) return; // a name nobody (or two people) answers to is never guessed at
+    if (cmd.mention && !target) return { ok: false, reason: 'no-target' }; // a name nobody (or two people) answers to is never guessed at
+    let result, scoreAction = null;
     switch (cmd.cmd) {
-      case 'plant': return plant(ctx, user, cmd.arg ?? 'rau');
-      case 'water': return water(ctx, user, target ?? user);
-      case 'pest': return catchPests(ctx, user);
-      case 'harvest': return harvest(ctx, user);
-      case 'steal': return steal(ctx, user, target);
-      case 'catch': return catchThief(ctx, user);
-      case 'dog': return dog(ctx, user);
-      case 'card': return ctx.emit({ type: 'card', userId: user.userId, nickname: user.nickname, level: user.level, xp: user.xp, gold: user.gold, stats: user.stats });
+      case 'plant': result = plant(ctx, user, cmd.arg ?? 'rau'); scoreAction = 'plant'; break;
+      case 'water': result = water(ctx, user, target ?? user); scoreAction = target && target !== user ? 'help' : 'water'; break;
+      case 'pest': result = catchPests(ctx, user); scoreAction = 'pest'; break;
+      case 'harvest': result = harvest(ctx, user); scoreAction = 'harvest'; break;
+      case 'steal': result = steal(ctx, user, target); break;
+      case 'catch': result = catchThief(ctx, user); scoreAction = 'catch'; break;
+      case 'dog': result = dog(ctx, user); scoreAction = 'protect'; break;
+      case 'card':
+        ctx.emit({ type: 'card', userId: user.userId, nickname: user.nickname, level: user.level, xp: user.xp, gold: user.gold, stats: user.stats, competition: competition.profile(user) });
+        return { ok: true };
+      default: return { ok: false, reason: 'unknown-command' };
     }
+    if (result?.ok && scoreAction) {
+      const award = competition.score(user, scoreAction);
+      if (award?.titles.length) ctx.emit({ type: 'title', userId: user.userId, nickname: user.nickname, titles: award.titles, points: award.total });
+    }
+    return result;
   }
 
   function chat(u) {
     const cmd = parseCommand(u.comment);
     let user = state.users[u.userId];
-    if (!cmd) {
-      const sign = !user?.seat && parseSign(u.comment);
-      if (sign) seat(ctx, ensureUser(ctx, u), sign);
-      return;
-    }
     const fresh = !user;
-    user = ensureUser(ctx, u);
-    if (!user.seat && !seat(ctx, user)) { if (fresh) delete state.users[u.userId]; return; } // no room: do not keep a record for someone with no plot
-    run(user, cmd);
+    let joined = false;
+    user ??= ensureUser(ctx, u);
+    if (!user.seat) {
+      const plot = seat(ctx, user);
+      if (!plot) { if (fresh) delete state.users[u.userId]; return { ok: false, reason: 'no-room' }; }
+      joined = true;
+      ctx.emit({ type: 'joined', userId: user.userId, plotId: plot.id });
+      const award = competition.score(user, 'join');
+      if (award?.titles.length) ctx.emit({ type: 'title', userId: user.userId, nickname: user.nickname, titles: award.titles, points: award.total });
+    }
+    return { ...(cmd ? run(user, cmd) : { ok: true }), action: cmd?.cmd ?? 'chat', joined, plotId: user.seat && `${user.seat.tier}:${user.seat.slot}`, competition: competition.profile(user) };
   }
 
   function expire() {
@@ -56,15 +69,15 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
 
   const view = p => {
     const o = p.owner && state.users[p.owner];
-    return { id: p.id, island: p.island, slot: p.slot, owner: o && { userId: o.userId, nickname: o.nickname, avatar: o.avatar, level: o.level, sign: o.sign },
+    return { id: p.id, tier: p.tier, slot: p.slot, owner: o && { userId: o.userId, nickname: o.nickname, avatar: o.avatar, level: o.level },
       stage: p.crop ? stageOf(p.crop, now(), ctx.cfg) : null, crop: p.crop && { type: p.crop.type, progress: p.crop.progress, pest: p.crop.pest, stolen: p.crop.stolen },
       water: p.water, dog: p.dogUntil > now(), shield: p.shieldUntil > now(), deco: p.deco, awake: Boolean(o) && now() - p.lastActive < ctx.cfg.sleepAfterMs };
   };
 
   return {
-    state, cfg: ctx.cfg, events,
+    state, cfg: ctx.cfg, events, competition,
     chat,
-    gift: g => { applyGift(ctx, ensureUser(ctx, g), g); },
+    gift: g => applyGift(ctx, ensureUser(ctx, g), g),
     like() {}, social() {}, member() {},
     tick() { tickPlots(ctx); tickSteal(ctx); events.tick(); expire(); },
     changes(seen) {
@@ -74,9 +87,11 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       if (Object.keys(plots).length) parts.plots = plots;
       const ev = JSON.stringify(state.event);
       if (ev !== seen.event) { seen.event = ev; parts.event = state.event; }
+      const revision = competition.revision();
+      if (revision !== seen.competition) { seen.competition = revision; parts.competition = competition.status(); }
       return parts;
     },
-    meta: () => ({ islands: ISLANDS, signNames: Object.fromEntries(SIGNS.map(x => [x.id, x.label])), copy: COPY, crops: CROPS, cfg: { plotCell: ctx.cfg.plotCell, plotsPerRow: ctx.cfg.plotsPerRow, islandSize: ctx.cfg.islandSize, islandCols: ctx.cfg.islandCols, islandMargin: ctx.cfg.islandMargin, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs } }),
+    meta: () => ({ tiers: TIERS, copy: COPY, crops: CROPS, cfg: { tierWidth: ctx.cfg.tierWidth, tierHeight: ctx.cfg.tierHeight, plotsPerTier: ctx.cfg.plotsPerTier, plotsPerRow: ctx.cfg.plotsPerRow, plotCell: ctx.cfg.plotCell, tierMarginX: ctx.cfg.tierMarginX, tierMarginY: ctx.cfg.tierMarginY, camera: ctx.cfg.camera, graceMs: ctx.cfg.graceMs } }),
     ctx,
   };
 }

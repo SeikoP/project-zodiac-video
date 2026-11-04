@@ -9,7 +9,17 @@
 <body>
 <div id="stage">
   <canvas id="world" width="1080" height="1920"></canvas>
-  <header id="top"><b>Vườn Mây</b><span id="hint"></span></header>
+  <header id="top">
+    <div class="brand-row"><span class="brand">✦ bungmoto</span><span class="tag">vườn chung</span></div>
+    <b>Vườn Mây</b>
+    <span id="hint"></span>
+    <div class="garden-status"><span class="live-dot" aria-hidden="true"></span><span id="audienceCount">Vườn đang mở</span><span id="eventLabel">Chờ người gieo hạt</span></div>
+  </header>
+  <aside id="scoreboard" aria-label="Bảng xếp hạng phiên LIVE">
+    <div class="score-heading"><b>ĐUA PHIÊN</b><span id="sessionLabel">Chờ khách đầu tiên</span></div>
+    <ol id="leaders"><li class="empty">Người đầu tiên sẽ mở phiên mới.</li></ol>
+  </aside>
+  <button id="audioToggle" type="button" aria-pressed="false" aria-label="Bật nhạc nền và hiệu ứng">♫ Bật âm thanh</button>
   <div id="banner"></div>
   <ul id="feed"></ul>
 </div>

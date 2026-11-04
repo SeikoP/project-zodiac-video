@@ -1,52 +1,52 @@
 // The camera director. The server decides every shot (so it is testable); the page only eases toward it.
 // Gifts get the best shots, but the light is shared: once a gift has been shown, a waiting non-gift moment
 // (first ripe crop, level up, a catch) is shown before more gifts until two of them were shown in the last minute.
-import { ISLANDS, islandCenter, plotCenter } from './world.mjs';
+import { TIERS, plotCenter, tierCenter } from './world.mjs';
 
 const PRIORITY = { gift: 1, steal: 3, catch: 3, levelup: 4, ripe: 4, 'event-start': 5 };
 const WIDTH = 1080, HEIGHT = 1920;
 
 export function createCamera({ cfg, now }) {
   const c = cfg.camera;
-  const worldCenter = { x: cfg.islandCols * cfg.islandSize / 2, y: Math.ceil(ISLANDS.length / cfg.islandCols) * cfg.islandSize / 2 };
+  const worldCenter = { x: cfg.tierWidth / 2, y: TIERS.length * cfg.tierHeight / 2 };
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  let queue = [], current = null, locked = false, shown = [], idleIdx = 0;
-  const activity = {};
+  let queue = [], current = null, locked = false, shown = [];
 
-  const split = id => { const [island, slot] = String(id).split(':'); return { island, slot: Number(slot) }; };
-  const plotAt = id => { const p = split(id); return { island: p.island, ...plotCenter(p.island, p.slot, cfg) }; };
+  const split = id => { const [tier, slot] = String(id).split(':'); return { tier, slot: Number(slot) }; };
+  const plotAt = id => { const p = split(id); return { tier: p.tier, ...plotCenter(p.tier, p.slot, cfg) }; };
 
   function candidate(e) {
-    const t = now(), base = { at: t, type: e.type, ttl: e.type === 'gift' ? c.giftTtlMs : c.ttlMs, gift: e.type === 'gift' };
+    const t = now(), base = { at: t, type: e.type, plotId: e.plotId, ttl: e.type === 'gift' ? c.giftTtlMs : c.ttlMs, gift: e.type === 'gift' };
+    if (e.type === 'joined') {
+      const p = plotAt(e.plotId);
+      return { ...base, kind: 'welcome', priority: 2, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomTier, holdMs: c.giftHoldMs };
+    }
     if (e.type === 'gift') {
-      if (!e.plotId) return { ...base, kind: 'gift', priority: 1, island: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.giftHoldMs };
+      if (!e.plotId) return { ...base, kind: 'gift', priority: 1, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.giftHoldMs };
       const big = e.tier === 'rain' || e.tier === 'tree', p = plotAt(e.plotId);
-      return big ? { ...base, kind: 'gift', priority: 1, island: p.island, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.giftHoldMs }
-        : { ...base, kind: 'gift', priority: 2, island: p.island, ...islandCenter(p.island, cfg), zoom: c.zoomIsland, holdMs: c.lowGiftHoldMs };
+      return big ? { ...base, kind: 'gift', priority: 1, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomTier, holdMs: c.giftHoldMs }
+        : { ...base, kind: 'gift', priority: 2, tier: p.tier, ...tierCenter(p.tier, cfg), zoom: c.zoomTier, holdMs: c.lowGiftHoldMs };
     }
     if (e.type === 'steal' || e.type === 'catch') {
       const a = plotAt(e.plotId), b = e.thiefPlotId ? plotAt(e.thiefPlotId) : a;
-      const zoom = clamp(Math.min(WIDTH / (Math.abs(a.x - b.x) + 480), HEIGHT / (Math.abs(a.y - b.y) + 480)), c.zoomIsland, c.zoomClose);
-      return { ...base, kind: e.type, priority: 3, island: a.island, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, zoom, holdMs: c.stealHoldMs };
+      const zoom = clamp(Math.min(WIDTH / (Math.abs(a.x - b.x) + 480), HEIGHT / (Math.abs(a.y - b.y) + 480)), c.zoomTier, c.zoomClose);
+      return { ...base, kind: e.type, priority: 3, tier: a.tier, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, zoom, holdMs: c.stealHoldMs };
     }
-    if (e.type === 'levelup' || (e.type === 'ripe' && (e.first || e.crop === 'linhthao'))) {
+    if (e.type === 'levelup' || (e.type === 'ripe' && (e.first || e.crop === 'nammay'))) {
       const p = plotAt(e.plotId);
-      return { ...base, kind: e.type, priority: 4, island: p.island, x: p.x, y: p.y, zoom: 1.6, holdMs: c.levelHoldMs };
+      return { ...base, kind: e.type, priority: 4, tier: p.tier, x: p.x, y: p.y, zoom: c.zoomClose, holdMs: c.levelHoldMs };
     }
-    if (e.type === 'event-start') return { ...base, kind: 'event', priority: 5, island: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.eventHoldMs };
+    if (e.type === 'event-start') return { ...base, kind: 'event', priority: 5, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.eventHoldMs };
     return null;
   }
 
-  function noteActivity(island) { if (island) activity[island] = (activity[island] ?? 0) + 1; }
-
   function push(e) {
-    if (e.plotId) noteActivity(split(e.plotId).island);
     if (locked) return;
     const cand = candidate(e);
     if (!cand) return;
-    const same = cand.island && queue.find(q => q.island === cand.island && cand.at - q.at <= c.mergeMs);
+    const same = cand.tier && queue.find(q => q.tier === cand.tier && cand.at - q.at <= c.mergeMs);
     if (same) {
-      Object.assign(same, { kind: 'island', priority: Math.min(same.priority, cand.priority), ...islandCenter(cand.island, cfg), zoom: c.zoomIsland, holdMs: Math.max(same.holdMs, cand.holdMs), gift: same.gift && cand.gift, ttl: Math.max(same.ttl, cand.ttl) });
+      Object.assign(same, { kind: 'tier', priority: Math.min(same.priority, cand.priority), ...tierCenter(cand.tier, cfg), zoom: c.zoomTier, holdMs: Math.max(same.holdMs, cand.holdMs), gift: same.gift && cand.gift, ttl: Math.max(same.ttl, cand.ttl) });
       return;
     }
     queue.push(cand);
@@ -69,10 +69,7 @@ export function createCamera({ cfg, now }) {
   }
 
   function idleShot() {
-    const ranked = ISLANDS.filter(i => activity[i] > 0).sort((a, b) => activity[b] - activity[a]);
-    const island = ranked[0] ?? ISLANDS[idleIdx++ % ISLANDS.length];
-    for (const k of Object.keys(activity)) activity[k] *= 0.5;
-    return { kind: 'idle', priority: 9, island, ...islandCenter(island, cfg), zoom: c.zoomIsland, holdMs: c.idleHoldMs, gift: false };
+    return { kind: 'idle', priority: 9, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.idleHoldMs, gift: false };
   }
 
   function start(shot) {
@@ -84,7 +81,7 @@ export function createCamera({ cfg, now }) {
   }
 
   return {
-    push, noteActivity,
+    push,
     setLock(on) { locked = Boolean(on); if (locked) queue = []; },
     tick() {
       if (locked) return null;
@@ -92,7 +89,7 @@ export function createCamera({ cfg, now }) {
       const idleYields = current?.kind === 'idle' && queue.length && t - current.startedAt >= c.holdMinMs; // a drift is filler: a real moment may cut it short
       if (current && t < current.until && !idleYields) return null;
       queue = queue.filter(q => t - q.at <= q.ttl);
-      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, island: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.gapMs, gift: false });
+      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.gapMs, gift: false });
       return start(choose() ?? idleShot());
     },
     state: () => ({ queue: queue.map(q => ({ ...q })), current: current && { ...current }, locked }),

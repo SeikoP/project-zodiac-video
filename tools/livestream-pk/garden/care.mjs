@@ -3,7 +3,7 @@ import { CROPS, seedCost, stageOf } from './crops.mjs';
 import { addGold, addXp, spendGold } from './progress.mjs';
 import { bump, isAwake, touch } from './world.mjs';
 
-const plotOf = (ctx, user) => user.seat && ctx.state.plots[`${user.seat.island}:${user.seat.slot}`];
+const plotOf = (ctx, user) => user.seat && ctx.state.plots[`${user.seat.tier}:${user.seat.slot}`];
 const mods = ctx => ctx.mods?.() ?? { grow: 1, gold: 1, boost: null };
 const fail = reason => ({ ok: false, reason });
 const gain = (ctx, user, xp, plot) => { const r = addXp(user, xp); if (r.leveledUp) ctx.emit({ type: 'levelup', userId: user.userId, plotId: plot?.id ?? null, level: r.level }); };

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { makeCtx, addUser } from './testkit.mjs';
 import { steal, catchThief, dog, tickSteal } from './steal.mjs';
 
-// a thief and a victim on one island; the victim's rau is ripe (10 gold), both are level 3 so no newcomer shield
+// a thief and a victim on one terrace; the victim's rau is ripe (10 gold), both are level 3 so no newcomer shield
 function scene() {
   const k = makeCtx();
   const thief = addUser(k.ctx, 'thief', { gold: 0, level: 3 }), vic = addUser(k.ctx, 'vic', { gold: 100, level: 3 });
@@ -110,7 +110,7 @@ test('two thefts within 3 minutes put the plot under a 3 minute shield', () => {
   assert.equal(steal(s.ctx, s.thief.user, s.vic.user).reason, 'shield');
 });
 
-test('stealing with no name picks a ripe awake plot on the thief island, or reports none', () => {
+test('stealing with no name picks a ripe awake plot on the thief terrace, or reports none', () => {
   const s = scene();
   assert.equal(steal(s.ctx, s.thief.user, null).victimId, 'vic');
   s.advance(21_000); s.wake();

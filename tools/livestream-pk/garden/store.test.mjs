@@ -11,6 +11,7 @@ const tmp = () => path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'garden-')), '
 test('a saved garden loads back with growing crops, thefts and users intact', async () => {
   const file = tmp();
   const k = makeCtx();
+  k.ctx.state.v = 2;
   const a = addUser(k.ctx, 'a', { gold: 5 });
   a.plot.crop = { type: 'rau', progress: 0.4, ripeAt: null, pest: false, stolen: 0 };
   k.ctx.state.thefts.push({ id: 1, thief: 'a', victim: 'a', plotId: a.plot.id, amount: 2, at: 1 });
@@ -18,14 +19,15 @@ test('a saved garden loads back with growing crops, thefts and users intact', as
   await saver.flush();
   saver.stop();
   const back = loadState(file);
+  assert.equal(back.v, 3);
   assert.equal(back.plots[a.plot.id].crop.progress, 0.4);
   assert.equal(back.users.a.gold, 5);
   assert.equal(back.thefts.length, 1);
 });
 
-test('a missing file gives an empty garden', () => {
+test('a missing file gives an empty v3 terrace garden', () => {
   const s = loadState(tmp());
-  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [1, 0, []]);
+  assert.deepEqual([s.v, Object.keys(s.users).length, s.thefts], [3, 0, []]);
 });
 
 test('a corrupt or truncated file gives an empty garden instead of crashing', () => {
@@ -33,15 +35,23 @@ test('a corrupt or truncated file gives an empty garden instead of crashing', ()
   fs.writeFileSync(file, '{"v":1,"users":{"a":');
   assert.equal(Object.keys(loadState(file).users).length, 0);
   fs.writeFileSync(file, '[1,2,3]');
-  assert.equal(loadState(file).v, 1);
+  assert.equal(loadState(file).v, 3);
 });
 
-test('a file missing fields is patched with defaults', () => {
+test('a v1 island save moves player progress and crops to the cloud terraces', () => {
   const file = tmp();
-  fs.writeFileSync(file, JSON.stringify({ v: 1, users: { a: { userId: 'a' } } }));
+  fs.writeFileSync(file, JSON.stringify({
+    v: 1,
+    users: { a: { userId: 'a', sign: 'leo', gold: 9, seat: { island: 'leo', slot: 2 } } },
+    plots: { 'leo:2': { id: 'leo:2', island: 'leo', slot: 2, owner: 'a', crop: { type: 'linhthao', progress: 0.4, ripeAt: null, pest: false, stolen: 0 } } },
+  }));
   const s = loadState(file);
-  assert.deepEqual([Array.isArray(s.thefts), typeof s.plots, typeof s.ver, typeof s.night], [true, 'object', 'number', 'string']);
-  assert.equal(s.users.a.userId, 'a');
+  assert.deepEqual([s.v, Array.isArray(s.thefts), typeof s.plots, typeof s.ver, typeof s.night], [3, true, 'object', 'number', 'string']);
+  assert.deepEqual(s.users.a.seat, { tier: 'cloud-1', slot: 2 });
+  assert.equal(s.users.a.gold, 9);
+  assert.equal(s.users.a.sign, undefined);
+  assert.equal(s.plots['cloud-1:2'].crop.type, 'nammay');
+  assert.equal(s.plots['cloud-1:2'].crop.progress, 0.4);
 });
 
 test('two flushes at once leave a valid file and no temp file behind', async () => {
@@ -59,7 +69,7 @@ test('a failed write keeps the garden dirty so the next flush retries', async ()
   const file = tmp();
   let fail = true;
   const fsStub = { ...fs.promises, writeFile: async (...a) => { if (fail) throw new Error('disk full'); return fs.promises.writeFile(...a); }, mkdir: fs.promises.mkdir, rename: fs.promises.rename };
-  const saver = createSaver({ file, getState: () => ({ v: 1 }), fs: fsStub, log: () => {} });
+  const saver = createSaver({ file, getState: () => ({ v: 2 }), fs: fsStub, log: () => {} });
   await saver.flush();
   assert.equal(saver.dirty(), true);
   fail = false;

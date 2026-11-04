@@ -1,57 +1,55 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ISLANDS, plotId, plotCenter, islandCenter, ensureUser, seat, touch, isAwake, emptyGardenState } from './world.mjs';
+import { TIERS, plotId, plotCenter, tierCenter, ensureUser, seat, touch, isAwake, emptyGardenState } from './world.mjs';
 import { makeCtx, addUser } from './testkit.mjs';
 
-test('twelve islands, one per sign, laid out 3 wide by 4 tall', () => {
-  assert.equal(ISLANDS.length, 12);
+test('four cloud terraces stack vertically with room for 432 viewers', () => {
+  assert.equal(TIERS.length, 4);
+  assert.equal(TIERS.reduce((n, t) => n + 108, 0), 432);
   const { ctx } = makeCtx();
-  const i = ISLANDS.indexOf('leo');
-  assert.deepEqual(islandCenter('leo', ctx.cfg), { x: (i % 3) * 1200 + 600, y: Math.floor(i / 3) * 1200 + 600 });
+  assert.deepEqual(tierCenter('cloud-3', ctx.cfg), { x: 1350, y: 3000 });
 });
 
-test('plotCenter follows the 6x6 grid of 160 cells with a 120 margin', () => {
+test('plot centers follow the 18-column layout inside a terrace', () => {
   const { ctx } = makeCtx();
-  const i = ISLANDS.indexOf('aries');
-  assert.deepEqual(plotCenter('aries', 0, ctx.cfg), { x: (i % 3) * 1200 + 120 + 80, y: Math.floor(i / 3) * 1200 + 120 + 80 });
-  assert.deepEqual(plotCenter('aries', 7, ctx.cfg), { x: (i % 3) * 1200 + 120 + 160 + 80, y: Math.floor(i / 3) * 1200 + 120 + 160 + 80 });
-  assert.equal(plotId('aries', 7), 'aries:7');
+  assert.deepEqual(plotCenter('cloud-1', 0, ctx.cfg), { x: 330, y: 300 });
+  assert.deepEqual(plotCenter('cloud-1', 19, ctx.cfg), { x: 450, y: 420 });
+  assert.equal(plotId('cloud-1', 19), 'cloud-1:19');
 });
 
-test('seat gives the same plot back, prefers the asked island, and records the sign', () => {
+test('seat returns the same plot and honors a requested cloud terrace', () => {
   const { ctx } = makeCtx();
   const u = ensureUser(ctx, { userId: 'a', nickname: 'A', avatar: '' });
-  const p = seat(ctx, u, 'virgo');
-  assert.equal(p.island, 'virgo');
-  assert.equal(u.sign, 'virgo');
-  assert.equal(seat(ctx, u, 'aries'), p);
+  const p = seat(ctx, u, 'cloud-3');
+  assert.equal(p.tier, 'cloud-3');
+  assert.equal(u.seat.tier, 'cloud-3');
+  assert.equal(seat(ctx, u, 'cloud-1'), p);
 });
 
-test('a full island makes the least recently active crop-less player give up a plot', () => {
-  const { ctx, advance } = makeCtx();
-  const first = addUser(ctx, 'first', { island: 'leo' });
-  for (let n = 1; n < 36; n++) { advance(1); addUser(ctx, 'u' + n, { island: 'leo' }); }
+test('a full terrace reclaims its least recently active empty plot', () => {
+  const { ctx, advance } = makeCtx({ cfg: { plotsPerTier: 2 } });
+  const first = addUser(ctx, 'first');
+  advance(1);
+  addUser(ctx, 'second');
   const u = ensureUser(ctx, { userId: 'late', nickname: 'L', avatar: '' });
-  const p = seat(ctx, u, 'leo');
-  assert.equal(p.island, 'leo');
+  const p = seat(ctx, u, 'cloud-1');
+  assert.equal(p.tier, 'cloud-1');
   assert.equal(first.user.seat, null, 'the evicted player is parked, not deleted');
   assert.ok(ctx.state.users.first);
 });
 
-test('when the asked island is full of growing crops the player goes to another island', () => {
-  const { ctx } = makeCtx();
-  for (let n = 0; n < 36; n++) addUser(ctx, 'u' + n, { island: 'leo' }).plot.crop = { type: 'rau', progress: 0, ripeAt: null, pest: false, stolen: 0 };
+test('a terrace full of growing crops sends newcomers to another terrace', () => {
+  const { ctx } = makeCtx({ cfg: { plotsPerTier: 1 } });
+  addUser(ctx, 'u', { tier: 'cloud-1' }).plot.crop = { type: 'rau', progress: 0, ripeAt: null, pest: false, stolen: 0 };
   const u = ensureUser(ctx, { userId: 'late', nickname: 'L', avatar: '' });
-  const p = seat(ctx, u, 'leo');
-  assert.ok(p);
-  assert.notEqual(p.island, 'leo');
+  assert.equal(seat(ctx, u, 'cloud-1').tier, 'cloud-2');
 });
 
-test('nobody can be evicted while every plot has a crop: seat returns null', () => {
-  const { ctx } = makeCtx();
-  for (const isl of ISLANDS) for (let n = 0; n < 36; n++) addUser(ctx, `${isl}-${n}`, { island: isl }).plot.crop = { type: 'rau', progress: 0, ripeAt: null, pest: false, stolen: 0 };
+test('nobody is evicted while every plot has a crop', () => {
+  const { ctx } = makeCtx({ cfg: { plotsPerTier: 1 } });
+  for (const tier of TIERS) addUser(ctx, tier.id, { tier: tier.id }).plot.crop = { type: 'rau', progress: 0, ripeAt: null, pest: false, stolen: 0 };
   const u = ensureUser(ctx, { userId: 'late', nickname: 'L', avatar: '' });
-  assert.equal(seat(ctx, u, 'leo'), null);
+  assert.equal(seat(ctx, u), null);
 });
 
 test('isAwake flips at 300000ms without activity and touch wakes the plot', () => {
@@ -65,7 +63,7 @@ test('isAwake flips at 300000ms without activity and touch wakes the plot', () =
   assert.equal(isAwake(ctx, plot), true);
 });
 
-test('emptyGardenState starts empty and versioned', () => {
+test('emptyGardenState starts empty and versioned for the terrace layout', () => {
   const s = emptyGardenState(0);
-  assert.deepEqual([s.v, s.ver, s.thefts, s.event], [1, 0, [], null]);
+  assert.deepEqual([s.v, s.ver, s.thefts, s.event], [2, 0, [], null]);
 });
