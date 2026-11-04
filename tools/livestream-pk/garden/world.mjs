@@ -7,7 +7,7 @@ export const plotId = (tier, slot) => `${tier}:${slot}`;
 export const nightOf = ms => { const d = new Date(ms); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 export function emptyGardenState(now = Date.now()) {
-  return { v: 4, ver: 0, users: {}, plots: {}, thefts: [], event: null, session: null, night: nightOf(now), lastTick: now };
+  return { v: 4, ver: 0, users: {}, plots: {}, thefts: [], event: null, session: null, night: nightOf(now), lastTick: now, hearts: null };
 }
 
 // Stable physical coordinates: one continuous 16-level rack, six pots per shelf.
