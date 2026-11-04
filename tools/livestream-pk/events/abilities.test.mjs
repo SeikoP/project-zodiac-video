@@ -36,7 +36,7 @@ test('the ability table names every row and describeAbility gives its banner', (
 
 test('ability constants are the numbers of Ruling N', () => {
   assert.deepEqual(ABILITY_DEFAULTS, {
-    bossUltFactor: 3, bossUltShield: 3, tugBoostFactor: 2, tugBoostSeconds: 60, tugGiftPullMax: 30,
+    bossUltFactor: 3, bossUltShield: 3, tugBoostFactor: 2, tugBoostSeconds: 60, tugGiftSwingMax: 35,
     raceBoostFactor: 1.5, raceBoostSeconds: 30, raceAdvanceShare: 0.25,
     goldChestDust: 40, goldChestGems: 2, roastPickSeconds: 15, journeyGiftPerDiamond: 0.2,
   });

@@ -27,7 +27,7 @@
   "bossUltShield": 3,
   "tugBoostFactor": 2,
   "tugBoostSeconds": 60,
-  "tugGiftPullMax": 30,
+  "tugGiftSwingMax": 35,
   "raceBoostFactor": 1.5,
   "raceBoostSeconds": 30,
   "raceAdvanceShare": 0.25,

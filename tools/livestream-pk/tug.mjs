@@ -87,13 +87,19 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
       amount = 1;
     } else if (action === 'gift') {
       amount = cfg.tugDiamondPower > 0 ? Math.max(n, MIN_GIFT_PULL / cfg.tugDiamondPower) : 0;
-      // one gift never swings the knot more than tugGiftPullMax (before the boost), so a single gift cannot end the tug on its own
-      if (cfg.tugDiamondPower > 0) amount = Math.min(amount, num('tugGiftPullMax') / cfg.tugDiamondPower);
     } else if (action === 'follow' || action === 'share') amount = 1;
     if (!(amount > 0)) return 0;
-    if (boosted(g, v.team)) amount *= num('tugBoostFactor'); // Tăng tốc
+    // Tăng tốc; the big gift that set the boost is not itself boosted (the boost carries skip: its giver, spent on that gift)
+    if (action === 'gift' && g.boost?.skip === u.userId) delete g.boost.skip;
+    else if (boosted(g, v.team)) amount *= num('tugBoostFactor');
+    const before = g.value;
     const p = meter.add(u.userId, v.team, action, amount);
     if (!p) return 0;
+    // one gift never moves the rope more than tugGiftSwingMax; the power stays whole for the MVP tally and the yank
+    if (action === 'gift') {
+      const max = num('tugGiftSwingMax');
+      if (Math.abs(g.value - before) > max) g.value = before + Math.sign(g.value - before) * max;
+    }
     g.nick[u.userId] = v.nickname;
     if (action === 'gift' && p >= YANK_POWER) onEvent({ type: 'tug-yank', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, power: Math.round(p) });
     if (meter.reached()) settle(true);
@@ -112,7 +118,7 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     mid: g => pulling(g),
     big: g => {
       if (!pulling(g)) return false;
-      st.tug.boost = { team: g.viewer.team, until: now() + num('tugBoostSeconds') * 1000 };
+      st.tug.boost = { team: g.viewer.team, until: now() + num('tugBoostSeconds') * 1000, skip: g.user.userId };
     },
   };
 

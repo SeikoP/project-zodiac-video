@@ -8,7 +8,7 @@ export const ABILITY_DEFAULTS = Object.freeze({
   bossUltShield: 3, // ... and this much shield for the room
   tugBoostFactor: 2, // Tăng tốc: the giver's team pulls x this ...
   tugBoostSeconds: 60, // ... for this long
-  tugGiftPullMax: 30, // one gift never swings the knot more than this, so a single gift cannot end the tug alone
+  tugGiftSwingMax: 35, // one gift never moves the rope (of +-100) more than this, boost included, so one gift cannot end a fresh tug
   raceBoostFactor: 1.5, // the finale: the giver's team light x this ...
   raceBoostSeconds: 30, // ... for this long
   raceAdvanceShare: 0.25, // a big gift: every team gets this share of the wheel cost
