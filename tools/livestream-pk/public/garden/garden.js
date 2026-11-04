@@ -127,7 +127,8 @@ function handleFx(fx) {
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
     case 'heart-milestone': {
       const label = { care:'Tim chăm cây', community:'Sức sống khu vườn', luck:'Tim may mắn' }[fx.kind] ?? 'Tim cộng đồng';
-      say(label, 2800);
+      say(fx.kind === 'luck' && fx.plotId ? `${label} · +2 vàng` : label, 2800);
+      if (fx.plotId) float('sparkle', fx.plotId);
       break;
     }
     case 'event-start': break;
