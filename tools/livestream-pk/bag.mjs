@@ -1,12 +1,12 @@
 // Kho tài nguyên: what a viewer collects by playing, and what they spend it on.
-//   ✦ Bụi sao  — a little with every bit of starlight they shed
+//   ✦ Điểm sáng (key dust) — a little with every bit of starlight they shed
 //   Ngọc phe (Đỏ · Vàng · Xanh lá · Xanh dương) — from the boss, the chest, quizzes and fixing Thủy Nghịch
 //   🌙 Mảnh trăng — for being there when the moon is full, and for a wish the room blessed
 // "nâng cấp" spends them to raise the viewer's mascot a level (Lv1–Lv5): a bigger halo on the wheel and a little
 // more starlight on everything they do. "kho" shows the bag on stream. Bags last across nights.
 
 export const RESOURCES = Object.freeze({
-  dust: { label: 'Bụi sao', icon: '✦' },
+  dust: { label: 'Điểm sáng', icon: '✦' },
   red: { label: 'Ngọc Đỏ', icon: '🔴' },
   yellow: { label: 'Ngọc Vàng', icon: '🟡' },
   green: { label: 'Ngọc Xanh lá', icon: '🟢' },
@@ -16,7 +16,7 @@ export const RESOURCES = Object.freeze({
 
 export const BAG_DEFAULTS = Object.freeze({
   dustPerLight: 0.5,
-  // cost of reaching level 2, 3, 4, 5: bụi sao, ngọc of the viewer's own team colour, mảnh trăng
+  // cost of reaching level 2, 3, 4, 5: điểm sáng, ngọc of the viewer's own team colour, mảnh trăng
   levelDust: [60, 160, 320, 560],
   levelGems: [1, 2, 3, 5],
   levelMoon: [0, 0, 1, 2],

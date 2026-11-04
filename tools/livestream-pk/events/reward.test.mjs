@@ -37,6 +37,23 @@ test('returns what the sink returned; undefined falls back to n', () => {
   assert.equal(stats.a.w, 4);
 });
 
+test('tally: the caller owns where each viewer numbers live', () => {
+  const store = {};
+  const r = createReward({ sinks: { dust: (u, v, n) => n }, tally: id => (store[id] ??= {}) });
+  r.grant({ userId: 'a' }, {}, 'dust', 3, 'chest');
+  assert.deepEqual(store, { a: { chest: 3, dust: 3 } });
+  assert.deepEqual(r.statsOf('a'), { chest: 3, dust: 3 });
+  assert.deepEqual(r.statsOf('b'), {});
+});
+
+test('onGrant hears every payout that went through', () => {
+  const heard = [];
+  const r = createReward({ sinks: { dust: (u, v, n) => n, gem: () => 0 }, onGrant: (u, v, kind, got, why) => heard.push([u.userId, kind, got, why]) });
+  r.grant({ userId: 'a' }, {}, 'dust', 3, 'catch');
+  r.grant({ userId: 'a' }, {}, 'gem', 2, 'catch');
+  assert.deepEqual(heard, [['a', 'dust', 3, 'catch']]);
+});
+
 test('unknown kind returns 0', () => {
   const { r } = make();
   assert.equal(r.grant(u, {}, 'bogus', 3, 'w'), 0);

@@ -111,7 +111,7 @@ export function createRoast({ st, cfg, now, rng = Math.random, onEvent, ctx, rew
     const give = cleared ? cfg.roastClearLight : cfg.roastAgreeLight;
     for (const id of winners) { const v = viewerOf(id); if (v) reward.grant({ userId: id }, v, 'light', give, 'roast'); }
     const consoled = !cleared && lucky(r.team);
-    onEvent({ type: 'roast-end', userId: r.userId, nickname: r.nickname, team: r.team, line: r.line, cleared, protests: counts.oan, need: r.need, agree: counts.chuan, names: winners.slice(0, 4).map(id => r.nick[id]), consoled: Boolean(consoled) });
+    onEvent({ type: 'roast-end', userId: r.userId, nickname: r.nickname, team: r.team, line: r.line, cleared, protests: counts.oan, need: r.need, agree: counts.chuan, names: winners.slice(0, 4).map(id => r.nick[id]), consoled: Boolean(consoled), mvpId: winners[0] ?? null });
   }
 
   function tick(t = now()) {

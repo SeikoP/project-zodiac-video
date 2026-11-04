@@ -12,9 +12,9 @@ function setup(config = {}) {
   return { game, events, say, advance, of: type => events.filter(e => e.type === type), v: id => game.state.viewers[id] };
 }
 
-// --- kho chung: one "kho" for resources, level and Sổ Sao ---
-test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer owns', () => {
-  for (const c of ['kho', 'túi đồ', 'sổ sao', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
+// --- kho chung: one "kho" for Điểm sáng, level, quests and Sổ mùa ---
+test('"kho", "khoe", "sổ sao", "sổ mùa" all open the one vault, with everything a viewer owns', () => {
+  for (const c of ['kho', 'túi đồ', 'sổ sao', 'sổ mùa', 'xem sổ mùa', 'khoe', 'khoe kho']) assert.equal(parseAction(c), 'vault', c);
   const s = setup();
   s.say('a', 'đỏ');
   Object.assign(s.v('a').bag, { dust: 120, red: 2, moon: 1 });
@@ -26,6 +26,9 @@ test('"kho", "khoe", "sổ sao" all open the one vault, with everything a viewer
   assert.ok(!('cards' in e) && !('bingo' in e), 'no card or bingo data any more');
   assert.ok(e.pass && e.pass.level >= 1);
   assert.ok(e.next, 'what the next level costs');
+  assert.equal(e.quests.length, 3, 'tonight\'s quests are on the same screen');
+  assert.deepEqual(Object.keys(e.quests[0]).sort(), ['done', 'goal', 'got', 'id', 'label', 'reward']);
+  assert.equal(e.labels.dust, 'Điểm sáng');
   s.say('a', 'kho');
   assert.equal(s.of('vault').length, 1, 'once per cooldown');
   assert.equal(s.of('bag').length + s.of('collection').length + s.of('pass-show').length, 0, 'the old separate panels are gone');

@@ -36,7 +36,8 @@ import { createTug, TUG_DEFAULTS } from './tug.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
 import { createPass, PASS_DEFAULTS } from './pass.mjs';
 import { createBoss, BOSS_DEFAULTS } from './boss.mjs';
-import { createBag, BAG_DEFAULTS, GEMS } from './bag.mjs';
+import { createBag, BAG_DEFAULTS, GEMS, RESOURCES } from './bag.mjs';
+import { createProfile, PROFILE_DEFAULTS } from './profile.mjs';
 import { TEAMS, TEAM_IDS, parseTeam, parseSwitchTeam } from './events/teams.mjs';
 import { createRoster } from './events/roster.mjs';
 import { createRegistry } from './events/registry.mjs';
@@ -122,9 +123,10 @@ export const DEFAULT_CONFIG = Object.freeze({
   chestIdleMinutes: 10, // skip a chest nobody is around for
   chestDust: 15, // what each "nhận" pays (bụi sao)
   ...BAG_DEFAULTS,
+  ...PROFILE_DEFAULTS,
   ...ALTAR_DEFAULTS,
   ...JOURNEY_DEFAULTS,
-  // "kho" (also "khoe", "sổ sao"): everything a viewer owns in one panel, once per this many seconds each
+  // "kho" (also "khoe", "sổ mùa"): everything a viewer owns in one panel, once per this many seconds each
   vaultCooldownSeconds: 30,
   // resources used in the room's events: "tung ngọc" in a fight hits like a gift of this many coins; "thắp trăng"
   // raises the moon by this share of its goal; each at most once per powerCooldownSeconds per viewer
@@ -184,7 +186,8 @@ const FORTUNE_RE = /\b(xin que|gieo que|rut que|boc que|xin xam|gieo xam)\b/;
 const WISH_RE = /^\s*(uoc|mong|nguyen|cau (nguyen|mong|cho|chuc))\b/;
 const CLAIM_RE = /^\s*(nhan|nhan ruong|mo ruong)[\s!.]*$/;
 const UPGRADE_RE = /\b(nang cap|len cap|len lv|up lv)\b/;
-const VAULT_RE = /^\s*(kho|tui|tui do|xem kho|kho do|khoe|khoe kho|so sao|xem so sao|so sao cua toi)[\s!.]*$/;
+const VAULT_RE = /^\s*(kho|tui|tui do|xem kho|kho do|khoe|khoe kho|so sao|xem so sao|so sao cua toi|so mua|xem so mua|so mua cua toi)[\s!.]*$/;
+const PROFILE_RE = /^\s*(ho so|xem ho so|ho so cua toi|ho so cua minh)[\s!.]*$/;
 const GEM_POWER_RE = /^\s*(tung ngoc|nem ngoc|dung ngoc)\b/;
 const MOON_POWER_RE = /^\s*(thap trang|dot trang)\b/;
 const VOTE_RE = /^\s*(?:so|chon|phieu|bau)?\s*([1-4])\s*[!.]*$/;
@@ -199,6 +202,7 @@ export function parseAction(comment) {
   if (WISH_RE.test(t)) return 'wish';
   if (CLAIM_RE.test(t)) return 'claim';
   if (VAULT_RE.test(t)) return 'vault';
+  if (PROFILE_RE.test(t)) return 'profile';
   if (GEM_POWER_RE.test(t)) return 'gem-power';
   if (MOON_POWER_RE.test(t)) return 'moon-power';
   if (UPGRADE_RE.test(t)) return 'upgrade';
@@ -426,9 +430,18 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       light: (u, v, n, why) => shine(u, v, n, why),
       dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why),
       gem: (u, v, n, why) => gem(u, v, n, why),
+      moon: (u, v, n, why) => bag.add(u, v, 'moon', n, why),
     },
-    stats: {},
+    tally: id => profile.tally(id), // payouts are counted inside each viewer, so a restart keeps them
+    onGrant: (u, v, kind, got, why) => {
+      // what the events already pay for, as the personal counters: a right answer, a mystery solved, a catch, a prediction
+      const stat = kind === 'light' && why === 'quiz' ? 'correct' : kind === 'gem' && why === 'mystery' ? 'guesses' : kind === 'dust' && why === 'catch' ? 'catches' : kind === 'dust' && why === 'predict' ? 'predictions' : null;
+      if (!stat) return;
+      profile.track(u, v, stat);
+      if (stat === 'guesses') profile.track(u, v, 'correct');
+    },
   });
+  const profile = createProfile({ st, cfg, reward, now, onEvent: e => onEvent(e), levelOf: v => bag.levelOf(v) });
   const viewerOf = id => st.viewers[id];
   const boss = createBoss({ st, cfg, now, onEvent, ctx: eventCtx, reward, viewerOf });
   registry.register(boss);
@@ -506,13 +519,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   const altar = createAltar({ st, cfg, now, onEvent, touch, shine: (u, v, n, why) => shine(u, v, n, why), dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why) });
   const showFortune = req => altar.show(req);
 
-  // --- kho chung: resources, level and Sổ Sao in one panel ("kho", "khoe", "sổ sao") ---
+  // --- kho chung: Điểm sáng, gems, level, tonight's quests and Sổ mùa in one panel ("kho", "khoe", "sổ mùa") ---
   function showVault(u, v) {
     if (now() - (v.vaultAt ?? 0) < cfg.vaultCooldownSeconds * 1000) return;
     v.vaultAt = now();
     const p = v.team ? pass.view(v) : null;
     onEvent({ type: 'vault', userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, level: bag.levelOf(v), bag: { ...(v.bag ?? {}) }, next: bag.nextCost(v),
-      pass: p, title: titleOf(v.lifetime) });
+      pass: p, title: titleOf(v.lifetime), quests: profile.progress(u.userId), role: profile.roleLabel(v),
+      labels: Object.fromEntries(Object.entries(RESOURCES).map(([k, r]) => [k, r.label])) });
   }
 
   // --- resources used in the room's events ---
@@ -534,7 +548,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     v.powerAt = now();
     held[res]--;
     onEvent({ type: 'power', kind: 'gem', res, target, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team });
-    registry.contribute('gift', u, v, cfg.gemPowerDiamonds);
+    contribute('gift', u, v, cfg.gemPowerDiamonds);
   }
   // "thắp trăng": one moon shard raises the moon by a share of its goal
   function moonPower(u, v) {
@@ -574,7 +588,19 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // whatever main event a saved night was in keeps running
   registry.adopt(st.boss ? 'boss' : st.tug ? 'tug' : st.roast ? 'roast' : st.guess ? 'guessobject' : st.starcatch ? 'starcatch' : st.quiz ? 'quiz' : '');
   const predict = createPredict({ st, cfg, now, onEvent, reward });
-  const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => bag.add(u, v, 'dust', 15, 'pass') });
+  // One viewer action for the running event, counted for the personal layer: pulls on the rope, thawing the team, feeding the shield
+  // (hits on the boss are counted from its boss-hit events below).
+  function contribute(action, u, v, n) {
+    const fight = registry.live(), b = st.boss;
+    const frozen = fight === 'boss' && action === 'comment' && v.team && b?.frozen?.team === v.team && !b.frozen.rescuers[u.userId] ? b.frozen : null;
+    const got = registry.contribute(action, u, v, n);
+    // a comment from a frozen team chips at the ice: it counts once the ice took the name
+    if (frozen && frozen.rescuers[u.userId]) profile.track(u, v, 'thaws');
+    else if (got > 0 && fight === 'tug') profile.track(u, v, 'pulls');
+    else if (got > 0 && fight === 'boss' && action === 'comment' && v.team === 'yellow') profile.track(u, v, 'shields');
+    return got;
+  }
+  const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass') });
   const label = id => TEAM[id]?.label ?? id;
   // --- hành trình đêm & đua phe (journey.mjs) ---
   const journey = createJourney({ st, cfg, now, onEvent, stageIds: () => stage.keys(), dust: (u, v, n) => bag.add(u, v, 'dust', n, 'journey'), moon: (u, v) => bag.add(u, v, 'moon', 1, 'journey') });
@@ -610,8 +636,18 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (side) tugSide = side;
   }
 
+  // What the events say about people: hits on the boss, and the MVPs they name (userId inside), for the personal layer
+  function personal(e) {
+    if (e.type === 'boss-hit') { const v = st.viewers[e.userId]; if (v) profile.track({ userId: e.userId }, v, 'hits'); }
+    else if (e.type === 'boss-defeated') { for (const team of TEAM_IDS) if (e.mvps?.[team]) profile.mvp('boss', e.mvps[team].userId); }
+    else if (e.type === 'tug-end') { profile.mvp('tug', e.mvpA?.userId); profile.mvp('tug', e.mvpB?.userId); }
+    else if (e.type === 'roast-end') profile.mvp('roast', e.mvpId);
+    else if (e.type === 'catch-end') profile.mvp('catch', e.top?.[0]?.userId);
+  }
+
   listen = e => {
     journey.note(e);
+    personal(e);
     if (e.type === 'chapter') cue('chapter', `Xong chặng ${e.no}/${e.of}: ${e.label}! ${e.next ? `Chặng tiếp: ${e.next.label} — cần ${e.next.need} ${e.next.goal}.` : 'Cả hành trình đêm nay đã trọn vẹn, cảm ơn cả nhà!'}`, `chapter@${st.night.no}@${e.no}`);
     else if (e.type === 'team-lead') cue('team-lead', `Đảo chiều! Phe ${label(e.team)} vượt lên dẫn đầu đêm nay — phe ${label(e.prev)} ơi, gỡ lại nào!`, `lead@${now()}`);
     // predictions open before a big outcome and settle when it is known
@@ -664,9 +700,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
   function actClose() {
     const top = Object.entries(st.act.light).sort((a, b) => b[1] - a[1]).slice(0, 3).filter(([id]) => st.viewers[id]);
-    // the act's MVP takes home a little bụi sao
+    // the act's MVP takes home a little Điểm sáng
     const mvp = top[0] && st.viewers[top[0][0]];
     if (mvp?.team) bag.add({ userId: top[0][0] }, mvp, 'dust', 10, 'mvp');
+    if (mvp?.team) profile.mvp(`act:${slot.act.id}`, top[0][0], `Màn ${slot.act.label}`);
     onEvent({ type: 'act-close', top: top.map(([id, light]) => ({ userId: id, nickname: st.viewers[id].nickname, avatar: st.viewers[id].avatar, team: st.viewers[id].team, light })),
       next: { act: slot.next.id, label: slot.next.label, glyph: '★', head: HEADS[headOf({ act: slot.next, index: slot.index + 1 })].label } });
   }
@@ -810,6 +847,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (!byGift) {
       bag.add(u, v, 'dust', cfg.blessDust);
       questAdd('blessings');
+      profile.track(u, v, 'blessings');
     }
     touch('cosmos');
     onEvent({ type: 'wish-bless', id: w.id, nickname: v.nickname, avatar: v.avatar, wisher: w.nickname, count, need: cfg.blessNeed });
@@ -895,7 +933,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function shine(u, v, base, kind) {
     if (base <= 0) return 0;
     if (!v.team) return 0;
-    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.team === v.team ? cfg.luckyMultiplier : 1) * teamBoostOf(v.team) * Math.min(LIGHT_CAP, bag.bonus(v) * heatMult() * fanMult(v))); // the room's heat, the Fanclub and the level share one cap
+    const amount = Math.round(base * (partying() ? cfg.partyMultiplier : 1) * (st.lucky?.team === v.team ? cfg.luckyMultiplier : 1) * teamBoostOf(v.team) * Math.min(LIGHT_CAP, (bag.bonus(v) + profile.roleBonus(v)) * heatMult() * fanMult(v))); // the room's heat, the Fanclub, the level and the role share one cap
     if (st.act) st.act.light[u.userId] = (st.act.light[u.userId] ?? 0) + amount;
     if (kind !== 'quest') questAdd('light', amount);
     pass.addXp(u, v, amount);
@@ -1007,16 +1045,18 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     }
     else if (action === 'upgrade') bag.upgrade(u, v);
     else if (action === 'vault') showVault(u, v);
+    else if (action === 'profile') profile.show(u, v);
     else if (action === 'gem-power') gemPower(u, v);
     else if (action === 'moon-power') moonPower(u, v);
     else if (action === 'bless') bless(u, v);
     else if (action === 'welcome') welcome(u, v);
     else if (action === 'call') fanCall(u, v);
-    registry.contribute('comment', u, v);
+    contribute('comment', u, v);
     raiseMoon(1);
     if (v.team && now() - v.lastCommentAt >= cfg.commentCooldownSeconds * 1000) {
       v.lastCommentAt = now();
       questAdd('comments'); // at most one per viewer per few seconds, so spamming doesn't fill it
+      profile.track(u, v, 'comments');
       shine(u, v, cfg.commentLight, 'comment');
     }
   }
@@ -1031,6 +1071,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     blessRound(w).open(null);
     st.wishes.unshift(w);
     st.wishes.length = Math.min(st.wishes.length, 6);
+    profile.track(u, v, 'wishes');
     touch('cosmos');
     onEvent({ type: 'wish', id: w.id, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, text: w.text, need: cfg.blessNeed, seconds: cfg.blessWindowSeconds });
   }
@@ -1153,7 +1194,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     recordGift(u, v, count, diamonds);
     thank(u, v);
     if (diamonds > 0 && v.team) giftAbility(u, v, diamonds);
-    registry.contribute('gift', u, v, diamonds);
+    contribute('gift', u, v, diamonds);
     // the giver: a golden aura on the wheel for a while, and a patron's star in the community sky
     const tierBefore = patronTier(v);
     v.giftTotal = (v.giftTotal ?? 0) + diamonds;
@@ -1171,8 +1212,9 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const v = viewer(u);
     const n = Math.max(0, u.count | 0);
     raiseMoon(n);
-    registry.contribute('like', u, v, n);
+    contribute('like', u, v, n);
     questAdd('likes', n);
+    profile.track(u, v, 'likes', n);
     addHeat(u.userId, Math.ceil(n / 15));
     onEvent({ type: 'likes', userId: u.userId, team: v.team, count: n });
     if (!cfg.likesPerLight || !v.team) return 0;
@@ -1190,7 +1232,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (v.bonusNight[kind] === st.night.no) return 0;
     v.bonusNight[kind] = st.night.no;
     thank(u, v);
-    registry.contribute(kind, u, v);
+    contribute(kind, u, v);
+    profile.track(u, v, kind === 'share' ? 'shares' : 'follows');
     addHeat(u.userId, 3);
     raiseMoon(20);
     return shine(u, v, kind === 'share' ? cfg.shareLight : cfg.followLight, kind);
@@ -1277,6 +1320,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // Call about every 100-250ms.
   let lastLuckyTick = null;
+  let minuteAt = now();
   function tick() {
     tickNo++;
     const t = now();
@@ -1338,6 +1382,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       else if (kind === 3) onEvent({ type: 'demo', demo: DEMOS[(st.demoNo = (st.demoNo ?? 0) + 1) % DEMOS.length], team: pickEventTeam() });
       else if (kind >= 0) showFortune({ userId: null, nickname: null, avatar: '' });
     }
+    // minutes in the room: one for everyone on stage, once a minute
+    if (t - minuteAt >= 60000) {
+      minuteAt = t;
+      for (const id of stage.keys()) { const v = st.viewers[id]; if (v) profile.track({ userId: id }, v, 'minutes'); }
+    }
     // Drop viewers who went quiet from the stage (at most crowdMax entries to look at).
     const cutoff = t - cfg.presenceMinutes * 60000;
     for (const id of stage.keys()) {
@@ -1379,7 +1428,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     },
     stage: () => [...stage.keys()].map(id => {
       const v = st.viewers[id];
-      return { userId: id, nickname: v.nickname, avatar: v.avatar, team: v.team, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1, fan: v.fanLevel ?? 0, sub: Boolean(v.subscriber),
+      return { userId: id, nickname: v.nickname, avatar: v.avatar, team: v.team, title: titleOf(v.lifetime), streak: v.streak ?? 0, crowns: v.crowns ?? 0, level: v.level ?? 1, role: profile.card(id).role, fan: v.fanLevel ?? 0, sub: Boolean(v.subscriber),
         aura: (v.auraUntil ?? 0) > now() ? v.auraUntil : 0, frame: pass.frameOf(v) };
     }),
     thanks: () => st.thanks.map(({ nickname, avatar, team }) => ({ nickname, avatar, team })),
@@ -1476,5 +1525,5 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     for (const [id, v] of Object.entries(st.viewers)) if (v.lastSeenAt < cutoff && v.lifetime < 100 && !stage.has(id)) delete st.viewers[id];
   }
 
-  return { startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, giftEventId, openChest: () => chestOpenNow(), startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: userId => (st.boss || !registry.start('roast', { userId }) ? null : st.roast), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
+  return { profile, startPoll, endPoll, chat, member, gift, like, social, startLucky, endLucky, startQuiz, endQuiz, showFortune, startBoss, giftEventId, openChest: () => chestOpenNow(), startHead, startTug: () => (st.boss || !registry.start('tug') ? null : st.tug), startRoast: userId => (st.boss || !registry.start('roast', { userId }) ? null : st.roast), act: actView, tick, changes, snapshot, newNight, resetAll, pruneViewers, get roster() { return roster; }, state: st, config: cfg };
 }

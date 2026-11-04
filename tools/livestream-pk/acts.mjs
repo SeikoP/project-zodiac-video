@@ -14,7 +14,7 @@ export const ACTS = Object.freeze([
   {
     id: 'reunion', label: 'Hội ngộ', color: '#F2A7C3',
     heads: ['roast', 'guessobject', 'chestrain', 'moonnight', 'final'],
-    quest: { stat: 'blessings', base: 5, per: 1, unit: 'lời chúc phúc', reward: 'dust', rewardText: 'mưa hoa · mỗi người +10 bụi sao' },
+    quest: { stat: 'blessings', base: 5, per: 1, unit: 'lời chúc phúc', reward: 'dust', rewardText: 'mưa hoa · mỗi người +10 điểm sáng' },
   },
 ]);
 

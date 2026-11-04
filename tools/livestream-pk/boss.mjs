@@ -156,7 +156,7 @@ export function createBoss({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
     const mvps = {};
     for (const team of TEAM_IDS) {
       const e = meter.topBy(team);
-      if (e) mvps[team] = { nickname: b.nick[e[0]], team, dmg: e[1] };
+      if (e) mvps[team] = { userId: e[0], nickname: b.nick[e[0]], team, dmg: e[1] };
     }
     hitters.forEach((h, i) => {
       const v = viewerOf(h.userId);

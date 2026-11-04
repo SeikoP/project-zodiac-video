@@ -134,7 +134,7 @@ export function createTug({ st, cfg, now, onEvent, ctx, reward, viewerOf }) {
       const v = viewerOf(id);
       if (v) reward.grant({ userId: id }, v, 'light', g.names[id] === winner ? cfg.tugWinLight : cfg.tugJoinLight, 'tug');
     }
-    const mvp = team => { const e = meter.topBy(team); return e ? { nickname: g.nick[e[0]], power: Math.round(e[1]) } : null; };
+    const mvp = team => { const e = meter.topBy(team); return e ? { userId: e[0], nickname: g.nick[e[0]], power: Math.round(e[1]) } : null; };
     onEvent({ type: 'tug-end', a: g.a, b: g.b, winner, pos: Math.round(g.value), pullers: pullers.length, mvpA: mvp(g.a), mvpB: mvp(g.b), early });
   }
 
