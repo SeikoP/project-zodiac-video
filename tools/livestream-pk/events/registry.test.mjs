@@ -134,3 +134,25 @@ test('an event that already finished does not block the next start; adopt resume
   assert.equal(reg.adopt('b'), false, 'one at a time');
   assert.equal(reg.active(), 'a');
 });
+
+test('a start that sets state and then throws is cleaned up: not active, end called once, event-error reported', () => {
+  const events = [];
+  const reg = createRegistry({ onEvent: e => events.push(e) });
+  const st = { x: null };
+  let ended = 0;
+  reg.register(def('a', { start: () => { st.x = 1; throw new Error('boom'); }, end: () => { ended++; st.x = null; } }));
+  assert.equal(reg.start('a'), false);
+  assert.equal(reg.active(), null);
+  assert.equal(ended, 1);
+  assert.equal(st.x, null);
+  assert.deepEqual(events, [{ type: 'event-error', id: 'a', where: 'start' }]);
+  assert.equal(reg.start('a'), false, 'and it can be tried again');
+});
+
+test('a falsy start does not call end (the state it declined to touch may belong to someone else)', () => {
+  const reg = createRegistry({});
+  let ended = 0;
+  reg.register(def('a', { start: () => false, end: () => ended++ }));
+  assert.equal(reg.start('a'), false);
+  assert.equal(ended, 0);
+});

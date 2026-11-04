@@ -694,3 +694,44 @@ test('resetAll keeps the roster working on the new state', () => {
   assert.equal(game.roster.teamOf('b'), 'yellow');
   assert.deepEqual(game.roster.counts(), { red: 0, yellow: 1, green: 0, blue: 0 });
 });
+
+// --- Đoán vật must not swallow ordinary chat: only a right guess is taken ---
+test('during Đoán vật a wrong guess is still a comment: it earns commentLight, casts a poll vote and reaches predict', () => {
+  const { game, events } = setup({ commentLight: 5, commentCooldownSeconds: 0 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng'], ['c', 'xanh lá']]) game.chat(u(id, { comment: team }));
+  game.startHead('guessobject');
+  const before = light(game, 'red');
+  game.chat(u('a', { comment: 'con chó' })); // wrong, and a's one try for this clue
+  assert.ok(light(game, 'red') > before, 'a wrong guess still pays commentLight');
+  game.startPoll();
+  game.chat(u('b', { comment: '2' }));
+  assert.equal(game.snapshot().hud.poll.total, 1, 'a poll vote goes through');
+  game.state.predict = { key: 'k', q: '?', options: ['A', 'B'], bets: {}, pool: [0, 0], closesAt: Date.UTC(2026, 10, 4), openedAt: 0 };
+  game.state.predict.closesAt = Infinity;
+  game.chat(u('c', { comment: 'đoán A' }));
+  assert.ok(game.state.predict.bets.c, '"đoán A" reaches predict');
+  assert.equal(of(events, 'mystery-win').length, 0);
+});
+
+test('during Đoán vật a right guess is swallowed once and pays gems', () => {
+  const { game, events } = setup({ commentLight: 5, commentCooldownSeconds: 0 });
+  for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng']]) game.chat(u(id, { comment: team }));
+  game.startHead('guessobject');
+  const answer = game.state.guess.answer;
+  const before = light(game, 'red');
+  game.chat(u('a', { comment: answer }));
+  assert.deepEqual(of(events, 'mystery-win').map(w => [w.userId, w.rank]), [['a', 1]]);
+  assert.equal(light(game, 'red'), before, 'the winning guess is taken, not also a comment');
+  assert.ok(game.state.viewers.a.bag.fire >= 2, 'rank 1 gets 2 gems of the team element');
+  game.chat(u('a', { comment: answer })); // nothing more to win
+  assert.equal(of(events, 'mystery-win').length, 1);
+});
+
+test('a right quiz answer raises the moon like the other keyword answers do', () => {
+  const { game } = setup({ commentLight: 0, moonGoal: 1e9 });
+  game.chat(u('a', { comment: 'đỏ' }));
+  game.startQuiz();
+  const before = game.state.moon.light;
+  game.chat(u('a', { comment: game.state.quiz.answer }));
+  assert.equal(game.state.moon.light - before, 1);
+});

@@ -35,7 +35,10 @@ export function createRegistry({ now = Date.now, onEvent = () => {}, cfg = {}, c
     if (current !== null && guard(current, 'isDone', () => defs.get(current)?.isDone?.(), false)) registry.end(current);
     if (current !== null) return false;
     if (def.needs && !guard(id, 'needs', () => def.needs(registry.ctx), false)) return false;
-    if (!guard(id, 'start', () => def.start(opts), false)) return false;
+    let threw = true;
+    const started = guard(id, 'start', () => { const ok = def.start(opts); threw = false; return ok; }, false);
+    if (threw) guard(id, 'end', () => def.end?.()); // a start that died half way must not leave its state behind
+    if (!started) return false;
     current = id;
     onEvent({ type: 'event-start', id });
     return true;

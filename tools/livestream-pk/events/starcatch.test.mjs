@@ -99,3 +99,13 @@ test('registered in the registry; JSON round trip mid-event carries on', () => {
   assert.equal(r2.of('catch-end').length, 1);
   assert.equal(r2.st.starcatch, null);
 });
+
+test('an onEvent that throws during start leaves no half-started event, through the registry', () => {
+  const st = { starcatch: null };
+  const sc = createStarcatch({ st, cfg: { ...MINIGAME_DEFAULTS }, now: () => 1, rng: () => 0, onEvent: () => { throw new Error('listener'); }, reward: createReward({}), viewerOf: () => null, quest: () => {} });
+  const reg = createRegistry({ now: () => 1, onEvent: () => {}, cfg: {}, ctx: {} });
+  reg.register(sc);
+  assert.equal(reg.start('starcatch'), false);
+  assert.equal(reg.active(), null);
+  assert.equal(st.starcatch, null);
+});

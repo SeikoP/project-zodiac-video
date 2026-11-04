@@ -36,7 +36,7 @@ export function createStarcatch({ st, cfg, now, rng, onEvent, reward, viewerOf, 
   function start() {
     if (st.starcatch) return null;
     st.starcatch = { round: 0, word: null, nextAt: 0, score: {}, kr: {} };
-    round(now());
+    try { round(now()); } catch (e) { st.starcatch = null; throw e; } // never leave a half-started event
     return st.starcatch;
   }
   function finish() {

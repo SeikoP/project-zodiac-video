@@ -23,8 +23,9 @@ export function createGuessObject({ st, cfg, now, rng = Math.random, onEvent, re
     const entry = wanted ? bank.find(e => [e.answer, ...e.aliases].some(a => normGuess(a) === wanted)) : bank[Math.floor(rng() * bank.length) % bank.length];
     if (!entry) return null;
     const of = Math.min(cfg.mysteryClues, entry.clues.length);
-    const g = st.guess = { answer: entry.answer, aliases: [...entry.aliases], clues: entry.clues.slice(0, of), clue: 1, of, nextAt: now() + cfg.mysteryClueSeconds * 1000, endsAt: of > 1 ? 0 : now() + cfg.mysteryLastSeconds * 1000, guessed: {}, nick: {}, kr: {} };
+    const g = { answer: entry.answer, aliases: [...entry.aliases], clues: entry.clues.slice(0, of), clue: 1, of, nextAt: now() + cfg.mysteryClueSeconds * 1000, endsAt: of > 1 ? 0 : now() + cfg.mysteryLastSeconds * 1000, guessed: {}, nick: {}, kr: {} };
     round(g).open([g.answer, ...g.aliases].map(normGuess));
+    st.guess = g; // assigned last: a start that throws leaves nothing behind
     onEvent({ type: 'mystery-start', clue: g.clues[0], of });
     return g;
   }
@@ -40,7 +41,8 @@ export function createGuessObject({ st, cfg, now, rng = Math.random, onEvent, re
     onEvent({ type: 'mystery-end', answer: g.answer, winners: winners(g) });
   }
 
-  // A guess while the event is on. Returns true when the line was taken as a guess (so the game does not also treat it as chat).
+  // A guess while the event is on. Returns true only for a winning guess (swallowed); a wrong one is recorded as the person's try
+  // for this clue and returns false so the game handles the line as normal chat.
   function chat(u, v, text) {
     const g = st.guess;
     if (!g || isCommand(text)) return false;
@@ -49,7 +51,7 @@ export function createGuessObject({ st, cfg, now, rng = Math.random, onEvent, re
     const kr = round(g);
     if (g.guessed[u.userId] === g.clue || kr.winnersList().includes(u.userId)) return false;
     g.guessed[u.userId] = g.clue;
-    if (kr.submit(u.userId, text) !== 'win') return true;
+    if (kr.submit(u.userId, text) !== 'win') return false; // a wrong guess is spent but stays ordinary chat
     const rank = kr.winnersList().length;
     g.nick[u.userId] = v.nickname;
     reward.grant(u, v, 'gem', gems()[rank - 1] ?? 1, 'mystery');

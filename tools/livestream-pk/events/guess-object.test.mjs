@@ -60,7 +60,7 @@ test('a clue every 10 seconds, four in all, then the answer is revealed', () => 
 test('each person guesses once per clue; a new clue gives a new chance', () => {
   const r = room();
   r.guess.start();
-  assert.equal(r.say('a', 'con chó'), true);
+  assert.equal(r.say('a', 'con chó'), false, 'a wrong guess is spent but stays ordinary chat');
   assert.equal(r.say('a', 'mèo'), false, 'the second guess on this clue is not taken');
   assert.equal(r.of('mystery-win').length, 0);
   r.advance(10_000);
@@ -101,7 +101,7 @@ test('a wrong guess changes nobody\'s team; commands and chatter are not guesses
   const r = room();
   r.guess.start();
   const teams = Object.fromEntries(Object.entries(r.viewers).map(([id, v]) => [id, v.team]));
-  assert.equal(r.say('a', 'xanh dương'), true, 'a colour word is just a wrong guess here');
+  assert.equal(r.say('a', 'xanh dương'), false, 'a colour word is just a wrong guess here');
   assert.equal(r.say('b', 'đổi vàng'), false, 'a command goes on to the game');
   assert.equal(r.say('c', 'nhận'), false);
   assert.equal(r.say('d', 'một câu rất dài '.repeat(10)), false, 'chatter is not a guess');
@@ -146,4 +146,15 @@ test('JSON round trip mid-event: a rebuilt event carries on with the same clue, 
   r2.say('c', 'mèo');
   const end = r2.of('mystery-end')[0];
   assert.deepEqual(end.winners.map(w => [w.nickname, w.rank]), [['B', 1], ['A', 2], ['C', 3]]);
+});
+
+test('an onEvent that throws during start leaves no half-started round, through the registry', () => {
+  const r = room();
+  const reg = createRegistry({ now: r.now, onEvent: () => {}, cfg: {}, ctx: {} });
+  const st = { guess: null };
+  const g = createGuessObject({ st, cfg: { ...MINIGAME_DEFAULTS }, now: r.now, rng: () => 0, onEvent: () => { throw new Error('listener'); }, reward: createReward({}), viewerOf: () => null, bank: BANK });
+  reg.register(g);
+  assert.equal(reg.start('guessobject'), false);
+  assert.equal(reg.active(), null);
+  assert.equal(st.guess, null);
 });
