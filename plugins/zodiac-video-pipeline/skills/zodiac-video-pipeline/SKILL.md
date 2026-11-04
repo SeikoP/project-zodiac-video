@@ -39,3 +39,5 @@ Load only what the current task needs.
 | Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
 | Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |
 | Repository execution and capability providers | references/repository-runtime.md |
+
+Fast Pipeline optimization: follow orchestration/fast-pipeline.md for source-verified context capsules, safe parallel native preflight, and per-phase performance evidence. This is a performance overlay only, not a phase/gate/approval replacement.
