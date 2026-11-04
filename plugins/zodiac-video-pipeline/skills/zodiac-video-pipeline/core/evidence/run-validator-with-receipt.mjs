@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 
@@ -9,12 +10,16 @@ if(!capabilityId||!receiptPath||!validator){
   process.exit(2);
 }
 const started=new Date().toISOString();
+const sha=x=>createHash('sha256').update(x).digest('hex');
+const validatorBytes=await readFile(validator);
 const run=spawnSync(process.execPath,[validator,...args],{encoding:'utf8'});
 const receipt={
   format:'zodiac-validator-receipt@1',
   capability_id:capabilityId,
   validator:validator.replaceAll('\\','/'),
+  validator_sha256:sha(validatorBytes),
   args,
+  args_sha256:sha(Buffer.from(JSON.stringify(args))),
   executed_at:started,
   exit_code:run.status??1,
   status:run.status===0?'PASS':'FAIL',
