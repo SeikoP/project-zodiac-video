@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCamera } from './camera.mjs';
 import { gardenConfig } from './config.mjs';
-import { plotCenter, tierCenter } from './world.mjs';
+import { plotCenter } from './world.mjs';
 
 const cfg = gardenConfig();
 function rig() {
@@ -18,16 +18,16 @@ test('a tree gift frames the givers terrace for 4s and beats a theft waiting', (
   r.cam.push(steal('cloud-2:1', 'cloud-2:2'));
   r.cam.push(gift('tree', 'cloud-1:3'));
   const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.priority, s.zoom, s.holdMs], ['gift', 1, cfg.camera.zoomTier, 4000]);
+  assert.deepEqual([s.kind, s.priority, s.zoom, s.holdMs], ['gift', 1, cfg.camera.zoomClose, 4000]);
   assert.deepEqual([s.x, s.y], [plotCenter('cloud-1', 3, cfg).x, plotCenter('cloud-1', 3, cfg).y]);
 });
 
-test('a small gift gets the cloud terrace view for 2.5s', () => {
+test('a small gift stays on the giver pot for 2.5s', () => {
   const r = rig();
   r.cam.push(gift('dew'));
   const s = r.cam.tick();
   assert.deepEqual([s.priority, s.zoom, s.holdMs], [2, cfg.camera.zoomTier, 2500]);
-  assert.deepEqual([s.x, s.y], [tierCenter('cloud-1', cfg).x, tierCenter('cloud-1', cfg).y]);
+  assert.deepEqual([s.x, s.y], [plotCenter('cloud-1', 3, cfg).x, plotCenter('cloud-1', 3, cfg).y]);
 });
 
 test('a theft frames both plots', () => {
@@ -49,7 +49,7 @@ test('the shot does not change before 2s; then a 1s wide gap, then the next shot
   assert.equal(r.cam.tick(), null);
   r.advance(1000);
   const gap = r.cam.tick();
-  assert.deepEqual([gap.kind, gap.zoom, gap.holdMs], ['gap', cfg.camera.zoomWorld, 1000]);
+  assert.deepEqual([gap.kind, gap.zoom, gap.holdMs], ['gap', cfg.camera.zoomTier, 1000]);
   assert.equal(r.cam.tick(), null);
   r.advance(1000);
   assert.equal(r.cam.tick().kind, 'gift');
@@ -108,14 +108,16 @@ test('locking holds the view and ignores events', () => {
   assert.equal(r.cam.tick().kind, 'gift');
 });
 
-test('with nothing happening it shows the full four-tier garden, then refreshes after 8s', () => {
+test('with nothing happening it tours readable pot groups every 8s', () => {
   const r = rig();
   const s = r.cam.tick();
-  assert.deepEqual([s.kind, s.x, s.y, s.zoom], ['idle', cfg.tierWidth / 2, 4 * cfg.tierHeight / 2, cfg.camera.zoomWorld]);
+  assert.deepEqual([s.kind, s.x, s.y, s.zoom], ['idle', cfg.tierWidth * .24, cfg.tierHeight / 2, cfg.camera.zoomTier]);
   r.advance(7999);
   assert.equal(r.cam.tick(), null);
   r.advance(2);
-  assert.equal(r.cam.tick().kind, 'idle');
+  const next = r.cam.tick();
+  assert.equal(next.kind, 'idle');
+  assert.ok(next.x > s.x, 'the idle camera advances to the next pot group');
 });
 
 test('a gift from a player with no plot is shown as a wide shot', () => {
