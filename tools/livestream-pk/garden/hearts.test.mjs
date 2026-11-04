@@ -62,3 +62,13 @@ test('malformed like counts do not mutate state', () => {
   }
   assert.equal(garden.state.hearts, null);
 });
+
+test('partial heart progress marks the save dirty even before first milestone', () => {
+  let dirties = 0;
+  const garden = createGarden({ onStateChange: () => dirties++ });
+  garden.like({ count: 5 });
+  assert.equal(dirties, 1);
+  assert.equal(garden.state.hearts.progress, 5);
+  assert.equal(garden.like({ count: -2 }).ok, false);
+  assert.equal(dirties, 1);
+});
