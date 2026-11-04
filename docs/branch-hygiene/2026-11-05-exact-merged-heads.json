@@ -1,0 +1,862 @@
+{
+  "format": "zodiac-branch-cleanup@1",
+  "repository": "SeikoP/project-zodiac-video",
+  "audit_date": "2026-11-05",
+  "safety_policy": "Exact matching PR head SHA, merged PR, no open PR, no release/protected/default branch; revalidate live immediately before deletion.",
+  "original_branch_count": 188,
+  "candidate_count": 142,
+  "candidates": [
+    {
+      "branch": "audit/2026-10-13-pipeline-stabilization",
+      "head_sha": "04b9f3e6dd94c524a7001b74136a1527447b3d0b",
+      "merged_pr": 123,
+      "merged_at": "2026-10-13T17:35:24Z"
+    },
+    {
+      "branch": "audit/e2e-observability-benchmarks",
+      "head_sha": "4a2238ad72be840d4e626551ca5c76b863f48b7c",
+      "merged_pr": 126,
+      "merged_at": "2026-10-13T17:48:11Z"
+    },
+    {
+      "branch": "audit/job0-job5-runtime-parity-voice-pacing",
+      "head_sha": "6402a2d4069972de0ee12659ec5cb9c6d46d38b3",
+      "merged_pr": 64,
+      "merged_at": "2026-10-08T19:33:50Z"
+    },
+    {
+      "branch": "audit/job5-visual-e2e-gates",
+      "head_sha": "9ecb9f1c5d47580797792f100055e206de3a9c1c",
+      "merged_pr": 68,
+      "merged_at": "2026-10-08T20:00:20Z"
+    },
+    {
+      "branch": "audit/publish-e2e-parity-20261009",
+      "head_sha": "c7f1e6c7780de53d97490463a9f0e9593f8f9a07",
+      "merged_pr": 85,
+      "merged_at": "2026-10-09T15:49:59Z"
+    },
+    {
+      "branch": "audit/render-pipeline-optimization",
+      "head_sha": "5ff09ecfe215dc4ccbdf670b325999d2e90d4fbb",
+      "merged_pr": 13,
+      "merged_at": "2026-10-06T11:12:45Z"
+    },
+    {
+      "branch": "chore/cleanup-docs",
+      "head_sha": "4b551fa665e665341b1b9282c9fe7317a0e198c9",
+      "merged_pr": 133,
+      "merged_at": "2026-11-02T18:38:53Z"
+    },
+    {
+      "branch": "chore/cleanup-references",
+      "head_sha": "f5cca321eab761b5a8020f1fa39e027e644a6f20",
+      "merged_pr": 134,
+      "merged_at": "2026-11-02T18:28:37Z"
+    },
+    {
+      "branch": "chore/remove-compat-shims",
+      "head_sha": "a7bdde9b4931552624af2f4818625bc919219cdc",
+      "merged_pr": 136,
+      "merged_at": "2026-11-02T18:41:49Z"
+    },
+    {
+      "branch": "chore/remove-remotion-v1",
+      "head_sha": "0eb320607f65bf3cdda2fe8b49eb29ccea5645be",
+      "merged_pr": 142,
+      "merged_at": "2026-11-02T19:38:13Z"
+    },
+    {
+      "branch": "chore/remove-renderer-2.0.0",
+      "head_sha": "52ec87b1383562371ecc450b20223e3c6da9207b",
+      "merged_pr": 135,
+      "merged_at": "2026-11-02T18:45:00Z"
+    },
+    {
+      "branch": "chore/single-ui",
+      "head_sha": "3653e9c4046678ac3dd5491acb1206fd275f627b",
+      "merged_pr": 137,
+      "merged_at": "2026-11-02T19:02:00Z"
+    },
+    {
+      "branch": "ci/remotion-compat-on-change",
+      "head_sha": "04c982d9e3f4caaec853747e01665759e75f9618",
+      "merged_pr": 139,
+      "merged_at": "2026-11-02T19:15:38Z"
+    },
+    {
+      "branch": "cleanup/phase02-current-assets-v250",
+      "head_sha": "346fdea1d974f483ba7fe422eb10a2a339ef104f",
+      "merged_pr": 120,
+      "merged_at": "2026-10-13T00:37:18Z"
+    },
+    {
+      "branch": "codex/harden-job5-package-import-2026-10-08",
+      "head_sha": "1337e3eb39085af134bc1c5fcb8e09f5c4efe948",
+      "merged_pr": 60,
+      "merged_at": "2026-10-08T11:51:09Z"
+    },
+    {
+      "branch": "codex/phase2-asset-framework-refactor",
+      "head_sha": "6496f8a7aaf41211a3eec5d04e6baa2a311c048f",
+      "merged_pr": 102,
+      "merged_at": "2026-10-12T09:39:29Z"
+    },
+    {
+      "branch": "codex/phase2-plan-closeout",
+      "head_sha": "c3ba8c9c7b465eb5fbfaf52c13ceb8fab9c04d67",
+      "merged_pr": 103,
+      "merged_at": "2026-10-12T11:06:03Z"
+    },
+    {
+      "branch": "codex/zodiac-maintainability-refactor",
+      "head_sha": "78ad599f0dfa0423b35c7ba00b24fb2d5ff022ef",
+      "merged_pr": 104,
+      "merged_at": "2026-10-12T16:26:36Z"
+    },
+    {
+      "branch": "codex/zodiac-simplification",
+      "head_sha": "5cf788d66c0639edd7f955a4bc2fedc0f7c78f95",
+      "merged_pr": 101,
+      "merged_at": "2026-10-11T19:40:50Z"
+    },
+    {
+      "branch": "codex/zodiac-visual-semantics-palettes",
+      "head_sha": "53b088bc2d28a56579c73bd9242cdd9cac145606",
+      "merged_pr": 108,
+      "merged_at": "2026-10-12T18:52:18Z"
+    },
+    {
+      "branch": "docs/defer-single-job-performance-backlog",
+      "head_sha": "81503cb8b93efc3d280540d23d254dafafc25c07",
+      "merged_pr": 32,
+      "merged_at": "2026-10-07T03:52:51Z"
+    },
+    {
+      "branch": "docs/narrative-visual-authoring-design",
+      "head_sha": "603d0db07e90ac2d8449f96a7a084f7e39c92559",
+      "merged_pr": 131,
+      "merged_at": "2026-11-02T18:18:15Z"
+    },
+    {
+      "branch": "docs/single-job-performance-engine-spec",
+      "head_sha": "afc03e32ce840412c5af9f915c8fad06c9b1f74e",
+      "merged_pr": 30,
+      "merged_at": "2026-10-07T03:17:55Z"
+    },
+    {
+      "branch": "feat/cover-safe-props-runtime-117",
+      "head_sha": "ac908453dd0eaec0adf5dae0f08fd1a47fbfdd33",
+      "merged_pr": 38,
+      "merged_at": "2026-10-07T05:35:33Z"
+    },
+    {
+      "branch": "feat/depth-cue-parity-gate-20261010",
+      "head_sha": "4a0ee65cf94a5c9cfcb573d73ac077c920b5f034",
+      "merged_pr": 97,
+      "merged_at": "2026-10-10T15:20:26Z"
+    },
+    {
+      "branch": "feat/final-media-acceptance-20261010",
+      "head_sha": "c6054a283eef087239ec1920955d957e1ac8b9e4",
+      "merged_pr": 92,
+      "merged_at": "2026-10-10T14:26:53Z"
+    },
+    {
+      "branch": "feat/garden-active-progression-v4",
+      "head_sha": "8d653286491dbbd66314db5e18d3ea2acbba3281",
+      "merged_pr": 157,
+      "merged_at": "2026-11-04T19:21:05Z"
+    },
+    {
+      "branch": "feat/garden-live-48-cards",
+      "head_sha": "4234f9f648240dec625ab725ab779590762d2961",
+      "merged_pr": 175,
+      "merged_at": "2026-11-04T21:03:31Z"
+    },
+    {
+      "branch": "feat/garden-seed-zone-v5",
+      "head_sha": "189aa1664009ab6ff6b7cca6e0a1de4b10dc5dcd",
+      "merged_pr": 162,
+      "merged_at": "2026-11-04T19:48:18Z"
+    },
+    {
+      "branch": "feat/garden-unified-rack-v6",
+      "head_sha": "87937ae4778e3f24c04b233d180b41737ac5163f",
+      "merged_pr": 170,
+      "merged_at": "2026-11-04T20:31:07Z"
+    },
+    {
+      "branch": "feat/job5-remotion-studio-launch-20261010",
+      "head_sha": "23f1291a7177fd41551a8800a51e26635e4e620b",
+      "merged_pr": 93,
+      "merged_at": "2026-10-10T14:29:45Z"
+    },
+    {
+      "branch": "feat/library-single-source",
+      "head_sha": "4154558db0cc64ed75a60538495df1ccd4504766",
+      "merged_pr": 138,
+      "merged_at": "2026-11-02T19:10:27Z"
+    },
+    {
+      "branch": "feat/livestream-hours-and-mechanics",
+      "head_sha": "a8ce1563a97548c3ad708213a3e7c1186c92c163",
+      "merged_pr": 146,
+      "merged_at": "2026-11-03T16:29:00Z"
+    },
+    {
+      "branch": "feat/meme-v31-cross-asset",
+      "head_sha": "aaba920953002db116036b94864bd5f3cb57901c",
+      "merged_pr": 26,
+      "merged_at": "2026-10-07T01:39:03Z"
+    },
+    {
+      "branch": "feat/named-videos-progress",
+      "head_sha": "99cf13bd5bfaab6014887b943d57d231ba750064",
+      "merged_pr": 140,
+      "merged_at": "2026-11-02T19:21:44Z"
+    },
+    {
+      "branch": "feat/narrative-brief-validator",
+      "head_sha": "0df815870d538ca77e5028ca32b9730af5d618f0",
+      "merged_pr": 132,
+      "merged_at": "2026-11-02T18:20:08Z"
+    },
+    {
+      "branch": "feat/narrative-visual-kit-lint",
+      "head_sha": "8c16d5e6cecb6e9b5af510c9b5674b44aba594df",
+      "merged_pr": 141,
+      "merged_at": "2026-11-02T19:24:31Z"
+    },
+    {
+      "branch": "feat/narrative-visual-wiring",
+      "head_sha": "30d46cd385dcd4ca6c22e79a78fd6e18badc423c",
+      "merged_pr": 144,
+      "merged_at": "2026-11-02T19:52:20Z"
+    },
+    {
+      "branch": "feat/phe-mau",
+      "head_sha": "f77d8232f8c61052d4b58bd7b8de375c9d3d9bf0",
+      "merged_pr": 148,
+      "merged_at": "2026-11-04T14:08:31Z"
+    },
+    {
+      "branch": "feat/prop-first-symbol-retired-gates",
+      "head_sha": "7b20447694fcb0f5f727acf5f7b3841385fbbdda",
+      "merged_pr": 119,
+      "merged_at": "2026-10-12T23:21:24Z"
+    },
+    {
+      "branch": "feat/render-observability-fingerprints",
+      "head_sha": "7015c1c18cc79d5869715e65e07e139e72d44a9b",
+      "merged_pr": 17,
+      "merged_at": "2026-10-06T11:11:57Z"
+    },
+    {
+      "branch": "feat/renderer-2-0-2-semantic-motion",
+      "head_sha": "36f6fdcb87b397aae2e4bcfdafbacaa065f1221d",
+      "merged_pr": 73,
+      "merged_at": "2026-10-08T20:57:03Z"
+    },
+    {
+      "branch": "feat/renderer-202-default",
+      "head_sha": "27b9a1007547bc4127be8022f04af4aa5c11ade7",
+      "merged_pr": 143,
+      "merged_at": "2026-11-02T19:44:59Z"
+    },
+    {
+      "branch": "feat/renderer-202-stepped-motion",
+      "head_sha": "56cab9e780ee27da6bfb3880cc34ee540923fef2",
+      "merged_pr": 130,
+      "merged_at": "2026-11-02T18:18:12Z"
+    },
+    {
+      "branch": "feat/renderer201-three-phase-visual-qa-20261010",
+      "head_sha": "d4239b20a54b4f3bd09d620199c8e5353a7a516e",
+      "merged_pr": 91,
+      "merged_at": "2026-10-10T14:23:57Z"
+    },
+    {
+      "branch": "feat/runtime-1.16-performance",
+      "head_sha": "9706aff45442833dc35821571bf5ac048f9baddc",
+      "merged_pr": 22,
+      "merged_at": "2026-10-06T21:09:58Z"
+    },
+    {
+      "branch": "feat/sentence-pauses-meme-framework",
+      "head_sha": "1efe972ed3102ecec8132f37ba9c453837eb6aee",
+      "merged_pr": 25,
+      "merged_at": "2026-10-06T23:50:00Z"
+    },
+    {
+      "branch": "feat/single-job-performance-foundation-v2",
+      "head_sha": "22d988bc96812ca780c961671996f5cbdeb17886",
+      "merged_pr": 31,
+      "merged_at": "2026-10-07T03:37:13Z"
+    },
+    {
+      "branch": "feat/studio-pacing-095",
+      "head_sha": "71088c0d19a6256e44f2cb454c339f7b605eadcc",
+      "merged_pr": 24,
+      "merged_at": "2026-10-06T23:35:01Z"
+    },
+    {
+      "branch": "feat/textual-tui-control-plane",
+      "head_sha": "b2f1f8573e4e5299b7bc81334150067483b8785e",
+      "merged_pr": 27,
+      "merged_at": "2026-10-07T01:49:59Z"
+    },
+    {
+      "branch": "feat/thin-package-v3-runtime-registry",
+      "head_sha": "47471a87809aab0ba7eab11dac2a224f7e942c9f",
+      "merged_pr": 18,
+      "merged_at": "2026-10-06T12:56:20Z"
+    },
+    {
+      "branch": "feat/tiktok-live-simulator",
+      "head_sha": "40ec6c34bb056de4bd48268b35558f63b2b49c5e",
+      "merged_pr": 147,
+      "merged_at": "2026-11-03T17:08:57Z"
+    },
+    {
+      "branch": "feat/tui-compact-pipeline-console",
+      "head_sha": "8e699d014447bfb20b0daaed8dfd3f27a83be6b4",
+      "merged_pr": 36,
+      "merged_at": "2026-10-07T05:04:15Z"
+    },
+    {
+      "branch": "feat/tui-ux-zodiac-command",
+      "head_sha": "37472cf20e132956c14d1f850bf8382e2a97ea26",
+      "merged_pr": 28,
+      "merged_at": "2026-10-07T02:01:42Z"
+    },
+    {
+      "branch": "feature/fast-pipeline-critical-path",
+      "head_sha": "11f56b5d4a09a4a54204e052bddd4e19f22e1799",
+      "merged_pr": 174,
+      "merged_at": "2026-11-04T21:10:35Z"
+    },
+    {
+      "branch": "feature/incremental-dependency-cache",
+      "head_sha": "9d400a4a1fc11c872bb7259e93e4267666d00ec0",
+      "merged_pr": 171,
+      "merged_at": "2026-11-04T21:03:34Z"
+    },
+    {
+      "branch": "fix/audio-preview-volume-100",
+      "head_sha": "038e9e61434a308489fc4f2c34a1d92c5e7f9573",
+      "merged_pr": 1,
+      "merged_at": "2026-10-05T14:10:44Z"
+    },
+    {
+      "branch": "fix/auto-refresh-stale-runtime-cache",
+      "head_sha": "39c405577716ff67ac6b48a3c5b8931d13db64ea",
+      "merged_pr": 54,
+      "merged_at": "2026-10-07T19:08:49Z"
+    },
+    {
+      "branch": "fix/automatic-job5-payload-parity-gate",
+      "head_sha": "4262bdf40e3679f5f8c27d54645477a01d3ce143",
+      "merged_pr": 65,
+      "merged_at": "2026-10-08T19:37:29Z"
+    },
+    {
+      "branch": "fix/bundled-font-watermark",
+      "head_sha": "40c97c2b168042c6c45b34925d4e031d04759800",
+      "merged_pr": 46,
+      "merged_at": "2026-10-07T17:40:56Z"
+    },
+    {
+      "branch": "fix/fail-package-before-pipeline",
+      "head_sha": "e429c51da0cf68f5e87fb2ebd3657ea41750080c",
+      "merged_pr": 51,
+      "merged_at": "2026-10-07T18:50:36Z"
+    },
+    {
+      "branch": "fix/gui-backend-audit-20261007",
+      "head_sha": "e074e287d0c05330e86ef61b145bb751d57a782c",
+      "merged_pr": 44,
+      "merged_at": "2026-10-07T11:06:44Z"
+    },
+    {
+      "branch": "fix/job5-event-lineage-audit-20261010",
+      "head_sha": "00664cf72b49d36ace7bdcaf55ec4f8a5f79a489",
+      "merged_pr": 90,
+      "merged_at": "2026-10-10T14:20:43Z"
+    },
+    {
+      "branch": "fix/job5-import-preflight-audit",
+      "head_sha": "96df3d832933d7647c99fe50b5da9be386f66ad7",
+      "merged_pr": 77,
+      "merged_at": "2026-10-09T00:22:54Z"
+    },
+    {
+      "branch": "fix/job5-js-semantic-parity-20261010",
+      "head_sha": "459dc8bb050566a5f251457b0505ffaa55d74d76",
+      "merged_pr": 95,
+      "merged_at": "2026-10-10T14:49:43Z"
+    },
+    {
+      "branch": "fix/job5-output-publish-parity",
+      "head_sha": "fc1afd74e8f405b33f3a7bc6ddacc37aef463579",
+      "merged_pr": 66,
+      "merged_at": "2026-10-08T19:40:46Z"
+    },
+    {
+      "branch": "fix/job5-parity-cover-and-audit",
+      "head_sha": "1bed7b1cbaed0b9a658e576bb1a4149128b9dfe2",
+      "merged_pr": 63,
+      "merged_at": "2026-10-08T19:26:36Z"
+    },
+    {
+      "branch": "fix/job5-plan-payload-audit-diagnostics",
+      "head_sha": "e84567c1d3aca3c96e7b6ede3fb946b4ec29c4c9",
+      "merged_pr": 78,
+      "merged_at": "2026-10-09T00:38:05Z"
+    },
+    {
+      "branch": "fix/job5-render-state-transition",
+      "head_sha": "0a51d0fec84dda8f66b068b0a847a44a3f644087",
+      "merged_pr": 69,
+      "merged_at": "2026-10-08T20:02:14Z"
+    },
+    {
+      "branch": "fix/job5-spatial-narrative-focus",
+      "head_sha": "0e7ce22ca0369c9b61f36b9009837e8a295abd8d",
+      "merged_pr": 70,
+      "merged_at": "2026-10-08T20:30:14Z"
+    },
+    {
+      "branch": "fix/job5-voice-gap-config-20261010",
+      "head_sha": "9de43981cee63b116092ee4875cab09cb9c733b5",
+      "merged_pr": 94,
+      "merged_at": "2026-10-10T14:32:10Z"
+    },
+    {
+      "branch": "fix/layout-zones-v18",
+      "head_sha": "14150b8703b7081250add17460928609a239fbee",
+      "merged_pr": 10,
+      "merged_at": "2026-10-06T03:21:43Z"
+    },
+    {
+      "branch": "fix/livestream-chest-active-round-guard",
+      "head_sha": "8a391ba2c9d4c2e049483b09f80506953ce58229",
+      "merged_pr": 176,
+      "merged_at": "2026-11-04T21:01:05Z"
+    },
+    {
+      "branch": "fix/package-content-identity",
+      "head_sha": "95dd06a17cd2bdb7ca2fc84bdcf05a3f35c4bbf1",
+      "merged_pr": 53,
+      "merged_at": "2026-10-07T19:03:18Z"
+    },
+    {
+      "branch": "fix/patch-reuse-and-visual-gap-preflight",
+      "head_sha": "9eb71feb375532acfdfd17912ef13793a1b9960f",
+      "merged_pr": 49,
+      "merged_at": "2026-10-07T18:33:23Z"
+    },
+    {
+      "branch": "fix/persist-alignment-before-visual-validation",
+      "head_sha": "df37d860b6d1246ff48af87930536ec94f2d08f8",
+      "merged_pr": 50,
+      "merged_at": "2026-10-07T18:39:42Z"
+    },
+    {
+      "branch": "fix/phase-scoped-execution-bundles",
+      "head_sha": "554a6797722531ec8a87448df7965403b8c393ce",
+      "merged_pr": 110,
+      "merged_at": "2026-10-12T19:53:16Z"
+    },
+    {
+      "branch": "fix/phase-source-transport",
+      "head_sha": "f71206ca2ebf293e557c5d31be87e315b496fcc0",
+      "merged_pr": 111,
+      "merged_at": "2026-10-12T19:59:28Z"
+    },
+    {
+      "branch": "fix/phase02-activation-gate",
+      "head_sha": "6af6d2612d3d844922164d53055f2cff2093c332",
+      "merged_pr": 115,
+      "merged_at": "2026-10-12T21:02:42Z"
+    },
+    {
+      "branch": "fix/phase02-composition-contract",
+      "head_sha": "912302f72038c57fd676b7719cc6bd04a4ff1f79",
+      "merged_pr": 99,
+      "merged_at": "2026-10-10T19:48:19Z"
+    },
+    {
+      "branch": "fix/phase02-narrative-visual-contract-20261105",
+      "head_sha": "be26af1f084993e323b3615243927e87841035df",
+      "merged_pr": 149,
+      "merged_at": "2026-11-04T17:51:06Z"
+    },
+    {
+      "branch": "fix/phase02-review-completeness",
+      "head_sha": "a9ed9937c911be9919f70e429599235e2886d484",
+      "merged_pr": 117,
+      "merged_at": "2026-10-12T22:19:02Z"
+    },
+    {
+      "branch": "fix/phase02-zodiac-shirt-identity-gate",
+      "head_sha": "1bb4357cd2721061cf2ce737dd270ae1ab1f4cbf",
+      "merged_pr": 161,
+      "merged_at": "2026-11-04T19:36:11Z"
+    },
+    {
+      "branch": "fix/phase03-co-visible-density",
+      "head_sha": "8cf7804b0df28f7fc80c3b8dd5245afeb71d0a39",
+      "merged_pr": 122,
+      "merged_at": "2026-10-13T15:08:53Z"
+    },
+    {
+      "branch": "fix/phase03-narrative-visual-handoff-20261105",
+      "head_sha": "a6fb1c514e70f6efa5a10c6142e25133a3a405be",
+      "merged_pr": 152,
+      "merged_at": "2026-11-04T18:30:39Z"
+    },
+    {
+      "branch": "fix/production-readiness-visual-coverage",
+      "head_sha": "077b49840486f496ff4c2b81aa02e047ccafd5d9",
+      "merged_pr": 127,
+      "merged_at": "2026-10-13T17:52:06Z"
+    },
+    {
+      "branch": "fix/publish-cover-bundle-v111",
+      "head_sha": "ab79fb66dae44357bf6120f758cff4b9b8904130",
+      "merged_pr": 11,
+      "merged_at": "2026-10-06T03:21:57Z"
+    },
+    {
+      "branch": "fix/remotion-cli-help-health-probe",
+      "head_sha": "7b40a63d42707e0ea84e5410ffdf33aa414acfd6",
+      "merged_pr": 82,
+      "merged_at": "2026-10-09T01:16:37Z"
+    },
+    {
+      "branch": "fix/renderer-correctness-ci-baseline",
+      "head_sha": "db29088340d758db182a3eaae2c39ea0f70d6ecf",
+      "merged_pr": 14,
+      "merged_at": "2026-10-06T11:14:17Z"
+    },
+    {
+      "branch": "fix/renderer-preview-prop-effect-parity",
+      "head_sha": "52a86bf663162ec3ae1b7747a5fc2f9f908e11e1",
+      "merged_pr": 62,
+      "merged_at": "2026-10-08T19:08:40Z"
+    },
+    {
+      "branch": "fix/renderer-semantic-visibility-motion-20261010",
+      "head_sha": "7524874705b663bd54f6b9ceb931b7ef3e7f0c7c",
+      "merged_pr": 96,
+      "merged_at": "2026-10-10T15:03:08Z"
+    },
+    {
+      "branch": "fix/renderer-v201-entity-role-budget",
+      "head_sha": "4769c1a0e1e7ed1bb3734d799e067fd1fa32b053",
+      "merged_pr": 74,
+      "merged_at": "2026-10-08T22:19:24Z"
+    },
+    {
+      "branch": "fix/renderer-v201-event-dual-frame-preview",
+      "head_sha": "307b5e0ab81511631e5b54b174ee395fffe50d0c",
+      "merged_pr": 75,
+      "merged_at": "2026-10-08T23:28:53Z"
+    },
+    {
+      "branch": "fix/renderer201-ci-and-parity-20261010",
+      "head_sha": "a7ccd059fc691c4f6fbcd623e5459af67404c86f",
+      "merged_pr": 89,
+      "merged_at": "2026-10-10T14:17:37Z"
+    },
+    {
+      "branch": "fix/renderer201-cli-deep-health-and-repair",
+      "head_sha": "0fd4d559fcf2499ac19470d0c6e1e94b905d7ad6",
+      "merged_pr": 81,
+      "merged_at": "2026-10-09T01:06:56Z"
+    },
+    {
+      "branch": "fix/renderer201-local-cli-deps-preflight",
+      "head_sha": "f5a434e96d6b48f23df98a0afa12e8b7d5b0a9f7",
+      "merged_pr": 80,
+      "merged_at": "2026-10-09T00:57:22Z"
+    },
+    {
+      "branch": "fix/renderer201-prop-scale-cover-preflight",
+      "head_sha": "aff3e5e27e39e14e63fbc9f4293cd597b2ac26bd",
+      "merged_pr": 83,
+      "merged_at": "2026-10-09T01:29:41Z"
+    },
+    {
+      "branch": "fix/renderer201-spatial-caption",
+      "head_sha": "317fbf8b120ec29c33d9319993a8ebc9d3a3c60f",
+      "merged_pr": 84,
+      "merged_at": "2026-10-09T02:15:58Z"
+    },
+    {
+      "branch": "fix/renderer201-spatial-parity-object-key-order",
+      "head_sha": "235cceb40276dd3a830a9f4760e9dd333302717c",
+      "merged_pr": 79,
+      "merged_at": "2026-10-09T00:46:28Z"
+    },
+    {
+      "branch": "fix/runtime-120-manifest-hash",
+      "head_sha": "1ca1032ae71cb69c445d33b974507e594a89772c",
+      "merged_pr": 57,
+      "merged_at": "2026-10-07T19:23:02Z"
+    },
+    {
+      "branch": "fix/runtime-caption-segmentation",
+      "head_sha": "4036ee447bd2bd67edd3815f43b43b5ce4e5d75a",
+      "merged_pr": 61,
+      "merged_at": "2026-10-08T17:59:46Z"
+    },
+    {
+      "branch": "fix/scene-set-foreground-geometry-255",
+      "head_sha": "8c1507b3e1fbb2a612456449ad3fea3f9f5470db",
+      "merged_pr": 121,
+      "merged_at": "2026-10-13T01:27:26Z"
+    },
+    {
+      "branch": "fix/scorpio-s05-anchored-actor-slide-20261010",
+      "head_sha": "bc66b91db12c2ec70a77d09b63d221b79d791459",
+      "merged_pr": 88,
+      "merged_at": "2026-10-09T22:34:04Z"
+    },
+    {
+      "branch": "fix/semantic-close-false-positive",
+      "head_sha": "556bd5841416cb831e94dcd9c3a53f154f866eb5",
+      "merged_pr": 48,
+      "merged_at": "2026-10-07T17:59:22Z"
+    },
+    {
+      "branch": "fix/semantic-motion-preview-v201",
+      "head_sha": "47089f45ba5318148471ca4030ae882184dce937",
+      "merged_pr": 76,
+      "merged_at": "2026-10-08T23:45:20Z"
+    },
+    {
+      "branch": "fix/single-final-output",
+      "head_sha": "3a7b62eb111cbd5a34329b010f86043888c359b5",
+      "merged_pr": 21,
+      "merged_at": "2026-10-06T20:15:13Z"
+    },
+    {
+      "branch": "fix/timing-existing-failure-recovery",
+      "head_sha": "c27cf7ee01ff28da69fb5a09cbdb48b3aea839e1",
+      "merged_pr": 160,
+      "merged_at": "2026-11-04T19:11:59Z"
+    },
+    {
+      "branch": "fix/tui-import-versioned-patches",
+      "head_sha": "b6991b9ce9cedfbc6ed4d0fde353c45c61a751a8",
+      "merged_pr": 52,
+      "merged_at": "2026-10-07T18:54:27Z"
+    },
+    {
+      "branch": "fix/tui-music-select-null",
+      "head_sha": "a0864451050b2504435715a4a46a97d00ba72924",
+      "merged_pr": 33,
+      "merged_at": "2026-10-07T04:34:47Z"
+    },
+    {
+      "branch": "fix/tui-pipeline-action-clipping",
+      "head_sha": "52b7a610ef29429831ee8039f99d8574b7f374e7",
+      "merged_pr": 37,
+      "merged_at": "2026-10-07T05:10:16Z"
+    },
+    {
+      "branch": "fix/tui-preview-logging-deps-20261007",
+      "head_sha": "14fa8a1c11da0ef43d93e4c8ab4efe8e0cd3b04a",
+      "merged_pr": 45,
+      "merged_at": "2026-10-07T11:42:03Z"
+    },
+    {
+      "branch": "fix/tui-responsive-studio-flow",
+      "head_sha": "8909faf1d0ebb01dcf66949b476253d0168237e3",
+      "merged_pr": 29,
+      "merged_at": "2026-10-07T02:20:36Z"
+    },
+    {
+      "branch": "fix/tui-skip-studio-workflow",
+      "head_sha": "0f0576ffb2589a9bad061b1cd0f8eafc21503d38",
+      "merged_pr": 34,
+      "merged_at": "2026-10-07T04:48:56Z"
+    },
+    {
+      "branch": "fix/tui-visual-audit",
+      "head_sha": "f560901492aae7fec1e1fbb93188dc0074c7307c",
+      "merged_pr": 35,
+      "merged_at": "2026-10-07T04:55:52Z"
+    },
+    {
+      "branch": "fix/v4-lineage-stale-zip-state",
+      "head_sha": "d3ec5470fa98dc9e2123834acd5883c6c2716faa",
+      "merged_pr": 47,
+      "merged_at": "2026-10-07T17:54:29Z"
+    },
+    {
+      "branch": "fix/v4-runtime-sha-fingerprint",
+      "head_sha": "8f4706e9d532cd6ea66b577a2b30f3435d208213",
+      "merged_pr": 23,
+      "merged_at": "2026-10-06T22:39:05Z"
+    },
+    {
+      "branch": "fix/visual-intent-grammar-projection",
+      "head_sha": "7e84df06d1568fa508329a1247ae9a00e1c7a0d8",
+      "merged_pr": 114,
+      "merged_at": "2026-10-12T20:45:46Z"
+    },
+    {
+      "branch": "fix/visual-production-gates",
+      "head_sha": "af54fb3ea4a4dbbd2eae023d4fb81a438b29bb5e",
+      "merged_pr": 9,
+      "merged_at": "2026-10-06T01:31:08Z"
+    },
+    {
+      "branch": "fix/voice-gap-source-of-truth",
+      "head_sha": "cf0b967b6b7ed0e53ad0ae0b2a4c0afb333763ed",
+      "merged_pr": 67,
+      "merged_at": "2026-10-08T19:42:40Z"
+    },
+    {
+      "branch": "fix/whisper-zero-duration-word",
+      "head_sha": "9bd91baf11dd3e851616e5eaf592a56d4c697437",
+      "merged_pr": 7,
+      "merged_at": "2026-10-05T22:23:57Z"
+    },
+    {
+      "branch": "fix/zodiac-phase1-autopilot-phase2-single-source",
+      "head_sha": "5bbac44e0b4a30d06cb1d171de22272e59c6076c",
+      "merged_pr": 165,
+      "merged_at": "2026-11-04T19:48:20Z"
+    },
+    {
+      "branch": "fix/zodiac-pipeline-smoothness-2.6.3",
+      "head_sha": "e0f3b5f5033c6c467a02140402acb526c55f9a99",
+      "merged_pr": 153,
+      "merged_at": "2026-11-04T18:45:47Z"
+    },
+    {
+      "branch": "perf/prepare-cache",
+      "head_sha": "bdc1be9c7867e7498752a258f92f3937b2620695",
+      "merged_pr": 16,
+      "merged_at": "2026-10-06T11:08:52Z"
+    },
+    {
+      "branch": "perf/render-observability-fingerprints",
+      "head_sha": "7388a8b82a72e8db706ad10b0bb5a9a0106257ac",
+      "merged_pr": 15,
+      "merged_at": "2026-10-06T11:12:23Z"
+    },
+    {
+      "branch": "production-final-audit",
+      "head_sha": "d0197742a37f41f0272a2eb164efbd62689b3449",
+      "merged_pr": 42,
+      "merged_at": "2026-10-07T07:32:19Z"
+    },
+    {
+      "branch": "refactor/deterministic-workflow-execution",
+      "head_sha": "00119d4453d70e0afafaf5d0eab8e10764e1b377",
+      "merged_pr": 125,
+      "merged_at": "2026-10-13T17:47:50Z"
+    },
+    {
+      "branch": "refactor/plugin-owned-motion-compat-20261010",
+      "head_sha": "8508f4432624fab0d85acf4f629d1dbe865e288a",
+      "merged_pr": 87,
+      "merged_at": "2026-10-09T18:09:45Z"
+    },
+    {
+      "branch": "refactor/skill-split-and-canonical-imports",
+      "head_sha": "592f7e9cbfde3d904205009e51074ce830b1ab5a",
+      "merged_pr": 128,
+      "merged_at": "2026-11-02T17:54:47Z"
+    },
+    {
+      "branch": "refactor/visual-simplification-narrative-visual",
+      "head_sha": "a1a3d41d83ec5eebf836aa97f982ff518ea6f4b8",
+      "merged_pr": 124,
+      "merged_at": "2026-10-13T17:47:16Z"
+    },
+    {
+      "branch": "refactor/zodiac-control-plane-v2",
+      "head_sha": "6ea7a1e153080225907393eb2aa8795da20239e8",
+      "merged_pr": 59,
+      "merged_at": "2026-10-08T09:00:49Z"
+    },
+    {
+      "branch": "refactor/zodiac-job-v4-local-boundary",
+      "head_sha": "30f575155587b28ede5d7d288d90d284a9beb124",
+      "merged_pr": 20,
+      "merged_at": "2026-10-06T18:22:47Z"
+    },
+    {
+      "branch": "runtime-1.18-agent-boundary",
+      "head_sha": "02de263ca07723d1bc3d0f6705d878dc8e2af58e",
+      "merged_pr": 39,
+      "merged_at": "2026-10-07T06:12:01Z"
+    },
+    {
+      "branch": "runtime-1.18.1-correct-state-transition",
+      "head_sha": "be52c3d801057bdf12bb64f7b462834ec4e5c42e",
+      "merged_pr": 40,
+      "merged_at": "2026-10-07T06:21:26Z"
+    },
+    {
+      "branch": "runtime-1.19-pose-choreography",
+      "head_sha": "0acca2b26ae027879a04df88c770efa260ce6541",
+      "merged_pr": 41,
+      "merged_at": "2026-10-07T06:41:45Z"
+    },
+    {
+      "branch": "runtime-1.20-layout-safety",
+      "head_sha": "df29793de2b8d9d3aebcfc13746693459f7d18e1",
+      "merged_pr": 43,
+      "merged_at": "2026-10-07T08:58:20Z"
+    },
+    {
+      "branch": "stabilize/runtime-121-v4-contract",
+      "head_sha": "356846dde6e2f64248fee484df3f907dc881542f",
+      "merged_pr": 58,
+      "merged_at": "2026-10-07T19:38:54Z"
+    },
+    {
+      "branch": "sync/plugin-2.4.64",
+      "head_sha": "aabfa17e12b0622f707665dda0f99947bcc2d39b",
+      "merged_pr": 112,
+      "merged_at": "2026-10-12T20:02:55Z"
+    },
+    {
+      "branch": "sync/plugin-2.4.65",
+      "head_sha": "90efb1a72131211b9423b53ef7677658fbfee618",
+      "merged_pr": 113,
+      "merged_at": "2026-10-12T20:05:38Z"
+    },
+    {
+      "branch": "task/visual-01-stateful-metaphor",
+      "head_sha": "b95395777d102d5269891343fa3f0da766f67a7a",
+      "merged_pr": 105,
+      "merged_at": "2026-10-12T18:36:21Z"
+    },
+    {
+      "branch": "task/visual-02-story-object-compat",
+      "head_sha": "264746cd2544c4729530ca27e7d004c989149508",
+      "merged_pr": 106,
+      "merged_at": "2026-10-12T18:38:48Z"
+    },
+    {
+      "branch": "task/visual-03-background-palettes",
+      "head_sha": "a7587af82b28eee3d11c03cbcc1de0d2a81e5ab2",
+      "merged_pr": 107,
+      "merged_at": "2026-10-12T18:52:20Z"
+    },
+    {
+      "branch": "ui/workbench-layout-clickable-stages",
+      "head_sha": "608c6dcb89a39eba3ebdcdcb23182842bd6d44f4",
+      "merged_pr": 86,
+      "merged_at": "2026-10-09T16:26:13Z"
+    }
+  ]
+}
