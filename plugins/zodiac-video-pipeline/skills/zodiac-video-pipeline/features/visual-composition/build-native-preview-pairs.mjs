@@ -68,6 +68,11 @@ async function readPreviewSceneCache(root,out,scene,assets,compilerSha){
  if(record.input_sha256!==fp.input_sha256)return {hit:false,reason:'MISS_INPUT_CHANGED',fp,file};
  if(record.compiler_sha256!==compilerSha)return {hit:false,reason:'MISS_COMPILER_CHANGED',fp,file};
  if(JSON.stringify(record.asset_hashes)!==JSON.stringify(fp.asset_hashes))return {hit:false,reason:'MISS_ASSET_CHANGED',fp,file};
+ // Never trust cached file names, an empty output inventory, or stale event metadata.
+ // On a hit every expected scene/event endpoint must already exist and match its SHA.
+ const expectedNames=['scene-'+scene.id+'-before.html','scene-'+scene.id+'-after.html',...(scene.events??[]).flatMap(ev=>[scene.id+'_'+ev.id+'-before.html',scene.id+'_'+ev.id+'-after.html'])].sort();
+ const actualNames=Object.keys(record.output_sha256??{}).sort();
+ if(!scene.events.every(ev=>validId(ev.id))||JSON.stringify(expectedNames)!==JSON.stringify(actualNames)||record.scene_frame?.scene_id!==scene.id||record.pairs?.length!==scene.events.length||record.pairs.some((pair,i)=>pair.event_id!==scene.events[i].id||pair.scene_id!==scene.id))return {hit:false,reason:'MISS_OUTPUT_TAMPERED',fp,file};
  for(const [name,digest] of Object.entries(record.output_sha256??{})){const target=path.join(out,name);if(!await fileExists(target))return {hit:false,reason:'MISS_OUTPUT_MISSING',fp,file};if(sha(await readFile(target))!==digest)return {hit:false,reason:'MISS_OUTPUT_TAMPERED',fp,file};}
  return {hit:true,reason:'HIT_EXACT',fp,file,record};
 }
