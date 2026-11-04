@@ -18,30 +18,27 @@ test('V4 production contracts no longer depend on a V3 directory',async()=>{
   for(const item of memes.compositions)await access(path.join(v4,'memes',item.source.replace(/^\.\//u,'')));
 });
 
-test('V4 has native study props and a school environment profile',async()=>{
+test('V4 has native study props; scene-set environment profiles are retired',async()=>{
   const props=await json('props/index.json');
   const ids=new Set(props.assets.map(x=>x.id));
   for(const id of ['notebook','book','water-bottle','tissue-box','headset','mirror','backpack','pen'])assert.ok(ids.has(id),id);
   for(const item of props.assets)await access(path.join(v4,item.path));
-  const env=await json('environments/composition-index.json');
-  assert.ok(env.profiles.some(x=>x.id==='classroom-study'));
-  assert.ok(env.profiles.some(x=>x.id==='school-hallway'));
-  assert.equal(env.policy.full_scene_backgrounds,false);
+  await assert.rejects(access(path.join(v4,'environments/composition-index.json')));
 });
 
-test('character identity includes stable face traits and everyday study actions',async()=>{
+test('character identity includes stable face traits (hair and body vary identity; accessories removed) and everyday study actions',async()=>{
   const catalog=await json('characters/components/catalog.json');
   assert.ok(catalog.policy.identity_fields.includes('face_profile_id'));
-  assert.ok(catalog.face_profiles.length>=4);
+  assert.ok(catalog.face_profiles.length>=1);
   const poses=new Set(catalog.poses.map(x=>x.id));
   for(const id of ['write','read','carry-backpack','text-phone'])assert.ok(poses.has(id),id);
   const accessories=await json('characters/accessories/index.json');
-  assert.ok(accessories.assets.length>=2);
-  for(const item of accessories.assets)await access(path.join(v4,item.path));
+  assert.equal(accessories.policy.status,'REMOVED');
+  assert.equal(accessories.assets.length,0);
   const {compileCharacterSvg,identitySignature}=await import(pathToFileURL(path.join(v4,'characters/compile-character-assembly.mjs')).href);
-  const base={entity_id:'test',body_profile:'standard_compact',hair_id:'asym-bang',outfit_id:'generic-cosmic-light',shirt_color_id:'coral',variant_seed:'test'};
+  const base={entity_id:'test',body_profile:'standard_compact',hair_id:'asym-bang',outfit_id:'plain-shirt',shirt_color_id:'coral',variant_seed:'test'};
   const a={...base,face_profile_id:catalog.face_profiles[0].id};
-  const b={...base,face_profile_id:catalog.face_profiles[1].id};
+  const b={...base,hair_id:'blocky-cut',face_profile_id:catalog.face_profiles[0].id};
   assert.notEqual(identitySignature(a),identitySignature(b));
   assert.match(compileCharacterSvg(a,{pose_id:'write',expression_id:'neutral'}).svg,/face_profile_id=/);
 });

@@ -201,7 +201,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Native producer and cross-language contract tests
-        run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/*.test.mjs
+        run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/**/*.test.mjs" "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/**/*.test.mjs" "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/**/*.test.mjs"
 
   plugin-candidate-bundle:
     name: release / candidate-plugin-integrity

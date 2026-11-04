@@ -5,6 +5,7 @@ validators and outputs. Current user direction and genuine approvals govern the
 episode; source transport never becomes a creative brief.
 
 ## Execution source
+Claude hosts: the skill is on disk; skip bundle staging and follow `references/claude-runtime.md`. Before each step run `resume-brief.mjs <workspace>`.
 Read `execution-bootstrap.md`. Restore only verified phase-scoped executable
 bytes with commit identity, version and SHA-256 inventory. A skill read or file
 listing is not executable source. Run `execution-preflight.mjs` before native

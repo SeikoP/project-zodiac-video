@@ -4,12 +4,12 @@ import {compileCharacterSvg} from '../compile-character-assembly.mjs';
 
 const gemini = {
   entity_id:'gemini',body_profile:'standard_compact',hair_id:'asym-bang',
-  face_profile_id:'wide-set',accessory_id:'none',outfit_id:'gemini-basic-clean',
+  face_profile_id:'balanced',accessory_id:'none',outfit_id:'plain-shirt',
   shirt_color_id:'teal',variant_seed:'face-grammar-regression'
 };
 const friend = {
-  entity_id:'classmate',body_profile:'round_soft',hair_id:'high-ponytail',
-  face_profile_id:'freckled',accessory_id:'none',outfit_id:'generic-soft-stripes',
+  entity_id:'classmate',body_profile:'round_soft',hair_id:'high-tied-ponytail',
+  face_profile_id:'balanced',accessory_id:'none',outfit_id:'zodiac-glyph-shirt',zodiac_sign_id:'gemini',
   shirt_color_id:'coral',variant_seed:'classmate-identity-regression'
 };
 
@@ -32,7 +32,7 @@ test('school classmate ponytail preserves independent identity across expression
     compileCharacterSvg(friend,{pose_id:'neutral',expression_id}));
   assert.equal(states[0].identity_signature,states[1].identity_signature);
   for(const {svg} of states) {
-    assert.match(svg,/hair_id=high-ponytail;/u);
+    assert.match(svg,/hair_id=high-tied-ponytail;/u);
     assert.doesNotMatch(svg,/thief|hair_id=lopsided-bob/u);
     assert.match(svg,/shirt_color_id=coral;shirt_color=#E97A66/u);
   }

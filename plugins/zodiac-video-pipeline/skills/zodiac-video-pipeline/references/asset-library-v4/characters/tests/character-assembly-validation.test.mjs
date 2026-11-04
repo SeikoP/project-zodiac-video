@@ -9,7 +9,7 @@ const here=path.dirname(fileURLToPath(import.meta.url));
 const validator=path.resolve(here,'../../validation/validate-character-assembly.mjs');
 const compiler=path.resolve(here,'../compile-character-assembly.mjs');
 const baseProduction=()=>({version:'2.0',assets:{},scenes:[{id:'S01',entities:[{id:'hero',kind:'character',initial_state:'neutral',states:{neutral:{transform:{x:100,y:100,width:300,height:420},layer:20,visible:true},react:{transform:{x:100,y:100,width:300,height:420},layer:20,visible:true}}}]}]});
-const basePlan=()=>({format:'zodiac-character-assembly-plan@1',characters:[{entity_id:'hero',identity_id:'hero-main',body_profile:'lean_tall',hair_id:'side-part',outfit_id:'gemini-basic-clean',variant_seed:'series-a|hero',states:{neutral:{pose_id:'neutral',expression_id:'neutral'},react:{pose_id:'reach',expression_id:'side-eye'}}}]});
+const basePlan=()=>({format:'zodiac-character-assembly-plan@1',characters:[{entity_id:'hero',identity_id:'hero-main',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'plain-shirt',variant_seed:'series-a|hero',states:{neutral:{pose_id:'neutral',expression_id:'neutral'},react:{pose_id:'reach',expression_id:'side-eye'}}}]});
 const compileWithPlan=d=>{const args=[path.join(d,'production.json'),path.join(d,'.authoring','character-assembly-plan.json')];const planned=spawnSync(process.execPath,[compiler,...args,'--plan-only'],{encoding:'utf8'});if(planned.status!==0)return planned;return spawnSync(process.execPath,[compiler,...args,'--write'],{encoding:'utf8'});};
 async function ws(plan=basePlan(),production=baseProduction(),writeStatePlan=true){
  const d=await mkdtemp(path.join(os.tmpdir(),'char-assembly-v4-'));await mkdir(path.join(d,'.authoring'),{recursive:true});
@@ -28,7 +28,7 @@ test('outfit bake validator checks shirt fills against distinct cast identities'
   const states={neutral:{pose_id:'neutral',expression_id:'neutral'},react:{pose_id:'reach',expression_id:'side-eye'}};
   const plan={format:'zodiac-character-assembly-plan@1',characters:[
    {...basePlan().characters[0],states},
-   {entity_id:'friend',body_profile:'round_soft',hair_id:'soft-wave',outfit_id:'generic-soft-stripes',variant_seed:'series-a|friend',states}
+   {entity_id:'friend',body_profile:'round_soft',hair_id:'curtain-bang',outfit_id:'zodiac-glyph-shirt',zodiac_sign_id:'gemini',variant_seed:'series-a|friend',states}
   ]};
   const compiled=await compileCharacterAssembly(production,plan,{root:d,writeAssets:true});
   await writeFile(path.join(d,'production.json'),JSON.stringify(compiled));
@@ -42,7 +42,7 @@ test('outfit bake validator checks shirt fills against distinct cast identities'
  }finally{await rm(d,{recursive:true,force:true});}
 });
 test('duplicate character identity specs fail closed',async()=>{const p=basePlan();p.characters.push({...p.characters[0],body_profile:'round_soft'});const d=await ws(p,baseProduction(),false);try{const r=spawnSync(process.execPath,[validator,d],{encoding:'utf8'});assert.notEqual(r.status,0);assert.match(r.stderr,/duplicate.*hero/i);}finally{await rm(d,{recursive:true,force:true});}});
-test('state-level identity overrides are forbidden',async()=>{const p=basePlan();p.characters[0].states.react.hair_id='soft-wave';const d=await ws(p,baseProduction(),false);try{const r=spawnSync(process.execPath,[validator,d],{encoding:'utf8'});assert.notEqual(r.status,0);assert.match(r.stderr,/state.*identity/i);}finally{await rm(d,{recursive:true,force:true});}});
+test('state-level identity overrides are forbidden',async()=>{const p=basePlan();p.characters[0].states.react.hair_id='curtain-bang';const d=await ws(p,baseProduction(),false);try{const r=spawnSync(process.execPath,[validator,d],{encoding:'utf8'});assert.notEqual(r.status,0);assert.match(r.stderr,/state.*identity/i);}finally{await rm(d,{recursive:true,force:true});}});
 test('meme-required crop and acting survive compilation and validator catches blueprint drift',async()=>{
  const production=baseProduction();production.scenes[0].visual_grammar={meme_composition:{acting_requirements:{hero:{pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'}}}};
  const plan=basePlan();plan.characters[0].states.neutral={pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'};
@@ -55,4 +55,4 @@ test('meme-required crop and acting survive compilation and validator catches bl
   await assert.rejects(()=>validateCharacterAssembly(d),/CHARACTER_STATE_MISMATCH/u);
  }finally{await rm(d,{recursive:true,force:true});}
 });
-test('validator rejects altered hair geometry even when blueprint metadata still matches',async()=>{const d=await ws();try{let r=compileWithPlan(d);assert.equal(r.status,0,r.stderr);const p=JSON.parse(await readFile(path.join(d,'production.json'),'utf8'));const assetPath=path.join(d,p.assets.CHAR_HERO_NEUTRAL.path);let svg=await readFile(assetPath,'utf8');assert.match(svg,/M147 250 Q165 181/u);svg=svg.replace('M147 250 Q165 181','M148 250 Q165 181');await writeFile(assetPath,svg);await assert.rejects(()=>import('../../validation/validate-character-assembly.mjs').then(m=>m.validateCharacterAssembly(d)),/CHARACTER_ART_DRIFT/u);}finally{await rm(d,{recursive:true,force:true});}});
+test('validator rejects altered hair geometry even when blueprint metadata still matches',async()=>{const d=await ws();try{let r=compileWithPlan(d);assert.equal(r.status,0,r.stderr);const p=JSON.parse(await readFile(path.join(d,'production.json'),'utf8'));const assetPath=path.join(d,p.assets.CHAR_HERO_NEUTRAL.path);let svg=await readFile(assetPath,'utf8');assert.match(svg,/M145 251 Q158 178/u);svg=svg.replace('M145 251 Q158 178','M146 251 Q158 178');await writeFile(assetPath,svg);await assert.rejects(()=>import('../../validation/validate-character-assembly.mjs').then(m=>m.validateCharacterAssembly(d)),/CHARACTER_ART_DRIFT/u);}finally{await rm(d,{recursive:true,force:true});}});

@@ -1,0 +1,11 @@
+{
+  "format": "zodiac-claude-host-map@1",
+  "note": "Advisory host mapping for Claude. Never waives a capability, validator, receipt or approval; ChatGPT manifests stay the source of truth.",
+  "capabilities": {
+    "exa_discovery": {"use": "Exa connector if connected, otherwise WebSearch", "receipt": "proof.kind=tool_result", "guidance": "references/research-and-viral-tools.md"},
+    "parallel_verify": {"use": "Parallel Search connector if connected, otherwise WebSearch with a second independent query", "receipt": "proof.kind=tool_result", "guidance": "references/research-and-viral-tools.md"},
+    "firecrawl_extract": {"use": "Firecrawl connector if connected, otherwise WebFetch", "receipt": "proof.kind=tool_result", "guidance": "references/research-and-viral-tools.md"},
+    "vidiq_reference_analysis": {"use": "vidIQ connector (vidiq_video_watch / vidiq_watch_shortform_content). Block capability: if not connected, stop and ask", "receipt": "proof.kind=tool_result", "guidance": "references/research-and-viral-tools.md"},
+    "viral_analysis": {"use": "Social Media Skills plugin (viral-reverse-engineering, hook-writer, short-form-video-script) as guidance only. Block if unavailable", "receipt": "proof.kind=skill_read", "guidance": "references/research-and-viral-tools.md"}
+  }
+}
