@@ -94,7 +94,7 @@ export function createCamera({ cfg, now }) {
       const idleYields = current?.kind === 'idle' && queue.length && t - current.startedAt >= c.holdMinMs; // a drift is filler: a real moment may cut it short
       if (current && t < current.until && !idleYields) return null;
       queue = queue.filter(q => t - q.at <= q.ttl);
-      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, tier: null, ...worldCenter, zoom: c.zoomWorld, holdMs: c.gapMs, gift: false });
+      if (queue.length && current && current.kind !== 'gap' && current.kind !== 'idle') return start({ kind: 'gap', priority: 9, tier: current.tier ?? null, x: current.x, y: current.y, zoom: c.zoomTier, holdMs: c.gapMs, gift: false });
       return start(choose() ?? idleShot());
     },
     state: () => ({ queue: queue.map(q => ({ ...q })), current: current && { ...current }, locked }),
