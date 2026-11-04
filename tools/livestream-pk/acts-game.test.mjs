@@ -47,12 +47,12 @@ test('minute 2.5 of an act brings its headliner: an elite boss in the arena', ()
   assert.equal(s.game.state.boss.elite, true);
 });
 
-test('Đoán vật still runs the old mystery game until its replacement arrives', () => {
+test('Đoán vật opens the reunion act as a headliner', () => {
   const s = setup('reunion', {}, 2.4, 1);
   s.crowd();
   s.advance(15_000);
   assert.equal(s.of('head-start')[0].id, 'guessobject');
-  assert.ok(s.game.state.mystery);
+  assert.ok(s.game.state.guess);
   assert.ok(s.game.state.head);
 });
 

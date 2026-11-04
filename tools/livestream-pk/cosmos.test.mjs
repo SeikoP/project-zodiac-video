@@ -140,7 +140,7 @@ test('the star chest opens on the quarter hour while people are around; one shar
   game.chat(u('a', { comment: 'đỏ' }));
   game.chat(u('a', { comment: 'nhận' }));
   const dustBefore = game.state.viewers.a.bag.dust;
-  assert.equal(game.state.chest.claimed.a, undefined); // not open yet
+  assert.equal(game.state.chest.kr.winners?.length ?? 0, 0); // not open yet
   assert.equal(game.changes({}).cosmos.chest.inMs, 14 * 60000);
   advance(13 * 60000);
   game.chat(u('a', { comment: 'vẫn ở đây' }));
@@ -149,7 +149,7 @@ test('the star chest opens on the quarter hour while people are around; one shar
   game.chat(u('a', { comment: 'nhận' }));
   game.chat(u('a', { comment: 'nhận!' }));
   game.chat(u('b', { comment: 'nhận' })); // a newcomer has a team from the first word, so they can claim at once
-  assert.equal(Object.keys(game.state.chest.claimed).length, 2);
+  assert.deepEqual(game.state.chest.kr.winners, ['a', 'b']);
   assert.equal(game.state.viewers.a.bag.dust - dustBefore >= 15, true, 'the claim pays 15 bụi sao');
   assert.deepEqual(game.state.chest.recent, [{ nickname: 'b', dust: 15 }, { nickname: 'a', dust: 15 }]);
   assert.equal(of(events, 'need-team').length, 0);

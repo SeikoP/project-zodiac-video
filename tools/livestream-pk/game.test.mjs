@@ -346,7 +346,7 @@ function simStorm(game) {
     game.social(u(id, { kind: 'share' }));
   }
 }
-for (const [what, begin] of [['boss', g => g.startBoss()], ['tug', g => g.startTug()], ['mystery', g => g.startHead('guessobject')], ['starcatch', g => g.startHead('starcatch')]]) {
+for (const [what, begin] of [['boss', g => g.startBoss()], ['tug', g => g.startTug()], ['guess', g => g.startHead('guessobject')], ['starcatch', g => g.startHead('starcatch')]]) {
   test(`outside rehearsal, sim: viewers change nothing, even mid ${what}`, () => {
     const { game, events } = setup();
     for (const [id, team] of [['a', 'đỏ'], ['b', 'vàng'], ['c', 'xanh lá'], ['d', 'xanh dương']]) game.chat(u(id, { comment: team }));

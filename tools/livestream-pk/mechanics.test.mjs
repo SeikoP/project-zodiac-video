@@ -94,7 +94,7 @@ test('"Xoá toàn bộ" also clears a tug, a prediction and a headliner in play'
   for (const [id, team] of [['a', 'đỏ'], ['b', 'xanh dương'], ['c', 'xanh lá']]) s.say(id, team);
   s.game.startTug();
   s.game.resetAll();
-  for (const k of ['tug', 'predict', 'mystery', 'starcatch', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);
+  for (const k of ['tug', 'predict', 'guess', 'starcatch', 'roast', 'head', 'quest']) assert.equal(s.game.state[k], null, k);
 });
 
 // predict on its own: a bare state, a fixed clock, events collected

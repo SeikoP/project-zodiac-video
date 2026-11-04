@@ -26,7 +26,10 @@ import { createJourney, JOURNEY_DEFAULTS } from './journey.mjs';
 import { cleanName, safeAvatar } from './names.mjs';
 import { occasionOn } from './public/occasions.js';
 import { ACTS, HEADS, HEAD_QUEST, createActs } from './acts.mjs';
-import { createMystery, createStarcatch, MINIGAME_DEFAULTS } from './minigames.mjs';
+import { createStarcatch, MINIGAME_DEFAULTS } from './minigames.mjs';
+import { createGuessObject } from './events/guess-object.mjs';
+import { createQuiz } from './events/quiz.mjs';
+import { createKeywordRound } from './events/keyword-round.mjs';
 import { createRoast, ROAST_DEFAULTS } from './roast.mjs';
 import { createTug, TUG_DEFAULTS } from './tug.mjs';
 import { createPredict, PREDICT_DEFAULTS } from './predict.mjs';
@@ -242,13 +245,13 @@ export function emptyState() {
     lastActivityAt: 0,
     boss: null, // see boss.mjs
     nextBossAt: 0,
-    chest: { no: 0, openUntil: 0, claimed: {}, recent: [] },
-    welcomes: [], // newcomers' stars the room can greet, newest first: { id, userId, nickname, avatar, at, greeters: { userId: nickname }, done }
-    wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, team, text, at, blessers: { userId: nickname }, blessed }
+    chest: { no: 0, openUntil: 0, kr: {}, recent: [] }, // kr: the keyword round of the current opening (winners = who claimed)
+    welcomes: [], // newcomers' stars the room can greet, newest first: { id, userId, nickname, avatar, at, greeters: { userId: nickname }, done, kr } (kr: keyword round, winners = greeters)
+    wishes: [], // the last few wishes, newest first: { id, userId, nickname, avatar, team, text, at, blessers: { userId: nickname }, blessed, kr } (kr: keyword round, winners = blessers)
     wishNo: 0,
     // the acts and headliners, and what is playing right now (null when nothing is)
     act: { key: null, phase: null, light: {} }, head: null, quest: null,
-    mystery: null, starcatch: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
+    guess: null, starcatch: null, roast: null, tug: null, predict: null, nextShowAt: 0, showNo: 0,
   };
 }
 
@@ -378,7 +381,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       touch('stars');
     }
     // their star flies in and lands on the rim of the cluster; the room's "chào" lights it up (like blessing a wish)
-    const w = { id: ++st.greetingNo, userId: u.userId, nickname, avatar, at: now(), greeters: {}, done: false };
+    const w = { id: ++st.greetingNo, userId: u.userId, nickname, avatar, at: now(), greeters: {}, done: false, kr: {} };
+    welcomeRound(w).open(null);
     st.welcomes.unshift(w);
     st.welcomes.length = Math.min(st.welcomes.length, 6);
     onEvent({ type: 'greeting', id: w.id, userId: u.userId, nickname, avatar, team: v.team, x: v.star.x, y: v.star.y, need: cfg.welcomeNeed, seconds: cfg.welcomeWindowSeconds });
@@ -430,7 +434,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // --- the star chest: opens on the clock for a short window, "nhận" pays a little bụi sao (the Kho replaces this later) ---
-  st.chest ??= { no: 0, openUntil: 0, claimed: {}, recent: [] };
+  st.chest ??= { no: 0, openUntil: 0, kr: {}, recent: [] };
+  st.chest.kr ??= { winners: Object.keys(st.chest.claimed ?? {}) }; // a chest saved before the keyword round
+  delete st.chest.claimed;
+  // each opening is a keyword round: "nhận" is right for anyone, once, for as long as it is open
+  const chestRound = () => createKeywordRound({ now, match: () => true, winners: Infinity, windowMs: cfg.chestOpenSeconds * 1000 }, st.chest.kr);
   const chestPeriod = () => cfg.chestEveryMinutes * 60000;
   const nextChestAt = () => (chestPeriod() ? Math.ceil((now() + 1) / chestPeriod()) * chestPeriod() : Infinity);
   let chestScheduled = nextChestAt(), chestShown = null;
@@ -440,14 +448,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const c = st.chest;
     c.no++;
     c.openUntil = now() + cfg.chestOpenSeconds * 1000;
-    c.claimed = {};
+    c.kr = {};
+    chestRound().open(null);
     c.recent = [];
     onEvent({ type: 'chest-open', no: c.no, seconds: cfg.chestOpenSeconds });
   }
   // "nhận" while the chest is open: one share per viewer per chest. Returns true when the comment was a claim.
   function chestClaim(u, v) {
-    if (!chestIsOpen() || st.chest.claimed[u.userId]) return false;
-    st.chest.claimed[u.userId] = true;
+    if (!chestIsOpen() || chestRound().submit(u.userId, 'nhận') !== 'win') return false;
     bag.add(u, v, 'dust', cfg.chestDust, 'chest');
     st.chest.recent.unshift({ nickname: v.nickname, dust: cfg.chestDust });
     st.chest.recent.length = Math.min(st.chest.recent.length, 4);
@@ -458,7 +466,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const t = now(), c = st.chest;
     if (c.openUntil && t >= c.openUntil) {
       c.openUntil = 0;
-      onEvent({ type: 'chest-close', no: c.no, claims: Object.keys(c.claimed).length });
+      onEvent({ type: 'chest-close', no: c.no, claims: chestRound().close().length });
     }
     if (t >= chestScheduled) {
       if (!chestIsOpen() && t - activeSince < cfg.chestIdleMinutes * 60000) chestOpenNow();
@@ -473,7 +481,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function chestView() {
     const t = now(), c = st.chest;
     return chestIsOpen()
-      ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: Object.keys(c.claimed).length, recent: c.recent }
+      ? { open: true, no: c.no, remainingMs: c.openUntil - t, claims: c.kr.winners.length, recent: c.recent }
       : { open: false, inMs: Number.isFinite(chestScheduled) ? chestScheduled - t : null };
   }
   const bag = createBag({ cfg, now, onEvent, elementOf: id => TEAM[id].element });
@@ -524,9 +532,21 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // --- two short headliners (minigames.mjs): Cung bí ẩn and Hứng sao băng ---
-  const mystery = createMystery({ st, cfg, now, rng, onEvent, parseGuess: parseSwitchTeam, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat) });
-  const starcatch = createStarcatch({ st, cfg, now, rng, onEvent, gem: (u, v, n, why) => gem(u, v, n, why), quest: stat => questAdd(stat),
-    dust: (u, v, n, why) => bag.add(u, v, 'dust', n, why), shine: (u, v, n, why) => shine(u, v, n, why) });
+  // Đoán vật and Hứng sao băng are EventDefs like the boss; "đổi <màu>" and the room's commands are never taken as a guess
+  const isCommand = text => parseAction(text) !== null || /^\s*(doi|chuyen)\s/.test(norm(text));
+  const guess = createGuessObject({ st, cfg, now, rng, onEvent, reward, viewerOf, quest: stat => questAdd(stat), isCommand });
+  registry.register(guess);
+  const starcatch = createStarcatch({ st, cfg, now, rng, onEvent, reward, viewerOf, quest: stat => questAdd(stat) });
+  registry.register(starcatch);
+  // the question of the moment: A-D within quizSeconds (đố nhanh liên hoàn keeps each person's streak through onAnswer)
+  const quizEvent = createQuiz({ st, cfg, now, onEvent, reward, quest: stat => questAdd(stat), touch, thank, bank: quiz,
+    onAnswer: (u, v, letter, q) => {
+      const chain = st.head?.id === 'quizchain' ? st.head : null;
+      if (!chain) return;
+      const n = chain.streaks[u.userId] = letter === q.answer ? (chain.streaks[u.userId] ?? 0) + 1 : 0;
+      if (n && n > (chain.best?.streak ?? 0)) chain.best = { userId: u.userId, nickname: v.nickname, team: v.team, streak: n };
+    } });
+  registry.register(quizEvent);
 
   // --- vòng quay bóc phốt (roast.mjs) ---------------------------------------------------------------
   const roast = createRoast({
@@ -539,8 +559,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   // --- kéo co, dự đoán, sổ sao (tug.mjs, predict.mjs, pass.mjs) ------------------------------
   const tug = createTug({ st, cfg, now, onEvent, ctx: eventCtx, reward, viewerOf });
   registry.register(tug);
-  // a boss or tug loaded from a saved night keeps running
-  registry.adopt(st.boss ? 'boss' : st.tug ? 'tug' : '');
+  // whatever main event a saved night was in keeps running
+  registry.adopt(st.boss ? 'boss' : st.tug ? 'tug' : st.guess ? 'guessobject' : st.starcatch ? 'starcatch' : st.quiz ? 'quiz' : '');
   const predict = createPredict({ st, cfg, now, onEvent });
   const pass = createPass({ cfg, now, onEvent, seasonOf: () => dayKey(now()).slice(0, 7), gem: (u, v, n) => gem(u, v, n, 'pass'), moon: (u, v, n) => bag.add(u, v, 'moon', n, 'pass'), card: (u, v) => bag.add(u, v, 'dust', 15, 'pass') });
   const label = id => TEAM[id]?.label ?? id;
@@ -641,10 +661,10 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   }
 
   // Headliners: the act's list in turn, one per act, from headAt() to CLOSE_AT. The host can start one any time.
-  // Those that play to their own end keep their state under st[OWN_END[id]]; "Đoán vật" is still the old mystery game.
-  const OWN_END = { roast: 'roast', tug: 'tug', guessobject: 'mystery', starcatch: 'starcatch' };
+  // Those that play to their own end keep their state under st[OWN_END[id]].
+  const OWN_END = { roast: 'roast', tug: 'tug', guessobject: 'guess', starcatch: 'starcatch' };
   function startHead(id = currentHead()) {
-    if (!id || !HEADS[id] || st.head || st.boss || st.roast || st.tug || st.mystery || st.starcatch) return null;
+    if (!id || !HEADS[id] || st.head || st.boss || st.roast || st.tug || st.guess || st.starcatch) return null;
     const t = now(), m = minuteInAct(t);
     const endsAt = t + Math.max(90000, (m < CLOSE_AT && slot ? CLOSE_AT - m : 3) * 60000);
     st.head = { id, startedAt: t, endsAt };
@@ -655,8 +675,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     else if (id === 'moonnight') { st.head.nextAt = t + 40000; showFortune({ userId: null, nickname: null, avatar: '', team: pickEventTeam() }); }
     else if (id === 'final') Object.assign(st.head, { base: { ...st.wheel.given }, wheel: st.wheel.no });
     else if (id === 'chestrain') { chestOpenNow(); st.head.chests = [t + 60000, t + 120000]; }
-    else if (id === 'guessobject') { if (!mystery.start()) { st.head = null; return null; } }
-    else if (id === 'starcatch') { if (!starcatch.start()) { st.head = null; return null; } }
+    else if (id === 'guessobject') { if (!registry.start('guessobject')) { st.head = null; return null; } }
+    else if (id === 'starcatch') { if (!registry.start('starcatch')) { st.head = null; return null; } }
     else if (id === 'roast') { if (!roast.start()) { st.head = null; return null; } }
     else if (id === 'tug') { if (!registry.start('tug')) { st.head = null; return null; } }
     touch('cosmos');
@@ -734,12 +754,23 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   };
 
   // --- newcomers the room can greet: "chào" goes to the newest open welcome that isn't your own -------------------
+  // Each greeting and each wish is a keyword round (winners = the people who greeted / blessed). Ones saved before rounds get one from their names.
+  const personRound = (w, names, need, seconds) => createKeywordRound({ now, match: () => true, winners: need, windowMs: seconds * 1000 }, w.kr ??= { open: true, openedAt: w.at, ctx: null, winners: Object.keys(names) });
+  const welcomeRound = w => personRound(w, w.greeters, cfg.welcomeNeed, cfg.welcomeWindowSeconds);
+  const blessRound = w => personRound(w, w.blessers, cfg.blessNeed, cfg.blessWindowSeconds);
   function welcome(u, v) {
-    const t = now();
-    const w = st.welcomes.find(x => !x.done && x.userId !== u.userId && !x.greeters[u.userId] && t - x.at < cfg.welcomeWindowSeconds * 1000);
+    // the newest greeting this person can still join: the keyword round says who already greeted and when the window is over
+    let w = null, count = 0;
+    for (const x of st.welcomes) {
+      if (x.done || x.userId === u.userId) continue;
+      const round = welcomeRound(x);
+      if (round.submit(u.userId, 'chào') !== 'win') continue;
+      w = x;
+      count = round.winnersList().length;
+      break;
+    }
     if (!w) return;
-    w.greeters[u.userId] = v.nickname;
-    const count = Object.keys(w.greeters).length;
+    w.greeters[u.userId] = v.nickname; // names for the overlay; the round holds who and how many
     if (count < cfg.welcomeNeed) return void onEvent({ type: 'welcome-hi', id: w.id, userId: w.userId, nickname: w.nickname, by: v.nickname, count, need: cfg.welcomeNeed });
     w.done = true;
     const owner = st.viewers[w.userId];
@@ -749,14 +780,20 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
 
   // --- wishes the room can bless --------------------------------------------------------------------
   function bless(u, v) {
-    const t = now();
-    const w = st.wishes.find(x => !x.blessed && x.userId !== u.userId && !x.blessers[u.userId] && t - x.at < cfg.blessWindowSeconds * 1000);
+    let w = null, count = 0;
+    for (const x of st.wishes) {
+      if (x.blessed || x.userId === u.userId) continue;
+      const round = blessRound(x);
+      if (round.submit(u.userId, 'chúc') !== 'win') continue;
+      w = x;
+      count = round.winnersList().length;
+      break;
+    }
     if (!w) return;
-    w.blessers[u.userId] = v.nickname;
+    w.blessers[u.userId] = v.nickname; // names for the overlay; the round holds who and how many
     bag.add(u, v, 'dust', cfg.blessDust);
     questAdd('blessings');
     touch('cosmos');
-    const count = Object.keys(w.blessers).length;
     onEvent({ type: 'wish-bless', id: w.id, nickname: v.nickname, avatar: v.avatar, wisher: w.nickname, count, need: cfg.blessNeed });
     if (count < cfg.blessNeed) return;
     w.blessed = true;
@@ -919,8 +956,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const had = Boolean(st.viewers[u.userId]?.team);
     const vote = st.poll ? parseVote(u.comment) : null;
     const v = viewer(u, had || vote !== null ? null : parseSwitchTeam(u.comment) ?? parseTeam(u.comment));
-    if (st.quiz && answerQuiz(u, v)) return;
-    if ((st.mystery && mystery.chat(u, v, u.comment)) || (st.starcatch && starcatch.chat(u, v, u.comment))) { addHeat(u.userId, 1); raiseMoon(1); return; } // a guess or a catch
+    if (registry.chat(u, v, u.comment)) { addHeat(u.userId, 1); raiseMoon(1); return; } // a quiz answer, a guess or a catch
     if (st.roast) roast.chat(u, v, norm(u.comment)); // "oan!" / "chuẩn!" while a team is being roasted
     if (st.predict && predict.chat(u, v, norm(u.comment))) { addHeat(u.userId, 1); return; } // "đoán A"
     if (vote !== null) { if (!st.poll.voted[u.userId] && vote < st.poll.options.length) castVote(u, v, vote); addHeat(u.userId, 1); return; }
@@ -937,9 +973,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     if (action === 'wish') wish(u, v);
     else if (action === 'fortune') altar.request(u, v, u.comment);
     else if (action === 'claim') {
-      const had = st.chest.claimed[u.userId];
-      chestClaim(u, v);
-      if (!had && st.chest.claimed[u.userId]) { gem(u, v, 1, 'chest'); questAdd('claims'); }
+      if (chestClaim(u, v)) { gem(u, v, 1, 'chest'); questAdd('claims'); }
     }
     else if (action === 'upgrade') bag.upgrade(u, v);
     else if (action === 'vault') showVault(u, v);
@@ -963,7 +997,8 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     const text = cfg.showWishText ? cleanWish(u.comment, cfg.blockedWords) : null;
     // the lantern carries the wish without its "ước…" opening, so it reads like the wish itself
     const shown = text && text.replace(/^\s*(ước|mong|nguyện|cầu (nguyện|mong|cho|chúc))\s*(gì\s*)?(là\s*)?/iu, '').trim();
-    const w = { id: ++st.wishNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, text: shown || text, at: now(), blessers: {}, blessed: false };
+    const w = { id: ++st.wishNo, userId: u.userId, nickname: v.nickname, avatar: v.avatar, team: v.team, text: shown || text, at: now(), blessers: {}, blessed: false, kr: {} };
+    blessRound(w).open(null);
     st.wishes.unshift(w);
     st.wishes.length = Math.min(st.wishes.length, 6);
     touch('cosmos');
@@ -1136,45 +1171,14 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     onEvent({ type: 'poll-end', q: p.q, kind: p.kind, total: p.total, winner, option, votes: top, team: option?.team ?? null });
   }
 
-  // --- quiz -------------------------------------------------------------
+  // --- quiz (events/quiz.mjs) -------------------------------------------------------------
+  // false when there is no question to ask, null while a poll or another main event is on
   function startQuiz() {
     if (!quiz.length) return false;
     if (st.quiz || st.poll) return null;
-    const item = quiz[st.quizCursor++ % quiz.length];
-    st.quiz = { ...item, endsAt: now() + cfg.quizSeconds * 1000, answered: {}, winners: [] };
-    touch('hud');
-    onEvent({ type: 'quiz-start' });
-    return st.quiz;
+    return registry.start('quiz') ? st.quiz : null;
   }
-
-  function answerQuiz(u, v) {
-    const letter = norm(u.comment).trim().toUpperCase();
-    if (!/^[A-D]$/.test(letter) || st.quiz.answered[u.userId]) return false;
-    st.quiz.answered[u.userId] = letter;
-    touch('hud');
-    const chain = st.head?.id === 'quizchain' ? st.head : null; // đố nhanh liên hoàn: answers in a row
-    if (chain) {
-      const n = chain.streaks[u.userId] = letter === st.quiz.answer ? (chain.streaks[u.userId] ?? 0) + 1 : 0;
-      if (n && n > (chain.best?.streak ?? 0)) chain.best = { userId: u.userId, nickname: v.nickname, team: v.team, streak: n };
-    }
-    if (letter !== st.quiz.answer) return true;
-    questAdd('correct');
-    const reward = cfg.quizRewards[st.quiz.winners.length];
-    if (reward === undefined) return true;
-    st.quiz.winners.push({ nickname: v.nickname, team: v.team, reward });
-    thank(u, v);
-    shine(u, v, reward, 'quiz');
-    gem(u, v, 1, 'quiz');
-    return true;
-  }
-
-  function endQuiz() {
-    const q = st.quiz;
-    if (!q) return;
-    st.quiz = null;
-    touch('hud');
-    onEvent({ type: 'quiz-end', answer: q.answer, answerText: q.options['ABCD'.indexOf(q.answer)], winners: q.winners });
-  }
+  const endQuiz = () => registry.end('quiz');
 
   // Call about every 100-250ms.
   let lastLuckyTick = null;
@@ -1200,13 +1204,11 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
     // the act and its headliner
     actTick(t);
     questTick();
-    mystery.tick(t);
-    starcatch.tick(t);
     roast.tick();
     registry.tick(t); // the running boss or tug
     predict.tick();
     headTick(t);
-    const playing = st.head || st.roast || st.tug || st.mystery || st.starcatch;
+    const playing = st.head || st.roast || st.tug || st.guess || st.starcatch;
     // bossWas spans ticks: a boss beaten by a gift ends between two ticks, not inside boss.tick()
     const hadBoss = bossWas;
     bossWas = Boolean(st.boss);
@@ -1218,7 +1220,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       if (!st.boss && !busy && !playing && t - st.lastActivityAt < 600000 && stage.size) runShow();
       else { st.nextShowAt = t + 15000; touch('cosmos'); }
     }
-    if (st.boss || hadBoss || st.mystery || st.starcatch) touch('cosmos');
+    if (st.boss || hadBoss || st.guess || st.starcatch) touch('cosmos');
     if (chestTick(st.lastActivityAt)) touch('cosmos');
     rollHeat();
     const hl = heatLevelOf(heatScore());
@@ -1228,7 +1230,6 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
       touch('cosmos');
     }
     altar.tick(t, !st.quiz && !st.poll && !st.boss);
-    if (st.quiz && t >= st.quiz.endsAt) endQuiz();
     // Quiet room: mostly a team's reading of the day; a quiz and a light poll come once each per eight
     // turns (about every six minutes), so they leave room for gifts, lit teams and the other events.
     const headWaiting = st.act?.phase === 'head' && !st.act.headDone; // don't open a quiz/poll in the way of the headliner
@@ -1310,7 +1311,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
         show: cfg.showEverySeconds ? { inMs: Math.max(0, st.nextShowAt - t), kind: nextShowKind() } : null,
         act: actView(),
         head: st.head && { id: st.head.id, label: HEADS[st.head.id].label, remainingMs: Math.max(0, st.head.endsAt - t), left: st.head.left ?? null },
-        mystery: mystery.view(t),
+        mystery: guess.view(t),
         starcatch: starcatch.view(t),
         quest: questView(),
         roast: roast.view(),
@@ -1335,7 +1336,7 @@ export function createGame({ config = {}, state = emptyState(), quiz = [], polls
   function changes(seen = {}) {
     const out = {};
     const timers = partying() || st.fortune || st.quiz || st.lucky || st.poll;
-    const cosmosTimers = st.boss || chestIsOpen() || st.mystery || st.starcatch || st.head || st.roast || st.tug || st.predict;
+    const cosmosTimers = st.boss || chestIsOpen() || st.guess || st.starcatch || st.head || st.roast || st.tug || st.predict;
     for (const [name, build] of Object.entries(parts)) {
       if (seen[name] === ver[name] && !(timers && name === 'hud') && !(cosmosTimers && name === 'cosmos')) continue;
       seen[name] = ver[name];
