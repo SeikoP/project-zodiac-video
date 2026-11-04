@@ -48,7 +48,7 @@ Garden chỉ mở một cổng local cho overlay, control, âm thanh và simulat
 
 Sự kiện vườn: Mưa mây, Bão sâu, Thương lái đến và Giờ vàng. Màn hình không hiện lời kêu gọi gửi quà.
 
-Camera giữ toàn cảnh bốn tầng khi vườn yên, chuyển sang khung tầng vừa phải khi có hoạt động và đánh dấu ô đích bằng vòng sáng. Quà không còn ép camera phóng cận mạnh. Có thể khóa camera bằng `POST /api/camera-lock {"on":true}` hoặc gọi sự kiện bằng `POST /api/event {"type":"rain"|"pests"|"merchant"|"golden"}`.
+Camera dạo qua 12 cụm chậu cây (4 tầng × 3 khung ngang) khi vườn yên để chậu, avatar và tên chủ vẫn đọc được trên màn hình điện thoại. Người mới, quà, cây chín và lên cấp được đưa về đúng chậu; khoảnh khắc quan trọng có vòng sáng lớn và vùng xung quanh tối nhẹ. Sự kiện toàn vườn vẫn dùng khung overview riêng kèm lớp hiệu ứng mưa, sâu, thương lái hoặc giờ vàng. Cách trình diễn thay đổi nhưng tọa độ ô, quyền sở hữu và save hiện tại không đổi. Có thể khóa camera bằng `POST /api/camera-lock {"on":true}` hoặc gọi sự kiện bằng `POST /api/event {"type":"rain"|"pests"|"merchant"|"golden"}`.
 
 ## Thi đua và danh hiệu
 
