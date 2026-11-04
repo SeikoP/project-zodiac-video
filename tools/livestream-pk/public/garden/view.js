@@ -1,15 +1,27 @@
 // Pure view math for the Vườn Mây page (no DOM), so it can be tested in Node.
-// meta = { tiers: { id, label }[], cfg: { tierWidth, tierHeight, plotCell, plotsPerRow, tierMarginX, tierMarginY } } from the server.
-
 export const lodOf = zoom => (zoom < 0.3 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 
-// Same layout as garden/world.mjs plotCenter (a test keeps the two in step).
-export function plotPos(plot, { tiers, cfg }) {
-  const i = tiers.findIndex(t => t.id === plot.tier);
-  return { x: cfg.tierMarginX + (plot.slot % cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2, y: i * cfg.tierHeight + cfg.tierMarginY + Math.floor(plot.slot / cfg.plotsPerRow) * cfg.plotCell + cfg.plotCell / 2 };
+export function slotLayout(slot, cfg) {
+  const module = Math.floor(slot / cfg.moduleCapacity);
+  const within = slot % cfg.moduleCapacity;
+  const row = Math.floor(within / cfg.potsPerShelf);
+  const col = within % cfg.potsPerShelf;
+  const moduleCol = module % cfg.modulesPerRow;
+  const moduleRow = Math.floor(module / cfg.modulesPerRow);
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
+  return {
+    module, moduleCol, moduleRow, row, col,
+    x: cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX) + col * cfg.potSpacingX,
+    y: cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY) + row * cfg.shelfSpacingY,
+  };
 }
 
-// The camera between two shots: smoothstep in position, geometric in zoom (so zooming feels even).
+export function plotPos(plot, { cfg }) {
+  const p = slotLayout(plot.slot, cfg);
+  return { x: p.x, y: p.y };
+}
+
 export function easeCamera(from, to, elapsedMs, easeMs = 600) {
   const t = Math.min(1, Math.max(0, elapsedMs / easeMs));
   if (t >= 1) return { ...to };
@@ -19,7 +31,6 @@ export function easeCamera(from, to, elapsedMs, easeMs = 600) {
 
 export const worldToScreen = (p, cam, vp) => ({ x: (p.x - cam.x) * cam.zoom + vp.w / 2, y: (p.y - cam.y) * cam.zoom + vp.h / 2 });
 
-// Which owned plots to draw: in detail (awake ones first, nearest the centre first, at most maxDetail) or as dots.
 export function visiblePlots(plots, cam, vp, meta, margin = 160, maxDetail = 120) {
   const owned = plots.filter(p => p.owner && p.awake !== false);
   if (lodOf(cam.zoom) === 'dot') return { detail: [], dots: owned };
@@ -33,7 +44,6 @@ export function visiblePlots(plots, cam, vp, meta, margin = 160, maxDetail = 120
   return { detail: inside.slice(0, maxDetail).map(x => x.p), dots: inside.slice(maxDetail).map(x => x.p) };
 }
 
-// Small LRU of avatar images. `get` starts loading on the first ask and returns the image only once it is ready.
 export function createAvatarCache(limit = 200, make = url => { const img = new Image(); img.crossOrigin = 'anonymous'; img.src = url; return img; }) {
   const map = new Map();
   return {

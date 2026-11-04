@@ -300,49 +300,67 @@ function drawVine(x1, y1, x2, y2) {
   ctx.restore();
 }
 
+function moduleGeometry(module, cfg) {
+  const moduleCol = module % cfg.modulesPerRow, moduleRow = Math.floor(module / cfg.modulesPerRow);
+  const spanX = (cfg.potsPerShelf - 1) * cfg.potSpacingX;
+  const spanY = (cfg.shelvesPerModule - 1) * cfg.shelfSpacingY;
+  const firstX = cfg.zoneMarginX + moduleCol * (spanX + cfg.moduleGapX);
+  const firstY = cfg.zoneMarginY + moduleRow * (spanY + cfg.moduleGapY);
+  return {
+    firstX, firstY, spanX, spanY,
+    left: firstX - 76, right: firstX + spanX + 76,
+    top: firstY - 166,
+    bottom: firstY + spanY + cfg.potBottomOffset + cfg.potShelfGap + 54,
+  };
+}
+
 function drawTier(tier, index) {
-  const cfg = meta.cfg;
-  const center = worldToScreen({ x: cfg.tierWidth / 2, y: index * cfg.tierHeight + cfg.tierHeight / 2 }, cam, VP);
-  const s = cam.zoom, scene = TIER_SCENES[index] ?? TIER_SCENES[0];
-  const bays = 3, rows = Math.ceil(cfg.plotsPerTier / cfg.plotsPerRow);
-  const bayCols = cfg.plotsPerRow / bays, bayW = bayCols * cfg.plotCell, totalW = cfg.plotsPerRow * cfg.plotCell;
-  const shelfStart = -(rows - 1) * cfg.plotCell / 2 - 18;
-  const roofY = shelfStart - 155, deckY = shelfStart + (rows - 1) * cfg.plotCell + 72;
-  ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const cfg = meta.cfg, scene = TIER_SCENES[0];
+  const modules = Math.ceil(cfg.activeCapacity / cfg.moduleCapacity);
+  for (let module = 0; module < modules; module++) {
+    const g = moduleGeometry(module, cfg);
+    const center = worldToScreen({ x: (g.left + g.right) / 2, y: (g.top + g.bottom) / 2 }, cam, VP);
+    const s = cam.zoom, w = g.right - g.left, h = g.bottom - g.top;
+    ctx.save(); ctx.translate(center.x, center.y); ctx.scale(s, s); ctx.translate(-w / 2, -h / 2);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-  ctx.fillStyle = C.shadow;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY + 26, totalW + 140, 88, 28); ctx.fill();
-  ctx.fillStyle = scene.trim; ctx.strokeStyle = C.ink; ctx.lineWidth = 9;
-  ctx.beginPath(); ctx.roundRect(-totalW / 2 - 70, deckY, totalW + 140, 82, 28); ctx.fill(); ctx.stroke();
+    // Back frame. Shelves are behind pots; a thin front lip is drawn after crops in drawShelfFronts().
+    ctx.fillStyle = 'rgba(255,253,249,.72)'; ctx.strokeStyle = C.ink; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.roundRect(0, 0, w, h, 28); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = scene.rail; ctx.lineWidth = 18;
+    ctx.beginPath(); ctx.moveTo(18, 62); ctx.quadraticCurveTo(w / 2, -24, w - 18, 62); ctx.stroke();
 
-  for (let bay = 0; bay < bays; bay++) {
-    const bx = -totalW / 2 + bayW * (bay + .5);
-    const left = bx - bayW / 2 + 24, right = bx + bayW / 2 - 24;
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.moveTo(left, roofY + 34); ctx.quadraticCurveTo(bx, roofY - 72, right, roofY + 34); ctx.stroke();
-    ctx.strokeStyle = scene.rail; ctx.lineWidth = 22; ctx.stroke();
-
-    for (const x of [left, right]) {
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(x, roofY + 34); ctx.lineTo(x, deckY + 10); ctx.stroke();
-      ctx.strokeStyle = scene.rail; ctx.lineWidth = 15; ctx.stroke();
+    for (let row = 0; row < cfg.shelvesPerModule; row++) {
+      const anchorY = (cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY);
+      const shelfWorldY = anchorY + cfg.potBottomOffset + cfg.potShelfGap;
+      const shelfY = shelfWorldY - g.top;
+      ctx.fillStyle = C.shadow;
+      ctx.beginPath(); ctx.roundRect(28, shelfY + 11, w - 56, 26, 10); ctx.fill();
+      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.roundRect(28, shelfY, w - 56, 18, 9); ctx.fill(); ctx.stroke();
     }
 
-    for (let row = 0; row < rows; row++) {
-      const shelfY = shelfStart + row * cfg.plotCell;
-      ctx.fillStyle = C.shadow; ctx.beginPath(); ctx.roundRect(left + 18, shelfY + 13, bayW - 84, 31, 12); ctx.fill();
-      ctx.fillStyle = row % 2 ? C.paper : scene.rail; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.roundRect(left + 18, shelfY, bayW - 84, 30, 12); ctx.fill(); ctx.stroke();
+    const label = String.fromCharCode(65 + module);
+    ctx.fillStyle = module % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(w / 2 - 142, 22, 284, 48, 12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = `bold 30px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`Khu Gieo Hạt · ${label}`, w / 2, 47);
+    ctx.restore();
+  }
+}
+
+function drawShelfFronts() {
+  const cfg = meta.cfg, modules = Math.ceil(cfg.activeCapacity / cfg.moduleCapacity);
+  ctx.save();
+  for (let module = 0; module < modules; module++) {
+    const g = moduleGeometry(module, cfg);
+    for (let row = 0; row < cfg.shelvesPerModule; row++) {
+      const anchorY = cfg.zoneMarginY + Math.floor(module / cfg.modulesPerRow) * (((cfg.shelvesPerModule - 1) * cfg.shelfSpacingY) + cfg.moduleGapY) + row * cfg.shelfSpacingY;
+      const y = anchorY + cfg.potBottomOffset + cfg.potShelfGap + 7;
+      const a = worldToScreen({ x:g.left + 28, y }, cam, VP), b = worldToScreen({ x:g.right - 28, y }, cam, VP);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = Math.max(2, 5 * cam.zoom); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     }
-
-    const signW = Math.min(370, bayW - 80);
-    ctx.fillStyle = bay % 2 ? scene.flag : C.card; ctx.strokeStyle = C.ink; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.roundRect(bx - signW / 2, roofY - 46, signW, 58, 14); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.font = `bold 34px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${tier.label} · ${String.fromCharCode(65 + bay)}`, bx, roofY - 17);
-
-    const deco = gardenArt(DECOR_ART[(index + bay) % DECOR_ART.length]);
-    if (deco) { ctx.save(); ctx.globalAlpha = .9; ctx.drawImage(deco, right - 105, roofY + 58, 86, 86); ctx.restore(); }
   }
   ctx.restore();
 }
@@ -639,13 +657,14 @@ function frame(now) {
   const active = [...plots.values()].filter(p => p.owner && p.awake);
   const activeTierIds = new Set(active.map(p => p.tier));
   if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
-  meta.tiers.forEach((tier, i) => { if (activeTierIds.has(tier.id)) drawTier(tier, i); });
+  drawTier(meta.tiers[0], 0);
   drawAtmosphere(now, activeTierIds);
 
   const { detail, dots } = visiblePlots(active, cam, VP, meta);
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   detail.forEach(p => drawPlot(p, lod));
+  drawShelfFronts();
   drawFocus(now);
   drawFloaters(now);
   renderEventHero();

@@ -1,8 +1,12 @@
 // Every number of the Vườn Mây spec in one place; config.json's "garden" section overrides any of them.
 export const GARDEN_DEFAULTS = Object.freeze({
-  // Four persistent districts remain available, but a normal <100 viewer LIVE fills one readable
-  // 18 × 6 district before opening the next. Plot IDs and the 432 hard ceiling remain compatible.
-  tierWidth: 2700, tierHeight: 1200, plotsPerTier: 108, plotsPerRow: 18, plotCell: 120, tierMarginX: 270, tierMarginY: 240,
+  // One visible Seed Zone, tuned for a real <100-viewer LIVE.
+  // Four rack modules × 24 pots = 96 active seats. Legacy cloud-* saves migrate into this zone.
+  tierWidth: 2580, tierHeight: 2200, plotsPerTier: 96, plotsPerRow: 6, plotCell: 120,
+  activeCapacity: 96, modulesPerRow: 2, moduleCapacity: 24, potsPerShelf: 6, shelvesPerModule: 4,
+  potSpacingX: 170, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 200,
+  zoneMarginX: 220, zoneMarginY: 250, potBottomOffset: 58, potShelfGap: 6,
+  tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 480000, tickMaxDtMs: 5000, plotSyncMs: 5000,
   // growth and care
@@ -25,8 +29,8 @@ export const GARDEN_DEFAULTS = Object.freeze({
   camera: Object.freeze({
     holdMinMs: 5200, welcomeHoldMs: 6000, giftHoldMs: 7000, lowGiftHoldMs: 5600,
     stealHoldMs: 6500, levelHoldMs: 6000, eventHoldMs: 9000,
-    queueMax: 14, giftTtlMs: 60000, ttlMs: 45000, mergeMs: 2200,
-    quotaWindowMs: 60000, quotaMin: 2, easeMs: 1800, overviewEaseMs: 2200,
+    queueMax: 7, giftTtlMs: 42000, ttlMs: 28000, mergeMs: 2200,
+    quotaWindowMs: 60000, quotaMin: 2, easeMs: 1450, overviewEaseMs: 1700,
     zoomWorld: 0.38, zoomTier: 0.82, zoomClose: 1.5,
   }),
 });
