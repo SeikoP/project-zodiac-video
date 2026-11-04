@@ -3,21 +3,28 @@ import assert from 'node:assert/strict';
 import { TIERS, SEED_ZONE, plotId, plotCenter, plotLayout, shelfSurface, ensureUser, balancedSlotOrder, seat, touch, isAwake, managePresence, migrateSeedZone, emptyGardenState } from './world.mjs';
 import { makeCtx, addUser } from './testkit.mjs';
 
-test('the live garden exposes one Seed Zone with a 96-player active capacity', () => {
+test('the live garden exposes one Seed Zone with a 96-player two-wing rack', () => {
   const { ctx } = makeCtx();
   assert.deepEqual(TIERS, [SEED_ZONE]);
   assert.equal(ctx.cfg.activeCapacity, 96);
-  assert.deepEqual([ctx.cfg.potsPerShelf, ctx.cfg.shelvesPerModule, ctx.cfg.moduleCapacity], [6, 16, 96]);
+  assert.deepEqual(
+    [ctx.cfg.potsPerShelf, ctx.cfg.rackWings, ctx.cfg.shelvesPerWing, ctx.cfg.moduleCapacity],
+    [6, 2, 8, 96],
+  );
 });
 
-test('one continuous rack has 16 shelves of six pots with aligned feet', () => {
+test('physical layout wraps logical row 8 into the right wing without changing slots', () => {
   const { ctx } = makeCtx();
-  const a = plotLayout(0, ctx.cfg), b = plotLayout(5, ctx.cfg), nextShelf = plotLayout(6, ctx.cfg), last = plotLayout(95, ctx.cfg);
-  assert.equal(b.x - a.x, ctx.cfg.potSpacingX * 5);
-  assert.equal(nextShelf.y - a.y, ctx.cfg.shelfSpacingY);
-  assert.equal(last.row, 15);
-  assert.equal(last.module, 0);
-  assert.equal(shelfSurface(0, ctx.cfg) - plotCenter('cloud-1', 0, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
+  const left0 = plotLayout(0, ctx.cfg), leftLast = plotLayout(47, ctx.cfg);
+  const right0 = plotLayout(48, ctx.cfg), rightLast = plotLayout(95, ctx.cfg);
+  assert.deepEqual([left0.wing, left0.row, left0.col], [0, 0, 0]);
+  assert.deepEqual([leftLast.wing, leftLast.row, leftLast.col], [0, 7, 5]);
+  assert.deepEqual([right0.wing, right0.row, right0.col], [1, 0, 0]);
+  assert.deepEqual([rightLast.wing, rightLast.row, rightLast.col], [1, 7, 5]);
+  assert.equal(leftLast.x - plotLayout(42, ctx.cfg).x, ctx.cfg.potSpacingX * 5);
+  assert.equal(right0.x - left0.x, ctx.cfg.potsPerShelf * 0 + (ctx.cfg.potsPerShelf - 1) * ctx.cfg.potSpacingX + ctx.cfg.rackWingGapX);
+  assert.equal(right0.y, left0.y);
+  assert.equal(shelfSurface(48, ctx.cfg) - plotCenter('cloud-1', 48, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
   assert.ok(ctx.cfg.shelfSpacingY >= 200);
 });
 test('new arrivals spread across the rack without ever changing an existing seat', () => {
