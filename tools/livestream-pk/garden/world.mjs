@@ -26,16 +26,16 @@ export function plotLayout(slot, cfg) {
 // Fill distant shelves first without ever moving a seated player.
 // Bit reversal spreads 12, 24 or 48 sequential arrivals across the full rack.
 export function balancedSlotOrder(cfg) {
-  const rows = Math.ceil(cfg.activeCapacity / cfg.potsPerShelf);
-  const bits = Math.ceil(Math.log2(rows));
-  const reverse = n => { let out = 0; for (let i = 0; i < bits; i++) { out = (out << 1) | (n & 1); n >>= 1; } return out; };
-  const order = [...Array(rows).keys()].sort((a,b) => reverse(a) - reverse(b));
   const slots = [];
-  for (let col = 0; col < cfg.potsPerShelf; col++)
-    for (const row of order) {
-      const slot = row * cfg.potsPerShelf + (col + row) % cfg.potsPerShelf;
-      if (slot < cfg.activeCapacity) slots.push(slot);
+  for (let shelf = 0; shelf < cfg.shelvesPerWing; shelf++) {
+    for (let col = 0; col < cfg.potsPerShelf; col++) {
+      for (let wing = 0; wing < cfg.rackWings; wing++) {
+        const logicalRow = wing * cfg.shelvesPerWing + shelf;
+        const slot = logicalRow * cfg.potsPerShelf + col;
+        if (slot < cfg.activeCapacity) slots.push(slot);
+      }
     }
+  }
   return slots;
 }
 

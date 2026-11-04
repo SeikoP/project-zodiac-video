@@ -36,7 +36,7 @@ test('worldToScreen puts the camera centre in the middle of the frame', () => {
 const owned = (tier, slot, awake = true) => ({ id: `${tier}:${slot}`, tier, slot, owner: { userId: `${tier}${slot}` }, awake });
 
 test('far overview uses dots; normal overview keeps crops readable', () => {
-  const plots = [owned('cloud-1', 0), owned('cloud-1', 24), owned('cloud-1', 48)];
+  const plots = [owned('cloud-1', 0), owned('cloud-1', 24), owned('cloud-1', 24)];
   const far = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.26 }, VP, meta);
   assert.deepEqual([far.detail.length, far.dots.length], [0, 3]);
   const readable = visiblePlots([plots[0]], { x: plotPos(plots[0], meta).x, y: plotPos(plots[0], meta).y, zoom: 0.38 }, VP, meta);
@@ -44,7 +44,7 @@ test('far overview uses dots; normal overview keeps crops readable', () => {
 });
 
 test('at close rack zoom only plots inside the frame are drawn in detail', () => {
-  const near = owned('cloud-1', 0), far = owned('cloud-1', 95);
+  const near = owned('cloud-1', 0), far = owned('cloud-1', 47);
   const c = plotPos(near, meta);
   const v = visiblePlots([near, far], { x: c.x, y: c.y, zoom: cfg.camera.zoomTier }, VP, meta);
   assert.deepEqual(v.detail.map(p => p.id), ['cloud-1:0']);
@@ -53,11 +53,11 @@ test('at close rack zoom only plots inside the frame are drawn in detail', () =>
 
 test('detail rendering is capped for the intended sub-100 room', () => {
   const plots = [];
-  for (let s = 0; s < 96; s++) plots.push(owned('cloud-1', s, true));
+  for (let s = 0; s < 48; s++) plots.push(owned('cloud-1', s, true));
   const c = { x: cfg.tierWidth / 2, y: cfg.tierHeight / 2, zoom: 0.38 };
   const v = visiblePlots(plots, c, VP, meta, 3000, 20);
   assert.equal(v.detail.length, 20);
-  assert.equal(v.dots.length, 76);
+  assert.equal(v.dots.length, 28);
   assert.ok(v.detail.every(p => p.awake));
 });
 
@@ -82,9 +82,9 @@ test('sleeping plots are excluded entirely from rendering', () => {
   assert.equal(v.dots.length, 0);
 });
 
-test('logical row eight wraps to a right visual wing at the same vertical shelf', () => {
+test('logical row four wraps to a right visual wing at the same vertical shelf', () => {
   const left = plotPos(owned('cloud-1', 0), meta);
-  const right = plotPos(owned('cloud-1', 48), meta);
+  const right = plotPos(owned('cloud-1', 24), meta);
   assert.ok(right.x - left.x > cfg.potSpacingX * 5);
   assert.equal(right.y, left.y);
 });
@@ -109,7 +109,7 @@ test('rackGeometry describes one outer frame containing two separated shelf wing
   assert.equal(rack.wings.length, 2);
   assert.ok(rack.wings[0].right < rack.wings[1].left, 'visual wings have a readable center gap');
   assert.ok(rack.outer.left < plotPos(owned('cloud-1', 0), meta).x);
-  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 95), meta).x);
+  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 47), meta).x);
   assert.equal(rack.wings[0].top, rack.wings[1].top);
   assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
   assert.ok(rack.outer.right - rack.outer.left > 1500, 'greenhouse fills most of the usable width before camera scaling');
