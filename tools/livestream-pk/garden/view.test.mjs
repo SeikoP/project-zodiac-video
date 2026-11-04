@@ -9,7 +9,7 @@ const meta = { tiers: TIERS, cfg };
 const VP = { w: 1080, h: 1920 };
 
 test('lodOf: dots when zoomed out, plots in the middle, close-up when zoomed in', () => {
-  assert.deepEqual([0.2, 0.29, 0.3, 0.4, 1.24, 1.25, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close', 'close']);
+  assert.deepEqual([0.2, 0.26, 0.27, 0.4, 1.24, 1.25, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close', 'close']);
 });
 
 test('plotPos agrees with the Seed Zone module layout', () => {
@@ -35,7 +35,7 @@ const owned = (tier, slot, awake = true) => ({ id: `${tier}:${slot}`, tier, slot
 
 test('far overview uses dots; normal overview keeps crops readable', () => {
   const plots = [owned('cloud-1', 0), owned('cloud-1', 24), owned('cloud-1', 48)];
-  const far = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.29 }, VP, meta);
+  const far = visiblePlots(plots, { x: 1800, y: 2400, zoom: 0.26 }, VP, meta);
   assert.deepEqual([far.detail.length, far.dots.length], [0, 3]);
   const readable = visiblePlots([plots[0]], { x: plotPos(plots[0], meta).x, y: plotPos(plots[0], meta).y, zoom: 0.38 }, VP, meta);
   assert.equal(readable.detail.length, 1);
