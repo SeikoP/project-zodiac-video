@@ -12,6 +12,8 @@ import {writeArtifact} from '../phase01/phase01-artifacts.mjs';
 import {mkdtemp,mkdir,cp,readFile,link,rm} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {performance} from 'node:perf_hooks';
+import {recordEpisodeSpan} from '../../core/performance/episode-profiler.mjs';
 import {assertReviewLock} from './phase03-production-release.mjs';
 import {inspectPhase02Seal} from '../phase02/phase02-seal-gate.mjs';
 import {validateStoryObjectWorkspace} from '../../features/story-object/validate-story-object.mjs';
@@ -26,6 +28,7 @@ import {validateZipFile} from './zip-core-v2.mjs';
 export async function publishCheckedZip(tempZip,target,persistReceipt){await persistReceipt();try{await link(tempZip,target);}catch(e){if(e.code==='EEXIST')throw new Error('PRODUCTION_ZIP_ALREADY_EXISTS '+target);throw e;}}
 
 export async function runPhase03Production({sourceRoot,outputDir,sign,concept,episodeScope,revision='1.0',patchVersion,reviewLock}={}){
+ const fastStarted=performance.now();
  if(!sourceRoot||!outputDir||(!sign&&!episodeScope)||!concept)throw new Error('PHASE03_ARGUMENTS_REQUIRED');
  const approved=path.resolve(sourceRoot),dest=path.resolve(outputDir);
  const episode=await episodeHandoffWorkspace(approved,{cover:true});let episodeIdentity;
@@ -82,6 +85,7 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
   await publishCheckedZip(tempZip,target,()=>writeArtifact(approved,receiptName,handoff));
   const receiptStatus='WRITTEN';
   let stateCommit={status:'PENDING'};if(receiptStatus==='WRITTEN'){try{stateCommit=await commitPhase03Release(approved,handoff,target,{expected_state_sha256:expectedStateHash});}catch(e){stateCommit={status:'RECOVERY_REQUIRED',reason:e.message};}}
+  await recordEpisodeSpan(approved,{phase:'03-handoff',stage:'job5-export',category:'native',duration_ms:performance.now()-fastStarted,status:'PASS'}).catch(()=>{});
   return {state_commit:stateCommit,handoff,handoff_receipt_status:receiptStatus,handoff_receipt:receiptStatus==='WRITTEN'?path.join(approved,'.authoring',receiptName):null,ok:true,release_level:'PRODUCTION_READY_ZIP',zip:target,scenes:ir.scenes.length,events:ir.scenes.reduce((n,s)=>n+s.events.length,0),assets:Object.keys(ir.assets).length,archive_entries:zipQc.entries,post_zip_semantic_p1:0,runner_media_verified:false};
  }finally{await rm(scratch,{recursive:true,force:true});}
 }
