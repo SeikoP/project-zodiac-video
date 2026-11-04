@@ -7,6 +7,7 @@ const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
 const stage = document.getElementById('stage'), feed = document.getElementById('feed'), hint = document.getElementById('hint'), shotLabel = document.getElementById('shotLabel');
 const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
+const heartKind = document.getElementById('heartKind'), heartCount = document.getElementById('heartCount'), heartFill = document.getElementById('heartFill');
 const audienceCount = document.getElementById('audienceCount'), eventLabel = document.getElementById('eventLabel'), sessionLabel = document.getElementById('sessionLabel'), leaders = document.getElementById('leaders');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
@@ -117,6 +118,11 @@ function handleFx(fx) {
     case 'fertilize': sfx('boon', null, { duck: .78, ms: 1000 }); break;
     case 'title': sfx('title', null, { duck: .4, ms: 2200 }); say(`${fx.nickname ?? 'Người làm vườn'} · ${fx.titles?.join(' · ') ?? 'danh hiệu mới'}`, 6000); break;
     case 'card': show(`${fx.nickname ?? 'Người làm vườn'} · cấp ${fx.level}`, `${fx.competition?.rank ? `Hạng ${fx.competition.rank} · ` : ''}${fx.competition?.points ?? 0} điểm · ${(fx.competition?.titles ?? []).map(t => t.label).join(' · ') || 'Chưa có danh hiệu'}`, 6000); break;
+    case 'heart-milestone': {
+      const label = { care:'Tim chăm cây', community:'Sức sống khu vườn', luck:'Tim may mắn' }[fx.kind] ?? 'Tim cộng đồng';
+      say(label, 2800);
+      break;
+    }
     case 'event-start': break;
     case 'event-active':
       music.setMood(fx.kind === 'pests' || fx.kind === 'golden' ? 'upbeat' : 'calm');
@@ -166,6 +172,13 @@ async function refreshStatus() {
   } catch { /* the live Garden stream continues without the optional status ribbon */ }
 }
 
+function renderHearts(h) {
+  if (!h) return;
+  heartKind.textContent = ({ care:'TIM · CHĂM CÂY', community:'TIM · CẢ VƯỜN', luck:'TIM · MAY MẮN' })[h.kind] ?? 'TIM CỘNG ĐỒNG';
+  heartCount.textContent = `${Math.min(h.progress,h.target)}/${h.target}`;
+  heartFill.style.width = `${Math.round(Math.min(1,h.progress / Math.max(1,h.target))*294)}px`;
+}
+
 function actionHintFor(p) {
   if (!p?.crop) return 'Gõ “trồng rau” để bắt đầu';
   if (p.crop.pest) return 'CÓ SÂU · gõ “bắt sâu” để cứu cây';
@@ -195,6 +208,7 @@ function onMessage(event, data) {
       if (serverEvent?.phase === 'active') music.setMood(serverEvent.kind === 'golden' || serverEvent.kind === 'pests' ? 'upbeat' : 'calm');
     }
     if (data.parts.competition) renderCompetition(data.parts.competition);
+    if (data.parts.hearts) renderHearts(data.parts.hearts);
     for (const fx of data.fx ?? []) handleFx(fx);
   } else if (event === 'shot') {
     from = cam;
@@ -423,6 +437,9 @@ function drawPlot(p, lod) {
   }
 
   if (p.crop) {
+    // Soil contact shadow makes the stem visibly grow from this pot, not float above it.
+    ctx.save(); ctx.fillStyle = 'rgba(53,73,56,.45)';
+    ctx.beginPath(); ctx.ellipse(0, 8, 14, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
     const variant = p.crop.variant ?? 'common';
     if (variant === 'golden') {
       ctx.save(); ctx.globalAlpha = .34; ctx.fillStyle = C.ochre; ctx.shadowColor = C.ochre; ctx.shadowBlur = 22;
@@ -431,7 +448,7 @@ function drawPlot(p, lod) {
       ctx.save(); ctx.globalAlpha = .22; ctx.fillStyle = C.teal; ctx.beginPath(); ctx.arc(0, -38, 39, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     }
     const cropImage = (p.stage ?? 0) >= 3 ? gardenArt(CROP_ART[p.crop.type]?.[variant] ?? CROP_ART[p.crop.type]?.common) : null;
-    if (cropImage) ctx.drawImage(cropImage, -49, -96, 98, 98);
+    if (cropImage) ctx.drawImage(cropImage, -49, -90, 98, 98);
     else {
       drawRipeCrop(p.crop.type, p.stage ?? 0);
       if ((p.stage ?? 0) < 3 && variant === 'lush') {
@@ -460,6 +477,11 @@ function drawPlot(p, lod) {
       drawSparkle(-36, -54, 7, C.ochre); drawSparkle(35, -38, 5, C.ochre);
       ctx.globalAlpha = 1;
     }
+  }
+  if (p.crop) {
+    // Pot front rim overlaps only the root contact point; shelf lip remains below the foot.
+    ctx.save(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 8, 33, 6, 0, 0, Math.PI); ctx.stroke(); ctx.restore();
   }
   if (p.crop?.pest) {
     ctx.beginPath(); ctx.arc(31, -14, 8, 0, Math.PI * 2); ctx.fillStyle = C.coral; ctx.fill(); ctx.stroke();
