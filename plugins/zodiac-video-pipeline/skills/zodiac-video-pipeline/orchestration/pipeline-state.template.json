@@ -1,6 +1,6 @@
 {
   "format": "zodiac-pipeline-state@2",
-  "plugin_version": "2.6.18",
+  "plugin_version": "2.6.19",
   "run_id": "<create-per-run>",
   "run_mode": "fresh",
   "flags": {
@@ -17,7 +17,8 @@
     "content_quality_engine": true,
     "art_direction_required": true,
     "episode_selected": false,
-    "visual_metaphor_selected": false
+    "visual_metaphor_selected": false,
+    "notion_sync": false
   },
   "current_phase": "01-content",
   "operations": [],
@@ -106,5 +107,5 @@
     }
   },
   "waivers": [],
-  "version": "2.6.18"
+  "version": "2.6.19"
 }
