@@ -41,7 +41,7 @@ const readBody = req => new Promise(resolve => {
   req.on('end', () => { try { resolve(s ? JSON.parse(s) : {}); } catch { resolve({}); } });
 });
 
-export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, simulator = false, now = Date.now, log = console.log } = {}) {
+export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), sharePort = null, dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, simulator = false, now = Date.now, log = console.log } = {}) {
   const full = config ?? readJson(path.join(root, 'config.json'), {});
   const musicDir = MUSIC_DIR, musicRoot = fs.existsSync(MUSIC_DIR) ? fs.realpathSync(MUSIC_DIR) : MUSIC_DIR;
   const music = listMusic({ dir: musicDir, exclude: full.musicExclude, upbeat: full.musicUpbeat });
@@ -152,6 +152,10 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       competition: garden.competition.status(),boss:garden.boss.status(),
       tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs).length })),
     };
+  };
+  const publicStatus = () => {
+    const s = status();
+    return { build:s.build,serverTime:s.serverTime,viewers:s.viewers,planted:s.planted,ripe:s.ripe,event:s.event,competition:s.competition,boss:s.boss,tiers:s.tiers };
   };
   const reset = async () => {
     if (!simulator) throw new Error('reset-simulator-only');
@@ -280,11 +284,14 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     fs.createReadStream(realFile, { start, end }).pipe(res);
   }
 
-  const handler = async (req, res) => {
-    if (!trusted(req)) return void res.writeHead(403).end('forbidden');
+  const HOST_ONLY = new Set(['/control','/control.html','/garden/control','/garden/control.html','/garden/control.js','/garden/control.css','/garden/audio-library.js']);
+  const sharedReadable = p => p === '/' || p === '/events' || p === '/poll' || p === '/api/status' || p === '/music.js' || p === '/sfx.js' || p.startsWith('/garden/') || p.startsWith('/fonts/') || p.startsWith('/music/');
+  const handler = shared => async (req, res) => {
+    if (shared ? !['GET','HEAD'].includes(req.method) : !trusted(req)) return void res.writeHead(shared ? 405 : 403).end('forbidden');
     let url;
     try { url = new URL(req.url, 'http://x'); } catch { return void res.writeHead(400).end('bad request'); }
-    if (url.pathname === '/api/status' && req.method === 'GET') return void res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify(status()));
+    if (shared && (!sharedReadable(url.pathname) || HOST_ONLY.has(url.pathname))) return void res.writeHead(404).end('not found');
+    if (url.pathname === '/api/status' && req.method === 'GET') return void res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }).end(JSON.stringify(shared ? publicStatus() : status()));
     if (url.pathname.startsWith('/music/')) {
       let name;
       try { name = decodeURIComponent(url.pathname.slice(7)); } catch { return void res.writeHead(400).end('bad request'); }
@@ -292,7 +299,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     }
     if (url.pathname === '/events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
-      const c = { seen: {}, host: true, busy: () => res.writableNeedDrain, send: (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`) };
+      const c = { seen: {}, host: !shared, busy: () => res.writableNeedDrain, send: (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`) };
       c.send('meta', meta());
       c.send('frame', { parts: garden.changes(c.seen), fx: [] });
       c.send('receipts',recentReceipts());
@@ -306,7 +313,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       if (!c) {
         id = Math.random().toString(36).slice(2) + Date.now().toString(36);
         const queue = [];
-        c = { seen: {}, host: true, lastPoll: Date.now(), queue, wake: null, busy: () => queue.length > 400,
+        c = { seen: {}, host: !shared, lastPoll: Date.now(), queue, wake: null, busy: () => queue.length > 400,
           send: (event, data) => {
             const last = queue.at(-1);
             if (event === 'frame' && last?.event === 'frame') { Object.assign(last.data.parts, data.parts); last.data.fx = last.data.fx.concat(data.fx); } // a page that is behind gets one merged frame
@@ -345,8 +352,14 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   };
 
   const listen = (server, p) => new Promise((resolve, reject) => { server.once('error', reject); server.listen(p, '127.0.0.1', () => resolve(server.address().port)); });
-  const main = http.createServer(handler);
+  const main = http.createServer(handler(false));
   const boundPort = await listen(main, port);
+  let share = null, boundSharePort;
+  if (!simulator && sharePort != null) {
+    share = http.createServer(handler(true));
+    try { boundSharePort = await listen(share, Number(sharePort)); }
+    catch (e) { main.closeAllConnections?.(); await new Promise(r => main.close(r)); throw e; }
+  }
 
   let bridge = null;
   if (tiktok && full.tiktokUsername) {
@@ -355,16 +368,17 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     bridge = createTikTokBridge({ game: diag.wrap(garden), probe: diag.probe, onStatus: s => hub.broadcast('tiktok', s, true) });
     bridge.connect(full.tiktokUsername);
   }
-  log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/\n  control  http://127.0.0.1:${boundPort}/control`);
+  log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/\n  control  http://127.0.0.1:${boundPort}/control${boundSharePort != null ? `\n  share (read-only)  http://127.0.0.1:${boundSharePort}/` : ''}`);
 
   return {
-    port: boundPort, url: `http://127.0.0.1:${boundPort}/`, get garden(){return garden;},get camera(){return camera;},
+    port: boundPort, sharePort: boundSharePort, url: `http://127.0.0.1:${boundPort}/`, shareUrl: boundSharePort == null ? undefined : `http://127.0.0.1:${boundSharePort}/`, get garden(){return garden;},get camera(){return camera;},
     async close() {
       clearInterval(frame); clearInterval(reaper); stopAuto();
       await bridge?.disconnect?.();
       await saver.flush(); saver.stop();
       for (const c of hub.clients) c.wake?.();
-      main.closeAllConnections?.();
+      share?.closeAllConnections?.(); main.closeAllConnections?.();
+      if (share) await new Promise(r => share.close(r));
       await new Promise(r => main.close(r));
     },
   };
@@ -376,7 +390,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     simulator: true,
     dir: process.env.PK_GARDEN_SIM_DATA_DIR ?? path.join(root, 'data', 'garden-simulator'),
     tiktok: false,
-  } : {});
+  } : { sharePort: Number(process.env.PK_GARDEN_SHARE_PORT || 4859) });
   let closing = false;
   const shutdown = () => {
     if (closing) return;

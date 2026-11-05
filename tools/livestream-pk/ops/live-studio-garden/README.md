@@ -5,9 +5,10 @@
 ## Nguồn và bố trí
 
 - Khung đề xuất: **1080×1920, 30 FPS**, dọc; kiểm tra lựa chọn thực tế trong phiên bản Studio/tài khoản đang dùng. Chưa xác nhận encoder/bitrate của máy bằng thử phát nên không ghi đè cấu hình đó.
-- Chỉ đưa **http://127.0.0.1:4858/?music=0.16&sfx=0.2** vào khung phát. `overlay.url` mở nhanh địa chỉ này. Cổng 4858 dùng chung cho Garden simulator và Garden thật, chỉ chạy một chế độ tại một thời điểm.
-- `control.url` mở **http://127.0.0.1:4858/control** cho host; để ngoài vùng thu. Không capture cả desktop có bảng điều khiển hoặc thông tin tài khoản.
-- Nếu Studio có nguồn trang web/link dùng được với localhost, chọn nguồn đó và nhập URL overlay. Nếu không có hoặc không hoạt động, mở overlay trong cửa sổ trình duyệt riêng rồi dùng nguồn thu cửa sổ có sẵn trong Studio, căn/crop phần nội dung 9:16. Tên menu/cách hỗ trợ tùy bản Studio, chưa xác nhận trực tiếp.
+- `overlay.url` chỉ mở **preview local** tại `http://127.0.0.1:4858/?music=0.16&sfx=0.2`; không dùng URL localhost này làm Link source nếu LIVE Studio từ chối localhost.
+- Với Garden thật: chạy `npm run garden`, rồi terminal thứ hai chạy **`npm run garden:share`**. Lệnh share dùng cổng local **4859 chỉ đọc** và in URL HTTPS `trycloudflare.com`; dán URL HTTPS đó vào Link source của TikTok LIVE Studio. Giữ terminal tunnel mở trong suốt buổi phát.
+- `control.url` mở **http://127.0.0.1:4858/control** cho host; để ngoài vùng thu. Cổng tunnel không phục vụ control, diagnostics host hoặc API ghi.
+- Simulator chỉ dùng 4858 và không mở share port. Không dùng simulator URL/tunnel làm nguồn phát thật.
 - Thử crop/fit bằng chính preview: không mất header Top 5, tên chậu, trạng thái cây cuối kệ. Không kéo méo hình để lấp khung. `?safe=1` chưa có xử lý riêng ở Garden; không dựa vào tham số đó.
 - Giữ tên nguồn dễ phân biệt: `Garden overlay`; scene rehearsal ghi rõ `Garden SIM`. Trước phát thật phải xác nhận API `simulator:false`, không chỉ đổi tên scene.
 
@@ -38,7 +39,7 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 1. Kết thúc thử và sao lưu `data/garden-simulator/garden-state.json` cùng `data/garden-state.json` nếu có, đặt bản sao có timestamp. Không reset để chuyển chế độ.
 2. Dừng đúng server simulator ở terminal của nó bằng Ctrl+C để flush save; xác nhận cổng 4858 đã nhả. Không mở thêm Garden thật khi sim còn giữ cổng.
 3. Xác nhận username/key trong cấu hình riêng. Không chụp hoặc in key. `npm run garden` nạp `.env`, dùng data thật và có thể kết nối TikTok ngay khi startup; chỉ chạy khi đúng tài khoản và chuẩn bị kiểm tra LIVE thật. Không chạy lặp các lệnh `--online` để dò kết nối.
-4. Chạy `npm run garden`; nạp lại nguồn overlay/control trên cùng địa chỉ 4858. Xác nhận `/api/status` có `simulator:false`, không còn bot mô phỏng. Không dùng `npm run live` vì đó là luồng PK khác.
+4. Chạy `npm run garden`; xác nhận control local 4858 có `simulator:false`, không còn bot mô phỏng. Sau đó chạy `npm run garden:share` và thay Link source trong LIVE Studio bằng URL HTTPS mới được in ra. Không dùng `npm run live`/`npm run share` vì đó là luồng PK khác.
 5. Tài khoản host đang LIVE: dùng tài khoản phụ gửi `trồng`, `chăm`, `vườn`, thả tim, rồi kiểm tra quà được phép thử. So từng sự kiện giữa màn hình người xem, native state và cảnh trình chiếu; không dùng nút giả lập làm bằng chứng LIVE.
 6. Nếu signing/rate-limit: dừng kết nối và chẩn đoán đúng tiến trình; tránh restart liên tục vì chính connect cũng có thể tốn quota. Chưa có trạng thái TikTok chi tiết trong `/api/status` Garden để thay thế việc nhìn thông báo kết nối/log riêng.
 

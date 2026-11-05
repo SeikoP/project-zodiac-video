@@ -175,6 +175,26 @@ test('Garden runs the overlay, control and poll through one port', async () => {
   } finally { await s.close(); }
 });
 
+test('live Garden exposes a read-only share port for TikTok LIVE Studio', async () => {
+  const { s, base } = await boot({ simulator:false, sharePort:0 });
+  const shared = `http://127.0.0.1:${s.sharePort}`;
+  try {
+    assert.equal((await fetch(base + '/control')).status, 200);
+    assert.equal((await fetch(shared + '/')).status, 200);
+    assert.equal((await fetch(shared + '/garden/garden.js')).status, 200);
+    assert.equal((await fetch(shared + '/poll')).status, 200);
+    const status = await fetch(shared + '/api/status').then(r => r.json());
+    assert.equal(typeof status.viewers, 'number');
+    assert.ok(status.competition);
+    assert.equal(status.players, undefined);
+    assert.equal(status.displays, undefined);
+    assert.equal((await fetch(shared + '/control')).status, 404);
+    assert.equal((await fetch(shared + '/control.html')).status, 404);
+    assert.equal((await fetch(shared + '/host-prompts.js')).status, 404);
+    assert.equal((await post(shared + '/api/camera-lock', { on:true })).status, 405);
+  } finally { await s.close(); }
+});
+
 test('the camera can be locked from the host panel', async () => {
   const { s, base } = await boot();
   try {

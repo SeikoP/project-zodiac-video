@@ -6,13 +6,16 @@ Vườn cộng đồng 1080 × 1920, dùng toàn khung hình. Một **Khu Gieo H
 
 ```bash
 npm run garden
+# LIVE Studio Link source: mở terminal thứ hai sau khi Garden thật đã chạy
+npm run garden:share
 # Hoặc chạy giả lập, sau khi đã dừng Garden thường:
 npm run garden:sim
 ```
 
-- Overlay: `http://127.0.0.1:4858/`; điều khiển: `http://127.0.0.1:4858/control`.
-- Garden thường lưu tại `data/garden-state.json`. Simulator không kết nối TikTok, lưu riêng tại `data/garden-simulator`.
-- Overlay và control dùng chung một cổng. Chỉ chạy một chế độ trên cổng đó; mỗi buổi LIVE chỉ chạy một game kết nối TikTok.
+- Overlay local: `http://127.0.0.1:4858/`; điều khiển: `http://127.0.0.1:4858/control`.
+- Garden thật mở thêm cổng **4859 chỉ đọc** cho `npm run garden:share`; lệnh này in URL HTTPS tạm để dán vào Link source của TikTok LIVE Studio. Control và API ghi không được public qua tunnel.
+- Garden thường lưu tại `data/garden-state.json`. Simulator không kết nối TikTok, lưu riêng tại `data/garden-simulator` và **không mở cổng share**.
+- Overlay và control local dùng chung cổng 4858. Chỉ chạy một chế độ trên cổng đó; mỗi buổi LIVE chỉ chạy một game kết nối TikTok.
 - Cấu hình trong `garden/config.mjs`, ghi đè qua mục `garden` của `config.json`. `PK_GARDEN_PORT` đổi cổng, `PK_GARDEN_SIM_DATA_DIR` đổi thư mục mô phỏng.
 - Control có bình luận, quà, demo, phòng bot, khóa camera, sự kiện và chốt phiên. Chức năng giả lập/reset chỉ bật trong simulator.
 - Kiểm thử: `npm test`; tải mô phỏng: `node garden/sim.mjs --users 40 --url http://127.0.0.1:4858`.
