@@ -22,6 +22,14 @@ function includesLabel(spoken,label){
 
 export function assertNarrativeArchetype(value){
  if(value?.format!=='zodiac-narrative-archetype@1')fail('format');
+ const allowed=new Set(['format','mode_id','selection_basis','behavior_mechanics','visual_grammar','viewer_inference','audience_evidence','recent_mode_ids','repeat_reason']);
+ for(const k of Object.keys(value))if(!allowed.has(k))fail('unknown field '+k);
+ const viAllowed=new Set(['target_label','aliases','explicitness','comment_affordance']);
+ for(const k of Object.keys(value.viewer_inference??{}))if(!viAllowed.has(k))fail('viewer_inference unknown field '+k);
+ if(value.audience_evidence){
+  const audienceAllowed=new Set(['source_kind','normalized_mode_id','signal_strength','not_zodiac_claim_evidence']);
+  for(const k of Object.keys(value.audience_evidence))if(!audienceAllowed.has(k)&&!forbiddenAudienceKeys.has(k))fail('audience_evidence unknown field '+k);
+ }
  const mode=modeId(value.mode_id);
  if(!['story_mechanics','audience_emergent','hybrid'].includes(value.selection_basis))fail('selection_basis');
  stringArray(value.behavior_mechanics,'behavior_mechanics',{min:2,max:6,minLen:8});
