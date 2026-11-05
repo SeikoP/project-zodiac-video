@@ -228,3 +228,27 @@ html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(-
 #impactStage[data-kind="cataclysm"]{background:var(--card);border-top-color:var(--ochre)}
 #impactStage h2{font-size:36px;margin:4px 0}#impactStage .meteor-art{display:none}#impactStage>small{font-size:22px}#impactHint{font-size:23px;margin:7px 0 0}#impactResult{font-size:30px}#impactTargets{margin:6px 0}#impactTargets span{font-size:23px;border-color:var(--coral);background:var(--paper)}
 #bossArena{background:var(--card);box-shadow:0 10px 0 var(--shadow),0 0 0 1200px rgba(246,240,230,.45)}
+
+/* Gift moments own the stage; routine comment feedback stays local to pots. */
+#giftHero{
+  left:70px;top:316px;width:940px;min-height:188px;z-index:15;
+  grid-template-columns:128px minmax(0,1fr);gap:20px;padding:17px 24px 18px;
+  border:4px solid var(--ink);border-top:11px solid var(--ochre);border-left:4px solid var(--ink);
+  border-radius:24px;background:linear-gradient(108deg,#FFF1B8 0%,#FFFDF9 62%,#F6F0E6 100%);
+  box-shadow:0 10px 0 rgba(47,60,68,.18),0 24px 55px rgba(47,60,68,.18);
+  transform:translateY(-12px) scale(.97);transform-origin:center top;
+}
+#giftHero.on{transform:none}
+#giftHero svg{width:122px;height:132px;filter:drop-shadow(0 8px 0 rgba(47,60,68,.12))}
+#giftKicker{font-size:21px;letter-spacing:2.2px;color:#8A6730;line-height:1}
+#giftSender{margin-top:5px;font-size:28px;line-height:1;color:var(--ink)}
+#giftTitle{margin-top:3px;font-size:48px;line-height:1;font-weight:400}
+#giftImpact{margin-top:7px;font-size:27px;line-height:1.12;color:var(--ink)}
+#giftHero[data-kind="dew"]{border-top-color:#63B7CF;background:linear-gradient(108deg,#DFF4FA,#FFFDF9 68%)}
+#giftHero[data-kind="star"]{border-top-color:var(--ochre);background:linear-gradient(108deg,#FFF0AE,#FFFDF9 68%)}
+#giftHero[data-kind="rain"]{border-top-color:#5EAD8D;background:linear-gradient(108deg,#DCF2E9,#FFFDF9 68%)}
+#stage.gift-live #zoneHeading,#stage.gift-live #feed,#stage.gift-live #idleHint,#stage.gift-live #focusCard{visibility:hidden}
+#stage.gift-live #scoreboard{box-shadow:0 5px 0 rgba(47,60,68,.17),0 0 0 3px rgba(242,196,92,.22)}
+@keyframes giftHeroArrive{from{opacity:0;transform:translateY(-18px) scale(.94)}to{opacity:1;transform:none}}
+#giftHero.on{animation:giftHeroArrive .26s ease-out both}
+@media(prefers-reduced-motion:reduce){#giftHero.on{animation:none}}

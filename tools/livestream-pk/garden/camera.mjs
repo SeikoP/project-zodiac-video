@@ -23,7 +23,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
     const width = right - left + 36, height = bottom - top + 24;
     const zoom = clamp(Math.min(WIDTH / width, VIEW_HEIGHT / height) * .98, c.zoomWorld, c.zoomTier);
     return { tier: TIERS[0].id, x: (left + right) / 2,
-      y: (top + bottom) / 2 - 170 / zoom, zoom };
+      y: (top + bottom) / 2 - 165 / zoom, zoom };
   }
 
   const base = e => ({ at: now(), type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,
@@ -66,7 +66,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
   }
 
   function push(e) {
-    if(e.type==='gift')foregroundUntil=Math.max(now(),foregroundUntil)+(e.impact?2800:e.roulette?3600:1800);
+    if(e.type==='gift')foregroundUntil=Math.max(now(),foregroundUntil)+(e.impact?3200:e.roulette?4200:2600);
     if(e.type==='boss-start')bossActive=true;
     if(e.type==='boss-end'){bossActive=false;secondaryReadyAt=now()+c.idleMs;}
     if (e.type === 'event-end') {

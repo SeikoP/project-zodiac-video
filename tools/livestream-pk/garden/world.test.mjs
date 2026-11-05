@@ -25,7 +25,7 @@ test('physical layout wraps logical row 7 into the right wing without changing s
   assert.equal(right0.x - left0.x, (ctx.cfg.potsPerShelf - 1) * ctx.cfg.potSpacingX + ctx.cfg.rackWingGapX);
   assert.equal(right0.y, left0.y);
   assert.equal(shelfSurface(21, ctx.cfg) - plotCenter('cloud-1', 21, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
-  assert.ok(ctx.cfg.shelfSpacingY >= 220);
+  assert.equal(ctx.cfg.shelfSpacingY, 205, 'world shelves compress so overview can zoom in without reducing screen-space row gap');
 });
 test('new arrivals spread across the rack without ever changing an existing seat', () => {
   const { ctx } = makeCtx();

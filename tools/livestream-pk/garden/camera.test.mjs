@@ -33,7 +33,7 @@ test('rack uses the bottom of the frame while leaving the expanded header clear'
  assert.ok(sy(cfg.zoneMarginY-132)>=345);
  assert.ok(sy(cfg.zoneMarginY+(cfg.shelvesPerWing-1)*cfg.shelfSpacingY+110)>=1810);
  assert.ok(sy(cfg.zoneMarginY+(cfg.shelvesPerWing-1)*cfg.shelfSpacingY+110)<=1910);
- assert.ok(100*cfg.potScale*shot.zoom>=135,'42-seat overview makes pots materially larger');
+ assert.ok(100*cfg.potScale*shot.zoom>=160,'42-seat overview uses the reclaimed center/vertical space for larger pots');
 });
 
 test('close shot enlarges the plant and reserves space beside it for its card',()=>{
@@ -188,8 +188,8 @@ test('overview fits the complete two-wing structure even with only one occupant'
 
 test('portrait rack makes every pot readable while fitting all 42 active seats',()=>{
  const shot=rig().cam.tick();
- assert.ok(100*cfg.potScale*shot.zoom>=135,'overview pots exceed 135px');
- assert.ok((cfg.shelvesPerWing-1)*cfg.shelfSpacingY*shot.zoom>1180,'seven shelves still fill the portrait height');
+ assert.ok(100*cfg.potScale*shot.zoom>=160,'overview pots exceed 160px');
+ assert.ok((cfg.shelvesPerWing-1)*cfg.shelfSpacingY*shot.zoom>1200,'seven shelves still fill the portrait height after world-space compression');
 });
 
 test('overview spreads both visual rack wings across most of the portrait play area', () => {
@@ -200,7 +200,7 @@ test('overview spreads both visual rack wings across most of the portrait play a
   const bottomLeft = { x: left.x, y: cfg.zoneMarginY + 3 * cfg.shelfSpacingY };
   const sx = p => (p.x - shot.x) * shot.zoom + 540;
   const sy = p => (p.y - shot.y) * shot.zoom + 960;
-  assert.ok(sx(right) - sx(left) > 420, 'left/right wings visibly separate');
+  assert.ok(sx(right) - sx(left) > 500 && sx(right) - sx(left) < 525, 'six columns keep even spacing while the center trellis replaces dead space');
   assert.ok(sy(bottomLeft) - sy(left) > 360, 'four enlarged shelves use substantial vertical space');
   assert.ok(shot.zoom >= .5, 'overview no longer shrinks into a thin tower');
 });

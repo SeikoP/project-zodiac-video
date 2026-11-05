@@ -4,9 +4,9 @@ export const GARDEN_DEFAULTS = Object.freeze({
   // Two portrait wings × 7 shelves × 3 pots = 42 active seats; the removed row funds larger pots and labels.
   tierWidth: 1960, tierHeight: 1600, plotsPerTier: 42, plotsPerRow: 6, plotCell: 120,
   activeCapacity: 42, modulesPerRow: 1, moduleCapacity: 42, potsPerShelf: 3, shelvesPerModule: 7,
-  rackWings: 2, shelvesPerWing: 7, rackWingGapX: 180,
-  potSpacingX: 180, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 220,
-  zoneMarginX: 160, zoneMarginY: 300, potScale: 1.5, potBottomOffset: 80, potShelfGap: 1,
+  rackWings: 2, shelvesPerWing: 7, rackWingGapX: 166,
+  potSpacingX: 168, shelfSpacingY: 205, moduleGapX: 220, moduleGapY: 205,
+  zoneMarginX: 160, zoneMarginY: 300, potScale: 1.62, potBottomOffset: 84, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 180000, tickMaxDtMs: 5000, plotSyncMs: 5000, sessionMs: 600000, awardsMs: 8000,
@@ -29,11 +29,11 @@ export const GARDEN_DEFAULTS = Object.freeze({
   merchantMs: 60000, merchantMult: 2, goldenMs: 30000, goldenMult: 2,
   // camera
   camera: Object.freeze({
-    holdMinMs: 1600, welcomeHoldMs: 0, giftHoldMs: 6200, lowGiftHoldMs: 1800,
+    holdMinMs: 1600, welcomeHoldMs: 0, giftHoldMs: 6200, lowGiftHoldMs: 2400,
     stealHoldMs: 1800, levelHoldMs: 1600, eventHoldMs: 1800, stableMinMs: 1600, overviewHoldMs: 6000, idleMs: 6000,
     queueMax: 7, giftTtlMs: 42000, ttlMs: 28000, mergeMs: 2200,
     quotaWindowMs: 60000, quotaMin: 2, easeMs: 500, overviewEaseMs: 600,
-    zoomWorld: 0.48, zoomTier: 0.96, zoomClose: 2.35,
+    zoomWorld: 0.48, zoomTier: 1.03, zoomClose: 2.35,
   }),
 });
 

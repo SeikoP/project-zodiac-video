@@ -169,7 +169,7 @@ test('view data exposes pot tier and crop visual state', () => {
 test('meta exposes the two-wing rack geometry required by the browser renderer', () => {
   const s = setup();
   const cfg = s.garden.meta().cfg;
-  assert.deepEqual([cfg.rackWings, cfg.shelvesPerWing, cfg.rackWingGapX], [2, 7, 180]);
+  assert.deepEqual([cfg.rackWings, cfg.shelvesPerWing, cfg.rackWingGapX], [2, 7, 166]);
 });
 
 test('pest mention routes to the neighbor and syncs the changed plot',()=>{

@@ -150,6 +150,13 @@ test('overview identity is an adaptive nickname and never a public slot code', (
   assert.equal(view.displayNickname('', .5), 'Người xem');
 });
 
+test('overview identity theme follows the earned pot tier',()=>{
+ const tiers=['clay','glazed','banded','royal','astral'],themes=tiers.map(view.identityLabelTheme);
+ assert.equal(new Set(themes.map(t=>t.accent)).size,tiers.length,'each pot tier gives the name card a distinct accent');
+ assert.ok(themes.every(t=>t.fill&&t.levelFill),'each tier supplies a readable card fill and LV badge fill');
+ assert.deepEqual(view.identityLabelTheme('unknown'),view.identityLabelTheme('clay'));
+});
+
 test('Garden join notices do not expose slot-number identity', () => {
   const source = fs.readFileSync(new URL('../public/garden/garden.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /chậu #|padStart\(3, '0'\)/);
@@ -164,7 +171,7 @@ test('rackGeometry describes one outer frame containing two separated shelf wing
   assert.ok(rack.outer.right > plotPos(owned('cloud-1', 41), meta).x);
   assert.equal(rack.wings[0].top, rack.wings[1].top);
   assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
-  assert.ok(rack.outer.right - rack.outer.left > 1000, 'greenhouse fills most of the usable width before camera scaling');
+  assert.ok(rack.outer.right - rack.outer.left > 850, 'tighter greenhouse frame leaves room for a real center trellis without wasting portrait width');
 });
 
 test('dense overview label width always leaves a gap between adjacent pots', () => {
@@ -184,7 +191,7 @@ test('garden guide follows the most useful room action and phase',()=>{
  assert.equal(view.gardenGuide({plots:[]})[1],'trồng');
  assert.equal(view.gardenGuide({plots:[{owner:{},awake:true,crop:null}]})[1],'trồng','an awake empty pot returns the loop to planting');
  assert.equal(view.gardenGuide({plots:[{...crop(),stage:3}]})[1],'hái');
- assert.equal(view.gardenGuide({plots:[crop({pest:true})],event:{kind:'pests',phase:'active'}})[1],'bắt sâu');
+ assert.equal(view.gardenGuide({plots:[crop({pest:true})],event:{kind:'pests',phase:'active'}})[1],'chăm');
  assert.equal(view.gardenGuide({plots:[crop({weeds:true})]})[1],'chăm');
  assert.equal(view.gardenGuide({plots:[{...crop(),water:.1}]})[1],'chăm');
 });

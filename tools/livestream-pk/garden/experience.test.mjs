@@ -50,8 +50,8 @@ test('presentation diagnostics expose the real active scene, queued work and qui
  let time=0;const q=createPresentationQueue(()=>time);q.push({type:'gift',id:'g',nickname:'An',roulette:{}});
  q.push({type:'card',userId:'a',nickname:'An'});q.tick();
  let d=q.snapshot();assert.equal(d.active.kind,'roulette');assert.equal(d.pending.length,1);
- time=3600;q.tick();d=q.snapshot();assert.equal(d.active,null);assert.equal(d.idleWaitMs,6000);
- time=9600;q.tick();assert.equal(q.snapshot().active.kind,'profile');
+ time=4200;q.tick();d=q.snapshot();assert.equal(d.active,null);assert.equal(d.idleWaitMs,6000);
+ time=10200;q.tick();assert.equal(q.snapshot().active.kind,'profile');
 });
 
 test('diagnostics bound queue details without hiding the actual backlog or mutating it',()=>{

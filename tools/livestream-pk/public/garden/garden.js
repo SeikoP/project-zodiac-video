@@ -4,7 +4,7 @@ import {POT_ART,createViewerAvatar,avatarSource,earnedPattern} from './identity.
 import { createMusic } from '../music.js';
 import {createGardenAudio} from './audio.js';
 import { createSfx } from '../sfx.js';
-import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, growthBuffPresentation, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotOverlayMode, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
+import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, growthBuffPresentation, identityLabelTheme, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotOverlayMode, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
@@ -141,9 +141,9 @@ function handleFx(fx) {
   if(actionCue)gardenAudio.cue({role:actionCue,eventId:fx.eventId??`${fx.type}:${fx.receivedAt??performance.now()}`,count:fx.count??1,ageMs:fx.receivedAt?Math.max(0,Date.now()-fx.receivedAt):0});
   switch (fx.type) {
     case 'action-feedback': {
-      const now=Date.now(),routine=!fx.ok&&['cooldown','busy','not-ripe','no-pest','no-weeds','already-fertilized'].includes(fx.reason),duration=fx.ok?2600:routine?2200:4200;
+      const now=Date.now(),routine=!fx.ok&&['cooldown','busy','not-ripe','no-pest','no-weeds','already-fertilized'].includes(fx.reason),duration=routine?1800:3600;
       if(fx.plotId&&!fx.ok)commandFeedback.set(fx.plotId,{...fx,at:now,until:now+duration});
-      say(`${displayNickname(fx.nickname,1.25)} · ${fx.message}`,duration,fx.ok||routine?'normal':'important');
+      if(!fx.ok&&!routine)say(`${displayNickname(fx.nickname,1.25)} · ${fx.message}`,duration,'important');
       break;
     }
     case 'session-end':
@@ -158,13 +158,13 @@ function handleFx(fx) {
     case 'joined': {
       
       if (fx.plotId) float('sparkle', fx.plotId);
-      if (fx.count === 1 && fx.seats?.length === 1) {
+      const activeNow=[...plots.values()].filter(p=>p.owner&&p.awake).length;
+      if(activeNow<8&&fx.count === 1 && fx.seats?.length === 1) {
         const seat = fx.seats[0];
-        say(`${displayNickname(seat.nickname, .82)} đã nhận chậu`, 4000);
-      } else if (fx.count > 1) {
-        const sample = (fx.seats ?? []).slice(0, 2)
-          .map(v => displayNickname(v.nickname, .82)).join(' · ');
-        say(`${fx.count} người vào Khu Gieo Hạt${sample ? ' · ' + sample : ''}`, 4000);
+        say(`${displayNickname(seat.nickname, .82)} đã nhận chậu`, 2600);
+      } else if(activeNow<8&&fx.count > 1) {
+        const sample = (fx.seats ?? []).slice(0, 2).map(v => displayNickname(v.nickname, .82)).join(' · ');
+        say(`${fx.count} người vào Khu Gieo Hạt${sample ? ' · ' + sample : ''}`, 2600);
       }
       break;
     }
@@ -187,7 +187,7 @@ function handleFx(fx) {
     case 'boss-end': music.setMood('calm');break;
     case 'heart-milestone': {
       const label = { care:'Tim chăm cây', community:'Sức sống khu vườn', luck:'Tim may mắn' }[fx.kind] ?? 'Tim cộng đồng';
-      say(fx.kind === 'luck' && fx.plotId ? `${label} · +2 vàng` : label, 3200, fx.kind === 'luck' ? 'important' : 'normal');
+      if(fx.kind==='luck'&&fx.plotId)say(`${label} · +2 vàng`,2600,'important');
       if (fx.plotId) float('sparkle', fx.plotId);
       break;
     }
@@ -220,7 +220,7 @@ function updateMeters(p){
   if(p.growth?.waterBoostUntil>now)sources.push(`Tưới +25% · ${Math.ceil((p.growth.waterBoostUntil-now)/1000)}s`);
   if(p.growth?.fertilized)sources.push('Phân +18%');
   if(p.growth?.speedUntil>now)sources.push(`Quà +30% · ${Math.ceil((p.growth.speedUntil-now)/1000)}s`);
-  if(p.prank?.until>now)sources.push(`${p.prank.kind==='slow'?'Mây lười −25%':p.prank.kind==='dry'?'Nắng khô · tưới để gỡ':'Cỏ · nhổ cỏ để gỡ'} · ${Math.ceil((p.prank.until-now)/1000)}s`);
+  if(p.prank?.until>now)sources.push(`${p.prank.kind==='slow'?'Mây lười −25%':p.prank.kind==='dry'?'Nắng khô · chăm để gỡ':'Cỏ · chăm để gỡ'} · ${Math.ceil((p.prank.until-now)/1000)}s`);
   if(p.crop?.pest)sources.push('Sâu −40%');if(p.crop?.weeds)sources.push('Cỏ −28%');if(p.crop&&p.water<=0)sources.push('Khô −50%');
   growthSources.textContent=sources.join(' · ')||'Tưới +25% trong 30s · bón phân +18%';
 }
@@ -228,7 +228,7 @@ function updateMeters(p){
 function renderMoments(now,wallNow){
   const celebrating=sessionInfo?.phase==='awards';
   awards.classList.toggle('on',celebrating);awards.setAttribute('aria-hidden',String(!celebrating));stage.classList.toggle('awards-live',celebrating);
-  document.getElementById('zoneHint').textContent=celebrating?'Đang trao giải · tạm ngừng thao tác · quà được giữ cho phiên mới':bossState?.phase==='active'?'Sâu Chúa đang xuất hiện · thả tim để cứu vườn · quà lớn đánh boss':'Gõ “trồng” → “chăm” → “hái” · “vườn” xem thông tin gọn';
+  document.getElementById('zoneHint').textContent=celebrating?'Đang trao giải · tạm ngừng thao tác · quà được giữ cho phiên mới':bossState?.phase==='active'?'Sâu Chúa đang xuất hiện · thả tim để cứu vườn · quà lớn đánh boss':'Gõ “trồng” → “chăm” → “hái” · quà mở cảnh riêng';
   if(celebrating)awardCountdown.textContent=`Phiên ${sessionInfo.no+1} mở sau ${Math.max(0,Math.ceil((sessionInfo.awardsUntil-wallNow)/1000))}s`;
   const next=presentation.tick({boss:bossState?.phase==='active',awards:celebrating,blocked:Boolean(focusPlot&&now<focusAt+focusMs),idleMs:meta.cfg.camera.idleMs});
   const compactNotices=presentation.drainNotices();
@@ -243,7 +243,7 @@ function renderMoments(now,wallNow){
     }
     if(next?.kind==='profile'){
       const p=plots.get(next.plotId);
-      say(`${displayNickname(next.nickname,1.25)} · LV${next.level} · ${next.xp} XP · ${next.gold} vàng · ${next.competition?.points??0} điểm · ${p?careLabel(p):'chăm vườn'}`,2500);
+      say(`${displayNickname(next.nickname,1.25)} · LV${next.level} · ${next.xp} XP · ${next.gold} vàng · ${next.competition?.points??0} điểm · ${p?careLabel(p):'chăm vườn'}`,1800);
     }
     if(next?.kind==='roulette'){
       const r=next.roulette;wheelPresentation=next;
@@ -265,7 +265,7 @@ function renderMoments(now,wallNow){
   wheelPanel.classList.toggle('on',wheelVisible);wheelPanel.setAttribute('aria-hidden',String(!wheelVisible));stage.classList.toggle('wheel-live',wheelVisible);
   if(wheelVisible&&(reduceMotion||now-wheelPresentation.startedAt>=2000)){
     const r=wheelPresentation.roulette;if(!wheelPresentation.soundResult){wheelPresentation.soundResult=true;if(!wheelPresentation.restored)gardenAudio.cue({role:'wheelResult',sceneId:wheelPresentation.sceneId,phase:'result'});}wheelResult.textContent=`${r.label} → ${r.targetName}`;
-    wheelHint.textContent=r.expiresAt&&r.expiresAt<=wallNow?'Hiệu ứng đã kết thúc':r.kind==='speed'?'+30% tốc độ trong 45s':r.kind==='fertilizer'?'+18% tốc độ đến khi hái':r.kind==='shield'?'Khiên bảo vệ trong 60s':`${r.durationMs/1000}s rồi tự hết${r.kind==='dry'?' · gõ “tưới” để gỡ sớm':r.kind==='weeds'?' · gõ “nhổ cỏ” để gỡ sớm':' · cây vẫn tiếp tục lớn'}`;
+    wheelHint.textContent=r.expiresAt&&r.expiresAt<=wallNow?'Hiệu ứng đã kết thúc':r.kind==='speed'?'+30% tốc độ trong 45s':r.kind==='fertilizer'?'+18% tốc độ đến khi hái':r.kind==='shield'?'Khiên bảo vệ trong 60s':`${r.durationMs/1000}s rồi tự hết${['dry','weeds'].includes(r.kind)?' · gõ “chăm” để gỡ sớm':' · cây vẫn tiếp tục lớn'}`;
   }
   if(wheelVisible&&now-wheelPresentation.startedAt<2000&&!wheelPresentation.restored){const tick=Math.floor((now-wheelPresentation.startedAt)/140);gardenAudio.cue({role:'wheelTick',sceneId:wheelPresentation.sceneId,phase:`tick:${tick}`});}
   if(next?.kind==='impact'&&now-next.startedAt>=650&&!next.soundImpact){next.soundImpact=true;if(!next.restored){const role=next.impact.mode==='boss'?'bossGiftHit':!next.impact.destroyed.length?'shieldBlock':next.tier==='cataclysm'?null:'meteorImpact';if(role)gardenAudio.cue({role,sceneId:next.sceneId,phase:'result'});}}
@@ -289,7 +289,7 @@ function presentGift(data) {
   giftPresentation={...data,startedAt:now,until:now+(Number(data.travelMs)||0)+(Number(data.stableMs)||5000)};
   giftHero.dataset.kind=data.giftKind;
   giftArt.setAttribute('href',`#gift-${data.giftKind}`);
-  giftSender.textContent=`${displayNickname(data.nickname??nameOf(data.plotId),1.25)} vừa mang tới`;
+  giftSender.textContent=`${Math.max(1,Number(data.total)||1)} XU · ${displayNickname(data.nickname??nameOf(data.plotId),1.25)}`;
   giftTitle.textContent=meta?.copy?.gifts?.[data.giftKind]??'Quà vườn';
   giftImpact.textContent=(data.benefits?.seeded?'Gieo rau mới · ':'')+giftImpactText(data);
   const effects=data.giftWide?data.effects??[]:(data.effects??[]).filter(e=>e.plotId===data.plotId);
@@ -593,9 +593,17 @@ function drawTier(_tier, _index, _active) {
   ctx.strokeStyle = scene.rail; ctx.lineWidth = 18;
   ctx.beginPath(); ctx.moveTo(18, 66); ctx.quadraticCurveTo(w / 2, -28, w - 18, 66); ctx.stroke();
 
-  const dividerX = (rack.wings[0].right + rack.wings[1].left) / 2 - g.left;
-  ctx.strokeStyle = 'rgba(142,192,185,.72)'; ctx.lineWidth = 12;
-  ctx.beginPath(); ctx.moveTo(dividerX, 84); ctx.lineTo(dividerX, h - 22); ctx.stroke();
+  const dividerX = (rack.wings[0].right + rack.wings[1].left) / 2 - g.left, pillarW = 36;
+  ctx.fillStyle='rgba(142,192,185,.16)';ctx.strokeStyle=C.ink;ctx.lineWidth=4;
+  ctx.beginPath();ctx.roundRect(dividerX-pillarW/2,72,pillarW,h-92,18);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=scene.rail;ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(dividerX,86);ctx.lineTo(dividerX,h-34);ctx.stroke();
+  ctx.strokeStyle=C.ochre;ctx.lineWidth=2.5;ctx.setLineDash([13,11]);
+  ctx.beginPath();ctx.moveTo(dividerX,98);ctx.lineTo(dividerX,h-46);ctx.stroke();ctx.setLineDash([]);
+  for(let y=154,i=0;y<h-72;y+=205,i++){
+    ctx.fillStyle=i%2?C.ochre:C.teal;ctx.strokeStyle=C.ink;ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.arc(dividerX,y,6.5,0,Math.PI*2);ctx.fill();ctx.stroke();
+    drawLeaf(dividerX+(i%2?11:-11),y+23,13,i%2?.85:-.85,i%2?C.ochre:C.teal);
+  }
 
   for (const wing of rack.wings) {
     const shelfLeft = wing.left - g.left + 28;
@@ -853,25 +861,30 @@ function drawPlotLabel(p) {
   if (!p.owner || !p.awake || cam.zoom < .27) return;
   if (focusPlot && cam.zoom >= 1.25) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), size = 100 * (meta.cfg.potScale ?? 1.4) * cam.zoom;
-  const maxW = overviewLabelWidth(meta.cfg, cam.zoom), y = at.y + size * .55;
+  const maxW = overviewLabelWidth(meta.cfg, cam.zoom), y = at.y + size * .53;
   const ripe = (p.stage ?? 0) >= 3;
   const event=visualEvent(),boost=event?.kind==='golden'&&ripe?meta.cfg.goldenMult:event?.kind==='merchant'&&p.crop?.type===event.crop?meta.cfg.merchantMult:0;
-  const trouble = p.crop?.pest || p.crop?.weeds || (p.crop && p.water < .25);
-  ctx.save(); ctx.font = `${cam.zoom < .65 ? 18 : 22}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const name = displayNickname(p.owner.nickname, cam.zoom);
-  const label=`${name} · L${p.owner.level}`;
-  const w = Math.min(maxW, ctx.measureText(label).width + 24);
-  ctx.fillStyle = C.card; ctx.strokeStyle = 'rgba(47,60,68,.22)'; ctx.lineWidth = 1.8;
-  ctx.beginPath(); ctx.roundRect(at.x-w/2, y, w, 29, 7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = C.ink; ctx.fillText(label, at.x, y+12, w-10);
+  const trouble = p.crop?.pest || p.crop?.weeds || (p.crop && p.water < .25),theme=identityLabelTheme(p.potTier);
+  ctx.save(); ctx.font = `${cam.zoom < .65 ? 18 : 22}px ${FONT}`; ctx.textBaseline = 'middle';
+  const name = displayNickname(p.owner.nickname, cam.zoom),level=`LV${p.owner.level}`;
+  const levelW=Math.max(42,ctx.measureText(level).width+13),nameW=ctx.measureText(name).width+20;
+  const w=Math.min(maxW,Math.max(96,nameW+levelW+7)),left=at.x-w/2;
+  ctx.shadowColor='rgba(47,60,68,.18)';ctx.shadowBlur=0;ctx.shadowOffsetY=3;
+  ctx.fillStyle=theme.fill;ctx.strokeStyle=C.ink;ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.roundRect(left,y,w,35,9);ctx.fill();ctx.stroke();ctx.shadowColor='transparent';ctx.shadowOffsetY=0;
+  ctx.fillStyle=theme.accent;ctx.beginPath();ctx.roundRect(left+4,y+5,4,23,3);ctx.fill();
+  const lvX=left+w-levelW-4;
+  ctx.fillStyle=theme.levelFill;ctx.strokeStyle=theme.accent;ctx.lineWidth=1.7;
+  ctx.beginPath();ctx.roundRect(lvX,y+5,levelW,22,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle=C.ink;ctx.textAlign='left';ctx.fillText(name,left+12,y+16,Math.max(24,w-levelW-22));
+  ctx.font=`bold 18px ${FONT}`;ctx.textAlign='center';ctx.fillText(level,lvX+levelW/2,y+16,levelW-6);
   if(p.crop){
-    ctx.fillStyle='#D5DFD7';ctx.fillRect(at.x-w/2+4,y+24,w-8,5);
+    ctx.fillStyle='#D5DFD7';ctx.fillRect(left+5,y+30,w-10,5);
     const buff=growthBuffPresentation(p,Date.now(),cam.zoom,activePlotCount),barColor=buff?BUFF_COLORS[buff.primary]:'#4E9272';
-    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:barColor;ctx.fillRect(at.x-w/2+4,y+24,(w-8)*p.crop.progress,5);
+    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:barColor;ctx.fillRect(left+5,y+30,(w-10)*p.crop.progress,5);
   }
   if (trouble || ripe || boost) {
-    // A small symbol beside the crop leaves both its silhouette and pot body visible.
-    ctx.font = `bold 22px ${FONT}`; ctx.fillStyle = trouble ? C.coral : C.ochre;
+    ctx.font = `bold 22px ${FONT}`; ctx.textAlign='center'; ctx.fillStyle = trouble ? C.coral : C.ochre;
     ctx.beginPath(); ctx.arc(at.x + size*.46, at.y-size*.34, boost?17:12, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = C.ink; ctx.fillText(trouble ? '!' : boost ? `×${boost}` : '✓', at.x+size*.46, at.y-size*.34+1);
   }
@@ -1108,7 +1121,7 @@ function frame(now) {
   detail.forEach(drawPlotLabel); // Screen-space identity is always above the shelf lip.
   const wallNow=Date.now();
   const overlayBudget={cards:0,maxCards:2};
-  presented.forEach(p=>drawProblemOverlay(p,wallNow,overlayBudget));
+  if(!giftPresentation)presented.forEach(p=>drawProblemOverlay(p,wallNow,overlayBudget));
   for(const id of problems.keys())if(!plots.get(id)?.awake)problems.delete(id);
   renderGuides(wallNow);
   const idleHint=document.getElementById('idleHint'),quiet=presentation.snapshot();

@@ -80,7 +80,7 @@ test('a full room reports why it cannot seat a newcomer without retaining a ghos
 
 test('problem overlays show an actionable command then pause before repeating',()=>{
  const p={crop:{pest:true},owner:{},awake:true,water:1,lastActive:1000};
- const problem=view.plotProblem(p,1000,{sleepAfterMs:90000});assert.equal(problem.command,'bắt sâu');
+ const problem=view.plotProblem(p,1000,{sleepAfterMs:90000});assert.equal(problem.command,'chăm');
  const first=view.problemPresentation(null,problem,1000);assert.equal(first.until,5000);
  const quiet=view.problemPresentation(first,problem,7000);assert.ok(quiet.until<7000);assert.ok(quiet.nextAt>7000);
  const next=view.problemPresentation(quiet,problem,quiet.nextAt);assert.ok(next.until>quiet.nextAt);

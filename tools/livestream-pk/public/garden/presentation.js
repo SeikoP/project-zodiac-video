@@ -1,4 +1,4 @@
-export const SCENE_MS=Object.freeze({impact:2800,roulette:3600,gift:1800,profile:2500,compact:1200});
+export const SCENE_MS=Object.freeze({impact:3200,roulette:4200,gift:2600,profile:1800,compact:1200});
 export function createPresentationQueue(now=()=>performance.now()){
  let pending=[],active=null,profileReadyAt=0,idleSince=now(),idleWindowMs=6000,notices=[];
  const seen=new Set();

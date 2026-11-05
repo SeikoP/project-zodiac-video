@@ -2,6 +2,15 @@
 export const lodOf = zoom => (zoom < 0.27 ? 'dot' : zoom < 1.25 ? 'plot' : 'close');
 export const shouldReplaceNotice=(tone,remaining,nextTone)=>nextTone!=='normal'||!['hero','important'].includes(tone)||remaining<=0;
 
+const IDENTITY_LABEL_THEMES=Object.freeze({
+ clay:Object.freeze({fill:'#FFF7F0',accent:'#E97A66',levelFill:'#F1C6A0'}),
+ glazed:Object.freeze({fill:'#EEF8F5',accent:'#5B9F95',levelFill:'#8EC0B9'}),
+ banded:Object.freeze({fill:'#FFF7DE',accent:'#C99524',levelFill:'#F2C45C'}),
+ royal:Object.freeze({fill:'#F1F8F6',accent:'#3F8278',levelFill:'#8EC0B9'}),
+ astral:Object.freeze({fill:'#F1EEF5',accent:'#435064',levelFill:'#F2C45C'}),
+});
+export const identityLabelTheme=tier=>IDENTITY_LABEL_THEMES[tier]??IDENTITY_LABEL_THEMES.clay;
+
 export function plotMotion(kind,elapsed,reduced=false){
  const neutral={scale:1,tilt:0,pulse:0};if(reduced||elapsed<0)return neutral;
  const duration=kind==='levelup'?1200:kind==='impact'?650:kind==='fertilize'?900:800,t=Math.min(1,elapsed/duration);
@@ -33,9 +42,9 @@ export function plotProblem(p,now,cfg) {
   if(p.brokenUntil>now)return {key:'broken',title:`Chậu nứt · ${Math.ceil((p.brokenUntil-now)/1000)}s`,command:null,hint:'Đợi rồi gieo rau miễn phí'};
   if(!p.crop&&p.replantCredit)return {key:'replant',title:'Gieo lại miễn phí',command:'trồng',hint:'Quà bị phá kèm hạt rau hồi phục'};
   if(p.prank?.kind==='slow'&&p.prank.until>now)return {key:'slow',title:`Mây lười · ${Math.ceil((p.prank.until-now)/1000)}s`,command:null,hint:'Tự hết sau 20s · cây vẫn lớn'};
-  if(p.crop?.pest)return {key:'pest',title:'Có sâu',command:'bắt sâu',hint:'Dọn sâu để cây lớn lại'};
-  if(p.crop?.weeds)return {key:'weed',title:'Có cỏ',command:'nhổ cỏ',hint:'Nhổ cỏ để tăng sản lượng'};
-  if(p.crop&&p.water<.25)return {key:'dry',title:'Đất khô',command:'tưới',hint:'Tưới để cây lớn nhanh'};
+  if(p.crop?.pest)return {key:'pest',title:'Có sâu',command:'chăm',hint:'“chăm” sẽ tự bắt sâu trước'};
+  if(p.crop?.weeds)return {key:'weed',title:'Có cỏ',command:'chăm',hint:'“chăm” sẽ tự nhổ cỏ trước'};
+  if(p.crop&&p.water<.25)return {key:'dry',title:'Đất khô',command:'chăm',hint:'“chăm” sẽ tự tưới khi cần'};
   const left=(cfg.sleepAfterMs??90000)-(now-(p.lastActive??now));
   if(left>0&&left<=30000)return {key:'idle',title:'Sắp nghỉ',command:'vườn',hint:`Gõ để giữ chậu · còn ${Math.ceil(left/1000)}s`};
   return null;
@@ -99,7 +108,7 @@ export function gardenGuide({ boss=false, awards=false, plots=[], event=null }={
   if(awards)return ['Vinh danh Top 5','sắp mở vườn','Giữ LV, XP và thành tựu · đợi phiên mới'];
   if(!awake.length)return ['Bắt đầu','trồng','Tự chọn giống cao nhất đủ LV + vàng · nhận chậu ngay trong một bình luận'];
   const pest=awake.filter(p=>p.crop?.pest).length,weeds=awake.filter(p=>p.crop?.weeds).length,ripe=awake.filter(p=>(p.stage??0)>=3).length,dry=awake.filter(p=>p.crop&&(p.water??1)<.25).length,empty=awake.filter(p=>!p.crop).length;
-  if(event?.kind==='pests'&&event.phase==='active'&&pest)return ['Cứu đợt sâu','bắt sâu',`${pest} cây đang có sâu · cây mình sạch sẽ tự giúp hàng xóm`];
+  if(event?.kind==='pests'&&event.phase==='active'&&pest)return ['Cứu đợt sâu','chăm',`${pest} cây đang có sâu · “chăm” tự ưu tiên bắt sâu trước`];
   if(ripe)return ['Đã có cây chín','hái',`${ripe} cây sẵn sàng · hái nhận vàng + XP rồi “trồng” vụ mới`];
   if(pest)return ['Ưu tiên cứu cây','chăm',`${pest} cây có sâu · “chăm” tự bắt sâu trước khi tưới`];
   if(weeds)return ['Dọn cỏ trước','chăm',`${weeds} cây có cỏ · “chăm” tự nhổ cỏ rồi mới tưới`];
@@ -136,7 +145,7 @@ export function displayNickname(nickname, zoom = 1) {
 
 export function overviewLabelWidth(cfg, zoom) {
   const spacing = Math.max(0, Number(cfg?.potSpacingX) || 0) * Math.max(0, Number(zoom) || 0);
-  return Math.max(48, Math.min(156, spacing - 6));
+  return Math.max(48, Math.min(166, spacing - 6));
 }
 
 export function slotLayout(slot, cfg) {
@@ -156,7 +165,7 @@ export function rackGeometry(cfg) {
   const bottom = cfg.zoneMarginY + (cfg.shelvesPerWing - 1) * cfg.shelfSpacingY + 110;
   const wings = Array.from({ length: cfg.rackWings }, (_, wing) => {
     const firstX = cfg.zoneMarginX + wing * (spanX + cfg.rackWingGapX);
-    return { index: wing, firstX, left: firstX - 76, right: firstX + spanX + 76, top, bottom };
+    return { index: wing, firstX, left: firstX - 50, right: firstX + spanX + 50, top, bottom };
   });
   return {
     spanX,
