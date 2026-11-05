@@ -190,6 +190,14 @@
           "tool_locator": "orchestration/plan-plugin-use.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "engagement_design_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-engagement-design.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "conditional_capabilities": [
@@ -247,7 +255,8 @@
         "viral-analysis.json",
         "reference-mechanics.json",
         "narrative-plan.json",
-        "phase3-writer-brief.json"
+        "phase3-writer-brief.json",
+        "engagement-design.json"
       ],
       "gate_checks": [
         "premise_competition",
@@ -257,7 +266,8 @@
         "reference_mechanics_compiled",
         "story_spine",
         "semantic_progression",
-        "content_lineage"
+        "content_lineage",
+        "engagement_design"
       ],
       "allowed_operations": [
         "read_context",
@@ -274,7 +284,8 @@
         "references/narration-rhythm.md",
         "references/plugin-use-playbook.md",
         "references/phase01-briefing.md",
-        "references/episode-formats.md"
+        "references/episode-formats.md",
+        "references/engagement-engine.md"
       ],
       "conditional_outputs": [
         {
@@ -300,12 +311,34 @@
       "title": "Narration",
       "required_capabilities": [
         {
+          "id": "narration_progressive_preflight",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/narration-progressive-validation.mjs",
+          "required_arg_suffixes": [
+            "preflight"
+          ],
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
           "id": "phase3_writer_contract",
           "kind": "internal_reference",
           "when": "always",
           "guidance_uri": "references/narrator-performance.md",
           "unavailable_policy": "block",
           "stage": "entry"
+        },
+        {
+          "id": "narration_draft_checkpoint",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/narration-progressive-validation.mjs",
+          "required_arg_suffixes": [
+            "draft"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         },
         {
           "id": "narrative_qc",
@@ -345,6 +378,14 @@
           "kind": "internal_validator",
           "when": "flag:content_quality_engine",
           "tool_locator": "references/validate-story-quality-review.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "engagement_review_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-engagement-review.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }
@@ -387,9 +428,14 @@
         "narration.txt",
         "narrative-qc.json",
         "story-spine-performance.json",
-        "story-quality-review.json"
+        "story-quality-review.json",
+        "engagement-review.json",
+        "narration-preflight.json",
+        "narration-draft-checkpoint.json"
       ],
       "gate_checks": [
+        "narration_draft_checkpoint",
+        "narration_preflight",
         "narration_ready_for_review",
         "narrative_qc",
         "narrative_qc_decision",
@@ -397,7 +443,8 @@
         "story_spine_performance",
         "story_quality_review",
         "tts_text_readiness_reviewed",
-        "duration_estimated_not_measured"
+        "duration_estimated_not_measured",
+        "engagement_review"
       ],
       "allowed_operations": [
         "read_context",
@@ -408,7 +455,8 @@
         "references/story-spine-performance.md",
         "references/content-quality-engine.md",
         "references/narration-rhythm.md",
-        "references/short-form-duration.mjs"
+        "references/short-form-duration.mjs",
+        "references/engagement-engine.md"
       ],
       "context_scopes": {
         "draft": {
@@ -457,7 +505,8 @@
             "reference_mechanics",
             "full_qc",
             "episode_scope",
-            "selected_member_lenses"
+            "selected_member_lenses",
+            "engagement_design"
           ],
           "forbidden_context_categories": [
             "memory",
@@ -473,7 +522,8 @@
             "references/content-quality-engine.md",
             "references/story-spine-performance.md",
             "references/narration-rhythm.md",
-            "references/plugin-use-playbook.md"
+            "references/plugin-use-playbook.md",
+            "references/engagement-engine.md"
           ]
         }
       }
