@@ -1,6 +1,6 @@
 {
   "name": "zodiac-video-pipeline",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {"name": "Personal"},
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
