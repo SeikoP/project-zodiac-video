@@ -116,6 +116,19 @@ Depending on delivery mode, use:
 
 Controlled roughness is acceptable. Do not polish every transition into an essay.
 
+## Progressive validation order
+
+For fresh 2.6.8+ runs, do not wait until the end of Narration to discover deterministic defects.
+
+1. Run the Narration entry preflight before writing.
+2. Write the complete draft from the minimized writer context.
+3. Run the draft checkpoint immediately.
+4. If the checkpoint returns REVIEW, revise the narration and rerun only the checkpoint. Do not create semantic-review artifacts yet.
+5. After checkpoint PASS, run Story Spine, Narrative QC, Engagement Review and Story Quality review on the stable text.
+6. Any text edit after those reviews invalidates their narration hash and requires only the affected post-write reviews to be regenerated; Evidence/Concept are not rerun unless their semantics changed.
+
+The checkpoint is intentionally cheap. It catches structural/contract/duration/TTS/identity failures early; it does not pretend to replace editorial judgment.
+
 ## Post-write semantic QC
 
 After the **full narration exists**, create `narrative-qc.json`. This is a soft semantic review, not a regex scorecard.
