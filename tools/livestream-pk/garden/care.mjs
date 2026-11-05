@@ -7,6 +7,11 @@ const plotOf = (ctx, user) => user.seat && ctx.state.plots[`${user.seat.tier}:${
 const mods = ctx => ctx.mods?.() ?? { grow: 1, gold: 1, boost: null };
 const fail = reason => ({ ok: false, reason });
 const gain = (ctx, user, xp, plot) => { const r = addXp(user, xp); if (r.leveledUp) ctx.emit({ type: 'levelup', userId: user.userId, plotId: plot?.id ?? null, level: r.level }); };
+const snapshot = (ctx, plot) => plot ? {
+  crop: plot.crop ? { type:plot.crop.type,variant:plot.crop.variant??'common',progress:plot.crop.progress,pest:Boolean(plot.crop.pest),weeds:Boolean(plot.crop.weeds),fertilized:Boolean(plot.crop.fertilized),stolen:plot.crop.stolen??0,stage:stageOf(plot.crop,ctx.now(),ctx.cfg) } : null,
+  water: plot.water ?? 0, waterBoostUntil:plot.waterBoostUntil??0, speedUntil:plot.speedUntil??0,
+  prank: plot.prank ? { kind:plot.prank.kind,until:plot.prank.until } : null, brokenUntil:plot.brokenUntil??0,replantCredit:Boolean(plot.replantCredit)
+} : null;
 
 export function growthInfo(ctx,plot){
   const crop=plot.crop;if(!crop)return null;
@@ -30,12 +35,13 @@ export function plant(ctx, user, cropId = null, seedGift = false) {
   if (plot.crop) return fail('busy');
   if (user.level < crop.minLevel) return { ...fail('level'),requiredLevel:crop.minLevel };
   if (!seedGift && !(plot.replantCredit&&cropId==='rau') && !spendGold(user, seedCost(cropId, ctx.cfg))) return { ...fail('gold'),requiredGold:seedCost(cropId,ctx.cfg) };
+  const before=snapshot(ctx,plot);
   plot.replantCredit=false;
   plot.crop = { type: cropId, progress: 0, ripeAt: null, pest: false, weeds: false, fertilized: false, stolen: 0, variant: cropVariant(user.level, ctx.rng()) };
   plot.water = 1;
   plot.waterBoostUntil=plot.speedUntil=0;plot.prank=null;
   touch(ctx, user);
-  ctx.emit({ type: 'plant', plotId: plot.id, userId: user.userId, crop: cropId });
+  ctx.emit({ type: 'plant', plotId: plot.id, userId: user.userId, crop: cropId, before, after:snapshot(ctx,plot) });
   return { ok: true, crop: cropId };
 }
 
@@ -44,7 +50,7 @@ export function water(ctx, user, target = user) {
   if (!plot) return fail('no-plot');
   if (!plot.crop) return fail('no-crop');
   if (now - (plot.wateredAt ?? -Infinity) < ctx.cfg.waterCooldownMs) return { ...fail('cooldown'), retryAfterMs:ctx.cfg.waterCooldownMs-(now-plot.wateredAt) };
-  const helping = target !== user;
+  const helping = target !== user, before=snapshot(ctx,plot);
   const pair = `${user.userId}>${target.userId}`;
   if (helping) {
     user.helped ??= {};
@@ -64,8 +70,8 @@ export function water(ctx, user, target = user) {
     gain(ctx, user, ctx.cfg.helpXp, plotOf(ctx, user));
     gain(ctx, target, ctx.cfg.helpXp, plot);
     addGold(user, ctx.cfg.helpGold);
-    ctx.emit({ type: 'help', plotId: plot.id, userId: user.userId, targetId: target.userId });
-  } else ctx.emit({ type: 'water', plotId: plot.id, userId: user.userId });
+    ctx.emit({ type: 'help', plotId: plot.id, userId: user.userId, targetId: target.userId, before, after:snapshot(ctx,plot) });
+  } else ctx.emit({ type: 'water', plotId: plot.id, userId: user.userId, before, after:snapshot(ctx,plot) });
   bump(ctx, plot);
   return { ok: true };
 }
@@ -77,24 +83,26 @@ export function catchPests(ctx, user, target = null) {
     plot = Object.values(ctx.state.plots).find(p => event.targets?.[p.id] === false && p.crop?.pest && isAwake(ctx, p));
   }
   if (!plot?.crop?.pest) return fail('no-pest');
+  const before=snapshot(ctx,plot);
   plot.crop.pest = false;
   touch(ctx, user);
   bump(ctx, plot);
   ctx.onPestCleared?.(user.userId, plot.id);
-  ctx.emit({ type: 'pest-cleared', plotId: plot.id, userId: user.userId });
+  ctx.emit({ type: 'pest-cleared', plotId: plot.id, userId: user.userId, before, after:snapshot(ctx,plot) });
   return { ok: true, cleared: true };
 }
 
 export function clearWeeds(ctx, user, target = user) {
   const plot = plotOf(ctx, target);
   if (!plot?.crop?.weeds) return fail('no-weeds');
+  const before=snapshot(ctx,plot);
   plot.crop.weeds = false;
   if(plot.prank?.kind==='weeds')plot.prank=null;
   touch(ctx, user);
   addGold(user, 1);
   gain(ctx, user, 1, plot);
   bump(ctx,plot);
-  ctx.emit({ type: 'weed-cleared', plotId: plot.id, userId: user.userId });
+  ctx.emit({ type: 'weed-cleared', plotId: plot.id, userId: user.userId, before, after:snapshot(ctx,plot) });
   return { ok: true, gold: 1, xp: 1 };
 }
 
@@ -103,6 +111,7 @@ export function fertilize(ctx, user) {
   if (!plot?.crop) return fail('no-crop');
   if (plot.crop.fertilized) return fail('already-fertilized');
   if (!spendGold(user, ctx.cfg.fertilizeCost)) return { ...fail('gold'),requiredGold:ctx.cfg.fertilizeCost };
+  const before=snapshot(ctx,plot);
   plot.crop.fertilized = true;
   if (plot.crop.progress < 1) {
     plot.crop.progress = Math.min(1, plot.crop.progress + ctx.cfg.fertilizeBoost);
@@ -112,7 +121,7 @@ export function fertilize(ctx, user) {
     }
   }
   touch(ctx, user);
-  ctx.emit({ type: 'fertilize', plotId: plot.id, userId: user.userId });
+  ctx.emit({ type: 'fertilize', plotId: plot.id, userId: user.userId, before, after:snapshot(ctx,plot) });
   bump(ctx, plot);
   return { ok: true, progress: plot.crop.progress };
 }
@@ -134,11 +143,11 @@ export function harvest(ctx, user) {
   const gold = Math.max(1, Math.round(def.gold * factor));
   addGold(user, gold);
   user.stats.harvest++;
-  const before={...plot.crop};
+  const before=snapshot(ctx,plot);
   plot.crop = null;plot.prank=null;plot.waterBoostUntil=plot.speedUntil=0;
   touch(ctx, user);
   gain(ctx, user, def.xp, plot);
-  ctx.emit({ type: 'harvest', plotId: plot.id, userId: user.userId, gold, xp: def.xp, crop: def.id, before, first:user.stats.harvest===1 });
+  ctx.emit({ type: 'harvest', plotId: plot.id, userId: user.userId, gold, xp: def.xp, crop: def.id, before, after:snapshot(ctx,plot), first:user.stats.harvest===1 });
   return { ok: true, gold, xp: def.xp, factor };
 }
 

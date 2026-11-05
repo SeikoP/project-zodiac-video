@@ -46,3 +46,20 @@ test('grouped joins retain at most three stable pot addresses for discovery', ()
   assert.equal(fx.count, 5);
   assert.deepEqual(fx.seats.map(v => v.slot), [0, 1, 2]);
 });
+test('coalesced care samples preserve before and after snapshots',()=>{
+ let t=0;const q=createCoalescer({windowMs:10,now:()=>t});
+ q.push({type:'water',plotId:'cloud-1:1',before:{crop:{progress:.1}},after:{crop:{progress:.2}}});
+ t=11;const fx=q.flush().find(x=>x.type==='water');
+ assert.equal(fx.plots[0].before.crop.progress,.1);
+ assert.equal(fx.plots[0].after.crop.progress,.2);
+});
+
+test('level and achievement recognition merges into one title card regardless of event order',()=>{
+ for(const order of [
+  [{type:'levelup',userId:'u',level:3},{type:'title',userId:'u',nickname:'An',titles:['Moc moi']}],
+  [{type:'title',userId:'u',nickname:'An',titles:['Moc moi']},{type:'levelup',userId:'u',level:3}]
+ ]){
+  const {co}=rig();for(const e of order)co.push(e);const [fx]=co.flush();
+  assert.equal(fx.type,'title');assert.equal(fx.level,3);assert.deepEqual(fx.titles,['Moc moi']);
+ }
+});

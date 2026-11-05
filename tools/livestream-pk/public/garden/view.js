@@ -4,10 +4,12 @@ export const shouldReplaceNotice=(tone,remaining,nextTone)=>nextTone!=='normal'|
 
 export function plotMotion(kind,elapsed,reduced=false){
  const neutral={scale:1,tilt:0,pulse:0};if(reduced||elapsed<0)return neutral;
- const duration=kind==='levelup'?1200:kind==='impact'?650:800,t=Math.min(1,elapsed/duration);
+ const duration=kind==='levelup'?1200:kind==='impact'?650:kind==='fertilize'?900:800,t=Math.min(1,elapsed/duration);
  if(t>=1)return neutral;
- return {scale:kind==='plant'?.55+.45*(1-(1-t)**3):1,
-  tilt:['water','impact'].includes(kind)?Math.sin(t*Math.PI*6)*(1-t)*(kind==='impact'?.08:.025):0,
+ const cropBounce=kind==='fertilize'?Math.sin(t*Math.PI)*(1-t)*.09:0;
+ const cropTilt=['water','pest-cleared','weed-cleared'].includes(kind)?Math.sin(t*Math.PI*5)*(1-t)*(kind==='water'?.025:.045):0;
+ return {scale:kind==='plant'?.55+.45*(1-(1-t)**3):1+cropBounce,
+  tilt:kind==='impact'?Math.sin(t*Math.PI*6)*(1-t)*.08:cropTilt,
   pulse:kind==='levelup'?Math.sin(t*Math.PI*3)*(1-t)*.055:0};
 }
 
@@ -70,6 +72,38 @@ export function careLabel(p) {
   if ((p.stage ?? 0) >= 3) return 'Hái ngay';
   if (p.water < .25) return 'Cần tưới';
   return `${Math.round(Math.min(1, Math.max(0, p.crop.progress ?? 0)) * 100)}% lớn`;
+}
+
+export function gardenGuide({ boss=false, awards=false, plots=[], event=null }={}) {
+  const awake=plots.filter(p=>p?.owner&&p.awake!==false);
+  if(boss)return ['Cứu vườn','thả tim','Đồng hồ vườn tạm dừng · tim và quà lớn chuyển sang đánh Sâu Chúa'];
+  if(awards)return ['Vinh danh Top 5','sắp mở vườn','Giữ LV, XP và thành tựu · đợi phiên mới'];
+  if(!awake.length)return ['Bắt đầu','trồng','Tự chọn giống cao nhất đủ LV + vàng · nhận chậu ngay trong một bình luận'];
+  const pest=awake.filter(p=>p.crop?.pest).length,weeds=awake.filter(p=>p.crop?.weeds).length,ripe=awake.filter(p=>(p.stage??0)>=3).length,dry=awake.filter(p=>p.crop&&(p.water??1)<.25).length,empty=awake.filter(p=>!p.crop).length;
+  if(event?.kind==='pests'&&event.phase==='active'&&pest)return ['Cứu đợt sâu','bắt sâu',`${pest} cây đang có sâu · cây mình sạch sẽ tự giúp hàng xóm`];
+  if(ripe)return ['Đã có cây chín','hái',`${ripe} cây sẵn sàng · hái nhận vàng + XP rồi “trồng” vụ mới`];
+  if(pest)return ['Ưu tiên cứu cây','chăm',`${pest} cây có sâu · “chăm” tự bắt sâu trước khi tưới`];
+  if(weeds)return ['Dọn cỏ trước','chăm',`${weeds} cây có cỏ · “chăm” tự nhổ cỏ rồi mới tưới`];
+  if(dry)return ['Đất đang khô','chăm',`${dry} cây cần nước · “chăm” tự chọn việc hữu ích mà không tốn vàng`];
+  if(empty)return ['Chậu đang trống','trồng',`${empty} chậu sẵn sàng · tự chọn giống cao nhất đủ LV + vàng`];
+  return ['Cùng chăm vườn','chăm','Tự bắt sâu → nhổ cỏ → tưới · người mới chỉ cần gõ “trồng”'];
+}
+
+export function impactMotion(tier, elapsed, reduced=false) {
+  if(reduced)return {kind:'result',progress:1,shake:0};
+  const quake=tier==='cataclysm',duration=quake?900:650,t=Math.max(0,Math.min(1,elapsed/duration));
+  return {kind:quake?'quake':'meteor',progress:t,shake:quake?Math.sin(t*Math.PI*10)*(1-t)*8:0};
+}
+
+export function chooseIdleSlot(capacity, plots, pointOf) {
+  const occupied=new Set(plots.filter(p=>p?.owner&&p.awake!==false).map(p=>Number(p.slot)).filter(Number.isInteger));
+  const empty=Array.from({length:Math.max(0,Number(capacity)||0)},(_,slot)=>slot).filter(slot=>!occupied.has(slot));
+  if(!empty.length)return null;
+  if(!occupied.size||typeof pointOf!=='function')return empty[0];
+  const pts=[...occupied].map(pointOf).filter(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y));
+  if(!pts.length)return empty[0];
+  const center={x:pts.reduce((s,p)=>s+p.x,0)/pts.length,y:pts.reduce((s,p)=>s+p.y,0)/pts.length};
+  return empty.map(slot=>({slot,p:pointOf(slot)})).filter(x=>x.p).sort((a,b)=>((a.p.x-center.x)**2+(a.p.y-center.y)**2)-((b.p.x-center.x)**2+(b.p.y-center.y)**2)||a.slot-b.slot)[0]?.slot??empty[0];
 }
 
 export function displayNickname(nickname, zoom = 1) {

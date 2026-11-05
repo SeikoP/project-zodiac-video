@@ -21,8 +21,11 @@ test('pot tiers have five distinct silhouettes; avatars reject unsafe schemes an
 
 test('plant motion settles and reduced motion skips every transient deformation',()=>{
  assert.ok(plotMotion('plant',0).scale<1);assert.equal(plotMotion('plant',900).scale,1);
- for(const kind of ['plant','levelup','water','impact'])assert.deepEqual(plotMotion(kind,200,true),{scale:1,tilt:0,pulse:0});
+ for(const kind of ['plant','levelup','water','fertilize','pest-cleared','weed-cleared','impact'])assert.deepEqual(plotMotion(kind,200,true),{scale:1,tilt:0,pulse:0});
  assert.ok(Math.abs(plotMotion('impact',80).tilt)>0);
+ assert.ok(plotMotion('fertilize',300).scale>1,'fertilizer visibly lifts the crop');
+ assert.ok(Math.abs(plotMotion('pest-cleared',120).tilt)>0,'clearing pests gives the crop a recovery wiggle');
+ assert.ok(Math.abs(plotMotion('weed-cleared',120).tilt)>0,'clearing weeds gives the crop a recovery wiggle');
 });
 
 test('Top 5 snapshots preserve avatars while only Top 3 receive the existing XP rewards',()=>{

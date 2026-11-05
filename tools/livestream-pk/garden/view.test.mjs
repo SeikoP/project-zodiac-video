@@ -175,3 +175,32 @@ test('dense overview label width always leaves a gap between adjacent pots', () 
     assert.ok(width >= 48, 'labels remain large enough to carry a short nickname');
   }
 });
+
+
+test('garden guide follows the most useful room action and phase',()=>{
+ const crop=(extra={})=>({owner:{},awake:true,stage:2,water:1,crop:{progress:.5,pest:false,weeds:false,...extra}});
+ assert.equal(view.gardenGuide({boss:true,plots:[crop()]})[1],'thả tim');
+ assert.equal(view.gardenGuide({awards:true,plots:[crop()]})[0].startsWith('Vinh danh'),true);
+ assert.equal(view.gardenGuide({plots:[]})[1],'trồng');
+ assert.equal(view.gardenGuide({plots:[{owner:{},awake:true,crop:null}]})[1],'trồng','an awake empty pot returns the loop to planting');
+ assert.equal(view.gardenGuide({plots:[{...crop(),stage:3}]})[1],'hái');
+ assert.equal(view.gardenGuide({plots:[crop({pest:true})],event:{kind:'pests',phase:'active'}})[1],'bắt sâu');
+ assert.equal(view.gardenGuide({plots:[crop({weeds:true})]})[1],'chăm');
+ assert.equal(view.gardenGuide({plots:[{...crop(),water:.1}]})[1],'chăm');
+});
+
+test('idle hint chooses an empty slot close to the active room instead of always slot zero',()=>{
+ const plots=[{slot:10,owner:{},awake:true},{slot:11,owner:{},awake:true}];
+ const point=slot=>({x:slot*100,y:0});
+ assert.equal(view.chooseIdleSlot(16,plots,point),9);
+ assert.equal(view.chooseIdleSlot(2,[{slot:0,owner:{},awake:true},{slot:1,owner:{},awake:true}],point),null);
+ assert.equal(view.chooseIdleSlot(4,[],point),0);
+});
+
+test('500 and 1000 coin destruction use distinct motion while reduced motion keeps result only',()=>{
+ const meteor=view.impactMotion('meteor',325),quake=view.impactMotion('cataclysm',450);
+ assert.equal(meteor.kind,'meteor');assert.equal(quake.kind,'quake');
+ assert.equal(meteor.progress,.5);assert.equal(quake.progress,.5);
+ assert.notEqual(quake.shake,undefined);
+ assert.deepEqual(view.impactMotion('cataclysm',100,true),{kind:'result',progress:1,shake:0});
+});

@@ -163,3 +163,18 @@ test('crop variants are distinct and affect harvest value', () => {
   plot.crop.progress = 1; plot.crop.ripeAt = k.ctx.now();
   assert.equal(harvest(k.ctx, user).gold, Math.round(CROPS.rau.gold * CROP_VARIANTS.golden.yield));
 });
+test('care events carry before and after plot snapshots for result-driven motion',()=>{
+  const k=ready(100);
+  plant(k.ctx,k.user,'rau');
+  let e=k.events.find(x=>x.type==='plant');assert.equal(e.before.crop,null);assert.equal(e.after.crop.type,'rau');
+  k.events.length=0;k.plot.crop.progress=.1;k.plot.water=0;water(k.ctx,k.user);
+  e=k.events.find(x=>x.type==='water');assert.equal(e.before.water,0);assert.equal(e.after.water,1);assert.ok(e.after.crop.progress>e.before.crop.progress);
+  k.events.length=0;k.plot.crop.pest=true;catchPests(k.ctx,k.user);
+  e=k.events.find(x=>x.type==='pest-cleared');assert.equal(e.before.crop.pest,true);assert.equal(e.after.crop.pest,false);
+  k.events.length=0;k.plot.crop.weeds=true;clearWeeds(k.ctx,k.user);
+  e=k.events.find(x=>x.type==='weed-cleared');assert.equal(e.before.crop.weeds,true);assert.equal(e.after.crop.weeds,false);
+  k.events.length=0;fertilize(k.ctx,k.user);
+  e=k.events.find(x=>x.type==='fertilize');assert.equal(e.before.crop.fertilized,false);assert.equal(e.after.crop.fertilized,true);
+  k.events.length=0;k.plot.crop.progress=1;k.plot.crop.ripeAt=k.ctx.now();harvest(k.ctx,k.user);
+  e=k.events.find(x=>x.type==='harvest');assert.equal(e.before.crop.type,'rau');assert.equal(e.after.crop,null);
+});
