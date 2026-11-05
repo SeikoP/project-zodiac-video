@@ -49,5 +49,5 @@ export async function updatePhase02SemanticCache(workspace,intent){
  const dir=cacheRoot(workspace),file=path.join(dir,'phase02-semantic-graph.json');let previous=null;try{previous=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
  const current=buildPhase02SemanticGraph(intent),diff=diffPhase02SemanticGraphs(previous,current);await mkdir(dir,{recursive:true});await writeFile(file,JSON.stringify(current,null,2)+'\n');
  const graph=await readCacheGraph(workspace);graph.semantic_graph_sha256=current.source_sha256;graph.semantic_dirty=diff.dirty;await writeCacheGraph(workspace,graph);
- return {...diff,current,previous};
+ return {...diff,current,previous,guidance:revisionGuidance(current,diff)};
 }
