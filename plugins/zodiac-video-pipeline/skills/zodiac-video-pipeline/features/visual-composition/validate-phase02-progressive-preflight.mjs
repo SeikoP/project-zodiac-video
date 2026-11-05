@@ -2,6 +2,7 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {validateScenePlan} from '../../phases/phase02/scene-plan.mjs';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const authored=a=>['authored','authored_derivative','derive_new'].includes(a?.lineage?.mode)||a?.ownership?.kind==='authored';
@@ -16,6 +17,8 @@ export async function validateProgressivePreflight({intent,production,motionRegi
    if(!text(beat.beat_id)||!text(beat.voice_anchor)||!text(beat.semantic_purpose)||(!text(beat.supported_motion_or_state)&&!text(beat.static_reason)))add('DIRECTOR_BEAT_INCOMPLETE',{scene_id:scene.id,beat_id:beat.beat_id??null});
   }
  }
+ const scenePlan=validateScenePlan(intent,{required:true});
+ if(scenePlan.status!=='PASS')issues.push(...scenePlan.issues);
  const registry=motionRegistry.motions??{};
  for(const scene of production?.scenes??[])for(const event of scene.events??[]){
   const motion=event.motion;if(!motion?.preset)continue;const spec=registry[motion.preset];if(!spec)continue;
