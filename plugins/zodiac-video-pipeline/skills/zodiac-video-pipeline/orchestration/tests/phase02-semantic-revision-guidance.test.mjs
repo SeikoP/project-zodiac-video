@@ -18,3 +18,22 @@ test('single S03 prop edit rebuilds S03 and aggregate review while reusing unrel
  assert.ok(g.nodes.reuse.includes('preview:S01'));
  assert.ok(g.nodes.reuse.includes('asset:character:lead'));
 });
+
+
+test('revision impact CLI reports scene-level rebuild and reuse guidance',async()=>{
+ const {mkdtemp,mkdir,writeFile,rm}=await import('node:fs/promises');
+ const os=await import('node:os'),path=await import('node:path'),{spawnSync}=await import('node:child_process'),{fileURLToPath}=await import('node:url');
+ const root=await mkdtemp(path.join(os.tmpdir(),'phase02-impact-')),before=path.join(root,'before'),after=path.join(root,'after');
+ try{
+  for(const d of [before,after])await mkdir(path.join(d,'.authoring'),{recursive:true});
+  await writeFile(path.join(before,'.authoring/visual-intent.json'),JSON.stringify(makeIntent(10)));
+  await writeFile(path.join(after,'.authoring/visual-intent.json'),JSON.stringify(makeIntent(30)));
+  const script=fileURLToPath(new URL('../../core/audit/assess-revision-impact.mjs',import.meta.url));
+  const r=spawnSync(process.execPath,[script,'--before',before,'--after',after],{encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);
+  const report=JSON.parse(r.stdout);
+  assert.ok(report.phase02_revision.scenes.rebuild.includes('S03'));
+  assert.ok(report.phase02_revision.scenes.reuse.includes('S01'));
+  assert.ok(report.phase02_revision.scenes.reuse.includes('S05'));
+ }finally{await rm(root,{recursive:true,force:true});}
+});
