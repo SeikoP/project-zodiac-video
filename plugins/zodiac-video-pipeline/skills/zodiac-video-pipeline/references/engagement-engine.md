@@ -68,3 +68,20 @@ The Engagement Review remains semantic, but it must now be written with the dete
 - **Long runtime needs turns.** Runtime is not capped, but >90 seconds needs enough pull beats and reframes to justify the time.
 - **Trend fit is separate.** A trend or reference **cannot override** a Retention REVIEW. Trend fit may alter execution only after the story earns continuation on its own.
 - **Payoff is not a summary.** The ending should resolve/reframe/callback to setup rather than merely restating the Zodiac interpretation.
+
+
+## Emergent narrative archetype
+
+An episode may use a recognizable narrative world when the **actual behavior mechanics** support it: detective case, quality control, interrogation, mock documentary, chat reconstruction, and other modes are examples, not a whitelist.
+
+The key rule is **behavior first, label second**. A mode needs concrete mechanics in the selected story. Viewer feedback may strengthen the choice when audiences independently name the same role, but that feedback is resonance evidence only; it is never Zodiac evidence.
+
+When `narrative_archetype` is present:
+- do not map a sign to a permanent mode;
+- keep `viewer_inference.explicitness=implicit`;
+- do not say the target role label or aliases in narration;
+- preserve a comment affordance so viewers can supply the label themselves;
+- keep raw comments, usernames and handles out of writer context;
+- repeat a recently used mode only with a substantive reason.
+
+A Scorpio story can therefore behave like a detective case without the narrator saying “Bọ Cạp là thám tử.” The audience inference is the success condition.
