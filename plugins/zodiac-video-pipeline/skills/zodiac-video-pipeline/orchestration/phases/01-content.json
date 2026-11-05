@@ -428,6 +428,17 @@
           ],
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "retention_structure_validation",
+          "kind": "internal_validator",
+          "when": "flag:retention_quality_engine",
+          "tool_locator": "features/retention/retention-structure.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "allowed_context_categories": [
@@ -486,7 +497,8 @@
         "references/content-quality-engine.md",
         "references/narration-rhythm.md",
         "references/short-form-duration.mjs",
-        "references/engagement-engine.md"
+        "references/engagement-engine.md",
+        "references/retention-quality.md"
       ],
       "context_scopes": {
         "draft": {
@@ -577,12 +589,20 @@
         {
           "name": ".authoring/commerce/affiliate-handoff.json",
           "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": "retention-structure.json",
+          "when": "flag:retention_quality_engine"
         }
       ],
       "conditional_gate_checks": [
         {
           "name": "affiliate_commerce_content",
           "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": "retention_structure",
+          "when": "flag:retention_quality_engine"
         }
       ]
     }
