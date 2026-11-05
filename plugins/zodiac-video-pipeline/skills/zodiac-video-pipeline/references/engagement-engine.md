@@ -56,3 +56,15 @@ When the user selects this stance:
 - SHARP catches a mistaken read, creates contrast, lands a reframe or closes a payoff.
 
 Do not alternate by timer or quota. Change intensity only when the semantic job changes.
+
+
+## Retention hardening
+
+The Engagement Review remains semantic, but it must now be written with the deterministic Retention Structure gate in mind.
+
+- **Repeated recognition is not progression.** Two adjacent examples that do the **same semantic job** without a new consequence, question, contrast, reframe or payoff are repetition and must be marked REVIEW.
+- **Explanation-only runs are expensive.** Two adjacent **explanation-only** beats require repair unless the second beat creates a genuinely new interpretation or closes a setup. Return to action, dialogue, a physical object, contrast or consequence.
+- **Hook value must be concrete.** Generic introductions such as “X has an interesting kind of…” are weak unless the actual anomaly/paradox/recognition/consequence lands immediately.
+- **Long runtime needs turns.** Runtime is not capped, but >90 seconds needs enough pull beats and reframes to justify the time.
+- **Trend fit is separate.** A trend or reference **cannot override** a Retention REVIEW. Trend fit may alter execution only after the story earns continuation on its own.
+- **Payoff is not a summary.** The ending should resolve/reframe/callback to setup rather than merely restating the Zodiac interpretation.
