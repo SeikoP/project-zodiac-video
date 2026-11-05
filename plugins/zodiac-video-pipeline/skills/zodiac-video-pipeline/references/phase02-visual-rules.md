@@ -13,3 +13,14 @@ Scene accents are sparse narrative context cues, not a permanently decorated roo
 ## Visual coverage before SVG compilation
 Fresh Phase 02 requires per-beat visual_coverage in Visual Intent art_direction before SVG compilation. Fill actor, optional Scene Accent, Narrative Visual, ordinary prop, support and caption decisions with actual references or explicit omissions. The native seam and Visual Quality enforce coverage; a symbolic metaphor cannot substitute for ordinary props used by the narration.
 
+
+
+## Scene Experience review
+
+Fresh 2.6.9+ runs review story experience before native SVG generation. This is not a decoration-density quota.
+
+For each scene, explicitly consider character action, environment specificity, physical storytelling, depth separation, secondary action, visual callback and Narrative Visual role. Behavior or relationship narration should have an authored story action or meaningful physical/Narrative Visual progression; a passive actor plus passive context cue is a REVIEW condition, not a sufficient scene.
+
+Sparse composition remains valid for reflection/payoff beats when negative space serves the semantic job and the omission rationale is explicit. Never add props, Scene Accents, effects or Narrative Visuals only to make a checklist green.
+
+If narration explicitly involves a physical object, a symbolic Narrative Visual cannot replace that physical storytelling obligation. Scene Accents remain rear/context-only and independent from actor composition.
