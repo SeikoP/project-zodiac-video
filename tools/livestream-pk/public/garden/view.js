@@ -47,6 +47,25 @@ export function problemPresentation(previous,problem,now) {
   return {...previous,...problem};
 }
 
+export function plotOverlayMode({focused=false,feedback=null,shown=null}={}) {
+  if(focused)return 'card';
+  if(feedback&&['cooldown','busy','not-ripe','no-pest','no-weeds','already-fertilized'].includes(feedback.reason))return 'hidden';
+  if(!feedback&&shown?.key==='idle')return 'hidden';
+  return 'card';
+}
+
+export function growthBuffPresentation(p,now,zoom=1,activeCount=1) {
+  if(!p?.crop||(p.stage??0)>=3)return null;
+  const sources=[];
+  if((p.growth?.speedUntil??0)>now)sources.push('speed');
+  if((p.growth?.waterBoostUntil??0)>now)sources.push('water');
+  if(p.growth?.fertilized)sources.push('fertilizer');
+  if(!sources.length)return null;
+  const primary=sources.includes('speed')?'speed':sources.includes('water')?'water':'fertilizer';
+  const bonusPercent=Math.max(0,Math.round(Number(p.growth?.bonusPercent)||0));
+  return {sources,primary,bonusPercent,mode:activeCount>=12&&zoom<1.25?'rim':'aura',showBadge:zoom>=1.25};
+}
+
 export function giftImpactText(gift) {
   if(gift.roulette)return `${gift.roulette.label} → ${gift.roulette.targetName}${gift.roulette.durationMs?` · ${gift.roulette.durationMs/1000}s`:''}`;
   const count=gift.affected??0,first=gift.effects?.[0],gain=first?Math.round((first.to-first.from)*100):0;

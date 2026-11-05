@@ -4,7 +4,7 @@ import {POT_ART,createViewerAvatar,avatarSource,earnedPattern} from './identity.
 import { createMusic } from '../music.js';
 import {createGardenAudio} from './audio.js';
 import { createSfx } from '../sfx.js';
-import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
+import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, growthBuffPresentation, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotOverlayMode, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
@@ -64,11 +64,12 @@ const fit = () => {
 };
 addEventListener('resize', fit); fit();
 
-let meta = null, focusPlot = null, focusAt = 0, focusMs = 0;
+let meta = null, focusPlot = null, focusAt = 0, focusMs = 0, activePlotCount = 0;
 const plots = new Map(), floaters = [];
 let cam = { x: 1350, y: 480, zoom: .38 }, from = cam, to = cam, shotAt = 0, cameraEaseMs = 1800, serverEvent = null, presentedEventKind = null;
 const visualEvent = () => serverEvent?.phase === 'active' && presentedEventKind === serverEvent.kind ? serverEvent : null;
 const C = { paper: '#F6F0E6', card: '#FFFDF9', ink: '#2F3C44', softInk: '#5C6B75', hair: '#4B5B61', skin: '#F1C6A0', shadow: '#D0C1B3', teal: '#8EC0B9', coral: '#E97A66', ochre: '#F2C45C', slate: '#435064' };
+const BUFF_COLORS={water:'#65B8C9',speed:'#F2C45C',fertilizer:'#D7A63D'};
 const SEED_SCENE = { rail:'#B8D6C4', trim:'#8EC0B9', flag:'#EBC49E' };
 const eventNames = { rain: 'Mưa tưới', pests: 'Đợt sâu bệnh', merchant: 'Chợ phiên', golden: 'Giờ vàng' };
 const EVENT_ART = {
@@ -133,16 +134,16 @@ function handleFx(fx) {
   if (fx.type === 'harvest') {
     for (const p of fx.plots ?? []) {float('text', p.plotId, `+${p.gold ?? 0} vàng · +${p.xp??0} XP`);const crop=p.before?.crop??p.before;if(crop)harvestGhosts.set(p.plotId,{crop,at:performance.now()});}
   }
-  if(['water','help','fertilize'].includes(fx.type))for(const p of fx.plots??[]){const before=p.before?.crop?.progress,after=p.after?.crop?.progress;if(Number.isFinite(before)&&Number.isFinite(after)&&after>before)float('text',p.plotId,`+${Math.round((after-before)*100)}% lớn`);}
+  if(['water','help','fertilize'].includes(fx.type))for(const p of fx.plots??[]){const before=p.before?.crop?.progress,after=p.after?.crop?.progress;if(Number.isFinite(before)&&Number.isFinite(after)&&after>before)float('buff',p.plotId,`+${Math.round((after-before)*100)}%`);}
   if(fx.type==='pest-cleared')for(const p of fx.plots??[])float('text',p.plotId,'Sạch sâu');
   if(fx.type==='weed-cleared')for(const p of fx.plots??[])float('text',p.plotId,'Sạch cỏ · +1 vàng');
   const actionCue={water:'water',help:'help',plant:'plant',harvest:'harvest','pest-cleared':'pestClear','weed-cleared':'weedClear',fertilize:'fertilize',steal:'theft',catch:'catch','dog-bark':'shieldBlock','boss-start':'bossIntro','boss-hit':'bossHit','boss-end':fx.won?'bossWin':'bossEscape','session-end':'podium','round-start':'roundStart','title':'achievement',levelup:[3,5,7,9].includes(fx.level)?'tierUnlock':'levelUp','event-active':{rain:'rainStart',pests:'pestsStart',merchant:'merchantStart',golden:'goldenStart'}[fx.kind]}[fx.type];
   if(actionCue)gardenAudio.cue({role:actionCue,eventId:fx.eventId??`${fx.type}:${fx.receivedAt??performance.now()}`,count:fx.count??1,ageMs:fx.receivedAt?Math.max(0,Date.now()-fx.receivedAt):0});
   switch (fx.type) {
     case 'action-feedback': {
-      const now=Date.now(),duration=fx.ok?3200:4500;
+      const now=Date.now(),routine=!fx.ok&&['cooldown','busy','not-ripe','no-pest','no-weeds','already-fertilized'].includes(fx.reason),duration=fx.ok?2600:routine?2200:4200;
       if(fx.plotId&&!fx.ok)commandFeedback.set(fx.plotId,{...fx,at:now,until:now+duration});
-      say(`${displayNickname(fx.nickname,1.25)} · ${fx.message}`,duration,fx.ok?'normal':'important');
+      say(`${displayNickname(fx.nickname,1.25)} · ${fx.message}`,duration,fx.ok||routine?'normal':'important');
       break;
     }
     case 'session-end':
@@ -292,7 +293,7 @@ function presentGift(data) {
   giftTitle.textContent=meta?.copy?.gifts?.[data.giftKind]??'Quà vườn';
   giftImpact.textContent=(data.benefits?.seeded?'Gieo rau mới · ':'')+giftImpactText(data);
   const effects=data.giftWide?data.effects??[]:(data.effects??[]).filter(e=>e.plotId===data.plotId);
-  for(const e of effects.slice(0,8))if(e.to>e.from)float('text',e.plotId,`+${Math.round((e.to-e.from)*100)}%`);
+  for(const e of effects.slice(0,8))if(e.to>e.from)float('buff',e.plotId,`+${Math.round((e.to-e.from)*100)}%`);
 }
 
 function renderGiftHero(now) {
@@ -697,13 +698,53 @@ function drawRipeCrop(type, stage) {
   }
 }
 
+function drawGrowthBuffAura(buff,now) {
+  if(!buff)return;
+  const color=BUFF_COLORS[buff.primary]??C.ochre,phase=reduceMotion?.5:(Math.sin(now/260)+1)/2;
+  ctx.save();
+  if(buff.mode==='rim'){
+    ctx.globalAlpha=.72;ctx.strokeStyle=color;ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(0,13,45,15,0,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.9;if(buff.sources.includes('fertilizer'))drawSparkle(34,-10,5,BUFF_COLORS.fertilizer);else if(buff.sources.includes('speed')){ctx.beginPath();ctx.moveTo(31,-8);ctx.lineTo(42,-2);ctx.lineTo(31,4);ctx.stroke();}
+    ctx.restore();return;
+  }
+  ctx.globalAlpha=(buff.sources.length>1?.16:.10)+phase*.05;
+  ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(0,-20,48+phase*5,56+phase*6,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=.58;ctx.strokeStyle=color;ctx.lineWidth=3;
+  ctx.beginPath();ctx.ellipse(0,-20,43+phase*4,51+phase*5,0,0,Math.PI*2);ctx.stroke();
+  if(buff.sources.length>1){ctx.globalAlpha=.24;ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,-20,55-phase*3,63-phase*4,0,0,Math.PI*2);ctx.stroke();}
+  ctx.globalAlpha=.88;
+  if(buff.sources.includes('water')){
+    ctx.fillStyle=BUFF_COLORS.water;
+    for(const [x,y] of [[-43,-37],[41,-16]]){ctx.beginPath();ctx.moveTo(x,y-7);ctx.quadraticCurveTo(x+8,y+5,x,y+9);ctx.quadraticCurveTo(x-7,y+5,x,y-7);ctx.fill();}
+  }
+  if(buff.sources.includes('fertilizer')){
+    drawSparkle(-45,-63,6,BUFF_COLORS.fertilizer);drawSparkle(44,-47,5,BUFF_COLORS.fertilizer);
+  }
+  if(buff.sources.includes('speed')){
+    ctx.strokeStyle=BUFF_COLORS.speed;ctx.lineWidth=4;
+    for(const y of [-53,-37]){ctx.beginPath();ctx.moveTo(36,y);ctx.lineTo(48,y+7);ctx.lineTo(36,y+14);ctx.stroke();}
+  }
+  ctx.restore();
+}
+
+function drawGrowthBuffBadge(buff) {
+  if(!buff?.showBadge||buff.bonusPercent<=0)return;
+  const color=BUFF_COLORS[buff.primary]??C.ochre,text=`+${buff.bonusPercent}%`,w=52;
+  ctx.save();ctx.translate(-54,-72);
+  ctx.fillStyle='rgba(255,253,249,.94)';ctx.strokeStyle=color;ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.roundRect(-w/2,-11,w,22,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle=C.ink;ctx.font=`bold 14px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,0,1,w-6);
+  ctx.restore();
+}
+
 function drawPlot(p, lod, now) {
   if (!p.owner || !p.awake) return;
   const at = worldToScreen(plotPos(p, meta), cam, VP), renderScale = meta.cfg.potScale ?? 1.05, size = 100 * renderScale * cam.zoom;
   ctx.save(); ctx.translate(at.x, at.y); ctx.scale(renderScale * cam.zoom, renderScale * cam.zoom); ctx.globalAlpha = 1;
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const motion=plotMotions.get(p.id),elapsed=motion?now-motion.at:2000,m=plotMotion(motion?.kind,elapsed,reduceMotion);
+  const motion=plotMotions.get(p.id),elapsed=motion?now-motion.at:2000,m=plotMotion(motion?.kind,elapsed,reduceMotion),buff=growthBuffPresentation(p,Date.now(),cam.zoom,activePlotCount);
   if(m.pulse||motion?.kind==='impact'){ctx.translate(0,55);ctx.rotate(motion?.kind==='impact'?m.tilt:0);ctx.scale(1+m.pulse,1-m.pulse*.4);ctx.translate(0,-55);}
+  drawGrowthBuffAura(buff,now);
 
   const tier = p.potTier ?? 'clay';
   const art=POT_ART[tier]??POT_ART.clay,colors=[art.fill,art.accent];
@@ -803,6 +844,7 @@ function drawPlot(p, lod, now) {
   if (p.deco?.includes('golden-tree')) {
     ctx.beginPath(); ctx.moveTo(-40, -17); ctx.lineTo(-35, -28); ctx.lineTo(-30, -18); ctx.lineTo(-19, -16); ctx.lineTo(-27, -9); ctx.lineTo(-25, 1); ctx.lineTo(-35, -4); ctx.lineTo(-44, 1); ctx.lineTo(-42, -9); ctx.lineTo(-50, -16); ctx.closePath(); ctx.fillStyle = C.ochre; ctx.fill(); ctx.stroke();
   }
+  drawGrowthBuffBadge(buff);
   ctx.restore();
 
 }
@@ -824,8 +866,8 @@ function drawPlotLabel(p) {
   ctx.fillStyle = C.ink; ctx.fillText(label, at.x, y+10, w-9);
   if(p.crop){
     ctx.fillStyle='#D5DFD7';ctx.fillRect(at.x-w/2+4,y+21,w-8,4);
-    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:'#4E9272';ctx.fillRect(at.x-w/2+4,y+21,(w-8)*p.crop.progress,4);
-    if(p.growth?.bonusPercent){ctx.font=`bold 17px ${FONT}`;ctx.fillStyle=p.growth.bonusPercent>0?'#32694D':'#A54C38';ctx.fillText(`${p.growth.bonusPercent>0?'+':''}${p.growth.bonusPercent}%`,at.x,at.y+size*.34);}
+    const buff=growthBuffPresentation(p,Date.now(),cam.zoom,activePlotCount),barColor=buff?BUFF_COLORS[buff.primary]:'#4E9272';
+    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:barColor;ctx.fillRect(at.x-w/2+4,y+21,(w-8)*p.crop.progress,4);
   }
   if (trouble || ripe || boost) {
     // A small symbol beside the crop leaves both its silhouette and pot body visible.
@@ -836,7 +878,7 @@ function drawPlotLabel(p) {
   ctx.restore();
 }
 
-function drawProblemOverlay(p,wallNow) {
+function drawProblemOverlay(p,wallNow,budget={cards:0,maxCards:2}) {
   const problem=plotProblem(p,wallNow,meta.cfg),previous=problems.get(p.id);
   const presentation=problemPresentation(previous,problem,wallNow);
   if(presentation)problems.set(p.id,presentation);else problems.delete(p.id);
@@ -844,7 +886,11 @@ function drawProblemOverlay(p,wallNow) {
   if(feedback&&feedback.until<=wallNow){commandFeedback.delete(p.id);feedback=null;}
   const shown=feedback??(presentation&&presentation.until>wallNow?presentation:null);
   if(!shown)return;
-  const focused=focusPlot===p.id&&cam.zoom>=1.25,at=worldToScreen(plotPos(p,meta),cam,VP),scale=(meta.cfg.potScale??1.4)*cam.zoom;
+  const focused=focusPlot===p.id&&cam.zoom>=1.25,mode=plotOverlayMode({focused,feedback,shown});
+  if(mode==='hidden')return;
+  if(!focused&&budget.cards>=budget.maxCards)return;
+  if(!focused)budget.cards++;
+  const at=worldToScreen(plotPos(p,meta),cam,VP),scale=(meta.cfg.potScale??1.4)*cam.zoom;
   const width=focused?340:Math.min(166,meta.cfg.potSpacingX*cam.zoom-10),height=focused?126:82;
   const x=at.x-width/2,y=at.y-78*scale;
   const success=feedback?.ok;
@@ -1013,10 +1059,12 @@ function drawFloaters(now) {
     const p = worldToScreen(f, cam, VP), y = p.y - age * 110 * cam.zoom;
     ctx.globalAlpha = 1 - age;
     if (f.kind === 'sparkle') drawSparkle(p.x, y, Math.max(8, 28 * cam.zoom));
-    else if (f.kind === 'text') {
-      ctx.font = `bold 23px ${FONT}`; ctx.textAlign = 'center'; ctx.lineWidth = 5;
+    else if (f.kind === 'text' || f.kind === 'buff') {
+      const buff=f.kind==='buff';
+      if(buff){ctx.globalAlpha=(1-age)*.32;ctx.fillStyle=C.teal;ctx.beginPath();ctx.ellipse(p.x,y-28,54+age*14,28+age*8,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1-age;for(const dx of [-30,31])drawSparkle(p.x+dx,y-42-age*12,7,C.ochre);}
+      ctx.font = `bold ${buff?31:23}px ${FONT}`; ctx.textAlign = 'center'; ctx.lineWidth = buff?7:5;
       ctx.strokeStyle = C.card; ctx.strokeText(f.text, p.x, y - 30);
-      ctx.fillStyle = C.ink; ctx.fillText(f.text, p.x, y - 30);
+      ctx.fillStyle = buff?'#32694D':C.ink; ctx.fillText(f.text, p.x, y - 30);
     }
     else if (f.kind === 'coin') { ctx.beginPath(); ctx.ellipse(p.x, y, 14 * cam.zoom + 4, 18 * cam.zoom + 4, -.12, 0, Math.PI * 2); ctx.fillStyle = C.ochre; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke(); }
     ctx.globalAlpha = 1;
@@ -1036,6 +1084,7 @@ function frame(now) {
   drawBackdrop(now);
 
   const active = [...plots.values()].filter(p => p.owner && p.awake);
+  activePlotCount=active.length;
   const activeTierIds = new Set(active.map(p => p.tier));
   if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
   const close = focusPlot && cam.zoom >= 1.25;
@@ -1058,12 +1107,14 @@ function frame(now) {
   if (!close) drawShelfFronts(active);
   detail.forEach(drawPlotLabel); // Screen-space identity is always above the shelf lip.
   const wallNow=Date.now();
-  presented.forEach(p=>drawProblemOverlay(p,wallNow));
+  const overlayBudget={cards:0,maxCards:2};
+  presented.forEach(p=>drawProblemOverlay(p,wallNow,overlayBudget));
   for(const id of problems.keys())if(!plots.get(id)?.awake)problems.delete(id);
   renderGuides(wallNow);
   const idleHint=document.getElementById('idleHint'),quiet=presentation.snapshot();
   const pointOf=slot=>plotPos({slot,tier:meta.tiers[0].id},meta),empty=chooseIdleSlot(meta.cfg.activeCapacity,[...plots.values()],pointOf);
-  const idleAllowed=empty!=null&&!quiet.active&&!quiet.primary&&quiet.idleWaitMs===0&&!close&&bossState?.phase!=='active'&&sessionInfo?.phase!=='awards';
+  const temporaryBuff=active.some(p=>(p.growth?.waterBoostUntil??0)>wallNow||(p.growth?.speedUntil??0)>wallNow);
+  const idleAllowed=empty!=null&&!quiet.active&&!quiet.primary&&quiet.idleWaitMs===0&&!close&&!temporaryBuff&&!floaters.length&&!plotMotions.size&&bossState?.phase!=='active'&&sessionInfo?.phase!=='awards';
   idleHint.hidden=!idleAllowed;
   if(idleAllowed){const at=worldToScreen(pointOf(empty),cam,VP),u=active[Math.floor(wallNow/30000)%Math.max(1,active.length)];idleHint.style.left=`${Math.max(18,Math.min(730,at.x-140))}px`;idleHint.style.top=`${Math.max(430,Math.min(1780,at.y-60))}px`;idleHint.textContent=u?`${u.owner.nickname} · ${u.owner.competition?.milestone?.label??'Cùng gieo mây'} · ${u.owner.competition?.milestone?.progress??0}/${u.owner.competition?.milestone?.target??1}`:'Chậu mới đang chờ bạn · gõ “trồng”';}
 
