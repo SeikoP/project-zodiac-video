@@ -1,0 +1,1419 @@
+{
+  "version": 1,
+  "style": "organic-water-soil-leaves-soft-bells",
+  "generatedBy": "scripts/prepare-garden-audio.mjs",
+  "roles": {
+    "plant": {
+      "files": [
+        "plant-1.mp3",
+        "plant-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "water": {
+      "files": [
+        "water-1.mp3",
+        "water-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "flow",
+      "group": "care"
+    },
+    "help": {
+      "files": [
+        "help-1.mp3",
+        "help-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "flow",
+      "group": "care"
+    },
+    "harvest": {
+      "files": [
+        "harvest-1.mp3",
+        "harvest-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "fertilize": {
+      "files": [
+        "fertilize-1.mp3",
+        "fertilize-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "pestClear": {
+      "files": [
+        "pestClear-1.mp3",
+        "pestClear-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "weedClear": {
+      "files": [
+        "weedClear-1.mp3",
+        "weedClear-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "softBlocked": {
+      "files": [
+        "softBlocked-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 250,
+      "priority": 1,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "care"
+    },
+    "levelUp": {
+      "files": [
+        "levelUp-1.mp3",
+        "levelUp-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "tierUnlock": {
+      "files": [
+        "tierUnlock-1.mp3",
+        "tierUnlock-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "achievement": {
+      "files": [
+        "achievement-1.mp3",
+        "achievement-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "theft": {
+      "files": [
+        "theft-1.mp3",
+        "theft-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "catch": {
+      "files": [
+        "catch-1.mp3",
+        "catch-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "shieldBlock": {
+      "files": [
+        "shieldBlock-1.mp3",
+        "shieldBlock-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "dew": {
+      "files": [
+        "dew-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "flow",
+      "group": "event"
+    },
+    "star": {
+      "files": [
+        "star-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "rain": {
+      "files": [
+        "rain-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "flow",
+      "group": "event"
+    },
+    "wheelStart": {
+      "files": [
+        "wheelStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "wheelTick": {
+      "files": [
+        "wheelTick-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "wheelResult": {
+      "files": [
+        "wheelResult-1.mp3",
+        "wheelResult-2.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "meteorFly": {
+      "files": [
+        "meteorFly-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "meteorImpact": {
+      "files": [
+        "meteorImpact-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "quake": {
+      "files": [
+        "quake-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "bossIntro": {
+      "files": [
+        "bossIntro-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 5,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "bossHit": {
+      "files": [
+        "bossHit-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 180,
+      "priority": 5,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "bossGiftHit": {
+      "files": [
+        "bossGiftHit-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 5,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "bossWin": {
+      "files": [
+        "bossWin-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 5,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "bossEscape": {
+      "files": [
+        "bossEscape-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 5,
+      "maxDurationMs": 2000,
+      "fallback": "bossHit",
+      "group": "event"
+    },
+    "roundStart": {
+      "files": [
+        "roundStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "podium": {
+      "files": [
+        "podium-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "reward": {
+      "files": [
+        "reward-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "roundEnd": {
+      "files": [
+        "roundEnd-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "rainStart": {
+      "files": [
+        "rainStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "flow",
+      "group": "event"
+    },
+    "pestsStart": {
+      "files": [
+        "pestsStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "merchantStart": {
+      "files": [
+        "merchantStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    },
+    "goldenStart": {
+      "files": [
+        "goldenStart-1.mp3"
+      ],
+      "gain": 1,
+      "cooldownMs": 1500,
+      "priority": 3,
+      "maxDurationMs": 2000,
+      "fallback": "sparkle",
+      "group": "event"
+    }
+  },
+  "assets": [
+    {
+      "id": "garden-plant-1",
+      "file": "plant-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "61dd56f4d2100f4f05fdc41c3fa6001978151fb5443da8fd9f684a1c4ff8ab09",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "plant",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-plant-2",
+      "file": "plant-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "ed7b225300f1abd34415f624b9fb585d2c36fc3388ad0e74082da46927cdec81",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "plant",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-water-1",
+      "file": "water-1.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "b8725e73d84c8166451e7568fdffc65ae855c6e59badaebb696014147a37df33",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "water",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-water-2",
+      "file": "water-2.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "92199f5a713c340355b270417cb5e51107cd8bfb36034a37b5416f6bb568b0c1",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "water",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-help-1",
+      "file": "help-1.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "3e1c2910ff187ec0c811519c5f71f11e064f810712c2b01cb78cf4edaf8716c6",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "help",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-help-2",
+      "file": "help-2.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "6b062be2ee9ca6d7ca7e8a0ebc463fa9b92f6a85325bda5f525f211afd929cdc",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "help",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-harvest-1",
+      "file": "harvest-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "94319a239dbd24e2c35083618ed3eef4a4bdcb558ef2684e1e892670ef875ab3",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "harvest",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-harvest-2",
+      "file": "harvest-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "3e7b78c7231a79fe0bac660fcd174e9d808b6129e148741407097e2d5d275201",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "harvest",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-fertilize-1",
+      "file": "fertilize-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "ed17867fda6d495e972eaa90dcc4de0e7b03478df6fbc372022e92324592d653",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "fertilize",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-fertilize-2",
+      "file": "fertilize-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "86837b9da543505506bb75e61a218ea4a8fa3fb045a9a7cfc240861b067479ce",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "fertilize",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-pestClear-1",
+      "file": "pestClear-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "cd8a0e5e0da2ab8eb2eee0df7f104fbcf3bb62318e0f6759decb82c3aeb60862",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "pestClear",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-pestClear-2",
+      "file": "pestClear-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "55cb3870f6cd7df26ddda217ae0a63866e054ccd504095230cd21d32d0f411a0",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "pestClear",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-weedClear-1",
+      "file": "weedClear-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "0cac200554e22eb0f83f8f43013041451fe932ba263f162233ad4b4492cbeaa7",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "weedClear",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-weedClear-2",
+      "file": "weedClear-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "5a3e4e624633603d5a6234ba7c8aeaf52ce53b92511beaa1b2d27805e0bd1b7d",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "weedClear",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-softBlocked-1",
+      "file": "softBlocked-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "475ab43f88bbbacacb5a235d8897d63de29622334e1e0b1ffa00f995386100da",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "care",
+        "softBlocked",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-levelUp-1",
+      "file": "levelUp-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "levelUp",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-levelUp-2",
+      "file": "levelUp-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "levelUp",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-tierUnlock-1",
+      "file": "tierUnlock-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "tierUnlock",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-tierUnlock-2",
+      "file": "tierUnlock-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "tierUnlock",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-achievement-1",
+      "file": "achievement-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "achievement",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-achievement-2",
+      "file": "achievement-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "achievement",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-theft-1",
+      "file": "theft-1.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "7feb1a0d86e882bbe2964fc828772d9bb0421b60cf1e1cfbb4dd09c9e547c7e6",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "theft",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-theft-2",
+      "file": "theft-2.mp3",
+      "durationMs": 550,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "75856dfe902c55ee99f2a2b3fc42271f6c2eb6491202114205118de44064a0fb",
+      "trimStartMs": 0,
+      "trimEndMs": 550,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "theft",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-catch-1",
+      "file": "catch-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "catch",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-catch-2",
+      "file": "catch-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "catch",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-shieldBlock-1",
+      "file": "shieldBlock-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "shieldBlock",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-shieldBlock-2",
+      "file": "shieldBlock-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "social",
+        "shieldBlock",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-dew-1",
+      "file": "dew-1.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "704d627186a95d3a032978e10fdeb235ce9c3df9f2daf2caebbbab45642c6543",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "dew",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-star-1",
+      "file": "star-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "star",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-rain-1",
+      "file": "rain-1.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "43b0f911a1d26803d2f3fd52a36aff0dc1c940e96e87b7fb98e24c26a918a07d",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "rain",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-wheelStart-1",
+      "file": "wheelStart-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "wheelStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-wheelTick-1",
+      "file": "wheelTick-1.mp3",
+      "durationMs": 75,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "63295ead39f2ca1da8d740d00e2481814c10e8768f6eaab9f095991d83ec090b",
+      "trimStartMs": 0,
+      "trimEndMs": 75,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "wheelTick",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-wheelResult-1",
+      "file": "wheelResult-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "wheelResult",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-wheelResult-2",
+      "file": "wheelResult-2.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "a34e0ede525abccc880e8265374eb1820db4ade84491655aa3e19b51f6363f03",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "wheelResult",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-meteorFly-1",
+      "file": "meteorFly-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "47faf970ff54739cb9cb8a46bb3b4f921d3a586ce7cfd8f060272b688bdcff56",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "meteorFly",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-meteorImpact-1",
+      "file": "meteorImpact-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "4e9010bf02db738b8171fd874327ed5ef04229f3e84924a6036cf97112de7c42",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "meteorImpact",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-quake-1",
+      "file": "quake-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "581e57824fddc57c92259dd004b24e2c02395a68bde841b489ce7a4fb29b0b2a",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "gift",
+        "quake",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-bossIntro-1",
+      "file": "bossIntro-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "9588c3b3e1f1149bd66c49e5ec609846d6ed5b12af713bd991e026660d9ee1e0",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "boss",
+        "bossIntro",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-bossHit-1",
+      "file": "bossHit-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "b1d05b4cd99999110245e5ffa0a6e1559a135cdd52554905c5cc6f62dbd8c025",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "boss",
+        "bossHit",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-bossGiftHit-1",
+      "file": "bossGiftHit-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "ee4bc869e6f33fb7ca02a16b9fcdc9ebf9055ed8ad3344d45ac4138f1181798e",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "boss",
+        "bossGiftHit",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-bossWin-1",
+      "file": "bossWin-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "237ab8e789fbb6a53a8f5c5339a1cac5a23fc96cc6a8c0392f4a296dcd8929fd",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "boss",
+        "bossWin",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-bossEscape-1",
+      "file": "bossEscape-1.mp3",
+      "durationMs": 1200,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "95d23bdc60bce6b22410538127f37795a5eb5acdf21de5f6dbbc3f0c9f9e26f8",
+      "trimStartMs": 0,
+      "trimEndMs": 1200,
+      "gainDb": 0,
+      "tags": [
+        "boss",
+        "bossEscape",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-roundStart-1",
+      "file": "roundStart-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "session",
+        "roundStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-podium-1",
+      "file": "podium-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "session",
+        "podium",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-reward-1",
+      "file": "reward-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "session",
+        "reward",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-roundEnd-1",
+      "file": "roundEnd-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "session",
+        "roundEnd",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-rainStart-1",
+      "file": "rainStart-1.mp3",
+      "durationMs": 900,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "87a674f23d026c3a08529a0219e09cd9b2592420e1476fad7afc285d0c832662",
+      "trimStartMs": 0,
+      "trimEndMs": 900,
+      "gainDb": 0,
+      "tags": [
+        "weather",
+        "rainStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-pestsStart-1",
+      "file": "pestsStart-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "weather",
+        "pestsStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-merchantStart-1",
+      "file": "merchantStart-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "weather",
+        "merchantStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    },
+    {
+      "id": "garden-goldenStart-1",
+      "file": "goldenStart-1.mp3",
+      "durationMs": 800,
+      "sourceUrl": "repo:scripts/prepare-garden-audio.mjs",
+      "author": "Garden project original procedural audio",
+      "licenseId": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "retrievedAt": "2026-11-05",
+      "sha256": "2080e7d841e30f625a6bbc4cb13114fc441ebf283312b4a1d32e5b0cd53cee59",
+      "trimStartMs": 0,
+      "trimEndMs": 800,
+      "gainDb": 0,
+      "tags": [
+        "weather",
+        "goldenStart",
+        "organic"
+      ],
+      "reviewStatus": "listening-pending"
+    }
+  ]
+}

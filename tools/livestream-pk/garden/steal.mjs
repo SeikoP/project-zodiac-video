@@ -20,7 +20,7 @@ function pick(ctx, thief) {
 export function steal(ctx, thief, victim) {
   const now = ctx.now(), cfg = ctx.cfg;
   if (!plotOf(ctx, thief)) return fail('no-plot');
-  if ((thief.banUntil ?? 0) > now) return fail('banned');
+  if ((thief.banUntil ?? 0) > now) return { ...fail('banned'), retryAfterMs:thief.banUntil-now };
   if (victim === null) { victim = pick(ctx, thief); if (!victim) return fail('no-target'); }
   if (victim.userId === thief.userId) return fail('self');
   const plot = plotOf(ctx, victim);
@@ -32,7 +32,7 @@ export function steal(ctx, thief, victim) {
   thief.stealLog ??= {};
   const log = (thief.stealLog[victim.userId] = (thief.stealLog[victim.userId] ?? []).filter(t => now - t < cfg.stealVictimWindowMs));
   if (plot.crop.stolen >= cfg.stealMaxPerCrop || log.length >= cfg.stealPerVictimMax) return fail('cap');
-  if (!ctx.limiter.allow(thief.userId, 'steal', cfg.stealCooldownMs)) return fail('cooldown');
+  if (!ctx.limiter.allow(thief.userId, 'steal', cfg.stealCooldownMs)) return { ...fail('cooldown'), retryAfterMs:ctx.limiter.remaining(thief.userId,'steal',cfg.stealCooldownMs) };
   const amount = Math.max(1, Math.round(CROPS[plot.crop.type].gold * cfg.stealFrac));
   addGold(thief, amount);
   plot.crop.stolen++;
@@ -66,7 +66,7 @@ export function dog(ctx, user) {
   if (plot.dogUntil > now) return fail('active');
   const free = user.dogNight !== night;
   if (free) user.dogNight = night;
-  else if (!spendGold(user, ctx.cfg.dogCost)) return fail('gold');
+  else if (!spendGold(user, ctx.cfg.dogCost)) return { ...fail('gold'),requiredGold:ctx.cfg.dogCost };
   plot.dogUntil = now + ctx.cfg.dogMs;
   touch(ctx, user);
   ctx.emit({ type: 'dog', plotId: plot.id, userId: user.userId });

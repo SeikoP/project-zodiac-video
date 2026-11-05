@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-11-05T04:46:45.102Z",
+  "url": "http://127.0.0.1:4858",
+  "simulator": true,
+  "viewers": 12,
+  "planted": 12,
+  "bots": 12,
+  "autoplayRunning": true,
+  "diagnosticsVersion": 1,
+  "studioInstalled": true,
+  "fontPresent": true,
+  "verification": {
+    "logicTestsPassed": 601,
+    "logicTestsFailed": 0,
+    "isolatedBrowserAudit": true,
+    "studioCapture": false,
+    "studioAudio": false,
+    "phoneSafeArea": false,
+    "actualLiveDelivery": false
+  },
+  "verdict": "Not ready for full LIVE acceptance; see audit findings 1-5"
+}

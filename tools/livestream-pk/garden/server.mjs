@@ -1,3 +1,6 @@
+import {createDisplays} from './displays.mjs';
+import {createHash} from 'node:crypto';
+import {createLimiter} from './commands.mjs';
 // Vườn Mây server (npm run garden). Separate port and save file; TikTok events use the shared connector.
 //   http://127.0.0.1:4858/   overlay for TikTok LIVE Studio (1080×1920) and the local host panel
 // Every FRAME_MS each page gets the plots that changed since it last heard, the merged effects, and any new camera shot.
@@ -13,6 +16,7 @@ import { createHub } from './hub.mjs';
 import { createSaver, loadState, pruneUsers } from './store.mjs';
 import { emptyGardenState, TIERS } from './world.mjs';
 import { listMusic } from '../music.mjs';
+import { potTierOf } from './progress.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC = path.join(root, 'public');
@@ -46,18 +50,24 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const state = loadState(file, now());
   pruneUsers(state, now());
   const hub = createHub();
+  const displays=createDisplays({now,simulator}),receipts=[];
+  const build=createHash('sha256').update(fs.readFileSync(fileURLToPath(import.meta.url))).update(fs.readFileSync(path.join(PUBLIC,'garden/garden.js'))).digest('hex').slice(0,12);let eventSeq=0;
+  const recentReceipts=()=>{while(receipts.length&&(now()-receipts[0].receivedAt>120000||receipts.length>64))receipts.shift();return receipts;};
   let coalescer = createCoalescer({ now }), garden, camera, lastShot = null;
   const saver = createSaver({ file, getState: () => state });
   const onEvent = e => {
     const u = e.userId && state.users[e.userId];
-    const out = u && !e.nickname ? { ...e, nickname: u.nickname } : e;
+    const out = u ? { ...e, plotId:e.plotId??(u.seat?`${u.seat.tier}:${u.seat.slot}`:null),nickname:e.nickname??u.nickname,avatar:u.avatar,level:e.level??u.level,potTier:potTierOf(u.level) } : e;
+    out.eventId=`${build}:${++eventSeq}`;out.receivedAt=now();out.sessionNo=state.session?.no??null;
+    if(out.type==='gift'){receipts.push(structuredClone(out));recentReceipts();}
     camera?.push(out);
     coalescer.push(out);
     saver.markDirty();
   };
   const newGarden = () => createGarden({ config: full.garden, state, now, onEvent, onStateChange: () => saver.markDirty() });
   garden = newGarden();
-  camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
+  camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
+  if(state.boss?.phase==='active')camera.push({type:'boss-start'});
 
   // Simulator room director: room-size profiles model a real LIVE instead of accumulating stress bots forever.
   const BOT_NAMES=['An','Bảo','Chi','Duy','Giang','Hà','Hải','Hân','Huy','Khanh','Lan','Linh','Mai','Minh','My','Nam','Nga','Ngân','Ngọc','Nhi','Phúc','Quân','Quỳnh','Sơn','Thảo','Trang','Trúc','Tuấn','Vy','Yến'];
@@ -66,11 +76,11 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     busy:{id:'busy',intervalMs:1000,actionsPerPulse:4,giftEvery:32,mediumGiftEvery:90,stealEvery:22},
     stress:{id:'stress',intervalMs:700,actionsPerPulse:8,giftEvery:12,mediumGiftEvery:45,stealEvery:12},
   };
-  let autoTimer=null,autoSeq=0,autoCursor=0,autoPulse=0,autoProfile='normal';
+  let autoTimer=null,autoSeq=0,autoCursor=0,autoPulse=0,autoProfile='normal',autoGift=0;
   const autoUsers=new Map();
   const autoStatus=()=>({running:Boolean(autoTimer),bots:autoUsers.size,profile:autoProfile,target:autoUsers.size});
-  const autoUser=()=>{const n=autoSeq++;return{userId:`auto-${n}`,nickname:`${BOT_NAMES[n%BOT_NAMES.length]} ${Math.floor(n/BOT_NAMES.length)+1}`,avatar:''};};
-  const addOneAuto=()=>{const user=autoUser();autoUsers.set(user.userId,user);garden.chat({...user,userId:'sim:'+user.userId,comment:'trồng rau'});return user;};
+  const autoUser=()=>{const n=autoSeq++;return{userId:`auto-${n}`,nickname:`${BOT_NAMES[n%BOT_NAMES.length]} ${Math.floor(n/BOT_NAMES.length)+1}`,avatar:`/garden/assets/avatar-${n%6+1}.svg`};};
+  const addOneAuto=()=>{const user=autoUser();autoUsers.set(user.userId,user);garden.chat({...user,userId:'sim:'+user.userId,comment:'trồng'});return user;};
   const removeOneAuto=()=>{
     const entry=[...autoUsers.entries()].at(-1); if(!entry)return false;
     const [id,user]=entry,stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
@@ -94,7 +104,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     for(let k=0;k<batch;k++){
       const user=users[autoCursor++%users.length],stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
       let comment;
-      if(!plot?.crop)comment=stored?.level>=2&&(autoCursor+k)%6===0?'trồng hướng dương':'trồng rau';
+      if(!plot?.crop)comment='trồng';
       else if(plot.crop.progress>=1)comment='hái';
       else if(plot.crop.pest)comment='bắt sâu';
       else if(plot.crop.weeds)comment='nhổ cỏ';
@@ -105,7 +115,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     }
     autoPulse++;
     if(profile.giftEvery&&autoPulse%profile.giftEvery===0){
-      const user=users[autoPulse%users.length];garden.gift({...user,userId:'sim:'+user.userId,diamonds:5,count:1});
+      const user=users[autoPulse%users.length],diamonds=[50,500,1000,100,5,1][autoGift++%6];garden.gift({...user,userId:'sim:'+user.userId,diamonds,count:1});
     }
     if(profile.mediumGiftEvery&&autoPulse%profile.mediumGiftEvery===0){
       const user=users[(autoPulse+3)%users.length];garden.gift({...user,userId:'sim:'+user.userId,diamonds:100,count:1});
@@ -114,7 +124,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const restartAutoTimer=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=setInterval(autoStep,(AUTO_PROFILES[autoProfile]??AUTO_PROFILES.normal).intervalMs);};
   const startAuto=(profile=autoProfile)=>{if(!simulator)throw new Error('simulator-only');if(AUTO_PROFILES[profile])autoProfile=profile;if(!autoUsers.size)setAutoRoom(24,autoProfile);if(!autoTimer)restartAutoTimer();return autoStatus();};
   const stopAuto=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=null;return autoStatus();};
-  const meta = () => ({ ...garden.meta(), music: { calm: music.calm, upbeat: music.upbeat } });
+  const meta = () => ({ ...garden.meta(), build,serverTime:now(),simulator,music: { calm: music.calm, upbeat: music.upbeat } });
   const status = () => {
     const plots = Object.values(state.plots), crops = plots.filter(p => p.owner && p.crop);
     const seated = Object.values(state.users).filter(u => u.seat);
@@ -125,25 +135,31 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const cam = camera.state();
     return {
       simulator,
+      build,displays:displays.list(),secondaryReady:displays.ready(),
+      diagnosticsVersion:simulator?1:undefined,serverTime:now(),
       autoplay: autoStatus(),
       viewers: players.length,
       sleeping: seated.length - players.length,
-      players: players.map(u => ({ nickname: u.nickname, level: u.level, tier: u.seat.tier })),
+      players: players.map(u => ({ userId:u.userId,nickname: u.nickname,avatar:u.avatar??'', level: u.level, tier: u.seat.tier })),
       planted: crops.length,
       ripe: crops.filter(p => p.crop.progress >= 1).length,
       event: state.event?.kind ?? null,
-      camera: { locked: cam.locked, current: cam.current?.kind ?? null, pending: cam.queue.length },
-      competition: garden.competition.status(),
+      camera: { locked: cam.locked, current: cam.current?.kind ?? null, pending: cam.queue.length,
+        eventKind:cam.current?.eventKind??null,nickname:cam.current?.nickname??null,
+        remainingMs:cam.current?.until===Infinity?0:Math.max(0,(cam.current?.until??now())-now()),idleWaitMs:cam.idleWaitMs,
+        queue:simulator?cam.queue.map(q=>({kind:q.kind,eventKind:q.eventKind,nickname:q.nickname,plotId:q.plotId,priority:q.priority,ageMs:Math.max(0,now()-q.at)})):undefined },
+      eventState:simulator&&state.event?{kind:state.event.kind,phase:state.event.phase,endsAt:state.event.endsAt}:null,
+      competition: garden.competition.status(),boss:garden.boss.status(),
       tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs).length })),
     };
   };
   const reset = async () => {
     if (!simulator) throw new Error('reset-simulator-only');
-    stopAuto(); autoUsers.clear(); autoSeq = autoCursor = autoPulse = 0; autoProfile = 'normal';
+    receipts.length=0;stopAuto(); autoUsers.clear(); autoSeq = autoCursor = autoPulse = autoGift = 0; autoProfile = 'normal';
     Object.assign(state, emptyGardenState(now()));
     coalescer = createCoalescer({ now });
     garden = newGarden();
-    camera = createCamera({ cfg: garden.cfg, now, getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
+    camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
     lastShot = null;
     for (const c of hub.clients) c.seen = {};
     hub.broadcast('reset', { ok: true });
@@ -169,18 +185,58 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const pollers = new Map();
   const reaper = setInterval(() => { for (const [id, c] of pollers) if (Date.now() - c.lastPoll > 15000) { pollers.delete(id); hub.remove(c); } }, 5000);
 
+  let scenarioSnapshot=null;
+  function restoreScenario(){
+    if(!scenarioSnapshot)throw Object.assign(new Error('no-scenario-snapshot'),{status:409});
+    stopAuto();const saved=structuredClone(scenarioSnapshot.state),delta=Math.max(0,now()-scenarioSnapshot.at);
+    const rebase=value=>{for(const [key,v] of Object.entries(value??{})){if(v&&typeof v==='object')rebase(v);else if(Number.isFinite(v)&&v>1e11&&(/At$|Until$/.test(key)||['at','until'].includes(key)))value[key]=v+delta;}};rebase(saved);
+    for(const key of Object.keys(state))if(!(key in saved))delete state[key];Object.assign(state,saved);
+    autoUsers.clear();for(const [id,user] of scenarioSnapshot.auto)autoUsers.set(id,structuredClone(user));autoSeq=scenarioSnapshot.autoSeq;autoCursor=autoPulse=autoGift=0;
+    garden=newGarden();camera=createCamera({cfg:garden.cfg,now,isSecondaryReady:()=>displays.ready(),getPlots:()=>Object.values(state.plots).filter(p=>p.owner)});
+    coalescer=createCoalescer({now});receipts.length=0;lastShot=null;for(const c of hub.clients)c.seen={};hub.broadcast('reset',{ok:true});saver.markDirty();
+    return {ok:true,label:'Phục hồi phòng',expected:'Đã giữ LV/vàng/cây trước lần thử; bot đang dừng'};
+  }
+  function runScenario(b){
+    const kind=String(b.scenario??'');
+    const kinds=['newcomer1','group4','room12','room24','room48','careburst48','cardspam100','giftburst30','bossinterrupt','shield','no-target','destruction','awardreload','audioquiet','audiobusy','restore'];
+    if(!kinds.includes(kind))throw Object.assign(new Error('invalid-scenario'),{status:400});
+    if(kind==='restore')return restoreScenario();
+    if(!scenarioSnapshot)scenarioSnapshot={state:structuredClone(state),auto:[...autoUsers.entries()],autoSeq,at:now()};else restoreScenario();
+    stopAuto();let seed=Number.isSafeInteger(b.seed)?b.seed:42;garden.ctx.rng=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
+    const count=kind==='newcomer1'||kind==='no-target'||kind==='audioquiet'?1:kind==='group4'?4:/48|audiobusy/.test(kind)?48:/24/.test(kind)?24:12;
+    setAutoRoom(count);garden.ctx.limiter=createLimiter(now);
+    const people=[...autoUsers.values()].map(u=>({...u,userId:'sim:'+u.userId})),giver=people[0];
+    const gift=(diamonds)=>garden.gift({...giver,diamonds,count:1});
+    if(kind==='careburst48'||kind==='audioquiet'||kind==='audiobusy')for(const u of people)garden.chat({...u,comment:'tưới'});
+    if(kind==='cardspam100')for(let i=0;i<100;i++)garden.chat({...people[i%people.length],comment:'vườn'});
+    if(kind==='giftburst30')for(let i=0;i<30;i++)gift(50);
+    if(kind==='bossinterrupt'){for(let i=0;i<4;i++)gift(50);garden.boss.force();}
+    if(['shield','no-target','destruction'].includes(kind)){
+      for(const p of Object.values(state.plots))if(p.owner&&p.owner!==giver.userId){p.shieldUntil=p.blessingUntil=kind==='shield'?now()+60000:0;if(kind==='no-target')p.crop=null;p.ver=++state.ver;}
+      gift(kind==='destruction'?1000:500);
+    }
+    if(kind==='awardreload')garden.competition.finish();
+    saver.markDirty();return {ok:true,runId:`${build}:${eventSeq}`,label:kind,expected:kind==='bossinterrupt'?'Boss phải hiện; quà không che arena':kind==='giftburst30'?'Cảnh chờ dài ≤12s, ghi công đủ quà':kind==='cardspam100'?'Không modal/zoom; một yêu cầu hồ sơ mới nhất':kind==='shield'?'Khiên chặn phá':kind==='no-target'?'Kết quả không có mục tiêu, không phá nhầm':'Đối chiếu trạng thái native, cảnh, hàng đợi và âm trên nguồn phát',status:status()};
+  }
   const API = {
+    'display-status': b=>displays.update(b),
+    'display-remove': b=>displays.remove(b.clientId),
+    'audio-command': b=>displays.command(b.clientId,b.command),
+    'sim-scenario': b=>runScenario(b),
     'camera-lock': b => { camera.setLock(Boolean(b.on)); return { locked: Boolean(b.on) }; },
     event: b => {
+      if(state.boss?.phase==='active')throw Object.assign(new Error('boss-active'),{status:409});
       const type = String(b.type);
       if (!EVENT_TYPES.includes(type)) throw Object.assign(new Error('invalid-event-type'), { status: 400 });
       garden.events.force(type);
       return { event: type };
     },
+    boss: () => garden.boss.force(),
     'session/finish': () => garden.competition.finish(),
     sim: b => {
-      const user = { userId: 'sim:' + String(b.user?.userId ?? 'x').slice(0, 48), nickname: String(b.user?.nickname ?? 'Người xem').slice(0, 32), avatar: '' };
-      if (b.kind === 'like') return garden.like({ count: Number(b.count) || 1 });
+      const id=String(b.user?.userId??'x').slice(0,48);
+      const user = { userId: 'sim:' + id, nickname: String(b.user?.nickname ?? 'Người xem').slice(0, 32), avatar: `/garden/assets/avatar-${[...id].reduce((n,c)=>n+c.codePointAt(0),0)%6+1}.svg` };
+      if (b.kind === 'like') return garden.like({ ...user, count: Number(b.count) || 1 });
       if (b.kind === 'gift') return garden.gift({ ...user, diamonds: Number(b.diamonds) || 1, count: Number(b.count) || 1 });
       return garden.chat({ ...user, comment: String(b.comment ?? '').slice(0, 120) });
     },
@@ -239,6 +295,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       const c = { seen: {}, host: true, busy: () => res.writableNeedDrain, send: (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`) };
       c.send('meta', meta());
       c.send('frame', { parts: garden.changes(c.seen), fx: [] });
+      c.send('receipts',recentReceipts());
       if (lastShot) c.send('shot', lastShot);
       hub.add(c);
       req.on('close', () => hub.remove(c));
@@ -260,6 +317,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
         hub.add(c);
         c.send('meta', meta());
         c.send('frame', { parts: garden.changes(c.seen), fx: [] });
+        c.send('receipts',recentReceipts());
         if (lastShot) c.send('shot', lastShot);
       }
       c.lastPoll = Date.now();
@@ -273,7 +331,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const api = url.pathname.startsWith('/api/') && Object.hasOwn(API, url.pathname.slice(5)) && API[url.pathname.slice(5)];
     if (api && req.method === 'POST') {
       const route = url.pathname.slice(5);
-      if (!simulator && ['sim', 'sim-room', 'reset'].includes(route)) return void res.writeHead(403, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'simulator-only' }));
+      if (!simulator && ['sim', 'sim-room', 'reset', 'boss','sim-scenario'].includes(route)) return void res.writeHead(403, { 'content-type': 'application/json' }).end(JSON.stringify({ ok: false, error: 'simulator-only' }));
       try {
         const result = await api(await readBody(req));
         saver.markDirty();
@@ -300,7 +358,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/\n  control  http://127.0.0.1:${boundPort}/control`);
 
   return {
-    port: boundPort, url: `http://127.0.0.1:${boundPort}/`, garden, camera,
+    port: boundPort, url: `http://127.0.0.1:${boundPort}/`, get garden(){return garden;},get camera(){return camera;},
     async close() {
       clearInterval(frame); clearInterval(reaper); stopAuto();
       await bridge?.disconnect?.();

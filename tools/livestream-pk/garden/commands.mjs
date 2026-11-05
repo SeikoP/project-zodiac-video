@@ -5,7 +5,7 @@ const norm = s => String(s ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowe
 
 const VERBS = [ // longer phrases first: "bắt trộm" and "bắt sâu" must win over "trộm"
   [/^bat\s+trom\b/, 'catch'], [/^bat\s+sau\b/, 'pest'], [/^tha\s+cho\b/, 'dog'], [/^nho\s+co\b/, 'weed'], [/^bon\s+phan\b/, 'fertilize'],
-  [/^trong\b/, 'plant'], [/^tuoi\b/, 'water'], [/^hai\b/, 'harvest'], [/^trom\b/, 'steal'], [/^vuon\b/, 'card'],
+  [/^(?:trong|gieo)\b/, 'plant'], [/^cham\b/, 'care'], [/^thu\s+hoach\b/, 'harvest'], [/^tuoi\b/, 'water'], [/^hai\b/, 'harvest'], [/^trom\b/, 'steal'], [/^vuon\b/, 'card'],
 ];
 
 export function parseCommand(text) {
@@ -16,7 +16,8 @@ export function parseCommand(text) {
   const body = t.replace(/@.*$/, '').trim();
   for (const [re, cmd] of VERBS) {
     if (!re.test(body)) continue;
-    return { cmd, arg: cmd === 'plant' ? cropByName(body.replace(re, '').trim()) : null, mention };
+    const seed=body.replace(re,'').trim();
+    return { cmd, arg: cmd === 'plant' && seed ? cropByName(seed) ?? 'unknown' : null, mention };
   }
   return null;
 }
@@ -31,7 +32,7 @@ export function resolveMention(state, mention, exceptUserId) {
 
 export function createLimiter(now) {
   const last = new Map();
-  return { allow(userId, key, ms) {
+  return { shift(key,delta){for(const [id,t] of last)if(id.endsWith(`|${key}`))last.set(id,t+delta);}, remaining(userId,key,ms) { return Math.max(0,ms-(now()-(last.get(`${userId}|${key}`)??-Infinity))); }, allow(userId, key, ms) {
     const k = `${userId}|${key}`, t = now();
     if (t - (last.get(k) ?? -Infinity) < ms) return false;
     last.set(k, t);

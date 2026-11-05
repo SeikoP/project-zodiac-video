@@ -41,7 +41,7 @@ export function runLoad({ users = 24, seconds = 120, giftsPerMin = 2, seed = 1 }
     coalescer.flush();
     frameBytes.push(JSON.stringify(garden.changes(seen)).length);
     if (shot) shotKinds[`${shot.kind}:${shot.label}`] = (shotKinds[`${shot.kind}:${shot.label}`] ?? 0) + 1;
-    if (shot && shot.kind !== 'idle' && shot.kind !== 'gap') shots.push(shot);
+    if (shot && !['idle','gap','overview'].includes(shot.kind)) shots.push(shot);
   }
   const minutes = seconds / 60;
   return {

@@ -1,4 +1,4 @@
-// Field events are queued first, then activated when the camera director presents them.
+// Gameplay owns weather timing; a locked or absent camera must never stall it.
 import { CROPS } from './crops.mjs';
 import { addGold } from './progress.mjs';
 import { bump, isAwake } from './world.mjs';
@@ -25,7 +25,7 @@ export function createEvents(ctx){
     state.event={kind,phase:'pending',queuedAt:now,startedAt:null,endsAt:null};
     last=kind;
     ctx.emit({type:'event-start',kind,queuedAt:now});
-    return state.event;
+    return activate(kind);
   }
 
   function activate(kind){
@@ -33,13 +33,18 @@ export function createEvents(ctx){
     if(!e||e.phase!=='pending'||e.kind!==kind)return e;
     const now=ctx.now();
     e.phase='active';e.startedAt=now;e.endsAt=now+cfg[DURATION[kind]];
-    if(kind==='merchant')e.crop=Object.keys(CROPS)[Math.floor(ctx.rng()*Object.keys(CROPS).length)];
+    if(kind==='rain')for(const p of Object.values(state.plots))if(p.crop&&isAwake(ctx,p)){p.water=1;bump(ctx,p);}
+    if(kind==='merchant'){
+      const present=[...new Set(Object.values(state.plots).filter(p=>p.crop&&isAwake(ctx,p)).map(p=>p.crop.type))];
+      const crops=present.length?present:Object.keys(CROPS);
+      e.crop=crops[Math.floor(ctx.rng()*crops.length)];
+    }
     if(kind==='pests'){
-      const sick=Object.values(state.plots).filter(p=>p.crop&&p.crop.progress<1&&isAwake(ctx,p));
+      const sick=Object.values(state.plots).filter(p=>p.crop&&p.crop.progress<1&&isAwake(ctx,p)&&!(p.blessingUntil>now));
       for(let i=sick.length-1;i>0;i--){const j=Math.floor(ctx.rng()*(i+1));[sick[i],sick[j]]=[sick[j],sick[i]];}
-      const hit=sick.slice(0,Math.floor(sick.length*cfg.stormShare));
+      const hit=sick.slice(0,Math.max(1,Math.floor(sick.length*cfg.stormShare)));
       for(const p of hit){p.crop.pest=true;bump(ctx,p);}
-      Object.assign(e,{total:hit.length,cleared:0,participants:{}});
+      Object.assign(e,{total:hit.length,cleared:0,participants:{},targets:Object.fromEntries(hit.map(p=>[p.id,false]))});
     }
     ctx.emit({type:'event-active',kind,startedAt:e.startedAt,endsAt:e.endsAt,crop:e.crop??null,total:e.total??null});
     return e;
@@ -54,13 +59,14 @@ export function createEvents(ctx){
       ok=e.total>0&&e.cleared/e.total>=cfg.stormPass;
       if(ok)for(const id of Object.keys(e.participants))addGold(state.users[id],cfg.stormReward);
     }
-    if(e.phase==='active')ctx.emit({type:'event-end',kind:e.kind,ok});
+    if(e.phase==='active')ctx.emit({type:'event-end',kind:e.kind,ok,cleared:e.cleared??0,total:e.total??0,reward:e.kind==='pests'&&ok?cfg.stormReward:0,participants:Object.keys(e.participants??{}).length});
   }
 
   return {
     tick(){
       const now=ctx.now();
       if(state.event){
+        if(state.event.phase==='pending')activate(state.event.kind);
         if(state.event.phase==='active'&&now>=state.event.endsAt)end();
         return;
       }
@@ -70,10 +76,12 @@ export function createEvents(ctx){
     },
     force(kind){if(state.event)end();return queue(kind);},
     present(kind){return activate(kind);},
+    reset(){state.event=null;nextAt=ctx.now()+gap();},
     current:()=>state.event,
-    notePestCleared(userId){
+    notePestCleared(userId,plotId){
       const e=state.event;
-      if(e?.phase!=='active'||e.kind!=='pests')return;
+      if(e?.phase!=='active'||e.kind!=='pests'||ctx.now()>=e.endsAt||e.targets?.[plotId]!==false)return;
+      e.targets[plotId]=true;
       e.cleared++;e.participants[userId]=true;
     },
   };

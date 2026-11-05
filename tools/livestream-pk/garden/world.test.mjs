@@ -9,19 +9,19 @@ test('the live garden exposes one Seed Zone with a 48-player two-wing rack', () 
   assert.equal(ctx.cfg.activeCapacity, 48);
   assert.deepEqual(
     [ctx.cfg.potsPerShelf, ctx.cfg.rackWings, ctx.cfg.shelvesPerWing, ctx.cfg.moduleCapacity],
-    [6, 2, 4, 48],
+    [3, 2, 8, 48],
   );
 });
 
-test('physical layout wraps logical row 4 into the right wing without changing slots', () => {
+test('physical layout wraps logical row 8 into the right wing without changing slots', () => {
   const { ctx } = makeCtx();
   const left0 = plotLayout(0, ctx.cfg), leftLast = plotLayout(23, ctx.cfg);
   const right0 = plotLayout(24, ctx.cfg), rightLast = plotLayout(47, ctx.cfg);
   assert.deepEqual([left0.wing, left0.row, left0.col], [0, 0, 0]);
-  assert.deepEqual([leftLast.wing, leftLast.row, leftLast.col], [0, 3, 5]);
+  assert.deepEqual([leftLast.wing, leftLast.row, leftLast.col], [0, 7, 2]);
   assert.deepEqual([right0.wing, right0.row, right0.col], [1, 0, 0]);
-  assert.deepEqual([rightLast.wing, rightLast.row, rightLast.col], [1, 3, 5]);
-  assert.equal(leftLast.x - plotLayout(18, ctx.cfg).x, ctx.cfg.potSpacingX * 5);
+  assert.deepEqual([rightLast.wing, rightLast.row, rightLast.col], [1, 7, 2]);
+  assert.equal(leftLast.x - plotLayout(21, ctx.cfg).x, ctx.cfg.potSpacingX * 2);
   assert.equal(right0.x - left0.x, ctx.cfg.potsPerShelf * 0 + (ctx.cfg.potsPerShelf - 1) * ctx.cfg.potSpacingX + ctx.cfg.rackWingGapX);
   assert.equal(right0.y, left0.y);
   assert.equal(shelfSurface(24, ctx.cfg) - plotCenter('cloud-1', 24, ctx.cfg).y, ctx.cfg.potBottomOffset + ctx.cfg.potShelfGap);
@@ -31,8 +31,8 @@ test('new arrivals spread across the rack without ever changing an existing seat
   const { ctx } = makeCtx();
   const ids = [];
   for (let i = 0; i < 12; i++) ids.push(addUser(ctx, 'u' + i).user.seat.slot);
-  const rows = new Set(ids.map(slot => Math.floor(slot / 6)));
-  assert.equal(rows.size, 2);
+  const rows = new Set(ids.map(slot => Math.floor(slot / ctx.cfg.potsPerShelf)));
+  assert.equal(rows.size, 4);
   for (let i = 12; i < 48; i++) addUser(ctx, 'u' + i);
   assert.equal(new Set(balancedSlotOrder(ctx.cfg)).size, 48);
   for (let i = 0; i < 12; i++) assert.equal(ctx.state.users['u' + i].seat.slot, ids[i]);

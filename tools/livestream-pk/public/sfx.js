@@ -3,52 +3,39 @@
 // constellations, a whoosh for meteors, a bell for the full moon. Rate-limited so a busy room
 // stays pleasant. ?sfx=0 turns it off, ?sfx=0.5 sets the volume. In OBS, tick
 // "Control audio via OBS" on the Browser Source to hear it in the stream.
-export function createSfx(volume = 0.3) {
-  let ctx = null, master = null, noise = null, samples = {}, loading = false;
-  const lastAt = {}, recent = [];
-  const COOLDOWN = { title: 4000, milestone: 1500, quiz: 800, join: 700, heart: 450, comment: 1500, dance: 800, sparkle: 400, wish: 1500, overtake: 4000, flow: 1200, quizTick: 900, boop: 1500, starFly: 900, bossHit: 300, runHit: 2000, cardFlip: 600, laugh: 3000 };
-
-  // Loads the recorded effects listed in /sfx/manifest.json; any that fail to load stay synthesized.
-  async function loadSamples() {
-    if (loading) return;
-    loading = true;
-    try {
-      const { roles } = await (await fetch('/sfx/manifest.json')).json();
-      for (const [name, def] of Object.entries(roles ?? {})) {
-        const bufs = [];
-        for (const f of def.files) {
-          try {
-            const res = await fetch(`/sfx/${f}`);
-            if (res.ok) bufs.push(await ctx.decodeAudioData(await res.arrayBuffer()));
-          } catch { /* this file is optional */ }
+export function createSfx(volume = 0.3, {manifestUrl='/sfx/manifest.json',onState=()=>{}}={}) {
+  let ctx=null,master=null,noise=null,samples={},definitions={},loading=null,currentNodes=null,currentSink=null;
+  const cache=new Map(),variants=new Map(),handles=new Set(),lastAt={},recent=[];
+  const missing=new Set();
+  const state=()=>({context:volume<=0?'muted':ctx?.state??'cold',loading:Boolean(loading&&!Object.keys(definitions).length),loadedRoles:Object.keys(samples).length,missing:[...missing],voices:handles.size,volume});
+  const report=()=>{try{onState(state());}catch{}};
+  async function loadSamples(){
+    if(loading)return loading;
+    loading=(async()=>{try{
+      const response=await fetch(manifestUrl),{roles}=await response.json();definitions=roles??{};
+      await Promise.all(Object.entries(definitions).map(async([name,def])=>{
+        const bufs=[];
+        for(const f of def.files??[]){
+          if(typeof f!=='string'||f.includes('..')||/^[\/]/.test(f)){missing.add(name);continue;}
+          const url=manifestUrl.slice(0,manifestUrl.lastIndexOf('/')+1)+f;
+          if(!cache.has(url))cache.set(url,(async()=>{const r=await fetch(url);if(!r.ok)throw Error('missing');return ctx.decodeAudioData(await r.arrayBuffer());})());
+          try{bufs.push({buffer:await cache.get(url),file:f});}catch{missing.add(name);}
         }
-        if (bufs.length) samples[name] = { bufs, gain: def.gain ?? 1 };
-      }
-    } catch { /* no pack installed: everything stays synthesized */ }
+        if(bufs.length)samples[name]={bufs,gain:def.gain??1};
+      }));
+    }catch{missing.add('manifest');}report();})();return loading;
   }
-  const playSample = ({ bufs, gain }) => {
-    const src = ctx.createBufferSource(), g = ctx.createGain();
-    src.buffer = bufs[Math.floor(Math.random() * bufs.length)];
-    g.gain.value = gain;
-    src.connect(g).connect(master);
-    src.start();
-  };
-
-  function ready() {
-    if (!ctx) {
-      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return false; }
-      master = ctx.createGain();
-      master.gain.value = volume;
-      master.connect(ctx.destination);
+  function ready(){
+    if(volume<=0)return false;
+    if(!ctx){
+      try{ctx=new (window.AudioContext||window.webkitAudioContext)();}catch{return false;}
+      master=ctx.createGain();master.gain.value=volume;master.connect(ctx.destination);
+      noise=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
       loadSamples();
-      noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-      const d = noise.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    return ctx.state !== 'closed';
+    if(ctx.state==='suspended')ctx.resume?.().then(report).catch(report);
+    return ctx.state==='running';
   }
-
   const tone = (freq, at, dur, { type = 'sine', gain = 0.5, glide = 0 } = {}) => {
     const t = ctx.currentTime + at, o = ctx.createOscillator(), g = ctx.createGain();
     o.type = type;
@@ -57,7 +44,7 @@ export function createSfx(volume = 0.3) {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(master);
+    o.connect(g).connect(currentSink??master);currentNodes?.push(o);
     o.start(t);
     o.stop(t + dur + 0.05);
   };
@@ -69,7 +56,7 @@ export function createSfx(volume = 0.3) {
     f.frequency.exponentialRampToValueAtTime(to, t + dur);
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f).connect(g).connect(master);
+    s.connect(f).connect(g).connect(currentSink??master);currentNodes?.push(s);
     s.start(t);
     s.stop(t + dur + 0.05);
   };
@@ -135,16 +122,34 @@ export function createSfx(volume = 0.3) {
     laugh: () => { for (let i = 0; i < 5; i++) tone(520 - i * 30, i * 0.13, 0.1, { type: 'sawtooth', gain: 0.08, glide: 0.8 }); },
   };
 
-  return function play(name, arg) {
-    const fn = SOUNDS[name];
-    if (!fn || volume <= 0 || !ready()) return;
-    const now = performance.now();
-    if (now - (lastAt[name] ?? 0) < (COOLDOWN[name] ?? 250)) return;
-    while (recent.length && now - recent[0] > 1000) recent.shift();
-    if (recent.length >= 8) return; // never more than 8 sounds a second
-    recent.push(now);
-    lastAt[name] = now;
-    if (samples[name]) playSample(samples[name]);
-    else fn(arg);
-  };
+  function play(name,arg,meta={}){
+    if(!ready())return null;
+    const def=definitions[name],sample=samples[name],fn=SOUNDS[name]??SOUNDS[def?.fallback];
+    if(!sample&&!fn)return null;
+    const now=performance.now();
+    if(!meta.managed){
+      if(now-(lastAt[name]??-Infinity)<(def?.cooldownMs??250))return null;
+      while(recent.length&&now-recent[0]>1000)recent.shift();if(recent.length>=8)return null;
+      recent.push(now);lastAt[name]=now;
+    }
+    const nodes=[],sink=ctx.createGain();sink.gain.value=Number.isFinite(meta.gain)?meta.gain:1;sink.connect(master);
+    let finish,timer,done=false;const ended=new Promise(r=>finish=r);
+    const handle={name,sampleId:null,fallback:!sample,ended,stop(){if(done)return;done=true;clearTimeout(timer);for(const n of nodes)try{n.stop();}catch{}sink.disconnect?.();handles.delete(handle);finish();report();}};
+    handles.add(handle);currentNodes=nodes;currentSink=sink;
+    let duration=Math.min(5000,def?.maxDurationMs??2500);
+    try{
+      if(sample){
+        const choices=sample.bufs.map((_,i)=>i).filter(i=>meta.sampleId?sample.bufs[i].file===meta.sampleId:sample.bufs.length===1||i!==variants.get(name));
+        if(!choices.length){handle.stop();return null;}
+        const index=choices[Math.floor(Math.random()*choices.length)];variants.set(name,index);
+        const selected=sample.bufs[index],src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=selected.buffer;g.gain.value=sample.gain;src.connect(g).connect(sink);nodes.push(src);handle.sampleId=selected.file;duration=Math.min(duration,src.buffer.duration*1000+40);src.onended=()=>handle.stop();src.start();
+      }else fn(arg);
+    }catch{handle.stop();return null;}finally{currentNodes=null;currentSink=null;}
+    timer=setTimeout(()=>handle.stop(),Math.max(20,duration));report();return handle;
+  }
+  play.warmup=async()=>{ready();await loading;report();return state();};
+  play.stop=()=>{for(const h of [...handles])h.stop();};
+  play.setVolume=n=>{volume=Number.isFinite(n)?Math.max(0,Math.min(1,n)):0;if(master)master.gain.value=volume;if(!volume)play.stop();report();};
+  play.status=state;
+  return play;
 }

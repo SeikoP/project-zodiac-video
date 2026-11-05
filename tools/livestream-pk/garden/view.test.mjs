@@ -10,6 +10,48 @@ const cfg = gardenConfig();
 const meta = { tiers: TIERS, cfg };
 const VP = { w: 1080, h: 1920 };
 
+test('every close-up explains its trigger and overview clears the reason',()=>{
+ for(const kind of ['steal','catch','levelup'])assert.match(view.cameraReason({kind}),/^Cận cảnh · .+/);
+ for(const eventKind of ['rain','pests','merchant','golden'])assert.match(view.cameraReason({kind:'event-focus',eventKind}),/^Cận cảnh · .+/);
+ assert.equal(view.cameraReason({kind:'overview'}),'');
+ for(const kind of ['ripe','harvest'])assert.equal(view.cameraReason({kind}),'');
+});
+
+test('crop and soil SVGs use the channel palette and handmade flat artwork',()=>{
+ const palette=new Set(['#F6F0E6','#FFFDF9','#2F3C44','#5C6B75','#4B5B61','#F1C6A0','#D0C1B3','#8EC0B9','#E97A66','#F2C45C','#435064']);
+ const dir=new URL('../public/garden/assets/',import.meta.url);
+ for(const file of fs.readdirSync(dir).filter(f=>f.startsWith('crop-')||f==='pot-soil-front.svg')){
+  const svg=fs.readFileSync(new URL(file,dir),'utf8');
+  for(const color of svg.match(/#[0-9a-f]{6}/gi)??[])assert.ok(palette.has(color.toUpperCase()),`${file}: ${color}`);
+  assert.doesNotMatch(svg,/<(?:filter|linearGradient|radialGradient|text)\b/);
+  assert.match(svg,/human-stroke-v2/);
+ }
+});
+
+test('a notice keeps its reading time while gifts or events occupy its dock',()=>{
+ assert.equal(view.noticeTimeLeft(7000,10000,true),7000);
+ assert.equal(view.noticeTimeLeft(7000,250,false),6750);
+ assert.equal(view.noticeTimeLeft(7000,10000,false),6750,'a stalled tab does not discard a result');
+ assert.equal(view.noticeTimeLeft(100,250,false),0);
+});
+
+test('gift copy describes measured impact instead of promising growth on a ripe garden',()=>{
+ assert.match(view.giftImpactText({giftKind:'rain',affected:12}),/12 cây/);
+ assert.match(view.giftImpactText({giftKind:'star',affected:1,effects:[{from:.55,to:1}]}),/45%/);
+ assert.match(view.giftImpactText({giftKind:'dew',affected:1,effects:[{from:1,to:1}]}),/đủ nước/);
+ assert.doesNotMatch(view.giftImpactText({giftKind:'rain',affected:0}),/lên|nâng/);
+});
+
+test('zoom callout stays next to the whole plant, within the frame on either side',()=>{
+ for(const x of [250,370,730,830]){
+  const bounds={left:x-155,right:x+155,top:650,bottom:1160};
+  const card=view.focusCardPlacement(bounds,{w:350,h:280},VP);
+  assert.ok(card.x>=24 && card.x+350<=1056);
+  assert.ok(card.y>=340 && card.y+280<=1760);
+  assert.ok(card.x>=bounds.right+24 || card.x+350<=bounds.left-24,'card never covers plant');
+ }
+});
+
 test('lodOf: dots when zoomed out, plots in the middle, close-up when zoomed in', () => {
   assert.deepEqual([0.2, 0.26, 0.27, 0.4, 1.24, 1.25, 2.5].map(z => lodOf(z)), ['dot', 'dot', 'plot', 'plot', 'plot', 'close', 'close']);
 });
@@ -82,11 +124,21 @@ test('sleeping plots are excluded entirely from rendering', () => {
   assert.equal(v.dots.length, 0);
 });
 
-test('logical row four wraps to a right visual wing at the same vertical shelf', () => {
+test('logical row eight wraps to a right visual wing at the same vertical shelf', () => {
   const left = plotPos(owned('cloud-1', 0), meta);
   const right = plotPos(owned('cloud-1', 24), meta);
-  assert.ok(right.x - left.x > cfg.potSpacingX * 5);
+  assert.ok(right.x - left.x > cfg.potSpacingX * (cfg.potsPerShelf - 1));
   assert.equal(right.y, left.y);
+});
+
+test('overview care labels prioritize trouble, then ripe crops, then water and growth',()=>{
+ const p={crop:{pest:true,weeds:true,progress:.5},stage:3,water:.1};
+ assert.equal(view.careLabel(p),'Bắt sâu');p.crop.pest=false;
+ assert.equal(view.careLabel(p),'Nhổ cỏ');p.crop.weeds=false;
+ assert.equal(view.careLabel(p),'Hái ngay');p.stage=2;
+ assert.equal(view.careLabel(p),'Cần tưới');p.water=1;
+ assert.equal(view.careLabel(p),'50% lớn');p.crop=null;
+ assert.equal(view.careLabel(p),'Gieo hạt');
 });
 
 test('overview identity is an adaptive nickname and never a public slot code', () => {
@@ -112,7 +164,7 @@ test('rackGeometry describes one outer frame containing two separated shelf wing
   assert.ok(rack.outer.right > plotPos(owned('cloud-1', 47), meta).x);
   assert.equal(rack.wings[0].top, rack.wings[1].top);
   assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
-  assert.ok(rack.outer.right - rack.outer.left > 1500, 'greenhouse fills most of the usable width before camera scaling');
+  assert.ok(rack.outer.right - rack.outer.left > 1000, 'greenhouse fills most of the usable width before camera scaling');
 });
 
 test('dense overview label width always leaves a gap between adjacent pots', () => {

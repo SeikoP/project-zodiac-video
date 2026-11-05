@@ -1,0 +1,12 @@
+{
+  "purpose": "Manual reference only; not a TikTok LIVE Studio import preset",
+  "overlayUrl": "http://127.0.0.1:4858/?music=0.16&sfx=0.2",
+  "controlUrl": "http://127.0.0.1:4858/control",
+  "proposedCanvas": { "width": 1080, "height": 1920, "fps": 30 },
+  "audio": "One Garden audio capture route plus a separate host microphone",
+  "capture": "Overlay only; keep control and diagnostics outside capture",
+  "simulatorAndLiveSharePort": true,
+  "studioSourceAndMixerVerified": false,
+  "phoneSafeAreaVerified": false,
+  "actualLiveDeliveryVerified": false
+}

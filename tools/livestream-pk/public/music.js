@@ -48,6 +48,8 @@ export function createMusic({ volume = 0.22, onBlocked = () => {} } = {}) {
   }, 50);
 
   return {
+    setVolume(n){volume=Number.isFinite(n)?Math.max(0,Math.min(1,n)):0;if(!volume)players.forEach(p=>{p.el.volume=0;});},
+    status:()=>({started,muted,mood,volume,duck,nowPlaying:players.find(p=>p.target===1)?.title??null}),
     setLists(next) { lists = { calm: next.calm ?? [], upbeat: next.upbeat ?? [] }; if (volume > 0 && !players.length) startNext(); },
     // Called with 'calm' or 'upbeat'; a change cross-fades into a track of the new mood.
     setMood(next) { if (next === mood) return; mood = next; if (players.length) { players.forEach(fadeOut); startNext(); } },
