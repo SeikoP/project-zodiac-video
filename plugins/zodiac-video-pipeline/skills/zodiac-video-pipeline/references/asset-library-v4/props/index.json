@@ -1,6 +1,6 @@
 {
   "format": "zodiac-v4-prop-catalog@1",
-  "version": "4.2",
+  "version": "4.3",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -302,6 +302,246 @@
         "show-object",
         "hold-two-props"
       ]
+    },
+    {
+      "id": "sealed-envelope",
+      "path": "props/sealed-envelope.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "message",
+        "trust",
+        "secrecy"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "folded-letter",
+      "path": "props/folded-letter.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "message",
+        "disclosure",
+        "decision"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "hourglass",
+      "path": "props/hourglass.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "waiting",
+        "time",
+        "pressure"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "key-ring",
+      "path": "props/key-ring.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "access",
+        "trust",
+        "ownership"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "receipt-roll",
+      "path": "props/receipt-roll.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "evidence",
+        "accountability",
+        "money"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "compass",
+      "path": "props/compass.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "direction",
+        "choice",
+        "uncertainty"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "theater-mask",
+      "path": "props/theater-mask.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "mask",
+        "role",
+        "identity"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "thread-spool",
+      "path": "props/thread-spool.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "connection",
+        "entanglement",
+        "repair"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "chess-knight",
+      "path": "props/chess-knight.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "strategy",
+        "tradeoff",
+        "choice"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "magnifying-glass",
+      "path": "props/magnifying-glass.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "inspection",
+        "doubt",
+        "discovery"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "calendar-page",
+      "path": "props/calendar-page.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "deadline",
+        "promise",
+        "delay"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "ribbon-knot",
+      "path": "props/ribbon-knot.svg",
+      "role": "contact_prop",
+      "contexts": [
+        "commitment",
+        "attachment",
+        "conflict"
+      ],
+      "contact_sockets": [
+        "left_grip",
+        "right_grip"
+      ],
+      "compatible_mechanics": [
+        "pass-object",
+        "show-object",
+        "hold-two-props"
+      ],
+      "creative_use": "reusable_physical_primitive_not_story_metaphor"
     }
   ]
 }
