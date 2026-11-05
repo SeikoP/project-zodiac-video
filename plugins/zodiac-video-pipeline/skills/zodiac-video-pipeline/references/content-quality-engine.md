@@ -8,10 +8,20 @@ New, fresh Phase-01 authoring MUST establish **why this particular story is wort
 3. Make `story_spine` describe the winner's curiosity/question, the cost or recognition at risk, the meaningful change and the earned final reframe. `narrative-plan.json.selected_concept_id` must point to the winner. A premise may be observation-led; its stakes can be social friction or recognition rather than theatrical disaster.
 4. Only now choose optional Viral support. Use it for hook/intensity optimization **after** the story point, never to rescue an uninteresting story with false mystery. Video Lab techniques are optional guidance and must not force per-second asset churn, false retention claims or external affiliate content into Narration.
 
+## Engagement design before Narration
+
+For fresh 2.6.8+ runs, read `references/engagement-engine.md` and create `engagement-design.json` after the winning Story Spine is established and before writer-brief compilation. This does not replace premise quality, identity-first review or Viral support. It makes the reason-to-continue explicit: entry hook, open question, recognition cues, supported reframes, payoff callback and one viewer-pull job per Narrative Plan beat.
+
+Do not rescue a weak premise by manufacturing mystery. If a beat has no new information, useful question, recognition, reframe or payoff, repair the Concept/Story Spine before Narration.
+
 ## Independent editorial challenge (Narration step, after the full draft)
 Create `.authoring/story-quality-review.json` separate from `narrative-qc.json`. In a clean editorial-review pass, inspect actual Narration against the chosen premise. For each of these criteria, record the actual assessment and grounded spoken excerpts; leave objection empty when none is found, or describe and resolve a concrete issue: `premise_strength`, `stakes_or_recognition`, `progression_and_turn`, `sign_irreplaceability`, `payoff_and_callback`, `silent_read_test`. `silent_read_test` means imagine plain text with no TTS, music, motion or captions: is there still a clear reason to read/watch through the ending? A reviewer MUST mark `REVIEW` when a material objection remains; no automatic PASS and no fabricated independent review agent.
 
 The deterministic `validate-story-quality-review.mjs` verifies source fingerprints, selected concept, grounded excerpts, actual assessments and decisions; **its PASS only certifies a well-formed review artifact**. Human/LLM editorial judgment is still necessary and Content Review remains a real user approval. Avoid numerical virality/retention guarantees and fake benchmarks.
+
+## Engagement review after Narration
+
+Fresh 2.6.8+ runs create `engagement-review.json` from the actual narration and validate it before Content Review. Review hook strength, early value, curiosity continuity, recognition density, reframe strength and payoff satisfaction, plus one grounded pull-chain entry per Narrative Plan beat. Two adjacent semantic beats that merely explain without adding behavior, question, contrast, reframe or payoff are an unresolved REVIEW.
 
 ## Repair routing
 If defects concern premises, stakes, cause/effect, same-sign substitution, weak reveal or a predictable ending, return to Concept, revise candidates and Story Spine, then rewrite Narration. If premise is sound and only speech cadence/wording is weak, revise Narration without altering the approved concept. Preserve any already approved scripts; a requested revision reopens Content Review only for that script. Fresh restart never silently overwrites approved content.
