@@ -7,17 +7,24 @@ import {estimateDuration} from '../../references/short-form-duration.mjs';
 const fail=code=>{throw new Error(code)};
 const tokens=s=>String(s??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/đ/g,'d').match(/[\p{L}\p{N}]+/gu)??[];
 
-function findSubsequence(hay,needle){
+function findSubsequence(hay,needle,{from=0,last=false}={}){
   if(!needle.length)return -1;
-  outer:for(let i=0;i<=hay.length-needle.length;i++){
+  if(last){
+    outerLast:for(let i=hay.length-needle.length;i>=from;i--){
+      for(let j=0;j<needle.length;j++)if(hay[i+j]!==needle[j])continue outerLast;
+      return i;
+    }
+    return -1;
+  }
+  outer:for(let i=Math.max(0,from);i<=hay.length-needle.length;i++){
     for(let j=0;j<needle.length;j++)if(hay[i+j]!==needle[j])continue outer;
     return i;
   }
   return -1;
 }
 
-function locate(all,excerpt,code){
-  const part=tokens(excerpt),start=findSubsequence(all,part);
+function locate(all,excerpt,code,options={}){
+  const part=tokens(excerpt),start=findSubsequence(all,part,options);
   if(start<0)fail(code+'_EXCERPT_NOT_FOUND');
   return {start,end:start+part.length,length:part.length,excerpt};
 }
@@ -27,8 +34,18 @@ export function analyzeRetentionStructure({narration,engagementReview,engagement
   const all=tokens(narration),issues=[],criteria=engagementReview?.criteria??{};
   const hook=locate(all,criteria.hook_strength?.evidence_excerpt,'HOOK');
   const early=locate(all,criteria.early_value?.evidence_excerpt,'EARLY_VALUE');
-  const payoff=locate(all,criteria.payoff_satisfaction?.evidence_excerpt,'PAYOFF');
-  const pulls=(engagementReview?.pull_chain??[]).map((p,i)=>({...locate(all,p.evidence_excerpt,'PULL_'+i),beat_id:p.beat_id}));
+  const payoff=locate(all,criteria.payoff_satisfaction?.evidence_excerpt,'PAYOFF',{last:true});
+  const pulls=[];let pullCursor=0;
+  for(const [i,p] of (engagementReview?.pull_chain??[]).entries()){
+    let located;
+    try{located=locate(all,p.evidence_excerpt,'PULL_'+i,{from:pullCursor});}
+    catch(e){
+      located=locate(all,p.evidence_excerpt,'PULL_'+i);
+      issues.push({code:'PULL_CHAIN_ORDER',beat_id:p.beat_id});
+    }
+    pulls.push({...located,beat_id:p.beat_id});
+    pullCursor=Math.max(pullCursor,located.end);
+  }
 
   if(hook.end>16)issues.push({code:'HOOK_LATE',end_token:hook.end,limit:16});
   if(early.end>30)issues.push({code:'EARLY_VALUE_LATE',end_token:early.end,limit:30});
@@ -36,7 +53,6 @@ export function analyzeRetentionStructure({narration,engagementReview,engagement
 
   let maxGap=0;
   for(let i=1;i<pulls.length;i++){
-    if(pulls[i].start<=pulls[i-1].start)issues.push({code:'PULL_CHAIN_ORDER',beat_id:pulls[i].beat_id});
     const gap=Math.max(0,pulls[i].start-pulls[i-1].end);maxGap=Math.max(maxGap,gap);
     if(gap>90)issues.push({code:'PULL_GAP_LONG',from:pulls[i-1].beat_id??null,to:pulls[i].beat_id??null,gap_tokens:gap,limit:90});
   }
