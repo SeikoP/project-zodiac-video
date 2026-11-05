@@ -4,7 +4,7 @@ import {analyzeRetentionStructure} from '../retention-structure.mjs';
 const words=s=>s.trim().split(/\s+/u);
 function fixture({late=false,long=false,gap=false}={}){
  const head=late?Array.from({length:20},(_,i)=>'mo'+i).join(' ')+' ':'';
- const body=long?Array.from({length:590},(_,i)=>'w'+i).join(' '):'Bọ Cạp thấy một chi tiết lệch nên bắt đầu nghi ngờ. Bạn hôm qua bảo ghét cà phê nhưng hôm nay lại cầm bạc xỉu. Câu hỏi là vì sao lời nói đổi nhanh như vậy. Họ im lặng đối chiếu rồi càng nghĩ chiếc ly càng thành manh mối. Nhưng suy luận không phải lúc nào cũng đúng. Cuối cùng bạn nói quán hết trà đào nên uống thử bạc xỉu.';
+ const body=(long||gap)?Array.from({length:590},(_,i)=>'w'+i).join(' '):'Bọ Cạp thấy một chi tiết lệch nên bắt đầu nghi ngờ. Bạn hôm qua bảo ghét cà phê nhưng hôm nay lại cầm bạc xỉu. Câu hỏi là vì sao lời nói đổi nhanh như vậy. Họ im lặng đối chiếu rồi càng nghĩ chiếc ly càng thành manh mối. Nhưng suy luận không phải lúc nào cũng đúng. Cuối cùng bạn nói quán hết trà đào nên uống thử bạc xỉu.';
  const narration=head+body;
  const tokenList=words(narration);
  const pick=(start,len=5)=>tokenList.slice(start,start+len).join(' ');
