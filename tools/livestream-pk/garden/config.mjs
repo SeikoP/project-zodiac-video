@@ -1,12 +1,12 @@
 // Every number of the Vườn Mây spec in one place; config.json's "garden" section overrides any of them.
 export const GARDEN_DEFAULTS = Object.freeze({
-  // One visible Seed Zone, tuned for a real <100-viewer LIVE.
-  // Two portrait wings × 8 shelves × 3 pots keep all 48 saved seats visible.
-  tierWidth: 1960, tierHeight: 1600, plotsPerTier: 48, plotsPerRow: 6, plotCell: 120,
-  activeCapacity: 48, modulesPerRow: 1, moduleCapacity: 48, potsPerShelf: 3, shelvesPerModule: 8,
-  rackWings: 2, shelvesPerWing: 8, rackWingGapX: 210,
-  potSpacingX: 190, shelfSpacingY: 200, moduleGapX: 220, moduleGapY: 200,
-  zoneMarginX: 160, zoneMarginY: 300, potScale: 1.4, potBottomOffset: 72, potShelfGap: 1,
+  // One visible Seed Zone, tuned for phone readability on a real LIVE.
+  // Two portrait wings × 7 shelves × 3 pots = 42 active seats; the removed row funds larger pots and labels.
+  tierWidth: 1960, tierHeight: 1600, plotsPerTier: 42, plotsPerRow: 6, plotCell: 120,
+  activeCapacity: 42, modulesPerRow: 1, moduleCapacity: 42, potsPerShelf: 3, shelvesPerModule: 7,
+  rackWings: 2, shelvesPerWing: 7, rackWingGapX: 180,
+  potSpacingX: 180, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 220,
+  zoneMarginX: 160, zoneMarginY: 300, potScale: 1.5, potBottomOffset: 80, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
   // Presence: inactive pots leave the active scene quickly, then release the seat later.
   sleepAfterMs: 90000, evictAfterMs: 180000, tickMaxDtMs: 5000, plotSyncMs: 5000, sessionMs: 600000, awardsMs: 8000,

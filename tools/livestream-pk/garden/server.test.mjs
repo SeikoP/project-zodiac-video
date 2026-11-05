@@ -19,7 +19,7 @@ test('simulator scenarios preserve a room snapshot and restore it without touchi
   assert.equal((await post(base+'/api/sim-scenario',{scenario:'unknown'})).status,400);
   await post(base+'/api/sim-scenario',{scenario:'restore'});assert.equal(s.garden.state.users['sim:auto-0'].gold,gold);assert.notEqual(s.garden.state.boss?.phase,'active');
  }finally{await s.close();}
- const live=await boot({simulator:false});try{assert.equal((await post(live.base+'/api/sim-scenario',{scenario:'room48'})).status,403);}finally{await live.s.close();}
+ const live=await boot({simulator:false});try{assert.equal((await post(live.base+'/api/sim-scenario',{scenario:'room42'})).status,403);}finally{await live.s.close();}
 });
 test('new subscribers recover gift receipts and display telemetry is local and ephemeral',async()=>{
  const {s,base}=await boot({config:{garden:{bossChance:0}}});

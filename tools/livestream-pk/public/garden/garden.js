@@ -474,7 +474,7 @@ function onMessage(event, data) {
     for (const fx of data.fx ?? []) handleFx(fx);
     const count = [...plots.values()].filter(p=>p.owner&&p.awake).length;
     audienceCount.textContent=`${count} người đang giữ vườn`;
-    zoneCount.textContent = `${count}/${meta?.cfg.activeCapacity??48} chậu · cùng chăm vườn`;
+    zoneCount.textContent = `${count}/${meta?.cfg.activeCapacity??42} chậu · cùng chăm vườn`;
   } else if(event==='receipts'){
     for(const receipt of data)if(receipt.sessionNo===sessionInfo?.no)presentation.push({...receipt,compact:true});
   } else if (event === 'shot') {
@@ -857,21 +857,21 @@ function drawPlotLabel(p) {
   const ripe = (p.stage ?? 0) >= 3;
   const event=visualEvent(),boost=event?.kind==='golden'&&ripe?meta.cfg.goldenMult:event?.kind==='merchant'&&p.crop?.type===event.crop?meta.cfg.merchantMult:0;
   const trouble = p.crop?.pest || p.crop?.weeds || (p.crop && p.water < .25);
-  ctx.save(); ctx.font = `${cam.zoom < .65 ? 16 : 20}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.save(); ctx.font = `${cam.zoom < .65 ? 18 : 22}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const name = displayNickname(p.owner.nickname, cam.zoom);
   const label=`${name} · L${p.owner.level}`;
-  const w = Math.min(maxW, ctx.measureText(label).width + 20);
-  ctx.fillStyle = C.card; ctx.strokeStyle = 'rgba(47,60,68,.22)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.roundRect(at.x-w/2, y, w, 25, 6); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = C.ink; ctx.fillText(label, at.x, y+10, w-9);
+  const w = Math.min(maxW, ctx.measureText(label).width + 24);
+  ctx.fillStyle = C.card; ctx.strokeStyle = 'rgba(47,60,68,.22)'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.roundRect(at.x-w/2, y, w, 29, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.ink; ctx.fillText(label, at.x, y+12, w-10);
   if(p.crop){
-    ctx.fillStyle='#D5DFD7';ctx.fillRect(at.x-w/2+4,y+21,w-8,4);
+    ctx.fillStyle='#D5DFD7';ctx.fillRect(at.x-w/2+4,y+24,w-8,5);
     const buff=growthBuffPresentation(p,Date.now(),cam.zoom,activePlotCount),barColor=buff?BUFF_COLORS[buff.primary]:'#4E9272';
-    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:barColor;ctx.fillRect(at.x-w/2+4,y+21,(w-8)*p.crop.progress,4);
+    ctx.fillStyle=p.crop.pest||p.crop.weeds?C.coral:barColor;ctx.fillRect(at.x-w/2+4,y+24,(w-8)*p.crop.progress,5);
   }
   if (trouble || ripe || boost) {
     // A small symbol beside the crop leaves both its silhouette and pot body visible.
-    ctx.font = `bold 20px ${FONT}`; ctx.fillStyle = trouble ? C.coral : C.ochre;
+    ctx.font = `bold 22px ${FONT}`; ctx.fillStyle = trouble ? C.coral : C.ochre;
     ctx.beginPath(); ctx.arc(at.x + size*.46, at.y-size*.34, boost?17:12, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = C.ink; ctx.fillText(trouble ? '!' : boost ? `×${boost}` : '✓', at.x+size*.46, at.y-size*.34+1);
   }
@@ -1084,7 +1084,7 @@ function frame(now) {
   drawBackdrop(now);
 
   const active = [...plots.values()].filter(p => p.owner && p.awake);
-  activePlotCount=active.length;
+  activePlotCount=active.length;stage.classList.toggle('dense-room',activePlotCount>=12);
   const activeTierIds = new Set(active.map(p => p.tier));
   if (!activeTierIds.size) activeTierIds.add(meta.tiers[0].id);
   const close = focusPlot && cam.zoom >= 1.25;

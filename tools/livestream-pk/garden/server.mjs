@@ -205,16 +205,16 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   }
   function runScenario(b){
     const kind=String(b.scenario??'');
-    const kinds=['newcomer1','group4','room12','room24','room48','careburst48','cardspam100','giftburst30','bossinterrupt','shield','no-target','destruction','awardreload','audioquiet','audiobusy','restore'];
+    const kinds=['newcomer1','group4','room12','room24','room42','careburst42','room48','careburst48','cardspam100','giftburst30','bossinterrupt','shield','no-target','destruction','awardreload','audioquiet','audiobusy','restore'];
     if(!kinds.includes(kind))throw Object.assign(new Error('invalid-scenario'),{status:400});
     if(kind==='restore')return restoreScenario();
     if(!scenarioSnapshot)scenarioSnapshot={state:structuredClone(state),auto:[...autoUsers.entries()],autoSeq,at:now()};else restoreScenario();
     stopAuto();let seed=Number.isSafeInteger(b.seed)?b.seed:42;garden.ctx.rng=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
-    const count=kind==='newcomer1'||kind==='no-target'||kind==='audioquiet'?1:kind==='group4'?4:/48|audiobusy/.test(kind)?48:/24/.test(kind)?24:12;
+    const count=kind==='newcomer1'||kind==='no-target'||kind==='audioquiet'?1:kind==='group4'?4:/42|48|audiobusy/.test(kind)?garden.cfg.activeCapacity:/24/.test(kind)?24:12;
     setAutoRoom(count);garden.ctx.limiter=createLimiter(now);
     const people=[...autoUsers.values()].map(u=>({...u,userId:'sim:'+u.userId})),giver=people[0];
     const gift=(diamonds)=>garden.gift({...giver,diamonds,count:1});
-    if(kind==='careburst48'||kind==='audioquiet'||kind==='audiobusy')for(const u of people)garden.chat({...u,comment:'tưới'});
+    if(['careburst42','careburst48','audioquiet','audiobusy'].includes(kind))for(const u of people)garden.chat({...u,comment:'tưới'});
     if(kind==='cardspam100')for(let i=0;i<100;i++)garden.chat({...people[i%people.length],comment:'vườn'});
     if(kind==='giftburst30')for(let i=0;i<30;i++)gift(50);
     if(kind==='bossinterrupt'){for(let i=0;i<4;i++)gift(50);garden.boss.force();}

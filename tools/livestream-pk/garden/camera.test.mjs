@@ -31,9 +31,9 @@ test('gift bursts retain the strongest tier and aggregate real progress without 
 test('rack uses the bottom of the frame while leaving the expanded header clear',()=>{
  const shot=rig().cam.tick();const sy=y=>(y-shot.y)*shot.zoom+960;
  assert.ok(sy(cfg.zoneMarginY-132)>=345);
- assert.ok(sy(cfg.zoneMarginY+7*cfg.shelfSpacingY+110)>=1840);
- assert.ok(sy(cfg.zoneMarginY+7*cfg.shelfSpacingY+110)<=1910);
- assert.ok(100*cfg.potScale*shot.zoom>=125);
+ assert.ok(sy(cfg.zoneMarginY+(cfg.shelvesPerWing-1)*cfg.shelfSpacingY+110)>=1810);
+ assert.ok(sy(cfg.zoneMarginY+(cfg.shelvesPerWing-1)*cfg.shelfSpacingY+110)<=1910);
+ assert.ok(100*cfg.potScale*shot.zoom>=135,'42-seat overview makes pots materially larger');
 });
 
 test('close shot enlarges the plant and reserves space beside it for its card',()=>{
@@ -186,10 +186,10 @@ test('overview fits the complete two-wing structure even with only one occupant'
   assert.equal(shot.zoom >= cfg.camera.zoomWorld, true);
 });
 
-test('portrait rack makes every pot readable while fitting all 48 seats',()=>{
+test('portrait rack makes every pot readable while fitting all 42 active seats',()=>{
  const shot=rig().cam.tick();
- assert.ok(100*cfg.potScale*shot.zoom>=115,'overview pots exceed 115px');
- assert.ok((cfg.shelvesPerWing-1)*cfg.shelfSpacingY*shot.zoom>1100,'shelves fill height');
+ assert.ok(100*cfg.potScale*shot.zoom>=135,'overview pots exceed 135px');
+ assert.ok((cfg.shelvesPerWing-1)*cfg.shelfSpacingY*shot.zoom>1180,'seven shelves still fill the portrait height');
 });
 
 test('overview spreads both visual rack wings across most of the portrait play area', () => {

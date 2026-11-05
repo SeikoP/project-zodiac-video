@@ -124,9 +124,9 @@ test('sleeping plots are excluded entirely from rendering', () => {
   assert.equal(v.dots.length, 0);
 });
 
-test('logical row eight wraps to a right visual wing at the same vertical shelf', () => {
+test('logical row seven wraps to a right visual wing at the same vertical shelf', () => {
   const left = plotPos(owned('cloud-1', 0), meta);
-  const right = plotPos(owned('cloud-1', 24), meta);
+  const right = plotPos(owned('cloud-1', 21), meta);
   assert.ok(right.x - left.x > cfg.potSpacingX * (cfg.potsPerShelf - 1));
   assert.equal(right.y, left.y);
 });
@@ -161,7 +161,7 @@ test('rackGeometry describes one outer frame containing two separated shelf wing
   assert.equal(rack.wings.length, 2);
   assert.ok(rack.wings[0].right < rack.wings[1].left, 'visual wings have a readable center gap');
   assert.ok(rack.outer.left < plotPos(owned('cloud-1', 0), meta).x);
-  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 47), meta).x);
+  assert.ok(rack.outer.right > plotPos(owned('cloud-1', 41), meta).x);
   assert.equal(rack.wings[0].top, rack.wings[1].top);
   assert.equal(rack.wings[0].bottom, rack.wings[1].bottom);
   assert.ok(rack.outer.right - rack.outer.left > 1000, 'greenhouse fills most of the usable width before camera scaling');
