@@ -204,3 +204,24 @@ test('500 and 1000 coin destruction use distinct motion while reduced motion kee
  assert.notEqual(quake.shake,undefined);
  assert.deepEqual(view.impactMotion('cataclysm',100,true),{kind:'result',progress:1,shake:0});
 });
+
+test('routine cooldown and idle states stay out of overview cards, while actionable problems remain visible',()=>{
+ assert.equal(view.plotOverlayMode({feedback:{reason:'cooldown'},shown:{}}),'hidden');
+ assert.equal(view.plotOverlayMode({feedback:{reason:'busy'},shown:{}}),'hidden');
+ assert.equal(view.plotOverlayMode({shown:{key:'idle'}}),'hidden');
+ assert.equal(view.plotOverlayMode({feedback:{reason:'gold'},shown:{}}),'card');
+ assert.equal(view.plotOverlayMode({shown:{key:'pest'}}),'card');
+ assert.equal(view.plotOverlayMode({focused:true,feedback:{reason:'cooldown'},shown:{}}),'card');
+});
+
+test('growth buffs expose one strong visual state without showing badges in dense overview',()=>{
+ const now=10_000,p={crop:{},stage:2,growth:{bonusPercent:48,waterBoostUntil:20_000,speedUntil:0,fertilized:true}};
+ let buff=view.growthBuffPresentation(p,now,.8);
+ assert.deepEqual(buff.sources,['water','fertilizer']);
+ assert.equal(buff.primary,'water');assert.equal(buff.bonusPercent,48);assert.equal(buff.mode,'aura');assert.equal(buff.showBadge,false,'overview keeps aura but drops persistent text badges');
+ buff=view.growthBuffPresentation({...p,growth:{...p.growth,speedUntil:20_000}},now,.9,48);
+ assert.equal(buff.primary,'speed');assert.equal(buff.mode,'rim');assert.equal(buff.showBadge,false,'dense rooms collapse buff to the pot rim and drop text');
+ assert.equal(view.growthBuffPresentation(p,now,1.4).showBadge,true,'close focus may show the numeric buff');
+ assert.equal(view.growthBuffPresentation({...p,stage:3},now,.8),null,'ripe crops do not advertise growth buffs');
+ assert.equal(view.growthBuffPresentation({...p,growth:{bonusPercent:0,waterBoostUntil:0,speedUntil:0,fertilized:false}},now,.8),null);
+});
