@@ -1,3 +1,5 @@
+import {createHash} from 'node:crypto';
+import {sniffImage} from './product-media-adapter.mjs';
 const fail=code=>{throw new Error(code)};
 const sha64=v=>/^[a-f0-9]{64}$/u.test(String(v??''));
 
@@ -18,6 +20,13 @@ export function validateCommerceProductTransport(asset,svg){
   const embedded=raw.match(/href\s*=\s*["']data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)["']/u);
   if(!embedded)fail('COMMERCE_EMBED_REQUIRED');
   if(embedded[1]!==c.source_mime)fail('COMMERCE_EMBED_MIME_MISMATCH');
+  let bytes;try{bytes=Buffer.from(embedded[2],'base64');}catch{fail('COMMERCE_EMBED_BASE64_INVALID');}
+  if(!bytes.length)fail('COMMERCE_EMBED_BASE64_INVALID');
+  const actualHash=createHash('sha256').update(bytes).digest('hex');
+  if(actualHash!==c.source_sha256)fail('COMMERCE_SOURCE_HASH_MISMATCH');
+  let actualInfo;try{actualInfo=sniffImage(bytes);}catch{fail('COMMERCE_EMBED_IMAGE_INVALID');}
+  if(actualInfo.mime!==c.source_mime)fail('COMMERCE_SOURCE_MIME_MISMATCH');
+  if(actualInfo.width!==Number(c.source_width)||actualInfo.height!==Number(c.source_height))fail('COMMERCE_SOURCE_DIMENSIONS_MISMATCH');
   if(/https?:\/\//iu.test(raw.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/u,'')))fail('COMMERCE_REMOTE_RUNTIME_FORBIDDEN');
   return {status:'PASS',provider:'kalodata',product_id:String(c.product_id)};
 }
