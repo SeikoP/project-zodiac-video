@@ -8,20 +8,26 @@ handoff context; preserve exact narration, scope and genuine Content Review.
    choices. It uses native compiler output and exact masters, not episode examples.
 2. Author **one source of truth only**: `.authoring/visual-intent.json` (`zodiac-visual-intent@1`). Put the semantic choices there: Scene Plan, cast identity, scene goals/grammar, context/background decision, physical-prop participation, Narrative Visual decision/entities, director beats, art-direction coverage and scene events. Character identity is fixed across states. Use performed actions to plan state assets before generation; never create duplicates then merge finished SVGs.
    Then run `write-phase02-authoring.mjs`. `compile-visual-intent.mjs` must project the intent deterministically into `production.json`, `asset-plan.json`, `visual-grammar-plan.json`, Character Assembly, Director Plan, Art Direction, Episode Cast Plan and any supported compatibility projection. These projection files are compiler-owned and must not be manually authored or patched by the agent.
-3. Run native compilers and manifest validators. Fresh production uses a simple
+3. Before native asset compilation, run the **progressive Phase-2 checkpoint** for fresh runs:
+   - `validate-phase02-progressive-preflight.mjs` catches deterministic defects that should never wait for Director/native QC: incomplete Director beats, motion-registry duration mismatches, and authored-SVG style/handmade/stroke/palette violations.
+   - `validate-scene-experience.mjs --write` writes `.authoring/scene-experience-review.json`. It reviews character action, environment specificity, physical storytelling, depth separation, secondary action, callbacks and Narrative Visual role.
+   - Behavior/relationship scenes with only a passive actor plus passive decoration remain `REVIEW`. An intentionally sparse reflection/payoff scene may PASS when its negative-space rationale is explicit. Do not satisfy the review by adding decorative assets or fixed prop quotas.
+   - These checks run in the same parallel entry-preflight batch as the existing seam/character/art-direction checks. Any blocker stops before native SVG generation.
+
+4. Run native compilers and manifest validators. Fresh production uses a simple
    canvas background, independently positioned characters, optional canvas-native
    Scene Accents, Narrative Visuals, physical props and effects. Do not select,
    compile or constrain actors inside Scene Sets or walls. Preserve canvas,
    caption and real physical-contact safety. Historical Scene Set imports remain
    a separate compatibility execution path.
-4. Validate actual scene events, state transitions, source/identity, token,
+5. Validate actual scene events, state transitions, source/identity, token,
    contact/lifecycle, visual quality and Director choreography. Keep supported
    conditional meme work. A static hold may be justified; motion cannot substitute
    for a semantic payoff.
-5. Compile every scene plus two endpoints per authored event; run native preview
+6. Compile every scene plus two endpoints per authored event; run native preview
    checks and `prepare-phase02-review.mjs`. Inspect all compiled visuals and secure
    explicit Visual Review. Native PASS is structural, not creative or media PASS.
-6. Preserve Publish Prep and cover identity. Phase 2 creates no ZIP. Phase 3 owns
+7. Preserve Publish Prep and cover identity. Phase 2 creates no ZIP. Phase 3 owns
    Job@5 export; local runner owns voice, measured timing, final motion/render and
    audio/MP4 QA.
 
@@ -59,3 +65,8 @@ Expected invalidation:
 - compiler/validator changes invalidate affected PASS entries.
 
 Use `phase02-execute.mjs --run --no-cache` for a full rebuild comparison. Normal logs should summarize reused/rebuilt nodes and reason codes; hashes are debug detail.
+
+
+## Progressive revision guidance
+
+`core/audit/assess-revision-impact.mjs` now projects the existing Phase-2 semantic graph into scene/asset-level `rebuild` and `reuse` guidance. A single-scene prop/Narrative Visual edit dirties that scene, its preview/event endpoints and the review aggregate while unrelated scene previews and character assets remain reusable when their semantic/dependency/output hashes still match. This guidance never grants or preserves user approval by itself.
