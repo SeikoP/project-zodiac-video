@@ -11,7 +11,7 @@
     "defaultPrompt": "Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md. Three editorial phases: 01-content, 02-visual-production, 03-handoff. Before every step, derive the active step from persisted state and read its manifest-bounded references; never substitute remembered guidance or an ad-hoc checklist. Fresh episodes use character_deconstruction with episode formats single_sign, element_group, ranked_shortlist and comparison. Phase 01 is fail-closed: narration cannot begin until the compiled writer brief contains nonempty rhythm_direction and narrator_vibe, and Content Review cannot open until required narration artifacts and actual validator receipts exist. A user-revoked, deleted, discarded or explicitly excluded source remains ineligible even if the runtime remounts or resurfaces it; only an explicit later user re-authorization may restore it. Preserve sourced evidence, approved narration and genuine user reviews. Use only verified phase-scoped execution source; never let repository transport replace plugin routing or phase manifests. Preserve zodiac-job@5 producer/runner boundary; measured TTS, timing, Remotion, audio and MP4 QA stay with local runner."
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.6.7",
+  "version": "2.6.8",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"
