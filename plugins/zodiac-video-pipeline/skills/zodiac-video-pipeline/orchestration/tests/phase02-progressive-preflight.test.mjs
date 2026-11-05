@@ -7,7 +7,7 @@ const token={id:'zodiac-paper-doodle-meme-v4',handmade_profile:'human-stroke-v2'
 const svg='<svg xmlns="http://www.w3.org/2000/svg"><metadata>style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2</metadata><path d="M0 0L10 10" stroke="#435064" stroke-width="8"/></svg>';
 function fixture(){
  return {
-  intent:{scenes:[{id:'S01',director_beats:[{beat_id:'B1',voice_anchor:'Một câu.',semantic_purpose:'setup',supported_motion_or_state:'state_swap'}],entities:[],events:[{id:'E1',motion:{preset:'state_swap',duration_frames:12}}]}],scene_plan:{scenes:[{id:'S01',purpose:'Setup the behavior',beats:['B1']}],single_scene_rationale:'Single-scene fixture isolates the progressive preflight contract.'},assets:{A:{category:'scene_accent',path:'assets/a.svg',lineage:{mode:'authored_derivative'}}}},
+  intent:{scene_plan:{scenes:[{id:'S01',purpose:'Introduce remembered detail',beats:['B1']}],single_scene_rationale:'One focused beat',continuous_visual_logic:'Single setup beat'},scenes:[{id:'S01',director_beats:[{beat_id:'B1',voice_anchor:'Một câu.',semantic_purpose:'setup',supported_motion_or_state:'state_swap'}],entities:[],events:[{id:'E1',motion:{preset:'state_swap',duration_frames:12}}]}],scene_plan:{scenes:[{id:'S01',purpose:'Setup the behavior',beats:['B1']}],single_scene_rationale:'Single-scene fixture isolates the progressive preflight contract.'},assets:{A:{category:'scene_accent',path:'assets/a.svg',lineage:{mode:'authored_derivative'}}}},
   production:{assets:{A:{category:'environment',path:'assets/a.svg'}},scenes:[{id:'S01',voice:'Một câu.',entities:[],events:[{id:'E1',motion:{preset:'state_swap',duration_frames:12}}]}]}
  };
 }
