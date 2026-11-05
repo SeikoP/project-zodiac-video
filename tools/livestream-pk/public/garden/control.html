@@ -6,18 +6,19 @@
 <meta name="theme-color" content="#F6F0E6">
 <title>Vườn Mây · Bàn điều khiển</title>
 <link rel="stylesheet" href="/garden/control.css">
+<link rel="stylesheet" href="/garden/identity.css">
 </head>
 <body>
 <main class="shell">
   <header class="masthead">
     <div>
-      <div class="eyebrow">✦ bungmoto <span>·</span> GARDEN TEST LAB</div>
+      <div class="eyebrow">✦ bungmoto <span>·</span> BÀN ĐIỀU KHIỂN</div>
       <h1>Vườn Mây <span id="mode" class="badge">Đang kết nối…</span></h1>
       <p id="modeNotice" class="notice" aria-live="polite">Đang đọc trạng thái Garden…</p>
     </div>
     <nav aria-label="Điều hướng">
-      <a class="button quiet" href="/">Mở overlay</a>
-      <a class="button" href="/garden/control">Bàn điều khiển</a>
+      <a class="button quiet" href="/?display=live">Mở overlay</a>
+      <a class="button quiet" href="#giftTests">Thử quà</a>
     </nav>
   </header>
 
@@ -28,73 +29,22 @@
     <article class="stat"><span>Sự kiện / camera</span><b id="activity">—</b></article>
   </section>
 
+  <nav class="control-tabs" aria-label="Chế độ điều khiển"><button data-control-tab="try">Thử</button><button data-control-tab="watch">Xem nguồn phát</button><button data-control-tab="log">Nhật ký</button><button data-control-tab="audio">Âm thanh</button></nav>
   <div class="layout">
     <section class="panel controls">
       <div class="panel-heading"><div><div class="eyebrow">TƯƠNG TÁC</div><h2>Thử như người xem</h2></div><span id="connection" class="pill">Đang nối…</span></div>
 
-      <div class="person-row">
-        <label for="nickname">Tên người xem giả lập</label>
-        <input id="nickname" value="Mai" maxlength="32" autocomplete="off">
-      </div>
-
-      <form id="chatForm" class="chat-form">
-        <label for="comment">Bình luận / lệnh</label>
-        <div class="input-row"><input id="comment" maxlength="120" placeholder="Ví dụ: trồng rau" autocomplete="off" required><button class="primary" type="submit" data-sim-only>Gửi bình luận</button></div>
-      </form>
-      <div class="quick-actions" aria-label="Lệnh nhanh">
-        <button type="button" data-comment="trồng rau" data-sim-only>Trồng rau</button>
-        <button type="button" data-comment="trồng hướng dương" data-sim-only>Hướng dương · cấp 2</button>
-        <button type="button" data-comment="trồng nấm mây" data-sim-only>Nấm mây · cấp 4</button>
-        <button type="button" data-comment="tưới" data-sim-only>Tưới</button>
-        <button type="button" data-comment="bắt sâu" data-sim-only>Bắt sâu</button>
-        <button type="button" data-comment="hái" data-sim-only>Hái</button>
-        <button type="button" data-comment="trộm" data-sim-only>Trộm</button>
-        <button type="button" data-comment="bắt trộm" data-sim-only>Bắt trộm</button>
-        <button type="button" data-comment="thả chó" data-sim-only>Thả chó</button>
-        <button type="button" data-comment="vườn" data-sim-only>Thẻ vườn</button>
-      </div>
-      <p id="actionResult" class="result" role="status" aria-live="polite">Chọn người xem, rồi gửi bình luận hoặc lệnh.</p>
-
-      <hr>
-      <div class="panel-heading compact"><div><div class="eyebrow">QUÀ THỬ</div><h2>Kiểm tra hiệu ứng quà</h2></div></div>
-      <div class="gift-row">
-        <label class="grow" for="diamonds">Giá trị mỗi quà</label>
-        <select id="diamonds" data-sim-only>
-          <option value="1">1 xu · Giọt sương</option>
-          <option value="5">5 xu · Phân sao</option>
-          <option value="100">100 xu · Mưa phép</option>
-          <option value="1000">1000 xu · Thần thụ</option>
-        </select>
-        <label class="count-label" for="giftCount">Số lượng</label>
-        <input id="giftCount" class="count" type="number" min="1" max="99" value="1" data-sim-only>
-        <button id="sendGift" class="primary" type="button" data-sim-only>Gửi quà</button>
-      </div>
-
-      <hr>
-      <div class="panel-heading compact"><div><div class="eyebrow">SỰ KIỆN & CAMERA</div><h2>Kiểm tra toàn vườn</h2></div></div>
-      <div class="event-actions">
-        <button type="button" data-event="rain">Mưa mây</button>
-        <button type="button" data-event="pests">Bão sâu</button>
-        <button type="button" data-event="merchant">Thương lái</button>
-        <button type="button" data-event="golden">Giờ vàng</button>
-        <button id="cameraLock" type="button">Khóa camera</button>
-      </div>
-
-      <div class="demo-row">
-        <div><b>Demo nhanh</b><small>Vào vườn → trồng → 3 lần phân sao → thu hoạch → giờ vàng</small></div>
-        <button id="runDemo" class="primary" type="button" data-sim-only>Chạy demo</button>
-      </div>
-
       <div class="auto-room">
+        <details><summary>Phòng tự chơi · quy mô và nhịp mô phỏng</summary>
         <div class="auto-room-copy">
           <div class="eyebrow">PHÒNG TỰ CHƠI</div>
-          <h2>Mô phỏng nhiều người cùng lúc</h2>
-          <p>Đặt đúng quy mô phòng cần thử. Normal mô phỏng nhịp LIVE thật; Busy và Stress chỉ dùng khi cần ép tải.</p>
+          <h2>Quy mô và nhịp phòng thử</h2>
+          <p>Bot luân phiên quà 50 / 500 / 1.000 / 100 / 5 / 1 xu. Có thể dừng bot để thử từng tính năng.</p>
         </div>
         <div class="auto-room-controls">
           <label for="autoCount">Quy mô phòng</label>
           <select id="autoCount" data-sim-only>
-            <option value="12">12 người</option>
+            <option value="1">1 người</option><option value="4">4 người</option><option value="12">12 người</option>
             <option value="24" selected>24 người</option>
             <option value="36">36 người</option>
             <option value="48">48 người · tối đa</option>
@@ -108,22 +58,117 @@
           <button id="autoStart" class="primary" type="button" data-sim-only>Bật tự chơi</button>
           <button id="autoStop" type="button" data-sim-only>Dừng</button>
         </div>
+        </details>
         <div class="auto-room-status"><span id="autoLamp" class="auto-lamp"></span><b id="autoStatus">Chưa có bot</b><small>Bot dùng save riêng của simulator và không kết nối TikTok.</small></div>
       </div>
 
+      <div class="person-row">
+        <label for="nickname">Tên người xem giả lập</label>
+        <input id="nickname" value="Mai" maxlength="32" autocomplete="off" list="viewerNames"><datalist id="viewerNames"></datalist>
+      </div>
+
+      <section id="giftTests" class="test-section" aria-labelledby="giftTestTitle">
+        <div class="panel-heading compact"><h2 id="giftTestTitle">Quà thử · bấm là gửi</h2><button id="prepareTargets" type="button" data-sim-only>Tạo 4 chậu đối thủ</button></div>
+        <div class="gift-presets"><button type="button" data-gift="1" data-sim-only><b>1 xu · Sương tưới</b></button><button type="button" data-gift="5" data-sim-only><b>5 xu · Phân sao</b></button>
+          <button type="button" data-gift="50" data-sim-only><b>50 xu · Vòng quay</b><small>Lợi cho mình hoặc trêu đối thủ</small></button>
+          <button type="button" data-gift="100" data-sim-only><b>100 xu · Mưa phép</b><small>Tăng trưởng và chăm cả vườn</small></button>
+          <button type="button" data-gift="500" data-sim-only><b>500 xu · Thiên thạch</b><small>Phá 1 cây · hoặc −25% HP boss</small></button>
+          <button type="button" data-gift="1000" data-sim-only><b>1.000 xu · Địa chấn</b><small>Phá tối đa 3 cây · hoặc −60% HP boss</small></button>
+        </div>
+        <p class="help">Quà gửi từ tên đang chọn. Muốn thử phá cây: tạo đối thủ → bấm 500 hoặc 1.000 xu. Khiên có thể chặn phá.</p>
+      </section>
+      <section class="test-section" id="scenarioTools"><label for="scenario">Kịch bản thử · có lưu bản phòng trước khi chạy</label><select id="scenario" data-sim-only><option value="newcomer1">Người mới · 1</option><option value="group4">Nhóm · 4</option><option value="room12">Phòng · 12</option><option value="room24">Phòng · 24</option><option value="room48">Phòng · 48</option><option value="careburst48">48 lượt chăm</option><option value="cardspam100">100 lệnh vườn</option><option value="giftburst30">30 vòng quay</option><option value="bossinterrupt">Boss giữa quà</option><option value="shield">Khiên chặn phá</option><option value="no-target">Không có mục tiêu</option><option value="destruction">Phá cây</option><option value="awardreload">Chốt phiên / reload</option><option value="audioquiet">Âm · phòng yên</option><option value="audiobusy">Âm · phòng đông</option></select><button id="runScenario" data-sim-only>Chạy kịch bản</button><button id="restoreScenario" data-sim-only>Phục hồi phòng trước thử</button><p id="scenarioResult" role="status"></p></section>
+      <p id="actionResult" class="result" role="status" aria-live="polite">Chọn người xem, rồi gửi bình luận hoặc lệnh.</p>
+      <section class="boss-tools test-section" aria-labelledby="bossTestTitle">
+        <div class="panel-heading compact"><h2 id="bossTestTitle">Boss cộng đồng</h2><span id="bossStatus" class="pill">Chưa có boss</span></div>
+        <progress id="bossHealth" max="1" value="0" aria-label="Máu boss"></progress>
+        <p id="roundClock" class="help">Đồng hồ phiên đang chờ</p>
+        <div class="event-actions">
+          <button id="forceBoss" type="button" data-sim-only>Gọi boss thử</button>
+          <button id="bossLike" type="button" data-sim-only>Thả 50 tim</button>
+          <button id="bossLikeMany" type="button" data-sim-only>Thả 200 tim</button>
+        </div>
+      </section>
+      <form id="chatForm" class="chat-form">
+        <label for="comment">Bình luận / lệnh</label>
+        <div class="input-row"><input id="comment" maxlength="120" placeholder="Ví dụ: trồng" autocomplete="off" required><button class="primary" type="submit" data-sim-only>Gửi bình luận</button></div>
+      </form>
+      <div class="quick-actions" aria-label="Lệnh nhanh">
+        <button type="button" data-comment="chăm" data-sim-only>Chăm tự chọn · miễn phí</button>
+        <button type="button" data-comment="trồng" data-sim-only>Trồng tự động</button>
+        <button type="button" data-comment="tưới" data-sim-only>Tưới</button>
+        <button type="button" data-comment="hái" data-sim-only>Hái</button>
+        <button type="button" data-comment="vườn" data-sim-only>Thông tin vườn</button>
+      </div>
+
+      <details class="advanced"><summary>Quà tùy chỉnh · giá trị và số lượng</summary>
+      <div class="gift-row">
+        <label class="grow" for="diamonds">Giá trị mỗi quà</label>
+        <select id="diamonds" data-sim-only>
+          <option value="1">1 xu · Giọt sương</option>
+          <option value="5">5 xu · Phân sao</option>
+          <option value="50">50 xu · Vòng quay tinh nghịch</option>
+          <option value="100">100 xu · Mưa phép</option>
+          <option value="500">500 xu · Thiên thạch · phá 1 cây</option>
+          <option value="1000">1000 xu · Đại địa chấn · phá 3 cây</option>
+        </select>
+        <label class="count-label" for="giftCount">Số lượng</label>
+        <input id="giftCount" class="count" type="number" min="1" max="99" value="1" data-sim-only>
+        <button id="sendGift" class="primary" type="button" data-sim-only>Gửi quà</button>
+      </div>
+
+      </details>
+      <details class="advanced"><summary>Lệnh nâng cao, sự kiện và camera</summary><div class="quick-actions">        <button type="button" data-comment="trồng hướng dương" data-sim-only>Hướng dương · cấp 2</button>
+        <button type="button" data-comment="trồng nấm mây" data-sim-only>Nấm mây · cấp 4</button>
+        <button type="button" data-comment="bắt sâu" data-sim-only>Bắt sâu</button>
+        <button type="button" data-comment="trộm" data-sim-only>Trộm</button>
+        <button type="button" data-comment="bắt trộm" data-sim-only>Bắt trộm</button>
+        <button type="button" data-comment="thả chó" data-sim-only>Thả chó</button>
+</div>
+      <div class="event-actions">
+        <button type="button" data-event="rain">Mưa mây</button>
+        <button type="button" data-event="pests">Bão sâu</button>
+        <button type="button" data-event="merchant">Thương lái</button>
+        <button type="button" data-event="golden">Giờ vàng</button>
+        <button id="cameraLock" type="button">Khóa camera</button>
+      </div>
+
+      <div class="demo-row">
+        <div><b>Demo nhanh</b><small>Vào vườn → trồng → 3 lần phân sao → thu hoạch → giờ vàng</small></div>
+        <button id="runDemo" class="primary" type="button" data-sim-only>Chạy demo</button>
+      </div>
+
+      </details>
       <div class="reset-row"><span>Chỉ xóa dữ liệu của simulator.</span><button id="reset" type="button" class="danger" data-sim-only>Reset simulator</button></div>
     </section>
 
     <aside class="side-column">
+      <section class="panel live-monitor"><div class="eyebrow">NGUỒN ĐƯỢC LIVE STUDIO THU</div><h2>Nguồn LIVE · độc lập với preview</h2><p id="liveReadiness" role="status">Chưa quan sát nguồn phát</p><div id="liveDisplays"></div></section>
+      <section class="panel audio-panel"><details id="audioLibrary"><summary>Kho âm Garden · nước, đất, lá, chuông mềm</summary><div id="gardenAudioLibrary"></div></details></section>
       <section class="panel preview-panel">
         <div class="panel-heading"><div><div class="eyebrow">XEM TRƯỚC</div><h2>Overlay đang chạy</h2></div><a href="/" target="_blank" rel="noopener">Mở lớn ↗</a></div>
-        <iframe id="preview" src="/" title="Xem trước overlay Vườn Mây"></iframe>
+        <div class="preview-workspace"><div class="preview-screen">
+        <iframe id="preview" src="/?display=preview&amp;music=0&amp;sfx=0" title="Xem trước overlay Vườn Mây"></iframe>
         <div id="tiers" class="tiers" aria-label="Số người ở từng tầng"></div>
+        </div>
+        <section id="presentationMonitor" class="presentation-monitor" aria-label="Theo dõi ngoài khung LIVE" hidden>
+          <div class="panel-heading compact"><h2>Đang phát & hàng đợi</h2><span id="previewConnection" class="pill">Chờ preview</span></div>
+          <p class="help">Dữ liệu bên ngoài khung LIVE · hàng đợi của chính preview này.</p>
+          <dl class="monitor-summary">
+            <div><dt>Đang phát</dt><dd id="playingScene">Đang chờ dữ liệu</dd></div>
+            <div><dt>Cơ chế hiện tại</dt><dd id="activeMechanics">—</dd></div>
+            <div><dt>Hồ sơ / zoom phụ</dt><dd id="secondaryGate">—</dd></div>
+          </dl>
+          <b id="queueCounts">Chính — · phụ —</b>
+          <ol id="presentationQueue" class="queue-list"><li>Chưa có dữ liệu</li></ol>
+          <details><summary>Camera ở server</summary><p id="cameraBackend" class="help">Đang chờ server</p><ol id="cameraQueue" class="queue-list"></ol></details>
+        </section>
+        </div>
       </section>
       <section class="panel rank-panel">
         <div class="panel-heading"><div><div class="eyebrow">THI ĐUA PHIÊN LIVE</div><h2 id="sessionTitle">Đang chờ khách đầu tiên</h2></div><span class="pill">Top 5</span></div>
         <ol id="standings" class="standings"><li class="empty">Khách đầu tiên sẽ mở bảng đua.</li></ol>
-        <div class="finish-row"><button id="finishSession" type="button" class="primary" disabled>Chốt phiên và trao danh hiệu</button></div>
+        <div class="finish-row"><button id="finishSession" type="button" class="primary" disabled>Chốt phiên · trao giải · mở vườn mới</button></div>
         <p id="finishResult" class="result" role="status" aria-live="polite"></p>
       </section>
       <section class="panel feed-panel">
@@ -134,5 +179,6 @@
   </div>
 </main>
 <script type="module" src="/garden/control.js"></script>
+<script type="module" src="/garden/audio-library.js"></script>
 </body>
 </html>

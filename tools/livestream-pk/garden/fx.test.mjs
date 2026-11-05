@@ -4,6 +4,14 @@ import { createCoalescer } from './fx.mjs';
 
 const rig = () => { let t = 0; return { co: createCoalescer({ windowMs: 250, now: () => t }), advance: ms => { t += ms; } }; };
 
+test('coalesced harvest keeps bounded local rewards for the renderer',()=>{
+ const {co,advance}=rig();
+ for(let i=0;i<12;i++)co.push({type:'harvest',plotId:`cloud-1:${i}`,gold:10});
+ advance(250);const [fx]=co.flush();
+ assert.equal(fx.count,12);assert.equal(fx.plots.length,8);
+ assert.deepEqual(fx.plots[0],{plotId:'cloud-1:0',gold:10});
+});
+
 test('23 waterings on one terrace in 250ms become one effect with a count and three names', () => {
   const { co, advance } = rig();
   for (let i = 0; i < 23; i++) co.push({ type: 'water', plotId: 'cloud-1:' + i, nickname: 'N' + i });

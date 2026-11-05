@@ -1,8 +1,8 @@
 // The crop table and the growth stages. progress runs 0..1; at 1 the crop is ripe and `ripeAt` is stamped.
 export const CROPS = Object.freeze({
-  rau: { id: 'rau', label: 'Rau', minLevel: 1, growMs: 600000, gold: 10, xp: 5 },
-  huongduong: { id: 'huongduong', label: 'Hướng dương', minLevel: 2, growMs: 720000, gold: 22, xp: 12 },
-  nammay: { id: 'nammay', label: 'Nấm mây', minLevel: 4, growMs: 900000, gold: 45, xp: 25 },
+  rau: { id: 'rau', label: 'Rau', minLevel: 1, growMs: 180000, gold: 10, xp: 5 },
+  huongduong: { id: 'huongduong', label: 'Hướng dương', minLevel: 2, growMs: 240000, gold: 22, xp: 12 },
+  nammay: { id: 'nammay', label: 'Nấm mây', minLevel: 4, growMs: 300000, gold: 45, xp: 25 },
 });
 
 export const CROP_VARIANTS = Object.freeze({

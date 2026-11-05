@@ -9,6 +9,7 @@ voice.wav
 .runtime/
 out/
 *.wav
+!tools/livestream-pk/public/garden/audio/*.wav
 *.mp4
 *.zip
 *.mp3

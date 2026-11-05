@@ -1,0 +1,15 @@
+{
+  "purpose": "Manual reference only; not a TikTok LIVE Studio import preset",
+  "localOverlayUrl": "http://127.0.0.1:4858/?music=0.16&sfx=0.2",
+  "liveStudioSource": "Run npm run garden:share and use the printed https://*.trycloudflare.com/?music=0.16&sfx=0.2 URL",
+  "sharePort": 4859,
+  "shareReadOnly": true,
+  "controlUrl": "http://127.0.0.1:4858/control",
+  "proposedCanvas": { "width": 1080, "height": 1920, "fps": 30 },
+  "audio": "One Garden audio capture route plus a separate host microphone",
+  "capture": "Overlay only; keep control and diagnostics outside capture",
+  "simulatorSharePort": false,
+  "studioSourceAndMixerVerified": false,
+  "phoneSafeAreaVerified": false,
+  "actualLiveDeliveryVerified": false
+}

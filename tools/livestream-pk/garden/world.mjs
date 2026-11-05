@@ -73,6 +73,8 @@ function take(ctx, user, plot) {
   plot.lastActive = ctx.now();
   plot.sleeping = false;
   plot.dogUntil = plot.shieldUntil = 0;
+  plot.blessingUntil = 0;plot.brokenUntil=0;plot.replantCredit=false;
+  plot.waterBoostUntil=plot.speedUntil=0;plot.prank=null;plot.wateredAt=null;
   plot.deco = [...user.deco];
   user.seat = { tier: SEED_ZONE.id, slot: plot.slot };
   user.lastSeen = ctx.now();
@@ -161,6 +163,8 @@ export function managePresence(ctx) {
       if (user.seat?.slot === plot.slot) user.seat = null;
       plot.owner = null; plot.crop = null; plot.water = 1; plot.wateredAt = null; plot.sleeping = false;
       plot.dogUntil = plot.shieldUntil = 0; plot.deco = [];
+      plot.blessingUntil = 0;plot.brokenUntil=0;plot.replantCredit=false;
+  plot.waterBoostUntil=plot.speedUntil=0;plot.prank=null;plot.wateredAt=null;
       bump(ctx, plot); evicted++; continue;
     }
     const nextSleeping = age >= ctx.cfg.sleepAfterMs;

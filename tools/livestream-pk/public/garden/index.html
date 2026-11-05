@@ -5,22 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vườn Mây · Nhà kính trên cao</title>
 <link rel="stylesheet" href="/garden/garden.css">
+<link rel="stylesheet" href="/garden/identity.css">
 </head>
 <body>
 <div id="stage">
   <canvas id="world" width="1080" height="1920"></canvas>
   <header id="top">
-    <div class="brand-row"><span class="brand">✦ bungmoto</span><span class="tag">nhà kính chung</span></div>
     <b>Vườn Mây</b>
     <span id="hint"></span>
+    <div id="guideDeck" aria-live="off"><small id="guideStep"></small><b id="guideCommand"></b><span id="guideText"></span></div>
     <div class="garden-status"><span class="live-dot" aria-hidden="true"></span><span id="audienceCount">Vườn đang mở</span><span id="eventLabel">Chờ người gieo hạt</span></div>
   </header>
   <aside id="scoreboard" aria-label="Bảng xếp hạng phiên LIVE">
-    <div class="score-heading"><b>ĐUA PHIÊN</b><span id="sessionLabel">Chờ khách đầu tiên</span></div>
+    <div class="score-heading"><b>ĐUA VƯỜN · TOP 5</b><span id="sessionLabel">Chờ khách đầu tiên</span></div>
     <ol id="leaders"><li class="empty">Người đầu tiên sẽ mở phiên mới.</li></ol>
   </aside>
   <div id="heartBar" aria-live="off"><span id="heartKind">TIM · CHĂM CÂY</span><span id="heartCount">0/100</span><i id="heartFill"></i></div>
-  <div id="shotLabel" aria-live="polite">TOÀN CẢNH VƯỜN</div>
+  <div id="zoneHeading"><h2>Khu Gieo Hạt</h2><span id="zoneCount">48 chậu · cùng chăm vườn</span><span id="eventTicker" aria-live="off"></span></div>
   <section id="eventHero" aria-live="polite" aria-hidden="true">
     <img id="eventArt" alt="">
     <div class="event-copy">
@@ -31,13 +32,59 @@
       <small id="eventHeroMeta"></small>
     </div>
   </section>
+  <section id="giftHero" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><defs>
+      <g id="gift-dew"><path d="M50 8C43 27 20 47 20 63a30 30 0 0060 0C80 47 57 27 50 8Z" fill="#78C9DE" stroke="#2F3C44" stroke-width="4"/><path d="M34 58q-8 18 9 23" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"/></g>
+      <g id="gift-star"><path d="m50 7 13 27 30 4-22 21 5 30-26-14-26 14 5-30L7 38l30-4Z" fill="#F2C45C" stroke="#2F3C44" stroke-width="4"/><path d="m44 38 7-15 7 17" fill="none" stroke="white" stroke-width="4"/></g>
+      <g id="gift-rain"><path d="M22 54C0 47 10 23 30 27c12-28 44-19 45-1 28-2 31 28 8 28Z" fill="#B8DDEA" stroke="#2F3C44" stroke-width="4"/><path d="m28 67-7 16m33-16-7 22m32-22-7 16" stroke="#58ACCA" stroke-width="8" stroke-linecap="round"/></g>
+      <g id="gift-tree"><path d="M43 53h14l8 40H34Z" fill="#C89755" stroke="#2F3C44" stroke-width="4"/><path d="M12 48c-1-16 10-22 21-24C38 0 67 4 71 25c27 1 27 31 7 35-18 10-41 12-58 0-8-1-11-6-8-12Z" fill="#78B795" stroke="#2F3C44" stroke-width="4"/><path d="m50 18 5 11 12 2-9 8 2 12-10-6-11 6 2-12-9-8 12-2Z" fill="#F2C45C"/></g>
+    </defs><use id="giftArt" href="#gift-dew"/></svg>
+    <div class="gift-copy"><small id="giftSender"></small><b id="giftTitle"></b><span id="giftImpact"></span></div>
+  </section>
+  <section id="bossArena" aria-label="Boss cộng đồng" aria-hidden="true">
+    <small id="bossKicker">BOSS CỘNG ĐỒNG</small><h2>Sâu Chúa nuốt mây</h2>
+    <div class="boss-portrait"><svg viewBox="0 0 500 360" aria-hidden="true">
+      <path d="M155 127Q96 66 122 23q65-1 83 95M292 110q12-78 83-86 13 63-45 102" fill="#B0C777" stroke="#2F3C44" stroke-width="8"/>
+      <path d="M100 169Q68 87 160 89q50-71 100-16 98-36 107 58 83 9 66 84 41 63-40 87-28 53-106 19-74 43-108-7-89 26-96-47-55-37 17-98Z" fill="#9BBC85" stroke="#2F3C44" stroke-width="9"/>
+      <path d="m158 152 56 16m79-8 53-21" stroke="#2F3C44" stroke-width="13" stroke-linecap="round"/>
+      <ellipse cx="190" cy="197" rx="20" ry="27" fill="#FFFDF9"/><ellipse cx="314" cy="190" rx="20" ry="27" fill="#FFFDF9"/>
+      <circle cx="196" cy="202" r="10" fill="#2F3C44"/><circle cx="308" cy="197" r="10" fill="#2F3C44"/>
+      <path d="M210 263q45 31 81-7" fill="none" stroke="#2F3C44" stroke-width="10" stroke-linecap="round"/>
+      <path d="m226 271 14 22 12-17m7-1 17 13 6-19" fill="#FFFDF9" stroke="#2F3C44" stroke-width="4"/>
+      <path d="M106 235q-83-37-74 23m361-23q72-41 74 9" fill="none" stroke="#2F3C44" stroke-width="12" stroke-linecap="round"/>
+    </svg><b id="bossDamage"></b></div>
+    <div class="boss-health"><i id="bossFill"></i><b id="bossHp"></b></div>
+    <b id="bossInstruction">THẢ TIM ĐỂ ĐÁNH · 1 TIM = 1 SÁT THƯƠNG</b>
+    <p id="bossClock"></p><span id="bossLeaders"></span>
+  </section>
+  <section id="impactStage" aria-label="Kỹ năng quà tặng" aria-hidden="true">
+    <small id="impactSender"></small><h2 id="impactTitle"></h2>
+    <svg class="meteor-art" viewBox="0 0 500 350" aria-hidden="true"><path d="m390 25-31 133 96-55-97 123 110-7-175 103-139-129 83-145 2 110 68-122-7 107Z" fill="#F3BC62" stroke="#2F3C44" stroke-width="7"/><circle cx="199" cy="245" r="91" fill="#D88A64" stroke="#2F3C44" stroke-width="9"/><path d="m184 162 22 54-35 26 36 44-10 45m-73-98 47 9m36 44 61 3" stroke="#704D48" stroke-width="10" fill="none"/><circle cx="237" cy="211" r="17" fill="#B66C59"/><circle cx="151" cy="285" r="11" fill="#B66C59"/></svg>
+    <b id="impactResult"></b><div id="impactTargets"></div><p id="impactHint"></p>
+  </section>
+  <aside id="idleHint" hidden></aside>
   <section id="focusCard" aria-live="polite" aria-hidden="true">
     <span id="focusKicker">CHẬU ĐANG ĐƯỢC CHÚ Ý</span>
-    <b id="focusName">Người làm vườn</b>
+    <span id="focusAvatar"></span><b id="focusName">Người làm vườn</b>
     <span id="focusStatus"></span>
+    <span id="focusStats"></span>
+    <div class="level-meter"><span id="focusLevel"></span><div><i id="xpFill"></i></div></div>
+    <div class="growth-meter"><b id="growthRate"></b><span id="growthLabel"></span><div><i id="growthFill"></i></div><small id="growthSources"></small></div>
     <strong id="focusAction"></strong>
   </section>
-  <ul id="feed"></ul>
+  <div id="zoneHint">Gõ “trồng” → “chăm” → “hái” · cây lớn trong 3–5 phút</div>
+  <ul id="feed" aria-live="polite"></ul>
+  <section id="awards" aria-label="Lễ trao giải phiên" aria-hidden="true">
+    <div class="award-panel"><small>VƯỜN MÂY · VINH DANH</small><h2 id="awardTitle"></h2>
+      <div id="podium"></div><p id="awardCountdown"></p>
+      <footer>Giữ LV · XP · huy hiệu<br>Vườn mới, chậu mới · mỗi người 20 vàng</footer>
+    </div>
+  </section>
+  <section id="roulette" aria-label="Vòng quay quà tặng" aria-hidden="true">
+    <small id="wheelSender"></small><h2>Vòng quay tinh nghịch</h2>
+    <div class="wheel-frame"><i class="wheel-pointer"></i><div id="wheel"></div><b class="wheel-center">QUÀ<br>MÂY</b></div>
+    <b id="wheelResult"></b><span id="wheelHint"></span>
+  </section>
 </div>
 <script type="module" src="/garden/garden.js"></script>
 </body>

@@ -15,7 +15,7 @@ export const potTierOf = level => [...POT_TIERS].reverse().find(t => Number(leve
 export function addXp(user, n) {
   const before = user.level;
   user.xp += n;
-  user.level = levelOf(user.xp);
+  user.level = Math.max(before, levelOf(user.xp));
   return { level: user.level, leveledUp: user.level > before };
 }
 

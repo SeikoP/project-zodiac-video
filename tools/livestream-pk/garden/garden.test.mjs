@@ -25,13 +25,28 @@ test('a planting command seats the newcomer and runs in the same comment', () =>
   assert.equal(s.plot('a').crop.type, 'rau', 'a newcomer starts with 20 gold, enough for seeds');
 });
 
+test('trồng automatically picks the highest unlocked affordable seed and preserves explicit choices', () => {
+  for (const [level, gold, expected] of [[1,20,'rau'],[2,20,'huongduong'],[4,20,'nammay'],[4,9,'huongduong'],[4,4,'rau']]) {
+    const s=setup();s.say('a','chào');Object.assign(s.user('a'),{level,gold});
+    assert.equal(s.say('a','trồng').ok,true);
+    assert.equal(s.plot('a').crop.type,expected);
+    assert.match(s.events.findLast(e=>e.type==='action-feedback').message,/Rau|Hướng dương|Nấm mây/);
+  }
+  const s=setup();s.say('a','chào');Object.assign(s.user('a'),{level:4,gold:0});
+  assert.equal(s.say('a','trồng').reason,'gold');assert.equal(s.plot('a').crop,null);
+  s.advance(1600);s.plot('a').replantCredit=true;
+  assert.equal(s.say('a','trồng').ok,true);assert.equal(s.plot('a').crop.type,'rau');
+  const explicit=setup();explicit.say('a','chào');explicit.user('a').level=4;
+  assert.equal(explicit.say('a','trồng rau').ok,true);assert.equal(explicit.plot('a').crop.type,'rau');
+});
+
 test('a player plants, the crop ripens over time, and hái pays gold and xp', () => {
   const s = setup();
   s.say('a', 'chào');
   s.user('a').gold = 20;
   s.say('a', 'trồng rau');
   assert.equal(s.plot('a').crop.type, 'rau');
-  for (let i = 0; i < 121; i++) { s.advance(5000); s.plot('a').water = 1; s.plot('a').lastActive = Date.UTC(2026, 10, 4, 12) + (i + 1) * 5000; }
+  for (let i = 0; i < 37; i++) { s.advance(5000); s.plot('a').water = 1; s.plot('a').lastActive = Date.UTC(2026, 10, 4, 12) + (i + 1) * 5000; }
   s.advance(1000);
   s.say('a', 'hái');
   assert.equal(s.plot('a').crop, null);
@@ -147,10 +162,21 @@ test('view data exposes pot tier and crop visual state', () => {
   assert.equal(plot.potTier, 'royal');
   assert.equal(plot.crop.variant, 'common');
   assert.equal(plot.crop.fertilized, false);
+  assert.deepEqual(plot.owner.competition,s.garden.competition.profile(s.user('a')));
+  assert.equal(plot.owner.competition.points,2);
 });
 
 test('meta exposes the two-wing rack geometry required by the browser renderer', () => {
   const s = setup();
   const cfg = s.garden.meta().cfg;
-  assert.deepEqual([cfg.rackWings, cfg.shelvesPerWing, cfg.rackWingGapX], [2, 4, 200]);
+  assert.deepEqual([cfg.rackWings, cfg.shelvesPerWing, cfg.rackWingGapX], [2, 8, 210]);
+});
+
+test('pest mention routes to the neighbor and syncs the changed plot',()=>{
+ const s=setup();s.say('a','trồng rau');s.say('b','trồng rau');
+ s.plot('b').crop.pest=true;const seen={};s.garden.changes(seen);
+ s.advance(1600);const result=s.say('a','bắt sâu @b');
+ assert.equal(result.ok,true);assert.equal(s.plot('b').crop.pest,false);
+ assert.equal(s.garden.changes(seen).plots[s.plot('b').id].crop.pest,false);
+ assert.equal(s.plot('a').crop.type,'rau');
 });
