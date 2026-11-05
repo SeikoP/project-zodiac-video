@@ -25,7 +25,7 @@
 ## Kiểm tra ngoại tuyến trước khi đổi sang thật
 
 - [x] `GET /api/status` trả lời; simulator cô lập báo đúng số người/bot và không nối TikTok.
-- [x] Rehearsal tự động phủ 1 / 4 / 12 / 24 / 48 người; browser fixture đã chụp 1 và 48 người, avatar/Top 5/CTA không lỗi console.
+- [x] Rehearsal tự động phủ 1 / 4 / 12 / 24 / 42 người; browser fixture đã chụp 1 và 42 người, avatar/Top 5/CTA không lỗi console.
 - [ ] Tạo 4 chậu đối thủ và quan sát trực tiếp toàn bộ cảnh quà 50/100/500/1.000 xu trong **một source LIVE giữ mở**. Native result/target của mọi tier đã có test; browser đã xác nhận hậu quả 500 xu và CTA gieo lại miễn phí.
 - [x] Burst quà, boss interrupt, shield/no-target/destruction và reload khi trao giải đều qua rehearsal cô lập; queue/gift/boss có regression test riêng.
 - [x] Queue phụ chỉ chạy sau 6s rảnh liên tục; spam `vườn` chỉ giữ request profile mới nhất và không preempt scene chính.
@@ -45,6 +45,6 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 
 ## Trạng thái lúc chuẩn bị bộ này
 
-Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden sau pass tối ưu trải nghiệm đạt **619/619** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Browser fixture 1080×1920 đã kiểm phòng 1 người sau thu hoạch, phòng 48 người và hậu quả quà 500 xu, không ghi nhận lỗi JS console. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
+Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden hiện dùng **42 chậu hoạt động (2 cánh × 7 hàng × 3)** để tăng kích thước chậu/cây và nhãn trên LIVE; full suite đạt **622/622** test local, catalog audio đạt **36 role / 50 sample**, rehearsal cô lập đạt **15/15** kịch bản. Browser fixture 1080×1920 đã kiểm phòng 1 người, phòng đủ 42 người và hậu quả quà 500 xu, không ghi nhận lỗi JS console. Load test còn thử 48 người đến cùng lúc và xác nhận chỉ 42 seat hoạt động. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
 
 Chưa nghiệm thu: nguồn Link/mixer bên trong UI TikTok LIVE Studio, nghe duyệt 50 sample, khung safe-area trên điện thoại thật, nhận chat/like/quà từ TikTok LIVE thật và hiệu năng khi Studio mã hóa. Các mục này phải được kiểm tra trong buổi rehearsal/LIVE thực tế; không suy ra PASS từ test hoặc tunnel smoke.

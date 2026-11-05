@@ -1,6 +1,6 @@
 # Vườn Mây
 
-Vườn cộng đồng 1080 × 1920, dùng toàn khung hình. Một **Khu Gieo Hạt** gồm 48 chậu, hai cánh kệ × tám hàng × ba chậu. Người xem bình luận nhận chậu tự động; có thể bắt đầu ngay bằng `trồng`. Canvas, SVG và font Patrick Hand có sẵn; không thêm thư viện.
+Vườn cộng đồng 1080 × 1920, dùng toàn khung hình. Một **Khu Gieo Hạt** gồm tối đa **42 chậu hoạt động**, hai cánh kệ × bảy hàng × ba chậu để chậu/cây và nhãn dễ đọc hơn trên LIVE điện thoại. Người xem bình luận nhận chậu tự động; khi đủ 42 chậu đang có cây, người đến sau không bị nhét thêm vào rack và chỉ vào được khi một chỗ được giải phóng. Canvas, SVG và font Patrick Hand có sẵn; không thêm thư viện.
 
 ## Chạy
 

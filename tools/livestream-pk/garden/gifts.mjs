@@ -56,6 +56,6 @@ export function applyGift(ctx, user, { diamonds, count }) {
     bump(ctx,p);
   }
   const id=`${ctx.now()}:${ctx.state.giftSeq=(ctx.state.giftSeq??0)+1}`;
-  ctx.emit({ type: 'gift',id,impact, tier, userId: user.userId, nickname: user.nickname, plotId: plot?.id ?? null, total, roulette, affected:effects.length, effects:effects.slice(0,48), benefits, blessingMs:impact?.shieldMs??0 });
+  ctx.emit({ type: 'gift',id,impact, tier, userId: user.userId, nickname: user.nickname, plotId: plot?.id ?? null, total, roulette, affected:effects.length, effects:effects.slice(0,ctx.cfg.activeCapacity), benefits, blessingMs:impact?.shieldMs??0 });
   return { tier, plotId: plot?.id ?? null,...(impact?{impact}:{}), ...(roulette?{roulette}:{}) };
 }

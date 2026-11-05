@@ -24,7 +24,7 @@ export function plotLayout(slot, cfg) {
 }
 
 // Fill distant shelves first without ever moving a seated player.
-// Bit reversal spreads 12, 24 or 48 sequential arrivals across the full rack.
+// The order spreads 12, 24 or 42 sequential arrivals across the full rack.
 export function balancedSlotOrder(cfg) {
   const slots = [];
   for (let shelf = 0; shelf < cfg.shelvesPerWing; shelf++) {

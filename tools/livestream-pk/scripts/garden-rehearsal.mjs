@@ -7,7 +7,7 @@ export async function rehearse({outDir='logs/garden-implementation/rehearsal',br
  const report={mode:'isolated-offline',scenarios:[],browser:{checked:false},studio:'not-checked',liveDelivery:'not-checked',listening:'pending'};let browser;
  const post=async(route,body)=>{const response=await fetch(s.url+'api/'+route,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const data=await response.json();assert.equal(response.status,200,JSON.stringify(data));assert.notEqual(data.ok,false);return data.result;};
  try{
-  for(const scenario of ['newcomer1','group4','room12','room24','room48','careburst48','cardspam100','giftburst30','shield','no-target','destruction','bossinterrupt','awardreload','audioquiet','audiobusy']){
+  for(const scenario of ['newcomer1','group4','room12','room24','room42','careburst42','cardspam100','giftburst30','shield','no-target','destruction','bossinterrupt','awardreload','audioquiet','audiobusy']){
    const run=await post('sim-scenario',{scenario});assert.equal(run.ok,true);if(scenario==='bossinterrupt')assert.equal(s.garden.boss.status().phase,'active');report.scenarios.push({scenario,ok:true,expected:run.expected});
   }
   await post('sim-scenario',{scenario:'restore'});
@@ -20,7 +20,7 @@ export async function rehearse({outDir='logs/garden-implementation/rehearsal',br
    await page.locator('#roulette.on').waitFor({state:'visible'});await page.waitForTimeout(350);await page.reload();await page.waitForTimeout(450);
    assert.equal(await page.locator('#roulette').evaluate(el=>el.classList.contains('on')),true,'same-tab checkpoint resumes the active wheel');await page.screenshot({path:path.join(dir,'wheel-reloaded.png')});
    await post('sim-scenario',{scenario:'bossinterrupt'});await page.locator('#bossArena.on').waitFor({state:'visible'});assert.equal(await page.locator('#roulette.on').count(),0);assert.match(await page.locator('#guideCommand').textContent(),/thả tim/);await page.screenshot({path:path.join(dir,'boss-priority.png')});
-   await post('sim-scenario',{scenario:'restore'});await post('sim-room',{action:'set',count:48});await page.waitForTimeout(700);
+   await post('sim-scenario',{scenario:'restore'});await post('sim-room',{action:'set',count:s.garden.cfg.activeCapacity});await page.waitForTimeout(700);
    for(const stage of [0,2,3]){
     for(const [i,u] of Object.values(s.garden.state.users).filter(u=>u.seat).entries()){
      u.level=[1,3,5,7,9][i%5];u.xp=[0,90,400,1100,2200][i%5];u.titles={[['firstHarvest','helpful','pestKeeper','harvest50','harvest100'][i%5]]:1};

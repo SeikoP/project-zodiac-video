@@ -23,7 +23,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
     const width = right - left + 36, height = bottom - top + 24;
     const zoom = clamp(Math.min(WIDTH / width, VIEW_HEIGHT / height) * .98, c.zoomWorld, c.zoomTier);
     return { tier: TIERS[0].id, x: (left + right) / 2,
-      y: (top + bottom) / 2 - 180 / zoom, zoom };
+      y: (top + bottom) / 2 - 170 / zoom, zoom };
   }
 
   const base = e => ({ at: now(), type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,
@@ -88,7 +88,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
         const effects=new Map(same.effects.map(e=>[e.plotId,e]));
         for(const e of cand.effects)effects.set(e.plotId,{...e,from:effects.get(e.plotId)?.from??e.from});
         const benefits=Object.fromEntries(['seeded','watered','fertilized','weeds','protected'].map(key=>[key,Math.max(same.benefits?.[key]??0,cand.benefits?.[key]??0)]));
-        Object.assign(same,{...strongest,at:cand.at,total:same.total+cand.total,effects:[...effects.values()].slice(0,48),affected:effects.size,benefits,priority:Math.min(same.priority,cand.priority),stableMs:Math.max(same.stableMs,cand.stableMs),ttl:Math.max(same.ttl,cand.ttl)});
+        Object.assign(same,{...strongest,at:cand.at,total:same.total+cand.total,effects:[...effects.values()].slice(0,cfg.activeCapacity),affected:effects.size,benefits,priority:Math.min(same.priority,cand.priority),stableMs:Math.max(same.stableMs,cand.stableMs),ttl:Math.max(same.ttl,cand.ttl)});
         return;
       }
     }
