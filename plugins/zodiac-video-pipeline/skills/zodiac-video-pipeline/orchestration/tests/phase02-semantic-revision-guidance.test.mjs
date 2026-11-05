@@ -37,3 +37,16 @@ test('revision impact CLI reports scene-level rebuild and reuse guidance',async(
   assert.ok(report.phase02_revision.scenes.reuse.includes('S05'));
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('semantic cache update returns rebuild/reuse guidance for the active revision',async()=>{
+ const {mkdtemp,rm}=await import('node:fs/promises');const os=await import('node:os'),path=await import('node:path');
+ const {updatePhase02SemanticCache}=await import('../../core/cache/phase02-semantic-cache.mjs');
+ const root=await mkdtemp(path.join(os.tmpdir(),'phase02-semantic-cache-'));
+ try{
+  await updatePhase02SemanticCache(root,makeIntent(10));
+  const r=await updatePhase02SemanticCache(root,makeIntent(30));
+  assert.ok(r.guidance.scenes.rebuild.includes('S03'));
+  assert.ok(r.guidance.scenes.reuse.includes('S01'));
+  assert.equal(r.guidance.review_index_rebuild,true);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
