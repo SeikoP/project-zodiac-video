@@ -14,6 +14,7 @@ export function reviewSceneExperience(intent){
  const scenes=[];
  for(const scene of intent?.scenes??[]){
   const issues=[],profile=scene.experience_profile??{},entities=(scene.entities??[]).filter(visibleEntity);
+  if(!scene.experience_profile||!text(profile.story_mode))issues.push({code:'EXPERIENCE_PROFILE_MISSING'});
   const characters=entities.filter(isCharacter),physical=entities.filter(isPhysical),narrative=entities.filter(isNarrative),accents=entities.filter(isAccent);
   const events=scene.events??[];
   const physicalActions=events.filter(ev=>physical.some(p=>p.id===ev.target)&&text(ev.action));
