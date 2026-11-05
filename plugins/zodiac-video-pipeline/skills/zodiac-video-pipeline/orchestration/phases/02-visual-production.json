@@ -18,6 +18,25 @@
           "stage": "entry"
         },
         {
+          "id": "phase02_progressive_preflight",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-phase02-progressive-preflight.mjs",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "scene_experience_review",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/visual-composition/validate-scene-experience.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
           "id": "narrative_visual_presence_validation",
           "kind": "internal_validator",
           "when": "fresh",
@@ -302,6 +321,10 @@
         {
           "name": ".authoring/visual-metaphor-plan.json",
           "when": "flag:visual_metaphor_selected"
+        },
+        {
+          "name": ".authoring/scene-experience-review.json",
+          "when": "fresh"
         }
       ],
       "gate_checks": [
@@ -334,6 +357,14 @@
         "retired_asset_exclusion"
       ],
       "conditional_gate_checks": [
+        {
+          "name": "progressive_preflight",
+          "when": "fresh"
+        },
+        {
+          "name": "scene_experience_review",
+          "when": "fresh"
+        },
         {
           "name": "interaction_semantics",
           "when": "flag:relational_beats"
