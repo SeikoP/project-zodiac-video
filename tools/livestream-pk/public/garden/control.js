@@ -2,7 +2,9 @@ import { cameraReason } from './view.js';
 import {createViewerAvatar} from './identity.js';
 const $ = id => document.getElementById(id);
 let simulator = false, cameraLocked = false, source, players=[],gifting=false;
+let tiktokState={username:null,state:'off',detail:'',viewers:0};
 let lastPreviewAt=0;
+try{$('ttUser').value=localStorage.getItem('garden-tiktok-user')||'';}catch{}
 const sceneName=kind=>({gift:'Quà tăng trưởng',roulette:'Vòng quay',impact:'Kỹ năng quà',profile:'Hồ sơ gọn',overview:'Toàn cảnh',event:'Mở sự kiện',boss:'Boss',session:'Trao giải','event-focus':'Zoom sự kiện',levelup:'Zoom lên cấp',steal:'Zoom trộm',catch:'Zoom bắt trộm'})[kind]??kind??'Chờ';
 const eventName=kind=>({rain:'Mưa tưới',pests:'Bão sâu',merchant:'Thương lái',golden:'Giờ vàng'})[kind]??kind;
 const sceneText=p=>`${sceneName(p.kind)}${p.nickname?` · ${p.nickname}`:''}${p.total?` · ${p.total} xu`:''}`;
@@ -79,6 +81,21 @@ function describeFx(fx) {
   return fx.type;
 }
 
+function renderTikTok(t) {
+  tiktokState=t??{username:null,state:'off',detail:'',viewers:0};
+  $('tiktokPanel').hidden=simulator;
+  if(simulator)return;
+  const state=tiktokState.state??'off',username=tiktokState.username;
+  if(username&&document.activeElement!==$('ttUser'))$('ttUser').value=username;
+  const labels={off:'Chưa kết nối',connecting:'Đang kết nối…',live:`LIVE${username?` @${username}`:''}`,retrying:'Đang thử lại…',ended:'LIVE đã kết thúc'};
+  $('ttState').textContent=labels[state]??state;
+  $('ttState').className=`pill${state==='live'?' good':state==='retrying'||state==='ended'?' bad':''}`;
+  const detail=state==='live'?`${tiktokState.viewers??0} đang xem${tiktokState.detail?` · ${tiktokState.detail}`:''}`:tiktokState.detail||'Bấm Kết nối sau khi tài khoản đã LIVE. Mất kết nối sẽ tự thử lại 5s → 60s.';
+  $('ttDetail').textContent=detail;
+  $('ttConnect').disabled=state==='connecting'||state==='live';
+  $('ttDisconnect').disabled=state==='off';
+}
+
 function renderStatus(s) {
   dispatchEvent(new CustomEvent('garden-status',{detail:s}));
   simulator = Boolean(s.simulator);
@@ -92,6 +109,7 @@ function renderStatus(s) {
   $('modeNotice').textContent = simulator
     ? 'Dữ liệu mô phỏng tách riêng, không kết nối TikTok và không ghi vào save Garden thật.'
     : 'Dữ liệu đang ghi vào Garden thật. Muốn thử tương tác, dừng server này rồi chạy npm run garden:sim trên cùng cổng 4858.';
+  renderTikTok(s.tiktok);
   $('viewers').textContent = s.viewers;
   $('planted').textContent = s.planted;
   $('ripe').textContent = s.ripe;
@@ -155,6 +173,19 @@ async function sendComment(comment) {
     $('comment').value = '';
   } catch (e) { $('actionResult').textContent = `Không gửi được: ${e.message}`; }
 }
+
+$('ttConnect').addEventListener('click',async()=>{
+  if(simulator)return;
+  const username=$('ttUser').value.replace(/^@/,'').trim();
+  try{localStorage.setItem('garden-tiktok-user',username);}catch{}
+  try{$('ttConnect').disabled=true;renderTikTok(await request('tiktok/connect',{username}));}
+  catch(e){$('ttDetail').textContent=`Không kết nối được: ${e.message}`;await loadStatus();}
+});
+$('ttDisconnect').addEventListener('click',async()=>{
+  if(simulator)return;
+  try{renderTikTok(await request('tiktok/disconnect',{}));}
+  catch(e){$('ttDetail').textContent=`Không ngắt được: ${e.message}`;await loadStatus();}
+});
 
 $('chatForm').addEventListener('submit', event => { event.preventDefault(); sendComment($('comment').value); });
 document.querySelectorAll('[data-comment]').forEach(button => button.addEventListener('click', () => sendComment(button.dataset.comment)));
@@ -267,6 +298,7 @@ source.addEventListener('shot', event => {
   catch { /* the status endpoint still reports the camera state */ }
 });
 source.addEventListener('reset', () => { log('Simulator đã được reset.'); loadStatus(); });
+source.addEventListener('tiktok',event=>{try{renderTikTok(JSON.parse(event.data));}catch{}});
 source.onopen = () => { $('connection').textContent = simulator ? 'Simulator sẵn sàng' : 'Đã nối tới Garden'; };
 source.onerror = () => { $('connection').textContent = 'Đang nối lại…'; };
 loadStatus();

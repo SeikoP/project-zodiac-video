@@ -17,7 +17,7 @@ npm run garden:sim
 - Garden thường lưu tại `data/garden-state.json`. Simulator không kết nối TikTok, lưu riêng tại `data/garden-simulator` và **không mở cổng share**.
 - Overlay và control local dùng chung cổng 4858. Chỉ chạy một chế độ trên cổng đó; mỗi buổi LIVE chỉ chạy một game kết nối TikTok.
 - Cấu hình trong `garden/config.mjs`, ghi đè qua mục `garden` của `config.json`. `PK_GARDEN_PORT` đổi cổng, `PK_GARDEN_SIM_DATA_DIR` đổi thư mục mô phỏng.
-- Control có bình luận, quà, demo, phòng bot, khóa camera, sự kiện và chốt phiên. Chức năng giả lập/reset chỉ bật trong simulator.
+- Control LIVE có trạng thái TikTok và nút **Kết nối / Ngắt** theo username như luồng PK cũ. Nếu `tiktokUsername` có trong `config.json`, `npm run garden` tự kết nối; mất kết nối tự retry 5s → 60s. Control còn có khóa camera, sự kiện và chốt phiên. Chức năng bình luận/quà giả lập, phòng bot và reset chỉ bật trong simulator.
 - Kiểm thử: `npm test`; tải mô phỏng: `node garden/sim.mjs --users 40 --url http://127.0.0.1:4858`.
 
 ## Phiên và trao giải

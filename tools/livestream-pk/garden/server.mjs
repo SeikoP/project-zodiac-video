@@ -41,7 +41,7 @@ const readBody = req => new Promise(resolve => {
   req.on('end', () => { try { resolve(s ? JSON.parse(s) : {}); } catch { resolve({}); } });
 });
 
-export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), sharePort = null, dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, simulator = false, now = Date.now, log = console.log } = {}) {
+export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PORT || 4858), sharePort = null, dir = process.env.PK_DATA_DIR ?? path.join(root, 'data'), config, tiktok = !process.env.PK_NO_TIKTOK, tiktokBridge = null, simulator = false, now = Date.now, log = console.log } = {}) {
   const full = config ?? readJson(path.join(root, 'config.json'), {});
   const musicDir = MUSIC_DIR, musicRoot = fs.existsSync(MUSIC_DIR) ? fs.realpathSync(MUSIC_DIR) : MUSIC_DIR;
   const music = listMusic({ dir: musicDir, exclude: full.musicExclude, upbeat: full.musicUpbeat });
@@ -124,6 +124,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const restartAutoTimer=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=setInterval(autoStep,(AUTO_PROFILES[autoProfile]??AUTO_PROFILES.normal).intervalMs);};
   const startAuto=(profile=autoProfile)=>{if(!simulator)throw new Error('simulator-only');if(AUTO_PROFILES[profile])autoProfile=profile;if(!autoUsers.size)setAutoRoom(24,autoProfile);if(!autoTimer)restartAutoTimer();return autoStatus();};
   const stopAuto=()=>{if(autoTimer)clearInterval(autoTimer);autoTimer=null;return autoStatus();};
+  let bridge = tiktokBridge;
+  const tiktokStatus = () => bridge?.status?.() ?? { username:null,state:'off',detail:simulator?'Simulator không kết nối TikTok':'',viewers:0 };
   const meta = () => ({ ...garden.meta(), build,serverTime:now(),simulator,music: { calm: music.calm, upbeat: music.upbeat } });
   const status = () => {
     const plots = Object.values(state.plots), crops = plots.filter(p => p.owner && p.crop);
@@ -137,6 +139,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       simulator,
       build,displays:displays.list(),secondaryReady:displays.ready(),
       diagnosticsVersion:simulator?1:undefined,serverTime:now(),
+      tiktok:tiktokStatus(),
       autoplay: autoStatus(),
       viewers: players.length,
       sleeping: seated.length - players.length,
@@ -226,6 +229,14 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     'display-status': b=>displays.update(b),
     'display-remove': b=>displays.remove(b.clientId),
     'audio-command': b=>displays.command(b.clientId,b.command),
+    'tiktok/connect': async b=>{
+      if(simulator)throw Object.assign(new Error('TikTok connection is disabled in the isolated simulator.'),{status:403});
+      if(!bridge)throw Object.assign(new Error('TikTok connector is disabled for this server.'),{status:503});
+      const username=String(b.username??'').replace(/^@/,'').trim();
+      if(!/^[\w.]{2,24}$/.test(username))throw Object.assign(new Error('invalid-tiktok-username'),{status:400});
+      await bridge.connect(username);return tiktokStatus();
+    },
+    'tiktok/disconnect': async ()=>{if(!bridge)return tiktokStatus();await bridge.disconnect();return tiktokStatus();},
     'sim-scenario': b=>runScenario(b),
     'camera-lock': b => { camera.setLock(Boolean(b.on)); return { locked: Boolean(b.on) }; },
     event: b => {
@@ -301,6 +312,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' });
       const c = { seen: {}, host: !shared, busy: () => res.writableNeedDrain, send: (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`) };
       c.send('meta', meta());
+      if(c.host)c.send('tiktok',tiktokStatus());
       c.send('frame', { parts: garden.changes(c.seen), fx: [] });
       c.send('receipts',recentReceipts());
       if (lastShot) c.send('shot', lastShot);
@@ -323,6 +335,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
         pollers.set(id, c);
         hub.add(c);
         c.send('meta', meta());
+        if(c.host)c.send('tiktok',tiktokStatus());
         c.send('frame', { parts: garden.changes(c.seen), fx: [] });
         c.send('receipts',recentReceipts());
         if (lastShot) c.send('shot', lastShot);
@@ -361,13 +374,12 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     catch (e) { main.closeAllConnections?.(); await new Promise(r => main.close(r)); throw e; }
   }
 
-  let bridge = null;
-  if (tiktok && full.tiktokUsername) {
+  if (tiktok && !bridge) {
     const [{ createTikTokBridge }, { createDiagnostics }] = await Promise.all([import('../tiktok.mjs'), import('../diagnostics.mjs')]);
     const diag = createDiagnostics({ dir: process.env.PK_LOG_DIR ?? path.join(root, 'logs'), record: Boolean(full.recordEvents || process.env.PK_RECORD) });
     bridge = createTikTokBridge({ game: diag.wrap(garden), probe: diag.probe, onStatus: s => hub.broadcast('tiktok', s, true) });
-    bridge.connect(full.tiktokUsername);
   }
+  if (bridge && full.tiktokUsername && !simulator) void bridge.connect(full.tiktokUsername);
   log(`Vườn Mây running:\n  overlay  http://127.0.0.1:${boundPort}/\n  control  http://127.0.0.1:${boundPort}/control${boundSharePort != null ? `\n  share (read-only)  http://127.0.0.1:${boundSharePort}/` : ''}`);
 
   return {
