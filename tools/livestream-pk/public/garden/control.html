@@ -34,6 +34,12 @@
     <section class="panel controls">
       <div class="panel-heading"><div><div class="eyebrow">TƯƠNG TÁC</div><h2>Thử như người xem</h2></div><span id="connection" class="pill">Đang nối…</span></div>
 
+      <section id="tiktokPanel" class="test-section" hidden aria-labelledby="tiktokTitle">
+        <div class="panel-heading compact"><div><div class="eyebrow">TIKTOK LIVE</div><h2 id="tiktokTitle">Kết nối sự kiện thật</h2></div><span id="ttState" class="pill">off</span></div>
+        <div class="input-row"><input id="ttUser" maxlength="24" placeholder="username TikTok, không cần @" autocomplete="off"><button id="ttConnect" class="primary" type="button">Kết nối</button><button id="ttDisconnect" type="button">Ngắt</button></div>
+        <p id="ttDetail" class="help">Bấm Kết nối sau khi tài khoản đã LIVE. Mất kết nối sẽ tự thử lại 5s → 60s.</p>
+      </section>
+
       <div class="auto-room">
         <details><summary>Phòng tự chơi · quy mô và nhịp mô phỏng</summary>
         <div class="auto-room-copy">

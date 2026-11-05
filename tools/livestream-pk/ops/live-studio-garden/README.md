@@ -38,13 +38,13 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 
 1. Kết thúc thử và sao lưu `data/garden-simulator/garden-state.json` cùng `data/garden-state.json` nếu có, đặt bản sao có timestamp. Không reset để chuyển chế độ.
 2. Dừng đúng server simulator ở terminal của nó bằng Ctrl+C để flush save; xác nhận cổng 4858 đã nhả. Không mở thêm Garden thật khi sim còn giữ cổng.
-3. Xác nhận username/key trong cấu hình riêng. Không chụp hoặc in key. `npm run garden` nạp `.env`, dùng data thật và có thể kết nối TikTok ngay khi startup; chỉ chạy khi đúng tài khoản và chuẩn bị kiểm tra LIVE thật. Không chạy lặp các lệnh `--online` để dò kết nối.
+3. Xác nhận username/key trong cấu hình riêng. Không chụp hoặc in key. `npm run garden` nạp `.env`, dùng data thật và tự kết nối nếu có `tiktokUsername`. Nếu chưa đặt username hoặc cần đổi phòng, dùng khối **TikTok LIVE → Kết nối / Ngắt** ngay trong control; trạng thái `connecting/live/retrying/ended` dùng chung cơ chế PK cũ. Không chạy lặp các lệnh `--online` để dò kết nối.
 4. Chạy `npm run garden`; xác nhận control local 4858 có `simulator:false`, không còn bot mô phỏng. Sau đó chạy `npm run garden:share` và thay Link source trong LIVE Studio bằng URL HTTPS mới được in ra. Không dùng `npm run live`/`npm run share` vì đó là luồng PK khác.
 5. Tài khoản host đang LIVE: dùng tài khoản phụ gửi `trồng`, `chăm`, `vườn`, thả tim, rồi kiểm tra quà được phép thử. So từng sự kiện giữa màn hình người xem, native state và cảnh trình chiếu; không dùng nút giả lập làm bằng chứng LIVE.
-6. Nếu signing/rate-limit: dừng kết nối và chẩn đoán đúng tiến trình; tránh restart liên tục vì chính connect cũng có thể tốn quota. Chưa có trạng thái TikTok chi tiết trong `/api/status` Garden để thay thế việc nhìn thông báo kết nối/log riêng.
+6. Nếu signing/rate-limit: xem trạng thái TikTok ngay trong control (`connecting/live/retrying/ended`) và `/api/status`; dừng kết nối trước khi chẩn đoán, tránh restart liên tục vì chính connect cũng có thể tốn quota.
 
 ## Trạng thái lúc chuẩn bị bộ này
 
-Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden sau khi nhập `main` đạt **612/612** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
+Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden với control kết nối LIVE kiểu PK cũ đạt **613/613** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
 
 Chưa nghiệm thu: nguồn Link/mixer bên trong UI TikTok LIVE Studio, nghe duyệt 50 sample, khung safe-area trên điện thoại thật, nhận chat/like/quà từ TikTok LIVE thật và hiệu năng khi Studio mã hóa. Các mục này phải được kiểm tra trong buổi rehearsal/LIVE thực tế; không suy ra PASS từ test hoặc tunnel smoke.

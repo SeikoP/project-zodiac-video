@@ -175,6 +175,20 @@ test('Garden runs the overlay, control and poll through one port', async () => {
   } finally { await s.close(); }
 });
 
+test('live Garden exposes old-PK-style TikTok connect, disconnect and status controls', async () => {
+  let current={username:null,state:'off',detail:'',viewers:0};const calls=[];
+  const fake={status:()=>({...current}),async connect(username){calls.push(['connect',username]);current={username,state:'live',detail:'room test',viewers:12};},async disconnect(){calls.push(['disconnect']);current={username:null,state:'off',detail:'',viewers:0};}};
+  const {s,base}=await boot({simulator:false,tiktok:false,tiktokBridge:fake,config:{garden:{bossChance:0}}});
+  try{
+    let status=await fetch(base+'/api/status').then(r=>r.json());assert.equal(status.tiktok.state,'off');
+    const connected=await post(base+'/api/tiktok/connect',{username:'@garden.host'}).then(r=>r.json());assert.equal(connected.result.state,'live');assert.equal(connected.result.viewers,12);
+    assert.deepEqual(calls[0],['connect','garden.host']);
+    status=await fetch(base+'/api/status').then(r=>r.json());assert.equal(status.tiktok.username,'garden.host');
+    const disconnected=await post(base+'/api/tiktok/disconnect',{}).then(r=>r.json());assert.equal(disconnected.result.state,'off');assert.deepEqual(calls.at(-1),['disconnect']);
+  }finally{await s.close();}
+  const sim=await boot({simulator:true,tiktok:false,tiktokBridge:fake});try{assert.equal((await post(sim.base+'/api/tiktok/connect',{username:'garden.host'})).status,403);}finally{await sim.s.close();}
+});
+
 test('live Garden exposes a read-only share port for TikTok LIVE Studio', async () => {
   const { s, base } = await boot({ simulator:false, sharePort:0 });
   const shared = `http://127.0.0.1:${s.sharePort}`;
@@ -188,6 +202,7 @@ test('live Garden exposes a read-only share port for TikTok LIVE Studio', async 
     assert.ok(status.competition);
     assert.equal(status.players, undefined);
     assert.equal(status.displays, undefined);
+    assert.equal(status.tiktok, undefined);
     assert.equal((await fetch(shared + '/control')).status, 404);
     assert.equal((await fetch(shared + '/control.html')).status, 404);
     assert.equal((await fetch(shared + '/host-prompts.js')).status, 404);
