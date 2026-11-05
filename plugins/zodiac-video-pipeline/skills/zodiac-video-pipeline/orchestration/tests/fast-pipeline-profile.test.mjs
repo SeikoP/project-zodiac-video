@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {criticalPath,summarizeFastProfile} from '../../core/performance/critical-path.mjs';
+test('critical path follows dependency graph rather than sum of parallel steps',()=>{const p=criticalPath([{id:'a',duration_ms:100},{id:'b',duration_ms:50},{id:'c',duration_ms:20,dependencies:['a','b']}]);assert.equal(p.critical_path_ms,120);assert.deepEqual(p.critical_path,['a','c']);});
+test('cycle and missing dependency fail closed',()=>{assert.throws(()=>criticalPath([{id:'a',dependencies:['b']},{id:'b',dependencies:['a']}]),/CYCLE/);assert.throws(()=>criticalPath([{id:'a',dependencies:['x']}]),/MISSING/);});
+test('profile records overhead and cache hits separately',()=>{const p=summarizeFastProfile({started_ms:0,ended_ms:200,steps:[{id:'a',status:'PASS',elapsed_ms:100},{id:'b',status:'SKIPPED_REUSED',elapsed_ms:0}]});assert.equal(p.wall_clock_ms,200);assert.equal(p.native_step_ms,100);assert.equal(p.overhead_ms,100);assert.equal(p.cache_hit_count,1);assert.equal(p.not_an_approval,true);});

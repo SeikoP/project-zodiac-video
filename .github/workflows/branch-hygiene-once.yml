@@ -1,0 +1,79 @@
+name: One-time verified merged-branch cleanup
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/branch-hygiene-once.yml'
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  delete-verified-heads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete only SHA-pinned, already-merged PR branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('docs/branch-hygiene/2026-11-05-exact-merged-heads.json', 'utf8'));
+            const owner = 'SeikoP', repo = 'project-zodiac-video';
+            if (manifest.format !== 'zodiac-branch-cleanup@1' || manifest.repository !== owner+'/'+repo ||
+                manifest.original_branch_count !== 188 || manifest.candidates.length > 160 ||
+                manifest.candidate_count !== manifest.candidates.length) throw Error('INVALID_CLEANUP_MANIFEST');
+            const open = await github.paginate(github.rest.pulls.list, {owner, repo, state:'open', per_page:100});
+            const openHeads = new Set(open.filter(p => p.head.repo?.full_name === owner+'/'+repo).map(p => p.head.ref));
+            const result = {format:'zodiac-branch-cleanup-result@1', generated_at:new Date().toISOString(),
+              repository:owner+'/'+repo, original_branch_count:manifest.original_branch_count,
+              candidates:manifest.candidates.length, deleted:[], skipped:[], failed:[]};
+            const seen = new Set();
+            const safe = name => typeof name === 'string' && !['main','master','develop','production','production-final-audit'].includes(name) &&
+              !name.startsWith('release/') && !name.startsWith('refs/') &&
+              name.split('/').every(s => s && s !== '.' && s !== '..');
+            const report = () => fs.writeFileSync('branch-cleanup-result.json', JSON.stringify(result,null,2)+'\n');
+            report();
+            for (const c of manifest.candidates) {
+              const name = c.branch;
+              const skip = reason => result.skipped.push({branch:name,expected_sha:c.head_sha,reason});
+              try {
+                if (!safe(name)) {skip('PROTECTED_NAME');continue;}
+                if (seen.has(name) || !/^[0-9a-f]{40}$/.test(c.head_sha) ||
+                    !Number.isSafeInteger(c.merged_pr) || c.merged_pr < 1) throw Error('MANIFEST_ENTRY_UNSAFE');
+                seen.add(name);
+                if (openHeads.has(name)) {skip('OPEN_PR');continue;}
+                let live;
+                try {live=(await github.rest.repos.getBranch({owner,repo,branch:name})).data;}
+                catch(e) {if (e.status === 404) {skip('ALREADY_DELETED');continue;}throw e;}
+                if (live.protected || live.commit.sha !== c.head_sha) {skip('BRANCH_CHANGED_OR_PROTECTED');continue;}
+                const aliases = {'integration/fast-pipeline-clean-base':{pr:174,ref:'feature/fast-pipeline-critical-path'}};
+                const alias = aliases[name];
+                if (c.head_alias_of && (!alias || alias.pr !== c.merged_pr || alias.ref !== c.head_alias_of))
+                  throw Error('HEAD_ALIAS_NOT_AUTHORIZED');
+                const {data:pr} = await github.rest.pulls.get({owner,repo,pull_number:c.merged_pr});
+                if (!pr.merged_at || pr.head.repo?.full_name !== owner+'/'+repo ||
+                    pr.head.ref !== (c.head_alias_of || name) || pr.head.sha !== c.head_sha)
+                  {skip('PR_EVIDENCE_CHANGED');continue;}
+                const {data:ref} = await github.rest.git.getRef({owner,repo,ref:'heads/'+name});
+                if (ref.object.sha !== c.head_sha) {skip('REF_CHANGED');continue;}
+                await github.rest.git.deleteRef({owner,repo,ref:'heads/'+name});
+                result.deleted.push({branch:name,recover_sha:c.head_sha,merged_pr:c.merged_pr});
+              } catch(e) {result.failed.push({branch:name,recover_sha:c.head_sha,error:e.message,http_status:e.status??null});}
+              finally {report();}
+            }
+            core.summary.addHeading('Verified branch cleanup');
+            core.summary.addTable([['Result','Count'],['Deleted',String(result.deleted.length)],
+              ['Skipped',String(result.skipped.length)],['Failed',String(result.failed.length)]]);
+            await core.summary.write();
+            if (result.failed.length) core.setFailed(result.failed.length+' branch deletions failed; see artifact');
+      - name: Retain recovery SHA manifest and deletion report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-branch-cleanup-recovery
+          path: |
+            docs/branch-hygiene/2026-11-05-exact-merged-heads.json
+            branch-cleanup-result.json
+          retention-days: 90
+          if-no-files-found: error

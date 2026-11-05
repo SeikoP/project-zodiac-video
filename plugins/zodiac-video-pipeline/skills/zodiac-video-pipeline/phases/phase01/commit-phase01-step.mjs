@@ -6,6 +6,8 @@ import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {performance} from 'node:perf_hooks';
+import {recordEpisodeSpan} from '../../core/performance/episode-profiler.mjs';
 const read=async p=>JSON.parse(await readFile(p,'utf8'));
 const hash=s=>createHash('sha256').update(s).digest('hex');
 import {conditionApplies} from '../../core/policy/resolve-capability-route.mjs';
@@ -51,6 +53,7 @@ export function preparePhase01StepCommit({state,manifest,evidence,files}){
  return next;
 }
 export async function commitPhase01Step(workspace,evidenceFile){
+ const fastStarted=performance.now();
  const root=path.resolve(workspace),dir=path.join(root,'.authoring');
  const lease=await open(path.join(dir,'.phase01-state-write.lock'),'wx').catch(e=>{throw new Error('STATE_WRITE_BUSY '+e.code)});
  try{
@@ -80,7 +83,7 @@ export async function commitPhase01Step(workspace,evidenceFile){
    const stepSpec=manifest.steps.find(s=>s.id===evidence.step_id);
    for(const cap of [...stepSpec.required_capabilities??[],...stepSpec.conditional_capabilities??[]].filter(c=>c.kind==='internal_validator'&&conditionApplies(c.when,{run_mode:state.run_mode,flags:state.flags}))){
     const receipt=evidence.capability_receipts.find(r=>r.capability_id===cap.id);const execution=await read(path.resolve(dir,receipt.proof.receipt_path));
-    const workspaceValidators=new Set(['references/short-form-duration.mjs','references/validate-evidence-contract.mjs','references/validate-content-contract.mjs','references/validate-story-quality-review.mjs','orchestration/plan-plugin-use.mjs','features/episode/validate-episode-scope.mjs','features/episode/validate-episode-concept.mjs','features/episode/validate-episode-scope.mjs','features/episode/validate-episode-concept.mjs']);
+    const workspaceValidators=new Set(['references/short-form-duration.mjs','references/validate-evidence-contract.mjs','references/validate-content-contract.mjs','references/validate-story-quality-review.mjs','references/validate-engagement-design.mjs','references/validate-engagement-review.mjs','references/narration-progressive-validation.mjs','orchestration/plan-plugin-use.mjs','features/episode/validate-episode-scope.mjs','features/episode/validate-episode-concept.mjs','features/episode/validate-episode-scope.mjs','features/episode/validate-episode-concept.mjs']);
     if(!Array.isArray(execution.args)||!execution.args.length)throw Error('VALIDATOR_WORKSPACE_MISMATCH '+cap.id);
     if(workspaceValidators.has(cap.tool_locator)){if(path.resolve(execution.args[0])!==root)throw Error('VALIDATOR_WORKSPACE_MISMATCH '+cap.id);}else {for(const arg of execution.args.filter(x=>typeof x==='string'&&!x.startsWith('--'))){const abs=path.resolve(arg);if(!abs.startsWith(root+path.sep))throw Error('VALIDATOR_WORKSPACE_MISMATCH '+cap.id);await safe(path.relative(root,abs));}}
     const run=spawnSync(process.execPath,[path.join(skill,cap.tool_locator),...execution.args],{encoding:'utf8',timeout:30000});if(run.status!==0)throw Error('VALIDATOR_REPLAY_FAILED '+cap.id+' '+String(run.stderr).slice(-1000));
@@ -89,6 +92,7 @@ export async function commitPhase01Step(workspace,evidenceFile){
    if(hash(await readFile(statePath))!==hash(raw))throw new Error('STATE_CHANGED_CONCURRENTLY');
    await rename(temp,statePath);
   }finally{await rm(temp,{force:true});}
+  await recordEpisodeSpan(root,{phase:'01-content',stage:'commit:'+evidence.step_id,category:'native',duration_ms:performance.now()-fastStarted,status:'PASS'}).catch(()=>{});
   return {status:'STATE_STEP_COMMITTED',step:evidence.step_id,phase_status:result.phases[phaseId].status};
  }finally{await lease.close();await rm(path.join(dir,'.phase01-state-write.lock'),{force:true});}
 }
