@@ -30,9 +30,6 @@
           "kind": "internal_validator",
           "when": "fresh",
           "tool_locator": "features/visual-composition/validate-scene-experience.mjs",
-          "required_arg_suffixes": [
-            "--write"
-          ],
           "unavailable_policy": "block",
           "stage": "entry"
         },
