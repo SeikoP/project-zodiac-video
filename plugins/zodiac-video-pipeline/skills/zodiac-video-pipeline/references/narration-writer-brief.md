@@ -27,6 +27,12 @@ narrator_vibe:
   - <2–4 concrete storytelling qualities>
 motif_candidates:
   - <optional payoff image>
+engagement_direction:
+  entry_hook: <compact first spoken move>
+  open_question: <question/tension to carry>
+  recognition_cues: [<2–6 concrete recognition cues>]
+  reframe_cues: [<1–4 supported reframes>]
+  payoff_callback: <ending callback with added meaning>
 forbidden_claims:
   - <unsupported motive/cause/consequence/frequency/outcome>
 ```
@@ -39,6 +45,8 @@ For fresh content, `narrator_vibe` is mandatory and is part of the authoring con
 - `rhythm_direction` answers **how delivery changes as meaning changes**.
 
 Both must exist before the draft. Do not invent either one after narration merely to satisfy QC. The compiler must fail when they are missing. Narrative 2.1 uses the same requirement.
+
+Fresh 2.6.8+ also compiles `engagement_direction` from validated `engagement-design.json`. The writer sees this compact direction only; the full beat-level pull map stays outside draft context.
 
 Prefer the `source_id + instruction` form so `validate-content-contract.mjs` can prove lineage. Legacy plain strings remain readable only when they textually resolve to the source artifact.
 
