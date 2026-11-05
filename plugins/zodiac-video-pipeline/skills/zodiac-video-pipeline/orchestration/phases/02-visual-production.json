@@ -270,6 +270,25 @@
           "tool_locator": "features/episode/validate-episode-handoff.mjs",
           "stage": "exit",
           "unavailable_policy": "block"
+        },
+        {
+          "id": "affiliate_commerce_contract",
+          "kind": "internal_reference",
+          "when": "flag:affiliate_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "visual_retention_validation",
+          "kind": "internal_validator",
+          "when": "flag:retention_quality_engine",
+          "tool_locator": "features/retention/visual-retention.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "allowed_context_categories": [
@@ -322,6 +341,10 @@
         {
           "name": ".authoring/scene-experience-review.json",
           "when": "fresh"
+        },
+        {
+          "name": ".authoring/visual-retention-review.json",
+          "when": "flag:retention_quality_engine"
         }
       ],
       "gate_checks": [
@@ -373,6 +396,10 @@
         {
           "name": "background_palette_binding",
           "when": "fresh"
+        },
+        {
+          "name": "visual_retention",
+          "when": "flag:retention_quality_engine"
         }
       ],
       "allowed_operations": [
@@ -384,7 +411,8 @@
         "references/visual-direction.md",
         "references/visual-quality.md",
         "references/asset-library.md",
-        "orchestration/phase02-composition-contract.md"
+        "orchestration/phase02-composition-contract.md",
+        "references/retention-quality.md"
       ],
       "guidance_selection": {
         "references/asset-library-v4/recipes/state-recipes.json": "meme",
@@ -661,6 +689,36 @@
           ],
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "kalodata_product_detail",
+          "kind": "internal_compiler",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/kalodata-client.mjs",
+          "required_arg_suffixes": [
+            "detail"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "affiliate_product_media",
+          "kind": "internal_compiler",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/product-media-adapter.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "affiliate_visual_validation",
+          "kind": "internal_validator",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
+          "required_arg_suffixes": [
+            "visual"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "allowed_context_categories": [
@@ -745,6 +803,10 @@
         {
           "name": "narration_performance_matches_actual_scene",
           "when": "fresh"
+        },
+        {
+          "name": "affiliate_product_media",
+          "when": "flag:affiliate_enabled"
         }
       ],
       "allowed_operations": [
@@ -771,6 +833,14 @@
         {
           "name": ".authoring/narration-performance-receipt.json",
           "when": "fresh"
+        },
+        {
+          "name": ".authoring/commerce/product-detail.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/product-media.json",
+          "when": "flag:affiliate_enabled"
         }
       ],
       "guidance_selection": {
@@ -815,7 +885,19 @@
           "stage": "exit"
         }
       ],
-      "conditional_capabilities": [],
+      "conditional_capabilities": [
+        {
+          "id": "publish_retention_validation",
+          "kind": "internal_validator",
+          "when": "flag:retention_quality_engine",
+          "tool_locator": "features/retention/publish-retention.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        }
+      ],
       "allowed_context_categories": [
         "current_request",
         "approved_narration",
@@ -853,7 +935,18 @@
       ],
       "guidance_selection": {},
       "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable.",
-      "conditional_gate_checks": []
+      "conditional_gate_checks": [
+        {
+          "name": "publish_retention",
+          "when": "flag:retention_quality_engine"
+        }
+      ],
+      "conditional_outputs": [
+        {
+          "name": ".authoring/publish-retention-review.json",
+          "when": "flag:retention_quality_engine"
+        }
+      ]
     }
   ]
 }

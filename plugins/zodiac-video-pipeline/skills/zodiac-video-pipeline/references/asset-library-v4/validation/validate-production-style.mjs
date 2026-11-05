@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateHumanStroke} from './validate-human-stroke.mjs';
+import {validateCommerceProductTransport} from '../../../features/commerce/validate-product-transport.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));const root=path.resolve(here,'..');
 const token=JSON.parse(await readFile(path.join(root,'foundations/style-token.json'),'utf8'));
 const fail=(code,msg)=>{throw new Error(`${code}: ${msg}`);};
@@ -14,13 +15,20 @@ const cc=designToken.character_construction??{},contract=designToken.asset_style
 if(cc.handmade_profile!==token.handmade_profile||cc.body_variation!==token.body_variation||cc.identity_rule!==token.identity_rule||!Array.isArray(cc.body_profiles)||cc.body_profiles.length<1||JSON.stringify(cc.sticker_edge_px_at_1080)!==JSON.stringify(token.sticker_edge_px_at_1080)||JSON.stringify(cc.outline_px_at_1080)!==JSON.stringify(token.character_outline_px_at_1080))fail('STYLE_TOKEN_V4_INVALID','character identity, authored variation, line weight, or sticker edge drifts from V4 contract');
 if(contract.style_token!==token.id||contract.handmade_profile!==token.handmade_profile||contract.legacy_v3_direct_copy!==false||JSON.stringify(contract.prop_effect_source_stroke_px)!==JSON.stringify(token.prop_effect_source_stroke_px)||JSON.stringify(designToken.palette_roles)!==JSON.stringify(token.palette_roles))fail('STYLE_TOKEN_V4_INVALID','asset style contract must lock native V4 palette/strokes and forbid direct V3 geometry copies');
 const designPalette=new Set(Object.values(designToken.palette_roles??{}).map(x=>String(x).toUpperCase()));if(token.palette.some(x=>!designPalette.has(x.toUpperCase())))fail('STYLE_TOKEN_V4_INVALID','design token palette omits colors from the canonical V4 foundation');
-let checked=0,characters=0;
+let checked=0,characters=0,commerce=0;
 for(const [assetId,a] of Object.entries(production.assets??{})){
- if(a.style_id!==token.id)fail('STYLE_TOKEN_V4_INVALID',`${assetId} style_id must be ${token.id}`);
- if(a.lineage?.source_library==='zodiac-paper-doodle-asset-library-v3'&&a.lineage?.mode==='direct_copy')fail('V3_DIRECT_COPY_FORBIDDEN',`${assetId} may not direct-copy v3 geometry into v4 production`);
  if(typeof a.path!=='string'||!a.path.trim())fail('STYLE_TOKEN_V4_INVALID',`${assetId} missing path`);
  const svg=await readFile(path.resolve(packageRoot,a.path),'utf8');
+ // Commerce product imagery is deliberately photographic. It is allowed to bypass
+ // the paper-doodle human-stroke rule only when its local SVG transport has strict
+ // Kalodata provenance and contains the raster bytes itself (no runtime URL).
+ if(a.commerce?.format==='zodiac-product-media-ref@1'){
+  try{validateCommerceProductTransport(a,svg);}catch(e){fail('COMMERCE_PRODUCT_TRANSPORT_INVALID',`${assetId}: ${e.message}`);}
+  checked++;commerce++;continue;
+ }
+ if(a.style_id!==token.id)fail('STYLE_TOKEN_V4_INVALID',`${assetId} style_id must be ${token.id}`);
+ if(a.lineage?.source_library==='zodiac-paper-doodle-asset-library-v3'&&a.lineage?.mode==='direct_copy')fail('V3_DIRECT_COPY_FORBIDDEN',`${assetId} may not direct-copy v3 geometry into v4 production`);
  const category=String(a.category??'').toLowerCase();const kind=category==='character'?'character':category==='effect'||/\/effects\//u.test(a.path.replaceAll('\\','/'))?'support':'focal';
  try{validateHumanStroke(svg,kind);}catch(e){fail('HUMAN_STROKE_V2_INVALID',`${assetId}: ${e.message}`);}checked++;if(kind==='character')characters++;
 }
-console.log(`ASSET_STYLE_V4_PASS: assets=${checked} token=${token.id}`);console.log(`CHARACTER_HUMAN_STROKE_PASS: characters=${characters}`);
+console.log(`ASSET_STYLE_V4_PASS: assets=${checked} token=${token.id} commerce=${commerce}`);console.log(`CHARACTER_HUMAN_STROKE_PASS: characters=${characters}`);

@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {assertNarrativeArchetype,compileNarrativeArchetypeDirection,assertImplicitArchetypeLabel} from './narrative-archetype.mjs';
 
 const fail=m=>{throw new Error('ENGAGEMENT_CONTRACT_INVALID '+m);};
 const text=(v,k,min=8)=>{if(typeof v!=='string'||v.trim().length<min)fail(k);return v.trim();};
@@ -18,6 +19,7 @@ export function assertEngagementDesign(design,{plan,selectedCandidate}={}){
  if(!Array.isArray(design.reframe_points)||design.reframe_points.length<1||design.reframe_points.length>4)fail('reframe_points');
  for(const [i,v] of design.reframe_points.entries())text(v,'reframe_points.'+i);
  text(design.payoff_callback,'payoff_callback');
+ if(design.narrative_archetype!=null)assertNarrativeArchetype(design.narrative_archetype);
  const beats=plan.beats??[];
  if(!Array.isArray(design.beat_pull)||design.beat_pull.length!==beats.length)fail('beat_pull_length');
  for(let i=0;i<beats.length;i++){
@@ -37,7 +39,8 @@ export function compileEngagementDirection(design){
   open_question:design.open_question,
   recognition_cues:[...design.recognition_loop],
   reframe_cues:[...design.reframe_points],
-  payoff_callback:design.payoff_callback
+  payoff_callback:design.payoff_callback,
+  ...(design.narrative_archetype?{narrative_mode:compileNarrativeArchetypeDirection(design.narrative_archetype)}:{})
  };
 }
 
@@ -45,6 +48,7 @@ export function assertEngagementReview(review,{design,plan,narrationRaw}={}){
  if(review?.format!=='zodiac-engagement-review@1')fail('review.format');
  if(review.source?.design_sha256!==hash(JSON.stringify(design))||review.source?.plan_sha256!==hash(JSON.stringify(plan))||review.source?.narration_sha256!==hash(narrationRaw))fail('review.source_lineage');
  const spoken=norm(narrationRaw);
+ if(design?.narrative_archetype)assertImplicitArchetypeLabel(design.narrative_archetype,narrationRaw);
  const keys=['hook_strength','early_value','curiosity_continuity','recognition_density','reframe_strength','payoff_satisfaction'];
  if(!review.criteria||Object.keys(review.criteria).sort().join('|')!==[...keys].sort().join('|'))fail('review.criteria');
  const unresolved=[];

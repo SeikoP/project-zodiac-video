@@ -68,3 +68,12 @@ Planner logic stays invisible in spoken narration. Write natural Vietnamese for 
 ## Creative ordering lock (v2.4.15)
 The Story Spine preserves identity_mechanism and misread_vs_reframe as recognition context; it does not force a misreading or twist. The beat sequence uses meaningful facets without a count quota; if the cast or setting takes control, return to the sign lens. Viral and visual object mechanics follow (never decide) the theme. See `zodiac-identity-first.md`.
 A Viral omission writes mechanics: [] and decision: {mode: "omitted", reason: "<actual editorial reason>"}. Do not invent a mechanic to fill an artifact.
+
+
+### Audience-emergent narrative archetypes
+
+Engagement Design may include `narrative_archetype` when story mechanics support a recognizable world/role. Audience feedback can reinforce the choice, including qualitative user-reported feedback, but it is not evidence for astrology claims.
+
+The writer receives only the compiled `narrative_mode` direction: behavior mechanics, visual grammar, viewer-inference target, labels not to say, and comment affordance. Never pass raw comments, usernames, handles or audience-profile data into the writer brief.
+
+The target label is intentionally withheld when `explicitness=implicit`. The goal is not “tell viewers Scorpio is a detective”; the goal is “make the behavior so detective-like that viewers say it first.”

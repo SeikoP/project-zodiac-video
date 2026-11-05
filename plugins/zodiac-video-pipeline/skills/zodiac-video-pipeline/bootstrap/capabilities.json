@@ -115,6 +115,37 @@
         }
       ],
       "owner": "features/narration-performance/compile-narration-performance.mjs"
+    },
+    {
+      "id": "affiliate_commerce",
+      "fresh": true,
+      "refs": [
+        "references/affiliate-commerce.md"
+      ],
+      "validators": [
+        "monetization-gate",
+        "affiliate-integration",
+        "product-media"
+      ],
+      "bindings": [
+        {
+          "phase": "01-content",
+          "steps": [
+            "narration"
+          ],
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "phase": "02-visual-production",
+          "steps": [
+            "visual_compile",
+            "assets",
+            "publish_prep"
+          ],
+          "when": "flag:affiliate_enabled"
+        }
+      ],
+      "owner": "features/commerce/validate-affiliate-integration.mjs"
     }
   ]
 }

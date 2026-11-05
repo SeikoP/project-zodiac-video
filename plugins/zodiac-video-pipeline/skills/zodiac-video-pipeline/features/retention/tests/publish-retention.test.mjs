@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {analyzePublishRetention} from '../publish-retention.mjs';
+const review=excerpt=>({criteria:{payoff_satisfaction:{result:'PASS',evidence_excerpt:excerpt}}});
+test('caption that reveals Scorpio payoff reviews',()=>{const r=analyzePublishRetention({publish:{title:'Bọ Cạp im lặng',caption:'Đôi khi sự thật rất đơn giản: quán chỉ hết trà đào.',cover:{hook:'BỌ CẠP ĐANG ĐIỀU TRA GÌ?'}},engagementReview:review('Mà vì… quán hết trà đào.')});assert.equal(r.status,'REVIEW');assert.ok(r.issues.some(x=>x.code==='PAYOFF_SPOILER'));});
+test('related but non-spoiling copy passes',()=>{const r=analyzePublishRetention({publish:{title:'Cự Giải và nghịch lý càng thân càng cần một chiếc vỏ',caption:'Cự Giải nhớ rất nhiều thứ nhỏ nhưng càng coi một nơi là nhà, họ càng có thứ cần bảo vệ.',cover:{hook:'CỰ GIẢI CÀNG GẦN, CÀNG CẦN MỘT CHIẾC VỎ?'}},engagementReview:review('chiếc vỏ không phải thứ đối lập với sự gần gũi')});assert.equal(r.status,'PASS');});

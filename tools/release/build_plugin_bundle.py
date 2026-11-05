@@ -14,7 +14,8 @@ INCLUDED_ROOTS = {"bootstrap", "core", "features", "phases", "orchestration",
                   "references", "art-direction", "compat", "contracts"}
 EXCLUDED_SEGMENTS = {"tests", "__pycache__", ".cache", ".pytest_cache",
                      ".authoring", "retired-source", "generated-previews"}
-REQUIRED = {"plugin.json", ".codex-plugin/plugin.json", "skills/zodiac-video-pipeline/SKILL.md"}
+REQUIRED = {"plugin.json", ".codex-plugin/plugin.json", "skills/zodiac-video-pipeline/SKILL.md",
+            "skills/zodiac-affiliate-commerce/SKILL.md"}
 STATIC_TIME = (1980, 1, 1, 0, 0, 0)
 
 

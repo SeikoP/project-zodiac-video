@@ -398,6 +398,47 @@
           "tool_locator": "references/short-form-duration.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "affiliate_commerce_contract",
+          "kind": "internal_reference",
+          "when": "flag:affiliate_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "kalodata_product_discovery",
+          "kind": "internal_compiler",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/kalodata-client.mjs",
+          "required_arg_suffixes": [
+            "discover"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "affiliate_integration_validation",
+          "kind": "internal_validator",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
+          "required_arg_suffixes": [
+            "content"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "retention_structure_validation",
+          "kind": "internal_validator",
+          "when": "flag:retention_quality_engine",
+          "tool_locator": "features/retention/retention-structure.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "allowed_context_categories": [
@@ -456,7 +497,8 @@
         "references/content-quality-engine.md",
         "references/narration-rhythm.md",
         "references/short-form-duration.mjs",
-        "references/engagement-engine.md"
+        "references/engagement-engine.md",
+        "references/retention-quality.md"
       ],
       "context_scopes": {
         "draft": {
@@ -526,7 +568,43 @@
             "references/engagement-engine.md"
           ]
         }
-      }
+      },
+      "conditional_outputs": [
+        {
+          "name": ".authoring/commerce/product-query.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/product-candidates.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/product-selection.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/affiliate-integration.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/affiliate-handoff.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": "retention-structure.json",
+          "when": "flag:retention_quality_engine"
+        }
+      ],
+      "conditional_gate_checks": [
+        {
+          "name": "affiliate_commerce_content",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": "retention_structure",
+          "when": "flag:retention_quality_engine"
+        }
+      ]
     }
   ]
 }

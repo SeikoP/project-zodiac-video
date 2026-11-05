@@ -12,6 +12,7 @@ PLUGIN = "plugins/zodiac-video-pipeline/"
 PHASES = ("01-content", "02-visual-production", "03-handoff")
 ROOT_REQUIRED = ("plugin.json", ".codex-plugin/plugin.json",
                  "skills/zodiac-video-pipeline/SKILL.md",
+                 "skills/zodiac-affiliate-commerce/SKILL.md",
                  "skills/zodiac-video-pipeline/orchestration/router.md",
                  "skills/zodiac-video-pipeline/orchestration/execution-bootstrap.md",
                  "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json")
