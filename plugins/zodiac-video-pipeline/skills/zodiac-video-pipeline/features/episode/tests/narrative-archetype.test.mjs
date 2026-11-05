@@ -63,3 +63,9 @@ test('implicit archetype label cannot leak into narration',()=>{
  assert.equal(assertImplicitArchetypeLabel(a,'Bọ Cạp nhìn cái ly, nhớ câu hôm qua rồi lặng lẽ đối chiếu từng chi tiết.'),true);
  assert.throws(()=>assertImplicitArchetypeLabel(a,'Bọ Cạp đúng là một thám tử trong tình huống này.'),/LABEL_LEAK/);
 });
+
+
+test('sign defaults are forbidden',()=>{
+ const a=detective();a.sign_default='scorpio';
+ assert.throws(()=>assertNarrativeArchetype(a),/unknown field sign_default/);
+});
