@@ -64,17 +64,6 @@
           "tool_locator": "references/validate-evidence-contract.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
-        },
-        {
-          "id": "affiliate_monetization_decision_validation",
-          "kind": "internal_validator",
-          "when": "fresh",
-          "tool_locator": "features/commerce/monetization-gate.mjs",
-          "required_arg_suffixes": [
-            "check"
-          ],
-          "unavailable_policy": "block",
-          "stage": "entry"
         }
       ],
       "conditional_capabilities": [
@@ -143,10 +132,6 @@
         {
           "name": "research-scope.json",
           "when": "flag:episode_selected"
-        },
-        {
-          "name": ".authoring/commerce/monetization.json",
-          "when": "fresh"
         }
       ],
       "gate_checks": [
@@ -162,10 +147,6 @@
         {
           "name": "series_selection_resolved",
           "when": "flag:series_tracker"
-        },
-        {
-          "name": "monetization_decision",
-          "when": "fresh"
         }
       ],
       "allowed_operations": [

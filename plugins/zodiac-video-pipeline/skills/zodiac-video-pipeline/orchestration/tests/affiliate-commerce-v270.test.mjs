@@ -49,9 +49,14 @@ test('pipeline state and phase manifests wire affiliate commerce fail closed',as
   assert.equal(state.plugin_version,'2.7.1');assert.equal(state.flags.affiliate_enabled,false);
   const p1=JSON.parse(await readFile(path.join(skillRoot,'orchestration/phases/01-content.json'),'utf8'));
   const evidence=p1.steps.find(x=>x.id==='evidence'),narration=p1.steps.find(x=>x.id==='narration');
-  assert.ok(evidence.required_capabilities.some(x=>x.id==='affiliate_monetization_decision_validation'));
+  assert.equal(evidence.required_capabilities.some(x=>x.id==='affiliate_monetization_decision_validation'),false);
   assert.ok(narration.conditional_capabilities.some(x=>x.id==='affiliate_integration_validation'&&x.when==='flag:affiliate_enabled'));
   const p2=JSON.parse(await readFile(path.join(skillRoot,'orchestration/phases/02-visual-production.json'),'utf8'));
   const assets=p2.steps.find(x=>x.id==='assets');
   for(const id of ['kalodata_product_detail','affiliate_product_media','affiliate_visual_validation'])assert.ok(assets.conditional_capabilities.some(x=>x.id===id&&x.when==='flag:affiliate_enabled'),id);
+});
+
+test('legacy fresh flags treat missing affiliate_enabled as commerce off',async()=>{
+  const {conditionApplies}=await import('../../core/policy/resolve-capability-route.mjs');
+  assert.equal(conditionApplies('flag:affiliate_enabled',{run_mode:'fresh',flags:{}}),false);
 });
