@@ -24,3 +24,9 @@ test('narrated physical object cannot be replaced only by narrative visual',()=>
  const r=reviewSceneExperience(intent({id:'S03',semantic_goal:'She remembers the cup',experience_profile:{story_mode:'behavior',required_physical_entities:['cup']},entities:[char,nv],events:[],art_direction:{scene_experience:{environment_specificity:'Memory space.',visual_callback:'Thread callback.'}}}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='PHYSICAL_STORY_ENTITY_MISSING'));
 });
+
+test('fresh scene without experience profile is REVIEW instead of silently passing',()=>{
+ const r=reviewSceneExperience(intent({id:'S00',semantic_goal:'A behavior beat',entities:[char,accent],events:[]}));
+ assert.equal(r.decision,'REVIEW');
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='EXPERIENCE_PROFILE_MISSING'));
+});
