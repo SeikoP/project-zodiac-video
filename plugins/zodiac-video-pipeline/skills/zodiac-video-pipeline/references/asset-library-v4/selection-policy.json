@@ -85,7 +85,15 @@
         "plain-shirt",
         "long-side-part",
         "high-tied-ponytail",
-        "zodiac-glyph-shirt"
+        "zodiac-glyph-shirt",
+        "soft-layered-bob",
+        "shoulder-wave",
+        "loose-long-wave",
+        "side-braid",
+        "braided-ponytail",
+        "messy-top-bun",
+        "half-up-long",
+        "blunt-lob"
       ],
       "kind": "character",
       "refs": [
@@ -115,7 +123,19 @@
         "sticky-note",
         "wallet",
         "photo-card",
-        "small-bag"
+        "small-bag",
+        "sealed-envelope",
+        "folded-letter",
+        "hourglass",
+        "key-ring",
+        "receipt-roll",
+        "compass",
+        "theater-mask",
+        "thread-spool",
+        "chess-knight",
+        "magnifying-glass",
+        "calendar-page",
+        "ribbon-knot"
       ],
       "kind": "prop",
       "refs": [
@@ -123,7 +143,6 @@
       ]
     },
     {
-      "kind": "scene_set",
       "ids": [
         "scene-set-home",
         "scene-set-cafe",
@@ -132,6 +151,7 @@
         "scene-set-street",
         "scene-set-neutral"
       ],
+      "kind": "scene_set",
       "refs": [
         "references/asset-library-v4/scene-set/index.json"
       ],
@@ -141,7 +161,6 @@
       ]
     },
     {
-      "kind": "scene_accent",
       "ids": [
         "scene-accent-cafe",
         "scene-accent-board",
@@ -156,6 +175,7 @@
         "scene-accent-neutral-dot",
         "scene-accent-neutral-line"
       ],
+      "kind": "scene_accent",
       "refs": [
         "references/asset-library-v4/scene-set/accents/index.json"
       ],
