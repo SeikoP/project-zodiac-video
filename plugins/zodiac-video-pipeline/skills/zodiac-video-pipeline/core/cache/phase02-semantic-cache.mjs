@@ -22,6 +22,23 @@ export function buildPhase02SemanticGraph(intent){
  nodes['review:index']={kind:'review',input_sha256:hash((intent.scenes??[]).map(s=>s.id)),dependencies:(intent.scenes??[]).map(s=>'preview:'+s.id)};
  return {format:'zodiac-phase02-semantic-graph@1',source_sha256:hash(intent),nodes,scene_references:Object.fromEntries([...sceneRefs].map(([k,v])=>[k,[...v].sort()]))};
 }
+export function revisionGuidance(current,diff){
+ const all=Object.keys(current?.nodes??{}),dirty=new Set((diff?.dirty??[]).filter(id=>current?.nodes?.[id]));
+ const rebuild=all.filter(id=>dirty.has(id)).sort(),reuse=all.filter(id=>!dirty.has(id)).sort();
+ const sceneIds=[...new Set(all.filter(id=>id.startsWith('scene:')).map(id=>id.slice(6)))].sort();
+ const assetIds=all.filter(id=>id.startsWith('asset:')).sort();
+ return {
+  format:'zodiac-phase02-revision-guidance@1',
+  nodes:{rebuild,reuse},
+  scenes:{
+   rebuild:sceneIds.filter(id=>dirty.has('scene:'+id)||dirty.has('preview:'+id)),
+   reuse:sceneIds.filter(id=>!dirty.has('scene:'+id)&&!dirty.has('preview:'+id))
+  },
+  assets:{rebuild:assetIds.filter(id=>dirty.has(id)),reuse:assetIds.filter(id=>!dirty.has(id))},
+  review_index_rebuild:dirty.has('review:index'),
+  not_an_approval:true
+ };
+}
 export function diffPhase02SemanticGraphs(previous,current){
  if(!previous)return {dirty:Object.keys(current.nodes),changed:Object.keys(current.nodes)};
  const changed=[];for(const [id,node] of Object.entries(current.nodes))if(previous.nodes?.[id]?.input_sha256!==node.input_sha256)changed.push(id);
