@@ -1,6 +1,6 @@
 // Original physical-style textures: filtered water/leaf noise, wood resonators and soft bells.
 import fs from 'node:fs';import path from 'node:path';import os from 'node:os';
-import {createHash} from 'node:crypto';import {spawnSync} from 'node:child_process';import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export const ROLE_GROUPS={
  care:['plant','water','help','harvest','fertilize','pestClear','weedClear','softBlocked'],
@@ -15,9 +15,9 @@ const dest=path.join(root,'public/garden/audio'),catalogFile=path.join(root,'gar
 export function checkCatalog(catalog,directory=dest){
  const roles=Object.values(ROLE_GROUPS).flat();if(Object.keys(catalog.roles??{}).length!==36||catalog.assets?.length!==50)throw Error('Expected 36 roles / 50 original samples');
  const declared=new Set(catalog.assets.map(a=>a.file));
- for(const role of roles){const def=catalog.roles[role];if(!def?.files?.length||def.files.some(f=>!declared.has(f)||!/^[a-zA-Z][\w-]*\.mp3$/.test(f)))throw Error('Invalid role '+role);}
+ for(const role of roles){const def=catalog.roles[role];if(!def?.files?.length||def.files.some(f=>!declared.has(f)||!/^[a-zA-Z][\w-]*\.wav$/.test(f)))throw Error('Invalid role '+role);}
  for(const a of catalog.assets){
-  if(!/^[a-zA-Z][\w-]*\.mp3$/.test(a.file)||!a.sourceUrl||!a.licenseId||!Number.isFinite(a.durationMs)||a.durationMs<=0)throw Error('Invalid asset '+a.file);
+  if(!/^[a-zA-Z][\w-]*\.wav$/.test(a.file)||!a.sourceUrl||!a.licenseId||!Number.isFinite(a.durationMs)||a.durationMs<=0)throw Error('Invalid asset '+a.file);
   const file=path.join(directory,a.file);if(sha(fs.readFileSync(file))!==a.sha256)throw Error('Checksum mismatch '+a.file);
  }
  return {roles:36,samples:50,listeningPending:catalog.assets.filter(a=>a.reviewStatus!=='listening-approved').length};
@@ -49,12 +49,9 @@ export function prepareAudio({from,check=false}={}){
   for(const [group,roles] of Object.entries(ROLE_GROUPS))for(const role of roles){
    const files=[];
    for(let variant=1;variant<=(doubles.has(role)?2:1);variant++){
-    const file=`${role}-${variant}.mp3`,wave=waveform(role,variant),wav=path.join(staging,file+'.wav'),mp3=path.join(staging,file);
-    if(from){const input=path.join(path.resolve(from),file);fs.copyFileSync(input,mp3);}else{
-     fs.writeFileSync(wav,wave.buffer);const converted=spawnSync('ffmpeg',['-v','error','-y','-i',wav,'-codec:a','libmp3lame','-b:a','96k',mp3],{windowsHide:true});
-     if(converted.status!==0)throw Error('ffmpeg failed: '+converted.stderr?.toString());
-    }
-    const bytes=fs.readFileSync(mp3);if(bytes.length<100)throw Error('Invalid MP3 '+file);
+    const file=`${role}-${variant}.wav`,wave=waveform(role,variant),output=path.join(staging,file);
+    if(from){const input=path.join(path.resolve(from),file);fs.copyFileSync(input,output);}else fs.writeFileSync(output,wave.buffer);
+    const bytes=fs.readFileSync(output);if(bytes.length<100)throw Error('Invalid WAV '+file);
     files.push(file);outputs.push({file,bytes});
     catalog.assets.push(imported?structuredClone(imported.assets.find(a=>a.file===file)):{id:`garden-${role}-${variant}`,file,durationMs:wave.durationMs,sourceUrl:'repo:scripts/prepare-garden-audio.mjs',author:'Garden project original procedural audio',licenseId:'CC0-1.0',licenseUrl:'https://creativecommons.org/publicdomain/zero/1.0/',retrievedAt:'2026-11-05',sha256:sha(bytes),trimStartMs:0,trimEndMs:wave.durationMs,gainDb:0,tags:[group,role,'organic'],reviewStatus:'listening-pending'});
    }
