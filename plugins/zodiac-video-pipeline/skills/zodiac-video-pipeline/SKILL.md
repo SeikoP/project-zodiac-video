@@ -41,6 +41,8 @@ Before drafting, the compiled writer brief must exist with valid lineage and mus
 
 For Narrative 2.1, narrator tone is still mandatory even though the episode compiler is separate. Missing `narrator_vibe` is a compiler failure, not an optional style omission.
 
+Fresh 2.6.8+ Narration is progressively validated: run entry preflight before prose, then a cheap draft checkpoint immediately after the draft. Basic contract/duration/TTS/identity defects must be repaired at the checkpoint before Story Spine/QC/Engagement/Story Quality artifacts are authored. Final validators confirm a stable draft rather than acting as the first defect detector.
+
 Fresh 2.6.8+ Concept also requires a validated `engagement-design.json` before writer-brief compilation. The writer receives only its compact `engagement_direction`; the beat-level pull map remains out of draft context. Narration review requires grounded `engagement-review.json`; unresolved hook/early-value/curiosity/recognition/reframe/payoff or consecutive-explanation REVIEW blocks Content Review.
 
 After drafting, switch to review context and complete the active manifest's narration outputs and gates: actual voice anchors, Story Spine realization, Narrative QC, Story Quality/Zodiac identity review when required, TTS text readiness and duration estimate. A manual table in chat is not a validator receipt. Any material `REVIEW` returns to the owning step; do not present the narration as complete until the gate is resolved.
