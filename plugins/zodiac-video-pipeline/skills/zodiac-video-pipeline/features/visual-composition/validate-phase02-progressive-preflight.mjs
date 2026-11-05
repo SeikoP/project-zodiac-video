@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateScenePlan} from '../../phases/phase02/scene-plan.mjs';
+import {validateCreativeProvenance} from './validate-creative-asset-provenance.mjs';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const authored=a=>['authored','authored_derivative','derive_new'].includes(a?.lineage?.mode)||a?.ownership?.kind==='authored';
@@ -40,6 +41,20 @@ export async function validateProgressivePreflight({intent,production,motionRegi
     if(invalid.length)add('AUTHORED_SVG_PALETTE',{asset_id:assetId,colors:invalid});
    }
   }
+ }
+ // Blocking creative originality provenance in the *existing* precompile gate,
+ // not merely a voluntary post-hoc CLI or an agent reminder.
+ if(intent?.taxonomy_version==='narrative_visual@1'){
+  const projectedVoice=new Map((production?.scenes??[]).map(s=>[s.id,s.voice]));
+  const intentWithVoice={...intent,scenes:(intent.scenes??[]).map(s=>({...s,voice:projectedVoice.get(s.id)??s.voice}))};
+  const svgByAsset={};
+  const ids=new Set(intentWithVoice.scenes.flatMap(s=>(s.entities??[]).filter(e=>e.kind==='narrative_visual').flatMap(e=>Object.values(e.states??{}).filter(st=>st?.asset&&st.visible!==false).map(st=>st.asset))));
+  for(const id of ids){const asset=intent?.assets?.[id];
+   if(!asset?.path||typeof readAsset!=='function'){add('CREATIVE_ASSET_SOURCE_REQUIRED',{asset_id:id});continue;}
+   try{svgByAsset[id]=await readAsset(asset.path);}catch{add('CREATIVE_ASSET_UNREADABLE',{asset_id:id});}
+  }
+  const creative=validateCreativeProvenance(intentWithVoice,svgByAsset);
+  issues.push(...creative.issues);
  }
  return {format:'zodiac-phase02-progressive-preflight@1',status:issues.length?'BLOCKED':'PASS',issues,not_an_approval:true};
 }
