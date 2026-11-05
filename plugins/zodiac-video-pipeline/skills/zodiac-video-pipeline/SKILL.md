@@ -24,8 +24,7 @@ Use the installed `defaultPrompt`, router, current phase manifest and `plan-step
 ## Execution source in the repository
 When operating from this repository checkout, read orchestration/execution-bootstrap.md and run the verified scripts directly from this checkout. Pin every execution to the current Git commit and verify SHA-256 inputs before native compilation. Load only the bounded references returned by plan-step-context.mjs; the full repository is not episode context. Repository execution does not waive the active router, phase manifest, validator order, source hashes, review gates or genuine user approvals. The ChatGPT-installed variant instead uses a verified phase-scoped execution bundle; do not apply repository-checkout transport instructions inside ChatGPT.
 
-## Phase 01
-No user-facing ZIP. Default to autonomous Evidence → Concept → Narration → QC execution after scope is known; the only normal user pause is final Content Review. Do not ask the user to approve searches, select a concept, approve an outline, or confirm validator/compiler steps unless they explicitly requested a choice or the scope is materially ambiguous.
+## Phase 01: no user-facing ZIP Default to autonomous Evidence → Concept → Narration → QC execution after scope is known; the only normal user pause is final Content Review. Do not ask the user to approve searches, select a concept, approve an outline, or confirm validator/compiler steps unless they explicitly requested a choice or the scope is materially ambiguous.
 
 Use references/episode-formats.md and references/phase01-briefing.md. Distinguish episode format from the `character_deconstruction` story engine. Use bounded independent evidence, one coherent Story Spine and authentic Content Review. Narrative 2.1 is for fresh scoped episodes.
 
