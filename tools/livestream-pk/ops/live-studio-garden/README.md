@@ -45,6 +45,6 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 
 ## Trạng thái lúc chuẩn bị bộ này
 
-Ngày 2026-11-05: Studio đã cài, chưa xác nhận UI nguồn/mixer. Simulator 4858 có 12 bot đang chạy, được giữ nguyên. Kiểm thử mới 601/601 qua; audit vẫn có lỗi về thời tiết, deadline khi boss, ưu tiên cảnh và phục hồi quà. Xem [báo cáo audit](../../docs/superpowers/plans/2026-11-05-garden-prelive-audit.md).
+Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden sau khi nhập `main` đạt **612/612** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
 
-Chưa nghiệm thu: phát từ Studio, âm thanh thật, khung điện thoại, nhận sự kiện/quà LIVE và hiệu năng khi mã hóa. Chưa sẵn sàng tuyên bố setup phát thật hoàn tất.
+Chưa nghiệm thu: nguồn Link/mixer bên trong UI TikTok LIVE Studio, nghe duyệt 50 sample, khung safe-area trên điện thoại thật, nhận chat/like/quà từ TikTok LIVE thật và hiệu năng khi Studio mã hóa. Các mục này phải được kiểm tra trong buổi rehearsal/LIVE thực tế; không suy ra PASS từ test hoặc tunnel smoke.

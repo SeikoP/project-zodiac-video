@@ -1,22 +1,29 @@
 {
-  "checkedAt": "2026-11-05T04:46:45.102Z",
-  "url": "http://127.0.0.1:4858",
-  "simulator": true,
-  "viewers": 12,
-  "planted": 12,
-  "bots": 12,
-  "autoplayRunning": true,
-  "diagnosticsVersion": 1,
+  "checkedAt": "2026-11-05T06:35:00.000Z",
+  "localOverlayUrl": "http://127.0.0.1:4858/?music=0.16&sfx=0.2",
+  "liveStudioSource": "npm run garden:share -> temporary HTTPS Link source",
+  "sharePort": 4859,
   "studioInstalled": true,
+  "studioVersion": "1.39.2",
+  "cloudflaredInstalled": true,
+  "cloudflaredVersion": "2026.10.7",
   "fontPresent": true,
   "verification": {
-    "logicTestsPassed": 601,
+    "logicTestsPassed": 612,
     "logicTestsFailed": 0,
-    "isolatedBrowserAudit": true,
+    "audioCatalogRoles": 36,
+    "audioCatalogSamples": 50,
+    "offlineRehearsalScenariosPassed": 15,
+    "shareTunnelVerified": true,
+    "shareOverlayHttp200": true,
+    "shareControlBlocked": true,
+    "shareWriteApiBlocked": true,
+    "sharePrivateStatusFieldsBlocked": true,
     "studioCapture": false,
     "studioAudio": false,
     "phoneSafeArea": false,
-    "actualLiveDelivery": false
+    "actualLiveDelivery": false,
+    "humanAudioListening": false
   },
-  "verdict": "Not ready for full LIVE acceptance; see audit findings 1-5"
+  "verdict": "Code and HTTPS share path are ready for LIVE Studio setup; full LIVE acceptance still requires Studio capture/audio, phone safe-area, human listening and actual TikTok delivery checks."
 }
