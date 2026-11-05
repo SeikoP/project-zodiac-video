@@ -3,6 +3,7 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
+import {buildPhase02SemanticGraph,diffPhase02SemanticGraphs,revisionGuidance} from '../cache/phase02-semantic-cache.mjs';
 const args=process.argv.slice(2), opt=k=>{const i=args.indexOf(k);return i<0?null:args[i+1]??null};
 const before=opt('--before'),after=opt('--after'),output=opt('--output');
 if(!before||!after){console.error('Usage: assess-revision-impact.mjs --before <approved-workspace> --after <revised-workspace> [--output <json>]');process.exit(2)}
@@ -40,6 +41,13 @@ if(eventChange){['event_state_chain','motion_registry','voice_anchor_validation'
 if(changed.includes('.authoring/scene-art-direction.json')||groups.token.length){['art_direction_qc','background_scene_set_qc','native_compile','director_review','native_preview','job5_compile'].forEach(g=>gates.add(g))}
 if(changed.includes('.authoring/director-plan.json')){['performance_coverage','director_review','native_preview','job5_compile'].forEach(g=>gates.add(g))}
 if(groups.publish.length){['publish_prep','cover_contract','job5_compile','cover_render'].forEach(g=>gates.add(g))}
-const report={format:'zodiac-revision-impact@1',status:changed.length?'REVIEW_REQUIRED':'NO_CHANGE',before:path.resolve(before),after:path.resolve(after),changed_files:changed,groups,production:{voice_changed:voiceChange,events_or_entities_changed:eventChange},approval,tasks_to_revalidate:[...gates].sort(),warning:'UNCHANGED_BY_SNAPSHOT does not prove an approval exists. This report NEVER grants approval or certifies runtime output.'};
+let phase02Revision=null;
+const beforeIntent=x.json['.authoring/visual-intent.json'],afterIntent=y.json['.authoring/visual-intent.json'];
+if(beforeIntent&&afterIntent){
+ const g0=buildPhase02SemanticGraph(beforeIntent),g1=buildPhase02SemanticGraph(afterIntent),diff=diffPhase02SemanticGraphs(g0,g1);
+ phase02Revision=revisionGuidance(g1,diff);
+ phase02Revision.changed_nodes=diff.changed;
+}
+const report={format:'zodiac-revision-impact@1',status:changed.length?'REVIEW_REQUIRED':'NO_CHANGE',before:path.resolve(before),after:path.resolve(after),changed_files:changed,groups,production:{voice_changed:voiceChange,events_or_entities_changed:eventChange},approval,tasks_to_revalidate:[...gates].sort(),phase02_revision:phase02Revision,warning:'UNCHANGED_BY_SNAPSHOT does not prove an approval exists. This report NEVER grants approval or certifies runtime output.'};
 if(output){await mkdir(path.dirname(path.resolve(output)),{recursive:true});await writeFile(path.resolve(output),JSON.stringify(report,null,2)+'\n')}
 console.log(JSON.stringify(report,null,2));

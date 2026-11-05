@@ -7,9 +7,30 @@ async function fixture(){
  await writeFile(path.join(skill,'features/visual-composition/validate-character-intent-preflight.mjs'),js);
  await writeFile(path.join(skill,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),'process.exit(0)');
  await writeFile(path.join(skill,'features/visual-composition/validate-phase02-art-direction.mjs'),'process.exit(0)');
- await writeFile(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),"import {writeFile} from 'node:fs/promises';const [id,out]=process.argv.slice(2);await writeFile(out,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:id,status:'PASS',exit_code:0}));");
+ await writeFile(path.join(skill,'features/visual-composition/validate-phase02-progressive-preflight.mjs'),'process.exit(0)');
+ await writeFile(path.join(skill,'features/visual-composition/validate-scene-experience.mjs'),'process.exit(0)');
+ await writeFile(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),"import {writeFile} from 'node:fs/promises';import {spawnSync} from 'node:child_process';const [id,out,file,...args]=process.argv.slice(2);const r=spawnSync(process.execPath,[file,...args],{encoding:'utf8'});const status=r.status===0?'PASS':'FAIL';await writeFile(out,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:id,status,exit_code:r.status??1,stdout:r.stdout??'',stderr:r.stderr??''}));process.exitCode=r.status??1;");
  return {root,skill,ws};
 }
 test('parallel preflight creates separate receipts and preserves gate results',async()=>{const f=await fixture();try{const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'PASS');assert.deepEqual(r.plan.batches,[['seam','character','art']]);for(const id of ['seam','art'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');}finally{await rm(f.root,{recursive:true,force:true});}});
 
 test('failed character preflight blocks while retaining other independent native receipts',async()=>{const f=await fixture();try{await writeFile(path.join(f.skill,'features/visual-composition/validate-character-intent-preflight.mjs'),'process.exitCode=2;');const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'BLOCKED');assert.equal(r.checks.character.status,'FAIL');assert.equal(r.checks.seam.status,'PASS');assert.equal(r.checks.art.status,'PASS');assert.equal(r.issues.length,1);}finally{await rm(f.root,{recursive:true,force:true});}});
+
+
+test('fresh preflight runs progressive and scene-experience gates before native compilation',async()=>{const f=await fixture();try{
+ const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true,fresh:true});
+ assert.equal(r.status,'PASS');
+ assert.deepEqual(r.plan.batches,[['seam','character','progressive','experience','art']]);
+ for(const id of ['progressive','experience'])assert.equal(r.checks[id].status,'PASS');
+ for(const id of ['progressive','experience'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');
+}finally{await rm(f.root,{recursive:true,force:true});}});
+
+test('fresh scene-experience review blocks preflight while independent checks still complete',async()=>{const f=await fixture();try{
+ await writeFile(path.join(f.skill,'features/visual-composition/validate-scene-experience.mjs'),'process.exitCode=1;');
+ const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:false,fresh:true});
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.checks.experience.status,'FAIL');
+ assert.equal(r.checks.progressive.status,'PASS');
+ assert.equal(r.checks.seam.status,'PASS');
+ assert.ok(r.issues.some(x=>x.id==='experience'));
+}finally{await rm(f.root,{recursive:true,force:true});}});

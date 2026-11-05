@@ -45,6 +45,8 @@ const sourcePaths=[
  'features/visual-composition/validate-authoring-scene-events.mjs',
  'features/visual-composition/validate-visual-quality.mjs',
  'features/visual-composition/validate-phase02-precompile-boundary.mjs',
+ 'features/visual-composition/validate-phase02-progressive-preflight.mjs',
+ 'features/visual-composition/validate-scene-experience.mjs',
  'features/visual-composition/phase02-composition.mjs',
  'core/ownership/generated-asset-ownership.mjs',
  'features/narration-performance/compile-narration-performance.mjs',
@@ -209,11 +211,19 @@ if(running&&report.issues.length===0){
  if(validity.status==='PASS'){
   const state=JSON.parse(await readFile(statePath,'utf8'));
   // Independent, read-only validators write distinct receipts; critical state validation stays sequential.
-  const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,maxConcurrency:3});
+  const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,fresh:state.run_mode==='fresh',maxConcurrency:5});
   report.fast_preflight={status:preflight.status,plan:preflight.plan,issues:preflight.issues,wall_ms:preflight.wall_ms,serial_equivalent_native_ms:preflight.serial_equivalent_native_ms};
   report.precompile_seam=preflight.checks.seam;
   report.precompile_seam_receipt=preflight.receipts.seam;
   report.character_intent_preflight=preflight.checks.character;
+  if(preflight.checks.progressive){
+   report.progressive_preflight=preflight.checks.progressive;
+   report.progressive_preflight_receipt=preflight.receipts.progressive;
+  }
+  if(preflight.checks.experience){
+   report.scene_experience_review=preflight.checks.experience;
+   report.scene_experience_receipt=preflight.receipts.experience;
+  }
   if(preflight.checks.art){
    report.art_direction_preflight=preflight.checks.art;
    report.art_direction_receipt=preflight.receipts.art;
@@ -221,6 +231,8 @@ if(running&&report.issues.length===0){
   if(preflight.checks.seam?.status!=='PASS')fail('PRECOMPILE_SEAM_BLOCKED',{exit_code:preflight.checks.seam?.exit_code??1,stderr:preflight.checks.seam?.stderr});
   if(preflight.checks.art&&preflight.checks.art.status!=='PASS')fail('ART_DIRECTION_PREFLIGHT_BLOCKED',{exit_code:preflight.checks.art.exit_code,stderr:preflight.checks.art.stderr});
   if(preflight.checks.character?.status!=='PASS')fail('CHARACTER_INTENT_PREFLIGHT_FAILED',{exit_code:preflight.checks.character?.exit_code??1,stderr:preflight.checks.character?.stderr});
+  if(preflight.checks.progressive&&preflight.checks.progressive.status!=='PASS')fail('PROGRESSIVE_PREFLIGHT_BLOCKED',{exit_code:preflight.checks.progressive.exit_code??1,stderr:preflight.checks.progressive.stderr});
+  if(preflight.checks.experience&&preflight.checks.experience.status!=='PASS')fail('SCENE_EXPERIENCE_REVIEW_BLOCKED',{exit_code:preflight.checks.experience.exit_code??1,stderr:preflight.checks.experience.stderr});
  }
 }
 if(report.issues.length){report.status='BLOCKED';await finish();}
