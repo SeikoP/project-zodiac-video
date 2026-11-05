@@ -53,3 +53,37 @@ test('engagement review blocks unresolved pull or explanation risk',()=>{
  };
  assert.throws(()=>assertEngagementReview(review,{design,plan,narrationRaw}),/Content Review blocked by engagement REVIEW/);
 });
+
+
+test('engagement design compiles an implicit narrative archetype',()=>{
+ const withMode=structuredClone(design);
+ withMode.narrative_archetype={
+  format:'zodiac-narrative-archetype@1',
+  mode_id:'detective_case',
+  selection_basis:'hybrid',
+  behavior_mechanics:[
+   'Notices a mismatch and treats it as a clue worth holding.',
+   'Compares details before accepting the ordinary explanation.'
+  ],
+  visual_grammar:['clue emphasis','case-file progression','case-closed callback'],
+  viewer_inference:{
+   target_label:'thám tử',
+   aliases:['detective'],
+   explicitness:'implicit',
+   comment_affordance:'Leave the role unnamed so viewers can identify and name it themselves.'
+  },
+  audience_evidence:{
+   source_kind:'user_reported_viewer_feedback',
+   normalized_mode_id:'detective_case',
+   signal_strength:'qualitative',
+   not_zodiac_claim_evidence:true
+  },
+  recent_mode_ids:[]
+ };
+ assert.equal(assertEngagementDesign(withMode,{plan,selectedCandidate:candidate}),withMode);
+ const compiled=compileEngagementDirection(withMode);
+ assert.equal(compiled.narrative_mode.mode_id,'detective_case');
+ assert.equal(compiled.narrative_mode.viewer_inference_target,'thám tử');
+ assert.equal(compiled.narrative_mode.audience_resonance_used,true);
+ assert.equal('audience_evidence' in compiled.narrative_mode,false);
+});
