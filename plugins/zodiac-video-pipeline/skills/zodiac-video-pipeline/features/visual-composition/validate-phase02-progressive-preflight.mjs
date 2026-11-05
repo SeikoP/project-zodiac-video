@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const authored=a=>['authored','authored_derivative','derive_new'].includes(a?.lineage?.mode)||a?.ownership?.kind==='authored';
-const metadata=(svg,key)=>{const body=/<metadata[^>]*>([\\s\\S]*?)<\\/metadata>/iu.exec(svg)?.[1]??'';for(const part of body.split(';')){const i=part.indexOf('=');if(i>0&&part.slice(0,i).trim()===key)return part.slice(i+1).trim();}return null;};
+const metadata=(svg,key)=>{const open=svg.indexOf('<metadata'),start=open<0?-1:svg.indexOf('>',open),end=start<0?-1:svg.indexOf('</metadata>',start+1);const body=start>=0&&end>start?svg.slice(start+1,end):'';for(const part of body.split(';')){const i=part.indexOf('=');if(i>0&&part.slice(0,i).trim()===key)return part.slice(i+1).trim();}return null;};
 const nums=(svg,re)=>[...svg.matchAll(re)].map(m=>Number(m[1])).filter(Number.isFinite);
 const colors=svg=>[...svg.matchAll(/(?:fill|stroke)=["'](#[0-9a-f]{6})["']/giu)].map(m=>m[1].toUpperCase());
 
