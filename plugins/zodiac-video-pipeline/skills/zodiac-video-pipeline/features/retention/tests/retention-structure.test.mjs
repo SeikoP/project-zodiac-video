@@ -9,7 +9,7 @@ function fixture({late=false,long=false,gap=false}={}){
  const tokenList=words(narration);
  const pick=(start,len=5)=>tokenList.slice(start,start+len).join(' ');
  const hookStart=late?20:0;
- const beatStarts=gap?[hookStart,hookStart+5,Math.min(tokenList.length-20,hookStart+120),Math.min(tokenList.length-10,hookStart+130)]:[hookStart,hookStart+8,hookStart+18,Math.max(hookStart+28,tokenList.length-35),Math.max(hookStart+35,tokenList.length-18)];
+ const beatStarts=gap?[hookStart,hookStart+5,Math.min(tokenList.length-20,hookStart+120),Math.min(tokenList.length-10,hookStart+130)]:long?[hookStart,hookStart+8,Math.max(hookStart+18,tokenList.length-35),Math.max(hookStart+28,tokenList.length-18)]:[hookStart,hookStart+8,hookStart+18,Math.max(hookStart+28,tokenList.length-35),Math.max(hookStart+35,tokenList.length-18)];
  const review={criteria:{
   hook_strength:{result:'PASS',evidence_excerpt:pick(hookStart)},
   early_value:{result:'PASS',evidence_excerpt:pick(hookStart+6)},
