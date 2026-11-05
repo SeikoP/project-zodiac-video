@@ -32,3 +32,13 @@ test('progressive preflight blocks authored SVG metadata stroke and palette defe
  assert.ok(r.issues.some(x=>x.code==='AUTHORED_SVG_STROKE_WIDTH'));
  assert.ok(r.issues.some(x=>x.code==='AUTHORED_SVG_PALETTE'));
 });
+
+test('progressive preflight blocks incomplete multi-scene Scene Plan before native compile',async()=>{
+ const f=fixture();
+ f.intent.scenes.push({id:'S02',director_beats:[{beat_id:'B2',voice_anchor:'Câu hai.',semantic_purpose:'reframe',supported_motion_or_state:'hold'}],entities:[],events:[]});
+ f.intent.scene_plan={scenes:[{id:'S01',purpose:'Introduce behavior',beats:['B1']},{id:'S02',purpose:'Reframe behavior',beats:[]}]};
+ f.production.scenes.push({id:'S02',voice:'Câu hai.',entities:[],events:[]});
+ const r=await validateProgressivePreflight({...f,motionRegistry:registry,designToken:token,readAsset:async()=>svg});
+ assert.ok(r.issues.some(x=>x.code==='SCENE_PLAN_INCOMPLETE'&&x.scene_id==='S02'));
+ assert.ok(r.issues.some(x=>x.code==='SCENE_TRANSITION_REASON_MISSING'&&x.scene_id==='S02'));
+});
