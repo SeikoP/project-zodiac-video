@@ -24,11 +24,11 @@
 
 ## Kiểm tra ngoại tuyến trước khi đổi sang thật
 
-- [ ] `GET /api/status` trả lời; đối chiếu simulator và số bot với màn control. Không dùng `npm run check` của PK để kết luận Garden đạt.
-- [ ] Dùng simulator thử 1 → 12 → 48 người; lệnh `trồng`, `chăm`, `vườn`, `hái`; avatar và Top 5; chốt phiên có năm avatar.
-- [ ] Tạo 4 chậu đối thủ, thử quà 50/100/500/1.000 xu và khiên. So native result, mục tiêu và cảnh đang phát bên ngoài iframe.
-- [ ] Thử burst quà, boss giữa vòng quay, hết giờ boss, thắng boss, reload giữa cảnh, cây chín/buff sát hết hạn. Báo cáo audit hiện có lỗi ở các trường hợp này, nên chưa đánh dấu đạt.
-- [ ] Chờ queue rỗng liên tục 6s rồi thử hồ sơ/zoom; thao tác `vườn` liên tục không che sân khấu.
+- [x] `GET /api/status` trả lời; simulator cô lập báo đúng số người/bot và không nối TikTok.
+- [x] Rehearsal tự động phủ 1 / 4 / 12 / 24 / 48 người; browser fixture đã chụp 1 và 48 người, avatar/Top 5/CTA không lỗi console.
+- [ ] Tạo 4 chậu đối thủ và quan sát trực tiếp toàn bộ cảnh quà 50/100/500/1.000 xu trong **một source LIVE giữ mở**. Native result/target của mọi tier đã có test; browser đã xác nhận hậu quả 500 xu và CTA gieo lại miễn phí.
+- [x] Burst quà, boss interrupt, shield/no-target/destruction và reload khi trao giải đều qua rehearsal cô lập; queue/gift/boss có regression test riêng.
+- [x] Queue phụ chỉ chạy sau 6s rảnh liên tục; spam `vườn` chỉ giữ request profile mới nhất và không preempt scene chính.
 - [ ] Đối chiếu preview Studio và ảnh điện thoại thật; ghi vùng bị bình luận/nút/quà của TikTok che rồi điều chỉnh nội dung. Chưa có số đo safe-area đã nghiệm thu.
 - [ ] Kiểm tra capture + âm thanh trên máy phát trong 15–20 phút; không kết luận FPS từ một tab headless hoặc tab đang ẩn.
 
@@ -45,6 +45,6 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 
 ## Trạng thái lúc chuẩn bị bộ này
 
-Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden với control kết nối LIVE kiểu PK cũ đạt **613/613** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
+Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden sau pass tối ưu trải nghiệm đạt **619/619** test local; catalog audio đạt **36 role / 50 sample**; rehearsal cô lập đạt **15/15** kịch bản. Browser fixture 1080×1920 đã kiểm phòng 1 người sau thu hoạch, phòng 48 người và hậu quả quà 500 xu, không ghi nhận lỗi JS console. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
 
 Chưa nghiệm thu: nguồn Link/mixer bên trong UI TikTok LIVE Studio, nghe duyệt 50 sample, khung safe-area trên điện thoại thật, nhận chat/like/quà từ TikTok LIVE thật và hiệu năng khi Studio mã hóa. Các mục này phải được kiểm tra trong buổi rehearsal/LIVE thực tế; không suy ra PASS từ test hoặc tunnel smoke.

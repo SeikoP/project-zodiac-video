@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-05T06:35:00.000Z",
+  "checkedAt": "2026-11-05T06:45:00.000Z",
   "localOverlayUrl": "http://127.0.0.1:4858/?music=0.16&sfx=0.2",
   "liveStudioSource": "npm run garden:share -> temporary HTTPS Link source",
   "sharePort": 4859,
@@ -9,11 +9,13 @@
   "cloudflaredVersion": "2026.10.7",
   "fontPresent": true,
   "verification": {
-    "logicTestsPassed": 613,
+    "logicTestsPassed": 619,
     "logicTestsFailed": 0,
     "audioCatalogRoles": 36,
     "audioCatalogSamples": 50,
     "offlineRehearsalScenariosPassed": 15,
+    "browserOverlayFixtures": ["solo-after-harvest", "room48", "gift500-post-state"],
+    "browserConsoleErrors": 0,
     "shareTunnelVerified": true,
     "shareOverlayHttp200": true,
     "shareControlBlocked": true,

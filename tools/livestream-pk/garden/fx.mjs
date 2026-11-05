@@ -7,7 +7,7 @@ export function createCoalescer({ windowMs = 250, now = Date.now } = {}) {
   let groups = new Map(), direct = [];
   return {
     push(e) {
-      if(['title','levelup'].includes(e.type)&&e.userId){const previous=direct.find(p=>['title','levelup'].includes(p.type)&&p.userId===e.userId);if(previous){Object.assign(previous,{...e,level:e.level??previous.level,titles:[...(previous.titles??[]),...(e.titles??[])]});return;}}
+      if(['title','levelup'].includes(e.type)&&e.userId){const previous=direct.find(p=>['title','levelup'].includes(p.type)&&p.userId===e.userId);if(previous){const titles=[...(previous.titles??[]),...(e.titles??[])];Object.assign(previous,{...e,type:titles.length?'title':e.type,level:e.level??previous.level,titles});return;}}
       if (!MERGE.has(e.type)) return void direct.push(e);
       const tier = tierOf(e), key = `${e.type}|${tier}`;
       const g = groups.get(key) ?? { first: now(), fx: { type: e.type,eventId:e.eventId,receivedAt:e.receivedAt, tier, count: 0, names: [] } };
@@ -15,7 +15,7 @@ export function createCoalescer({ windowMs = 250, now = Date.now } = {}) {
       if(e.type==='boss-hit')g.fx.damage=(g.fx.damage??0)+e.damage;
       if (e.plotId) {
         g.fx.plots ??= [];
-        if (g.fx.plots.length < 8) g.fx.plots.push({ plotId: e.plotId,...(e.before?{before:e.before}:{}),...(e.xp!=null?{xp:e.xp}:{}), ...(e.gold != null ? { gold: e.gold } : {}) });
+        if (g.fx.plots.length < 8) g.fx.plots.push({ plotId: e.plotId,...(e.before?{before:e.before}:{}),...(e.after?{after:e.after}:{}),...(e.targetId?{targetId:e.targetId}:{}),...(e.xp!=null?{xp:e.xp}:{}), ...(e.gold != null ? { gold: e.gold } : {}) });
       }
       if (e.type === 'joined' && e.plotId) {
         g.fx.seats ??= [];

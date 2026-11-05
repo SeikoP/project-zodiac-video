@@ -4,7 +4,7 @@ import {POT_ART,createViewerAvatar,avatarSource,earnedPattern} from './identity.
 import { createMusic } from '../music.js';
 import {createGardenAudio} from './audio.js';
 import { createSfx } from '../sfx.js';
-import { cameraReason, careLabel, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, giftImpactText, lodOf, noticeTimeLeft, overviewLabelWidth, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
+import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
@@ -35,21 +35,6 @@ let wheelPresentation=null,awardNo=null;
 ['Gió +30%','Phân mây','Khiên lá','Mây −25%','Nắng khô','Cỏ ghé chơi'].forEach((text,i)=>{
   const label=document.createElement('span');label.textContent=text;label.style.setProperty('--angle',`${i*60+30}deg`);wheel.append(label);
 });
-const GUIDES=[
-  ['Bắt đầu','trồng','Tự chọn theo LV + vàng · rau LV1 · hoa LV2 · nấm LV4'],
-  ['Một lệnh chăm cây','chăm','Tự dọn sâu → nhổ cỏ → tưới · không mất vàng'],
-  ['Khi cây chín','hái','Nhận vàng + XP · gieo vụ mới để leo hạng'],
-  ['Giúp bạn','tưới @tên','Ghi rõ tên trên chậu · cả hai có XP'],
-  ['Cứu sâu','bắt sâu','Trong bão, cây mình sạch thì tự giúp hàng xóm'],
-  ['Xem thông tin','vườn','Thông tin gọn ở dòng thông báo · hồ sơ đầy đủ khi zoom'],
-  ['Giữ chậu','bình luận','Im 90s: chậu nghỉ · im 3 phút: nhường chỗ'],
-  ['Đua phiên','10 phút','Trao giải 8s · vườn mới giữ LV, XP và huy hiệu'],
-  ['Vòng quay quà','50–99 xu','Lợi cho mình hoặc trêu hàng xóm 20s · khiên chặn được'],
-  ['Sâu Chúa','thả tim','35% phiên có boss · 1 tim = 1 sát thương'],
-  ['Quà kỹ năng','thiên thạch','500 xu phá 1 cây · 1.000 xu phá tối đa 3 cây'],
-  ['Tăng tốc thật','tưới +25%','30s tăng tốc · bón phân +18% đến khi hái'],
-  ['Quà có vai trò riêng','tưới · bón · bảo vệ','Sương tưới · sao bón · mưa dọn cỏ · quà lớn phá cây'],
-];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const params = new URLSearchParams(location.search);
 const displayRole=params.get('display')==='preview'||parent!==window?'preview':'live';
@@ -146,8 +131,11 @@ function handleFx(fx) {
   if(['plant','water','help','levelup','harvest','fertilize','pest-cleared','weed-cleared'].includes(fx.type))for(const id of fx.plots?.map(p=>p.plotId)??[fx.plotId])animatePlot(id,fx.type==='help'?'water':fx.type);
   for(const p of fx.impact?.destroyed??[])animatePlot(p.plotId,'impact');
   if (fx.type === 'harvest') {
-    for (const p of fx.plots ?? []) {float('text', p.plotId, `+${p.gold ?? 0} vàng · +${p.xp??0} XP`);if(p.before)harvestGhosts.set(p.plotId,{crop:p.before,at:performance.now()});}
+    for (const p of fx.plots ?? []) {float('text', p.plotId, `+${p.gold ?? 0} vàng · +${p.xp??0} XP`);const crop=p.before?.crop??p.before;if(crop)harvestGhosts.set(p.plotId,{crop,at:performance.now()});}
   }
+  if(['water','help','fertilize'].includes(fx.type))for(const p of fx.plots??[]){const before=p.before?.crop?.progress,after=p.after?.crop?.progress;if(Number.isFinite(before)&&Number.isFinite(after)&&after>before)float('text',p.plotId,`+${Math.round((after-before)*100)}% lớn`);}
+  if(fx.type==='pest-cleared')for(const p of fx.plots??[])float('text',p.plotId,'Sạch sâu');
+  if(fx.type==='weed-cleared')for(const p of fx.plots??[])float('text',p.plotId,'Sạch cỏ · +1 vàng');
   const actionCue={water:'water',help:'help',plant:'plant',harvest:'harvest','pest-cleared':'pestClear','weed-cleared':'weedClear',fertilize:'fertilize',steal:'theft',catch:'catch','dog-bark':'shieldBlock','boss-start':'bossIntro','boss-hit':'bossHit','boss-end':fx.won?'bossWin':'bossEscape','session-end':'podium','round-start':'roundStart','title':'achievement',levelup:[3,5,7,9].includes(fx.level)?'tierUnlock':'levelUp','event-active':{rain:'rainStart',pests:'pestsStart',merchant:'merchantStart',golden:'goldenStart'}[fx.kind]}[fx.type];
   if(actionCue)gardenAudio.cue({role:actionCue,eventId:fx.eventId??`${fx.type}:${fx.receivedAt??performance.now()}`,count:fx.count??1,ageMs:fx.receivedAt?Math.max(0,Date.now()-fx.receivedAt):0});
   switch (fx.type) {
@@ -279,7 +267,7 @@ function renderMoments(now,wallNow){
     wheelHint.textContent=r.expiresAt&&r.expiresAt<=wallNow?'Hiệu ứng đã kết thúc':r.kind==='speed'?'+30% tốc độ trong 45s':r.kind==='fertilizer'?'+18% tốc độ đến khi hái':r.kind==='shield'?'Khiên bảo vệ trong 60s':`${r.durationMs/1000}s rồi tự hết${r.kind==='dry'?' · gõ “tưới” để gỡ sớm':r.kind==='weeds'?' · gõ “nhổ cỏ” để gỡ sớm':' · cây vẫn tiếp tục lớn'}`;
   }
   if(wheelVisible&&now-wheelPresentation.startedAt<2000&&!wheelPresentation.restored){const tick=Math.floor((now-wheelPresentation.startedAt)/140);gardenAudio.cue({role:'wheelTick',sceneId:wheelPresentation.sceneId,phase:`tick:${tick}`});}
-  if(next?.kind==='impact'&&now-next.startedAt>=650&&!next.soundImpact){next.soundImpact=true;if(!next.restored)gardenAudio.cue({role:next.impact.mode==='boss'?'bossGiftHit':next.impact.destroyed.length?'meteorImpact':'shieldBlock',sceneId:next.sceneId,phase:'result'});}
+  if(next?.kind==='impact'&&now-next.startedAt>=650&&!next.soundImpact){next.soundImpact=true;if(!next.restored){const role=next.impact.mode==='boss'?'bossGiftHit':!next.impact.destroyed.length?'shieldBlock':next.tier==='cataclysm'?null:'meteorImpact';if(role)gardenAudio.cue({role,sceneId:next.sceneId,phase:'result'});}}
   const impactVisible=next?.kind==='impact';impactStage.classList.toggle('on',impactVisible);impactStage.setAttribute('aria-hidden',String(!impactVisible));stage.classList.toggle('impact-live',impactVisible);
   const b=bossState,active=b?.phase==='active',ended=b&&['won','escaped'].includes(b.phase)&&wallNow-b.endedAt<6500;
   const visible=Boolean((active||ended)&&(!next||next.kind==='profile')&&!celebrating);
@@ -743,7 +731,7 @@ function drawPlot(p, lod, now) {
     for(const x of [-20,0,20]){ctx.beginPath();if(pattern==='water'){ctx.moveTo(x-5,36);ctx.quadraticCurveTo(x,29,x+5,36);ctx.quadraticCurveTo(x+9,43,x+13,36);}else if(pattern==='leaf'){ctx.ellipse(x,34,4,8,.6,0,Math.PI*2);}else if(pattern==='season'){ctx.arc(x,35,6,0,Math.PI*2);}else if(pattern==='garden'){ctx.moveTo(x-6,40);ctx.lineTo(x,29);ctx.lineTo(x+6,40);ctx.closePath();}else ctx.ellipse(x,35,3,5,-.4,0,Math.PI*2);ctx.stroke();}ctx.restore();}
   if(p.brokenUntil>Date.now()){ctx.strokeStyle=C.ink;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-4,10);ctx.lineTo(9,24);ctx.lineTo(-1,35);ctx.lineTo(12,49);ctx.moveTo(9,24);ctx.lineTo(28,23);ctx.stroke();}
   if (p.crop) {
-    ctx.save();ctx.translate(0,10);ctx.rotate(motion?.kind==='water'?m.tilt:0);ctx.scale(m.scale,m.scale);ctx.translate(0,-10);
+    ctx.save();ctx.translate(0,10);ctx.rotate(['water','pest-cleared','weed-cleared'].includes(motion?.kind)?m.tilt:0);ctx.scale(m.scale,m.scale);ctx.translate(0,-10);
     // Soil contact shadow makes the stem visibly grow from this pot, not float above it.
     ctx.save(); ctx.fillStyle = C.hair;
     ctx.beginPath(); ctx.ellipse(0, 15, 15, 4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
@@ -876,8 +864,7 @@ function drawProblemOverlay(p,wallNow) {
 }
 
 function renderGuides(wallNow) {
-  const awake=[...plots.values()].filter(p=>p.owner&&p.awake),ripe=awake.filter(p=>p.stage>=3).length;
-  const current=bossState?.phase==='active'?['Cứu vườn','thả tim','Đồng hồ vườn tạm dừng · quà lớn đánh boss']:sessionInfo?.phase==='awards'?['Vinh danh Top 5','sắp mở vườn','Giữ LV, XP và thành tựu · đợi phiên mới']:!awake.length?GUIDES[0]:ripe?['Đã có cây chín','hái',`${ripe} cây sẵn sàng · hái nhận vàng + XP, rồi “trồng” vụ mới`]:['Cùng chăm vườn','chăm','Tự bắt sâu → nhổ cỏ → tưới · người mới chỉ cần gõ “trồng”'];
+  const current=gardenGuide({boss:bossState?.phase==='active',awards:sessionInfo?.phase==='awards',plots:[...plots.values()],event:serverEvent});
   const key=current.join('|');if(key!==lastGuide){lastGuide=key;guideStep.textContent=current[0];guideCommand.textContent=current[1];guideText.textContent=current[2];}
 
   const seconds=sessionInfo?.phase==='awards'?Math.max(0,Math.ceil((sessionInfo.awardsUntil-wallNow)/1000)):sessionInfo?Math.max(0,Math.ceil(((sessionInfo.endsAt??sessionInfo.startedAt+(meta.cfg.sessionMs??600000))-(sessionInfo.pausedAt??wallNow))/1000)):0;
@@ -1060,8 +1047,9 @@ function frame(now) {
   const lod = lodOf(cam.zoom);
   dots.forEach(drawDot);
   drawGiftImpact(now);
-  if(lastPresentation?.kind==='impact'&&!reduceMotion){const t=Math.min(1,(now-lastPresentation.startedAt)/650);for(const hit of lastPresentation.impact.destroyed??[]){const target=plots.get(hit.plotId);if(!target)continue;const at=worldToScreen(plotPos(target,meta),cam,VP);ctx.save();ctx.strokeStyle=C.coral;ctx.fillStyle=C.ochre;ctx.lineWidth=5;
-    if(t<1){const x=at.x+240*(1-t),y=at.y-500*(1-t);ctx.beginPath();ctx.moveTo(x+50,y-80);ctx.lineTo(x,y);ctx.stroke();ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  if(lastPresentation?.kind==='impact'&&!reduceMotion){const motion=impactMotion(lastPresentation.tier,now-lastPresentation.startedAt);for(const hit of lastPresentation.impact.destroyed??[]){const target=plots.get(hit.plotId);if(!target)continue;const at=worldToScreen(plotPos(target,meta),cam,VP);ctx.save();ctx.strokeStyle=C.coral;ctx.fillStyle=C.ochre;ctx.lineWidth=5;
+    if(motion.kind==='quake'){ctx.translate(motion.shake,0);for(let ring=0;ring<3;ring++){const q=Math.max(0,Math.min(1,(motion.progress-ring*.12)/.76));if(!q)continue;ctx.globalAlpha=(1-q)*.72;ctx.beginPath();ctx.ellipse(at.x,at.y-8,28+q*115,10+q*42,0,0,Math.PI*2);ctx.stroke();}if(motion.progress>.28){ctx.globalAlpha=Math.min(1,(motion.progress-.28)*2);for(const dx of [-38,0,36]){ctx.beginPath();ctx.moveTo(at.x+dx,at.y-2);ctx.lineTo(at.x+dx-12,at.y+24);ctx.lineTo(at.x+dx+7,at.y+42);ctx.stroke();}}}
+    else if(motion.progress<1){const t=motion.progress,x=at.x+240*(1-t),y=at.y-500*(1-t);ctx.beginPath();ctx.moveTo(x+50,y-80);ctx.lineTo(x,y);ctx.stroke();ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();ctx.stroke();}
     else{const age=(now-lastPresentation.startedAt-650)/1800;ctx.globalAlpha=Math.max(0,1-age);ctx.beginPath();ctx.ellipse(at.x,at.y-15,45+age*65,20+age*25,0,0,Math.PI*2);ctx.stroke();}ctx.restore();}}
 
   drawFocus(now);
@@ -1074,10 +1062,10 @@ function frame(now) {
   for(const id of problems.keys())if(!plots.get(id)?.awake)problems.delete(id);
   renderGuides(wallNow);
   const idleHint=document.getElementById('idleHint'),quiet=presentation.snapshot();
-  const empty=Array.from({length:meta.cfg.activeCapacity},(_,slot)=>slot).find(slot=>![...plots.values()].some(p=>p.slot===slot&&p.owner&&p.awake));
+  const pointOf=slot=>plotPos({slot,tier:meta.tiers[0].id},meta),empty=chooseIdleSlot(meta.cfg.activeCapacity,[...plots.values()],pointOf);
   const idleAllowed=empty!=null&&!quiet.active&&!quiet.primary&&quiet.idleWaitMs===0&&!close&&bossState?.phase!=='active'&&sessionInfo?.phase!=='awards';
   idleHint.hidden=!idleAllowed;
-  if(idleAllowed){const at=worldToScreen(plotPos({slot:empty,tier:meta.tiers[0].id},meta),cam,VP),u=active[Math.floor(wallNow/30000)%Math.max(1,active.length)];idleHint.style.left=`${Math.max(18,Math.min(730,at.x-140))}px`;idleHint.style.top=`${Math.max(430,Math.min(1780,at.y-60))}px`;idleHint.textContent=u?`${u.owner.nickname} · ${u.owner.competition?.milestone?.label??'Cùng gieo mây'} · ${u.owner.competition?.milestone?.progress??0}/${u.owner.competition?.milestone?.target??1}`:'Chậu mới đang chờ bạn · gõ “trồng”';}
+  if(idleAllowed){const at=worldToScreen(pointOf(empty),cam,VP),u=active[Math.floor(wallNow/30000)%Math.max(1,active.length)];idleHint.style.left=`${Math.max(18,Math.min(730,at.x-140))}px`;idleHint.style.top=`${Math.max(430,Math.min(1780,at.y-60))}px`;idleHint.textContent=u?`${u.owner.nickname} · ${u.owner.competition?.milestone?.label??'Cùng gieo mây'} · ${u.owner.competition?.milestone?.progress??0}/${u.owner.competition?.milestone?.target??1}`:'Chậu mới đang chờ bạn · gõ “trồng”';}
 
   drawFloaters(now);
   renderEventHero(now);
