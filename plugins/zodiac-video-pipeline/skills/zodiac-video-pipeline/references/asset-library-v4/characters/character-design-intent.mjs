@@ -2,13 +2,17 @@
 // picking any V4 library components. v1 plans are retained for legacy jobs.
 const fail=(code,detail='')=>{throw new Error(code+(detail?' '+detail:''));};
 const meaningful=s=>typeof s==='string'&&s.trim().length>=18;
+const chosen=s=>typeof s==='string'&&s.trim().length>0;
+
 export function validateCharacterDesignIntent(production,plan,{requireV2=false}={}){
  const version=plan?.format;
  if(!['zodiac-character-assembly-plan@1','zodiac-character-assembly-plan@2'].includes(version))fail('CHARACTER_PLAN_FORMAT_INVALID');
  if(requireV2&&version!=='zodiac-character-assembly-plan@2')fail('CHARACTER_INTENT_V2_REQUIRED');
  if(version==='zodiac-character-assembly-plan@1')return {legacy:true};
  const sceneMap=new Map((production?.scenes??[]).map(s=>[s.id,s]));
- for(const spec of plan.characters??[]){
+ const specs=plan.characters??[];
+ const specById=new Map(specs.map(s=>[s.entity_id,s]));
+ for(const spec of specs){
   const id=spec.entity_id,design=spec.design_intent;
   if(!design||typeof design!=='object')fail('CHARACTER_INTENT_MISSING',id);
   const visual=spec.visual_identity_intent;
@@ -22,6 +26,9 @@ export function validateCharacterDesignIntent(production,plan,{requireV2=false}=
   for(const field of ['body_profile','hair_id','shirt_color_id']){
    if(!meaningful(design.decision_reasons?.[field]))fail('CHARACTER_INTENT_CHOICE_REASON_MISSING',`${id}/${field}`);
   }
+  // Fresh intent-bearing plans must own the hair choice explicitly. Falling back to
+  // a deterministic seed made valid characters converge on the same hairstyle.
+  if(!chosen(spec.hair_id))fail('CHARACTER_INTENT_HAIR_CHOICE_REQUIRED',id);
   if(design.role==='lead'&&!spec.shirt_color_id)fail('CHARACTER_INTENT_SHIRT_CHOICE_REQUIRED',id);
   if(!meaningful(design.rejected_alternative?.reason)||!String(design.rejected_alternative?.choice??'').trim())fail('CHARACTER_INTENT_ALTERNATIVE_REQUIRED',id);
   if(design.reuse_strategy!=='native_assembly_after_story'&&design.reuse_strategy!=='new_native_asset_after_story')fail('CHARACTER_INTENT_REUSE_STRATEGY_INVALID',id);
@@ -32,5 +39,22 @@ export function validateCharacterDesignIntent(production,plan,{requireV2=false}=
   for(const s of (production.scenes??[]))for(const entity of s.entities??[])if(entity.id===id)for(const state of Object.keys(entity.states??{}))states.add(state);
   for(const state of states)if(!meaningful(design.state_purposes?.[state]))fail('CHARACTER_INTENT_STATE_PURPOSE_MISSING',`${id}/${state}`);
  }
- return {legacy:false,character_count:plan.characters?.length??0};
+
+ // Hair is part of identity, so co-visible recurring people should read as different
+ // silhouettes. Intentional matching (twins, mirroring, uniformity) remains allowed,
+ // but every colliding character must explain it explicitly.
+ for(const scene of production?.scenes??[]){
+  const ids=[...new Set((scene.entities??[]).filter(e=>e.kind==='character').map(e=>e.id))];
+  const groups=new Map();
+  for(const id of ids){
+   const spec=specById.get(id);if(!spec?.hair_id)continue;
+   const list=groups.get(spec.hair_id)??[];list.push(spec);groups.set(spec.hair_id,list);
+  }
+  for(const [hair_id,group] of groups){
+   if(group.length<2)continue;
+   const unexplained=group.filter(spec=>!meaningful(spec.design_intent?.hair_reuse_reason));
+   if(unexplained.length)fail('CHARACTER_HAIR_COLLISION',`${scene.id}/${hair_id}/${group.map(x=>x.entity_id).join(',')}`);
+  }
+ }
+ return {legacy:false,character_count:specs.length};
 }
