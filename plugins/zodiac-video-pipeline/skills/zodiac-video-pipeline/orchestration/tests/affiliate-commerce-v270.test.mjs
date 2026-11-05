@@ -14,7 +14,7 @@ test('plugin prompt makes the affiliate gate explicit and Kalodata canonical',as
   assert.match(prompt,/Kalodata/i);
   assert.match(prompt,/do not ask.*product link/i);
   assert.match(prompt,/zodiac-affiliate-commerce\/SKILL\.md/i);
-  assert.equal(plugin.version,'2.7.1');
+  assert.equal(plugin.version,'2.7.2');
 });
 
 test('affiliate skill routes enabled commerce through discovery, integration, media and handoff',async()=>{
@@ -46,7 +46,7 @@ test('affiliate reference fixes provider, duration range and SVG transport strat
 
 test('pipeline state and phase manifests wire affiliate commerce fail closed',async()=>{
   const state=JSON.parse(await readFile(path.join(skillRoot,'orchestration/pipeline-state.template.json'),'utf8'));
-  assert.equal(state.plugin_version,'2.7.1');assert.equal(state.flags.affiliate_enabled,false);
+  assert.equal(state.plugin_version,'2.7.2');assert.equal(state.flags.affiliate_enabled,false);
   const p1=JSON.parse(await readFile(path.join(skillRoot,'orchestration/phases/01-content.json'),'utf8'));
   const evidence=p1.steps.find(x=>x.id==='evidence'),narration=p1.steps.find(x=>x.id==='narration');
   assert.equal(evidence.required_capabilities.some(x=>x.id==='affiliate_monetization_decision_validation'),false);
