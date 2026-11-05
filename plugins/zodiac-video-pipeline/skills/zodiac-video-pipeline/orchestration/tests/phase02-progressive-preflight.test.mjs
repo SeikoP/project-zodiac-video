@@ -39,6 +39,6 @@ test('progressive preflight blocks incomplete multi-scene Scene Plan before nati
  f.intent.scene_plan={scenes:[{id:'S01',purpose:'Introduce behavior',beats:['B1']},{id:'S02',purpose:'Reframe behavior',beats:[]}]};
  f.production.scenes.push({id:'S02',voice:'Câu hai.',entities:[],events:[]});
  const r=await validateProgressivePreflight({...f,motionRegistry:registry,designToken:token,readAsset:async()=>svg});
- assert.ok(r.issues.some(x=>x.code==='SCENE_PLAN_INCOMPLETE'&&x.scene_id==='S02'));
- assert.ok(r.issues.some(x=>x.code==='SCENE_TRANSITION_REASON_MISSING'&&x.scene_id==='S02'));
+ assert.ok(r.issues.some(x=>x.code==='SCENE_BEATS_MISSING'&&x.scene_id==='S02'));
+ assert.ok(r.issues.some(x=>x.code==='SCENE_TRANSITION_MISSING'&&x.scene_id==='S02'));
 });
