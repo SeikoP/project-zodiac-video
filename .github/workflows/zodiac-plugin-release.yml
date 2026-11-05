@@ -8,6 +8,8 @@ on:
       - plugins/zodiac-video-pipeline/plugin.json
       - plugins/zodiac-video-pipeline/.codex-plugin/plugin.json
       - plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json
+      - tools/release/build_plugin_bundle.py
+      - .github/workflows/zodiac-plugin-release.yml
 permissions:
   contents: read
 jobs:
@@ -22,13 +24,17 @@ jobs:
         run: |
           version="$(node -p "JSON.parse(require('fs').readFileSync('plugins/zodiac-video-pipeline/plugin.json','utf8')).version")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Create plugin archive
+      - name: Create hardened plugin archive
         run: |
-          cd plugins/zodiac-video-pipeline
-          zip -qr "$RUNNER_TEMP/zodiac-video-pipeline-plugin.zip" plugin.json .codex-plugin skills
+          python tools/release/build_plugin_bundle.py \
+            --repo-root . \
+            --output "$RUNNER_TEMP/zodiac-video-pipeline-plugin.zip" \
+            --report "$RUNNER_TEMP/candidate-plugin-report.json"
       - uses: actions/upload-artifact@v4
         with:
           name: zodiac-video-pipeline-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
-          path: ${{ runner.temp }}/zodiac-video-pipeline-plugin.zip
+          path: |
+            ${{ runner.temp }}/zodiac-video-pipeline-plugin.zip
+            ${{ runner.temp }}/candidate-plugin-report.json
           if-no-files-found: error
           retention-days: 1
