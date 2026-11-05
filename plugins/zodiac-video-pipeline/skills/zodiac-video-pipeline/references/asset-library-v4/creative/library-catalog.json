@@ -1,0 +1,29 @@
+{
+  "format": "zodiac-creative-library@1",
+  "version": "1.0",
+  "reusable_primitive_ids": [
+    "sealed-envelope",
+    "folded-letter",
+    "hourglass",
+    "key-ring",
+    "receipt-roll",
+    "compass",
+    "theater-mask",
+    "thread-spool",
+    "chess-knight",
+    "magnifying-glass",
+    "calendar-page",
+    "ribbon-knot"
+  ],
+  "locked_story_assets": [],
+  "modes": {
+    "reusable": "physical prop, character geometry, rig/pose, palette, framing, motion mechanics",
+    "authored": "specific symbolic graphic, narrative transformation, visual punchline, relationship pressure and payoff image"
+  },
+  "rules": [
+    "Never select a reusable prop solely because the shape resembles a theme.",
+    "New narrative_visual SVG identities require a per-scene claim and exact voice anchor.",
+    "Do not pre-stock zodiac-specific metaphors, revelation/payoff imagery, or fixed story sequences.",
+    "Similarity or deliberate cross-episode reuse requires recorded rationale and editorial review, not silent random substitution."
+  ]
+}

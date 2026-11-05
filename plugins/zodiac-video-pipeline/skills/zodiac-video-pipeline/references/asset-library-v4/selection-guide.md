@@ -22,6 +22,14 @@ Use `capability-index.json` for supported needs and `coverage-matrix.json` for
 coverage. Per beat, select one shot-layout and primary action, then bind actual
 entities. Scene Direction owns coordinates; the runner owns measured timing.
 
+## Character identity and hair selection
+
+Fresh Character Assembly is story-first. `hair_id` is not a cosmetic default and must be selected explicitly in the intent-bearing character plan. Derive the hairstyle from character role, psychological tension, performed action and contrast with the visible cast, then record a meaningful `decision_reasons.hair_id`.
+
+The current feminine lead pool intentionally spans bob, lob, waves, long hair, braids, bun, half-up and ponytail silhouettes. Do not repeatedly choose the first long-hair/ponytail option. Co-visible recurring people should use different hair silhouettes. Matching hair is allowed only when the narrative intentionally calls for mirroring/twins/uniformity and every colliding character supplies a meaningful `hair_reuse_reason`.
+
+Hair diversity does not replace body-silhouette diversity. Body + hair + shirt color should create a readable identity stack while face/pose/expression remain consistent with the native style.
+
 ## Native selection surface
 Run `features/asset-selection/build-current-asset-review.mjs <output-directory>`
 from the skill root. Optional `--selection <asset-selection.json>` renders only
@@ -46,7 +54,7 @@ Current native casting does not expose alternate face/accessory components by de
 Expressions and actor motion remain native acting. `zodiac-glyph-shirt` preserves one
 intrinsic chest icon selected by `zodiac_sign_id`, with no surrounding decoration.
 Keep unknown supporting signs unassigned. Prefer feminine lead presentation,
-`lean_tall`/`lanky_slouch` and suitable long/ponytail hair; explicit casting wins.
+`lean_tall`/`lanky_slouch` and select a story-appropriate hairstyle from the expanded feminine pool; explicit casting wins.
 
 Accents are sparse context cues with a lifecycle, not a permanent room skin.
 Use `initial_state` and `states: {hidden: {visible: false}, visible: {visible: true}}`
@@ -54,3 +62,8 @@ with ordinary voice-anchored fade/state events to enter and release them. These
 states share the same SVG and canvas transform. A string-lights Accent can be authored for narrated celebrations; never add a birthday to another script.
 One native scene may contain multiple story turns. Judge changes of meaning,
 actor attention and object relations, not scene count or pose changes alone.
+
+Fresh 2.6.11+ scene-level execution uses the canonical Visual Intent for a
+source-fingerprinted scene graph and separate continuity verification. It must
+not independently author a derived production/asset plan per scene. Native
+compilation and final review remain the existing manifest-owned gate.

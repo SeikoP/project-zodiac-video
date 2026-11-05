@@ -1,6 +1,6 @@
 {
   "format": "zodiac-pipeline-state@2",
-  "plugin_version": "2.6.9",
+  "plugin_version": "2.6.18",
   "run_id": "<create-per-run>",
   "run_mode": "fresh",
   "flags": {
@@ -105,5 +105,6 @@
       }
     }
   },
-  "waivers": []
+  "waivers": [],
+  "version": "2.6.18"
 }

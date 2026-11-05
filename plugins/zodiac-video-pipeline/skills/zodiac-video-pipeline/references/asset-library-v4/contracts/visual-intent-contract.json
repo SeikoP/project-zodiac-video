@@ -335,7 +335,15 @@
       "low-ponytail",
       "soft-mohawk",
       "long-side-part",
-      "high-tied-ponytail"
+      "high-tied-ponytail",
+      "soft-layered-bob",
+      "shoulder-wave",
+      "loose-long-wave",
+      "side-braid",
+      "braided-ponytail",
+      "messy-top-bun",
+      "half-up-long",
+      "blunt-lob"
     ],
     "expectation": "Current compiled assets only; no static historical geometry."
   },

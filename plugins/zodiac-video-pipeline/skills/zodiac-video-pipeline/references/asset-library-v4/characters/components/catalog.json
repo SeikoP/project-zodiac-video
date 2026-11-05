@@ -1,6 +1,6 @@
 {
   "format": "zodiac-character-components@1",
-  "version": "4.6",
+  "version": "4.7",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -26,7 +26,9 @@
     "body_variation": "authored_geometry_not_scale_transform",
     "same_entity_identity_lock": true,
     "body_height_width_contract": "independent authored silhouette width and profile-specific leg reach; no whole-SVG scale; preserve identity across states",
-    "state_budget_basis": "authored performed actions before SVG compilation"
+    "state_budget_basis": "authored performed actions before SVG compilation",
+    "fresh_hair_selection": "explicit_story_first_choice",
+    "co_visible_hair_diversity": "required_unless_authored_reuse_reason"
   },
   "body_profiles": [
     {
@@ -65,61 +67,145 @@
       "id": "asym-bang",
       "source_master": "asym-bang",
       "selection_tier": "preferred_meme",
-      "style_intent": "simple uneven silhouette; review on the selected face"
+      "style_intent": "simple uneven silhouette; review on the selected face",
+      "silhouette_family": "short_asym",
+      "presentation": "neutral"
     },
     {
       "id": "spiky-overthink",
       "source_master": "spiky-overthink",
       "selection_tier": "preferred_meme",
-      "style_intent": "simple uneven silhouette; review on the selected face"
+      "style_intent": "simple uneven silhouette; review on the selected face",
+      "silhouette_family": "short_spiky",
+      "presentation": "neutral"
     },
     {
       "id": "antenna-short",
       "source_master": "antenna-short",
       "selection_tier": "preferred_meme",
-      "style_intent": "simple uneven silhouette; review on the selected face"
+      "style_intent": "simple uneven silhouette; review on the selected face",
+      "silhouette_family": "short_antenna",
+      "presentation": "neutral"
     },
     {
       "id": "blocky-cut",
       "source_master": "blocky-cut",
       "selection_tier": "preferred_meme",
-      "style_intent": "simple uneven silhouette; review on the selected face"
+      "style_intent": "simple uneven silhouette; review on the selected face",
+      "silhouette_family": "short_block",
+      "presentation": "neutral"
     },
     {
       "id": "curtain-bang",
       "source_master": "curtain-bang",
       "selection_tier": "preferred_meme",
-      "style_intent": "center-part curtain silhouette"
+      "style_intent": "center-part curtain silhouette",
+      "silhouette_family": "medium_curtain",
+      "presentation": "neutral"
     },
     {
       "id": "short-curl",
       "source_master": "short-curl",
       "selection_tier": "preferred_meme",
-      "style_intent": "compact rounded curl silhouette"
+      "style_intent": "compact rounded curl silhouette",
+      "silhouette_family": "short_curly",
+      "presentation": "feminine"
     },
     {
       "id": "low-ponytail",
       "source_master": "low-ponytail",
       "selection_tier": "preferred_meme",
-      "style_intent": "low rear ponytail silhouette"
+      "style_intent": "low rear ponytail silhouette",
+      "silhouette_family": "ponytail_low",
+      "presentation": "feminine"
     },
     {
       "id": "soft-mohawk",
       "source_master": "soft-mohawk",
       "selection_tier": "preferred_meme",
-      "style_intent": "soft lifted center silhouette"
+      "style_intent": "soft lifted center silhouette",
+      "silhouette_family": "short_lifted",
+      "presentation": "neutral"
     },
     {
       "id": "long-side-part",
       "source_master": "long-side-part",
       "selection_tier": "preferred_meme",
-      "style_intent": "long side-part silhouette, feminine presentation"
+      "style_intent": "long side-part silhouette, feminine presentation",
+      "silhouette_family": "long_side_part",
+      "presentation": "feminine"
     },
     {
       "id": "high-tied-ponytail",
       "source_master": "high-tied-ponytail",
       "selection_tier": "preferred_meme",
-      "style_intent": "high rear ponytail silhouette, feminine presentation"
+      "style_intent": "high rear ponytail silhouette, feminine presentation",
+      "silhouette_family": "ponytail_high",
+      "presentation": "feminine"
+    },
+    {
+      "id": "soft-layered-bob",
+      "source_master": "soft-layered-bob",
+      "selection_tier": "preferred_meme",
+      "style_intent": "layered chin-to-shoulder bob with soft inward ends",
+      "silhouette_family": "bob_layered",
+      "presentation": "feminine"
+    },
+    {
+      "id": "shoulder-wave",
+      "source_master": "shoulder-wave",
+      "selection_tier": "preferred_meme",
+      "style_intent": "shoulder-length loose wave with asymmetric volume",
+      "silhouette_family": "medium_wave",
+      "presentation": "feminine"
+    },
+    {
+      "id": "loose-long-wave",
+      "source_master": "loose-long-wave",
+      "selection_tier": "preferred_meme",
+      "style_intent": "long flowing wave with open face and curved side volume",
+      "silhouette_family": "long_wave",
+      "presentation": "feminine"
+    },
+    {
+      "id": "side-braid",
+      "source_master": "side-braid",
+      "selection_tier": "preferred_meme",
+      "style_intent": "long side braid that creates a clear diagonal silhouette",
+      "silhouette_family": "braid_side",
+      "presentation": "feminine"
+    },
+    {
+      "id": "braided-ponytail",
+      "source_master": "braided-ponytail",
+      "selection_tier": "preferred_meme",
+      "style_intent": "high tied base with segmented braid tail",
+      "silhouette_family": "ponytail_braided",
+      "presentation": "feminine"
+    },
+    {
+      "id": "messy-top-bun",
+      "source_master": "messy-top-bun",
+      "selection_tier": "preferred_meme",
+      "style_intent": "high soft bun with loose side wisps and open face",
+      "silhouette_family": "bun_messy",
+      "presentation": "feminine"
+    },
+    {
+      "id": "half-up-long",
+      "source_master": "half-up-long",
+      "selection_tier": "preferred_meme",
+      "style_intent": "half-up knot with long loose side lengths",
+      "silhouette_family": "half_up_long",
+      "presentation": "feminine"
+    },
+    {
+      "id": "blunt-lob",
+      "source_master": "blunt-lob",
+      "selection_tier": "preferred_meme",
+      "style_intent": "straight long bob with blunt shoulder-level edge",
+      "silhouette_family": "lob_blunt",
+      "presentation": "feminine"
     }
   ],
   "outfits": [
@@ -295,10 +381,21 @@
       "lanky_slouch"
     ],
     "lead_hair": [
+      "soft-layered-bob",
+      "shoulder-wave",
+      "loose-long-wave",
+      "side-braid",
+      "braided-ponytail",
+      "messy-top-bun",
+      "half-up-long",
+      "blunt-lob",
       "long-side-part",
       "high-tied-ponytail",
-      "low-ponytail"
+      "low-ponytail",
+      "short-curl"
     ],
+    "hair_selection": "Choose explicitly from story-first design intent; do not default to the same lead hair across cast or episodes.",
+    "co_visible_rule": "Different recurring people visible together should use distinct hair silhouette_family unless an authored hair_reuse_reason explains the intentional match.",
     "override": "explicit episode design intent",
     "supporting_signs": "never infer unknown zodiac signs for supporting actors"
   }
