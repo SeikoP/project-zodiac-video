@@ -13,6 +13,7 @@ class CandidateBundleTests(unittest.TestCase):
             "plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/SKILL.md": "# Zodiac",
+            "skills/zodiac-affiliate-commerce/SKILL.md": "# Affiliate",
             "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json": '{"plugin_version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/core/run.mjs": "export const run = true;",
             "skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs": "throw Error('NO');",
@@ -35,6 +36,7 @@ class CandidateBundleTests(unittest.TestCase):
             with ZipFile(first) as package:
                 self.assertIsNone(package.testzip())
                 self.assertIn("skills/zodiac-video-pipeline/core/run.mjs", package.namelist())
+                self.assertIn("skills/zodiac-affiliate-commerce/SKILL.md", package.namelist())
                 self.assertNotIn("skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs", package.namelist())
                 self.assertNotIn("skills/zodiac-video-pipeline/references/retired-source/dead.md", package.namelist())
             self.assertFalse(one["release_approved"])

@@ -270,6 +270,14 @@
           "tool_locator": "features/episode/validate-episode-handoff.mjs",
           "stage": "exit",
           "unavailable_policy": "block"
+        },
+        {
+          "id": "affiliate_commerce_contract",
+          "kind": "internal_reference",
+          "when": "flag:affiliate_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
         }
       ],
       "allowed_context_categories": [
@@ -661,6 +669,36 @@
           ],
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "kalodata_product_detail",
+          "kind": "internal_compiler",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/kalodata-client.mjs",
+          "required_arg_suffixes": [
+            "detail"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "affiliate_product_media",
+          "kind": "internal_compiler",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/product-media-adapter.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "affiliate_visual_validation",
+          "kind": "internal_validator",
+          "when": "flag:affiliate_enabled",
+          "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
+          "required_arg_suffixes": [
+            "visual"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "allowed_context_categories": [
@@ -745,6 +783,10 @@
         {
           "name": "narration_performance_matches_actual_scene",
           "when": "fresh"
+        },
+        {
+          "name": "affiliate_product_media",
+          "when": "flag:affiliate_enabled"
         }
       ],
       "allowed_operations": [
@@ -771,6 +813,14 @@
         {
           "name": ".authoring/narration-performance-receipt.json",
           "when": "fresh"
+        },
+        {
+          "name": ".authoring/commerce/product-detail.json",
+          "when": "flag:affiliate_enabled"
+        },
+        {
+          "name": ".authoring/commerce/product-media.json",
+          "when": "flag:affiliate_enabled"
         }
       ],
       "guidance_selection": {
