@@ -17,6 +17,17 @@ Fresh Phase 02 requires per-beat visual_coverage in Visual Intent art_direction 
 
 ## Scene Experience review
 
+Every fresh scene must author an `experience_profile` in Visual Intent before native compilation:
+
+```yaml
+experience_profile:
+  story_mode: behavior | relationship | exposition | transition | reflection | payoff | symbolic
+  sparse_reason: <required only when deliberate negative space is the visual strategy>
+  required_physical_entities: [<entity ids explicitly required by the narrated physical action>]
+```
+
+The profile is authoring-only and must never project into `production.json` or Job@5.
+
 Fresh 2.6.9+ runs review story experience before native SVG generation. This is not a decoration-density quota.
 
 For each scene, explicitly consider character action, environment specificity, physical storytelling, depth separation, secondary action, visual callback and Narrative Visual role. Behavior or relationship narration should have an authored story action or meaningful physical/Narrative Visual progression; a passive actor plus passive context cue is a REVIEW condition, not a sufficient scene.
