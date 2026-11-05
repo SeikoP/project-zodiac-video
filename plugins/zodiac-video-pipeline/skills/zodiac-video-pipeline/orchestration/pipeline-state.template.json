@@ -19,7 +19,8 @@
     "episode_selected": false,
     "visual_metaphor_selected": false,
     "notion_sync": false,
-    "affiliate_enabled": false
+    "affiliate_enabled": false,
+    "retention_quality_engine": true
   },
   "current_phase": "01-content",
   "operations": [],
