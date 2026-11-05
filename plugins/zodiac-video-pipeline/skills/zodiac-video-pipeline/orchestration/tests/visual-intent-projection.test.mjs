@@ -36,3 +36,9 @@ test('fresh narrative visual authoring accepts simple representation without thr
  input.scenes[0].entities[0].kind='story_symbol';
  assert.throws(()=>api.compileVisualIntent(input,{narration}),/FRESH_SYMBOLIC_ALIAS_FORBIDDEN/);
 });
+
+test('Scene Experience profile remains authoring-only and never leaks to production',()=>{
+ const input=intent();input.scenes[0].experience_profile={story_mode:'behavior'};
+ const out=api.compileVisualIntent(input,{narration});
+ assert.equal(out.production.scenes[0].experience_profile,undefined);
+});
