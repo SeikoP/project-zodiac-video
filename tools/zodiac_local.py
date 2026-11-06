@@ -51,15 +51,17 @@ DEFAULT_MUSIC_VOLUME = 1.0
 
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 
-_SCENE_DIRECTION_LINE_RE = re.compile(
-    r"(?mi)^[ \t]*\[S\d{2}[^\]\r\n]*\](?:[ \t]*\[[^\]\r\n]*\])?[ \t]*(?:\r?\n|$)"
+_SCENE_DIRECTION_MARKER_RE = re.compile(
+    r"\[S\d{2}[^\]\r\n]*\](?:[ \t]*\[(?:GẮT|BÌNH THƯỜNG)[^\]\r\n]*\])?",
+    flags=re.IGNORECASE,
 )
 
 
 def caption_scene_text(value: str) -> str:
-    """Remove scene/stage metadata that must never appear in captions."""
+    """Remove authored scene/tone labels, including when merged into captions."""
     text = str(value).replace("\r\n", "\n").replace("\r", "\n")
-    return _SCENE_DIRECTION_LINE_RE.sub("", text).strip("\n")
+    text = _SCENE_DIRECTION_MARKER_RE.sub("", text)
+    return "\n".join(line.strip() for line in text.split("\n")).strip()
 
 
 def spoken_scene_text(value: str) -> str:
