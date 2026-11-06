@@ -81,7 +81,8 @@ export function compileVisualGrammar(production,plan){
   if(production?.version!=='2.0')fail('production.version must be 2.0');
   if(plan?.format!=='zodiac-visual-grammar-plan@1'||!Array.isArray(plan.scenes))fail('visual grammar plan must be zodiac-visual-grammar-plan@1');
   const out=clone(production),sceneMap=new Map((out.scenes??[]).map(s=>[s.id,s]));
-  for(let sceneIndex=0;sceneIndex<plan.scenes.length;sceneIndex++){\n    const spec=plan.scenes[sceneIndex];
+  for(let sceneIndex=0;sceneIndex<plan.scenes.length;sceneIndex++){
+    const spec=plan.scenes[sceneIndex];
     const scene=sceneMap.get(spec.scene_id);
     if(!scene)fail(`unknown scene ${spec.scene_id}`);
     const meme=resolveMeme(spec,scene,spec.scene_id);
