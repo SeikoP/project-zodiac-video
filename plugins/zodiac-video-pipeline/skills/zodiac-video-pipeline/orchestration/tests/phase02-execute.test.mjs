@@ -49,7 +49,7 @@ const makeSource=async()=>{
  await write(path.join(skill,'features/visual-composition/phase02-composition-core.mjs'),await readFile(new URL('../../features/visual-composition/phase02-composition-core.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-precompile-boundary.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'features/visual-composition/validate-phase02-art-direction.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-art-direction.mjs',import.meta.url),'utf8'));
- for(const name of ['phase02-composition.mjs','phase02-composition-core.mjs','validate-phase02-precompile-boundary.mjs','validate-phase02-art-direction.mjs']) await write(path.join(skill,'features/visual-composition',name),await readFile(new URL('../../features/visual-composition/'+name,import.meta.url),'utf8'));
+ for(const name of ['phase02-composition.mjs','phase02-composition-core.mjs','validate-phase02-precompile-boundary.mjs','validate-phase02-art-direction.mjs','current-visual-mode.mjs']) await write(path.join(skill,'features/visual-composition',name),await readFile(new URL('../../features/visual-composition/'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/scene-set/scene-set-detection.mjs'),await readFile(new URL('../../features/scene-set/scene-set-detection.mjs',import.meta.url),'utf8'));
  for(const f of ['palette-registry.json','environment-registry.json']) await write(path.join(skill,'art-direction',f),await readFile(new URL('../../art-direction/'+f,import.meta.url),'utf8'));
  // Minimal imports needed by the isolated coordinator fixture; the real

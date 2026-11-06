@@ -1,4 +1,5 @@
-import {createMachine,getInitialSnapshot} from 'xstate';
+let createMachine=null,getInitialSnapshot=null;
+try{({createMachine,getInitialSnapshot}=await import('xstate'));}catch{}
 import {createHash} from 'node:crypto';
 import {readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
@@ -9,7 +10,7 @@ const done=s=>['PASS','SKIPPED_REUSED'].includes(s);
 const genuine=r=>r?.status==='APPROVED'&&r.proof?.kind==='user_message'&&typeof r.proof.ref==='string'&&r.proof.ref.trim()&&!r.proof.ref.includes('<');
 const kinds=['COMPLETE','RESOLVE_BLOCKER','WAIT_FOR_GENUINE_USER_REVIEW','RUN_PHASE_GATE_PER_ROUTER','ACTIVATE_PHASE','DESIGN_VISUAL','DESIGN_SCENE_BEATS','AUTHOR_STEP','VALIDATE_AND_COMMIT_STEP'];
 // Recomputed from authoritative persisted state; no second persisted state machine.
-export const taskMachine=createMachine({id:'zodiac-task-router',context:({input})=>input,initial:'select',states:{
+const machineSpec={id:'zodiac-task-router',context:({input})=>input,initial:'select',states:{
  select:{always:[
   {guard:({context:c})=>c.complete,target:'COMPLETE'},
   {guard:({context:c})=>c.blocked,target:'RESOLVE_BLOCKER'},
@@ -21,7 +22,9 @@ export const taskMachine=createMachine({id:'zodiac-task-router',context:({input}
   {guard:({context:c})=>c.needsAuthoring,target:'AUTHOR_STEP'},
   {target:'VALIDATE_AND_COMMIT_STEP'}
  ]},...Object.fromEntries(kinds.map(k=>[k,{type:'final'}]))
-}});
+}};
+export const taskMachine=createMachine?createMachine(machineSpec):machineSpec;
+const fallbackTaskValue=c=>c.complete?'COMPLETE':c.blocked?'RESOLVE_BLOCKER':c.review&&!c.approved?'WAIT_FOR_GENUINE_USER_REVIEW':c.review||!c.step?'RUN_PHASE_GATE_PER_ROUTER':c.locked?'ACTIVATE_PHASE':c.visual&&!c.intent?'DESIGN_VISUAL':c.thinScene?'DESIGN_SCENE_BEATS':c.needsAuthoring?'AUTHOR_STEP':'VALIDATE_AND_COMMIT_STEP';
 
 const quiet=s=>['reflection','transition'].includes(s.experience_profile?.story_mode)&&String(s.experience_profile?.sparse_reason??'').trim().length>=24;
 export function resolveNextTask({state,manifests,visualIntent=null,narration='',outputsReady=false,creativeDirection=null,episodeScope=null,storySpine=null}={}){
@@ -32,12 +35,12 @@ export function resolveNextTask({state,manifests,visualIntent=null,narration='',
  const visual=phase.id==='02-visual-production'&&step?.id==='visual_compile';
  const thinScene=visual?(visualIntent?.scenes??[]).find(s=>(s.director_beats??[]).length<4&&!quiet(s)):null;
  const facts={complete:manifests.every(m=>done(state.phases?.[m.id]?.status)),blocked:ps.status==='BLOCKED'||ps.steps?.[step?.id]?.status==='BLOCKED',review:ps.status==='IN_REVIEW',approved:state.review_receipts?.some(r=>r.phase_id===phase.id&&genuine(r)),locked:ps.status==='LOCKED',visual,intent:visualIntent,thinScene,step:step?.id,needsAuthoring:!visual&&!outputsReady&&(step?.authoring_sources??[]).length>0};
- const kind=getInitialSnapshot(taskMachine,facts).value;
+ const kind=createMachine&&getInitialSnapshot?getInitialSnapshot(taskMachine,facts).value:fallbackTaskValue(facts);
  const applicable=x=>conditionApplies(x.when,{run_mode:state.run_mode,flags:state.flags??{}});
  const caps=[...(step?.required_capabilities??[]),...(step?.conditional_capabilities??[])].filter(applicable);
  const authoring=step?.authoring_sources??[];
  const writable=['AUTHOR_STEP','DESIGN_VISUAL','DESIGN_SCENE_BEATS'].includes(kind);
- const task={format:'zodiac-next-task@1',engine:'xstate',kind,phase:phase.id,step:step?.id??null,role:ps.steps?.[step?.id]?.context_role??'draft',allowed_writes:writable?authoring:[],
+ const task={format:'zodiac-next-task@1',engine:createMachine?'xstate':'builtin-fsm',kind,phase:phase.id,step:step?.id??null,role:ps.steps?.[step?.id]?.context_role??'draft',allowed_writes:writable?authoring:[],
   required_outputs:[...(step?.required_outputs??[]),...(step?.conditional_outputs??[]).filter(applicable).map(x=>x.name)],
   required_gates:[...(step?.gate_checks??[]),...(step?.conditional_gate_checks??[]).filter(applicable).map(x=>x.name)],
   required_capabilities:caps.map(c=>({id:c.id,kind:c.kind,stage:c.stage,tool_locator:c.tool_locator??null,guidance_uri:c.guidance_uri??null,required_arg_suffixes:c.required_arg_suffixes??[]})),

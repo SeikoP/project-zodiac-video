@@ -13,7 +13,7 @@ For each location use reusable structural cues in `composition-index.json` and c
 - library: shelf-side, book insert, paired study
 - schoolyard: break, conversation, return-to-class
 
-**Important:** `zodiac-renderer@2.0.1` reads only baked ordinary entities. Never transfer these variant labels as unsupported runtime fields. Existing Environment Compile uses predeclared transforms and shot types. Do not pretend it supports freeform camera positioning; add geometry support to the compiler and validate output before promising new layouts.
+**Important:** `zodiac-renderer@2.0.2` reads only baked ordinary entities. Never transfer these variant labels as unsupported runtime fields. Existing Environment Compile uses predeclared transforms and shot types. Do not pretend it supports freeform camera positioning; add geometry support to the compiler and validate output before promising new layouts.
 
 ## Single simple background style across profiles
 
