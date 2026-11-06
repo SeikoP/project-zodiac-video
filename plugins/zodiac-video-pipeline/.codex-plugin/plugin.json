@@ -4,14 +4,14 @@
       "Interactive"
     ],
     "category": "Productivity",
-    "defaultPrompt": "Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Before each step, run orchestration/resume-brief.mjs <workspace> --context and use its source-bound task, policy and selected references. Fresh runs include one disclosed fictional advertisement in the Narrative Plan; real affiliate routing and commerce artifacts are paused. Preserve approved narration and genuine Content Review / Visual Review. Keep all scene beats and use native compiler, validator, and receipt gates. In ChatGPT, execute only from the verified phase-scoped bundle matching installed version and commit.",
+    "defaultPrompt": "Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Before each step, run orchestration/resume-brief.mjs <workspace> --context and use its source-bound task, policy and selected references. Fresh episodes use character_deconstruction. Fresh runs include one disclosed fictional advertisement in the Narrative Plan; real affiliate routing and commerce artifacts are paused. Preserve approved narration and genuine Content Review / Visual Review. Keep all scene beats and use native compiler, validator, and receipt gates. In ChatGPT, execute only from the verified phase-scoped bundle matching installed version and commit.",
     "developerName": "Personal",
     "displayName": "Zodiac Video Pipeline",
     "longDescription": "Zodiac story production with semantic V4 visuals and Job@5 handoff.",
     "shortDescription": "3-phase Zodiac video workflow"
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.7.10",
+  "version": "2.7.11",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"
