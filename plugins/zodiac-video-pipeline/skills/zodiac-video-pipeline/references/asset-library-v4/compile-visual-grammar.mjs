@@ -81,7 +81,7 @@ export function compileVisualGrammar(production,plan){
   if(production?.version!=='2.0')fail('production.version must be 2.0');
   if(plan?.format!=='zodiac-visual-grammar-plan@1'||!Array.isArray(plan.scenes))fail('visual grammar plan must be zodiac-visual-grammar-plan@1');
   const out=clone(production),sceneMap=new Map((out.scenes??[]).map(s=>[s.id,s]));
-  for(const spec of plan.scenes){
+  for(let sceneIndex=0;sceneIndex<plan.scenes.length;sceneIndex++){\n    const spec=plan.scenes[sceneIndex];
     const scene=sceneMap.get(spec.scene_id);
     if(!scene)fail(`unknown scene ${spec.scene_id}`);
     const meme=resolveMeme(spec,scene,spec.scene_id);
@@ -111,7 +111,7 @@ export function compileVisualGrammar(production,plan){
     const d=frame.scene_direction,focus=bindings[d.focus_role];
     if(!focus)fail(`${spec.scene_id}/${frame.id} cannot resolve focus role ${d.focus_role}`);
     const interaction=d.interaction_roles?Object.fromEntries(Object.entries(d.interaction_roles).flatMap(([outKey,slotId])=>bindings[slotId]?[[outKey,bindings[slotId]]]:[])):undefined;
-    scene.scene_direction={shot:d.shot,focus,subject_placement:d.subject_placement,continuity_relation:spec.continuity_relation??'continue',foreground_role:d.foreground_role?bindings[d.foreground_role]??null:null,composition_goal:String(spec.composition_goal??'').trim()||`${frame.id} + ${mechanic.id}`,...(interaction&&Object.keys(interaction).length?{interaction_roles:interaction}:{})};
+    scene.scene_direction={shot:d.shot,focus,subject_placement:d.subject_placement,continuity_relation:spec.continuity_relation??(sceneIndex===0?'start':'continue'),foreground_role:d.foreground_role?bindings[d.foreground_role]??null:null,composition_goal:String(spec.composition_goal??'').trim()||`${frame.id} + ${mechanic.id}`,...(interaction&&Object.keys(interaction).length?{interaction_roles:interaction}:{})};
     scene.visual_grammar={frame_id:frame.id,mechanic_id:mechanic.id,bindings:clone(bindings)};
     if(meme){
       scene.scene_direction.meme_layout={composition_id:meme.id,entities:meme.layoutEntities,caption_slot:meme.composition.caption_slot??null};
