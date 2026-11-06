@@ -91,11 +91,18 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
                 message="measured caption duration must be positive", scene_id=scene["id"])
         for i, token in enumerate(parts):
             tokens.append((token, a + (b - a) * i / len(parts), a + (b - a) * (i + 1) / len(parts), len(parts) == 1))
+    # Editorial markers can be split *across* authored caption groups
+    # (e.g. "[S02 — ... →" / "GẮT] Chuyện là thế này.").
+    # Join using a private separator, remove the entire bracketed marker, then
+    # recover the surviving phrase boundaries. The separator is consumed only
+    # when a metadata marker itself spans a boundary.
+    separator = "\uE000"
+    joined = separator.join(str(segment["text"]) for segment in scene["caption_segments"])
     segments = [
-        {**segment, "text": caption_scene_text(segment["text"]).strip()}
-        for segment in scene["caption_segments"]
+        {"text": phrase.strip()}
+        for phrase in caption_scene_text(joined).split(separator)
+        if phrase.strip()
     ]
-    segments = [segment for segment in segments if segment["text"]]
     wanted = [w for segment in segments for w in words(segment["text"])]
     if wanted != [token[0] for token in tokens]:
         raise ControlPlaneError(code="CAPTION_ALIGNMENT_MISMATCH", stage="PLAN",
