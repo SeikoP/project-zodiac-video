@@ -297,6 +297,19 @@ def _reconcile_asr_variant(
                 }
             continue
 
+        if tag == "insert":
+            # Some TTS frontends speak the approved transition glyph "→" as
+            # "đến". This is not an ungrounded ASR insertion: the spoken word
+            # is licensed by the immediately preceding approved token.
+            previous = expected_tokens[i1 - 1] if i1 > 0 else ""
+            if (
+                heard_count == 1
+                and "→" in previous
+                and str(measured[j1]["heard"]) == "đến"
+            ):
+                continue
+            return None
+
         if tag != "replace" or expected_count < 1 or heard_count < 1:
             return None
 
