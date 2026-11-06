@@ -9,6 +9,7 @@ from .authoring import validate_authoring_ir
 from .contracts import validate_contract_shape
 from .errors import ControlPlaneError
 from .performance import compile_motion_duration, context_hash
+from tools.zodiac_local import caption_scene_text
 
 
 FINAL_LANDING_TAIL_FRAMES = 24
@@ -90,7 +91,18 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
                 message="measured caption duration must be positive", scene_id=scene["id"])
         for i, token in enumerate(parts):
             tokens.append((token, a + (b - a) * i / len(parts), a + (b - a) * (i + 1) / len(parts), len(parts) == 1))
-    segments = scene["caption_segments"]
+    # Editorial markers can be split *across* authored caption groups
+    # (e.g. "[S02 — ... →" / "GẮT] Chuyện là thế này.").
+    # Join using a private separator, remove the entire bracketed marker, then
+    # recover the surviving phrase boundaries. The separator is consumed only
+    # when a metadata marker itself spans a boundary.
+    separator = "\uE000"
+    joined = separator.join(str(segment["text"]) for segment in scene["caption_segments"])
+    segments = [
+        {"text": phrase.strip()}
+        for phrase in caption_scene_text(joined).split(separator)
+        if phrase.strip()
+    ]
     wanted = [w for segment in segments for w in words(segment["text"])]
     if wanted != [token[0] for token in tokens]:
         raise ControlPlaneError(code="CAPTION_ALIGNMENT_MISMATCH", stage="PLAN",
