@@ -400,6 +400,7 @@ def ensure_voice_artifact(
             text_hash=text_hash,
             voice_profile_hash=profile_hash,
             performance_context_hash=speech_hashes[scene_id],
+            generation_profile_hash=generation_profile_hash,
         )
         if approved is not None:
             try:

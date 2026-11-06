@@ -175,6 +175,44 @@ class StudioV2VoiceTests(unittest.TestCase):
             self.assertEqual(second.cache_reason, "REUSED_SCENES")
             self.assertEqual(fake.calls, 1)
 
+    def test_engine_upgrade_does_not_restore_approved_take(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "narration.txt").write_text("xin chao\nbo cap\n", encoding="utf-8")
+            fake = FakeGenerator()
+            ensure_voice_artifact(
+                root, ir_document(), voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo"}, engine_version="vieneu-v1",
+                generator=fake,
+            )
+            second = ensure_voice_artifact(
+                root, ir_document(), voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo"}, engine_version="vieneu-v2",
+                generator=fake,
+            )
+            self.assertFalse(second.reused)
+            self.assertEqual(second.generated_scenes, 2)
+            self.assertEqual(fake.calls, 2)
+
+    def test_backend_change_does_not_restore_approved_take(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "narration.txt").write_text("xin chao\nbo cap\n", encoding="utf-8")
+            fake = FakeGenerator()
+            ensure_voice_artifact(
+                root, ir_document(), voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo", "backend": "onnx"},
+                engine_version="vieneu-v1", generator=fake,
+            )
+            second = ensure_voice_artifact(
+                root, ir_document(), voice_profile="Hai Dang",
+                tts_settings={"mode": "v3turbo", "backend": "pytorch"},
+                engine_version="vieneu-v1", generator=fake,
+            )
+            self.assertFalse(second.reused)
+            self.assertEqual(second.generated_scenes, 2)
+            self.assertEqual(fake.calls, 2)
+
     def test_generator_failure_is_structured_voice_error(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
