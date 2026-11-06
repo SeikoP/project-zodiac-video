@@ -50,6 +50,25 @@ test("prepare preserves resolved frame ranges exactly", async () => {
   assert.match(props.assets["char.scorpio"].src, /^data:image\/svg\+xml;base64,/);
 });
 
+test("prepare canonicalizes lowercase SVG viewbox for browser image transport", async () => {
+  const root = await mkdtemp(join(tmpdir(), "zodiac-renderer-viewbox-"));
+  await mkdir(join(root, ".runtime"), {recursive: true});
+  await mkdir(join(root, "assets"), {recursive: true});
+  await writeFile(
+    join(root, "assets", "char-scorpio.svg"),
+    '<svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 320 360"><path d="M0 0H320V360H0Z"/></svg>',
+    "utf8",
+  );
+  const plan = minimalPlan();
+  await writeFile(join(root, ".runtime", "render-plan.json"), JSON.stringify(plan), "utf8");
+  const {output} = await prepareRendererProps(root);
+  const props = JSON.parse(await readFile(output, "utf8"));
+  const encoded = props.assets["char.scorpio"].src.split(",")[1];
+  const svg = Buffer.from(encoded, "base64").toString("utf8");
+  assert.match(svg, /viewBox="0 0 320 360"/);
+  assert.doesNotMatch(svg, /viewbox=/);
+});
+
 test("invalid executable frame range is rejected", () => {
   const plan = minimalPlan();
   plan.scenes[0].events[0].end_frame = 8;
