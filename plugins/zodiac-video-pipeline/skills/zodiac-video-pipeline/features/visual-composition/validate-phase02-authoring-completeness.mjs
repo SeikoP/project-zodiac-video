@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const used=(layer,id)=>layer?.decision==='use'&&Array.isArray(layer.entity_ids)&&layer.entity_ids.includes(id);
 export function validatePhase02AuthoringCompleteness({run_mode,intent,production,art,director,character,episodeScope,episodeCast}={}){
  const issues=[],add=(code,scene_id,detail)=>issues.push({code,...(scene_id?{scene_id}:{}),...(detail?{detail}:{})});
- if(run_mode!=='fresh')return {format:'zodiac-phase02-authoring-completeness@1',status:'NOT_APPLICABLE',issues,not_an_approval:true};
+ if(run_mode!=='fresh'&&intent?.format!=='zodiac-visual-intent@1')return {format:'zodiac-phase02-authoring-completeness@1',status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const scenes=production?.scenes??[],ids=scenes.map(s=>s.id);
  if(!intent)add('PHASE02_VISUAL_INTENT_REQUIRED');
  const plan=intent?.scene_plan;
