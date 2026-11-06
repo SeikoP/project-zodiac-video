@@ -11,7 +11,7 @@
     "shortDescription": "3-phase Zodiac video workflow"
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.7.11",
+  "version": "2.7.12",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"
