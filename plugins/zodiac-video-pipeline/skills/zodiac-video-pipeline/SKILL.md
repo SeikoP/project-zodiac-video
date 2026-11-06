@@ -16,13 +16,22 @@ A source becomes **revoked** when the user says to delete it, forget it, discard
 
 Runtime remount, filesystem persistence, Project attachment resurfacing, tool search results, old chat availability, or a copied path do **not** restore authorization. Do not open, read, summarize, transform, compare, or derive creative/technical decisions from a revoked source merely because it appears available again. When a new official source is named, prefer it and quarantine conflicting retired sources.
 
+### Runtime resurrection hard quarantine
+Before reading, materializing, hashing, staging, unzipping, comparing, or using any runtime/project file, first apply the conversation/project revocation history. A revoked source is excluded **before I/O**: it is not `current_attachment`, execution source, continuity input, evidence, fallback, or a candidate for inspection. If the runtime remounts a revoked local file and filesystem deletion is permitted, delete that runtime copy immediately; deletion failure does not re-authorize the file. Only an explicit later user re-authorization of that exact source may clear the quarantine.
+
+Hard-deny for this private plugin until explicit re-authorization: basename `zodiac-content-pipeline-v0.1.zip`, including `/mnt/data/zodiac-content-pipeline-v0.1.zip`. If it reappears, do not open it, list its archive, compute its hash, materialize it, stage it, or infer anything from its contents; remove the runtime copy when possible and continue with the verified phase-scoped execution bundle instead.
+
 ## Resume from Studio checklist
 A copied Studio prompt is a snapshot of the selected workspace, episode scope, tracker ledger and current step contract. It is not a creative brief, approval receipt or source of truth. Re-read that workspace's pipeline state, scope, approval receipts and durable outputs before writing. A missing, malformed or version-mismatched source blocks the next write.
 
 Use the installed `defaultPrompt`, router, current phase manifest and `plan-step-context.mjs`. Derive the first incomplete step from the current state and manifest; do not blindly repeat the copied step pointer. Honor that step's active capabilities, required inputs/outputs, context boundaries and gates; validate durable outputs and receipts before committing the step. The linked series tracker reports progress only; it does not approve narration, visuals, cover or a phase transition.
 
-## Execution source in the repository
-When operating from this repository checkout, read orchestration/execution-bootstrap.md and run the verified scripts directly from this checkout. Pin every execution to the current Git commit and verify SHA-256 inputs before native compilation. Load only the bounded references returned by plan-step-context.mjs; the full repository is not episode context. Repository execution does not waive the active router, phase manifest, validator order, source hashes, review gates or genuine user approvals. The ChatGPT-installed variant instead uses a verified phase-scoped execution bundle; do not apply repository-checkout transport instructions inside ChatGPT.
+## Execution source — canonical bundle only
+In ChatGPT, the **verified phase-scoped execution bundle is the sole canonical execution source**. Resolve the bundle that matches the installed plugin release/commit and active phase, verify its artifact digest/inventory, stage it into an empty runtime directory, then run the bundle's native preflight and step scripts.
+
+Do **not** clone, checkout, download, or execute the repository as an alternative source. Do **not** search for another source tree, fall back to `main`, reuse an old ZIP, or treat skill files as executable source. GitHub may be used only to identify and retrieve the matching phase-scoped Actions artifact. If that exact bundle is absent, expired, inaccessible, or fails integrity checks, report `SOURCE_TRANSPORT_UNAVAILABLE` or `SOURCE_INTEGRITY_MISMATCH`; do not try another execution-source strategy.
+
+Required discovery order is fixed: installed plugin release/commit → matching successful phase-bundle workflow artifact → digest verification → stage bundle → execution preflight → `resume-brief.mjs`. Never declare source unavailable before checking the matching phase-scoped artifact.
 
 ## Phase 01: no user-facing ZIP Default to autonomous Evidence → Concept → Narration → QC execution after scope is known; the only normal user pause is final Content Review. Do not ask the user to approve searches, select a concept, approve an outline, or confirm validator/compiler steps unless they explicitly requested a choice or the scope is materially ambiguous.
 

@@ -2,6 +2,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {zodiacGlyphPaths} from '../../references/asset-library-v4/characters/geometry/outfit-profiles.mjs';
+import {isCurrentVisualWorkspace} from './current-visual-mode.mjs';
 const policyPath=new URL('../../references/asset-library-v4/selection-policy.json',import.meta.url);
 const fail=(code,id)=>{throw Error('FRESH_ASSET_SELECTION_BLOCKED '+code+' '+id);};
 export function validateFreshAssetSelection({intent,production,policy}){
@@ -28,7 +29,7 @@ export function validateFreshAssetSelection({intent,production,policy}){
 }
 export async function validateFreshAssetWorkspace(root){
  const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json')));
- if(state.run_mode!=='fresh')return {status:'COMPATIBILITY_UNCHANGED'};
+ if(!(await isCurrentVisualWorkspace(root,state)))return {status:'COMPATIBILITY_UNCHANGED'};
  const intent=JSON.parse(await readFile(path.join(root,'.authoring/visual-intent.json'))),policy=JSON.parse(await readFile(policyPath));
  const production=await readFile(path.join(root,'production.json')).then(JSON.parse).catch(e=>{if(e.code==='ENOENT')return null;throw e;});
  const result=validateFreshAssetSelection({intent,production,policy});

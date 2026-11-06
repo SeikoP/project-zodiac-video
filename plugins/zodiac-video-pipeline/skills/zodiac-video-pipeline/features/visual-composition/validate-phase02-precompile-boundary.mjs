@@ -6,6 +6,7 @@ import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {isCurrentVisualWorkspace} from './current-visual-mode.mjs';
 const normal=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normal(s).replace(/\s+/gu,'');
 const furniture=/(?:^|[^\p{L}\p{N}])(?:desk|table|bed|chair|sofa|pillow|blanket|cabinet|headboard|bàn|ghế|giường|gối|chăn)(?=$|[^\p{L}\p{N}])/iu;
@@ -91,7 +92,8 @@ const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(impo
 if(direct){
  const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-precompile-boundary.mjs <workspace>');process.exit(2);}
  try{const [p,n]=await Promise.all([readFile(path.join(root,'production.json'),'utf8'),readFile(path.join(root,'narration.txt'),'utf8')]);const r=validatePrecompileBoundary(JSON.parse(p),n);const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json'),'utf8'));
- if(state.run_mode==='fresh'){const completeness=await (await import('./validate-phase02-authoring-completeness.mjs')).validatePhase02AuthoringCompletenessWorkspace(root);r.issues.push(...completeness.issues);const narrativePresence=await (await import('./validate-narrative-visual-presence.mjs')).validateNarrativeVisualPresence(root);r.issues.push(...narrativePresence.issues);const plan=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8'));for(const scene of JSON.parse(p).scenes??[])r.issues.push(...validateVisualCoverage(scene,plan.scenes?.find(s=>s.id===scene.id),{required:true}));const {lintNarrativeVisualAssets,workspaceSvgReader}=await import('./validate-narrative-visual-assets.mjs');r.issues.push(...await lintNarrativeVisualAssets(JSON.parse(p),workspaceSvgReader(root)));r.status=r.issues.length?'BLOCKED':'PASS';if(r.status!=='PASS'){console.log(JSON.stringify(r,null,2));process.exit(1);}}
+ const currentVisual=await isCurrentVisualWorkspace(root,state);
+ if(currentVisual){const completeness=await (await import('./validate-phase02-authoring-completeness.mjs')).validatePhase02AuthoringCompletenessWorkspace(root);r.issues.push(...completeness.issues);const narrativePresence=await (await import('./validate-narrative-visual-presence.mjs')).validateNarrativeVisualPresence(root);r.issues.push(...narrativePresence.issues);const plan=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8'));for(const scene of JSON.parse(p).scenes??[])r.issues.push(...validateVisualCoverage(scene,plan.scenes?.find(s=>s.id===scene.id),{required:true}));const {lintNarrativeVisualAssets,workspaceSvgReader}=await import('./validate-narrative-visual-assets.mjs');r.issues.push(...await lintNarrativeVisualAssets(JSON.parse(p),workspaceSvgReader(root)));r.status=r.issues.length?'BLOCKED':'PASS';if(r.status!=='PASS'){console.log(JSON.stringify(r,null,2));process.exit(1);}}
  await (await import('../episode/episode-handoff.mjs')).episodeHandoffWorkspace(root);
  const version=String(state.plugin_version??'').split('.').map(Number);
  if(state.run_mode==='fresh'&&(version[0]>2||(version[0]===2&&(version[1]>4||version[1]===4&&version[2]>=47)))){let rawPlan;try{rawPlan=await readFile(path.join(root,'.authoring/narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;rawPlan=await readFile(path.join(root,'narrative-plan.json'),'utf8');}const rhythm=JSON.parse(rawPlan);if(!['2.0','2.1'].includes(rhythm.version))throw Error('NARRATIVE_V2_REQUIRED');(await import('../narration-performance/compile-narration-performance.mjs')).compileNarrationPerformance(JSON.parse(p),rhythm,n);}
@@ -99,7 +101,7 @@ if(direct){
   const [plan,design]=await Promise.all([readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8'),readFile(path.join(root,'design.md'),'utf8')]);
   const modern=version[0]>2||(version[0]===2&&(version[1]>4||(version[1]===4&&version[2]>=46)));
   const authored=JSON.parse(plan);
-  if(modern&&state.run_mode==='fresh'&&authored.composition_stage!=='intent')throw Error('COMPOSITION_INTENT_MIGRATION_REQUIRED');
+  if(modern&&currentVisual&&authored.composition_stage!=='intent')throw Error('COMPOSITION_INTENT_MIGRATION_REQUIRED');
   const composition=authored.composition_stage==='intent'?await (await import('./resolve-scene-composition.mjs')).validateCompositionIntent(JSON.parse(p),authored,designToken(design)):validateComposition(JSON.parse(p),authored,designToken(design));
   const canonicalToken=designToken(await readFile(new URL('../../references/design.md',import.meta.url),'utf8'));
   if(compositionHash(designToken(design))!==compositionHash(canonicalToken))r.issues.push({code:'COMPOSITION_CANONICAL_TOKEN_DRIFT'});

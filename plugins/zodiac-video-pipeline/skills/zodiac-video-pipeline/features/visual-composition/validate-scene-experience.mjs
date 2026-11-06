@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {buildSceneGraph} from '../scene-production/scene-graph.mjs';
 import {reviewSceneContinuity} from '../scene-production/scene-continuity.mjs';
+import {writeSceneCheckpoints} from '../scene-production/scene-checkpoints.mjs';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const meaningful=v=>typeof v==='string'&&v.trim().length>=12;
@@ -98,4 +99,4 @@ export function reviewSceneExperience(intent){
 }
 
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
-if(direct){const root=process.argv[2];if(!root){console.error('Usage: node validate-scene-experience.mjs <workspace> [--write]');process.exit(2);}try{const intent=JSON.parse(await readFile(path.join(root,'.authoring/visual-intent.json'),'utf8')),r=reviewSceneExperience(intent);if(process.argv.includes('--write')){await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/scene-experience-review.json'),JSON.stringify(r,null,2)+'\n');const {writeSceneCheckpoints}=await import('../scene-production/scene-checkpoints.mjs');await writeSceneCheckpoints(path.resolve(root));}console.log(JSON.stringify(r,null,2));if(r.decision!=='PASS')process.exitCode=1;}catch(e){console.error(e.message);process.exitCode=2;}}
+if(direct){const root=process.argv[2];if(!root){console.error('Usage: node validate-scene-experience.mjs <workspace> [--write]');process.exit(2);}try{const intent=JSON.parse(await readFile(path.join(root,'.authoring/visual-intent.json'),'utf8')),r=reviewSceneExperience(intent);if(process.argv.includes('--write')){await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/scene-experience-review.json'),JSON.stringify(r,null,2)+'\n');await writeSceneCheckpoints(path.resolve(root));}console.log(JSON.stringify(r,null,2));if(r.decision!=='PASS')process.exitCode=1;}catch(e){console.error(e.message);process.exitCode=2;}}

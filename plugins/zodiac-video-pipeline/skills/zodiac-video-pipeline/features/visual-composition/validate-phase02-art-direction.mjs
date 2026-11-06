@@ -3,6 +3,7 @@
 import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from '../scene-set/scene-set-detection.mjs';
 import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
+import {isCurrentVisualWorkspace} from './current-visual-mode.mjs';
 const normalize=s=>String(s??'').normalize('NFC').replace(/\s+/gu,' ').trim();
 const compact=s=>normalize(s).replace(/\s+/gu,'');
 export function validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage=false,fresh=false}={}){
@@ -48,6 +49,7 @@ if(direct){
  const [production,plan,narration,palettes,environments]=await Promise.all([
  load(path.join(ws,'production.json')),load(path.join(ws,'.authoring/scene-art-direction.json')),readFile(path.join(ws,'narration.txt'),'utf8'),load(path.join(root,'art-direction/palette-registry.json')),load(path.join(root,'art-direction/environment-registry.json'))]);
  const state=await load(path.join(ws,'.authoring/pipeline-state.json'));
- const result=validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage:state.run_mode==='fresh',fresh:state.run_mode==='fresh'});console.log(JSON.stringify(result,null,2));if(result.status!=='PASS')process.exitCode=1;}
+ const currentVisual=await isCurrentVisualWorkspace(ws,state);
+ const result=validatePhase02ArtDirection(production,plan,narration,palettes,environments,{requireCoverage:currentVisual,fresh:currentVisual});console.log(JSON.stringify(result,null,2));if(result.status!=='PASS')process.exitCode=1;}
  catch(e){console.error('ART_DIRECTION_PREFLIGHT_ERROR '+e.message);process.exitCode=2;}
 }

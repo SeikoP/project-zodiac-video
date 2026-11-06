@@ -92,3 +92,9 @@ Never fabricate a TikTok product URL and never claim account-level attachability
 - Validate: `node features/commerce/validate-affiliate-integration.mjs <workspace>`
 
 Commerce files under `.authoring/commerce/` are authoring evidence/state, not approval receipts. Existing Zodiac review and Phase 03 gates remain authoritative.
+
+## Approved commercial storytelling structure
+
+Before authoring any Phase 01 commercial segment, read `references/approved-story-interrupt.md` in full. This reference is the user-approved creative structure and tone authority for Zodiac affiliate narration. The generic topology × treatment contract remains the machine-valid representation, but it must not replace the approved storytelling shape with a generic utility insertion or a detached ad block.
+
+A product should normally be discovered because an object, action, setting detail, or tension in the story gives the narrator a credible reason to hijack the story for a moment. Story Fit means the commercial beat can spring from the story and snap back into the same tension; it does not mean the product must solve the plot problem.
