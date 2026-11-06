@@ -47,8 +47,9 @@ from tools.zodiac_local import (
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE = ROOT / ".zodiac-work"
-TTS_ROOT = Path(r"E:\projects\VieNeu-TTS")
-TTS_URL = "http://127.0.0.1:7860"
+# Optional per-machine configuration; preserve the original Windows defaults.
+TTS_ROOT = Path(os.environ.get("ZODIAC_TTS_ROOT") or r"E:\projects\VieNeu-TTS").expanduser()
+TTS_URL = os.environ.get("ZODIAC_VIENEU_URL", "http://127.0.0.1:7860")
 MUSIC_DIRECTORIES = (ROOT / "asset" / "music", ROOT / "assets" / "music")
 
 class ZodiacQtApp(QMainWindow):
