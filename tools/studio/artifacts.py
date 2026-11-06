@@ -204,6 +204,7 @@ class VoiceArtifactStore:
         text_hash: str,
         voice_profile_hash: str,
         performance_context_hash: str | None = None,
+        generation_profile_hash: str | None = None,
     ) -> dict | None:
         record = self.active_take(scene_id)
         if not record or record.get("status") != VoiceTakeStatus.APPROVED:
@@ -213,6 +214,10 @@ class VoiceArtifactStore:
         if record.get("voice_profile_hash") != voice_profile_hash:
             return None
         if record.get("performance_context_hash") != performance_context_hash:
+            return None
+        # A previously approved take is not valid for a changed TTS engine,
+        # backend, precision, or other synthesis settings.
+        if not generation_profile_hash or record.get("generation_profile_hash") != generation_profile_hash:
             return None
 
         artifact = (self.root / str(record.get("path") or "")).resolve()
