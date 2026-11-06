@@ -11,6 +11,8 @@ import {designToken} from './phase02-composition.mjs';
 import {compileVisualIntent,projectionPaths} from './compile-visual-intent.mjs';
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
 import {updatePhase02SemanticCache} from '../../core/cache/phase02-semantic-cache.mjs';
+import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
+import {assertTaskWrite} from '../../core/workflow/task-coordinator.mjs';
 import os from 'node:os';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const decode=async p=>JSON.parse(await readFile(p,'utf8'));
@@ -62,15 +64,21 @@ export function assessAuthoringPayload(payload,{narration,pluginVersion,state}){
 
  return {status:issues.length?'BLOCKED':'AUTHORING_PAYLOAD_VALID',issues,files:fileMap.map(([,name])=>name),not_compiled:true};
 }
-export async function writePhase02Authoring({workspace,payloadPath}){
+export async function writePhase02Authoring({workspace,payloadPath,revise=false,taskId=null}){
  const root=path.resolve(workspace);const dir=path.join(root,'.authoring');await mkdir(dir,{recursive:true});
  const leasePath=path.join(dir,'.phase02-authoring-write.lock');const lease=await acquireAuthoringLease(leasePath,{run_id:'phase02-write',host_id:os.hostname()});
  const staged=[],committed=[];
  try{
   const pkg=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../../plugin.json');
   const manifest=await decode(pkg),statePath=path.join(dir,'pipeline-state.json'),stateBytes=await readFile(statePath),state=JSON.parse(stateBytes);
+  if(revise){
+   const phase=state.phases?.['02-visual-production'];
+   if(state.current_phase!=='02-visual-production'||!['READY','IN_PROGRESS'].includes(phase?.status)||phase.current_step!=='visual_compile'||!['READY','IN_PROGRESS'].includes(phase.steps?.visual_compile?.status)||(state.review_receipts??[]).some(r=>r.phase_id==='02-visual-production'))throw Error('AUTHORING_REOPEN_REQUIRED');
+  }
+  await assertContentApprovalSources(root,state);
   const source=await readFile(path.join(root,'narration.txt'),'utf8');
   const authored=await decode(payloadPath);
+  if(taskId!==null)await assertTaskWrite(root,taskId,'.authoring/visual-intent.json',{visualIntent:authored});
   assertPhase02AuthoringSource(authored.format,state.run_mode);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
   if(generated&&authored.taxonomy_version!=='narrative_visual@1'&&authored.story_object_decision?.mode==='omitted'&&state.flags?.story_object_required)throw Error('STORY_OBJECT_FLAGS_CONFLICT: configure the explicit omitted decision before authoring');
@@ -82,27 +90,40 @@ export async function writePhase02Authoring({workspace,payloadPath}){
   if(generated){Object.assign(payload,generated,{intent:authored,projection_receipt:generated.receipt});}
   for(const [key,rel] of files){
    const target=path.join(root,rel),data=JSON.stringify(payload[key],null,2)+'\n';
-   let alreadyPresent=false;
+   let alreadyPresent=false,previous=null;
    try{
     const st=await lstat(target);
     if(!st.isFile()||st.isSymbolicLink())throw new Error('AUTHORING_TARGET_UNSAFE '+rel);
-    if((await readFile(target,'utf8'))!==data)throw new Error('AUTHORING_REVISION_REQUIRED '+rel);
-    alreadyPresent=true;
+    previous=await readFile(target);
+    alreadyPresent=previous.equals(Buffer.from(data));
+    if(!alreadyPresent&&!revise)throw new Error('AUTHORING_REVISION_REQUIRED '+rel);
    }catch(e){if(e.code!=='ENOENT')throw e;}
-   outputs.push({rel,target,data,alreadyPresent,sha256:sha(Buffer.from(data))});
+   outputs.push({rel,target,data,previous,alreadyPresent,sha256:sha(Buffer.from(data))});
   }
   // Re-read approved source/state before mutating: concurrent edits fail closed.
   if(sha(Buffer.from(await readFile(path.join(root,'narration.txt'))))!==payload.approved_narration_sha256)throw new Error('NARRATION_CHANGED_CONCURRENTLY');
   if(sha(await readFile(statePath))!==sha(stateBytes))throw new Error('STATE_CHANGED_CONCURRENTLY');
   for(const o of outputs.filter(o=>!o.alreadyPresent)){await mkdir(path.dirname(o.target),{recursive:true});const tmp=o.target+'.staged-'+process.pid;await writeFile(tmp,o.data,'utf8');if(sha(await readFile(tmp))!==o.sha256)throw Error('AUTHORING_STAGING_HASH_MISMATCH '+o.rel);staged.push({tmp,...o});}
-  for(const o of staged){await rename(o.tmp,o.target);committed.push(o);if(sha(await readFile(o.target))!==o.sha256)throw Error('AUTHORING_COMMIT_HASH_MISMATCH '+o.rel);}
+  for(const o of staged){
+   let current=null;try{current=await readFile(o.target);}catch(e){if(e.code!=='ENOENT')throw e;}
+   if((current===null)!==(o.previous===null)||current&&!current.equals(o.previous))throw Error('AUTHORING_CHANGED_CONCURRENTLY '+o.rel);
+   await rename(o.tmp,o.target);committed.push(o);if(sha(await readFile(o.target))!==o.sha256)throw Error('AUTHORING_COMMIT_HASH_MISMATCH '+o.rel);
+  }
   const cache_plan=generated?await updatePhase02SemanticCache(root,authored):null;
   return {status:'AUTHORING_WRITTEN_NOT_COMPILED',files:outputs.map(o=>({path:o.rel,sha256:o.sha256})),cache:cache_plan?{changed:cache_plan.changed,dirty:cache_plan.dirty,guidance:cache_plan.guidance}:null,next:'Run strict execution-preflight and native Phase02 compilers; do not mark PASS.'};
- }catch(e){for(const o of committed.reverse())await rm(o.target,{force:true});throw e;}
+ }catch(e){
+  for(const o of committed.reverse()){
+   // Restore prior bytes only while this writer still owns the current output.
+   if(sha(await readFile(o.target))!==o.sha256)continue;
+   if(o.previous===null)await rm(o.target,{force:true});
+   else {await writeFile(o.tmp,o.previous);await rename(o.tmp,o.target);}
+  }
+  throw e;
+ }
  finally{for(const o of staged)await rm(o.tmp,{force:true});await lease.release();}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2),idx=k=>args.indexOf(k),w=args[idx('--workspace')+1],p=args[idx('--payload')+1];
- if(idx('--workspace')<0||idx('--payload')<0||!w||!p){console.error('Usage: node write-phase02-authoring.mjs --workspace <dir> --payload <agent-authored.json>');process.exitCode=2;}
- else writePhase02Authoring({workspace:w,payloadPath:p}).then(r=>console.log(JSON.stringify(r,null,2))).catch(e=>{console.error(e.message);process.exitCode=2});
+ if(idx('--workspace')<0||idx('--payload')<0||!w||!p){console.error('Usage: node write-phase02-authoring.mjs --workspace <dir> --payload <agent-authored.json> [--revise] [--task-id <id>]');process.exitCode=2;}
+ else writePhase02Authoring({workspace:w,payloadPath:p,revise:idx('--revise')>=0,taskId:idx('--task-id')<0?null:args[idx('--task-id')+1]??''}).then(r=>console.log(JSON.stringify(r,null,2))).catch(e=>{console.error(e.message);process.exitCode=2});
 }

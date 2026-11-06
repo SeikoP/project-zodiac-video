@@ -12,9 +12,9 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 PLUGIN = Path("plugins/zodiac-video-pipeline")
 INCLUDED_ROOTS = {"bootstrap", "core", "features", "phases", "orchestration",
                   "references", "art-direction", "compat", "contracts"}
-EXCLUDED_SEGMENTS = {"tests", "__pycache__", ".cache", ".pytest_cache",
+EXCLUDED_SEGMENTS = {"tests", "__pycache__", ".cache", ".pytest_cache", "node_modules", ".runtime", ".codegraph",
                      ".authoring", "retired-source", "generated-previews"}
-REQUIRED = {"plugin.json", ".codex-plugin/plugin.json", "skills/zodiac-video-pipeline/SKILL.md",
+REQUIRED = {"plugin.json", ".codex-plugin/plugin.json", "package.json", "package-lock.json", "skills/zodiac-video-pipeline/SKILL.md",
             "skills/zodiac-affiliate-commerce/SKILL.md"}
 STATIC_TIME = (1980, 1, 1, 0, 0, 0)
 

@@ -1,62 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
-const here=path.dirname(fileURLToPath(import.meta.url));
-const skillRoot=path.resolve(here,'../..');
-const pluginRoot=path.resolve(skillRoot,'../..');
+const skill=new URL('../../',import.meta.url);
+const json=async rel=>JSON.parse(await readFile(new URL(rel,skill),'utf8'));
 
-test('plugin prompt makes the affiliate gate explicit and Kalodata canonical',async()=>{
-  const plugin=JSON.parse(await readFile(path.join(pluginRoot,'plugin.json'),'utf8'));
-  const prompt=plugin.extensions['com.openai'].interface.defaultPrompt;
-  assert.match(prompt,/Thêm quảng cáo Affiliate\? YES\/NO/i);
-  assert.match(prompt,/Kalodata/i);
-  assert.match(prompt,/do not ask.*product link/i);
-  assert.match(prompt,/zodiac-affiliate-commerce\/SKILL\.md/i);
-  assert.equal(plugin.version,'2.7.2');
+test('entry prompt is compact and defers step details to persisted state',async()=>{
+ const plugin=await json('../../plugin.json'),prompt=plugin.extensions['com.openai'].interface.defaultPrompt;
+ assert.ok(Buffer.byteLength(prompt)<1500);
+ assert.match(prompt,/resume-brief/);assert.doesNotMatch(prompt,/Thêm quảng cáo Affiliate|Fresh 2\.|Kalodata/);
+ const entry=await readFile(new URL('SKILL.md',skill),'utf8');assert.ok(Buffer.byteLength(entry)<5000);assert.ok(entry.split(/\r?\n/).length<=80);
 });
 
-test('affiliate skill routes enabled commerce through discovery, integration, media and handoff',async()=>{
-  const skill=await readFile(path.join(pluginRoot,'skills/zodiac-affiliate-commerce/SKILL.md'),'utf8');
-  for(const phrase of ['Monetization gate','Kalodata','Product Media Adapter','affiliate-handoff','topology','treatment'])assert.match(skill,new RegExp(phrase,'i'),phrase);
-  assert.match(skill,/YES.*NO/is);
-  assert.match(skill,/do not ask.*product link|không.*link/is);
+test('fresh defaults use one fictional ad without affiliate provider dependencies',async()=>{
+ const state=await json('orchestration/pipeline-state.template.json');
+ assert.equal(state.flags.affiliate_enabled,false);assert.equal(state.flags.mock_ad_enabled,true);
+ const cap=await json('bootstrap/capabilities.json'),mock=cap.capabilities.find(x=>x.id==='mock_advertisement');
+ assert.ok(mock);assert.ok(mock.refs.includes('references/affiliate-commerce.md'));
+ for(const phase of ['01-content','02-visual-production']){
+  const m=await json(`orchestration/phases/${phase}.json`);
+  assert.doesNotMatch(JSON.stringify(m),/kalodata-client|product-media-adapter|flag:affiliate_enabled/);
+  assert.equal(m.steps.flatMap(s=>s.conditional_outputs??[]).filter(o=>o.name.includes('/commerce/')).length,0);
+  assert.ok(m.steps.some(s=>s.conditional_capabilities?.some(c=>c.when==='flag:mock_ad_enabled'&&c.kind==='internal_validator')));
+ }
 });
 
-test('capability registry binds commerce to phase 01 narration and phase 02 visual work',async()=>{
-  const cap=JSON.parse(await readFile(path.join(skillRoot,'bootstrap/capabilities.json'),'utf8'));
-  const commerce=cap.capabilities.find(x=>x.id==='affiliate_commerce');
-  assert.ok(commerce);
-  assert.equal(commerce.fresh,true);
-  assert.ok(commerce.refs.includes('references/affiliate-commerce.md'));
-  const phases=new Set(commerce.bindings.map(x=>x.phase));
-  assert.ok(phases.has('01-content'));
-  assert.ok(phases.has('02-visual-production'));
+test('fictional ad guidance reuses creative structure inside the canonical narrative plan',async()=>{
+ const doc=await readFile(new URL('references/affiliate-commerce.md',skill),'utf8');
+ for(const phrase of ['mock_ad','topology','treatment','5–18','narrative-plan.json','visual-intent.json','Quảng cáo hư cấu'])assert.ok(doc.includes(phrase),phrase);
+ const extension=await readFile(new URL('../zodiac-affiliate-commerce/SKILL.md',skill),'utf8');
+ assert.match(extension,/paused/i);assert.doesNotMatch(extension,/ask exactly|KALODATA_API_KEY is required/);
 });
 
-test('affiliate reference fixes provider, duration range and SVG transport strategy',async()=>{
-  const doc=await readFile(path.join(skillRoot,'references/affiliate-commerce.md'),'utf8');
-  assert.match(doc,/Kalodata.*canonical/i);
-  assert.match(doc,/5–18|5-18/);
-  assert.match(doc,/SVG transport/i);
-  assert.match(doc,/secret-key/i);
-  assert.match(doc,/ACCOUNT_ATTACH_UNVERIFIED/);
-});
-
-test('pipeline state and phase manifests wire affiliate commerce fail closed',async()=>{
-  const state=JSON.parse(await readFile(path.join(skillRoot,'orchestration/pipeline-state.template.json'),'utf8'));
-  assert.equal(state.plugin_version,'2.7.2');assert.equal(state.flags.affiliate_enabled,false);
-  const p1=JSON.parse(await readFile(path.join(skillRoot,'orchestration/phases/01-content.json'),'utf8'));
-  const evidence=p1.steps.find(x=>x.id==='evidence'),narration=p1.steps.find(x=>x.id==='narration');
-  assert.equal(evidence.required_capabilities.some(x=>x.id==='affiliate_monetization_decision_validation'),false);
-  assert.ok(narration.conditional_capabilities.some(x=>x.id==='affiliate_integration_validation'&&x.when==='flag:affiliate_enabled'));
-  const p2=JSON.parse(await readFile(path.join(skillRoot,'orchestration/phases/02-visual-production.json'),'utf8'));
-  const assets=p2.steps.find(x=>x.id==='assets');
-  for(const id of ['kalodata_product_detail','affiliate_product_media','affiliate_visual_validation'])assert.ok(assets.conditional_capabilities.some(x=>x.id===id&&x.when==='flag:affiliate_enabled'),id);
-});
-
-test('legacy fresh flags treat missing affiliate_enabled as commerce off',async()=>{
-  const {conditionApplies}=await import('../../core/policy/resolve-capability-route.mjs');
-  assert.equal(conditionApplies('flag:affiliate_enabled',{run_mode:'fresh',flags:{}}),false);
+test('pre-feature states keep mock advertising off and active affiliate states require explicit migration',async()=>{
+ const {conditionApplies}=await import('../../core/policy/resolve-capability-route.mjs');
+ assert.equal(conditionApplies('flag:mock_ad_enabled',{run_mode:'fresh',flags:{}}),false);
+ const {loadStepContext}=await import('../plan-step-context.mjs');const state=await json('orchestration/pipeline-state.template.json');
+ await assert.rejects(()=>loadStepContext('01-content','narration',{...state.flags,affiliate_enabled:true}),/AFFILIATE_PAUSED/);
 });

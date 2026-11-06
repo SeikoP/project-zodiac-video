@@ -16,6 +16,7 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
  const step=manifest?.steps?.find(s=>s.id===stepId);
  if(!step)throw new Error('CONTEXT_STEP_NOT_FOUND '+stepId);
  if(!['draft','review'].includes(role))throw Error('CONTEXT_ROLE_INVALID');
+ if(flags.affiliate_enabled)throw Error('AFFILIATE_PAUSED: preserve existing commerce files; explicitly disable affiliate routing before continuing.');
  if(manifest.id==='02-visual-production'&&['legacy','selected_cues'].includes(environment_mode))throw Error('RECOVERY_SNAPSHOT_REQUIRED');
  const scope=step.context_scopes?.[role]??step;
  const caps=[...(step.required_capabilities??[]),...(step.conditional_capabilities??[])].filter(c=>conditionApplies(c.when,{run_mode,flags}));
@@ -26,10 +27,12 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
  refs=refs.filter(guidanceAllowed);
  let assetSelection=null;if(selected_asset_ids!==null||asset_needs.length){if(!policy)throw Error('CONTEXT_SELECTION_POLICY_MISSING');assetSelection=selectAssetGuidance({selected_asset_ids:selected_asset_ids??[],asset_needs,meme_selected,environment_mode},policy,{capabilityIndex,coverageMatrix});if(assetSelection.unresolved_ids.length)throw Error('CONTEXT_ASSET_UNRESOLVED '+assetSelection.unresolved_ids.join(','));selected_asset_ids=assetSelection.selected_asset_ids??selected_asset_ids??[];refs=[...new Set([...refs,...assetSelection.core_refs,...assetSelection.extension_refs])];}
  refs=[...new Set([...refs,...selectedCapabilities.flatMap(item=>item.refs??[])])];
+ const deferredReferences=refs.filter(ref=>(scope.defer_references??[]).includes(ref));
+ refs=refs.filter(ref=>!deferredReferences.includes(ref));
  const isHostUri=ref=>/^[a-z][a-z0-9+.-]*:\/\//iu.test(ref),hostGuidance=refs.filter(isHostUri);refs=refs.filter(ref=>!isHostUri(ref));
  if(manifest.id==='02-visual-production'&&refs.some(ref=>/(?:^|\/)(?:migration|provenance|compat)(?:\/|$)|story-object-effects|story-object-composition-v2|environments\/compositions/u.test(ref)))throw Error('CONTEXT_RETIRED_REFERENCE');
  const output={production_entrypoint:manifest.production_entrypoint??null,invocation_policy:manifest.invocation_policy??'step_capabilities',format:'zodiac-step-context-plan@1',phase:manifest.id,step:step.id,run_mode,role,
-   required_references:refs,host_guidance_references:hostGuidance,host_capability_notes:caps.filter(c=>hostMap.capabilities[c.id]).map(c=>({capability_id:c.id,policy:c.unavailable_policy,...hostMap.capabilities[c.id]})),phase_guidance:'orchestration/phases/'+manifest.id+'.md',reload_rule:'Re-run this planner and re-read required_references before every step; never rely on remembered guidance.',required_entry_capabilities:entry.map(c=>c.id),
+   required_references:refs,deferred_references:deferredReferences,host_guidance_references:hostGuidance,host_capability_notes:caps.filter(c=>hostMap.capabilities[c.id]).map(c=>({capability_id:c.id,policy:c.unavailable_policy,...hostMap.capabilities[c.id]})),phase_guidance:'orchestration/phases/'+manifest.id+'.md',reload_rule:'Resolve current state before every step. Read required_references or a verified capsule; defer review guidance until review. Never treat context delivery as validation or approval.',required_entry_capabilities:entry.map(c=>c.id),
    selected_capabilities:selectedCapabilities.map(item=>item.id),
    resolved_asset_capabilities:assetSelection?.resolved_capabilities??[],
    deferred_exit_capabilities:caps.filter(c=>c.stage==='exit').map(c=>c.id),

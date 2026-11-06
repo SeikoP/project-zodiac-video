@@ -10,7 +10,9 @@ export function assertEngagementDesign(design,{plan,selectedCandidate}={}){
  if(design?.format!=='zodiac-engagement-design@1')fail('format');
  if(!plan||!selectedCandidate)fail('lineage_inputs');
  if(design.selected_concept_id!==plan.selected_concept_id||design.selected_concept_id!==selectedCandidate.id)fail('selected_concept_id');
- if(design.source?.plan_sha256!==hash(JSON.stringify(plan))||design.source?.candidate_sha256!==hash(JSON.stringify(selectedCandidate)))fail('source_lineage');
+ // Final review binds the full plan; an unchanged base story can reuse its earlier design.
+ const {mock_ad,...baseStory}=plan;
+ if(![hash(JSON.stringify(plan)),hash(JSON.stringify(baseStory))].includes(design.source?.plan_sha256)||design.source?.candidate_sha256!==hash(JSON.stringify(selectedCandidate)))fail('source_lineage');
  text(design.entry_hook?.intent,'entry_hook.intent');
  text(design.entry_hook?.mechanism,'entry_hook.mechanism');
  text(design.open_question,'open_question');

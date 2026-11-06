@@ -83,13 +83,32 @@ export function commercialDurationClass(seconds){
   if(s<=7)return 'flash';if(s<=12)return 'standard';if(s<=15)return 'demo';return 'extended';
 }
 
-export function validateAffiliateIntegrationPlan(plan,{recent=[]}={}){
-  if(plan?.format!=='zodiac-affiliate-integration@1')fail('INTEGRATION_FORMAT');
+function validateAdvertisementStructure(plan){
   if(!TOPOLOGIES.has(plan.topology))fail('INTEGRATION_TOPOLOGY');
   if(!TREATMENTS.has(plan.treatment))fail('INTEGRATION_TREATMENT');
   commercialDurationClass(plan.commercial_duration_s);
   if(!RETURNS.has(plan.return_mechanism))fail('INTEGRATION_RETURN');
   if(!String(plan.story_before_anchor??'').trim()||!String(plan.story_after_anchor??'').trim())fail('STORY_ANCHORS_REQUIRED');
+}
+
+export function validateMockAdvertisement(plan,narration){
+  if(!plan||typeof plan!=='object'||Array.isArray(plan))fail('MOCK_AD_REQUIRED');
+  const fields=new Set(['topology','treatment','commercial_duration_s','return_mechanism','story_before_anchor','story_after_anchor','fictional_product','text']);
+  if(Object.keys(plan).some(k=>!fields.has(k)))fail('MOCK_AD_COMMERCIAL_FIELDS_FORBIDDEN');
+  validateAdvertisementStructure(plan);
+  if(typeof plan.fictional_product!=='string'||!plan.fictional_product.trim()||typeof plan.text!=='string'||!plan.text.includes(plan.fictional_product))fail('MOCK_AD_FICTIONAL_PRODUCT_REQUIRED');
+  if(!/quảng cáo hư cấu/iu.test(plan.text))fail('MOCK_AD_DISCLOSURE_REQUIRED');
+  if(/https?:\/\//iu.test(plan.text+plan.fictional_product))fail('MOCK_AD_EXTERNAL_PRODUCT_FORBIDDEN');
+  if(typeof narration!=='string')fail('MOCK_AD_NARRATION_REQUIRED');
+  const at=narration.indexOf(plan.text);
+  if(at<0||narration.indexOf(plan.text,at+1)>=0)fail('MOCK_AD_COPY_MISMATCH');
+  if(!narration.slice(0,at).includes(plan.story_before_anchor)||!narration.slice(at+plan.text.length).includes(plan.story_after_anchor))fail('MOCK_AD_STORY_ANCHORS');
+  return {status:'PASS',mode:'fictional',issues:[]};
+}
+
+export function validateAffiliateIntegrationPlan(plan,{recent=[]}={}){
+  if(plan?.format!=='zodiac-affiliate-integration@1')fail('INTEGRATION_FORMAT');
+  validateAdvertisementStructure(plan);
   if(!Array.isArray(plan.product_asset_ids)||!plan.product_asset_ids.length)fail('PRODUCT_ASSETS_REQUIRED');
   if(!Array.isArray(plan.claims))fail('CLAIMS_REQUIRED');
   for(const c of plan.claims)if(!CLAIMS.has(c?.type)||!String(c?.text??'').trim())fail('INVALID_CLAIM');

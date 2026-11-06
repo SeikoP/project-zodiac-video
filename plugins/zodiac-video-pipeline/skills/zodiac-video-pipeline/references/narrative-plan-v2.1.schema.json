@@ -102,6 +102,55 @@
       "items": {
         "type": "object"
       }
+    },
+    "mock_ad": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topology",
+        "treatment",
+        "commercial_duration_s",
+        "return_mechanism",
+        "story_before_anchor",
+        "story_after_anchor",
+        "fictional_product",
+        "text"
+      ],
+      "properties": {
+        "topology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "treatment": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commercial_duration_s": {
+          "type": "number",
+          "minimum": 5,
+          "maximum": 18
+        },
+        "return_mechanism": {
+          "type": "string",
+          "minLength": 1
+        },
+        "story_before_anchor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "story_after_anchor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fictional_product": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   },
   "$defs": {

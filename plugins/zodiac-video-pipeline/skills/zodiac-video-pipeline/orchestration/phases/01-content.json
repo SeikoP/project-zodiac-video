@@ -158,6 +158,11 @@
         "references/context-isolation.md",
         "references/research-and-viral-tools.md",
         "references/episode-formats.md"
+      ],
+      "authoring_sources": [
+        ".authoring/evidence-ledger.json",
+        ".authoring/evidence-summary.md",
+        ".authoring/research-scope.json"
       ]
     },
     {
@@ -304,6 +309,86 @@
           "name": "episode-scope.json",
           "when": "flag:episode_selected"
         }
+      ],
+      "context_scopes": {
+        "draft": {
+          "load_references": [
+            "references/phase01-briefing.md",
+            "references/content-quality-engine.md",
+            "references/episode-formats.md",
+            "references/engagement-engine.md",
+            "references/viral-routing-policy.md"
+          ],
+          "allowed_context_categories": [
+            "current_request",
+            "current_attachment",
+            "evidence_summary",
+            "canonical_contract",
+            "explicit_reference",
+            "capability_output",
+            "series_selection",
+            "episode_scope"
+          ],
+          "forbidden_context_categories": [
+            "memory",
+            "prior_chat",
+            "old_package",
+            "sign_example",
+            "series_tracker_raw",
+            "full_research",
+            "asset_rules",
+            "renderer_rules",
+            "runtime_rules",
+            "unselected_member_profiles"
+          ]
+        },
+        "review": {
+          "load_references": [
+            "references/viral-routing-policy.md",
+            "references/content-craft.md",
+            "references/narrative-modes.md",
+            "references/narration-writer-brief.md",
+            "references/character-viral-performance.md",
+            "references/content-quality-engine.md",
+            "references/narration-rhythm.md",
+            "references/plugin-use-playbook.md",
+            "references/phase01-briefing.md",
+            "references/episode-formats.md",
+            "references/engagement-engine.md"
+          ],
+          "allowed_context_categories": [
+            "current_request",
+            "current_attachment",
+            "evidence_summary",
+            "canonical_contract",
+            "explicit_reference",
+            "capability_output",
+            "series_selection",
+            "episode_scope"
+          ],
+          "forbidden_context_categories": [
+            "memory",
+            "prior_chat",
+            "old_package",
+            "sign_example",
+            "series_tracker_raw",
+            "full_research",
+            "asset_rules",
+            "renderer_rules",
+            "runtime_rules",
+            "unselected_member_profiles"
+          ]
+        }
+      },
+      "authoring_sources": [
+        ".authoring/concept-candidates.json",
+        ".authoring/viral-analysis.json",
+        ".authoring/reference-mechanics.json",
+        ".authoring/narrative-plan.json",
+        ".authoring/writer-brief-extras.json",
+        ".authoring/engagement-design.json",
+        ".authoring/plugin-use-decisions.json",
+        ".authoring/episode-scope.json"
       ]
     },
     {
@@ -325,7 +410,7 @@
           "id": "phase3_writer_contract",
           "kind": "internal_reference",
           "when": "always",
-          "guidance_uri": "references/narrator-performance.md",
+          "guidance_uri": "references/narration-writer-brief.md",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -400,42 +485,31 @@
           "stage": "exit"
         },
         {
-          "id": "affiliate_commerce_contract",
-          "kind": "internal_reference",
-          "when": "flag:affiliate_enabled",
-          "guidance_uri": "references/affiliate-commerce.md",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
-          "id": "kalodata_product_discovery",
-          "kind": "internal_compiler",
-          "when": "flag:affiliate_enabled",
-          "tool_locator": "features/commerce/kalodata-client.mjs",
-          "required_arg_suffixes": [
-            "discover"
-          ],
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "affiliate_integration_validation",
-          "kind": "internal_validator",
-          "when": "flag:affiliate_enabled",
-          "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
-          "required_arg_suffixes": [
-            "content"
-          ],
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
           "id": "retention_structure_validation",
           "kind": "internal_validator",
           "when": "flag:retention_quality_engine",
           "tool_locator": "features/retention/retention-structure.mjs",
           "required_arg_suffixes": [
             "--write"
+          ],
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "mock_advertisement_contract",
+          "kind": "internal_reference",
+          "when": "flag:mock_ad_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
+        },
+        {
+          "id": "mock_advertisement_content_validation",
+          "kind": "internal_validator",
+          "when": "flag:mock_ad_enabled",
+          "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
+          "required_arg_suffixes": [
+            "content"
           ],
           "unavailable_policy": "block",
           "stage": "exit"
@@ -531,10 +605,11 @@
             "unselected_member_profiles"
           ],
           "load_references": [
-            "references/narration-writer-brief.md",
-            "references/story-spine-performance.md",
-            "references/content-quality-engine.md",
-            "references/plugin-use-playbook.md"
+            "references/narration-writer-brief.md"
+          ],
+          "defer_references": [
+            "references/narrator-performance.md",
+            "references/narration-rhythm.md"
           ]
         },
         "review": {
@@ -571,39 +646,27 @@
       },
       "conditional_outputs": [
         {
-          "name": ".authoring/commerce/product-query.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
-          "name": ".authoring/commerce/product-candidates.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
-          "name": ".authoring/commerce/product-selection.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
-          "name": ".authoring/commerce/affiliate-integration.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
-          "name": ".authoring/commerce/affiliate-handoff.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
           "name": "retention-structure.json",
           "when": "flag:retention_quality_engine"
         }
       ],
       "conditional_gate_checks": [
         {
-          "name": "affiliate_commerce_content",
-          "when": "flag:affiliate_enabled"
-        },
-        {
           "name": "retention_structure",
           "when": "flag:retention_quality_engine"
+        },
+        {
+          "name": "mock_advertisement_content",
+          "when": "flag:mock_ad_enabled"
         }
+      ],
+      "authoring_sources": [
+        "narration.txt",
+        ".authoring/narrative-plan.json",
+        ".authoring/narrative-qc.json",
+        ".authoring/story-spine-performance.json",
+        ".authoring/story-quality-review.json",
+        ".authoring/engagement-review.json"
       ]
     }
   ]

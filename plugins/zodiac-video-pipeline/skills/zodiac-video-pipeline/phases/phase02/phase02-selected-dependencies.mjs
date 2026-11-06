@@ -1,6 +1,16 @@
-import {readFile,access} from 'node:fs/promises';
+import {readFile,access,lstat} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import path from 'node:path';
 const exists=p=>access(p).then(()=>true,()=>false);
+export async function signatureFiles(files){
+ const sha=b=>createHash('sha256').update(b).digest('hex'),parts=[],selected=[...new Set(files)].sort();
+ // Bound parallel I/O; reread every call so edits cannot survive a memoized PASS.
+ for(let i=0;i<selected.length;i+=8){
+  const batch=await Promise.all(selected.slice(i,i+8).map(async rel=>{const p=path.resolve(rel);try{const st=await lstat(p);return st.isFile()&&!st.isSymbolicLink()?[p,sha(await readFile(p))]:null;}catch{return null;}}));
+  if(batch.includes(null))return null;parts.push(...batch);
+ }
+ return sha(JSON.stringify(parts));
+}
 // Selected SVGs plus transitive local executable imports. Never walk the asset tree.
 export async function selectedPhase02Dependencies(skillRoot,workspace){
  const intentFile=path.join(workspace,'.authoring/visual-intent.json');if(!await exists(intentFile))return {mode:'legacy-full',files:[]};
@@ -17,11 +27,11 @@ export async function selectedPhase02Dependencies(skillRoot,workspace){
 export async function selectedStepDependencyFiles(skillRoot,entry,candidates,{stepId}={}){
  const seen=new Set(),base=path.resolve(skillRoot),known=candidates.map(p=>path.resolve(p));
  const visit=async p=>{p=path.resolve(p);if(!p.startsWith(base+path.sep)||seen.has(p)||!await exists(p))return;seen.add(p);if(!p.endsWith('.mjs'))return;const raw=await readFile(p,'utf8');
-  for(const m of raw.matchAll(/['"]([^'"\n]+\.(?:mjs|json|md))['"]/gu)){const rel=m[1];if(rel.startsWith('/')||rel.includes('://'))continue;const local=path.resolve(path.dirname(p),rel);if(await exists(local))await visit(local);else for(const candidate of known)if(candidate.endsWith('/'+rel.replace(/^\.\//u,'')))await visit(candidate);}
+  for(const m of raw.matchAll(/['"]([^'"\n]+\.(?:mjs|json|md))['"]/gu)){const rel=m[1];if(rel.startsWith('/')||rel.includes('://'))continue;const local=path.resolve(path.dirname(p),rel);if(await exists(local))await visit(local);else for(const candidate of known)if(candidate.replaceAll('\\','/').endsWith('/'+rel.replace(/^\.\//u,'')))await visit(candidate);}
  };
  await visit(path.join(base,entry));
  const character=entry.includes('/characters/')||['character_components','character_identity','outfit_bake'].includes(stepId);
  const environment=entry.includes('/environments/')||['environment_binding','scene_set_identity','scene_accent_containment'].includes(stepId);
- for(const p of known.filter(p=>p.endsWith('.svg')))if(character?p.includes('/characters/'):environment?p.includes('/scene-set/')||p.includes('/environments/'):true)seen.add(p);
+ for(const p of known.filter(p=>p.endsWith('.svg'))){const normalized=p.replaceAll('\\','/');if(character?normalized.includes('/characters/'):environment?normalized.includes('/scene-set/')||normalized.includes('/environments/'):true)seen.add(p);}
  return [...seen].sort();
 }

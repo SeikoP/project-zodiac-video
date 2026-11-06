@@ -117,15 +117,13 @@
       "owner": "features/narration-performance/compile-narration-performance.mjs"
     },
     {
-      "id": "affiliate_commerce",
+      "id": "mock_advertisement",
       "fresh": true,
       "refs": [
         "references/affiliate-commerce.md"
       ],
       "validators": [
-        "monetization-gate",
-        "affiliate-integration",
-        "product-media"
+        "mock-advertisement"
       ],
       "bindings": [
         {
@@ -133,7 +131,7 @@
           "steps": [
             "narration"
           ],
-          "when": "flag:affiliate_enabled"
+          "when": "flag:mock_ad_enabled"
         },
         {
           "phase": "02-visual-production",
@@ -142,7 +140,7 @@
             "assets",
             "publish_prep"
           ],
-          "when": "flag:affiliate_enabled"
+          "when": "flag:mock_ad_enabled"
         }
       ],
       "owner": "features/commerce/validate-affiliate-integration.mjs"

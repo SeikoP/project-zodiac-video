@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Activate Phase 02 only after the read-only transition gate reports AUTHORING_READY.
+// Open authoring after approved content is ready; derived plans are created inside Phase 02.
 // This mutates orchestration state only; it never creates approvals or validator PASS receipts.
 import {readFile,writeFile,rename,open,rm} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
@@ -22,10 +22,10 @@ export async function activatePhase02(workspace){
     const manifest=JSON.parse(await readFile(path.resolve(skill,'../../plugin.json'),'utf8'));
     if(state.plugin_version!==manifest.version)throw new Error('VERSION_MISMATCH');
     const gate=path.join(path.dirname(fileURLToPath(import.meta.url)),'phase02-transition-gate.mjs');
-    const proc=spawnSync(process.execPath,[gate,'--workspace',root],{encoding:'utf8'});
+    const proc=spawnSync(process.execPath,[gate,'--workspace',root,'--entry-only'],{encoding:'utf8'});
     let report;try{report=JSON.parse(proc.stdout)}catch{throw new Error('TRANSITION_GATE_UNREADABLE '+String(proc.stderr||proc.stdout).trim())}
-    if(proc.status!==0||report.status!=='AUTHORING_READY'||report.authoring_ready!==true)
-      throw new Error('PHASE02_NOT_AUTHORING_READY '+JSON.stringify(report.issues??[]));
+    if(proc.status!==0||report.status!=='ENTRY_READY'||report.entry_ready!==true)
+      throw new Error('PHASE02_ENTRY_NOT_READY '+JSON.stringify(report.issues??[]));
     const next=structuredClone(state), p=next.phases['02-visual-production'];
     if(p.status!=='LOCKED'||p.current_step!=='visual_compile'||p.steps?.visual_compile?.status!=='LOCKED')
       throw new Error('PHASE02_ACTIVATION_STATE_INVALID');

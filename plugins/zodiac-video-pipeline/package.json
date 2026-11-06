@@ -1,0 +1,14 @@
+{
+  "name": "zodiac-plugin-runtime",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "@colbymchenry/codegraph": "1.6.2",
+    "@toon-format/toon": "4.4.0",
+    "gpt-tokenizer": "4.1.0",
+    "xstate": "5.33.3"
+  }
+}

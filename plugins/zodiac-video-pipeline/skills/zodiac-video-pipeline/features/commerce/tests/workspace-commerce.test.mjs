@@ -3,6 +3,24 @@ import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';import os f
 import {writeMonetizationDecision,readMonetizationDecision,validateMonetizationDecision} from '../monetization-gate.mjs';
 import {validateCommerceWorkspace} from '../validate-affiliate-integration.mjs';
 
+const mockAd=()=>({topology:'interrupt',treatment:'narrator_hijack',commercial_duration_s:9,return_mechanism:'snap_back',story_before_anchor:'Trước câu chuyện.',story_after_anchor:'Trở lại câu chuyện.',fictional_product:'Máy lọc suy nghĩ Sao Mộc',text:'Quảng cáo hư cấu: Máy lọc suy nghĩ Sao Mộc chỉ giữ lại điều đáng nhớ.'});
+async function mockWorkspace(root){await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({flags:{mock_ad_enabled:true,affiliate_enabled:false}}));const ad=mockAd();await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));await writeFile(path.join(root,'narration.txt'),[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'));return ad;}
+
+test('mock ad uses the narrative plan and narration without creating commerce files',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'z-mock-'));
+ try{const ad=await mockWorkspace(root);await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n')}]}));for(const stage of ['content','visual']){const r=await validateCommerceWorkspace(root,{stage});assert.equal(r.status,'PASS');assert.equal(r.mode,'fictional');}await assert.rejects(()=>readFile(path.join(root,'.authoring/commerce/monetization.json')),/ENOENT/);}finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('mock ad requires disclosed fictional copy in the actual narration and a return to story',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'z-mock-'));
+ try{const ad=await mockWorkspace(root);for(const change of [{text:ad.text.replace('Quảng cáo hư cấu: ','')},{return_mechanism:'none'},{commercial_duration_s:20},{product_id:'real-product'},{fictional_product:'Real URL https://shop.example/item'}]){await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:{...ad,...change}}));await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_|INTEGRATION_|DURATION_/);}await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));await writeFile(path.join(root,'narration.txt'),ad.text);await assert.rejects(()=>validateCommerceWorkspace(root),/MOCK_AD_STORY_ANCHORS/);}finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('mock visual validation binds ad scenes to approved narration without product assets',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'z-mock-'));
+ try{const ad=await mockWorkspace(root);await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'s01',voice:ad.story_before_anchor},{id:'ad',voice:ad.text},{id:'s02',voice:ad.story_after_anchor}]}));assert.equal((await validateCommerceWorkspace(root,{stage:'visual'})).status,'PASS');await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'s01',voice:ad.story_before_anchor}]}));await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'visual'}),/MOCK_AD_VISUAL_COPY_MISMATCH/);}finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('monetization decision persists explicitly in authoring state',async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'z-mon-'));try{const d=await writeMonetizationDecision(root,'yes');assert.equal(d.advertising,true);const r=await readMonetizationDecision(root);assert.deepEqual(r,d);}finally{await rm(root,{recursive:true,force:true});}});
 
 test('disabled commerce needs no product artifacts',async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'z-mon-'));try{await writeMonetizationDecision(root,'no');assert.equal((await validateCommerceWorkspace(root)).status,'PASS');}finally{await rm(root,{recursive:true,force:true});}});

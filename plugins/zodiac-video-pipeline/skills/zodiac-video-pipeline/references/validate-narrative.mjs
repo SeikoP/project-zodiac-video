@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 
 import {validateNarrationRhythm} from "./narration-rhythm.mjs";
 import {validateEpisodeNarrative} from './episode-narrative.mjs';
+import {validateMockAdvertisement} from '../features/commerce/commerce-core.mjs';
 
 const args=process.argv.slice(2);
 if(args.length<2){console.error("Usage: node validate-narrative.mjs <narrative-plan.json> <narration.txt> [interaction-plan.json]");process.exit(2);}
@@ -29,6 +30,7 @@ const leakedPlannerTerms=plannerVocabulary.filter((term)=>new RegExp(`(?:^| )${t
 if(leakedPlannerTerms.length)fail("PLANNER_LANGUAGE_LEAK: narration contains internal/meta vocabulary: "+leakedPlannerTerms.join(", "));
 
 assertObject(plan,schema,"narrative plan");
+if(plan.mock_ad!==undefined)validateMockAdvertisement(plan.mock_ad,narration);
 if(plan.version!==schema.properties.version.const)fail("version must be "+schema.properties.version.const);
 if(!schema.properties.story_shape.enum.includes(plan.story_shape))fail("unsupported story_shape");
 if(!schema.properties.delivery_mode.enum.includes(plan.delivery_mode))fail("unsupported delivery_mode");

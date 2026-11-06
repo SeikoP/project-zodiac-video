@@ -272,14 +272,6 @@
           "unavailable_policy": "block"
         },
         {
-          "id": "affiliate_commerce_contract",
-          "kind": "internal_reference",
-          "when": "flag:affiliate_enabled",
-          "guidance_uri": "references/affiliate-commerce.md",
-          "unavailable_policy": "block",
-          "stage": "entry"
-        },
-        {
           "id": "visual_retention_validation",
           "kind": "internal_validator",
           "when": "flag:retention_quality_engine",
@@ -289,6 +281,14 @@
           ],
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "mock_advertisement_contract",
+          "kind": "internal_reference",
+          "when": "flag:mock_ad_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
+          "unavailable_policy": "block",
+          "stage": "entry"
         }
       ],
       "allowed_context_categories": [
@@ -419,7 +419,11 @@
         "references/asset-library-v4/memes/templates/index.json": "meme",
         "references/asset-library-v4/memes/index.json": "meme"
       },
-      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable."
+      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable.",
+      "authoring_sources": [
+        ".authoring/visual-intent.json",
+        "design.md"
+      ]
     },
     {
       "id": "assets",
@@ -691,28 +695,17 @@
           "stage": "exit"
         },
         {
-          "id": "kalodata_product_detail",
-          "kind": "internal_compiler",
-          "when": "flag:affiliate_enabled",
-          "tool_locator": "features/commerce/kalodata-client.mjs",
-          "required_arg_suffixes": [
-            "detail"
-          ],
+          "id": "mock_advertisement_contract",
+          "kind": "internal_reference",
+          "when": "flag:mock_ad_enabled",
+          "guidance_uri": "references/affiliate-commerce.md",
           "unavailable_policy": "block",
-          "stage": "exit"
+          "stage": "entry"
         },
         {
-          "id": "affiliate_product_media",
-          "kind": "internal_compiler",
-          "when": "flag:affiliate_enabled",
-          "tool_locator": "features/commerce/product-media-adapter.mjs",
-          "unavailable_policy": "block",
-          "stage": "exit"
-        },
-        {
-          "id": "affiliate_visual_validation",
+          "id": "mock_advertisement_visual_validation",
           "kind": "internal_validator",
-          "when": "flag:affiliate_enabled",
+          "when": "flag:mock_ad_enabled",
           "tool_locator": "features/commerce/validate-affiliate-integration.mjs",
           "required_arg_suffixes": [
             "visual"
@@ -805,8 +798,8 @@
           "when": "fresh"
         },
         {
-          "name": "affiliate_product_media",
-          "when": "flag:affiliate_enabled"
+          "name": "mock_advertisement_visual",
+          "when": "flag:mock_ad_enabled"
         }
       ],
       "allowed_operations": [
@@ -833,20 +826,15 @@
         {
           "name": ".authoring/narration-performance-receipt.json",
           "when": "fresh"
-        },
-        {
-          "name": ".authoring/commerce/product-detail.json",
-          "when": "flag:affiliate_enabled"
-        },
-        {
-          "name": ".authoring/commerce/product-media.json",
-          "when": "flag:affiliate_enabled"
         }
       ],
       "guidance_selection": {
         "references/asset-library-v4/recipes/state-recipes.json": "meme"
       },
-      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable."
+      "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable.",
+      "authoring_sources": [
+        "assets/**"
+      ]
     },
     {
       "id": "publish_prep",
@@ -946,6 +934,10 @@
           "name": ".authoring/publish-retention-review.json",
           "when": "flag:retention_quality_engine"
         }
+      ],
+      "authoring_sources": [
+        "publish/publish.json",
+        "publish/publish-copy.txt"
       ]
     }
   ]

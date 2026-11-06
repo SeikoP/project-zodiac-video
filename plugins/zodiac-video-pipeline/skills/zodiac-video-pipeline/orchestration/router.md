@@ -18,7 +18,7 @@ Do not fall back to main, another release or a whole-repository runtime download
 3. `03-handoff`: seal approved source → Job@5 Assemble → static gates → one ZIP export and archive QC.
 
 Use only the active phase manifest and current-step guidance. Run
-`plan-step-context.mjs` and use its exact bounded references. Retired source,
+`resume-brief.mjs <workspace> --context` for source-bound task delivery, or `plan-step-context.mjs` for its exact bounded references in the loading plan. Fetch pending required blocks before their capability is used. Reuse across steps/phases requires explicit caller-held capsule acknowledgement; see `references/chatgpt-runtime.md`. Do not reload the whole router or unrelated phases between steps. Deferred review guidance enters only at review; all validators remain required. Retired source,
 old episode examples and migration prose are absent from the current asset
 surface; no agent should search them to fill a missing choice. Continuity jobs
 requiring removed capabilities use their separately pinned recovery snapshot,
@@ -52,7 +52,7 @@ boundaries, use the existing gates:
 
 | Phase | Entry and exit contract |
 | --- | --- |
-| 01-content | Complete manifest outputs and content gates, obtain the required user review receipt, then pass `phase02-transition-gate.mjs` as `AUTHORING_READY` before `activate-phase02.mjs`. |
+| 01-content | Complete manifest outputs and content gates, obtain the required user review receipt, then pass `phase02-transition-gate.mjs --entry-only` as `ENTRY_READY` before `activate-phase02.mjs`. |
 | 02-visual-production | Use activated Phase 01 source; complete manifest outputs and native visual evidence, obtain visual review approval, then pass the seal gate and write the review lock. |
 | 03-handoff | Start from the approved source and review lock; validate and export one Job@5 ZIP. Report local-runner import readiness separately from rendered MP4 and media acceptance. |
 
@@ -65,8 +65,8 @@ Use `references/phase01-briefing.md` and the selected episode format. Fresh scop
 **Autopilot rule:** after scope is known, do not stop between Evidence, Concept and Narration for user confirmation. Research, candidate competition, concept selection, hook/story-spine construction, QC repairs and validator retries are internal work. Ask only when scope is materially ambiguous or when the completed Narration reaches the single Content Review boundary. If the user explicitly asks to choose among options, surface them; otherwise the Content Engine selects the winner and continues.
 
 ## Phase 01 → Phase 02
-Run `phase02-transition-gate.mjs` until AUTHORING_READY, read its handoff_context
-and source hashes, then `activate-phase02.mjs`. Activation changes orchestration
+Run `phase02-transition-gate.mjs --entry-only`, read its approved handoff context
+and source hashes, then `activate-phase02.mjs` on ENTRY_READY. Create Visual Intent and derived plans inside the active phase; full authoring readiness still gates native compilation. Activation changes orchestration
 state only. Preserve the approved narration and scope. It creates no native PASS.
 
 ## Phase 02
@@ -98,3 +98,10 @@ audio and MP4 acceptance. Native review, ZIP readiness and final media readiness
 are separate. A missing runner is not a producer blocker. Recover a verified
 existing ZIP through `commit-phase03-release.mjs`; do not export duplicates.
 Content creates no assets or ZIP; Phase 01 and Phase 02 create no user-facing ZIP. Their normal output surface is direct chat text/images plus specific diagnostic files only when needed. Only Phase-03 export owns packaging. `zodiac-publish-bundle.zip` is forbidden.
+
+## Advertisement and revision ownership
+Fresh workspaces use one fictional ad in the canonical Narrative Plan and narration; real affiliate routing is paused. Follow references/affiliate-commerce.md in the owning step. No commerce files, discovery, product media or affiliate handoff are required. Preserve existing approved workspaces; do not silently add an ad to them.
+
+For revisions, use assess-revision-impact.mjs on the approved snapshot and working copy before changing state. Its resume_from names the earliest affected step; its tasks and semantic guidance identify revalidation and reusable scenes. The report grants no approval. For an unapproved Phase 02 in review, use reopen-phase02-for-source-update.mjs --amend with a reason before write-phase02-authoring.mjs --revise. The writer updates all derived plans from the canonical Visual Intent and restores prior bytes on failure. Approved content stays hash-bound.
+
+Do not create additional summaries, copied plans/checklists or per-attempt diagnostics by default. Required projections and genuine receipts remain internal. An impact report can stay on stdout; only explicit --output creates a report file.

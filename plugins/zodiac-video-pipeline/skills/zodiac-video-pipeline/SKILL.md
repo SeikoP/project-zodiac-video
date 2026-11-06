@@ -1,83 +1,37 @@
 ---
 name: zodiac-video-pipeline
-description: Produce or resume Vietnamese Zodiac videos in single-sign, element-group, ranked-shortlist and comparison formats. Use whenever the user mentions a zodiac or cung hoàng đạo episode, a Studio prompt or workspace to resume, Content Review or Visual Review, Job@5 or the ZIP for the local runner, or a failure the local runner reported (voice, timing, caption, render, cover), even if they do not name the pipeline.
+description: Produce or resume Vietnamese Zodiac videos, Content Review, Visual Review and Job@5 handoff. Diagnose producer or runner failures using the current phase contract.
 ---
 # Zodiac Video Pipeline
 
-Follow orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Do not use account memory as unapproved episode evidence. The installed plugin router/manifests and genuine user approvals govern workflow; GitHub is execution-byte transport only.
+Follow `orchestration/router.md`: 01-content → 02-visual-production → 03-handoff.
+Do not use account memory as unapproved episode evidence.
 
-## Step authority — fail closed
-Before **every** step, derive the first incomplete step from persisted state with `orchestration/resume-brief.mjs`, read the active manifest and every `read_now` reference, then act only inside that bounded context. Never replace this with remembered instructions, a prose checklist, a prior assistant summary, or a previously generated package.
+## Current step
+Run `node orchestration/resume-brief.mjs <workspace> --context` before each step. It delivers the current task, source-bound handoff, policy and budgeted references. Fetch pending required references before using their capability; see `references/chatgpt-runtime.md`. A Studio pointer or prior chat summary is only a hint.
+Use its XState `next_task`, scoped writes and revision ID. Keep the full supplied scene context; see `references/chatgpt-runtime.md` for the plugin-owned CodeGraph/runtime setup.
+Read only selected capsule blocks (or `read_now` from plain resume). Load review guidance when switching to review; do not load every phase or catalog into the writer's context. Required gates remain blocking.
+Run real validators through `run-validator-with-receipt.mjs`, then commit the step. Missing state, verified execution bytes or required capability means BLOCKED. A file listing, prose checklist or tool invocation is never compiler PASS or user approval.
 
-A user-facing `PASS`, `IN_REVIEW`, `APPROVED`, phase transition, or statement that a gate "passed" requires the durable outputs and actual receipts required by the active manifest. Editorial inspection in chat may be described as editorial review, but it is never a substitute for native compiler/validator evidence. If execution source or a required validator is unavailable, report `BLOCKED`; do not synthesize a PASS from manual reasoning.
+## Sources
+Read `orchestration/execution-bootstrap.md` once to establish the current execution source. Repository runs use this checkout; ChatGPT uses a verified phase-scoped execution bundle. Pin commit/version and verify SHA-256. Transport never changes editorial authority.
+User-revoked, deleted, discarded, replaced or excluded sources stay forbidden even if remounted, resurfaced or copied. Only explicit user re-authorization restores that exact source.
+Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Prior packages and raw trackers are not fresh creative context. Missing choices block; no implicit legacy fallback.
 
-## Revoked-source quarantine
-A source becomes **revoked** when the user says to delete it, forget it, discard it, stop using it, replace it, or explicitly excludes it from the current workflow. A revoked source is forbidden context for all later steps and runs in the same conversation/project unless the user explicitly re-attaches or re-authorizes that exact source.
-
-Runtime remount, filesystem persistence, Project attachment resurfacing, tool search results, old chat availability, or a copied path do **not** restore authorization. Do not open, read, summarize, transform, compare, or derive creative/technical decisions from a revoked source merely because it appears available again. When a new official source is named, prefer it and quarantine conflicting retired sources.
-
-### Runtime resurrection hard quarantine
-Before reading, materializing, hashing, staging, unzipping, comparing, or using any runtime/project file, first apply the conversation/project revocation history. A revoked source is excluded **before I/O**: it is not `current_attachment`, execution source, continuity input, evidence, fallback, or a candidate for inspection. If the runtime remounts a revoked local file and filesystem deletion is permitted, delete that runtime copy immediately; deletion failure does not re-authorize the file. Only an explicit later user re-authorization of that exact source may clear the quarantine.
-
-Hard-deny for this private plugin until explicit re-authorization: basename `zodiac-content-pipeline-v0.1.zip`, including `/mnt/data/zodiac-content-pipeline-v0.1.zip`. If it reappears, do not open it, list its archive, compute its hash, materialize it, stage it, or infer anything from its contents; remove the runtime copy when possible and continue with the verified phase-scoped execution bundle instead.
-
-## Resume from Studio checklist
-A copied Studio prompt is a snapshot of the selected workspace, episode scope, tracker ledger and current step contract. It is not a creative brief, approval receipt or source of truth. Re-read that workspace's pipeline state, scope, approval receipts and durable outputs before writing. A missing, malformed or version-mismatched source blocks the next write.
-
-Use the installed `defaultPrompt`, router, current phase manifest and `plan-step-context.mjs`. Derive the first incomplete step from the current state and manifest; do not blindly repeat the copied step pointer. Honor that step's active capabilities, required inputs/outputs, context boundaries and gates; validate durable outputs and receipts before committing the step. The linked series tracker reports progress only; it does not approve narration, visuals, cover or a phase transition.
-
-## Execution source — canonical bundle only
-In ChatGPT, the **verified phase-scoped execution bundle is the sole canonical execution source**. Resolve the bundle that matches the installed plugin release/commit and active phase, verify its artifact digest/inventory, stage it into an empty runtime directory, then run the bundle's native preflight and step scripts.
-
-Do **not** clone, checkout, download, or execute the repository as an alternative source. Do **not** search for another source tree, fall back to `main`, reuse an old ZIP, or treat skill files as executable source. GitHub may be used only to identify and retrieve the matching phase-scoped Actions artifact. If that exact bundle is absent, expired, inaccessible, or fails integrity checks, report `SOURCE_TRANSPORT_UNAVAILABLE` or `SOURCE_INTEGRITY_MISMATCH`; do not try another execution-source strategy.
-
-Required discovery order is fixed: installed plugin release/commit → matching successful phase-bundle workflow artifact → digest verification → stage bundle → execution preflight → `resume-brief.mjs`. Never declare source unavailable before checking the matching phase-scoped artifact.
-
-## Phase 01: no user-facing ZIP Default to autonomous Evidence → Concept → Narration → QC execution after scope is known; the only normal user pause is final Content Review. Do not ask the user to approve searches, select a concept, approve an outline, or confirm validator/compiler steps unless they explicitly requested a choice or the scope is materially ambiguous.
-
-Use references/episode-formats.md and references/phase01-briefing.md. Distinguish episode format from the `character_deconstruction` story engine. Use bounded independent evidence, one coherent Story Spine and authentic Content Review. Narrative 2.1 is for fresh scoped episodes.
-
-### Narration readiness lock
-Narration may not begin from a remembered concept or from the full planner context. It must be drafted only from the compiled minimized writer brief plus the manifest-permitted minimal evidence/reference mechanics.
-
-Before drafting, the compiled writer brief must exist with valid lineage and must contain:
-- a nonempty `rhythm_direction`;
-- a nonempty `narrator_vibe` with concrete storytelling qualities, not a generic placeholder;
-- identity tension, progression intent and payoff target;
-- evidence-safe behaviors and forbidden claims;
-- Zodiac-first identity fields required by the active format/version.
-
-For Narrative 2.1, narrator tone is still mandatory even though the episode compiler is separate. Missing `narrator_vibe` is a compiler failure, not an optional style omission.
-
-Fresh 2.6.8+ Narration is progressively validated: run entry preflight before prose, then a cheap draft checkpoint immediately after the draft. Basic contract/duration/TTS/identity defects must be repaired at the checkpoint before Story Spine/QC/Engagement/Story Quality artifacts are authored. Final validators confirm a stable draft rather than acting as the first defect detector.
-
-Fresh 2.6.8+ Concept also requires a validated `engagement-design.json` before writer-brief compilation. The writer receives only its compact `engagement_direction`; the beat-level pull map remains out of draft context. Narration review requires grounded `engagement-review.json`; unresolved hook/early-value/curiosity/recognition/reframe/payoff or consecutive-explanation REVIEW blocks Content Review.
-
-After drafting, switch to review context and complete the active manifest's narration outputs and gates: actual voice anchors, Story Spine realization, Narrative QC, Story Quality/Zodiac identity review when required, TTS text readiness and duration estimate. A manual table in chat is not a validator receipt. Any material `REVIEW` returns to the owning step; do not present the narration as complete until the gate is resolved.
-
-Show the selected concept, final Narration and compact QC/status directly in chat; keep workspace artifacts internal unless debugging requires a specific file. When narration review identifies `natural_voice`, `formulaic_language` or `audience_fit`, `plan-plugin-use.mjs` may route that exact excerpt through installed HumanWriting guidance. HumanWriting may polish cadence and phrasing only; facts, claims, evidence qualifiers, Zodiac identity, Story Spine progression and payoff remain semantically locked, and its output is never approval.\n\n## Optional Notion project sync\nWhen the user has enabled Notion tracking for the project, use `core/integrations/notion-sync.mjs` to prepare a one-way sync only after the owning Zodiac artifact/state has been written. Notion may store status, artifact links/hashes, validated decisions, blockers, PRs and release links. It may not create Content Review or Visual Review approval, may not become episode evidence, may not overwrite `.authoring/pipeline-state.json`, and may not silently change requirements. Missing Notion access never blocks the native Zodiac pipeline.
-
-At Phase 01 → Phase 02, run the transition gate until AUTHORING_READY, then run phases/phase02/activate-phase02.mjs before Phase 02 step commits. Activation changes orchestration state only and creates no approval or native PASS. Inspect source hashes/approvals; AUTHORING_READY is not PASS.
+## Phase 01: no user-facing ZIP
+Use `references/phase01-briefing.md` in the owning step. Complete Evidence → Concept → Narration autonomously after scope is known. Use real evidence and one Story Spine; pause at final Content Review. Draft only from the compiled minimized writer brief and permitted minimal evidence. `rhythm_direction` and `narrator_vibe` must exist before drafting.
+Run entry preflight, draft checkpoint, then switch to review context for grounded QC. Present selected concept, final narration and compact QC directly in chat. IN_REVIEW requires actual outputs/receipts; APPROVED requires the genuine user message bound to source hashes.
+Fresh runs include one disclosed fictional advertisement using `references/affiliate-commerce.md`. Keep `mock_ad` inside the canonical Narrative Plan; do not create commerce files or invoke real affiliate discovery.
 
 ## Phase 02: no user-facing ZIP
+Preserve approved narration. Activate after the entry-only gate; create visual plans inside Phase 02. Author `.authoring/visual-intent.json`; use `write-phase02-authoring.mjs` to generate derived plans. Never hand-edit projections. Load selected asset guidance only when needed.
+Compile native scene-complete review frames and event endpoints, inspect them, then request genuine Visual Review. Native receipts never substitute for that approval.
 
-Fresh 2.6.9+ uses progressive entry validation before expensive native asset work. Run the deterministic progressive preflight and grounded Scene Experience review before native character/environment/scene compilation. Basic Director/motion/SVG-style defects must be repaired at this checkpoint, and unresolved passive-storytelling REVIEW blocks Visual Review. Sparse reflection/payoff scenes are allowed when intentionally justified; never inflate scene density merely to satisfy the gate. Revision planning should use semantic scene/asset rebuild/reuse guidance so unrelated scenes are not recomputed. Treat `.authoring/visual-intent.json` as the only agent-authored visual source of truth; use `write-phase02-authoring.mjs` / `compile-visual-intent.mjs` to generate production, Character Assembly, Visual Grammar, Asset Plan, Director Plan, Art Direction and Episode Cast projections. Do not manually edit those derived files. Read orchestration/phases/02-visual-production.md and references/asset-library-v4/selection-guide.md. Use features/asset-selection/build-current-asset-review.mjs for native catalog comparisons. Use approved cast, canvas-native backgrounds, Scene Accents, V4 native assets and the single Narrative Visual authoring concept. Every Episode Cast `role=member` character must carry the intrinsic `zodiac-glyph-shirt` with `zodiac_sign_id=member_id`; non-member actors may use `plain-shirt`. Compile scene-complete native review frames for every scene plus event endpoint pairs; Visual Review must use the clean Phase-02 review surface produced by features/visual-composition/prepare-phase02-review.mjs. Do not copy historical Phase-01 README or migration prose into the review surface. Accents are independent canvas-relative context cues; actors are never constrained to an accent or wall.
+## Revisions and files
+Use `core/audit/assess-revision-impact.mjs --before <approved-snapshot> --after <workspace>` to find the owning step, required revalidation and affected approvals; stdout is sufficient unless a report file is needed. Correct the canonical source once, then recompile projections. Preserve unrelated scenes with semantic cache guidance.
+For an unapproved Phase 02 in review, reopen with `reopen-phase02-for-source-update.mjs <workspace> --amend --reason=<reason>`, then use `write-phase02-authoring.mjs --workspace <workspace> --payload <visual-intent.json> --revise`. Never overwrite approved phases without reopening the applicable review.
+Keep only canonical authoring inputs, machine-required projections, genuine receipts and review outputs. Do not create extra prose summaries, copied checklists, alternate plans or diagnostic snapshots by default. Existing approvals and source data are never deleted merely to reduce file count.
 
-## Phase 03: exactly one validated Job@5 ZIP per revision. Use phases/phase03/run-phase03-production.mjs or its verified current target. Preserve zodiac-job@5 and zodiac-renderer@2.0.1. Package one validated ZIP per revision. Local runner owns voice, timing, Remotion, captions, cover, audio and MP4 acceptance. ZIP-ready never means video-ready.
-
-## User-facing status vocabulary
-Use only DRAFT, IN_REVIEW, APPROVED, PASS or BLOCKED in normal user updates. Keep transport/preflight/compiler receipt states diagnostic unless a failure requires explanation.
-
-Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Missing choices block; no legacy/selected-cues fallback. Historical job recovery requires its separately pinned external snapshot. Fresh production has no Scene Set. Legacy Scene Set rendering is compatibility-only, requiring verified historical job input; character placement always remains independent.
-
-## Never rely on remembered guidance
-Context is lost between steps and sessions. Before **every** step, and whenever unsure where the run stands, run `node orchestration/resume-brief.mjs <workspace>` (read-only). It derives the first incomplete step from `.authoring/pipeline-state.json` and lists exactly which reference files to read now, the capabilities with the current host-tool guidance, the required outputs and the forbidden context. Read those files in full, then act. It creates no approval and replaces neither the phase manifest nor the validators.
-
-## Where to read next
-Load only what the current task needs.
-
-| Task | Read |
-| --- | --- |
-| Phase 02 visuals | orchestration/phases/02-visual-production.md, references/asset-library-v4/selection-guide.md, **references/phase02-visual-rules.md (read in full)** |
-| Runner reported a failure, or a revision after the ZIP | references/runner-feedback-triage.md |
-| Repository execution and capability providers | references/repository-runtime.md |
+## Phase 03: exactly one validated Job@5 ZIP per revision
+Use the router's Phase 03 runner and preserve the active Job@5/renderer contract. Local runner owns TTS, measured timing, Remotion, captions, cover rasterization, audio and persistent MP4 acceptance. ZIP-ready never means video-ready.
+Normal user statuses: DRAFT, IN_REVIEW, APPROVED, PASS, BLOCKED. Optional Notion sync is a status ledger, never evidence or approval.

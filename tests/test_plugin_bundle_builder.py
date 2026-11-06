@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
-from tools.release.build_plugin_bundle import build
+from tools.release.build_plugin_bundle import build, eligible
 
 
 class CandidateBundleTests(unittest.TestCase):
@@ -11,6 +11,8 @@ class CandidateBundleTests(unittest.TestCase):
         plugin = root / "plugins/zodiac-video-pipeline"
         entries = {
             "plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
+            "package.json": '{"private":true,"dependencies":{"xstate":"5.33.3","@colbymchenry/codegraph":"1.6.2"}}',
+            "package-lock.json": '{"lockfileVersion":3}',
             ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/SKILL.md": "# Zodiac",
             "skills/zodiac-affiliate-commerce/SKILL.md": "# Affiliate",
@@ -37,9 +39,16 @@ class CandidateBundleTests(unittest.TestCase):
                 self.assertIsNone(package.testzip())
                 self.assertIn("skills/zodiac-video-pipeline/core/run.mjs", package.namelist())
                 self.assertIn("skills/zodiac-affiliate-commerce/SKILL.md", package.namelist())
+                self.assertIn("package.json", package.namelist())
+                self.assertIn("package-lock.json", package.namelist())
                 self.assertNotIn("skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs", package.namelist())
                 self.assertNotIn("skills/zodiac-video-pipeline/references/retired-source/dead.md", package.namelist())
             self.assertFalse(one["release_approved"])
+
+    def test_plugin_runtime_lock_is_included_but_installed_binaries_and_indexes_are_not(self):
+        self.assertTrue(eligible(Path("package-lock.json")))
+        self.assertFalse(eligible(Path("node_modules/xstate/dist/xstate.js")))
+        self.assertFalse(eligible(Path("skills/zodiac-video-pipeline/core/.runtime/private.json")))
 
     def test_missing_static_esm_dependency_blocks_zip(self):
         with tempfile.TemporaryDirectory() as temp:

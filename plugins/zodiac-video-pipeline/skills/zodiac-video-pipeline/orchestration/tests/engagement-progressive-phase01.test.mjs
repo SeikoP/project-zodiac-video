@@ -28,6 +28,13 @@ test('engagement design validates and compiles minimized direction',()=>{
  assert.equal(d.recognition_cues.length,2);
 });
 
+test('adding a separate mock ad preserves base story design lineage while story edits still invalidate it',()=>{
+ const revised={...structuredClone(plan),mock_ad:{text:'Quảng cáo hư cấu'}};
+ assert.equal(assertEngagementDesign(design,{plan:revised,selectedCandidate:candidate}),design);
+ revised.beats[0].semantic_delta='A different story';
+ assert.throws(()=>assertEngagementDesign(design,{plan:revised,selectedCandidate:candidate}),/source_lineage/);
+});
+
 test('engagement design fails when beat pull coverage is incomplete',()=>{
  const bad=structuredClone(design);bad.beat_pull.pop();
  assert.throws(()=>assertEngagementDesign(bad,{plan,selectedCandidate:candidate}),/beat_pull_length/);

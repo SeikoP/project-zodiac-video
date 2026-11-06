@@ -17,6 +17,13 @@ spec.loader.exec_module(stager)
 
 
 class BundleSelectionTests(unittest.TestCase):
+    def test_runtime_manifest_is_required_and_caches_are_never_source(self):
+        self.assertIn("package.json", builder.ROOT_REQUIRED)
+        self.assertIn("package-lock.json", builder.ROOT_REQUIRED)
+        for phase in builder.PHASES:
+            for rel in ("node_modules/xstate/index.js", ".runtime/codegraph/index.json", "skills/zodiac-video-pipeline/core/.codegraph/codegraph.db"):
+                self.assertFalse(builder.include(builder.PLUGIN + rel, phase))
+
     def test_runner_never_bundled(self):
         for phase in builder.PHASES:
             self.assertFalse(builder.include("runtime/remotion/index.ts", phase))

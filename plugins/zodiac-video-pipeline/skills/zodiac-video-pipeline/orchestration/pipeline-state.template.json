@@ -20,7 +20,8 @@
     "visual_metaphor_selected": false,
     "notion_sync": false,
     "affiliate_enabled": false,
-    "retention_quality_engine": true
+    "retention_quality_engine": true,
+    "mock_ad_enabled": true
   },
   "current_phase": "01-content",
   "operations": [],

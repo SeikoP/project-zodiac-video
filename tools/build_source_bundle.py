@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 
 PLUGIN = "plugins/zodiac-video-pipeline/"
 PHASES = ("01-content", "02-visual-production", "03-handoff")
-ROOT_REQUIRED = ("plugin.json", ".codex-plugin/plugin.json",
+ROOT_REQUIRED = ("plugin.json", ".codex-plugin/plugin.json", "package.json", "package-lock.json",
                  "skills/zodiac-video-pipeline/SKILL.md",
                  "skills/zodiac-affiliate-commerce/SKILL.md",
                  "skills/zodiac-video-pipeline/orchestration/router.md",
@@ -30,7 +30,7 @@ def include(path, phase):
         return False
     rel = path[len(PLUGIN):]
     parts = PurePosixPath(rel).parts
-    if not parts or "tests" in parts or rel.endswith(".test.mjs"):
+    if not parts or any(part in {"tests", "node_modules", ".runtime", ".codegraph"} for part in parts) or rel.endswith(".test.mjs"):
         return False
     # Shared validators import V4 modules/catalogues even outside Phase 02.
     # Exclude visual payloads, never their executable/data dependencies.

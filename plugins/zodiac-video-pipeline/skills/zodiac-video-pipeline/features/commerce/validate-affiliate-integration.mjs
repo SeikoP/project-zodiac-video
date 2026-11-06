@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import {access,readFile} from 'node:fs/promises';import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validateAffiliateIntegrationPlan} from './commerce-core.mjs';
+import {validateAffiliateIntegrationPlan,validateMockAdvertisement} from './commerce-core.mjs';
+import {readArtifact} from '../../phases/phase01/phase01-artifacts.mjs';
 import {readCommerceHistory} from './commerce-history.mjs';
 const exists=p=>access(p).then(()=>true).catch(()=>false);
 const fail=code=>{throw new Error(code)};
@@ -9,6 +10,19 @@ const readJson=async p=>JSON.parse(await readFile(p,'utf8'));
 
 export async function validateCommerceWorkspace(workspace,{recent=null,stage='visual'}={}){
   if(!['content','visual'].includes(stage))fail('AFFILIATE_VALIDATION_STAGE_INVALID');
+  let state;try{state=await readJson(path.join(workspace,'.authoring/pipeline-state.json'));}catch(e){if(e.code!=='ENOENT')throw e;}
+  if(state?.flags?.mock_ad_enabled){
+    if(state.flags.affiliate_enabled)fail('MOCK_AD_AFFILIATE_CONFLICT');
+    const plan=await readArtifact(workspace,'narrative-plan.json');
+    let narration;try{narration=await readFile(path.join(workspace,'.authoring/narration.txt'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;narration=await readFile(path.join(workspace,'narration.txt'),'utf8');}
+    const verdict=validateMockAdvertisement(plan.mock_ad,narration);
+    if(stage==='visual'){
+      const production=await readJson(path.join(workspace,'production.json'));
+      const voice=(production.scenes??[]).map(s=>s.voice??'').join(production.voice_partition==='utf8_ranges'?'':'\n');
+      try{validateMockAdvertisement(plan.mock_ad,voice);}catch(e){fail('MOCK_AD_VISUAL_COPY_MISMATCH '+e.message);}
+    }
+    return {...verdict,advertising:false,stage};
+  }
   const dir=path.join(workspace,'.authoring','commerce');const monetizationPath=path.join(dir,'monetization.json');
   if(!(await exists(monetizationPath)))fail('MONETIZATION_DECISION_REQUIRED');
   const monetization=await readJson(monetizationPath);
