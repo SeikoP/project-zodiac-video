@@ -52,14 +52,14 @@ DEFAULT_MUSIC_VOLUME = 1.0
 SUPPORTED_MUSIC_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg"}
 
 _SCENE_DIRECTION_LINE_RE = re.compile(
-    r"(?mi)^[ \\t]*\\[S\\d{2}[^\\]\\r\\n]*\\](?:[ \\t]*\\[[^\\]\\r\\n]*\\])?[ \\t]*(?:\\r?\\n|$)"
+    r"(?mi)^[ \t]*\[S\d{2}[^\]\r\n]*\](?:[ \t]*\[[^\]\r\n]*\])?[ \t]*(?:\r?\n|$)"
 )
 
 
 def caption_scene_text(value: str) -> str:
     """Remove scene/stage metadata that must never appear in captions."""
-    text = str(value).replace("\\r\\n", "\\n").replace("\\r", "\\n")
-    return _SCENE_DIRECTION_LINE_RE.sub("", text).strip("\\n")
+    text = str(value).replace("\r\n", "\n").replace("\r", "\n")
+    return _SCENE_DIRECTION_LINE_RE.sub("", text).strip("\n")
 
 
 def spoken_scene_text(value: str) -> str:
@@ -67,7 +67,7 @@ def spoken_scene_text(value: str) -> str:
     text = caption_scene_text(value)
     # VieNeu can spell all-caps Latin product labels letter-by-letter.
     # Case-normalize the established product phrase without changing captions.
-    return re.sub(r"\\bPRO\\s+MAX\\b", "Pro Max", text, flags=re.IGNORECASE)
+    return re.sub(r"\bPRO\s+MAX\b", "Pro Max", text, flags=re.IGNORECASE)
 
 BUNDLED_MUSIC = Path(__file__).resolve().parents[1] / "assets" / "music" / "background.mp3"
 
