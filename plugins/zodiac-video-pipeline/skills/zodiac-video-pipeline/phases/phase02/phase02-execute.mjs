@@ -19,6 +19,7 @@ import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
 import {selectedPhase02Dependencies,selectedStepDependencyFiles} from './phase02-selected-dependencies.mjs';
 import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
+import {isCurrentVisualWorkspace} from '../../features/visual-composition/current-visual-mode.mjs';
 const fastProfileStart=performance.now();
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
@@ -189,19 +190,21 @@ const activeSourcePaths=sourcePaths.filter(p=>dependencySelection.mode!=='select
 const stamp=manifest?.version&&missingSource.length===0?await signature([...new Set([path.join(source.pluginRoot,'plugin.json'),...activeSourcePaths.map(p=>path.join(source.skillRoot,p)),...nativeDependencies])]):null;
 const releaseParts=String(manifest?.version??'0.0.0').split('.').map(Number);const modernComposition=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=46)));
 const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4||(releaseParts[1]===4&&releaseParts[2]>=47)));
-if(rhythmRelease&&await exists(statePath)){const selected=JSON.parse(await readFile(statePath,'utf8'));if(selected.run_mode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'features/narration-performance/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}}
+const phase02State=await readFile(statePath,'utf8').then(JSON.parse).catch(()=>null);
+const phase02RunMode=phase02State?.run_mode??null;
+const currentVisual=phase02State?await isCurrentVisualWorkspace(workspace,phase02State):false;
+if(rhythmRelease&&phase02RunMode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'features/narration-performance/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}
 steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_props',src:'references/asset-library-v4/memes/compile-meme-props.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-prop-compile-receipt.json','.authoring/generated-assets.json']});
 if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'features/visual-composition/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
 // Retired Scene Set checks remain available for compatibility only.
-// Fresh canvas composition still runs geometry, spatial and caption validators.
-const phase02RunMode=await readFile(path.join(workspace,'.authoring/pipeline-state.json'),'utf8').then(s=>JSON.parse(s).run_mode).catch(()=>null);
-if(phase02RunMode==='fresh'){
+// Current Visual Intent uses canvas-native composition even when recovering a continuity run.
+if(currentVisual){
  for(const oldId of ['scene_set_identity','scene_accent_containment']){
   const ix=steps.findIndex(s=>s.id===oldId);if(ix>=0)steps.splice(ix,1);
  }
 }
 if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
-const graph=validateStepGraph(steps,phase02RunMode==='fresh'?PHASE02_DEPENDENCIES:LEGACY_PHASE02_DEPENDENCIES,{strictMissing:true});
+const graph=validateStepGraph(steps,currentVisual?PHASE02_DEPENDENCIES:LEGACY_PHASE02_DEPENDENCIES,{strictMissing:true});
 if(graph.status!=='PASS')report.issues.push(...graph.issues);
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
 if(running&&report.issues.length===0){
@@ -211,7 +214,7 @@ if(running&&report.issues.length===0){
  if(validity.status==='PASS'){
   const state=JSON.parse(await readFile(statePath,'utf8'));
   // Independent, read-only validators write distinct receipts; critical state validation stays sequential.
-  const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,fresh:state.run_mode==='fresh',maxConcurrency:5});
+  const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,fresh:currentVisual,maxConcurrency:5});
   report.fast_preflight={status:preflight.status,plan:preflight.plan,issues:preflight.issues,wall_ms:preflight.wall_ms,serial_equivalent_native_ms:preflight.serial_equivalent_native_ms};
   report.precompile_seam=preflight.checks.seam;
   report.precompile_seam_receipt=preflight.receipts.seam;
