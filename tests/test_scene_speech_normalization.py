@@ -42,3 +42,27 @@ def test_semantic_caption_alignment_uses_cleaned_phrase_text():
     }
     rows = _semantic_caption_rows(scene, timing, fps=24)
     assert [row["text"] for row in rows] == ["SAO CÒN CHỜ?", "Bạch Dương bỏ đi."]
+
+
+def test_semantic_caption_alignment_handles_label_split_across_phrases():
+    from tools.control_plane.timeline import _semantic_caption_rows
+
+    scene = {
+        "id": "S02",
+        "caption_segments": [
+            {"text": "[S02 — XUNG ĐỘT | BÌNH THƯỜNG →"},
+            {"text": "GẮT] Chuyện là thế này."},
+            {"text": "Hai người đang giận nhau."},
+        ],
+    }
+    words = ["Chuyện", "là", "thế", "này.", "Hai", "người", "đang", "giận", "nhau."]
+    timing = {
+        "captions": [
+            {"text": word, "startMs": i * 100.0, "endMs": (i+1) * 100.0}
+            for i, word in enumerate(words)
+        ]
+    }
+    rows = _semantic_caption_rows(scene, timing, fps=24)
+    assert [row["text"] for row in rows] == [
+        "Chuyện là thế này.", "Hai người đang giận nhau."
+    ]
