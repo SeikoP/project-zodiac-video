@@ -30,6 +30,19 @@ ZIPs, generated voice/timing and rendered media remain separate deliverables.
 - Node.js + npm
 - FFmpeg on `PATH` for background-music preview/final mix
 - VieNeu-TTS at `E:\\projects\\VieNeu-TTS` for the built-in local voice flow, or attach your own `voice.wav`
+
+The desktop workbench accepts optional per-machine environment overrides:
+
+```powershell
+$env:ZODIAC_TTS_ROOT = 'D:\\Tools\\VieNeu-TTS'
+$env:ZODIAC_VIENEU_URL = 'http://127.0.0.1:7860'
+uv run zodiac
+```
+
+These options configure the existing VieNeu Gradio integration, not the newer
+OpenAI-compatible `/v1/audio/speech` server. Leave the URL unset to keep the
+existing default. The path must refer to a valid local VieNeu installation.
+
 - `faster-whisper` for automatic word-level timing:
 
 ```bash
