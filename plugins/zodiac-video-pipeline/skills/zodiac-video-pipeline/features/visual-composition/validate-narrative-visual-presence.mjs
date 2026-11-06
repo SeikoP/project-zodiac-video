@@ -12,10 +12,10 @@ export async function validateNarrativeVisualPresence(workspace){
  const add=(code,scene_id,extra={})=>issues.push({code,...(scene_id?{scene_id}:{}),...extra});
  const load=async rel=>JSON.parse(await readFile(path.join(root,rel),'utf8'));
  const state=await load('.authoring/pipeline-state.json');
- if(state.run_mode!=='fresh')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};
  let intent;
  try{intent=await load('.authoring/visual-intent.json');}
- catch{add('NARRATIVE_VISUAL_INTENT_MISSING');return {status:'BLOCKED',issues,not_an_approval:true};}
+ catch{if(state.run_mode!=='fresh')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};add('NARRATIVE_VISUAL_INTENT_MISSING');return {status:'BLOCKED',issues,not_an_approval:true};}
+ if(state.run_mode!=='fresh'&&intent?.format!=='zodiac-visual-intent@1')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const decision=intent.taxonomy_version==='narrative_visual@1'?intent.narrative_visual_decision:null;
  if(!decision||!['required','optional','omitted'].includes(decision.mode)||!String(decision.reason??'').trim())add('NARRATIVE_VISUAL_DECISION_MISSING');
  const speech=await readFile(path.join(root,'narration.txt')),present=[];
