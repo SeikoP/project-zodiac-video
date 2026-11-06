@@ -26,6 +26,7 @@ from tools.zodiac_local import (
     concatenate_scene_voices,
     file_sha256,
     generate_scene_voices,
+    spoken_scene_text,
     scene_wav_path,
     validate_voice,
 )
@@ -266,10 +267,10 @@ def ensure_voice_artifact(
             detail={"path": str(narration_path)},
         ) from exc
 
-    production = _production_from_ir(ir)
+    authored_production = _production_from_ir(ir)
     authored_narration = "\n".join(
         str(scene["voice"])
-        for scene in production["scenes"]
+        for scene in authored_production["scenes"]
     )
     if _normalized_words(narration) != _normalized_words(authored_narration):
         raise ControlPlaneError(
@@ -278,7 +279,13 @@ def ensure_voice_artifact(
             message="narration.txt does not match Authoring IR scene voice text",
         )
 
-    safe_settings = _json_safe(tts_settings)
+    production = {
+        "scenes": [
+            {**scene, "voice": spoken_scene_text(scene["voice"])}
+            for scene in authored_production["scenes"]
+        ]
+    }
+    safe_settings = {**_json_safe(tts_settings), "speech_normalizer_version": 2}
     try:
         speech_hashes = {str(s["id"]): speech_hash(s) for s in production["scenes"]}
         _write_json_atomic(workspace / ".runtime" / "voice-performance.json", performance_report(production))

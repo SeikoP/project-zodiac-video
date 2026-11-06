@@ -188,7 +188,8 @@ const hydrateAssets = async (root, assets) => {
       if (extension !== ".svg") {
         throw new Error(`asset ${assetId} has unsupported renderer-v2 media type: ${extension}`);
       }
-      asset.src = `data:image/svg+xml;base64,${bytes.toString("base64")}`;
+      const svgText = bytes.toString("utf8").replace(/\bviewbox=/g, "viewBox=");
+      asset.src = `data:image/svg+xml;base64,${Buffer.from(svgText, "utf8").toString("base64")}`;
     }
     output[assetId] = asset;
   }

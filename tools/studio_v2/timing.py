@@ -20,6 +20,7 @@ from tools.zodiac_local import (
     InvalidAlignmentTimestampError,
     _align_scene_words,
     build_timing_from_word_alignment,
+    caption_scene_text,
     file_sha256,
     load_word_aligner,
     require_word_aligner_installed,
@@ -60,7 +61,7 @@ def _production_from_ir(ir: dict[str, Any]) -> dict[str, Any]:
         "scenes": [
             {
                 "id": str(scene["id"]),
-                "voice": str(scene["voice"]),
+                "voice": caption_scene_text(str(scene["voice"])),
             }
             for scene in ir.get("scenes", [])
         ],
