@@ -22,22 +22,21 @@ export const noticeTimeLeft = (remaining, elapsed, blocked) => blocked ? remaini
 
 export function feedbackCommand(feedback) {
   if(!feedback.ok){
-    if(feedback.reason==='gold')return feedback.action==='plant'?'tưới @tên':'chăm';
-    return ({broken:'trồng','no-crop':'trồng','unknown-crop':'trồng',level:'trồng','not-ripe':'chăm',busy:'chăm',dog:'trộm @tên',shield:'trộm @tên',cap:'trộm @tên','no-target':'vườn'})[feedback.reason]??'chăm';
+    if(feedback.reason==='gold')return feedback.action==='plant'?'chăm @tên':'chăm';
+    return ({dog:'trộm @tên',shield:'trộm @tên',cap:'trộm @tên','no-target':'vườn'})[feedback.reason]??'chăm';
   }
-  return feedback.action==='harvest'?'trồng':['steal','catch','dog','card'].includes(feedback.action)?'vườn':'chăm';
+  return ['steal','catch','dog','card'].includes(feedback.action)?'vườn':'chăm';
 }
 
 export function plotProblem(p,now,cfg) {
   if(!p?.owner||!p.awake)return null;
   if(p.brokenUntil>now)return {key:'broken',title:`Chậu nứt · ${Math.ceil((p.brokenUntil-now)/1000)}s`,command:null,hint:'Đợi rồi gieo rau miễn phí'};
-  if(!p.crop&&p.replantCredit)return {key:'replant',title:'Gieo lại miễn phí',command:'trồng',hint:'Quà bị phá kèm hạt rau hồi phục'};
+  if(!p.crop&&p.replantCredit)return {key:'replant',title:'Gieo lại miễn phí',command:'chăm',hint:'Quà bị phá kèm hạt rau hồi phục'};
+  if((p.stage??0)>=3)return {key:'ripe',title:'Cây đã chín',command:'chăm',hint:'Hái nhận vàng + XP, lần chăm sau gieo vụ mới'};
   if(p.prank?.kind==='slow'&&p.prank.until>now)return {key:'slow',title:`Mây lười · ${Math.ceil((p.prank.until-now)/1000)}s`,command:null,hint:'Tự hết sau 20s · cây vẫn lớn'};
-  if(p.crop?.pest)return {key:'pest',title:'Có sâu',command:'bắt sâu',hint:'Dọn sâu để cây lớn lại'};
-  if(p.crop?.weeds)return {key:'weed',title:'Có cỏ',command:'nhổ cỏ',hint:'Nhổ cỏ để tăng sản lượng'};
-  if(p.crop&&p.water<.25)return {key:'dry',title:'Đất khô',command:'tưới',hint:'Tưới để cây lớn nhanh'};
-  const left=(cfg.sleepAfterMs??90000)-(now-(p.lastActive??now));
-  if(left>0&&left<=30000)return {key:'idle',title:'Sắp nghỉ',command:'vườn',hint:`Gõ để giữ chậu · còn ${Math.ceil(left/1000)}s`};
+  if(p.crop?.pest)return {key:'pest',title:'Có sâu',command:'chăm',hint:'Dọn sâu để cây lớn lại'};
+  if(p.crop?.weeds)return {key:'weed',title:'Có cỏ',command:'chăm',hint:'Nhổ cỏ để tăng sản lượng'};
+  if(p.crop&&p.water<.25)return {key:'dry',title:'Đất khô',command:'chăm',hint:'Tưới để cây lớn nhanh'};
   return null;
 }
 
@@ -86,9 +85,9 @@ export function focusCardPlacement(plant, card, vp) {
 
 export function careLabel(p) {
   if (!p.crop) return 'Gieo hạt';
+  if ((p.stage ?? 0) >= 3) return 'Hái ngay';
   if (p.crop.pest) return 'Bắt sâu';
   if (p.crop.weeds) return 'Nhổ cỏ';
-  if ((p.stage ?? 0) >= 3) return 'Hái ngay';
   if (p.water < .25) return 'Cần tưới';
   return `${Math.round(Math.min(1, Math.max(0, p.crop.progress ?? 0)) * 100)}% lớn`;
 }
@@ -97,15 +96,15 @@ export function gardenGuide({ boss=false, awards=false, plots=[], event=null }={
   const awake=plots.filter(p=>p?.owner&&p.awake!==false);
   if(boss)return ['Cứu vườn','thả tim','Đồng hồ vườn tạm dừng · tim và quà lớn chuyển sang đánh Sâu Chúa'];
   if(awards)return ['Vinh danh Top 5','sắp mở vườn','Giữ LV, XP và thành tựu · đợi phiên mới'];
-  if(!awake.length)return ['Bắt đầu','trồng','Tự chọn giống cao nhất đủ LV + vàng · nhận chậu ngay trong một bình luận'];
+  if(!awake.length)return ['Bắt đầu','chăm','Nhận chậu và tự mua giống phù hợp LV + vàng trong một bình luận'];
   const pest=awake.filter(p=>p.crop?.pest).length,weeds=awake.filter(p=>p.crop?.weeds).length,ripe=awake.filter(p=>(p.stage??0)>=3).length,dry=awake.filter(p=>p.crop&&(p.water??1)<.25).length,empty=awake.filter(p=>!p.crop).length;
-  if(event?.kind==='pests'&&event.phase==='active'&&pest)return ['Cứu đợt sâu','bắt sâu',`${pest} cây đang có sâu · cây mình sạch sẽ tự giúp hàng xóm`];
-  if(ripe)return ['Đã có cây chín','hái',`${ripe} cây sẵn sàng · hái nhận vàng + XP rồi “trồng” vụ mới`];
+  if(event?.kind==='pests'&&event.phase==='active'&&pest)return ['Cứu đợt sâu','chăm',`${pest} cây đang có sâu · cây mình sạch sẽ tự giúp hàng xóm`];
+  if(ripe)return ['Đã có cây chín','chăm',`${ripe} cây sẵn sàng · hái nhận vàng + XP, lần “chăm” sau gieo vụ mới`];
   if(pest)return ['Ưu tiên cứu cây','chăm',`${pest} cây có sâu · “chăm” tự bắt sâu trước khi tưới`];
   if(weeds)return ['Dọn cỏ trước','chăm',`${weeds} cây có cỏ · “chăm” tự nhổ cỏ rồi mới tưới`];
   if(dry)return ['Đất đang khô','chăm',`${dry} cây cần nước · “chăm” tự chọn việc hữu ích mà không tốn vàng`];
-  if(empty)return ['Chậu đang trống','trồng',`${empty} chậu sẵn sàng · tự chọn giống cao nhất đủ LV + vàng`];
-  return ['Cùng chăm vườn','chăm','Tự bắt sâu → nhổ cỏ → tưới · người mới chỉ cần gõ “trồng”'];
+  if(empty)return ['Chậu đang trống','chăm',`${empty} chậu sẵn sàng · tự mua giống cao nhất đủ LV + vàng`];
+  return ['Cùng chăm vườn','chăm','Trống thì trồng · chín thì hái · còn lại bắt sâu, nhổ cỏ hoặc tưới'];
 }
 
 export function impactMotion(tier, elapsed, reduced=false) {
@@ -204,4 +203,35 @@ export function createAvatarCache(limit = 200, make = url => { const img = new I
       return img.complete && img.naturalWidth > 0 ? img : null;
     },
   };
+}
+
+// Shared wording for the visible heart event and its action result.
+export function heartMilestoneText(fx) {
+  const who = fx.nickname || 'Một người chơi';
+  if (fx.kind === 'care') return fx.affected ? `Tim chăm cây · ${who} nhận +${Math.round((fx.gain ?? 0)*100)}% trưởng thành` : 'Tim chăm cây · chưa có cây đang lớn';
+  if (fx.kind === 'community') return fx.affected ? `Sức sống cả vườn · ${fx.affected} cây được +2,5% trưởng thành` : 'Sức sống cả vườn · chưa có cây đang lớn';
+  if (fx.kind === 'luck') return fx.affected ? `Tim may mắn · ${who} nhận +2 vàng` : 'Tim may mắn · đang chờ người chơi nhận thưởng';
+  return 'Mốc tim cộng đồng';
+}
+// One scope policy for the server camera and browser gift effects.
+export function isGardenWideGift({tier,plotId,affected=0}={}) {
+  return !plotId || ['rain','meteor','cataclysm'].includes(tier) || affected > 1;
+}
+export function heartGoalText(h) {
+  if (!h) return 'THẢ TIM ĐỂ CHĂM VƯỜN';
+  const target = Number(h.target) || 0;
+  return ({care:`${target} tim · +5% một cây`,community:`${target} tim · +2,5% cả vườn`,luck:`${target} tim · tặng 2 vàng`})[h.kind] ?? 'TIM CỘNG ĐỒNG';
+}
+// Keep LIVE/preview capture smooth at idle; hidden tabs can save CPU.
+export function renderCadence({moving=false,eventLive=false,animated=false,visible=true}={}) {
+  return !visible ? 12 : moving||eventLive ? 45 : 30;
+}
+export function setTextIfChanged(node,text){
+ if(node.textContent===text)return false;
+ node.textContent=text;return true;
+}
+// Backing store matches the actual 9:16 capture pixels; logical drawing remains 1080x1920.
+export function canvasBackingScale(width,height,dpr=1){
+ const physical=Math.min((width/1080)*dpr,(height/1920)*dpr);
+ return Math.max(1/3,Math.min(1,physical));
 }

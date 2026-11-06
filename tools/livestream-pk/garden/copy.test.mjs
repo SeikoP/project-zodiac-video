@@ -19,5 +19,5 @@ test('no viewer-facing string asks for a gift', () => {
 });
 
 test('the how-to line only mentions comments', () => {
-  assert.match(COPY.howTo, /“trồng”/);
+  assert.match(COPY.howTo, /“chăm”/);
 });

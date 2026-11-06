@@ -109,7 +109,7 @@ test('stable reading time starts after travel finishes',()=>{
  r.cam.push(gift('dew'));
  const s=r.cam.tick();
  assert.equal(s.kind,'gift');
- assert.equal(s.travelMs,cfg.camera.overviewEaseMs);
+ assert.equal(s.travelMs,cfg.camera.easeMs);assert.equal(s.zoom,cfg.camera.zoomClose);assert.equal(s.giftWide,false);
  assert.ok(s.stableMs>=cfg.camera.stableMinMs);
  r.advance(s.travelMs+s.stableMs-1);
  assert.equal(r.cam.tick(),null);
@@ -126,7 +126,7 @@ test('queued beats cannot interrupt the current readable window',()=>{
  assert.equal(r.cam.tick(),null);
  r.advance(2);
  assert.equal(r.cam.tick().kind,'overview');
- r.advance(cfg.camera.idleMs);assert.equal(r.cam.tick().kind,'steal');
+ r.advance(cfg.camera.overviewEaseMs+cfg.camera.overviewHoldMs+1);assert.equal(r.cam.tick().kind,'steal');
 });
 
 test('secondary zoom waits six quiet seconds and a gift burst restarts the wait',()=>{
@@ -134,7 +134,7 @@ test('secondary zoom waits six quiet seconds and a gift burst restarts the wait'
  assert.equal(r.cam.tick().kind,'overview');r.advance(5999);assert.equal(r.cam.tick(),null);
  r.cam.push(gift('dew'));const first=r.cam.tick();assert.equal(first.kind,'gift');
  r.advance(first.holdMs+1);assert.equal(r.cam.tick().kind,'overview');
- r.advance(5998);assert.equal(r.cam.tick(),null);r.advance(2);assert.equal(r.cam.tick().kind,'levelup');
+ r.advance(Math.max(5998,cfg.camera.overviewEaseMs+cfg.camera.overviewHoldMs-1));assert.equal(r.cam.tick(),null);r.advance(2);assert.equal(r.cam.tick().kind,'levelup');
 });
 
 test('queue is capped at seven meaningful beats',()=>{
@@ -203,4 +203,34 @@ test('overview spreads both visual rack wings across most of the portrait play a
   assert.ok(sx(right) - sx(left) > 420, 'left/right wings visibly separate');
   assert.ok(sy(bottomLeft) - sy(left) > 360, 'four enlarged shelves use substantial vertical space');
   assert.ok(shot.zoom >= .5, 'overview no longer shrinks into a thin tower');
+});
+
+test('single-target gifts zoom to their owner while room-wide gifts remain readable',()=>{
+ for(const tier of ['dew','star','roulette']){
+  const r=rig();r.cam.push(gift(tier,'cloud-1:3'));
+  const shot=r.cam.tick();
+  assert.equal(shot.kind,'gift');assert.equal(shot.plotId,'cloud-1:3');
+  assert.equal(shot.zoom,cfg.camera.zoomClose);assert.equal(shot.giftWide,false);
+  assert.ok(shot.stableMs>=2400);
+ }
+ for(const tier of ['rain','meteor','cataclysm']){
+  const r=rig();r.cam.push(gift(tier,'cloud-1:3'));
+  const shot=r.cam.tick();assert.equal(shot.giftWide,true);assert.ok(shot.zoom<1.25);
+ }
+});
+test('camera preserves native event identity and reports travel/hold/result phases',()=>{
+ const r=rig();r.cam.push({...gift('dew'),eventId:'native:42'});
+ const shot=r.cam.tick();assert.equal(shot.eventId,'native:42');assert.equal(shot.sceneId,'native:42');
+ assert.equal(r.cam.state().current.sceneId,'native:42');
+ assert.equal(r.cam.state().current.phase,'travel');
+ r.advance(shot.travelMs+1);assert.equal(r.cam.state().current.phase,'hold');
+ r.advance(shot.stableMs-2);assert.equal(r.cam.state().current.phase,'result');
+ r.advance(2);assert.equal(r.cam.state().current.phase,'done');
+});
+test('gift shot records an absolute start and end so a reconnect does not replay camera travel',()=>{
+ const r=rig();r.cam.push({...gift('star'),eventId:'native:late'});
+ const shot=r.cam.tick();
+ assert.equal(typeof shot.startedAt,'number');
+ assert.equal(shot.until,shot.startedAt+shot.travelMs+shot.stableMs);
+ assert.equal(shot.stableAt,shot.startedAt+shot.travelMs);
 });

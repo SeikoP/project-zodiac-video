@@ -34,7 +34,8 @@ export function plant(ctx, user, cropId = null, seedGift = false) {
   if(plot.brokenUntil>ctx.now())return {ok:false,reason:'broken',retryAfterMs:plot.brokenUntil-ctx.now()};
   if (plot.crop) return fail('busy');
   if (user.level < crop.minLevel) return { ...fail('level'),requiredLevel:crop.minLevel };
-  if (!seedGift && !(plot.replantCredit&&cropId==='rau') && !spendGold(user, seedCost(cropId, ctx.cfg))) return { ...fail('gold'),requiredGold:seedCost(cropId,ctx.cfg) };
+  const cost=seedGift||(plot.replantCredit&&cropId==='rau')?0:seedCost(cropId,ctx.cfg);
+  if (!spendGold(user,cost)) return { ...fail('gold'),requiredGold:cost };
   const before=snapshot(ctx,plot);
   plot.replantCredit=false;
   plot.crop = { type: cropId, progress: 0, ripeAt: null, pest: false, weeds: false, fertilized: false, stolen: 0, variant: cropVariant(user.level, ctx.rng()) };
@@ -42,7 +43,7 @@ export function plant(ctx, user, cropId = null, seedGift = false) {
   plot.waterBoostUntil=plot.speedUntil=0;plot.prank=null;
   touch(ctx, user);
   ctx.emit({ type: 'plant', plotId: plot.id, userId: user.userId, crop: cropId, before, after:snapshot(ctx,plot) });
-  return { ok: true, crop: cropId };
+  return { ok: true, crop: cropId, cost };
 }
 
 export function water(ctx, user, target = user) {

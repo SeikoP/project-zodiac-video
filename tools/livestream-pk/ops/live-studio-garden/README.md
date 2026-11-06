@@ -48,3 +48,15 @@ Phần này để thao tác khi chuẩn bị phát thật; bộ hướng dẫn k
 Ngày 2026-11-05: TikTok LIVE Studio **1.39.2** và cloudflared **2026.10.7** đã có trên máy. Garden hiện dùng **42 chậu hoạt động (2 cánh × 7 hàng × 3)** để tăng kích thước chậu/cây và nhãn trên LIVE; full suite đạt **622/622** test local, catalog audio đạt **36 role / 50 sample**, rehearsal cô lập đạt **15/15** kịch bản. Browser fixture 1080×1920 đã kiểm phòng 1 người, phòng đủ 42 người và hậu quả quà 500 xu, không ghi nhận lỗi JS console. Load test còn thử 48 người đến cùng lúc và xác nhận chỉ 42 seat hoạt động. Đường `garden:share` đã được thử qua tunnel HTTPS thật: overlay trả 200, control trả 404, POST API trả 405 và status public không lộ danh sách người chơi/diagnostics host.
 
 Chưa nghiệm thu: nguồn Link/mixer bên trong UI TikTok LIVE Studio, nghe duyệt 50 sample, khung safe-area trên điện thoại thật, nhận chat/like/quà từ TikTok LIVE thật và hiệu năng khi Studio mã hóa. Các mục này phải được kiểm tra trong buổi rehearsal/LIVE thực tế; không suy ra PASS từ test hoặc tunnel smoke.
+
+## Preflight read-only mới (2026-11-05)
+
+Trước khi thử LIVE, kiểm tra `npm run garden:sim` ở Simulator hoặc `npm run garden` ở chế độ LIVE. Chạy từ `tools/livestream-pk`:
+
+```bash
+node scripts/garden-preflight.mjs --mode sim --out logs/garden-preflight-sim.json
+# Với Garden thật đang chạy, không cần kết nối lại TikTok:
+node scripts/garden-preflight.mjs --mode live --out logs/garden-preflight-live.json
+```
+
+Preflight chỉ **đọc** `/api/status`, không kết nối TikTok, không đổi scene và không sửa save. Nó kiểm tra đúng mode, build ID, source stale, camera diagnostics và FPS tức thời. Khi `offlineReady:true` vẫn **chưa có nghĩa** Studio/LIVE đã đạt: phải kiểm tra thủ công khung 1080×1920, một nguồn âm thanh duy nhất, thiết bị phát, bản thu 15–20 phút và sự kiện TikTok thật. Xem [bản đồ tích hợp](../../garden/INTEGRATION.md) và [bằng chứng kiểm thử](../../docs/superpowers/plans/2026-11-05-garden-integration-heart-hardening.md).

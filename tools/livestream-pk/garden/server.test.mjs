@@ -11,6 +11,24 @@ async function boot(over = {}) {
   return { s, base: `http://127.0.0.1:${s.port}` };
 }
 const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+test('one-command loop reaches HTTP, poll feedback, retained player status and session cleanup',async()=>{
+ let time=1_800_000_000_000;const {s,base}=await boot({now:()=>time,config:{garden:{bossChance:0,pestChancePerSec:0,weedChancePerSec:0}}});
+ try{
+  const chat=()=>post(base+'/api/sim',{kind:'chat',user:{userId:'one',nickname:'Lan'},comment:'chăm'}).then(r=>r.json()).then(r=>r.result);
+  assert.equal((await chat()).resolvedAction,'plant');
+  const u=s.garden.state.users['sim:one'],p=s.garden.state.plots[`${u.seat.tier}:${u.seat.slot}`];
+  time+=240000;s.garden.tick();
+  const status=await fetch(base+'/api/status').then(r=>r.json());assert.equal(status.viewers,1);assert.equal(status.sleeping,0);assert.equal(status.tiers[0].viewers,1);assert.equal(status.players[0].nickname,'Lan');
+  const poll=await fetch(base+'/poll').then(r=>r.json());
+  const frame=poll.msgs.find(m=>m.event==='frame');assert.equal(frame.data.parts.plots[p.id].awake,true);
+  p.crop.progress=1;p.crop.ripeAt=time;
+  assert.equal((await chat()).resolvedAction,'harvest');assert.equal(u.stats.harvest,1);
+  time+=1600;assert.equal((await chat()).resolvedAction,'plant');
+  await post(base+'/api/session/finish',{});assert.equal((await chat()).reason,'awards');
+  time+=8000;s.garden.tick();assert.equal(p.owner,null);
+ }finally{await s.close();}
+});
 test('simulator scenarios preserve a room snapshot and restore it without touching live mode',async()=>{
  const {s,base}=await boot({config:{garden:{bossChance:0}}});
  try{
@@ -38,7 +56,7 @@ test('simulator avatar and camera diagnostics reach status and the completed Top
  try{
   await post(base+'/api/sim-room',{action:'set',count:6});
   let status=await fetch(base+'/api/status').then(r=>r.json());
-  assert.equal(status.diagnosticsVersion,1);assert.ok(Array.isArray(status.camera.queue));
+  assert.equal(status.diagnosticsVersion,2);assert.ok(Array.isArray(status.camera.queue));
   assert.ok(status.competition.standings.every(u=>/^\/garden\/assets\/avatar-[1-6]\.svg$/.test(u.avatar)));
   const finished=await post(base+'/api/session/finish',{}).then(r=>r.json());
   assert.equal(finished.result.standings.length,5);assert.equal(finished.result.podium.length,3);
@@ -224,4 +242,54 @@ test('static files cannot escape the public folder', async () => {
     const r = await fetch(base + '/..%2f..%2fpackage.json');
     assert.notEqual(r.status, 200);
   } finally { await s.close(); }
+});
+
+test('simulator status exposes non-boss heart progress for Control and viewer diagnostics',async()=>{
+ const {s,base}=await boot({config:{garden:{bossChance:0}}});
+ try{
+  await post(base+'/api/sim',{kind:'chat',user:{userId:'heart',nickname:'Lan'},comment:'trồng'});
+  await post(base+'/api/sim',{kind:'like',user:{userId:'heart',nickname:'Lan'},count:100});
+  const status=await fetch(base+'/api/status').then(r=>r.json());
+  assert.equal(status.hearts.kind,'community');
+  assert.equal(status.hearts.progress,0);
+  assert.equal(status.hearts.target,400);
+  assert.equal(status.runtimeSourceChanged,false);
+ }finally{await s.close();}
+});
+test('native gift scene ID is exposed in camera status and SSE receipt',async()=>{
+ const {s,base}=await boot({config:{garden:{bossChance:0}}});
+ try{
+  await post(base+'/api/sim',{kind:'chat',user:{userId:'identity',nickname:'Lan'},comment:'trồng'});
+  await post(base+'/api/sim',{kind:'gift',user:{userId:'identity',nickname:'Lan'},diamonds:5});
+  await new Promise(r=>setTimeout(r,400));
+  const status=await fetch(base+'/api/status').then(r=>r.json());
+  const receipts=await fetch(base+'/poll').then(r=>r.json());
+  const gift=receipts.msgs.find(m=>m.event==='receipts')?.data.at(-1);
+  assert.ok(gift?.eventId);
+  assert.equal(status.camera.sceneId,gift.eventId);
+  assert.ok(['travel','hold','result','done'].includes(status.camera.phase));
+ }finally{await s.close();}
+});
+test('new subscriber receives absolute gift camera timeline rather than an unbounded replay',async()=>{
+ const {s,base}=await boot({config:{garden:{bossChance:0}}});
+ try{
+  await post(base+'/api/sim',{kind:'chat',user:{userId:'reconnect',nickname:'Lan'},comment:'trồng'});
+  await post(base+'/api/sim',{kind:'gift',user:{userId:'reconnect',nickname:'Lan'},diamonds:5});
+  await new Promise(r=>setTimeout(r,400));
+  const session=await fetch(base+'/poll').then(r=>r.json());
+  const shot=session.msgs.find(m=>m.event==='shot')?.data;
+  assert.equal(shot.kind,'gift');
+  assert.ok(shot.startedAt>0);
+  assert.ok(shot.until>shot.startedAt);
+  assert.ok(Date.now()-shot.startedAt>=200,'reconnect must account for elapsed time');
+ }finally{await s.close();}
+});
+test('LIVE status publishes camera diagnostics instead of a false old-server warning',async()=>{
+ const {s,base}=await boot({simulator:false,tiktok:false});
+ try{
+  const status=await fetch(base+'/api/status').then(r=>r.json());
+  assert.ok(status.diagnosticsVersion>=2);
+  assert.equal(typeof status.camera.pending,'number');
+  assert.equal(typeof status.runtimeSourceChanged,'boolean');
+ }finally{await s.close();}
 });

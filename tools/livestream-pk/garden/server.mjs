@@ -1,5 +1,4 @@
 import {createDisplays} from './displays.mjs';
-import {createHash} from 'node:crypto';
 import {createLimiter} from './commands.mjs';
 // Vườn Mây server (npm run garden). Separate port and save file; TikTok events use the shared connector.
 //   http://127.0.0.1:4858/   overlay for TikTok LIVE Studio (1080×1920) and the local host panel
@@ -14,7 +13,9 @@ import { createCoalescer } from './fx.mjs';
 import { EVENT_TYPES } from './events.mjs';
 import { createHub } from './hub.mjs';
 import { createSaver, loadState, pruneUsers } from './store.mjs';
-import { emptyGardenState, TIERS } from './world.mjs';
+import { buildFingerprint, buildRuntimeFiles, runtimeSourceChanged } from './build-id.mjs';
+import { heartStatus } from './hearts.mjs';
+import { emptyGardenState, TIERS, isAwake } from './world.mjs';
 import { listMusic } from '../music.mjs';
 import { potTierOf } from './progress.mjs';
 
@@ -50,8 +51,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const state = loadState(file, now());
   pruneUsers(state, now());
   const hub = createHub();
-  const displays=createDisplays({now,simulator}),receipts=[];
-  const build=createHash('sha256').update(fs.readFileSync(fileURLToPath(import.meta.url))).update(fs.readFileSync(path.join(PUBLIC,'garden/garden.js'))).digest('hex').slice(0,12);let eventSeq=0;
+  const build=buildFingerprint(root),runtimeFiles=buildRuntimeFiles(root),startedAt=Date.now();let eventSeq=0;
+  const displays=createDisplays({now,simulator,expectedBuild:build}),receipts=[];
   const recentReceipts=()=>{while(receipts.length&&(now()-receipts[0].receivedAt>120000||receipts.length>64))receipts.shift();return receipts;};
   let coalescer = createCoalescer({ now }), garden, camera, lastShot = null;
   const saver = createSaver({ file, getState: () => state });
@@ -66,7 +67,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   };
   const newGarden = () => createGarden({ config: full.garden, state, now, onEvent, onStateChange: () => saver.markDirty() });
   garden = newGarden();
-  camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
+  camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => isAwake(garden.ctx,p)) });
   if(state.boss?.phase==='active')camera.push({type:'boss-start'});
 
   // Simulator room director: room-size profiles model a real LIVE instead of accumulating stress bots forever.
@@ -80,7 +81,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
   const autoUsers=new Map();
   const autoStatus=()=>({running:Boolean(autoTimer),bots:autoUsers.size,profile:autoProfile,target:autoUsers.size});
   const autoUser=()=>{const n=autoSeq++;return{userId:`auto-${n}`,nickname:`${BOT_NAMES[n%BOT_NAMES.length]} ${Math.floor(n/BOT_NAMES.length)+1}`,avatar:`/garden/assets/avatar-${n%6+1}.svg`};};
-  const addOneAuto=()=>{const user=autoUser();autoUsers.set(user.userId,user);garden.chat({...user,userId:'sim:'+user.userId,comment:'trồng'});return user;};
+  const addOneAuto=()=>{const user=autoUser();autoUsers.set(user.userId,user);garden.chat({...user,userId:'sim:'+user.userId,comment:'chăm'});return user;};
   const removeOneAuto=()=>{
     const entry=[...autoUsers.entries()].at(-1); if(!entry)return false;
     const [id,user]=entry,stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
@@ -102,15 +103,8 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const profile=AUTO_PROFILES[autoProfile]??AUTO_PROFILES.normal,users=[...autoUsers.values()];
     const batch=Math.min(users.length,profile.actionsPerPulse);
     for(let k=0;k<batch;k++){
-      const user=users[autoCursor++%users.length],stored=state.users['sim:'+user.userId],seat=stored?.seat,plot=seat&&state.plots[`${seat.tier}:${seat.slot}`];
-      let comment;
-      if(!plot?.crop)comment='trồng';
-      else if(plot.crop.progress>=1)comment='hái';
-      else if(plot.crop.pest)comment='bắt sâu';
-      else if(plot.crop.weeds)comment='nhổ cỏ';
-      else if(!plot.crop.fertilized&&stored?.gold>=garden.cfg.fertilizeCost&&(autoCursor+k)%5===0)comment='bón phân';
-      else if(profile.stealEvery&&autoPulse%profile.stealEvery===0&&k===0)comment='trộm';
-      else comment=(autoCursor+k)%3===0?'vườn':'tưới';
+      const user=users[autoCursor++%users.length];
+      const comment=profile.stealEvery&&autoPulse>0&&autoPulse%profile.stealEvery===0&&k===0?'trộm':'chăm';
       garden.chat({...user,userId:'sim:'+user.userId,comment});
     }
     autoPulse++;
@@ -132,13 +126,13 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     const seated = Object.values(state.users).filter(u => u.seat);
     const players = seated.filter(u => {
       const p = state.plots[`${u.seat.tier}:${u.seat.slot}`];
-      return p && now() - p.lastActive < garden.cfg.sleepAfterMs;
+      return isAwake(garden.ctx,p);
     });
     const cam = camera.state();
     return {
       simulator,
-      build,displays:displays.list(),secondaryReady:displays.ready(),
-      diagnosticsVersion:simulator?1:undefined,serverTime:now(),
+      build,runtimeSourceChanged:runtimeSourceChanged(root,startedAt,runtimeFiles),displays:displays.list(),secondaryReady:displays.ready(),
+      diagnosticsVersion:2,serverTime:now(),
       tiktok:tiktokStatus(),
       autoplay: autoStatus(),
       viewers: players.length,
@@ -147,13 +141,15 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
       planted: crops.length,
       ripe: crops.filter(p => p.crop.progress >= 1).length,
       event: state.event?.kind ?? null,
+      hearts: heartStatus(state),
       camera: { locked: cam.locked, current: cam.current?.kind ?? null, pending: cam.queue.length,
         eventKind:cam.current?.eventKind??null,nickname:cam.current?.nickname??null,
+        sceneId:cam.current?.sceneId??null,eventId:cam.current?.eventId??null,phase:cam.current?.phase??null,plotId:cam.current?.plotId??null,
         remainingMs:cam.current?.until===Infinity?0:Math.max(0,(cam.current?.until??now())-now()),idleWaitMs:cam.idleWaitMs,
         queue:simulator?cam.queue.map(q=>({kind:q.kind,eventKind:q.eventKind,nickname:q.nickname,plotId:q.plotId,priority:q.priority,ageMs:Math.max(0,now()-q.at)})):undefined },
       eventState:simulator&&state.event?{kind:state.event.kind,phase:state.event.phase,endsAt:state.event.endsAt}:null,
       competition: garden.competition.status(),boss:garden.boss.status(),
-      tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs).length })),
+      tiers: TIERS.map(t => ({ id: t.id, label: t.label, viewers: plots.filter(p => p.tier === t.id && isAwake(garden.ctx,p)).length })),
     };
   };
   const publicStatus = () => {
@@ -166,7 +162,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     Object.assign(state, emptyGardenState(now()));
     coalescer = createCoalescer({ now });
     garden = newGarden();
-    camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => p.owner && now() - p.lastActive < garden.cfg.sleepAfterMs) });
+    camera = createCamera({ cfg: garden.cfg, now, isSecondaryReady:()=>displays.ready(), getPlots: () => Object.values(state.plots).filter(p => isAwake(garden.ctx,p)) });
     lastShot = null;
     for (const c of hub.clients) c.seen = {};
     hub.broadcast('reset', { ok: true });
@@ -214,7 +210,7 @@ export async function startGardenServer({ port = Number(process.env.PK_GARDEN_PO
     setAutoRoom(count);garden.ctx.limiter=createLimiter(now);
     const people=[...autoUsers.values()].map(u=>({...u,userId:'sim:'+u.userId})),giver=people[0];
     const gift=(diamonds)=>garden.gift({...giver,diamonds,count:1});
-    if(['careburst42','careburst48','audioquiet','audiobusy'].includes(kind))for(const u of people)garden.chat({...u,comment:'tưới'});
+    if(['careburst42','careburst48','audioquiet','audiobusy'].includes(kind))for(const u of people)garden.chat({...u,comment:'chăm'});
     if(kind==='cardspam100')for(let i=0;i<100;i++)garden.chat({...people[i%people.length],comment:'vườn'});
     if(kind==='giftburst30')for(let i=0;i<30;i++)gift(50);
     if(kind==='bossinterrupt'){for(let i=0;i<4;i++)gift(50);garden.boss.force();}

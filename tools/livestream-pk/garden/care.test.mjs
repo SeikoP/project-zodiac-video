@@ -101,13 +101,13 @@ test('a huge pause (laptop asleep) advances a crop by at most 5s', () => {
   assert.ok(k.plot.crop.progress <= 5000 / CROPS.rau.growMs + 1e-9);
 });
 
-test('a sleeping plot (no action for 5 minutes) does not grow', () => {
+test('a retained plot keeps growing without comments for 5 minutes', () => {
   const k = ready();
   plant(k.ctx, k.user, 'rau');
-  k.advance(301_000); tickPlots(k.ctx); // first tick after the pause is clamped but the plot is asleep anyway
+  k.advance(301_000); tickPlots(k.ctx); // Growth still clamps a large time jump.
   const before = k.plot.crop.progress;
   run(k, 20_000);
-  assert.equal(k.plot.crop.progress, before);
+  assert.ok(k.plot.crop.progress > before);
 });
 
 test('advanceStage jumps to the next stage threshold and stops at ripe', () => {

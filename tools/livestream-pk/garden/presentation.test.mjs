@@ -48,3 +48,12 @@ test('bosses and camera shots block secondary profiles and restart their quiet w
  time=12100;assert.equal(q.tick({blocked:true}),null);
  q.push({type:'gift',id:'combat',impact:{}});assert.equal(q.tick({blocked:true}).id,'combat');
 });
+
+test('native gift event identity deduplicates receipt and reconnected frame',()=>{
+ let time=0;const q=createPresentationQueue(()=>time);
+ q.push({type:'gift',eventId:'native:42',tier:'dew',nickname:'An'});
+ q.push({type:'gift',eventId:'native:42',tier:'dew',nickname:'An'});
+ assert.equal(q.pending(),1);
+ assert.equal(q.tick().sceneId,'native:42');
+ assert.equal(q.snapshot().active.sceneId,'native:42');
+});

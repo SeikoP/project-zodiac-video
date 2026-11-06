@@ -72,3 +72,49 @@ test('partial heart progress marks the save dirty even before first milestone', 
   assert.equal(garden.like({ count: -2 }).ok, false);
   assert.equal(dirties, 1);
 });
+
+test('heart care milestone identifies a recipient and shows measurable boost',()=>{
+ const {garden,events}=setup();
+ garden.chat({userId:'owner',nickname:'Owner',comment:'trồng rau'});
+ const plot=Object.values(garden.state.plots)[0], before=plot.crop.progress;
+ garden.like({count:100});
+ const milestone=events.findLast(e=>e.type==='heart-milestone');
+ assert.equal(milestone.kind,'care');
+ assert.equal(milestone.plotId,plot.id);
+ assert.equal(milestone.affected,1);
+ assert.ok(milestone.gain>0);
+ assert.ok(plot.crop.progress-before>=.04);
+});
+
+test('community heart milestone announces actual number of crops helped',()=>{
+ const {garden,events}=setup();
+ for(let i=0;i<3;i++) garden.chat({userId:`owner-${i}`,nickname:`Owner ${i}`,comment:'trồng rau'});
+ garden.like({count:500});
+ const milestones=events.filter(e=>e.type==='heart-milestone');
+ assert.equal(milestones.length,1);
+ garden.tick();
+ const community=events.findLast(e=>e.type==='heart-milestone');
+ assert.equal(community.kind,'community');
+ assert.equal(community.affected,3);
+ assert.ok(community.gain>0);
+});
+test('community heart milestone provides bounded plot IDs for visible garden feedback',()=>{
+ const {garden,events}=setup();
+ for(let i=0;i<9;i++) garden.chat({userId:`p${i}`,nickname:`P${i}`,comment:'trồng rau'});
+ garden.like({count:500});garden.tick();
+ const fx=events.findLast(e=>e.type==='heart-milestone');
+ assert.equal(fx.kind,'community');
+ assert.equal(fx.affected,9);
+ assert.equal(fx.plotIds.length,6);
+ assert.ok(fx.plotIds.every(id=>garden.state.plots[id]?.crop));
+});
+test('lucky heart reward invalidates its owner plot so the live profile displays updated gold',()=>{
+ const {garden}=setup();
+ garden.chat({userId:'owner',nickname:'Lan',comment:'trồng rau'});
+ const plot=Object.values(garden.state.plots)[0];
+ garden.like({count:100});garden.like({count:400});
+ const before=plot.ver, gold=garden.state.users.owner.gold;
+ garden.like({count:500});
+ assert.equal(garden.state.users.owner.gold,gold+2);
+ assert.ok(plot.ver>before,'owner plot must be included in the next browser frame');
+});

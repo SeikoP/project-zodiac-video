@@ -1,3 +1,4 @@
+> **Lưu ý phiên bản (2026-11-05):** Các mốc 48 chậu, cấu hình zoom/camera trước đây và hướng dẫn OBS trong tài liệu lịch sử không còn là cấu hình vận hành chuẩn. Garden hiện là 42 chậu và dùng TikTok LIVE Studio. Tra cứu [Garden Integration](../../../garden/INTEGRATION.md) hoặc `garden/INTEGRATION.md` tại thư mục `tools/livestream-pk` để xem quy tắc hiện tại. Tài liệu này được giữ để đối chiếu yêu cầu, không áp dụng nguyên xi khi triển khai.
 # Garden Full-screen B2 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

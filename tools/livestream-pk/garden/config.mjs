@@ -8,7 +8,7 @@ export const GARDEN_DEFAULTS = Object.freeze({
   potSpacingX: 180, shelfSpacingY: 220, moduleGapX: 220, moduleGapY: 220,
   zoneMarginX: 160, zoneMarginY: 300, potScale: 1.5, potBottomOffset: 80, potShelfGap: 1,
   tierMarginX: 220, tierMarginY: 250,
-  // Presence: inactive pots leave the active scene quickly, then release the seat later.
+  // Retain pots until session end; evictAfterMs gates one stale replacement on near-full arrivals. sleepAfterMs is legacy.
   sleepAfterMs: 90000, evictAfterMs: 180000, tickMaxDtMs: 5000, plotSyncMs: 5000, sessionMs: 600000, awardsMs: 8000,
   // growth and care
   graceMs: 120000, oldYield: 0.5,

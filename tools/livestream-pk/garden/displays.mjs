@@ -1,4 +1,4 @@
-export function createDisplays({now=Date.now,simulator=false}={}){
+export function createDisplays({now=Date.now,simulator=false,expectedBuild=null}={}){
  const clients=new Map(),commands=new Map();
  const list=()=>{for(const [id,c] of clients)if(now()-c.at>30000)clients.delete(id);return [...clients.values()].map(c=>({...c,stale:now()-c.at>3000}));};
  return {
@@ -17,7 +17,7 @@ export function createDisplays({now=Date.now,simulator=false}={}){
    const queue=commands.get(id)??[];queue.push({...command,at:now()});commands.set(id,queue.slice(-8));return {ok:true};
   },
   ready(){const all=list(),live=all.filter(c=>c.role==='live'),owners=live.length?live:simulator?all.filter(c=>c.role==='preview').slice(0,1):[];
-   return owners.length>0&&owners.every(c=>!c.stale&&!c.idle?.blocked&&c.idle?.primary===0&&c.idle?.waitMs===0);
+   return owners.length>0&&owners.every(c=>!c.stale&&(!expectedBuild||c.build===expectedBuild)&&!c.idle?.blocked&&c.idle?.primary===0&&c.idle?.waitMs===0);
   },
  };
 }

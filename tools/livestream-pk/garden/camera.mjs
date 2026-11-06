@@ -1,5 +1,6 @@
 // Camera director: overview is home, raw activity becomes a short queue of readable presentation beats.
 import { TIERS, plotCenter, tierCenter } from './world.mjs';
+import { isGardenWideGift } from '../public/garden/view.js';
 
 const WIDTH = 1080, VIEW_HEIGHT = 1560;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -26,7 +27,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
       y: (top + bottom) / 2 - 170 / zoom, zoom };
   }
 
-  const base = e => ({ at: now(), type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,
+  const base = e => ({ at: now(), eventId:e.eventId??null, sceneId:e.eventId??null, type: e.type, plotId: e.plotId ?? null, nickname: e.nickname ?? null,
     ttl: e.type === 'gift' ? c.giftTtlMs : c.ttlMs, gift: e.type === 'gift',
     ...(e.type === 'gift' ? { total:e.total??0, affected:e.affected??0, effects:e.effects??[],benefits:e.benefits??{},blessingMs:e.blessingMs??0,roulette:e.roulette??null } : {}) });
   const closeTarget = id => {
@@ -45,7 +46,9 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
       return { ...b, kind:'event-focus', priority:1, plotId:plot.id, ...closeTarget(plot.id), eventKind:e.kind, ttl:e.endsAt == null ? c.ttlMs : Math.max(0,e.endsAt-now()), stableMs:c.levelHoldMs, travelMs:c.easeMs };
     }
     if (e.type === 'gift') {
-      return {...b,kind:'gift',priority:0,...overviewTarget(),giftWide:true,stableMs:c.lowGiftHoldMs,travelMs:c.overviewEaseMs,giftKind:e.tier};
+      // A single-target gift deserves a close-up; room-wide/destructive gifts keep the full rack visible.
+      const wide = isGardenWideGift(e);
+      return {...b,kind:'gift',priority:0,...(wide?overviewTarget():closeTarget(e.plotId)),giftWide:wide,stableMs:wide?c.lowGiftHoldMs:Math.max(c.lowGiftHoldMs,2400),travelMs:wide?c.overviewEaseMs:c.easeMs,giftKind:e.tier};
     }
     if (e.type === 'steal' || e.type === 'catch') {
       return { ...b, kind:e.type, priority:2, ...closeTarget(e.plotId), stableMs:c.stealHoldMs, travelMs:c.easeMs };
@@ -98,7 +101,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
   function choose() {
     trim();
     if (!queue.length) return null;
-    const eligible=queue.filter(q=>q.zoom!==c.zoomClose||(!bossActive&&isSecondaryReady()&&now()>=Math.max(secondaryReadyAt,foregroundUntil+c.idleMs)));
+    const eligible=queue.filter(q=>q.gift||q.zoom!==c.zoomClose||(!bossActive&&isSecondaryReady()&&now()>=Math.max(secondaryReadyAt,foregroundUntil+c.idleMs)));
     if(!eligible.length)return null;
     const pool=eligible.some(q=>q.gift)?eligible.filter(q=>q.gift):eligible;
     const best = pool.reduce((a,b)=>b.priority<a.priority || (b.priority===a.priority && b.at<a.at) ? b : a);
@@ -114,7 +117,7 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
     current={...shot,startedAt:t,stableAt:t+travelMs,until:stableMs===Infinity?Infinity:t+travelMs+stableMs};
     if(shot.kind!=='overview'&&shot.zoom!==c.zoomClose)secondaryReadyAt=Math.max(secondaryReadyAt,current.until+c.idleMs);
     const {at,ttl,gift,type,...out}=shot;
-    return {...out,travelMs,stableMs,holdMs:stableMs===Infinity?Infinity:travelMs+stableMs,label:type??shot.kind,pending:queue.length};
+    return {...out,startedAt:t,stableAt:current.stableAt,until:current.until,travelMs,stableMs,holdMs:stableMs===Infinity?Infinity:travelMs+stableMs,label:type??shot.kind,pending:queue.length};
   }
 
   return {
@@ -137,6 +140,6 @@ export function createCamera({ cfg, now, getPlots = () => [], isSecondaryReady=(
       if(!current || current.kind!=='overview')return start(overviewShot());
       return null;
     },
-    state:()=>({queue:queue.map(q=>({...q})),current:current&&{...current},locked,idleWaitMs:Math.max(0,secondaryReadyAt-now(),foregroundUntil+c.idleMs-now())}),
+    state:()=>({queue:queue.map(q=>({...q})),current:current&&{...current,phase:now()>=current.until?'done':now()<current.stableAt?'travel':current.until!==Infinity&&current.until-now()<=Math.min(400,current.stableMs/4)?'result':'hold'},locked,idleWaitMs:Math.max(0,secondaryReadyAt-now(),foregroundUntil+c.idleMs-now())}),
   };
 }

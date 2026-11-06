@@ -1,4 +1,4 @@
-import { cameraReason } from './view.js';
+import { cameraReason, heartGoalText } from './view.js';
 import {createViewerAvatar} from './identity.js';
 const $ = id => document.getElementById(id);
 let simulator = false, cameraLocked = false, source, players=[],gifting=false;
@@ -100,8 +100,12 @@ function renderStatus(s) {
   dispatchEvent(new CustomEvent('garden-status',{detail:s}));
   simulator = Boolean(s.simulator);
   $('presentationMonitor').hidden=false;
-  $('cameraBackend').textContent=s.diagnosticsVersion?`${sceneName(s.camera.current)} · ${s.camera.pending} cảnh chờ · ${s.camera.locked?'đang khóa':'tự động'}${s.camera.idleWaitMs?` · chờ rảnh ${Math.ceil(s.camera.idleWaitMs/1000)}s`:''}`:'Server đang chạy chưa có dữ liệu chẩn đoán mới · cần khởi động lại simulator';
+  $('cameraBackend').textContent=s.diagnosticsVersion?`${sceneName(s.camera.current)} · ${s.camera.pending} cảnh chờ · ${s.camera.locked?'đang khóa':'tự động'}${s.camera.sceneId?` · ID ${s.camera.sceneId} · ${s.camera.phase??'unknown'}`:''}${s.camera.idleWaitMs?` · chờ rảnh ${Math.ceil(s.camera.idleWaitMs/1000)}s`:''}`:'Server đang chạy chưa có dữ liệu chẩn đoán mới · cần khởi động lại simulator';
+  const owner=(s.displays??[]).find(d=>d.role==='live'&&!d.stale)??(simulator?(s.displays??[]).find(d=>d.role==='preview'&&!d.stale):null);
+  if(owner?.camera?.serverSceneId){const aligned=owner.camera.serverSceneId===s.camera.sceneId;
+    $('cameraBackend').textContent+=` · ${aligned?'Nguồn phát khớp':'Nguồn phát khác cảnh'} (${owner.camera.serverSceneId}/${owner.camera.serverPhase??'unknown'})`;}
   $('cameraQueue').replaceChildren(...(s.camera.queue??[]).map(p=>{const li=document.createElement('li');li.textContent=`${sceneText(p)}${p.eventKind?' · '+eventName(p.eventKind):''} · ưu tiên ${p.priority} · đợi ${Math.round(p.ageMs/1000)}s`;return li;}));
+  if(s.hearts) $('heartStatus').textContent=`${s.hearts.progress}/${s.hearts.target} · ${heartGoalText(s.hearts)}`;
   players=s.players??[];
   $('viewerNames').replaceChildren(...players.map(p=>Object.assign(document.createElement('option'),{value:p.nickname,label:`LV${p.level}`})));
   $('mode').textContent = simulator ? 'Simulator riêng' : 'Garden thường';
@@ -123,8 +127,9 @@ function renderStatus(s) {
   $('autoLamp').classList.toggle('on', Boolean(auto.running));
   $('autoStart').disabled = !simulator || Boolean(auto.running);
   $('autoStop').disabled = !simulator || !auto.running;
-  $('connection').textContent = simulator ? 'Simulator sẵn sàng' : 'Control host sẵn sàng';
-  $('connection').className = 'pill good';
+  const staleCode = Boolean(s.runtimeSourceChanged) || (s.displays??[]).some(d=>d.build && d.build !== s.build);
+  $('connection').textContent = staleCode ? 'Mã Garden đã đổi · cần khởi động lại server hoặc tải lại nguồn' : simulator ? 'Simulator sẵn sàng' : 'Control host sẵn sàng';
+  $('connection').className = staleCode ? 'pill bad' : 'pill good';
   for (const button of document.querySelectorAll('[data-sim-only]')) button.disabled = !simulator || (button.id === 'runDemo' && demoRunning);
   $('autoStart').disabled = !simulator || Boolean(auto.running);
   $('autoStop').disabled = !simulator || !auto.running;
@@ -133,7 +138,7 @@ function renderStatus(s) {
   $('bossStatus').textContent=fighting?`${s.boss.hp}/${s.boss.maxHp} HP · ${Math.max(0,Math.ceil((s.boss.endsAt-Date.now())/1000))}s`:s.boss?.phase==='won'?'Đã thắng boss':s.boss?.phase==='escaped'?'Boss đã trốn':'Chưa có boss';
   $('bossHealth').max=s.boss?.maxHp||1;$('bossHealth').value=s.boss?.hp??0;
   const left=session?Math.max(0,Math.ceil((session.endsAt-(session.pausedAt??Date.now()))/1000)):0;
-  $('roundClock').textContent=session?`${session.pausedAt!=null?'Tạm dừng phiên để đánh boss':'Phiên đang chạy'} · còn ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'Bình luận “trồng” để mở phiên';
+  $('roundClock').textContent=session?`${session.pausedAt!=null?'Tạm dừng phiên để đánh boss':'Phiên đang chạy'} · còn ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`:'Bình luận “chăm” để mở phiên';
   $('forceBoss').disabled=!simulator||fighting;
   for(const button of document.querySelectorAll('[data-comment]'))button.disabled=!simulator||fighting;
   for(const button of document.querySelectorAll('[data-event]'))button.disabled=fighting;
@@ -206,7 +211,7 @@ $('prepareTargets').addEventListener('click',async()=>{
  try{
   let ready=0;
   for(let i=1;i<=4;i++){
-   const r=await request('sim',{kind:'chat',user:{userId:`test-rival-${i}`,nickname:`Đối thủ ${i}`},comment:'trồng'});
+   const r=await request('sim',{kind:'chat',user:{userId:`test-rival-${i}`,nickname:`Đối thủ ${i}`},comment:'chăm'});
    if(r.ok||r.reason==='busy')ready++;
   }
   $('actionResult').textContent=`${ready}/4 chậu thử đã có cây · bấm 50 / 500 / 1.000 xu để thử quà.${ready<4?' Chậu nứt cần đợi 8s; đang đánh boss thì kết thúc trận trước.':''}`;
@@ -273,11 +278,11 @@ $('runDemo').addEventListener('click', async () => {
   const user = { userId: `demo-${Date.now()}`, nickname: 'Mai' };
   const post = (kind, rest = {}) => request('sim', { kind, user, ...rest });
   try {
-    const planted = await post('chat', { comment: 'trồng' });
+    const planted = await post('chat', { comment: 'chăm' });
     if (!planted?.ok) throw new Error(reasonText[planted?.reason] ?? 'Không gieo được cây.');
     for (let i = 0; i < 3; i++) await post('gift', { diamonds: 5, count: 1 });
     await wait(1600);
-    const harvested = await post('chat', { comment: 'hái' });
+    const harvested = await post('chat', { comment: 'chăm' });
     if (!harvested?.ok) throw new Error(reasonText[harvested?.reason] ?? 'Không thu hoạch được.');
     await request('event', { type: 'golden' });
     $('actionResult').textContent = 'Demo xong: người mới, trồng, quà, cây chín, thu hoạch và giờ vàng.';
@@ -304,8 +309,18 @@ source.onerror = () => { $('connection').textContent = 'Đang nối lại…'; }
 loadStatus();
 setInterval(loadStatus, 2000);
 
-$('forceBoss').addEventListener('click',async()=>{try{await request('sim',{kind:'chat',user:person(),comment:'trồng'});const r=await request('boss',{});$('actionResult').textContent=r.ok?'Boss đã xuất hiện · đồng hồ phiên tạm dừng · thả tim hoặc dùng quà lớn để đánh':'Cần bình luận mở phiên trước';await loadStatus();}catch(e){$('actionResult').textContent=e.message;}});
+$('forceBoss').addEventListener('click',async()=>{try{await request('sim',{kind:'chat',user:person(),comment:'chăm'});const r=await request('boss',{});$('actionResult').textContent=r.ok?'Boss đã xuất hiện · đồng hồ phiên tạm dừng · thả tim hoặc dùng quà lớn để đánh':'Cần bình luận mở phiên trước';await loadStatus();}catch(e){$('actionResult').textContent=e.message;}});
 
 $('bossLike').addEventListener('click',async()=>{try{const r=await request('sim',{kind:'like',user:person(),count:50});$('actionResult').textContent=r.boss?`Đã đánh boss −${r.damage} HP · còn ${r.hp} HP`:'Đã thả 50 tim chăm vườn';}catch(e){$('actionResult').textContent=e.message;}});
 
 $('bossLikeMany').addEventListener('click',async()=>{try{const r=await request('sim',{kind:'like',user:person(),count:200});$('actionResult').textContent=r.boss?`Đã đánh boss −${r.damage} HP · còn ${r.hp} HP`:'Đã thả 200 tim chăm vườn';await loadStatus();}catch(e){$('actionResult').textContent=e.message;}});
+
+document.querySelectorAll('[data-heart]').forEach(button=>button.addEventListener('click',async()=>{
+  if(!simulator)return;
+  try{
+    const count=Number(button.dataset.heart);
+    const r=await request('sim',{kind:'like',user:person(),count: Number(button.dataset.heart)});
+    $('actionResult').textContent=r.boss?`Thả ${count} tim · đánh boss −${r.damage} HP`:`Đã ghi nhận ${count} tim · ${r.status?.progress??0}/${r.status?.target??100} hướng tới mốc tiếp`;
+    await loadStatus();
+  }catch(error){$('actionResult').textContent=`Không thả tim được: ${error.message}`;}
+}));

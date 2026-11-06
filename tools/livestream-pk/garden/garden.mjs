@@ -17,6 +17,7 @@ import { LEVEL_XP, potTierOf } from './progress.mjs';
 export function createGarden({ config = {}, now = Date.now, rng = Math.random, onEvent = () => {}, onStateChange = () => {}, state = emptyGardenState(now()) } = {}) {
   const ctx = { state, cfg: gardenConfig(config), now, rng, emit: e => onEvent(e), markDirty: onStateChange, limiter: createLimiter(now) };
   migrateSeedZone(ctx);
+  managePresence(ctx);
   const competition = createCompetition({ state, now, sessionMs:ctx.cfg.sessionMs, awardsMs:ctx.cfg.awardsMs,
     onFinish:completed=>{
       events.reset();
@@ -76,9 +77,11 @@ export function createGarden({ config = {}, now = Date.now, rng = Math.random, o
       case 'plant': if(cmd.arg==='unknown')return {ok:false,reason:'unknown-crop'}; result = plant(ctx, user, cmd.arg); scoreAction = 'plant'; break;
       case 'care': {
         const person=target??user,p=person.seat&&state.plots[`${person.seat.tier}:${person.seat.slot}`];
-        const resolved=p?.crop?.pest?'pest':p?.crop?.weeds?'weed':'water';
-        result=resolved==='pest'?catchPests(ctx,user,person):resolved==='weed'?clearWeeds(ctx,user,person):water(ctx,user,person);
-        result.resolvedAction=resolved;scoreAction=resolved==='pest'?'pest':target&&target!==user?'help':resolved==='weed'?'help':'water';break;
+        const storm=!target&&state.event?.kind==='pests'&&state.event.phase==='active'&&now()<state.event.endsAt
+          &&Object.values(state.plots).some(plot=>state.event.targets?.[plot.id]===false&&plot.crop?.pest&&isAwake(ctx,plot));
+        const resolved=!target&&!p?.crop?'plant':!target&&p?.crop?.progress>=1?'harvest':p?.crop?.pest?'pest':p?.crop?.weeds?'weed':storm?'pest':'water';
+        result=resolved==='plant'?plant(ctx,user):resolved==='harvest'?harvest(ctx,user):resolved==='pest'?catchPests(ctx,user,target):resolved==='weed'?clearWeeds(ctx,user,person):water(ctx,user,person);
+        result.resolvedAction=resolved;scoreAction=['plant','harvest','pest'].includes(resolved)?resolved:target&&target!==user?'help':resolved==='weed'?'help':'water';break;
       }
       case 'water': result = water(ctx, user, target ?? user); scoreAction = target && target !== user ? 'help' : 'water'; break;
       case 'pest': result = catchPests(ctx, user, target); scoreAction = 'pest'; break;

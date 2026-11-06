@@ -1,3 +1,4 @@
+> **Lưu ý phiên bản (2026-11-05):** Các mốc 48 chậu, cấu hình zoom/camera trước đây và hướng dẫn OBS trong tài liệu lịch sử không còn là cấu hình vận hành chuẩn. Garden hiện là 42 chậu và dùng TikTok LIVE Studio. Tra cứu [Garden Integration](../../../garden/INTEGRATION.md) hoặc `garden/INTEGRATION.md` tại thư mục `tools/livestream-pk` để xem quy tắc hiện tại. Tài liệu này được giữ để đối chiếu yêu cầu, không áp dụng nguyên xi khi triển khai.
 # Garden full-frame implementation plan
 
 **Goal:** Fill the portrait frame with larger plants and readable care feedback, with cooperative pest events.

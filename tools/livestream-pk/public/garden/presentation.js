@@ -14,11 +14,12 @@ export function createPresentationQueue(now=()=>performance.now()){
  return {
   push(fx){
    const gift=fx.type==='gift';if(!gift&&fx.type!=='card')return;
-   if(gift&&fx.id&&seen.has(fx.id))return;remember(fx.id);
+   const identity=fx.eventId??fx.id;
+   if(gift&&identity&&seen.has(identity))return;remember(identity);
    const kind=gift?(fx.impact?'impact':fx.roulette?'roulette':'gift'):'profile';
    if(!gift){if(active?.kind==='profile'&&active.userId===fx.userId&&now()<active.until)return;pending=pending.filter(p=>p.type!=='card');}
    if(gift){idleSince=now();if(active?.kind==='profile')active=null;}
-   let item={...fx,kind,priority:kind==='impact'?0:kind==='roulette'?1:gift?2:5,queuedAt:now()};
+   let item={...fx,sceneId:identity??null,kind,priority:kind==='impact'?0:kind==='roulette'?1:gift?2:5,queuedAt:now()};
    if(fx.compact||fx.roulette?.expiresAt&&fx.roulette.expiresAt<=Date.now())item=compact(item,fx.compact?'recovered':'expired');
    pending.push(item);reduce();
   },
@@ -36,7 +37,7 @@ export function createPresentationQueue(now=()=>performance.now()){
    if(active)idleSince=Math.max(idleSince,active.until);
    active=null;pending.sort((a,b)=>a.priority-b.priority||a.queuedAt-b.queuedAt);
    if(pending[0]?.kind==='profile'&&(blocked||now()<profileReadyAt||now()-idleSince<idleMs))return null;
-   const next=pending.shift();active=next?{...next,sceneId:next.id??`profile:${next.userId}:${next.queuedAt}`,startedAt:now(),until:now()+SCENE_MS[next.kind]}:null;
+   const next=pending.shift();active=next?{...next,sceneId:next.sceneId??next.id??`profile:${next.userId}:${next.queuedAt}`,startedAt:now(),until:now()+SCENE_MS[next.kind]}:null;
    if(next?.kind==='profile')profileReadyAt=now()+8000;
    return active;
   },

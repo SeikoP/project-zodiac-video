@@ -51,6 +51,7 @@ test('an empty inactive pot can still be reclaimed without deleting progression'
   const { ctx, advance } = makeCtx({ cfg: { activeCapacity: 2 } });
   const first = addUser(ctx, 'first', { gold: 77, level: 5 });
   advance(1); addUser(ctx, 'second');
+  advance(180000);
   const late = ensureUser(ctx, { userId: 'late', nickname: 'Late', avatar: '' });
   const p = seat(ctx, late);
   assert.equal(p.tier, 'cloud-1');
@@ -91,15 +92,13 @@ test('shrinking a legacy 48-seat save to 42 keeps user progression and the 42 mo
   assert.ok(Object.values(ctx.state.plots).some(p=>p.owner==='legacy-47'&&p.crop?.progress===.47),'most recent planted pot is preserved');
 });
 
-test('isAwake and presence management still hide then release inactive pots', () => {
+test('presence management retains inactive pots and restores legacy sleeping pots', () => {
   const { ctx, advance } = makeCtx({ cfg: { sleepAfterMs:100, evictAfterMs:300 } });
   const { user, plot } = addUser(ctx, 'a');
-  advance(101); assert.equal(isAwake(ctx, plot), false);
-  assert.deepEqual(managePresence(ctx), { sleeping:1, evicted:0 });
-  touch(ctx, user); assert.equal(isAwake(ctx, plot), true);
-  advance(301);
-  assert.deepEqual(managePresence(ctx), { sleeping:0, evicted:1 });
-  assert.equal(user.seat, null);
+  advance(301); assert.equal(isAwake(ctx, plot), true);
+  assert.deepEqual(managePresence(ctx), { sleeping:0, evicted:0 });
+  assert.ok(user.seat);plot.sleeping=true;
+  managePresence(ctx);assert.equal(isAwake(ctx, plot),true);
 });
 
 test('emptyGardenState starts at Seed Zone schema v4', () => {

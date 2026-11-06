@@ -95,10 +95,14 @@ function room(ctx, user) {
 }
 
 function evict(ctx, user) {
-  const free = occupied(ctx).filter(p => !p.crop).sort((a, b) => a.lastActive - b.lastActive)[0];
+  const pots=occupied(ctx);
+  if(pots.length<Math.ceil(ctx.cfg.activeCapacity*6/7))return null;
+  const free = pots.filter(p => ctx.now()-p.lastActive>=ctx.cfg.evictAfterMs)
+    .sort((a, b) => Number(Boolean(a.crop))-Number(Boolean(b.crop)) || a.lastActive-b.lastActive)[0];
   if (!free) return null;
   const previous = ctx.state.users[free.owner];
   if (previous) previous.seat = null;
+  ctx.state.thefts=ctx.state.thefts.filter(t=>t.victim!==free.owner&&t.thief!==free.owner);
   free.crop = null;
   return take(ctx, user, free);
 }
@@ -108,7 +112,7 @@ export function seat(ctx, user) {
     return ctx.state.plots[plotId(SEED_ZONE.id, user.seat.slot)] ?? null;
   }
   user.seat = null;
-  return room(ctx, user) ?? evict(ctx, user);
+  return evict(ctx, user) ?? room(ctx, user);
 }
 
 export function migrateSeedZone(ctx) {
@@ -146,11 +150,9 @@ export function touch(ctx, user) {
   bump(ctx, plot);
 }
 
-export const isAwake = (ctx, plot) => Boolean(plot.owner) && !plot.sleeping && ctx.now() - plot.lastActive < ctx.cfg.sleepAfterMs;
+export const isAwake = (ctx, plot) => Boolean(plot?.owner) && !plot.sleeping;
 
 export function managePresence(ctx) {
-  const now = ctx.now();
-  let sleeping = 0, evicted = 0;
   for (const plot of Object.values(ctx.state.plots)) {
     if (!plot.owner) continue;
     const user = ctx.state.users[plot.owner];
@@ -158,18 +160,7 @@ export function managePresence(ctx) {
       plot.owner = null; plot.crop = null; plot.sleeping = false; plot.deco = []; bump(ctx, plot);
       continue;
     }
-    const age = now - plot.lastActive;
-    if (age >= ctx.cfg.evictAfterMs) {
-      if (user.seat?.slot === plot.slot) user.seat = null;
-      plot.owner = null; plot.crop = null; plot.water = 1; plot.wateredAt = null; plot.sleeping = false;
-      plot.dogUntil = plot.shieldUntil = 0; plot.deco = [];
-      plot.blessingUntil = 0;plot.brokenUntil=0;plot.replantCredit=false;
-  plot.waterBoostUntil=plot.speedUntil=0;plot.prank=null;plot.wateredAt=null;
-      bump(ctx, plot); evicted++; continue;
-    }
-    const nextSleeping = age >= ctx.cfg.sleepAfterMs;
-    if (Boolean(plot.sleeping) !== nextSleeping) { plot.sleeping = nextSleeping; bump(ctx, plot); }
-    if (nextSleeping) sleeping++;
+    if(plot.sleeping){plot.sleeping=false;bump(ctx,plot);}
   }
-  return { sleeping, evicted };
+  return { sleeping:0, evicted:0 };
 }

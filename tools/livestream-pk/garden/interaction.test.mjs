@@ -17,11 +17,11 @@ function rig(config={}) {
  return {garden,events,say,plot,advance:ms=>{time+=ms;garden.tick();}};
 }
 
-test('short crop times and idle reclamation preserve the returning player progression',()=>{
+test('short crop times and sparse retention preserve the returning player progression',()=>{
  assert.deepEqual(Object.values(CROPS).map(c=>c.growMs),[180000,240000,300000]);
  const k=makeCtx(),a=addUser(k.ctx,'a',{gold:45,level:5});a.plot.crop={type:'rau',progress:.3};
  k.advance(180001);managePresence(k.ctx);
- assert.equal(a.user.seat,null);assert.deepEqual([a.user.gold,a.user.level],[45,5]);assert.equal(a.plot.crop,null);
+ assert.ok(a.user.seat);assert.deepEqual([a.user.gold,a.user.level],[45,5]);assert.ok(a.plot.crop);
 });
 
 test('failed comments emit actionable feedback with the actual remaining cooldown',()=>{
@@ -80,7 +80,7 @@ test('a full room reports why it cannot seat a newcomer without retaining a ghos
 
 test('problem overlays show an actionable command then pause before repeating',()=>{
  const p={crop:{pest:true},owner:{},awake:true,water:1,lastActive:1000};
- const problem=view.plotProblem(p,1000,{sleepAfterMs:90000});assert.equal(problem.command,'bắt sâu');
+ const problem=view.plotProblem(p,1000,{sleepAfterMs:90000});assert.equal(problem.command,'chăm');
  const first=view.problemPresentation(null,problem,1000);assert.equal(first.until,5000);
  const quiet=view.problemPresentation(first,problem,7000);assert.ok(quiet.until<7000);assert.ok(quiet.nextAt>7000);
  const next=view.problemPresentation(quiet,problem,quiet.nextAt);assert.ok(next.until>quiet.nextAt);
@@ -89,7 +89,7 @@ test('problem overlays show an actionable command then pause before repeating',(
 
 test('blocked harvest and planting suggest an action that can actually resolve the problem',()=>{
  assert.equal(view.feedbackCommand({ok:false,action:'harvest',reason:'not-ripe'}),'chăm');
- assert.equal(view.feedbackCommand({ok:false,action:'plant',reason:'gold'}),'tưới @tên');
- assert.equal(view.feedbackCommand({ok:false,action:'water',reason:'no-crop'}),'trồng');
- assert.equal(view.feedbackCommand({ok:true,action:'harvest'}),'trồng');
+ assert.equal(view.feedbackCommand({ok:false,action:'plant',reason:'gold'}),'chăm @tên');
+ assert.equal(view.feedbackCommand({ok:false,action:'water',reason:'no-crop'}),'chăm');
+ assert.equal(view.feedbackCommand({ok:true,action:'harvest'}),'chăm');
 });

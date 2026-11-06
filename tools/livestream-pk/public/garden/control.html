@@ -85,6 +85,15 @@
       </section>
       <section class="test-section" id="scenarioTools"><label for="scenario">Kịch bản thử · có lưu bản phòng trước khi chạy</label><select id="scenario" data-sim-only><option value="newcomer1">Người mới · 1</option><option value="group4">Nhóm · 4</option><option value="room12">Phòng · 12</option><option value="room24">Phòng · 24</option><option value="room42">Phòng · 42</option><option value="careburst42">42 lượt chăm</option><option value="cardspam100">100 lệnh vườn</option><option value="giftburst30">30 vòng quay</option><option value="bossinterrupt">Boss giữa quà</option><option value="shield">Khiên chặn phá</option><option value="no-target">Không có mục tiêu</option><option value="destruction">Phá cây</option><option value="awardreload">Chốt phiên / reload</option><option value="audioquiet">Âm · phòng yên</option><option value="audiobusy">Âm · phòng đông</option></select><button id="runScenario" data-sim-only>Chạy kịch bản</button><button id="restoreScenario" data-sim-only>Phục hồi phòng trước thử</button><p id="scenarioResult" role="status"></p></section>
       <p id="actionResult" class="result" role="status" aria-live="polite">Chọn người xem, rồi gửi bình luận hoặc lệnh.</p>
+      <section class="test-section" aria-labelledby="heartTestTitle">
+        <div class="panel-heading compact"><h2 id="heartTestTitle">Thả tim · chăm cả vườn</h2><span id="heartStatus" class="pill" role="status">0/100 tim</span></div>
+        <p class="help">Ngoài boss: 100 tim tăng 5% một cây, thêm 400 tim tăng 2,5% các cây đang lớn, thêm 500 tim tặng 2 vàng. Tim lúc boss được tính thành sát thương.</p>
+        <div class="event-actions">
+          <button type="button" data-heart="100" data-sim-only>+100 tim · chăm cây</button>
+          <button type="button" data-heart="400" data-sim-only>+400 tim · cả vườn</button>
+          <button type="button" data-heart="500" data-sim-only>+500 tim · may mắn</button>
+        </div>
+      </section>
       <section class="boss-tools test-section" aria-labelledby="bossTestTitle">
         <div class="panel-heading compact"><h2 id="bossTestTitle">Boss cộng đồng</h2><span id="bossStatus" class="pill">Chưa có boss</span></div>
         <progress id="bossHealth" max="1" value="0" aria-label="Máu boss"></progress>
@@ -97,14 +106,11 @@
       </section>
       <form id="chatForm" class="chat-form">
         <label for="comment">Bình luận / lệnh</label>
-        <div class="input-row"><input id="comment" maxlength="120" placeholder="Ví dụ: trồng" autocomplete="off" required><button class="primary" type="submit" data-sim-only>Gửi bình luận</button></div>
+        <div class="input-row"><input id="comment" maxlength="120" placeholder="Ví dụ: chăm" autocomplete="off" required><button class="primary" type="submit" data-sim-only>Gửi bình luận</button></div>
       </form>
+      <p class="notice">Chậu trống: mua hạt bằng vàng. Chăm cây và hái không tốn vàng; mỗi lần gõ làm một việc.</p>
       <div class="quick-actions" aria-label="Lệnh nhanh">
-        <button type="button" data-comment="chăm" data-sim-only>Chăm tự chọn · miễn phí</button>
-        <button type="button" data-comment="trồng" data-sim-only>Trồng tự động</button>
-        <button type="button" data-comment="tưới" data-sim-only>Tưới</button>
-        <button type="button" data-comment="hái" data-sim-only>Hái</button>
-        <button type="button" data-comment="vườn" data-sim-only>Thông tin vườn</button>
+        <button type="button" data-comment="chăm" data-sim-only>Chăm · trồng / chăm cây / hái</button>
       </div>
 
       <details class="advanced"><summary>Quà tùy chỉnh · giá trị và số lượng</summary>
@@ -124,7 +130,12 @@
       </div>
 
       </details>
-      <details class="advanced"><summary>Lệnh nâng cao, sự kiện và camera</summary><div class="quick-actions">        <button type="button" data-comment="trồng hướng dương" data-sim-only>Hướng dương · cấp 2</button>
+      <details class="advanced"><summary>Lệnh nâng cao, sự kiện và camera</summary><div class="quick-actions">
+        <button type="button" data-comment="trồng" data-sim-only>Trồng tự động</button>
+        <button type="button" data-comment="tưới" data-sim-only>Tưới</button>
+        <button type="button" data-comment="hái" data-sim-only>Hái</button>
+        <button type="button" data-comment="vườn" data-sim-only>Thông tin vườn</button>
+        <button type="button" data-comment="trồng hướng dương" data-sim-only>Hướng dương · cấp 2</button>
         <button type="button" data-comment="trồng nấm mây" data-sim-only>Nấm mây · cấp 4</button>
         <button type="button" data-comment="bắt sâu" data-sim-only>Bắt sâu</button>
         <button type="button" data-comment="trộm" data-sim-only>Trộm</button>

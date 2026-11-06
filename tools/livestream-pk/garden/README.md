@@ -1,6 +1,7 @@
+> **Tài liệu tích hợp chuẩn:** [garden/INTEGRATION.md](INTEGRATION.md) — event → camera → presentation/audio → source → Control → Studio; thay thế các đoạn lịch sử đã lỗi thời.
 # Vườn Mây
 
-Vườn cộng đồng 1080 × 1920, dùng toàn khung hình. Một **Khu Gieo Hạt** gồm tối đa **42 chậu hoạt động**, hai cánh kệ × bảy hàng × ba chậu để chậu/cây và nhãn dễ đọc hơn trên LIVE điện thoại. Người xem bình luận nhận chậu tự động; khi đủ 42 chậu đang có cây, người đến sau không bị nhét thêm vào rack và chỉ vào được khi một chỗ được giải phóng. Canvas, SVG và font Patrick Hand có sẵn; không thêm thư viện.
+Vườn cộng đồng 1080 × 1920, dùng toàn khung hình. Một **Khu Gieo Hạt** gồm tối đa **42 chậu hoạt động**, hai cánh kệ × bảy hàng × ba chậu để chậu/cây và nhãn dễ đọc hơn trên LIVE điện thoại. Người xem bình luận nhận chậu tự động; từ 36/42 chậu trở lên, người mới có thể nhận lại đúng một chậu vắng quá 3 phút; kín chỗ và không ai quá hạn thì chờ. Canvas, SVG và font Patrick Hand có sẵn; không thêm thư viện.
 
 ## Chạy
 
@@ -36,10 +37,14 @@ Rau lớn **3 phút** (LV1), hướng dương **4 phút** (LV2), nấm mây **5 
 
 Mốc mới: 10/50 thu hoạch tích lũy, 20 lần giúp bạn, 20 lần dọn sâu. Dữ liệu cũ không có tổng thu hoạch trọn đời bắt đầu ghi từ đợt này; không suy đoán lịch sử đã mất. Thông báo lên cấp/danh hiệu kèm avatar, LV và màu bậc, được giữ đủ thời gian đọc thay vì bị dòng thành công cơ bản ghi đè. Trồng/tưới/lên cấp/phá cây có phản hồi chuyển động ngắn tại chậu; đổi hạng và lễ vinh danh có chuyển động riêng, tắt theo reduced-motion.
 
+**Lệnh chính duy nhất: `chăm` (hoặc `cham`).** Mỗi bình luận làm một việc: chậu trống → mua giống cao nhất đủ LV và vàng; cây chín → hái lấy vàng/XP; cây đang lớn → bắt sâu, nhổ cỏ hoặc tưới. Lần chăm sau khi hái bắt đầu vụ mới. Gieo hạt dùng vàng trong game (rau 4, hướng dương 9, nấm mây 18 vàng mặc định), phản hồi ghi đúng chi phí; chăm cây/hái không tốn vàng, không tự bón phân. Gieo lại sau phá cây dùng hạt rau miễn phí một lần. Boss dùng thả tim; trao giải chờ phiên mới.
+
+Trong bão sâu, khi cây mình không cần trồng/hái/dọn sâu/cỏ, `chăm` tự giúp dọn sâu cho hàng xóm. `chăm @tên` vẫn giúp đúng người, không tự trồng hoặc hái cây của họ. Lệnh cũ tiếp tục tương thích, nằm trong phần nâng cao của Control:
+
 | Bình luận | Tác dụng |
 |---|---|
 | `trồng`, `gieo` | Tự mua cây cao nhất đủ LV và vàng: rau LV1, hướng dương LV2, nấm mây LV4. Có thể ghi tên cây để chọn thủ công; có lượt gieo lại miễn phí thì chọn rau |
-| `chăm` | Tự bắt sâu → nhổ cỏ → tưới, không tự tiêu vàng |
+| `chăm` | Tự trồng → chăm → hái theo trạng thái; chỉ gieo hạt mới tiêu vàng |
 | `tưới` | Đầy nước, thêm 1,5% tiến độ và **+25% tốc độ trong 30s**; hồi 15s |
 | `bón phân` | Tốn 3 vàng, thêm 3% tiến độ; **+18% tốc độ** và tăng sản lượng đến khi hái |
 | `chăm @tên`, `tưới @tên` | Giúp đúng người trên tên chậu; giúp tưới cho XP cả hai và vàng người giúp |
@@ -53,7 +58,7 @@ Thanh tốc độ dùng **cùng phép tính với tăng trưởng thực tế**:
 
 Thông báo thao tác dùng một dòng dưới “Khu Gieo Hạt”; hướng dẫn xoay tua tận dụng phần phải của thẻ trên cùng. Lệnh bị chặn trả lý do, số vàng/LV thiếu hoặc thời gian hồi còn lại. Vấn đề sâu/cỏ/khô phủ hướng dẫn lên cây 4s rồi nghỉ 20s. Thành công cơ bản không thêm thẻ phủ cây hoặc kéo camera. Hàng đợi trình chiếu ưu tiên quà; kỹ năng lớn đứng trước vòng quay/quà nhỏ đang chờ. Lệnh “vườn” chỉ dùng dòng thông báo, không thay hồ sơ đang zoom và không che sân khấu boss. Mỗi lúc chỉ có một cảnh chính. Camera giữ toàn cảnh với mọi quà và boss; `vườn` không vào hàng đợi camera. Những lần lên cấp/sự kiện đặc biệt vẫn có thể dùng cận cảnh.
 
-Im 90s: chậu ẩn và ngừng lớn. Im 3 phút: thu hồi chậu/cây để nhường chỗ. Trong cùng phiên, người quay lại giữ vàng/cấp/XP; sau đổi phiên áp dụng quy tắc 20 vàng ở trên.
+Phòng thưa giữ chậu hiển thị và cây tiếp tục lớn đến hết phiên, không cần comment để giữ chỗ. Khi có người mới và đã dùng ít nhất `ceil(activeCapacity × 6/7)` chậu (mặc định **36/42**), nhường đúng **một** chậu vắng ít nhất `evictAfterMs` (**3 phút**): ưu tiên chậu trống, sau đó người vắng lâu nhất. Không có chậu quá hạn thì dùng ô còn trống; kín hết thì báo đầy. Không quét xóa hàng loạt, không lấy chậu trống của người còn hoạt động. Người bị nhường giữ LV/XP/vàng/thành tích. `sleepAfterMs` là cấu hình cũ, không còn làm ẩn/ngừng lớn chậu. Sang phiên vẫn áp dụng quy tắc reset ở trên.
 
 ## Quà và vòng quay
 
@@ -70,7 +75,7 @@ Tổng xu = giá trị mỗi quà × số lượng, dùng cùng đường xử l
 
 Sáu ô vòng quay: tăng tốc mình **+30% / 45s**, bón phân cho mình, khiên mình **60s**, hoặc chọn ngẫu nhiên người khác để chậm **25% / 20s**, khô đất **20s**, cỏ **20s**. Khiên và lớp bảo vệ chặn việc bị chọn. Tưới/nhổ cỏ gỡ sớm hiệu ứng tương ứng; hết giờ trả lại trạng thái trước khi trêu. Riêng vòng quay không xóa cây, lấy vàng hoặc trừ XP. Không có đối thủ hợp lệ sẽ chọn lợi ích cho mình; chậu trống có thể nhận khiên. Nếu không có chậu cho người tặng và không có đối thủ hợp lệ, dùng khiên cả vườn. Giao diện quay đúng ô đã được máy chủ áp dụng, không tự quay lại kết quả.
 
-Kỹ năng quà cao không dùng vòng quay: kết quả áp dụng ngay trên máy chủ rồi trình chiếu cảnh thiên thạch, số cây bị phá và tên nạn nhân. Chỉ chọn cây đang có, người khác đang hoạt động và không có khiên/lớp bảo vệ. Cây bị phá mất toàn bộ tiến độ, chậu nứt **8s**, sau đó gõ `trồng` để gieo lại miễn phí một lần. Không mất LV, XP, vàng hay huy hiệu. Lệnh trong thời gian nứt trả đúng thời gian còn lại; lịch trộm cũ của cây bị phá được dọn. Bản thân người gửi luôn nhận chín cây/khiên nếu có chậu, kể cả khi không có mục tiêu đối thủ.
+Kỹ năng quà cao không dùng vòng quay: kết quả áp dụng ngay trên máy chủ rồi trình chiếu cảnh thiên thạch, số cây bị phá và tên nạn nhân. Chỉ chọn cây đang có, người khác đang hoạt động và không có khiên/lớp bảo vệ. Cây bị phá mất toàn bộ tiến độ, chậu nứt **8s**, sau đó gõ `chăm` để gieo lại miễn phí một lần. Không mất LV, XP, vàng hay huy hiệu. Lệnh trong thời gian nứt trả đúng thời gian còn lại; lịch trộm cũ của cây bị phá được dọn. Bản thân người gửi luôn nhận chín cây/khiên nếu có chậu, kể cả khi không có mục tiêu đối thủ.
 
 Khi boss đang sống, quà 500–999 đánh **25% HP tối đa**, từ 1000 đánh **60% HP tối đa**; không phá cây đối thủ trong trận boss. Khiên của người gửi bảo vệ 60s, chống trộm/phá cây và sâu/cỏ mới; sâu đã có vẫn cần dọn.
 
@@ -103,3 +108,15 @@ Control đặt preview cạnh bảng **Đang phát & hàng đợi** trên deskto
 Mục **Camera ở server** là hàng đợi camera riêng, không đồng nhất với hàng đợi trình chiếu trong preview. Mất dữ liệu preview sẽ báo rõ sau 2,5s; server cũ chưa hỗ trợ diagnostics sẽ yêu cầu nạp lại, không hiện hàng đợi trống giả. Avatar thiếu/hỏng dùng chữ viết tắt. Snapshot chốt phiên giữ avatar Top 5, cả khi mở lại sau đổi phiên; thưởng Top 3 không đổi.
 
 Kế hoạch UX/animation tiếp theo: `docs/superpowers/plans/2026-11-05-garden-experience-animation.md`.
+
+## Cập nhật Garden 2026-11-05 — phạm vi quà, tim và phiên bản
+
+Tài liệu vận hành hiện hành: phần này và [kế hoạch tích hợp Garden](../docs/superpowers/plans/2026-11-05-garden-integration-heart-hardening.md). Các đoạn lịch sử ghi **48 chậu**, camera **mọi quà đều toàn cảnh** hoặc hướng dẫn OBS không còn là chuẩn hiện tại. Garden hiển thị **42 chậu**, LIVE Studio (không dùng OBS).
+
+- **Thả tim ngoài boss:** thanh tim cho biết mốc kế tiếp. Đạt mốc 100 tim: một cây đang lớn tăng tối đa 5% tiến độ; cộng dồn đến 500 tim: các cây đang lớn tăng tối đa 2,5% mỗi cây; cộng dồn đến 1.000 tim: một người chơi đang hoạt động nhận 2 vàng. Sau đó luân phiên lại. Cơ chế vẫn áp dụng giới hạn tăng tiến độ do tim là 10% trên mỗi cây. Nếu không có cây/người đủ điều kiện, thông báo nêu rõ không có mục tiêu, không phát thưởng giả.
+- **Tim khi boss:** 1 tim = 1 sát thương (giữ cơ chế cũ), không cộng vào thanh tim vườn; tim trong pha trao giải không thay đổi game.
+- **Phản hồi:** thông báo hiển thị số cây/người nhận, có hiệu ứng nhẹ trên chậu liên quan (tối đa 6 điểm khi tác động toàn vườn), giảm chuyển động thì bỏ animation. Tim thường không kéo camera khỏi vườn.
+- **Quà:** single-target dew/star/roulette dùng zoom chậu; quà ảnh hưởng nhiều chậu, rain, meteor, cataclysm hoặc không có chậu giữ toàn cảnh. Camera và overlay dùng cùng `isGardenWideGift`.
+- **Build ID:** server hash phụ thuộc vào code camera, tim, trình chiếu, audio, CSS và logic. Thay đổi code cần khởi động lại **Simulator** trước khi kiểm tra; build ID server và preview phải khớp. Không khởi động lại Garden thật hoặc xóa dữ liệu khi chỉ thử.
+
+Cách thử an toàn: chạy `npm run garden:sim` khi cổng 4858 không có server khác, mở `/control`, gửi `chăm` cho một người, thả tim 100/400/500 (để lần lượt vượt các mốc 100/500/1000), kiểm tra trạng thái/cây/thông báo. Kiểm thử khác với capture thực tế: phải kiểm tra thêm trang `/` ở độ phân giải điện thoại và heartbeat của nguồn LIVE trước khi phát.

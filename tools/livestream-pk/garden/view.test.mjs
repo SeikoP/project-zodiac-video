@@ -131,10 +131,11 @@ test('logical row seven wraps to a right visual wing at the same vertical shelf'
   assert.equal(right.y, left.y);
 });
 
-test('overview care labels prioritize trouble, then ripe crops, then water and growth',()=>{
- const p={crop:{pest:true,weeds:true,progress:.5},stage:3,water:.1};
+test('overview care labels match the next care action: ripe, trouble, water and growth',()=>{
+ const p={crop:{pest:true,weeds:true,progress:1},stage:3,water:.1};
+ assert.equal(view.careLabel(p),'Hái ngay');p.stage=2;p.crop.progress=.5;
  assert.equal(view.careLabel(p),'Bắt sâu');p.crop.pest=false;
- assert.equal(view.careLabel(p),'Nhổ cỏ');p.crop.weeds=false;
+ assert.equal(view.careLabel(p),'Nhổ cỏ');p.crop.weeds=false;p.stage=3;
  assert.equal(view.careLabel(p),'Hái ngay');p.stage=2;
  assert.equal(view.careLabel(p),'Cần tưới');p.water=1;
  assert.equal(view.careLabel(p),'50% lớn');p.crop=null;
@@ -181,10 +182,10 @@ test('garden guide follows the most useful room action and phase',()=>{
  const crop=(extra={})=>({owner:{},awake:true,stage:2,water:1,crop:{progress:.5,pest:false,weeds:false,...extra}});
  assert.equal(view.gardenGuide({boss:true,plots:[crop()]})[1],'thả tim');
  assert.equal(view.gardenGuide({awards:true,plots:[crop()]})[0].startsWith('Vinh danh'),true);
- assert.equal(view.gardenGuide({plots:[]})[1],'trồng');
- assert.equal(view.gardenGuide({plots:[{owner:{},awake:true,crop:null}]})[1],'trồng','an awake empty pot returns the loop to planting');
- assert.equal(view.gardenGuide({plots:[{...crop(),stage:3}]})[1],'hái');
- assert.equal(view.gardenGuide({plots:[crop({pest:true})],event:{kind:'pests',phase:'active'}})[1],'bắt sâu');
+ assert.equal(view.gardenGuide({plots:[]})[1],'chăm');
+ assert.equal(view.gardenGuide({plots:[{owner:{},awake:true,crop:null}]})[1],'chăm','an awake empty pot returns the loop to planting');
+ assert.equal(view.gardenGuide({plots:[{...crop(),stage:3}]})[1],'chăm');
+ assert.equal(view.gardenGuide({plots:[crop({pest:true})],event:{kind:'pests',phase:'active'}})[1],'chăm');
  assert.equal(view.gardenGuide({plots:[crop({weeds:true})]})[1],'chăm');
  assert.equal(view.gardenGuide({plots:[{...crop(),water:.1}]})[1],'chăm');
 });
@@ -224,4 +225,74 @@ test('growth buffs expose one strong visual state without showing badges in dens
  assert.equal(view.growthBuffPresentation(p,now,1.4).showBadge,true,'close focus may show the numeric buff');
  assert.equal(view.growthBuffPresentation({...p,stage:3},now,.8),null,'ripe crops do not advertise growth buffs');
  assert.equal(view.growthBuffPresentation({...p,growth:{bonusPercent:0,waterBoostUntil:0,speedUntil:0,fertilized:false}},now,.8),null);
+});
+
+test('long viewer names shorten predictably and nameplates omit level badges',()=>{
+ const names=['Nguyễn Thị Minh Anh Hoàng Gia','Trần Phương Thảo Ngọc Ánh','AlexandraCloudGardener2026','🌱🌸Vườn Mây Hạnh Phúc'];
+ for(const name of names){
+  for(const zoom of [.5,.82,2.35]){
+   const shown=view.displayNickname(name,zoom);
+   const limit=zoom<.65?6:zoom<1.25?10:16;
+   assert.ok([...shown].length<=limit+1,`${name} ${zoom}`);
+   assert.ok(shown.endsWith('…'),`${name} truncated at ${zoom}`);
+  }
+ }
+ const source=fs.readFileSync(new URL('../public/garden/garden.js',import.meta.url),'utf8');
+ assert.match(source,/const label=name;/);
+ assert.match(source,/focusName\.textContent = displayNickname\(plot\.owner\?\.nickname, 1\.25\);/);
+});
+test('heart milestone copy explains gameplay effect rather than generic celebration',()=>{
+ assert.match(view.heartMilestoneText({kind:'care',affected:1,gain:.05,nickname:'Mai'}),/Mai.*5%/);
+ assert.match(view.heartMilestoneText({kind:'community',affected:3,gain:.075}),/3 cây.*2,5%/);
+ assert.match(view.heartMilestoneText({kind:'luck',affected:1,nickname:'Lan'}),/Lan.*2 vàng/);
+ assert.match(view.heartMilestoneText({kind:'care',affected:0,gain:0}),/chưa có cây/);
+});
+test('gift scope follows target and affected plots, not just gift tier',()=>{
+ assert.equal(view.isGardenWideGift({tier:'star',plotId:'cloud-1:1',affected:1}),false);
+ assert.equal(view.isGardenWideGift({tier:'star',plotId:'cloud-1:1',affected:4}),true);
+ assert.equal(view.isGardenWideGift({tier:'rain',plotId:'cloud-1:1',affected:1}),true);
+ assert.equal(view.isGardenWideGift({tier:'meteor',plotId:'cloud-1:1',affected:0}),true);
+ assert.equal(view.isGardenWideGift({tier:'star',plotId:null,affected:0}),true);
+});
+
+test('Garden heart event is connected to meaningful notification copy and effect',()=>{
+ const source=fs.readFileSync(new URL('../public/garden/garden.js',import.meta.url),'utf8');
+ assert.match(source,/heartMilestoneText\(fx\)/);
+ assert.match(source,/float\('buff',fx\.plotId/);
+});
+test('heart HUD explains the next milestone reward and remaining target',()=>{
+ assert.match(view.heartGoalText({kind:'care',target:100}),/100 tim.*5%/i);
+ assert.match(view.heartGoalText({kind:'community',target:400}),/400 tim.*2,5%/i);
+ assert.match(view.heartGoalText({kind:'luck',target:500}),/500 tim.*2 vàng/i);
+});
+test('heart milestone animates the existing HUD without new blocking overlay',()=>{
+ const js=fs.readFileSync(new URL('../public/garden/garden.js',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../public/garden/garden.css',import.meta.url),'utf8');
+ assert.match(js,/heartBar\.classList\.add\('milestone'\)/);
+ assert.match(css,/#heartBar\.milestone/);
+});
+test('LIVE display heartbeat reports the native camera scene independently of client presentation',()=>{
+ const source=fs.readFileSync(new URL('../public/garden/garden.js',import.meta.url),'utf8');
+ assert.match(source,/serverSceneId:activeCameraShot\?\.sceneId/);
+ assert.match(source,/serverPhase:cameraPhase/);
+});
+test('visible Garden keeps a 30fps render floor while prioritizing moving scenes',()=>{
+ assert.equal(view.renderCadence({moving:false,eventLive:false,animated:false,visible:true}),30);
+ assert.equal(view.renderCadence({moving:true,eventLive:false,animated:false,visible:true}),45);
+ assert.equal(view.renderCadence({moving:false,eventLive:true,animated:false,visible:true}),45);
+ assert.ok(view.renderCadence({moving:false,eventLive:false,animated:false,visible:false})<30);
+});
+test('unchanged stage text avoids a redundant DOM write every Canvas frame',()=>{
+ let writes=0;const node={_text:'',get textContent(){return this._text;},set textContent(v){writes++;this._text=v;}};
+ assert.equal(view.setTextIfChanged(node,'Tim chăm vườn'),true);
+ assert.equal(view.setTextIfChanged(node,'Tim chăm vườn'),false);
+ assert.equal(view.setTextIfChanged(node,'Boss'),true);
+ assert.equal(writes,2);
+});
+test('Canvas backing pixels match actual output size without degrading full-HD Studio capture',()=>{
+ assert.equal(view.canvasBackingScale(540,960,1),.5);
+ assert.ok(Math.abs(view.canvasBackingScale(360,640,1)-1/3)<.001);
+ assert.equal(view.canvasBackingScale(540,960,2),1);
+ assert.equal(view.canvasBackingScale(1080,1920,1),1);
+ assert.equal(view.canvasBackingScale(240,426,1),1/3);
 });

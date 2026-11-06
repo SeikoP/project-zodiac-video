@@ -129,17 +129,17 @@ test('a viewer who cannot get a plot when the Seed Zone is full of crops leaves 
 });
 
 
-test('ordinary chat wakes a sleeping player and inactivity eventually frees the visible pot', () => {
+test("ordinary chat keeps a returning player's pot throughout a sparse session", () => {
   const s = setup({ sleepAfterMs: 100, evictAfterMs: 400 });
   s.say('a', 'xin chào');
   const id = s.plot('a').id;
   s.advance(150);
-  assert.equal(s.garden.state.plots[id].sleeping, true);
+  assert.equal(s.garden.state.plots[id].sleeping, false);
   s.say('a', 'tôi vẫn ở đây');
   assert.equal(s.garden.state.plots[id].sleeping, false);
   s.advance(450);
-  assert.equal(s.user('a').seat, null);
-  assert.equal(s.garden.state.plots[id].owner, null);
+  assert.ok(s.user('a').seat);
+  assert.equal(s.garden.state.plots[id].owner, 'a');
 });
 
 test('new care commands add decisions beyond water and harvest', () => {
@@ -179,4 +179,24 @@ test('pest mention routes to the neighbor and syncs the changed plot',()=>{
  assert.equal(result.ok,true);assert.equal(s.plot('b').crop.pest,false);
  assert.equal(s.garden.changes(seen).plots[s.plot('b').id].crop.pest,false);
  assert.equal(s.plot('a').crop.type,'rau');
+});
+
+test('simulated players with long names retain full identity while overlay labels remain compact',async()=>{
+ const {displayNickname,overviewLabelWidth}=await import('../public/garden/view.js');
+ const s=setup();
+ const names=['Nguyễn Thị Minh Anh Hoàng Gia','Trần Phương Thảo Ngọc Ánh','AlexandraCloudGardener2026','🌱🌸Vườn Mây Hạnh Phúc'];
+ for(const [index,name] of names.entries()){
+  const id=`long-${index}`;
+  const result=s.say(id,'trồng',name);
+  assert.equal(result.ok,true);
+  assert.equal(s.user(id).nickname,name);
+  assert.ok(s.plot(id).owner);
+  for(const zoom of [.5,.82,2.35]){
+   const label=displayNickname(s.user(id).nickname,zoom);
+   assert.ok(!/\bLv?\d+\b/i.test(label));
+   assert.ok([...label].length<=[...name].length);
+   assert.ok(overviewLabelWidth(s.garden.cfg,zoom)>0);
+  }
+ }
+ assert.equal(names.length,4);
 });

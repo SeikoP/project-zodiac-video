@@ -4,13 +4,13 @@ import {POT_ART,createViewerAvatar,avatarSource,earnedPattern} from './identity.
 import { createMusic } from '../music.js';
 import {createGardenAudio} from './audio.js';
 import { createSfx } from '../sfx.js';
-import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, growthBuffPresentation, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotOverlayMode, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice } from './view.js';
+import { cameraReason, careLabel, chooseIdleSlot, displayNickname, easeCamera, feedbackCommand, focusCardPlacement, gardenGuide, giftImpactText, growthBuffPresentation, impactMotion, lodOf, noticeTimeLeft, overviewLabelWidth, plotOverlayMode, plotPos, plotProblem, problemPresentation, rackGeometry, visiblePlots, worldToScreen,plotMotion,shouldReplaceNotice,heartMilestoneText,heartGoalText,isGardenWideGift,renderCadence,setTextIfChanged,canvasBackingScale } from './view.js';
 
 const VP = { w: 1080, h: 1920 };
 const canvas = document.getElementById('world'), ctx = canvas.getContext('2d');
 const stage = document.getElementById('stage'), feed = document.getElementById('feed'), hint = document.getElementById('hint');
 const eventHero = document.getElementById('eventHero'), eventArt = document.getElementById('eventArt'), eventHeroTitle = document.getElementById('eventHeroTitle'), eventHeroHint = document.getElementById('eventHeroHint'), eventHeroMeta = document.getElementById('eventHeroMeta'), eventMeterFill = document.getElementById('eventMeterFill');
-const heartKind = document.getElementById('heartKind'), heartCount = document.getElementById('heartCount'), heartFill = document.getElementById('heartFill');
+const heartBar = document.getElementById('heartBar'), heartKind = document.getElementById('heartKind'), heartCount = document.getElementById('heartCount'), heartFill = document.getElementById('heartFill');
 const zoneCount = document.getElementById('zoneCount');
 const eventTicker = document.getElementById('eventTicker');
 const guideStep=document.getElementById('guideStep'),guideCommand=document.getElementById('guideCommand'),guideText=document.getElementById('guideText');
@@ -27,7 +27,7 @@ const harvestGhosts=new Map();
 const plotMotions=new Map(),potPaths=Object.fromEntries(Object.entries(POT_ART).map(([id,art])=>[id,new Path2D(art.body)]));
 const animatePlot=(id,kind)=>{if(id&&!reduceMotion)plotMotions.set(id,{kind,at:performance.now()});};
 let sessionInfo=null,lastGuide=-1,lastSessionClock='';
-let shotReason='';
+let shotReason='',activeCameraShot=null;
 const awards=document.getElementById('awards'),podium=document.getElementById('podium'),awardTitle=document.getElementById('awardTitle'),awardCountdown=document.getElementById('awardCountdown');
 const wheelPanel=document.getElementById('roulette'),wheel=document.getElementById('wheel'),wheelResult=document.getElementById('wheelResult'),wheelHint=document.getElementById('wheelHint'),wheelSender=document.getElementById('wheelSender');
 const growthRate=document.getElementById('growthRate'),growthLabel=document.getElementById('growthLabel'),growthFill=document.getElementById('growthFill'),growthSources=document.getElementById('growthSources'),focusLevel=document.getElementById('focusLevel'),xpFill=document.getElementById('xpFill');
@@ -58,6 +58,9 @@ addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
 addEventListener('keydown', unlockAudio, { once: true, capture: true });
 const fit = () => {
   const scale = Math.min(innerWidth / VP.w, innerHeight / VP.h);
+  const backing=canvasBackingScale(innerWidth,innerHeight,devicePixelRatio);
+  const w=Math.round(VP.w*backing),h=Math.round(VP.h*backing);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;ctx.setTransform(backing,0,0,backing,0,0);}
   stage.style.transform = `scale(${scale})`;
   stage.style.left = `${(innerWidth - VP.w * scale) / 2}px`;
   stage.style.top = `${(innerHeight - VP.h * scale) / 2}px`;
@@ -152,8 +155,8 @@ function handleFx(fx) {
       break;
     case 'round-start':
       gardenAudio.stop();presentation.clear();lastPresentation=null;wheelPresentation=null;
-      problems.clear();commandFeedback.clear();floaters.length=0;focusPlot=null;giftPresentation=null;
-      say(`Phiên ${fx.no} bắt đầu · giữ LV + XP · gõ “trồng” nhận chậu mới`,6000,'hero');
+      problems.clear();commandFeedback.clear();floaters.length=0;focusPlot=null;activeCameraShot=null;giftPresentation=null;
+      say(`Phiên ${fx.no} bắt đầu · giữ LV + XP · gõ “chăm” nhận chậu mới`,6000,'hero');
       break;
     case 'joined': {
       
@@ -186,9 +189,16 @@ function handleFx(fx) {
     case 'boss-hit': bossDamage.textContent=`−${fx.damage??0}`;bossDamage.dataset.at=String(Date.now());break;
     case 'boss-end': music.setMood('calm');break;
     case 'heart-milestone': {
-      const label = { care:'Tim chăm cây', community:'Sức sống khu vườn', luck:'Tim may mắn' }[fx.kind] ?? 'Tim cộng đồng';
-      say(fx.kind === 'luck' && fx.plotId ? `${label} · +2 vàng` : label, 3200, fx.kind === 'luck' ? 'important' : 'normal');
-      if (fx.plotId) float('sparkle', fx.plotId);
+      const label = heartMilestoneText(fx);
+      heartBar.classList.remove('milestone');
+      void heartBar.offsetWidth;
+      heartBar.classList.add('milestone');
+      say(label, 4500, 'important');
+      if (fx.plotId) {
+        float('buff',fx.plotId, fx.kind==='luck' ? '+2 vàng' : `+${Math.round((fx.gain??0)*100)}%`);
+        float('sparkle', fx.plotId);
+      }
+      if(fx.kind==='community')for(const id of fx.plotIds??[])float('buff',id,'+2,5%');
       break;
     }
     case 'event-start': break;
@@ -220,15 +230,15 @@ function updateMeters(p){
   if(p.growth?.waterBoostUntil>now)sources.push(`Tưới +25% · ${Math.ceil((p.growth.waterBoostUntil-now)/1000)}s`);
   if(p.growth?.fertilized)sources.push('Phân +18%');
   if(p.growth?.speedUntil>now)sources.push(`Quà +30% · ${Math.ceil((p.growth.speedUntil-now)/1000)}s`);
-  if(p.prank?.until>now)sources.push(`${p.prank.kind==='slow'?'Mây lười −25%':p.prank.kind==='dry'?'Nắng khô · tưới để gỡ':'Cỏ · nhổ cỏ để gỡ'} · ${Math.ceil((p.prank.until-now)/1000)}s`);
+  if(p.prank?.until>now)sources.push(`${p.prank.kind==='slow'?'Mây lười −25%':p.prank.kind==='dry'?'Nắng khô · chăm để gỡ':'Cỏ · chăm để gỡ'} · ${Math.ceil((p.prank.until-now)/1000)}s`);
   if(p.crop?.pest)sources.push('Sâu −40%');if(p.crop?.weeds)sources.push('Cỏ −28%');if(p.crop&&p.water<=0)sources.push('Khô −50%');
   growthSources.textContent=sources.join(' · ')||'Tưới +25% trong 30s · bón phân +18%';
 }
 
 function renderMoments(now,wallNow){
   const celebrating=sessionInfo?.phase==='awards';
-  awards.classList.toggle('on',celebrating);awards.setAttribute('aria-hidden',String(!celebrating));stage.classList.toggle('awards-live',celebrating);
-  document.getElementById('zoneHint').textContent=celebrating?'Đang trao giải · tạm ngừng thao tác · quà được giữ cho phiên mới':bossState?.phase==='active'?'Sâu Chúa đang xuất hiện · thả tim để cứu vườn · quà lớn đánh boss':'Gõ “trồng” → “chăm” → “hái” · “vườn” xem thông tin gọn';
+  awards.classList.toggle('on',celebrating);if(awards.getAttribute('aria-hidden')!==String(!celebrating))awards.setAttribute('aria-hidden',String(!celebrating));stage.classList.toggle('awards-live',celebrating);
+  setTextIfChanged(document.getElementById('zoneHint'),celebrating?'Đang trao giải · tạm ngừng thao tác · quà được giữ cho phiên mới':bossState?.phase==='active'?'Sâu Chúa đang xuất hiện · thả tim để cứu vườn · quà lớn đánh boss':'Chỉ cần gõ “chăm” · trống thì trồng, chín thì hái, còn lại chăm cây');
   if(celebrating)awardCountdown.textContent=`Phiên ${sessionInfo.no+1} mở sau ${Math.max(0,Math.ceil((sessionInfo.awardsUntil-wallNow)/1000))}s`;
   const next=presentation.tick({boss:bossState?.phase==='active',awards:celebrating,blocked:Boolean(focusPlot&&now<focusAt+focusMs),idleMs:meta.cfg.camera.idleMs});
   const compactNotices=presentation.drainNotices();
@@ -238,7 +248,7 @@ function renderMoments(now,wallNow){
     lastPresentation=next;giftPresentation=null;wheelPresentation=null;
     if(next?.kind==='compact')say(`${next.entries.length} quà đã ghi nhận · ${next.entries.slice(-3).map(e=>`${e.nickname??'Bạn'}: ${e.roulette?.label??e.impact?.label??'chăm vườn'}`).join(' · ')}`,1200,'important');
     if(next?.kind==='gift'){
-      presentGift({...next,giftKind:next.tier,travelMs:0,stableMs:next.until-now,giftWide:next.tier==='rain'});
+      presentGift({...next,giftKind:next.tier,travelMs:0,stableMs:next.until-now,giftWide:isGardenWideGift(next)});
       if(!next.restored)gardenAudio.cue({role:next.tier==='rain'?'rain':next.tier==='star'?'star':'dew',sceneId:next.sceneId,phase:'action'});
     }
     if(next?.kind==='profile'){
@@ -257,7 +267,7 @@ function renderMoments(now,wallNow){
       impactSender.textContent=`${displayNickname(next.nickname,1.25)} kích hoạt · ${next.total} xu`;
       impactTitle.textContent=r.label;impactResult.textContent=r.mode==='boss'?`−${r.damage} HP Sâu Chúa`:r.destroyed.length?`PHÁ HỦY ${r.destroyed.length} CÂY`:'ĐỐI THỦ ĐƯỢC KHIÊN BẢO VỆ';
       impactTargets.replaceChildren(...r.destroyed.map(p=>el('span',`${p.nickname} · mất cây ${meta.crops[p.crop]?.label??''}`)));
-      impactHint.textContent=r.mode==='boss'?'Quà lớn chuyển hỏa lực vào boss · người gửi được chín cây và khiên 60s':`Người gửi được chín cây + khiên 60s. ${r.destroyed.length?'Chậu bị phá nứt 8s → gõ “trồng” gieo lại miễn phí.':'Không có cây đối thủ hợp lệ để phá.'}`;
+      impactHint.textContent=r.mode==='boss'?'Quà lớn chuyển hỏa lực vào boss · người gửi được chín cây và khiên 60s':`Người gửi được chín cây + khiên 60s. ${r.destroyed.length?'Chậu bị phá nứt 8s → gõ “chăm” gieo lại miễn phí.':'Không có cây đối thủ hợp lệ để phá.'}`;
       if(!next.restored)gardenAudio.cue({role:next.tier==='cataclysm'?'quake':'meteorFly',sceneId:next.sceneId,phase:'intro'});
     }
   }
@@ -265,7 +275,7 @@ function renderMoments(now,wallNow){
   wheelPanel.classList.toggle('on',wheelVisible);wheelPanel.setAttribute('aria-hidden',String(!wheelVisible));stage.classList.toggle('wheel-live',wheelVisible);
   if(wheelVisible&&(reduceMotion||now-wheelPresentation.startedAt>=2000)){
     const r=wheelPresentation.roulette;if(!wheelPresentation.soundResult){wheelPresentation.soundResult=true;if(!wheelPresentation.restored)gardenAudio.cue({role:'wheelResult',sceneId:wheelPresentation.sceneId,phase:'result'});}wheelResult.textContent=`${r.label} → ${r.targetName}`;
-    wheelHint.textContent=r.expiresAt&&r.expiresAt<=wallNow?'Hiệu ứng đã kết thúc':r.kind==='speed'?'+30% tốc độ trong 45s':r.kind==='fertilizer'?'+18% tốc độ đến khi hái':r.kind==='shield'?'Khiên bảo vệ trong 60s':`${r.durationMs/1000}s rồi tự hết${r.kind==='dry'?' · gõ “tưới” để gỡ sớm':r.kind==='weeds'?' · gõ “nhổ cỏ” để gỡ sớm':' · cây vẫn tiếp tục lớn'}`;
+    wheelHint.textContent=r.expiresAt&&r.expiresAt<=wallNow?'Hiệu ứng đã kết thúc':r.kind==='speed'?'+30% tốc độ trong 45s':r.kind==='fertilizer'?'+18% tốc độ đến khi hái':r.kind==='shield'?'Khiên bảo vệ trong 60s':`${r.durationMs/1000}s rồi tự hết${r.kind==='dry'?' · gõ “chăm” để gỡ sớm':r.kind==='weeds'?' · gõ “chăm” để gỡ sớm':' · cây vẫn tiếp tục lớn'}`;
   }
   if(wheelVisible&&now-wheelPresentation.startedAt<2000&&!wheelPresentation.restored){const tick=Math.floor((now-wheelPresentation.startedAt)/140);gardenAudio.cue({role:'wheelTick',sceneId:wheelPresentation.sceneId,phase:`tick:${tick}`});}
   if(next?.kind==='impact'&&now-next.startedAt>=650&&!next.soundImpact){next.soundImpact=true;if(!next.restored){const role=next.impact.mode==='boss'?'bossGiftHit':!next.impact.destroyed.length?'shieldBlock':next.tier==='cataclysm'?null:'meteorImpact';if(role)gardenAudio.cue({role,sceneId:next.sceneId,phase:'result'});}}
@@ -299,9 +309,9 @@ function presentGift(data) {
 function renderGiftHero(now) {
   if(giftPresentation&&now>=giftPresentation.until)giftPresentation=null;
   const active=Boolean(giftPresentation);
-  giftHero.classList.toggle('on',active);giftHero.setAttribute('aria-hidden',String(!active));
+  giftHero.classList.toggle('on',active);if(giftHero.getAttribute('aria-hidden')!==String(!active))giftHero.setAttribute('aria-hidden',String(!active));
   stage.classList.toggle('gift-live',active);
-  stage.dataset.gift=giftPresentation?.giftKind??'';
+  const giftKind=giftPresentation?.giftKind??'';if(stage.dataset.gift!==giftKind)stage.dataset.gift=giftKind;
 }
 
 function drawGiftImpact(now) {
@@ -377,20 +387,19 @@ async function refreshStatus() {
 
 function renderHearts(h) {
   if (!h) return;
-  heartKind.textContent = ({ care:'TIM · CHĂM CÂY', community:'TIM · CẢ VƯỜN', luck:'TIM · MAY MẮN' })[h.kind] ?? 'TIM CỘNG ĐỒNG';
+  heartKind.textContent = heartGoalText(h);
   heartCount.textContent = `${Math.min(h.progress,h.target)}/${h.target}`;
   heartFill.style.width = `${Math.round(Math.min(1,h.progress / Math.max(1,h.target))*Math.max(0,heartFill.parentElement.clientWidth-16))}px`;
 }
 
 function actionHintFor(p) {
-  if(p?.brokenUntil>Date.now())return `CHẬU NỨT · ${Math.ceil((p.brokenUntil-Date.now())/1000)}s rồi gõ “trồng” miễn phí`;
-  if (!p?.crop) return p?.replantCredit?'Gõ “trồng” để gieo lại miễn phí':'Gõ “trồng” để bắt đầu';
-  if (p.crop.pest) return 'CÓ SÂU · gõ “bắt sâu” để cứu cây';
-  if (p.crop.weeds) return 'CÓ CỎ · gõ “nhổ cỏ” để cây lớn lại';
-  if ((p.stage ?? 0) >= 3) return 'CÂY CHÍN · gõ “hái” để nhận vàng + XP';
-  if (p.water < .25) return 'ĐẤT KHÔ · gõ “tưới”';
-  if (!p.crop.fertilized) return 'Gõ “bón phân” để tăng tốc';
-  return 'Tiếp tục chăm cây · chờ cây chín';
+  if(p?.brokenUntil>Date.now())return `CHẬU NỨT · ${Math.ceil((p.brokenUntil-Date.now())/1000)}s rồi gõ “chăm” miễn phí`;
+  if (!p?.crop) return p?.replantCredit?'Gõ “chăm” để gieo lại miễn phí':'Gõ “chăm” để bắt đầu';
+  if ((p.stage ?? 0) >= 3) return 'CÂY CHÍN · gõ “chăm” để nhận vàng + XP';
+  if (p.crop.pest) return 'CÓ SÂU · gõ “chăm” để cứu cây';
+  if (p.crop.weeds) return 'CÓ CỎ · gõ “chăm” để cây lớn lại';
+  if (p.water < .25) return 'ĐẤT KHÔ · gõ “chăm”';
+  return 'Gõ “chăm” để tưới tăng tốc · chín thì hái';
 }
 
 
@@ -409,7 +418,7 @@ function updateFocusCard(kind, plot) {
   const tier = plot.potTier ?? 'clay';
   focusCard.dataset.tier = tier;
   focusKicker.textContent = shotReason || 'HỒ SƠ VƯỜN';
-  focusName.textContent = `${displayNickname(plot.owner?.nickname, 1.25)} · Lv${plot.owner.level}`;
+  focusName.textContent = displayNickname(plot.owner?.nickname, 1.25);
   const avatarSlot=document.getElementById('focusAvatar');
   if(avatarSlot.dataset.owner!==plot.owner.userId+plot.owner.avatar){avatarSlot.dataset.owner=plot.owner.userId+plot.owner.avatar;avatarSlot.replaceChildren(createViewerAvatar(plot.owner));}
 
@@ -442,7 +451,7 @@ function positionFocusCard(now) {
 function onMessage(event, data) {
   if (event === 'meta') {
     meta = data;
-    hint.textContent = 'Bình luận để nhận chậu · gõ “trồng”';
+    hint.textContent = 'Bình luận để nhận chậu · gõ “chăm”';
     music.setLists(data.music ?? { calm: [], upbeat: [] });
     preloadGardenArt();
     music.resume();gardenAudio.warmup().catch(()=>{});
@@ -479,21 +488,22 @@ function onMessage(event, data) {
     for(const receipt of data)if(receipt.sessionNo===sessionInfo?.no)presentation.push({...receipt,compact:true});
   } else if (event === 'shot') {
     shotReason=cameraReason(data);
+    activeCameraShot={sceneId:data.sceneId??null,eventId:data.eventId??null,kind:data.kind,startedAt:performance.now()-Math.max(0,Date.now()-(data.startedAt??Date.now())),travelMs:Math.max(0,data.travelMs??0),stableMs:Math.max(0,data.stableMs??0)};
     from = cam;
     to = { x: data.x, y: data.y, zoom: data.zoom };
     cameraEaseMs = Math.max(0, Number(data.travelMs ?? data.easeMs) || 1800);
     const focused = data.plotId ? plots.get(data.plotId) : null;
     hint.textContent = data.kind === 'overview'||data.giftWide||data.kind==='boss'
-      ? 'Bình luận để nhận chậu · gõ “trồng”'
+      ? 'Bình luận để nhận chậu · gõ “chăm”'
       : data.eventKind ? meta?.copy?.eventHint?.[data.eventKind] ?? 'Cùng chăm vườn' : 'Cận cảnh thao tác · xem hướng dẫn cạnh cây';
     if(data.kind==='event'&&data.eventKind)presentedEventKind=data.eventKind;
 
     focusPlot = data.giftWide ? null : data.plotId ?? null;
     updateFocusCard(data.kind, focused);
     const now = performance.now();
-    focusAt = now + Math.max(0, Number(data.travelMs) || cameraEaseMs);
+    focusAt = activeCameraShot.startedAt + Math.max(0, Number(data.travelMs) || cameraEaseMs);
     focusMs = Math.max(0, Number(data.stableMs) || 4600);
-    shotAt = now;
+    shotAt = activeCameraShot.startedAt;
   }
 }
 
@@ -859,7 +869,7 @@ function drawPlotLabel(p) {
   const trouble = p.crop?.pest || p.crop?.weeds || (p.crop && p.water < .25);
   ctx.save(); ctx.font = `${cam.zoom < .65 ? 18 : 22}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const name = displayNickname(p.owner.nickname, cam.zoom);
-  const label=`${name} · L${p.owner.level}`;
+  const label=name;
   const w = Math.min(maxW, ctx.measureText(label).width + 24);
   ctx.fillStyle = C.card; ctx.strokeStyle = 'rgba(47,60,68,.22)'; ctx.lineWidth = 1.8;
   ctx.beginPath(); ctx.roundRect(at.x-w/2, y, w, 29, 7); ctx.fill(); ctx.stroke();
@@ -1007,9 +1017,9 @@ function renderEventHero(now) {
   const cropLabel=e.crop&&(meta.crops?.[e.crop]?.label??e.crop);
   const hints={
     rain:'Mưa đã tưới đầy nước · tiếp tục chăm cây',
-    pests:`Gõ “bắt sâu” · thắng: +${meta.cfg.stormReward} vàng/người góp sức`,
-    merchant:cropLabel?`${cropLabel} ×${meta.cfg.merchantMult} vàng · cây chín? gõ “hái”`:'Chợ đang chọn cây thu mua',
-    golden:`Thu hoạch ×${meta.cfg.goldenMult} vàng · gõ “hái”`,
+    pests:`Gõ “chăm” · thắng: +${meta.cfg.stormReward} vàng/người góp sức`,
+    merchant:cropLabel?`${cropLabel} ×${meta.cfg.merchantMult} vàng · cây chín? gõ “chăm”`:'Chợ đang chọn cây thu mua',
+    golden:`Thu hoạch ×${meta.cfg.goldenMult} vàng · gõ “chăm”`,
   };
   eventHeroHint.textContent=hints[e.kind]??'';
 
@@ -1075,7 +1085,7 @@ let lastFrameAt = 0,diagnosticAt=0,diagnosticFrames=0;
 function frame(now) {
   requestAnimationFrame(frame);
   if (!meta) return;
-  const moving=now-shotAt<cameraEaseMs+120,eventLive=Boolean(visualEvent())||Boolean(giftPresentation&&now<giftPresentation.until),fps=moving||eventLive?45:floaters.length||plotMotions.size?30:20;
+  const moving=now-shotAt<cameraEaseMs+120,eventLive=Boolean(visualEvent())||Boolean(giftPresentation&&now<giftPresentation.until),fps=renderCadence({moving,eventLive,animated:!!(floaters.length||plotMotions.size),visible:document.visibilityState==='visible'});
   if(now-lastFrameAt<1000/fps-2)return;
   lastFrameAt=now;
   cam = reduceMotion ? to : easeCamera(from, to, now - shotAt, cameraEaseMs);
@@ -1116,7 +1126,7 @@ function frame(now) {
   const temporaryBuff=active.some(p=>(p.growth?.waterBoostUntil??0)>wallNow||(p.growth?.speedUntil??0)>wallNow);
   const idleAllowed=empty!=null&&!quiet.active&&!quiet.primary&&quiet.idleWaitMs===0&&!close&&!temporaryBuff&&!floaters.length&&!plotMotions.size&&bossState?.phase!=='active'&&sessionInfo?.phase!=='awards';
   idleHint.hidden=!idleAllowed;
-  if(idleAllowed){const at=worldToScreen(pointOf(empty),cam,VP),u=active[Math.floor(wallNow/30000)%Math.max(1,active.length)];idleHint.style.left=`${Math.max(18,Math.min(730,at.x-140))}px`;idleHint.style.top=`${Math.max(430,Math.min(1780,at.y-60))}px`;idleHint.textContent=u?`${u.owner.nickname} · ${u.owner.competition?.milestone?.label??'Cùng gieo mây'} · ${u.owner.competition?.milestone?.progress??0}/${u.owner.competition?.milestone?.target??1}`:'Chậu mới đang chờ bạn · gõ “trồng”';}
+  if(idleAllowed){const at=worldToScreen(pointOf(empty),cam,VP),u=active[Math.floor(wallNow/30000)%Math.max(1,active.length)];idleHint.style.left=`${Math.max(18,Math.min(730,at.x-140))}px`;idleHint.style.top=`${Math.max(430,Math.min(1780,at.y-60))}px`;setTextIfChanged(idleHint,u?`${u.owner.nickname} · ${u.owner.competition?.milestone?.label??'Cùng gieo mây'} · ${u.owner.competition?.milestone?.progress??0}/${u.owner.competition?.milestone?.target??1}`:'Chậu mới đang chờ bạn · gõ “chăm”');}
 
   drawFloaters(now);
   renderEventHero(now);
@@ -1131,7 +1141,9 @@ function frame(now) {
   diagnosticFrames++;
   if(now-diagnosticAt>=500){
     const blocked=sessionInfo?.phase==='awards'?'Đang trao giải':bossState?.phase==='active'?'Đang đánh boss':focusPlot&&now<focusAt+focusMs?'Đang zoom':'';
-    const report={type:'garden-presentation',presentation:presentation.snapshot(),blocked,camera:{reason:shotReason,zoom:cam.zoom,plotId:focusPlot},
+    const elapsed=activeCameraShot?Math.max(0,now-activeCameraShot.startedAt):0;
+    const cameraPhase=!activeCameraShot?'idle':elapsed<activeCameraShot.travelMs?'travel':elapsed<activeCameraShot.travelMs+Math.max(0,activeCameraShot.stableMs-400)?'hold':elapsed<activeCameraShot.travelMs+activeCameraShot.stableMs?'result':'done';
+    const report={type:'garden-presentation',presentation:presentation.snapshot(),blocked,camera:{reason:shotReason,zoom:cam.zoom,plotId:focusPlot,serverSceneId:activeCameraShot?.sceneId??null,serverPhase:cameraPhase},
       event:serverEvent?{kind:serverEvent.kind,phase:serverEvent.phase,remainingMs:Math.max(0,(serverEvent.endsAt??0)-wallNow)}:null,
       boss:bossState?{phase:bossState.phase,hp:bossState.hp,maxHp:bossState.maxHp,remainingMs:Math.max(0,(bossState.endsAt??0)-wallNow)}:null,
       session:sessionInfo?.phase??null,visibility:document.visibilityState,fps:Math.round(diagnosticFrames*1000/Math.max(1,now-diagnosticAt))};

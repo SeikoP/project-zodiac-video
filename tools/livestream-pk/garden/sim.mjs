@@ -8,7 +8,7 @@ import { createGarden } from './garden.mjs';
 import { createCamera } from './camera.mjs';
 import { createCoalescer } from './fx.mjs';
 
-const ACTIONS = ['trồng rau', 'trồng hướng dương', 'tưới', 'tưới', 'hái', 'bắt sâu', 'trộm', 'bắt trộm', 'thả chó', 'vườn'];
+const ACTIONS = ['chăm'];
 const GIFTS = [1, 1, 1, 1, 1, 5, 5, 10, 10, 30, 100, 1000]; // mostly small, like a real room
 
 function mulberry(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -22,7 +22,7 @@ export function runLoad({ users = 24, seconds = 120, giftsPerMin = 2, seed = 1 }
   const camera = createCamera({ cfg: garden.cfg, now: () => t, getPlots: () => Object.values(garden.state.plots).filter(p => p.owner) });
   const coalescer = createCoalescer({ now: () => t });
   const ids = Array.from({ length: users }, (_, i) => `u${i}`);
-  ids.forEach((id, i) => garden.chat({ userId: id, nickname: `Người ${i}`, avatar: '', comment: 'chào' }));
+  ids.forEach((id, i) => garden.chat({ userId: id, nickname: `Người ${i}`, avatar: '', comment: 'chăm' }));
 
   const seen = {}, tickMs = [], frameBytes = [], shots = [], eventCounts = {}, shotKinds = {};
   garden.changes(seen);
@@ -53,7 +53,7 @@ export function runLoad({ users = 24, seconds = 120, giftsPerMin = 2, seed = 1 }
 async function live(url, users, seconds) {
   const post = body => fetch(`${url}/api/sim`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
   const mk = i => ({ userId: `rehearsal-${i}`, nickname: `Người ${i}` });
-  for (let i = 0; i < users; i++) await post({ kind: 'chat', user: mk(i), comment: 'chào' });
+  for (let i = 0; i < users; i++) await post({ kind: 'chat', user: mk(i), comment: 'chăm' });
   console.log(`${users} viewers joined; acting for ${seconds}s`);
   const end = Date.now() + seconds * 1000;
   while (Date.now() < end) {

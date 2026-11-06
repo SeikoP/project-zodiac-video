@@ -26,20 +26,22 @@ export function applyHearts(ctx, data) {
     const kind = HEART_KINDS[h.step];
     h.step = (h.step + 1) % HEART_KINDS.length;
     const eligible = Object.values(ctx.state.plots).filter(p => p.owner && isAwake(ctx, p) && p.crop && p.crop.progress < 1);
+    let targetPlot = null, affected = 0, gain = 0;
+    const plotIds = [];
     if (kind === 'care' && eligible.length) {
       const plot = eligible[Math.floor(ctx.rng() * eligible.length)];
-      boost(ctx, plot, .02);
+      targetPlot = plot; gain = boost(ctx, plot, .05); affected = gain > 0 ? 1 : 0; if (affected) plotIds.push(plot.id);
     } else if (kind === 'community') {
-      for (const plot of eligible) boost(ctx, plot, .01);
+      for (const plot of eligible) { const added = boost(ctx, plot, .025); if (added > 0) { affected++; gain += added; if (plotIds.length < 6) plotIds.push(plot.id); } }
     }
     let luckyPlot = null;
     if (kind === 'luck') {
       const participants = Object.values(ctx.state.plots).filter(p => p.owner && isAwake(ctx,p) && ctx.state.users[p.owner]);
       luckyPlot = participants.length ? participants[Math.floor(ctx.rng() * participants.length)] : null;
-      if (luckyPlot) addGold(ctx.state.users[luckyPlot.owner], 2);
+      if (luckyPlot) { addGold(ctx.state.users[luckyPlot.owner], 2); bump(ctx,luckyPlot); targetPlot = luckyPlot; affected = 1; }
     }
     h.revision++;
-    ctx.emit({ type: 'heart-milestone', kind, step: h.step, total: h.total, plotId: luckyPlot?.id ?? null });
+    ctx.emit({ type: 'heart-milestone', kind, step: h.step, total: h.total, plotId: targetPlot?.id ?? null, nickname: targetPlot ? ctx.state.users[targetPlot.owner]?.nickname ?? null : null, affected, plotIds, gain: Number(gain.toFixed(3)) });
     effects.push(kind);
   }
   h.revision++;
@@ -51,10 +53,11 @@ function boost(ctx, plot, gain) {
   const already = Math.max(0, Number(crop.heartBonus) || 0);
   const available = Math.max(0, .10 - already);
   const delta = Math.min(gain, available, Math.max(0, .999 - crop.progress));
-  if (!delta) return;
+  if (!delta) return 0;
   crop.progress += delta;
   crop.heartBonus = already + delta;
   bump(ctx, plot);
+  return delta;
 }
 
 // Once per simulation tick, consume at most one deferred milestone.

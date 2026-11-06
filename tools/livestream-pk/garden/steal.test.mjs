@@ -31,6 +31,7 @@ test('refuses: self, unripe, newcomer shield, asleep', () => {
   s.vic.user.level = 3;
   s.advance(301_000);
   s.thief.plot.lastActive = s.ctx.now();
+  s.vic.plot.sleeping = true;
   assert.equal(steal(s.ctx, s.thief.user, s.vic.user).reason, 'asleep');
   assert.equal(s.thief.user.gold, 0);
 });

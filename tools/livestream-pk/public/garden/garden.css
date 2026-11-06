@@ -228,3 +228,11 @@ html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(-
 #impactStage[data-kind="cataclysm"]{background:var(--card);border-top-color:var(--ochre)}
 #impactStage h2{font-size:36px;margin:4px 0}#impactStage .meteor-art{display:none}#impactStage>small{font-size:22px}#impactHint{font-size:23px;margin:7px 0 0}#impactResult{font-size:30px}#impactTargets{margin:6px 0}#impactTargets span{font-size:23px;border-color:var(--coral);background:var(--paper)}
 #bossArena{background:var(--card);box-shadow:0 10px 0 var(--shadow),0 0 0 1200px rgba(246,240,230,.45)}
+
+/* Heart milestone feedback uses the existing HUD and never blocks gameplay. */
+#heartBar.milestone { animation: heartMilestone .95s ease-out; }
+@keyframes heartMilestone {
+  0%,100% { box-shadow:none; }
+  35% { box-shadow:0 0 0 7px rgba(233,122,102,.23); border-color:var(--coral); }
+}
+@media (prefers-reduced-motion:reduce) { #heartBar.milestone { animation:none; } }
