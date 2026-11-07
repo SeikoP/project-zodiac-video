@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {mkdir,mkdtemp,link,unlink,rm,access} from 'node:fs/promises';
+import {mkdir,link,unlink,access} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runPhase03Production} from '../phase03/run-phase03-production.mjs';
@@ -23,14 +23,19 @@ export async function publishReadyZip(stagedZip,readyDir){
 
 export async function runLocalPhase03({queueRoot=process.env.ZODIAC_QUEUE_ROOT||process.cwd(),sourceRoot,producer=runPhase03Production,...args}={}){
  if(!sourceRoot)throw Error('LOCAL_PHASE03_SOURCE_REQUIRED');
- const root=path.resolve(queueRoot);await mkdir(root,{recursive:true});
- const scratch=await mkdtemp(path.join(root,'.local-phase03-staging-')),outputDir=path.join(scratch,'output');
- try{
-  const result=await producer({sourceRoot:path.resolve(sourceRoot),outputDir,...args});
-  if(result?.ok!==true||result?.release_level!=='PRODUCTION_READY_ZIP'||!result?.zip)throw Error('LOCAL_PHASE03_PRODUCTION_NOT_READY');
-  const published=await publishReadyZip(result.zip,path.join(root,'ready'));
-  return {...published,run_id:result.handoff?.run_id??null,producer_release_level:result.release_level,producer_result:result};
- }finally{await rm(scratch,{recursive:true,force:true})}
+ const root=path.resolve(queueRoot),ready=path.join(root,'ready');await mkdir(ready,{recursive:true});
+ // The canonical Phase-03 producer already stages privately under outputDir,
+ // validates the real archive, then atomically publishes and commits state
+ // against that final target. Do not add a second staging layer here or the
+ // producer state would point at a path that this wrapper later removes.
+ const result=await producer({sourceRoot:path.resolve(sourceRoot),outputDir:ready,...args});
+ if(result?.ok!==true||result?.release_level!=='PRODUCTION_READY_ZIP'||!result?.zip)throw Error('LOCAL_PHASE03_PRODUCTION_NOT_READY');
+ const target=path.resolve(result.zip);
+ if(path.dirname(target)!==ready)throw Error('LOCAL_PHASE03_READY_PATH_INVALID '+target);
+ const zipQc=await validateZipFile(target);
+ const semantic=await validateSemanticZip(target);
+ if(semantic.errors.length)throw Error('LOCAL_READY_SEMANTIC_P1 '+semantic.errors.length);
+ return {status:'READY_PUBLISHED',zip:target,archive_entries:zipQc.entries,run_id:result.handoff?.run_id??null,producer_release_level:result.release_level,producer_result:result,not_an_approval:true};
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
