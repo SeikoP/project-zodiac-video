@@ -3,7 +3,7 @@ import {mkdir,readFile,readdir,lstat,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {buildZip} from '../../compat/production-v1/zip-core.mjs';
+import {buildPortableZip} from '../../core/archive/zip-primitives.mjs';
 import {assertContentApprovalSources,approvalSourceHashes} from '../../core/evidence/approval-source-hashes.mjs';
 import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest} from '../../contracts/phase1-handoff.mjs';
 
@@ -67,7 +67,7 @@ export async function buildPhase1HandoffManifest(workspace){
  const currentHashes=await approvalSourceHashes(root);
  const receiptFile=payload.find(x=>x.rel==='content-review-receipt.json');
  const receipt=JSON.parse(receiptFile.data);
- if(receipt.status!=='APPROVED'&&receipt.phase_id!=='01-content')throw Error('PHASE1_HANDOFF_RECEIPT_INVALID');
+ if(receipt.status!=='APPROVED'||receipt.phase_id!=='01-content')throw Error('PHASE1_HANDOFF_RECEIPT_INVALID');
  const stateReceipt=review;
  if(JSON.stringify(receipt.source_hashes??null)!==JSON.stringify(stateReceipt.source_hashes??null))throw Error('PHASE1_HANDOFF_REVIEW_RECEIPT_MISMATCH');
  const inventory=buildInventory(payload);
@@ -89,7 +89,7 @@ export async function exportPhase1Handoff(workspace,outputPath){
   ...payload,
   {rel:'SHA256SUMS',data:Buffer.from(formatSha256Sums(inventory))}
  ];
- const zip=buildZip(entries);
+ const zip=buildPortableZip(entries);
  const out=path.resolve(outputPath);await mkdir(path.dirname(out),{recursive:true});
  await writeFile(out,zip,{flag:'wx'});
  return {format:PHASE1_HANDOFF_FORMAT,run_id:manifest.run_id,path:out,sha256:sha256(zip),bytes:zip.length,entries:entries.length,not_an_approval:true};
