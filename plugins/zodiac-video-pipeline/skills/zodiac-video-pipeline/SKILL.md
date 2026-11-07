@@ -34,4 +34,4 @@ Keep only canonical authoring inputs, machine-required projections, genuine rece
 
 ## Phase 03: exactly one validated Job@5 ZIP per revision
 Use the router's Phase 03 runner and preserve the active Job@5/renderer contract. Local runner owns TTS, measured timing, Remotion, captions, cover rasterization, audio and persistent MP4 acceptance. ZIP-ready never means video-ready.
-Normal user statuses: DRAFT, IN_REVIEW, APPROVED, PASS, BLOCKED. Optional Notion sync is a status ledger, never evidence or approval.
+Normal user statuses: DRAFT, IN_REVIEW, APPROVED, PASS, BLOCKED.

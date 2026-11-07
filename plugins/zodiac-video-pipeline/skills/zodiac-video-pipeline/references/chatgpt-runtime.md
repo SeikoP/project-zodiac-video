@@ -41,7 +41,7 @@ Use the active phase manifest as the source of truth for required capabilities a
 | parallel_verify | Parallel Search connector mcp__Parallel_Search__web_search | Tavily, then built-in web search, are fallback routes only where the manifest allows them. |
 | firecrawl_extract | Firecrawl connector mcp__Firecrawl__firecrawl_scrape | Conditional capability; block if unavailable. |
 | vidiq_reference_analysis | vidIQ mcp__vidIQ__vidiq_watch_shortform_content | Conditional capability; block if unavailable. |
-| viral_analysis | Installed ChatGPT viral-analysis plugin instructions | Guidance only; never treat as Zodiac evidence. |\n| humanwriting_editor | HumanWriting `skills://plugins/humanwriting/human-writing/skill.md` | Optional narration polish for observed natural-voice/formulaic-language/audience-fit weaknesses. Preserve semantics and evidence; never creates approval. |\n| notion_knowledge_sync | Notion knowledge-capture workflow | Optional one-way sync of status, artifact hashes/links, validated decisions and blockers after Zodiac state is written. Notion never creates episode evidence, review approval or pipeline authority. |
+| viral_analysis | Installed ChatGPT viral-analysis plugin instructions | Guidance only; never treat as Zodiac evidence. |\n| humanizer_editor | Bundled Humanizer `skills://plugins/zodiac-video-pipeline/humanizer/skill.md` | Optional narration polish for observed natural-voice/formulaic-language/audience-fit weaknesses. Preserve semantics and evidence; never creates approval. |
 
 Internal compilers, validators, phase gates, source hashes and approval receipts must run through the verified phase-scoped execution source. A tool result or skill read is evidence of invocation, not approval.
 
