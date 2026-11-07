@@ -10,6 +10,9 @@ test('web entrypoint owns Phase 1 and exports handoff instead of activating Phas
  assert.match(s,/name:\s*zodiac-video-web/u);
  assert.match(s,/export-phase1-handoff\.mjs/u);
  assert.match(s,/PHASE1_HANDOFF_READY/u);
+ assert.match(s,/resume-brief\.mjs/u);
+ assert.match(s,/01-content\.json/u);
+ assert.doesNotMatch(s,/zodiac-video-pipeline\/SKILL\.md/u);
  assert.match(s,/must not activate Phase 2/i);
  assert.doesNotMatch(s,/run-phase03-production\.mjs/u);
 });
