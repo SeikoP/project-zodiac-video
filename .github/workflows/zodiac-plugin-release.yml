@@ -9,6 +9,10 @@ on:
       - plugins/zodiac-video-pipeline/.codex-plugin/plugin.json
       - plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json
       - tools/release/build_plugin_bundle.py
+      - tools/release/build_split_plugin_bundle.py
+      - plugins/zodiac-video-pipeline/distributions/**
+      - plugins/zodiac-video-pipeline/skills/zodiac-video-web/**
+      - plugins/zodiac-video-pipeline/skills/zodiac-video-local/**
       - .github/workflows/zodiac-plugin-release.yml
 permissions:
   contents: read
@@ -33,6 +37,10 @@ jobs:
             --repo-root . \
             --output "$RUNNER_TEMP/zodiac-video-pipeline-plugin.zip" \
             --report "$RUNNER_TEMP/candidate-plugin-report.json"
+      - name: Build Web and Local distribution archives
+        run: |
+          python tools/release/build_split_plugin_bundle.py --repo-root . --profile web --output "$RUNNER_TEMP/zodiac-video-web-plugin.zip" --report "$RUNNER_TEMP/web-plugin-report.json"
+          python tools/release/build_split_plugin_bundle.py --repo-root . --profile local --output "$RUNNER_TEMP/zodiac-video-local-plugin.zip" --report "$RUNNER_TEMP/local-plugin-report.json"
       - uses: actions/upload-artifact@v4
         with:
           name: zodiac-video-pipeline-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
@@ -41,3 +49,19 @@ jobs:
             ${{ runner.temp }}/candidate-plugin-report.json
           if-no-files-found: error
           retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-web-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/zodiac-video-web-plugin.zip
+            ${{ runner.temp }}/web-plugin-report.json
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-local-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/zodiac-video-local-plugin.zip
+            ${{ runner.temp }}/local-plugin-report.json
+          if-no-files-found: error
+          retention-days: 7
