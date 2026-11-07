@@ -126,6 +126,7 @@ export function validateMockAdvertisement(plan,narration,{requireStoryHijack=fal
   validateAdvertisementStructure(plan);
   if(typeof plan.fictional_product!=='string'||!plan.fictional_product.trim()||typeof plan.text!=='string'||!plan.text.includes(plan.fictional_product))fail('MOCK_AD_FICTIONAL_PRODUCT_REQUIRED');
   if(/https?:\/\//iu.test(plan.text+plan.fictional_product))fail('MOCK_AD_EXTERNAL_PRODUCT_FORBIDDEN');
+  if(requireStoryHijack&&/quảng cáo hư cấu/iu.test(plan.text))fail('MOCK_AD_META_LABEL_FORBIDDEN');
   if(typeof narration!=='string')fail('MOCK_AD_NARRATION_REQUIRED');
   const at=narration.indexOf(plan.text);
   if(at<0||narration.indexOf(plan.text,at+1)>=0)fail('MOCK_AD_COPY_MISMATCH');
