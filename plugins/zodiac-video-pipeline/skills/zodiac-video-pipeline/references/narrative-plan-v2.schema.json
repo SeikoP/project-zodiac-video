@@ -163,6 +163,49 @@
         "text": {
           "type": "string",
           "minLength": 1
+        },
+        "story_hijack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trigger",
+            "pivot",
+            "product_reveal",
+            "demo",
+            "wordplay",
+            "cta",
+            "snapback"
+          ],
+          "properties": {
+            "trigger": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pivot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "product_reveal": {
+              "type": "string",
+              "minLength": 1
+            },
+            "demo": {
+              "type": "string",
+              "minLength": 1
+            },
+            "wordplay": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cta": {
+              "type": "string",
+              "minLength": 1
+            },
+            "snapback": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
         }
       }
     }
