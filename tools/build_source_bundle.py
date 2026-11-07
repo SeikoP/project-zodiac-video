@@ -53,6 +53,24 @@ def validate_dependencies(root, selected):
                 raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing executable dependency " + name + " -> " + dependency)
 
 
+def release_identity_for_phase(record, phase):
+    """Resolve the installed plugin release that owns one execution phase."""
+    fmt = record.get("format", "zodiac-plugin-release@1")
+    if fmt == "zodiac-plugin-release@1":
+        release_id = record.get("plugin_release_id")
+        if not release_id:
+            raise ValueError("SOURCE_INTEGRITY_MISMATCH: release ID missing")
+        return ("monolithic", release_id)
+    if fmt == "zodiac-plugin-release@2":
+        owner = "web" if phase == "01-content" else "local"
+        node = record.get(owner + "_plugin") or {}
+        release_id = node.get("release_id")
+        if not release_id:
+            raise ValueError("SOURCE_INTEGRITY_MISMATCH: release ID missing for " + owner)
+        return (owner, release_id)
+    raise ValueError("SOURCE_INTEGRITY_MISMATCH: unsupported release record format")
+
+
 def build(root, output, commit, release_id, release_record=None, phase="01-content"):
     if phase not in PHASES:
         raise ValueError("Unknown phase")
@@ -71,13 +89,15 @@ def build(root, output, commit, release_id, release_record=None, phase="01-conte
     if manifests[1]["version"] != version or manifests[2]["plugin_version"] != version:
         raise ValueError("SOURCE_INTEGRITY_MISMATCH: manifest version mismatch")
     record = None
+    distribution = "monolithic"
     if release_record:
         record = json.loads((root / release_record).read_text())
-        if record["plugin_version"] != version or not record.get("plugin_release_id") or not record.get("source_commit"):
+        if record.get("plugin_version") != version or not record.get("source_commit"):
             raise ValueError("SOURCE_INTEGRITY_MISMATCH: release record incomplete")
-        if release_id and release_id != record["plugin_release_id"]:
+        distribution, resolved_release_id = release_identity_for_phase(record, phase)
+        if release_id and release_id != resolved_release_id:
             raise ValueError("SOURCE_INTEGRITY_MISMATCH: release ID mismatch")
-        release_id = record["plugin_release_id"]
+        release_id = resolved_release_id
         # Mapping commits may follow the implementation commit, but bytes must
         # still match the plugin source actually associated with this release.
         result = subprocess.run(["git", "diff", "--quiet", record["source_commit"], commit, "--", PLUGIN], cwd=root)
@@ -106,6 +126,7 @@ def build(root, output, commit, release_id, release_record=None, phase="01-conte
         archive.writestr("SOURCE-PROVENANCE.json", json.dumps({
             "format": "zodiac-execution-source@2", "scope": phase,
             "plugin_version": version, "plugin_release_id": release_id,
+            "distribution": distribution,
             "plugin_source_commit": record["source_commit"] if record else None,
             "repository": "SeikoP/project-zodiac-video", "commit": commit,
             "source_root": PLUGIN.rstrip("/"),
