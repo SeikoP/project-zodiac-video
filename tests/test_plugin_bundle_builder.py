@@ -16,6 +16,8 @@ class CandidateBundleTests(unittest.TestCase):
             ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/SKILL.md": "# Zodiac",
             "skills/zodiac-affiliate-commerce/SKILL.md": "# Affiliate",
+            "skills/humanizer/SKILL.md": "# Humanizer",
+            "skills/humanizer/LICENSE": "MIT License",
             "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json": '{"plugin_version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/core/run.mjs": "export const run = true;",
             "skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs": "throw Error('NO');",
@@ -39,6 +41,8 @@ class CandidateBundleTests(unittest.TestCase):
                 self.assertIsNone(package.testzip())
                 self.assertIn("skills/zodiac-video-pipeline/core/run.mjs", package.namelist())
                 self.assertIn("skills/zodiac-affiliate-commerce/SKILL.md", package.namelist())
+                self.assertIn("skills/humanizer/SKILL.md", package.namelist())
+                self.assertIn("skills/humanizer/LICENSE", package.namelist())
                 self.assertIn("package.json", package.namelist())
                 self.assertIn("package-lock.json", package.namelist())
                 self.assertNotIn("skills/zodiac-video-pipeline/orchestration/tests/ignore.test.mjs", package.namelist())
