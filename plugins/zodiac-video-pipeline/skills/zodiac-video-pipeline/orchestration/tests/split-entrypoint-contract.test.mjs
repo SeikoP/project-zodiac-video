@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
-const web=new URL('../../../../zodiac-video-web/SKILL.md',import.meta.url);
-const local=new URL('../../../../zodiac-video-local/SKILL.md',import.meta.url);
+const web=new URL('../../../zodiac-video-web/SKILL.md',import.meta.url);
+const local=new URL('../../../zodiac-video-local/SKILL.md',import.meta.url);
 
 test('web entrypoint owns Phase 1 and exports handoff instead of activating Phase 2',async()=>{
  const s=await readFile(web,'utf8');
