@@ -54,7 +54,7 @@ test('fresh story-hijack gate requires product pivot, compact demo and immediate
    [{...ad,story_hijack:undefined},/MOCK_AD_STORY_HIJACK_REQUIRED/],
    [{...ad,story_hijack:{...ad.story_hijack,trigger:'không có trong truyện'}},/MOCK_AD_TRIGGER_NOT_IN_STORY/],
    [{...ad,story_hijack:{...ad.story_hijack,cta:'MÀ KHOAN!'}},/MOCK_AD_BEAT_ORDER_CTA/],
-   [{...ad,story_hijack:{...ad.story_hijack,product_reveal:'Sản phẩm khác'}},/MOCK_AD_REVEAL_PRODUCT_MISMATCH/],
+   [{...ad,story_hijack:{...ad.story_hijack,product_reveal:'Quảng cáo hư cấu:'}},/MOCK_AD_REVEAL_PRODUCT_MISMATCH/],
    [{...ad,story_hijack:{...ad.story_hijack,snapback:'Quay lại câu chuyện'}},/MOCK_AD_SNAPBACK_NOT_IMMEDIATE/]
   ]){
    await setPlan(bad);
