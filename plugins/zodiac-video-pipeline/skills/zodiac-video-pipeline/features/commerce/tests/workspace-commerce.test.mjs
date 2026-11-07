@@ -48,6 +48,9 @@ test('fresh story-hijack gate requires product pivot, compact demo and immediate
   const setPlan=async x=>writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:x}));
   await setPlan(ad);
   assert.equal((await validateCommerceWorkspace(root,{stage:'content'})).status,'PASS');
+  await setPlan({...ad,text:'Quảng cáo hư cấu: '+ad.text});
+  await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_META_LABEL_FORBIDDEN|MOCK_AD_COPY_MISMATCH/);
+  await setPlan(ad);
   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'s01',voice:ad.story_before_anchor},{id:'ad',voice:ad.text},{id:'s02',voice:ad.story_after_anchor+'\\nNgười ấy vẫn chưa nhắn.'}]}));
   assert.equal((await validateCommerceWorkspace(root,{stage:'visual'})).status,'PASS');
   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:ad.text,entities:[{kind:'text',text:'Quảng cáo hư cấu'}]}]}));
