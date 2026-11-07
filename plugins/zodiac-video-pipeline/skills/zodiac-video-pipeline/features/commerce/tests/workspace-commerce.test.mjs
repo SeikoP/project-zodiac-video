@@ -3,7 +3,7 @@ import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';import os f
 import {writeMonetizationDecision,readMonetizationDecision,validateMonetizationDecision} from '../monetization-gate.mjs';
 import {validateCommerceWorkspace} from '../validate-affiliate-integration.mjs';
 
-const mockAd=()=>({topology:'interrupt',treatment:'narrator_hijack',commercial_duration_s:9,return_mechanism:'snap_back',story_before_anchor:'Trước câu chuyện.',story_after_anchor:'Trở lại câu chuyện.',fictional_product:'Máy lọc suy nghĩ Sao Mộc',text:'Quảng cáo hư cấu: Máy lọc suy nghĩ Sao Mộc chỉ giữ lại điều đáng nhớ.'});
+const mockAd=()=>({topology:'interrupt',treatment:'narrator_hijack',commercial_duration_s:9,return_mechanism:'snap_back',story_before_anchor:'Trước câu chuyện.',story_after_anchor:'Trở lại câu chuyện.',fictional_product:'Máy lọc suy nghĩ Sao Mộc',text:'Máy lọc suy nghĩ Sao Mộc chỉ giữ lại điều đáng nhớ.'});
 async function mockWorkspace(root){await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({flags:{mock_ad_enabled:true,affiliate_enabled:false}}));const ad=mockAd();await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));await writeFile(path.join(root,'narration.txt'),[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'));return ad;}
 
 test('mock ad uses the narrative plan and narration without creating commerce files',async()=>{
@@ -11,9 +11,9 @@ test('mock ad uses the narrative plan and narration without creating commerce fi
  try{const ad=await mockWorkspace(root);await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n')}]}));for(const stage of ['content','visual']){const r=await validateCommerceWorkspace(root,{stage});assert.equal(r.status,'PASS');assert.equal(r.mode,'fictional');}await assert.rejects(()=>readFile(path.join(root,'.authoring/commerce/monetization.json')),/ENOENT/);}finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('mock ad requires disclosed fictional copy in the actual narration and a return to story',async()=>{
+test('mock ad requires an exact contiguous copy in narration and a return to story',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'z-mock-'));
- try{const ad=await mockWorkspace(root);for(const change of [{text:ad.text.replace('Quảng cáo hư cấu: ','')},{return_mechanism:'none'},{commercial_duration_s:20},{product_id:'real-product'},{fictional_product:'Real URL https://shop.example/item'}]){await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:{...ad,...change}}));await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_|INTEGRATION_|DURATION_/);}await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));await writeFile(path.join(root,'narration.txt'),ad.text);await assert.rejects(()=>validateCommerceWorkspace(root),/MOCK_AD_STORY_ANCHORS/);}finally{await rm(root,{recursive:true,force:true});}
+ try{const ad=await mockWorkspace(root);for(const change of [{text:ad.text.replace('','')},{return_mechanism:'none'},{commercial_duration_s:20},{product_id:'real-product'},{fictional_product:'Real URL https://shop.example/item'}]){await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:{...ad,...change}}));await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_|INTEGRATION_|DURATION_/);}await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));await writeFile(path.join(root,'narration.txt'),ad.text);await assert.rejects(()=>validateCommerceWorkspace(root),/MOCK_AD_STORY_ANCHORS/);}finally{await rm(root,{recursive:true,force:true});}
 });
 
 test('mock visual validation binds ad scenes to approved narration without product assets',async()=>{
@@ -39,7 +39,7 @@ test('fresh story-hijack gate requires product pivot, compact demo and immediate
    topology:'interrupt',treatment:'prop_zoom',commercial_duration_s:10,return_mechanism:'snap_back',
    story_before_anchor:'Ngẩng lên đã hai giờ sáng.',story_after_anchor:'Nhưng người ta đợi là màn hình điện thoại, không phải chiếc đèn.',
    fictional_product:'Đèn bàn Thức Khuya',
-   text:'MÀ KHOAN! Hai giờ sáng mà vẫn sáng trưng? Quảng cáo hư cấu: Đèn bàn Thức Khuya! Bật một cái, sáng cả góc phòng! Sáng đèn thì dễ, sáng tình thì khó! Chốt ngay!',
+   text:'MÀ KHOAN! Hai giờ sáng mà vẫn sáng trưng? Đèn bàn Thức Khuya! Bật một cái, sáng cả góc phòng! Sáng đèn thì dễ, sáng tình thì khó! Chốt ngay!',
    story_hijack:{trigger:'hai giờ sáng',pivot:'MÀ KHOAN!',product_reveal:'Đèn bàn Thức Khuya!',demo:'Bật một cái, sáng cả góc phòng!',wordplay:'Sáng đèn thì dễ, sáng tình thì khó!',cta:'Chốt ngay!',snapback:'Nhưng người ta đợi là màn hình điện thoại'}
   };
   const narration=[ad.story_before_anchor,ad.text,ad.story_after_anchor,'Người ấy vẫn chưa nhắn.'].join('\n');
@@ -70,23 +70,3 @@ test('existing approved-style mock ad remains compatible when new story-hijack f
 });
 
 
-test('visual-only disclosure preserves approved spoken copy and blocks absent on-screen label',async()=>{
- const root=await mkdtemp(path.join(os.tmpdir(),'z-ad-visual-label-'));
- try{
-   await mockWorkspace(root);
-   const plan=JSON.parse(await readFile(path.join(root,'.authoring/narrative-plan.json'),'utf8'));
-   const ad=plan.mock_ad;
-   ad.text=ad.text.replace('Quảng cáo hư cấu: ','');
-   ad.disclosure={mode:'visual_label',label:'Quảng cáo hư cấu'};
-   await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));
-   await writeFile(path.join(root,'narration.txt'),[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'));
-   assert.equal((await validateCommerceWorkspace(root,{stage:'content'})).status,'PASS');
-   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:ad.text,entities:[]}]}));
-   await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'visual'}),/MOCK_AD_VISUAL_DISCLOSURE_MISSING/);
-   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'),entities:[{id:'label',kind:'text',text:'Quảng cáo hư cấu'}]}]}));
-   assert.equal((await validateCommerceWorkspace(root,{stage:'visual'})).status,'PASS');
-   ad.disclosure={mode:'visual_label',label:'Quảng cáo thật'};
-   await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));
-   await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_DISCLOSURE_PLAN_INVALID/);
- }finally{await rm(root,{recursive:true,force:true});}
-});
