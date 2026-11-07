@@ -23,7 +23,11 @@ Run the canonical Phase 2 manifest, author Visual Intent, compile assets/scenes/
 
 ## Phase 3
 
-After genuine Visual Review and Phase 2 PASS, run the canonical Phase 3 production path through the local delivery wrapper. Only a validated Job@5 archive may be atomically published into `ready/`.
+After genuine Visual Review and Phase 2 PASS, run the canonical local delivery wrapper:
+
+`node skills/zodiac-video-pipeline/phases/local/run-local-phase03.mjs --queue-root <queue-root> --source-workspace <workspace> --concept <concept> [--episode-scope <scope.json> | --sign <sign>]`
+
+Only a validated Job@5 archive may be atomically published into `ready/`.
 
 LocalRunner continues to own TTS, measured timing, Remotion rendering, audio, cover/runtime QA, and MP4 production.
 
