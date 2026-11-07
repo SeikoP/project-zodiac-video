@@ -24,6 +24,10 @@ Fresh state sets `mock_ad_story_hijack_required=true`; older episodes stay compa
 
 Creative rule: hijack a **real story detail** → sudden product pitch for a **tangible everyday object** → fast visual demo + punchy pun → short CTA → hard-cut back by dismissing/reframing the product and continuing the Zodiac tension. Do not sell an abstract personality fix, explain the ad transition or add a moral after the cut. Removing the spot must leave a coherent story. Automated checks cover source/ordering/copy only; editorial Content Review owns humor, relevance and abruptness. Preserve required fictional disclosure inside the ad copy; never add an explanatory paragraph.
 
+## Non-spoken fictional disclosure (optional)
+
+Keep approved voice byte-locked: a fictional spot may instead set `mock_ad.disclosure={"mode":"visual_label","label":"Quảng cáo hư cấu"}`. Content validation checks its metadata; the Visual gate **blocks** until a scene containing the advertised product name in voice also contains a visible text entity with that exact label. Render it clearly throughout the short product cut; Visual Review still examines legibility. This is not a waiver or permission to omit disclosure. Older spoken disclosure remains valid.
+
 ## Visuals and changes
 Represent the interlude using normal scenes/entities inside `.authoring/visual-intent.json`; use the normal local native assets and shared Visual Review. No product adapter, remote media, new transport category or separate approval artifact. The spoken copy must survive projection to `production.json` exactly.
 
