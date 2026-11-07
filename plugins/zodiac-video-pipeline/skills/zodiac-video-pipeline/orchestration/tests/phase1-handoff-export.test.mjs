@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {parseZip} from '../../compat/production-v1/zip-core.mjs';
+import {parsePortableZip} from '../../core/archive/zip-primitives.mjs';
 import {buildSourceBoundReviewReceipt} from '../../core/evidence/approval-source-hashes.mjs';
 import {exportPhase1Handoff} from '../../phases/phase01/export-phase1-handoff.mjs';
 
@@ -37,7 +37,7 @@ test('exports deterministic phase1 handoff with source-bound inventory',async()=
     const a=path.join(root,'a.zip'),b=path.join(root,'b.zip');
     const one=await exportPhase1Handoff(root,a),two=await exportPhase1Handoff(root,b);
     assert.equal(one.sha256,two.sha256);
-    const entries=parseZip(await readFile(a));
+    const entries=parsePortableZip(await readFile(a));
     const names=entries.map(x=>x.rel);
     for(const required of ['HANDOFF.json','SHA256SUMS','narration.txt','narrative-plan.json','episode-scope.json','writer-brief.json','pipeline-state.json','content-review-receipt.json','plugin-use-decisions.json'])assert.ok(names.includes(required),required);
     const handoff=JSON.parse(entries.find(x=>x.rel==='HANDOFF.json').data);
