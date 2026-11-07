@@ -42,7 +42,7 @@ test('fresh story-hijack gate requires product pivot, compact demo and immediate
    text:'MÀ KHOAN! Hai giờ sáng mà vẫn sáng trưng? Quảng cáo hư cấu: Đèn bàn Thức Khuya! Bật một cái, sáng cả góc phòng! Sáng đèn thì dễ, sáng tình thì khó! Chốt ngay!',
    story_hijack:{trigger:'hai giờ sáng',pivot:'MÀ KHOAN!',product_reveal:'Đèn bàn Thức Khuya!',demo:'Bật một cái, sáng cả góc phòng!',wordplay:'Sáng đèn thì dễ, sáng tình thì khó!',cta:'Chốt ngay!',snapback:'Nhưng người ta đợi là màn hình điện thoại'}
   };
-  const narration=[ad.story_before_anchor,ad.text,ad.story_after_anchor,'Người ấy vẫn chưa nhắn.'].join('\\n');
+  const narration=[ad.story_before_anchor,ad.text,ad.story_after_anchor,'Người ấy vẫn chưa nhắn.'].join('\n');
   await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({flags:{mock_ad_enabled:true,affiliate_enabled:false,mock_ad_story_hijack_required:true}}));
   await writeFile(path.join(root,'narration.txt'),narration);
   const setPlan=async x=>writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:x}));
