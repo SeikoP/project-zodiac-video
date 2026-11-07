@@ -1,0 +1,18 @@
+{
+  "format": "zodiac-plugin-backup@1",
+  "plugin_version": "2.7.16",
+  "plugin_release_id": "pluginrel_6aef5fcb6078819184d112c85268706a",
+  "source_commit": "dfd970aee06caa5b5063121dbd645cbc024109e4",
+  "release_record_commit": "36266c2c5e2a8c2a3860ab8a20c67a93abe95002",
+  "backup_branch": "backup/zodiac-2.7.16",
+  "plugin_archive_workflow_run": 42396434529,
+  "plugin_archive_artifact_id": 13582654292,
+  "phase_source_workflow_run": 42396524280,
+  "phase_artifacts": {
+    "01-content": 13583950683,
+    "02-visual-production": 13583657403,
+    "03-handoff": 13583204895
+  },
+  "reason": "rollback baseline before Web/Local distribution split",
+  "not_an_approval": true
+}
