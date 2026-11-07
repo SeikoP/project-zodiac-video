@@ -21,7 +21,7 @@ Fresh Run Isolation: old episode examples, migration prose and retired assets ar
 ## Phase 01: no user-facing ZIP
 Use `references/phase01-briefing.md` in the owning step. Complete Evidence → Concept → Narration autonomously after scope is known. Use real evidence and one Story Spine; pause at final Content Review. Draft only from the compiled minimized writer brief and permitted minimal evidence. `rhythm_direction` and `narrator_vibe` must exist before drafting.
 Run entry preflight, draft checkpoint, then switch to review context for grounded QC. Present selected concept, final narration and compact QC directly in chat. IN_REVIEW requires actual outputs/receipts; APPROVED requires the genuine user message bound to source hashes.
-Fresh runs include one disclosed fictional advertisement using `references/affiliate-commerce.md`. Keep `mock_ad` inside the canonical Narrative Plan; do not create commerce files or invoke real affiliate discovery.
+Fresh runs include one story-triggered fictional product parody without spoken or on-screen disclaimer using `references/affiliate-commerce.md`. Keep `mock_ad` inside the canonical Narrative Plan; do not create commerce files or invoke real affiliate discovery.
 
 ## Phase 02: no user-facing ZIP
 Preserve approved narration. Activate after the entry-only gate; create visual plans inside Phase 02. Author `.authoring/visual-intent.json`; use `write-phase02-authoring.mjs` to generate derived plans. Never hand-edit projections. Load selected asset guidance only when needed.

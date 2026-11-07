@@ -70,7 +70,18 @@ const ttsIssues=ttsTextIssues(narrationRaw);
 if(ttsIssues.some(x=>x.kind==='performance_tag'))base.issues.push({code:'TTS_PERFORMANCE_TAG',detail:ttsIssues.filter(x=>x.kind==='performance_tag')});
 const duration=estimateDuration(narrationRaw);
 if(duration.estimated_seconds<90)base.issues.push({code:'DURATION_UNDER_90',detail:duration});
-if(duration.estimated_seconds>120)base.issues.push({code:'DURATION_OVER_120',detail:duration});
+if(duration.estimated_seconds>120){
+  let exception=null;
+  try{exception=await json('duration-exception.json');}
+  catch(e){if(e.code!=='ENOENT')throw e;}
+  const approved=exception?.format==='zodiac-duration-editorial-exception@1'&&
+    exception?.decision==='EDITORIAL_EXCEPTION'&&
+    exception?.narration_sha256===hash(narrationRaw)&&
+    typeof exception?.reason==='string'&&exception.reason.trim().length>=40&&
+    typeof exception?.user_review_excerpt==='string'&&exception.user_review_excerpt.trim().length>=15;
+  if(approved)base.duration_exception={decision:'EDITORIAL_EXCEPTION',narration_sha256:exception.narration_sha256,reason:exception.reason,not_tts_verification:true};
+  else base.issues.push({code:'DURATION_OVER_120',detail:duration});
+}
 const openingWords=spoken.split(' ').filter(Boolean).slice(0,45).join(' ');
 if(!openingWords)base.issues.push({code:'EMPTY_OPENING'});
 const recognition=(brief.engagement_direction?.recognition_cues??[]).filter(x=>spoken.includes(norm(x))).length;
