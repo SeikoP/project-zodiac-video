@@ -13,7 +13,7 @@ test('entry prompt is compact and defers step details to persisted state',async(
 
 test('fresh defaults use one fictional ad without affiliate provider dependencies',async()=>{
  const state=await json('orchestration/pipeline-state.template.json');
- assert.equal(state.flags.affiliate_enabled,false);assert.equal(state.flags.mock_ad_enabled,true);
+ assert.equal(state.flags.affiliate_enabled,false);assert.equal(state.flags.mock_ad_enabled,true);assert.equal(state.flags.mock_ad_story_hijack_required,true);
  const cap=await json('bootstrap/capabilities.json'),mock=cap.capabilities.find(x=>x.id==='mock_advertisement');
  assert.ok(mock);assert.ok(mock.refs.includes('references/affiliate-commerce.md'));
  for(const phase of ['01-content','02-visual-production']){
