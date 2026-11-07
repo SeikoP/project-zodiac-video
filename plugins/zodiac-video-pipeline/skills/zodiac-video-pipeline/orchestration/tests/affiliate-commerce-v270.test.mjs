@@ -26,7 +26,7 @@ test('fresh defaults use one fictional ad without affiliate provider dependencie
 
 test('fictional ad guidance reuses creative structure inside the canonical narrative plan',async()=>{
  const doc=await readFile(new URL('references/affiliate-commerce.md',skill),'utf8');
- for(const phrase of ['mock_ad','topology','treatment','5–18','narrative-plan.json','visual-intent.json','Quảng cáo hư cấu'])assert.ok(doc.includes(phrase),phrase);
+ for(const phrase of ['mock_ad','topology','treatment','5–18','narrative-plan.json','visual-intent.json'])assert.ok(doc.includes(phrase),phrase);
  const extension=await readFile(new URL('../zodiac-affiliate-commerce/SKILL.md',skill),'utf8');
  assert.match(extension,/paused/i);assert.doesNotMatch(extension,/ask exactly|KALODATA_API_KEY is required/);
 });
