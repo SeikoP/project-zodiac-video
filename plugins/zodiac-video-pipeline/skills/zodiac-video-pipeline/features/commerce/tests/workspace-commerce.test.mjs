@@ -50,6 +50,12 @@ test('fresh story-hijack gate requires product pivot, compact demo and immediate
   assert.equal((await validateCommerceWorkspace(root,{stage:'content'})).status,'PASS');
   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'s01',voice:ad.story_before_anchor},{id:'ad',voice:ad.text},{id:'s02',voice:ad.story_after_anchor+'\\nNgười ấy vẫn chưa nhắn.'}]}));
   assert.equal((await validateCommerceWorkspace(root,{stage:'visual'})).status,'PASS');
+  await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:ad.text,entities:[{kind:'text',text:'Quảng cáo hư cấu'}]}]}));
+  await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'visual'}),/MOCK_AD_LABEL_FORBIDDEN_IN_VIDEO/);
+  await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:ad.text,entities:[]}]}));
+  await writeFile(path.join(root,'narration.txt'),narration.replace(ad.text,'Quảng cáo hư cấu '+ad.text));
+  await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_LABEL_FORBIDDEN_IN_NARRATION/);
+  await writeFile(path.join(root,'narration.txt'),narration);
   for(const [bad,reason] of [
    [{...ad,story_hijack:undefined},/MOCK_AD_STORY_HIJACK_REQUIRED/],
    [{...ad,story_hijack:{...ad.story_hijack,trigger:'không có trong truyện'}},/MOCK_AD_TRIGGER_NOT_IN_STORY/],
