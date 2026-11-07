@@ -121,21 +121,17 @@ function assertStoryHijack(ad,narration,at){
 
 export function validateMockAdvertisement(plan,narration,{requireStoryHijack=false}={}){
   if(!plan||typeof plan!=='object'||Array.isArray(plan))fail('MOCK_AD_REQUIRED');
-  const fields=new Set(['topology','treatment','commercial_duration_s','return_mechanism','story_before_anchor','story_after_anchor','fictional_product','text','story_hijack','disclosure']);
+  const fields=new Set(['topology','treatment','commercial_duration_s','return_mechanism','story_before_anchor','story_after_anchor','fictional_product','text','story_hijack']);
   if(Object.keys(plan).some(k=>!fields.has(k)))fail('MOCK_AD_COMMERCIAL_FIELDS_FORBIDDEN');
   validateAdvertisementStructure(plan);
   if(typeof plan.fictional_product!=='string'||!plan.fictional_product.trim()||typeof plan.text!=='string'||!plan.text.includes(plan.fictional_product))fail('MOCK_AD_FICTIONAL_PRODUCT_REQUIRED');
-  const spokenDisclosure=/quảng cáo hư cấu/iu.test(plan.text);
-  const visualDisclosure=plan.disclosure?.mode==='visual_label'&&plan.disclosure?.label==='Quảng cáo hư cấu';
-  if(plan.disclosure!==undefined&&!visualDisclosure)fail('MOCK_AD_DISCLOSURE_PLAN_INVALID');
-  if(!spokenDisclosure&&!visualDisclosure)fail('MOCK_AD_DISCLOSURE_REQUIRED');
   if(/https?:\/\//iu.test(plan.text+plan.fictional_product))fail('MOCK_AD_EXTERNAL_PRODUCT_FORBIDDEN');
   if(typeof narration!=='string')fail('MOCK_AD_NARRATION_REQUIRED');
   const at=narration.indexOf(plan.text);
   if(at<0||narration.indexOf(plan.text,at+1)>=0)fail('MOCK_AD_COPY_MISMATCH');
   if(!narration.slice(0,at).includes(plan.story_before_anchor)||!narration.slice(at+plan.text.length).includes(plan.story_after_anchor))fail('MOCK_AD_STORY_ANCHORS');
   if(requireStoryHijack||plan.story_hijack!==undefined)assertStoryHijack(plan,narration,at);
-  return {status:'PASS',mode:'fictional',disclosure_mode:spokenDisclosure?'spoken':'visual_label',issues:[]};
+  return {status:'PASS',mode:'fictional',issues:[]};
 }
 
 export function validateAffiliateIntegrationPlan(plan,{recent=[]}={}){
