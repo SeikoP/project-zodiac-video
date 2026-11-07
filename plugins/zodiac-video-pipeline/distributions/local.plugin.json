@@ -1,0 +1,16 @@
+{
+  "profile": "local",
+  "name": "zodiac-video-local",
+  "description": "Zodiac local Phase 2-3 producer with automatic phase1-done bootstrap.",
+  "entry_skill": "skills/zodiac-video-local/SKILL.md",
+  "include_humanizer": false,
+  "interface": {
+    "capabilities": ["Interactive"],
+    "category": "Productivity",
+    "defaultPrompt": "Immediately run the local bootstrap from phase1-done/. Resume processing if present, then own Phase 2 and Phase 3 only. Preserve approved narration and publish only validated Job@5 into ready/.",
+    "developerName": "Personal",
+    "displayName": "Zodiac Video Local",
+    "longDescription": "Import approved Zodiac Phase-1 handoffs locally, complete visual production and Job@5 handoff, and deliver into ready/ for LocalRunner.",
+    "shortDescription": "Zodiac local Phase 2-3 producer"
+  }
+}

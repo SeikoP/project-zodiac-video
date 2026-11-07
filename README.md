@@ -24,6 +24,20 @@ version; do not infer it from this README or fall back to latest. Executable-sou
 archives include contracts, registries and native assets as well as code. Episode
 ZIPs, generated voice/timing and rendered media remain separate deliverables.
 
+
+## Web/Local producer split
+
+Zodiac 2.8 separates producer entrypoints while keeping one canonical source tree.
+
+- `zodiac-video-web` owns Phase 1: Evidence → Concept → Narration → Content Review → `zodiac-phase1-handoff@1` ZIP.
+- Put the downloaded handoff ZIP directly in repository `phase1-done/` (or under `ZODIAC_QUEUE_ROOT`).
+- Invoke `zodiac-video-local`. It automatically resumes one existing `processing/<run-id>/` workspace or claims the oldest valid ZIP from `phase1-done/`, validates it, activates Phase 2, and continues Phase 2–3.
+- Failed imports go to `blocked/<run-id>/`; no background watcher is required.
+- After genuine Visual Review, the local Phase-3 wrapper validates Job@5 in private staging and publishes it atomically into repository `ready/`.
+- Existing Zodiac Studio/LocalRunner continues to read `ready/`; TTS, measured timing, Remotion and MP4 remain local-runner responsibilities.
+
+The two plugin distributions share contracts and implementation from `plugins/zodiac-video-pipeline/`; do not fork the source into separate repositories.
+
 ## Requirements
 
 - Python 3.9+ for local tools; Python 3.10+ for the desktop GUI
@@ -224,6 +238,4 @@ Job@5 ZIPs contain data only; executable Node.js renderer code comes from the tr
 
 ## Zodiac plugin source
 
-The complete ChatGPT plugin source lives in `plugins/zodiac-video-pipeline/` (version 2.4.44, release `pluginrel_6aca94231d648191ad99c19837287790`). This replaces the partial release overlay; native V4 assets, contracts, orchestration and tests are included. The files were copied byte-for-byte from the published plugin archive.
-
-GitHub commits do not automatically update the installed ChatGPT plugin. Future edits must be tested and published through Plugin Creator; a sync back to GitHub must retain the same source/version. Run native commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the skill root.
+The canonical Zodiac producer source lives in `plugins/zodiac-video-pipeline/`. Version 2.8.0 builds two installable distributions, `zodiac-video-web` and `zodiac-video-local`, while the monolithic archive is retained only as a transition/rollback artifact. GitHub commits do not automatically update installed plugins. Run native implementation commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the canonical skill root.
