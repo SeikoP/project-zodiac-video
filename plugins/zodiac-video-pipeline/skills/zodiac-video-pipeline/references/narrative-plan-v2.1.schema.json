@@ -192,6 +192,22 @@
               "minLength": 1
             }
           }
+        },
+        "disclosure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "label"
+          ],
+          "properties": {
+            "mode": {
+              "const": "visual_label"
+            },
+            "label": {
+              "const": "Quảng cáo hư cấu"
+            }
+          }
         }
       }
     }
