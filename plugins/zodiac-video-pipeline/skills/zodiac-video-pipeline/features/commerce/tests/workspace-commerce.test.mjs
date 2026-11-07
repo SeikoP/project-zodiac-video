@@ -68,3 +68,25 @@ test('existing approved-style mock ad remains compatible when new story-hijack f
  try{await mockWorkspace(root);assert.equal((await validateCommerceWorkspace(root,{stage:'content'})).status,'PASS');}
  finally{await rm(root,{recursive:true,force:true});}
 });
+
+
+test('visual-only disclosure preserves approved spoken copy and blocks absent on-screen label',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'z-ad-visual-label-'));
+ try{
+   await mockWorkspace(root);
+   const plan=JSON.parse(await readFile(path.join(root,'.authoring/narrative-plan.json'),'utf8'));
+   const ad=plan.mock_ad;
+   ad.text=ad.text.replace('Quảng cáo hư cấu: ','');
+   ad.disclosure={mode:'visual_label',label:'Quảng cáo hư cấu'};
+   await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));
+   await writeFile(path.join(root,'narration.txt'),[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'));
+   assert.equal((await validateCommerceWorkspace(root,{stage:'content'})).status,'PASS');
+   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:ad.text,entities:[]}]}));
+   await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'visual'}),/MOCK_AD_VISUAL_DISCLOSURE_MISSING/);
+   await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'ad',voice:[ad.story_before_anchor,ad.text,ad.story_after_anchor].join('\n'),entities:[{id:'label',kind:'text',text:'Quảng cáo hư cấu'}]}]}));
+   assert.equal((await validateCommerceWorkspace(root,{stage:'visual'})).status,'PASS');
+   ad.disclosure={mode:'visual_label',label:'Quảng cáo thật'};
+   await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({mock_ad:ad}));
+   await assert.rejects(()=>validateCommerceWorkspace(root,{stage:'content'}),/MOCK_AD_DISCLOSURE_PLAN_INVALID/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
