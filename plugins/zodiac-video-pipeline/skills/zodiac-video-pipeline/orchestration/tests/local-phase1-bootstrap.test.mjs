@@ -17,7 +17,7 @@ async function approvedWorkspace(runId){
  await writeFile(path.join(root,'.authoring','episode-scope.json'),JSON.stringify({sign:'Song Tử',concept:runId}));
  await writeFile(path.join(root,'.authoring','phase3-writer-brief.json'),JSON.stringify({creative_direction:{tone:'normal'}}));
  await writeFile(path.join(root,'.authoring','plugin-use-decisions.json'),JSON.stringify({format:'zodiac-plugin-use-decisions@1',replaces_zodiac:false,decisions:[],not_an_approval:true}));
- const state=structuredClone(stateTemplate);state.run_id=runId;state.current_phase='01-content';state.phases['01-content'].status='PASS';state.phases['01-content'].current_step='narration';for(const step of Object.values(state.phases['01-content'].steps))step.status='PASS';
+ const state=structuredClone(stateTemplate);state.run_id=runId;state.run_mode='continuity';state.current_phase='01-content';state.phases['01-content'].status='PASS';state.phases['01-content'].current_step='narration';for(const step of Object.values(state.phases['01-content'].steps)){step.status='SKIPPED_REUSED';step.reuse_source='test:approved-phase1';}
  const receipt=await buildSourceBoundReviewReceipt(root,{phase_id:'01-content',proof:{kind:'user_message',ref:'conversation:user:'+runId+':approved'}});state.review_receipts=[receipt];
  await writeFile(path.join(root,'.authoring','pipeline-state.json'),JSON.stringify(state,null,2));await writeFile(path.join(root,'.authoring','content-review-receipt.json'),JSON.stringify(receipt,null,2));
  return root;
