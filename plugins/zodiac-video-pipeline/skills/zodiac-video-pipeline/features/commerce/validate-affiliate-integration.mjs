@@ -15,11 +15,12 @@ export async function validateCommerceWorkspace(workspace,{recent=null,stage='vi
     if(state.flags.affiliate_enabled)fail('MOCK_AD_AFFILIATE_CONFLICT');
     const plan=await readArtifact(workspace,'narrative-plan.json');
     let narration;try{narration=await readFile(path.join(workspace,'.authoring/narration.txt'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;narration=await readFile(path.join(workspace,'narration.txt'),'utf8');}
-    const verdict=validateMockAdvertisement(plan.mock_ad,narration);
+    const requireStoryHijack=state.flags.mock_ad_story_hijack_required===true;
+    const verdict=validateMockAdvertisement(plan.mock_ad,narration,{requireStoryHijack});
     if(stage==='visual'){
       const production=await readJson(path.join(workspace,'production.json'));
       const voice=(production.scenes??[]).map(s=>s.voice??'').join(production.voice_partition==='utf8_ranges'?'':'\n');
-      try{validateMockAdvertisement(plan.mock_ad,voice);}catch(e){fail('MOCK_AD_VISUAL_COPY_MISMATCH '+e.message);}
+      try{validateMockAdvertisement(plan.mock_ad,voice,{requireStoryHijack});}catch(e){fail('MOCK_AD_VISUAL_COPY_MISMATCH '+e.message);}
     }
     return {...verdict,advertising:false,stage};
   }
