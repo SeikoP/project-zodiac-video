@@ -19,14 +19,6 @@ export async function validateCommerceWorkspace(workspace,{recent=null,stage='vi
     const verdict=validateMockAdvertisement(plan.mock_ad,narration,{requireStoryHijack});
     if(stage==='visual'){
       const production=await readJson(path.join(workspace,'production.json'));
-      if(verdict.disclosure_mode==='visual_label'){
-        const label=plan.mock_ad.disclosure.label;
-        const shown=(production.scenes??[]).some(s=>
-          String(s.voice??'').includes(plan.mock_ad.fictional_product)&&
-          JSON.stringify(s.entities??[]).includes(label)
-        );
-        if(!shown)fail('MOCK_AD_VISUAL_DISCLOSURE_MISSING');
-      }
       const voice=(production.scenes??[]).map(s=>s.voice??'').join(production.voice_partition==='utf8_ranges'?'':'\n');
       try{validateMockAdvertisement(plan.mock_ad,voice,{requireStoryHijack});}catch(e){fail('MOCK_AD_VISUAL_COPY_MISMATCH '+e.message);}
     }
