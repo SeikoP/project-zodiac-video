@@ -91,9 +91,37 @@ function validateAdvertisementStructure(plan){
   if(!String(plan.story_before_anchor??'').trim()||!String(plan.story_after_anchor??'').trim())fail('STORY_ANCHORS_REQUIRED');
 }
 
-export function validateMockAdvertisement(plan,narration){
+// Fresh story-hijack advertisements make their creative beats auditable. This
+// structural check does not certify a joke, product demonstration or copy quality.
+function assertStoryHijack(ad,narration,at){
+  const v=ad.story_hijack;
+  if(!v||typeof v!=='object'||Array.isArray(v))fail('MOCK_AD_STORY_HIJACK_REQUIRED');
+  const keys=['trigger','pivot','product_reveal','demo','wordplay','cta','snapback'];
+  if(Object.keys(v).some(k=>!keys.includes(k))||keys.some(k=>typeof v[k]!=='string'||!v[k].trim()))
+    fail('MOCK_AD_STORY_HIJACK_FIELDS');
+  const before=narration.slice(0,at),after=narration.slice(at+ad.text.length);
+  if(!before.includes(v.trigger)||!ad.story_before_anchor.includes(v.trigger))
+    fail('MOCK_AD_TRIGGER_NOT_IN_STORY');
+  let previous=-1;
+  for(const key of ['pivot','product_reveal','demo','cta']){
+    const pos=ad.text.indexOf(v[key],previous+1);
+    if(pos<0||pos<=previous)fail('MOCK_AD_BEAT_ORDER_'+key.toUpperCase());
+    previous=pos;
+  }
+  if(!v.product_reveal.includes(ad.fictional_product))fail('MOCK_AD_REVEAL_PRODUCT_MISMATCH');
+  if(!ad.text.includes(v.wordplay))fail('MOCK_AD_WORDPLAY_MISSING');
+  if(!ad.story_after_anchor.startsWith(v.snapback)||!after.trimStart().startsWith(v.snapback))
+    fail('MOCK_AD_SNAPBACK_NOT_IMMEDIATE');
+  const afterSnap=after.trimStart().slice(v.snapback.length);
+  if(!afterSnap.trim())fail('MOCK_AD_STORY_RESUMPTION_MISSING');
+  // A literal transition explanation is not a sudden return.
+  if(/^(?:quay lại|trở lại|tiếp tục)\s+(?:câu chuyện|nội dung)/iu.test(v.snapback.trim()))
+    fail('MOCK_AD_META_RETURN_FORBIDDEN');
+}
+
+export function validateMockAdvertisement(plan,narration,{requireStoryHijack=false}={}){
   if(!plan||typeof plan!=='object'||Array.isArray(plan))fail('MOCK_AD_REQUIRED');
-  const fields=new Set(['topology','treatment','commercial_duration_s','return_mechanism','story_before_anchor','story_after_anchor','fictional_product','text']);
+  const fields=new Set(['topology','treatment','commercial_duration_s','return_mechanism','story_before_anchor','story_after_anchor','fictional_product','text','story_hijack']);
   if(Object.keys(plan).some(k=>!fields.has(k)))fail('MOCK_AD_COMMERCIAL_FIELDS_FORBIDDEN');
   validateAdvertisementStructure(plan);
   if(typeof plan.fictional_product!=='string'||!plan.fictional_product.trim()||typeof plan.text!=='string'||!plan.text.includes(plan.fictional_product))fail('MOCK_AD_FICTIONAL_PRODUCT_REQUIRED');
@@ -103,6 +131,7 @@ export function validateMockAdvertisement(plan,narration){
   const at=narration.indexOf(plan.text);
   if(at<0||narration.indexOf(plan.text,at+1)>=0)fail('MOCK_AD_COPY_MISMATCH');
   if(!narration.slice(0,at).includes(plan.story_before_anchor)||!narration.slice(at+plan.text.length).includes(plan.story_after_anchor))fail('MOCK_AD_STORY_ANCHORS');
+  if(requireStoryHijack||plan.story_hijack!==undefined)assertStoryHijack(plan,narration,at);
   return {status:'PASS',mode:'fictional',issues:[]};
 }
 
