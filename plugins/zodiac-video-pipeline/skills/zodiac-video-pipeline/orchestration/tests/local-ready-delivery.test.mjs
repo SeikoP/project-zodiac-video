@@ -43,11 +43,12 @@ test('invalid staged archive never becomes visible in ready',async()=>{
  }finally{await rm(root,{recursive:true,force:true})}
 });
 
-test('local Phase3 wrapper keeps producer output private until validation succeeds',async()=>{
+test('local Phase3 wrapper lets canonical producer own the atomic ready publication path',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'z-ready-'));try{
   const source=path.join(root,'processing','run','workspace'),ready=path.join(root,'ready');await mkdir(source,{recursive:true});
-  const producer=async({outputDir})=>{await mkdir(outputDir,{recursive:true});const zip=path.join(outputDir,'zodiac-songtu-demo.zip');await writeFile(zip,minimalJob());return {ok:true,release_level:'PRODUCTION_READY_ZIP',zip};};
+  let seenOutput=null;
+  const producer=async({outputDir})=>{seenOutput=path.resolve(outputDir);await mkdir(outputDir,{recursive:true});const zip=path.join(outputDir,'zodiac-songtu-demo.zip');await writeFile(zip,minimalJob());return {ok:true,release_level:'PRODUCTION_READY_ZIP',zip,state_commit:{status:'COMMITTED',zip}};};
   const r=await runLocalPhase03({queueRoot:root,sourceRoot:source,sign:'Song Tử',concept:'Demo',producer});
-  assert.equal(r.status,'READY_PUBLISHED');assert.equal(path.dirname(r.zip),ready);assert.equal(await exists(r.zip),true);
+  assert.equal(seenOutput,ready);assert.equal(r.status,'READY_PUBLISHED');assert.equal(r.zip,path.join(ready,'zodiac-songtu-demo.zip'));assert.equal(r.producer_result.state_commit.zip,r.zip);assert.equal(await exists(r.zip),true);
  }finally{await rm(root,{recursive:true,force:true})}
 });
