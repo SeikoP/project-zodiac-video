@@ -25,10 +25,10 @@ if(phase==='02-visual-production')required.push(
  'features/visual-composition/validate-visual-quality.mjs'
 );
 const exists=async p=>access(p).then(()=>true).catch(()=>false);
-// Context delivery loads TOON and tokenizer directly. XState has a built-in fallback;
-// CodeGraph is loaded only for explicit code-index requests. Do not gate Phase 1 on optional tools.
+// Context delivery requires tokenizer. TOON now has a lossless JSON fallback;
+// XState has a built-in FSM fallback and CodeGraph is loaded only on explicit requests.
 const requireFromPlugin=createRequire(path.join(pluginRoot,'package.json'));
-const runtimeDependencies=['@toon-format/toon','gpt-tokenizer/encoding/o200k_base'];
+const runtimeDependencies=['gpt-tokenizer/encoding/o200k_base'];
 
 const problems=[];let manifest,template;
 try{manifest=JSON.parse(await readFile(path.join(pluginRoot,'plugin.json'),'utf8'));}catch{problems.push('PLUGIN_MANIFEST_MISSING');}
