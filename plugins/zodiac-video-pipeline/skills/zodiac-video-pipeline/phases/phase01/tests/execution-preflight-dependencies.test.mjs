@@ -10,8 +10,8 @@ import {createRequire} from 'node:module';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const skill=path.resolve(here,'../../..');
 const plugin=path.resolve(skill,'../..');
-const deps=['@toon-format/toon','gpt-tokenizer/encoding/o200k_base'];
-const optional=['@colbymchenry/codegraph','xstate'];
+const deps=['gpt-tokenizer/encoding/o200k_base'];
+const optional=['@colbymchenry/codegraph','@toon-format/toon','xstate'];
 const resolver=createRequire(path.join(plugin,'package.json'));
 
 test('Phase 1 preflight blocks when native runtime dependencies are unresolved',async()=>{
