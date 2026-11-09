@@ -40,6 +40,62 @@ def include(path, phase):
     return True
 
 
+# Phase 1 consumes shared contracts, not the Phase-2 renderer/asset production
+# or the local Phase-3 runner. Retain every statically imported dependency of
+# retained executables even if it lives in one of these families.
+PHASE1_DEFERRED_PREFIXES = (
+    "skills/zodiac-video-pipeline/phases/phase03/",
+    "skills/zodiac-video-pipeline/phases/local/",
+    "skills/zodiac-video-pipeline/features/visual-composition/",
+    "skills/zodiac-video-pipeline/features/scene-production/",
+    "skills/zodiac-video-pipeline/features/scene-set/",
+    "skills/zodiac-video-pipeline/features/cover/",
+    "skills/zodiac-video-pipeline/features/publish/",
+    "skills/zodiac-video-pipeline/features/story-object/",
+    "skills/zodiac-video-pipeline/features/meme/",
+    "skills/zodiac-video-pipeline/features/asset-selection/",
+)
+PHASE1_PHASE2_ENTRYPOINTS = frozenset((
+    "skills/zodiac-video-pipeline/phases/phase02/phase02-transition-gate.mjs",
+    "skills/zodiac-video-pipeline/phases/phase02/phase02-handoff-context.mjs",
+))
+LOCAL_IMPORT = re.compile(r"(?:from\\s*|import\\s*\\(?\\s*|new\\s+URL\\s*\\(\\s*)['\\\"](\\.[^'\\\"]+)['\\\"]")
+
+
+def select_phase_files(root, tracked, phase):
+    """Retain content producers and recursively close their local JS imports.
+
+    The default selection stays unchanged for Phases 2/3. Phase 1 removes
+    native visual/local execution modules but keeps shared JSON/Markdown
+    catalogues and all transitively referenced JS modules.
+    """
+    candidates = {name for name in tracked if include(name, phase)}
+    if phase != "01-content":
+        return sorted(candidates)
+    selected = set()
+    for name in candidates:
+        rel = name[len(PLUGIN):]
+        if rel.startswith("skills/zodiac-video-pipeline/phases/phase02/"):
+            if rel not in PHASE1_PHASE2_ENTRYPOINTS:
+                continue
+        if any(rel.startswith(prefix) and rel.endswith(".mjs")
+               for prefix in PHASE1_DEFERRED_PREFIXES):
+            continue
+        selected.add(name)
+    pending = list(selected)
+    while pending:
+        name = pending.pop()
+        if not name.endswith(".mjs"):
+            continue
+        for match in LOCAL_IMPORT.finditer((root / name).read_text()):
+            dependency = posixpath.normpath(
+                posixpath.join(posixpath.dirname(name), match[1]))
+            if dependency in candidates and dependency not in selected:
+                selected.add(dependency)
+                pending.append(dependency)
+    return sorted(selected)
+
+
 def validate_dependencies(root, selected):
     """Fail before emitting an archive with dangling refactored imports/CLI targets."""
     selected = set(selected)
@@ -106,7 +162,7 @@ def build(root, output, commit, release_id, release_record=None, phase="01-conte
     if not release_id:
         raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing release ID")
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
-    selected = sorted(path for path in filter(None, tracked) if include(path, phase))
+    selected = select_phase_files(root, filter(None, tracked), phase)
     missing = [PLUGIN + p for p in (*ROOT_REQUIRED, *PHASE_REQUIRED[phase])
                if PLUGIN + p not in selected]
     if missing:
