@@ -10,7 +10,8 @@ import {createRequire} from 'node:module';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const skill=path.resolve(here,'../../..');
 const plugin=path.resolve(skill,'../..');
-const deps=['@colbymchenry/codegraph','@toon-format/toon','gpt-tokenizer/encoding/o200k_base','xstate'];
+const deps=['@toon-format/toon','gpt-tokenizer/encoding/o200k_base'];
+const optional=['@colbymchenry/codegraph','xstate'];
 const resolver=createRequire(path.join(plugin,'package.json'));
 
 test('Phase 1 preflight blocks when native runtime dependencies are unresolved',async()=>{
@@ -23,6 +24,7 @@ test('Phase 1 preflight blocks when native runtime dependencies are unresolved',
   const report=JSON.parse(await readFile(path.join(ws,'.authoring/execution-preflight.json'),'utf8'));
   const missing=deps.filter(d=>{try{resolver.resolve(d);return false;}catch{return true;}});
   for(const d of missing)assert.ok(report.problems.includes('RUNTIME_DEPENDENCY_UNAVAILABLE:'+d),d);
+  for(const d of optional)assert.equal(report.problems.includes('RUNTIME_DEPENDENCY_UNAVAILABLE:'+d),false,d+' must remain optional for Phase 1');
   if(missing.length){assert.equal(report.status,'BLOCKED');assert.notEqual(result.status,0);}
   else assert.equal(report.problems.some(p=>p.startsWith('RUNTIME_DEPENDENCY_UNAVAILABLE:')),false);
  }finally{await rm(ws,{recursive:true,force:true});}
