@@ -2,6 +2,7 @@
 import {access,readFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createRequire} from 'node:module';
 import {checkReleaseConsistency} from '../../core/release/validate-release-consistency.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'../..');
@@ -24,6 +25,10 @@ if(phase==='02-visual-production')required.push(
  'features/visual-composition/validate-visual-quality.mjs'
 );
 const exists=async p=>access(p).then(()=>true).catch(()=>false);
+// Phase-scoped source ZIPs omit node_modules. Check runtime resolution before READY.
+const requireFromPlugin=createRequire(path.join(pluginRoot,'package.json'));
+const runtimeDependencies=['@colbymchenry/codegraph','@toon-format/toon','gpt-tokenizer/encoding/o200k_base','xstate'];
+
 const problems=[];let manifest,template;
 try{manifest=JSON.parse(await readFile(path.join(pluginRoot,'plugin.json'),'utf8'));}catch{problems.push('PLUGIN_MANIFEST_MISSING');}
 try{template=JSON.parse(await readFile(path.join(root,'orchestration/pipeline-state.template.json'),'utf8'));}catch{problems.push('STATE_TEMPLATE_MISSING');}
@@ -31,6 +36,9 @@ if(manifest&&template&&manifest.version!==template.plugin_version)problems.push(
 const releaseCheck=await checkReleaseConsistency(pluginRoot);
 for(const problem of releaseCheck.problems)if(!problems.includes(problem))problems.push(problem);
 for(const rel of required)if(!await exists(path.join(root,rel)))problems.push('MISSING_SOURCE:'+rel);
+for(const dependency of runtimeDependencies){
+ try{requireFromPlugin.resolve(dependency);}catch{problems.push('RUNTIME_DEPENDENCY_UNAVAILABLE:'+dependency);}
+}
 const statePath=path.join(workspace,'.authoring','pipeline-state.json');
 let state;
 if(await exists(statePath)){
@@ -42,7 +50,7 @@ if(phase==='02-visual-production' && process.argv.includes('--require-authoring-
   if(!await exists(path.join(workspace,rel)))problems.push('MISSING_AUTHORING_INPUT:'+rel);
  }
 }
-const report={format:'zodiac-execution-preflight@1',plugin_version:manifest?.version??null,phase,workspace,status:problems.length?'BLOCKED':'READY',problems,checked_at:new Date().toISOString(),notes:'READY verifies source/version/state only unless --require-authoring-inputs is passed. Strict READY verifies input existence, not schema or native compilation. Never synthesize compiler or validator receipts.'};
+const report={format:'zodiac-execution-preflight@1',plugin_version:manifest?.version??null,phase,workspace,status:problems.length?'BLOCKED':'READY',problems,checked_at:new Date().toISOString(),notes:'READY verifies source/version/state and runtime dependency resolution. --require-authoring-inputs also verifies input existence, not schema or native compilation. Never synthesize compiler or validator receipts.'};
 await mkdir(path.dirname(reportPath),{recursive:true});await writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify({status:report.status,problems,report:reportPath},null,2));
 process.exit(problems.length?2:0);
