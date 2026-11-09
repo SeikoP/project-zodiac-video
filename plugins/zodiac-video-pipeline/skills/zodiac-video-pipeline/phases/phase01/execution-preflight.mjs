@@ -26,8 +26,7 @@ if(phase==='02-visual-production')required.push(
  'features/visual-composition/validate-visual-quality.mjs'
 );
 const exists=async p=>access(p).then(()=>true).catch(()=>false);
-// Context delivery requires tokenizer. TOON now has a lossless JSON fallback;
-// XState has a built-in FSM fallback and CodeGraph is loaded only on explicit requests.
+// Context delivery requires tokenizer. TOON has a lossless JSON fallback; XState has a built-in FSM fallback.
 const requireFromPlugin=createRequire(path.join(pluginRoot,'package.json'));
 
 const problems=[];let manifest,template;
