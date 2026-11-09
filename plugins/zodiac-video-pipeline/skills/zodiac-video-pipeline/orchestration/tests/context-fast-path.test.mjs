@@ -19,3 +19,11 @@ test('compiled step capsule accepts the already verified resume plan',async()=>{
  assert.deepEqual(capsule.deferred_references,plan.deferred_references);
  assert.equal(capsule.not_an_approval,true);
 });
+
+
+test('review context restores exit guidance deferred during draft',async()=>{
+ const draft=await loadStepContext('02-visual-production','visual_compile',{}, {run_mode:'fresh',role:'draft',environment_mode:'canvas'});
+ const review=await loadStepContext('02-visual-production','visual_compile',{}, {run_mode:'fresh',role:'review',environment_mode:'canvas'});
+ const reviewRefs=new Set(review.required_references);
+ assert.ok(draft.deferred_references.some(ref=>reviewRefs.has(ref)),'review should restore at least one exit-only reference');
+});
