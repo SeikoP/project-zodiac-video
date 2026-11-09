@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {recordEpisodeSpan,summarizeEpisodeSpans} from '../episode-profiler.mjs';
+import {recordEpisodeSpan,summarizeEpisodeSpans,performanceIdentity} from '../episode-profiler.mjs';
 async function withSpace(fn){const p=await mkdtemp(path.join(tmpdir(),'zodiac-e2e-'));try{await fn(p)}finally{await rm(p,{recursive:true,force:true})}}
 const iso=s=>new Date(1700000000000+s).toISOString();
 const rec=(phase,start,end,extra={})=>({phase,stage:'demo',duration_ms:end-start,run_id:'run-one',revision_id:'rev-a',started_at:iso(start),ended_at:iso(end),...extra});
@@ -37,3 +37,9 @@ test('mixed revisions cannot claim wall-clock result',async()=>withSpace(async p
 test('rejects inverted timestamps',async()=>withSpace(async p=>{
  await assert.rejects(()=>recordEpisodeSpan(p,rec('01-content',300,100,{duration_ms:5})),/FAST_SPAN_TIME_INVALID/);
 }));
+
+test('performance identity is stable for a run/plugin pair and rejects templates',()=>{
+ const a=performanceIdentity({run_id:'run-123',plugin_version:'2.8.0'}),b=performanceIdentity({run_id:'run-123',plugin_version:'2.8.0'});
+ assert.deepEqual(a,b);assert.equal(a.run_id,'run-123');assert.match(a.revision_id,/^[a-f0-9]{20}$/u);
+ assert.equal(performanceIdentity({run_id:'<create-per-run>',plugin_version:'2.8.0'}),null);
+});

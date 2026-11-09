@@ -1,12 +1,18 @@
 import {readFile,writeFile,mkdir,readdir,rename} from 'node:fs/promises';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 export const E2E_FORMAT='zodiac-e2e-performance@1';
 const categories=new Set(['agent_compute','native','tool_wait','review_wait','transport','other']);
 const phases=new Set(['01-content','02-visual-production','03-handoff','local-runner']);
 const pluginPhases=['01-content','02-visual-production','03-handoff'];
 const validTime=x=>typeof x==='string'&&Number.isFinite(Date.parse(x));
 const sum=xs=>+xs.reduce((a,n)=>a+n,0).toFixed(2);
+export function performanceIdentity(state){
+ const run_id=typeof state?.run_id==='string'&&state.run_id.trim()&&!state.run_id.includes('<')?state.run_id.trim():null;
+ const plugin=typeof state?.plugin_version==='string'&&state.plugin_version.trim()?state.plugin_version.trim():null;
+ if(!run_id||!plugin)return null;
+ return {run_id,revision_id:createHash('sha256').update(JSON.stringify({run_id,plugin_version:plugin})).digest('hex').slice(0,20)};
+}
 const intervalUnion=spans=>{
  const intervals=spans.map(s=>[Date.parse(s.started_at),Date.parse(s.ended_at)]).sort((a,b)=>a[0]-b[0]);
  let total=0,start=null,end=null;

@@ -10,24 +10,24 @@ import {performance} from 'node:perf_hooks';
 import {summarizeFastProfile} from '../../core/performance/critical-path.mjs';
 import {runParallelNativePreflight} from '../../core/performance/parallel-native-preflight.mjs';
 import {planBatchRepair} from '../../core/performance/batch-repair.mjs';
-import {recordEpisodeSpan} from '../../core/performance/episode-profiler.mjs';
+import {recordEpisodeSpan,performanceIdentity} from '../../core/performance/episode-profiler.mjs';
 
 import {acquireAuthoringLease} from '../../core/state/authoring-lease.mjs';
 import {validateStepGraph,PHASE02_DEPENDENCIES,LEGACY_PHASE02_DEPENDENCIES,executionTrace,createRepairPlan} from '../../core/workflow/deterministic-execution.mjs';
 import os from 'node:os';
 import {finalizePhase02Workspace} from './finalize-phase02-workspace.mjs';
 import {verifyIntentWorkspace} from '../../features/visual-composition/compile-visual-intent.mjs';
-import {selectedPhase02Dependencies,selectedStepDependencyFiles,signatureFiles} from './phase02-selected-dependencies.mjs';
+import {selectedPhase02Dependencies,selectedStepDependencyFiles,signatureFiles,characterProductionFingerprint} from './phase02-selected-dependencies.mjs';
 import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
 import {isCurrentVisualWorkspace} from '../../features/visual-composition/current-visual-mode.mjs';
-const fastProfileStart=performance.now();
+const fastProfileStartedAt=new Date().toISOString(),fastProfileStart=performance.now();
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
 const arg=k=>{const i=argv.indexOf(k);return i<0?null:argv[i+1]??null;};
 const requestedWorkspace=arg('--workspace');
 if(!requestedWorkspace){console.error('Usage: node phase02-execute.mjs --workspace <dir> [--source-root <plugin-root|skill-root>] [--snapshot <snapshot.json> --restore-target <plugin-root>] [--run] [--force] [--no-cache]');process.exit(2);}
 const workspace=path.resolve(requestedWorkspace);
-const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),noCache=argv.includes('--no-cache'),force=argv.includes('--force')||finalizeManifest||noCache;
+const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),noCache=argv.includes('--no-cache'),force=argv.includes('--force')||noCache;
 if(finalizeManifest&&!running)throw Error('FINALIZE_MANIFEST_REQUIRES_RUN');
 await verifyIntentWorkspace(workspace,{revalidateNativeOutput:finalizeManifest});
 await mkdir(path.join(workspace,'.authoring'),{recursive:true});const nativeLease=running?await acquireAuthoringLease(path.join(workspace,'.authoring/.phase02-native.lock'),{run_id:'phase02-native',host_id:os.hostname()}):null;
@@ -104,7 +104,7 @@ const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).diges
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
 const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.json');
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
-const finish=async()=>{report.repair_source_hashes={};for(const rel of ['narration.txt','.authoring/visual-intent.json','design.md','.authoring/narrative-plan.json','production.json']){try{report.repair_source_hashes[rel]=sha(await readFile(path.join(workspace,rel)));}catch(e){if(e.code!=='ENOENT')throw e;report.repair_source_hashes[rel]=null;}}report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;report.fast_repair_groups=report.issues.length?planBatchRepair(report.issues):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}report.fast_profile=summarizeFastProfile({started_ms:fastProfileStart,ended_ms:performance.now(),steps:report.steps,dependencies:PHASE02_DEPENDENCIES,preflight_wall_ms:(report.state_validation?.elapsed_ms??0)+(report.fast_preflight?.wall_ms??0)});await writeJson(path.join(workspace,'.authoring/fast-pipeline-profile.json'),report.fast_profile);if(running)await recordEpisodeSpan(workspace,{phase:'02-visual-production',stage:'native-execute',category:'native',duration_ms:report.fast_profile.wall_clock_ms,status:report.status}).catch(()=>{});await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
+const finish=async()=>{report.repair_source_hashes={};for(const rel of ['narration.txt','.authoring/visual-intent.json','design.md','.authoring/narrative-plan.json','production.json']){try{report.repair_source_hashes[rel]=sha(await readFile(path.join(workspace,rel)));}catch(e){if(e.code!=='ENOENT')throw e;report.repair_source_hashes[rel]=null;}}report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;report.fast_repair_groups=report.issues.length?planBatchRepair(report.issues):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}report.fast_profile=summarizeFastProfile({started_ms:fastProfileStart,ended_ms:performance.now(),steps:report.steps,dependencies:PHASE02_DEPENDENCIES,preflight_wall_ms:(report.state_validation?.elapsed_ms??0)+(report.fast_preflight?.wall_ms??0)});await writeJson(path.join(workspace,'.authoring/fast-pipeline-profile.json'),report.fast_profile);if(running){const perfState=await readFile(path.join(workspace,'.authoring/pipeline-state.json'),'utf8').then(JSON.parse).catch(()=>null),perfIdentity=performanceIdentity(perfState),fastEndedAt=new Date().toISOString();await recordEpisodeSpan(workspace,{phase:'02-visual-production',stage:'native-execute',category:'native',duration_ms:report.fast_profile.wall_clock_ms,status:['NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED','PASS','READY'].includes(report.status)?'PASS':report.status,...(perfIdentity??{}),started_at:fastProfileStartedAt,ended_at:fastEndedAt}).catch(()=>{});}await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
 const resolveSource=async p=>{
  const src=path.resolve(p);
@@ -262,7 +262,12 @@ else{
    relevant.push(...(await workspaceAssetPaths(kind)).filter(p=>!generated.includes(p)));
   }
   if(step.id==='visual_quality')for(const rel of ['asset-plan.json','.authoring/asset-plan.json'])if(await exists(path.join(workspace,rel)))relevant.push(path.join(workspace,rel));
-  const before=await signature(relevant);
+  const productionPath=path.join(workspace,'production.json');
+  const characterScoped=['character_plan','character_write'].includes(step.id);
+  const signatureRelevant=characterScoped?relevant.filter(p=>path.resolve(p)!==productionPath):relevant;
+  const fileInputSignature=await signature(signatureRelevant);
+  const characterInputSignature=characterScoped?characterProductionFingerprint(JSON.parse(await readFile(productionPath,'utf8'))):null;
+  const before=fileInputSignature===null?null:characterScoped?sha(JSON.stringify({files:fileInputSignature,character_production:characterInputSignature})):fileInputSignature;
   const required=step.required.map(p=>path.join(workspace,p));
   if(step.id==='character_write')required.push(...await workspaceAssetPaths('character'));
   if(step.id==='meme_props')required.push(...await workspaceAssetPaths('meme_props'));
@@ -294,7 +299,9 @@ else{
   }
   if(extra.status==='PASS'){
    extra.output_hash=required.length?await signature(required):sha('no-output-files');
-   cache.steps[step.id]={status:'PASS',command:result.command,selected_source_files:stepSourceFiles.map(p=>path.relative(source.skillRoot,p)),after_input_sha:await signature(relevant),output_sha:required.length?await signature(required):sha('no-output-files'),at:new Date().toISOString()};
+   const afterFileInputSignature=await signature(signatureRelevant),afterCharacterInputSignature=characterScoped?characterProductionFingerprint(JSON.parse(await readFile(productionPath,'utf8'))):null;
+   const afterInputSha=afterFileInputSignature===null?null:characterScoped?sha(JSON.stringify({files:afterFileInputSignature,character_production:afterCharacterInputSignature})):afterFileInputSignature;
+   cache.steps[step.id]={status:'PASS',command:result.command,selected_source_files:stepSourceFiles.map(p=>path.relative(source.skillRoot,p)),input_scope:characterScoped?'character-production':'full-production',after_input_sha:afterInputSha,output_sha:required.length?await signature(required):sha('no-output-files'),at:new Date().toISOString()};
    await writeJson(checkpointPath,cache);
   }else {delete cache.steps[step.id];await writeJson(checkpointPath,cache);fail('NATIVE_STEP_FAILED',{step:step.id,reason:extra.reason??'NODE_EXIT_NONZERO',exit_code:extra.exit_code});}
   report.steps.push(extra);

@@ -2,6 +2,18 @@ import {readFile,access,lstat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 const exists=p=>access(p).then(()=>true,()=>false);
+const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
+export function characterProductionFingerprint(production){
+ const characters=(production?.scenes??[]).map(scene=>({
+  id:scene.id,
+  acting_requirements:scene.visual_grammar?.meme_composition?.acting_requirements??null,
+  entities:(scene.entities??[]).filter(e=>e.kind==='character').map(e=>({
+   id:e.id,initial_state:e.initial_state??null,
+   states:Object.fromEntries(Object.entries(e.states??{}).map(([id,s])=>[id,{visible:s?.visible!==false}]))
+  }))
+ }));
+ return createHash('sha256').update(JSON.stringify(canonical({version:production?.version??null,characters}))).digest('hex');
+}
 export async function signatureFiles(files){
  const sha=b=>createHash('sha256').update(b).digest('hex'),parts=[],selected=[...new Set(files)].sort();
  // Bound parallel I/O; reread every call so edits cannot survive a memoized PASS.

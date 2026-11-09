@@ -207,3 +207,24 @@ test('precompile and art direction preflights each execute once with genuine rec
   const receipt=JSON.parse(await readFile(path.join(ws,'.authoring/native-validator-precompile_seam_validation.json')));assert.equal(receipt.exit_code,0);assert.match(receipt.stdout,/PREFLIGHT_OK/);
  }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
 });
+
+test('finalize-manifest does not globally bypass native checkpoints',async()=>{
+ const source=await readFile(script,'utf8');
+ assert.match(source,/force=argv\.includes\('--force'\)\|\|noCache/);
+ assert.doesNotMatch(source,/force=argv\.includes\('--force'\)\|\|finalizeManifest/);
+});
+
+test('non-character production edits preserve expensive character planner/write cache',async()=>{
+ const ws=await makeWorkspace(),src=await makeSource();
+ try{
+  await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
+  assert.equal(run(ws,src,['--run']).status,0);
+  const prod=JSON.parse(await readFile(path.join(ws,'production.json'),'utf8'));
+  prod.scenes[0].entities.push({id:'prop-note',kind:'object',initial_state:'idle',states:{idle:{asset:null,visible:true}}});
+  await write(path.join(ws,'production.json'),JSON.stringify(prod));
+  const rerun=run(ws,src,['--run']);assert.equal(rerun.status,0,rerun.stderr+rerun.stdout);
+  const receipt=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json'),'utf8'));
+  assert.equal(receipt.steps.find(x=>x.id==='character_plan').status,'SKIPPED_REUSED');
+  assert.equal(receipt.steps.find(x=>x.id==='character_write').status,'SKIPPED_REUSED');
+ }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
+});
