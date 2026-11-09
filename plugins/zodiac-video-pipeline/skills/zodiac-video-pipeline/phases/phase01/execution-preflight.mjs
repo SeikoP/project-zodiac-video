@@ -3,6 +3,7 @@ import {access,readFile,mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {unresolvedContextImports} from './runtime-dependency-check.mjs';
 import {checkReleaseConsistency} from '../../core/release/validate-release-consistency.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.resolve(here,'../..');
@@ -28,7 +29,6 @@ const exists=async p=>access(p).then(()=>true).catch(()=>false);
 // Context delivery requires tokenizer. TOON now has a lossless JSON fallback;
 // XState has a built-in FSM fallback and CodeGraph is loaded only on explicit requests.
 const requireFromPlugin=createRequire(path.join(pluginRoot,'package.json'));
-const runtimeDependencies=['gpt-tokenizer/encoding/o200k_base'];
 
 const problems=[];let manifest,template;
 try{manifest=JSON.parse(await readFile(path.join(pluginRoot,'plugin.json'),'utf8'));}catch{problems.push('PLUGIN_MANIFEST_MISSING');}
@@ -37,9 +37,7 @@ if(manifest&&template&&manifest.version!==template.plugin_version)problems.push(
 const releaseCheck=await checkReleaseConsistency(pluginRoot);
 for(const problem of releaseCheck.problems)if(!problems.includes(problem))problems.push(problem);
 for(const rel of required)if(!await exists(path.join(root,rel)))problems.push('MISSING_SOURCE:'+rel);
-for(const dependency of runtimeDependencies){
- try{requireFromPlugin.resolve(dependency);}catch{problems.push('RUNTIME_DEPENDENCY_UNAVAILABLE:'+dependency);}
-}
+for(const dependency of unresolvedContextImports(specifier=>requireFromPlugin.resolve(specifier)))problems.push('RUNTIME_DEPENDENCY_UNAVAILABLE:'+dependency);
 const statePath=path.join(workspace,'.authoring','pipeline-state.json');
 let state;
 if(await exists(statePath)){
