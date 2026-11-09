@@ -46,7 +46,7 @@ class BundleSelectionTests(unittest.TestCase):
 
     def test_phase_one_selection_drops_local_runners_but_keeps_import_closure(self):
         tracked = subprocess.check_output(
-            ["git", "ls-files", "-z"], cwd=ROOT).decode().split("\\0")
+            ["git", "ls-files", "-z"], cwd=ROOT).decode().split(chr(0))
         full = {name for name in tracked if builder.include(name, "01-content")}
         slim = set(builder.select_phase_files(ROOT, tracked, "01-content"))
         self.assertTrue(slim.issubset(full))
