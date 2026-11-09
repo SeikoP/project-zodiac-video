@@ -6,6 +6,7 @@ import tempfile
 import json
 import zipfile
 import hashlib
+import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("builder", ROOT / "tools/build_source_bundle.py")
@@ -42,6 +43,27 @@ class BundleSelectionTests(unittest.TestCase):
     def test_handoff_excludes_visual_masters_and_catalog_ui(self):
         for rel in ("references/asset-library-v4/props/book.svg", "orchestration/asset-catalog.html"):
             self.assertFalse(builder.include("plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/" + rel, "03-handoff"))
+
+    def test_phase_one_selection_drops_local_runners_but_keeps_import_closure(self):
+        tracked = subprocess.check_output(
+            ["git", "ls-files", "-z"], cwd=ROOT).decode().split("\\0")
+        full = {name for name in tracked if builder.include(name, "01-content")}
+        slim = set(builder.select_phase_files(ROOT, tracked, "01-content"))
+        self.assertTrue(slim.issubset(full))
+        self.assertLess(len(slim), len(full))
+        self.assertNotIn(builder.PLUGIN +
+            "skills/zodiac-video-pipeline/phases/phase03/run-phase03-production.mjs", slim)
+        self.assertNotIn(builder.PLUGIN +
+            "skills/zodiac-video-pipeline/phases/local/run-local-phase03.mjs", slim)
+        self.assertIn(builder.PLUGIN +
+            "skills/zodiac-video-pipeline/phases/phase02/phase02-transition-gate.mjs", slim)
+        self.assertIn(builder.PLUGIN +
+            "skills/zodiac-video-pipeline/phases/phase01/export-phase1-handoff.mjs", slim)
+        builder.validate_dependencies(ROOT, slim)
+        # Phase-2/3 package selection must not change.
+        for phase in ("02-visual-production", "03-handoff"):
+            self.assertEqual(set(builder.select_phase_files(ROOT, tracked, phase)),
+                             {name for name in tracked if builder.include(name, phase)})
 
     def test_missing_refactored_import_is_rejected(self):
         import tempfile
