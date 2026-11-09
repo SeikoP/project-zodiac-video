@@ -1,0 +1,37 @@
+name: Zodiac Phase-1 runtime dependencies (offline transport)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/zodiac-phase01-runtime-cache.yml
+permissions:
+  contents: read
+jobs:
+  phase01-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned plugin dependencies
+        run: npm ci --prefix plugins/zodiac-video-pipeline --ignore-scripts --no-audit --no-fund
+      - name: Archive lock-bound dependencies for offline host
+        run: |
+          mkdir -p /tmp/zodiac-phase01-offline
+          tar -czf /tmp/zodiac-phase01-offline/node-modules.tar.gz -C plugins/zodiac-video-pipeline node_modules
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          root=pathlib.Path('plugins/zodiac-video-pipeline')
+          archive=pathlib.Path('/tmp/zodiac-phase01-offline/node-modules.tar.gz')
+          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+          record={'format':'zodiac-node-deps-cache@1','scope':'01-content','source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'package_lock_sha256':sha(root/'package-lock.json'),'node_major':22,'os':'linux','arch':'x64','archive_sha256':sha(archive),'not_an_approval':True}
+          pathlib.Path('/tmp/zodiac-phase01-offline/PROVENANCE.json').write_text(json.dumps(record,indent=2)+'\n')
+          print(json.dumps(record))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-phase01-runtime-deps-${{ github.sha }}
+          path: /tmp/zodiac-phase01-offline/
+          if-no-files-found: error
+          retention-days: 14
