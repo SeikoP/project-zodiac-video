@@ -1,12 +1,18 @@
 import {readFile,writeFile,mkdir,readdir,rename} from 'node:fs/promises';
 import path from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash} from 'node:crypto';
 export const E2E_FORMAT='zodiac-e2e-performance@1';
 const categories=new Set(['agent_compute','native','tool_wait','review_wait','transport','other']);
 const phases=new Set(['01-content','02-visual-production','03-handoff','local-runner']);
 const pluginPhases=['01-content','02-visual-production','03-handoff'];
 const validTime=x=>typeof x==='string'&&Number.isFinite(Date.parse(x));
 const sum=xs=>+xs.reduce((a,n)=>a+n,0).toFixed(2);
+export function performanceIdentity(state){
+ const run_id=typeof state?.run_id==='string'&&state.run_id.trim()&&!state.run_id.includes('<')?state.run_id.trim():null;
+ const plugin=typeof state?.plugin_version==='string'&&state.plugin_version.trim()?state.plugin_version.trim():null;
+ if(!run_id||!plugin)return null;
+ return {run_id,revision_id:createHash('sha256').update(JSON.stringify({run_id,plugin_version:plugin})).digest('hex').slice(0,20)};
+}
 const intervalUnion=spans=>{
  const intervals=spans.map(s=>[Date.parse(s.started_at),Date.parse(s.ended_at)]).sort((a,b)=>a[0]-b[0]);
  let total=0,start=null,end=null;
@@ -33,7 +39,7 @@ export async function summarizeEpisodeSpans(workspace){
  const all=[];for(const n of names){const s=JSON.parse(await readFile(path.join(root,n),'utf8'));if(s.format!=='zodiac-e2e-span@1')throw Error('FAST_SPAN_FORMAT_INVALID');all.push(s);}
  const spans=all.filter(s=>pluginPhases.includes(s.phase)),runner=all.filter(s=>s.phase==='local-runner');
  const totals=Object.fromEntries([...categories].map(c=>[c,sum(spans.filter(s=>s.category===c).map(s=>s.duration_ms))]));
- const perPhase=Object.fromEntries(pluginPhases.map(p=>[p,{spans:spans.filter(s=>s.phase===p).length,duration_ms:sum(spans.filter(s=>s.phase===p).map(s=>s.duration_ms))}]));
+ const perPhase=Object.fromEntries(pluginPhases.map(p=>{const owned=spans.filter(s=>s.phase===p);return [p,{spans:owned.length,pass_spans:owned.filter(s=>s.status==='PASS').length,non_pass_spans:owned.filter(s=>s.status!=='PASS').length,duration_ms:sum(owned.map(s=>s.duration_ms))}];}));
  const runIds=[...new Set(spans.map(s=>s.run_id).filter(Boolean))];
  const revisions=[...new Set(spans.map(s=>s.revision_id).filter(Boolean))];
  const reasons=[];
@@ -41,7 +47,7 @@ export async function summarizeEpisodeSpans(workspace){
  if(spans.some(s=>!s.run_id||!s.revision_id))reasons.push('MISSING_RUN_OR_REVISION_ID');
  if(runIds.length!==1||revisions.length!==1)reasons.push('MIXED_RUN_OR_REVISION');
  if(spans.some(s=>!validTime(s.started_at)||!validTime(s.ended_at)||Date.parse(s.ended_at)<Date.parse(s.started_at)))reasons.push('MISSING_OR_INVALID_INTERVAL');
- if(spans.some(s=>s.status!=='PASS'))reasons.push('NON_PASS_STAGE');
+ if(pluginPhases.some(p=>perPhase[p].pass_spans===0))reasons.push('MISSING_PASS_PHASE');
  const intervalsValid=!reasons.includes('MISSING_OR_INVALID_INTERVAL')&&spans.length>0;
  const wall=intervalsValid?Math.max(...spans.map(s=>Date.parse(s.ended_at)))-Math.min(...spans.map(s=>Date.parse(s.started_at))):null;
  const covered=intervalsValid?intervalUnion(spans):null;
@@ -49,7 +55,7 @@ export async function summarizeEpisodeSpans(workspace){
  const categoriesUnion=intervalsValid?Object.fromEntries([...categories].map(c=>[c,intervalUnion(spans.filter(s=>s.category===c))])):null;
  return {format:E2E_FORMAT,workspace:path.resolve(workspace),spans:spans.length,excluded_local_runner_spans:runner.length,run_id:runIds.length===1?runIds[0]:null,revision_id:revisions.length===1?revisions[0]:null,totals,per_phase:perPhase,
   // Historical additive metric is diagnostic only, NEVER wall-clock E2E.
-  observed_stage_duration_ms:sum(Object.values(totals)),
+  observed_stage_duration_ms:sum(Object.values(totals)),failed_spans:spans.filter(s=>s.status!=='PASS').length,failed_stage_duration_ms:sum(spans.filter(s=>s.status!=='PASS').map(s=>s.duration_ms)),
   plugin_wall_clock_ms:intervalsValid&&reasons.length===0?wall:null,
   plugin_observed_interval_union_ms:intervalsValid&&reasons.length===0?covered:null,
   plugin_unmeasured_gap_ms:intervalsValid&&reasons.length===0?+(wall-covered).toFixed(2):null,

@@ -423,7 +423,70 @@
       "authoring_sources": [
         ".authoring/visual-intent.json",
         "design.md"
-      ]
+      ],
+      "context_scopes": {
+        "design": {
+          "load_references": [
+            "references/visual-direction.md",
+            "references/visual-quality.md",
+            "orchestration/phase02-composition-contract.md",
+            "references/retention-quality.md"
+          ],
+          "context_capability_ids": [
+            "visual_compile_contract",
+            "runtime_authoring_boundary",
+            "scene_direction_contract",
+            "cast_library_contract",
+            "visual_intent_contract",
+            "narrative_visual_contract",
+            "scene_accent_canvas_contract"
+          ]
+        },
+        "scene": {
+          "load_references": [
+            "references/visual-direction.md",
+            "references/visual-quality.md",
+            "orchestration/phase02-composition-contract.md"
+          ],
+          "context_capability_ids": [
+            "visual_compile_contract",
+            "runtime_authoring_boundary",
+            "scene_direction_contract",
+            "director_performance_contract",
+            "visual_intent_contract",
+            "narrative_visual_contract",
+            "scene_accent_canvas_contract"
+          ]
+        },
+        "validate": {
+          "load_references": [
+            "references/visual-quality.md",
+            "orchestration/phase02-composition-contract.md"
+          ],
+          "context_capability_ids": [
+            "runtime_authoring_boundary",
+            "scene_direction_contract",
+            "director_performance_contract",
+            "visual_intent_contract",
+            "narrative_visual_contract"
+          ]
+        },
+        "review": {
+          "load_references": [
+            "references/visual-quality.md",
+            "orchestration/phase02-composition-contract.md",
+            "references/retention-quality.md"
+          ],
+          "context_capability_ids": [
+            "runtime_authoring_boundary",
+            "scene_direction_contract",
+            "director_performance_contract",
+            "visual_intent_contract",
+            "narrative_visual_contract",
+            "caption_compile_contract"
+          ]
+        }
+      }
     },
     {
       "id": "assets",
@@ -834,7 +897,53 @@
       "guidance_selection_policy": "Selection filters reference loading only; capabilities and integrity validators remain required. Receipt application summary records the selected bounded index when full extension guidance is inapplicable.",
       "authoring_sources": [
         "assets/**"
-      ]
+      ],
+      "context_scopes": {
+        "assets": {
+          "load_references": [
+            "references/asset-library-v4/contracts/anatomy-contract.md",
+            "references/asset-library-v4/contracts/validation-contract.md"
+          ],
+          "context_capability_ids": [
+            "asset_library_contract",
+            "character_assembly_contract",
+            "scene_direction_contract",
+            "scene_direction_compiler_profile",
+            "visual_intent_contract",
+            "asset_style_contract",
+            "outfit_pattern_contract"
+          ]
+        },
+        "validate": {
+          "load_references": [
+            "references/asset-library-v4/contracts/validation-contract.md",
+            "references/asset-library-v4/scene-direction/index.json"
+          ],
+          "context_capability_ids": [
+            "asset_library_contract",
+            "character_assembly_contract",
+            "scene_direction_contract",
+            "visual_intent_contract",
+            "pose_readability_contract",
+            "post_pose_attachment_contract",
+            "asset_style_contract",
+            "outfit_pattern_contract"
+          ]
+        },
+        "review": {
+          "load_references": [
+            "references/asset-library-v4/contracts/validation-contract.md",
+            "references/visual-quality.md"
+          ],
+          "context_capability_ids": [
+            "asset_library_contract",
+            "scene_direction_contract",
+            "visual_intent_contract",
+            "asset_style_contract",
+            "pose_readability_contract"
+          ]
+        }
+      }
     },
     {
       "id": "publish_prep",
@@ -938,7 +1047,36 @@
       "authoring_sources": [
         "publish/publish.json",
         "publish/publish-copy.txt"
-      ]
+      ],
+      "context_scopes": {
+        "publish": {
+          "load_references": [
+            "references/publish-virality.md"
+          ],
+          "context_capability_ids": [
+            "publish_contract",
+            "cover_design_contract"
+          ]
+        },
+        "validate": {
+          "load_references": [
+            "references/publish-virality.md"
+          ],
+          "context_capability_ids": [
+            "publish_contract",
+            "cover_design_contract"
+          ]
+        },
+        "review": {
+          "load_references": [
+            "references/publish-virality.md"
+          ],
+          "context_capability_ids": [
+            "publish_contract",
+            "cover_design_contract"
+          ]
+        }
+      }
     }
   ]
 }

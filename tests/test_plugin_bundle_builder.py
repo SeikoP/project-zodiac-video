@@ -11,7 +11,7 @@ class CandidateBundleTests(unittest.TestCase):
         plugin = root / "plugins/zodiac-video-pipeline"
         entries = {
             "plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
-            "package.json": '{"private":true,"dependencies":{"xstate":"5.33.3","@colbymchenry/codegraph":"1.6.2"}}',
+            "package.json": '{"private":true,"dependencies":{"xstate":"5.33.3","@toon-format/toon":"4.4.0"}}',
             "package-lock.json": '{"lockfileVersion":3}',
             ".codex-plugin/plugin.json": '{"name":"zodiac-video-pipeline","version":"2.5.6-dev.7"}',
             "skills/zodiac-video-pipeline/SKILL.md": "# Zodiac",

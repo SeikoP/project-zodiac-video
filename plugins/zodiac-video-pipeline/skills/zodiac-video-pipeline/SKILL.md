@@ -9,7 +9,7 @@ Do not use account memory as unapproved episode evidence.
 
 ## Current step
 Run `node orchestration/resume-brief.mjs <workspace> --context` before each step. It delivers the current task, source-bound handoff, policy and budgeted references. Fetch pending required references before using their capability; see `references/chatgpt-runtime.md`. A Studio pointer or prior chat summary is only a hint.
-Use its XState `next_task`, scoped writes and revision ID. Keep the full supplied scene context; see `references/chatgpt-runtime.md` for the plugin-owned CodeGraph/runtime setup.
+Use its XState `next_task`, scoped writes and revision ID. Keep the full supplied scene context; see `references/chatgpt-runtime.md` for context transport and runtime requirements.
 Read only selected capsule blocks (or `read_now` from plain resume). Load review guidance when switching to review; do not load every phase or catalog into the writer's context. Required gates remain blocking.
 Run real validators through `run-validator-with-receipt.mjs`, then commit the step. Missing state, verified execution bytes or required capability means BLOCKED. A file listing, prose checklist or tool invocation is never compiler PASS or user approval.
 

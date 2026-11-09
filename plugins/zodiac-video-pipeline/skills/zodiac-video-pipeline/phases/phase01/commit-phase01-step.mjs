@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {performance} from 'node:perf_hooks';
-import {recordEpisodeSpan} from '../../core/performance/episode-profiler.mjs';
+import {recordEpisodeSpan,performanceIdentity} from '../../core/performance/episode-profiler.mjs';
 const read=async p=>JSON.parse(await readFile(p,'utf8'));
 const hash=s=>createHash('sha256').update(s).digest('hex');
 import {conditionApplies} from '../../core/policy/resolve-capability-route.mjs';
@@ -53,7 +53,7 @@ export function preparePhase01StepCommit({state,manifest,evidence,files}){
  return next;
 }
 export async function commitPhase01Step(workspace,evidenceFile){
- const fastStarted=performance.now();
+ const fastStartedAt=new Date().toISOString(),fastStarted=performance.now();
  const root=path.resolve(workspace),dir=path.join(root,'.authoring');
  const lease=await open(path.join(dir,'.phase01-state-write.lock'),'wx').catch(e=>{throw new Error('STATE_WRITE_BUSY '+e.code)});
  try{
@@ -92,7 +92,8 @@ export async function commitPhase01Step(workspace,evidenceFile){
    if(hash(await readFile(statePath))!==hash(raw))throw new Error('STATE_CHANGED_CONCURRENTLY');
    await rename(temp,statePath);
   }finally{await rm(temp,{force:true});}
-  await recordEpisodeSpan(root,{phase:'01-content',stage:'commit:'+evidence.step_id,category:'native',duration_ms:performance.now()-fastStarted,status:'PASS'}).catch(()=>{});
+  const perfIdentity=performanceIdentity(state),fastEndedAt=new Date().toISOString();
+  await recordEpisodeSpan(root,{phase:'01-content',stage:'commit:'+evidence.step_id,category:'native',duration_ms:performance.now()-fastStarted,status:'PASS',...(perfIdentity??{}),started_at:fastStartedAt,ended_at:fastEndedAt}).catch(()=>{});
   return {status:'STATE_STEP_COMMITTED',step:evidence.step_id,phase_status:result.phases[phaseId].status};
  }finally{await lease.close();await rm(path.join(dir,'.phase01-state-write.lock'),{force:true});}
 }

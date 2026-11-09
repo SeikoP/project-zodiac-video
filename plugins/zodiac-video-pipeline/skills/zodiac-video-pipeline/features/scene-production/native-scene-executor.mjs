@@ -22,7 +22,7 @@ const sourceHash=async()=>{
  }
  return digest(await Promise.all([...new Set([...sources,...extra])].sort().map(async p=>[path.relative(skillRoot,p),hash(await readFile(p))])));
 };
-async function referencedAssets(scene,assets,root){
+async function referencedAssets(scene,assets,root,hashCache=null){
  const refs=new Set();const visit=v=>{if(typeof v==='string'){if(Object.hasOwn(assets,v))refs.add(v);}else if(Array.isArray(v))v.forEach(visit);else if(v&&typeof v==='object')Object.values(v).forEach(visit);};visit(scene);
  const entries=[];
  for(const id of [...refs].sort()){
@@ -30,7 +30,7 @@ async function referencedAssets(scene,assets,root){
   const rel=String(a.path).replaceAll('\\','/');if(path.isAbsolute(rel)||rel.split('/').includes('..')||rel.includes(':'))throw Error('SCENE_ASSET_PATH_UNSAFE '+id);
   const abs=path.resolve(root,rel),real=await realpath(abs);if(!real.startsWith(root+path.sep))throw Error('SCENE_ASSET_PATH_UNSAFE '+id);
   const st=await lstat(real);if(!st.isFile())throw Error('SCENE_ASSET_INVALID '+id);
-  entries.push([id,a,hash(await readFile(real))]);
+  let digestPromise=hashCache?.get(real);if(!digestPromise){digestPromise=readFile(real).then(hash);hashCache?.set(real,digestPromise);}entries.push([id,a,await digestPromise]);
  }
  return entries;
 }
@@ -57,8 +57,9 @@ export async function compileIsolatedScenes(workspace,{maxConcurrency=3,compileO
  const lease=await open(lockPath,'wx').catch(e=>{if(e.code==='EEXIST')throw Error('SCENE_NATIVE_ALREADY_RUNNING');throw e;});
  await mkdir(workdir,{recursive:true});
  try{
+ const initialAssetHashes=new Map();
  const rows=await Promise.all(source.scenes.map(async(s,index)=>{
-  const assets=await referencedAssets(s,source.assets??{},root);
+  const assets=await referencedAssets(s,source.assets??{},root,initialAssetHashes);
   const input=digest({scene:s,version:source.version,visual_system:source.visual_system,asset_hashes:assets,compiler});
   const old=prior[s.id],alreadyCompiled=old?.output_sha256===digest(s),sameSource=old?.input_sha256===input||alreadyCompiled,
    reusable=sameSource&&old?.compiler_sha256===compiler&&old?.assets_sha256===digest(assets)&&old?.result&&old?.result_sha256===digest(old.result)&&(!alreadyCompiled||old?.output_sha256===digest(old.result))&&old?.receipt?.scene_id===s.id&&old?.result?.id===s.id;
@@ -82,7 +83,7 @@ export async function compileIsolatedScenes(workspace,{maxConcurrency=3,compileO
   await Promise.all(Array.from({length:Math.min(maxConcurrency,rows.length)},run));
   // Source integrity: workers must not mutate shared production or referenced asset bytes.
   const latest=await readFile(path.join(root,'production.json'));if(production===null&&digest(JSON.parse(latest))!==digest(source))throw Error('SCENE_NATIVE_SOURCE_CHANGED_DURING_RUN');
-  for(const row of rows){const now=await referencedAssets(source.scenes[row.index],source.assets??{},root);if(digest(now)!==digest(row.assets))throw Error('SCENE_NATIVE_ASSET_CHANGED_DURING_RUN '+row.scene_id);}
+  const finalAssetHashes=new Map();for(const row of rows){const now=await referencedAssets(source.scenes[row.index],source.assets??{},root,finalAssetHashes);if(digest(now)!==digest(row.assets))throw Error('SCENE_NATIVE_ASSET_CHANGED_DURING_RUN '+row.scene_id);}
   const merged={...source,scenes:results};
   const receipt={format:'zodiac-scene-direction-compile-receipt@1',compiler_version:profileVersion??(await readJson(path.join(skillRoot,'references/asset-library-v4/scene-direction/compiler-profile.json'))).version,production_version:merged.version,scenes:receipts,signature:signature(receipts)};
   const entries=Object.fromEntries(rows.map(row=>[row.scene_id,{input_sha256:row.reuse?row.old.input_sha256:row.input,compiler_sha256:compiler,assets_sha256:digest(row.assets),output_sha256:digest(results[row.index]),result:results[row.index],result_sha256:digest(results[row.index]),receipt:receipts[row.index]}]));

@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {performance} from 'node:perf_hooks';
 import assert from 'node:assert/strict';
 import {getInitialSnapshot} from 'xstate';
+import {spawnSync} from 'node:child_process';
 import {taskMachine,resolveNextTask,buildWorkflowGraph,queryWorkflowGraph} from '../workflow/task-coordinator.mjs';
-import {buildCodeIndex,collectPluginCodeSources} from '../workflow/runtime-codegraph.mjs';
 import {resumeBrief} from '../../orchestration/resume-brief.mjs';
 import {compileStepCapsule,deliverContextBlocks,encodeContextData} from '../performance/compile-step-capsule.mjs';
 import {signatureFiles} from '../../phases/phase02/phase02-selected-dependencies.mjs';
@@ -32,29 +32,63 @@ export async function benchmarkPluginOrchestration(){
  const baseline=c=>c.complete?'COMPLETE':c.blocked?'RESOLVE_BLOCKER':c.review&&!c.approved?'WAIT_FOR_GENUINE_USER_REVIEW':c.review||!c.step?'RUN_PHASE_GATE_PER_ROUTER':c.locked?'ACTIVATE_PHASE':c.visual&&!c.intent?'DESIGN_VISUAL':c.thinScene?'DESIGN_SCENE_BEATS':c.needsAuthoring?'AUTHOR_STEP':'VALIDATE_AND_COMMIT_STEP';
  const cases=[facts,...['complete','blocked','review','locked','needsAuthoring'].map(k=>({...facts,thinScene:false,[k]:true}))];
  for(const c of cases)assert.equal(getInitialSnapshot(taskMachine,c).value,baseline(c));
- const codeFiles=await collectPluginCodeSources(manifests),start=performance.now();
- let index=await buildCodeIndex({files:codeFiles});const indexOpenMs=performance.now()-start;
- const indexInfo={files:index.file_count,source_bytes:index.source_bytes,index_cache_hit:index.index_result===null,open_or_build_ms:round(indexOpenMs),stats:index.stats};
+ // Bounded source-file lookup is the relevant CLI baseline; no repository-wide code index.
+ async function collectExecutableSources(dir=skill){
+  const entries=await readdir(dir,{withFileTypes:true});
+  const nested=await Promise.all(entries.map(async entry=>{
+   if(entry.isDirectory()){
+    if(['tests','node_modules','.runtime','.codegraph','.git'].includes(entry.name))return [];
+    return collectExecutableSources(path.join(dir,entry.name));
+   }
+   return entry.isFile()&&entry.name.endsWith('.mjs')&&!entry.name.endsWith('.test.mjs')?[path.relative(skill,path.join(dir,entry.name)).split(path.sep).join('/')]:[];
+  }));
+  return nested.flat();
+ }
+ const codeFiles=(await collectExecutableSources()).sort();
+ const rgCheck=spawnSync('rg',['--version'],{cwd:skill,encoding:'utf8'});
+ const rgAvailable=!rgCheck.error&&rgCheck.status===0;
  const queries=[];
- try{
-  for(const query of ['resolveNextTask','planStepContext','createRepairPlan']){
-   const spans=[];let result;
-   for(let i=0;i<8;i++){const t=performance.now();result=await index.query(query);spans.push(performance.now()-t);}
-   assert.ok(result.symbols.some(s=>s.name===query),'CodeGraph failed to retrieve '+query);
-   const scanStart=performance.now(),matched=[];
-   for(const file of codeFiles){const raw=await readFile(path.join(skill,file),'utf8');if(raw.includes(query))matched.push({file,bytes:Buffer.byteLength(raw)});}
-   queries.push({query,median_query_ms:round(median(spans)),symbols:result.symbols.length,edges:result.edges.length,returned_source_bytes:result.source_bytes,omitted_symbols:result.omitted_symbols,baseline_full_file_scan_ms:round(performance.now()-scanStart),baseline_matching_file_bytes:matched.reduce((n,r)=>n+r.bytes,0)});
+ for(const query of ['resolveNextTask','planStepContext','createRepairPlan']){
+  const scanStart=performance.now(),matched=[];
+  for(const file of codeFiles){
+   const raw=await readFile(path.join(skill,file),'utf8');
+   if(raw.includes(query))matched.push(file);
   }
- }finally{index.close();}
+  const baselineMs=performance.now()-scanStart;
+  assert.ok(matched.length,'Direct lookup failed for '+query);
+  const spans=[];let rgPaths=[];
+  if(rgAvailable)for(let i=0;i<8;i++){
+   const started=performance.now();
+   const result=spawnSync('rg',['-l','-F','--glob','*.mjs','--glob','!**/tests/**','--glob','!**/*.test.mjs',query,'.'],{cwd:skill,encoding:'utf8',maxBuffer:1024*1024});
+   spans.push(performance.now()-started);
+   if(result.error||![0,1].includes(result.status))throw Error('RG_LOOKUP_FAILED '+String(result.error??result.stderr));
+   rgPaths=result.stdout.trim()?result.stdout.trim().split(String.fromCharCode(10)).map(p=>p.trim()).filter(Boolean).map(p=>p.startsWith('./')?p.slice(2):p).map(p=>p.split(path.sep).join('/')).sort():[];
+   if(!rgPaths.length)throw Error('RG_LOOKUP_MISSING '+query);
+   for(const file of rgPaths)assert.ok(matched.includes(file),'rg returned a file not matched by direct scan: '+file);
+  }
+  queries.push({query,baseline_full_file_scan_ms:round(baselineMs),baseline_matching_files:matched.length,rg_available:rgAvailable,rg_match_files:rgAvailable?rgPaths.length:null,rg_median_ms:rgAvailable?round(median(spans)):null,rg_p95_ms:rgAvailable?round([...spans].sort((a,b)=>a-b)[Math.floor(spans.length*.95)]):null});
+ }
  const contextDelivery=[];let prior=null;
  for(const manifest of manifests)for(const step of manifest.steps){
-  const started=performance.now(),capsule=await compileStepCapsule({phase:manifest.id,step:step.id,flags:freshState.flags}),blocks=capsule.blocks.map(b=>({key:b.path,content:b.content}));
+  const workUnit=manifest.id==='02-visual-production'?({visual_compile:'design',assets:'assets',publish_prep:'publish'}[step.id]??null):null;
+  const started=performance.now(),capsule=await compileStepCapsule({phase:manifest.id,step:step.id,flags:freshState.flags,options:{work_unit:workUnit}}),blocks=capsule.blocks.map(b=>({key:b.path,content:b.content}));
   const delivered=await deliverContextBlocks(blocks,{workspace:'synthetic-benchmark-only',policy:capsule.policy_sha256,prior,reuseId:prior?.id,tokenBudget:100000});
   const budgeted=await deliverContextBlocks(blocks,{workspace:'synthetic-benchmark-only',policy:capsule.policy_sha256,tokenBudget:16000});
   assert.ok(!delivered.pending_references.length);
-  contextDelivery.push({phase:manifest.id,step:step.id,full_tokens:delivered.budget.full_transport_tokens_before_accounting,delta_tokens:delivered.budget.transport_tokens_before_accounting,reused_blocks:delivered.blocks.filter(b=>b.delivery==='CALLER_HELD_IDENTICAL').length,pending_at_16k:budgeted.pending_references.length,elapsed_ms:round(performance.now()-started)});prior=delivered;
+  contextDelivery.push({phase:manifest.id,step:step.id,work_unit:workUnit,full_tokens:delivered.budget.full_transport_tokens_before_accounting,delta_tokens:delivered.budget.transport_tokens_before_accounting,reused_blocks:delivered.blocks.filter(b=>b.delivery==='CALLER_HELD_IDENTICAL').length,pending_at_16k:budgeted.pending_references.length,elapsed_ms:round(performance.now()-started)});prior=delivered;
  }
  const encodedScene=await encodeContextData(task.context);
+ const {countTokens}=await import('gpt-tokenizer/encoding/o200k_base');
+ const contextEncodingCases=[];
+ for(const sceneCount of [1,5,12]){
+  const value={phase:'02-visual-production',scenes:intent.scenes.slice(0,sceneCount),narration:'Giữ nguyên lời kể và toàn bộ nhịp hình ảnh.'};
+  const pretty=JSON.stringify(value,null,2),compact=JSON.stringify(value);
+  const encodingStarted=performance.now(),encoded=await encodeContextData(value);
+  const encodingMs=performance.now()-encodingStarted;
+  assert.deepEqual(encoded.decoded,value);
+  assert.ok(encoded.tokens<=encoded.json_tokens);
+  contextEncodingCases.push({scenes:sceneCount,pretty_bytes:Buffer.byteLength(pretty),compact_bytes:Buffer.byteLength(compact),selected_bytes:Buffer.byteLength(encoded.content),pretty_tokens:countTokens(pretty),compact_tokens:countTokens(compact),selected_tokens:encoded.tokens,selected_format:encoded.format,lossless:true,encoding_wall_ms:round(encodingMs)});
+ }
  const hashFiles=codeFiles.slice(0,64).map(p=>path.join(skill,p)),signatureTimes={sequential:[],bounded_parallel:[]};
  const digest=b=>createHash('sha256').update(b).digest('hex');
  for(let i=0;i<5;i++){
@@ -66,14 +100,14 @@ export async function benchmarkPluginOrchestration(){
   for(let i=0;i<10;i++){const started=performance.now(),brief=await resumeBrief(temporary);assert.equal(brief.next_task.kind,'AUTHOR_STEP');resumeTimes.push(performance.now()-started);}
   for(let i=0;i<5;i++){const started=performance.now(),capsule=await resumeBrief(temporary,{context:true});assert.equal(capsule.format,'zodiac-task-context@1');contextTimes.push(performance.now()-started);}
  }finally{await rm(temporary,{recursive:true,force:true});}
- return {format:'zodiac-orchestration-benchmark@1',node:process.version,platform:process.platform+'-'+process.arch,dependencies:{xstate:'5.33.3',codegraph:'1.6.2'},
-  scope:'Local real SDK/source benchmark; synthetic 12-scene input, no LLM/API/render calls. Full-file scan is a diagnostic baseline, not equivalent to graph retrieval.',
+ return {format:'zodiac-orchestration-benchmark@1',node:process.version,platform:process.platform+'-'+process.arch,dependencies:{xstate:'5.33.3',tokenizer:'4.1.0',toon:'4.4.0'},
+  scope:'Local real runtime/source benchmark; synthetic 12-scene input, no LLM/API/render calls. Scoped rg and direct-file scan return source matches, not runtime dependency semantics.',
   xstate_guard_dispatch:sample(()=>getInitialSnapshot(taskMachine,facts),1000),branch_guard_dispatch_baseline:sample(()=>baseline(facts),1000),full_task_resolution:sample(()=>resolveNextTask({state,manifests,visualIntent:intent}),200),resume_brief_with_io:{iterations:10,median_ms:round(median(resumeTimes)),includes:'state validation, reference/source hashing, filesystem reads and revision-bound task; warm in-process API'},
   scene_context:{fixture_scenes:12,full_intent_bytes:fullBytes,selected_context_bytes:taskBytes,reduction_percent:round((1-taskBytes/fullBytes)*100),all_selected_scene_fields_preserved:true},
-  context_delivery:{scope:'Real required references in manifest step order; explicit immediate-prior acknowledgement, all blocks delivered with 100k diagnostic budget. Token counts exclude accounting fields and host history. No live phase approvals or LLM calls.',encoding:'o200k_base',steps:contextDelivery,scene_serialization:{selected:encodedScene.format,json_tokens:encodedScene.json_tokens,selected_tokens:encodedScene.tokens,lossless:true},resume_context_warm_median_ms:round(median(contextTimes))},
+  context_delivery:{scope:'Real required references in manifest step order; explicit immediate-prior acknowledgement, all blocks delivered with 100k diagnostic budget. Token counts exclude accounting fields and host history. No live phase approvals or LLM calls.',encoding:'o200k_base',steps:contextDelivery,scene_serialization:{selected:encodedScene.format,json_tokens:encodedScene.json_tokens,selected_tokens:encodedScene.tokens,lossless:true},encoding_cases:contextEncodingCases,resume_context_warm_median_ms:round(median(contextTimes))},
   native_signature_io:{files:hashFiles.length,iterations:5,sequential_median_ms:round(median(signatureTimes.sequential)),bounded_parallel_median_ms:round(median(signatureTimes.bounded_parallel)),identical_hashes:true},
   workflow_graph:{nodes:workflow.nodes.length,edges:workflow.edges.length,build_ms:round(graphBuild),lookup:sample(()=>queryWorkflowGraph(workflow,'character_assembly'),200)},
-  codegraph:{...indexInfo,queries},installed_dependency_bytes:await directoryBytes(path.resolve(skill,'../../node_modules')),not_a_production_acceptance:true};
+  source_lookup:{mode:rgAvailable?'scoped_rg':'direct_file_scan_fallback',file_count:codeFiles.length,queries},installed_dependency_bytes:await directoryBytes(path.resolve(skill,'../../node_modules')),not_a_production_acceptance:true};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{console.log(JSON.stringify(await benchmarkPluginOrchestration(),null,2));}catch(e){console.error(e);process.exitCode=1;}

@@ -1,8 +1,8 @@
 # ChatGPT host runtime
 
-## Plugin-owned orchestration and code intelligence
+## Plugin-owned orchestration and bounded source lookup
 
-The plugin root includes a pinned `package.json` and `package-lock.json` for XState 5.33.3, CodeGraph 1.6.2, gpt-tokenizer 4.1.0 and TOON 4.4.0. These are plugin runtime dependencies, not a dependency on the developer's current Codex/MCP session. From the verified plugin root, provision with `npm ci --ignore-scripts --no-audit --no-fund`; Node >=22.5 is required. For normal `resume-brief --context`, `gpt-tokenizer/encoding/o200k_base` is the required runtime import. TOON is an optional lossless compression path with JSON fallback; XState uses a built-in FSM fallback; CodeGraph is an opt-in indexing tool. The full pinned `npm ci` remains the recommended provisioning path. A host without Node or the required tokenizer is unavailable for this context runtime; do not claim that an installed ChatGPT skill automatically supplies an execution environment or installs packages. Never download dependencies while answering a context or graph query.
+The plugin root pins XState 5.33.3, gpt-tokenizer 4.1.0 and TOON 4.4.0 in `package.json` and `package-lock.json`. They are plugin runtime dependencies, not session-global tools. From the verified plugin root, provision with `npm ci --ignore-scripts --no-audit --no-fund`; Node >=22.5 is required. For `resume-brief --context`, `gpt-tokenizer/encoding/o200k_base` is required. TOON is an optional lossless encoding with compact JSON fallback; XState has a built-in FSM fallback. A host without Node or the required tokenizer cannot claim context runtime availability. Never download dependencies merely to answer a context or source lookup query.
 
 ## Context delivery across phases and repairs
 
@@ -22,16 +22,9 @@ XState computes one `next_task` from the existing pipeline state; it keeps no se
 
 Use `node orchestration/resume-brief.mjs <workspace> --query character_assembly` to inspect the manifest-derived phase/step/capability/source graph. This is a small in-memory workflow graph; it is not a replacement for a code index.
 
-For actual code intelligence, from the skill root run:
+For unfamiliar implementation code, prefer exact-file reads, then scoped `rg -l -F` or `rg -n -F --max-count 20` against the owning source folder. Confirm `rg --version` before assuming ripgrep exists. If it is absent, use a scoped `git grep` in a repository checkout; otherwise fall back to bounded direct file reads. Restrict default searches to current executable source; do not scan old episode data, archives, node_modules, caches or full asset catalogs. Use the manifest-derived workflow graph for phase/step/capability relationships, and the existing semantic graph for scene/asset invalidation. Text matches are not a replacement for source-bound receipts or approval checks.
 
-```sh
-node --liftoff-only core/workflow/runtime-codegraph.mjs index
-node core/workflow/runtime-codegraph.mjs query resolveNextTask
-```
-
-This invokes the CodeGraph SDK installed inside this plugin. It mirrors only current executable modules reachable from manifest tool locators and coordinator imports into the plugin's ignored `.runtime/codegraph/` cache, then indexes real symbols/calls/imports in SQLite. It does not index the entire repository, episode inputs, chat history, retired creative examples or secrets. Query results carry original-source hashes; changed source/cache is rejected until rebuilt. Source is returned for matching symbols, with bounded neighboring symbol metadata/relations; omitted symbols are explicit. CodeGraph does not grant approval, select creative evidence or execute the workflow.
-
-CodeGraph is loaded only when explicitly requested, not during ordinary task routing. Its platform bundle and index have a material disk/startup cost. Do not package development `node_modules/` or cached databases as episode artifacts; install the pinned dependency for the target OS. To reproduce local measurements, run `node --liftoff-only core/audit/benchmark-plugin-orchestration.mjs` from the skill root. This measures real installed SDKs/source plus a labeled synthetic 12-scene fixture; it makes no claim about ChatGPT latency or production acceptance.
+For baseline timing, run `node core/audit/benchmark-plugin-orchestration.mjs` from the skill root with the pinned runtime provisioned. This benchmark measures lookup and context source costs; it does not establish total ChatGPT latency or production acceptance.
 
 Use the active phase manifest as the source of truth for required capabilities and fallback policy. This file maps those capabilities to available ChatGPT tools; it does not waive a capability, validator, receipt or approval.
 
