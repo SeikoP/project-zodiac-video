@@ -4,7 +4,7 @@
 import {readFile,stat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {loadStepContext} from './plan-step-context.mjs';
+import {loadStepContext,workUnitForTask} from './plan-step-context.mjs';
 import {resolveNextTask,bindTaskRevision,buildWorkflowGraph,queryWorkflowGraph} from '../core/workflow/task-coordinator.mjs';
 import {validatePipelineState} from '../core/state/validate-pipeline-state.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -35,15 +35,19 @@ export async function resumeBrief(workspace,{query=null,context=false,prior=null
  const base={format:'zodiac-resume-brief@1',run_id:state.run_id,run_mode:state.run_mode,phase,phase_status:ps.status,review_boundary:manifest.review_boundary,not_an_approval:true,
   pointer_warning:'A copied Studio step pointer is a hint only; this brief is derived from the persisted state.'};
  if(!step||['ACTIVATE_PHASE','RESOLVE_BLOCKER'].includes(pointer.kind)){const next_task=await bindTaskRevision(pointer,{workspace,stateBytes,manifests});return {...base,step:step??null,next_action:next_task.kind,phase_guidance:'orchestration/'+entry.guide,state_sha256:next_task.state_sha256,next_task};}
- const plan=await loadStepContext(phase,step,state.flags??{},{run_mode:state.run_mode??'fresh',role:ps.steps[step]?.context_role??'draft',selected_asset_ids:state.selected_asset_ids??null,asset_needs:state.asset_needs??[],environment_mode:state.environment_mode??'canvas',meme_selected:state.flags?.meme_selected??false});
- const sizes=[];for(const ref of new Set([plan.phase_guidance,...plan.required_references])){try{sizes.push({ref,bytes:(await stat(path.join(skill,ref))).size});}catch{sizes.push({ref,bytes:null,missing:true});}}
+ let contextWorkUnit=workUnitForTask(pointer);
+ let plan=await loadStepContext(phase,step,state.flags??{},{run_mode:state.run_mode??'fresh',role:ps.steps[step]?.context_role??'draft',work_unit:contextWorkUnit,selected_asset_ids:state.selected_asset_ids??null,asset_needs:state.asset_needs??[],environment_mode:state.environment_mode??'canvas',meme_selected:state.flags?.meme_selected??false});
  const present=await Promise.all(plan.required_outputs.map(async rel=>{if(rel.includes('*'))return false;for(const file of [rel,...(rel.startsWith('.authoring/')?[]:['.authoring/'+rel])])try{if((await stat(path.join(workspace,file))).isFile())return true;}catch(e){if(e.code!=='ENOENT')throw e;}return false;}));
- const next_task=await bindTaskRevision(resolveNextTask({state,manifests,visualIntent,narration,creativeDirection,episodeScope,storySpine,outputsReady:present.every(Boolean)}),{workspace,stateBytes,manifests,contextManifest:plan.context_manifest});
+ const resolvedTask=resolveNextTask({state,manifests,visualIntent,narration,creativeDirection,episodeScope,storySpine,outputsReady:present.every(Boolean)});
+ const finalWorkUnit=workUnitForTask(resolvedTask);
+ if(finalWorkUnit!==contextWorkUnit){contextWorkUnit=finalWorkUnit;plan=await loadStepContext(phase,step,state.flags??{},{run_mode:state.run_mode??'fresh',role:ps.steps[step]?.context_role??'draft',work_unit:contextWorkUnit,selected_asset_ids:state.selected_asset_ids??null,asset_needs:state.asset_needs??[],environment_mode:state.environment_mode??'canvas',meme_selected:state.flags?.meme_selected??false});}
+ const sizes=[];for(const ref of new Set([plan.phase_guidance,...plan.required_references])){try{sizes.push({ref,bytes:(await stat(path.join(skill,ref))).size});}catch{sizes.push({ref,bytes:null,missing:true});}}
+ const next_task=await bindTaskRevision(resolvedTask,{workspace,stateBytes,manifests,contextManifest:plan.context_manifest});
  if(!(await readFile(statePath)).equals(stateBytes))throw Error('TASK_STATE_CHANGED_CONCURRENTLY');
  return {...base,step,step_status:ps.steps[step]?.status,remaining_steps:stepIds.slice(stepIds.indexOf(step)),
   read_now:sizes,deferred_references:plan.deferred_references,host_guidance_references:plan.host_guidance_references,host_capability_notes:plan.host_capability_notes,
   required_entry_capabilities:plan.required_entry_capabilities,deferred_exit_capabilities:plan.deferred_exit_capabilities,required_outputs:plan.required_outputs,
-  forbidden_context_categories:plan.forbidden_context_categories,phase_guidance:plan.phase_guidance,
+  forbidden_context_categories:plan.forbidden_context_categories,work_unit:contextWorkUnit,phase_guidance:plan.phase_guidance,
   next_action:next_task.kind,state_sha256:next_task.state_sha256,next_task};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

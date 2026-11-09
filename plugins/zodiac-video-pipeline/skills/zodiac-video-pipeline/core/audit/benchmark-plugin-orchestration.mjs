@@ -70,11 +70,12 @@ export async function benchmarkPluginOrchestration(){
  }
  const contextDelivery=[];let prior=null;
  for(const manifest of manifests)for(const step of manifest.steps){
-  const started=performance.now(),capsule=await compileStepCapsule({phase:manifest.id,step:step.id,flags:freshState.flags}),blocks=capsule.blocks.map(b=>({key:b.path,content:b.content}));
+  const workUnit=manifest.id==='02-visual-production'?({visual_compile:'design',assets:'assets',publish_prep:'publish'}[step.id]??null):null;
+  const started=performance.now(),capsule=await compileStepCapsule({phase:manifest.id,step:step.id,flags:freshState.flags,options:{work_unit:workUnit}}),blocks=capsule.blocks.map(b=>({key:b.path,content:b.content}));
   const delivered=await deliverContextBlocks(blocks,{workspace:'synthetic-benchmark-only',policy:capsule.policy_sha256,prior,reuseId:prior?.id,tokenBudget:100000});
   const budgeted=await deliverContextBlocks(blocks,{workspace:'synthetic-benchmark-only',policy:capsule.policy_sha256,tokenBudget:16000});
   assert.ok(!delivered.pending_references.length);
-  contextDelivery.push({phase:manifest.id,step:step.id,full_tokens:delivered.budget.full_transport_tokens_before_accounting,delta_tokens:delivered.budget.transport_tokens_before_accounting,reused_blocks:delivered.blocks.filter(b=>b.delivery==='CALLER_HELD_IDENTICAL').length,pending_at_16k:budgeted.pending_references.length,elapsed_ms:round(performance.now()-started)});prior=delivered;
+  contextDelivery.push({phase:manifest.id,step:step.id,work_unit:workUnit,full_tokens:delivered.budget.full_transport_tokens_before_accounting,delta_tokens:delivered.budget.transport_tokens_before_accounting,reused_blocks:delivered.blocks.filter(b=>b.delivery==='CALLER_HELD_IDENTICAL').length,pending_at_16k:budgeted.pending_references.length,elapsed_ms:round(performance.now()-started)});prior=delivered;
  }
  const encodedScene=await encodeContextData(task.context);
  const {countTokens}=await import('gpt-tokenizer/encoding/o200k_base');

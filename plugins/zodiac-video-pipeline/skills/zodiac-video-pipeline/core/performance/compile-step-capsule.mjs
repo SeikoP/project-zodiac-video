@@ -5,7 +5,7 @@ import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
 import {isDeepStrictEqual} from 'node:util';
 import path from 'node:path';import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {loadStepContext} from '../../orchestration/plan-step-context.mjs';
+import {loadStepContext,workUnitForTask} from '../../orchestration/plan-step-context.mjs';
 import {loadCurrentPolicy} from '../policy/current-policy.mjs';
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const sha=b=>createHash('sha256').update(b).digest('hex');
@@ -78,7 +78,7 @@ export async function compileTaskCapsule(workspace,{brief,prior=null,reuseId=nul
  let policy=task.contract_sha256,host_guidance_required=[],deferred_references=[],contextManifest=[];
  if(task.step&&!['ACTIVATE_PHASE','RESOLVE_BLOCKER','COMPLETE'].includes(task.kind)){
   const ps=state.phases[task.phase];
-  const capsule=await compileStepCapsule({phase:task.phase,step:task.step,flags:state.flags??{},options:{run_mode:state.run_mode??'fresh',role:ps.steps[task.step]?.context_role??'draft',selected_asset_ids:state.selected_asset_ids??null,asset_needs:state.asset_needs??[],environment_mode:state.environment_mode??'canvas',meme_selected:state.flags?.meme_selected??false}});
+  const capsule=await compileStepCapsule({phase:task.phase,step:task.step,flags:state.flags??{},options:{run_mode:state.run_mode??'fresh',role:ps.steps[task.step]?.context_role??'draft',work_unit:workUnitForTask(task),selected_asset_ids:state.selected_asset_ids??null,asset_needs:state.asset_needs??[],environment_mode:state.environment_mode??'canvas',meme_selected:state.flags?.meme_selected??false}});
   policy=capsule.policy_sha256;host_guidance_required=capsule.host_guidance_required;deferred_references=capsule.deferred_references;contextManifest=capsule.task_context_manifest;
   blocks.push({key:'active-policy',content:JSON.stringify({effective_policy:capsule.effective_policy,host_capability_notes:capsule.host_capability_notes,allowed_context_categories:capsule.allowed_context_categories,forbidden_context_categories:capsule.forbidden_context_categories,required_entry_capabilities:capsule.required_entry_capabilities,deferred_exit_capabilities:capsule.deferred_exit_capabilities}),format:'json',protected:true});
   blocks.push(...capsule.blocks.map(b=>({key:b.path,content:b.content,format:'text',required:true})));
@@ -94,7 +94,7 @@ export async function compileTaskCapsule(workspace,{brief,prior=null,reuseId=nul
  const current=await bindTaskRevision({},{workspace,stateBytes:await readFile(path.join(root,'.authoring/pipeline-state.json')),manifests,contextManifest});
  if(current.contract_sha256!==task.contract_sha256||current.state_sha256!==task.state_sha256)throw Error('CONTEXT_TASK_CHANGED');
  const delivery=await deliverContextBlocks(blocks,{workspace:task.workspace_sha256,policy,prior,reuseId,tokenBudget,requestedPaths});
- return {...delivery,format:'zodiac-task-context@1',phase:task.phase,step:task.step,task_id:task.id,host_guidance_required,deferred_references,serialization:{selected:encoded.format,json_tokens:encoded.json_tokens,selected_tokens:encoded.tokens,lossless:true},history_policy:'Only selected current sources are delivered. Host chat history is not erased. Missing facts require source retrieval, not invention.'};
+ return {...delivery,format:'zodiac-task-context@1',phase:task.phase,step:task.step,task_id:task.id,work_unit:workUnitForTask(task),host_guidance_required,deferred_references,serialization:{selected:encoded.format,json_tokens:encoded.json_tokens,selected_tokens:encoded.tokens,lossless:true},history_policy:'Only selected current sources are delivered. Host chat history is not erased. Missing facts require source retrieval, not invention.'};
 }
 export async function compileStepCapsule({phase,step,flags={},options={},prior=null,explicitReuseId=null}){
  const plan=await loadStepContext(phase,step,flags,options);
