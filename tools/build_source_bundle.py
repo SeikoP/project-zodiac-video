@@ -59,7 +59,7 @@ PHASE1_PHASE2_ENTRYPOINTS = frozenset((
     "skills/zodiac-video-pipeline/phases/phase02/phase02-transition-gate.mjs",
     "skills/zodiac-video-pipeline/phases/phase02/phase02-handoff-context.mjs",
 ))
-LOCAL_IMPORT = re.compile(r"(?:from\\s*|import\\s*\\(?\\s*|new\\s+URL\\s*\\(\\s*)['\\\"](\\.[^'\\\"]+)['\\\"]")
+LOCAL_IMPORT = re.compile(r"(?:from\s*|import\s*\(?\s*|new\s+URL\s*\(\s*)['\"](\.[^'\"]+)['\"]")
 
 
 def select_phase_files(root, tracked, phase):
