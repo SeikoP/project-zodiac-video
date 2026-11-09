@@ -213,7 +213,7 @@ jobs:
       - name: Benchmark scoped lookup and exact context delivery
         run: |
           node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/audit/benchmark-plugin-orchestration.mjs > "$RUNNER_TEMP/zodiac-local-runtime-benchmark.json"
-          node -e "const r=require(process.env.RUNNER_TEMP+'/zodiac-local-runtime-benchmark.json'); if(r.source_lookup.mode!=='scoped_rg')process.exit(2)"
+          node -e "const r=require(process.env.RUNNER_TEMP+'/zodiac-local-runtime-benchmark.json'); if(r.source_lookup.mode!=='scoped_rg')process.exit(2); const p=r.context_delivery.steps.filter(x=>x.phase==='02-visual-production'); if(p.some(x=>x.pending_at_16k!==0)) { console.error(JSON.stringify(p)); process.exit(3); }"
       - name: Publish local runtime benchmark
         if: always()
         uses: actions/upload-artifact@v4

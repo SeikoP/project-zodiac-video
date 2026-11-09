@@ -14,7 +14,7 @@ const hostMap=JSON.parse(readFileSync(path.join(skill,'orchestration/repository-
 const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02-visual-production.json','03-handoff':'03-handoff.json'};
 const workUnits=new Set(['design','scene','assets','validate','review','publish']);
 export function workUnitForTask(task){
- if(!task)return null;
+ if(!task||task.phase&&task.phase!=='02-visual-production')return null;
  if(task.kind==='DESIGN_VISUAL')return 'design';
  if(task.kind==='DESIGN_SCENE_BEATS')return 'scene';
  if(['WAIT_FOR_GENUINE_USER_REVIEW','RUN_PHASE_GATE_PER_ROUTER'].includes(task.kind))return 'review';

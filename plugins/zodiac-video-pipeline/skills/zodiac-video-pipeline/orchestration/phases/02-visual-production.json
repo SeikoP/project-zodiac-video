@@ -433,17 +433,13 @@
             "references/retention-quality.md"
           ],
           "context_capability_ids": [
-            "visual_grammar_contract",
             "visual_compile_contract",
             "runtime_authoring_boundary",
             "scene_direction_contract",
-            "director_performance_contract",
             "cast_library_contract",
             "visual_intent_contract",
-            "background_palette_registry",
             "narrative_visual_contract",
-            "scene_accent_canvas_contract",
-            "mock_advertisement_contract"
+            "scene_accent_canvas_contract"
           ]
         },
         "scene": {
@@ -905,25 +901,17 @@
       "context_scopes": {
         "assets": {
           "load_references": [
-            "references/asset-library-v4/scene-direction/index.json",
             "references/asset-library-v4/contracts/anatomy-contract.md",
-            "references/asset-library-v4/contracts/validation-contract.md",
-            "references/asset-library-v4/recipes/state-recipes.json"
+            "references/asset-library-v4/contracts/validation-contract.md"
           ],
           "context_capability_ids": [
             "asset_library_contract",
             "character_assembly_contract",
             "scene_direction_contract",
             "scene_direction_compiler_profile",
-            "story_prop_catalog",
-            "cross_asset_anchor_contract",
             "visual_intent_contract",
-            "pose_readability_contract",
-            "post_pose_attachment_contract",
             "asset_style_contract",
-            "outfit_pattern_contract",
-            "meme_composition_contract",
-            "mock_advertisement_contract"
+            "outfit_pattern_contract"
           ]
         },
         "validate": {
