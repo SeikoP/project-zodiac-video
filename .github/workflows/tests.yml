@@ -204,6 +204,16 @@ jobs:
         run: npm ci --prefix plugins/zodiac-video-pipeline --no-audit --no-fund
       - name: Native producer and cross-language contract tests
         run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/*.test.mjs "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/**/*.test.mjs" "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/**/*.test.mjs" "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/**/*.test.mjs" "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/**/*.test.mjs"
+      - name: Benchmark scoped lookup and exact context delivery
+        run: node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/audit/benchmark-plugin-orchestration.mjs > "$RUNNER_TEMP/zodiac-local-runtime-benchmark.json"
+      - name: Publish local runtime benchmark
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-local-runtime-benchmark
+          path: ${{ runner.temp }}/zodiac-local-runtime-benchmark.json
+          if-no-files-found: warn
+          retention-days: 14
 
   plugin-candidate-bundle:
     name: release / candidate-plugin-integrity
