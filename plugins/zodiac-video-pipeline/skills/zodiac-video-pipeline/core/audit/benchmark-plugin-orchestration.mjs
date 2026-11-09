@@ -77,6 +77,17 @@ export async function benchmarkPluginOrchestration(){
   contextDelivery.push({phase:manifest.id,step:step.id,full_tokens:delivered.budget.full_transport_tokens_before_accounting,delta_tokens:delivered.budget.transport_tokens_before_accounting,reused_blocks:delivered.blocks.filter(b=>b.delivery==='CALLER_HELD_IDENTICAL').length,pending_at_16k:budgeted.pending_references.length,elapsed_ms:round(performance.now()-started)});prior=delivered;
  }
  const encodedScene=await encodeContextData(task.context);
+ const {countTokens}=await import('gpt-tokenizer/encoding/o200k_base');
+ const contextEncodingCases=[];
+ for(const sceneCount of [1,5,12]){
+  const value={phase:'02-visual-production',scenes:intent.scenes.slice(0,sceneCount),narration:'Giữ nguyên lời kể và toàn bộ nhịp hình ảnh.'};
+  const pretty=JSON.stringify(value,null,2),compact=JSON.stringify(value);
+  const encodingStarted=performance.now(),encoded=await encodeContextData(value);
+  const encodingMs=performance.now()-encodingStarted;
+  assert.deepEqual(encoded.decoded,value);
+  assert.ok(encoded.tokens<=encoded.json_tokens);
+  contextEncodingCases.push({scenes:sceneCount,pretty_bytes:Buffer.byteLength(pretty),compact_bytes:Buffer.byteLength(compact),selected_bytes:Buffer.byteLength(encoded.content),pretty_tokens:countTokens(pretty),compact_tokens:countTokens(compact),selected_tokens:encoded.tokens,selected_format:encoded.format,lossless:true,encoding_wall_ms:round(encodingMs)});
+ }
  const hashFiles=codeFiles.slice(0,64).map(p=>path.join(skill,p)),signatureTimes={sequential:[],bounded_parallel:[]};
  const digest=b=>createHash('sha256').update(b).digest('hex');
  for(let i=0;i<5;i++){
@@ -92,7 +103,7 @@ export async function benchmarkPluginOrchestration(){
   scope:'Local real runtime/source benchmark; synthetic 12-scene input, no LLM/API/render calls. Scoped rg and direct-file scan return source matches, not runtime dependency semantics.',
   xstate_guard_dispatch:sample(()=>getInitialSnapshot(taskMachine,facts),1000),branch_guard_dispatch_baseline:sample(()=>baseline(facts),1000),full_task_resolution:sample(()=>resolveNextTask({state,manifests,visualIntent:intent}),200),resume_brief_with_io:{iterations:10,median_ms:round(median(resumeTimes)),includes:'state validation, reference/source hashing, filesystem reads and revision-bound task; warm in-process API'},
   scene_context:{fixture_scenes:12,full_intent_bytes:fullBytes,selected_context_bytes:taskBytes,reduction_percent:round((1-taskBytes/fullBytes)*100),all_selected_scene_fields_preserved:true},
-  context_delivery:{scope:'Real required references in manifest step order; explicit immediate-prior acknowledgement, all blocks delivered with 100k diagnostic budget. Token counts exclude accounting fields and host history. No live phase approvals or LLM calls.',encoding:'o200k_base',steps:contextDelivery,scene_serialization:{selected:encodedScene.format,json_tokens:encodedScene.json_tokens,selected_tokens:encodedScene.tokens,lossless:true},resume_context_warm_median_ms:round(median(contextTimes))},
+  context_delivery:{scope:'Real required references in manifest step order; explicit immediate-prior acknowledgement, all blocks delivered with 100k diagnostic budget. Token counts exclude accounting fields and host history. No live phase approvals or LLM calls.',encoding:'o200k_base',steps:contextDelivery,scene_serialization:{selected:encodedScene.format,json_tokens:encodedScene.json_tokens,selected_tokens:encodedScene.tokens,lossless:true},encoding_cases:contextEncodingCases,resume_context_warm_median_ms:round(median(contextTimes))},
   native_signature_io:{files:hashFiles.length,iterations:5,sequential_median_ms:round(median(signatureTimes.sequential)),bounded_parallel_median_ms:round(median(signatureTimes.bounded_parallel)),identical_hashes:true},
   workflow_graph:{nodes:workflow.nodes.length,edges:workflow.edges.length,build_ms:round(graphBuild),lookup:sample(()=>queryWorkflowGraph(workflow,'character_assembly'),200)},
   source_lookup:{mode:rgAvailable?'scoped_rg':'direct_file_scan_fallback',file_count:codeFiles.length,queries},installed_dependency_bytes:await directoryBytes(path.resolve(skill,'../../node_modules')),not_a_production_acceptance:true};
