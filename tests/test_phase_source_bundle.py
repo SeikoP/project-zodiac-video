@@ -71,15 +71,22 @@ class BundleSelectionTests(unittest.TestCase):
         version = json.loads((ROOT / builder.PLUGIN / "plugin.json").read_text())["version"]
         with tempfile.TemporaryDirectory() as folder:
             root = pathlib.Path(folder)
-            output = root / "phase01.zip"
-            report = builder.build(ROOT, output, head, "phase01-test",
-                                   phase="01-content")
-            self.assertEqual(report["phase"], "01-content")
-            staged = stager.stage(output, root / "staged", "01-content",
-                                  version, "phase01-test", head)
-            self.assertEqual(staged["status"], "SOURCE_STAGED")
-            self.assertTrue((root / "staged" / builder.PLUGIN /
-                "skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs").exists())
+            checkout = root / "clean-head"
+            subprocess.run(["git", "worktree", "add", "--detach", str(checkout), head],
+                           cwd=ROOT, check=True, capture_output=True, text=True)
+            try:
+                output = root / "phase01.zip"
+                report = builder.build(checkout, output, head, "phase01-test",
+                                       phase="01-content")
+                self.assertEqual(report["phase"], "01-content")
+                staged = stager.stage(output, root / "staged", "01-content",
+                                      version, "phase01-test", head)
+                self.assertEqual(staged["status"], "SOURCE_STAGED")
+                self.assertTrue((root / "staged" / builder.PLUGIN /
+                    "skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs").exists())
+            finally:
+                subprocess.run(["git", "worktree", "remove", "--force", str(checkout)],
+                               cwd=ROOT, check=True, capture_output=True, text=True)
 
     def test_missing_refactored_import_is_rejected(self):
         import tempfile
