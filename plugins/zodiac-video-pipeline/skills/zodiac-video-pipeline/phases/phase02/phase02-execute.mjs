@@ -20,6 +20,7 @@ import {verifyIntentWorkspace} from '../../features/visual-composition/compile-v
 import {selectedPhase02Dependencies,selectedStepDependencyFiles,signatureFiles,characterProductionFingerprint} from './phase02-selected-dependencies.mjs';
 import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
 import {isCurrentVisualWorkspace} from '../../features/visual-composition/current-visual-mode.mjs';
+import {cacheInputsForStep} from './phase02-cache-scope.mjs';
 const fastProfileStartedAt=new Date().toISOString(),fastProfileStart=performance.now();
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
@@ -252,7 +253,8 @@ else{
   const absolute=path.join(source.skillRoot,step.src);
   const args=[...step.args];
   const stepSourceFiles=dependencySelection.mode==='selected'?await selectedStepDependencyFiles(source.skillRoot,step.src,[...nativeDependencies,...activeSourcePaths.map(p=>path.join(source.skillRoot,p))],{stepId:step.id}):[];
-  const relevant=[...stepSourceFiles,absolute,...(step.validator?[path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs')]:[]),...stepInputPaths.map(p=>path.join(workspace,p))];
+  const cacheInputPaths=cacheInputsForStep(step.id,{coreInputPaths,publishInputPaths});
+  const relevant=[...stepSourceFiles,absolute,...(step.validator?[path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs')]:[]),...cacheInputPaths.map(p=>path.join(workspace,p))];
   // These validators read workspace plans outside production.json. A cached
   // PASS must not survive changes to their actual authoring inputs.
   if(['composition_resolved','visual_quality','director_final_review'].includes(step.id))for(const rel of ['design.md','.authoring/scene-art-direction.json','.authoring/director-plan.json','.authoring/story-object-plan.json','.authoring/visual-metaphor-plan.json'])if(await exists(path.join(workspace,rel)))relevant.push(path.join(workspace,rel));
