@@ -18,9 +18,9 @@ Read `orchestration/execution-bootstrap.md` once to establish the current execut
 User-revoked, deleted, discarded, replaced or excluded sources stay forbidden even if remounted, resurfaced or copied. Only explicit user re-authorization restores that exact source.
 Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from the current selection surface. Prior packages and raw trackers are not fresh creative context. Missing choices block; no implicit legacy fallback.
 
-## Phase 01: Web handoff ZIP only after Content Review
+## Phase 01: no user-facing ZIP
 Use `references/phase01-briefing.md` in the owning step. Complete Evidence → Concept → Narration autonomously after scope is known. Use real evidence and one Story Spine; pause at final Content Review. Draft only from the compiled minimized writer brief and permitted minimal evidence. `rhythm_direction` and `narrator_vibe` must exist before drafting.
-Run entry preflight, draft checkpoint, then switch to review context for grounded QC. Present selected concept, final narration and compact QC directly in chat. IN_REVIEW requires actual outputs/receipts; APPROVED requires the genuine user message bound to source hashes. The shared Phase 01 engine does not export by itself. The Zodiac Video Web distribution, after Phase 1 PASS and source-bound Content Review APPROVED, exports exactly one immutable Phase-1 handoff ZIP using `phases/phase01/export-phase1-handoff.mjs` and must not activate Phase 2. This ZIP is distinct from the Phase 3 Job@5 ZIP.
+Run entry preflight, draft checkpoint, then switch to review context for grounded QC. Present selected concept, final narration and compact QC directly in chat. IN_REVIEW requires actual outputs/receipts; APPROVED requires the genuine user message bound to source hashes.
 Fresh runs include one story-triggered fictional product parody without spoken or on-screen disclaimer using `references/affiliate-commerce.md`. Keep `mock_ad` inside the canonical Narrative Plan; do not create commerce files or invoke real affiliate discovery.
 
 ## Phase 02: no user-facing ZIP
