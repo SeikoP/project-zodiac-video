@@ -36,14 +36,22 @@ export async function selectedPhase02Dependencies(skillRoot,workspace){
  for(const rel of ['phases/phase02/phase02-execute.mjs','references/asset-library-v4/scene-set/compile-scene-set.mjs','references/asset-library-v4/characters/compile-character-assembly.mjs','references/asset-library-v4/scene-direction/compile-scene-direction.mjs'])await add(path.join(skillRoot,rel));
  return {mode:'selected',files:[...files].sort()};
 }
+export function stepUsesSvgDependency(entry,stepId,normalized){
+ const character=entry.includes('/characters/')||['character_components','character_identity','outfit_bake','character_plan','character_write'].includes(stepId);
+ const environment=entry.includes('/environments/')||['environment','environment_binding','scene_set_identity','scene_accent_containment'].includes(stepId);
+ const meme=entry.includes('/memes/')||stepId==='meme_props';
+ const broad=entry.includes('/scene-direction/')||['scene_direction','visual_quality','composition_resolved'].includes(stepId);
+ if(character)return normalized.includes('/characters/');
+ if(environment)return normalized.includes('/scene-set/')||normalized.includes('/environments/');
+ if(meme)return normalized.includes('/memes/');
+ return broad;
+}
 export async function selectedStepDependencyFiles(skillRoot,entry,candidates,{stepId}={}){
  const seen=new Set(),base=path.resolve(skillRoot),known=candidates.map(p=>path.resolve(p));
  const visit=async p=>{p=path.resolve(p);if(!p.startsWith(base+path.sep)||seen.has(p)||!await exists(p))return;seen.add(p);if(!p.endsWith('.mjs'))return;const raw=await readFile(p,'utf8');
   for(const m of raw.matchAll(/['"]([^'"\n]+\.(?:mjs|json|md))['"]/gu)){const rel=m[1];if(rel.startsWith('/')||rel.includes('://'))continue;const local=path.resolve(path.dirname(p),rel);if(await exists(local))await visit(local);else for(const candidate of known)if(candidate.replaceAll('\\','/').endsWith('/'+rel.replace(/^\.\//u,'')))await visit(candidate);}
  };
  await visit(path.join(base,entry));
- const character=entry.includes('/characters/')||['character_components','character_identity','outfit_bake'].includes(stepId);
- const environment=entry.includes('/environments/')||['environment_binding','scene_set_identity','scene_accent_containment'].includes(stepId);
- for(const p of known.filter(p=>p.endsWith('.svg'))){const normalized=p.replaceAll('\\','/');if(character?normalized.includes('/characters/'):environment?normalized.includes('/scene-set/')||normalized.includes('/environments/'):true)seen.add(p);}
+ for(const p of known.filter(p=>p.endsWith('.svg'))){const normalized=p.replaceAll('\\','/');if(stepUsesSvgDependency(entry,stepId,normalized))seen.add(p);}
  return [...seen].sort();
 }
