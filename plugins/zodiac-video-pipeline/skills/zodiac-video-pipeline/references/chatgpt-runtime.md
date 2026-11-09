@@ -2,7 +2,7 @@
 
 ## Plugin-owned orchestration and code intelligence
 
-The plugin root includes a pinned `package.json` and `package-lock.json` for XState 5.33.3, CodeGraph 1.6.2, gpt-tokenizer 4.1.0 and TOON 4.4.0. These are plugin runtime dependencies, not a dependency on the developer's current Codex/MCP session. From the verified plugin root, provision with `npm ci --ignore-scripts --no-audit --no-fund`; Node >=22.5 is required. A host without Node/package installation is unavailable for this runtime; do not claim that an installed ChatGPT skill automatically supplies an execution environment or installs packages. Never download dependencies while answering a context or graph query.
+The plugin root includes a pinned `package.json` and `package-lock.json` for XState 5.33.3, CodeGraph 1.6.2, gpt-tokenizer 4.1.0 and TOON 4.4.0. These are plugin runtime dependencies, not a dependency on the developer's current Codex/MCP session. From the verified plugin root, provision with `npm ci --ignore-scripts --no-audit --no-fund`; Node >=22.5 is required. For normal `resume-brief --context`, `gpt-tokenizer/encoding/o200k_base` is the required runtime import. TOON is an optional lossless compression path with JSON fallback; XState uses a built-in FSM fallback; CodeGraph is an opt-in indexing tool. The full pinned `npm ci` remains the recommended provisioning path. A host without Node or the required tokenizer is unavailable for this context runtime; do not claim that an installed ChatGPT skill automatically supplies an execution environment or installs packages. Never download dependencies while answering a context or graph query.
 
 ## Context delivery across phases and repairs
 

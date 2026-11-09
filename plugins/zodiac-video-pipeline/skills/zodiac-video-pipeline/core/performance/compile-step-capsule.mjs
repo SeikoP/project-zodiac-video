@@ -11,11 +11,11 @@ const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const tokens=async text=>(await import('gpt-tokenizer/encoding/o200k_base')).countTokens(text);
 
-export async function encodeContextData(value){
+export async function encodeContextData(value,{loadToon=()=>import('@toon-format/toon')}={}){
  const json=JSON.stringify(value),json_tokens=await tokens(json);
- const {encode,decode}=await import('@toon-format/toon');
  let content=json,format='json',decoded=value;
- try{const candidate=encode(value),restored=decode(candidate);
+ try{const {encode,decode}=await loadToon();
+  const candidate=encode(value),restored=decode(candidate);
   if(isDeepStrictEqual(restored,value)&&await tokens(candidate)<json_tokens){content=candidate;format='toon';decoded=restored;}
  }catch{/* Compact JSON remains the lossless fallback for unsupported values. */}
  return {content,format,tokens:await tokens(content),json_tokens,decoded};
