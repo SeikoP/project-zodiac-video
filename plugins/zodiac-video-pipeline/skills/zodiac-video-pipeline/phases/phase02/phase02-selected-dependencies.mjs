@@ -5,7 +5,7 @@ const exists=p=>access(p).then(()=>true,()=>false);
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 export function characterProductionFingerprint(production){
  const characters=(production?.scenes??[]).map(scene=>({
-  id:scene.id,
+  id:scene.id,voice:scene.voice??null,
   acting_requirements:scene.visual_grammar?.meme_composition?.acting_requirements??null,
   entities:(scene.entities??[]).filter(e=>e.kind==='character').map(e=>({
    id:e.id,initial_state:e.initial_state??null,

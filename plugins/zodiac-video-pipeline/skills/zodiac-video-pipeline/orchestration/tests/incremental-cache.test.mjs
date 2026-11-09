@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
 import {evaluateCacheNode,recordCacheNode,CACHE_REASON,putObject,readObject} from '../../core/cache/incremental-cache.mjs';
 import {buildPhase02SemanticGraph,diffPhase02SemanticGraphs} from '../../core/cache/phase02-semantic-cache.mjs';
-import {signatureFiles,selectedStepDependencyFiles} from '../../phases/phase02/phase02-selected-dependencies.mjs';
+import {signatureFiles,selectedStepDependencyFiles,characterProductionFingerprint} from '../../phases/phase02/phase02-selected-dependencies.mjs';
 const intent=()=>({format:'zodiac-visual-intent@1',cast:[{entity_id:'C_SCORPIO',hair_id:'long'},{entity_id:'C_FRIEND',hair_id:'short'}],assets:{nv3:{category:'narrative_visual',path:'assets/nv3.svg'}},scenes:[{id:'S01',semantic_goal:'a',grammar:{},entities:[{id:'C_FRIEND',kind:'character',states:{a:{asset:'friend'}}}],events:[]},{id:'S03',semantic_goal:'b',grammar:{},entities:[{id:'C_SCORPIO',kind:'character',states:{a:{asset:'scorpio'}}},{id:'NV_S03',kind:'narrative_visual',states:{a:{asset:'nv3'}}}],events:[]}]});
 test('tampered output is never reused',async()=>{const ws=await mkdtemp(path.join(os.tmpdir(),'zcache-'));try{await mkdir(path.join(ws,'out'),{recursive:true});await writeFile(path.join(ws,'out/a.txt'),'A');await recordCacheNode(ws,{nodeId:'x',input:{a:1},compiler:'v1',outputs:['out/a.txt']});assert.equal((await evaluateCacheNode(ws,{nodeId:'x',input:{a:1},compiler:'v1',outputs:['out/a.txt']})).reason,CACHE_REASON.HIT_EXACT);await writeFile(path.join(ws,'out/a.txt'),'B');assert.equal((await evaluateCacheNode(ws,{nodeId:'x',input:{a:1},compiler:'v1',outputs:['out/a.txt']})).reason,CACHE_REASON.MISS_OUTPUT_TAMPERED);}finally{await rm(ws,{recursive:true,force:true});}});
 test('object store is content addressed',async()=>{const ws=await mkdtemp(path.join(os.tmpdir(),'zcache-'));try{const x=await putObject(ws,'hello');assert.equal((await readObject(ws,x.sha256)).toString(),'hello');}finally{await rm(ws,{recursive:true,force:true});}});
@@ -28,4 +28,16 @@ test('selected native SVG dependencies use normalized Windows paths',async()=>{
   const out=await selectedStepDependencyFiles(root,'entry.mjs',[character,environment],{stepId:'character_identity'});
   assert.ok(out.includes(character));assert.ok(!out.includes(environment));
  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('character production fingerprint ignores unrelated props but tracks voice and character state semantics',()=>{
+ const base={version:'2.0',scenes:[{id:'S1',voice:'anchor',entities:[{id:'C',kind:'character',initial_state:'a',states:{a:{asset:'CHAR_A',visible:true}}}],events:[]}]};
+ const prop=structuredClone(base);prop.scenes[0].entities.push({id:'P',kind:'object',states:{a:{asset:'PROP'}}});
+ assert.equal(characterProductionFingerprint(base),characterProductionFingerprint(prop));
+ const rebound=structuredClone(base);rebound.scenes[0].entities[0].states.a.asset='CHAR_B';
+ assert.equal(characterProductionFingerprint(base),characterProductionFingerprint(rebound));
+ const voice=structuredClone(base);voice.scenes[0].voice='different anchor';
+ assert.notEqual(characterProductionFingerprint(base),characterProductionFingerprint(voice));
+ const hidden=structuredClone(base);hidden.scenes[0].entities[0].states.a.visible=false;
+ assert.notEqual(characterProductionFingerprint(base),characterProductionFingerprint(hidden));
 });
