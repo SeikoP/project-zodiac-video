@@ -65,6 +65,22 @@ class BundleSelectionTests(unittest.TestCase):
             self.assertEqual(set(builder.select_phase_files(ROOT, tracked, phase)),
                              {name for name in tracked if builder.include(name, phase)})
 
+    def test_phase_one_build_and_stage_clean_room(self):
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        version = json.loads((ROOT / builder.PLUGIN / "plugin.json").read_text())["version"]
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder)
+            output = root / "phase01.zip"
+            report = builder.build(ROOT, output, head, "phase01-test",
+                                   phase="01-content")
+            self.assertEqual(report["phase"], "01-content")
+            staged = stager.stage(output, root / "staged", "01-content",
+                                  version, "phase01-test", head)
+            self.assertEqual(staged["status"], "SOURCE_STAGED")
+            self.assertTrue((root / "staged" / builder.PLUGIN /
+                "skills/zodiac-video-pipeline/phases/phase01/execution-preflight.mjs").exists())
+
     def test_missing_refactored_import_is_rejected(self):
         import tempfile
         with tempfile.TemporaryDirectory() as folder:
