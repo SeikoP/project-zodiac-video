@@ -25,9 +25,10 @@ if(phase==='02-visual-production')required.push(
  'features/visual-composition/validate-visual-quality.mjs'
 );
 const exists=async p=>access(p).then(()=>true).catch(()=>false);
-// Phase-scoped source ZIPs omit node_modules. Check runtime resolution before READY.
+// Context delivery loads TOON and tokenizer directly. XState has a built-in fallback;
+// CodeGraph is loaded only for explicit code-index requests. Do not gate Phase 1 on optional tools.
 const requireFromPlugin=createRequire(path.join(pluginRoot,'package.json'));
-const runtimeDependencies=['@colbymchenry/codegraph','@toon-format/toon','gpt-tokenizer/encoding/o200k_base','xstate'];
+const runtimeDependencies=['@toon-format/toon','gpt-tokenizer/encoding/o200k_base'];
 
 const problems=[];let manifest,template;
 try{manifest=JSON.parse(await readFile(path.join(pluginRoot,'plugin.json'),'utf8'));}catch{problems.push('PLUGIN_MANIFEST_MISSING');}
