@@ -6,6 +6,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {unresolvedContextImports} from '../runtime-dependency-check.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const skill=path.resolve(here,'../../..');
@@ -28,4 +29,9 @@ test('Phase 1 preflight blocks when native runtime dependencies are unresolved',
   if(missing.length){assert.equal(report.status,'BLOCKED');assert.notEqual(result.status,0);}
   else assert.equal(report.problems.some(p=>p.startsWith('RUNTIME_DEPENDENCY_UNAVAILABLE:')),false);
  }finally{await rm(ws,{recursive:true,force:true});}
+});
+
+test('dependency check detects missing tokenizer independently of the CI node_modules',()=>{
+ assert.deepEqual(unresolvedContextImports(()=>{throw Error('MODULE_NOT_FOUND');}),['gpt-tokenizer/encoding/o200k_base']);
+ assert.deepEqual(unresolvedContextImports(()=>'/verified/plugin/node_modules/gpt-tokenizer'),[]);
 });
