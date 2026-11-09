@@ -43,3 +43,23 @@ test('performance identity is stable for a run/plugin pair and rejects templates
  assert.deepEqual(a,b);assert.equal(a.run_id,'run-123');assert.match(a.revision_id,/^[a-f0-9]{20}$/u);
  assert.equal(performanceIdentity({run_id:'<create-per-run>',plugin_version:'2.8.0'}),null);
 });
+
+
+test('failed repair attempts stay inside wall-clock E2E without poisoning a later PASS',async()=>{
+ const ws=await mkdtemp(path.join(tmpdir(),'z-profiler-repair-'));
+ try{
+  const origin=Date.parse('2026-11-09T12:00:00.000Z');
+  const rec=(phase,stage,status,start,duration)=>recordEpisodeSpan(ws,{phase,stage,status,category:'native',duration_ms:duration,run_id:'run-1',revision_id:'rev-1',started_at:new Date(origin+start).toISOString(),ended_at:new Date(origin+start+duration).toISOString()});
+  await rec('01-content','commit','PASS',0,40);
+  await rec('02-visual-production','native-attempt-1','BLOCKED',50,50);
+  await rec('02-visual-production','native-attempt-2','PASS',110,70);
+  await rec('03-handoff','export','PASS',200,40);
+  const summary=await summarizeEpisodeSpans(ws);
+  assert.equal(summary.not_full_e2e_baseline,false);
+  assert.equal(summary.plugin_wall_clock_ms,240);
+  assert.equal(summary.failed_spans,1);
+  assert.equal(summary.failed_stage_duration_ms,50);
+  assert.equal(summary.per_phase['02-visual-production'].pass_spans,1);
+  assert.equal(summary.per_phase['02-visual-production'].non_pass_spans,1);
+ }finally{await rm(ws,{recursive:true,force:true});}
+});
