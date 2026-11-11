@@ -10,7 +10,7 @@ class WebLocalHandoffReleaseTests(unittest.TestCase):
         plugin=json.loads((ROOT/"plugins/zodiac-video-pipeline/plugin.json").read_text(encoding="utf-8"))
         codex=json.loads((ROOT/"plugins/zodiac-video-pipeline/.codex-plugin/plugin.json").read_text(encoding="utf-8"))
         state=json.loads((ROOT/"plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json").read_text(encoding="utf-8"))
-        self.assertRegex(plugin["version"],r"^\\d+\\.\\d+\\.\\d+$")
+        self.assertRegex(plugin["version"],r"^\d+\.\d+\.\d+$")
         self.assertEqual(codex["version"],plugin["version"])
         self.assertEqual(state["plugin_version"],plugin["version"])
         backup=json.loads((ROOT/"docs/backups/zodiac-2.7.16.json").read_text(encoding="utf-8"))
