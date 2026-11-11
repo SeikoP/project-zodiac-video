@@ -1,0 +1,44 @@
+name: phase1-voice-first
+on:
+  pull_request:
+    paths:
+      - 'plugins/zodiac-video-pipeline/**'
+      - 'tests/test_split_plugin_bundle_builder.py'
+      - 'tests/test_web_local_handoff_contract.py'
+      - '.github/workflows/phase1-voice-first.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase1-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install canonical plugin dependencies
+        run: npm ci --prefix plugins/zodiac-video-pipeline --no-audit --no-fund
+      - name: Run voice-first validators, compiler and Phase 1 integration
+        run: |
+          set -euo pipefail
+          base=plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline
+          node --test \
+            "$base/references/validate-voice-fidelity-review.test.mjs" \
+            "$base/references/validate-narrative-design.test.mjs" \
+            "$base/references/validate-content-contract.test.mjs" \
+            "$base/references/context-isolation.test.mjs" \
+            "$base/orchestration/tests/phase01-briefs.test.mjs" \
+            "$base/orchestration/tests/creative-freedom.test.mjs" \
+            "$base/orchestration/tests/episode-writer-brief.test.mjs" \
+            "$base/orchestration/tests/phase01-agent-e2e.test.mjs" \
+            "$base/orchestration/tests/episode-phase01-e2e.test.mjs"
+  phase1-handoff-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify split bundle and local handoff compatibility
+        run: python -m unittest tests.test_split_plugin_bundle_builder tests.test_web_local_handoff_contract -v
