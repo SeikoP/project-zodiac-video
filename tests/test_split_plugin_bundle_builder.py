@@ -27,7 +27,10 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertNotIn("skills/zodiac-video-local/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs", names)
-                self.assertIn("skills/humanizer/SKILL.md", names)
+                self.assertNotIn("skills/humanizer/SKILL.md", names)
+                self.assertIn("skills/zodiac-video-pipeline/references/voice-profile.md", names)
+                self.assertIn("skills/zodiac-video-pipeline/references/validate-narrative-design.mjs", names)
+                self.assertIn("skills/zodiac-video-pipeline/references/validate-voice-fidelity-review.mjs", names)
                 self.assertNotIn("01-content → 02-visual-production → 03-handoff", manifest["extensions"]["com.openai"]["interface"]["defaultPrompt"])
             with ZipFile(temp / "local.zip") as z:
                 names = set(z.namelist())
