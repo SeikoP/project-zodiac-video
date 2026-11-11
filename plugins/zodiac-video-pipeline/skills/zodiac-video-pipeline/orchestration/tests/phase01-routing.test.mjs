@@ -10,8 +10,9 @@ test('narration draft loads writing guidance without review catalogs; exit gates
  const {readFile}=await import('node:fs/promises'),{loadStepContext}=await import('../plan-step-context.mjs');
  const state=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url),'utf8'));
  const draft=await loadStepContext('01-content','narration',state.flags,{role:'draft'}),review=await loadStepContext('01-content','narration',state.flags,{role:'review'});
- assert.ok(draft.required_references.length<=3,draft.required_references.join('\n'));
+ assert.ok(draft.required_references.length<=4,draft.required_references.join('\n'));
  assert.ok(draft.required_references.includes('references/narration-writer-brief.md'));
+ assert.ok(draft.required_references.includes('references/voice-benchmark.md'));
  assert.ok(!draft.required_references.includes('references/content-quality-engine.md'));
  assert.ok(review.required_references.includes('references/content-quality-engine.md'));
  assert.deepEqual(draft.required_outputs,review.required_outputs);
