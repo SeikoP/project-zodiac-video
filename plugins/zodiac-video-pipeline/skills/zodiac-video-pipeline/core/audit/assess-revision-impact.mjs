@@ -10,7 +10,7 @@ if(!before||!after){console.error('Usage: assess-revision-impact.mjs --before <a
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function inventory(root){
  const dirs=['assets'];
- const contentNames=['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','viral-analysis.json','narration.txt'];
+ const contentNames=['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','voice-profile.json','narrative-design.json','voice-fidelity-review.json','viral-analysis.json','narration.txt'];
  const evidenceNames=['evidence-ledger.json','evidence-brief.json','evidence-summary.md','research-scope.json'];
  const rels=[...contentNames,...evidenceNames,...[...contentNames,...evidenceNames].map(name=>'.authoring/'+name),'.authoring/visual-intent.json','asset-plan.json','visual-grammar-plan.json','.authoring/character-assembly-plan.json','.authoring/generated-assets.json','.authoring/scene-composition-resolved.json','production.json','design.md','design-token.json','publish/publish.json','publish/publish-copy.txt','.authoring/story-object-plan.json','.authoring/story-beat-choreography.json','.authoring/scene-art-direction.json','.authoring/director-plan.json'];
  const {readdir}=await import('node:fs/promises');
@@ -26,7 +26,7 @@ const files=[...new Set([...Object.keys(x.fileHash),...Object.keys(y.fileHash)])
 const changed=files.filter(f=>x.fileHash[f]!==y.fileHash[f]);
 const groups={content:[],visual:[],publish:[],token:[],evidence:[],performance:[]};
 const evidenceFiles=new Set(['evidence-ledger.json','evidence-brief.json','evidence-summary.md','research-scope.json']);
-const conceptFiles=new Set(['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','viral-analysis.json']);
+const conceptFiles=new Set(['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','voice-profile.json','narrative-design.json','voice-fidelity-review.json','viral-analysis.json']);
 for(const f of changed){const name=f.replace(/^\.authoring\//u,'');if(evidenceFiles.has(name))groups.evidence.push(f);else if(name==='narration.txt'||conceptFiles.has(name))groups.content.push(f);else if(f.startsWith('publish/'))groups.publish.push(f);else if(['design.md','design-token.json'].includes(f))groups.token.push(f);else groups.visual.push(f)}
 let eventChange=false,voiceChange=false;
 const p0=x.json['production.json'],p1=y.json['production.json'];
