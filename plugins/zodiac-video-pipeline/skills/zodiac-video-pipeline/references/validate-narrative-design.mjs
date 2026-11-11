@@ -7,14 +7,15 @@ const [design,profile,plan]=await Promise.all(['narrative-design.json','voice-pr
 if(design.format!=='zodiac-narrative-design@1')fail('format');
 if(!Array.isArray(design.beats)||!design.beats.length)fail('beats');
 if(design.selected_concept_id!==plan.selected_concept_id)fail('selected concept lineage');
-const planIds=new Set((plan.beats??[]).map(b=>b.id));
+const planIds=new Set((plan.beats??[]).map(b=>b.id));if(planIds.size!==(plan.beats??[]).length)fail('duplicate plan beats');const designIds=new Set();
 for(const b of design.beats){
- if(typeof b.id!=='string'||!b.id.trim()||!planIds.has(b.id))fail('beat id '+b.id);
+ if(typeof b.id!=='string'||!b.id.trim()||!planIds.has(b.id)||designIds.has(b.id))fail('beat id '+b.id);designIds.add(b.id);
  if(typeof b.purpose!=='string'||b.purpose.trim().length<8)fail(b.id+'.purpose');
- if(!Array.isArray(b.evidence_refs)||!b.evidence_refs.length)fail(b.id+'.evidence_refs');
+ if(!Array.isArray(b.evidence_refs)||!b.evidence_refs.length)fail(b.id+'.evidence_refs');const sourceBeat=plan.beats.find(x=>x.id===b.id);const sourceRefs=new Set(sourceBeat.evidence_refs??[]);if(b.evidence_refs.some(id=>!sourceRefs.has(id)))fail(b.id+'.evidence_ref_drift');
  if(!Array.isArray(b.voice_devices)||!b.voice_devices.length)fail(b.id+'.voice_devices');
  if(!Array.isArray(b.rhythm)||!b.rhythm.length)fail(b.id+'.rhythm');
 }
+if(designIds.size!==planIds.size)fail('incomplete beat coverage');
 if(!design.voice_profile_ref||design.voice_profile_ref!=='voice-profile.json')fail('voice_profile_ref');
 if(profile.format!=='zodiac-voice-profile@1')fail('voice profile lineage');
 if(Object.prototype.hasOwnProperty.call(design,'full_research')||Object.prototype.hasOwnProperty.call(design,'raw_reference'))fail('forbidden raw context');
