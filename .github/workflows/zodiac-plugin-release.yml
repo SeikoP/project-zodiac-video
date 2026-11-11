@@ -57,6 +57,25 @@ jobs:
             ${{ runner.temp }}/web-plugin-report.json
           if-no-files-found: error
           retention-days: 7
+      - name: Stage Web plugin for direct ChatGPT upload
+        run: |
+          python - <<'PY'
+          import os, zipfile
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'zodiac-video-web-direct'
+          root.mkdir(parents=True,exist_ok=True)
+          with zipfile.ZipFile(Path(os.environ['RUNNER_TEMP'])/'zodiac-video-web-plugin.zip') as archive:
+              archive.extractall(root)
+          assert (root/'.codex-plugin/plugin.json').is_file()
+          assert (root/'skills/zodiac-video-web/SKILL.md').is_file()
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-web-direct-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/zodiac-video-web-direct/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         with:
           name: zodiac-video-local-plugin-${{ steps.meta.outputs.version }}-${{ github.sha }}
