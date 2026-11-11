@@ -36,5 +36,14 @@ Do not compress the source into labels such as `playful`, `sharp`, or `conversat
 ## Default reference family for the current benchmark
 The benchmark family is behavior-first, teasing/roasting on the surface, affectionate underneath, conversational Vietnamese, controlled roughness, absurd exaggeration, direct internal voice, and vulnerability that leaks through without turning into therapeutic prose.
 
+When the current project uses the supplied Bạch Dương/Bọ Cạp reference family, load `references/voice-benchmark.md` as the behavioral benchmark. The benchmark is not another evidence source. It exists to preserve narrator behavior that adjective-only profiles lose.
+
+For reference-present runs, `voice-profile.json` should also include:
+- `benchmark_ref`: canonical benchmark path used by writer/reviewer;
+- `benchmark_dimensions[]`: the selected behavioral dimensions that matter for this narration;
+- `ending_rule`: how the narrator should retain energy at the payoff without turning inspirational.
+
+Do not copy sentences from the benchmark sources into these fields. Encode mechanics only.
+
 ## Forbidden drift
 A narration is off-voice when it becomes a polished Zodiac explainer with slang painted on top, a therapist, a horoscope encyclopedia, or an inspirational conclusion.
