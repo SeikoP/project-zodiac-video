@@ -24,6 +24,11 @@ const viral=await readJson('viral-analysis.json');
 const refs=await readJson('reference-mechanics.json');
 const plan=await readJson('narrative-plan.json');
 if(plan.story_shape!=='character_deconstruction')fail('Zodiac permits only character_deconstruction story_shape');
+const voiceProfile=await readJson('voice-profile.json');
+const narrativeDesign=await readJson('narrative-design.json');
+if(voiceProfile.format!=='zodiac-voice-profile@1'||typeof voiceProfile.reference_present!=='boolean')fail('voice-profile contract');
+if(narrativeDesign.format!=='zodiac-narrative-design@1'||narrativeDesign.voice_profile_ref!=='voice-profile.json'||narrativeDesign.selected_concept_id!==plan.selected_concept_id)fail('narrative-design lineage');
+const planBeatIds=new Set((plan.beats??[]).map(b=>b.id));for(const beat of narrativeDesign.beats??[])if(!planBeatIds.has(beat.id))fail('narrative-design beat does not resolve: '+beat.id);
 const brief=await readJson('phase3-writer-brief.json');
 const ledger=await readJson('evidence-ledger.json');
 // New fresh runs enforce concept competition. Previously approved releases remain readable.
@@ -71,6 +76,7 @@ if(!Array.isArray(viral.rejected_moves))fail('viral-analysis.rejected_moves must
 for(const key of [...(plan.version==='2.1'?[]:['sign']),'topic','thesis','identity_tension','progression_intent','payoff_target'])nonEmptyString(brief[key],`writer brief ${key}`);
 if(!Array.isArray(brief.evidence_safe_behaviors)||!brief.evidence_safe_behaviors.length||brief.evidence_safe_behaviors.some(x=>typeof x!=='string'||!x.trim()))fail('writer brief evidence_safe_behaviors must contain at least one non-empty item');
 if(!Array.isArray(brief.forbidden_claims))fail('writer brief forbidden_claims must be an array');
+if(brief.voice_profile_ref!=='voice-profile.json'||brief.narrative_design_ref!=='narrative-design.json')fail('writer brief must point to first-class voice/narrative design artifacts');
 if(!Array.isArray(brief.viral_mechanics)||brief.viral_mechanics.length>3)fail('writer brief viral_mechanics must contain at most 3 selected items; omission is explicit upstream');
 for(const item of brief.viral_mechanics){const sourceId=typeof item==='object'&&item?item.source_id:null;const instruction=typeof item==='object'&&item?item.instruction:item;if(sourceId){if(!writerEffects.has(sourceId))fail('writer brief viral mechanic source_id does not resolve: '+sourceId);if(!same(writerEffects.get(sourceId),instruction))fail('writer brief viral mechanic instruction drifted from '+sourceId);}else if(![...writerEffects.values()].some(x=>same(x,instruction)))fail('writer brief viral mechanic does not originate exactly in viral-analysis: '+instruction);}
 
