@@ -11,11 +11,12 @@ if(!q.criteria||Object.keys(q.criteria).sort().join('|')!==[...keys].sort().join
 const failureCodes=new Set(['GENERIC_EXPLAINER','SLANG_PAINTED_AI','MISSING_NARRATOR_REACTION','WEAK_COMIC_CAUSALITY','RHYTHM_FLATTENING','THERAPIST_DRIFT','ENDING_ENERGY_DROP','REFERENCE_CONTAMINATION']);
 if(!Array.isArray(q.failure_codes)||q.failure_codes.some(x=>!failureCodes.has(x)))fail('failure_codes');
 let unresolved=0;
-for(const k of keys){const c=q.criteria[k];if(!c||!['PASS','REVIEW'].includes(c.result))fail(k+'.result');if(typeof c.response!=='string'||c.response.trim().length<20)fail(k+'.response');if(!Array.isArray(c.evidence)||c.evidence.length<1||c.evidence.some(x=>typeof x!=='string'||x.trim().length<6))fail(k+'.evidence');if(c.result==='REVIEW')unresolved++;}
+for(const k of keys){const c=q.criteria[k];if(!c||!['PASS','REVIEW'].includes(c.result))fail(k+'.result');if(typeof c.response!=='string'||c.response.trim().length<20)fail(k+'.response');if(!Array.isArray(c.evidence)||c.evidence.length<1||c.evidence.some(x=>typeof x!=='string'||x.trim().length<6))fail(k+'.evidence');if(c.evidence.some(x=>!narrRaw.includes(x)))fail(k+'.evidence_not_in_narration');if(c.result==='REVIEW')unresolved++;}
 if(q.decision==='PASS'&&q.failure_codes.length)fail('PASS with failure codes');
 if(!['strong_match','plausible_match','weak_match','different_narrator'].includes(q.same_narrator_probability))fail('same_narrator_probability');
 if(!['PASS','REVIEW'].includes(q.decision)||!Array.isArray(q.revision_targets))fail('decision/revision_targets');
 if(q.decision==='PASS'&&(unresolved||q.revision_targets.length||!['strong_match','plausible_match'].includes(q.same_narrator_probability)))fail('PASS with unresolved voice drift');
 if(q.decision==='REVIEW'&&!q.revision_targets.length)fail('REVIEW requires revision targets');
+if(q.decision==='REVIEW'&&!q.failure_codes.length)fail('REVIEW requires failure codes');
 if(q.decision!=='PASS')fail('voice fidelity blocks Content Review');
 console.log('VOICE_FIDELITY_REVIEW_PASS');
