@@ -10,8 +10,8 @@ This distribution owns **Phase 1 only**. Use the canonical implementation under 
 ## Invocation
 
 1. Establish the verified Phase-1 execution source using `skills/zodiac-video-pipeline/orchestration/execution-bootstrap.md`.
-2. Before each step run `node skills/zodiac-video-pipeline/orchestration/resume-brief.mjs <workspace> --context`, then follow `skills/zodiac-video-pipeline/orchestration/phases/01-content.json` and its Phase-1 guidance: Evidence → Concept → Narration → genuine Content Review.
-3. Video Lab and bundled Humanizer may be applied only through the Phase-1 plugin-use contract.
+2. Before each step run `node skills/zodiac-video-pipeline/orchestration/resume-brief.mjs <workspace> --context`, then follow `skills/zodiac-video-pipeline/orchestration/phases/01-content.json` and its Phase-1 guidance: Evidence → Voice → Concept → Narrative Design → Narration → genuine Content Review.
+3. Video Lab and other enhancements are optional under the Phase-1 plugin-use contract. Humanizer is not bundled in the Web profile and is not on the critical path.
 4. After Phase 1 is PASS and Content Review is source-bound APPROVED, run the Phase-2 transition gate with `--entry-only`.
 5. Export exactly one handoff capsule with:
    `node skills/zodiac-video-pipeline/phases/phase01/export-phase1-handoff.mjs <workspace> <output.zip>`
@@ -20,3 +20,6 @@ This distribution owns **Phase 1 only**. Use the canonical implementation under 
 ## Boundary
 
 The Web distribution **must not activate Phase 2** and must not author Visual Intent, assets, previews, Phase 3, Job@5, TTS, timing, Remotion, or MP4. A repository/source transport result is never approval. The exported capsule carries the approved bytes and receipts; local work resumes from those bytes rather than chat history.
+
+## Phase 1 voice-first rule
+Treat user-supplied SRTs and writing references as style sources. Build `voice-profile.json`, preserve the style-only firewall, write narration in the target narrator family on the first draft, and require `voice-fidelity-review.json` PASS before asking for Content Review. Enhancement plugins are optional and must never replace native Evidence, Voice, Narration or review ownership.

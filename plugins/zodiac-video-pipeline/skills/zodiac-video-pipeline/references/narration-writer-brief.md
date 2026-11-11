@@ -1,6 +1,6 @@
 # Narration Writer Brief
 
-Compile `phase3-writer-brief.json` from the full narrative plan before Narration. This is the writer's minimized creative context, not a copy of the planner workspace.
+`phase3-writer-brief.json` is now a compatibility projection, not the narrator's voice source. Before Narration, compile it from the validated concept/evidence lineage, while the actual draft receives `narrative-design.json + voice-profile.json` as first-class inputs. Never compress the voice family into this brief.
 
 ```yaml
 sign: <label>
@@ -23,8 +23,8 @@ reference_mechanics:
 situation_territories:
   - <optional context, not an exact beat script>
 rhythm_direction: <compact topic-specific direction; change intensity when the meaning changes>
-narrator_vibe:
-  - <2–4 concrete storytelling qualities>
+voice_profile_ref: voice-profile.json
+narrative_design_ref: narrative-design.json
 motif_candidates:
   - <optional payoff image>
 engagement_direction:
@@ -37,14 +37,10 @@ forbidden_claims:
   - <unsupported motive/cause/consequence/frequency/outcome>
 ```
 
-## Required storytelling tone
-For fresh content, `narrator_vibe` is mandatory and is part of the authoring contract, not optional polish. It defines the narrator's storytelling stance before prose is written. Use 2–4 concrete qualities such as `observational`, `conversational`, `lightly teasing`, `restrained warmth`, `dry`, `sharp`, `quietly curious`; do not use empty labels such as `good`, `viral`, `emotional`, or `natural` without a meaningful stance.
+## Voice-first authoring contract
+For fresh content, `voice-profile.json` is mandatory. It answers **who is telling this, what relationship they have with the subject, how they attack/joke, how affection leaks through, how sentences move, and what drift is forbidden**. `narrative-design.json` maps that voice family onto the supported beat progression.
 
-`narrator_vibe` and `rhythm_direction` are complementary:
-- `narrator_vibe` answers **who is telling this and with what stance**;
-- `rhythm_direction` answers **how delivery changes as meaning changes**.
-
-Both must exist before the draft. Do not invent either one after narration merely to satisfy QC. The compiler must fail when they are missing. Narrative 2.1 uses the same requirement.
+`rhythm_direction` may remain in the compatibility brief for legacy consumers, but `narrator_vibe` is no longer a required 1–4 adjective contract. If a legacy artifact still carries `narrator_vibe`, treat it as descriptive metadata only and never as a substitute for the Voice Profile.
 
 Fresh 2.6.8+ also compiles `engagement_direction` from validated `engagement-design.json`. The writer sees this compact direction only; the full beat-level pull map stays outside draft context.
 
@@ -55,6 +51,6 @@ Keep the brief compact. Never include raw SRT/reference lines, reference Zodiac 
 ## Mandatory Zodiac-first brief for fresh v2.4.15+
 Include `sign_identity_mechanism`, `misread_vs_reframe`, `three_facets`, `sign_swap_counterfactual`, `scene_usage_limit`, and `non_moral_payoff` from the chosen candidate. three_facets is a compatibility field name for a nonempty list, not an exact count. misread_vs_reframe is recognition context, not mandatory misunderstanding/twist. They are *creative essential context*, not full research or QC. Explicitly instruct the writer to **explain the sign, not narrate a long fictional episode**. Scenes are compact manifestations; no obligatory moral transformation. Distinguish behavioral observation from evidence about individual people.
 
-Fresh >=2.4.47 requires a nonempty `rhythm_direction` grounded in Narrative Plan v2 performance intent and a nonempty `narrator_vibe` grounded in the selected premise/user direction. Keep rhythm compact; no fixed gắt baseline, emotional quota, beat inventory or performance tags in narration. Post-write QC adds exact anchors/emphasis to the plan from actual draft text.
+Fresh >=2.4.47 keeps a nonempty `rhythm_direction` for compatibility. Voice ownership lives in `voice-profile.json`; beat-level delivery ownership lives in `narrative-design.json`. Keep rhythm compact; no fixed gắt baseline, emotional quota, beat inventory or performance tags in narration. Post-write QC adds exact anchors/emphasis to the plan from actual draft text.
 
 Carry compact creative_direction from authored extras unchanged. Viral mechanics may be omitted with an explicit reason in viral-analysis; no filler effect is required. Narrator stance follows the premise/user.

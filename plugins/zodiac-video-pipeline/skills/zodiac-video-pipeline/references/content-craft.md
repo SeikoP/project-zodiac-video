@@ -21,9 +21,9 @@ Concept always writes `viral-analysis.json`:
 
 A generic application summary without artifact-level mapping does not satisfy Concept.
 
-### Reference mechanics are not evidence
+### Voice profile is the style source; reference mechanics are compatibility only
 
-When a reference is supplied, write `reference-mechanics.json` and transfer mechanics only: narrator stance, identity framing, cadence, facet sequencing, contrast/reversal timing, reset/escalation and recognition/payoff construction. Never copy reference lines or treat reference Zodiac claims as evidence.
+When a reference is supplied, write `voice-profile.json` as the first-class style contract. It captures narrator relationship, affection/attack model, language register, comic and contradiction engines, sentence music, internal voice, emotional movement, warmth limits and forbidden drift. `reference-mechanics.json` remains a migration/compatibility projection only; it must never become the writer's source of truth. Never copy reference lines or treat reference Zodiac claims as evidence.
 
 ```json
 {
@@ -52,7 +52,7 @@ Create intensity through identity framing, contrast, diction, rhythm, recognitio
 
 ## Writer context
 
-Compile only creative essentials into `phase3-writer-brief.json`: story shape/delivery, Story Spine direction, evidence-safe behaviors, selected Viral writer effects (possibly empty with an explicit omission decision), compact reference mechanics, audience/narrator vibe and forbidden claims.
+Narration's primary creative inputs are `narrative-design.json + voice-profile.json`, plus minimal evidence and an optional bounded style-only reference capsule. `phase3-writer-brief.json` is a compatibility projection for legacy consumers: keep story shape/delivery, Story Spine direction, evidence-safe behaviors, selected Viral writer effects, audience context and forbidden claims, but do not flatten the narrator family into a few adjectives.
 
 Prefer lineage-bearing entries:
 
@@ -60,7 +60,7 @@ Prefer lineage-bearing entries:
 {"viral_mechanics":[{"source_id":"V1","instruction":"<V1.writer_effect>"}],"reference_mechanics":[{"source_id":"R1","instruction":"<R1 mechanic/application>"}]}
 ```
 
-`validate-content-contract.mjs` resolves those IDs, checks Story Spine carry-through and evidence refs, and rejects raw planning payload in the writer brief. Do not send the writer the full plan, raw SRT/reference, full evidence ledger/research, QC rules, assets, runtime instructions or packaging context.
+`validate-content-contract.mjs` resolves compatibility IDs, checks Story Spine carry-through and evidence refs, and separately validates `voice-profile.json` and `narrative-design.json` lineage. Do not send the writer the full plan, raw SRT/reference, full evidence ledger/research, QC rules, assets, runtime instructions or packaging context. A bounded voice-reference capsule may expose only style observations/brief excerpts under the reference firewall; it never authorizes claims.
 
 Planner logic stays invisible in spoken narration. Write natural Vietnamese for a voice, with varied sentence lengths and controlled reactions; concrete manifestation does not need to become a full scene.
 

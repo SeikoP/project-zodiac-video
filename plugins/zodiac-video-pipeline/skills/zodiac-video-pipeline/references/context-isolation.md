@@ -40,7 +40,13 @@ Prior project content may be retrieved only when the current user turn explicitl
 
 Retrieve the minimum relevant context. Do not broaden a continuity request into unrelated remembered preferences or old concepts. Continuity opt-in never overrides an explicit source revocation unless the user clearly re-authorizes that source.
 
-## Reference mechanics vs creative content
-Reference transcripts/examples may teach cadence, narrator stance, interaction rhythm, contrast/reversal mechanics. They do not provide Zodiac evidence, sign selection, claims, jokes, situations, progression, or reusable wording.
+## Voice reference vs evidence
+Reference transcripts/examples are a **style source**, not an evidence source. Phase 1 must compile them into `voice-profile.json` and may expose a bounded voice-reference capsule to Narration so cadence is not compressed away before writing.
 
-This separation is mandatory to prevent example anchoring.
+The bounded capsule may transfer narrator stance, relationship, cadence, slang behavior, sentence behavior, comic mechanisms, contradiction/reversal timing, controlled roughness and emotional movement.
+
+It may **not** transfer Zodiac claims, reference-specific situations as facts, exact jokes, distinctive phrases, exact sentences, or unsupported motives/outcomes. Any factual statement used in narration must resolve independently through the evidence track.
+
+Raw full references remain excluded from ordinary creative context. The exception is the Narration voice lane: it may receive only the current user-authorized style reference through the style-only firewall defined in `voice-profile.md`.
+
+This separation prevents both failure modes: reference anchoring and premature style compression.

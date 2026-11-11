@@ -9,21 +9,31 @@ Narration is not allowed to rescue an uninteresting Concept with faster jokes or
 ## Context boundary
 
 The writer receives:
-- Narration Writer Brief;
+- Narrative Design;
 - minimal evidence needed to stay claim-safe;
-- compact Viral writer effects already selected by Concept;
-- compact compiled reference mechanics when present.
+- Voice Profile;
+- a bounded, style-only voice-reference capsule when the user supplied references;
+- compact Viral effects only when they survived Concept review.
 
 The writer does **not** receive:
-- raw attachment/SRT/reference;
-- full narrative plan;
+- reference material as factual evidence;
 - full evidence ledger/research;
 - QC checklist;
 - asset library;
 - interaction schema;
 - renderer/runtime/package context.
 
-The brief carries the creative direction that matters: content engine, identity tension, progression intent, payoff target, compressed Viral writer effects and compressed reference mechanics.
+The style capsule may preserve cadence, narrator relationship, slang behavior, sentence behavior, comic mechanisms, contradiction/reversal timing and controlled roughness. It may not supply Zodiac claims, exact jokes, distinctive wording, exact sentences or reference-specific situations as facts.
+
+Do not flatten Voice into four adjectives. Voice Profile and Narrative Design remain separate contracts so style does not disappear during compression.
+
+## Voice-conditioned first draft
+
+The default path is **not** “write clean generic prose, then add slang.” Write the first complete draft in the target narrator family.
+
+Preserve intentional asymmetry, interruptions, colloquial phrasing, short impact lines and controlled roughness when those behaviors are part of the Voice Profile. A later cleanup pass may remove accidental stiffness, but must not normalize the narrator into polished explanatory prose.
+
+A frequent failure mode is **slang-painted AI prose**: structurally generic Zodiac explanation with casual tokens pasted onto it. Treat this as voice drift even if individual words look informal.
 
 ## Common spoken Vietnamese
 
@@ -92,7 +102,7 @@ Rules:
 - do not explain the same trait repeatedly with new synonyms;
 - converge toward the payoff target rather than ending as a list.
 
-Reference mechanics may influence cadence, facet sequencing, reversal timing and recognition payoff. They may not import the reference's claims.
+Voice Profile may influence cadence, facet sequencing, reversal timing, narrator relationship, comic behavior, roughness and recognition payoff. It may never import the reference's claims or distinctive wording.
 
 ## Scene performance
 
@@ -124,8 +134,9 @@ For fresh 2.6.8+ runs, do not wait until the end of Narration to discover determ
 2. Write the complete draft from the minimized writer context.
 3. Run the draft checkpoint immediately.
 4. If the checkpoint returns REVIEW, revise the narration and rerun only the checkpoint. Do not create semantic-review artifacts yet.
-5. After checkpoint PASS, run Story Spine, Narrative QC, Engagement Review and Story Quality review on the stable text.
-6. Any text edit after those reviews invalidates their narration hash and requires only the affected post-write reviews to be regenerated; Evidence/Concept are not rerun unless their semantics changed.
+5. After checkpoint PASS, run Semantic/Narrative QC, Voice Fidelity Review, Engagement Review and Story Quality review on the stable text.
+6. Voice Fidelity Review is blocking. A narration that is semantically correct but reads like a different narrator cannot open Content Review.
+7. Any text edit after those reviews invalidates its narration hash and requires only the affected post-write reviews to be regenerated; Evidence/Concept/Voice are not rerun unless their source semantics changed.
 
 The checkpoint is intentionally cheap. It catches structural/contract/duration/TTS/identity failures early; it does not pretend to replace editorial judgment.
 
@@ -172,3 +183,23 @@ Before returning Narration:
 9. keep one convergent synthesis/payoff instead of explaining after every facet/scene.
 
 Do not run Visual Compile from the Narration step.
+
+
+## Voice fidelity review
+
+Create `voice-fidelity-review.json` after the full narration is stable enough for editorial review. The reviewer is a `voice_challenger`, not the writer.
+
+Judge:
+- narrator relationship;
+- spoken naturalness;
+- roughness preservation;
+- comic aggression;
+- behavior-before-analysis;
+- contradiction energy;
+- internal voice;
+- sentence music;
+- warmth leakage;
+- generic-AI distance;
+- overall same-narrator plausibility.
+
+Use `PASS` only when the narration plausibly belongs to the same narrator family as the Voice Profile. If it reads like polished Zodiac explanation with slang added, mark REVIEW and issue targeted revision instructions. Do not solve voice drift by rewriting the whole script into a new voice during review.

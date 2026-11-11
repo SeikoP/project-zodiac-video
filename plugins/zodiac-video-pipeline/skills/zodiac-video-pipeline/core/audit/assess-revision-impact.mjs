@@ -10,7 +10,7 @@ if(!before||!after){console.error('Usage: assess-revision-impact.mjs --before <a
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function inventory(root){
  const dirs=['assets'];
- const contentNames=['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','viral-analysis.json','narration.txt'];
+ const contentNames=['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','voice-profile.json','narrative-design.json','voice-fidelity-review.json','viral-analysis.json','narration.txt'];
  const evidenceNames=['evidence-ledger.json','evidence-brief.json','evidence-summary.md','research-scope.json'];
  const rels=[...contentNames,...evidenceNames,...[...contentNames,...evidenceNames].map(name=>'.authoring/'+name),'.authoring/visual-intent.json','asset-plan.json','visual-grammar-plan.json','.authoring/character-assembly-plan.json','.authoring/generated-assets.json','.authoring/scene-composition-resolved.json','production.json','design.md','design-token.json','publish/publish.json','publish/publish-copy.txt','.authoring/story-object-plan.json','.authoring/story-beat-choreography.json','.authoring/scene-art-direction.json','.authoring/director-plan.json'];
  const {readdir}=await import('node:fs/promises');
@@ -26,7 +26,7 @@ const files=[...new Set([...Object.keys(x.fileHash),...Object.keys(y.fileHash)])
 const changed=files.filter(f=>x.fileHash[f]!==y.fileHash[f]);
 const groups={content:[],visual:[],publish:[],token:[],evidence:[],performance:[]};
 const evidenceFiles=new Set(['evidence-ledger.json','evidence-brief.json','evidence-summary.md','research-scope.json']);
-const conceptFiles=new Set(['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','viral-analysis.json']);
+const conceptFiles=new Set(['episode-scope.json','phase3-writer-brief.json','writer-brief.json','narrative-plan.json','concept-candidates.json','writer-brief-extras.json','engagement-design.json','reference-mechanics.json','voice-profile.json','narrative-design.json','viral-analysis.json']);
 for(const f of changed){const name=f.replace(/^\.authoring\//u,'');if(evidenceFiles.has(name))groups.evidence.push(f);else if(name==='narration.txt'||conceptFiles.has(name))groups.content.push(f);else if(f.startsWith('publish/'))groups.publish.push(f);else if(['design.md','design-token.json'].includes(f))groups.token.push(f);else groups.visual.push(f)}
 let eventChange=false,voiceChange=false;
 const p0=x.json['production.json'],p1=y.json['production.json'];
@@ -40,7 +40,7 @@ const withoutPerformance=value=>Array.isArray(value)?value.map(withoutPerformanc
 for(const file of [...groups.content,...groups.visual])if(['production.json','.authoring/narrative-plan.json','narrative-plan.json'].includes(file)&&x.json[file]&&y.json[file]&&JSON.stringify(withoutPerformance(x.json[file]))===JSON.stringify(withoutPerformance(y.json[file]))){groups.performance.push(file);groups.content=groups.content.filter(f=>f!==file);groups.visual=groups.visual.filter(f=>f!==file);}
 const approval={content:(groups.evidence.length||groups.content.length||groups.performance.some(f=>f!=='production.json'))?'REAPPROVAL_REQUIRED':'UNCHANGED_BY_SNAPSHOT',visual:(groups.evidence.length||groups.visual.length||groups.token.length||groups.content.length||groups.performance.length)?'REAPPROVAL_REQUIRED':'UNCHANGED_BY_SNAPSHOT',publish:groups.publish.length?'REAPPROVAL_REQUIRED':'UNCHANGED_BY_SNAPSHOT'};
 const gates=new Set();if(groups.performance.length){['narration_performance','performance_review','voice_anchor_validation','job5_compile','tts_timing','subtitle_alignment'].forEach(g=>gates.add(g));if(groups.performance.some(f=>f!=='production.json'))gates.add('content_source_review');}if(groups.evidence.length){['evidence_validation','writer_brief','semantic_story_quality','content_review','native_compile','visual_review','job5_compile','tts_timing','subtitle_alignment'].forEach(g=>gates.add(g));} // Research rerun only when evidence input changed.
-if(groups.content.length){['narration_qc','voice_anchor_validation','semantic_story_quality','native_compile','source_hash','visual_review','job5_compile','tts_timing','subtitle_alignment'].forEach(g=>gates.add(g))}
+if(groups.content.length){['narration_qc','voice_fidelity_review','content_review','voice_anchor_validation','semantic_story_quality','native_compile','source_hash','visual_review','job5_compile','tts_timing','subtitle_alignment'].forEach(g=>gates.add(g))}
 if(groups.visual.length||groups.token.length){['native_compile','visual_quality','story_object','director_review','native_preview','job5_compile','runner_visual_parity'].forEach(g=>gates.add(g))}
 if(eventChange){['event_state_chain','motion_registry','voice_anchor_validation'].forEach(g=>gates.add(g))}
 if(changed.includes('.authoring/scene-art-direction.json')||groups.token.length){['art_direction_qc','background_scene_set_qc','native_compile','director_review','native_preview','job5_compile'].forEach(g=>gates.add(g))}

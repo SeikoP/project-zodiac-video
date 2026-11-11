@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const hex=data=>createHash('sha256').update(data).digest('hex');
-const reserved=['.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json','.authoring/episode-scope.json','.authoring/narrative-plan.json','.authoring/scene-composition-resolved.json','.authoring/generated-assets.json','.authoring/story-beat-choreography.json','design.md','.authoring/scene-art-direction.json','narration.txt','production.json','asset-plan.json','visual-grammar-plan.json','.authoring/director-plan.json','.authoring/character-assembly-plan.json','.authoring/story-object-plan.json','.authoring/depth-composition-plan.json','publish/publish.json'];
+const reserved=['.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json','.authoring/episode-scope.json','.authoring/narrative-plan.json','.authoring/voice-profile.json','.authoring/narrative-design.json','.authoring/voice-fidelity-review.json','.authoring/scene-composition-resolved.json','.authoring/generated-assets.json','.authoring/story-beat-choreography.json','design.md','.authoring/scene-art-direction.json','narration.txt','production.json','asset-plan.json','visual-grammar-plan.json','.authoring/director-plan.json','.authoring/character-assembly-plan.json','.authoring/story-object-plan.json','.authoring/depth-composition-plan.json','publish/publish.json'];
 export function compactState(state,shaByPath={}){
  if(!state||state.format!=='zodiac-pipeline-state@2')throw new Error('CAPSULE_STATE_INVALID');
  const phase=state.current_phase;const ss=state.phases?.[phase];

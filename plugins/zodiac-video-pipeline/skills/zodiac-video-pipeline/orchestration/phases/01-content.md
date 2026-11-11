@@ -1,6 +1,6 @@
 # Phase 1 — Content
 
-Finish Evidence → Concept → Narration autonomously, then enter `IN_REVIEW` for CONTENT REVIEW.
+Finish Evidence → Voice → Concept → Narrative Design → Narration autonomously, then enter `IN_REVIEW` for CONTENT REVIEW.
 
 ## Fail-closed execution rule
 Phase 1 is simple in shape but strict in evidence. Do not infer completion from a polished script or from a manual checklist. Before each step, use `resume-brief.mjs` / the active manifest to determine required references, context, capabilities, outputs and gates. The step may advance only after its durable outputs exist and required compiler/validator receipts are real.
@@ -8,7 +8,7 @@ Phase 1 is simple in shape but strict in evidence. Do not infer completion from 
 If the host cannot run a required compiler/validator, or verified execution source is unavailable, the step is `BLOCKED`. Do not label manually reviewed content as native `PASS` or `IN_REVIEW`. A user-facing Content Review opens only after the Narration step has satisfied the active manifest.
 
 ## Interaction policy
-Phase 1 is an autopilot authoring phase, not a sequence of approval prompts. Once the user has supplied enough scope to identify the episode/sign/topic, continue through Evidence → Concept → Narration → QC without stopping to ask permission between steps.
+Phase 1 is an autopilot authoring phase, not a sequence of approval prompts. Once the user has supplied enough scope to identify the episode/sign/topic, continue through Evidence → Voice → Concept → Narrative Design → Narration → QC without stopping to ask permission between steps.
 
 Do **not** ask the user to:
 - approve research queries or individual evidence sources;

@@ -167,8 +167,16 @@
     },
     {
       "id": "concept",
-      "title": "Concept + Story Engine",
+      "title": "Voice + Concept + Narrative Design",
       "required_capabilities": [
+        {
+          "id": "voice_profile_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-voice-profile.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
         {
           "id": "writer_brief_compile",
           "kind": "internal_compiler",
@@ -201,6 +209,14 @@
           "kind": "internal_validator",
           "when": "always",
           "tool_locator": "references/validate-engagement-design.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "narrative_design_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-narrative-design.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
         }
@@ -261,7 +277,9 @@
         "reference-mechanics.json",
         "narrative-plan.json",
         "phase3-writer-brief.json",
-        "engagement-design.json"
+        "engagement-design.json",
+        "voice-profile.json",
+        "narrative-design.json"
       ],
       "gate_checks": [
         "premise_competition",
@@ -272,7 +290,9 @@
         "story_spine",
         "semantic_progression",
         "content_lineage",
-        "engagement_design"
+        "engagement_design",
+        "voice_profile",
+        "narrative_design"
       ],
       "allowed_operations": [
         "read_context",
@@ -290,7 +310,8 @@
         "references/plugin-use-playbook.md",
         "references/phase01-briefing.md",
         "references/episode-formats.md",
-        "references/engagement-engine.md"
+        "references/engagement-engine.md",
+        "references/voice-profile.md"
       ],
       "conditional_outputs": [
         {
@@ -388,7 +409,9 @@
         ".authoring/writer-brief-extras.json",
         ".authoring/engagement-design.json",
         ".authoring/plugin-use-decisions.json",
-        ".authoring/episode-scope.json"
+        ".authoring/episode-scope.json",
+        ".authoring/voice-profile.json",
+        ".authoring/narrative-design.json"
       ]
     },
     {
@@ -473,6 +496,14 @@
           "tool_locator": "references/validate-engagement-review.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "voice_fidelity_review_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-voice-fidelity-review.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "conditional_capabilities": [
@@ -519,7 +550,9 @@
         "current_request",
         "phase3_writer_brief",
         "minimal_evidence",
-        "reference_mechanics"
+        "voice_profile",
+        "narrative_design",
+        "bounded_voice_reference"
       ],
       "forbidden_context_categories": [
         "memory",
@@ -546,7 +579,8 @@
         "story-quality-review.json",
         "engagement-review.json",
         "narration-preflight.json",
-        "narration-draft-checkpoint.json"
+        "narration-draft-checkpoint.json",
+        "voice-fidelity-review.json"
       ],
       "gate_checks": [
         "narration_draft_checkpoint",
@@ -559,7 +593,8 @@
         "story_quality_review",
         "tts_text_readiness_reviewed",
         "duration_estimated_not_measured",
-        "engagement_review"
+        "engagement_review",
+        "voice_fidelity_review"
       ],
       "allowed_operations": [
         "read_context",
@@ -572,7 +607,9 @@
         "references/narration-rhythm.md",
         "references/short-form-duration.mjs",
         "references/engagement-engine.md",
-        "references/retention-quality.md"
+        "references/retention-quality.md",
+        "references/voice-profile.md",
+        "references/narrator-performance.md"
       ],
       "context_scopes": {
         "draft": {
@@ -580,9 +617,11 @@
             "current_request",
             "phase3_writer_brief",
             "minimal_evidence",
-            "reference_mechanics",
             "episode_scope",
-            "selected_member_lenses"
+            "selected_member_lenses",
+            "voice_profile",
+            "narrative_design",
+            "bounded_voice_reference"
           ],
           "forbidden_context_categories": [
             "memory",
@@ -594,7 +633,6 @@
             "full_research",
             "narrative_plan",
             "current_attachment",
-            "explicit_reference",
             "asset_rules",
             "renderer_rules",
             "package_rules",
@@ -605,7 +643,9 @@
             "unselected_member_profiles"
           ],
           "load_references": [
-            "references/narration-writer-brief.md"
+            "references/narration-writer-brief.md",
+            "references/voice-profile.md",
+            "references/narrator-performance.md"
           ],
           "defer_references": [
             "references/narrator-performance.md",
@@ -619,11 +659,13 @@
             "narrative_plan",
             "selected_concept",
             "evidence_summary",
-            "reference_mechanics",
             "full_qc",
             "episode_scope",
             "selected_member_lenses",
-            "engagement_design"
+            "engagement_design",
+            "voice_profile",
+            "narrative_design",
+            "bounded_voice_reference"
           ],
           "forbidden_context_categories": [
             "memory",
@@ -640,7 +682,9 @@
             "references/story-spine-performance.md",
             "references/narration-rhythm.md",
             "references/plugin-use-playbook.md",
-            "references/engagement-engine.md"
+            "references/engagement-engine.md",
+            "references/voice-profile.md",
+            "references/narrator-performance.md"
           ]
         }
       },
@@ -666,7 +710,10 @@
         ".authoring/narrative-qc.json",
         ".authoring/story-spine-performance.json",
         ".authoring/story-quality-review.json",
-        ".authoring/engagement-review.json"
+        ".authoring/engagement-review.json",
+        ".authoring/voice-profile.json",
+        ".authoring/narrative-design.json",
+        ".authoring/voice-fidelity-review.json"
       ]
     }
   ]

@@ -89,7 +89,7 @@ export function queryWorkflowGraph(graph,query,{limit=8}={}){
 
 export async function bindTaskRevision(task,{workspace,stateBytes,manifests,contextManifest=[]}){
  const source_hashes={};
- for(const rel of ['narration.txt','.authoring/narration.txt','.authoring/narrative-plan.json','narrative-plan.json','.authoring/phase3-writer-brief.json','.authoring/episode-scope.json','.authoring/visual-intent.json','design.md','production.json']){
+ for(const rel of ['narration.txt','.authoring/narration.txt','.authoring/narrative-plan.json','narrative-plan.json','.authoring/voice-profile.json','.authoring/narrative-design.json','.authoring/voice-fidelity-review.json','.authoring/phase3-writer-brief.json','.authoring/episode-scope.json','.authoring/visual-intent.json','design.md','production.json']){
   const file=path.resolve(workspace,rel);try{const real=await realpath(file);if(!real.startsWith(await realpath(workspace)+path.sep))throw Error('TASK_SOURCE_UNSAFE '+rel);source_hashes[rel]=hash(await readFile(real));}catch(e){if(e.code!=='ENOENT')throw e;source_hashes[rel]=null;}
  }
  const contract_sha256=hash({manifests,contextManifest,router:hash(await readFile(new URL('./task-coordinator.mjs',import.meta.url)))});
