@@ -26,7 +26,8 @@ class MediaAcceptanceTests(unittest.TestCase):
             root=Path(tmp)
             report=inspect(root,root/"out.mp4",root/"cover.png")
             self.assertEqual(report["status"], "BLOCKED")
-            self.assertEqual(report["visual_human_review"], "NOT_VERIFIED")
+            self.assertEqual(report["spoken_performance_review"], "NOT_VERIFIED")
+            self.assertEqual(report["rendered_performance_review"], "NOT_VERIFIED")
             self.assertIn("ARTIFACT_MISSING:voice", report["issues"])
 
 

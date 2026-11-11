@@ -18,7 +18,7 @@ if(q.source?.plan_sha256!==hash(rawPlan)||q.source?.narration_sha256!==hash(rawN
 if(q.selected_concept_id!==plan.selected_concept_id||q.selected_concept_id!==candidates.selected_candidate_id)fail('selected concept mismatch');
 if(q.reviewer_role!=='editorial_challenger')fail('reviewer_role must be editorial_challenger');
 if(typeof q.blind_read_verdict!=='string'||q.blind_read_verdict.trim().length<35)fail('blind_read_verdict must be substantive');
-const keys=['premise_strength','stakes_or_recognition','progression_and_turn','sign_irreplaceability','payoff_and_callback','silent_read_test'];
+const keys=['premise_strength','stakes_or_recognition','progression_and_turn','sign_irreplaceability','payoff_and_callback'];
 if(!q.criteria||Object.keys(q.criteria).sort().join('|')!==[...keys].sort().join('|'))fail('exact six editorial criteria required');
 const objections=[];let unresolved=[];
 for(const k of keys){

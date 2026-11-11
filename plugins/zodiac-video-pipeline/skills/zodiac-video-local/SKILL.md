@@ -57,6 +57,23 @@ Only a validated Job@5 archive may be atomically published into `ready/`.
 
 LocalRunner continues to own TTS, measured timing, Remotion rendering, audio, cover/runtime QA, and MP4 production.
 
+## Runtime performance reviews
+
+Do not treat generated WAV/timing or a technically valid MP4 as proof that the intended performance survived.
+
+After TTS + measured timing exist:
+1. Run `python -m tools.performance_review <workspace> init-tts`.
+2. Listen to the exact generated take(s) and complete `.runtime/tts-performance-review.json` against pronunciation, pause/breath, pace, emphasis, internal voice, punchline landing and ending cadence.
+3. Run `python -m tools.performance_review <workspace> validate-tts`. A REVIEW/BLOCKED result routes to the affected voice take/performance input. Do not rewrite approved narration unless the defect is textual and Content Review is reopened.
+
+After `out/zodiac-story.mp4` exists:
+1. Run `python -m tools.performance_review <workspace> init-rendered`.
+2. Watch the exact final MP4 and complete `.runtime/rendered-performance-review.json` against voice-in-mix, caption reveal timing, visual pre-emption, cut/pause alignment, attention competition, payoff sync and ending energy.
+3. Run `python -m tools.performance_review <workspace> validate-rendered`.
+4. Only then run `python -m tools.media_acceptance <workspace> --video <workspace>/out/zodiac-story.mp4 --cover <workspace>/out/cover.png`.
+
+`media_acceptance` is now blocked unless both performance reviews PASS on exact source hashes. Rebuilt WAV/timing/MP4 bytes invalidate the corresponding review; never carry an old PASS across regeneration.
+
 ## Queue statuses
 
 - `PHASE2_LOCAL_READY`: continue the returned Phase 2 task.

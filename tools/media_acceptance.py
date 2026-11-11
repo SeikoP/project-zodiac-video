@@ -15,6 +15,8 @@ import struct
 import subprocess
 import wave
 
+from tools.performance_review import validate_tts_review, validate_rendered_review
+
 
 def file_sha(path: Path) -> str:
     digest = hashlib.sha256()
@@ -111,13 +113,36 @@ def inspect(workspace: Path, video: Path, cover: Path) -> dict:
         except (RuntimeError, OSError, ValueError, KeyError, wave.Error,
                 subprocess.TimeoutExpired, ZeroDivisionError) as exc:
             errors.append("MEDIA_PROBE_FAILED:" + str(exc))
+    try:
+        tts_review = validate_tts_review(workspace)
+        evidence["tts_performance_review"] = {
+            "status": "PASS",
+            "path": str(workspace / ".runtime/tts-performance-review.json"),
+            "prosody_verified": bool(tts_review.get("prosody_verified", True)),
+        }
+    except Exception as exc:
+        errors.append("TTS_PERFORMANCE_REVIEW:" + str(exc))
+    try:
+        rendered_review = validate_rendered_review(workspace)
+        reviewed_hash = rendered_review.get("source", {}).get("video_sha256")
+        if reviewed_hash != file_sha(video):
+            errors.append("RENDERED_REVIEW_VIDEO_HASH_MISMATCH")
+        else:
+            evidence["rendered_performance_review"] = {
+                "status": "PASS",
+                "path": str(workspace / ".runtime/rendered-performance-review.json"),
+                "video_sha256": reviewed_hash,
+                "rendered_effect_verified": bool(rendered_review.get("rendered_effect_verified", True)),
+            }
+    except Exception as exc:
+        errors.append("RENDERED_PERFORMANCE_REVIEW:" + str(exc))
     return {
-        "format": "zodiac-media-acceptance@1",
-        "status": "PASS_TECHNICAL_ONLY" if not errors else "BLOCKED",
+        "format": "zodiac-media-acceptance@2",
+        "status": "PASS" if not errors else "BLOCKED",
         "issues": errors, "evidence": evidence,
-        "visual_human_review": "NOT_VERIFIED",
-        "spoken_last_syllable_review": "NOT_VERIFIED",
-        "warning": "Technical metadata cannot certify creative semantics, audio fidelity, frame contacts or human review.",
+        "spoken_performance_review": "VERIFIED" if "tts_performance_review" in evidence else "NOT_VERIFIED",
+        "rendered_performance_review": "VERIFIED" if "rendered_performance_review" in evidence else "NOT_VERIFIED",
+        "warning": "Technical probes plus evidence-bound human/agent reviews are required; deterministic validation does not invent creative quality.",
     }
 
 
@@ -134,7 +159,7 @@ def main() -> int:
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"status": report["status"], "issues": report["issues"],
                       "receipt": str(output)}, ensure_ascii=False))
-    return 0 if report["status"] == "PASS_TECHNICAL_ONLY" else 2
+    return 0 if report["status"] == "PASS" else 2
 
 
 if __name__ == "__main__":

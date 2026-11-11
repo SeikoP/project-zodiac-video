@@ -32,7 +32,7 @@ node features/visual-composition/resolve-scene-composition.mjs <workspace> --wri
 node features/visual-composition/run-director-v2-review.mjs <workspace>
 ```
 
-Resolved geometry goes to `.authoring/scene-composition-resolved.json`; it does not overwrite narrative reasons/anchors in intent. Director reruns the resolved check after its adjustments, before native endpoints. Visual Review still needs actual user approval. Phase 3 validates the snapshot again before ZIP; local runner alone verifies audio timing, frames and MP4.
+Resolved geometry goes to `.authoring/scene-composition-resolved.json`; it does not overwrite narrative reasons/anchors in intent. Director reruns the resolved check after its adjustments, before native endpoints. Visual Review still needs actual user approval. Phase 3 validates the snapshot again before ZIP; local runner produces measured audio timing, frames and MP4; evidence-bound TTS and Rendered Performance Reviews verify whether the intended performance survives those outputs.
 
 ## Fix the source that owns the failure
 

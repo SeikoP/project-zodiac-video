@@ -508,10 +508,29 @@
       ],
       "conditional_capabilities": [
         {
-          "id": "tts_text_readiness",
+          "id": "silent_read_review_validation",
           "kind": "internal_validator",
           "when": "fresh",
-          "tool_locator": "references/short-form-duration.mjs",
+          "tool_locator": "references/validate-silent-read-review.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "spoken_performance_plan_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "features/narration-performance/validate-spoken-performance-plan.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
+          "id": "tts_text_preflight_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "references/validate-tts-text-preflight.mjs",
+          "required_arg_suffixes": [
+            "--write"
+          ],
           "unavailable_policy": "block",
           "stage": "exit"
         },
@@ -582,6 +601,24 @@
         "narration-draft-checkpoint.json",
         "voice-fidelity-review.json"
       ],
+      "conditional_outputs": [
+        {
+          "name": "silent-read-review.json",
+          "when": "fresh"
+        },
+        {
+          "name": "spoken-performance-plan.json",
+          "when": "fresh"
+        },
+        {
+          "name": "tts-text-preflight.json",
+          "when": "fresh"
+        },
+        {
+          "name": "retention-structure.json",
+          "when": "flag:retention_quality_engine"
+        }
+      ],
       "gate_checks": [
         "narration_draft_checkpoint",
         "narration_preflight",
@@ -591,7 +628,6 @@
         "narrative_qc_grounding",
         "story_spine_performance",
         "story_quality_review",
-        "tts_text_readiness_reviewed",
         "duration_estimated_not_measured",
         "engagement_review",
         "voice_fidelity_review"
@@ -602,6 +638,9 @@
       ],
       "load_references": [
         "references/narration-writer-brief.md",
+        "references/performance-surfaces.md",
+        "references/silent-read-review.md",
+        "references/spoken-performance.md",
         "references/story-spine-performance.md",
         "references/content-quality-engine.md",
         "references/narration-rhythm.md",
@@ -680,6 +719,9 @@
           ],
           "load_references": [
             "references/content-quality-engine.md",
+            "references/performance-surfaces.md",
+            "references/silent-read-review.md",
+            "references/spoken-performance.md",
             "references/story-spine-performance.md",
             "references/narration-rhythm.md",
             "references/plugin-use-playbook.md",
@@ -690,13 +732,19 @@
           ]
         }
       },
-      "conditional_outputs": [
-        {
-          "name": "retention-structure.json",
-          "when": "flag:retention_quality_engine"
-        }
-      ],
       "conditional_gate_checks": [
+        {
+          "name": "silent_read_review",
+          "when": "fresh"
+        },
+        {
+          "name": "spoken_performance_plan",
+          "when": "fresh"
+        },
+        {
+          "name": "tts_text_preflight",
+          "when": "fresh"
+        },
         {
           "name": "retention_structure",
           "when": "flag:retention_quality_engine"
@@ -708,6 +756,9 @@
       ],
       "authoring_sources": [
         "narration.txt",
+        ".authoring/silent-read-review.json",
+        ".authoring/spoken-performance-plan.json",
+        ".authoring/tts-text-preflight.json",
         ".authoring/narrative-plan.json",
         ".authoring/narrative-qc.json",
         ".authoring/story-spine-performance.json",

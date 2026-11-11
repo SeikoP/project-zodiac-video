@@ -50,6 +50,7 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
  try{
   await mkdir(stage);
   for(const rel of ['production.json','design.md','narration.txt'])await cp(path.join(approved,rel),path.join(stage,rel));
+  await cp(path.join(approved,'.authoring','spoken-performance-plan.json'),path.join(stage,'spoken-performance-plan.json'));
   await cp(path.join(approved,'publish'),path.join(stage,'publish'),{recursive:true});
   // Stage the reviewed registry, not stale unregistered SVGs left by older runs.
   // Source files stay intact; compileWorkspace subsequently prunes unused registered assets.

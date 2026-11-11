@@ -28,7 +28,7 @@ const voice=s=>s.scenes.map(x=>x.voice).join('\n\n')+'\n';
 async function fixture(){const d=await mkdtemp(path.join(os.tmpdir(),'zodiac-phase03-boundary-'));
  const s=source();await mkdir(path.join(d,'assets'));await mkdir(path.join(d,'publish'));
  await writeFile(path.join(d,'production.json'),JSON.stringify(s));await writeFile(path.join(d,'design.md'),design);
- await writeFile(path.join(d,'narration.txt'),voice(s));
+ await writeFile(path.join(d,'narration.txt'),voice(s));await writeFile(path.join(d,'spoken-performance-plan.json'),JSON.stringify({format:'zodiac-spoken-performance-plan@1',source:{narration_sha256:'fixture',voice_profile_sha256:'fixture'},units:[{id:'U1',excerpt:'fixture',role:'payoff',pace:'medium',energy:0.8,pause_before:'none',pause_after:'full',emphasis:[],delivery:'Fixture performance intent.'}],pronunciation:[],ending_strategy:'Fixture keeps final energy.'}));
  for(const k of ['hero','map','class'])await writeFile(path.join(d,'assets',k+'.svg'),'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>');
  await writeFile(path.join(d,'publish/publish.json'),JSON.stringify({version:'1.5',platform:'tiktok',source:{narration:'narration.txt',production:'production.json'},caption:'Nhân Mã chỉ vào tấm bản đồ.'}));
  await writeFile(path.join(d,'publish/publish-copy.txt'),'COVER IDENTITY: NHÂN MÃ\nHOOK: Bản đồ\nTIKTOK CAPTION: Bản đồ.\nHASHTAGS: #nhanma\n');return d;}

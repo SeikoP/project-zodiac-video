@@ -5,7 +5,7 @@ import os from 'node:os';import path from 'node:path';import test from 'node:tes
 const script=fileURLToPath(new URL('./validate-story-quality-review.mjs',import.meta.url));
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const lines=['Bảo Bình thích nói khác người, nhưng lần này đám bạn lại không chịu nghe.','Cả lớp chỉ có hai lựa chọn, Bảo Bình muốn làm cách thứ ba.','Một người đột nhiên phản đối vì bị giao phần khó nhất.','Bảo Bình tự tay xóa phương án mình vừa bảo vệ.','Không còn tranh đúng sai, cả lớp phải chia việc cho công bằng.','Lần này điều Bảo Bình đổi không phải đáp án mà là câu hỏi.'];
-const keys=['premise_strength','stakes_or_recognition','progression_and_turn','sign_irreplaceability','payoff_and_callback','silent_read_test'];
+const keys=['premise_strength','stakes_or_recognition','progression_and_turn','sign_irreplaceability','payoff_and_callback'];
 async function verify(edit){const dir=await mkdtemp(path.join(os.tmpdir(),'zquality-'));try{
 const d=path.join(dir,'.authoring');await mkdir(d);
 const plan=JSON.stringify({selected_concept_id:'C3'}),candidate=JSON.stringify({selected_candidate_id:'C3'}),narration=lines.join(' ');
