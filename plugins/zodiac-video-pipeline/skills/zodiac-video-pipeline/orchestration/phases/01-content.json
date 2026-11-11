@@ -609,7 +609,8 @@
         "references/engagement-engine.md",
         "references/retention-quality.md",
         "references/voice-profile.md",
-        "references/narrator-performance.md"
+        "references/narrator-performance.md",
+        "references/voice-benchmark.md"
       ],
       "context_scopes": {
         "draft": {
@@ -645,7 +646,8 @@
           "load_references": [
             "references/narration-writer-brief.md",
             "references/voice-profile.md",
-            "references/narrator-performance.md"
+            "references/narrator-performance.md",
+            "references/voice-benchmark.md"
           ],
           "defer_references": [
             "references/narrator-performance.md",
@@ -684,7 +686,8 @@
             "references/plugin-use-playbook.md",
             "references/engagement-engine.md",
             "references/voice-profile.md",
-            "references/narrator-performance.md"
+            "references/narrator-performance.md",
+            "references/voice-benchmark.md"
           ]
         }
       },
