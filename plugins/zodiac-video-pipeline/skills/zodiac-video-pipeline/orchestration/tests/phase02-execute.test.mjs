@@ -61,6 +61,19 @@ const makeSource=async()=>{
 };
 const exists=async p=>{try{await readFile(p);return true;}catch{return false;}};
 
+test('local distribution source root can run Phase 2 inspection',async()=>{
+ const ws=await makeWorkspace(),src=await makeSource();
+ try{
+  await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
+  const manifest=JSON.parse(await readFile(path.join(src,'plugin.json'),'utf8'));
+  manifest.name='zodiac-video-local';
+  await write(path.join(src,'plugin.json'),JSON.stringify(manifest));
+  const result=run(ws,src);
+  assert.equal(result.status,0,result.stderr+'\n'+result.stdout);
+  assert.equal(JSON.parse(result.stdout).status,'READY');
+ }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
+});
+
 test('cached visual quality invalidates when workspace art-direction inputs change',async()=>{
  const ws=await makeWorkspace(),src=await makeSource();
  try{
@@ -92,6 +105,7 @@ test('missing pipeline state remains blocked without fabricated approval',async(
 
 test('native run invokes fixture compilers and receipt-wrapped validators in order; resume reuses validated outputs',async()=>{
  const ws=await makeWorkspace(),src=await makeSource();await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
+ await write(path.join(ws,'.authoring/native-validator-scene_direction_validation.json'),'visual-compile-receipt');
  const r=run(ws,src,['--run']);assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
  const e=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
  assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,16);
@@ -99,7 +113,8 @@ test('native run invokes fixture compilers and receipt-wrapped validators in ord
  assert.ok(e.steps.every(x=>x.status==='PASS'));
  const p=JSON.parse(await readFile(path.join(ws,'production.json')));
  assert.equal(p.scenes[0].entities[0].states.neutral.asset,'demo');
- const v=JSON.parse(await readFile(path.join(ws,'.authoring/native-validator-visual_quality.json')));
+ assert.equal(await readFile(path.join(ws,'.authoring/native-validator-scene_direction_validation.json'),'utf8'),'visual-compile-receipt');
+ const v=JSON.parse(await readFile(path.join(ws,'.authoring/native-assets-validator-visual_quality.json')));
  assert.equal(v.format,'zodiac-validator-receipt@1');
  const again=run(ws,src,['--run']);assert.equal(again.status,0,again.stderr);
  const e2=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));

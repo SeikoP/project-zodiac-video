@@ -11,9 +11,9 @@ This distribution owns Phase 1 handoff import plus **Phase 2 and Phase 3**. It n
 
 Immediately on invocation, before asking the user for an episode name or ZIP path, run:
 
-`node skills/zodiac-video-pipeline/phases/local/local-bootstrap.mjs <queue-root>`
+`node skills/zodiac-video-pipeline/phases/local/local-bootstrap.mjs <queue-root> [--run-id <run-id>]`
 
-The default queue root is `ZODIAC_QUEUE_ROOT` when set, otherwise the current working directory. The bootstrap discovers `phase1-done/`, resumes an existing `processing/<run-id>/` workspace, or atomically claims the oldest valid handoff.
+The default queue root is `ZODIAC_QUEUE_ROOT` when set, otherwise the current working directory. The bootstrap atomically claims the oldest valid handoff in `phase1-done/` before resuming existing work, preserving every active workspace. When no handoff is waiting it resumes the sole active workspace; if several are active, select the intended one with `--run-id <run-id>`.
 
 When status is `PHASE2_LOCAL_READY`, use the returned `workspace`, source-bound `context`, and `next_task`. Do not import the same capsule again, re-discover the repository, or call an optional code index just to understand the current task.
 
@@ -43,6 +43,10 @@ Persistent pipeline contracts, receipts, approvals and Job@5 stay JSON. The cont
 
 Run the canonical Phase 2 manifest, author Visual Intent, compile assets/scenes/previews, fix native failures, and stop for genuine Visual Review. The Local distribution **must not rewrite approved narration** or replace Content Review.
 
+Fresh visual readiness requires a visible narration-grounded background/context Scene Accent component in every scene and at least one Narrative Visual per video. A palette-only canvas or episode-wide Narrative Visual omission must fail before native compilation. Narrative Visual is authored as `narrative_visual` and transported as `story_object`. Run the current authoring-completeness and narrative-visual-presence gates; do not accept old PASS receipts after source changes.
+
+Keep visual scenes economical: do not assign a new visual setting to every narration beat. Reuse the same background, framing and character positions across adjacent beats when place, time and story focus remain continuous; let pose, prop state and event carry the change. Preserve separate audio scene boundaries when performance semantics differ. Every fictional advertisement must read clearly as an ad, foreground its product/story-object, show one product-specific demo, and land on a visual punchline. Keep the ad brief and stylistically consistent, and leave faces and captions readable.
+
 ## Phase 3
 
 After genuine Visual Review and Phase 2 PASS, run the canonical local delivery wrapper:
@@ -58,4 +62,5 @@ LocalRunner continues to own TTS, measured timing, Remotion rendering, audio, co
 - `PHASE2_LOCAL_READY`: continue the returned Phase 2 task.
 - `NO_PHASE1_HANDOFF_AVAILABLE`: no new capsule exists in `phase1-done/`.
 - `PHASE1_HANDOFF_BLOCKED`: inspect `blocked/<run-id>/import-receipt.json`; never repair the capsule in place.
-- `LOCAL_MULTIPLE_ACTIVE_EPISODES`: list the processing candidates; never guess which episode owns the session.
+- `LOCAL_BLOCKED_HANDOFFS_PRESENT`: inspect the blocked receipts before resuming another episode; select an existing workspace explicitly with `--run-id` if it should continue.
+- `LOCAL_MULTIPLE_ACTIVE_EPISODES`: use the current task's `run_id` with `--run-id`; never guess which episode owns the session.

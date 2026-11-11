@@ -1,6 +1,6 @@
 # Phase 02 composition contract — 2.4.44
 
-**Scene-set-first rule (2.4.60 source):** fresh authoring treats `scene-set` as the persistent visual stage, `shot-layout` as actor/prop placement, `scene accent` as optional contained context detail, and Story Object as an independent narrative symbol. Compatibility room profiles never auto-materialize behind a primary scene-set.
+Fresh authoring requires a visible canvas-native background/context component in every scene and at least one Narrative Visual per video. Use Scene Accent entities for context, independent shot-layout for actors/props, and `narrative_visual` entities for the storytelling image (runtime `story_object`). Palette-only canvases and episode-wide Narrative Visual omissions are incomplete. Historical Scene Set walls and room profiles remain compatibility-only.
 
 Keep the existing phases. Phase 02 executes four responsibilities in order:
 1. Read approved narration and canonical `references/design.md`; copy its complete STYLE_TOKEN to workspace `design.md`. Choose cast identity, environment and action.

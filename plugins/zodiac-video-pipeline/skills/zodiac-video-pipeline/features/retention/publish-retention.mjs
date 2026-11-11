@@ -7,10 +7,16 @@ const fail=code=>{throw new Error(code)};
 const stop=new Set('la va nhung mot cac cua co khong vi ma thi lai rat hon duoc voi trong khi nay do ay nhu cho ra chi phai'.split(/\s+/u));
 const tokens=s=>String(s??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replace(/đ/g,'d').match(/[\p{L}\p{N}]+/gu)??[];
 const distinct=s=>[...new Set(tokens(s).filter(x=>x.length>1&&!stop.has(x)))];
+const normalized=s=>tokens(s).join(' ');
 
-export function analyzePublishRetention({publish,engagementReview}){
-  const payoff=String(engagementReview?.criteria?.payoff_satisfaction?.evidence_excerpt??'').trim();
+export function analyzePublishRetention({publish,engagementReview,narration}){
+  const reviewed=String(engagementReview?.criteria?.payoff_satisfaction?.evidence_excerpt??'').trim();
+  const payoff=reviewed||String(publish?.retention?.payoff_evidence_excerpt??'').trim();
   if(!payoff)fail('PUBLISH_RETENTION_PAYOFF_REQUIRED');
+  if(!reviewed&&narration==null)fail('PUBLISH_RETENTION_NARRATION_REQUIRED');
+  const excerptTokens=tokens(payoff);
+  if(excerptTokens.length<3||excerptTokens.length>35)fail('PUBLISH_RETENTION_PAYOFF_LENGTH');
+  if(narration!=null&&!normalized(narration).includes(normalized(payoff)))fail('PUBLISH_RETENTION_PAYOFF_NOT_GROUNDED');
   const payoffTokens=distinct(payoff);
   const copy=[publish?.title,publish?.caption,publish?.cover?.hook].filter(Boolean).join(' ');
   const copySet=new Set(distinct(copy));
@@ -26,11 +32,12 @@ export function analyzePublishRetention({publish,engagementReview}){
 
 export async function analyzePublishRetentionWorkspace(root,{write=false}={}){
   root=path.resolve(root);
-  const [publish,engagementReview]=await Promise.all([
+  const [publish,engagementReview,narration]=await Promise.all([
     readFile(path.join(root,'publish','publish.json'),'utf8').then(JSON.parse),
-    readFile(path.join(root,'.authoring','engagement-review.json'),'utf8').then(JSON.parse)
+    readFile(path.join(root,'.authoring','engagement-review.json'),'utf8').then(JSON.parse).catch(e=>{if(e.code==='ENOENT')return null;throw e;}),
+    readFile(path.join(root,'narration.txt'),'utf8')
   ]);
-  const report=analyzePublishRetention({publish,engagementReview});
+  const report=analyzePublishRetention({publish,engagementReview,narration});
   if(write){
     const dir=path.join(root,'.authoring');await mkdir(dir,{recursive:true});
     await writeFile(path.join(dir,'publish-retention-review.json'),JSON.stringify(report,null,2)+'\n');

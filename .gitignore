@@ -26,3 +26,5 @@ assets/music/content-review-v3.md
 /videos/
 .env
 /.release
+/processing
+/blocked/

@@ -5,13 +5,14 @@ import {readFile,writeFile,rename,open,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 export async function reopenPhase02(workspace,{amend=false,reason=''}={}){
  const root=path.resolve(workspace),dir=path.join(root,'.authoring'),statePath=path.join(dir,'pipeline-state.json');
  const lock=await open(path.join(dir,'.phase02-revalidate.lock'),'wx').catch(e=>{throw Error('STATE_WRITE_BUSY '+e.code)});
  try{
   const raw=await readFile(statePath),state=JSON.parse(raw);
-  if(state.current_phase!=='02-visual-production'||state.phases?.['02-visual-production']?.status!=='IN_REVIEW')throw Error('PHASE02_NOT_IN_REVIEW');
+  if(state.current_phase!=='02-visual-production'||!['READY','IN_PROGRESS','BLOCKED','IN_REVIEW'].includes(state.phases?.['02-visual-production']?.status))throw Error('PHASE02_NOT_ACTIVE');
   if((state.review_receipts??[]).some(r=>r.phase_id==='02-visual-production'))throw Error('VISUAL_APPROVAL_ALREADY_EXISTS');
   const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
   const plugin=JSON.parse(await readFile(path.resolve(skill,'../../plugin.json'),'utf8'));
@@ -19,6 +20,7 @@ export async function reopenPhase02(workspace,{amend=false,reason=''}={}){
   if(amend&&!String(reason).trim())throw Error('AMEND_REASON_REQUIRED');
   if(!amend&&previous===plugin.version)throw Error('PLUGIN_VERSION_UNCHANGED');
   if(!state.review_receipts?.some(r=>r.phase_id==='01-content'&&r.status==='APPROVED'&&r.proof?.kind==='user_message'))throw Error('CONTENT_APPROVAL_MISSING');
+  await assertContentApprovalSources(root,state);
   const next=structuredClone(state),p=next.phases['02-visual-production'];
   if(!amend)next.plugin_version=plugin.version;
   next.current_phase='02-visual-production';
@@ -31,6 +33,7 @@ export async function reopenPhase02(workspace,{amend=false,reason=''}={}){
    const {validatePipelineState}=await import('../../core/state/validate-pipeline-state.mjs');
    await validatePipelineState(temp);
    if(sha(await readFile(statePath))!==sha(raw))throw Error('STATE_CHANGED_CONCURRENTLY');
+   await writeFile(path.join(dir,'pipeline-state-before-revalidation-'+sha(raw)+'.json'),raw,{flag:'wx'}).catch(e=>{if(e.code!=='EEXIST')throw e;});
    await rename(temp,statePath);
   }finally{await rm(temp,{force:true})}
   const receipt={format:'zodiac-phase02-source-revalidation@1',status:'REOPENED',trigger:amend?'authoring_amend':'plugin_version_update',reason:amend?String(reason).trim():'',from_plugin_version:previous,to_plugin_version:next.plugin_version,source_state_sha256:sha(raw),resulting_state_sha256:sha(await readFile(statePath)),phase01_approval_preserved:true,phase02_approval_present:false,phase02_operations_cleared:true,not_a_phase_pass:true};

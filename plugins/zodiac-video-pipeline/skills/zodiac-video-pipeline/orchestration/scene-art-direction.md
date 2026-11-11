@@ -4,10 +4,10 @@ Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-a
 
 ## Visual layers
 
-1. `scene-set` — supporting rear picture/wall for depth. It may remain consistent across scenes; foreground characters own independent composition and physical support.
+1. Background/context — every fresh scene selects an actual canvas-native Scene Accent entity behind its actors. Palette alone is insufficient. Scene Set walls are compatibility-only; characters own independent composition and physical support.
 2. `shot-layout` — actor/prop composition skeleton. It is not a background frame.
-3. `scene accent` — optional simple context cue such as a few hanging strips; it must stay inside the scene-set wall region.
-4. `Story Object` — independent symbolic narrative element with setup → friction → payoff when selected. A thought metaphor may float near/above an actor; physical contact is required only for `physical_interaction`.
+3. `scene accent` — the fresh background/context component, with canvas coordinates, explicit visibility lifecycle and caption-safe placement. It does not require a wall container.
+4. `Narrative Visual` — current authoring category for Story Object, visual metaphor, thought and contrast. Require at least one per fresh video, with a narrated semantic state change. Runtime projects it to `story_object`. Physical contact is required only for `physical_interaction`.
 5. `prop` / `effect` — ordinary physical objects and reaction emphasis. Neither may substitute for the Story Object premise or the scene-set.
 
 Use `art-direction/palette-registry.json` for token colors. `art-direction/environment-registry.json` contains compatibility selected-cue/legacy profiles; fresh scene-set authoring does not need a room profile from that registry. Do not auto-add windows, boards, tables, lamps, shadows, gradients or perspective.

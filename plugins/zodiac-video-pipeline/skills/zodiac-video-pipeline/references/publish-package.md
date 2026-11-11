@@ -1,4 +1,4 @@
-# Publish package contract v1.6
+# Publish package contract v1.7
 
 Publish metadata belongs to **Visual Production → Publish Prep**. It reuses approved narration and production states; it does not reopen story research and creates no ZIP.
 
@@ -35,6 +35,8 @@ Rules:
 - `source_scene_id` resolves to a real scene;
 - every cover visual resolves to an entity/state in that source scene;
 - cover visuals reuse production states; no cover-only AI image or state by default.
+
+For publish retention, use `.authoring/engagement-review.json`'s grounded `payoff_satisfaction.evidence_excerpt` when present. If an approved imported workspace no longer contains that Phase 1 review, `publish.retention.payoff_evidence_excerpt` may carry a 3–35 word exact excerpt from the immutable `narration.txt`. The retention validator checks that excerpt against the narration before comparing it with publish copy; paraphrases are invalid.
 
 ## Runtime-owned cover composition
 The canonical runtime renders a TikTok-safe 1080×1920 cover with the large identity treatment, hook frame and selected source-scene visuals. Publish Prep normally selects **what** appears, not exact coordinates.

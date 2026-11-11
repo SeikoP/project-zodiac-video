@@ -7,4 +7,18 @@ const svg=(w,h)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}
 const entity=(id,kind,asset)=>({id,kind,initial_state:'on',states:{on:{asset,layer:kind==='character'?20:10,visible:true}}});
 const scene=(id,dir)=>({id,voice:'x',scene_direction:dir,entities:[entity('hero','character','HERO'),entity('phone','object','PHONE')],events:[{id:id+'E',target:'hero',action:'changes',state_before:'on',state_after:'on',trigger:{source:'scene_start'}}],captions:{source:'voice',segmentation:'semantic',max_lines:2}});
 const inside=t=>t.x>=0&&t.y>=0&&t.x+t.width<=1080&&t.y+t.height<=1920;
+test('different pose aspect ratios preserve authored movement across repeated compiles',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-aspect-'));
+ await mkdir(path.join(root,'assets'));
+ await writeFile(path.join(root,'assets/hero.svg'),svg(246,360));
+ await writeFile(path.join(root,'assets/wounded.svg'),svg(234,360));
+ await writeFile(path.join(root,'assets/phone.svg'),svg(320,360));
+ const s=scene('S1',{shot:'prop-insert',focus:'phone',subject_placement:'center'});
+ s.entities[0].states.on.transform={x:100,y:640,width:280,height:410};
+ s.entities[0].states.wounded={asset:'WOUNDED',transform:{x:120,y:650,width:280,height:410}};
+ const input={version:'2.0',assets:{HERO:{path:'assets/hero.svg'},WOUNDED:{path:'assets/wounded.svg'},PHONE:{path:'assets/phone.svg'}},scenes:[s]};
+ const first=await compileProduction(input,{root}),second=await compileProduction(first.production,{root});
+ assert.deepEqual(second,first);
+ assert.equal(first.production.scenes[0].entities[0].states.wounded.transform.x-first.production.scenes[0].entities[0].states.on.transform.x,26);
+});
 test('same assets compile to materially different geometry and stay inside canvas',async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-shot-'));await mkdir(path.join(root,'assets'),{recursive:true});await writeFile(path.join(root,'assets/hero.svg'),svg(520,720));await writeFile(path.join(root,'assets/phone.svg'),svg(320,360));const production={version:'2.0',assets:{HERO:{path:'assets/hero.svg'},PHONE:{path:'assets/phone.svg'}},scenes:[scene('S1',{shot:'wide-environment',focus:'hero',subject_placement:'center',continuity_relation:'start',foreground_role:null,composition_goal:'establish'}),scene('S2',{shot:'reaction-closeup',focus:'hero',subject_placement:'center',continuity_relation:'reframe',foreground_role:null,composition_goal:'reaction'}),scene('S3',{shot:'prop-insert',focus:'phone',subject_placement:'center',continuity_relation:'insert',foreground_role:null,composition_goal:'phone detail'}),scene('S4',{shot:'foreground-peek',focus:'hero',subject_placement:'right',continuity_relation:'reframe',foreground_role:'phone',composition_goal:'depth reveal'})]};const {production:out,receipt}=await compileProduction(production,{root});const t=(i,id)=>out.scenes[i].entities.find(e=>e.id===id).states.on.transform;const wide=t(0,'hero'),close=t(1,'hero'),insert=t(2,'phone'),peekHero=t(3,'hero'),peekPhone=t(3,'phone');assert.ok(close.width*close.height>wide.width*wide.height*1.8);assert.ok(insert.width>300);assert.notDeepEqual(peekHero,close);for(const box of [wide,close,insert,peekHero,peekPhone])assert.ok(inside(box),JSON.stringify(box));assert.equal(receipt.scenes.length,4);});

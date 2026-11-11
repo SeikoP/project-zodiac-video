@@ -3,7 +3,7 @@
 The JSON manifest owns required capabilities and native gates. Read the approved
 handoff context; preserve exact narration, scope and genuine Content Review.
 
-1. Select current components through `references/asset-library-v4/selection-guide.md`.
+1. Select current components through `references/asset-library-v4/selection-guide.md`. Every fresh scene requires a visible background/context component with actual Scene Accent entity/asset/coverage. A palette-only canvas is incomplete. Every fresh video requires at least one `narrative_visual` with a narration-grounded state change; set `narrative_visual_decision.mode=required`. Story Object is its runtime `story_object` transport role. Do not replace these layers with actor pose swaps or generic omission reasons.
    Render `features/asset-selection/build-current-asset-review.mjs` when comparing
    choices. It uses native compiler output and exact masters, not episode examples.
 2. Author **one source of truth only**: `.authoring/visual-intent.json` (`zodiac-visual-intent@1`). Put the semantic choices there: Scene Plan, cast identity, scene goals/grammar, context/background decision, physical-prop participation, Narrative Visual decision/entities, director beats, art-direction coverage and scene events. Character identity is fixed across states. Use performed actions to plan state assets before generation; never create duplicates then merge finished SVGs.
@@ -34,7 +34,7 @@ handoff context; preserve exact narration, scope and genuine Content Review.
 Fresh Narrative Visual authoring follows `references/narrative-visual-contract.md`
 (the legacy filename is retained for existing links). The authoring role is
 `narrative_visual`, not a prop; it may have one state or narrated transitions.
-Effects and Scene Accents are optional and never fill space automatically.
+Effects are optional and never fill space automatically. Scene Accent is required as the visible background/context component in every fresh scene.
 Fresh runs also follow `references/narrative-visual-authoring.md`: a brief before drawing, a kit lint, and an optional blind readback.
 
 Retired capabilities are unavailable in the current plugin. Restore an exact,

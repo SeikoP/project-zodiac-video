@@ -6,12 +6,12 @@ job recovery uses a separately pinned snapshot outside this package.
 
 ## Select by responsibility — fresh mode
 
-- Background: a simple color/gradient/optional pattern; never a Scene Set wall.
+- Background: select a narration-grounded context component for every scene, authored as a canvas-native Scene Accent behind the actors. A palette/color alone does not satisfy scene background coverage. Reuse context across related scenes when appropriate.
 - Shot layout: independent actor composition from `shot-layouts/index.json`.
 - Character: native body/hair/shirt identity, persistent across states.
 - Prop: a real physically interacted item from `props/index.json`.
-- Narrative Visual: one authoring category for thought, metaphor, contrast and meaning; optional states and actor/group/canvas anchors.
-- Scene Accent: optional independent context SVG (window, menu, notice board, lights). Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
+- Narrative Visual: the current authoring category for Story Object, thought, metaphor, contrast and meaning; require at least one in each fresh video with a visible, narration-grounded state change. Set `narrative_visual_decision.mode=required`. The runtime transport role remains `story_object`; a phone or character pose alone does not satisfy this layer.
+- Scene Accent: independent context SVG (window, menu, notice board, lights). Select at least one visible context component per scene, with `scene_accent=use` coverage where it appears. Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
 - Effect: optional emphasis of action or emotion, not mandatory decoration.
 
 Each beat must explicitly use or omit Scene Accent in fresh Visual Coverage.

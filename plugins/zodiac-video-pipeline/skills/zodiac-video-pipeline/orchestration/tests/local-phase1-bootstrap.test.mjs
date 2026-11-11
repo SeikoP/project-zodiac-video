@@ -28,7 +28,7 @@ async function capsule(inbox,runId,name=runId+'.zip'){
  try{await exportPhase1Handoff(source,file);return file}finally{await rm(source,{recursive:true,force:true})}
 }
 
-test('bootstrap claims oldest capsule, activates Phase 2, then resumes the same run',async()=>{
+test('bootstrap claims queued capsules before resuming active work and supports explicit run selection',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
   const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});
   const older=await capsule(inbox,'run-old','old.zip'),newer=await capsule(inbox,'run-new','new.zip');
@@ -38,8 +38,15 @@ test('bootstrap claims oldest capsule, activates Phase 2, then resumes the same 
   const state=JSON.parse(await readFile(path.join(root,'processing','run-old','workspace','.authoring','pipeline-state.json'),'utf8'));
   assert.equal(state.current_phase,'02-visual-production');assert.equal(state.phases['02-visual-production'].steps.visual_compile.status,'READY');
   assert.deepEqual((await readdir(inbox)).sort(),['new.zip']);
-  const second=await bootstrapLocal(root);assert.equal(second.status,'PHASE2_LOCAL_READY');assert.equal(second.run_id,'run-old');assert.equal(second.resumed,true);
-  assert.deepEqual((await readdir(inbox)).sort(),['new.zip']);
+  const second=await bootstrapLocal(root);assert.equal(second.status,'PHASE2_LOCAL_READY');assert.equal(second.run_id,'run-new');assert.equal(second.resumed,false);
+  assert.equal((await readdir(path.join(root,'processing'))).length,2);
+  const ambiguous=await bootstrapLocal(root);assert.equal(ambiguous.status,'LOCAL_MULTIPLE_ACTIVE_EPISODES');
+  const selected=await bootstrapLocal(root,{runId:'run-new'});assert.equal(selected.status,'PHASE2_LOCAL_READY');assert.equal(selected.run_id,'run-new');assert.equal(selected.resumed,true);
+  const blocked=path.join(root,'blocked','blocked-run');await mkdir(blocked,{recursive:true});
+  await writeFile(path.join(blocked,'import-receipt.json'),JSON.stringify({status:'BLOCKED'}));
+  assert.equal((await bootstrapLocal(root)).status,'LOCAL_BLOCKED_HANDOFFS_PRESENT');
+  assert.equal((await bootstrapLocal(root,{runId:'run-new'})).run_id,'run-new');
+  assert.deepEqual(await readdir(inbox),[]);
  }finally{await rm(root,{recursive:true,force:true})}
 });
 

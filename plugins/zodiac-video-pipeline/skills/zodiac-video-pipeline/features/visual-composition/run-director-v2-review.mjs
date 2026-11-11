@@ -39,6 +39,12 @@ if(objectEnabled){
   {id:'story_object_composition_v2',script:'features/story-object/validate-story-object-composition.mjs',args:[root,'--write'],validator:true}
  );
 }
+const skippedStages=[];
+try{await access(path.join(root,'.authoring/story-beat-choreography.json'));}catch(e){
+ if(e.code!=='ENOENT')throw e;
+ const index=stages.findIndex(x=>x.id==='story_choreography_v2');
+ if(index>=0){stages.splice(index,1);skippedStages.push({id:'story_choreography_v2',reason:'No choreography plan authored'});}
+}
 let status='READY_FOR_HUMAN_VISUAL_REVIEW';const rows=[];
 const productionFile=path.join(root,'production.json');
 // Full source rollback if any post-director check fails: do not leave partial
@@ -72,7 +78,7 @@ if(status==='BLOCKED'){
   }catch{}
 }
 try{signature=sha256(await readFile(productionFile));}catch{}
-const output={format:'zodiac-director-v2-review@1',status,source_hash:signature,original_source_hash:originalHash,stages:rows,explicit_user_approval_required:true,runner_temporal_qa_required:true};
+const output={format:'zodiac-director-v2-review@1',status,source_hash:signature,original_source_hash:originalHash,stages:rows,...(skippedStages.length?{skipped_stages:skippedStages}:{}),explicit_user_approval_required:true,runner_temporal_qa_required:true};
 await mkdir(path.join(root,'.authoring'),{recursive:true});
 const report=path.join(root,'.authoring/director-v2-review-receipt.json');await writeFile(report,JSON.stringify(output,null,2)+'\n');
 console.log(JSON.stringify({status,stages:rows.map(r=>({id:r.stage,exit_code:r.exit_code})),receipt:report},null,2));

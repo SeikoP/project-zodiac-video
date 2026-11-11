@@ -172,7 +172,7 @@ report.source.plugin_root=source.pluginRoot;report.source.skill_root=source.skil
 let manifest=null,template=null;
 try{manifest=JSON.parse(await readFile(path.join(source.pluginRoot,'plugin.json'),'utf8'));}catch{fail('PLUGIN_MANIFEST_MISSING');}
 try{template=JSON.parse(await readFile(path.join(source.skillRoot,'orchestration/pipeline-state.template.json'),'utf8'));}catch{fail('SOURCE_TEMPLATE_MISSING');}
-if(manifest&&manifest.name!=='zodiac-video-pipeline')fail('PLUGIN_IDENTITY_MISMATCH');
+if(manifest&&!['zodiac-video-pipeline','zodiac-video-local'].includes(manifest.name))fail('PLUGIN_IDENTITY_MISMATCH');
 if(manifest&&template&&manifest.version!==template.plugin_version)fail('SOURCE_TEMPLATE_VERSION_MISMATCH',{plugin:manifest.version,template:template.plugin_version});
 const missingSource=[];for(const rel of sourcePaths)if(!(await exists(path.join(source.skillRoot,rel))))missingSource.push(rel);
 if(missingSource.length)fail('SOURCE_UNAVAILABLE',{missing:missingSource});
@@ -274,12 +274,12 @@ else{
   if(step.id==='character_write')required.push(...await workspaceAssetPaths('character'));
   if(step.id==='meme_props')required.push(...await workspaceAssetPaths('meme_props'));
   if(step.id==='environment')required.push(...await workspaceAssetPaths('environment'));
-  if(step.validator)required.push(path.join(workspace,'.authoring/native-validator-'+step.id+'.json'));
+  if(step.validator)required.push(path.join(workspace,'.authoring/native-assets-validator-'+step.id+'.json'));
   const cached=cache.steps?.[step.id];
   const outputsSig=required.length?await signature(required):sha('no-output-files');
   if(!force&&before!==null&&outputsSig!==null&&cached?.status==='PASS'&&cached.after_input_sha===before&&cached.output_sha===outputsSig){report.steps.push({id:step.id,status:'SKIPPED_REUSED',cache_reason:CACHE_REASON.HIT_EXACT,input_hash:before,output_hash:outputsSig,evidence:'verified_post_input_and_output_hash',previous_command:cached.command});continue;}
   if(before===null){const error={id:step.id,status:'BLOCKED',reason:'INPUT_UNREADABLE_OR_MISSING'};report.steps.push(error);fail('NATIVE_STEP_INPUT_MISSING',{step:step.id});break;}
-  const receiptRel='.authoring/native-validator-'+step.id+'.json';
+  const receiptRel='.authoring/native-assets-validator-'+step.id+'.json';
   const commandFile=step.validator?path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs'):absolute;
   const commandArgs=step.validator?[step.id,path.join(workspace,receiptRel),absolute,...args]:args;
   const result=nodeRun(commandFile,commandArgs);

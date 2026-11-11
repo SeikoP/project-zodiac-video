@@ -46,10 +46,14 @@ export async function compileProduction(production,{root='.',profile=profileDefa
         return;
       }
       const originalBase=e.states?.[e.initial_state]?.transform;
+      const fittedBase=fit(await aspectOf(e.states?.[e.initial_state]?.asset),resolvedBox,canvas);
+      const alreadyFitted=['x','y','width','height'].every(k=>originalBase?.[k]===fittedBase[k]);
       for(const [stateId,state] of stateEntries(e)){
         if(!state?.asset)fail(`${scene.id}/${id}/${stateId} missing asset`);
-        const previous=state.transform??{},dx=Number(previous.x??0)-Number(originalBase?.x??0),dy=Number(previous.y??0)-Number(originalBase?.y??0);
         const aspect=await aspectOf(state.asset),t=fit(aspect,resolvedBox,canvas);
+        // Re-entry must subtract each pose's fitted box, not reinterpret aspect offsets as movement.
+        const previous=state.transform??{},origin=alreadyFitted?t:originalBase;
+        const dx=Number(previous.x??0)-Number(origin?.x??0),dy=Number(previous.y??0)-Number(origin?.y??0);
         // The director profile owns baseline layout, not authored movement between states.
         state.transform={...previous,...t,x:round(t.x+dx),y:round(t.y+dy)};
       }

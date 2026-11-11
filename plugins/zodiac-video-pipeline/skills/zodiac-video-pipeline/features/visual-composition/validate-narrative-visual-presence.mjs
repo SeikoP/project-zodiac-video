@@ -5,6 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
 import {validateNarrativeVisualKit} from './validate-narrative-visual-kit.mjs';
+import {reachableStates,classifyEventChange} from './scene-state-trace.mjs';
 
 const safeRel=p=>typeof p==='string'&&p.length>0&&!path.isAbsolute(p)&&!p.split(/[\\/]/u).includes('..')&&!p.includes('\\');
 export async function validateNarrativeVisualPresence(workspace){
@@ -18,6 +19,7 @@ export async function validateNarrativeVisualPresence(workspace){
  if(state.run_mode!=='fresh'&&intent?.format!=='zodiac-visual-intent@1')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const decision=intent.taxonomy_version==='narrative_visual@1'?intent.narrative_visual_decision:null;
  if(!decision||!['required','optional','omitted'].includes(decision.mode)||!String(decision.reason??'').trim())add('NARRATIVE_VISUAL_DECISION_MISSING');
+ if(state.run_mode==='fresh'&&decision?.mode!=='required')add('NARRATIVE_VISUAL_REQUIRED_FOR_FRESH');
  const speech=await readFile(path.join(root,'narration.txt')),present=[];
  for(const scene of intent.scenes??[]){
   const voice=speech.subarray(...(scene.narration_range??[0,0])).toString('utf8');
@@ -28,8 +30,8 @@ export async function validateNarrativeVisualPresence(workspace){
    const coverage=scene.art_direction?.visual_coverage?.beats??[];
    if(!coverage.some(b=>b.layers?.narrative_visual?.decision==='use'&&b.layers.narrative_visual.entity_ids?.includes(entity.id)))add('NARRATIVE_VISUAL_COVERAGE_MISSING',scene.id,{entity_id:entity.id});
    for(const error of validateNarrativeBrief({...scene,voice},scene.art_direction?.narrative_brief))add(error.code,scene.id,{entity_id:entity.id});
-   if(!(scene.events??[]).some(e=>e.target===entity.id&&e.state_before!==e.state_after))add('NARRATIVE_VISUAL_SEMANTIC_EVENT_MISSING',scene.id,{entity_id:entity.id});
-   const visible=Object.values(entity.states??{}).filter(st=>st.visible!==false);
+   if(!(scene.events??[]).some(e=>e.target===entity.id&&e.state_before!==e.state_after&&classifyEventChange(e,entity.states?.[e.state_before],entity.states?.[e.state_after])==='visual_change'))add('NARRATIVE_VISUAL_SEMANTIC_EVENT_MISSING',scene.id,{entity_id:entity.id});
+   const visible=reachableStates(scene,entity).filter(st=>st.visible!==false);
    if(!visible.length)add('NARRATIVE_VISUAL_INVISIBLE',scene.id,{entity_id:entity.id});
    for(const st of visible){
     const asset=intent.assets?.[st.asset];
@@ -43,6 +45,7 @@ export async function validateNarrativeVisualPresence(workspace){
   }
  }
  if(decision?.mode==='required'&&!present.length)add('NARRATIVE_VISUAL_REQUIRED_BUT_ABSENT');
+ if(state.run_mode==='fresh'&&decision?.mode!=='required'&&!present.length)add('NARRATIVE_VISUAL_REQUIRED_BUT_ABSENT');
  if(decision?.mode==='omitted'&&present.length)add('NARRATIVE_VISUAL_OMITTED_BUT_PRESENT');
  if(decision?.mode==='required'&&!(intent.scenes??[]).some(s=>s.entities?.some(e=>e.kind==='narrative_visual'&&Object.values(e.states??{}).some(st=>st.visible!==false))))add('NARRATIVE_VISUAL_REQUIRED_BUT_INVISIBLE');
  return {format:'zodiac-narrative-visual-presence@1',status:issues.length?'BLOCKED':'PASS',decision:decision?.mode??null,authored_entities:present,issues,not_an_approval:true};
