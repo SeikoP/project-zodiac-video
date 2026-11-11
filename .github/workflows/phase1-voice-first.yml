@@ -24,6 +24,7 @@ jobs:
           set -euo pipefail
           base=plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline
           node --test \
+            "$base/references/validate-voice-profile.test.mjs" \
             "$base/references/validate-voice-fidelity-review.test.mjs" \
             "$base/references/validate-narrative-design.test.mjs" \
             "$base/references/validate-content-contract.test.mjs" \
