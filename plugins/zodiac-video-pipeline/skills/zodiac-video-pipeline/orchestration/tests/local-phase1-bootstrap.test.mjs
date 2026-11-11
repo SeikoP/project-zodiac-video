@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {buildPortableZip,parsePortableZip} from '../../core/archive/zip-primitives.mjs';
 import {buildSourceBoundReviewReceipt} from '../../core/evidence/approval-source-hashes.mjs';
+import {buildInventory} from '../../contracts/phase1-handoff.mjs';
 import {exportPhase1Handoff} from '../../phases/phase01/export-phase1-handoff.mjs';
 import {bootstrapLocal} from '../../phases/local/local-bootstrap.mjs';
 
@@ -27,6 +28,17 @@ async function capsule(inbox,runId,name=runId+'.zip'){
  const source=await approvedWorkspace(runId);const file=path.join(inbox,name);
  try{await exportPhase1Handoff(source,file);return file}finally{await rm(source,{recursive:true,force:true})}
 }
+
+test('handoff inventory order is locale-independent',()=>{
+ const rows=buildInventory([
+  {rel:'validator-receipts/narrative_qc_decision_validation.json',data:Buffer.from('decision')},
+  {rel:'validator-receipts/narrative_qc.json',data:Buffer.from('narrative')}
+ ]);
+ assert.deepEqual(rows.map(x=>x.path),[
+  'validator-receipts/narrative_qc.json',
+  'validator-receipts/narrative_qc_decision_validation.json'
+ ]);
+});
 
 test('bootstrap claims queued capsules before resuming active work and supports explicit run selection',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{

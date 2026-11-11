@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "zodiac-video-pipeline",
+      "name": "zodiac-video-local",
       "source": {
         "source": "local",
-        "path": "./plugins/zodiac-video-pipeline"
+        "path": "./.runtime/plugin-dev/zodiac-video-local"
       },
       "policy": {
         "installation": "AVAILABLE",

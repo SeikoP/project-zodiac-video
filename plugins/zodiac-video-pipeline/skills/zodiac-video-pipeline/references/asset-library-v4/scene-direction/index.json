@@ -16,7 +16,8 @@
       "left",
       "right",
       "split",
-      "full"
+      "full",
+      "trio"
     ],
     "continuity_relations": [
       "start",
@@ -150,6 +151,19 @@
         "right",
         "full"
       ]
+    },
+    {
+      "id": "three-person",
+      "scale_band": "medium_wide",
+      "purpose": [
+        "group_contrast",
+        "shared_action"
+      ],
+      "foreground": "optional",
+      "placements": [
+        "trio"
+      ],
+      "requires_interaction_roles": true
     }
   ],
   "rhythm_patterns": [

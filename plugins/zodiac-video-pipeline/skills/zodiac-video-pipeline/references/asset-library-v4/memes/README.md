@@ -1,22 +1,33 @@
-# Visual Grammar v4 Meme Adapters
+# Native meme actions
 
-Meme adapters preserve reviewed action, role relationships, composition, and crop from the promoted V4 semantic contracts while compiling characters and assets with the native V4 style.
+`index.json` is the production adapter inventory; `templates/index.json` maps each adapter to its semantic reference. The preview tool enumerates the actual registry, not a curated subset:
 
-Visual Compile may add this field to a scene in `visual-grammar-plan.json`:
+```sh
+node plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/audit/preview-meme-acting.mjs
+```
+
+Run from the project checkout, or pass an empty output directory explicitly. The generated `index.html` includes all meme compositions, every catalog pose/expression, setup/reaction replay, search and optional lettering. It uses native SVG assets and scene transforms. Playback is illustrative, without measured audio timing or production approval. Existing episode workspaces cannot be used as demo output.
+
+## Acting
+
+Bind roles to the episode's existing characters. Keep hair/body/shirt identity and select reaction states using `meme_composition.state_bindings`. Reach each reaction with a normal voice-anchored event. Native cast planning and independent validation enforce the adapter's pose/expression/crop at that state.
+
+Adapter IDs, role bindings and entity kinds must match the registry. Frame/mechanic overrides must match the adapter; unknown entities, missing participants and mandatory props fail closed. Semantic interaction templates list character participants only; optional labels/props stay in adapter bindings, outside the interaction participant-role contract. Scene Direction owns final transforms. Explicit effect entities/specifications remain rejected; do not add effect receipt steps.
+
+Six additions adapt the supplied images: waiting, broom warning, farewell, cheek poke, exhaustion and retraction. Three further situation adapters cover innocent shrugging, awkward concession and silent judgment, with reference links in their templates/cards. All eleven older adapters now support optional lettering; heart-offer uses a native heart and mirror-self-check uses an embarrassed expression. Production artwork preserves the channel cast.
+
+## Optional short lettering
+
+All adapters expose an optional object role named `label`. Omit it when the action already communicates the joke. To use it, bind `label` to an authored object with hidden/shown states, layer it clear of faces/captions, and add a voice-anchored reveal at the relevant reaction. Do not change approved narration to fit a stock phrase.
 
 ```json
-{
-  "meme_composition": {
-    "id": "cry-hug-object",
-    "bindings": {"actor": "hero", "prop": "keepsake"}
-  }
+"meme_composition": {
+  "id": "polite-exit",
+  "bindings": {"actor": "hero", "label": "exit_words"},
+  "state_bindings": {"actor": "farewell"}
 }
 ```
 
-`id` must exist in `index.json`. `bindings` maps recipe roles to entities already present in the scene. The compiler resolves the registered v4 frame, mechanic, placements, and acting requirements. Explicit `frame_id` or `mechanic_id` overrides are allowed only when they match the adapter. Missing required roles, wrong entity kinds, unknown entities, and adapter mismatches fail closed.
+The existing prop compiler materializes the bound label asset and its receipt. Unbound optional labels create no asset requirement; required props and participants still fail closed when missing. Labels use outlined Patrick Hand glyph paths, with accessible titles and canonical colors. They contain no SVG `<text>`, script, external image or font dependency and pass Human Stroke validation. Authoring maintenance can regenerate these paths with `python tools/preview/bake-meme-labels.py` in the repository; this is not a runtime dependency.
 
-The V4 registry points to a local contract in `memes/templates/`. These contracts contain semantic layout and contact rules; legacy reference SVGs are not included. New assets use `zodiac-paper-doodle-meme-v4` and `human-stroke-v2` with truthful V4 lineage.
-
-The compiler writes authoring-only `scene.visual_grammar.meme_composition` metadata and `scene.scene_direction.meme_layout`. `compile-meme-props.mjs` materializes only native props declared in `asset_requirements` and binds them to object states. Its receipt lists the actual prop assets and bindings. Scene Direction owns final transforms. Effects are removed; any effect entity or nonempty effect specification is rejected.
-
-A new meme needs role geometry and character/prop actions. Add a bespoke prop requirement only when the scene actually uses it. Do not add effect primitives, effect receipt finalizers or effect review steps.
+Keep labels brief, tied to the scene and subordinate to the acting. Do not add them to every beat, cover a face or let them compete with spoken captions. The gallery's text toggle is for comparing legibility; it does not grant episode approval.

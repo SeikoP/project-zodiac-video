@@ -1,0 +1,43 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "exhausted-slump",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://theselfishmeme.co.uk/wp-content/uploads/2025/11/anh-meme-chan-nan-cha-buon-noi-4.webp"
+  ],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Kiệt sức hết pin",
+    "Mình xử lý được hết.",
+    "Nhưng pin mình hết rồi."
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Kiệt sức hết pin; adapt acting and optional lettering to the existing channel cast.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": true
+  },
+  "optional_text": "Hết pin..."
+}

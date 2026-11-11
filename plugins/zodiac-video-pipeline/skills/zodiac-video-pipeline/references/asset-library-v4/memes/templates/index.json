@@ -60,6 +60,51 @@
       "id": "wallet-flex",
       "path": "templates/wallet-flex.json",
       "historical_source": "asset-library-v3/meme-compositions/templates/wallet-flex/composition.json"
+    },
+    {
+      "id": "impatient-wait",
+      "path": "templates/impatient-wait.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-19.webp"
+    },
+    {
+      "id": "smiling-threat",
+      "path": "templates/smiling-threat.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-18.webp"
+    },
+    {
+      "id": "polite-exit",
+      "path": "templates/polite-exit.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-22.webp"
+    },
+    {
+      "id": "playful-cheek-poke",
+      "path": "templates/playful-cheek-poke.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/09/hai-huoc-meme-danh-nhau-cute-7.webp"
+    },
+    {
+      "id": "exhausted-slump",
+      "path": "templates/exhausted-slump.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/11/anh-meme-chan-nan-cha-buon-noi-4.webp"
+    },
+    {
+      "id": "take-that-back",
+      "path": "templates/take-that-back.json",
+      "source_reference": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp"
+    },
+    {
+      "id": "innocent-shrug",
+      "path": "templates/innocent-shrug.json",
+      "source_reference": "https://vanvn.net/meme-da-lam-gi-dau/"
+    },
+    {
+      "id": "awkward-grin",
+      "path": "templates/awkward-grin.json",
+      "source_reference": "https://time.com/5650967/kombucha-meme/"
+    },
+    {
+      "id": "silent-judgment",
+      "path": "templates/silent-judgment.json",
+      "source_reference": "https://theselfishmeme.co.uk/cac-meme-noi-tieng-nhat"
     }
   ]
 }

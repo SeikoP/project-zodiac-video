@@ -1,0 +1,43 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "silent-judgment",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://theselfishmeme.co.uk/cac-meme-noi-tieng-nhat"
+  ],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Phán xét trong im lặng",
+    "Mình chỉ xem thôi, không phán xét.",
+    "Ánh mắt thì kể câu chuyện khác."
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Phán xét trong im lặng; native cast acting, no reference artwork.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": true
+  },
+  "optional_text": "Bạn chắc chưa?"
+}

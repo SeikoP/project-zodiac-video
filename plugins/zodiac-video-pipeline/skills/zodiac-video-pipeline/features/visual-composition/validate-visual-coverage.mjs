@@ -8,7 +8,8 @@ const anchorOffset=(voice,trigger)=>{let at=-1,start=0;for(let i=0;i<(trigger?.o
 export function validateVisualCoverage(scene,planned,{required=false,deriveEmptyLayers=false}={}){
  const issues=[],add=(code,detail={})=>issues.push({code,scene_id:scene.id,...detail});
  const coverage=planned?.visual_coverage;
- const activeLayers=coverage?.layers_version==='narrative_visual@1'?coverageLayers:legacyCoverageLayers;
+ const baseLayers=coverage?.layers_version==='narrative_visual@1'?coverageLayers:legacyCoverageLayers;
+ const activeLayers=[...baseLayers,...((scene.entities??[]).some(e=>e.visual_role==='overlay')||coverage?.beats?.some(b=>b.layers?.story_text)?['story_text']:[])];
  if(!coverage){if(required)add('VISUAL_COVERAGE_REQUIRED');return issues;}
  const voice=String(scene.voice??''),bytes=Buffer.from(voice);
  if(coverage.format!=='zodiac-visual-coverage@1'||!Array.isArray(coverage.beats)||!coverage.beats.length){add('COVERAGE_FORMAT_INVALID');return issues;}
@@ -19,7 +20,7 @@ export function validateVisualCoverage(scene,planned,{required=false,deriveEmpty
  for(const e of scene.events??[]){const key=JSON.stringify([e.target,e.trigger?.type,e.trigger?.text,e.trigger?.occurrence??1,e.trigger?.offset_frames??0]);const prior=lanes.get(key);if(prior&&prior.state_after!==e.state_after)add('COVERAGE_EVENT_ANCHOR_CONFLICT',{event_id:e.id,prior_event_id:prior.id});lanes.set(key,e);}
  const states=new Map([...entities].map(([id,e])=>[id,e.initial_state]));
  const visible=id=>{const e=entities.get(id);return e?e.states?.[states.get(id)]?.visible!==false:components.get(id)?.visual_role==='background';};
- const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.narrative_role==='scene_accent'||c?.visual_role==='scene_accent')return 'scene_accent';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(['story_object','story_symbol','visual_metaphor','narrative_visual'].includes(c?.narrative_role)||c?.visual_role==='narrative_visual')return coverage?.layers_version==='narrative_visual@1'?'narrative_visual':'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
+ const roleOf=id=>{const c=components.get(id),e=entities.get(id);if(e?.kind==='character')return 'actors';if(c?.visual_role==='overlay')return 'story_text';if(c?.narrative_role==='scene_accent'||c?.visual_role==='scene_accent')return 'scene_accent';if(c?.visual_role==='background')return 'scene_set';if(c?.visual_role==='effect')return 'scene_accent';if(['story_object','story_symbol','visual_metaphor','narrative_visual'].includes(c?.narrative_role)||c?.visual_role==='narrative_visual')return coverage?.layers_version==='narrative_visual@1'?'narrative_visual':'story_object';if(c?.visual_role==='interactive_prop'||c?.visual_role==='foreground_environment')return 'physical';return null;};
  let end=0;
  for(const beat of coverage.beats){
   if(!beat||!text(beat.id)||seenBeats.has(beat.id)||!text(beat.goal)){add('COVERAGE_BEAT_INVALID');continue;}seenBeats.add(beat.id);

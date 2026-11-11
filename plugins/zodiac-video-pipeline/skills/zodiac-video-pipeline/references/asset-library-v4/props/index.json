@@ -542,6 +542,211 @@
         "hold-two-props"
       ],
       "creative_use": "reusable_physical_primitive_not_story_metaphor"
+    },
+    {
+      "id": "meme-label-impatient-wait",
+      "path": "props/meme-label-impatient-wait.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "impatient-wait"
+      ]
+    },
+    {
+      "id": "meme-label-smiling-threat",
+      "path": "props/meme-label-smiling-threat.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "smiling-threat"
+      ]
+    },
+    {
+      "id": "meme-label-polite-exit",
+      "path": "props/meme-label-polite-exit.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "polite-exit"
+      ]
+    },
+    {
+      "id": "meme-label-playful-cheek-poke",
+      "path": "props/meme-label-playful-cheek-poke.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "playful-cheek-poke"
+      ]
+    },
+    {
+      "id": "meme-label-exhausted-slump",
+      "path": "props/meme-label-exhausted-slump.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "exhausted-slump"
+      ]
+    },
+    {
+      "id": "meme-label-take-that-back",
+      "path": "props/meme-label-take-that-back.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "take-that-back"
+      ]
+    },
+    {
+      "id": "broom",
+      "path": "props/broom.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "playful-meme-reaction"
+      ]
+    },
+    {
+      "id": "toy-water-pistol",
+      "path": "props/toy-water-pistol.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "playful-meme-reaction"
+      ]
+    },
+    {
+      "id": "heart",
+      "path": "props/heart.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "affection",
+        "overkill-offer"
+      ]
+    },
+    {
+      "id": "meme-label-absurd-offer",
+      "path": "props/meme-label-absurd-offer.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "absurd-offer"
+      ]
+    },
+    {
+      "id": "meme-label-cry-closeup",
+      "path": "props/meme-label-cry-closeup.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "cry-closeup"
+      ]
+    },
+    {
+      "id": "meme-label-cry-hug-object",
+      "path": "props/meme-label-cry-hug-object.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "cry-hug-object"
+      ]
+    },
+    {
+      "id": "meme-label-equip-this",
+      "path": "props/meme-label-equip-this.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "equip-this"
+      ]
+    },
+    {
+      "id": "meme-label-facepalm-closeup",
+      "path": "props/meme-label-facepalm-closeup.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "facepalm-closeup"
+      ]
+    },
+    {
+      "id": "meme-label-heart-offer-overkill",
+      "path": "props/meme-label-heart-offer-overkill.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "heart-offer-overkill"
+      ]
+    },
+    {
+      "id": "meme-label-mirror-self-check",
+      "path": "props/meme-label-mirror-self-check.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "mirror-self-check"
+      ]
+    },
+    {
+      "id": "meme-label-prop-pressure",
+      "path": "props/meme-label-prop-pressure.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "prop-pressure"
+      ]
+    },
+    {
+      "id": "meme-label-receipt-in-face",
+      "path": "props/meme-label-receipt-in-face.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "receipt-in-face"
+      ]
+    },
+    {
+      "id": "meme-label-side-eye-object",
+      "path": "props/meme-label-side-eye-object.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "side-eye-object"
+      ]
+    },
+    {
+      "id": "meme-label-wallet-flex",
+      "path": "props/meme-label-wallet-flex.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "wallet-flex"
+      ]
+    },
+    {
+      "id": "meme-label-innocent-shrug",
+      "path": "props/meme-label-innocent-shrug.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "innocent-shrug"
+      ]
+    },
+    {
+      "id": "meme-label-awkward-grin",
+      "path": "props/meme-label-awkward-grin.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "awkward-grin"
+      ]
+    },
+    {
+      "id": "meme-label-silent-judgment",
+      "path": "props/meme-label-silent-judgment.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "silent-judgment"
+      ]
     }
   ]
 }

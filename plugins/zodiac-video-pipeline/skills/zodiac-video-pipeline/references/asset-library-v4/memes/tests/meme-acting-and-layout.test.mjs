@@ -9,6 +9,15 @@ import {compileProduction} from '../../scene-direction/compile-scene-direction.m
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 
+test('native facepalm uses a broad palm over the brow instead of a tiny eye-poking fingertip',()=>{
+ const {svg}=compileCharacterSvg({entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'plain-shirt'},{pose_id:'facepalm',expression_id:'exasperated'});
+ const arm=svg.match(/<g id="right_arm">([\s\S]*?)<\/g>/u)?.[1]??'';
+ const palm=arm.match(/<path d="([^"]+)" fill="#F1C6A0"/u)?.[1]??'';
+ const coordinates=(palm.match(/-?\d+(?:\.\d+)?/gu)??[]).map(Number),xs=coordinates.filter((_,i)=>i%2===0),ys=coordinates.filter((_,i)=>i%2===1);
+ assert.ok(Math.max(...xs)-Math.min(...xs)>=70,'palm must visibly cover the brow/eye');
+ assert.ok(Math.max(...ys)-Math.min(...ys)>=85,'fingers must extend over the forehead');
+});
+
 test('character compiler supports meme facepalm crop without changing identity',()=>{
   const identity={entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'plain-shirt',variant_seed:'series-a|hero'};
   const meme=compileCharacterSvg(identity,{pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'});

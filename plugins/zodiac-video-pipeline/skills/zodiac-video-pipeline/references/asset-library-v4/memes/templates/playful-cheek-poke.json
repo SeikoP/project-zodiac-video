@@ -1,0 +1,44 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "playful-cheek-poke",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://theselfishmeme.co.uk/wp-content/uploads/2025/09/hai-huoc-meme-danh-nhau-cute-7.webp"
+  ],
+  "roles": {
+    "actor": "existing scene participant",
+    "target": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Chọc má bạn thân",
+    "Bạn thân nói một câu rất tự tin.",
+    "Cái đồ yêu nghiệt này!"
+  ],
+  "mechanic": "confront",
+  "reviewed_visual_note": "Chọc má bạn thân; adapt acting and optional lettering to the existing channel cast.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": true
+  },
+  "optional_text": "Thứ yêu nghiệt!"
+}

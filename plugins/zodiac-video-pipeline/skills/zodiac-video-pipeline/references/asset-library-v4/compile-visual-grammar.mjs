@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 import {hasPrimarySceneSet} from '../../features/scene-set/scene-set-detection.mjs';
+import {traceSceneStates} from '../../features/visual-composition/scene-state-trace.mjs';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=m=>{throw new Error('VISUAL_GRAMMAR_COMPILE_INVALID: '+m);};
 const shotLayoutsDoc=JSON.parse(await readFile(path.join(here,'shot-layouts/index.json'),'utf8'));
@@ -31,11 +32,14 @@ function resolveMeme(spec,scene,sceneId){
   const entities=new Map((scene.entities??[]).map(e=>[e.id,e]));
   const knownRoles=new Set(Object.keys(composition.roles??{}));
   for(const role of Object.keys(supplied))if(!knownRoles.has(role))fail(`${sceneId} meme ${id} unknown role binding ${role}`);
+  const stateBindings=request.state_bindings===undefined?{}:request.state_bindings;
+  if(!stateBindings||typeof stateBindings!=='object'||Array.isArray(stateBindings))fail(`${sceneId} meme ${id} state_bindings must be an object`);
+  for(const role of Object.keys(stateBindings))if(!supplied[role]||!composition.roles?.[role]?.acting)fail(`${sceneId} meme ${id} unknown acting role ${role}`);
+  const trace=Object.keys(stateBindings).length?traceSceneStates(scene):[];
   const roles={};
   const frameBindings=clone(spec.bindings??{});
   const layoutEntities={};
   const actingRequirements={};
-  const effectSpecs=[];
   for(const [role,contract] of Object.entries(composition.roles??{})){
     const entityId=supplied[role];
     if(contract.required&&!entityId)fail(`${sceneId} meme ${id} missing required role ${role}`);
@@ -55,26 +59,17 @@ function resolveMeme(spec,scene,sceneId){
     const [cx,cy,w,h]=box;
     if(w<=0||h<=0||cx-w/2<0||cy-h/2<0||cx+w/2>memesDoc.canvas.width||cy+h/2>memesDoc.canvas.height)fail(`${sceneId} meme ${id} layout for role ${role} exceeds canvas`);
     layoutEntities[entityId]=box;
-    if(contract.kind==='character'&&contract.acting)actingRequirements[entityId]=clone(contract.acting);
+    if(contract.kind==='character'&&contract.acting){
+      const stateId=stateBindings[role];
+      if(Object.hasOwn(stateBindings,role)){
+        if(typeof stateId!=='string'||!stateId.trim()||!entity.states?.[stateId]||entity.states[stateId].visible===false)fail(`${sceneId} meme ${id} invalid visible acting state ${role}/${stateId}`);
+        if(stateId!==entity.initial_state&&!(scene.events??[]).some((event,index)=>event.target===entityId&&event.state_after===stateId&&trace[index]?.after[entityId]===stateId&&event.trigger?.type==='voice_anchor'&&typeof event.trigger.text==='string'&&event.trigger.text.trim()&&scene.voice?.includes(event.trigger.text)))fail(`${sceneId} meme ${id} acting state ${role}/${stateId} needs a reachable voice-anchored event`);
+      }
+      actingRequirements[entityId]={...clone(contract.acting),...(stateId!==undefined?{state_id:stateId}:{})};
+    }
   }
-  if(composition.effect){
-    const effect=composition.effect;
-    const anchor=effect.anchor;
-    const role=anchor?.role;
-    const roleBinding=roles[role];
-    if(!roleBinding)fail(`${sceneId} meme ${id} effect anchor references unbound role ${role}`);
-    const roleBox=layoutEntities[roleBinding.entity_id];
-    const [cx,cy,w,h]=roleBox,[px,py]=anchor.point??[0.5,0.5],[ox,oy]=anchor.offset_px??[0,0];
-    const [ew,eh]=effect.size_px??[];
-    if(![px,py,ox,oy,ew,eh].every(Number.isFinite)||ew<=0||eh<=0)fail(`${sceneId} meme ${id} has invalid effect geometry`);
-    const x=cx-w/2+px*w+ox-ew/2,y=cy-h/2+py*h+oy-eh/2;
-    const box=[x+ew/2,y+eh/2,ew,eh];
-    if(x<0||y<0||x+ew>memesDoc.canvas.width||y+eh>memesDoc.canvas.height)fail(`${sceneId} meme ${id} effect exceeds canvas`);
-    const entityId=`FX_${String(sceneId).replace(/[^A-Za-z0-9_]/gu,'_')}_01`;
-    layoutEntities[entityId]=box;
-    effectSpecs.push({id:effect.id,entity_id:entityId,box,layer:effect.layer??70,locus:effect.locus,anchor:clone(anchor)});
-  }
-  return {id,composition,roles,frameBindings,layoutEntities,actingRequirements,effectSpecs};
+  // Historical effect metadata is reference-only; native production rejects effect assets.
+  return {id,composition,roles,frameBindings,layoutEntities,actingRequirements,effectSpecs:[]};
 }
 
 export function compileVisualGrammar(production,plan){
@@ -116,7 +111,11 @@ export function compileVisualGrammar(production,plan){
     scene.visual_grammar={frame_id:frame.id,mechanic_id:mechanic.id,bindings:clone(bindings)};
     if(meme){
       scene.scene_direction.meme_layout={composition_id:meme.id,entities:meme.layoutEntities,caption_slot:meme.composition.caption_slot??null};
-      const assetRequirements=(meme.composition.asset_requirements??[]).map(req=>{const binding=meme.roles[req.role];if(!binding)fail(`${scene.id} meme ${meme.id} asset requirement references unbound role ${req.role}`);return {...clone(req),entity_id:binding.entity_id};});
+      const assetRequirements=(meme.composition.asset_requirements??[]).flatMap(req=>{
+        const binding=meme.roles[req.role];
+        if(!binding){if(req.optional===true&&meme.composition.roles?.[req.role]?.required===false)return [];fail(`${scene.id} meme ${meme.id} asset requirement references unbound role ${req.role}`);}
+        return [{...clone(req),entity_id:binding.entity_id}];
+      });
       scene.visual_grammar.meme_composition={id:meme.id,source_library:'zodiac-visual-grammar-v4',source_contract:meme.composition.source,roles:meme.roles,required_contacts:clone(meme.composition.required_contacts??[]),acting_requirements:meme.actingRequirements,effects:meme.effectSpecs,asset_requirements:assetRequirements};
     }
     if(spec.environment!==undefined){

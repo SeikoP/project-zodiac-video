@@ -14,9 +14,9 @@ test('Phase 2 draft context defers exit-only capability references',async()=>{
  for(const ref of plan.deferred_references)assert.equal(required.has(ref),false,'deferred ref leaked into default authoring context: '+ref);
 });
 
-test('compiled step capsule accepts the already verified resume plan',async()=>{
+test('compiled step capsule matches the current source-verified resume scope',async()=>{
  const plan=await loadStepContext('02-visual-production','visual_compile',flags, {run_mode:'fresh',role:'draft',environment_mode:'canvas'});
- const capsule=await compileStepCapsule({phase:'02-visual-production',step:'visual_compile',preparedPlan:plan});
+ const capsule=await compileStepCapsule({phase:'02-visual-production',step:'visual_compile',flags,options:{run_mode:'fresh',role:'draft',environment_mode:'canvas'}});
  assert.equal(capsule.phase,'02-visual-production');
  assert.equal(capsule.step,'visual_compile');
  assert.deepEqual(capsule.deferred_references,plan.deferred_references);

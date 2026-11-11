@@ -238,4 +238,12 @@ Job@5 ZIPs contain data only; executable Node.js renderer code comes from the tr
 
 ## Zodiac plugin source
 
-The canonical Zodiac producer source lives in `plugins/zodiac-video-pipeline/`. Version 2.8.0 builds two installable distributions, `zodiac-video-web` and `zodiac-video-local`, while the monolithic archive is retained only as a transition/rollback artifact. GitHub commits do not automatically update installed plugins. Run native implementation commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the canonical skill root.
+The canonical Zodiac producer source lives in `plugins/zodiac-video-pipeline/`; it is build input, not an installable project marketplace entry. Version 2.8.8 builds the separate `zodiac-video-web` and `zodiac-video-local` distributions. The project marketplace exposes `zodiac-video-local` from `.runtime/plugin-dev/zodiac-video-local`, built from this checkout. GitHub commits do not automatically update installed plugins. Run native implementation commands with `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/` as the canonical skill root.
+
+The local Codex marketplace entry uses the profile built from that source at `.runtime/plugin-dev/zodiac-video-local`. On a fresh checkout, create it before adding the repository marketplace:
+
+```powershell
+python tools/release/build_split_plugin_bundle.py --profile local --output .runtime/plugin-dev/zodiac-video-local.zip
+if (Test-Path .runtime/plugin-dev/zodiac-video-local) { throw 'Choose a fresh empty extraction directory' }
+Expand-Archive -LiteralPath .runtime/plugin-dev/zodiac-video-local.zip -DestinationPath .runtime/plugin-dev/zodiac-video-local
+```

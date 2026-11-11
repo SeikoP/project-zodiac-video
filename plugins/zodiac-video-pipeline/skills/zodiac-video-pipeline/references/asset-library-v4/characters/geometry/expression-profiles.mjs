@@ -11,5 +11,6 @@ export const expr=(id)=>({
  relieved:{eye_mode:'closed',eyes:[smileEye(205,286),smileEye(320,286)],mouth:'M250 354 Q267 375 284 354'},
  cry:{eye_mode:'closed',eyes:[smileEye(205,285),smileEye(320,285)],mouth:'M254 369 Q267 351 280 369'},
  exasperated:{eye_mode:'dot',eyes:[dotEye(205,288,7,7),dotEye(320,288,7,7)],mouth:'M255 364 Q267 355 279 364'},
+ weary:{eye_mode:'closed',eyes:['M193 285 Q205 295 217 284','M307 286 Q320 298 333 285'],mouth:'M255 372 Q266 358 279 371'},
  embarrassed:{eye_mode:'closed',eyes:[smileEye(205,286),smileEye(320,286)],mouth:'M257 358 Q267 368 277 358'}
 }[id]);

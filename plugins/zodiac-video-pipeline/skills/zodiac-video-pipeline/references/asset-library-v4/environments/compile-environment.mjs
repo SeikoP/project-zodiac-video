@@ -31,7 +31,8 @@ export async function compileEnvironmentWorkspace(root,{libraryRoot=here,write=t
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  if(process.argv.includes('--write')&&!process.argv.includes('--transaction-stage')){
   const {runGeneratedCompile}=await import('../../../core/ownership/generated-asset-ownership.mjs');
-  const r=await runGeneratedCompile(path.resolve(process.argv[2]),fileURLToPath(import.meta.url),process.argv.slice(2),{compiler_id:'environment',prune:process.argv.includes('--prune-generated')});process.stdout.write(r.stdout??'');
+  const root=path.resolve(process.argv[2]),prune=process.argv.includes('--prune-generated'),stage_inputs=['production.json',...(prune?['assets']:[]),'.authoring/generated-assets.json','publish/publish.json'];
+  const r=await runGeneratedCompile(root,fileURLToPath(import.meta.url),process.argv.slice(2),{compiler_id:'environment',prune,stage_inputs});process.stdout.write(r.stdout??'');
  }else{
   const root=process.argv[2];if(!root)throw Error('workspace required');
   if(process.argv.includes('--library-root'))fail('RECOVERY_SNAPSHOT_REQUIRED');

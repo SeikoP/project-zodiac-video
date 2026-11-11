@@ -1,0 +1,43 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "innocent-shrug",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://vanvn.net/meme-da-lam-gi-dau/"
+  ],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Nhún vai vô tội",
+    "Ai vừa làm chuyện này?",
+    "Mình có biết gì đâu."
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Nhún vai vô tội; native cast acting, no reference artwork.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": true
+  },
+  "optional_text": "Ai biết gì đâu"
+}

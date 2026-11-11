@@ -7,6 +7,25 @@ import {recordEpisodeSpan,summarizeEpisodeSpans,performanceIdentity} from '../ep
 async function withSpace(fn){const p=await mkdtemp(path.join(tmpdir(),'zodiac-e2e-'));try{await fn(p)}finally{await rm(p,{recursive:true,force:true})}}
 const iso=s=>new Date(1700000000000+s).toISOString();
 const rec=(phase,start,end,extra={})=>({phase,stage:'demo',duration_ms:end-start,run_id:'run-one',revision_id:'rev-a',started_at:iso(start),ended_at:iso(end),...extra});
+
+test('local Phase 2 exposes observed timing without pretending missing Phase 1 or agent time was measured',async()=>withSpace(async p=>{
+ await recordEpisodeSpan(p,rec('02-visual-production',0,100,{category:'native',status:'BLOCKED'}));
+ await recordEpisodeSpan(p,rec('02-visual-production',80,150,{category:'native'}));
+ await recordEpisodeSpan(p,rec('02-visual-production',200,250,{category:'review_wait'}));
+ const all=await summarizeEpisodeSpans(p),s=all.per_phase['02-visual-production'];
+ assert.equal(all.plugin_wall_clock_ms,null);assert.equal(all.not_full_e2e_baseline,true);
+ assert.equal(s.observed_wall_clock_ms,250);assert.equal(s.observed_interval_union_ms,200);assert.equal(s.observed_gap_ms,50);
+ assert.equal(s.review_wait_wall_clock_ms,50);assert.equal(s.timing_scope,'observed_spans_only');
+ assert.ok(s.unmeasured_categories.includes('agent_compute'));
+}));
+
+test('phase-local timing refuses mixed identities and duration-only spans',async()=>withSpace(async p=>{
+ await recordEpisodeSpan(p,rec('02-visual-production',0,100));
+ await recordEpisodeSpan(p,rec('02-visual-production',100,150,{revision_id:'rev-b'}));
+ let all=await summarizeEpisodeSpans(p);assert.equal(all.per_phase['02-visual-production'].observed_wall_clock_ms,null);
+ await recordEpisodeSpan(p,{phase:'03-handoff',stage:'legacy',duration_ms:20});
+ all=await summarizeEpisodeSpans(p);assert.equal(all.per_phase['03-handoff'].observed_wall_clock_ms,null);
+}));
 test('overlap is not double-counted, runner excluded, review wait subtracted',async()=>withSpace(async p=>{
  await recordEpisodeSpan(p,rec('01-content',0,200,{category:'agent_compute'}));
  await recordEpisodeSpan(p,rec('02-visual-production',100,300,{category:'native'}));

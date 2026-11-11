@@ -330,7 +330,7 @@ class ProductionChecklistScreen(QWidget):
         prompts = _default_prompt_values(self.plugin_root)
         routes = _default_prompt_routes(self.plugin_root)
         lines = [
-            "Tiếp tục episode này bằng Zodiac Video Pipeline, theo defaultPrompt và router đang cài.",
+            "Tiếp tục episode này bằng Zodiac Video Web cho Phase 01 hoặc Zodiac Video Local cho Phase 02–03, theo defaultPrompt và router đang cài.",
             "Đây là snapshot checklist để định hướng; hãy đọc lại workspace trước khi sửa và không coi trạng thái này là approval.",
             f"Workspace: {workspace_path}",
             f"Episode ID: {row['episode_id'] or 'chưa xác định'}",

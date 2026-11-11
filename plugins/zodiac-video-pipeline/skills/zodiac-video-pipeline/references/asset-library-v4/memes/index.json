@@ -37,6 +37,11 @@
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -57,6 +62,12 @@
           530,
           300,
           310
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -84,7 +95,28 @@
         "layer": 72,
         "locus": "between giver hand and offered prop"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Mời một món không ai hỏi",
+        "setup": "Mình có quà cho bạn.",
+        "reaction": "Nhưng ai mượn vậy?",
+        "prop": "gift-box"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Ai mượn?",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_ABSURD_OFFER",
+          "source_path": "../props/meme-label-absurd-offer.svg",
+          "output_path": "assets/props/meme-label-absurd-offer.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "cry-closeup",
@@ -101,6 +133,11 @@
             "expression_id": "cry",
             "crop_id": "face-closeup"
           }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -109,6 +146,12 @@
           570,
           780,
           780
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -135,7 +178,28 @@
         "layer": 72,
         "locus": "eyes down across both cheeks"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Mạnh miệng rồi bật khóc",
+        "setup": "Mình hoàn toàn ổn.",
+        "reaction": "Ổn được ba giây.",
+        "prop": ""
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Ổn được ba giây",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CRY_CLOSEUP",
+          "source_path": "../props/meme-label-cry-closeup.svg",
+          "output_path": "assets/props/meme-label-cry-closeup.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "cry-hug-object",
@@ -156,6 +220,11 @@
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -170,6 +239,12 @@
           780,
           260,
           260
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -198,7 +273,28 @@
         "layer": 72,
         "locus": "eyes toward cheeks while arms squeeze prop"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Ôm đồ khóc hết nước mắt",
+        "setup": "Không có gì phải tiếc.",
+        "reaction": "Trừ món quà này.",
+        "prop": "gift-box"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Không tiếc... mới lạ",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CRY_HUG_OBJECT",
+          "source_path": "../props/meme-label-cry-hug-object.svg",
+          "output_path": "assets/props/meme-label-cry-hug-object.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "equip-this",
@@ -228,6 +324,11 @@
           "slot": "shared_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -244,10 +345,16 @@
           760
         ],
         "pants": [
-          320,
+          315,
           835,
-          160,
-          160
+          210,
+          210
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -351,9 +458,28 @@
           "source_path": "../props/pants.svg",
           "output_path": "assets/props/offered-pants.svg",
           "category": "prop"
+        },
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_EQUIP_THIS",
+          "source_path": "../props/meme-label-equip-this.svg",
+          "output_path": "assets/props/meme-label-equip-this.svg",
+          "category": "prop"
         }
       ],
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Đưa quần chữa ngượng",
+        "setup": "Bạn bảo không biết ngượng.",
+        "reaction": "Vậy nhận cái quần này đi.",
+        "prop": "pants"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Đội quần lên nào",
+        "default_enabled": false
+      }
     },
     {
       "id": "facepalm-closeup",
@@ -370,6 +496,11 @@
             "expression_id": "exasperated",
             "crop_id": "face-closeup"
           }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -378,6 +509,12 @@
           560,
           700,
           760
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -404,7 +541,28 @@
         "layer": 72,
         "locus": "hand meeting forehead"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Tự quê che mặt",
+        "setup": "Mình đã quên hết rồi.",
+        "reaction": "Nhưng vẫn nhớ từng chữ.",
+        "prop": ""
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Xin đừng nhắc nữa",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_FACEPALM_CLOSEUP",
+          "source_path": "../props/meme-label-facepalm-closeup.svg",
+          "output_path": "assets/props/meme-label-facepalm-closeup.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "heart-offer-overkill",
@@ -425,6 +583,11 @@
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -439,6 +602,12 @@
           620,
           300,
           280
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -466,7 +635,35 @@
         "layer": 72,
         "locus": "around the heart"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Trao tim hơi quá đà",
+        "setup": "Chỉ quan tâm một chút thôi.",
+        "reaction": "Một chút bằng cả trái tim.",
+        "prop": "heart"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Thương hơi quá tay",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_HEART_OFFER_OVERKILL",
+          "source_path": "../props/meme-label-heart-offer-overkill.svg",
+          "output_path": "assets/props/meme-label-heart-offer-overkill.svg",
+          "category": "prop"
+        },
+        {
+          "role": "heart",
+          "asset_id": "MEME_HEART",
+          "source_path": "../props/heart.svg",
+          "output_path": "assets/props/heart.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "mirror-self-check",
@@ -480,13 +677,18 @@
           "required": true,
           "acting": {
             "pose_id": "inspect-prop",
-            "expression_id": "side-eye"
+            "expression_id": "embarrassed"
           }
         },
         "mirror": {
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -501,6 +703,12 @@
           570,
           230,
           360
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -528,7 +736,28 @@
         "layer": 72,
         "locus": "reflection upper edge"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Soi lại chính mình",
+        "setup": "Ai lại làm chuyện đó chứ?",
+        "reaction": "Khoan, hình như mình cũng vậy.",
+        "prop": "mirror"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Ủa, là mình à?",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_MIRROR_SELF_CHECK",
+          "source_path": "../props/meme-label-mirror-self-check.svg",
+          "output_path": "assets/props/meme-label-mirror-self-check.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "prop-pressure",
@@ -558,6 +787,11 @@
           "slot": "shared_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -575,9 +809,15 @@
         ],
         "prop": [
           555,
-          610,
+          900,
           260,
-          270
+          260
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -605,7 +845,28 @@
         "layer": 72,
         "locus": "fan from prop into target space"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Ép đối diện bằng chứng",
+        "setup": "Không có bằng chứng đâu.",
+        "reaction": "Vậy cái này là gì?",
+        "prop": "phone"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Bằng chứng đây",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_PROP_PRESSURE",
+          "source_path": "../props/meme-label-prop-pressure.svg",
+          "output_path": "assets/props/meme-label-prop-pressure.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "receipt-in-face",
@@ -635,6 +896,11 @@
           "slot": "shared_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -655,6 +921,12 @@
           640,
           230,
           330
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -682,7 +954,28 @@
         "layer": 72,
         "locus": "receipt toward target space"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Đưa hóa đơn tận mặt",
+        "setup": "Mình chưa từng nói thế.",
+        "reaction": "Đọc lại tin nhắn này xem.",
+        "prop": "receipt-roll"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Đọc lại đi bạn",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_RECEIPT_IN_FACE",
+          "source_path": "../props/meme-label-receipt-in-face.svg",
+          "output_path": "assets/props/meme-label-receipt-in-face.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "side-eye-object",
@@ -703,6 +996,11 @@
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -717,6 +1015,12 @@
           630,
           230,
           270
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -744,7 +1048,28 @@
         "layer": 72,
         "locus": "gaze endpoint near prop"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Liếc xéo món đồ",
+        "setup": "Chắc chỉ là trùng hợp.",
+        "reaction": "Trùng hợp lần thứ tám rồi.",
+        "prop": "phone"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Trùng hợp dữ chưa",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SIDE_EYE_OBJECT",
+          "source_path": "../props/meme-label-side-eye-object.svg",
+          "output_path": "assets/props/meme-label-side-eye-object.svg",
+          "category": "prop"
+        }
+      ]
     },
     {
       "id": "wallet-flex",
@@ -765,6 +1090,11 @@
           "slot": "focus_prop",
           "kind": "object",
           "required": true
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
         }
       },
       "layout": {
@@ -779,6 +1109,12 @@
           690,
           240,
           210
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
         ]
       },
       "required_contacts": [
@@ -806,7 +1142,637 @@
         "layer": 72,
         "locus": "wallet upper edge"
       },
-      "effects": []
+      "effects": [],
+      "preview": {
+        "title": "Khoe ví cho oai",
+        "setup": "Mình luôn sẵn sàng thanh toán.",
+        "reaction": "Cho mình nhìn số dư trước đã.",
+        "prop": "wallet"
+      },
+      "text_label": {
+        "role": "label",
+        "text": "Để xem số dư",
+        "default_enabled": false
+      },
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_WALLET_FLEX",
+          "source_path": "../props/meme-label-wallet-flex.svg",
+          "output_path": "assets/props/meme-label-wallet-flex.svg",
+          "category": "prop"
+        }
+      ]
+    },
+    {
+      "id": "impatient-wait",
+      "source": "./templates/impatient-wait.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "hands-on-hips",
+            "expression_id": "exasperated"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_IMPATIENT_WAIT",
+          "source_path": "../props/meme-label-impatient-wait.svg",
+          "output_path": "assets/props/meme-label-impatient-wait.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Sốt cả ruột",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Sốt ruột chống nạnh",
+        "setup": "Chờ có năm phút thôi mà.",
+        "reaction": "Năm phút lần thứ mười rồi!",
+        "prop": ""
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-19.webp"
+    },
+    {
+      "id": "smiling-threat",
+      "source": "./templates/smiling-threat.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "hold-broom",
+            "expression_id": "smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        },
+        "prop": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          450,
+          760,
+          640,
+          900
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ],
+        "prop": [
+          540,
+          895,
+          770,
+          220
+        ]
+      },
+      "required_contacts": [
+        "actor.hands→prop"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SMILING_THREAT",
+          "source_path": "../props/meme-label-smiling-threat.svg",
+          "output_path": "assets/props/meme-label-smiling-threat.svg",
+          "category": "prop"
+        },
+        {
+          "role": "prop",
+          "asset_id": "MEME_BROOM",
+          "source_path": "../props/broom.svg",
+          "output_path": "assets/props/broom.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Nói lại xem?",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Cười hiền cầm chổi",
+        "setup": "Mình đang rất bình tĩnh.",
+        "reaction": "Bạn nói lại lần nữa xem?",
+        "prop": "broom"
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-18.webp"
+    },
+    {
+      "id": "polite-exit",
+      "source": "./templates/polite-exit.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "clasp-hands",
+            "expression_id": "smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_POLITE_EXIT",
+          "source_path": "../props/meme-label-polite-exit.svg",
+          "output_path": "assets/props/meme-label-polite-exit.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Cáo từ",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Chắp tay cáo từ",
+        "setup": "Mình vẫn đang lắng nghe.",
+        "reaction": "Đến đây thì xin phép cáo từ.",
+        "prop": ""
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-22.webp"
+    },
+    {
+      "id": "playful-cheek-poke",
+      "source": "./templates/playful-cheek-poke.json",
+      "frame_id": "two-person-offset",
+      "mechanic_id": "confront",
+      "roles": {
+        "actor": {
+          "slot": "speaker",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "cheek-poke",
+            "expression_id": "smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        },
+        "target": {
+          "slot": "listener",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "recoil",
+            "expression_id": "exasperated"
+          }
+        }
+      },
+      "layout": {
+        "actor": [
+          325,
+          760,
+          520,
+          760
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ],
+        "target": [
+          675,
+          760,
+          520,
+          760
+        ]
+      },
+      "required_contacts": [
+        "actor.hand→target.cheek"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_PLAYFUL_CHEEK_POKE",
+          "source_path": "../props/meme-label-playful-cheek-poke.svg",
+          "output_path": "assets/props/meme-label-playful-cheek-poke.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Thứ yêu nghiệt!",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Chọc má bạn thân",
+        "setup": "Bạn thân nói một câu rất tự tin.",
+        "reaction": "Cái đồ yêu nghiệt này!",
+        "prop": ""
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/09/hai-huoc-meme-danh-nhau-cute-7.webp"
+    },
+    {
+      "id": "exhausted-slump",
+      "source": "./templates/exhausted-slump.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "slump",
+            "expression_id": "weary"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_EXHAUSTED_SLUMP",
+          "source_path": "../props/meme-label-exhausted-slump.svg",
+          "output_path": "assets/props/meme-label-exhausted-slump.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Hết pin...",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Kiệt sức hết pin",
+        "setup": "Mình xử lý được hết.",
+        "reaction": "Nhưng pin mình hết rồi.",
+        "prop": ""
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/11/anh-meme-chan-nan-cha-buon-noi-4.webp"
+    },
+    {
+      "id": "take-that-back",
+      "source": "./templates/take-that-back.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "confront",
+            "expression_id": "deadpan"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        },
+        "prop": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          390,
+          760,
+          600,
+          880
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ],
+        "prop": [
+          667,
+          887,
+          280,
+          175
+        ]
+      },
+      "required_contacts": [
+        "actor.hands→prop"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_TAKE_THAT_BACK",
+          "source_path": "../props/meme-label-take-that-back.svg",
+          "output_path": "assets/props/meme-label-take-that-back.svg",
+          "category": "prop"
+        },
+        {
+          "role": "prop",
+          "asset_id": "MEME_TOY_WATER_PISTOL",
+          "source_path": "../props/toy-water-pistol.svg",
+          "output_path": "assets/props/toy-water-pistol.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Thu hồi lời vừa nói",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Đòi thu hồi lời nói",
+        "setup": "Bạn vừa nói gì cơ?",
+        "reaction": "Cho bạn thu hồi lời vừa nói.",
+        "prop": "toy-water-pistol"
+      },
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp"
+    },
+    {
+      "id": "innocent-shrug",
+      "source": "./templates/innocent-shrug.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "shrug",
+            "expression_id": "smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_INNOCENT_SHRUG",
+          "source_path": "../props/meme-label-innocent-shrug.svg",
+          "output_path": "assets/props/meme-label-innocent-shrug.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Ai biết gì đâu",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Nhún vai vô tội",
+        "setup": "Ai vừa làm chuyện này?",
+        "reaction": "Mình có biết gì đâu.",
+        "prop": ""
+      },
+      "reference_url": "https://vanvn.net/meme-da-lam-gi-dau/"
+    },
+    {
+      "id": "awkward-grin",
+      "source": "./templates/awkward-grin.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "scratch-head",
+            "expression_id": "embarrassed"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_AWKWARD_GRIN",
+          "source_path": "../props/meme-label-awkward-grin.svg",
+          "output_path": "assets/props/meme-label-awkward-grin.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Ờ... cũng đúng",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Cười trừ cho qua",
+        "setup": "Mình đã tính rất kỹ rồi.",
+        "reaction": "Trừ đúng cái phần quan trọng nhất.",
+        "prop": ""
+      },
+      "reference_url": "https://time.com/5650967/kombucha-meme/"
+    },
+    {
+      "id": "silent-judgment",
+      "source": "./templates/silent-judgment.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "hands-on-hips",
+            "expression_id": "side-eye"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          800,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          185,
+          900,
+          170
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SILENT_JUDGMENT",
+          "source_path": "../props/meme-label-silent-judgment.svg",
+          "output_path": "assets/props/meme-label-silent-judgment.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Bạn chắc chưa?",
+        "default_enabled": false
+      },
+      "preview": {
+        "title": "Phán xét trong im lặng",
+        "setup": "Mình chỉ xem thôi, không phán xét.",
+        "reaction": "Ánh mắt thì kể câu chuyện khác.",
+        "prop": ""
+      },
+      "reference_url": "https://theselfishmeme.co.uk/cac-meme-noi-tieng-nhat"
     }
   ]
 }

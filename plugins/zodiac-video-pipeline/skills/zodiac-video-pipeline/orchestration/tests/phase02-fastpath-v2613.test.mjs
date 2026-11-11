@@ -6,6 +6,10 @@ import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';
 const fixture=async()=>{const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-fast-path-'));await mkdir(path.join(root,'.authoring'));await writeFile(path.join(root,'production.json'),JSON.stringify({version:'2.0',assets:{},scenes:[{id:'S01'},{id:'S02'}]}));return root;};
 const fake=async p=>({production:{...p,scenes:[{...p.scenes[0],compiled:true}]},receipt:{scenes:[{scene_id:p.scenes[0].id,signature:'sig'}]}});
+test('native wall time never proves that end-to-end authoring time was measured',()=>{
+ const r=analyzePhase02Performance({profile:{wall_clock_ms:150}});
+ assert.ok(r.findings.some(f=>f.code==='END_TO_END_AUTHORING_TIME_UNMEASURED'));
+});
 test('native receipt includes measurable timing and cache counts',async()=>{const root=await fixture();try{const r=await compileIsolatedScenes(root,{compileOne:fake,sourceFingerprint:'t',profileVersion:'1.1'});const n=JSON.parse(await readFile(r.native_receipt));assert.equal(n.execution_mode,'injected');assert.equal(n.cache_miss_count,2);assert.equal(n.cache_hit_count,0);assert.ok(n.compile_wall_ms>=0);assert.ok(r.total_wall_ms>=r.compile_wall_ms);}finally{await rm(root,{recursive:true,force:true});}});
 test('unknown execution mode blocks',async()=>{const root=await fixture();try{await assert.rejects(()=>compileIsolatedScenes(root,{executionMode:'unbounded'}),/SCENE_NATIVE_EXECUTION_MODE_INVALID/);}finally{await rm(root,{recursive:true,force:true});}});
 test('diagnostics cannot confuse summed step time with wall clock',()=>{const r=analyzePhase02Performance({execution:{steps:[{id:'character_write',status:'PASS',elapsed_ms:200},{id:'scene_direction',status:'PASS',elapsed_ms:10}]},profile:{wall_clock_ms:150},native:{execution_mode:'in_process',compile_wall_ms:8,scenes:[{action:'compile'},{action:'reuse'}]}});assert.equal(r.measured.native_step_elapsed_sum_ms,210);assert.equal(r.measured.native_reported_wall_ms,150);assert.equal(r.slowest_native_steps[0].id,'character_write');assert.equal(r.measured.scene_direction_compiled,1);assert.equal(r.status,'DIAGNOSTIC_ONLY');});

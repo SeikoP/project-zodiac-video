@@ -39,7 +39,7 @@ export function summarizeOptimization({diagnosis=null,profiler=null,context=null
  if(baseline?.format==='zodiac-episode-optimization@1'&&context?.comparison_key&&baseline.comparison_key===context.comparison_key&&safe(baseline.measured?.native_wall_ms)>0&&measured.native_wall_ms!==null){
   comparison.status='COMPARABLE';comparison.native_wall_change_pct=+((measured.native_wall_ms/baseline.measured.native_wall_ms-1)*100).toFixed(2);
  }
- return {format:'zodiac-episode-optimization@1',comparison_key:context?.comparison_key??null,measured,cache_reuse_ratio,context_saving_ratio,comparison,measurement_limits:['Context tokens are delivered-transport estimates, not total model context.','Semantic dirty sets are not proof of render rebuilds.','Native wall time excludes agent authoring/review.','Missing readings remain null.'],not_an_approval:true};
+ return {format:'zodiac-episode-optimization@1',comparison_key:context?.comparison_key??null,measured,phase_observations:profiler?.per_phase??null,cache_reuse_ratio,context_saving_ratio,comparison,measurement_limits:['Context tokens are delivered-transport estimates, not total model context.','Semantic dirty sets are not proof of render rebuilds.','Native wall time excludes agent authoring/review.','Phase observations cover recorded intervals only; missing agent/tool/review spans are not zero.','Missing readings remain null.'],not_an_approval:true};
 }
 
 export async function episodeObservability(workspace,{baselinePath=null}={}){

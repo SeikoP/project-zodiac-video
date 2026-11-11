@@ -9,11 +9,13 @@ This distribution owns Phase 1 handoff import plus **Phase 2 and Phase 3**. It n
 
 ## Invocation bootstrap
 
-Immediately on invocation, before asking the user for an episode name or ZIP path, run:
+For episode production, immediately on invocation, before asking the user for an episode name or ZIP path, run:
 
 `node skills/zodiac-video-pipeline/phases/local/local-bootstrap.mjs <queue-root> [--run-id <run-id>]`
 
 The default queue root is `ZODIAC_QUEUE_ROOT` when set, otherwise the current working directory. The bootstrap atomically claims the oldest valid handoff in `phase1-done/` before resuming existing work, preserving every active workspace. When no handoff is waiting it resumes the sole active workspace; if several are active, select the intended one with `--run-id <run-id>`.
+
+For pipeline review, audit or performance work, inspect existing sources and receipts without claiming a handoff or starting an episode.
 
 When status is `PHASE2_LOCAL_READY`, use the returned `workspace`, source-bound `context`, and `next_task`. Do not import the same capsule again, re-discover the repository, or call an optional code index just to understand the current task.
 
@@ -22,7 +24,7 @@ When status is `PHASE2_LOCAL_READY`, use the returned `workspace`, source-bound 
 1. Treat the current XState `next_task`, revision ID, allowed writes, active phase manifest, source hashes, receipts, and selected reference blocks as the task contract. Fetch any `pending_references` before using their capability; never infer missing source from old history.
 2. Execute only the work unit owned by that task. For visual authoring, preserve narration verbatim, all meaningful director beats, actors, physical props/story-objects, events, continuity and asset bindings. The canonical visual authoring source is `.authoring/visual-intent.json`; never hand-edit its generated projections.
 3. Run cheap authoring/precompile checks before expensive native asset work. For native repair, use current source-bound receipt issues, group related defects, revise the canonical source once, and rerun only valid dirty scene/asset closures under the existing exact hash/cache rules.
-4. After a successful write, validator, commit or phase transition, run `node skills/zodiac-video-pipeline/orchestration/resume-brief.mjs <workspace> --context` and follow the new `next_task`. For unchanged tasks, retain the already delivered context; do not poll or reload it needlessly.
+4. After a canonical source write, commit or phase transition, run `node skills/zodiac-video-pipeline/orchestration/resume-brief.mjs <workspace> --context` and follow the new `next_task`. Run the prescribed checks for the same task as one bounded batch; refresh once after that batch, rather than after each validator. Stop on an upstream failure before dependent checks. For unchanged tasks, retain the already delivered context; do not poll or reload it needlessly. Task IDs, source hashes and pending required references still apply to every write and capability use.
 5. Request genuine Visual Review at its boundary; Phase 3 cannot publish to `ready/` before explicit review approval and Phase 2 PASS.
 
 Source lookup is **exceptional**, not a mandatory production step. Prefer, in order: (a) known manifest/receipt/source path; (b) exact-file read; (c) scoped ripgrep `rg` for an unknown symbol, filename or error; (d) existing manifest/workflow and semantic dependency graphs. Do not index the repository before ordinary scene/asset/validation tasks.
@@ -44,6 +46,10 @@ Persistent pipeline contracts, receipts, approvals and Job@5 stay JSON. The cont
 Run the canonical Phase 2 manifest, author Visual Intent, compile assets/scenes/previews, fix native failures, and stop for genuine Visual Review. The Local distribution **must not rewrite approved narration** or replace Content Review.
 
 Fresh visual readiness requires a visible narration-grounded background/context Scene Accent component in every scene and at least one Narrative Visual per video. A palette-only canvas or episode-wide Narrative Visual omission must fail before native compilation. Narrative Visual is authored as `narrative_visual` and transported as `story_object`. Run the current authoring-completeness and narrative-visual-presence gates; do not accept old PASS receipts after source changes.
+
+Author director beats for the actual narrative changes and cover every event in `event_ids`; there is no four-beat minimum. For meme moments, read the performance guidance in `references/visual-direction.md`: preserve the channel's cast identity, establish a normal setup, and bind native meme acting to the visible reaction state with `grammar.meme_composition.state_bindings` at the approved voice anchor. Do not start every scene already at its punchline or synthesize retired effect assets. Obtain genuine Visual Review of the contrast and later check measured runtime timing.
+
+Review-only visual-quality and retention guidance may be deferred during draft planning; fetch it before the corresponding validation/review. Mandatory entry catalogs remain available in the full step context, and selected work units still fetch current entries before use. Deferral never waives a capability or validator. Use `core/audit/episode-utilization-report.mjs <workspace>` to inspect recorded per-phase intervals; native-only observations do not measure agent authoring time.
 
 Keep visual scenes economical. Preserve separate audio scene boundaries when performance semantics differ. Treat full-room backgrounds as scene anchors: use them for essential setting reveals, major location changes and callbacks, and avoid repeating one full-room background across a run of separate scenes. In connecting scenes, use one sparse, narration-grounded Scene Accent cue (such as a lamp, window or clock) behind the action instead of another full-room backdrop. Keep accents clear of actors, props and captions. Reuse framing and character positions across continuous beats; let pose, prop state and event carry progression. Every fictional advertisement must read clearly as an ad, foreground its product/story-object, show one product-specific demo, and land on a visual punchline. Keep the ad brief and stylistically consistent, and leave faces and captions readable.
 

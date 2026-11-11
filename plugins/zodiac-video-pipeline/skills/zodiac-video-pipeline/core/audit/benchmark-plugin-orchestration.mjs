@@ -24,6 +24,7 @@ export async function benchmarkPluginOrchestration(){
  const freshState=structuredClone(state);
  state.phases['01-content'].status='PASS';state.current_phase='02-visual-production';state.phases[state.current_phase].status='READY';state.phases[state.current_phase].steps.visual_compile.status='READY';
  const intent={format:'zodiac-visual-intent@1',cast:[],assets:{},video:{width:1080,height:1920},visual_system:{style:'locked'},scenes:Array.from({length:12},(_,i)=>({id:'s'+i,semantic_goal:'A distinct story decision in scene '+i,narration_range:[0,60],entities:[{id:'actor',kind:'character',states:{neutral:{asset:'actor-svg'}}}],events:[],director_beats:Array.from({length:i===5?3:5},(_,b)=>({id:'b'+b,voice_anchor:'Exact voice anchor '+b,action:'Meaningful action '+b,reaction:'Grounded response '+b,semantic_purpose:'A different interpretation '+b}))}))};
+ intent.scenes[5].events=[{id:'uncovered-reaction'}];
  const task=resolveNextTask({state,manifests,visualIntent:intent,narration:'Exact approved narration. '.repeat(20)});
  assert.equal(task.scene_id,'s5');assert.deepEqual(task.context.scene,intent.scenes[5]);
  const fullBytes=Buffer.byteLength(JSON.stringify(intent)),taskBytes=Buffer.byteLength(JSON.stringify(task.context));
@@ -62,7 +63,7 @@ export async function benchmarkPluginOrchestration(){
    const result=spawnSync('rg',['-l','-F','--glob','*.mjs','--glob','!**/tests/**','--glob','!**/*.test.mjs',query,'.'],{cwd:skill,encoding:'utf8',maxBuffer:1024*1024});
    spans.push(performance.now()-started);
    if(result.error||![0,1].includes(result.status))throw Error('RG_LOOKUP_FAILED '+String(result.error??result.stderr));
-   rgPaths=result.stdout.trim()?result.stdout.trim().split(String.fromCharCode(10)).map(p=>p.trim()).filter(Boolean).map(p=>p.startsWith('./')?p.slice(2):p).map(p=>p.split(path.sep).join('/')).sort():[];
+   rgPaths=result.stdout.trim()?result.stdout.trim().split(String.fromCharCode(10)).map(p=>p.trim()).filter(Boolean).map(p=>p.split(path.sep).join('/').replace(/^\.\//u,'')).sort():[];
    if(!rgPaths.length)throw Error('RG_LOOKUP_MISSING '+query);
    for(const file of rgPaths)assert.ok(matched.includes(file),'rg returned a file not matched by direct scan: '+file);
   }

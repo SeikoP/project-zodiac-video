@@ -26,14 +26,17 @@ const machineSpec={id:'zodiac-task-router',context:({input})=>input,initial:'sel
 export const taskMachine=createMachine?createMachine(machineSpec):machineSpec;
 const fallbackTaskValue=c=>c.complete?'COMPLETE':c.blocked?'RESOLVE_BLOCKER':c.review&&!c.approved?'WAIT_FOR_GENUINE_USER_REVIEW':c.review||!c.step?'RUN_PHASE_GATE_PER_ROUTER':c.locked?'ACTIVATE_PHASE':c.visual&&!c.intent?'DESIGN_VISUAL':c.thinScene?'DESIGN_SCENE_BEATS':c.needsAuthoring?'AUTHOR_STEP':'VALIDATE_AND_COMMIT_STEP';
 
-const quiet=s=>['reflection','transition'].includes(s.experience_profile?.story_mode)&&String(s.experience_profile?.sparse_reason??'').trim().length>=24;
+const needsSceneBeats=scene=>{
+ const beats=scene.director_beats??[],covered=new Set(beats.flatMap(b=>b.event_ids??[]));
+ return !beats.length||(scene.events??[]).some(event=>!covered.has(event.id));
+};
 export function resolveNextTask({state,manifests,visualIntent=null,narration='',outputsReady=false,creativeDirection=null,episodeScope=null,storySpine=null}={}){
  if(!state||!Array.isArray(manifests)||!manifests.length)throw Error('TASK_STATE_REQUIRED');
  const phase=manifests.find(m=>!done(state.phases?.[m.id]?.status))??manifests.at(-1);
  const ps=state.phases?.[phase.id];if(!ps)throw Error('TASK_PHASE_MISSING '+phase.id);
  const step=phase.steps.find(s=>!done(ps.steps?.[s.id]?.status));
  const visual=phase.id==='02-visual-production'&&step?.id==='visual_compile';
- const thinScene=visual?(visualIntent?.scenes??[]).find(s=>(s.director_beats??[]).length<4&&!quiet(s)):null;
+ const thinScene=visual?(visualIntent?.scenes??[]).find(needsSceneBeats):null;
  const facts={complete:manifests.every(m=>done(state.phases?.[m.id]?.status)),blocked:ps.status==='BLOCKED'||ps.steps?.[step?.id]?.status==='BLOCKED',review:ps.status==='IN_REVIEW',approved:state.review_receipts?.some(r=>r.phase_id===phase.id&&genuine(r)),locked:ps.status==='LOCKED',visual,intent:visualIntent,thinScene,step:step?.id,needsAuthoring:!visual&&!outputsReady&&(step?.authoring_sources??[]).length>0};
  const kind=createMachine&&getInitialSnapshot?getInitialSnapshot(taskMachine,facts).value:fallbackTaskValue(facts);
  const applicable=x=>conditionApplies(x.when,{run_mode:state.run_mode,flags:state.flags??{}});
@@ -45,7 +48,6 @@ export function resolveNextTask({state,manifests,visualIntent=null,narration='',
   required_gates:[...(step?.gate_checks??[]),...(step?.conditional_gate_checks??[]).filter(applicable).map(x=>x.name)],
   required_capabilities:caps.map(c=>({id:c.id,kind:c.kind,stage:c.stage,tool_locator:c.tool_locator??null,guidance_uri:c.guidance_uri??null,required_arg_suffixes:c.required_arg_suffixes??[]})),
   completion_rule:'Run required native checks, verify current source/evidence and commit through the owning step. This task never grants PASS or approval.',not_an_approval:true};
- if(visual)task.beat_target=[4,5];
  if(thinScene&&kind==='DESIGN_SCENE_BEATS'){
   const i=visualIntent.scenes.indexOf(thinScene),actors=new Set((thinScene.entities??[]).filter(e=>e.kind==='character').map(e=>e.id));
   const neighbor=s=>s?{id:s.id,semantic_goal:s.semantic_goal,director_beats:s.director_beats??[]}:null;
@@ -57,7 +59,7 @@ export function resolveNextTask({state,manifests,visualIntent=null,narration='',
   const related=[...new Set([...(thinScene.experience_profile?.depends_on_scene_ids??[]),...(thinScene.experience_profile?.callback_scene_ids??[])])];
   if(related.some(id=>!visualIntent.scenes.some(s=>s.id===id)))throw Error('TASK_SCENE_DEPENDENCY_MISSING');
   Object.assign(task,{scene_id:thinScene.id,allowed_writes:['.authoring/visual-intent.json'],context:{scene:thinScene,voice,voice_ref:{path:'narration.txt',range},creative_direction:creativeDirection,episode_scope:episodeScope,story_spine:storySpine,cast:(visualIntent.cast??[]).filter(c=>actors.has(c.entity_id)),assets:Object.fromEntries(Object.entries(visualIntent.assets??{}).filter(([id])=>refs.has(id))),video:visualIntent.video,visual_system:visualIntent.visual_system,previous_scene:neighbor(visualIntent.scenes[i-1]),next_scene:neighbor(visualIntent.scenes[i+1]),related_scenes:visualIntent.scenes.filter(s=>related.includes(s.id)).map(neighbor)},
-   constraints:['Keep every existing beat/entity/event; add distinct semantic changes, not decorative event counts.','Change only this scene inside Visual Intent; preserve cast/style, all other scenes and approved narration.','4-5 is the normal target; longer justified scenes are not truncated. Native coverage and grounded review remain required.']});
+   constraints:['Keep every existing beat/entity/event; cover every authored event in director event_ids. Do not add decorative beats to meet a count.','Change only this scene inside Visual Intent; preserve cast/style, all other scenes and approved narration.','Use as many beats as the narrated story changes require. Native narration coverage, director semantics and grounded review remain required.']});
  }
  return task;
 }

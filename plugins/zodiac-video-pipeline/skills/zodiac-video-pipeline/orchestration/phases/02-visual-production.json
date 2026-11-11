@@ -425,6 +425,12 @@
         "design.md"
       ],
       "context_scopes": {
+        "draft": {
+          "defer_references": [
+            "references/visual-quality.md",
+            "references/retention-quality.md"
+          ]
+        },
         "design": {
           "load_references": [
             "references/visual-direction.md",

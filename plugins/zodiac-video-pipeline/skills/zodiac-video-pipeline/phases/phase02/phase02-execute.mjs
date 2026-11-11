@@ -117,7 +117,10 @@ const nodeRun=(file,args)=>{
  const started=Date.now();
  const r=spawnSync(process.execPath,[file,...args],{encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000});
  const exit_code=r.status??(r.error?.code==='ETIMEDOUT'?124:1);
- return {status:exit_code===0?'PASS':'FAIL',exit_code,elapsed_ms:Date.now()-started,command:[process.execPath,file,...args],stdout:String(r.stdout??'').slice(-4500),stderr:String(r.stderr??r.error?.message??'').slice(-4500)};
+ let issues=[];
+ // Parse before truncating logs so grouped repair retains the first failing scene too.
+ if(exit_code!==0)try{const output=JSON.parse(String(r.stdout??''));if(Array.isArray(output?.issues))issues=output.issues.filter(i=>i&&typeof i==='object'&&typeof i.code==='string'&&i.code.trim());}catch{}
+ return {status:exit_code===0?'PASS':'FAIL',exit_code,issues,elapsed_ms:Date.now()-started,command:[process.execPath,file,...args],stdout:String(r.stdout??'').slice(-4500),stderr:String(r.stderr??r.error?.message??'').slice(-4500)};
 };
 // Native library assets are executable dependencies, not just authoring metadata.
 // A changed SVG or environment cue must invalidate the corresponding cached native compilation.
@@ -285,6 +288,7 @@ else{
   const result=nodeRun(commandFile,commandArgs);
   const cache_reason=noCache?CACHE_REASON.BYPASS_NO_CACHE:!cached?CACHE_REASON.MISS_NOT_RECORDED:cached.after_input_sha!==before?CACHE_REASON.MISS_INPUT_CHANGED:cached.output_sha!==outputsSig?CACHE_REASON.MISS_OUTPUT_TAMPERED:CACHE_REASON.MISS_DEPENDENCY_CHANGED;
   const extra={id:step.id,input_hash:before,cache_reason,...result};
+  if(result.status!=='PASS')report.issues.push(...result.issues.map(issue=>({...issue,step:step.id})));
   if(result.status==='PASS'&&step.id==='character_write'){
    required.push(...await workspaceAssetPaths('character'));
    const check=await findNativeCharAssets();extra.missing_character_asset_refs=check.missing;

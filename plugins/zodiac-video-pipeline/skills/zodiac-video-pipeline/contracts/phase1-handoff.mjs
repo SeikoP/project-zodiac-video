@@ -11,7 +11,7 @@ export const sha256=data=>createHash('sha256').update(data).digest('hex');
 
 export function buildInventory(entries){
   return [...entries].map(entry=>({path:entry.rel,sha256:sha256(entry.data),size:entry.data.length}))
-    .sort((a,b)=>a.path.localeCompare(b.path));
+    .sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0);
 }
 
 export function formatSha256Sums(inventory){

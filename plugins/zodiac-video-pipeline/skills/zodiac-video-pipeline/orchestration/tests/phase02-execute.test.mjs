@@ -223,6 +223,23 @@ test('precompile and art direction preflights each execute once with genuine rec
  }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
 });
 
+test('native failures retain all structured issues for grouped repair before log truncation',async()=>{
+ const ws=await makeWorkspace(),src=await makeSource();
+ try{
+  await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
+  const issues=Array.from({length:80},(_,i)=>({code:'CHARACTER_STATE_INVALID',scene_id:'s01',entity_id:'actor'+i,detail:'x'.repeat(80)}));
+  await write(path.join(src,'skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs'),`console.log(JSON.stringify(${JSON.stringify({status:'BLOCKED',issues})}));process.exitCode=1;`);
+  const result=run(ws,src,['--run']);assert.equal(result.status,2,result.stderr);
+  const receipt=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
+  assert.equal(receipt.status,'BLOCKED');
+  assert.equal(receipt.issues.filter(i=>i.code==='CHARACTER_STATE_INVALID').length,80);
+  assert.equal(receipt.issues.find(i=>i.entity_id==='actor0').step,'character_plan');
+  assert.equal(receipt.fast_repair_groups.groups.find(g=>g.owner==='visual_intent.cast').issues.length,80);
+  assert.ok(receipt.issues.some(i=>i.code==='NATIVE_STEP_FAILED'));
+  assert.ok(receipt.steps.at(-1).stdout.length<=4500);
+ }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
+});
+
 test('finalize-manifest does not globally bypass native checkpoints',async()=>{
  const source=await readFile(script,'utf8');
  assert.match(source,/force=argv\.includes\('--force'\)\|\|noCache/);

@@ -66,6 +66,10 @@ export async function compileProduction(production,{root='.',profile=profileDefa
       if(!focusId)fail(`${scene.id} prop-insert focus must resolve to entity`);await assign(focusId,'focus_prop',targetBox(profile,d.shot,'focus',placement));const companion=(scene.entities??[]).find(e=>e.kind==='character'&&e.id!==focusId)?.id;if(companion){const side=placement==='right'?'left':'right';await assign(companion,'companion',targetBox(profile,d.shot,'companion',side));}
     }else if(d.shot==='two-person'){
       const r=d.interaction_roles??{};await assign(r.speaker,'speaker',profile.shots[d.shot].speaker);await assign(r.listener,'listener',profile.shots[d.shot].listener);if(r.shared_prop)await assign(r.shared_prop,'shared_prop',profile.shots[d.shot].shared_prop);
+    }else if(d.shot==='three-person'){
+      const r=d.interaction_roles??{},ids=['lead','peer_a','peer_b'].map(role=>r[role]);
+      if(new Set(ids).size!==3||ids.some(id=>em.get(id)?.kind!=='character'))fail(`${scene.id} three-person needs three distinct characters`);
+      for(const role of ['lead','peer_a','peer_b'])await assign(r[role],role,targetBox(profile,d.shot,role,placement));
     }else if(d.shot==='over-shoulder'){
       if(!focusId||!d.foreground_role)fail(`${scene.id} over-shoulder needs focus entity + foreground_role`);await assign(focusId,'focus',targetBox(profile,d.shot,'focus',placement));const key=placement==='left'?'when_focus_left':'when_focus_right';await assign(d.foreground_role,'foreground',targetBox(profile,d.shot,'foreground',key));
     }else if(d.shot==='foreground-peek'){

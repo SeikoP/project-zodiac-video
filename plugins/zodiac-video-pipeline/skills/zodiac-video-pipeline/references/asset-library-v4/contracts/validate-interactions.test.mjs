@@ -12,6 +12,16 @@ const plan=()=>({version:"1.1",scenes:[{scene_id:"S01",interactions:[{id:"I1",ty
 const run=async(pv,iv)=>{const dir=await mkdtemp(path.join(os.tmpdir(),"zodiac-interaction-"));try{const pp=path.join(dir,"production.json"),ip=path.join(dir,"plan.json");await writeFile(pp,JSON.stringify(pv));await writeFile(ip,JSON.stringify(iv));return spawnSync(process.execPath,[validator,pp,ip],{encoding:"utf8"});}finally{await rm(dir,{recursive:true,force:true});}};
 test("valid handoff passes",async()=>{const r=await run(production(),plan());assert.equal(r.status,0,r.stdout+"\n"+r.stderr);});
 test("two-role meme binds to the two existing participants",async()=>{const p=plan();const i=p.scenes[0].interactions[0];i.type="confront";delete i.shared_prop;delete i.ownership;i.meme_template_id="receipt-in-face";i.meme_role_bindings={evidence_actor:"alice",target:"bob"};const r=await run(production(),p);assert.equal(r.status,0,r.stdout+"\n"+r.stderr);});
+
+test("cheek-poke participants stay valid with optional lettering present or absent",async()=>{
+ for(const lettering of [false,true]){
+  const pv=production(),p=plan(),interaction=p.scenes[0].interactions[0];
+  interaction.type='confront';delete interaction.shared_prop;delete interaction.ownership;
+  interaction.meme_template_id='playful-cheek-poke';interaction.meme_role_bindings={actor:'alice',target:'bob'};
+  if(lettering){pv.assets.label={lineage:{source_master:'meme-label-playful-cheek-poke'}};pv.scenes[0].entities.push({id:'lettering',kind:'object',initial_state:'shown',states:{shown:{asset:'label'}}});}
+  const result=await run(pv,p);assert.equal(result.status,0,result.stderr);
+ }
+});
 test("meme role cannot spawn a third person",async()=>{const p=plan();const i=p.scenes[0].interactions[0];i.type="confront";delete i.shared_prop;delete i.ownership;i.meme_template_id="receipt-in-face";i.meme_role_bindings={evidence_actor:"alice",target:"charlie"};const r=await run(production(),p);assert.notEqual(r.status,0);assert.match(r.stderr,/spawned\/missing entity charlie/);});
 test("meme role must bind existing participants",async()=>{const pv=production();pv.scenes[0].entities.push({id:"charlie",initial_state:"idle",states:{idle:{asset:"bob.idle"}}});const p=plan();const i=p.scenes[0].interactions[0];i.type="confront";delete i.shared_prop;delete i.ownership;i.meme_template_id="receipt-in-face";i.meme_role_bindings={evidence_actor:"alice",target:"charlie"};const r=await run(pv,p);assert.notEqual(r.status,0);assert.match(r.stderr,/must bind existing participant charlie/);});
 test("meme roles must exactly match template roles",async()=>{const p=plan();const i=p.scenes[0].interactions[0];i.meme_template_id="receipt-in-face";i.meme_role_bindings={actor:"alice",target:"bob"};const r=await run(production(),p);assert.notEqual(r.status,0);assert.match(r.stderr,/exactly match template roles/);});

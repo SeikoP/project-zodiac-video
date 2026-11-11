@@ -43,7 +43,10 @@ export function planStepContext(manifest, stepId, flags={}, {run_mode='fresh',ro
  refs=refs.filter(guidanceAllowed);
  let assetSelection=null;if(selected_asset_ids!==null||asset_needs.length){if(!policy)throw Error('CONTEXT_SELECTION_POLICY_MISSING');assetSelection=selectAssetGuidance({selected_asset_ids:selected_asset_ids??[],asset_needs,meme_selected,environment_mode},policy,{capabilityIndex,coverageMatrix});if(assetSelection.unresolved_ids.length)throw Error('CONTEXT_ASSET_UNRESOLVED '+assetSelection.unresolved_ids.join(','));selected_asset_ids=assetSelection.selected_asset_ids??selected_asset_ids??[];refs=[...new Set([...refs,...assetSelection.core_refs,...assetSelection.extension_refs])];}
  refs=[...new Set([...refs,...selectedCapabilities.filter(item=>!contextCapabilityIds||contextCapabilityIds.has(item.id)).flatMap(item=>item.refs??[])])];
- const deferredReferences=refs.filter(ref=>(scope.defer_references??[]).includes(ref));
+ const exitReferences=[...new Set(caps.filter(c=>c.stage==='exit').flatMap(c=>[c.guidance_uri,c.selected_guidance_uri]).filter(Boolean))];
+ const validationContext=role==='review'||['validate','review'].includes(work_unit);
+ if(validationContext)refs=[...new Set([...refs,...exitReferences])];
+ const deferredReferences=[...new Set([...refs.filter(ref=>(scope.defer_references??[]).includes(ref)),...(!validationContext?exitReferences.filter(ref=>!refs.includes(ref)):[])])];
  refs=refs.filter(ref=>!deferredReferences.includes(ref));
  const isHostUri=ref=>/^[a-z][a-z0-9+.-]*:\/\//iu.test(ref),hostGuidance=refs.filter(isHostUri);refs=refs.filter(ref=>!isHostUri(ref));
  if(manifest.id==='02-visual-production'&&refs.some(ref=>/(?:^|\/)(?:migration|provenance|compat)(?:\/|$)|story-object-effects|story-object-composition-v2|environments\/compositions/u.test(ref)))throw Error('CONTEXT_RETIRED_REFERENCE');

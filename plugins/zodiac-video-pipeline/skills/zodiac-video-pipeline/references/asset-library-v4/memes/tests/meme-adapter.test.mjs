@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {compileVisualGrammar} from '../../compile-visual-grammar.mjs';
+import {compileMemeProps} from '../compile-meme-props.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const index=JSON.parse(await readFile(path.join(here,'../index.json'),'utf8'));
@@ -35,13 +36,13 @@ test('unknown meme composition fails closed',()=>{
 });
 
 test('registry covers every promoted V4 meme template',()=>{
-  const expected=['absurd-offer','cry-closeup','cry-hug-object','equip-this','facepalm-closeup','heart-offer-overkill','mirror-self-check','prop-pressure','receipt-in-face','side-eye-object','wallet-flex'];
+  const expected=['absurd-offer','cry-closeup','cry-hug-object','equip-this','facepalm-closeup','heart-offer-overkill','mirror-self-check','prop-pressure','receipt-in-face','side-eye-object','wallet-flex','impatient-wait','smiling-threat','polite-exit','playful-cheek-poke','exhausted-slump','take-that-back','innocent-shrug','awkward-grin','silent-judgment'];
   assert.deepEqual(index.compositions.map(x=>x.id).sort(),expected.sort());
 });
-test('each registered meme declares the approved effect primitive and a stable locus',()=>{const expected={'absurd-offer':'offer-swish','cry-closeup':'tear-trails','cry-hug-object':'tear-squeeze','equip-this':'offer-impact','facepalm-closeup':'facepalm-impact','heart-offer-overkill':'sparkle-burst','mirror-self-check':'mirror-glint','prop-pressure':'contact-fan-pressure','receipt-in-face':'contact-fan-receipt','side-eye-object':'question-accent','wallet-flex':'wallet-shine'};for(const composition of index.compositions){assert.equal(composition.effect?.id,expected[composition.id],`${composition.id} effect`);assert.ok(composition.effect?.anchor,`${composition.id} effect anchor`);assert.ok(Array.isArray(composition.effect?.size_px)&&composition.effect.size_px.every(n=>Number.isFinite(n)&&n>0),`${composition.id} effect size`);}});
+test('each registered meme declares the approved effect primitive and a stable locus',()=>{const expected={'absurd-offer':'offer-swish','cry-closeup':'tear-trails','cry-hug-object':'tear-squeeze','equip-this':'offer-impact','facepalm-closeup':'facepalm-impact','heart-offer-overkill':'sparkle-burst','mirror-self-check':'mirror-glint','prop-pressure':'contact-fan-pressure','receipt-in-face':'contact-fan-receipt','side-eye-object':'question-accent','wallet-flex':'wallet-shine'};for(const composition of index.compositions.filter(c=>c.effect)){assert.equal(composition.effect?.id,expected[composition.id],`${composition.id} effect`);assert.ok(composition.effect?.anchor,`${composition.id} effect anchor`);assert.ok(Array.isArray(composition.effect?.size_px)&&composition.effect.size_px.every(n=>Number.isFinite(n)&&n>0),`${composition.id} effect size`);}});
 test('equip-this requires a receiver and offers pants into their handoff zone',()=>{const composition=index.compositions.find(x=>x.id==='equip-this');assert.equal(composition.frame_id,'two-person-offset');assert.equal(composition.mechanic_id,'offer-pants-for-embarrassment');assert.equal(composition.roles.embarrassed_target.required,true);assert.equal(composition.roles.embarrassed_target.slot,'listener');assert.ok(composition.required_contacts.includes('pants→target.handoff_zone'));assert.ok(!composition.required_contacts.some(x=>x.includes('head_zone')));});
 
-test('all registered compositions compile from existing role bindings',()=>{
+test('all registered compositions compile through native props without retired effects',async()=>{
   for(const composition of index.compositions){
     const entities=[];
     const bindings={};
@@ -55,8 +56,9 @@ test('all registered compositions compile from existing role bindings',()=>{
     const result=compileVisualGrammar({version:'2.0',scenes:[scene]},{format:'zodiac-visual-grammar-plan@1',scenes:[{scene_id:'S01',meme_composition:{id:composition.id,bindings}}]});
     assert.equal(result.scenes[0].visual_grammar.meme_composition.id,composition.id);
     assert.ok(result.scenes[0].visual_grammar.meme_composition.required_contacts.length>0,composition.id);
-    assert.equal(result.scenes[0].visual_grammar.meme_composition.effects[0].id,composition.effect.id,composition.id);
-    assert.ok(result.scenes[0].scene_direction.meme_layout.entities[result.scenes[0].visual_grammar.meme_composition.effects[0].entity_id],composition.id+' effect box');
+    assert.deepEqual(result.scenes[0].visual_grammar.meme_composition.effects,[],composition.id);
+    assert.ok(!Object.keys(result.scenes[0].scene_direction.meme_layout.entities).some(id=>id.startsWith('FX_')));
+    await compileMemeProps(result,{writeAssets:false});
   }
 });
 

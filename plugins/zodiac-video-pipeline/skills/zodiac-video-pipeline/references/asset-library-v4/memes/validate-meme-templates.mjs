@@ -28,7 +28,7 @@ export async function validateMemeTemplates(){
   const row=index.templates.find(x=>x.path===rel);
   if(!row||row.id!==adapter.id)fail(adapter.id+' missing local semantic template mapping');
  }
- if(templates.size!==ids.size||templates.size!==11)fail(`expected 11 matched templates/adapters; got templates=${templates.size} adapters=${ids.size}`);
+ if(!templates.size||templates.size!==ids.size)fail(`expected nonempty matched templates/adapters; got templates=${templates.size} adapters=${ids.size}`);
  return {templates:templates.size,adapters:ids.size};
 }
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);

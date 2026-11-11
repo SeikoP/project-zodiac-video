@@ -73,6 +73,7 @@ export async function validateHandoffV2(root){
     if(category==='prop')return 'prop';
     if(category==='effect')return 'effect';
     if(category==='environment')return 'environment';
+    if(category==='overlay'&&entity.visual_role==='overlay')return 'overlay';
     // Native mental imagery is projected to story_object at the Job@5 boundary.
     // Count it against prominent visual effects, never infer that it is an actor.
     if(category==='story_object'||category==='narrative_visual')return 'effect';

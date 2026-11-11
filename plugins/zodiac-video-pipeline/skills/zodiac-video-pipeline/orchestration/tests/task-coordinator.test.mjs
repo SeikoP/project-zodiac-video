@@ -8,7 +8,18 @@ const root=new URL('../../',import.meta.url);
 const manifests=await Promise.all(['01-content','02-visual-production','03-handoff'].map(async id=>JSON.parse(await readFile(new URL('orchestration/phases/'+id+'.json',root),'utf8'))));
 const template=JSON.parse(await readFile(new URL('orchestration/pipeline-state.template.json',root),'utf8'));
 function visualState(){const s=structuredClone(template);s.phases['01-content'].status='PASS';s.current_phase='02-visual-production';const p=s.phases[s.current_phase];p.status='READY';p.steps.visual_compile.status='READY';return s;}
-function scene(id,count){return {id,semantic_goal:'A distinct change in how the character responds',narration_range:[0,24],entities:[],events:[],director_beats:Array.from({length:count},(_,i)=>({id:id+'b'+i,voice_anchor:'anchor '+i,semantic_delta:'A distinct story change '+i}))};}
+function scene(id,count){return {id,semantic_goal:'A distinct change in how the character responds',narration_range:[0,24],entities:[],events:[{id:id+'event'}],director_beats:Array.from({length:count},(_,i)=>({id:id+'b'+i,voice_anchor:'anchor '+i,semantic_delta:'A distinct story change '+i,event_ids:count>=4&&i===0?[id+'event']:[]}))};}
+
+test('one complete director beat proceeds to native checks without a decorative quota',()=>{
+ const s=scene('s1',1);s.events=[{id:'reaction'}];s.director_beats[0].event_ids=['reaction'];
+ const task=api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}});
+ assert.equal(task.kind,'VALIDATE_AND_COMMIT_STEP');assert.equal(task.beat_target,undefined);
+ s.director_beats=[];assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'DESIGN_SCENE_BEATS');
+});
+test('many director beats cannot hide an uncovered event, even in a sparse scene',()=>{
+ const s=scene('s1',5);s.events=[{id:'uncovered'}];s.experience_profile={story_mode:'reflection',sparse_reason:'Hold a long deliberate silence after the reveal.'};
+ assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'DESIGN_SCENE_BEATS');
+});
 
 test('XState is inside the plugin and routes one task without changing state',()=>{
  assert.equal(api.taskMachine?.id,'zodiac-task-router');const state=structuredClone(template),before=JSON.stringify(state);
@@ -22,17 +33,18 @@ test('phase ordering follows manifests and a review boundary cannot be bypassed'
  state.review_receipts=[{phase_id:'02-visual-production',status:'APPROVED',proof:{kind:'self_asserted'}}];
  assert.equal(api.resolveNextTask({state,manifests}).kind,'WAIT_FOR_GENUINE_USER_REVIEW');
 });
-test('scene task keeps the full scene and 4-5 beat requirement, not a truncated index',()=>{
+test('scene task keeps the full scene while repairing missing event coverage',()=>{
  const state=visualState(),intent={cast:[],video:{width:1080,height:1920},assets:{},scenes:[scene('s1',1),scene('s2',5)]};
  const t=api.resolveNextTask({state,manifests,visualIntent:intent,narration:'The exact approved words.'});
- assert.equal(t.kind,'DESIGN_SCENE_BEATS');assert.equal(t.scene_id,'s1');assert.deepEqual(t.context.scene,intent.scenes[0]);assert.deepEqual(t.beat_target,[4,5]);assert.equal(t.context.next_scene.id,'s2');
+ assert.equal(t.kind,'DESIGN_SCENE_BEATS');assert.equal(t.scene_id,'s1');assert.deepEqual(t.context.scene,intent.scenes[0]);assert.equal(t.beat_target,undefined);assert.equal(t.context.next_scene.id,'s2');
  assert.deepEqual(t.allowed_writes,['.authoring/visual-intent.json']);
  assert.equal(api.resolveNextTask({state,manifests,visualIntent:{...intent,scenes:[scene('s1',4),scene('s2',5)]}}).kind,'VALIDATE_AND_COMMIT_STEP');
 });
-test('only intentional reflection/transition with a concrete reason can use fewer beats',()=>{
+test('sparse scene justification does not waive event coverage',()=>{
  const s=scene('s1',1);s.experience_profile={story_mode:'behavior',sparse_reason:'A sufficiently concrete reason, but the mode is not a quiet hold.'};
  assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'DESIGN_SCENE_BEATS');
- s.experience_profile.story_mode='reflection';assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'VALIDATE_AND_COMMIT_STEP');
+ s.experience_profile.story_mode='reflection';assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'DESIGN_SCENE_BEATS');
+ s.director_beats[0].event_ids=['s1event'];assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'VALIDATE_AND_COMMIT_STEP');
 });
 test('workflow graph links a capability to its phase, step and execution source',()=>{
  const graph=api.buildWorkflowGraph(manifests,template);const q=api.queryWorkflowGraph(graph,'character_assembly');

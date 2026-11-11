@@ -39,7 +39,16 @@ export async function summarizeEpisodeSpans(workspace){
  const all=[];for(const n of names){const s=JSON.parse(await readFile(path.join(root,n),'utf8'));if(s.format!=='zodiac-e2e-span@1')throw Error('FAST_SPAN_FORMAT_INVALID');all.push(s);}
  const spans=all.filter(s=>pluginPhases.includes(s.phase)),runner=all.filter(s=>s.phase==='local-runner');
  const totals=Object.fromEntries([...categories].map(c=>[c,sum(spans.filter(s=>s.category===c).map(s=>s.duration_ms))]));
- const perPhase=Object.fromEntries(pluginPhases.map(p=>{const owned=spans.filter(s=>s.phase===p);return [p,{spans:owned.length,pass_spans:owned.filter(s=>s.status==='PASS').length,non_pass_spans:owned.filter(s=>s.status!=='PASS').length,duration_ms:sum(owned.map(s=>s.duration_ms))}];}));
+ const perPhase=Object.fromEntries(pluginPhases.map(p=>{
+  const owned=spans.filter(s=>s.phase===p);
+  const valid=owned.length>0&&owned.every(s=>s.run_id&&s.revision_id&&validTime(s.started_at)&&validTime(s.ended_at)&&Date.parse(s.ended_at)>=Date.parse(s.started_at))&&new Set(owned.map(s=>s.run_id)).size===1&&new Set(owned.map(s=>s.revision_id)).size===1;
+  const wall=valid?Math.max(...owned.map(s=>Date.parse(s.ended_at)))-Math.min(...owned.map(s=>Date.parse(s.started_at))):null;
+  const covered=valid?intervalUnion(owned):null;
+  return [p,{spans:owned.length,pass_spans:owned.filter(s=>s.status==='PASS').length,non_pass_spans:owned.filter(s=>s.status!=='PASS').length,duration_ms:sum(owned.map(s=>s.duration_ms)),
+   timing_scope:'observed_spans_only',observed_wall_clock_ms:wall,observed_interval_union_ms:covered,observed_gap_ms:valid?+(wall-covered).toFixed(2):null,
+   review_wait_wall_clock_ms:valid?intervalUnion(owned.filter(s=>s.category==='review_wait')):null,
+   unmeasured_categories:[...categories].filter(c=>!owned.some(s=>s.category===c))}];
+ }));
  const runIds=[...new Set(spans.map(s=>s.run_id).filter(Boolean))];
  const revisions=[...new Set(spans.map(s=>s.revision_id).filter(Boolean))];
  const reasons=[];

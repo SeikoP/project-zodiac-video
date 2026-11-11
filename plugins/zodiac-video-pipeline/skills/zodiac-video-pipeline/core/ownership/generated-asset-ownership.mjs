@@ -37,11 +37,11 @@ function generatedIds(production,compilerId,statePlan){
  if(compilerId==='meme_props')return [...new Set((production.scenes??[]).flatMap(s=>(s.visual_grammar?.meme_composition?.asset_requirements??[]).map(r=>r.asset_id)).filter(Boolean))];
  return [];
 }
-export async function runGeneratedCompile(root,script,args,{compiler_id,prune=false}={}){
+export async function runGeneratedCompile(root,script,args,{compiler_id,prune=false,stage_inputs}={}){
  root=path.resolve(root);const temp=await mkdtemp(path.join(os.tmpdir(),'zodiac-native-transaction-')),stage=path.join(temp,'job');await mkdir(stage);const lock=path.join(root,'.authoring/native-compile.lock');let locked=false;
  try{
   await mkdir(path.dirname(lock),{recursive:true});try{const handle=await open(lock,'wx');locked=true;await handle.writeFile(JSON.stringify({pid:process.pid,compiler_id}));await handle.close();}catch(e){if(e.code==='EEXIST')fail('COMPILE_LOCKED');throw e;}
-  const inputs=['production.json','assets','.authoring','publish','narration.txt','design.md','asset-plan.json','visual-grammar-plan.json'];
+  const inputs=stage_inputs??['production.json','assets','.authoring','publish','narration.txt','design.md','asset-plan.json','visual-grammar-plan.json'];
   for(const rel of inputs){const src=await confined(root,rel);try{const st=await lstat(src);if(st.isDirectory())await walk(root,rel);await cp(src,path.join(stage,rel),{recursive:true,filter:entry=>!entry.endsWith('.lock')});}catch(e){if(e.code!=='ENOENT')throw e;}}
   const sourceHashes=new Map();for(const rel of await walk(stage))sourceHashes.set(rel,hash(await readFile(path.join(stage,rel))));
   const previous=await json(path.join(root,'.authoring/generated-assets.json')).catch(e=>{if(e.code==='ENOENT')return {entries:[]};throw e;});

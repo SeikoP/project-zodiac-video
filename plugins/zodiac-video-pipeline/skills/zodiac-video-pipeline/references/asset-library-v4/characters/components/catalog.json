@@ -249,6 +249,9 @@
     },
     {
       "id": "embarrassed"
+    },
+    {
+      "id": "weary"
     }
   ],
   "poses": [
@@ -332,6 +335,24 @@
     },
     {
       "id": "open-barrier"
+    },
+    {
+      "id": "hands-on-hips"
+    },
+    {
+      "id": "clasp-hands"
+    },
+    {
+      "id": "hold-broom"
+    },
+    {
+      "id": "cheek-poke"
+    },
+    {
+      "id": "slump"
+    },
+    {
+      "id": "shrug"
     }
   ],
   "crops": [
