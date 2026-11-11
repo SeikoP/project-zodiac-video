@@ -645,7 +645,6 @@
           ],
           "load_references": [
             "references/narration-writer-brief.md",
-            "references/voice-profile.md",
             "references/narrator-performance.md",
             "references/voice-benchmark.md"
           ],
