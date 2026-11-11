@@ -84,3 +84,34 @@ jobs:
             ${{ runner.temp }}/local-plugin-report.json
           if-no-files-found: error
           retention-days: 7
+      - name: Stage Pipeline and Local plugins for direct ChatGPT upload
+        run: |
+          python - <<'PY'
+          import os, zipfile
+          from pathlib import Path
+          tmp=Path(os.environ['RUNNER_TEMP'])
+          for name in ('zodiac-video-pipeline','zodiac-video-local'):
+              src=tmp/(name+'-plugin.zip')
+              dst=tmp/(name+'-direct')
+              dst.mkdir(parents=True,exist_ok=True)
+              with zipfile.ZipFile(src) as archive:
+                  archive.extractall(dst)
+              assert (dst/'.codex-plugin/plugin.json').is_file()
+              assert (dst/'plugin.json').is_file()
+          assert (tmp/'zodiac-video-pipeline-direct/skills/zodiac-video-pipeline/SKILL.md').is_file()
+          assert (tmp/'zodiac-video-local-direct/skills/zodiac-video-local/SKILL.md').is_file()
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-pipeline-direct-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/zodiac-video-pipeline-direct/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-video-local-direct-${{ steps.meta.outputs.version }}-${{ github.sha }}
+          path: ${{ runner.temp }}/zodiac-video-local-direct/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
