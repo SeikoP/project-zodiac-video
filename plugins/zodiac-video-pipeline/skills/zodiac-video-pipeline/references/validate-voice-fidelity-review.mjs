@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {readFile} from 'node:fs/promises';import {createHash} from 'node:crypto';import path from 'node:path';
 const root=path.resolve(process.argv[2]??'');if(!process.argv[2]){console.error('Usage: node validate-voice-fidelity-review.mjs <workspace>');process.exit(2);}
-const read=n=>readFile(path.join(root,'.authoring',n),'utf8');const h=s=>createHash('sha256').update(s).digest('hex');const fail=m=>{throw Error('VOICE_FIDELITY_REVIEW_INVALID: '+m);};
+const read=n=>readFile(path.join(root,'.authoring',n),'utf8').catch(e=>{if(e.code!=='ENOENT'||n!=='narration.txt')throw e;return readFile(path.join(root,n),'utf8');});const h=s=>createHash('sha256').update(s).digest('hex');const fail=m=>{throw Error('VOICE_FIDELITY_REVIEW_INVALID: '+m);};
 const [narrRaw,profileRaw,reviewRaw]=await Promise.all(['narration.txt','voice-profile.json','voice-fidelity-review.json'].map(read));
 const q=JSON.parse(reviewRaw);
 if(q.format!=='zodiac-voice-fidelity-review@1'||q.reviewer_role!=='voice_challenger')fail('format/reviewer_role');
