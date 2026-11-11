@@ -211,6 +211,14 @@
           "tool_locator": "references/validate-engagement-design.mjs",
           "unavailable_policy": "block",
           "stage": "exit"
+        },
+        {
+          "id": "narrative_design_validation",
+          "kind": "internal_validator",
+          "when": "always",
+          "tool_locator": "references/validate-narrative-design.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
         }
       ],
       "conditional_capabilities": [
