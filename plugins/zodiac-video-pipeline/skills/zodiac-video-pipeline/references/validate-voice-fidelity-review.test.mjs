@@ -4,3 +4,7 @@ async function run(mut){const d=await mkdtemp(path.join(tmpdir(),'z-voice-'));tr
 test('valid voice review passes',async()=>{const r=await run();assert.equal(r.status,0,r.stderr);});
 test('generic AI drift blocks',async()=>{const r=await run(q=>{q.criteria.generic_ai_distance.result='REVIEW';q.same_narrator_probability='weak_match';q.decision='REVIEW';q.revision_targets=['Narrator sounds like a polished explainer with slang added.'];});assert.notEqual(r.status,0);assert.match(r.stderr,/blocks Content Review/);});
 test('weak match cannot PASS',async()=>{const r=await run(q=>q.same_narrator_probability='weak_match');assert.notEqual(r.status,0);});
+
+test('stale narration hash cannot be approved',async()=>{const r=await run(q=>{q.source.narration_sha256='0'.repeat(64);});assert.notEqual(r.status,0);assert.match(r.stderr,/stale source fingerprints/);});
+test('stale voice profile hash cannot be approved',async()=>{const r=await run(q=>{q.source.voice_profile_sha256='0'.repeat(64);});assert.notEqual(r.status,0);assert.match(r.stderr,/stale source fingerprints/);});
+test('different narrator cannot receive PASS',async()=>{const r=await run(q=>{q.same_narrator_probability='different_narrator';});assert.notEqual(r.status,0);assert.match(r.stderr,/unresolved voice drift/);});
