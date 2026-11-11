@@ -25,6 +25,8 @@ The writer does **not** receive:
 
 The style capsule may preserve cadence, narrator relationship, slang behavior, sentence behavior, comic mechanisms, contradiction/reversal timing and controlled roughness. It may not supply Zodiac claims, exact jokes, distinctive wording, exact sentences or reference-specific situations as facts.
 
+When a referenced Voice Profile declares `benchmark_ref`, load that benchmark alongside the profile. Treat it as a behavioral comparator, not copy material. The draft should visibly realize the selected `benchmark_dimensions`; a later slang pass is not an acceptable substitute.
+
 Do not flatten Voice into four adjectives. Voice Profile and Narrative Design remain separate contracts so style does not disappear during compression.
 
 ## Voice-conditioned first draft
@@ -34,6 +36,10 @@ The default path is **not** “write clean generic prose, then add slang.” Wri
 Preserve intentional asymmetry, interruptions, colloquial phrasing, short impact lines and controlled roughness when those behaviors are part of the Voice Profile. A later cleanup pass may remove accidental stiffness, but must not normalize the narrator into polished explanatory prose.
 
 A frequent failure mode is **slang-painted AI prose**: structurally generic Zodiac explanation with casual tokens pasted onto it. Treat this as voice drift even if individual words look informal.
+
+For the current behavior-first roast family, prefer story movement such as `behavior -> narrator catches it -> contradiction -> exaggeration/internal voice -> vulnerability leak -> roast/pride recovery` when supported by the material. This is a causal movement, not a rigid beat quota. Humor must be attached to the behavior being exposed; detachable jokes do not satisfy comic fidelity.
+
+Do not let the ending automatically become warm, reflective or inspirational. Follow the Voice Profile `ending_rule` and preserve the narrator's established energy.
 
 ## Common spoken Vietnamese
 
