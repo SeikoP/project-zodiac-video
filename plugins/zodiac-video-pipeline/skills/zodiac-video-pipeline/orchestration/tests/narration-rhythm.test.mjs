@@ -1,5 +1,5 @@
-import test from 'node:test';import assert from 'node:assert/strict';
-import {compileNarrationPerformance} from '../../features/narration-performance/compile-narration-performance.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {createHash} from 'node:crypto';
+import {compileNarrationPerformance,compileNarrationPerformanceWorkspace} from '../../features/narration-performance/compile-narration-performance.mjs';import {compositionHash} from '../../features/visual-composition/phase02-composition.mjs';
 const performance=()=>({delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:['Bọ Cạp'],reason:'Recognizable observation before the reframe.'});
 const fixture=()=>({p:{scenes:[{id:'S01',voice:'Bọ Cạp nhìn lại.',performance_context:{motion_duration_ms:400}}]},plan:{version:'2.0',beats:[{id:'B01',voice_anchor:'Bọ Cạp',performance:performance()}]},n:'Bọ Cạp nhìn lại.\n'});
 test('v2 maps actual beat direction without touching voice or visual fields',()=>{const {p,plan,n}=fixture(),out=compileNarrationPerformance(p,plan,n);assert.equal(out.scenes[0].performance_context.pace,'medium');assert.equal(out.scenes[0].performance_context.motion_duration_ms,400);assert.equal(out.scenes[0].voice,p.scenes[0].voice);assert.equal(p.scenes[0].performance_context.pace,undefined);});
@@ -8,3 +8,13 @@ test('invalid energy, emphasis and missing scene coverage reject before mutation
 test('legacy plans remain unchanged and stale narration blocks v2',()=>{const f=fixture();assert.deepEqual(compileNarrationPerformance(f.p,{version:'1.1'},f.n),f.p);assert.throws(()=>compileNarrationPerformance(f.p,f.plan,'changed'),/NARRATION/);});
 
 test('Windows narration line endings compare without rewriting approved text',()=>{const f=fixture();f.n=f.n.replace(/\n/g,'\r\n');assert.equal(compileNarrationPerformance(f.p,f.plan,f.n).scenes[0].voice,f.p.scenes[0].voice);});
+
+test('workspace uses only source-bound, user-approved scene coverage without changing narrative beats',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-performance-coverage-')),authoring=path.join(root,'.authoring'),sha=s=>createHash('sha256').update(s).digest('hex'),narration='A one.\nB two.\n',plan={version:'2.0',beats:[{id:'B1',voice_anchor:'A',performance:{...performance(),emphasis:[]}}]},planRaw=JSON.stringify(plan),beats=['A','B'].map((anchor,i)=>({id:`S0${i+1}`,scene_id:`S0${i+1}`,voice_anchor:anchor,performance:{...performance(),emphasis:[]}}));
+ try{
+  await mkdir(authoring,{recursive:true});await writeFile(path.join(root,'narration.txt'),narration);await writeFile(path.join(authoring,'narrative-plan.json'),planRaw);await writeFile(path.join(root,'production.json'),JSON.stringify({scenes:[{id:'S01',voice:'A one.'},{id:'S02',voice:'B two.'}]}));await writeFile(path.join(authoring,'pipeline-state.json'),JSON.stringify({run_mode:'fresh',plugin_version:'2.10.0'}));
+  const source_plan_sha256=sha(planRaw),narration_sha256=sha(narration),coverage={format:'zodiac-narration-performance-coverage@1',status:'APPROVED',source_plan_sha256,narration_sha256,beats,review_receipt:{status:'APPROVED',proof:{kind:'user_message',ref:'user:test:scene-performance-coverage'},source_plan_sha256,narration_sha256,beats_sha256:compositionHash(beats)}};
+  await writeFile(path.join(authoring,'narration-performance-coverage.json'),JSON.stringify(coverage));await compileNarrationPerformanceWorkspace(root,{write:true});assert.equal((await compileNarrationPerformanceWorkspace(root)).status,'PASS');const output=JSON.parse(await readFile(path.join(root,'production.json'),'utf8'));assert.equal(output.scenes[1].performance_context.emotion,'amused');assert.equal(JSON.parse(await readFile(path.join(authoring,'narrative-plan.json'),'utf8')).beats.length,1);
+  coverage.review_receipt.proof.ref='<missing approval>';await writeFile(path.join(authoring,'narration-performance-coverage.json'),JSON.stringify(coverage));await assert.rejects(()=>compileNarrationPerformanceWorkspace(root,{write:true}),/COVERAGE_REVIEW_OR_SOURCE_INVALID/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

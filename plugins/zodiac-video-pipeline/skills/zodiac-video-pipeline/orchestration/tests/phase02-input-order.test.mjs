@@ -1,3 +1,4 @@
+import {sourcePaths} from '../../phases/phase02/phase02-native-plan.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
@@ -14,8 +15,7 @@ const sandbox=async()=>{
  const root=path.join(src,'skills/zodiac-video-pipeline');
  await write(path.join(src,'plugin.json'),JSON.stringify({name:'zodiac-video-pipeline',version:'2.2.22'}));
  await write(path.join(root,'orchestration/pipeline-state.template.json'),JSON.stringify({plugin_version:'2.2.22'}));
- const coordinator=await readFile(script,'utf8');
- const rels=coordinator.match(/const sourcePaths=\[([\s\S]*?)\];/)[1].match(/'[^']+'/g).map(s=>s.slice(1,-1));
+ const rels=sourcePaths;
  for(const rel of rels){if(rel==='orchestration/pipeline-state.template.json')continue;if(rel.endsWith('.mjs'))await write(path.join(root,rel),'console.log("FAKE_OK")\n');else await write(path.join(root,rel),'{}\n');}
  await write(path.join(root,'references/asset-library-v4/memes/compile-meme-props.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=path.dirname(process.argv[2]);await mkdir(path.join(root,'.authoring'),{recursive:true});for(const file of ['meme-prop-compile-receipt.json','generated-assets.json'])await writeFile(path.join(root,'.authoring',file),'{}');`);
  const fakeChar=`import {mkdir,readFile,writeFile} from 'node:fs/promises';import path from 'node:path';const f=process.argv[2];const dir=path.dirname(f);await mkdir(path.join(dir,'.authoring'),{recursive:true});await writeFile(path.join(dir,'.authoring/character-state-asset-plan.json'),'{}');if(process.argv.includes('--write')){const p=JSON.parse(await readFile(f));p.assets.demo={path:'assets/characters/demo.svg'};p.scenes[0].entities[0].states.neutral.asset='demo';await mkdir(path.join(dir,'assets/characters'),{recursive:true});await writeFile(path.join(dir,'assets/characters/demo.svg'),'<svg/>');await writeFile(f,JSON.stringify(p));}`;

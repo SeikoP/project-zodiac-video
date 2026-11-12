@@ -1,6 +1,8 @@
 const upstream=/^(WORKSPACE_|SOURCE_|SCENE_PLAN_|CONTRACT_|ASSET_|NARRATION_|PHASE02_|VISUAL_INTENT_)/u;
 const creative=/^(CONTENT_REVIEW_|VISUAL_REVIEW_|CREATIVE_|USER_APPROVAL_)/u;
 const ownerByPrefix=[
+ [/^(STORY_TEXT_|PHASE02_EDITORIAL_|PHASE02_STORY_TEXT_)/u,'visual_intent.scenes.story_text'],
+ [/^PHASE02_MEME_/u,'visual_intent.scenes.grammar.meme_composition'],
  [/^(CHARACTER_|OUTFIT_|HAIR_)/u,'visual_intent.cast'],
  [/^(NARRATIVE_VISUAL_|STORY_OBJECT_)/u,'visual_intent.narrative_visual'],
  [/^(SCENE_|SPATIAL_|COMPOSITION_)/u,'visual_intent.scenes'],

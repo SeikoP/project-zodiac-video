@@ -1,13 +1,30 @@
-# Story text in Phase2
+# Story text in Phase 2
 
-Consider lettering alongside action, props and Narrative Visuals. Its job can be setup, contrast, payoff, annotation, dialogue or internal voice; it does not depend on selecting a meme. Use short channel-style phrases that add meaning, rather than duplicating continuous captions. Record `story_text=use/omit` with a reason in per-beat visual coverage; do not force text into every beat.
+Plan lettering with action, props and Narrative Visuals. Every fresh beat explicitly declares `layers.story_text=use/omit` with its editorial reason. Missing entities are not an omission decision. At reversals, accusations, demos and callbacks, decide what the viewer reads before/after the turn; leave quiet reflection quiet.
 
-Author an ordinary `kind: object`, `visual_role: overlay` entity, backed by `category: overlay` SVG assets. Keep its `story_text: {purpose, reason, states: {state_id: text}}` in Visual Intent only. The native compiler strips this authoring metadata; Job5/runtime use the existing overlay role, assets and state events. Text never counts as a physical prop, Scene Accent or the required Narrative Visual.
+Author `kind: object`, `visual_role: overlay`, `category: overlay` SVGs, with `story_text: {purpose, reason, states: {state_id: text}, styles: {state_id: treatment}}` in Visual Intent only. Purposes: setup, contrast, payoff, annotation, dialogue, internal_voice. This layer never substitutes for props, Scene Accent or Narrative Visual.
 
-Start hidden. Reveal/change lettering with exact voice anchors; release it when its story job ends. A final label may remain through scene end with `hold_to_scene_end_reason`. Keep one text focus at a time, clear of faces and the lower caption zone. Never reveal a punchline before its spoken turn. Use different states to contradict or replace a setup, rather than accumulating words.
+Start hidden. Reveal/change/release at exact voice anchors; a final hold needs `hold_to_scene_end_reason`. Replace text rather than accumulate it. Never reveal a punchline early. Coverage selects actual text entities; different phrases or treatments require distinct asset paths.
 
-Use outlined Patrick Hand paths, canonical ink/coral and accessible SVG titles. In this repository `python tools/preview/bake-story-text.py <workspace> --intent <candidate.json>` bakes authored state strings to their declared asset paths before `write-phase02-authoring.mjs`. It needs authoring-time fontTools; runtime needs no font/parser dependency. Otherwise supply equivalent native path SVGs and verify exact lettering visually.
+## Treatments
 
-Design the lettering as part of the picture. `story_text.styles` maps visible state IDs to `note` (crooked paper, tape, ochre marker), `stamp` (tilted coral rejection/completion), `score` (label plus a prominent numeric result) or `title` (small setup line, large coral emphasis). Omitted styles use `note`. Choose by editorial function, not at random; different designs or phrases require distinct asset paths. These are baked artwork treatments, not runtime options. Preserve native handwriting; avoid generic subtitle rows, UI pills, decorative noise and competing focal text. Position the artwork near its story action or in a deliberately reserved field, rather than always hugging the subtitle zone.
+| Style | Editorial use |
+| --- | --- |
+| bubble | Short spoken reply, tail toward speaker |
+| thought | Private thought, trailing thought dots |
+| burst | Surprise or emphatic reaction; WOW, UA or HA only when grounded |
+| whisper | Quiet aside, light dashed contour |
+| tag | Small annotation next to its object |
+| ribbon | Brief announcement or product reveal |
+| underline | Handwritten emphasis without a card |
+| sfx | Narration-grounded sound word with action strokes |
+| note | Crooked paper, tape and ochre marker; default |
+| stamp | Coral rejection or completion verdict |
+| score | Label plus numeric payoff |
+| title | Setup line plus larger emphasis |
 
-Authoring completeness enforces purpose, overlay role, hidden setup, reachable anchored reveals and release/end hold. Visual coverage declares `story_text` separately. Run native style, geometry, caption safety and all event-pair checks, then inspect phone-size readability. Endpoint PASS never proves audio-aligned timing or final rendered font/lettering appearance.
+Compact styles normally use 1-4 words at 260-420 canvas pixels wide. Keep readable on a phone; shorten rather than shrink long prose. Place beside its speaker/object, away from faces, Narrative Visuals and lower captions. Keep one focal text at a time. Choose by meaning, not a quota or fixed rotation; vary phrases as well as shape.
+
+Bake outlined Patrick Hand with `python tools/preview/bake-story-text.py <workspace> --intent <candidate.json>` before the owning writer (authoring-time fontTools required), or provide equivalent safe path SVGs. Keep canonical palette, accessible SVG titles and no runtime font dependency.
+
+Run completeness, native style/geometry/caption and event-pair checks. Inspect scene entry, each reveal/release and final frames at phone size in browser screenshots. Structural PASS never approves creative quality, final glyphs or audio-aligned timing.

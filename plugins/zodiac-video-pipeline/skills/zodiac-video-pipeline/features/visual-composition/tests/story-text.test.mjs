@@ -35,3 +35,12 @@ test('lettering treatments are explicit and cannot overwrite a differently style
  entity.story_text.styles.second='note';assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_ASSET_TEXT_CONFLICT'));
  entity.story_text.styles.shown='neon';assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_STYLE_INVALID'));
 });
+test('compact speech, thought, burst and whisper lettering retain reveal/release validation',()=>{
+ for(const style of ['bubble','thought','burst','whisper','tag','ribbon','underline','sfx']){
+  const {intent,production}=fixture();
+  intent.scenes[0].entities[0].story_text.styles={shown:style};
+  assert.deepEqual(validateStoryText(intent,production),[],style);
+  intent.scenes[0].events.pop();
+  assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_RELEASE_REQUIRED'),style);
+ }
+});

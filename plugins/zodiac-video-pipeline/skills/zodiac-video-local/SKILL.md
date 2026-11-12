@@ -7,6 +7,10 @@ description: Resume Zodiac production locally from phase1-done/, run Phase 2 and
 
 This distribution owns Phase 1 handoff import plus **Phase 2 and Phase 3**. It never performs new Evidence/Concept/Narration work.
 
+## Execution source
+
+Use this installed plugin root, resolved from this skill path, for all local production. The canonical editable source is `plugins/zodiac-video-pipeline` in the project checkout. Rebuild and reinstall after source changes; do not execute stale marketplace snapshots or cache copies from other distributions. This unified local development distribution retains version 2.10.0 for existing episode compatibility and incorporates the former P2 NEXT native execution improvements. Preserve genuine approvals and rerun affected source-bound native gates after updates.
+
 ## Invocation bootstrap
 
 For episode production, immediately on invocation, before asking the user for an episode name or ZIP path, run:
@@ -48,6 +52,8 @@ Run the canonical Phase 2 manifest, author Visual Intent, compile assets/scenes/
 Fresh visual readiness requires a visible narration-grounded background/context Scene Accent component in every scene and at least one Narrative Visual per video. A palette-only canvas or episode-wide Narrative Visual omission must fail before native compilation. Narrative Visual is authored as `narrative_visual` and transported as `story_object`. Run the current authoring-completeness and narrative-visual-presence gates; do not accept old PASS receipts after source changes.
 
 Author director beats for the actual narrative changes and cover every event in `event_ids`; there is no four-beat minimum. For meme moments, read the performance guidance in `references/visual-direction.md`: preserve the channel's cast identity, establish a normal setup, and bind native meme acting to the visible reaction state with `grammar.meme_composition.state_bindings` at the approved voice anchor. Do not start every scene already at its punchline or synthesize retired effect assets. Obtain genuine Visual Review of the contrast and later check measured runtime timing.
+
+Every fresh coverage beat must explicitly decide `story_text` and `meme` use/omit with an editorial reason before projection. Read `references/story-text.md` alongside `references/visual-direction.md`; plan lettering and cast reactions at the actual reversals, demonstrations and callbacks. Missing decisions and unperformed selections block authoring completeness. Deliberate quiet omissions remain valid; no text or meme quota replaces judgment.
 
 Review-only visual-quality and retention guidance may be deferred during draft planning; fetch it before the corresponding validation/review. Mandatory entry catalogs remain available in the full step context, and selected work units still fetch current entries before use. Deferral never waives a capability or validator. Use `core/audit/episode-utilization-report.mjs <workspace>` to inspect recorded per-phase intervals; native-only observations do not measure agent authoring time.
 

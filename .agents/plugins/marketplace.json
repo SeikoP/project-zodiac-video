@@ -8,7 +8,7 @@
       "name": "zodiac-video-local",
       "source": {
         "source": "local",
-        "path": "./.runtime/plugin-dev/zodiac-video-local"
+        "path": "./.runtime/plugin-dev/zodiac-video-local-unified"
       },
       "policy": {
         "installation": "AVAILABLE",

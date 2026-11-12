@@ -11,7 +11,7 @@ export function validateStoryText(intent,production){
   for(const [id,state] of Object.entries(entity.states??{}))if(state.visible!==false){
    if(!spec.states?.[id]?.trim()||intent.assets?.[state.asset]?.category!=='overlay')add('STORY_TEXT_ASSET_INVALID');
    const style=spec.styles?.[id]??'note';
-   if(!['note','stamp','score','title'].includes(style))add('STORY_TEXT_STYLE_INVALID');
+   if(!['note','stamp','score','title','bubble','thought','burst','whisper','tag','ribbon','underline','sfx'].includes(style))add('STORY_TEXT_STYLE_INVALID');
    const asset=intent.assets?.[state.asset],key=asset?.path??state.asset,value=JSON.stringify([spec.states?.[id],style]);
    if(letteringByPath.has(key)&&letteringByPath.get(key)!==value)add('STORY_TEXT_ASSET_TEXT_CONFLICT');
    letteringByPath.set(key,value);

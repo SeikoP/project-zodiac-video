@@ -10,8 +10,13 @@ test('Phase 2 work units reduce model guidance without waiving entry capabilitie
  const design=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'design'});
  const scene=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'scene'});
  const validate=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'validate'});
- assert.ok(design.required_references.length<full.required_references.length);
- assert.ok(scene.required_references.length<design.required_references.length);
+ assert.ok(full.context_manifest.reduce((n,r)=>n+r.bytes,0)<70000);
+ for(const context of [design,scene]){
+  assert.ok(context.context_manifest.reduce((n,r)=>n+r.bytes,0)<45000);
+  assert.ok(context.required_references.includes('references/story-text.md'));
+  assert.ok(context.required_references.includes('references/visual-direction.md'));
+ }
+ assert.ok(scene.required_references.includes('references/director-performance-v2.md'));
  assert.ok(validate.required_references.length<=scene.required_references.length);
  assert.deepEqual(new Set(design.required_entry_capabilities),new Set(full.required_entry_capabilities));
  assert.deepEqual(new Set(scene.required_entry_capabilities),new Set(full.required_entry_capabilities));

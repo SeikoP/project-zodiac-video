@@ -3,11 +3,23 @@
 The JSON manifest owns required capabilities and native gates. Read the approved
 handoff context; preserve exact narration, scope and genuine Content Review.
 
+## Work loop
+
+The existing manifest steps stay authoritative. Work through five responsibilities:
+1. **Design:** read approved voice and decide each beat's setup, change, reaction and payoff. Consider lettering, meme acting, physical props and Narrative Visual independently; record actual use or a specific omission reason in coverage.
+2. **Author:** write Visual Intent once. Preserve identity, voice ranges and continuity; project derived files through the owning writer.
+3. **Validate and compile:** run entry checks as one bounded batch before expensive assets. On failure, read the execution receipt's structured issues and source-bound repair groups, fix the owning canonical source once, and rerun the valid dirty closure. Exact cache hits require dependency and output hashes; file existence is insufficient.
+4. **Inspect:** after Director/native gates, inspect scene entry/final frames and every event pair at phone size. Judge readable cause -> reaction -> payoff, hand/prop contact, lettering contrast and callbacks. A label or state name does not prove an action happened.
+5. **Review:** prepare the review surface and obtain genuine Visual Review. Keep native structural results, creative approval and downstream measured media results separate.
+
+Use the current work-unit capsule; fetch selected catalogs before using their capabilities. Do not reload full catalogs between unchanged tasks. Use `core/performance/diagnose-phase02.mjs <workspace>` for native and preview reuse metrics; agent authoring, review wait and final render time require their own recorded spans. Never infer end-to-end speed or creative quality from native timings.
+
 1. Select current components through `references/asset-library-v4/selection-guide.md`. Every fresh scene requires a visible background/context component with actual Scene Accent entity/asset/coverage. A palette-only canvas is incomplete. Every fresh video requires at least one `narrative_visual` with a narration-grounded state change; set `narrative_visual_decision.mode=required`. Story Object is its runtime `story_object` transport role. Do not replace these layers with actor pose swaps or generic omission reasons.
    Render `features/asset-selection/build-current-asset-review.mjs` when comparing
    choices. It uses native compiler output and exact masters, not episode examples.
 2. Author **one source of truth only**: `.authoring/visual-intent.json` (`zodiac-visual-intent@1`). Put the semantic choices there: Scene Plan, cast identity, scene goals/grammar, context/background decision, physical-prop participation, Narrative Visual decision/entities, director beats, art-direction coverage and scene events. Character identity is fixed across states. Use performed actions to plan state assets before generation; never create duplicates then merge finished SVGs.
    Then run `write-phase02-authoring.mjs`. `compile-visual-intent.mjs` must project the intent deterministically into `production.json`, `asset-plan.json`, `visual-grammar-plan.json`, Character Assembly, Director Plan, Art Direction, Episode Cast Plan and any supported compatibility projection. These projection files are compiler-owned and must not be manually authored or patched by the agent.
+   Every beat must decide `story_text`/`meme` use or omit with a reason. Follow `references/story-text.md` and `references/visual-direction.md`; completeness blocks missing decisions and unperformed selections.
 3. Before native asset compilation, run the **progressive Phase-2 checkpoint** for fresh runs:
    - `validate-phase02-progressive-preflight.mjs` catches deterministic defects that should never wait for Director/native QC: incomplete Director beats, motion-registry duration mismatches, and authored-SVG style/handmade/stroke/palette violations.
    - `validate-scene-experience.mjs --write` writes `.authoring/scene-experience-review.json`. It reviews character action, environment specificity, physical storytelling, depth separation, secondary action, callbacks and Narrative Visual role. Every fresh scene must declare `experience_profile.story_mode`; missing profile is REVIEW. The profile is authoring-only and is stripped before production projection.

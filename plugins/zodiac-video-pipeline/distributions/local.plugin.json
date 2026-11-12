@@ -5,12 +5,14 @@
   "entry_skill": "skills/zodiac-video-local/SKILL.md",
   "include_humanizer": false,
   "interface": {
-    "capabilities": ["Interactive"],
+    "capabilities": [
+      "Interactive"
+    ],
     "category": "Productivity",
     "defaultPrompt": "Immediately run the local bootstrap from phase1-done/. Resume processing if present, then own Phase 2 and Phase 3 only. Preserve approved narration and publish only validated Job@5 into ready/.",
     "developerName": "Personal",
-    "displayName": "Zodiac Video Local [PROJECT]",
+    "displayName": "Zodiac Video Local",
     "longDescription": "Import approved Zodiac Phase-1 handoffs locally, complete visual production and Job@5 handoff, and deliver into ready/ for LocalRunner.",
-    "shortDescription": "PROJECT source: project-zodiac-video | Phase 2-3"
+    "shortDescription": "Unified local source | Phase 2-3 | project-zodiac-video"
   }
 }

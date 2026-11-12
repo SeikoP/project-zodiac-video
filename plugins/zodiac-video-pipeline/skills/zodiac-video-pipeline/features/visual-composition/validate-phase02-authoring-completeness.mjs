@@ -4,7 +4,7 @@
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {reachableStates} from './scene-state-trace.mjs';
+import {reachableStates,traceSceneStates} from './scene-state-trace.mjs';
 import {validateStoryText} from './validate-story-text.mjs';
 const used=(layer,id)=>layer?.decision==='use'&&Array.isArray(layer.entity_ids)&&layer.entity_ids.includes(id);
 export function validatePhase02AuthoringCompleteness({run_mode,intent,production,art,director,character,episodeScope,episodeCast}={}){
@@ -45,6 +45,27 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
   for(const actor of (scene.entities??[]).filter(e=>e.kind==='character'))if(!charIds.has(actor.id))add('PHASE02_CHARACTER_ASSEMBLY_REQUIRED',scene.id,actor.id);
   if(!scene.environment)add('PHASE02_CONTEXT_DECISION_REQUIRED',scene.id);
   const events=scene.events??[],beats=sceneArt?.visual_coverage?.beats??[];
+  const trace=run_mode==='fresh'?traceSceneStates(scene):[];
+  if(run_mode==='fresh')for(const beat of beats){
+   const authored=intent?.scenes?.find(s=>s.id===scene.id),request=authored?.grammar?.meme_composition;
+   const reactions=Object.entries(request?.state_bindings??{}).flatMap(([role,state])=>{
+    const id=request.bindings?.[role],actor=(scene.entities??[]).find(e=>e.id===id&&e.kind==='character');
+    return events.filter((e,index)=>actor?.states?.[state]&&actor.initial_state!==state&&e.target===id&&e.state_after===state&&e.state_before!==state&&trace[index]?.before[id]===e.state_before&&actor.states[state].visible!==false&&e.trigger?.type==='voice_anchor'&&typeof e.trigger.text==='string'&&e.trigger.text.trim()&&scene.voice?.includes(e.trigger.text)&&beat.event_ids?.includes(e.id));
+   });
+   for(const layer of ['story_text','meme']){
+    const decision=beat.layers?.[layer];
+    if(!decision||!['use','omit'].includes(decision.decision)||typeof decision.reason!=='string'||!decision.reason.trim()){add('PHASE02_EDITORIAL_DECISION_REQUIRED',scene.id,layer);continue;}
+    if(decision.decision==='omit'){
+     if(decision.entity_ids?.length)add('PHASE02_EDITORIAL_OMISSION_HAS_ENTITIES',scene.id,layer);
+     if(layer==='meme'&&reactions.length)add('PHASE02_MEME_COVERAGE_REQUIRED',scene.id,beat.id);
+     continue;
+    }
+    const ids=decision.entity_ids;
+    if(layer==='story_text'){
+     if(!Array.isArray(ids)||!ids.length||ids.some(id=>!authored?.entities?.some(e=>e.id===id&&e.story_text&&e.kind==='object'&&e.visual_role==='overlay')))add('PHASE02_STORY_TEXT_SELECTION_REQUIRED',scene.id,beat.id);
+    }else if(!request?.id||!Array.isArray(ids)||!ids.length||ids.some(id=>!reactions.some(e=>e.target===id))||reactions.some(e=>!ids.includes(e.target)))add('PHASE02_MEME_REACTION_REQUIRED',scene.id,beat.id);
+   }
+  }
   const backgrounds=(scene.entities??[]).filter(e=>e.kind==='scene_accent'||e.visual_role==='background'||e.visual_role==='scene_accent');
   const canvas=scene.layout_contract?.canvas??production.video??{width:1080,height:1920};
   if(!backgrounds.some(e=>reachableStates(scene,e).some(s=>{const t=s.transform;return s.visible!==false&&s.asset&&t&&['x','y','width','height'].every(k=>Number.isFinite(t[k]))&&t.width>0&&t.height>0&&t.x>=0&&t.y>=0&&t.x+t.width<=canvas.width&&t.y+t.height<=canvas.height;})&&beats.some(b=>used(b.layers?.scene_accent,e.id)||used(b.layers?.scene_set,e.id))))add('PHASE02_SCENE_BACKGROUND_REQUIRED',scene.id);

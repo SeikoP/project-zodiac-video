@@ -2,7 +2,7 @@
 // Native Phase 02 execution coordinator. Source/read/READY is not compiler PASS.
 import {createHash} from 'node:crypto';
 import {access,mkdir,readFile,writeFile,rename,lstat,readdir} from 'node:fs/promises';
-import {spawnSync} from 'node:child_process';
+import {runNativeCommandSync} from '../../core/performance/native-command.mjs';
 import {statSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -21,6 +21,7 @@ import {selectedPhase02Dependencies,selectedStepDependencyFiles,signatureFiles,c
 import {CACHE_REASON,readCacheGraph} from '../../core/cache/incremental-cache.mjs';
 import {isCurrentVisualWorkspace} from '../../features/visual-composition/current-visual-mode.mjs';
 import {cacheInputsForStep} from './phase02-cache-scope.mjs';
+import {phase02NativeSteps,sourcePaths} from './phase02-native-plan.mjs';
 const fastProfileStartedAt=new Date().toISOString(),fastProfileStart=performance.now();
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const argv=process.argv.slice(2);
@@ -30,7 +31,6 @@ if(!requestedWorkspace){console.error('Usage: node phase02-execute.mjs --workspa
 const workspace=path.resolve(requestedWorkspace);
 const running=argv.includes('--run'),finalizeManifest=argv.includes('--finalize-manifest'),noCache=argv.includes('--no-cache'),force=argv.includes('--force')||noCache;
 if(finalizeManifest&&!running)throw Error('FINALIZE_MANIFEST_REQUIRES_RUN');
-await verifyIntentWorkspace(workspace,{revalidateNativeOutput:finalizeManifest});
 await mkdir(path.join(workspace,'.authoring'),{recursive:true});const nativeLease=running?await acquireAuthoringLease(path.join(workspace,'.authoring/.phase02-native.lock'),{run_id:'phase02-native',host_id:os.hostname()}):null;
 const reportedAt=new Date().toISOString();
 const exists=p=>access(p).then(()=>true).catch(()=>false);
@@ -38,68 +38,7 @@ const sha=b=>createHash('sha256').update(b).digest('hex');
 // Publish Prep is a later Phase-02 step, not an entry requirement for native compilers.
 const coreInputPaths=['production.json','narration.txt','.authoring/character-assembly-plan.json'];
 const publishInputPaths=['publish/publish.json','publish/publish-copy.txt'];
-const sourcePaths=[
- 'features/episode/episode-handoff.mjs','features/episode/episode-scope.mjs',
- 'orchestration/phase-index.json',
- 'orchestration/pipeline-state.template.json',
- 'core/state/validate-pipeline-state.mjs',
- 'core/evidence/run-validator-with-receipt.mjs',
- 'features/visual-composition/validate-authoring-scene-events.mjs',
- 'features/visual-composition/validate-visual-quality.mjs',
- 'features/visual-composition/validate-phase02-precompile-boundary.mjs',
- 'features/visual-composition/validate-phase02-progressive-preflight.mjs',
- 'features/visual-composition/validate-scene-experience.mjs',
- 'features/visual-composition/phase02-composition.mjs',
- 'core/ownership/generated-asset-ownership.mjs',
- 'features/narration-performance/compile-narration-performance.mjs',
- 'references/narration-rhythm.mjs',
- 'features/visual-composition/resolve-scene-composition.mjs',
- 'references/asset-library-v4/memes/compile-meme-props.mjs',
- 'references/asset-library-v4/memes/effect-lifecycle.mjs',
- 'references/design.md',
- 'features/visual-composition/validate-phase02-art-direction.mjs',
- 'features/scene-set/validate-scene-set-identity.mjs',
- 'features/scene-set/scene-set-detection.mjs',
- 'references/asset-library-v4/scene-set/index.json',
- 'references/asset-library-v4/scene-set/compile-scene-set.mjs',
- 'references/asset-library-v4/scene-set/accents/index.json',
- 'phases/phase02/phase02-selected-dependencies.mjs',
- 'features/visual-composition/validate-motion-consistency.mjs',
- 'features/scene-set/validate-scene-set-accents.mjs',
- 'art-direction/palette-registry.json',
- 'art-direction/environment-registry.json',
- 'features/publish/validate-publish-prep.mjs',
- 'references/asset-library-v4/characters/compile-character-assembly.mjs',
- 'references/asset-library-v4/characters/character-design-intent.mjs',
- 'features/visual-composition/validate-character-intent-preflight.mjs',
- 'references/asset-library-v4/characters/components/catalog.json',
- 'references/asset-library-v4/validation/validate-character-assembly.mjs',
- 'references/asset-library-v4/validation/validate-character-components.mjs',
- 'references/asset-library-v4/validation/validate-outfit-bake-v4.mjs',
- 'references/asset-library-v4/environments/compile-environment.mjs',
- 'references/asset-library-v4/environments/validate-environment-binding.mjs',
- 'references/asset-library-v4/scene-set/index.json',
- 'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',
- 'references/asset-library-v4/scene-direction/compiler-profile.json',
- 'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',
-];
-const steps=[
- {id:'character_components',src:'references/asset-library-v4/validation/validate-character-components.mjs',args:[],required:[],validator:true},
- {id:'character_plan',src:'references/asset-library-v4/characters/compile-character-assembly.mjs',args:[path.join(workspace,'production.json'),path.join(workspace,'.authoring/character-assembly-plan.json'),'--plan-only'],required:['.authoring/character-state-asset-plan.json']},
- {id:'character_write',src:'references/asset-library-v4/characters/compile-character-assembly.mjs',args:[path.join(workspace,'production.json'),path.join(workspace,'.authoring/character-assembly-plan.json'),'--write'],required:['.authoring/character-state-asset-plan.json']},
- {id:'character_identity',src:'references/asset-library-v4/validation/validate-character-assembly.mjs',args:[workspace],required:[],validator:true},
- {id:'outfit_bake',src:'references/asset-library-v4/validation/validate-outfit-bake-v4.mjs',args:[workspace],required:[],validator:true},
- {id:'environment',src:'references/asset-library-v4/environments/compile-environment.mjs',args:[workspace,'--write'],required:['.authoring/environment-compile-receipt.json']},
- {id:'environment_binding',src:'references/asset-library-v4/environments/validate-environment-binding.mjs',args:[workspace],required:[],validator:true},
- {id:'scene_direction',src:'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',args:[workspace,'--write'],required:['.authoring/scene-direction-compile-receipt.json']},
- {id:'scene_set_identity',src:'features/scene-set/validate-scene-set-identity.mjs',args:[workspace],required:[],validator:true},
- {id:'scene_accent_containment',src:'features/scene-set/validate-scene-set-accents.mjs',args:[workspace],required:[],validator:true},
- {id:'scene_direction_validation',src:'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',args:[workspace],required:[],validator:true},
- {id:'scene_events',src:'features/visual-composition/validate-authoring-scene-events.mjs',args:[workspace],required:[],validator:true},
- {id:'motion_consistency',src:'features/visual-composition/validate-motion-consistency.mjs',args:[workspace],required:[],validator:true},
- {id:'visual_quality',src:'features/visual-composition/validate-visual-quality.mjs',args:[workspace],required:[],validator:true},
- {id:'publish_prep',src:'features/publish/validate-publish-prep.mjs',args:[workspace],required:[],validator:true},
-];
+let steps=[];
 const semanticCache=await readCacheGraph(workspace).catch(()=>({semantic_dirty:[]}));
 const report={run_id:createHash('sha256').update(workspace+'|'+reportedAt).digest('hex').slice(0,20),format:'zodiac-phase02-execution@1',phase:'02-visual-production',at:reportedAt,workspace,mode:running?'run':'inspect',cache_mode:noCache?'disabled':'enabled',semantic_dirty:semanticCache.semantic_dirty??[],status:'BLOCKED',source:{},issues:[],steps:[],checkpoint:'not_checked'};
 const reportPath=path.join(workspace,'.authoring/phase02-execution-receipt.json');
@@ -107,21 +46,16 @@ const checkpointPath=path.join(workspace,'.authoring/phase02-native-checkpoints.
 const writeJson=async(p,x)=>{await mkdir(path.dirname(p),{recursive:true});const tmp=p+'.tmp-'+process.pid;await writeFile(tmp,JSON.stringify(x,null,2)+'\n','utf8');await rename(tmp,p);};
 const finish=async()=>{report.repair_source_hashes={};for(const rel of ['narration.txt','.authoring/visual-intent.json','design.md','.authoring/narrative-plan.json','production.json']){try{report.repair_source_hashes[rel]=sha(await readFile(path.join(workspace,rel)));}catch(e){if(e.code!=='ENOENT')throw e;report.repair_source_hashes[rel]=null;}}report.execution_trace=executionTrace(report);report.repair_plan=report.issues.length?createRepairPlan(report.issues,{attempt:0,maxAttempts:1}):null;report.fast_repair_groups=report.issues.length?planBatchRepair(report.issues):null;if(running&&report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED')report.finalizer=await finalizePhase02Workspace(workspace,{write:true});report.structural_status=report.status==='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'?'STRUCTURAL_PASS':report.status;report.creative_status='CREATIVE_REVIEW_REQUIRED';report.runtime_status='RUNTIME_QA_PENDING';if(running){try{report.compiled_production_sha256=sha(await readFile(path.join(workspace,'production.json')));report.projection_source_sha256=JSON.parse(await readFile(path.join(workspace,'.authoring/visual-intent-projection-receipt.json'))).source_sha256;}catch{}}report.fast_profile=summarizeFastProfile({started_ms:fastProfileStart,ended_ms:performance.now(),steps:report.steps,dependencies:PHASE02_DEPENDENCIES,preflight_wall_ms:(report.state_validation?.elapsed_ms??0)+(report.fast_preflight?.wall_ms??0)});await writeJson(path.join(workspace,'.authoring/fast-pipeline-profile.json'),report.fast_profile);if(running){const perfState=await readFile(path.join(workspace,'.authoring/pipeline-state.json'),'utf8').then(JSON.parse).catch(()=>null),perfIdentity=performanceIdentity(perfState),fastEndedAt=new Date().toISOString();await recordEpisodeSpan(workspace,{phase:'02-visual-production',stage:'native-execute',category:'native',duration_ms:report.fast_profile.wall_clock_ms,status:['NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED','PASS','READY'].includes(report.status)?'PASS':report.status,...(perfIdentity??{}),started_at:fastProfileStartedAt,ended_at:fastEndedAt}).catch(()=>{});}await writeJson(reportPath,report);if(nativeLease)await nativeLease.release();console.log(JSON.stringify({status:report.status,phase:report.phase,issues:report.issues,steps:report.steps.map(s=>({id:s.id,status:s.status,exit_code:s.exit_code})),receipt:reportPath},null,2));process.exit(['PASS','READY','NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED'].includes(report.status)?0:2);};
 const fail=(code,details={})=>{report.issues.push({code,...details});};
+try{
+try{await verifyIntentWorkspace(workspace,{revalidateNativeOutput:finalizeManifest});}catch(e){fail('VISUAL_INTENT_INVALID',{detail:e.message});await finish();}
+
 const resolveSource=async p=>{
  const src=path.resolve(p);
  if(await exists(path.join(src,'plugin.json')))return {pluginRoot:src,skillRoot:path.join(src,'skills/zodiac-video-pipeline')};
  if(await exists(path.join(src,'orchestration/phase-index.json')))return {pluginRoot:path.resolve(src,'../..'),skillRoot:src};
  return {pluginRoot:src,skillRoot:path.join(src,'skills/zodiac-video-pipeline')};
 };
-const nodeRun=(file,args)=>{
- const started=Date.now();
- const r=spawnSync(process.execPath,[file,...args],{encoding:'utf8',maxBuffer:4*1024*1024,timeout:180000});
- const exit_code=r.status??(r.error?.code==='ETIMEDOUT'?124:1);
- let issues=[];
- // Parse before truncating logs so grouped repair retains the first failing scene too.
- if(exit_code!==0)try{const output=JSON.parse(String(r.stdout??''));if(Array.isArray(output?.issues))issues=output.issues.filter(i=>i&&typeof i==='object'&&typeof i.code==='string'&&i.code.trim());}catch{}
- return {status:exit_code===0?'PASS':'FAIL',exit_code,issues,elapsed_ms:Date.now()-started,command:[process.execPath,file,...args],stdout:String(r.stdout??'').slice(-4500),stderr:String(r.stderr??r.error?.message??'').slice(-4500)};
-};
+const nodeRun=(file,args)=>runNativeCommandSync([file,...args]);
 // Native library assets are executable dependencies, not just authoring metadata.
 // A changed SVG or environment cue must invalidate the corresponding cached native compilation.
 const collectNativeDependencies=async(base)=>{
@@ -197,17 +131,8 @@ const rhythmRelease=releaseParts[0]>2||(releaseParts[0]===2&&(releaseParts[1]>4|
 const phase02State=await readFile(statePath,'utf8').then(JSON.parse).catch(()=>null);
 const phase02RunMode=phase02State?.run_mode??null;
 const currentVisual=phase02State?await isCurrentVisualWorkspace(workspace,phase02State):false;
-if(rhythmRelease&&phase02RunMode==='fresh'){coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');steps.unshift({id:'narration_performance',src:'features/narration-performance/compile-narration-performance.mjs',args:[workspace,'--write'],required:['.authoring/narration-performance-receipt.json']});}
-steps.splice(steps.findIndex(s=>s.id==='environment'),0,{id:'meme_props',src:'references/asset-library-v4/memes/compile-meme-props.mjs',args:[path.join(workspace,'production.json'),'--write'],required:['.authoring/meme-prop-compile-receipt.json','.authoring/generated-assets.json']});
-if(modernComposition){steps.splice(steps.findIndex(s=>s.id==='scene_events'),0,{id:'composition_resolved',src:'features/visual-composition/resolve-scene-composition.mjs',args:[workspace,'--write'],required:['.authoring/scene-composition-resolved.json']});}
-// Retired Scene Set checks remain available for compatibility only.
-// Current Visual Intent uses canvas-native composition even when recovering a continuity run.
-if(currentVisual){
- for(const oldId of ['scene_set_identity','scene_accent_containment']){
-  const ix=steps.findIndex(s=>s.id===oldId);if(ix>=0)steps.splice(ix,1);
- }
-}
-if(finalizeManifest)steps.push({id:'director_final_review',src:'features/visual-composition/run-director-v2-review.mjs',args:[workspace],required:['.authoring/director-v2-review-receipt.json']});
+if(rhythmRelease&&phase02RunMode==='fresh')coreInputPaths.push(await exists(path.join(workspace,'.authoring/narrative-plan.json'))?'.authoring/narrative-plan.json':'narrative-plan.json');
+steps=phase02NativeSteps(workspace,{narrationPerformance:rhythmRelease&&phase02RunMode==='fresh',modernComposition,currentVisual,finalizeManifest});
 const graph=validateStepGraph(steps,currentVisual?PHASE02_DEPENDENCIES:LEGACY_PHASE02_DEPENDENCIES,{strictMissing:true});
 if(graph.status!=='PASS')report.issues.push(...graph.issues);
 report.source.version=manifest?.version??null;report.source.fingerprint=stamp;report.source.native_dependency_count=nativeDependencies.length;report.source.native_dependency_mode=dependencySelection.mode;
@@ -221,6 +146,7 @@ if(running&&report.issues.length===0){
   const preflight=await runParallelNativePreflight(source.skillRoot,workspace,{artDirectionRequired:state.flags?.art_direction_required===true,fresh:currentVisual,maxConcurrency:5});
   report.fast_preflight={status:preflight.status,plan:preflight.plan,issues:preflight.issues,wall_ms:preflight.wall_ms,serial_equivalent_native_ms:preflight.serial_equivalent_native_ms};
   report.precompile_seam=preflight.checks.seam;
+  report.issues.push(...preflight.issues);
   report.precompile_seam_receipt=preflight.receipts.seam;
   report.character_intent_preflight=preflight.checks.character;
   if(preflight.checks.progressive){
@@ -317,6 +243,10 @@ else{
    report.status='NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED';
  }else report.status='BLOCKED';
  await finish();
+}
+}catch(e){
+ report.status='BLOCKED';fail('PHASE02_EXECUTION_FAILED',{detail:e.message});
+ try{await finish();}finally{if(nativeLease)await nativeLease.release();}
 }
 // Synchronous input metadata check avoids reading bytes twice before per-step signature.
 function requireExistsSync(rel){try{return Boolean(requireFileStatSync(path.join(workspace,rel)));}catch{return false;}}

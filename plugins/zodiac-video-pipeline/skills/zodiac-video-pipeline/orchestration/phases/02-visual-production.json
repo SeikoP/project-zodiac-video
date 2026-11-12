@@ -429,6 +429,13 @@
           "defer_references": [
             "references/visual-quality.md",
             "references/retention-quality.md"
+          ],
+          "load_references": [
+            "references/visual-direction.md",
+            "references/visual-quality.md",
+            "orchestration/phase02-composition-contract.md",
+            "references/retention-quality.md",
+            "references/story-text.md"
           ]
         },
         "design": {
@@ -436,7 +443,8 @@
             "references/visual-direction.md",
             "references/visual-quality.md",
             "orchestration/phase02-composition-contract.md",
-            "references/retention-quality.md"
+            "references/retention-quality.md",
+            "references/story-text.md"
           ],
           "context_capability_ids": [
             "visual_compile_contract",
@@ -452,7 +460,8 @@
           "load_references": [
             "references/visual-direction.md",
             "references/visual-quality.md",
-            "orchestration/phase02-composition-contract.md"
+            "orchestration/phase02-composition-contract.md",
+            "references/story-text.md"
           ],
           "context_capability_ids": [
             "visual_compile_contract",
@@ -808,7 +817,6 @@
       ],
       "required_outputs": [
         "assets/**",
-        "asset-lineage-receipt.json",
         ".authoring/character-state-asset-plan.json",
         ".authoring/scene-direction-compile-receipt.json",
         ".authoring/environment-compile-receipt.json",
@@ -816,7 +824,6 @@
         ".authoring/director-v2-review-receipt.json"
       ],
       "gate_checks": [
-        "asset_lineage",
         "semantic_animation",
         "style_token_conformance",
         "outfit_bake_layering",

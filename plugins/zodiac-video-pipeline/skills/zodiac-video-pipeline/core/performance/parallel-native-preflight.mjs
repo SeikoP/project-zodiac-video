@@ -1,15 +1,7 @@
-import {spawn} from 'node:child_process';
+import {runNativeCommand} from './native-command.mjs';
 import path from 'node:path';
 import {performance} from 'node:perf_hooks';
 import {runSafeParallel} from './safe-parallel-scheduler.mjs';
-function executeNode(file,args){
- return new Promise((resolve,reject)=>{
-  const start=performance.now();const child=spawn(process.execPath,[file,...args],{stdio:['ignore','pipe','pipe']});
-  let stdout='',stderr='';const limit=4500;const collect=(prev,chunk)=>(prev+chunk.toString()).slice(-limit);
-  child.stdout.on('data',b=>{stdout=collect(stdout,b);});child.stderr.on('data',b=>{stderr=collect(stderr,b);});
-  child.once('error',reject);child.once('close',(code,signal)=>resolve({status:code===0?'PASS':'FAIL',exit_code:code??1,signal:signal??null,elapsed_ms:+(performance.now()-start).toFixed(2),command:[process.execPath,file,...args],stdout,stderr}));
- });
-}
 export async function runParallelNativePreflight(sourceRoot,workspace,{artDirectionRequired=false,fresh=false,maxConcurrency=5}={}){
  const fastStarted=performance.now();
  const validator=path.join(sourceRoot,'core/evidence/run-validator-with-receipt.mjs');
@@ -32,9 +24,9 @@ export async function runParallelNativePreflight(sourceRoot,workspace,{artDirect
   );
  }
  if(artDirectionRequired)tasks.push({id:'art',reads:['production.json','.authoring/scene-art-direction.json'],writes:['.authoring/native-validator-phase02_art_direction_validation.json'],dependencies:[],file:validator,args:['phase02_art_direction_validation',artReceipt,path.join(sourceRoot,'features/visual-composition/validate-phase02-art-direction.mjs'),workspace]});
- const result=await runSafeParallel(tasks,{maxConcurrency,execute:async t=>executeNode(t.file,t.args)});
+ const result=await runSafeParallel(tasks,{maxConcurrency,execute:async t=>runNativeCommand([t.file,...t.args])});
  const checks=Object.fromEntries(result.results.map(x=>[x.id,x.status==='PASS'?x.value:{status:'FAIL',reason:x.error}]));
  // A child may exit nonzero without rejecting. Validate its native exit status.
- const issues=Object.entries(checks).filter(([,v])=>v.status!=='PASS').map(([id,v])=>({id,exit_code:v.exit_code??1,stderr:v.stderr??v.reason??''}));
+ const issues=Object.entries(checks).filter(([,v])=>v.status!=='PASS').flatMap(([id,v])=>[{id,code:'PHASE02_ENTRY_CHECK_FAILED',step:id,exit_code:v.exit_code??1,stderr:v.stderr??v.reason??''},...(v.issues??[]).map(issue=>({...issue,step:id}))]);
  return {status:issues.length?'BLOCKED':'PASS',wall_ms:+(performance.now()-fastStarted).toFixed(2),serial_equivalent_native_ms:+Object.values(checks).reduce((n,x)=>n+(x.elapsed_ms??0),0).toFixed(2),checks,issues,plan:result.plan,receipts:{seam:seamReceipt,...(fresh?{progressive:progressiveReceipt,experience:experienceReceipt}:{}),...(artDirectionRequired?{art:artReceipt}:{})},not_an_approval:true};
 }

@@ -1,3 +1,4 @@
+import {sourcePaths} from '../../phases/phase02/phase02-native-plan.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
@@ -23,8 +24,7 @@ const makeSource=async()=>{
  const skill=path.join(root,'skills/zodiac-video-pipeline');
  await write(path.join(root,'plugin.json'),JSON.stringify({name:'zodiac-video-pipeline',version:'2.2.9'}));
  await write(path.join(skill,'orchestration/pipeline-state.template.json'),JSON.stringify({plugin_version:'2.2.9'}));
- const coordinator=await readFile(script,'utf8');
- const rels=coordinator.match(/const sourcePaths=\[([\s\S]*?)\];/)[1].match(/'[^']+'/g).map(x=>x.slice(1,-1));
+ const rels=sourcePaths;
  for(const p of rels){const full=path.join(skill,p);if(p.endsWith('.mjs'))await write(full,'console.log("MOCK_PASS");\n');else if(!(await exists(full)))await write(full,'{}\n');}
  await write(path.join(skill,'references/asset-library-v4/memes/compile-meme-props.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=path.dirname(process.argv[2]);await mkdir(path.join(root,'.authoring'),{recursive:true});for(const file of ['meme-prop-compile-receipt.json','generated-assets.json'])await writeFile(path.join(root,'.authoring',file),'{}');`);
  // Deterministic fake binaries only for testing the coordinator, never for production.
@@ -60,6 +60,18 @@ const makeSource=async()=>{
  return root;
 };
 const exists=async p=>{try{await readFile(p);return true;}catch{return false;}};
+
+test('invalid visual source produces a structured blocker and releases the native lease',async()=>{
+ const ws=await makeWorkspace(),src=await makeSource();
+ try{
+  await write(path.join(ws,'.authoring/visual-intent.json'),'{invalid');
+  const result=run(ws,src,['--run']);assert.equal(result.status,2,result.stderr);
+  const receipt=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
+  assert.ok(receipt.issues.some(i=>i.code==='VISUAL_INTENT_INVALID'));
+  assert.deepEqual(receipt.steps,[]);
+  assert.equal(await exists(path.join(ws,'.authoring/.phase02-native.lock')),false);
+ }finally{await rm(ws,{recursive:true,force:true});await rm(src,{recursive:true,force:true});}
+});
 
 test('local distribution source root can run Phase 2 inspection',async()=>{
  const ws=await makeWorkspace(),src=await makeSource();

@@ -43,3 +43,18 @@ test('canvas-native accents project as rear environment without prop/effect dens
  assert.equal(output.production.scenes[0].environment.mode,'canvas');
  assert.equal(output.art_direction.scenes[0].components[0].narrative_role,'scene_accent');
 });
+
+test('legacy Story Text decisions project their reason and spoken event anchor into Art Direction',async()=>{
+ const {compileVisualIntent}=await import('../../features/visual-composition/compile-visual-intent.mjs');
+ const {createHash}=await import('node:crypto');
+ const voice='Mọi thứ vẫn nối với nhau.';
+ const input={format:'zodiac-visual-intent@1',taxonomy_version:'narrative_visual@1',narration_sha256:createHash('sha256').update(voice).digest('hex'),video:{width:1080,height:1920,fps:24},visual_system:{},cast:[],frames:[],assets:{label:{category:'overlay',path:'assets/overlays/label.svg'}},narrative_visual_decision:{mode:'omitted',reason:'No symbolic visual needed',review_ref:'review:story-text'},scenes:[{id:'S01',narration_range:[0,Buffer.byteLength(voice)],semantic_goal:'Show a claim then its correction',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'story_text_s01'},environment:{background_palette_id:'warm-paper'}},entities:[{id:'story_text_s01',kind:'object',visual_role:'overlay',initial_state:'hidden',states:{hidden:{asset:'label',visible:false,layer:42,transform:{x:120,y:170,width:840,height:235}},setup:{asset:'label',visible:true,layer:42,transform:{x:120,y:170,width:840,height:235}}},story_text:{purpose:'contrast',reason:'Show the claim before the spoken correction.',states:{setup:'VẪN NỐI'}}}],events:[{id:'TEXT_SETUP',target:'story_text_s01',action:'state_swap',state_before:'hidden',state_after:'setup',scheduling:{mode:'voice_anchor'},trigger:{type:'voice_anchor',text:'Mọi thứ vẫn nối',occurrence:1},motion:{preset:'state_swap',duration_frames:12}}],director_beats:[],art_direction:{},semantic_asset_decisions:[]}]};
+ const output=compileVisualIntent(input,{narration:voice}),component=output.art_direction.scenes[0].components[0];
+ assert.equal(component.reason,input.scenes[0].entities[0].story_text.reason);
+ assert.equal(component.voice_anchor,'Mọi thứ vẫn nối');
+ assert.equal(output.production.scenes[0].entities[0].story_text,undefined);
+ assert.deepEqual(output.production.scenes[0].events[0].scheduling,{max_drift_frames:0,merge_policy:'never'});
+ const schema=JSON.parse(await readFile(new URL('../../references/contracts/authoring-ir-v1.schema.json',import.meta.url)));
+ const handoff=compileJobV5(output.production,design,{sign:'Test',concept:'story-text',contractSchema:schema});
+ assert.deepEqual(handoff.ir.scenes[0].events[0].scheduling,{max_drift_frames:0,merge_policy:'never'});
+});

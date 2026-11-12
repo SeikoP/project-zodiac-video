@@ -43,7 +43,7 @@ export async function validateHandoffV2(root){
   let end=0;for(const s of scene.caption_segments){
     if(s.start_ms<end||s.end_ms<=s.start_ms||s.max_lines>2)fail('invalid caption timing/lines '+scene.id);
     end=s.end_ms;
-    if(tokens(s.text).length<3 && !/[!?…]/u.test(s.text))fail('tiny caption fragment '+scene.id);
+    if(tokens(s.text).length<3 && tokens(scene.voice).length>=3 && !/[!?…]/u.test(s.text))fail('tiny caption fragment '+scene.id);
   }
   const layout=scene.layout_contract;const canvas=layout.canvas;
   const boxes=['caption_safe_zone','character_zone','prop_zone','effect_zone'];

@@ -14,6 +14,16 @@ async function fixture(){
 }
 test('parallel preflight creates separate receipts and preserves gate results',async()=>{const f=await fixture();try{const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'PASS');assert.deepEqual(r.plan.batches,[['seam','character','art']]);for(const id of ['seam','art'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');}finally{await rm(f.root,{recursive:true,force:true});}});
 
+test('parallel preflight retains first and last scene diagnostics from large native output',async()=>{
+ const f=await fixture();try{
+  await writeFile(path.join(f.skill,'features/visual-composition/validate-character-intent-preflight.mjs'),`console.log(JSON.stringify({issues:[{code:'CHARACTER_FIRST',scene_id:'S01',detail:'x'.repeat(12000)},{code:'CHARACTER_LAST',scene_id:'S19'}]}));process.exitCode=1;`);
+  const r=await runParallelNativePreflight(f.skill,f.ws);
+  assert.equal(r.status,'BLOCKED');
+  assert.deepEqual(r.issues.filter(i=>i.scene_id).map(i=>[i.code,i.scene_id,i.step]),[['CHARACTER_FIRST','S01','character'],['CHARACTER_LAST','S19','character']]);
+  assert.ok(r.checks.character.stdout.length<=4500);
+ }finally{await rm(f.root,{recursive:true,force:true});}
+});
+
 test('failed character preflight blocks while retaining other independent native receipts',async()=>{const f=await fixture();try{await writeFile(path.join(f.skill,'features/visual-composition/validate-character-intent-preflight.mjs'),'process.exitCode=2;');const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'BLOCKED');assert.equal(r.checks.character.status,'FAIL');assert.equal(r.checks.seam.status,'PASS');assert.equal(r.checks.art.status,'PASS');assert.equal(r.issues.length,1);}finally{await rm(f.root,{recursive:true,force:true});}});
 
 

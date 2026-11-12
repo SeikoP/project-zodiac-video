@@ -6,6 +6,23 @@ import {validateHandoffV2} from '../../phases/phase03/validate-handoff-workspace
 import {exportZodiacJobV2,canonicalPackageZipName} from '../../phases/phase03/export-zodiac-job-v2.mjs';
 import {validateZipFile,parseZip} from '../../phases/phase03/zip-core-v2.mjs';
 const exists=p=>access(p).then(()=>true).catch(()=>false);
+
+test('short complete scenes remain valid while tiny fragments in longer scenes fail',async()=>{
+ const root=await makeRoot();
+ try{
+  const s=source();s.scenes[0].voice='Khoan.';
+  await writeFile(path.join(root,'production.json'),JSON.stringify(s));
+  await writeFile(path.join(root,'narration.txt'),'Khoan.');
+  const {ir}=await compileWorkspace(root,{sign:'gemini',concept:'Pause',prune:true});
+  await validateHandoffV2(root);
+  ir.scenes[0].voice='Khoan để tôi nói.';
+  const segment=ir.scenes[0].caption_segments[0];
+  ir.scenes[0].caption_segments=[{...segment,text:'Khoan',start_ms:0,end_ms:300},{...segment,text:'để tôi nói.',start_ms:300,end_ms:900}];
+  await writeFile(path.join(root,'production.ir.json'),JSON.stringify(ir));
+  await writeFile(path.join(root,'narration.txt'),ir.scenes[0].voice);
+  await assert.rejects(()=>validateHandoffV2(root),/tiny caption fragment/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
 test('explicit state-swap duration overrides use the existing runner-compatible duration ID',async()=>{const root=await makeRoot();try{const s=source();s.scenes[0].events[0].motion.duration_frames=12;s.scenes[0].events.push({...s.scenes[0].events[0],id:'E02',state_before:'open',state_after:'neutral',scheduling:{max_drift_frames:30,merge_policy:'never'},motion:{preset:'state_swap',duration_frames:8,duration_override:true}});await writeFile(path.join(root,'production.json'),JSON.stringify(s));const r=await compileWorkspace(root,{sign:'Bọ Cạp',concept:'Hai phiên bản',prune:true});assert.equal(r.ir.scenes[0].events[1].desired_motion,'state_swap_8f');assert.equal(r.designToken.motion_defaults.state_swap_8f.duration_frames,8);await validateHandoffV2(root);}finally{await rm(root,{recursive:true,force:true})}});
 const token={id:'zodiac-paper-doodle-meme-v4',version:'4.0',style_family:'paper-doodle-chibi-meme',handmade_profile:'human-stroke-v2',hard_style_lock:true,palette_roles:{paper:'#fff',ink:'#111'},character_construction:{handmade_profile:'human-stroke-v2',identity_rule:'body + hair + outfit',body_variation:'authored_geometry_not_scale_transform'},shape_language:{},caption_emphasis:{font_family:'Patrick Hand'},safe_zone:{x:72,y:960,width:936,height:620},caption_overlay:{mode:'collision_aware'},motion_grammar:{state_swap:'voice anchored'},asset_style_contract:{style_token:'zodiac-paper-doodle-meme-v4',handmade_profile:'human-stroke-v2',legacy_v3_direct_copy:false}};
 const design=`<!-- STYLE_TOKEN_BEGIN -->\n\`\`\`json\n${JSON.stringify(token)}\n\`\`\`\n<!-- STYLE_TOKEN_END -->\n`;

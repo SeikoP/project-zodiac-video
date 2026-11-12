@@ -64,7 +64,7 @@ def validate_authoring_ir(document: dict[str, Any]) -> None:
                     raise _invalid("caption segments overlap or have invalid bounds", scene_id=scene_id, detail={"index": index})
                 last_end = end
                 phrase = segment["text"].strip()
-                if len(_tokens(phrase)) < 3 and not any(p in phrase for p in "!?…"):
+                if len(_tokens(phrase)) < 3 and len(_tokens(scene["voice"])) >= 3 and not any(p in phrase for p in "!?…"):
                     raise _invalid("caption fragment has fewer than three words", scene_id=scene_id, detail={"index": index})
                 combined.extend(_tokens(phrase))
             if combined != _tokens(scene["voice"]):

@@ -15,6 +15,31 @@ def fixture_ir():
 
 
 class AuthoringIrTests(unittest.TestCase):
+    def test_short_complete_scene_caption_is_valid(self):
+        document = fixture_ir()
+        scene = document["scenes"][0]
+        scene["voice"] = "Khoan."
+        for event in scene["events"]:
+            event["trigger"] = {"type": "scene_start"}
+        scene["caption_segments"] = [
+            {"text": "Khoan.", "start_ms": 0, "end_ms": 500, "max_lines": 2, "preferred_breaks": []}
+        ]
+        validate_authoring_ir(document)
+        scene["caption_segments"][0]["text"] = "Ừ."
+        with self.assertRaisesRegex(ControlPlaneError, "exact narration token order"):
+            validate_authoring_ir(document)
+
+    def test_tiny_caption_fragment_in_longer_scene_is_rejected(self):
+        document = fixture_ir()
+        scene = document["scenes"][0]
+        scene["voice"] = "Khoan để tôi nói."
+        scene["caption_segments"] = [
+            {"text": "Khoan", "start_ms": 0, "end_ms": 300, "max_lines": 2, "preferred_breaks": []},
+            {"text": "để tôi nói.", "start_ms": 300, "end_ms": 900, "max_lines": 2, "preferred_breaks": []},
+        ]
+        with self.assertRaisesRegex(ControlPlaneError, "fewer than three words"):
+            validate_authoring_ir(document)
+
     def test_loads_valid_semantic_ir(self):
         loaded = load_authoring_ir(FIXTURE / "production.ir.json")
         self.assertEqual(loaded["format"], "zodiac-authoring-ir@1")

@@ -23,12 +23,14 @@ and ordered `beats` covering the whole voice with contiguous UTF-8 byte
 `narration_range` values. A beat is internal pacing, not a new scene or a
 change to approved narration paragraphs.
 
-Every beat has `id`, `goal`, ordered `event_ids`, and decisions for all seven
-`layers`: `actors`, `scene_set`, `scene_accent`, `story_object`, `props`,
-`support`, `caption`. Each decision is `use` with a reason and actual
+Every fresh beat has `id`, `goal`, ordered `event_ids`, and decisions for
+`layers`: `actors`, `scene_accent`, `narrative_visual`, `props`,
+`support`, `caption`, `story_text`, `meme`. Each decision is `use` with a reason and actual
 `entity_ids`, or `omit` with a nonempty editorial reason. Caption uses the
 layout's reserved safe zone rather than a fake SVG entity. Use existing
 entities/states; do not generate an asset just to fill a box.
+
+`story_text` and `meme` are mandatory editorial decisions, not mandatory visual density. Lettering use binds actual authored overlays. Meme use binds reacting characters and a selected grammar adapter's `state_bindings` to real voice-anchored events in that beat. Neither can be inferred from a global flag or an absent asset. Omit with a specific reason when acting, the product demo or a quiet hold should own attention. Historical coverage retains its pinned `scene_set`/`story_object` names.
 
 The precompile seam enforces coverage even if art_direction_required is false.
 It rejects missing decisions, narration gaps/stale hashes, missing or wrongly
