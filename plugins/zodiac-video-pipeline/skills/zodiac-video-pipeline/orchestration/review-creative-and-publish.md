@@ -8,8 +8,8 @@ These are review obligations inside the existing three phases, not a new phase. 
 - Use plain spoken narration for TTS; **markdown bold** belongs to UI and never enters narration.txt or voice anchor. Voice anchors must be exact whole-word text fragments.
 
 ## Phase 02 — visual intent authoring
-- Director Plan documents primary actor, head-space Story Object, before→after visual meaning, supporting prop/crowd/reaction/effect opportunities, density rationale and why each role is used or omitted for every beat.
-- The Story Object is a changing metaphor in thought-space when semantically appropriate, *not* a background replacement nor ordinary decoration. Test voice-muted setup→friction→payoff and actual temporal changes. Do not enforce prop-count quotas or one-SVG-per-line.
+- Director Plan documents primary actor, head-space Narrative Visual, before→after visual meaning, supporting prop/crowd/reaction/effect opportunities, density rationale and why each role is used or omitted for every beat.
+- The Narrative Visual is a changing story image in thought-space when semantically appropriate, *not* a background replacement nor ordinary decoration. Test voice-muted setup→friction→payoff and actual temporal changes. Do not enforce prop-count quotas or one-SVG-per-line.
 - Scene environments are motivated by the narration, not convenience profiles. Symbolic minimal thought-space is valid; do not add sofa/window to satisfy fixture counts. Validate token V4, handwritten strokes, casting diversity across completed series, face visibility, caption safe zone, 180px-scale cover legibility and scene-to-scene composition diversity.
 - Run `node core/audit/audit-visual-story-roles.mjs <workspace>` after authoring events/assets and BEFORE native visual review; record its REVIEW_REQUIRED findings. REVIEW flags are editorial questions, not automatic failures and not proof of quality. Unresolved asset references/event targets block.
 - Changes to narration, assets, events, cover or publish surfaces after an approval require a source revision diff and *new approval for affected surfaces*; do not inherit v3 review for v1.1/v1.2 revisions.

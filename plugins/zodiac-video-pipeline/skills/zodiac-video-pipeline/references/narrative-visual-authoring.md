@@ -1,25 +1,30 @@
-# Narrative Visual authoring (fresh runs)
+# Narrative Visual — Hình ảnh kể chuyện (Phase 2 execution)
 
-No story motifs are stored. Each episode invents its picture; the kit constrains form only (style, safety, size, placement), never content. Human Stroke v2 stays: focal shapes are authored paths, no runtime jitter, filters or wobble.
+Fresh authoring uses one term only: **Narrative Visual** (`narrative_visual`). Phase 1 owns the creative direction in `narrative-plan.json:narrative_visuals[]`; Phase 2 materializes that direction. Story Object, Story Symbol and Visual Metaphor are compatibility/runtime vocabulary only.
 
-## Per narrative beat
-1. **Brief** (`zodiac-narrative-brief@1`, in the scene's art direction as `narrative_brief`): `claim` (one sentence the viewer must grasp), `anchor_phrase` (exact words in the scene voice), `state_changes[]` (`from`, `to`, `anchor_phrase`, optional `event_id`). Required when any coverage beat uses the `narrative_visual` layer. Checked by `validate-narrative-brief.mjs`.
-2. **Three concepts** as text only: literal, metaphor, exaggeration. Pick one and write why. Variety comes from this ladder and from the reuse check, not from stock images.
-3. **Reuse check**: `auditNarrativeBriefReuse` (in `audit-creative-reuse.mjs`) compares the claim with earlier episodes' briefs. A repeat is `EDITORIAL_REVIEW`, never a block. Pass earlier briefs as `priorNarrativeBriefs` when they are available.
-4. **Author the SVG**: one SVG per identity, states as visibility groups driven by voice-anchored events.
-5. **Kit lint** (`validate-narrative-visual-assets.mjs`, run by the precompile boundary on fresh runs): no text glyphs, no filter/script/image/animation, valid viewBox, at least two focal paths, minimum placed area `KIT_MIN_AREA` (30,000 px² by default; override per call with `minArea` when a placement justifies it), inside the canvas, clear of the caption safe zone. Palette and stroke-token checks exist in the module but are not wired to a global list yet, because stroke tokens are ranges.
-6. **Blind readback (offered, not required)**: rasterize the compiled frame and give a fresh reviewer (`zodiac-reviewer`) only that image and the narration line. Ask what story it tells and compare the answer with the brief's `claim`. A mismatch returns NEEDS_REVISION with the reviewer's own words. It is a pre-review aid; the user's Visual Review stays the approval.
+## Phase 2 responsibilities
 
-## Coverage ceremony
-On fresh runs a layer with no entity in the beat is derived as `omit` ("no entity in beat") by the validator. A layer that has entities still needs its authored reason. The caption layer stays explicit. Old workspaces keep the strict rule.
+1. **Read the Phase-1 direction.** Select the relevant `narrative_visuals[]` entry by `id`. Do not run a second literal/metaphor/exaggeration competition and do not substitute a thematic catalog asset.
+2. **Bind to the approved narration.** Choose an exact spoken `anchor_phrase` from the final narration and map the Phase-1 `beat_ids[]` to the scene/director beats that realize it.
+3. **Write the scene brief.** `art_direction.narrative_brief.claim` must preserve the Phase-1 `claim`. Add only scene-specific state changes and exact narration anchors; changing the claim or selected image direction requires reopening Phase 1.
+4. **Author the SVG.** One scene-specific SVG identity may contain multiple visibility/state groups. Human Stroke v2 stays: authored paths, no runtime jitter, filters or random wobble.
+5. **Record provenance.** Every new Narrative Visual asset uses:
+   ```json
+   {
+     "creative_origin": {
+       "mode": "phase1_directed",
+       "phase1_visual_id": "NV1",
+       "scene_id": "S01",
+       "anchor_phrase": "exact words in the approved narration"
+     }
+   }
+   ```
+6. **Reuse check.** Repetition is editorial review, not automatic failure. Reuse is acceptable only when continuity or callback meaning justifies it.
+7. **Kit lint.** `validate-narrative-visual-assets.mjs` checks SVG safety, viewBox, focal paths, area, canvas placement and caption-safe zones.
+8. **Blind readback (optional).** Rasterize the compiled frame and ask a fresh reviewer what story it communicates. Compare that answer with the Phase-1 claim. User Visual Review remains the approval.
 
-## Who does what
-| Task | Agent | Model |
-| --- | --- | --- |
-| Brief, three concepts, SVG authoring | `zodiac-narrative-visual` | opus |
-| Kit lint, previews, receipts | `zodiac-gatekeeper` | haiku |
-| Blind readback | `zodiac-reviewer` | opus, sees only the frame and the line |
+## Blocking rule
 
-## Blocking handoff rule
+For a fresh Phase-1-directed run, `narrative_visual_decision.mode=required` is not satisfied by a proposal paragraph, a compatibility asset, a generic zodiac icon or a coverage layer marked `omit`. The authored `visual-intent.json` must own an entity, native asset path, exact narration anchor, state/event semantics, and `creative_origin.phase1_visual_id` that resolves to the approved Narrative Plan.
 
-`narrative_visual_decision.mode=required` is not satisfied by a standalone proposal SVG, a descriptive paragraph or a coverage layer marked `omit`. The authored `visual-intent.json` must own an entity, states, exact voice-anchor events, native kit-valid asset paths, narrative brief and explicit coverage. Run `validate-narrative-visual-presence.mjs` before precompile and record the native receipt. If a scene starts with a hidden graphic, judge the completed scene and the before/after event frames rather than relying on the entry contact sheet. `PASS` from the validator means structure and asset bytes exist; narrative readability and visual quality still require genuine review. Keep physical props and scene accents separate from the mental-image layer.
+Phase 2 may refine **how** the selected image is drawn, placed and transitioned. It may not replace **what the image means** without reopening Phase 1.

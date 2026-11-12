@@ -11,7 +11,7 @@ const metadata=(svg,key)=>{const open=svg.indexOf('<metadata'),start=open<0?-1:s
 const nums=(svg,re)=>[...svg.matchAll(re)].map(m=>Number(m[1])).filter(Number.isFinite);
 const colors=svg=>[...svg.matchAll(/(?:fill|stroke)=["'](#[0-9a-f]{6})["']/giu)].map(m=>m[1].toUpperCase());
 
-export async function validateProgressivePreflight({intent,production,motionRegistry={},designToken={},readAsset}={}){
+export async function validateProgressivePreflight({intent,production,motionRegistry={},designToken={},readAsset,phase1Visuals=[]}={}){
  const issues=[],add=(code,detail={})=>issues.push({code,...detail});
  for(const scene of intent?.scenes??[]){
   for(const beat of scene.director_beats??[]){
@@ -53,25 +53,26 @@ export async function validateProgressivePreflight({intent,production,motionRegi
    if(!asset?.path||typeof readAsset!=='function'){add('CREATIVE_ASSET_SOURCE_REQUIRED',{asset_id:id});continue;}
    try{svgByAsset[id]=await readAsset(asset.path);}catch{add('CREATIVE_ASSET_UNREADABLE',{asset_id:id});}
   }
-  const creative=validateCreativeProvenance(intentWithVoice,svgByAsset);
+  const creative=validateCreativeProvenance(intentWithVoice,svgByAsset,phase1Visuals);
   issues.push(...creative.issues);
  }
  return {format:'zodiac-phase02-progressive-preflight@1',status:issues.length?'BLOCKED':'PASS',issues,not_an_approval:true};
 }
 
 async function workspace(root){
- const [intent,production,motionRegistry,design]=await Promise.all([
+ const [intent,production,motionRegistry,design,plan]=await Promise.all([
   readFile(path.join(root,'.authoring/visual-intent.json'),'utf8').then(JSON.parse),
   readFile(path.join(root,'production.json'),'utf8').then(JSON.parse),
   readFile(new URL('../../contracts/motion-registry-v1.json',import.meta.url),'utf8').then(JSON.parse),
-  readFile(path.join(root,'design.md'),'utf8')
+  readFile(path.join(root,'design.md'),'utf8'),
+  readFile(path.join(root,'.authoring/narrative-plan.json'),'utf8').then(JSON.parse).catch(()=>({}))
  ]);
  let designToken={id:'zodiac-paper-doodle-meme-v4',handmade_profile:'human-stroke-v2',stroke_width_range:[4,9]};
  try{
   const {designToken:parse}=await import('./phase02-composition.mjs');const t=parse(design);
   designToken={...designToken,...t,colors:[...new Set(JSON.stringify(t).match(/#[0-9A-Fa-f]{6}/g)??[])]};
  }catch{}
- return validateProgressivePreflight({intent,production,motionRegistry,designToken,readAsset:p=>readFile(path.join(root,p),'utf8')});
+ return validateProgressivePreflight({intent,production,motionRegistry,designToken,phase1Visuals:plan.narrative_visuals??[],readAsset:p=>readFile(path.join(root,p),'utf8')});
 }
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(direct){const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-progressive-preflight.mjs <workspace>');process.exit(2);}try{const r=await workspace(path.resolve(root));console.log(JSON.stringify(r,null,2));if(r.status!=='PASS')process.exitCode=1;}catch(e){console.error(e.message);process.exitCode=2;}}

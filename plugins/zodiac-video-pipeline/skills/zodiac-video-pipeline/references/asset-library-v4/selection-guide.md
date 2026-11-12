@@ -10,7 +10,7 @@ job recovery uses a separately pinned snapshot outside this package.
 - Shot layout: independent actor composition from `shot-layouts/index.json`.
 - Character: native body/hair/shirt identity, persistent across states.
 - Prop: a real physically interacted item from `props/index.json`.
-- Narrative Visual: the current authoring category for Story Object, thought, metaphor, contrast and meaning; require at least one in each fresh video with a visible, narration-grounded state change. Set `narrative_visual_decision.mode=required`. The runtime transport role remains `story_object`; a phone or character pose alone does not satisfy this layer.
+- Narrative Visual: **do not select it from an asset catalog.** Phase 1 has already selected the story image direction in `narrative_plan.narrative_visuals[]` from Zodiac evidence + concept fit. Phase 2 authors a new scene-specific SVG/states from that direction, binds an exact narration anchor, and sets `narrative_visual_decision.mode=required`. Runtime compatibility may serialize the role as `story_object`; that name is not exposed as a fresh creative option.
 - Scene Accent: independent context SVG (window, menu, notice board, lights). Select at least one visible context component per scene, with `scene_accent=use` coverage where it appears. Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
 - Effect: optional emphasis of action or emotion, not mandatory decoration.
 

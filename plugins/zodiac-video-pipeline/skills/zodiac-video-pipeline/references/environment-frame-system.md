@@ -4,7 +4,7 @@
 For fresh Phase 02, the selected `scene-set` is a supporting rear pictorial backdrop. `environment.frame` is staging metadata for actors/fixtures in an independent foreground composition; it does not own or replace the scene-set. Retired room profiles require an external recovery snapshot; current authoring chooses explicit scene accents or narrated props. Scene accents are minimal context cues and must remain inside the scene-set wall region. Foreground characters are composed independently of the backdrop; they do not stand, sit or hang on its decorative wall/floor.
 
 The environment is **an acting scaffold**, not a fixed wallpaper image. Decide
-scene action + Story Object first. Then define `scene.environment.frame` on the
+scene action + Narrative Visual first. Then define `scene.environment.frame` on the
 authored `production.json` before running native Scene Direction.
 
 ```json

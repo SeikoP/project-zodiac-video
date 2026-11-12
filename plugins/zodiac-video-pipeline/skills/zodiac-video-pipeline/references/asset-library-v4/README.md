@@ -11,7 +11,7 @@ State budget follows performed actions. The native face is fixed, shirts are pla
 
 Scene-set provides wall/floor/frame depth. Characters are composed independently in the foreground; the backdrop provides no physical actor support.
 Accents stay inside the wall. Physical props require physical contacts only when
-a physical action is authored; symbolic objects follow their presentation mode.
+a physical action is authored; Narrative Visuals follow their authored scene relationship without becoming physical props.
 
 Current registry coverage is validated from data, not prose quotas. Historical
 masters, room cues, migration guides and compatibility hair are absent. Resume

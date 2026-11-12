@@ -7,7 +7,7 @@ Phase02 `visual_compile` entry, before any native scene/character/environment co
 1. Full narration must be reconstructable from scene voices in order, preserving all text (insignificant whitespace may differ).
 2. A scene must not end inside an approved Narration paragraph. Multiple performance beats in one paragraph should become internal beat/events, not a new scene that breaks Job@5 segment policy.
 3. Background (`env__` or environment role owned) is architectural/ambient only; automatically generated furniture belongs to no environment scene. A chair/bed/desk explicitly called for by script is an authored `prop`/`object` outside the environment layer.
-4. Art Direction is required for new runs with `flags.art_direction_required=true` and uses `zodiac-scene-art-direction@2`, bound to source scene IDs, scene voices, native environment profiles, canonical palette IDs and justified action/color/space choices. Metaphorical Story Object is optional and never `render_layer:background`.
+4. Art Direction is required for new runs with `flags.art_direction_required=true` and uses `zodiac-scene-art-direction@2`, bound to source scene IDs, scene voices, native environment profiles, canonical palette IDs and justified action/color/space choices. Narrative Visual is separate from the background and never `render_layer:background`.
 5. The executor records validator PASS receipts. A gate cannot be manually asserted without an executed receipt. Native Director + Visual Review + Job@5 seal remain mandatory; local runner still validates WAV, Timing, rendering and visual parity.
 
 ## Commands

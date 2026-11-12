@@ -8,7 +8,7 @@ This document is an external acceptance handshake, not a new phase or an attempt
 - A local runner may execute `python -m tools.control_plane.cli build <workspace>` after real, measured `.runtime/timing.json` exists. Its IR → render-plan lineage guard must detect lost scenes, entities, states, asset IDs and events and fail with `PLAN_LINEAGE_DRIFT`. This command is runner-owned and MUST NOT be invoked as a Phase 03 prerequisite.
 - Renderer 2.0.1 CI (including actual font/typecheck and Remotion smoke) is a repository CI condition, not plugin native-preview approval.
 - Regression baseline: `SeikoP/project-zodiac-video` PR #89 renderer CI green; PR #90 lineage audit requires its own CI. Do not claim it has passed merely because the PR exists.
-- Native visual reviews require story object, scene semantic effects and meaningful positions. The runner cannot fabricate missing authoring states or props to pass visuals.
+- Native visual reviews require Narrative Visuals, scene semantic effects and meaningful positions. The runner cannot fabricate missing authoring states or props to pass visuals.
 - Runner final acceptance requires actual voice.wav, measured word timing, render-plan validation, temporal frame checks across all events, caption/cover stills, final MP4 + audio ending inspection, and real runner receipt. Human creative approval cannot be replaced by deterministic tests.
 - Changes to rendered assets or narration demand revision-impact assessment and revalidation. Existing approvals may only be reused with matching source hashes.
 - Keep Job@5 contract unchanged until an explicit versioned migration is approved.

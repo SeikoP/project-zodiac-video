@@ -7,8 +7,8 @@ Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-a
 1. Background/context — every fresh scene selects an actual canvas-native Scene Accent entity behind its actors. Palette alone is insufficient. Scene Set walls are compatibility-only; characters own independent composition and physical support.
 2. `shot-layout` — actor/prop composition skeleton. It is not a background frame.
 3. `scene accent` — the fresh background/context component, with canvas coordinates, explicit visibility lifecycle and caption-safe placement. It does not require a wall container.
-4. `Narrative Visual` — current authoring category for Story Object, visual metaphor, thought and contrast. Require at least one per fresh video, with a narrated semantic state change. Runtime projects it to `story_object`. Physical contact is required only for `physical_interaction`.
-5. `prop` / `effect` — ordinary physical objects and reaction emphasis. Neither may substitute for the Story Object premise or the scene-set.
+4. `Narrative Visual` — the only fresh symbolic/storytelling category. Its meaning comes from the Phase-1 `narrative_visuals[]` direction and must connect a source-bounded Zodiac trait to this episode's concept. Require at least one per fresh video, with a narrated semantic state change. Runtime compatibility may serialize it as `story_object`; that transport name is not a second authoring concept.
+5. `prop` / `effect` — ordinary physical objects and reaction emphasis. Neither may substitute for the Narrative Visual premise or the scene-set.
 
 Use `art-direction/palette-registry.json` for token colors. `art-direction/environment-registry.json` contains compatibility selected-cue/legacy profiles; fresh scene-set authoring does not need a room profile from that registry. Do not auto-add windows, boards, tables, lamps, shadows, gradients or perspective.
 
@@ -37,7 +37,7 @@ It rejects missing decisions, narration gaps/stale hashes, missing or wrongly
 classified entities, uncovered events, anchors outside their beat, selected
 entities that never appear, and visible entities undeclared in that beat.
 Ordinary props need an authored action and actor/surface spatial binding;
-a symbolic Story Object cannot satisfy physical prop coverage. Support requires an explicit actor on_surface relation, so a held cup cannot bypass prop checks by being labelled support. The seam also reuses the producer role-size gate before SVG compilation. Support,
+a symbolic Narrative Visual cannot satisfy physical prop coverage. Support requires an explicit actor on_surface relation, so a held cup cannot bypass prop checks by being labelled support. The seam also reuses the producer role-size gate before SVG compilation. Support,
 props and metaphors remain separate editorial decisions.
 
 Physical objects explicitly involved in the narration deserve a decision:

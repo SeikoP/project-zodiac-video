@@ -27,6 +27,16 @@ voice_profile_ref: voice-profile.json
 narrative_design_ref: narrative-design.json
 motif_candidates:
   - <optional payoff image>
+narrative_visual_direction:
+  - id: <Phase-1 Narrative Visual id>
+    beat_ids: [<Narrative Plan beat ids>]
+    claim: <silent-read meaning>
+    trait_basis: <source-bounded Zodiac trait>
+    story_tension: <story-specific contradiction>
+    selected_concept: literal | metaphor | exaggeration
+    image: <selected image idea>
+    humor_mechanism: <visual joke/irony/escalation or restrained reason>
+    payoff_image: <later callback/resolution>
 engagement_direction:
   entry_hook: <compact first spoken move>
   open_question: <question/tension to carry>
@@ -46,7 +56,7 @@ Fresh 2.6.8+ also compiles `engagement_direction` from validated `engagement-des
 
 Prefer the `source_id + instruction` form so `validate-content-contract.mjs` can prove lineage. Legacy plain strings remain readable only when they textually resolve to the source artifact.
 
-Keep the brief compact. Never include raw SRT/reference lines, reference Zodiac claims, beat IDs, `beats`, `devices`, the full evidence ledger/research, full QC, assets, animation, runtime or package rules. `audience_vibe` is concept-driven, not automatically `student_peer`. All planner vocabulary is internal-only and must be translated into natural viewer-facing Vietnamese.
+Keep the brief compact. `narrative_visual_direction` is semantic Phase-1 story intent only: it may guide lines that give the selected image a natural anchor, but it must not turn narration into stage directions. Never include raw SRT/reference lines, reference Zodiac claims, full beat objects, `devices`, the full evidence ledger/research, full QC, assets, animation, runtime or package rules. `audience_vibe` is concept-driven, not automatically `student_peer`. All planner vocabulary is internal-only and must be translated into natural viewer-facing Vietnamese.
 
 ## Mandatory Zodiac-first brief for fresh v2.4.15+
 Include `sign_identity_mechanism`, `misread_vs_reframe`, `three_facets`, `sign_swap_counterfactual`, `scene_usage_limit`, and `non_moral_payoff` from the chosen candidate. three_facets is a compatibility field name for a nonempty list, not an exact count. misread_vs_reframe is recognition context, not mandatory misunderstanding/twist. They are *creative essential context*, not full research or QC. Explicitly instruct the writer to **explain the sign, not narrate a long fictional episode**. Scenes are compact manifestations; no obligatory moral transformation. Distinguish behavioral observation from evidence about individual people.

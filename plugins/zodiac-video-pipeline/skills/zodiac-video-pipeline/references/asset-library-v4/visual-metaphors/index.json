@@ -92,7 +92,7 @@
       }
     }
   ],
-  "display_name": "Hình tượng kể chuyện",
+  "display_name": "Narrative Visual compatibility shapes",
   "version": "1.1",
-  "selection_policy": "starting forms for authored narrative figures, not finished icon templates"
+  "selection_policy": "compatibility shape references only; not selectable for fresh Narrative Visual authoring"
 }

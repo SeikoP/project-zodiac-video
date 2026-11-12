@@ -14,7 +14,7 @@ This bounded view contains component reasons, voice anchors, native locators, st
 
 ## Design before asset selection
 
-1. From the approved narration beat, name the performer, story object, action and visual payoff. Each component needs a reason and an exact voice anchor.
+1. From the approved narration beat, name the performer, Narrative Visual, action and visual payoff. Each component needs a reason and an exact voice anchor.
 2. Choose identity/contrast before browsing body/hair/outfit presets. Open only the relevant catalog section. Native reuse is an implementation decision, not the creative rationale.
 3. Mark `.authoring/scene-art-direction.json` with `composition_stage: "intent"`. Preserve scene voice, token hash, components, layout zones, bindings and front/back relations. Component ownership is `{kind:"authored"}` or `{kind:"compiler",locator:"..."}`.
 4. Supported compiler locators: `character:<entity-id>` for existing cast; `environment:<cue-id>` for a cue selected by that scene's environment profile; `meme-effect:<effect-id>` for the scene's selected adapter; `meme-prop:<asset-id>` for its bound asset requirement. A registered item not selected by that scene cannot bypass missing-component checks. Authored props must exist in source before compile.

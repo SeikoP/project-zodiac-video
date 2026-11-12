@@ -1,45 +1,59 @@
-# Creative Asset System — 2.6.16
+# Creative Asset System — Narrative Visual ownership
 
-## Two separate responsibilities
+## One fresh storytelling term
 
-**Reusable construction assets**: human-stroke silhouette primitives, people/body/hair/outfits, physical handled props, rig, contact mechanics, scene accents, motion grammar, safe-area layouts. Build once and select for *functional* fit. The twelve new SVG props in `props/index.json` are physical nouns, not prefabricated story beats.
+Fresh work uses **Narrative Visual — Hình ảnh kể chuyện** (`narrative_visual`) for symbolic/storytelling imagery. Story Object, Story Symbol and Visual Metaphor are legacy or runtime compatibility names, not separate creative categories.
 
-**Must be authored for the scene**: Narrative Visual, psychological metaphor, relationship pressure, transformation, ironic reveal, scene-specific evidence, visual punchline, and payoff. Never select a prefabricated thematic illustration just because the Zodiac sign matches. An existing visual metaphor in the legacy catalog is a shape compatibility reference, not the default creative answer in fresh production.
+## Two responsibilities
 
-## Required process for fresh Phase 2
+**Reusable construction assets**: character geometry, physical handled props, rig/contact mechanics, context accents, layout and motion mechanics. These may be selected from current registries for functional fit.
 
-1. For each beat, declare **the concrete psychological claim** and exact voice anchor. Determine the actors and causal object/action relationship before choosing artwork.
-2. Develop **three distinct candidate images** (literal situation / metaphor / exaggeration). Choose one based on new information, readability and payoff continuity. Record discarded ideas and why the winner was selected.
-3. For a scene-original symbolic illustration, author SVG specifically for that scene and register the asset under `intent.assets[asset_id].creative_origin`:
+**Narrative Visual**: a scene-specific storytelling image whose meaning comes from the episode's Zodiac evidence, selected concept and Story Spine. It is not selected from a thematic illustration catalog.
 
-   ```json
-   {
-     "mode": "scene_authored",
-     "scene_id": "S01",
-     "claim": "A character quietly absorbs the cost of a promise",
-     "anchor_phrase": "exact words included in S01 narration",
-     "concept_candidates": {
-       "literal": "A hand holding the other person's unfinished checklist",
-       "metaphor": "A single thread pulling three different obligations",
-       "exaggeration": "A tower of unfinished promises bending toward the hero"
-     },
-     "selected_concept": "metaphor",
-     "selection_reason": "The thread can tighten across an actual acting beat"
-   }
-   ```
+## Ownership by phase
 
-4. Bind visual states, events, authored placement and scene narration. The graphic may be sparse or static when that strengthens meaning. Do **not** add visual objects just to satisfy a numeric quota.
-5. Run `node features/visual-composition/validate-creative-asset-provenance.mjs <workspace>` before native compile for fresh Narrative Visual authoring. This must report `PASS` (or `NOT_APPLICABLE` for a non-fresh run). Block missing provenance, mismatched scene ownership, missing voice anchors, unsafe SVG and unexplained repeated graphic bytes across different scenes. The checker does **not** judge artistic quality.
-6. Run existing Narrative Visual SVG kit lint, semantic fit, scene experience, frame inspection and genuine Visual Review. Inspect endpoints: a beautiful static frame alone does not prove narrative progression.
+### Phase 1 — meaning and image direction
 
-## Avoid repetitive visuals
+Phase 1 authors `narrative_plan.narrative_visuals[]` before narration is finalized. For each Narrative Visual it:
 
-Maintain a per-episode **visual motif ledger**: unique object purpose, state transition, emotional pressure and relation to other objects. Repetition is intentional only when its meaning changes; reuse across unrelated scene claims requires a reviewer and explicit reason. No random stock asset roulette.
+1. identifies the source-bounded Zodiac `trait_basis`;
+2. connects it to the episode-specific `story_tension` and selected concept;
+3. writes the silent-read `claim`;
+4. compares `literal`, `metaphor` and `exaggeration` image candidates;
+5. selects one candidate with a `selection_reason`;
+6. defines the `humor_mechanism` and later `payoff_image`;
+7. binds the direction to Narrative Plan beat IDs and evidence refs.
 
-## Character design
+The three candidates are an ideation ladder, not three assets.
 
-Feminine leads are preferred where approved. Keep character identity consistent per person while varying *between* cast members: overall body silhouette, hair family, wardrobe color and expression/pose. A new hair silhouette is not a substitute for acting, and hair must remain readable in profile, crop and reveal. The existing expanded hair catalogue contains 18 profiles; do not revert to a single default ponytail.
+### Phase 2 — visual execution
 
-## Handoff boundaries
+Phase 2 reads the approved Phase-1 direction and authors the actual scene-specific SVG/states. It must not reopen the candidate competition or choose a stock zodiac metaphor.
 
-Creative preflight cannot forge a phase gate or user approval; receipts remain in the existing manifest chain. No local runner, MP4 or timing work is part of plugin E2E. Existing approved narration and images remain unchanged unless explicitly revised.
+Register a new Narrative Visual asset like this:
+
+```json
+{
+  "creative_origin": {
+    "mode": "phase1_directed",
+    "phase1_visual_id": "NV1",
+    "scene_id": "S01",
+    "anchor_phrase": "exact words included in the approved narration"
+  }
+}
+```
+
+The scene's `narrative_brief.claim` must preserve the Phase-1 claim. Changing the claim or selected image direction is a Phase-1 revision, not a Phase-2 art tweak.
+
+## Quality rules
+
+- A Zodiac glyph or stock symbolic shape does not count merely because it resembles the sign.
+- Prefer visual action, irony, escalation, contrast or callback that adds meaning beyond the spoken sentence.
+- Humor is concept-dependent: use a visual joke when it fits, otherwise record a restrained mechanism rather than forcing comedy.
+- Maintain a per-episode motif ledger. Reuse is intentional only when its meaning changes or continuity requires it.
+- A beautiful static frame is insufficient when the approved direction promises progression or payoff.
+- Run creative provenance, Narrative Visual kit lint, semantic fit, scene experience, endpoint inspection and genuine Visual Review.
+
+## Compatibility
+
+Historical visual-metaphor shapes and Story Object plans may still be read by explicit compatibility paths. They are not fresh-authoring inspiration or selectable Narrative Visual defaults.

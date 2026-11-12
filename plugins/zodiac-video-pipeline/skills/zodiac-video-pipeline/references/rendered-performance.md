@@ -17,7 +17,7 @@ Watch the exact final MP4 and fill `.runtime/rendered-performance-review.json` a
 
 Examples of real failures:
 - caption reveals a punchline before the narrator lands it;
-- visual metaphor explains the reframe before the spoken turn;
+- Narrative Visual explains the reframe before the spoken turn;
 - a cut happens inside the setup-to-hit interval;
 - animation/music competes with a line that needs listening attention;
 - final shot keeps running after the last roast and drains ending energy.

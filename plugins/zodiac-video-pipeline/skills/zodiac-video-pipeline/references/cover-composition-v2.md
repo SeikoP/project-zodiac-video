@@ -1,7 +1,7 @@
 # Cover Composition v2 — token-locked producer/runner contract
 
 ## Source of truth and ownership
-Read `references/design.md` STYLE_TOKEN (`zodiac-paper-doodle-meme-v4`) before composing a cover. The designer must reuse source-scene native V4 characters and story objects rather than generating cover-only characters. Publish Prep selects `cover.visuals` with a **semantic** purpose; the local runner renders 1080 × 1920 `cover.png` and verifies actual pixels. New covers must use `cover.design.version = "zodiac-cover-design@2"`; older reviewed packages remain readable without design.
+Read `references/design.md` STYLE_TOKEN (`zodiac-paper-doodle-meme-v4`) before composing a cover. The designer must reuse source-scene native V4 characters and Narrative Visuals rather than generating cover-only characters. Publish Prep selects `cover.visuals` with a **semantic** purpose; the local runner renders 1080 × 1920 `cover.png` and verifies actual pixels. New covers must use `cover.design.version = "zodiac-cover-design@2"`; older reviewed packages remain readable without design.
 
 ## Paper title frame (not generic UI)
 - Shape: visibly hand-drawn *crooked paper-note* path with subtle 1–4% edge asymmetry, NOT a perfect CSS pill or generic rounded box.
@@ -13,8 +13,8 @@ Read `references/design.md` STYLE_TOKEN (`zodiac-paper-doodle-meme-v4`) before c
 - 1080×1920 canvas. Cover readability zone must accommodate platform crop; reserve safe margins no less than 72px each lateral edge, and avoid important hook/face detail near extreme top/bottom. Title region concept target 30–35% composition visual weight; not a hard pixel quota.
 - Hero character should be **composed** to 0.82–0.90 of the previous default *display footprint* (do not mutate underlying character geometry or body identity). Supporting prop display footprint 0.75–0.85 default. These are compositional hints, not universal object transforms. If a meaningful expression becomes unreadable, increase hero until face legible and reduce/omit secondary elements first.
 - Focal set: the full **semantically necessary ensemble** from the selected scene: featured actor or group, decisive Narrative Visual, key physical Prop when used in the conflict, situational Scene Accent when essential for context, and optional reaction/effect. Every cover must make explicit use/omit decisions for actor, Narrative Visual, Prop, Scene Accent and Effect; omissions are valid with a narrative reason. Do not force decorative props, omit a participating actor, or silently discard the symbolic object that makes the conflict intelligible.
-- Draw order/read sequence: (1) title/short hook, (2) sign name/glyph, (3) character+primary story object; accents do not compete. Keep faces, glyph, and key prop visually distinct and non-overlapping with title frame.
-- Actor/object/environment remain separate in `Story Object Composition v2`; story object **never replaces background**. Background structural cues are simplified by opacity/density, not discarded to make the cover look like a generic stock poster.
+- Draw order/read sequence: (1) title/short hook, (2) sign name/glyph, (3) character+primary Narrative Visual; accents do not compete. Keep faces, glyph, and key prop visually distinct and non-overlapping with title frame.
+- Actor/Narrative Visual/environment remain separate. Historical `Story Object Composition v2` is compatibility-only; a Narrative Visual **never replaces background**. Background structural cues are simplified by opacity/density, not discarded to make the cover look like a generic stock poster.
 
 ## New `publish.json` cover authoring fields
 Add this object within `cover`, keeping `layout: tilted_top_hook`, `identity`, `hook`, `source_scene_id`, `visuals` and `source` unchanged (backward compatible Job@5):

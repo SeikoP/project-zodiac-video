@@ -178,6 +178,14 @@
           "stage": "exit"
         },
         {
+          "id": "narrative_visual_direction_validation",
+          "kind": "internal_validator",
+          "when": "fresh",
+          "tool_locator": "references/validate-narrative-visual-direction.mjs",
+          "unavailable_policy": "block",
+          "stage": "exit"
+        },
+        {
           "id": "writer_brief_compile",
           "kind": "internal_compiler",
           "when": "fresh",
@@ -292,7 +300,8 @@
         "content_lineage",
         "engagement_design",
         "voice_profile",
-        "narrative_design"
+        "narrative_design",
+        "narrative_visual_direction"
       ],
       "allowed_operations": [
         "read_context",
@@ -311,7 +320,8 @@
         "references/phase01-briefing.md",
         "references/episode-formats.md",
         "references/engagement-engine.md",
-        "references/voice-profile.md"
+        "references/voice-profile.md",
+        "references/narrative-visual-direction.md"
       ],
       "conditional_outputs": [
         {
@@ -338,7 +348,8 @@
             "references/content-quality-engine.md",
             "references/episode-formats.md",
             "references/engagement-engine.md",
-            "references/viral-routing-policy.md"
+            "references/viral-routing-policy.md",
+            "references/narrative-visual-direction.md"
           ],
           "allowed_context_categories": [
             "current_request",
@@ -375,7 +386,8 @@
             "references/plugin-use-playbook.md",
             "references/phase01-briefing.md",
             "references/episode-formats.md",
-            "references/engagement-engine.md"
+            "references/engagement-engine.md",
+            "references/narrative-visual-direction.md"
           ],
           "allowed_context_categories": [
             "current_request",

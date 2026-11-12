@@ -1,4 +1,4 @@
-# Narrative Visual — Hình ảnh diễn giải
+# Narrative Visual — Hình ảnh kể chuyện
 
 Fresh authoring uses a single symbolic visual category: `narrative_visual`. It represents thoughts, emotions, comparisons and metaphor according to **narrative purpose**, never merely its SVG shape.
 
