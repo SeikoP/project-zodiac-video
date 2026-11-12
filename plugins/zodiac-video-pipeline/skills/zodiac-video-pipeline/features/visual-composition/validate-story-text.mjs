@@ -1,6 +1,6 @@
 // Story lettering uses the existing overlay role; captions remain runtime-owned.
 export function validateStoryText(intent,production){
- const issues=[];
+ const issues=[],letteringByPath=new Map();
  for(const scene of intent?.scenes??[])for(const entity of scene.entities??[]){
   if(!entity.story_text)continue;
   const add=code=>issues.push({code,scene_id:scene.id,entity_id:entity.id});
@@ -10,6 +10,11 @@ export function validateStoryText(intent,production){
   if(entity.states?.[entity.initial_state]?.visible!==false)add('STORY_TEXT_PREMATURE_REVEAL');
   for(const [id,state] of Object.entries(entity.states??{}))if(state.visible!==false){
    if(!spec.states?.[id]?.trim()||intent.assets?.[state.asset]?.category!=='overlay')add('STORY_TEXT_ASSET_INVALID');
+   const style=spec.styles?.[id]??'note';
+   if(!['note','stamp','score','title'].includes(style))add('STORY_TEXT_STYLE_INVALID');
+   const asset=intent.assets?.[state.asset],key=asset?.path??state.asset,value=JSON.stringify([spec.states?.[id],style]);
+   if(letteringByPath.has(key)&&letteringByPath.get(key)!==value)add('STORY_TEXT_ASSET_TEXT_CONFLICT');
+   letteringByPath.set(key,value);
   }
   const events=(scene.events??[]).filter(e=>e.target===entity.id);
   for(const event of events)if(event.trigger?.type!=='voice_anchor'||!event.trigger.text||!voice.includes(event.trigger.text))add('STORY_TEXT_ANCHOR_INVALID');

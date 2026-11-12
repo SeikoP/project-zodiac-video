@@ -1,6 +1,12 @@
 from tools.zodiac_local import caption_scene_text, spoken_scene_text
 
 
+def test_layout_line_breaks_do_not_become_independent_tts_paragraphs():
+    raw = 'Vừa sửa vừa kiểu:\n\n“Thấy chưa. Có gì đâu.”\n\nCó.\nCó ba người phía sau.'
+    assert spoken_scene_text(raw) == 'Vừa sửa vừa kiểu: “Thấy chưa. Có gì đâu.” Có. Có ba người phía sau.'
+    assert caption_scene_text(raw) == raw
+
+
 def test_scene_direction_metadata_is_removed_from_caption_and_speech():
     raw = "[S01 — HOOK | GẮT]\nBạch Dương bỏ đi.\n"
     assert caption_scene_text(raw) == "Bạch Dương bỏ đi."

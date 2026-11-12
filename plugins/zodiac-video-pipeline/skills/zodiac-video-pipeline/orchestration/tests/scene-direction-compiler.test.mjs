@@ -7,6 +7,17 @@ const svg=(w,h)=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}
 const entity=(id,kind,asset)=>({id,kind,initial_state:'on',states:{on:{asset,layer:kind==='character'?20:10,visible:true}}});
 const scene=(id,dir)=>({id,voice:'x',scene_direction:dir,entities:[entity('hero','character','HERO'),entity('phone','object','PHONE')],events:[{id:id+'E',target:'hero',action:'changes',state_before:'on',state_after:'on',trigger:{source:'scene_start'}}],captions:{source:'voice',segmentation:'semantic',max_lines:2}});
 const inside=t=>t.x>=0&&t.y>=0&&t.x+t.width<=1080&&t.y+t.height<=1920;
+test('registered three-person shot places distinct native actors without moving story lettering',async()=>{
+ const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-trio-'));await mkdir(path.join(root,'assets'));
+ await writeFile(path.join(root,'assets/hero.svg'),svg(520,720));await writeFile(path.join(root,'assets/phone.svg'),svg(900,160));
+ const words=entity('words','object','WORDS');words.visual_role='overlay';words.states.on.transform={x:90,y:1240,width:900,height:160};
+ const input={version:'2.0',assets:{HERO:{path:'assets/hero.svg'},WORDS:{path:'assets/phone.svg',category:'overlay'}},scenes:[{id:'S01',scene_direction:{shot:'three-person',focus:'lead',subject_placement:'trio',interaction_roles:{lead:'lead',peer_a:'a',peer_b:'b'}},entities:[entity('lead','character','HERO'),entity('a','character','HERO'),entity('b','character','HERO'),words]}]};
+ const first=await compileProduction(input,{root}),second=await compileProduction(first.production,{root});assert.deepEqual(second,first);
+ const entities=first.production.scenes[0].entities,boxes=entities.slice(0,3).map(e=>e.states.on.transform);
+ assert.ok(boxes.every(inside));assert.ok(boxes[0].x+boxes[0].width<=boxes[1].x+10&&boxes[1].x+boxes[1].width<=boxes[2].x+10);
+ assert.deepEqual(entities[3],words);
+ input.scenes[0].scene_direction.interaction_roles.peer_b='a';await assert.rejects(compileProduction(input,{root}),/three distinct characters/u);
+});
 test('different pose aspect ratios preserve authored movement across repeated compiles',async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-aspect-'));
  await mkdir(path.join(root,'assets'));

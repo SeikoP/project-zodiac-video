@@ -1,4 +1,5 @@
 import json
+import hashlib
 import shutil
 import tempfile
 import unittest
@@ -52,6 +53,34 @@ def add_fixture_timing(controller: StudioV2Controller) -> None:
 
 
 class StudioV2ControllerTests(unittest.TestCase):
+    def test_spoken_plan_is_validated_copied_hashed_and_removed_on_legacy_import(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = make_job(root)
+            plan_path = source / "spoken-performance-plan.json"
+            plan = {"format": "zodiac-spoken-performance-plan@1", "source": {
+                "narration_sha256": hashlib.sha256((source / "narration.txt").read_bytes()).hexdigest()},
+                "units": [{"id": "u1", "excerpt": "xin chao", "delivery": "calm"}]}
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            controller = StudioV2Controller(root / "workspace")
+            controller.import_package(source)
+            copied = controller.workspace / plan_path.name
+            self.assertEqual(copied.read_bytes(), plan_path.read_bytes())
+            first_hash = controller.state.package.package_hash
+            plan["units"][0]["delivery"] = "sharp"
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            controller.import_package(source)
+            self.assertNotEqual(controller.state.package.package_hash, first_hash)
+            kept = copied.read_bytes()
+            plan["source"]["narration_sha256"] = "0" * 64
+            plan_path.write_text(json.dumps(plan), encoding="utf-8")
+            with self.assertRaises(ControlPlaneError):
+                controller.import_package(source)
+            self.assertEqual(copied.read_bytes(), kept)
+            plan_path.unlink()
+            controller.import_package(source)
+            self.assertFalse(copied.exists())
+
     def test_import_validates_handshake_and_copies_package(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

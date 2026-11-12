@@ -90,6 +90,7 @@ def _package_hash(root: Path) -> str:
         "production.ir.json",
         "design-token.json",
         "narration.txt",
+        "spoken-performance-plan.json",
         "publish/publish.json",
         "publish/publish-copy.txt",
     ):
@@ -153,6 +154,13 @@ class StudioV2Controller:
             shutil.copy2(source / relative, self.workspace / relative)
 
         target_assets = self.workspace / "assets"
+        spoken_source = source / "spoken-performance-plan.json"
+        spoken_target = self.workspace / "spoken-performance-plan.json"
+        if spoken_source.is_file():
+            shutil.copy2(spoken_source, spoken_target)
+        else:
+            spoken_target.unlink(missing_ok=True)
+
         source_assets = source / "assets"
         if target_assets.exists():
             shutil.rmtree(target_assets)

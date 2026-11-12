@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -18,7 +19,7 @@ _REQUIRED_ROOT_FILES = {
     "design-token.json",
     "narration.txt",
 }
-_ALLOWED_ROOT_FILES = _REQUIRED_ROOT_FILES
+_ALLOWED_ROOT_FILES = _REQUIRED_ROOT_FILES | {"spoken-performance-plan.json"}
 _ALLOWED_ROOT_DIRECTORIES = {"assets", "publish"}
 _REQUIRED_ROOT_DIRECTORIES = {"publish"}
 _REQUIRED_PUBLISH_FILES = {"publish.json", "publish-copy.txt"}
@@ -314,6 +315,17 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
             "publish metadata must point to narration.txt and production.ir.json",
             detail={"source": source},
         )
+
+    spoken_path = root / "spoken-performance-plan.json"
+    if spoken_path.is_file():
+        spoken = _read_object(spoken_path, code="PACKAGE_CONTENT_INVALID")
+        narration_hash = hashlib.sha256((root / "narration.txt").read_bytes()).hexdigest()
+        if (spoken.get("format") != "zodiac-spoken-performance-plan@1"
+                or not isinstance(spoken.get("source"), dict)
+                or spoken["source"].get("narration_sha256") != narration_hash
+                or not isinstance(spoken.get("units"), list) or not spoken["units"]):
+            _fail("PACKAGE_CONTENT_INVALID", "spoken performance plan must match package narration",
+                  detail={"path": spoken_path.name})
 
     _validate_narration(root, ir)
     _validate_asset_files(root, ir)

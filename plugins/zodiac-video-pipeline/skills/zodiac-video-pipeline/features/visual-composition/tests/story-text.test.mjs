@@ -18,3 +18,20 @@ test('story lettering is a declared coverage layer, never a physical prop',()=>{
  delete plan.visual_coverage.beats[0].layers.story_text;
  assert.ok(validateVisualCoverage(scene,plan,{deriveEmptyLayers:true}).some(x=>x.code==='COVERAGE_VISIBLE_ENTITY_UNDECLARED'));
 });
+test('different phrases cannot share a path across states or scenes',()=>{
+ const {intent,production}=fixture(),entity=intent.scenes[0].entities[0];
+ entity.states.payoff={asset:'WORDS',visible:true};entity.story_text.states.payoff='ĐÃ LÀM';
+ assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_ASSET_TEXT_CONFLICT'));
+ entity.states.payoff.asset='OTHER';intent.assets.WORDS.path='assets/words.svg';intent.assets.OTHER={category:'overlay',path:'assets/words.svg'};
+ assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_ASSET_TEXT_CONFLICT'));
+ delete entity.states.payoff;delete entity.story_text.states.payoff;
+ const second=structuredClone(intent.scenes[0]);second.id='S02';second.entities[0].story_text.states.shown='ĐÃ LÀM';intent.scenes.push(second);production.scenes.push({...production.scenes[0],id:'S02'});
+ assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_ASSET_TEXT_CONFLICT'));
+});
+test('lettering treatments are explicit and cannot overwrite a differently styled state',()=>{
+ const {intent,production}=fixture(),entity=intent.scenes[0].entities[0];
+ entity.story_text.styles={shown:'stamp'};assert.deepEqual(validateStoryText(intent,production),[]);
+ entity.states.second={...entity.states.shown};entity.story_text.states.second=entity.story_text.states.shown;
+ entity.story_text.styles.second='note';assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_ASSET_TEXT_CONFLICT'));
+ entity.story_text.styles.shown='neon';assert.ok(validateStoryText(intent,production).some(x=>x.code==='STORY_TEXT_STYLE_INVALID'));
+});

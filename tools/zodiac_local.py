@@ -66,7 +66,8 @@ def caption_scene_text(value: str) -> str:
 
 def spoken_scene_text(value: str) -> str:
     """TTS-safe text while preserving approved narration semantics."""
-    text = caption_scene_text(value)
+    # Layout line breaks otherwise become separate VieNeu normalization/generation chunks.
+    text = " ".join(caption_scene_text(value).split())
     # VieNeu can spell all-caps Latin product labels letter-by-letter.
     # Case-normalize the established product phrase without changing captions.
     return re.sub(r"\bPRO\s+MAX\b", "Pro Max", text, flags=re.IGNORECASE)
