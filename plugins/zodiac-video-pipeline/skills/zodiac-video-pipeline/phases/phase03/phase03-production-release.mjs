@@ -12,7 +12,6 @@ import {projectLegacyIR,assertRoundTrip} from '../../core/model/project-legacy-i
 import {compileJobV5} from './compile-job-v5.mjs';
 import {fileURLToPath} from 'node:url';
 import {migrateLegacyJob5} from '../../core/model/migrate-production-model.mjs';
-import {validateStoryObjectWorkspace} from '../../features/story-object/validate-story-object.mjs';
 
 import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
 import {resolveHandoffLayout} from './handoff-preflight.mjs';
@@ -36,7 +35,7 @@ export async function sourceReviewFingerprint(root){
  for(const rel of ['publish/publish.json','publish/publish-copy.txt']){
   try{await readFile(path.join(base,rel));files.push(rel);}catch(e){if(e?.code!=='ENOENT')throw e;}
  }
- for(const rel of ['.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json','.authoring/phase3-writer-brief.json','.authoring/writer-brief.json','.authoring/evidence-brief.json','.authoring/narrative-plan.json','narrative-plan.json','.authoring/episode-scope.json','.authoring/episode-cast-plan.json','.authoring/narration-performance-receipt.json','.authoring/scene-composition-resolved.json','.authoring/generated-assets.json','asset-plan.json','visual-grammar-plan.json','.authoring/scene-art-direction.json','.authoring/character-assembly-plan.json','.authoring/depth-composition-plan.json','.authoring/director-plan.json','.authoring/story-beat-choreography.json','.authoring/story-object-plan.json','.authoring/story-object-required.json']){
+ for(const rel of ['.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json','.authoring/phase3-writer-brief.json','.authoring/writer-brief.json','.authoring/evidence-brief.json','.authoring/narrative-plan.json','narrative-plan.json','.authoring/episode-scope.json','.authoring/episode-cast-plan.json','.authoring/narration-performance-receipt.json','.authoring/scene-composition-resolved.json','.authoring/generated-assets.json','asset-plan.json','visual-grammar-plan.json','.authoring/scene-art-direction.json','.authoring/character-assembly-plan.json','.authoring/depth-composition-plan.json','.authoring/director-plan.json','.authoring/story-beat-choreography.json']){
   try{await readFile(path.join(base,rel));files.push(rel);}catch(e){if(e?.code!=='ENOENT')throw e;}
  }
  files.sort();
@@ -168,7 +167,6 @@ export function assertPublishProjection(authored,compiled,conceptContext=null){
 
 export async function validatePhase03Release(root,{sourceRoot,reviewLock}={}){
  if(!sourceRoot||!reviewLock)fail('APPROVAL_EVIDENCE_REQUIRED','--source-workspace and --review-lock required');
- await validateStoryObjectWorkspace(sourceRoot); // authoring meaning must match reviewed voice/events
  const lock=typeof reviewLock==='string'?JSON.parse(await readFile(reviewLock,'utf8')):reviewLock;
  const approved=await assertReviewLock(sourceRoot,lock);
  const state=JSON.parse(await readFile(path.join(sourceRoot,'.authoring','pipeline-state.json'),'utf8'));

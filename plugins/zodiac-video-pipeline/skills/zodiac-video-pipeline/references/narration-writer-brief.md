@@ -30,13 +30,17 @@ motif_candidates:
 narrative_visual_direction:
   - id: <Phase-1 Narrative Visual id>
     beat_ids: [<Narrative Plan beat ids>]
-    claim: <silent-read meaning>
     trait_basis: <source-bounded Zodiac trait>
-    story_tension: <story-specific contradiction>
-    selected_concept: literal | metaphor | exaggeration
-    image: <selected image idea>
-    humor_mechanism: <visual joke/irony/escalation or restrained reason>
-    payoff_image: <later callback/resolution>
+    story_point: <exact point the image explains>
+    viewer_read: <silent-read meaning>
+    visible_subject: <concrete visible subject/object relationship>
+    visible_action: <observable action/state change>
+    visual_idea: <one concrete drawable image idea>
+    concept_fit: <why it belongs to this episode>
+    centrality_reason: <why this point deserves visual focus>
+    why_visual_not_text: <why image beats short Story Text>
+    tone_fit: <how it preserves episode tone>
+    payoff_image: <optional later callback/resolution>
 engagement_direction:
   entry_hook: <compact first spoken move>
   open_question: <question/tension to carry>

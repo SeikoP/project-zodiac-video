@@ -14,7 +14,7 @@ Read `references/design.md` STYLE_TOKEN (`zodiac-paper-doodle-meme-v4`) before c
 - Hero character should be **composed** to 0.82–0.90 of the previous default *display footprint* (do not mutate underlying character geometry or body identity). Supporting prop display footprint 0.75–0.85 default. These are compositional hints, not universal object transforms. If a meaningful expression becomes unreadable, increase hero until face legible and reduce/omit secondary elements first.
 - Focal set: the full **semantically necessary ensemble** from the selected scene: featured actor or group, decisive Narrative Visual, key physical Prop when used in the conflict, situational Scene Accent when essential for context, and optional reaction/effect. Every cover must make explicit use/omit decisions for actor, Narrative Visual, Prop, Scene Accent and Effect; omissions are valid with a narrative reason. Do not force decorative props, omit a participating actor, or silently discard the symbolic object that makes the conflict intelligible.
 - Draw order/read sequence: (1) title/short hook, (2) sign name/glyph, (3) character+primary Narrative Visual; accents do not compete. Keep faces, glyph, and key prop visually distinct and non-overlapping with title frame.
-- Actor/Narrative Visual/environment remain separate. Historical `Story Object Composition v2` is compatibility-only; a Narrative Visual **never replaces background**. Background structural cues are simplified by opacity/density, not discarded to make the cover look like a generic stock poster.
+- Actor/Narrative Visual/environment remain separate. A Narrative Visual **never replaces background**. Background structural cues are simplified by opacity/density, not discarded to make the cover look like a generic stock poster.
 
 ## New `publish.json` cover authoring fields
 Add this object within `cover`, keeping `layout: tilted_top_hook`, `identity`, `hook`, `source_scene_id`, `visuals` and `source` unchanged (backward compatible Job@5):
@@ -25,11 +25,11 @@ Add this object within `cover`, keeping `layout: tilted_top_hook`, `identity`, `
  "style_token":"zodiac-paper-doodle-meme-v4",
  "canvas":{"width":1080,"height":1920},
  "title_frame":{"shape":"crooked-paper-note","fill_role":"card","stroke_role":"ink","shadow_role":"soft_shadow","shadow_dx_px":3,"shadow_dy_px":6,"shadow_opacity":0.3,"font_family":"Patrick Hand","max_lines":3},
- "composition":{"hero_scale":0.86,"supporting_prop_scale":0.80,"read_order":["hook","identity","character_story_object"],"max_supporting_accents":2,"min_side_margin_px":72,"background_policy":"preserve-native-environment"}
+ "composition":{"hero_scale":0.86,"supporting_prop_scale":0.80,"read_order":["hook","identity","character_narrative_visual"],"max_supporting_accents":2,"min_side_margin_px":72,"background_policy":"preserve-native-environment"}
 }
 ```
 
-The above is **producer intent** metadata. It does not prove the runtime has implemented `cover.design`; renderer must either apply it or explicitly report `COVER_DESIGN_UNSUPPORTED` (never silently ignore it). Runtime screenshot QA checks shadow pixels, thumbnail readability, character/story-object scale, native assets, crop and visible token palette. If `cover.design` is not handled in the local runner, output must be reported as `COVER_RUNTIME_PARITY_UNVERIFIED`, NOT PASS.
+The above is **producer intent** metadata. It does not prove the runtime has implemented `cover.design`; renderer must either apply it or explicitly report `COVER_DESIGN_UNSUPPORTED` (never silently ignore it). Runtime screenshot QA checks shadow pixels, thumbnail readability, character/Narrative-Visual scale, native assets, crop and visible token palette. If `cover.design` is not handled in the local runner, output must be reported as `COVER_RUNTIME_PARITY_UNVERIFIED`, NOT PASS.
 
 ## Review process
 ## Cover as the video opening — 2.4.49

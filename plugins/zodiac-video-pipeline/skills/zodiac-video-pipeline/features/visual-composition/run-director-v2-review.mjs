@@ -20,10 +20,6 @@ const stages=[
  {id:'native_preview_build_v2',script:'features/visual-composition/build-native-preview-pairs.mjs',args:[root]},
  {id:'native_preview_validate_v2',script:'features/visual-composition/validate-native-preview-pairs.mjs',args:[root],validator:true}
 ];
-// Only opt-in/required authoring runs are checked; legacy runs are labelled
-// unsupported rather than receiving an invented Story Object PASS.
-const objectFiles=['.authoring/story-object-plan.json','.authoring/story-object-required.json'];
-let objectEnabled=(await Promise.all(objectFiles.map(rel=>access(path.join(root,rel)).then(()=>true).catch(()=>false)))).some(Boolean);
 try { const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-state.json'),'utf8'));
   const v=/^(\d+)\.(\d+)\.(\d+)/.exec(String(state.plugin_version??''));
   const modern=v&&(Number(v[1])>2||(Number(v[1])===2&&(Number(v[2])>4||(Number(v[2])===4&&Number(v[3])>=46))));
@@ -31,14 +27,7 @@ try { const state=JSON.parse(await readFile(path.join(root,'.authoring/pipeline-
   try{authoredIntent=JSON.parse(await readFile(path.join(root,'.authoring/scene-art-direction.json'),'utf8')).composition_stage==='intent';}catch(e){if(e.code!=='ENOENT')throw e;}
   if((modern&&state.run_mode==='fresh')||authoredIntent)stages.splice(1,0,{id:'scene_composition_resolved',script:'features/visual-composition/resolve-scene-composition.mjs',args:[root,'--write'],validator:true});
   else if(v && (Number(v[1])>2||(Number(v[1])===2&&(Number(v[2])>4||(Number(v[2])===4&&Number(v[3])>=44)))))stages.splice(1,0,{id:'scene_composition_v1',script:'features/visual-composition/phase02-composition.mjs',args:[root],validator:true});
-  if(state.flags?.story_object_required===true)objectEnabled=true;
 } catch(e) { if(e?.code!=='ENOENT')throw e; }
-if(objectEnabled){
- const before=stages.findIndex(x=>x.id==='native_preview_build_v2');
- stages.splice(before,0,{id:'story_object_v1',script:'features/story-object/validate-story-object.mjs',args:[root,'--write'],validator:true},
-  {id:'story_object_composition_v2',script:'features/story-object/validate-story-object-composition.mjs',args:[root,'--write'],validator:true}
- );
-}
 const skippedStages=[];
 try{await access(path.join(root,'.authoring/story-beat-choreography.json'));}catch(e){
  if(e.code!=='ENOENT')throw e;

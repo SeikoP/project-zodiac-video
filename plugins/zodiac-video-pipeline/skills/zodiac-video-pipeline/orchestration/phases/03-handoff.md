@@ -2,7 +2,7 @@
 
 Phase 03 remains **Assemble → Validate → Export** within the original three editorial phases. There is **one** production entrypoint: `phases/phase03/run-phase03-production.mjs`. Direct low-level `export-zodiac-job-v2.mjs` is a library/legacy test utility and MUST NOT be used as an unsealed production command. No TTS, MP4, Remotion or fake runtime evidence in the plugin.
 
-Story Object V1: the source review fingerprint includes the authored metaphor/effect plan. Phase 03 rejects an opted-in missing or changed plan before staging; `validatePhase03Release` rechecks real object/effect event semantics. The plan is **never inside Job@5 ZIP**. Legacy approved source without the opt-in marker keeps old compatibility, not a false Story Object PASS.
+Narrative Visual meaning is already sealed by the reviewed Phase-2 Visual Intent and source fingerprint. Phase 03 does not load a separate storytelling-object plan; it only preserves the reviewed Job@5 transport bytes and approvals.
 
 ## Mandatory sequence, fail closed before ZIP bytes
 

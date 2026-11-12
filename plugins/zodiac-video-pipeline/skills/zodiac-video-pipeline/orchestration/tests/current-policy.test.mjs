@@ -19,8 +19,7 @@ test('current effective policy is explicit and release-history is not active pro
  assert.deepEqual(policy,{
   format:'zodiac-current-policy@1',
   narrative:'2.1',
-  story_object:'compatibility:v2',
-  narrative_visual:'v1',
+  narrative_visual:'v2',
   visual_grammar:'v4',
   scene_system:'canvas@1',
   character_assembly:'v2',

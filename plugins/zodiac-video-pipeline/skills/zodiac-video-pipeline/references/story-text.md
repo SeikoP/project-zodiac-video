@@ -1,30 +1,17 @@
-# Story text in Phase 2
+# Story Text in Phase 2
 
-Plan lettering with action, props and Narrative Visuals. Every fresh beat explicitly declares `layers.story_text=use/omit` with its editorial reason. Missing entities are not an omission decision. At reversals, accusations, demos and callbacks, decide what the viewer reads before/after the turn; leave quiet reflection quiet.
+Story Text is short authored lettering used when a few readable words explain the scene's key point better than a Narrative Visual.
 
-Author `kind: object`, `visual_role: overlay`, `category: overlay` SVGs, with `story_text: {purpose, reason, states: {state_id: text}, styles: {state_id: treatment}}` in Visual Intent only. Purposes: setup, contrast, payoff, annotation, dialogue, internal_voice. This layer never substitutes for props, Scene Accent or Narrative Visual.
+A scene may contain **Story Text or Narrative Visual, never both**. This is a focal-semantic-layer rule, not a density quota: a scene may use neither.
 
-Start hidden. Reveal/change/release at exact voice anchors; a final hold needs `hold_to_scene_end_reason`. Replace text rather than accumulate it. Never reveal a punchline early. Coverage selects actual text entities; different phrases or treatments require distinct asset paths.
+Choose Story Text for a short reply, thought, verdict, label, score, product reveal, annotation, or punchline where the words themselves are the clearest content. Choose Narrative Visual only when a concrete visible action/state communicates the point better than text.
 
-## Treatments
+Author `kind: object`, `visual_role: overlay`, `category: overlay` SVGs with `story_text: {purpose, reason, states, styles}` in Visual Intent. Purposes: setup, contrast, payoff, annotation, dialogue, internal_voice.
 
-| Style | Editorial use |
-| --- | --- |
-| bubble | Short spoken reply, tail toward speaker |
-| thought | Private thought, trailing thought dots |
-| burst | Surprise or emphatic reaction; WOW, UA or HA only when grounded |
-| whisper | Quiet aside, light dashed contour |
-| tag | Small annotation next to its object |
-| ribbon | Brief announcement or product reveal |
-| underline | Handwritten emphasis without a card |
-| sfx | Narration-grounded sound word with action strokes |
-| note | Crooked paper, tape and ochre marker; default |
-| stamp | Coral rejection or completion verdict |
-| score | Label plus numeric payoff |
-| title | Setup line plus larger emphasis |
+Start hidden. Reveal/change/release at exact voice anchors; a final hold needs `hold_to_scene_end_reason`. Replace text rather than accumulating it. Never reveal a punchline early. Keep one focal Story Text entity at a time.
 
-Compact styles normally use 1-4 words at 260-420 canvas pixels wide. Keep readable on a phone; shorten rather than shrink long prose. Place beside its speaker/object, away from faces, Narrative Visuals and lower captions. Keep one focal text at a time. Choose by meaning, not a quota or fixed rotation; vary phrases as well as shape.
+Supported treatments: `bubble`, `thought`, `burst`, `whisper`, `tag`, `ribbon`, `underline`, `sfx`, `note`, `stamp`, `score`, `title`. Choose by meaning, not rotation. Compact styles normally use 1–4 words; shorten rather than shrink long prose.
 
-Bake outlined Patrick Hand with `python tools/preview/bake-story-text.py <workspace> --intent <candidate.json>` before the owning writer (authoring-time fontTools required), or provide equivalent safe path SVGs. Keep canonical palette, accessible SVG titles and no runtime font dependency.
+Story Text may coexist with actors, physical props, Scene Accent, effects, and runtime captions. It may not coexist with Narrative Visual in the same scene.
 
-Run completeness, native style/geometry/caption and event-pair checks. Inspect scene entry, each reveal/release and final frames at phone size in browser screenshots. Structural PASS never approves creative quality, final glyphs or audio-aligned timing.
+Bake safe path SVG lettering before projection, then run completeness, style/geometry/caption, event-pair, phone-size preview, and human Visual Review. Structural PASS never approves creative quality or final timing.

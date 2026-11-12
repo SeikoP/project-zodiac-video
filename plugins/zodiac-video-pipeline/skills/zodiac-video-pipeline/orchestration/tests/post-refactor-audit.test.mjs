@@ -14,7 +14,7 @@ test('fresh default Phase 2 context is canvas-first and does not auto-load Scene
   const result=await loadStepContext('02-visual-production','visual_compile',state.flags);
   assert.equal(result.selected_capabilities.includes('scene_set'),false);
   assert.ok(result.required_references.includes('references/scene-accent-contract.md'));
-  assert.ok(result.required_references.includes('references/narrative-visual-contract.md'));
+  assert.ok(result.required_references.includes('references/narrative-visual.md'));
   for(const forbidden of [
     'references/asset-library-v4/environments/composition-index.json',
     'references/asset-library-v4/environments/compositions/index.json',

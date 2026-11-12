@@ -1,7 +1,11 @@
 // Story lettering uses the existing overlay role; captions remain runtime-owned.
 export function validateStoryText(intent,production){
  const issues=[],letteringByPath=new Map();
- for(const scene of intent?.scenes??[])for(const entity of scene.entities??[]){
+ for(const scene of intent?.scenes??[]){
+  const storyTextEntities=(scene.entities??[]).filter(e=>e.story_text);
+  const narrativeVisuals=(scene.entities??[]).filter(e=>e.kind==='narrative_visual');
+  if(storyTextEntities.length&&narrativeVisuals.length)issues.push({code:'STORY_FOCUS_LAYER_CONFLICT',scene_id:scene.id});
+  for(const entity of scene.entities??[]){
   if(!entity.story_text)continue;
   const add=code=>issues.push({code,scene_id:scene.id,entity_id:entity.id});
   const spec=entity.story_text,voice=production?.scenes?.find(s=>s.id===scene.id)?.voice??'';
@@ -22,6 +26,7 @@ export function validateStoryText(intent,production){
   if(!reveals.length)add('STORY_TEXT_REVEAL_REQUIRED');
   const last=events.at(-1);
   if(last&&entity.states?.[last.state_after]?.visible!==false&&!spec.hold_to_scene_end_reason?.trim())add('STORY_TEXT_RELEASE_REQUIRED');
+  }
  }
  return issues;
 }

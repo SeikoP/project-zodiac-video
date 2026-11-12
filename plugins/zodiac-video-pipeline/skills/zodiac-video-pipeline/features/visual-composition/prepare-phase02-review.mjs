@@ -20,8 +20,6 @@ export async function preparePhase02Review(workspace,outDir){
  if(report.format!=='zodiac-native-preview-pairs@2'||report.review_surface!=='scene_complete_plus_event_pairs'||report.scene_count!==report.scene_frames?.length)throw Error('SCENE_COMPLETE_PREVIEW_REQUIRED');
  await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
  const required=['narration.txt','production.json','asset-plan.json','visual-grammar-plan.json','.authoring/character-assembly-plan.json','.authoring/visual-intent.json','.authoring/director-plan.json','.authoring/scene-art-direction.json','.authoring/scene-composition-resolved.json','.authoring/pipeline-state.json','.authoring/phase02-activation-receipt.json','.authoring/phase02-visual_compile-commit.json','.authoring/phase02-assets-commit.json','.authoring/phase02-publish_prep-commit.json','.authoring/director-v2-review-receipt.json','.authoring/preview-pairs','assets','publish'];
- // an episode that never required a Story Object has no plan/QC pair to copy
- if(state.flags?.story_object_required===true)required.push('.authoring/story-object-plan.json','.authoring/story-object-qc.json','.authoring/story-object-composition-qc.json');
  for(const rel of required)if(!(await copyIf(root,out,rel)))throw Error('REVIEW_REQUIRED_FILE_MISSING '+rel);
  for(const rel of ['.authoring/phase02-validator-receipts-2.4.68','.authoring/phase02-compiler-logs-2.4.68','asset-lineage-receipt.json'])await copyIf(root,out,rel);
  const design=await readFile(path.join(root,'design.md'),'utf8');const token=activeStyle(design);

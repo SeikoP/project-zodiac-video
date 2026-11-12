@@ -53,32 +53,6 @@
       "owner": "references/asset-library-v4/characters/compile-character-assembly.mjs"
     },
     {
-      "id": "visual_metaphor",
-      "fresh": false,
-      "refs": [
-        "references/visual-metaphor-contract.md",
-        "references/visual-metaphor-composition.md"
-      ],
-      "validators": [
-        "visual-metaphor",
-        "visual-metaphor-composition"
-      ],
-      "bindings": [
-        {
-          "phase": "02-visual-production",
-          "steps": [
-            "visual_compile",
-            "assets"
-          ],
-          "run_modes": [
-            "continuity"
-          ],
-          "when": "flag:visual_metaphor_selected"
-        }
-      ],
-      "owner": "features/visual-metaphor/validate-visual-metaphor.mjs"
-    },
-    {
       "id": "cover",
       "fresh": true,
       "refs": [

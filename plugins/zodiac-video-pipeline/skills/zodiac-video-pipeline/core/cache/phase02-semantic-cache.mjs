@@ -4,7 +4,7 @@ import {sha256,cacheRoot,readCacheGraph,writeCacheGraph,propagateDirty} from './
 
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 const hash=x=>sha256(JSON.stringify(canonical(x)));
-const symbolic=e=>['narrative_visual','story_object','story_symbol','visual_metaphor'].includes(e.kind)||['narrative_visual','story_object'].includes(e.visual_role);
+const symbolic=e=>e.kind==='narrative_visual'||['narrative_visual','story_object'].includes(e.visual_role);
 const assetsForEntity=(entity,assets)=>[...new Set(Object.values(entity.states??{}).map(s=>s.asset).filter(Boolean))].sort().map(id=>[id,assets?.[id]??null]);
 export function buildPhase02SemanticGraph(intent){
  const nodes={},sceneRefs=new Map(),assets=intent.assets??{},assetInstances=new Map();

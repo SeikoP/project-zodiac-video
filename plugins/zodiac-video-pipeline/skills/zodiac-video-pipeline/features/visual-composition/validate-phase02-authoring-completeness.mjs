@@ -14,10 +14,7 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
  if(!intent)add('PHASE02_VISUAL_INTENT_REQUIRED');
  const plan=intent?.scene_plan;
  if(!plan||!Array.isArray(plan.scenes)||plan.scenes.length!==ids.length||plan.scenes.some((s,i)=>s.id!==ids[i]))add('PHASE02_SCENE_PLAN_REQUIRED');
- if(intent?.story_object_plan)add('PHASE02_LEGACY_STORY_OBJECT_FORBIDDEN');
  for(const s of intent?.scenes??[])if(s?.grammar?.environment?.scene_set_id)add('PHASE02_LEGACY_SCENE_SET_FORBIDDEN',s.id);
- const allVisuals=scenes.flatMap(scene=>(scene.entities??[]).filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object'));
- if(!allVisuals.length)add('PHASE02_NARRATIVE_VISUAL_REQUIRED');
  const directorScenes=new Set((director?.beats??[]).map(b=>b.scene_id).filter(Boolean));
  const characterById=new Map((character?.characters??[]).map(c=>[c.entity_id,c]));
  const charIds=new Set(characterById.keys());
@@ -44,10 +41,15 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
   if(!directorScenes.has(scene.id))add('PHASE02_DIRECTOR_PLAN_REQUIRED',scene.id);
   for(const actor of (scene.entities??[]).filter(e=>e.kind==='character'))if(!charIds.has(actor.id))add('PHASE02_CHARACTER_ASSEMBLY_REQUIRED',scene.id,actor.id);
   if(!scene.environment)add('PHASE02_CONTEXT_DECISION_REQUIRED',scene.id);
-  const events=scene.events??[],beats=sceneArt?.visual_coverage?.beats??[];
+  const authored=intent?.scenes?.find(s=>s.id===scene.id),events=scene.events??[],beats=sceneArt?.visual_coverage?.beats??[];
+  const authoredVisuals=(authored?.entities??[]).filter(e=>e.kind==='narrative_visual');
+  const authoredStoryText=(authored?.entities??[]).filter(e=>e.story_text);
+  const narrativeUse=beats.some(b=>b.layers?.narrative_visual?.decision==='use');
+  const storyTextUse=beats.some(b=>b.layers?.story_text?.decision==='use');
+  if((authoredVisuals.length&&authoredStoryText.length)||(narrativeUse&&storyTextUse))add('PHASE02_STORY_FOCUS_CONFLICT',scene.id);
   const trace=run_mode==='fresh'?traceSceneStates(scene):[];
   if(run_mode==='fresh')for(const beat of beats){
-   const authored=intent?.scenes?.find(s=>s.id===scene.id),request=authored?.grammar?.meme_composition;
+   const request=authored?.grammar?.meme_composition;
    const reactions=Object.entries(request?.state_bindings??{}).flatMap(([role,state])=>{
     const id=request.bindings?.[role],actor=(scene.entities??[]).find(e=>e.id===id&&e.kind==='character');
     return events.filter((e,index)=>actor?.states?.[state]&&actor.initial_state!==state&&e.target===id&&e.state_after===state&&e.state_before!==state&&trace[index]?.before[id]===e.state_before&&actor.states[state].visible!==false&&e.trigger?.type==='voice_anchor'&&typeof e.trigger.text==='string'&&e.trigger.text.trim()&&scene.voice?.includes(e.trigger.text)&&beat.event_ids?.includes(e.id));
@@ -68,15 +70,15 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
   }
   const backgrounds=(scene.entities??[]).filter(e=>e.kind==='scene_accent'||e.visual_role==='background'||e.visual_role==='scene_accent');
   const canvas=scene.layout_contract?.canvas??production.video??{width:1080,height:1920};
-  if(!backgrounds.some(e=>reachableStates(scene,e).some(s=>{const t=s.transform;return s.visible!==false&&s.asset&&t&&['x','y','width','height'].every(k=>Number.isFinite(t[k]))&&t.width>0&&t.height>0&&t.x>=0&&t.y>=0&&t.x+t.width<=canvas.width&&t.y+t.height<=canvas.height;})&&beats.some(b=>used(b.layers?.scene_accent,e.id)||used(b.layers?.scene_set,e.id))))add('PHASE02_SCENE_BACKGROUND_REQUIRED',scene.id);
+  if(!backgrounds.some(e=>reachableStates(scene,e).some(s=>{const t=s.transform;return s.visible!==false&&s.asset&&t&&['x','y','width','height'].every(k=>Number.isFinite(t[k]))&&t.width>0&&t.height>0&&t.x>=0&&t.y>=0&&t.x+t.width<=canvas.width&&t.y+t.height<=canvas.height;})&&beats.some(b=>used(b.layers?.scene_accent,e.id))))add('PHASE02_SCENE_BACKGROUND_REQUIRED',scene.id);
   for(const prop of (scene.entities??[]).filter(e=>e.visual_role==='interactive_prop')){
    if(!beats.some(b=>used(b.layers?.props,prop.id)))add('PHASE02_PROP_COVERAGE_REQUIRED',scene.id,prop.id);
    if(!events.some(e=>e.target===prop.id))add('PHASE02_PROP_EVENT_REQUIRED',scene.id,prop.id);
   }
-  const visuals=(scene.entities??[]).filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object');
+  const visuals=(scene.entities??[]).filter(e=>e.visual_role==='story_object');
   if(visuals.length){
    for(const visual of visuals){
-    if(!beats.some(b=>used(b.layers?.narrative_visual,visual.id)||used(b.layers?.story_object,visual.id)))add('PHASE02_NARRATIVE_VISUAL_COVERAGE_REQUIRED',scene.id,visual.id);
+    if(!beats.some(b=>used(b.layers?.narrative_visual,visual.id)))add('PHASE02_NARRATIVE_VISUAL_COVERAGE_REQUIRED',scene.id,visual.id);
     if(!events.some(e=>e.target===visual.id&&e.state_before!==e.state_after))add('PHASE02_NARRATIVE_VISUAL_EVENT_REQUIRED',scene.id,visual.id);
    }
   }

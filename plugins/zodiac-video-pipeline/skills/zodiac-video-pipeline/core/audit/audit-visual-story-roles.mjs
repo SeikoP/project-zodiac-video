@@ -23,10 +23,10 @@ const scenes=prod.scenes.map(scene=>{
  const active=ents.filter(e=>targeted.has(e.id)).map(e=>e.id);
 
  const actors=ents.filter(e=>e.kind==='character');
- const objects=ents.filter(e=>e.kind==='story_object'||/^story[_-]/iu.test(e.id));
+ const visuals=ents.filter(e=>e.visual_role==='story_object');
  const eventsByTarget=id=>events.filter(e=>e.target===id);
  const objectStates=[];
- for(const obj of objects){
+ for(const obj of visuals){
    const states=obj.states??{};
    const trace=eventsByTarget(obj.id);
    const meaningful=trace.some(event=>{
@@ -58,13 +58,13 @@ const scenes=prod.scenes.map(scene=>{
  if(missing.length)notes.push('ASSET_REFERENCE_MISSING');
  if(stale.length)notes.push('EVENT_TARGET_MISSING');
 
- if(objects.length&&!objectStates.some(x=>x.meaningful_native_transition))notes.push('STORY_OBJECT_DECORATIVE_REVIEW');
- if(objectStates.some(x=>x.masquerades_as_environment))notes.push('STORY_OBJECT_REPLACES_ENVIRONMENT');
+ if(visuals.length&&!objectStates.some(x=>x.meaningful_native_transition))notes.push('NARRATIVE_VISUAL_DECORATIVE_REVIEW');
+ if(objectStates.some(x=>x.masquerades_as_environment))notes.push('NARRATIVE_VISUAL_REPLACES_ENVIRONMENT');
  if(effectStates.some(x=>!x.enters||!x.releases))notes.push('EFFECT_LIFECYCLE_INCOMPLETE');
  if(!actors.length)notes.push('NO_CHARACTER_PRESENT');
 
- return {scene_id:scene.id,layout_signature:layoutSignature,story_objects:objectStates,effects:effectStates,voice_present:Boolean(String(scene.voice??'').trim()),entity_count:ents.length,event_count:events.length,asset_roles:cats,evented_entities:active,referenced_assets:[...referenced],unresolved_assets:missing,invalid_event_targets:stale.map(e=>e.id),editorial_review_flags:notes,editorial_questions:['Does the Story Object change meaning without voice?','Are supporting props, effects or social pressure meaningful rather than decorative?','Does placement respect face, caption and thought-space?','Does this scene differ intentionally from adjacent scenes?']};
+ return {scene_id:scene.id,layout_signature:layoutSignature,narrative_visuals:objectStates,effects:effectStates,voice_present:Boolean(String(scene.voice??'').trim()),entity_count:ents.length,event_count:events.length,asset_roles:cats,evented_entities:active,referenced_assets:[...referenced],unresolved_assets:missing,invalid_event_targets:stale.map(e=>e.id),editorial_review_flags:notes,editorial_questions:['Does the Narrative Visual communicate its story point without voice?','Are supporting props, effects or social pressure meaningful rather than decorative?','Does placement respect face, caption and focal space?','Does this scene differ intentionally from adjacent scenes?']};
 });
 for(let i=2;i<scenes.length;i++)if(scenes[i].layout_signature===scenes[i-1].layout_signature&&scenes[i].layout_signature===scenes[i-2].layout_signature&&scenes[i].layout_signature!=='[]')scenes[i].editorial_review_flags.push('THREE_SCENES_SAME_CAST_LAYOUT');
-const report={format:'zodiac-visual-role-audit@1',status:scenes.some(s=>s.unresolved_assets.length||s.invalid_event_targets.length||s.editorial_review_flags.includes('STORY_OBJECT_REPLACES_ENVIRONMENT'))?'BLOCKED':'REVIEW_REQUIRED',scope:'native-authoring-only',disclaimer:'Neither asset count nor validator output proves visual quality. Inspect rendered frames and obtain user approval.',scenes};
+const report={format:'zodiac-visual-role-audit@1',status:scenes.some(s=>s.unresolved_assets.length||s.invalid_event_targets.length||s.editorial_review_flags.includes('NARRATIVE_VISUAL_REPLACES_ENVIRONMENT'))?'BLOCKED':'REVIEW_REQUIRED',scope:'native-authoring-only',disclaimer:'Neither asset count nor validator output proves visual quality. Inspect rendered frames and obtain user approval.',scenes};
 const output=path.join(workspace,'.authoring/visual-role-audit.json');await mkdir(path.dirname(output),{recursive:true});await writeFile(output,JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({status:report.status,output,flags:scenes.flatMap(s=>s.editorial_review_flags.map(code=>({scene:s.scene_id,code})))},null,2));process.exit(report.status==='BLOCKED'?2:0);

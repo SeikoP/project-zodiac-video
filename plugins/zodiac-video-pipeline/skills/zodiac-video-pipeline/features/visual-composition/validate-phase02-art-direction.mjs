@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generic authoring-only gate; no sign-specific entity, shot quotas or forced story objects.
+// Generic authoring-only gate; no sign-specific entity, shot quotas or forced Narrative Visuals.
 import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from '../scene-set/scene-set-detection.mjs';
 import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
@@ -18,25 +18,22 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   if(!source||source.id!==d?.id)fail('ART_SCENE_ORDER_MISMATCH',scene_id);
   if(normalize(source?.voice)!==normalize(d?.voice))fail('ART_VOICE_MISMATCH',scene_id);
   if(!Object.prototype.hasOwnProperty.call(palettes?.palettes??{},d?.palette_id))fail('PALETTE_UNKNOWN',scene_id);
-  const archiveFrame=source?.environment?.mode==='archive_frame',primarySceneSet=hasPrimarySceneSet(source,production),sceneSetId=source?.environment?.scene_set_id??source?.environment?.scene_set?.id;
+  const primarySceneSet=hasPrimarySceneSet(source,production),sceneSetId=source?.environment?.scene_set_id??source?.environment?.scene_set?.id;
   if(primarySceneSet&&!fresh){
    const accents=source.environment.scene_accents??[];
    if(!Array.isArray(accents))fail('SCENE_ACCENT_SELECTION_INVALID',scene_id);
    else if(!accents.length&&!String(source.environment.scene_accent_omission_reason??'').trim())fail('SCENE_ACCENT_DECISION_MISSING',scene_id);
    if(!sceneSetId||d?.scene_set_id!==sceneSetId)fail('SCENE_SET_ID_MISMATCH',scene_id);
    if(d?.environment_profile!==undefined&&d?.environment_profile!==null)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET',scene_id);
-  }else if(!archiveFrame&&!fresh){
+  }else if(!fresh){
    if(!(environments?.profiles??[]).includes(d?.environment_profile))fail('ENVIRONMENT_UNKNOWN',scene_id);
    if(source?.environment?.profile!==d?.environment_profile)fail('ENVIRONMENT_PROFILE_MISMATCH',scene_id);
   }
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||(!fresh&&!String(d?.environment_reason??'').trim()))fail('ART_REASON_MISSING',scene_id);
   if(source)issues.push(...validateVisualCoverage(source,d,{required:requireCoverage,deriveEmptyLayers:fresh}));
-  // Fresh runs only: a beat that draws a narrative visual must state its claim, anchor and state change first.
+  // Fresh runs only: a used Narrative Visual must preserve Phase-1 meaning, anchor and state change.
   if(source&&fresh){const usesNarrative=(d?.visual_coverage?.beats??[]).some(b=>b?.layers?.narrative_visual?.decision==='use');if(usesNarrative||d?.narrative_brief)issues.push(...validateNarrativeBrief(source,d.narrative_brief));}
-  const story=d?.story_object;
-  if(story && (!['prop','symbolic','story_object'].includes(story.render_layer)||story.replaces_environment===true))fail('STORY_OBJECT_BACKGROUND_FORBIDDEN',scene_id);
-  if(story && (!String(story.id??'').trim()||!String(story.voice_anchor??'').trim()||!String(d.voice??'').includes(story.voice_anchor)))fail('STORY_OBJECT_VOICE_ANCHOR_MISSING',scene_id);
  }
  if(compact(scenes.map(s=>s.voice).join(''))!==compact(narration))fail('APPROVED_NARRATION_MISMATCH');
  return {format:'zodiac-art-direction-qc@2',status:issues.length?'BLOCKED':'PASS',scenes:directed.length,issues};

@@ -48,30 +48,6 @@
     {
       "id": "interaction.compare_group",
       "capability": "compare-group"
-    },
-    {
-      "id": "metaphor.balance",
-      "capability": "balance-scale"
-    },
-    {
-      "id": "metaphor.split_direction",
-      "capability": "split-direction"
-    },
-    {
-      "id": "metaphor.push_pull",
-      "capability": "push-pull"
-    },
-    {
-      "id": "metaphor.focus_shift",
-      "capability": "focus-shift-metaphor"
-    },
-    {
-      "id": "metaphor.barrier",
-      "capability": "barrier-opening"
-    },
-    {
-      "id": "metaphor.comparison_level",
-      "capability": "comparison-level"
     }
   ]
 }

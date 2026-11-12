@@ -11,7 +11,7 @@ export async function validateSceneSetIdentityWorkspace(workspace){
  const production=JSON.parse(await readFile(path.join(workspace,'production.json'),'utf8'));
  const issues=[],seenCompiled=new Map();let checked=0;
  for(const scene of production.scenes??[]){
-  const env=scene.environment??{},id=env.scene_set_id??env.scene_set?.id;if(!id||env.mode==='archive_frame')continue;
+  const env=scene.environment??{},id=env.scene_set_id??env.scene_set?.id;if(!id)continue;
   checked++;const master=registry.scene_sets.find(x=>x.id===id);if(!master){issues.push({code:'SCENE_SET_ID_UNKNOWN',scene_id:scene.id,id});continue;}
   const set=env.scene_set,assetId=set?.asset??set?.asset_id,asset=production.assets?.[assetId];
   if(!set||set.format!=='zodiac-scene-set@1'||!asset?.path){issues.push({code:'SCENE_SET_ASSET_MISSING',scene_id:scene.id});continue;}

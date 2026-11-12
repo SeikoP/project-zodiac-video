@@ -1,43 +1,44 @@
 # Narrative Visual — Hình ảnh kể chuyện (Phase 1)
 
-**Narrative Visual** is the only fresh-authoring term for the symbolic/storytelling image layer. Machine identifier: `narrative_visual`. Older names such as Story Object, Story Symbol and Visual Metaphor are compatibility vocabulary only and must not be offered as fresh creative choices.
+**Narrative Visual** is the single fresh storytelling-image concept. It is **optional**. Do not create one to satisfy a quota.
 
-Phase 1 owns the idea. Phase 2 owns only execution.
+Use it only when one concrete image can explain a central story point more clearly than actor performance, a physical prop, or Story Text. If the scene is better served by a short readable phrase, choose Story Text instead. Phase 2 may never show Story Text and Narrative Visual in the same scene.
 
-## Phase 1 direction
+## One direction, not variants
 
-After Evidence and concept selection, author `narrative_plan.narrative_visuals[]`. Start from the source-bounded Zodiac mechanism/facet, then connect it to the selected concept and Story Spine. Do not start from an asset catalog.
+When a Narrative Visual is justified, author exactly one concrete direction in `narrative_plan.narrative_visuals[]`. Do not create literal/metaphor/exaggeration variants. Do not browse a symbolic catalog.
 
 Each direction contains:
 
-- `id`: stable Narrative Visual identity.
-- `beat_ids[]`: Narrative Plan beats whose meaning it advances.
-- `evidence_refs[]`: evidence supporting the Zodiac trait/tension used by the image.
-- `trait_basis`: the supported Zodiac characteristic being visualized.
-- `story_tension`: the concrete contradiction or pressure in this story.
-- `claim`: what a viewer should understand from the image with audio muted.
-- `concept_fit`: why this image belongs to the selected concept rather than merely matching the sign.
-- `concept_candidates.literal|metaphor|exaggeration`: three genuinely different image ideas.
-- `selected_concept`: the chosen lane.
-- `selection_reason`: why it reads best and advances the story.
-- `humor_mechanism`: the visual joke, comic escalation, irony or deadpan relationship; do not add humor when the concept calls for restraint.
-- `payoff_image`: how the same idea lands, changes meaning or resolves later.
+- `id`: stable identity.
+- `beat_ids[]`: the Narrative Plan beats it explains.
+- `evidence_refs[]`: evidence supporting the Zodiac trait used by the image.
+- `trait_basis`: the source-bounded Zodiac characteristic.
+- `story_point`: the exact content point the viewer needs to understand.
+- `viewer_read`: what a viewer should understand with audio muted.
+- `visible_subject`: the concrete person/object relationship visible on screen.
+- `visible_action`: the observable action or state change that carries meaning.
+- `visual_idea`: one specific image composition, described literally enough to draw.
+- `concept_fit`: why it belongs to this episode's selected concept.
+- `centrality_reason`: why this point deserves the scene's focal semantic layer.
+- `why_visual_not_text`: why an image communicates this better than Story Text.
+- `tone_fit`: how the image preserves this episode's comic, sharp, restrained or warm tone.
+- `payoff_image` (optional): a later concrete callback or resolution when the story actually needs one.
 
-The candidate ladder is an ideation tool, not three assets to render. One selected direction is handed to Phase 2.
+A direction must describe visible nouns and verbs. “Balance”, “pressure”, “conflict”, “choice” or “harmony” by themselves are not drawable ideas.
 
-## Selection rule
+## Editorial test
 
-Prefer an image that passes all four editorial questions:
+Use a Narrative Visual only when all are true:
 
-1. **Zodiac-specific:** is it grounded in the selected evidence/facet?
-2. **Concept-fit:** does it advance this episode's premise and Story Spine?
-3. **Visual read:** can the essential meaning be understood without narration?
-4. **Story value:** does it add a joke, pressure, contrast, callback or payoff instead of repeating the spoken sentence?
+1. **Central:** removing it would make an important story turn harder to understand.
+2. **Concrete:** the direction names a visible subject plus a visible action/state change.
+3. **Zodiac-specific:** the meaning is tied to selected evidence, not a generic sign icon.
+4. **Silent-readable:** a viewer can infer the intended point without hearing the line.
+5. **Better than text:** a short Story Text card would communicate the point less effectively.
 
-A zodiac glyph, stock balance scale, generic heart, question mark or other ready-made symbol is not sufficient merely because it resembles the sign.
+For Libra, a stock scale is not enough. A scale is acceptable only when the current story conflict is visibly encoded in what is on each side, who changes it, and what that change reveals. Otherwise use a more literal scene action or Story Text.
 
 ## Phase 2 handoff
 
-Phase 2 must reference the Phase 1 direction by `phase1_visual_id`, bind it to an exact narration phrase, and author the SVG/states/layout. Phase 2 must not regenerate the literal/metaphor/exaggeration competition or substitute a prebuilt thematic illustration.
-
-Historical assets and contracts remain readable only through explicit compatibility paths.
+Phase 2 references the direction by `phase1_visual_id`, binds an exact narration anchor, and authors the SVG/states/layout. It may refine execution but may not change the story point or invent another symbolic concept.

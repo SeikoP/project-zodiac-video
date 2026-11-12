@@ -10,9 +10,9 @@ const jaccard=(a,b)=>{if(!a.size||!b.size)return 0;let n=0;for(const w of a)if(b
 export function auditNarrativeBriefReuse(briefs=[],priorBriefs=[],{threshold=0.6}={}){
  const flags=[];
  for(const b of briefs){
-  const mine=words(b?.claim);
+  const mine=words(b?.viewer_read);
   for(const p of priorBriefs){
-   const score=jaccard(mine,words(p?.claim));
+   const score=jaccard(mine,words(p?.viewer_read));
    if(score>=threshold)flags.push({code:'NARRATIVE_CONCEPT_REPEATED',scenes:[String(b.scene_id)],prior:{episode:p.episode??null,scene_id:p.scene_id??null},similarity:Math.round(score*100)/100,severity:'EDITORIAL_REVIEW'});
   }
  }
@@ -30,10 +30,10 @@ export function auditCreativeReuse({production,visualGrammar,depth,assetPlan,nar
  for(const s of scenes){
   const g=grams.get(s.id)??{},d=depths.get(s.id)??{};
   const active=(s.entities??[]).filter(e=>!/^env__|^depth__|^decor_/u.test(e.id));
-  const objects=active.filter(e=>e.kind==='story_object'||e.kind==='object'||/^story[_-]/u.test(e.id));
+  const objects=active.filter(e=>e.visual_role==='story_object');
   const objectSignature=objects.map(e=>({id:e.id,states:Object.keys(e.states??{}).length,events:(s.events??[]).filter(v=>v.target===e.id).map(v=>({before:v.state_before,after:v.state_after,motion:v.motion?.preset??v.desired_motion??v.motion??null}))}));
   identities.push({scene:s.id,frame:g.frame_id??null,mechanic:g.mechanic_id??null,palette:d.palette??d.palette_id??null,profile:d.profile??d.environment_profile??null,objectSignature:JSON.stringify(objectSignature),cast:(active.filter(e=>e.kind==='character').map(e=>e.id)).sort().join(',')});
-  const primary=active.filter(e=>e.kind==='story_object'||/^story[_-]/u.test(e.id));
+  const primary=active.filter(e=>e.visual_role==='story_object');
   for(const e of primary)for(const state of Object.values(e.states??{})){
     const a=production.assets?.[state?.asset];if(!a)continue;
     const master=String(a.lineage?.source_master??a.path??state.asset);

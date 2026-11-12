@@ -42,7 +42,7 @@ export function compileDepth(production,plan,catalog){
   if(!scene||!profile||!palette||seen.has(item.scene_id))fail('DEPTH_PLAN_INVALID',String(item.scene_id));
   seen.add(item.scene_id);
   if(!String(item.rationale??'').trim()||!Array.isArray(item.layers)||item.layers.length<1||item.layers.length>3||new Set(item.layers).size!==item.layers.length||item.layers.some(x=>!['rear','divider','front'].includes(x)))fail('DEPTH_LAYER_INVALID',item.scene_id);
-  if(item.story_object_entity_id && !(scene.entities??[]).some(e=>e.id===item.story_object_entity_id))fail('STORY_OBJECT_MISSING',item.scene_id);
+  if(item.narrative_visual_entity_id && !(scene.entities??[]).some(e=>e.id===item.narrative_visual_entity_id))fail('NARRATIVE_VISUAL_MISSING',item.scene_id);
   for(const role of item.layers){
    const id='depth__'+safe(item.scene_id)+'__'+role,asset='DEPTH_'+safe(item.scene_id).toUpperCase()+'_'+role.toUpperCase(),rel='assets/environment/depth-'+safe(item.scene_id)+'-'+role+'.svg';
    if(out.assets[asset] || (scene.entities??[]).some(e=>e.id===id))fail('DEPTH_ENTITY_COLLISION',id);

@@ -1,6 +1,6 @@
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
-import {parsePortableZip} from '../../core/archive/zip-primitives.mjs';
+import {parsePortableZip} from '../../core/portable/zip-primitives.mjs';
 import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_REQUIRED,validateHandoffManifest} from '../../contracts/phase1-handoff.mjs';
 import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
 import {validatePipelineState} from '../../core/state/validate-pipeline-state.mjs';

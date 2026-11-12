@@ -233,7 +233,7 @@
           "id": "narrative_visual_contract",
           "kind": "internal_reference",
           "when": "fresh",
-          "guidance_uri": "references/narrative-visual-contract.md",
+          "guidance_uri": "references/narrative-visual.md",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -333,10 +333,6 @@
         {
           "name": ".authoring/episode-cast-plan.json",
           "when": "flag:episode_selected"
-        },
-        {
-          "name": ".authoring/visual-metaphor-plan.json",
-          "when": "flag:visual_metaphor_selected"
         },
         {
           "name": ".authoring/scene-experience-review.json",

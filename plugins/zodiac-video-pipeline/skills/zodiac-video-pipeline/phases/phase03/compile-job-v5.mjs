@@ -18,7 +18,7 @@ const ascii=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g
 const signSlug=value=>ascii(value).replace(/[^a-z0-9]+/g,'');
 const conceptSlug=value=>ascii(value).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-{2,}/g,'-');
 // Normalize only the transport projection; approved authored sources remain untouched.
-const transportVisualRole=value=>['narrative_visual','story_symbol','visual_metaphor'].includes(value)?'story_object':value;
+const transportVisualRole=value=>value==='narrative_visual'?'story_object':value;
 const canonical=value=>Array.isArray(value)?value.map(canonical):isObj(value)?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
 const contractHash=schema=>createHash('sha256').update(JSON.stringify(canonical(schema)),'utf8').digest('hex');
 
@@ -171,7 +171,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
     };
     return {id:scene.id,voice:scene.voice,duration_hint_frames:Number.isInteger(scene.duration_hint_frames)&&scene.duration_hint_frames>1?toRuntimeFrames(scene.duration_hint_frames):Math.max(24,Math.round(scene.voice.trim().split(/\s+/u).length*8)),entities,events,...sceneExtras};
   });
-  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:Object.fromEntries(Object.entries(source.assets).map(([id,asset])=>[id,{...clone(asset),...(asset.category==='narrative_visual'||asset.category==='story_symbol'||asset.category==='visual_metaphor'?{category:'story_object'}:{})}])),scenes};
+  const ir={format:'zodiac-authoring-ir@1',fps:24,video:{width:1080,height:1920},assets:Object.fromEntries(Object.entries(source.assets).map(([id,asset])=>[id,{...clone(asset),...(asset.category==='narrative_visual'?{category:'story_object'}:{})}])),scenes};
   assertJob5VisualRoleSizes(ir);const preflight=preflightHandoff(ir);if(preflight.status==='BLOCKED')fail('HANDOFF_PREFLIGHT '+JSON.stringify(preflight.issues));
   // Plugin owns branding/caption intent. Renderer only materializes the font.
   // Explicit contradictory brand configuration is not silently overwritten.

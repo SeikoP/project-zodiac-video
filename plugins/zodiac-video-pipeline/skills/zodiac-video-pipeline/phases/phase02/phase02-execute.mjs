@@ -186,7 +186,7 @@ else{
   const relevant=[...stepSourceFiles,absolute,...(step.validator?[path.join(source.skillRoot,'core/evidence/run-validator-with-receipt.mjs')]:[]),...cacheInputPaths.map(p=>path.join(workspace,p))];
   // These validators read workspace plans outside production.json. A cached
   // PASS must not survive changes to their actual authoring inputs.
-  if(['composition_resolved','visual_quality','director_final_review'].includes(step.id))for(const rel of ['design.md','.authoring/scene-art-direction.json','.authoring/director-plan.json','.authoring/story-object-plan.json','.authoring/visual-metaphor-plan.json'])if(await exists(path.join(workspace,rel)))relevant.push(path.join(workspace,rel));
+  if(['composition_resolved','visual_quality','director_final_review'].includes(step.id))for(const rel of ['design.md','.authoring/scene-art-direction.json','.authoring/director-plan.json'])if(await exists(path.join(workspace,rel)))relevant.push(path.join(workspace,rel));
   if(!['character_components','character_plan','character_write','meme_props'].includes(step.id)){
    const generated=step.id==='environment'?await workspaceAssetPaths('environment'):[];
    const kind=['character_identity','outfit_bake'].includes(step.id)?'character':undefined;

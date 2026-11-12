@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,utimes,readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {buildPortableZip,parsePortableZip} from '../../core/archive/zip-primitives.mjs';
+import {buildPortableZip,parsePortableZip} from '../../core/portable/zip-primitives.mjs';
 import {buildSourceBoundReviewReceipt} from '../../core/evidence/approval-source-hashes.mjs';
 import {buildInventory} from '../../contracts/phase1-handoff.mjs';
 import {exportPhase1Handoff} from '../../phases/phase01/export-phase1-handoff.mjs';
@@ -14,8 +14,8 @@ const stateTemplate=JSON.parse(await readFile(new URL('../pipeline-state.templat
 async function approvedWorkspace(runId){
  const root=await mkdtemp(path.join(tmpdir(),'z-local-src-'));await mkdir(path.join(root,'.authoring','validator-receipts'),{recursive:true});
  await writeFile(path.join(root,'narration.txt'),'Approved narration '+runId+'\n');
- await writeFile(path.join(root,'.authoring','narrative-plan.json'),JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tử',story_spine:{premise:'p'}}));
- await writeFile(path.join(root,'.authoring','episode-scope.json'),JSON.stringify({sign:'Song Tử',concept:runId}));
+ await writeFile(path.join(root,'.authoring','narrative-plan.json'),JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tá»­',story_spine:{premise:'p'}}));
+ await writeFile(path.join(root,'.authoring','episode-scope.json'),JSON.stringify({sign:'Song Tá»­',concept:runId}));
  await writeFile(path.join(root,'.authoring','phase3-writer-brief.json'),JSON.stringify({creative_direction:{tone:'normal'}}));
  await writeFile(path.join(root,'.authoring','plugin-use-decisions.json'),JSON.stringify({format:'zodiac-plugin-use-decisions@1',replaces_zodiac:false,decisions:[],not_an_approval:true}));
  const state=structuredClone(stateTemplate);state.run_id=runId;state.run_mode='continuity';state.current_phase='01-content';state.phases['01-content'].status='PASS';state.phases['01-content'].current_step='narration';for(const step of Object.values(state.phases['01-content'].steps)){step.status='SKIPPED_REUSED';step.reuse_source='test:approved-phase1';}
@@ -76,7 +76,7 @@ test('source-bound approval drift is rejected even if capsule inventory is recom
  const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
   const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});const file=await capsule(inbox,'run-drift');
   const entries=parsePortableZip(await readFile(file)),payload=entries.filter(x=>!['HANDOFF.json','SHA256SUMS'].includes(x.rel));
-  payload.find(x=>x.rel==='narrative-plan.json').data=Buffer.from(JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tử',story_spine:{premise:'changed'}}));
+  payload.find(x=>x.rel==='narrative-plan.json').data=Buffer.from(JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tá»­',story_spine:{premise:'changed'}}));
   const {buildInventory,formatSha256Sums}=await import('../../contracts/phase1-handoff.mjs');const inventory=buildInventory(payload);
   const handoff=JSON.parse(entries.find(x=>x.rel==='HANDOFF.json').data);handoff.inventory=inventory;
   await writeFile(file,buildPortableZip([{rel:'HANDOFF.json',data:Buffer.from(JSON.stringify(handoff,null,2)+'\n')},...payload.map(x=>({rel:x.rel,data:x.data})),{rel:'SHA256SUMS',data:Buffer.from(formatSha256Sums(inventory))}]));

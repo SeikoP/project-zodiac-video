@@ -12,7 +12,7 @@ test('fresh run: a beat that uses a narrative visual needs a brief',()=>{
  assert.ok(gate(plan(),true).includes('NARRATIVE_BRIEF_REQUIRED'));
 });
 test('fresh run: a valid brief satisfies the gate',()=>{
- const brief={format:'zodiac-narrative-brief@1',claim:'Sự vắng mặt nói thay lời',anchor_phrase:'chiếc ghế trống',state_changes:[{from:'có người',to:'trống',anchor_phrase:'bỏ lại'}]};
+ const brief={format:'zodiac-narrative-brief@2',phase1_visual_id:'NV1',story_point:'Cô ấy chủ động để lại vị trí cũ.',viewer_read:'Chiếc ghế trống cho thấy cô ấy đã rời khỏi vị trí cũ.',anchor_phrase:'chiếc ghế trống',state_changes:[{from:'có người',to:'trống',anchor_phrase:'bỏ lại'}]};
  assert.ok(!gate(plan({narrative_brief:brief}),true).some(c=>c.startsWith('NARRATIVE_BRIEF')));
 });
 test('non-fresh workspaces never require a brief',()=>{
@@ -36,9 +36,9 @@ test('an asset that is not authored yet is skipped, not failed',async()=>assert.
 test('text glyphs are rejected',async()=>assert.ok((await codes(prod({x:100,y:300,width:400,height:400}),'<svg viewBox="0 0 1 1"><text>hi</text><path d="M0 0"/><path d="M1 1"/></svg>')).includes('NARRATIVE_KIT_TEXT_GLYPHS')));
 
 import {auditNarrativeBriefReuse} from '../../core/audit/audit-creative-reuse.mjs';
-test('reuse check flags a repeated claim for editorial review and ignores different ones',()=>{
- const prior=[{episode:'ep-1',scene_id:'S03',claim:'Chiếc ghế trống nói thay sự vắng mặt'}];
- const same=auditNarrativeBriefReuse([{scene_id:'S02',claim:'Sự vắng mặt nói thay bằng chiếc ghế trống'}],prior);
+test('reuse check flags a repeated viewer read for editorial review and ignores different ones',()=>{
+ const prior=[{episode:'ep-1',scene_id:'S03',viewer_read:'Chiếc ghế trống nói thay sự vắng mặt'}];
+ const same=auditNarrativeBriefReuse([{scene_id:'S02',viewer_read:'Sự vắng mặt nói thay bằng chiếc ghế trống'}],prior);
  assert.equal(same.length,1);assert.equal(same[0].code,'NARRATIVE_CONCEPT_REPEATED');assert.equal(same[0].severity,'EDITORIAL_REVIEW');assert.equal(same[0].prior.episode,'ep-1');
- assert.deepEqual(auditNarrativeBriefReuse([{scene_id:'S02',claim:'Đồng hồ chạy ngược khi lo lắng'}],prior),[]);
+ assert.deepEqual(auditNarrativeBriefReuse([{scene_id:'S02',viewer_read:'Đồng hồ chạy ngược khi lo lắng'}],prior),[]);
 });

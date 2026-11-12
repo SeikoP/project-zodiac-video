@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// Editorial-source provenance gate for fresh Narrative Visuals.
-// New fresh work is Phase-1-directed; older workspaces keep scene-authored compatibility.
+// Fresh Narrative Visual provenance gate: every authored image must execute one concrete Phase-1 direction.
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const hash=s=>createHash('sha256').update(s).digest('hex');
-const meaningful=s=>typeof s==='string'&&s.trim().length>=12;
+const meaningful=s=>typeof s==='string'&&s.trim().length>=8;
 const entry=(code,scene_id,entity_id,detail)=>({code,scene_id,entity_id,detail});
 const normalize=s=>String(s??'').trim();
 
@@ -15,47 +14,38 @@ export function validateCreativeProvenance(intent,svgByAsset={},phase1Visuals=[]
  const issues=[],seenByHash=new Map();
  if(intent?.taxonomy_version!=='narrative_visual@1')return {status:'NOT_APPLICABLE',issues,review_required:false};
  const directions=new Map((phase1Visuals??[]).map(v=>[v.id,v]));
- const phase1Directed=directions.size>0;
  for(const scene of intent.scenes??[]){
   const voice=String(scene.voice??scene.narration_text??'');
   const visuals=(scene.entities??[]).filter(x=>x.kind==='narrative_visual');
   if(!visuals.length)continue;
-  const narrativeBrief=scene.art_direction?.narrative_brief??{};
-  if(!meaningful(narrativeBrief.claim))issues.push(entry('CREATIVE_SCENE_CLAIM_REQUIRED',scene.id,null,'No clear viewer takeaway'));
+  if(visuals.length>1)issues.push(entry('CREATIVE_NARRATIVE_VISUAL_DENSITY',scene.id,null,String(visuals.length)));
+  const brief=scene.art_direction?.narrative_brief??{};
+  if(!meaningful(brief.story_point)||!meaningful(brief.viewer_read))issues.push(entry('CREATIVE_SCENE_MEANING_REQUIRED',scene.id,null,'Narrative Visual needs concrete story_point and viewer_read'));
   for(const entity of visuals){
    const states=Object.entries(entity.states??{}).filter(([,s])=>s?.asset&&s.visible!==false);
-   if(!states.length){issues.push(entry('CREATIVE_VISIBLE_STATE_REQUIRED',scene.id,entity.id,'At least one visible visual state is needed'));continue;}
+   if(!states.length){issues.push(entry('CREATIVE_VISIBLE_STATE_REQUIRED',scene.id,entity.id,'At least one visible Narrative Visual state is needed'));continue;}
    for(const [stateId,state] of states){
     const asset=intent.assets?.[state.asset],origin=asset?.creative_origin;
     if(!asset){issues.push(entry('CREATIVE_ASSET_MISSING',scene.id,entity.id,state.asset));continue;}
-    if(!origin){issues.push(entry('CREATIVE_ORIGIN_REQUIRED',scene.id,entity.id,state.asset));continue;}
+    if(!origin||origin.mode!=='phase1_directed'||!normalize(origin.phase1_visual_id)){
+     issues.push(entry('CREATIVE_PHASE1_DIRECTION_REQUIRED',scene.id,entity.id,state.asset));
+     continue;
+    }
     if(origin.scene_id!==scene.id)issues.push(entry('CREATIVE_SCENE_OWNER_MISMATCH',scene.id,entity.id,state.asset));
+    const direction=directions.get(origin.phase1_visual_id);
+    if(!direction)issues.push(entry('CREATIVE_PHASE1_DIRECTION_UNKNOWN',scene.id,entity.id,origin.phase1_visual_id));
+    else{
+     const beatIds=new Set((scene.director_beats??[]).map(b=>b.beat_id));
+     if(!(direction.beat_ids??[]).some(id=>beatIds.has(id)))issues.push(entry('CREATIVE_PHASE1_BEAT_MISMATCH',scene.id,entity.id,origin.phase1_visual_id));
+     if(normalize(brief.phase1_visual_id)!==normalize(direction.id))issues.push(entry('CREATIVE_PHASE1_BRIEF_LINK_MISMATCH',scene.id,entity.id,origin.phase1_visual_id));
+     if(normalize(brief.story_point)!==normalize(direction.story_point)||normalize(brief.viewer_read)!==normalize(direction.viewer_read))
+      issues.push(entry('CREATIVE_PHASE1_MEANING_DRIFT',scene.id,entity.id,origin.phase1_visual_id));
+     for(const key of ['visible_subject','visible_action','visual_idea','centrality_reason','why_visual_not_text','tone_fit'])
+      if(!meaningful(direction[key]))issues.push(entry('CREATIVE_PHASE1_DIRECTION_INCOMPLETE',scene.id,entity.id,key));
+    }
     const anchor=normalize(origin.anchor_phrase);
     if(!anchor||(!voice.includes(anchor)&&!String(scene.narration_range_text??'').includes(anchor)))
      issues.push(entry('CREATIVE_VOICE_ANCHOR_REQUIRED',scene.id,entity.id,anchor));
-
-    if(phase1Directed){
-     if(origin.mode!=='phase1_directed'||!normalize(origin.phase1_visual_id)){
-      issues.push(entry('CREATIVE_PHASE1_DIRECTION_REQUIRED',scene.id,entity.id,state.asset));
-     }else{
-      const direction=directions.get(origin.phase1_visual_id);
-      if(!direction)issues.push(entry('CREATIVE_PHASE1_DIRECTION_UNKNOWN',scene.id,entity.id,origin.phase1_visual_id));
-      else{
-       const beatIds=new Set((scene.director_beats??[]).map(b=>b.beat_id));
-       if(!(direction.beat_ids??[]).some(id=>beatIds.has(id)))issues.push(entry('CREATIVE_PHASE1_BEAT_MISMATCH',scene.id,entity.id,origin.phase1_visual_id));
-       if(normalize(narrativeBrief.claim)!==normalize(direction.claim))issues.push(entry('CREATIVE_PHASE1_CLAIM_DRIFT',scene.id,entity.id,origin.phase1_visual_id));
-      }
-     }
-    }else{
-     if(origin.mode!=='scene_authored'){
-      issues.push(entry('CREATIVE_ORIGIN_REQUIRED',scene.id,entity.id,`State ${stateId} must use a scene-authored Narrative Visual`));
-     }else{
-      if(!meaningful(origin.claim)||!meaningful(origin.selection_reason))issues.push(entry('CREATIVE_SEMANTIC_RATIONALE_REQUIRED',scene.id,entity.id,state.asset));
-      const concepts=origin.concept_candidates??{};
-      if(!['literal','metaphor','exaggeration'].every(k=>meaningful(concepts[k]))||!['literal','metaphor','exaggeration'].includes(origin.selected_concept))
-       issues.push(entry('CREATIVE_CONCEPT_LADDER_REQUIRED',scene.id,entity.id,state.asset));
-     }
-    }
 
     const svg=svgByAsset[state.asset];
     if(typeof svg!=='string'||!svg.trim()){issues.push(entry('CREATIVE_SVG_MISSING',scene.id,entity.id,state.asset));continue;}
@@ -69,7 +59,7 @@ export function validateCreativeProvenance(intent,svgByAsset={},phase1Visuals=[]
    }
   }
  }
- return {format:'zodiac-creative-provenance@1',status:issues.length?'BLOCKED':'PASS',issues,review_required:issues.some(x=>x.code==='CREATIVE_STOCK_REUSE_REQUIRES_REVIEW'),not_an_approval:true};
+ return {format:'zodiac-creative-provenance@2',status:issues.length?'BLOCKED':'PASS',issues,review_required:issues.some(x=>x.code==='CREATIVE_STOCK_REUSE_REQUIRES_REVIEW'),not_an_approval:true};
 }
 
 export async function validateCreativeWorkspace(root){

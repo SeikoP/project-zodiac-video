@@ -1,53 +1,22 @@
-# Scene art direction — Phase 02
+# Scene Art Direction — Phase 02
 
-Fresh Phase 02 uses `.authoring/scene-art-direction.json` format `zodiac-scene-art-direction@2` and validates it with `validate-phase02-art-direction.mjs`. Historical probes are absent from this package; old jobs use an external pinned snapshot.
+Fresh Phase 2 uses `.authoring/scene-art-direction.json` format `zodiac-scene-art-direction@2`.
 
-## Visual layers
+## Visual components
 
-1. Background/context — every fresh scene selects an actual canvas-native Scene Accent entity behind its actors. Palette alone is insufficient. Scene Set walls are compatibility-only; characters own independent composition and physical support.
-2. `shot-layout` — actor/prop composition skeleton. It is not a background frame.
-3. `scene accent` — the fresh background/context component, with canvas coordinates, explicit visibility lifecycle and caption-safe placement. It does not require a wall container.
-4. `Narrative Visual` — the only fresh symbolic/storytelling category. Its meaning comes from the Phase-1 `narrative_visuals[]` direction and must connect a source-bounded Zodiac trait to this episode's concept. Require at least one per fresh video, with a narrated semantic state change. Runtime compatibility may serialize it as `story_object`; that transport name is not a second authoring concept.
-5. `prop` / `effect` — ordinary physical objects and reaction emphasis. Neither may substitute for the Narrative Visual premise or the scene-set.
+1. **Actor / Character** — identity, pose, expression and performed action.
+2. **Scene Accent** — canvas-native environmental/context cue behind the action. Palette alone is insufficient context.
+3. **Physical Prop / Support** — handled or contacted objects with explicit spatial relations and actions.
+4. **Effect / Meme acting** — optional reaction emphasis tied to actual narration/action.
+5. **Focal semantic layer** — choose **Narrative Visual OR Story Text OR neither** for the whole scene. Never use both.
+6. **Caption safe zone** — reserved runtime subtitle space, not an authored SVG entity.
 
-Use `art-direction/palette-registry.json` for token colors. `art-direction/environment-registry.json` contains compatibility selected-cue/legacy profiles; fresh scene-set authoring does not need a room profile from that registry. Do not auto-add windows, boards, tables, lamps, shadows, gradients or perspective.
+Narrative Visual is optional and Phase-1-directed. It is valid only when a concrete visible subject/action explains a central story point better than Story Text. Generic symbols and decorative zodiac imagery do not qualify.
 
-Run `node features/visual-composition/validate-phase02-art-direction.mjs <workspace>` before native compilation. Then run native compilers, Director V2, preview pairs and human Visual Review. Structural PASS never implies aesthetic or runtime-media PASS.
+## Visual coverage
 
-## Required visual coverage before compilation
+Fresh coverage uses `zodiac-visual-coverage@1`, exact scene narration SHA-256, and contiguous UTF-8 narration ranges. Every beat records `use/omit` with a reason for applicable layers and names the real entity IDs when used.
 
-Fresh Phase 02 must fill `visual_coverage` inside each Visual Intent scene's
-`art_direction`. It projects only into scene-art-direction, never Job@5.
-Use format `zodiac-visual-coverage@1`, SHA-256 of that scene's exact voice,
-and ordered `beats` covering the whole voice with contiguous UTF-8 byte
-`narration_range` values. A beat is internal pacing, not a new scene or a
-change to approved narration paragraphs.
+Story Text and Narrative Visual are mutually exclusive across the entire scene. Meme use is independent but must bind actual acting/state events. Ordinary props require an authored action plus spatial relation. Support requires real contact. Do not generate assets to satisfy quotas.
 
-Every fresh beat has `id`, `goal`, ordered `event_ids`, and decisions for
-`layers`: `actors`, `scene_accent`, `narrative_visual`, `props`,
-`support`, `caption`, `story_text`, `meme`. Each decision is `use` with a reason and actual
-`entity_ids`, or `omit` with a nonempty editorial reason. Caption uses the
-layout's reserved safe zone rather than a fake SVG entity. Use existing
-entities/states; do not generate an asset just to fill a box.
-
-`story_text` and `meme` are mandatory editorial decisions, not mandatory visual density. Lettering use binds actual authored overlays. Meme use binds reacting characters and a selected grammar adapter's `state_bindings` to real voice-anchored events in that beat. Neither can be inferred from a global flag or an absent asset. Omit with a specific reason when acting, the product demo or a quiet hold should own attention. Historical coverage retains its pinned `scene_set`/`story_object` names.
-
-The precompile seam enforces coverage even if art_direction_required is false.
-It rejects missing decisions, narration gaps/stale hashes, missing or wrongly
-classified entities, uncovered events, anchors outside their beat, selected
-entities that never appear, and visible entities undeclared in that beat.
-Ordinary props need an authored action and actor/surface spatial binding;
-a symbolic Narrative Visual cannot satisfy physical prop coverage. Support requires an explicit actor on_surface relation, so a held cup cannot bypass prop checks by being labelled support. The seam also reuses the producer role-size gate before SVG compilation. Support,
-props and metaphors remain separate editorial decisions.
-
-Physical objects explicitly involved in the narration deserve a decision:
-for drinking coffee, consider a native cup with lift/lower/release states;
-for sitting, provide a support or a documented crop that hides the contact.
-Do not force props into every beat. A coffee cup may be lowered when a
-question takes attention, then disappear when the cafe passage ends.
-Coverage checks structure and actual visibility; semantic and visual review
-still decide whether the action convincingly tells the story.
-
-Revalidate coverage on native output in Visual Quality. Changing geometry,
-source or decisions invalidates receipts; preview endpoints and human review
-remain necessary. Runtime voice/timing/MP4 QA stays downstream.
+Run `validate-phase02-art-direction.mjs`, coverage/completeness gates, native compilers, Director review, preview pairs, and human Visual Review. Structural PASS never implies aesthetic or final-media PASS.

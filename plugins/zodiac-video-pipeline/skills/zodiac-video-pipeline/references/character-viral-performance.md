@@ -37,8 +37,8 @@ Use dynamic cadence: accelerating banter, clearer lines at emotional reversal, s
 - Sign-specific evidence boundaries remain. `micro_story` and `hybrid_deconstruction` as Story Shape are REJECTED.
 - User-approved Story Spine/narration remain locked. Existing receipts and Content Review remain mandatory.
 
-## Object-led visual thinking
-As soon as the Story Spine is stable, identify the one tangible metaphor able to reveal the sign-specific contradiction, and a callback that turns it against itself. This is a creative intent, not a license to rewrite an approved Narration or demand additional SVGs. Phase 02 binds it to supported object/effect events through `references/story-object-contract.md`.
+## Focal visual thinking
+Do not force a metaphor. If one central story point becomes clearer through a concrete visible subject/action than through actor performance or short Story Text, Phase 1 may author one Narrative Visual direction. Otherwise use Story Text, acting, or a physical prop. Phase 2 executes the approved direction through `references/narrative-visual.md`; it never invents a replacement.
 
 ## Visual boundary
 Only banter spans omit room/environment background: character + meaningful prop/effect on token canvas. All other facets keep selected native V4 backgrounds. Visual Compile owns semantic mapping, Semantic Assets materializes geometry, local runner owns measured timing and final QA. No changes to Job@5 schema, phase count or asset naming.

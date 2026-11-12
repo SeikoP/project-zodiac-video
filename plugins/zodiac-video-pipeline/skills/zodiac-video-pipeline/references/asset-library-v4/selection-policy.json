@@ -195,8 +195,7 @@
         "references/asset-library-v4/scene-set/index.json"
       ],
       "availability": [
-        "scene_set",
-        "archive_frame"
+        "scene_set"
       ]
     },
     {
@@ -220,22 +219,7 @@
       ],
       "availability": [
         "canvas",
-        "scene_set",
-        "archive_frame"
-      ]
-    },
-    {
-      "ids": [
-        "balance-scale",
-        "split-direction",
-        "push-pull",
-        "focus-shift-metaphor",
-        "barrier-opening",
-        "comparison-level"
-      ],
-      "kind": "visual_metaphor",
-      "refs": [
-        "references/asset-library-v4/visual-metaphors/index.json"
+        "scene_set"
       ]
     }
   ],

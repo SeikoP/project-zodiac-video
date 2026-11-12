@@ -9,5 +9,4 @@ const q=p=>validatePhase02ArtDirection(source,p,'Đầu.\n\nCuối.',palettes,en
 test('works for any sign without hard-coded Taurus entities and no mandated story object',()=>assert.equal(q(plan).status,'PASS'));
 test('rejects palette outside canonical registry',()=>{const p=structuredClone(plan);p.scenes[1].palette_id='neon';assert.ok(q(p).issues.some(i=>i.code==='PALETTE_UNKNOWN'));});
 test('rejects narrative/scene profile mismatch',()=>{const p=structuredClone(plan);p.scenes[0].environment_profile='cafe-chat';assert.ok(q(p).issues.some(i=>i.code==='ENVIRONMENT_PROFILE_MISMATCH'));});
-test('rejects metaphor pretending to replace background',()=>{const p=structuredClone(plan);p.scenes[1].story_object={id:'anchor',render_layer:'background',replaces_environment:true};assert.ok(q(p).issues.some(i=>i.code==='STORY_OBJECT_BACKGROUND_FORBIDDEN'));});
 test('rejects art direction changing approved voice',()=>{const p=structuredClone(plan);p.scenes[0].voice='không đúng';assert.ok(q(p).issues.some(i=>i.code==='ART_VOICE_MISMATCH'));});

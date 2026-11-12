@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {parsePortableZip} from '../../core/archive/zip-primitives.mjs';
+import {parsePortableZip} from '../../core/portable/zip-primitives.mjs';
 import {buildSourceBoundReviewReceipt} from '../../core/evidence/approval-source-hashes.mjs';
 import {exportPhase1Handoff} from '../../phases/phase01/export-phase1-handoff.mjs';
 
@@ -13,8 +13,8 @@ async function fixture(){
   const root=await mkdtemp(path.join(tmpdir(),'zodiac-phase1-handoff-'));
   await mkdir(path.join(root,'.authoring','validator-receipts'),{recursive:true});
   await writeFile(path.join(root,'narration.txt'),'Approved narration\n');
-  await writeFile(path.join(root,'.authoring','narrative-plan.json'),JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tử',story_spine:{premise:'attention can be misread as commitment'}}));
-  await writeFile(path.join(root,'.authoring','episode-scope.json'),JSON.stringify({sign:'Song Tử',concept:'Sự quan tâm bị hiểu nhầm'}));
+  await writeFile(path.join(root,'.authoring','narrative-plan.json'),JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tá»­',story_spine:{premise:'attention can be misread as commitment'}}));
+  await writeFile(path.join(root,'.authoring','episode-scope.json'),JSON.stringify({sign:'Song Tá»­',concept:'Sự quan tâm bị hiểu nhầm'}));
   await writeFile(path.join(root,'.authoring','phase3-writer-brief.json'),JSON.stringify({creative_direction:{tone:'bình thường ↔ gắt'}}));
   await writeFile(path.join(root,'.authoring','plugin-use-decisions.json'),JSON.stringify({format:'zodiac-plugin-use-decisions@1',replaces_zodiac:false,decisions:[],not_an_approval:true}));
   await writeFile(path.join(root,'.authoring','validator-receipts','narrative.json'),JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:'narrative',status:'PASS',exit_code:0,executed_at:'2026-11-08T00:00:00Z',validator_sha256:'a'.repeat(64)}));

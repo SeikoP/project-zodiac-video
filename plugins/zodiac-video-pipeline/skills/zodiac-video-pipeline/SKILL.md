@@ -16,7 +16,7 @@ Run real validators through `run-validator-with-receipt.mjs`, then commit the st
 ## Sources
 Read `orchestration/execution-bootstrap.md` once to establish the current execution source. Repository runs use this checkout; ChatGPT uses a verified phase-scoped execution bundle. Pin commit/version and verify SHA-256. Transport never changes editorial authority.
 Revoked or excluded sources require explicit user re-authorization before reuse.
-Fresh Run Isolation: old episodes, raw trackers and retired assets are not fresh creative context. Missing choices block; no legacy fallback.
+Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from fresh creative context. Raw trackers are not creative input. Missing choices block; no fallback.
 
 ## Phase 01: no user-facing ZIP
 Use `references/phase01-briefing.md` in the owning step. Complete Evidence → Voice → Concept → Narrative Design → Narration autonomously after scope is known. Use real evidence and one Story Spine; pause at final Content Review. Voice ownership lives in `voice-profile.json`; beat delivery ownership lives in `narrative-design.json`. Draft from the bounded writer context plus those first-class voice artifacts, never from generic prose with slang painted on afterward.

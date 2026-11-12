@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validateFreshAssetSelection} from '../../features/visual-composition/validate-fresh-asset-selection.mjs';
-import {coverageLayers,legacyCoverageLayers} from '../../features/visual-composition/validate-visual-coverage.mjs';
+import {coverageLayers} from '../../features/visual-composition/validate-visual-coverage.mjs';
 import {compileJobV5} from '../../phases/phase03/compile-job-v5.mjs';
 import {design} from './handoff-fixture.mjs';
 import {readFile} from 'node:fs/promises';
@@ -10,9 +10,9 @@ test('fresh canvas authoring does not require a scene set or accent',()=>{
  const result=validateFreshAssetSelection({intent:{scenes:[{id:'S01',environment:{}}]},production:{assets:{}},policy:{retired_asset_ids:[],retired_hair_ids:[],extensions:[]}});
  assert.equal(result.status,'PASS');
 });
-test('fresh coverage excludes scene-set and scene-accent; legacy layers retained',()=>{
+test('fresh coverage exposes one current Narrative Visual layer and no Story Object layer',()=>{
  assert.deepEqual(coverageLayers,['actors','scene_accent','narrative_visual','props','support','caption']);
- assert.ok(legacyCoverageLayers.includes('scene_set'));
+ assert.equal(coverageLayers.includes('story_object'),false);
 });
 test('narrative visual projects to existing Job5 story_object role without schema change',async()=>{
  const schema=JSON.parse(await readFile(new URL('../../references/contracts/authoring-ir-v1.schema.json',import.meta.url)));
@@ -44,7 +44,7 @@ test('canvas-native accents project as rear environment without prop/effect dens
  assert.equal(output.art_direction.scenes[0].components[0].narrative_role,'scene_accent');
 });
 
-test('legacy Story Text decisions project their reason and spoken event anchor into Art Direction',async()=>{
+test('Story Text decisions project their reason and spoken event anchor into Art Direction',async()=>{
  const {compileVisualIntent}=await import('../../features/visual-composition/compile-visual-intent.mjs');
  const {createHash}=await import('node:crypto');
  const voice='Mọi thứ vẫn nối với nhau.';

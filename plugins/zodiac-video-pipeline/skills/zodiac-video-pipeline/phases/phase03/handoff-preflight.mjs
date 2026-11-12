@@ -9,7 +9,7 @@ export function preflightHandoff(source){const issues=[],add=(scene_id,code,path
   categories.set(e.id,[...cats][0]??(e.kind==='character'?'character':null));
   current[e.id]=e.initial_state??Object.keys(e.states??{})[0];
  }
- const assetFolderCategory=p=>{const path=String(p??'').replaceAll('\\\\','/');for(const [part,cat] of [['characters','character'],['props','prop'],['effects','effect'],['story','story_object'],['symbols','story_symbol'],['environment','environment'],['environments','environment']])if(path.split('/').includes(part))return cat;return null;};
+ const assetFolderCategory=p=>{const path=String(p??'').replaceAll('\\\\','/');for(const [part,cat] of [['characters','character'],['props','prop'],['effects','effect'],['story','story_object'],['environment','environment'],['environments','environment']])if(path.split('/').includes(part))return cat;return null;};
  for(const [assetId,asset] of Object.entries(source.assets??{})){const inferred=assetFolderCategory(asset.path);if(inferred&&asset.category!==inferred&&!(inferred==='story_object'&&asset.category==='narrative_visual'))add(scene.id,'ASSET_CATEGORY_MISMATCH',assetId);}
  const byId=new Map((scene.entities??[]).map(e=>[e.id,e]));
  const links=new Set((scene.spatial_bindings??[]).map(b=>b.entity+'->'+b.anchor));

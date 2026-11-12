@@ -4,7 +4,7 @@ import {mkdir,readFile,readdir,lstat,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {buildPortableZip} from '../../core/archive/zip-primitives.mjs';
+import {buildPortableZip} from '../../core/portable/zip-primitives.mjs';
 import {assertContentApprovalSources,approvalSourceHashes} from '../../core/evidence/approval-source-hashes.mjs';
 import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest} from '../../contracts/phase1-handoff.mjs';
 

@@ -50,11 +50,11 @@ test('canonical Visual Intent revision restores every prior projection if cache 
   const {cacheRoot}=await import('../../core/cache/incremental-cache.mjs');
   const token={id:'zodiac-paper-doodle-meme-v4',version:'4.0',hard_style_lock:true,handmade_profile:'human-stroke-v2'};
   await writeFile(path.join(root,'design.md'),'<!-- STYLE_TOKEN_BEGIN -->\n```json\n'+JSON.stringify(token)+'\n```\n<!-- STYLE_TOKEN_END -->');
-  const input={format:'zodiac-visual-intent@1',narration_sha256:hash,assets:{a:{path:'assets/cup.svg'}},video:{width:1080,height:1920,fps:30},cast:[],frames:[],story_object_decision:{mode:'omitted',reason:'Plain physical prop',review_ref:'fixture:review'},scenes:[{id:'s01',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'}},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],semantic_asset_decisions:[{entity_id:'cup',reason:'Physical cup'}],events:[]}]};
+  const input={format:'zodiac-visual-intent@1',narration_sha256:hash,assets:{a:{path:'assets/cup.svg'}},video:{width:1080,height:1920,fps:30},cast:[],frames:[],taxonomy_version:'narrative_visual@1',narrative_visual_decision:{mode:'omitted',reason:'Phase 1 selected no Narrative Visual.'},scenes:[{id:'s01',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'}},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],semantic_asset_decisions:[{entity_id:'cup',reason:'Physical cup'}],events:[]}]};
   await writeFile(payloadPath,JSON.stringify(input));
   await writePhase02Authoring({workspace:root,payloadPath,revise:true});
   const {projectionPaths}=await import('../../features/visual-composition/compile-visual-intent.mjs');
-  const paths=[...Object.values(projectionPaths).filter(p=>!p.endsWith('story-object-plan.json')),'.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json'];
+  const paths=[...Object.values(projectionPaths),'.authoring/visual-intent.json','.authoring/visual-intent-projection-receipt.json'];
   const originals=await Promise.all(paths.map(p=>readFile(path.join(root,p))));
   await writeFile(path.join(cacheRoot(root),'phase02-semantic-graph.json'),'invalid-json');
   input.scenes[0].semantic_goal='Changed meaning';await writeFile(payloadPath,JSON.stringify(input));

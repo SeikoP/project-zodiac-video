@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {validateEpisodeCast} from '../episode/episode-handoff.mjs';
 import {designToken,compositionHash} from './phase02-composition.mjs';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
-const inputs=[['production','production.json'],['visual_grammar','visual-grammar-plan.json'],['character_assembly','.authoring/character-assembly-plan.json'],['story_object','.authoring/story-object-plan.json'],['depth','.authoring/depth-composition-plan.json'],['composition','.authoring/scene-art-direction.json'],['resolved','.authoring/scene-composition-resolved.json'],['narrative','.authoring/narrative-plan.json'],['episode_cast','.authoring/episode-cast-plan.json'],['director','.authoring/director-plan.json'],['choreography','.authoring/story-beat-choreography.json']];
+const inputs=[['production','production.json'],['visual_grammar','visual-grammar-plan.json'],['character_assembly','.authoring/character-assembly-plan.json'],['depth','.authoring/depth-composition-plan.json'],['composition','.authoring/scene-art-direction.json'],['resolved','.authoring/scene-composition-resolved.json'],['narrative','.authoring/narrative-plan.json'],['episode_cast','.authoring/episode-cast-plan.json'],['director','.authoring/director-plan.json'],['choreography','.authoring/story-beat-choreography.json']];
 const idOf=o=>String(o?.scene_id??o?.id??'');
 const ids=a=>(a??[]).map(x=>String(x?.id??x?.entity_id??'')).filter(Boolean);
 const unique=(items,code)=>{const seen=new Set();for(const item of items){if(seen.has(item))throw new Error(`${code} ${item}`);seen.add(item);}return seen;};
@@ -20,9 +20,8 @@ export function deriveSceneContext(docs,sceneId,{budget=12,detail='bounded'}={})
  const source=prod.scenes.find(s=>s.id===sceneId);
  if(!source)throw new Error('SCENE_CONTEXT_SCENE_UNKNOWN '+sceneId);
  const plans={};
- for(const key of ['visual_grammar','story_object','depth']){
+ for(const key of ['visual_grammar','depth']){
   const doc=docs[key];if(!doc)continue;
-  if(key==='story_object'&&Array.isArray(doc.beats)){unique(doc.beats.map(b=>b.beat_id),'SCENE_CONTEXT_DUPLICATE_BEAT');for(const b of doc.beats)if(!prod.scenes.some(s=>s.id===b.scene_id))throw new Error('SCENE_CONTEXT_PLAN_ORPHAN story_object '+b.scene_id);const beats=doc.beats.filter(b=>b.scene_id===sceneId);if(beats.length)plans.story_object={beat_ids:beats.map(b=>b.beat_id),...(doc.format==='zodiac-story-object-plan@2'?{metaphor_id:doc.central_metaphor?.id,sign_contradiction:doc.central_metaphor?.sign_contradiction,removal_test:doc.central_metaphor?.removal_test,beats:beats.slice(0,budget).map(b=>({beat_id:b.beat_id,object_entity:b.object_entity,added_meaning:b.semantic_delta?.added_meaning,relation_transformation:b.relation_transformation??null})),truncated_beats:Math.max(0,beats.length-budget)}:{})};continue;}
   if(!Array.isArray(doc.scenes))throw new Error('SCENE_CONTEXT_PLAN_INVALID '+key);
   unique(doc.scenes.map(idOf),'SCENE_CONTEXT_DUPLICATE_PLAN_SCENE');
   for(const plan of doc.scenes)if(!prod.scenes.some(s=>s.id===idOf(plan)))throw new Error('SCENE_CONTEXT_PLAN_ORPHAN '+key+' '+idOf(plan));
@@ -35,16 +34,15 @@ export function deriveSceneContext(docs,sceneId,{budget=12,detail='bounded'}={})
  const castItems=cast.filter(c=>characters.includes(c.entity_id));
  const missing=characters.filter(id=>!castItems.some(c=>c.entity_id===id));
  const events=source.events??[];
- const objectIds=(source.entities??[]).filter(e=>['object','prop','interactive_prop'].includes(e.kind)&&!/^env__|^depth__|^decor_/u.test(e.id)).map(e=>e.id);
+ const narrativeVisualIds=(source.entities??[]).filter(e=>e.visual_role==='story_object').map(e=>e.id);
  const authored=docs.composition?.scenes?.find(s=>s.id===sceneId),diagnostics=[];
  if(docs.resolved&&docs.resolved.source_sha256!==compositionHash(prod))diagnostics.push({code:'SCENE_CONTEXT_RESOLVED_STALE'});
  const concise={format:'zodiac-scene-context@1',scene_id:sceneId,source_is_authoritative:true,
   voice_ref:{file:'production.json',scene_id:sceneId,characters:String(source.voice??'').length},
-  character_ids:characters,story_object_ids:objectIds,
+  character_ids:characters,narrative_visual_ids:narrativeVisualIds,
   event_ids:ids(events),event_count:events.length,
   decisions:{
    visual_grammar:plans.visual_grammar?{frame_id:plans.visual_grammar.frame_id??null,mechanic_id:plans.visual_grammar.mechanic_id??null,ref:`visual-grammar-plan.json#${sceneId}`} : null,
-   story_object:plans.story_object?{ref:`.authoring/story-object-plan.json#${sceneId}`,...(plans.story_object.beat_ids?{...plans.story_object}:{})} : null,
    depth:plans.depth?{profile:plans.depth.profile??plans.depth.environment_profile??null,palette:plans.depth.palette??plans.depth.palette_id??null,ref:`.authoring/depth-composition-plan.json#${sceneId}`} : null,
    cast:castItems.map(c=>({entity_id:c.entity_id,design_intent_ref:`.authoring/character-assembly-plan.json#${c.entity_id}`}))
   },

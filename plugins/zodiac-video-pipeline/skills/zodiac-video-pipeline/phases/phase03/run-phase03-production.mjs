@@ -16,8 +16,6 @@ import {performance} from 'node:perf_hooks';
 import {recordEpisodeSpan,performanceIdentity} from '../../core/performance/episode-profiler.mjs';
 import {assertReviewLock} from './phase03-production-release.mjs';
 import {inspectPhase02Seal} from '../phase02/phase02-seal-gate.mjs';
-import {validateStoryObjectWorkspace} from '../../features/story-object/validate-story-object.mjs';
-import {validateStoryObjectCompositionWorkspace} from '../../features/story-object/validate-story-object-composition.mjs';
 import {compileWorkspace} from './compile-job-v5.mjs';
 import {validateHandoffV2} from './validate-handoff-workspace-v2.mjs';
 import {validateJob5Workspace} from './validate-job5-import-gate.mjs';
@@ -38,8 +36,6 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
  // This happens before any staging, archive writes or output directory creation.
  const gate=await inspectPhase02Seal(approved);
  if(gate.status!=='SEAL_ELIGIBLE')throw new Error('PHASE03_STATE_EVIDENCE_BLOCKED '+JSON.stringify(gate.issues));
- await validateStoryObjectWorkspace(approved); // fail before staging/ZIP
- await validateStoryObjectCompositionWorkspace(approved); // object must not become environment/background
  const stateBefore=await readFile(path.join(approved,'.authoring/pipeline-state.json'));const performanceRun=performanceIdentity(JSON.parse(stateBefore));const expectedStateHash=createHash('sha256').update(stateBefore).digest('hex');
  const lockPath=reviewLock??path.join(approved,'.authoring','phase02-review-lock.json');
  const lock=JSON.parse(await readFile(lockPath,'utf8'));

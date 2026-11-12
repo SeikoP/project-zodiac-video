@@ -14,7 +14,7 @@ export async function validateSceneSetWorkspace(root){
  const production=JSON.parse(await readFile(path.join(root,'production.json'),'utf8'));
  let checked=0;const palettes=new Set(),sets=new Set(),compiledHashes=new Set();
  for(const scene of production.scenes??[]){
-  const env=scene.environment??{};if(env.mode==='archive_frame')continue;
+  const env=scene.environment??{};
   const id=env.scene_set_id??env.scene_set?.id;if(!id)continue;
   const master=registry.scene_sets.find(x=>x.id===id);if(!master)fail(scene.id+' unknown scene-set '+id);
   const set=env.scene_set;if(!set||set.format!=='zodiac-scene-set@1'||set.id!==id)fail(scene.id+' scene-set metadata');
