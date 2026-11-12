@@ -40,6 +40,7 @@ from tools.studio_qt.screens.media import MediaWorkspace
 from tools.studio_qt.screens.production_checklist import ProductionChecklistScreen
 from tools.studio_qt.screens.workbench import STAGE_TITLES, WorkbenchScreen
 from tools.studio_qt.theme import stylesheet
+from tools.studio_qt.vieneu_service import VieNeuControl
 from tools.zodiac_local import (
     DEFAULT_MUSIC_VOLUME,
     default_music_path,
@@ -75,7 +76,7 @@ class ZodiacQtApp(QMainWindow):
         self._frame_milestones: dict[tuple[str, str], int] = {}
         self.close_when_stopped = False
         self.settings = {"voice": preferred_voice(saved_voices()), "music": str(default_music_path() or ""), "volume": DEFAULT_MUSIC_VOLUME, "align_model": ALIGN_MODEL_DEFAULT, "scene_gap_ms": 180.0}
-        self.setWindowTitle("Zodiac Studio · Task Workbench")
+        self.setWindowTitle("bungmoto · Zodiac Local Runner")
         self.resize(1260, 860)
         self.setMinimumSize(1024, 680)
         self.setStyleSheet(stylesheet())
@@ -99,16 +100,16 @@ class ZodiacQtApp(QMainWindow):
             ROOT / "plugins" / "zodiac-video-pipeline",
             media_jobs,
         )
+        self.checklist.job_requested.connect(self._open_media_workspace)
         self.main_tabs = QTabWidget()
         self.main_tabs.setDocumentMode(True)
         self.main_tabs.setMovable(False)
         self.main_tabs.addTab(self.stack, "Công việc / Workspace")
-        self.library = LibraryScreen(ROOT, self.workspace)
+        self.library = LibraryScreen(ROOT, self.workspace, checklist=self.checklist)
         self.library.job_requested.connect(self._open_recent)
         self.library.changed.connect(self._after_library_change)
-        self.main_tabs.addTab(self.library, "Kho")
+        self.main_tabs.addTab(self.library, "Kho & tiến độ")
         self.main_tabs.addTab(self.media, "Media")
-        self.main_tabs.addTab(self.checklist, "Checklist sản xuất")
         self.main_tabs.currentChanged.connect(self._main_tab_changed)
 
         shell = QWidget()
@@ -119,11 +120,14 @@ class ZodiacQtApp(QMainWindow):
         topbar_layout = QHBoxLayout(topbar)
         topbar_layout.setContentsMargins(22, 8, 22, 8)
         topbar_layout.setSpacing(14)
-        topbar_layout.addWidget(QLabel("ZODIAC STUDIO", objectName="brand"))
+        topbar_layout.addWidget(QLabel("✦ bungmoto / ZODIAC STUDIO", objectName="brand"))
         self.header_job = QLabel("Chưa mở công việc", objectName="muted")
         self.header_job.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.header_job.setMinimumWidth(180)
         topbar_layout.addWidget(self.header_job, 1)
+        self.vieneu_control = VieNeuControl(TTS_ROOT, TTS_URL, self.workspace / "vieneu-service.log", self)
+        self.vieneu_control.log_received.connect(self.bridge.log_received.emit)
+        topbar_layout.addWidget(self.vieneu_control)
         self.header_settings_button = QPushButton("Thiết lập")
         self.header_settings_button.setEnabled(False)
         self.header_settings_button.clicked.connect(self._open_settings)
@@ -358,6 +362,7 @@ class ZodiacQtApp(QMainWindow):
             active = next((row for row in rows if row.get("step") == self.selected_stage), active)
         self.workbench.set_active_stage(active["step"], active, percent=None)
         pipeline_active = self.pipeline_running or self.application.running
+        self.vieneu_control.set_in_use(pipeline_active and self._running_stage() == "VOICE")
         self.home.set_busy(pipeline_active or self.busy)
         self.workbench.set_running(pipeline_active, busy=self.busy and not pipeline_active)
         self.header_settings_button.setEnabled(not pipeline_active and not self.busy)
@@ -386,6 +391,8 @@ class ZodiacQtApp(QMainWindow):
             note = "Đợi thao tác hiện tại kết thúc; kết quả có trong nhật ký."
         elif fully_done and video:
             label, note = "Xem video đầu ra", "Đã hoàn tất. Xem video và copy nội dung đăng trong Media."
+        elif fully_done:
+            label, note = "Kiểm tra đầu ra", "Các bước đã kết thúc nhưng chưa tìm thấy MP4 hợp lệ trong out/. Xem Media và nhật ký đầu ra."
         elif self._environment_ready is not True:
             label, note = "Kiểm tra môi trường", "Mở Thiết lập hoặc xem lỗi môi trường, rồi kiểm tra lại trước khi chạy."
         else:
@@ -401,8 +408,8 @@ class ZodiacQtApp(QMainWindow):
     def _main_tab_changed(self, index: int) -> None:
         widget = self.main_tabs.widget(index)
         if widget is self.library:
-            self.library.refresh()
-        if widget in (self.media, self.checklist):
+            self.library.ensure_loaded()
+        if widget in (self.media, self.library):
             self._refresh_media_jobs()
         if widget is not self.media:
             self.media.player.pause()
@@ -539,8 +546,8 @@ class ZodiacQtApp(QMainWindow):
             return
         rows = self._pipeline_rows()
         video = self._active_video()
-        if rows and all(row.get("status") in (DONE, SKIPPED) for row in rows) and video and video.is_file():
-            self._open_output("video")
+        if rows and all(row.get("status") in (DONE, SKIPPED) for row in rows):
+            self._open_output("video" if video and video.is_file() else "media")
         elif self._environment_ready is not True:
             self._check_environment(show_result=False)
         else:
@@ -914,6 +921,7 @@ class ZodiacQtApp(QMainWindow):
             self.close_when_stopped = True
             event.ignore()
             return
+        self.vieneu_control.shutdown()
         event.accept()
 
 

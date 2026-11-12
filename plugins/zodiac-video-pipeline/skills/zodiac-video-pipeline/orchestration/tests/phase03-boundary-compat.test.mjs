@@ -63,3 +63,10 @@ test('compiler rejects narration lexical drift rather than repairing the approve
 test('unsupported fps is rejected before producing runtime output',()=>{
  const s=source();s.video.fps=59;assert.throws(()=>compileJobV5(s,design,{sign:'Nhân Mã',concept:'Chấm nhỏ',contractSchema:schema}),/supported 24 or 30fps/);
 });
+
+
+test('caption pages prefer a complete sentence over the old eight-word cutoff',()=>{
+ const text='Một việc còn chưa bắt đầu mà Bạch Dương đã thấy nó chậm.';
+ const pages=captionSegmentsForScene(text);
+ assert.equal(pages.length,1);assert.equal(pages[0].text,text);
+});

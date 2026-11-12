@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Build deterministic Web/Local Zodiac plugin distributions from one canonical source."""
 from __future__ import annotations
-import argparse, hashlib, json, re
+import argparse, hashlib, json, re, sys
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from tools.build_source_bundle import select_phase_files
 
 PLUGIN = Path("plugins/zodiac-video-pipeline")
 ROOT_FILES = {"package.json", "package-lock.json"}
@@ -46,6 +50,10 @@ def build_profile(root: Path, profile: str, destination: Path) -> dict:
     if config.get("include_humanizer"):
         required += [Path("skills/humanizer/SKILL.md"),Path("skills/humanizer/LICENSE")]
     files=sorted((p for p in src.rglob("*") if p.is_file() and _canonical_eligible(p.relative_to(src))),key=lambda p:p.relative_to(src).as_posix())
+    source_count = len(files)
+    if profile == "web":
+        selected = set(select_phase_files(root, [p.relative_to(root).as_posix() for p in files], "01-content"))
+        files = [p for p in files if p.relative_to(root).as_posix() in selected]
     for rel in required:
         p=src/rel
         if not p.is_file(): raise ValueError(f"SPLIT_REQUIRED_FILE_MISSING {rel.as_posix()}")
@@ -87,7 +95,8 @@ def build_profile(root: Path, profile: str, destination: Path) -> dict:
     return {
         "format":"zodiac-split-plugin-package@1","profile":profile,"plugin_name":config["name"],
         "version":canonical["version"],"archive_sha256":hashlib.sha256(destination.read_bytes()).hexdigest(),
-        "archive_bytes":destination.stat().st_size,"archive_file_count":len(files)+2,"release_approved":False,
+        "archive_bytes":destination.stat().st_size,"archive_file_count":len(files)+2,
+        "deferred_file_count": source_count - len(files) + len(required),"release_approved":False,
     }
 
 def main():

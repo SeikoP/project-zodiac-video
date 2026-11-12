@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {conceptContext} from '../../features/episode/concept-context.mjs';
 import {mkdir,readFile,readdir,lstat,writeFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
@@ -72,10 +73,12 @@ export async function buildPhase1HandoffManifest(workspace){
  if(JSON.stringify(receipt.source_hashes??null)!==JSON.stringify(stateReceipt.source_hashes??null))throw Error('PHASE1_HANDOFF_REVIEW_RECEIPT_MISMATCH');
  const inventory=buildInventory(payload);
  const scope=JSON.parse(payload.find(x=>x.rel==='episode-scope.json').data);
+ const context=conceptContext(JSON.parse(payload.find(x=>x.rel==='narrative-plan.json').data),scope);
  const manifest=validateHandoffManifest({
   format:PHASE1_HANDOFF_FORMAT,contract_major:PHASE1_HANDOFF_MAJOR,run_id:state.run_id,
   plugin_version:plugin.version,phase:'01-content',phase_status:'PASS',
-  sign:scope.sign??null,concept:scope.concept??scope.title??null,
+  sign:scope.sign??scope.member_ids??null,concept:context?.premise??scope.concept??scope.title_working??scope.title??null,
+  ...(context?{concept_context:context}:{}),
   source_hashes:currentHashes,content_review:stateReceipt,inventory,not_an_approval:true
  });
  return {manifest,payload,inventory};

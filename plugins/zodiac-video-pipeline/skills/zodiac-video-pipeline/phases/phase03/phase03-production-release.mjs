@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Plugin-owned Phase 03 production boundary, stored OUTSIDE the Job@5 ZIP.
 // Only facts available before local TTS are required here.
+import {readConceptContext} from '../../features/episode/concept-context.mjs';
 import {createHash} from 'node:crypto';
 import {readdir,readFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -159,8 +160,8 @@ export function assertPublishIntent(pub,copy,ir){
  return {ok:true};
 }
 
-export function assertPublishProjection(authored,compiled){
- const expected={...authored,format:'zodiac-publish@1',source:{...(authored.source??{}),narration:'narration.txt',production:'production.ir.json'}};
+export function assertPublishProjection(authored,compiled,conceptContext=null){
+ const expected={...authored,format:'zodiac-publish@1',source:{...(authored.source??{}),narration:'narration.txt',production:'production.ir.json',...(conceptContext?{concept:conceptContext}:{})}};
  if(!isDeepStrictEqual(expected,compiled))fail('APPROVED_PUBLISH_DRIFT');
  return {ok:true};
 }
@@ -188,7 +189,7 @@ export async function validatePhase03Release(root,{sourceRoot,reviewLock}={}){
  const copy=await readFile(path.join(root,'publish','publish-copy.txt'),'utf8');
  assertPublishIntent(pub,copy,ir);
  const reviewedPub=JSON.parse(await readFile(path.join(sourceRoot,'publish','publish.json'),'utf8'));
- assertPublishProjection(reviewedPub,pub);
+ assertPublishProjection(reviewedPub,pub,await readConceptContext(sourceRoot));
  const reviewedCopy=await readFile(path.join(sourceRoot,'publish','publish-copy.txt'),'utf8');
  if(copy!==reviewedCopy)fail('APPROVED_PUBLISH_COPY_CHANGED');
  // Migrate without changing exported bytes: the plugin's canonical model must

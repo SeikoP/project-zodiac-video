@@ -28,6 +28,8 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs", names)
                 self.assertNotIn("skills/humanizer/SKILL.md", names)
+                self.assertFalse(any(name.endswith(".svg") for name in names))
+                self.assertGreater(web1["deferred_file_count"], 0)
                 self.assertIn("skills/zodiac-video-pipeline/references/voice-profile.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/references/validate-narrative-design.mjs", names)
                 self.assertIn("skills/zodiac-video-pipeline/references/validate-voice-fidelity-review.mjs", names)

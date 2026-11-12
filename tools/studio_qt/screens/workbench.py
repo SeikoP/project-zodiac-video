@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from tools.studio_qt.widgets.stage_rail import StageRail
+from tools.studio_qt.theme import TOKENS
 
 STAGE_TITLES = {
     "PACKAGE": "Gói",
@@ -45,13 +46,13 @@ class ConsoleHighlighter(QSyntaxHighlighter):
         upper = text.upper()
         level = None
         if any(tag in upper for tag in ("[ERROR]", "[FAILED]")):
-            level = "#E08A82"
+            level = TOKENS["danger"]
         elif any(tag in upper for tag in ("[WARNING]", "[WARN]", "[CANCELLED]")):
-            level = "#D7B36A"
+            level = TOKENS["warning"]
         elif "[DONE]" in upper or "[SUCCESS]" in upper:
-            level = "#86B89A"
+            level = TOKENS["success"]
         elif "[RUNNING]" in upper or "[START]" in upper:
-            level = "#C6A76A"
+            level = TOKENS["success"]
         if level:
             fmt = QTextCharFormat()
             fmt.setForeground(QColor(level))
@@ -59,7 +60,7 @@ class ConsoleHighlighter(QSyntaxHighlighter):
         sep = text.find(" [")
         if sep > 0:
             fmt = QTextCharFormat()
-            fmt.setForeground(QColor("#84908B"))
+            fmt.setForeground(QColor(TOKENS["muted"]))
             self.setFormat(0, sep, fmt)
 
 
@@ -139,20 +140,20 @@ class WorkbenchScreen(QWidget):
         current_layout.addWidget(self.next_action)
         self.pipeline_progress_label = QLabel("0% theo số bước · không phải thời gian", details_panel, objectName="muted")
         self.pipeline_progress_label.setAccessibleName("Tiến độ tổng quy trình")
-        self.pipeline_progress_label.hide()
+        current_layout.addWidget(self.pipeline_progress_label)
         self.pipeline_progress_bar = QProgressBar(details_panel)
         self.pipeline_progress_bar.setObjectName("pipelineProgress")
         self.pipeline_progress_bar.setRange(0, 100)
         self.pipeline_progress_bar.setValue(0)
         self.pipeline_progress_bar.setTextVisible(False)
         self.pipeline_progress_bar.setAccessibleName("Tiến độ tổng theo số bước đã hoàn tất")
-        self.pipeline_progress_bar.hide()
+        current_layout.addWidget(self.pipeline_progress_bar)
         self.pipeline_detail = QLabel("Trạng thái các bước sẽ hiện tại đây.", details_panel, objectName="muted")
         self.pipeline_detail.setWordWrap(True)
-        self.pipeline_detail.hide()
+        current_layout.addWidget(self.pipeline_detail)
         self.output_summary = QLabel("Chưa có video đầu ra", details_panel, objectName="muted")
         self.output_summary.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.output_summary.hide()
+        current_layout.addWidget(self.output_summary)
         overview_divider = QFrame(objectName="workspaceDivider")
         overview_divider.setFrameShape(QFrame.Shape.HLine)
         current_layout.addWidget(overview_divider)
@@ -197,7 +198,7 @@ class WorkbenchScreen(QWidget):
         step_divider.setFrameShape(QFrame.Shape.HLine)
         current_layout.addWidget(step_divider)
         log_row = QHBoxLayout()
-        log_row.addWidget(QLabel("LIVE CONSOLE", objectName="consoleHeading"))
+        log_row.addWidget(QLabel("JOURNAL / NHẬT KÝ", objectName="consoleHeading"))
         self.log_count = QLabel("0 dòng", objectName="muted")
         log_row.addWidget(self.log_count)
         log_row.addStretch(1)
@@ -278,7 +279,11 @@ class WorkbenchScreen(QWidget):
         self.detail_console_splitter.setObjectName("detailConsoleSplitter")
         self.detail_console_splitter.setChildrenCollapsible(False)
         self.detail_console_splitter.setHandleWidth(7)
-        self.detail_console_splitter.addWidget(details_panel)
+        details_scroll = QScrollArea()
+        details_scroll.setWidgetResizable(True)
+        details_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        details_scroll.setWidget(details_panel)
+        self.detail_console_splitter.addWidget(details_scroll)
         self.detail_console_splitter.addWidget(console_panel)
         self.detail_console_splitter.setStretchFactor(0, 1)
         self.detail_console_splitter.setStretchFactor(1, 1)
@@ -333,6 +338,10 @@ class WorkbenchScreen(QWidget):
         self.set_rows(rows)
 
     def set_rows(self, rows: list[dict]) -> None:
+        signature = repr(rows)
+        if signature == getattr(self, "_row_signature", None):
+            return
+        self._row_signature = signature
         self.stage_rail.set_rows(rows)
         active_step = next((row["step"] for row in rows if row.get("status") == "RUNNING"), None)
         if active_step != self._running_step:
@@ -373,8 +382,10 @@ class WorkbenchScreen(QWidget):
             status, severity = "! Cần xử lý", "error"
         elif running:
             status, severity = "● Đang chạy · " + STAGE_TITLES.get(active_step, active_step), "warning"
+        elif cancelled:
+            status, severity = "◷ Đã dừng", "warning"
         elif total and done + skipped == total:
-            status, severity = "✓ Hoàn tất", "success"
+            status, severity = "✓ Các bước đã kết thúc", "success"
         elif total:
             status, severity = "◷ Còn việc", "warning"
         else:
@@ -621,7 +632,7 @@ class WorkbenchScreen(QWidget):
                     self.latest_event.setToolTip(f"Không lưu được nhật ký: {exc}")
             if self._matches_filter(entry):
                 self.log_view.appendPlainText(entry)
-        self.log_count.setText(f"{len(self._records)}/{self._total_lines} dòng gần nhất")
+        self.log_count.setText(f"{self.log_view.blockCount() if not self.log_view.document().isEmpty() else 0} hiện / {self._total_lines} tổng")
 
     def _matches_filter(self, entry: str) -> bool:
         level = self.log_filter.currentData()

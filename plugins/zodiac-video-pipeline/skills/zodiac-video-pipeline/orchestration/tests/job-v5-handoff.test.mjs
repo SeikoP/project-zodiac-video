@@ -22,3 +22,17 @@ test('real handoff validator accepts byte-preserved CRLF source ranges',async()=
 
 
 test('producer 2.9 handoff requires the spoken performance plan projection',async()=>{const root=await makeRoot();try{await compileWorkspace(root,{sign:'B? C?p',concept:'Hai phi�n b?n',prune:true});await rm(path.join(root,'spoken-performance-plan.json'));await assert.rejects(()=>validateHandoffV2(root),/spoken-performance-plan\.json required for producer >=2\.9\.0/);}finally{await rm(root,{recursive:true,force:true});}});
+
+
+test('staged Job@5 carries concept from approved source outside staging',async()=>{
+ const stage=await makeRoot(),approved=await mkdtemp(path.join(os.tmpdir(),'concept-source-'));
+ try{
+  await mkdir(path.join(approved,'.authoring'));
+  await writeFile(path.join(approved,'.authoring/narrative-plan.json'),JSON.stringify({selected_concept_id:'C1',story_spine:{premise:'Approved source concept'}}));
+  const result=await compileWorkspace(stage,{sign:'Bọ Cạp',concept:'Hai phiên bản',sourceRoot:approved,prune:true});
+  assert.equal(result.publish.source.concept.premise,'Approved source concept');
+  const bytes=JSON.parse(await readFile(path.join(stage,'publish/publish.json'),'utf8'));
+  assert.equal(bytes.source.concept.id,'C1');
+  await validateHandoffV2(stage);
+ }finally{await rm(stage,{recursive:true,force:true});await rm(approved,{recursive:true,force:true});}
+});

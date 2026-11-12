@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 
 from tools.zodiac_local import SUPPORTED_MUSIC_EXTENSIONS
 from tools.studio_qt.publish_copy import publish_text_for_job
+from tools.studio_qt.production_checklist import concept_for_job
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".svg"}
@@ -211,6 +212,11 @@ class MediaWorkspace(QWidget):
         self.selected_label = QLabel("Chưa chọn tệp", objectName="sectionTitle")
         self.selected_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         preview_layout.addWidget(self.selected_label)
+        self.concept_label = QLabel("Concept chưa được truyền trong gói này.", objectName="conceptCard")
+        self.concept_label.setWordWrap(True)
+        self.concept_label.setTextFormat(Qt.TextFormat.PlainText)
+        self.concept_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        preview_layout.addWidget(self.concept_label)
         self.path_label = QLabel("", objectName="muted")
         self.path_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.path_label.setWordWrap(True)
@@ -287,6 +293,19 @@ class MediaWorkspace(QWidget):
             if out_path != (job_path / "out").resolve() or not out_path.is_dir():
                 continue
             normalized[str(job_path)] = {**job, "path": str(job_path), "out_path": str(out_path)}
+        stamps = []
+        for job in normalized.values():
+            for rel in ("publish/publish.json", "out/zodiac-story.mp4", "out/cover.png"):
+                try:
+                    stat = (Path(job["path"]) / rel).stat()
+                    stamps.append((job["path"], rel, stat.st_mtime_ns, stat.st_size))
+                except OSError:
+                    stamps.append((job["path"], rel, None, None))
+        signature = tuple(stamps)
+        if getattr(self, "_jobs_initialized", False) and signature == getattr(self, "_jobs_signature", None) and normalized == self._jobs and (selected_path is None or str(Path(selected_path).resolve()) == previous):
+            return
+        self._jobs_signature = signature
+        self._jobs_initialized = True
         self._jobs = normalized
 
         self.job_picker.blockSignals(True)
@@ -333,6 +352,7 @@ class MediaWorkspace(QWidget):
             self.copy_publish_button.setEnabled(False)
             self.publish_preview.clear()
             self._current_job_path = None
+            self.concept_label.setText("Chưa chọn tập để xem concept.")
             self.root_label.setText("Chưa có job nào có thư mục out/")
             self.root_label.setToolTip("Media chỉ hiển thị các job có thư mục out/")
             self._clear_selection()
@@ -453,6 +473,8 @@ class MediaWorkspace(QWidget):
         if new_path != self._current_job_path:
             self._clear_selection()
         self._current_job_path = new_path
+        premise = concept_for_job(new_path)
+        self.concept_label.setText("Concept · " + premise if premise else "Concept chưa được truyền trong gói này.")
         self.workspace_button.setEnabled(True)
         self.video_button.setEnabled((new_path / "out" / "zodiac-story.mp4").is_file())
         self.root_label.setText(f"{job['name']} · out/")

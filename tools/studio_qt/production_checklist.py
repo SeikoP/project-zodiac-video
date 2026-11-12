@@ -224,6 +224,11 @@ def load_episode_row(workspace: Path, plugin_root: Path, linked_job: Path | None
                 result["diagnostics"].append(narrative_error)
             if candidates_error and (workspace / ".authoring" / "concept-candidates.json").exists():
                 result["diagnostics"].append(candidates_error)
+            if narrative and not candidates and not (workspace / ".authoring" / "concept-candidates.json").exists():
+                spine = narrative.get("story_spine")
+                premise = spine.get("premise") if isinstance(spine, dict) else None
+                if isinstance(premise, str) and premise.strip():
+                    result["concept"] = premise.strip()
             if narrative and candidates:
                 selected_id = narrative.get("selected_concept_id")
                 selected_candidate_id = candidates.get("selected_candidate_id")
@@ -275,3 +280,14 @@ def load_series_tracker(path: Path) -> dict:
     result["done"] = sum(item["status"] == "done" for item in signs)
     result["todo"] = sum(item["status"] == "todo" for item in signs)
     return result
+
+
+def concept_for_job(job: Path) -> str | None:
+    """Read transported concept metadata; never infer it from filenames or captions."""
+    publish, _ = _read_json(Path(job) / "publish" / "publish.json", "Publish metadata")
+    source = publish.get("source") if publish else None
+    context = source.get("concept") if isinstance(source, dict) else None
+    if not isinstance(context, dict) or context.get("format") != "zodiac-concept-context@1":
+        return None
+    premise = context.get("premise")
+    return premise.strip() if isinstance(premise, str) and premise.strip() else None

@@ -106,7 +106,8 @@ def plan_key(
             "timing_hash": timing_hash,
             "design_hash": design_hash,
             "compiler_version": compiler_version,
-            "caption_word_timing_version": 1,
+            "caption_word_timing_version": 2,
+            "caption_layout_policy": "sentence-first-56px",
         },
     )
 

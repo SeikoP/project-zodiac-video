@@ -197,6 +197,10 @@ class StageRail(QFrame):
     def select_step(self, step: str, *, emit: bool = False) -> None:
         if step not in self.buttons:
             return
+        if self.selected_step == step:
+            if emit:
+                self.stage_selected.emit(step)
+            return
         self.selected_step = step
         for key, button in self.buttons.items():
             button.setChecked(key == step)

@@ -1,0 +1,77 @@
+{
+  "current_plugin": "2.9.0",
+  "targets": [
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-bachduong-di-roi-sao-con-cho.zip",
+      "kind": "obsolete-package",
+      "version": "2.7.10",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-bocap-im-lang-khong-co-nghia-la-khong-biet.zip",
+      "kind": "obsolete-package",
+      "version": "2.6.2",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-bocap-kiem-soat-buon-tay.zip",
+      "kind": "obsolete-package",
+      "version": "2.6.0",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-cugiai-nguoi-bien-su-quan-tam-thanh-cam-giac-o-nha.zip",
+      "kind": "obsolete-package",
+      "version": "2.6.8",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-plugin-2.6.0.zip",
+      "kind": "obsolete-package",
+      "version": "2.6.0",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-songngu-absorbs-others-never-claims.zip",
+      "kind": "obsolete-package",
+      "version": "2.6.0",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-songtu-job5-spatial-fixed.zip",
+      "kind": "obsolete-package",
+      "version": "2.5.6-dev.7",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\ready\\zodiac-songtu-khi-su-quan-tam-bi-hieu-nham-thanh-mot-loi-hua.zip",
+      "kind": "obsolete-package",
+      "version": "2.8.8",
+      "replacement_version": "2.9.0"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\.zodiac-work\\runtimes\\zodiac-remotion\\1.15.0",
+      "kind": "unused-legacy-renderer",
+      "version": "1.15.0",
+      "replacement_version": "zodiac-renderer 2.0.2"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\.zodiac-work\\runtimes\\zodiac-remotion\\1.16.0",
+      "kind": "unused-legacy-renderer",
+      "version": "1.16.0",
+      "replacement_version": "zodiac-renderer 2.0.2"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\.zodiac-work\\runtimes\\zodiac-remotion\\1.20.0",
+      "kind": "unused-legacy-renderer",
+      "version": "1.20.0",
+      "replacement_version": "zodiac-renderer 2.0.2"
+    },
+    {
+      "path": "E:\\projects\\project-zodiac-video\\.zodiac-work\\runtimes\\zodiac-remotion\\1.21.0",
+      "kind": "unused-legacy-renderer",
+      "version": "1.21.0",
+      "replacement_version": "zodiac-renderer 2.0.2"
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import json
 import re
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -12,6 +12,11 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QGroupBox,
+    QFrame,
+    QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QSplitter,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -41,6 +46,8 @@ def _default_prompt_routes(plugin_root: Path) -> list[str]:
 
 
 class ProductionChecklistScreen(QWidget):
+    job_requested = Signal(str)
+
     def __init__(self, config_path: Path, plugin_root: Path, runner_jobs: list[dict], parent=None) -> None:
         super().__init__(parent)
         self.config_path = Path(config_path)
@@ -54,27 +61,75 @@ class ProductionChecklistScreen(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(20, 18, 20, 18)
         layout.setSpacing(12)
-        heading = QLabel("Checklist sản xuất")
-        heading.setStyleSheet("font-size: 20px; font-weight: 600;")
-        layout.addWidget(heading)
+        heading = QLabel("Tập & concept", objectName="pageTitle")
+        header = QHBoxLayout()
+        header.addWidget(heading, 1)
+        self.manage_toggle = QPushButton("Quản lý tập / series")
+        self.manage_toggle.setCheckable(True)
+        header.addWidget(self.manage_toggle)
+        self.guide_toggle = QPushButton("Cách dùng")
+        self.guide_toggle.setCheckable(True)
+        header.addWidget(self.guide_toggle)
+        layout.addLayout(header)
+        guide = QFrame(objectName="surface")
+        guide_layout = QVBoxLayout(guide)
+        self.usage_guide = QLabel(
+            "1. Mở ‘Quản lý tập / series’, chọn tập tìm thấy và bấm ‘Theo dõi’; hoặc ‘Thêm tập’ để chọn thư mục có .authoring/.\n"
+            "2. Đọc phase / bước hiện tại. Bấm ‘Sao chép prompt tiếp tục’, rồi dán vào Codex có plugin Zodiac.\n"
+            "3. Khi plugin xuất ZIP vào ready/, nhập ZIP ở tab Công việc. Quay lại đây chọn Runner Job@5 tương ứng.\n"
+            "4. Bấm ‘Mở Runner’ để tạo MP4; bấm ‘Làm mới trạng thái’ để đọc lại tiến độ.\n"
+            "Checklist theo dõi dữ liệu đã lưu; các nút ở đây không tự chạy plugin hoặc phê duyệt nội dung."
+        )
+        self.usage_guide.setWordWrap(True)
+        guide_layout.addWidget(self.usage_guide)
+        layout.addWidget(guide)
+        self.guide_toggle.toggled.connect(guide.setVisible)
+        guide.hide()
+        self.overview = QLabel("", objectName="sectionTitle")
+        self.overview.setWordWrap(True)
+        self.overview.setToolTip("Cần chú ý: nguồn thiếu/lỗi, trạng thái BLOCKED hoặc IN_REVIEW, hay Job@5 đã liên kết không còn trong Runner.")
+        layout.addWidget(self.overview)
 
         self.preferences_error_label = QLabel(objectName="checklist_preferences_error")
         self.preferences_error_label.setWordWrap(True)
         self.preferences_error_label.setStyleSheet("color: #D56C73;")
         layout.addWidget(self.preferences_error_label)
 
+        management = QFrame(objectName="surface")
+        management_layout = QVBoxLayout(management)
         controls = QHBoxLayout()
-        self.add_workspace_button = QPushButton("Thêm workspace…", objectName="checklist_add_workspace")
+        self.add_workspace_button = QPushButton("Thêm tập…", objectName="checklist_add_workspace")
         self.add_workspace_button.clicked.connect(self._choose_workspace)
         controls.addWidget(self.add_workspace_button)
+        self.discovered_picker = QComboBox()
+        self.discovered_picker.setMinimumWidth(180)
+        self.discovered_picker.setAccessibleName("Các tập tìm thấy trong dự án")
+        controls.addWidget(self.discovered_picker, 1)
+        self.track_discovered_button = QPushButton("Theo dõi")
+        self.track_discovered_button.clicked.connect(self._track_discovered)
+        controls.addWidget(self.track_discovered_button)
         controls.addStretch(1)
-        self.cover_visible_check = QCheckBox("Hiển thị thẻ Cover", objectName="checklist_cover_visible")
+        self.cover_visible_check = QCheckBox("Cover & concept", objectName="checklist_cover_visible")
         self.cover_visible_check.toggled.connect(self._set_cover_visible)
         controls.addWidget(self.cover_visible_check)
-        layout.addLayout(controls)
+        management_layout.addLayout(controls)
 
-        self.series_group = QGroupBox("Series checklist · theo dõi 12 cung")
-        series_layout = QVBoxLayout(self.series_group)
+        filters = QHBoxLayout()
+        self.search = QLineEdit(placeholderText="Tìm tập theo tên, cung hoặc workspace…")
+        self.search.setAccessibleName("Tìm tập trong checklist")
+        self.search.textChanged.connect(self._filter_cards)
+        filters.addWidget(self.search, 1)
+        self.scope = QComboBox()
+        self.scope.addItem("Tất cả tập", "all")
+        self.scope.addItem("Cần chú ý", "attention")
+        self.scope.currentIndexChanged.connect(self._filter_cards)
+        filters.addWidget(self.scope)
+        self.refresh_button = QPushButton("Làm mới trạng thái")
+        self.refresh_button.clicked.connect(self.refresh)
+        filters.addWidget(self.refresh_button)
+        layout.addLayout(filters)
+        self.series_group = QGroupBox("Tiến độ 12 cung · mở để liên kết / xem series")
+        series_layout = QVBoxLayout()
         series_actions = QHBoxLayout()
         self.series_link_button = QPushButton("Liên kết checklist…", objectName="checklist_series_link")
         self.series_link_button.clicked.connect(self._choose_series_tracker)
@@ -88,9 +143,19 @@ class ProductionChecklistScreen(QWidget):
         self.series_status_label.setWordWrap(True)
         series_layout.addWidget(self.series_status_label)
         self.series_signs_label = QLabel()
+        self.series_signs_label.setObjectName("seriesSigns")
         self.series_signs_label.setWordWrap(True)
         series_layout.addWidget(self.series_signs_label)
-        layout.addWidget(self.series_group)
+        self.series_group.setCheckable(True)
+        self.series_group.toggled.connect(lambda checked: self.series_body.setVisible(checked))
+        self.series_body = QWidget()
+        self.series_body.setLayout(series_layout)
+        group_layout = QVBoxLayout(self.series_group)
+        group_layout.addWidget(self.series_body)
+        management_layout.addWidget(self.series_group)
+        layout.addWidget(management)
+        self.manage_toggle.toggled.connect(management.setVisible)
+        management.hide()
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
@@ -99,12 +164,22 @@ class ProductionChecklistScreen(QWidget):
         self.rows_layout.setContentsMargins(0, 0, 0, 0)
         self.rows_layout.setSpacing(10)
         self.scroll.setWidget(self.rows_host)
-        layout.addWidget(self.scroll, 1)
+        self.episode_list = QListWidget()
+        self.episode_list.setAccessibleName("Chọn tập để xem concept và tiến độ")
+        self.episode_list.setMinimumWidth(210)
+        self.episode_list.currentRowChanged.connect(self._select_episode)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(self.episode_list)
+        splitter.addWidget(self.scroll)
+        splitter.setStretchFactor(1, 1)
+        splitter.setSizes([260, 740])
+        layout.addWidget(splitter, 1)
 
         self.notice_label = QLabel()
         self.notice_label.setWordWrap(True)
         layout.addWidget(self.notice_label)
         self.set_runner_jobs(runner_jobs)
+        self.series_group.setChecked(False)
 
     def set_runner_jobs(self, jobs: list[dict]) -> None:
         self.runner_jobs = [
@@ -112,13 +187,32 @@ class ProductionChecklistScreen(QWidget):
             for job in jobs
             if job.get("group") == "Job@5" and isinstance(job.get("name"), str) and isinstance(job.get("path"), str)
         ]
+        files = [self.config_path]
+        for entry in self.config.get("workspaces", []):
+            authoring = Path(entry["path"]) / ".authoring"
+            files.extend(authoring / name for name in ("pipeline-state.json", "narrative-plan.json", "concept-candidates.json", "episode-scope.json"))
+        files.extend(Path(job["path"]) / "out" / "cover.png" for job in self.runner_jobs)
+        stamps = []
+        for file in files:
+            try:
+                stat = file.stat()
+                stamps.append((str(file), stat.st_mtime_ns, stat.st_size))
+            except OSError:
+                stamps.append((str(file), None, None))
+        signature = (json.dumps(self.runner_jobs, sort_keys=True), tuple(stamps))
+        if signature == getattr(self, "_refresh_signature", None):
+            return
         self.refresh()
+        self._refresh_signature = signature
 
     def refresh(self) -> None:
         self.config, self._preferences_error = checklist.load_checklist_config(self.config_path)
         self.preferences_error_label.setText(self._preferences_error or self._write_error or "")
+        self.preferences_error_label.setVisible(bool(self._preferences_error or self._write_error))
         mutable = not (self._preferences_error or self._write_error)
         self.add_workspace_button.setEnabled(mutable)
+        self._discover_workspaces()
+        self.track_discovered_button.setEnabled(mutable and bool(self.discovered_picker.currentData()))
         self.series_link_button.setEnabled(mutable)
         self.cover_visible_check.blockSignals(True)
         self.cover_visible_check.setChecked(self.config["cover_visible"])
@@ -139,9 +233,12 @@ class ProductionChecklistScreen(QWidget):
                     f"Đã liên kết series checklist · {tracker['done']}/12 cung hoàn tất · {tracker['todo']} còn lại"
                 )
                 self.series_signs_label.setText(
-                    "  ·  ".join(f"{sign['label']}: {sign['status']}" for sign in tracker["signs"])
+                    "  ·  ".join(f"{sign['label']}: {'Hoàn tất' if sign['status'] == 'done' else 'Còn lại'}" for sign in tracker["signs"])
                 )
 
+        selected_path = self.episode_list.currentItem().data(Qt.ItemDataRole.UserRole) if self.episode_list.currentItem() else None
+        self.episode_list.blockSignals(True)
+        self.episode_list.clear()
         self._clear_rows()
         self.episode_cards = []
         for entry in self.config["workspaces"]:
@@ -152,7 +249,41 @@ class ProductionChecklistScreen(QWidget):
             card = self._make_episode_card(entry, row, mutable, linked)
             self.rows_layout.addWidget(card["widget"])
             self.episode_cards.append(card)
+            item = QListWidgetItem(f"{row['title'] or workspace.name}\n" + {"IN_PROGRESS": "Đang thực hiện", "IN_REVIEW": "Chờ duyệt", "BLOCKED": "Cần xử lý", "PASS": "Đã đạt"}.get((row["step"] or {}).get("status"), "Chờ thực hiện"))
+            item.setData(Qt.ItemDataRole.UserRole, str(workspace))
+            self.episode_list.addItem(item)
+            if str(workspace) == selected_path:
+                self.episode_list.setCurrentItem(item)
+        self.empty_label = QLabel("Chưa có tập. Mở ‘Quản lý tập / series’ để chọn tập đang làm, rồi bấm ‘Theo dõi’.", objectName="muted")
+        self.empty_label.setWordWrap(True)
+        self.rows_layout.addWidget(self.empty_label)
         self.rows_layout.addStretch(1)
+        self.episode_list.blockSignals(False)
+        self._filter_cards()
+
+    def _select_episode(self, index: int) -> None:
+        for i, card in enumerate(self.episode_cards):
+            card["widget"].setVisible(i == index and not self.episode_list.item(i).isHidden())
+
+    def _filter_cards(self) -> None:
+        needle = self.search.text().strip().casefold()
+        attention_only = self.scope.currentData() == "attention"
+        visible = 0
+        for i, card in enumerate(self.episode_cards):
+            show = (not needle or needle in card["search_text"]) and (not attention_only or card["attention"])
+            self.episode_list.item(i).setHidden(not show)
+            visible += show
+        current = self.episode_list.currentRow()
+        if current < 0 or self.episode_list.item(current).isHidden():
+            current = next((i for i in range(self.episode_list.count()) if not self.episode_list.item(i).isHidden()), -1)
+            self.episode_list.setCurrentRow(current)
+        self._select_episode(current)
+        attention = sum(card["attention"] for card in self.episode_cards)
+        self.overview.setText(f"{len(self.episode_cards)} tập đang theo dõi  ·  {attention} cần chú ý  ·  {visible} đang hiện")
+        if hasattr(self, "empty_label"):
+            self.empty_label.setVisible(visible == 0)
+            if self.episode_cards:
+                self.empty_label.setText("Không có tập phù hợp. Đổi bộ lọc hoặc từ khóa tìm kiếm.")
 
     def _clear_rows(self) -> None:
         while self.rows_layout.count():
@@ -165,28 +296,45 @@ class ProductionChecklistScreen(QWidget):
         workspace = entry["path"]
         card = QGroupBox(row["episode_id"] or Path(workspace).name)
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(16, 14, 16, 16)
+        card_layout.setSpacing(10)
         summary = QLabel("Cung: " + (" · ".join(item["label"] for item in row["members"]) or "chưa có episode scope"))
         title = QLabel("Tập: " + (row["title"] or "Chưa có tiêu đề từ episode scope"))
         topic = QLabel("Topic: " + (row["topic"] or "Chưa có topic từ episode scope"))
-        concept = QLabel("Concept: " + (row["concept"] or "Chưa chốt"))
+        concept = QLabel("Concept: " + (row["concept"] or "Chưa chốt"), card)
+        concept.hide()
+        status_labels = {"LOCKED": "Chưa mở", "READY": "Sẵn sàng", "IN_PROGRESS": "Đang thực hiện",
+                         "IN_REVIEW": "Chờ duyệt", "PASS": "Đã đạt", "BLOCKED": "Cần xử lý",
+                         "SKIPPED_REUSED": "Đã dùng lại"}
         phase = QLabel(
-            "Phase: " + (f"{row['phase']['title']} · {row['phase']['status']}" if row["phase"] else "Chưa xác định")
+            "Giai đoạn: " + (f"{row['phase']['title']} · {status_labels.get(row['phase']['status'], row['phase']['status'])}" if row["phase"] else "Chưa xác định")
         )
         step = QLabel(
-            "Bước: " + (f"{row['step']['title']} · {row['step']['status']}" if row["step"] else "Chưa xác định")
+            "Bước: " + (f"{row['step']['title']} · {status_labels.get(row['step']['status'], row['step']['status'])}" if row["step"] else "Chưa xác định")
         )
-        for label in (summary, title, topic, concept, phase, step):
+        title.setObjectName("sectionTitle")
+        phase.setObjectName("checklistPhase")
+        step.setObjectName("checklistStep")
+        status = (row["step"] or row["phase"] or {}).get("status", "")
+        attention = bool(row["diagnostics"]) or status in ("BLOCKED", "IN_REVIEW") or bool(entry.get("job_id") and linked_job is None)
+        severity = "error" if row["diagnostics"] or status == "BLOCKED" else "warning" if attention else "success" if status in ("PASS", "SKIPPED_REUSED") else ""
+        phase.setToolTip(str(row["phase"]))
+        step.setToolTip(str(row["step"]))
+        phase.setProperty("severity", severity)
+        step.setProperty("severity", severity)
+        for label in (title, summary, phase, step, topic):
             label.setWordWrap(True)
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             card_layout.addWidget(label)
         diagnostics = QLabel("\n".join(row["diagnostics"]))
         diagnostics.setWordWrap(True)
-        diagnostics.setStyleSheet("color: #D56C73;")
+        diagnostics.setObjectName("checklistDiagnostic")
         diagnostics.setVisible(bool(row["diagnostics"]))
         card_layout.addWidget(diagnostics)
 
         actions = QHBoxLayout()
-        actions.addWidget(QLabel("Runner Job@5:"))
+        job_link = QHBoxLayout()
+        job_link.addWidget(QLabel("Runner Job@5:"))
         job_combo = QComboBox(objectName="checklist_job_picker")
         job_combo.addItem("Chưa liên kết", None)
         available_ids = set()
@@ -201,26 +349,53 @@ class ProductionChecklistScreen(QWidget):
         job_combo.currentIndexChanged.connect(
             lambda _index, workspace=workspace, picker=job_combo: self._set_job_link(workspace, picker.currentData())
         )
-        actions.addWidget(job_combo, 1)
+        job_link.addWidget(job_combo, 1)
         handoff = QPushButton("Sao chép prompt tiếp tục", objectName="checklist_handoff")
         handoff.clicked.connect(lambda _checked=False, path=workspace: self._copy_handoff(path))
+        handoff.setProperty("primaryAction", True)
+        handoff.setToolTip("Sao chép hướng dẫn để tiếp tục trong plugin; không tự chạy quy trình.")
         actions.addWidget(handoff)
+        open_job = QPushButton("Mở Runner")
+        open_job.setEnabled(linked_job is not None)
+        open_job.setToolTip("Mở Job@5 đã liên kết trong Workspace của Runner.")
+        if linked_job:
+            open_job.clicked.connect(lambda _checked=False, path=linked_job["path"]: self.job_requested.emit(path))
+        actions.addWidget(open_job)
         remove = QPushButton("Bỏ theo dõi", objectName="checklist_remove_workspace")
         remove.setEnabled(mutable)
         remove.clicked.connect(lambda _checked=False, path=workspace: self._remove_workspace(path))
         actions.addWidget(remove)
-        card_layout.addLayout(actions)
+        card_layout.insertLayout(2, actions)
+        card_layout.addLayout(job_link)
 
         cover_card = QGroupBox("Cover")
-        cover_layout = QVBoxLayout(cover_card)
+        cover_layout = QVBoxLayout()
         cover_preview = QLabel(objectName="checklist_cover_preview")
         cover_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        cover_preview.setFixedSize(300, 533)
+        cover_preview.setFixedSize(144, 256)
         cover_placeholder = QLabel()
         cover_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         cover_placeholder.setWordWrap(True)
-        cover_layout.addWidget(cover_preview, alignment=Qt.AlignmentFlag.AlignHCenter)
-        cover_layout.addWidget(cover_placeholder)
+        visual_row = QHBoxLayout()
+        image_column = QVBoxLayout()
+        image_column.addWidget(cover_preview, alignment=Qt.AlignmentFlag.AlignHCenter)
+        image_column.addWidget(cover_placeholder)
+        visual_row.addLayout(image_column)
+        concept_card = QFrame(objectName="conceptCard")
+        concept_layout = QVBoxLayout(concept_card)
+        concept_layout.addWidget(QLabel("CONCEPT ĐANG LÀM", objectName="eyebrow"))
+        cover_concept = QLabel(row["concept"] or "Chưa nhận được concept từ nguồn sản xuất.")
+        cover_concept.setWordWrap(True)
+        cover_concept.setTextFormat(Qt.TextFormat.PlainText)
+        cover_concept.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        concept_layout.addWidget(cover_concept)
+        card_layout.removeWidget(phase)
+        card_layout.removeWidget(step)
+        concept_layout.addWidget(phase)
+        concept_layout.addWidget(step)
+        concept_layout.addStretch(1)
+        visual_row.addWidget(concept_card, 1, Qt.AlignmentFlag.AlignTop)
+        cover_layout.addLayout(visual_row)
         if not self.config["cover_visible"]:
             cover_card.hide()
         if not job_id:
@@ -243,9 +418,17 @@ class ProductionChecklistScreen(QWidget):
             else:
                 cover_placeholder.setText("Chưa có ảnh out/cover.png.")
             cover_preview.hide()
-        card_layout.addWidget(cover_card)
+        cover_card.setCheckable(True)
+        cover_body = QWidget()
+        cover_body.setLayout(cover_layout)
+        cover_outer = QVBoxLayout(cover_card)
+        cover_outer.addWidget(cover_body)
+        cover_card.toggled.connect(cover_body.setVisible)
+        card_layout.insertWidget(3, cover_card)
         return {
             "widget": card,
+            "attention": attention,
+            "search_text": " ".join((workspace, title.text(), summary.text(), topic.text(), concept.text())).casefold(),
             "summary": summary,
             "title": title,
             "topic": topic,
@@ -253,12 +436,35 @@ class ProductionChecklistScreen(QWidget):
             "phase": phase,
             "step": step,
             "job_combo": job_combo,
+            "open_job_button": open_job,
             "handoff_button": handoff,
             "remove_button": remove,
             "cover_card": cover_card,
+            "cover_concept": cover_concept,
             "cover_preview": cover_preview,
             "cover_placeholder": cover_placeholder,
         }
+
+    def _discover_workspaces(self) -> None:
+        previous = self.discovered_picker.currentData()
+        self.discovered_picker.clear()
+        registered = {Path(item["path"]).resolve() for item in self.config["workspaces"]}
+        project = self.plugin_root.parent.parent
+        candidates = list((project / "processing").glob("*/workspace"))
+        candidates += list((self.config_path.parent / "episodes").glob("*"))
+        for path in sorted(set(candidates)):
+            if path.is_dir() and not path.is_symlink() and (path / ".authoring").is_dir() and path.resolve() not in registered:
+                self.discovered_picker.addItem(path.parent.name if path.name == "workspace" else path.name, str(path.resolve()))
+        if self.discovered_picker.count() == 0:
+            self.discovered_picker.addItem("Không có tập mới tìm thấy", None)
+        index = self.discovered_picker.findData(previous)
+        if index >= 0:
+            self.discovered_picker.setCurrentIndex(index)
+
+    def _track_discovered(self) -> None:
+        path = self.discovered_picker.currentData()
+        if path:
+            self._add_workspace(Path(path))
 
     def _choose_workspace(self) -> None:
         selected = QFileDialog.getExistingDirectory(self, "Chọn plugin authoring workspace", str(Path.home()))

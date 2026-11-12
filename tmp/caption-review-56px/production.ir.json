@@ -1,0 +1,2368 @@
+{
+  "format": "zodiac-authoring-ir@1",
+  "fps": 24,
+  "video": {
+    "width": 1080,
+    "height": 1920
+  },
+  "assets": {
+    "ACC_WORKSPACE": {
+      "category": "environment",
+      "path": "assets/scene-accents/workspace-board.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "Handmade group-work board context."
+      }
+    },
+    "ACC_TRACK": {
+      "category": "environment",
+      "path": "assets/scene-accents/race-track.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "Rear track cue for spontaneous competition."
+      }
+    },
+    "ACC_REPAIR": {
+      "category": "environment",
+      "path": "assets/scene-accents/repair-rack.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "Rear repair cue for the callback."
+      }
+    },
+    "PROP_HOURGLASS": {
+      "category": "prop",
+      "path": "assets/props/hourglass.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "reuse_native",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "hourglass"
+      }
+    },
+    "NV_START_ACTIVE": {
+      "category": "story_object",
+      "path": "assets/narrative/start-line.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "Scene-authored starting-line metaphor."
+      },
+      "creative_origin": {
+        "mode": "scene_authored",
+        "scene_id": "S04",
+        "claim": "An unfinished task instantly becomes a starting line inside Aries even when nobody else is racing.",
+        "selection_reason": "The starting-line metaphor visualizes the exact competition reframe while remaining removable from the physical scene.",
+        "concept_candidates": {
+          "literal": "Show Aries physically running ahead of peers after hearing the task can wait.",
+          "metaphor": "A crooked starting line suddenly appears beside Aries when unfinished work is mentioned.",
+          "exaggeration": "The entire floor snaps into race lanes while everyone else remains stationary."
+        },
+        "selected_concept": "metaphor",
+        "anchor_phrase": "trong đầu tự nhiên mọc ra vạch xuất phát."
+      }
+    },
+    "WORDS_S01_0": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s01-0.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "CHƯA BÀN XONG"
+      }
+    },
+    "WORDS_S01_1": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s01-1.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "ĐÃ LÀM"
+      }
+    },
+    "WORDS_S02_0": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s02-0.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "ĐỂ MAI"
+      }
+    },
+    "WORDS_S02_1": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s02-1.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "KHÔNG."
+      }
+    },
+    "WORDS_S04_0": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s04-0.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "TỰ VỀ NHẤT"
+      }
+    },
+    "WORDS_S04_1": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s04-1.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "ĐỐI THỦ: 0"
+      }
+    },
+    "WORDS_S05_0": {
+      "category": "overlay",
+      "path": "assets/lettering/words_s05-0.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "lineage": {
+        "mode": "authored",
+        "semantic_intent": "NÚT START QUÁ NHẠY"
+      }
+    },
+    "CHAR_C_ARIES_NEUTRAL": {
+      "path": "assets/characters/C_ARIES-neutral.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "neutral",
+        "expression_id": "deadpan",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES neutral neutral deadpan"
+      }
+    },
+    "CHAR_C_ARIES_CONFRONT": {
+      "path": "assets/characters/C_ARIES-confront.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "hands-on-hips",
+        "expression_id": "exasperated",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES confront hands-on-hips exasperated"
+      }
+    },
+    "CHAR_C_ARIES_RUN": {
+      "path": "assets/characters/C_ARIES-run.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "run",
+        "expression_id": "smug",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES run run smug"
+      }
+    },
+    "CHAR_C_ARIES_PRESSURE": {
+      "path": "assets/characters/C_ARIES-pressure.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "confront",
+        "expression_id": "deadpan",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES pressure confront deadpan"
+      }
+    },
+    "CHAR_C_ARIES_EXASPERATED": {
+      "path": "assets/characters/C_ARIES-exasperated.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "explain",
+        "expression_id": "exasperated",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES exasperated explain exasperated"
+      }
+    },
+    "CHAR_C_ARIES_LOOK_BACK": {
+      "path": "assets/characters/C_ARIES-look_back.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "shrug",
+        "expression_id": "smug",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES look_back shrug smug"
+      }
+    },
+    "CHAR_C_ARIES_REACH": {
+      "path": "assets/characters/C_ARIES-reach.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "reach",
+        "expression_id": "smug",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES reach reach smug"
+      }
+    },
+    "CHAR_C_ARIES_PROUD": {
+      "path": "assets/characters/C_ARIES-proud.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "aries-lead",
+        "identity_signature": "b3b7204b5b24d239",
+        "body_profile": "lean_tall",
+        "hair_id": "messy-top-bun",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "zodiac-glyph-shirt",
+        "zodiac_sign_id": "aries",
+        "gender_presentation": "feminine",
+        "shirt_color_id": "coral",
+        "shirt_color": "#E97A66",
+        "pose_id": "hands-on-hips",
+        "expression_id": "smug",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:lean_tall",
+        "semantic_intent": "C_ARIES proud hands-on-hips smug"
+      }
+    },
+    "CHAR_C_PEER_A_UNSURE": {
+      "path": "assets/characters/C_PEER_A-unsure.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-a",
+        "identity_signature": "b2a382f8e8c4af97",
+        "body_profile": "standard_compact",
+        "hair_id": "soft-layered-bob",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "teal",
+        "shirt_color": "#8EC0B9",
+        "pose_id": "scratch-head",
+        "expression_id": "embarrassed",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:standard_compact",
+        "semantic_intent": "C_PEER_A unsure scratch-head embarrassed"
+      }
+    },
+    "CHAR_C_PEER_A_TIRED": {
+      "path": "assets/characters/C_PEER_A-tired.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-a",
+        "identity_signature": "b2a382f8e8c4af97",
+        "body_profile": "standard_compact",
+        "hair_id": "soft-layered-bob",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "teal",
+        "shirt_color": "#8EC0B9",
+        "pose_id": "neutral",
+        "expression_id": "exasperated",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:standard_compact",
+        "semantic_intent": "C_PEER_A tired neutral exasperated"
+      }
+    },
+    "CHAR_C_PEER_A_RECOIL": {
+      "path": "assets/characters/C_PEER_A-recoil.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-a",
+        "identity_signature": "b2a382f8e8c4af97",
+        "body_profile": "standard_compact",
+        "hair_id": "soft-layered-bob",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "teal",
+        "shirt_color": "#8EC0B9",
+        "pose_id": "recoil",
+        "expression_id": "panic",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:standard_compact",
+        "semantic_intent": "C_PEER_A recoil recoil panic"
+      }
+    },
+    "CHAR_C_PEER_A_FACEPALM": {
+      "path": "assets/characters/C_PEER_A-facepalm.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-a",
+        "identity_signature": "b2a382f8e8c4af97",
+        "body_profile": "standard_compact",
+        "hair_id": "soft-layered-bob",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "teal",
+        "shirt_color": "#8EC0B9",
+        "pose_id": "facepalm",
+        "expression_id": "exasperated",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:standard_compact",
+        "semantic_intent": "C_PEER_A facepalm facepalm exasperated"
+      }
+    },
+    "CHAR_C_PEER_B_READ": {
+      "path": "assets/characters/C_PEER_B-read.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-b",
+        "identity_signature": "3d809e1761b56ab9",
+        "body_profile": "petite_compact",
+        "hair_id": "side-braid",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "ochre",
+        "shirt_color": "#F2C45C",
+        "pose_id": "read",
+        "expression_id": "neutral",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:petite_compact",
+        "semantic_intent": "C_PEER_B read read neutral"
+      }
+    },
+    "CHAR_C_PEER_B_TIRED": {
+      "path": "assets/characters/C_PEER_B-tired.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-b",
+        "identity_signature": "3d809e1761b56ab9",
+        "body_profile": "petite_compact",
+        "hair_id": "side-braid",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "ochre",
+        "shirt_color": "#F2C45C",
+        "pose_id": "neutral",
+        "expression_id": "deadpan",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:petite_compact",
+        "semantic_intent": "C_PEER_B tired neutral deadpan"
+      }
+    },
+    "CHAR_C_PEER_B_SLUMP": {
+      "path": "assets/characters/C_PEER_B-slump.svg",
+      "style_id": "zodiac-paper-doodle-meme-v4",
+      "category": "character",
+      "character_blueprint": {
+        "identity_id": "peer-b",
+        "identity_signature": "3d809e1761b56ab9",
+        "body_profile": "petite_compact",
+        "hair_id": "side-braid",
+        "face_profile_id": "balanced",
+        "accessory_id": "none",
+        "outfit_id": "plain-shirt",
+        "zodiac_sign_id": null,
+        "gender_presentation": "feminine",
+        "shirt_color_id": "ochre",
+        "shirt_color": "#F2C45C",
+        "pose_id": "slump",
+        "expression_id": "weary",
+        "crop_id": null
+      },
+      "lineage": {
+        "mode": "composite",
+        "source_library": "zodiac-visual-grammar-v4",
+        "source_master": "body:petite_compact",
+        "semantic_intent": "C_PEER_B slump slump weary"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "S01",
+      "voice": "Một việc còn chưa bắt đầu mà Bạch Dương đã thấy nó chậm.\n\nNgười ta mới đang:\n\n“Hay là mình bàn thêm một chút—”\n\nBạch Dương:\n\n“Bàn gì nữa? Làm đi.”\n\nỪ.\n\nĐấy.\n\nCái tốc độ khiến người khác còn đang nghĩ bước một thì Bạch Dương đã đi được… hai bước rưỡi.\n\nKhông hẳn vì họ chắc mình đúng.\n\nCũng không hẳn vì họ thích làm sếp.\n\nNhiều lúc chỉ đơn giản là:\n\n“Làm được mà. Sao chưa làm?”\n\nVà thế là làm.\n\n",
+      "duration_hint_frames": 672,
+      "entities": [
+        {
+          "id": "C_ARIES",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_C_ARIES_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 141,
+                "y": 450,
+                "width": 328,
+                "height": 480
+              }
+            },
+            "confront": {
+              "asset": "CHAR_C_ARIES_CONFRONT",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 141,
+                "y": 450,
+                "width": 328,
+                "height": 480
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_A",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "unsure",
+          "states": {
+            "unsure": {
+              "asset": "CHAR_C_PEER_A_UNSURE",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 611,
+                "y": 450,
+                "width": 328,
+                "height": 480
+              }
+            },
+            "tired": {
+              "asset": "CHAR_C_PEER_A_TIRED",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 611,
+                "y": 450,
+                "width": 328,
+                "height": 480
+              }
+            }
+          }
+        },
+        {
+          "id": "A_WORK_S01",
+          "kind": "object",
+          "visual_role": "background",
+          "role": "scene_accent",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ACC_WORKSPACE",
+              "visible": true,
+              "layer": 2,
+              "transform": {
+                "x": 630,
+                "y": 220,
+                "width": 340,
+                "height": 340
+              }
+            }
+          }
+        },
+        {
+          "id": "WORDS_S01",
+          "kind": "object",
+          "visual_role": "overlay",
+          "initial_state": "hidden",
+          "states": {
+            "text0": {
+              "asset": "WORDS_S01_0",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 65,
+                "y": 1000,
+                "width": 820,
+                "height": 250
+              }
+            },
+            "text1": {
+              "asset": "WORDS_S01_1",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 65,
+                "y": 1000,
+                "width": 820,
+                "height": 250
+              }
+            },
+            "hidden": {
+              "asset": "WORDS_S01_0",
+              "visible": false,
+              "layer": 65,
+              "transform": {
+                "x": 65,
+                "y": 1000,
+                "width": 820,
+                "height": 250
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E_WORDS_S01_0",
+          "target": "WORDS_S01",
+          "intent": "reveal story lettering CHƯA BÀN XONG",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Hay là mình bàn thêm một chút—”"
+          },
+          "state_before": "hidden",
+          "state_after": "text0",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S01_CUT",
+          "target": "C_ARIES",
+          "intent": "cut through deliberation",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Bàn gì nữa? Làm đi.”"
+          },
+          "state_before": "neutral",
+          "state_after": "confront",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S01_LEFT_BEHIND",
+          "target": "C_PEER_A",
+          "intent": "Peer lowers the questioning gesture into an exasperated stillness as Aries moves ahead.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Cái tốc độ khiến người khác còn đang nghĩ bước một"
+          },
+          "state_before": "unsure",
+          "state_after": "tired",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S01_1",
+          "target": "WORDS_S01",
+          "intent": "reveal story lettering ĐÃ LÀM",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Và thế là làm."
+          },
+          "state_before": "text0",
+          "state_after": "text1",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        }
+      ],
+      "occlusion_relations": [],
+      "performance_context": {
+        "delivery": "deadpan rồi tăng nhịp",
+        "energy": 0.72,
+        "emotion": "nhận ra và hơi buồn cười",
+        "pace": "fast",
+        "emphasis": []
+      },
+      "caption_segments": [
+        {
+          "text": "Một việc còn chưa bắt đầu mà Bạch",
+          "start_ms": 0,
+          "end_ms": 2480,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Dương đã thấy nó chậm.",
+          "start_ms": 2480,
+          "end_ms": 4030,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Người ta mới đang:",
+          "start_ms": 4030,
+          "end_ms": 5270,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Hay là mình bàn thêm một chút—” Bạch",
+          "start_ms": 5270,
+          "end_ms": 7750,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Dương: “Bàn gì nữa?",
+          "start_ms": 7750,
+          "end_ms": 8990,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Làm đi.” Ừ. Đấy.",
+          "start_ms": 8990,
+          "end_ms": 10230,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Cái tốc độ khiến người khác còn đang",
+          "start_ms": 10230,
+          "end_ms": 12710,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "nghĩ bước một thì Bạch Dương đã đi",
+          "start_ms": 12710,
+          "end_ms": 15190,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "được… hai bước rưỡi.",
+          "start_ms": 15190,
+          "end_ms": 16430,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Không hẳn vì họ chắc mình đúng.",
+          "start_ms": 16430,
+          "end_ms": 18600,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Cũng không hẳn vì họ thích làm sếp.",
+          "start_ms": 18600,
+          "end_ms": 21080,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Nhiều lúc chỉ đơn giản là:",
+          "start_ms": 21080,
+          "end_ms": 22940,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Làm được mà. Sao chưa làm?” Và thế là làm.",
+          "start_ms": 22940,
+          "end_ms": 26040,
+          "max_lines": 2,
+          "preferred_breaks": []
+        }
+      ],
+      "caption_timing_status": "estimated_not_audio_aligned",
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 72,
+          "y": 1420,
+          "width": 936,
+          "height": 350
+        },
+        "character_zone": {
+          "x": 24,
+          "y": 360,
+          "width": 1032,
+          "height": 545
+        },
+        "prop_zone": {
+          "x": 100,
+          "y": 930,
+          "width": 880,
+          "height": 340
+        },
+        "effect_zone": {
+          "x": 20,
+          "y": 380,
+          "width": 1040,
+          "height": 510
+        }
+      },
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_props": 2,
+        "max_prominent_effects": 2
+      }
+    },
+    {
+      "id": "S02",
+      "voice": "Cả nhóm còn hỏi ai phụ trách.\n\nHọ mở file rồi.\n\nNgười ta đang cân nhắc phương án.\n\nHọ chốt rồi.\n\nCó người vừa nói:\n\n“Hay để mai—”\n\nKhông.\n\nChữ “mai” với Bạch Dương nhiều khi nghe như một sự xúc phạm đến tiến độ.\n\nMà cay nhất là…\n\nnhiều lúc cái kiểu này cực kỳ có ích.\n\nMột nhóm ì ba ngày.\n\nBạch Dương vào mười phút.\n\nÍt nhất mọi thứ bắt đầu chạy.\n\nKhông chắc chạy đúng hướng.\n\nNhưng chạy.\n\n",
+      "duration_hint_frames": 656,
+      "entities": [
+        {
+          "id": "C_ARIES",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_C_ARIES_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 35,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "run": {
+              "asset": "CHAR_C_ARIES_RUN",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 35,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_A",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "unsure",
+          "states": {
+            "unsure": {
+              "asset": "CHAR_C_PEER_A_UNSURE",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 370,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "recoil": {
+              "asset": "CHAR_C_PEER_A_RECOIL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 370,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_B",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "read",
+          "states": {
+            "read": {
+              "asset": "CHAR_C_PEER_B_READ",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 705,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            }
+          }
+        },
+        {
+          "id": "A_WORK_S02",
+          "kind": "object",
+          "visual_role": "background",
+          "role": "scene_accent",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ACC_WORKSPACE",
+              "visible": true,
+              "layer": 2,
+              "transform": {
+                "x": 90,
+                "y": 250,
+                "width": 330,
+                "height": 330
+              }
+            }
+          }
+        },
+        {
+          "id": "WORDS_S02",
+          "kind": "object",
+          "visual_role": "overlay",
+          "initial_state": "hidden",
+          "states": {
+            "text0": {
+              "asset": "WORDS_S02_0",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 100,
+                "y": 1020,
+                "width": 880,
+                "height": 260
+              }
+            },
+            "text1": {
+              "asset": "WORDS_S02_1",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 100,
+                "y": 1020,
+                "width": 880,
+                "height": 260
+              }
+            },
+            "hidden": {
+              "asset": "WORDS_S02_0",
+              "visible": false,
+              "layer": 65,
+              "transform": {
+                "x": 100,
+                "y": 1020,
+                "width": 880,
+                "height": 260
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E_WORDS_S02_0",
+          "target": "WORDS_S02",
+          "intent": "reveal story lettering ĐỂ MAI",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Hay để mai—”"
+          },
+          "state_before": "hidden",
+          "state_after": "text0",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S02_NO_TOMORROW",
+          "target": "C_PEER_A",
+          "intent": "Peer recoils at the immediate rejection of postponing the work.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Không.",
+            "occurrence": 1
+          },
+          "state_before": "unsure",
+          "state_after": "recoil",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S02_1",
+          "target": "WORDS_S02",
+          "intent": "reveal story lettering KHÔNG.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Không.",
+            "occurrence": 1
+          },
+          "state_before": "text0",
+          "state_after": "text1",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S02_2",
+          "target": "WORDS_S02",
+          "intent": "release story lettering",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Mà cay nhất là…"
+          },
+          "state_before": "text1",
+          "state_after": "hidden",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S02_RUN",
+          "target": "C_ARIES",
+          "intent": "turn stalled plan into forward motion",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Ít nhất mọi thứ bắt đầu chạy."
+          },
+          "state_before": "neutral",
+          "state_after": "run",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        }
+      ],
+      "occlusion_relations": [],
+      "performance_context": {
+        "delivery": "bình thường, rõ",
+        "energy": 0.58,
+        "emotion": "công bằng",
+        "pace": "medium",
+        "emphasis": []
+      },
+      "caption_segments": [
+        {
+          "text": "Cả nhóm còn hỏi ai phụ trách.",
+          "start_ms": 0,
+          "end_ms": 2170,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Họ mở file rồi.",
+          "start_ms": 2170,
+          "end_ms": 3410,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Người ta đang cân nhắc phương án.",
+          "start_ms": 3410,
+          "end_ms": 5580,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Họ chốt rồi. Có người vừa nói:",
+          "start_ms": 5580,
+          "end_ms": 7750,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Hay để mai—” Không.",
+          "start_ms": 7750,
+          "end_ms": 8990,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Chữ “mai” với Bạch Dương nhiều khi nghe",
+          "start_ms": 8990,
+          "end_ms": 11470,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "như một sự xúc phạm đến tiến độ.",
+          "start_ms": 11470,
+          "end_ms": 13950,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Mà cay nhất là…",
+          "start_ms": 13950,
+          "end_ms": 15190,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "nhiều lúc cái kiểu này cực kỳ có",
+          "start_ms": 15190,
+          "end_ms": 17670,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "ích. Một nhóm ì ba ngày.",
+          "start_ms": 17670,
+          "end_ms": 19530,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Bạch Dương vào mười phút.",
+          "start_ms": 19530,
+          "end_ms": 21080,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Ít nhất mọi thứ bắt đầu chạy.",
+          "start_ms": 21080,
+          "end_ms": 23250,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Không chắc chạy đúng hướng. Nhưng chạy.",
+          "start_ms": 23250,
+          "end_ms": 25420,
+          "max_lines": 2,
+          "preferred_breaks": []
+        }
+      ],
+      "caption_timing_status": "estimated_not_audio_aligned",
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 72,
+          "y": 1420,
+          "width": 936,
+          "height": 350
+        },
+        "character_zone": {
+          "x": 24,
+          "y": 360,
+          "width": 1032,
+          "height": 545
+        },
+        "prop_zone": {
+          "x": 100,
+          "y": 930,
+          "width": 880,
+          "height": 340
+        },
+        "effect_zone": {
+          "x": 20,
+          "y": 380,
+          "width": 1040,
+          "height": 510
+        }
+      },
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_props": 2,
+        "max_prominent_effects": 2
+      }
+    },
+    {
+      "id": "S03",
+      "voice": "Và đấy chính là lý do người ta vừa cần Bạch Dương…\n\nvừa rất muốn giấu nút Start khỏi tay họ.\n\nVì vấn đề không nằm ở chuyện họ thích hành động.\n\nVấn đề là họ quên mất người khác không sống ở cùng tốc độ.\n\nNgười ta cần nghĩ.\n\n“Nghĩ gì lâu vậy?”\n\nNgười ta cần nói cho khéo.\n\n“Nói thẳng đi.”\n\nNgười ta cần thêm thời gian.\n\n“Thêm để làm gì?”\n\nRồi từ “chủ động” sang “giục”…\n\nnó đổi tên nhanh đến mức chính Bạch Dương cũng không kịp nhận ra.\n\n",
+      "duration_hint_frames": 744,
+      "entities": [
+        {
+          "id": "C_ARIES",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "pressure": {
+              "asset": "CHAR_C_ARIES_PRESSURE",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 75,
+                "y": 441,
+                "width": 450,
+                "height": 658
+              }
+            },
+            "exasperated": {
+              "asset": "CHAR_C_ARIES_EXASPERATED",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 75,
+                "y": 441,
+                "width": 450,
+                "height": 658
+              }
+            },
+            "neutral": {
+              "asset": "CHAR_C_ARIES_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 85,
+                "y": 421,
+                "width": 450,
+                "height": 658
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_A",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "unsure",
+          "states": {
+            "recoil": {
+              "asset": "CHAR_C_PEER_A_RECOIL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 565,
+                "y": 466,
+                "width": 430,
+                "height": 628
+              }
+            },
+            "unsure": {
+              "asset": "CHAR_C_PEER_A_UNSURE",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 565,
+                "y": 466,
+                "width": 430,
+                "height": 628
+              }
+            }
+          }
+        },
+        {
+          "id": "A_WORK_S03",
+          "kind": "object",
+          "visual_role": "background",
+          "role": "scene_accent",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ACC_WORKSPACE",
+              "visible": true,
+              "layer": 2,
+              "transform": {
+                "x": 660,
+                "y": 250,
+                "width": 300,
+                "height": 300
+              }
+            }
+          }
+        },
+        {
+          "id": "P_HOURGLASS",
+          "kind": "object",
+          "visual_role": "interactive_prop",
+          "initial_state": "hidden",
+          "states": {
+            "hidden": {
+              "asset": "PROP_HOURGLASS",
+              "visible": false,
+              "layer": 12,
+              "transform": {
+                "x": 425,
+                "y": 770,
+                "width": 260,
+                "height": 260
+              }
+            },
+            "visible": {
+              "asset": "PROP_HOURGLASS",
+              "visible": true,
+              "layer": 12,
+              "transform": {
+                "x": 425,
+                "y": 770,
+                "width": 260,
+                "height": 260
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E_S03_HOURGLASS",
+          "target": "P_HOURGLASS",
+          "intent": "reveal waiting-time prop",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Người ta cần thêm thời gian."
+          },
+          "state_before": "hidden",
+          "state_after": "visible",
+          "desired_motion": "pop-in",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S03_PRESSURE",
+          "target": "C_ARIES",
+          "intent": "press the shared hourglass toward the peer",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Thêm để làm gì?”"
+          },
+          "state_before": "neutral",
+          "state_after": "pressure",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S03_RECOIL",
+          "target": "C_PEER_A",
+          "intent": "recoil at the impatient demand",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Thêm để làm gì?”"
+          },
+          "state_before": "unsure",
+          "state_after": "recoil",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S03_EXASPERATE",
+          "target": "C_ARIES",
+          "intent": "show impatience at requested delay",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Rồi từ “chủ động” sang “giục”…"
+          },
+          "state_before": "pressure",
+          "state_after": "exasperated",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        }
+      ],
+      "occlusion_relations": [],
+      "performance_context": {
+        "delivery": "nhanh và sắc dần",
+        "energy": 0.78,
+        "emotion": "căng hài",
+        "pace": "fast",
+        "emphasis": []
+      },
+      "spatial_bindings": [
+        {
+          "entity": "P_HOURGLASS",
+          "anchor": "C_PEER_A",
+          "relation": "near",
+          "max_distance_px": 280
+        }
+      ],
+      "caption_segments": [
+        {
+          "text": "Và đấy chính là lý do người ta",
+          "start_ms": 0,
+          "end_ms": 2480,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "vừa cần Bạch Dương…",
+          "start_ms": 2480,
+          "end_ms": 3720,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "vừa rất muốn giấu nút Start khỏi tay",
+          "start_ms": 3720,
+          "end_ms": 6200,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "họ. Vì vấn đề không nằm ở chuyện",
+          "start_ms": 6200,
+          "end_ms": 8680,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "họ thích hành động.",
+          "start_ms": 8680,
+          "end_ms": 9920,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Vấn đề là họ quên mất người khác",
+          "start_ms": 9920,
+          "end_ms": 12400,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "không sống ở cùng tốc độ.",
+          "start_ms": 12400,
+          "end_ms": 14260,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Người ta cần nghĩ.",
+          "start_ms": 14260,
+          "end_ms": 15500,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Nghĩ gì lâu vậy?” Người ta cần nói",
+          "start_ms": 15500,
+          "end_ms": 17980,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "cho khéo. “Nói thẳng đi.” Người ta cần",
+          "start_ms": 17980,
+          "end_ms": 20460,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "thêm thời gian. “Thêm để làm gì?” Rồi",
+          "start_ms": 20460,
+          "end_ms": 22940,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "từ “chủ động” sang “giục”…",
+          "start_ms": 22940,
+          "end_ms": 24490,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "nó đổi tên nhanh đến mức chính Bạch",
+          "start_ms": 24490,
+          "end_ms": 26970,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Dương cũng không kịp nhận ra.",
+          "start_ms": 26970,
+          "end_ms": 28830,
+          "max_lines": 2,
+          "preferred_breaks": []
+        }
+      ],
+      "caption_timing_status": "estimated_not_audio_aligned",
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 72,
+          "y": 1420,
+          "width": 936,
+          "height": 350
+        },
+        "character_zone": {
+          "x": 24,
+          "y": 360,
+          "width": 1032,
+          "height": 545
+        },
+        "prop_zone": {
+          "x": 100,
+          "y": 930,
+          "width": 880,
+          "height": 340
+        },
+        "effect_zone": {
+          "x": 20,
+          "y": 380,
+          "width": 1040,
+          "height": 510
+        }
+      },
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_props": 2,
+        "max_prominent_effects": 2
+      }
+    },
+    {
+      "id": "S04",
+      "voice": "Cái buồn cười là nhiều Bạch Dương còn chẳng nghĩ mình đang cạnh tranh.\n\nKhông ai thi với họ cả.\n\nNhưng chỉ cần xuất hiện một việc chưa xong…\n\ntrong đầu tự nhiên mọc ra vạch xuất phát.\n\nMột người nói:\n\n“Mai làm cũng được.”\n\nBạch Dương nghe thành:\n\n“Có ai muốn thắng tôi không?”\n\nXong tự chạy.\n\nTự về nhất.\n\nTự quay lại.\n\n“Ủa, mọi người đâu rồi?”\n\n",
+      "duration_hint_frames": 552,
+      "entities": [
+        {
+          "id": "C_ARIES",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_C_ARIES_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 205,
+                "y": 310,
+                "width": 671,
+                "height": 980
+              }
+            },
+            "run": {
+              "asset": "CHAR_C_ARIES_RUN",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 205,
+                "y": 310,
+                "width": 671,
+                "height": 980
+              }
+            },
+            "look_back": {
+              "asset": "CHAR_C_ARIES_LOOK_BACK",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 205,
+                "y": 310,
+                "width": 671,
+                "height": 980
+              }
+            }
+          }
+        },
+        {
+          "id": "A_TRACK_S04",
+          "kind": "object",
+          "visual_role": "background",
+          "role": "scene_accent",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ACC_TRACK",
+              "visible": true,
+              "layer": 2,
+              "transform": {
+                "x": 90,
+                "y": 230,
+                "width": 900,
+                "height": 420
+              }
+            }
+          }
+        },
+        {
+          "id": "NV_START",
+          "kind": "object",
+          "visual_role": "story_object",
+          "initial_state": "hidden",
+          "states": {
+            "hidden": {
+              "asset": "NV_START_ACTIVE",
+              "visible": false,
+              "layer": 14,
+              "transform": {
+                "x": 390,
+                "y": 560,
+                "width": 560,
+                "height": 368
+              }
+            },
+            "visible": {
+              "asset": "NV_START_ACTIVE",
+              "visible": true,
+              "layer": 14,
+              "transform": {
+                "x": 390,
+                "y": 560,
+                "width": 560,
+                "height": 368
+              }
+            }
+          }
+        },
+        {
+          "id": "WORDS_S04",
+          "kind": "object",
+          "visual_role": "overlay",
+          "initial_state": "hidden",
+          "states": {
+            "text0": {
+              "asset": "WORDS_S04_0",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 70,
+                "y": 60,
+                "width": 940,
+                "height": 290
+              }
+            },
+            "text1": {
+              "asset": "WORDS_S04_1",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 70,
+                "y": 60,
+                "width": 940,
+                "height": 290
+              }
+            },
+            "hidden": {
+              "asset": "WORDS_S04_0",
+              "visible": false,
+              "layer": 65,
+              "transform": {
+                "x": 70,
+                "y": 60,
+                "width": 940,
+                "height": 290
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E_S04_STARTLINE",
+          "target": "NV_START",
+          "intent": "materialize internal starting line",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "trong đầu tự nhiên mọc ra vạch xuất phát."
+          },
+          "state_before": "hidden",
+          "state_after": "visible",
+          "desired_motion": "pop-in",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S04_RUN",
+          "target": "C_ARIES",
+          "intent": "run the race nobody else entered",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Xong tự chạy."
+          },
+          "state_before": "neutral",
+          "state_after": "run",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S04_0",
+          "target": "WORDS_S04",
+          "intent": "reveal story lettering TỰ VỀ NHẤT",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Tự về nhất."
+          },
+          "state_before": "hidden",
+          "state_after": "text0",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S04_LOOK_BACK",
+          "target": "C_ARIES",
+          "intent": "shrug after discovering nobody joined the race",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Ủa, mọi người đâu rồi?”"
+          },
+          "state_before": "run",
+          "state_after": "look_back",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S04_1",
+          "target": "WORDS_S04",
+          "intent": "reveal story lettering ĐỐI THỦ: 0",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Ủa, mọi người đâu rồi?”"
+          },
+          "state_before": "text0",
+          "state_after": "text1",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        }
+      ],
+      "occlusion_relations": [],
+      "performance_context": {
+        "delivery": "hỏi ngắn rồi reframe",
+        "energy": 0.66,
+        "emotion": "trêu nhưng tỉnh",
+        "pace": "medium",
+        "emphasis": []
+      },
+      "caption_segments": [
+        {
+          "text": "Cái buồn cười là nhiều Bạch Dương còn",
+          "start_ms": 0,
+          "end_ms": 2480,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "chẳng nghĩ mình đang cạnh tranh.",
+          "start_ms": 2480,
+          "end_ms": 4340,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Không ai thi với họ cả.",
+          "start_ms": 4340,
+          "end_ms": 6200,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Nhưng chỉ cần xuất hiện một việc chưa",
+          "start_ms": 6200,
+          "end_ms": 8680,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "xong… trong đầu tự nhiên mọc ra vạch",
+          "start_ms": 8680,
+          "end_ms": 11160,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "xuất phát. Một người nói:",
+          "start_ms": 11160,
+          "end_ms": 12710,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Mai làm cũng được.” Bạch Dương nghe thành:",
+          "start_ms": 12710,
+          "end_ms": 15190,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Có ai muốn thắng tôi không?” Xong tự",
+          "start_ms": 15190,
+          "end_ms": 17670,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "chạy. Tự về nhất.",
+          "start_ms": 17670,
+          "end_ms": 18910,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Tự quay lại. “Ủa,",
+          "start_ms": 18910,
+          "end_ms": 20150,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "mọi người đâu rồi?”",
+          "start_ms": 20150,
+          "end_ms": 21390,
+          "max_lines": 2,
+          "preferred_breaks": []
+        }
+      ],
+      "caption_timing_status": "estimated_not_audio_aligned",
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 72,
+          "y": 1420,
+          "width": 936,
+          "height": 350
+        },
+        "character_zone": {
+          "x": 24,
+          "y": 360,
+          "width": 1032,
+          "height": 545
+        },
+        "prop_zone": {
+          "x": 100,
+          "y": 930,
+          "width": 880,
+          "height": 340
+        },
+        "effect_zone": {
+          "x": 20,
+          "y": 380,
+          "width": 1040,
+          "height": 510
+        }
+      },
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_props": 2,
+        "max_prominent_effects": 2
+      }
+    },
+    {
+      "id": "S05",
+      "voice": "Người ta thấy cái đầu lao lên trước thì gọi là hiếu thắng.\n\nThấy câu nói đi thẳng thì gọi là cộc.\n\nThấy sự sốt ruột thì gọi là nóng tính.\n\nCũng không oan hoàn toàn.\n\nNhưng nếu gom lại thì có một thứ còn đúng hơn:\n\nkhoảng cách từ\n\n“muốn làm”\n\nđến\n\n“đã làm”\n\ncủa Bạch Dương ngắn một cách đáng ngờ.\n\nNgắn đến mức thành lợi thế.\n\nCũng ngắn đến mức phần suy nghĩ, thương lượng…\n\nvà ba người còn đang đứng phía sau…\n\nđôi khi chưa kịp lên xe.\n\nMà khổ một cái:\n\nđến lúc chiếc xe thật sự gặp chuyện…\n\nai lao vào xử lý đầu tiên?\n\nVẫn Bạch Dương.\n\nVừa sửa vừa kiểu:\n\n“Thấy chưa. Có gì đâu.”\n\nCó.\n\nCó ba người phía sau vừa sống thêm một kiếp.\n\nNên Bạch Dương không thiếu phanh.\n\nHọ chỉ có một cái nút Start quá nhạy.\n\nVà đáng sợ nhất là…\n\nhọ cực kỳ tự hào về nó.\n",
+      "duration_hint_frames": 1288,
+      "entities": [
+        {
+          "id": "C_ARIES",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "neutral",
+          "states": {
+            "neutral": {
+              "asset": "CHAR_C_ARIES_NEUTRAL",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 35,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "reach": {
+              "asset": "CHAR_C_ARIES_REACH",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 35,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "proud": {
+              "asset": "CHAR_C_ARIES_PROUD",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 35,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_A",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "tired",
+          "states": {
+            "tired": {
+              "asset": "CHAR_C_PEER_A_TIRED",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 370,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "facepalm": {
+              "asset": "CHAR_C_PEER_A_FACEPALM",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 370,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            }
+          }
+        },
+        {
+          "id": "C_PEER_B",
+          "kind": "character",
+          "visual_role": "character",
+          "initial_state": "tired",
+          "states": {
+            "tired": {
+              "asset": "CHAR_C_PEER_B_TIRED",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 705,
+                "y": 512,
+                "width": 340,
+                "height": 497
+              }
+            },
+            "slump": {
+              "asset": "CHAR_C_PEER_B_SLUMP",
+              "visible": true,
+              "layer": 20,
+              "transform": {
+                "x": 705,
+                "y": 498,
+                "width": 340,
+                "height": 523
+              }
+            }
+          }
+        },
+        {
+          "id": "A_REPAIR_S05",
+          "kind": "object",
+          "visual_role": "background",
+          "role": "scene_accent",
+          "initial_state": "visible",
+          "states": {
+            "visible": {
+              "asset": "ACC_REPAIR",
+              "visible": true,
+              "layer": 2,
+              "transform": {
+                "x": 690,
+                "y": 250,
+                "width": 280,
+                "height": 340
+              }
+            }
+          }
+        },
+        {
+          "id": "WORDS_S05",
+          "kind": "object",
+          "visual_role": "overlay",
+          "initial_state": "hidden",
+          "states": {
+            "text0": {
+              "asset": "WORDS_S05_0",
+              "visible": true,
+              "layer": 65,
+              "transform": {
+                "x": 70,
+                "y": 1110,
+                "width": 940,
+                "height": 280
+              }
+            },
+            "hidden": {
+              "asset": "WORDS_S05_0",
+              "visible": false,
+              "layer": 65,
+              "transform": {
+                "x": 70,
+                "y": 1110,
+                "width": 940,
+                "height": 280
+              }
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "E_S05_REPAIR",
+          "target": "C_ARIES",
+          "intent": "step back into the problem first",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "ai lao vào xử lý đầu tiên?"
+          },
+          "state_before": "neutral",
+          "state_after": "reach",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S05_FACEPALM",
+          "target": "C_PEER_A",
+          "intent": "Peer covers the face while Aries declares the disruption harmless.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "“Thấy chưa. Có gì đâu.”"
+          },
+          "state_before": "tired",
+          "state_after": "facepalm",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S05_EXHAUSTED",
+          "target": "C_PEER_B",
+          "intent": "The second peer slumps with visible exhaustion, answering the boast without text.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Có ba người phía sau vừa sống thêm một kiếp."
+          },
+          "state_before": "tired",
+          "state_after": "slump",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_WORDS_S05_0",
+          "target": "WORDS_S05",
+          "intent": "reveal story lettering NÚT START QUÁ NHẠY",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "Họ chỉ có một cái nút Start quá nhạy."
+          },
+          "state_before": "hidden",
+          "state_after": "text0",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        },
+        {
+          "id": "E_S05_PROUD",
+          "target": "C_ARIES",
+          "intent": "Aries ends hands on hips with a smug smile while both peers remain drained.",
+          "trigger": {
+            "type": "voice_anchor",
+            "text": "họ cực kỳ tự hào về nó."
+          },
+          "state_before": "reach",
+          "state_after": "proud",
+          "desired_motion": "state_swap",
+          "scheduling": {
+            "max_drift_frames": 8,
+            "merge_policy": "never"
+          }
+        }
+      ],
+      "occlusion_relations": [],
+      "performance_context": {
+        "delivery": "gọn, chắc, không truyền cảm hứng",
+        "energy": 0.62,
+        "emotion": "chốt tỉnh",
+        "pace": "slow",
+        "emphasis": []
+      },
+      "caption_segments": [
+        {
+          "text": "Người ta thấy cái đầu lao lên trước",
+          "start_ms": 0,
+          "end_ms": 2480,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "thì gọi là hiếu thắng.",
+          "start_ms": 2480,
+          "end_ms": 4030,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Thấy câu nói đi thẳng thì gọi là",
+          "start_ms": 4030,
+          "end_ms": 6510,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "cộc. Thấy sự sốt ruột thì gọi là",
+          "start_ms": 6510,
+          "end_ms": 8990,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "nóng tính. Cũng không oan hoàn toàn.",
+          "start_ms": 8990,
+          "end_ms": 11160,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Nhưng nếu gom lại thì có một thứ",
+          "start_ms": 11160,
+          "end_ms": 13640,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "còn đúng hơn: khoảng cách từ “muốn làm”",
+          "start_ms": 13640,
+          "end_ms": 16120,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "đến “đã làm” của Bạch Dương ngắn một",
+          "start_ms": 16120,
+          "end_ms": 18600,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "cách đáng ngờ. Ngắn đến mức thành lợi",
+          "start_ms": 18600,
+          "end_ms": 21080,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "thế. Cũng ngắn đến mức phần suy nghĩ,",
+          "start_ms": 21080,
+          "end_ms": 23560,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "thương lượng… và ba người còn đang đứng",
+          "start_ms": 23560,
+          "end_ms": 26040,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "phía sau… đôi khi chưa kịp lên xe.",
+          "start_ms": 26040,
+          "end_ms": 28520,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Mà khổ một cái:",
+          "start_ms": 28520,
+          "end_ms": 29760,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "đến lúc chiếc xe thật sự gặp chuyện…",
+          "start_ms": 29760,
+          "end_ms": 32240,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "ai lao vào xử lý đầu tiên?",
+          "start_ms": 32240,
+          "end_ms": 34410,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Vẫn Bạch Dương. Vừa sửa vừa kiểu:",
+          "start_ms": 34410,
+          "end_ms": 36580,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "“Thấy chưa. Có gì đâu.” Có.",
+          "start_ms": 36580,
+          "end_ms": 38440,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Có ba người phía sau vừa sống thêm",
+          "start_ms": 38440,
+          "end_ms": 40920,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "một kiếp. Nên Bạch Dương không thiếu phanh.",
+          "start_ms": 40920,
+          "end_ms": 43400,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "Họ chỉ có một cái nút Start quá",
+          "start_ms": 43400,
+          "end_ms": 45880,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "nhạy. Và đáng sợ nhất là…",
+          "start_ms": 45880,
+          "end_ms": 47740,
+          "max_lines": 2,
+          "preferred_breaks": []
+        },
+        {
+          "text": "họ cực kỳ tự hào về nó.",
+          "start_ms": 47740,
+          "end_ms": 49910,
+          "max_lines": 2,
+          "preferred_breaks": []
+        }
+      ],
+      "caption_timing_status": "estimated_not_audio_aligned",
+      "layout_contract": {
+        "canvas": {
+          "width": 1080,
+          "height": 1920
+        },
+        "caption_safe_zone": {
+          "x": 72,
+          "y": 1420,
+          "width": 936,
+          "height": 350
+        },
+        "character_zone": {
+          "x": 24,
+          "y": 360,
+          "width": 1032,
+          "height": 545
+        },
+        "prop_zone": {
+          "x": 100,
+          "y": 930,
+          "width": 880,
+          "height": 340
+        },
+        "effect_zone": {
+          "x": 20,
+          "y": 380,
+          "width": 1040,
+          "height": 510
+        }
+      },
+      "render_density_budget": {
+        "max_characters": 3,
+        "max_prominent_props": 2,
+        "max_prominent_effects": 2
+      }
+    }
+  ]
+}

@@ -23,3 +23,7 @@ The Web distribution **must not activate Phase 2** and must not author Visual In
 
 ## Phase 1 voice-first rule
 Treat user-supplied SRTs and writing references as style sources. Build `voice-profile.json`, preserve the style-only firewall, write narration in the target narrator family on the first draft, and require `voice-fidelity-review.json` PASS before asking for Content Review. Enhancement plugins are optional and must never replace native Evidence, Voice, Narration or review ownership.
+
+## Concept transport to Local Runner
+
+The handoff exporter derives `concept_context` from the source-bound Narrative Plan premise, selected concept ID and Episode Scope. Preserve those source bytes; do not retype a concept from chat or filenames. Local Phase 3 projects the same context into `publish/publish.json` under `source.concept`, which Local Runner displays beside the cover. These metadata fields describe the episode and never grant approval.

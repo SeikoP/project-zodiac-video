@@ -1,0 +1,237 @@
+{
+  "root": "E:\\projects\\project-zodiac-video",
+  "folders": [
+    {
+      "path": ".agents",
+      "bytes": 418,
+      "files": 1,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".claude",
+      "bytes": 29048544,
+      "files": 4779,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".codegraph",
+      "bytes": 88334693,
+      "files": 7,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".git",
+      "bytes": 18493284,
+      "files": 807,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".github",
+      "bytes": 30105,
+      "files": 8,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".plugin-sync",
+      "bytes": 5319056,
+      "files": 485,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".pytest_cache",
+      "bytes": 16202,
+      "files": 5,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".remotion",
+      "bytes": 282143443,
+      "files": 292,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".runtime",
+      "bytes": 99534045,
+      "files": 1804,
+      "complete": true,
+      "links_skipped": 1,
+      "errors": 0
+    },
+    {
+      "path": ".superpowers",
+      "bytes": 558576,
+      "files": 14,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".venv",
+      "bytes": 589822454,
+      "files": 7122,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": ".worktrees",
+      "bytes": 14783311,
+      "files": 1576,
+      "complete": true,
+      "links_skipped": 1,
+      "errors": 0
+    },
+    {
+      "path": ".zodiac-work",
+      "bytes": 3257745967,
+      "files": 68372,
+      "complete": false,
+      "links_skipped": 0,
+      "errors": 4
+    },
+    {
+      "path": "assets",
+      "bytes": 85956045,
+      "files": 23,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "blocked",
+      "bytes": 46958,
+      "files": 5,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "checklist",
+      "bytes": 365252,
+      "files": 7,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "contracts",
+      "bytes": 29546,
+      "files": 9,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "docs",
+      "bytes": 5363450,
+      "files": 137,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "node_modules",
+      "bytes": 282143443,
+      "files": 291,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "phase1-done",
+      "bytes": 25799,
+      "files": 1,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "plugins",
+      "bytes": 308297794,
+      "files": 4232,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "processing",
+      "bytes": 13232138,
+      "files": 575,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "ready",
+      "bytes": 2615163,
+      "files": 19,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "runtime",
+      "bytes": 2080831440,
+      "files": 45054,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "tests",
+      "bytes": 3129385,
+      "files": 271,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "tmp",
+      "bytes": 186161,
+      "files": 3,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "tools",
+      "bytes": 82286289,
+      "files": 4453,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "videos",
+      "bytes": 0,
+      "files": 0,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    },
+    {
+      "path": "zodiac_video_local.egg-info",
+      "bytes": 24982,
+      "files": 6,
+      "complete": true,
+      "links_skipped": 0,
+      "errors": 0
+    }
+  ]
+}

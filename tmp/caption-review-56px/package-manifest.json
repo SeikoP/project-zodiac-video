@@ -1,0 +1,20 @@
+{
+  "format": "zodiac-job@5",
+  "job": {
+    "id": "bachduong-nut-start-qua-nhay",
+    "revision": "1.0"
+  },
+  "contract": {
+    "id": "zodiac-authoring-ir",
+    "version": "1.0.0",
+    "sha256": "d6af8a599324fcf68dd43fb1627a0dc23f9b3db07ba0874eeb8a86e5df1a43c0"
+  },
+  "renderer": {
+    "id": "zodiac-renderer",
+    "version": "2.0.2"
+  },
+  "producer": {
+    "plugin": "zodiac-video-pipeline",
+    "version": "2.9.0"
+  }
+}

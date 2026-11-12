@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {readConceptContext} from '../../features/episode/concept-context.mjs';
 import {validateAnchorLanes} from '../../features/visual-composition/validate-anchor-lanes.mjs';
 import {assertEpisodeIdentity} from '../../features/episode/episode-handoff.mjs';
 import {createHash} from 'node:crypto';
@@ -58,10 +59,8 @@ export function captionSegmentsForScene(voice, supplied) {
   const chunks=[],parts=[];
   for (let i=0;i<words.length;i++) {
     parts.push(words[i]);
-    const natural=/[,;:.!?…]$/u.test(words[i]);
-    const remaining=words.length-i-1;
-    if ((parts.length>=4 && natural && (remaining===0||remaining>=3)) ||
-        ((parts.length>=8 || parts.join(' ').length>=43) && (remaining===0||remaining>=3))) {
+    const natural=/[.!?…][”’"')\]]*$/u.test(words[i]);
+    if (natural && parts.length>=3) {
       chunks.push(parts.splice(0).join(' '));
     }
   }
@@ -190,7 +189,7 @@ export function compileJobV5(source,designMarkdown,{sign,concept,episodeIdentity
   return {ir,designToken,manifest};
 }
 
-export async function compileWorkspace(root,{sign,concept,episodeIdentity,revision='1.0',prune=false}={}){
+export async function compileWorkspace(root,{sign,concept,episodeIdentity,revision='1.0',prune=false,sourceRoot=root}={}){
   const here=path.dirname(fileURLToPath(import.meta.url));
   const schema=JSON.parse(await readFile(path.resolve(here,'../../references/contracts/authoring-ir-v1.schema.json'),'utf8'));
   const source=JSON.parse(await readFile(path.join(root,'production.json'),'utf8'));
@@ -225,7 +224,8 @@ export async function compileWorkspace(root,{sign,concept,episodeIdentity,revisi
   const publishPath=path.join(root,'publish','publish.json');
   const publish=JSON.parse(await readFile(publishPath,'utf8'));
   publish.format='zodiac-publish@1';
-  publish.source={...(isObj(publish.source)?publish.source:{}),narration:'narration.txt',production:'production.ir.json'};
+  const conceptContext=await readConceptContext(sourceRoot);
+  publish.source={...(isObj(publish.source)?publish.source:{}),narration:'narration.txt',production:'production.ir.json',...(conceptContext?{concept:conceptContext}:{})};
   await writeFile(publishPath,JSON.stringify(publish,null,2)+'\n');
   if(prune){await rm(path.join(root,'production.json'),{force:true});await rm(path.join(root,'design.md'),{force:true});}
   return {ir,designToken,manifest,publish};

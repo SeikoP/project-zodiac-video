@@ -27,7 +27,7 @@ class HomeScreen(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(12)
 
-        layout.addWidget(QLabel("ZODIAC STUDIO  /  WORKSPACE", objectName="eyebrow"))
+        layout.addWidget(QLabel("✦ bungmoto  /  LOCAL RUNNER", objectName="eyebrow"))
         title_row = QHBoxLayout()
         title_row.addWidget(QLabel("Công việc video", objectName="pageTitle"), 1)
         self.import_button = QPushButton("Chọn ZIP từ máy…")
@@ -36,13 +36,13 @@ class HomeScreen(QWidget):
         self.import_button.clicked.connect(self.import_requested)
         title_row.addWidget(self.import_button)
         layout.addLayout(title_row)
-        layout.addWidget(QLabel("Nhập gói → Thiết lập → Chạy quy trình → Xem Media", objectName="muted"))
+        layout.addWidget(QLabel("Nhập Job@5 → Kiểm tra môi trường → Tạo video → Xem MP4 & nội dung đăng", objectName="muted"))
         self.operation_status = QLabel("Chọn gói sẵn sàng hoặc mở lại job bên dưới.", objectName="muted")
         self.operation_status.setWordWrap(True)
         self.operation_status.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.operation_status)
 
-        self.ready_frame = QFrame(objectName="workspaceMain")
+        self.ready_frame = QFrame(objectName="surface")
         ready_layout = QVBoxLayout(self.ready_frame)
         ready_layout.setContentsMargins(18, 12, 18, 12)
         ready_layout.setSpacing(8)
@@ -66,7 +66,7 @@ class HomeScreen(QWidget):
         layout.addWidget(self.ready_frame)
         self.set_ready_packages([])
 
-        self.recent_frame = QFrame(objectName="workspaceMain")
+        self.recent_frame = QFrame(objectName="surface")
         recent_layout = QVBoxLayout(self.recent_frame)
         recent_layout.setContentsMargins(18, 14, 18, 14)
         recent_header = QHBoxLayout()
@@ -90,7 +90,7 @@ class HomeScreen(QWidget):
         recent_layout.addLayout(actions)
         layout.addWidget(self.recent_frame, 1)
 
-        self.empty_state = QFrame(objectName="workspaceMain")
+        self.empty_state = QFrame(objectName="surface")
         empty_layout = QVBoxLayout(self.empty_state)
         empty_layout.setContentsMargins(24, 24, 24, 24)
         empty_layout.addStretch(1)

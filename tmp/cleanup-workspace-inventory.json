@@ -1,0 +1,72 @@
+[
+  {
+    "path": ".zodiac-work\\.runtime",
+    "bytes": 1920078,
+    "files": 1,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\episodes",
+    "bytes": 15785904,
+    "files": 1316,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\jobs",
+    "bytes": 0,
+    "files": 0,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\plugin-release-2.6.1",
+    "bytes": 2007296,
+    "files": 595,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\releases",
+    "bytes": 396561,
+    "files": 26,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\reviews",
+    "bytes": 4338181,
+    "files": 445,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\runtimes",
+    "bytes": 2265492350,
+    "files": 60678,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\scripts",
+    "bytes": 69504,
+    "files": 15,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\v2",
+    "bytes": 1040725652,
+    "files": 1897,
+    "errors": 0,
+    "complete": true
+  },
+  {
+    "path": ".zodiac-work\\_archive",
+    "bytes": 794693203,
+    "files": 18211,
+    "errors": 4,
+    "complete": true
+  }
+]

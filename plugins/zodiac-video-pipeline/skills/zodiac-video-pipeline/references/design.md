@@ -41,7 +41,7 @@ Forbidden visual feel:
 Use the full 1080×1920 canvas. No content card. Captions overlay the scene. Never expose Beat/Scene/Panel/Step labels or authoring order.
 
 ## Caption
-Use the exact demo CSS font stack: `"Patrick Hand", "Segoe Print", cursive`. `Patrick Hand` remains the primary family for compatibility; `Segoe Print` and generic `cursive` are explicit runtime fallbacks. Default 84px, preferred 80–90px, minimum 64px, weight 400, max two lines. **Semantic-first pagination only**; prefer a complete spoken sentence when it fits, otherwise split at a natural clause/punctuation boundary. No arbitrary fixed-word slicing.
+Use the exact demo CSS font stack: `"Patrick Hand", "Segoe Print", cursive`. `Patrick Hand` remains the primary family for compatibility; `Segoe Print` and generic `cursive` are explicit runtime fallbacks. Default 56px, preferred 52–60px, minimum 48px, weight 400, max two lines. **Semantic-first pagination only**; prefer a complete spoken sentence when it fits, otherwise split at a natural clause/punctuation boundary. No arbitrary fixed-word slicing.
 
 ## Runtime brand overlay
 Watermark is runtime-owned, never baked into character/environment assets. Canonical overlay is `✦ bungmoto`, top-left, using the same demo CSS font stack as captions. Keep it below subtitles and above ordinary scene art.
@@ -166,8 +166,8 @@ Canonical palette: `#F6F0E6 #FFFDF9 #2F3C44 #5C6B75 #4B5B61 #F1C6A0 #D0C1B3 #8EC
     ],
     "css_font_family": "\"Patrick Hand\", \"Segoe Print\", cursive",
     "font_weight": 400,
-    "font_size_px": 84,
-    "min_font_size_px": 64,
+    "font_size_px": 56,
+    "min_font_size_px": 48,
     "max_lines": 2,
     "color_role": "ink",
     "highlight_role": "coral",

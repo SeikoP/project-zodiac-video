@@ -48,6 +48,15 @@ test('exports deterministic phase1 handoff with source-bound inventory',async()=
   }finally{await rm(root,{recursive:true,force:true})}
 });
 
+test('Web handoff carries the selected concept for downstream local runner',async()=>{
+ const root=await fixture();try{
+ const zip=path.join(root,'handoff-concept.zip');await exportPhase1Handoff(root,zip);
+ const entries=parsePortableZip(await readFile(zip));const handoff=JSON.parse(entries.find(e=>e.rel==='HANDOFF.json').data);
+ assert.equal(handoff.concept,'attention can be misread as commitment');
+ assert.equal(handoff.concept_context.premise,handoff.concept);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('rejects export after phase2 activation',async()=>{
   const root=await fixture();
   try{

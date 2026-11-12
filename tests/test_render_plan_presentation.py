@@ -119,6 +119,17 @@ class RenderPlanPresentationTests(unittest.TestCase):
             "motion_defaults": {"state_swap": {"duration_frames": 8}},
         }
 
+    def test_compact_caption_policy_regroups_legacy_fragments_without_losing_measured_words(self):
+        from tools.control_plane.timeline import _semantic_caption_rows
+        scene={"id":"S1","caption_segments":[{"text":"Một việc chưa bắt đầu mà Bạch"},{"text":"Dương đã thấy chậm."}]}
+        text="Một việc chưa bắt đầu mà Bạch Dương đã thấy chậm."
+        timing={"captions":[{"text":part,"startMs":i*200,"endMs":(i+1)*200} for i,part in enumerate(text.split())]}
+        rows=_semantic_caption_rows(scene,timing,fps=24)
+        self.assertEqual([row["text"] for row in rows],[text])
+        self.assertEqual(len(rows[0]["words"]),len(text.split()))
+        plan=compile_render_plan(self.ir,self.timing,self.design)
+        self.assertEqual(plan["presentation"]["caption"]["font_size_px"],56)
+
     def test_compiler_freezes_layout_captions_and_presentation_for_dumb_renderer(self):
         plan = compile_render_plan(self.ir, self.timing, self.design)
         validate_render_plan(plan, self.ir)

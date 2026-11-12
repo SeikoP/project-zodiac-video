@@ -87,7 +87,7 @@ def select_phase_files(root, tracked, phase):
         name = pending.pop()
         if not name.endswith(".mjs"):
             continue
-        for match in LOCAL_IMPORT.finditer((root / name).read_text()):
+        for match in LOCAL_IMPORT.finditer((root / name).read_text(encoding="utf-8")):
             dependency = posixpath.normpath(
                 posixpath.join(posixpath.dirname(name), match[1]))
             if dependency in candidates and dependency not in selected:
@@ -103,7 +103,7 @@ def validate_dependencies(root, selected):
     for name in sorted(selected):
         if not name.endswith(".mjs"):
             continue
-        for match in local.finditer((root / name).read_text()):
+        for match in local.finditer((root / name).read_text(encoding="utf-8")):
             dependency = posixpath.normpath(posixpath.join(posixpath.dirname(name), match[1]))
             if dependency not in selected:
                 raise ValueError("SOURCE_INTEGRITY_MISMATCH: missing executable dependency " + name + " -> " + dependency)

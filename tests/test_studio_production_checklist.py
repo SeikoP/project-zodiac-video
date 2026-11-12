@@ -280,6 +280,49 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.qt_app.processEvents()
         return screen
 
+    def test_imported_web_concept_and_cover_card_use_the_approved_premise(self):
+        workspace = workspace_fixture(self.root / "web-episode")
+        authoring = workspace / ".authoring"
+        (authoring / "concept-candidates.json").unlink()
+        write_json(authoring / "narrative-plan.json", {"selected_concept_id": "C1", "story_spine": {"premise": "Approved Web premise"}})
+        self.write_config([{"path": str(workspace), "job_id": None}])
+        screen = self.make_screen()
+        self.assertEqual(screen.episode_cards[0]["cover_concept"].text(), "Approved Web premise")
+        self.assertIn("Approved Web premise", screen.episode_cards[0]["concept"].text())
+        before = screen.episode_cards[0]["widget"]
+        screen.set_runner_jobs([])
+        stable = screen.episode_cards[0]["widget"]
+        screen.set_runner_jobs([])
+        self.assertIs(screen.episode_cards[0]["widget"], stable)
+
+    def test_guide_and_discovered_episode_can_be_registered(self):
+        workspace = workspace_fixture(self.config_path.parent / "episodes" / "new-episode")
+        screen = self.make_screen()
+        self.assertIn("dán vào Codex", screen.usage_guide.text())
+        self.assertEqual(screen.discovered_picker.currentData(), str(workspace.resolve()))
+        screen.track_discovered_button.click()
+        self.assertEqual(len(screen.episode_cards), 1)
+        self.assertNotEqual(screen.discovered_picker.currentData(), str(workspace.resolve()))
+        self.assertTrue((workspace / ".authoring" / "pipeline-state.json").exists())
+
+    def test_search_and_attention_filter_do_not_change_tracked_workspaces(self):
+        workspace = workspace_fixture(self.root / "gemini")
+        missing = self.root / "missing"
+        self.write_config([{"path": str(workspace), "job_id": None}, {"path": str(missing), "job_id": None}])
+        original = self.config_path.read_bytes()
+        screen = self.make_screen()
+        self.assertIn("2 tập", screen.overview.text())
+        screen.scope.setCurrentIndex(screen.scope.findData("attention"))
+        self.assertTrue(screen.episode_cards[0]["widget"].isHidden())
+        self.assertFalse(screen.episode_cards[1]["widget"].isHidden())
+        screen.search.setText("no-match")
+        self.assertFalse(screen.empty_label.isHidden())
+        self.assertEqual(self.config_path.read_bytes(), original)
+        screen.scope.setCurrentIndex(0)
+        screen.search.setText("Song Tử")
+        self.assertFalse(screen.episode_cards[0]["widget"].isHidden())
+        self.assertTrue(screen.episode_cards[1]["widget"].isHidden())
+
     def test_registered_rows_show_episode_scope_and_optional_concept(self):
         from PySide6.QtWidgets import QFileDialog
 
@@ -333,12 +376,16 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.assertNotIn("local-job", [picker.itemText(index) for index in range(picker.count())])
         picker.setCurrentIndex(picker.findData("gemini-job"))
         self.qt_app.processEvents()
+        opened = []
+        screen.job_requested.connect(opened.append)
+        screen.episode_cards[0]["open_job_button"].click()
+        self.assertEqual(opened, [str(job5)])
         self.assertEqual(screen.episode_cards[0]["job_combo"].currentData(), "gemini-job")
         self.assertFalse(screen.episode_cards[0]["cover_placeholder"].isVisible())
         pixmap = screen.episode_cards[0]["cover_preview"].pixmap()
         self.assertFalse(pixmap.isNull())
-        self.assertGreaterEqual(pixmap.width(), 290)
-        self.assertGreaterEqual(pixmap.height(), 500)
+        self.assertGreaterEqual(pixmap.width(), 140)
+        self.assertGreaterEqual(pixmap.height(), 250)
         self.assertEqual(pixmap.toImage().pixelColor(0, 0), image.pixelColor(0, 0))
 
         cover_path.unlink()
@@ -365,9 +412,10 @@ class ProductionChecklistScreenTests(unittest.TestCase):
 
         self.assertEqual(screen.series_status_label.text(), "Chưa liên kết series checklist.")
         with patch.object(QFileDialog, "getOpenFileName", return_value=(str(tracker), "JSON (*.json)")):
+            screen.series_group.setChecked(True)
             screen.series_link_button.click()
         self.assertIn("1/12", screen.series_status_label.text())
-        self.assertIn("Song Tử: done", screen.series_signs_label.text())
+        self.assertIn("Song Tử: Hoàn tất", screen.series_signs_label.text())
         self.assertNotIn("phase", screen.series_signs_label.text().lower())
         linked, error = production_checklist.load_checklist_config(self.config_path)
         self.assertIsNone(error)
@@ -381,6 +429,7 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.assertFalse(restarted.cover_visible_check.isChecked())
         self.assertTrue(restarted.episode_cards[0]["cover_card"].isHidden())
         self.assertEqual(restarted.series_status_label.text(), screen.series_status_label.text())
+        restarted.series_group.setChecked(True)
         restarted.series_unlink_button.click()
         self.assertEqual(restarted.series_status_label.text(), "Chưa liên kết series checklist.")
         unlinked, error = production_checklist.load_checklist_config(self.config_path)
@@ -482,9 +531,10 @@ class ProductionChecklistAppTests(unittest.TestCase):
         episode = workspace_fixture(self.root / "authoring" / "gemini")
         app = ZodiacQtApp(workspace=studio_workspace)
 
-        index = app.main_tabs.indexOf(app.checklist)
+        index = app.main_tabs.indexOf(app.library)
         self.assertGreaterEqual(index, 0)
-        self.assertEqual(app.main_tabs.tabText(index), "Checklist sản xuất")
+        self.assertEqual(app.main_tabs.tabText(index), "Kho & tiến độ")
+        self.assertIs(app.library.pages.widget(0), app.checklist)
         self.assertEqual(app.checklist.config_path, studio_workspace.resolve() / "studio-production-checklist.json")
         self.assertNotEqual(app.checklist.config_path, job5 / ".runtime" / "gui-settings.json")
         config = {
@@ -501,7 +551,7 @@ class ProductionChecklistAppTests(unittest.TestCase):
         self.assertNotIn("legacy-job", [picker.itemText(row) for row in range(picker.count())])
 
         (job5 / "package-manifest.json").unlink()
-        app.main_tabs.setCurrentWidget(app.checklist)
+        app.main_tabs.setCurrentWidget(app.library)
         self.qt_app.processEvents()
         self.assertEqual(app.checklist.runner_jobs, [])
         self.assertEqual(app.checklist.episode_cards[0]["job_combo"].currentData(), "gemini-job")

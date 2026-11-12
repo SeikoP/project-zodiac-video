@@ -1,5 +1,6 @@
 // Launch only the renderer's pinned, locally installed Remotion CLI.
 // Never let npx silently fetch a different version from npm.
+import {resolveBrowserExecutable} from './browser-cache.mjs';
 import {readFile,stat} from "node:fs/promises";
 import {spawnSync} from "node:child_process";
 import {dirname,isAbsolute,relative,resolve} from "node:path";
@@ -81,7 +82,13 @@ export const probePinnedRemotionCli = async (rendererDir = RENDERER_DIR, opts={}
 export const runPinnedRemotionCli = async (args, opts={}) => {
   const cli=await findPinnedRemotionCli(opts.rendererDir);
   const run=opts.spawn??spawnSync;
-  const result=run(process.execPath,[cli.entry,...args],{
+  let cliArgs=args;
+  if(!opts.spawn && ['render','still','compositions','benchmark'].includes(args[0]) && !args.some(x=>x.startsWith('--browser-executable'))){
+    const browser=await resolveBrowserExecutable();
+    console.info('REMOTION_BROWSER_CACHE path='+browser);
+    cliArgs=[...args,'--browser-executable='+browser];
+  }
+  const result=run(process.execPath,[cli.entry,...cliArgs],{
     cwd:cli.rendererDir,stdio:"inherit",windowsHide:true
   });
   if(result.error)throw Object.assign(new Error("Remotion CLI failed to start: "+result.error.message),{code:"RENDERER_CLI_LAUNCH_FAILED"});

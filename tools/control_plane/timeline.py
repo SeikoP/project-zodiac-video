@@ -103,6 +103,17 @@ def _semantic_caption_rows(scene: dict[str, Any], timing_scene: dict[str, Any], 
         for phrase in caption_scene_text(joined).split(separator)
         if phrase.strip()
     ]
+    # Old producer packages split at eight words, including inside sign names.
+    # Rejoin those fragments; browser measurement paginates only if a sentence cannot fit.
+    sentences, current = [], []
+    for part in " ".join(segment["text"] for segment in segments).split():
+        current.append(part)
+        if re.search(r"[.!?…][”’\"')\]]*$", part):
+            sentences.append({"text": " ".join(current)})
+            current = []
+    if current:
+        sentences.append({"text": " ".join(current)})
+    segments = sentences
     wanted = [w for segment in segments for w in words(segment["text"])]
     if wanted != [token[0] for token in tokens]:
         raise ControlPlaneError(code="CAPTION_ALIGNMENT_MISMATCH", stage="PLAN",
@@ -153,7 +164,7 @@ def _presentation(design_token: dict[str, Any]) -> dict[str, Any]:
         "ink": str(palette.get("ink") or "#111111"),
         "caption": {
             "font_family": str(caption.get("font_family") or "sans-serif"),
-            "font_size_px": int(caption.get("font_size_px") or 84),
+            "font_size_px": min(int(caption.get("font_size_px") or 56), 56),
             "font_weight": int(caption.get("font_weight") or 400),
             "max_lines": int(caption.get("max_lines") or 2),
             "color": str(palette.get(color_role) or palette.get("ink") or "#111111"),

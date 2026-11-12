@@ -1,0 +1,114 @@
+{
+  "version": "1.5",
+  "platform": "tiktok",
+  "cover": {
+    "layout": "tilted_top_hook",
+    "identity": {
+      "sign_id": "aries",
+      "label": "BẠCH DƯƠNG",
+      "glyph": "♈"
+    },
+    "hook": "CHƯA BẮT ĐẦU MÀ ĐÃ THẤY CHẬM?",
+    "source_scene_id": "S04",
+    "visuals": [
+      {
+        "entity_id": "C_ARIES",
+        "state_id": "run"
+      },
+      {
+        "entity_id": "NV_START",
+        "state_id": "visible"
+      },
+      {
+        "entity_id": "A_TRACK_S04",
+        "state_id": "visible"
+      }
+    ],
+    "visual_decisions": {
+      "actors": {
+        "decision": "use",
+        "entity_ids": [
+          "C_ARIES"
+        ],
+        "reason": "Lead expression and forward motion are the recognizable sign behavior."
+      },
+      "narrative_visual": {
+        "decision": "use",
+        "entity_ids": [
+          "NV_START"
+        ],
+        "reason": "The starting line is the decisive metaphor for self-generated competition."
+      },
+      "prop": {
+        "decision": "omit",
+        "reason": "S04 has no physical prop; adding one would confuse the internal-race metaphor."
+      },
+      "scene_accent": {
+        "decision": "use",
+        "entity_ids": [
+          "A_TRACK_S04"
+        ],
+        "reason": "The track cue supplies minimal situational context behind the decisive Narrative Visual."
+      },
+      "effect": {
+        "decision": "omit",
+        "reason": "No effect is needed because the starting-line state change already carries the reveal."
+      }
+    },
+    "opening": {
+      "enabled": true,
+      "duration_sec": 0.75,
+      "transition_sec": 0.2
+    },
+    "design": {
+      "version": "zodiac-cover-design@2",
+      "style_token": "zodiac-paper-doodle-meme-v4",
+      "canvas": {
+        "width": 1080,
+        "height": 1920
+      },
+      "title_frame": {
+        "shape": "crooked-paper-note",
+        "fill_role": "card",
+        "stroke_role": "ink",
+        "shadow_role": "soft_shadow",
+        "shadow_dx_px": 3,
+        "shadow_dy_px": 6,
+        "shadow_opacity": 0.3,
+        "font_family": "Patrick Hand",
+        "max_lines": 3
+      },
+      "composition": {
+        "hero_scale": 0.86,
+        "supporting_prop_scale": 0.8,
+        "read_order": [
+          "hook",
+          "identity",
+          "character_story_object"
+        ],
+        "max_supporting_accents": 1,
+        "min_side_margin_px": 72,
+        "background_policy": "preserve-native-environment"
+      }
+    }
+  },
+  "title": "Bạch Dương: vì sao luôn hành động trước khi cả nhóm kịp chốt?",
+  "caption": "Không ai thi với Bạch Dương cả. Nhưng chỉ cần thấy một việc chưa xong, trong đầu họ đã mọc ra vạch xuất phát. Bạn có quen ai như vậy không?",
+  "hashtags": [
+    "#BachDuong",
+    "#CungHoangDao",
+    "#TinhCachBachDuong",
+    "#GiaiMaTinhCach",
+    "#ChiemTinh",
+    "#HanhDongQuaNhanh",
+    "#bungmoto"
+  ],
+  "retention": {
+    "payoff_evidence_excerpt": "Họ chỉ có một cái nút Start quá nhạy."
+  },
+  "source": {
+    "narration": "narration.txt",
+    "production": "production.ir.json"
+  },
+  "format": "zodiac-publish@1"
+}

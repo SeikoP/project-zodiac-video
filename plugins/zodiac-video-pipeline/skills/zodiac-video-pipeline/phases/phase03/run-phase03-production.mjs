@@ -64,7 +64,7 @@ export async function runPhase03Production({sourceRoot,outputDir,sign,concept,ep
   const nativeReceipts=[];const releaseRun=randomUUID();
   const recordValidator=(capability_id,tool,args)=>{const rel='phase03-validator-'+releaseRun+'-'+capability_id+'.json',receipt=path.join(approved,'.authoring',rel);const run=spawnSync(process.execPath,[path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../core/evidence/run-validator-with-receipt.mjs'),capability_id,receipt,path.resolve(path.dirname(fileURLToPath(import.meta.url)),tool),...args],{encoding:'utf8',timeout:60000});if(run.status!==0)throw Error('PHASE03_NATIVE_VALIDATOR_FAILED '+capability_id+' '+run.stderr);nativeReceipts.push({capability_id,receipt_path:rel});};
   const identityFile=path.join(scratch,'episode-identity.json');if(episodeIdentity){const {writeFile}=await import('node:fs/promises');await writeFile(identityFile,JSON.stringify(episodeIdentity));}
-  const {ir}=await compileWorkspace(stage,{sign,concept,episodeIdentity,revision,prune:true});
+  const {ir}=await compileWorkspace(stage,{sign,concept,episodeIdentity,revision,prune:true,sourceRoot:approved});
   recordValidator('handoff_v2_workspace_validation','validate-handoff-workspace-v2.mjs',[stage]);await validateHandoffV2(stage); // schema, manifest/hash, asset set, fonts, visual-role size, captions
   await validateJob5Workspace(stage); // runner pre-import anchor semantics
   const p1=lintSemanticAnimation(ir).filter(x=>x.severity==='P1');

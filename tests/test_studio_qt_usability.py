@@ -14,6 +14,59 @@ from tools.studio_qt.publish_copy import publish_text_for_job
 
 
 class WorkbenchUsabilityTests(unittest.TestCase):
+    def test_media_reads_transported_concept_and_does_not_rebuild_unchanged_jobs(self):
+        from tools.studio_qt.screens.media import MediaWorkspace
+        with tempfile.TemporaryDirectory() as temp:
+            job = Path(temp) / "episode"
+            (job / "out").mkdir(parents=True)
+            (job / "publish").mkdir()
+            (job / "publish" / "publish.json").write_text(json.dumps({"source": {"concept": {"format": "zodiac-concept-context@1", "premise": "Source premise"}}}), encoding="utf-8")
+            w = MediaWorkspace()
+            jobs = [{"group": "Job@5", "name": "episode", "path": str(job), "out_path": str(job / "out")}]
+            w.set_jobs(jobs)
+            self.assertIn("Source premise", w.concept_label.text())
+            with patch.object(w, "_job_changed") as changed:
+                w.set_jobs(jobs)
+                changed.assert_not_called()
+            w.close()
+
+    def test_overview_exposes_progress_output_and_cancelled_state(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        w = WorkbenchScreen()
+        w.set_rows([{"step": "PACKAGE", "status": "DONE"},
+                    {"step": "VOICE", "status": "CANCELLED"}])
+        self.assertEqual(w.pipeline_progress_bar.value(), 50)
+        self.assertIn("Đã dừng", w.status_label.text())
+        for widget in (w.pipeline_progress_bar, w.pipeline_progress_label,
+                       w.pipeline_detail, w.output_summary):
+            self.assertFalse(widget.isHidden())
+        w.set_rows([{"step": "OUTPUT", "status": "DONE"}])
+        self.assertIn("Các bước đã kết thúc", w.status_label.text())
+        self.assertIn("Chưa có video", w.output_summary.text())
+        w.close()
+
+    def test_completed_steps_without_video_open_media_for_inspection(self):
+        from tools.studio_qt.app import ZodiacQtApp
+        with tempfile.TemporaryDirectory() as temp:
+            window = ZodiacQtApp(workspace=Path(temp))
+            with patch.object(window, "_pipeline_rows", return_value=[{"status": "DONE"}]), \
+                 patch.object(window, "_active_video", return_value=None), \
+                 patch.object(window, "_open_output") as opened, \
+                 patch.object(window, "_start") as start:
+                window._continue_workflow()
+                opened.assert_called_once_with("media")
+                start.assert_not_called()
+            window.close()
+
+    def test_log_count_respects_filter_when_appending(self):
+        from tools.studio_qt.screens.workbench import WorkbenchScreen
+        w = WorkbenchScreen()
+        w.log_filter.setCurrentIndex(w.log_filter.findData("error"))
+        w.append_activity("ordinary", channel="info")
+        w.append_activity("failed", channel="error")
+        self.assertEqual(w.log_count.text(), "1 hiện / 2 tổng")
+        w.close()
+
     def test_media_position_updates_do_not_seek_and_keyboard_changes_do(self):
         from tools.studio_qt.screens.media import MediaWorkspace
         media = MediaWorkspace()

@@ -58,13 +58,13 @@ class QtLauncherTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_obsidian_theme_keeps_focus_and_status_labels_visible(self):
+    def test_channel_theme_keeps_focus_and_status_labels_visible(self):
         from tools.studio_qt.theme import stylesheet
 
         style = stylesheet()
 
-        self.assertIn("#121516", style)
-        self.assertIn("#C6A76A", style)
+        self.assertIn("#F6F0E6", style)
+        self.assertIn("#8EC0B9", style)
         self.assertIn(":focus", style)
         self.assertIn("stageStatus=", style)
 
@@ -299,7 +299,7 @@ class TaskWorkbenchTests(unittest.TestCase):
             window = ZodiacQtApp(workspace=Path(workspace))
             self.qt_app.processEvents()
             self.assertIs(window.stack.currentWidget(), window.home)
-            self.assertEqual(window.windowTitle(), "Zodiac Studio · Task Workbench")
+            self.assertEqual(window.windowTitle(), "bungmoto · Zodiac Local Runner")
             self.assertEqual(len(window._shortcuts), 5)
             window.close()
 
@@ -310,10 +310,10 @@ class TaskWorkbenchTests(unittest.TestCase):
             window = ZodiacQtApp(workspace=Path(workspace))
             self.assertEqual(
                 [window.main_tabs.tabText(index) for index in range(window.main_tabs.count())],
-                ["Công việc / Workspace", "Kho", "Media", "Checklist sản xuất"],
+                ["Công việc / Workspace", "Kho & tiến độ", "Media"],
             )
             self.assertIs(window.main_tabs.widget(0), window.stack)
-            self.assertIs(window.main_tabs.widget(3), window.checklist)
+            self.assertIs(window.library.pages.widget(0), window.checklist)
             window.close()
 
     def test_closed_qt_window_releases_multimedia_children(self):

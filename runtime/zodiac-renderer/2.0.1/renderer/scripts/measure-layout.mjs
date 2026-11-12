@@ -1,5 +1,6 @@
+import {resolveBrowserExecutable} from './browser-cache.mjs';
 import {createRequire} from 'node:module';
-import {resolveCaptionLayout} from '../src/caption-layout.mjs';
+import {paginateCaption} from '../src/caption-layout.mjs';
 
 export async function measurePlanLayout(plan) {
   if (!plan.scenes.some(s=>s.captions?.length)) return plan;
@@ -7,7 +8,7 @@ export async function measurePlanLayout(plan) {
   const require=createRequire(import.meta.url);
   const cliRequire=createRequire(require.resolve('@remotion/cli/package.json'));
   const {openBrowser}=cliRequire('@remotion/renderer');
-  const browser=await openBrowser('chrome',{logLevel:'error'});
+  const browser=await openBrowser('chrome',{logLevel:'error',browserExecutable:await resolveBrowserExecutable()});
   try {
     const page=await browser.newPage({context:()=>null,logLevel:'error',indent:false,pageIndex:0,onBrowserLog:null,onLog:()=>{}});
     const measurements=await page.evaluate(async ({assets,presentation,scenes})=>{
@@ -38,18 +39,19 @@ export async function measurePlanLayout(plan) {
       }
       for(const scene of scenes) for(const c of scene.captions??[]) for(const paragraph of c.text.split('\n')) {
         const words=paragraph.split(/\s+/).filter(Boolean);
-        for(let a=0;a<words.length;a++) for(let b=a+1;b<=words.length;b++) {const text=words.slice(a,b).join(' ');widths[text]=ctx.measureText(text).width;}
+        for(let a=0;a<words.length;a++) for(let b=a+1;b<=words.length;b++) {const text=words.slice(a,b).join(' ');const metrics=ctx.measureText(text);widths[text]=metrics.width;inkHeights[text]=metrics.actualBoundingBoxAscent+metrics.actualBoundingBoxDescent;}
       }
       return {bounds,widths,inkHeights};
     },{assets:plan.assets,presentation:plan.presentation??{},scenes:plan.scenes});
     for(const [id,bounds] of Object.entries(measurements.bounds)) Object.assign(plan.assets[id],bounds);
-    for(const scene of plan.scenes) for(const caption of scene.captions??[]) {
-      try {caption.resolved_layout=resolveCaptionLayout(scene,plan.presentation,plan.video,caption.text,text=>measurements.widths[text]??0);}
-      catch(error) {throw new Error(`${error.message} frame=${caption.start_frame}`);}
+    for(const scene of plan.scenes) {
+      scene.captions=(scene.captions??[]).flatMap(caption=>paginateCaption(scene,plan.presentation,plan.video,caption,text=>measurements.widths[text]??0));
+      for(const caption of scene.captions) {
       const {zone,lines}=caption.resolved_layout;
       // Accented glyphs can extend past the CSS line box; collision QC includes this padding.
       if(measurements.inkHeights[caption.text]>zone.fontSize*zone.lineHeight+2*zone.padding)
         throw new Error(`CAPTION_OVERFLOW scene=${scene.id} frame=${caption.start_frame} actual_lines=${lines.length} max_lines=${zone.maxLines} ink_height=${measurements.inkHeights[caption.text]} line_height_px=${zone.fontSize*zone.lineHeight}`);
+    }
     }
     return plan;
   } finally {await browser.close({silent:true});}
