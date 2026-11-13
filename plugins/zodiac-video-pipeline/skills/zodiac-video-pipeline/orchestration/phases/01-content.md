@@ -35,23 +35,26 @@ Build one coherent Story Spine with:
 - escalation rather than repeated trait listing;
 - at least one reframe/reveal;
 - a payoff that changes how the opening is understood;
+- a **Narrative Motif** chosen before prose for story-driven concepts, with setup, friction, turn, payoff/callback and a removal test;
+- a **second-half pulse** that specifies how post-midpoint beats keep moving through action, decision, consequence, contrast, reframe or payoff;
 - optional narrative-visual direction only when a concrete image is central to the story.
 
-Do not pre-design Phase-2 scenes or assets.
+A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not Phase-2 Visual Metaphor/Story Object authoring. Do not pre-design Phase-2 scenes or assets.
 
 ### Narration
 
-Draft from the selected concept, Story Spine and Voice Profile. Optimize for:
+Draft from the selected concept, Story Spine, Narrative Motif when present, second-half pulse and Voice Profile. Optimize for:
 - specificity;
 - spoken naturalness;
 - contrast and surprise;
 - semantic progression;
 - recognizable zodiac identity;
-- a finish that lands rather than fades.
+- post-midpoint movement instead of explanation plateaus;
+- a finish that lands through payoff/callback rather than fades.
 
 Do not write to pass a validator. Editorial review happens after a real draft exists.
 
-There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one.
+There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 
 ## Content Review
 
