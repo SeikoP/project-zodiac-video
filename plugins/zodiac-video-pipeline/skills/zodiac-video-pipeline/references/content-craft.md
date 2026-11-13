@@ -77,3 +77,18 @@ Engagement Design may include `narrative_archetype` when story mechanics support
 The writer receives only the compiled `narrative_mode` direction: behavior mechanics, visual grammar, viewer-inference target, labels not to say, and comment affordance. Never pass raw comments, usernames, handles or audience-profile data into the writer brief.
 
 The target label is intentionally withheld when `explicitness=implicit`. The goal is not “tell viewers Scorpio is a detective”; the goal is “make the behavior so detective-like that viewers say it first.”
+
+## Story engine before prose
+
+A concept is not ready merely because its thesis is accurate. Before Narrative Design, ask whether the viewer has a reason to watch the idea **unfold**.
+
+Reject or rebuild a premise when:
+- the hook already reveals the whole conclusion;
+- the middle can only add parallel examples;
+- escalation changes nouns but not pressure, consequence or interpretation;
+- the payoff merely restates the opening;
+- the same premise survives a sign swap with only labels changed.
+
+For story-driven concepts, choose one Phase-1 Narrative Motif and define its progression before drafting. The motif should expose the sign mechanism under changing pressure, not decorate the script. See `narrative-motif.md`.
+
+Humor should attach to conflict, workaround, contradiction, narrator reaction or motif state. A joke that could be moved anywhere without changing the story is usually filler.
