@@ -32,6 +32,15 @@ export async function buildPhase1HandoffManifest(workspace){
  const review=JSON.parse(payload.find(x=>x.rel==='content-review-receipt.json').data);
  if(review.status!=='APPROVED'||review.phase_id!=='01-content'||review.proof?.kind!=='user_message'||!String(review.proof?.ref??'').trim())throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_INVALID');
  if(typeof review.proof.text!=='string')throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_TEXT_REQUIRED');
+ const source_hashes={
+  narration:sha256(payload.find(x=>x.rel==='narration.txt').data),
+  plan:sha256(payload.find(x=>x.rel==='narrative-plan.json').data),
+  scope:sha256(payload.find(x=>x.rel==='episode-scope.json').data),
+  brief:sha256(payload.find(x=>x.rel==='writer-brief.json').data),
+  voice:sha256(payload.find(x=>x.rel==='voice-profile.json').data)
+ };
+ const normalizedReview={...review,source_hashes};
+ payload.find(x=>x.rel==='content-review-receipt.json').data=Buffer.from(JSON.stringify(normalizedReview,null,2)+'\n');
  const scope=JSON.parse(payload.find(x=>x.rel==='episode-scope.json').data);
  const plan=JSON.parse(payload.find(x=>x.rel==='narrative-plan.json').data);
  const runId=String(review.run_id??scope.run_id??scope.episode_id??'').trim();
@@ -44,7 +53,7 @@ export async function buildPhase1HandoffManifest(workspace){
   plugin_version:plugin.version,phase:'01-content',phase_status:'PASS',
   sign:scope.sign??scope.member_ids??null,concept:context?.premise??scope.concept??scope.title_working??scope.title??null,
   ...(context?{concept_context:context}:{}),
-  content_review:review,inventory,not_an_approval:true
+  content_review:normalizedReview,inventory,not_an_approval:true
  });
  return {manifest,payload,inventory};
 }
