@@ -24,16 +24,21 @@ def _canonical_eligible(rel: Path) -> bool:
     return len(parts)>=3 and parts[0]=="skills" and parts[1]=="zodiac-video-pipeline" and parts[2] in CANONICAL_ROOTS
 
 def _manifest(canonical: dict, config: dict) -> tuple[dict,dict]:
+    interface=dict(config["interface"])
+    if config.get("display_version"):
+        prefix=f"v{canonical['version']} | "
+        short=str(interface.get("shortDescription", "")).strip()
+        if not short.startswith(prefix): interface["shortDescription"]=prefix+short
     plugin={
         "$schema":canonical.get("$schema"),
         "author":canonical.get("author",{"name":"Personal"}),
         "description":config["description"],
-        "extensions":{"com.openai":{"interface":config["interface"]}},
+        "extensions":{"com.openai":{"interface":interface}},
         "name":config["name"],
         "version":canonical["version"],
     }
     codex={
-        "interface":config["interface"],"name":config["name"],"version":canonical["version"],
+        "interface":interface,"name":config["name"],"version":canonical["version"],
         "description":config["description"],"author":canonical.get("author",{"name":"Personal"}),
         "keywords":[],"skills":"./skills",
     }

@@ -4,6 +4,7 @@
   "description": "Zodiac local Phase 2-3 producer with automatic phase1-done bootstrap.",
   "entry_skill": "skills/zodiac-video-local/SKILL.md",
   "include_humanizer": false,
+  "display_version": true,
   "interface": {
     "capabilities": [
       "Interactive"

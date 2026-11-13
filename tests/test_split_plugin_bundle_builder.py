@@ -38,6 +38,7 @@ class SplitPluginBundleTests(unittest.TestCase):
                 names = set(z.namelist())
                 manifest = json.loads(z.read("plugin.json"))
                 self.assertEqual(manifest["name"], "zodiac-video-local")
+                self.assertTrue(manifest["extensions"]["com.openai"]["interface"]["shortDescription"].startswith(f"v{manifest['version']} | "))
                 self.assertIn("skills/zodiac-video-local/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-web/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
