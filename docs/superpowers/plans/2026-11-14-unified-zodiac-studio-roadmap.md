@@ -21,6 +21,8 @@
 - Voice Lab is a first-class stage **before** visual authoring; generated TTS prosody metadata is not evidence of actual audible delivery.
 - Only genuine user actions can grant human voice, visual or publish approval. Technical PASS, compatibility migration and approval are separate evidence classes.
 - The only fresh visual authoring owner is `.authoring/visual-intent.json` (`zodiac-visual-intent@1`); `production.json` / render plans and previews are derived.
+- The V4 compiler must be maintained as **one modular build/quality system**, not copied into HyperFrames or rewritten from scratch: source-bound dependencies, incremental assets/scenes/previews, deterministic receipts, full review gates and rollback. The detailed contract is [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
+- The HyperFrames **renderer** is a separate Phase 7 benchmark decision from the HyperFrames **editor**. Static state-frame + FFmpeg export is an experimental fast path, not an assumed correct replacement for dynamic caption/voice timing.
 - Keep V4 Character Assembly, meme/prop/environment compilers, genuine Visual Review and source-bound validation; no revival of retired fresh Scene Sets. Narrative Visual is scene-authored and mutually exclusive with Story Text in one scene.
 - No full-featured animation editor: hold, cut, state swap, show/hide, and only justified simple fades/slides/zoom. Image/story legibility and voice timing come first.
 - Keep `VoiceArtifactStore`, scene/timing cache, semantic dirty graph, artifact graph, Job@5 import/export, reversible archive restore and pinned Remotion runtime until real parity tests authorize retirement.
@@ -29,7 +31,7 @@
 
 ## Phase sizing rule: medium, reviewable vertical slices
 
-- **Seven phases, 3 independently reviewable tasks each**, except Phase 0 which has 4 contract-level tasks. A task crosses UI/domain/testing layers when necessary to deliver observable behavior; don't split by each button/file.
+- **Eight medium-sized phases, ~3 reviewable tasks each**, except Phase 0 and the dedicated Compiler Phase 3 (4 tasks each). Do not create a giant compiler rewrite or dozens of micro-PRs. A task crosses UI/domain/testing layers when necessary to deliver observable behavior; don't split by each button/file.
 - Each phase delivers **one user-verifiable outcome**, including real backend wiring and a replayable smoke test. A screen that only displays a mock is NOT phase completion.
 - One agent takes one work task from `READY` to `TESTED`. Each task must include schema/contract, source owner, implementation files, tests, positive and negative behaviors, migration/rollback, committed evidence.
 - Agent receives a **small scope capsule**, not the full repository context. It cannot mark its task DONE without actual test receipts and a reviewer verdict.
@@ -41,7 +43,7 @@
 
 **Deliverable:** the Studio-native backend can safely register/open a verified Phase 1 episode, persist one project identity and report *real* status without importing Job@5 as a fake precondition.
 
-- **0.1** Baseline/compatibility fixture and ownership map: approved Phase 1 v2, representative V4 episode/asset, Job@5 legacy, voice take, checklist, archive; capture existing regression commands.
+- **0.1** Baseline/compatibility fixture and ownership map: approved Phase 1 v2, representative V4 episode/asset, Job@5 legacy, voice take, checklist, archive; **freeze compiler/validator/preview owners and quality golden frames, profile cold/warm/single-scene-edit and retries separately from agent/render time**. Capture commands and evidence; don't assume the historical 19–21s native last-receipt sums are a complete wall-time baseline.
 - **0.2** Phase 1 importer and durable project identity: source byte freeze, immutable receipt/hash verification, idempotent reopen, malformed/untrusted input isolation.
 - **0.3** Single project ledger/event/command boundary: durable monotonically ordered project events, revision checks, idempotent commands and restart recovery; reuse existing state/artifact primitives, no second Visual Intent writer.
 - **0.4** Phase status/evidence and anti-omission gate: derived status from receipts, source hashes and exact output provenance; `BLOCKED` on missing evidence; no automatic human approval.
@@ -68,45 +70,56 @@
 
 **Gate P2:** real VieNeu synthesis and human listening test on representative Vietnamese punchline; choose a different take only for the affected speech unit, keep old take and unaffected audio; no fake prosody verification; measurable caption/voice alignment; ASR error routes to review, not silent source rewrite.
 
-## 3 — Embedded HyperFrames scene editor (S01 → full episode)
+## 3 — Compiler VNext: modular compilation, speed and visual quality
 
-**Deliverable:** Agent authors Visual Intent, V4 compilers produce real assets, a scene appears in the **same Zodiac window**, and SDK edits round-trip into canonical source with a fresh preview.
+**Deliverable:** V4 Visual Intent is compiled through ONE documented and versioned core with stable source hashes, bounded scene/asset rebuilds, on-demand preview, validated quality and reproducible performance evidence. It remains compatible with current Phase 2 scripts and Job@5. This is a standalone engineering phase, not an appendix to the editor.
 
-- **3.1** Visual Intent ↔ HyperFrames presentation/source-map for real V4 SVG, scene IDs, actor states, props, context accents and simple timeline/captions; use existing compilers, correct UTF-8 narration ranges and P2 measured anchors.
-- **3.2** UI scene editor + agent semantic commands: move/scale actor, choose state, place props, set/show/hide events; command commit, optimistic concurrency, undo and guaranteed invalidation of dependent previews, no direct edit of generated HTML/plan.
-- **3.3** Progressive preview/review: S01 before remaining scenes done, captions, phone-safe positions, Narrative Visual vs Story Text invariant, validator receipts, genuine Visual Review gate; preview and final renderer fidelity declared clearly.
+- **3.1** Consolidate the *compiler interface/ownership* with pure Visual Intent→assets→scene graph stages and legacy script adapters; freeze existing actor/pose/expression/meme/scene/event semantics as golden fixtures. No duplicate catalogs and no automatic narration edits.
+- **3.2** Reuse and unify existing `phase02-semantic-cache.mjs`, `incremental-cache.mjs`, selected dependency graph and `native-scene-executor.mjs`; remove avoidable full-tree hashing and process startups **only when benchmarked**. Keep exact source/dependency/output SHA validation and transactional rollback.
+- **3.3** On-demand single-scene/one-frame compilation for the editor plus native progressive visual QA: readable prop/face/layers/captions, event-before/after meaning, Narrative Visual vs Story Text, real voice anchors and preview/export parity; preserve actual user Visual Review.
+- **3.4** Repeat cold/warm/one-scene/actor-change performance benchmarks and quality regressions, report actual agent/native/preview/render intervals, document extension API for new characters/props/effects and fallback/rollback. See [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
 
-**Gate P3:** one real episode S01 with native actor/prop/meme reaction, voice-anchored timing and caption; agent edit visible to user without ZIP/full render; crash/reopen preserves source edits; unsupported SDK ops rejected; old compiled V4 and approved narration unaffected. Remotion continues final-render fallback.
+**Gate P3:** real Libra/Gemini/Scorpio narrative fixtures and an audio-synced scene compile with no missing actor, prop, meme or event; unchanged and single-scene edit reuse independently verified; negative tamper/missing-asset tests block; Windows CPU/RAM/disk timing evidence available; old outputs still reproducible; no fabricated human approvals. No claim of universal speedup without measured baseline.
 
-## 4 — Real V4 asset gallery within Studio
+## 4 — Embedded HyperFrames scene editor (S01 → full episode)
 
-**Deliverable:** browse/inspect/choose **real previews of selectable components** and selected variants, all inside Zodiac; agent can query same catalog.
+**Deliverable:** a scene backed by the P3 compiler appears in the **same Zodiac window**, and SDK edits round-trip into Visual Intent with a fresh scoped preview.
 
-- **4.1** Index current V4 catalog IDs/roles/status/refs as read-through adapters, not another manually curated library; retire/hide legacy assets correctly.
-- **4.2** Embed existing character identity and native asset preview compilers into thumbnail grid with lazy generation and bounded disk/memory cache; meme before/after and physical prop/context preview included.
-- **4.3** Selected asset → Scene intent update with compatibility/provenance validation, linked scene usage, invalidation and undo; agent asset.search/select accesses identical indexed surface.
+- **4.1** Visual Intent ↔ HyperFrames visual source map, scene IDs, actual V4 SVG elements and P2 measured speech anchors; HyperFrames DOM is a derived view, not a new Zodiac authoring schema.
+- **4.2** UI scene editor + agent semantic commands: move/scale actor, choose state, place props, show/hide/swap actions; command commit, optimistic concurrency, undo and correct P3 dirty-closure invalidation. Unsupported SDK override is rejected.
+- **4.3** S01 preview → edit → re-preview with existing real V4 props/meme/caption/speech, geometry and source-bound validation; true Visual Review gate before finishing all scenes. No full ZIP or MP4 needed merely to view one scene.
 
-**Gate P4:** manually preview body, hair, outfit, pose, face, prop, accent, meme before/after, select a compatible asset for S01 and see it in preview; invalid/retired selected asset is blocked. No eager explosion of all possible character combinations.
+**Gate P4:** one real V4 episode S01 with setup/reaction/voice reveal renders correctly inside Zodiac; agent edit visible without a second GUI; crash/reopen retains source; preview matches reviewed scene within declared tolerances; approved narration unaffected.
 
-## 5 — Concept × 12, episode library and packages
+## 5 — Real V4 asset gallery within Studio
 
-**Deliverable:** Studio shows all approved/planned/produced/published work, with accurate concept×sign coverage and safe ZIP/MP4/cover/voice discovery.
+**Deliverable:** browse/inspect/select **real compiled and thumbnailed V4 components** and selected variants, all inside Zodiac, with the agent seeing the same registry.
 
-- **5.1** Merge existing checklist/series tracker/planned concepts into one indexed concept×sign×episode projection using evidence. Unknown != done; single- vs multi-sign scopes are distinct.
-- **5.2** Episode browser with progress/review blockers/cover, videos, voice selection, workspace and actual package state. No duplicate manual tracker or user-entered “done” when receipts exist.
-- **5.3** Packages/media scanner, publish artifact history, provenance and safe archive/restore. Import old Job@5; preserve the last good export and file-system safety.
+- **5.1** Index current V4 IDs/roles/status/version/ref and actual usage as read-through compiler adapters, not a manually duplicated library.
+- **5.2** Reuse character identity compilation and native meme before/after preview; use resvg-js *if benchmarked and needed* for thumbnails, lazy render/cache to bound RAM/disk; include hair, body, outfit, face, pose, prop and context.
+- **5.3** Selected asset → safe canonical scene edit with provenance/compatibility, preview refresh, usage links and undo; no cross-product eager asset generation.
 
-**Gate P5:** one concept shows correct 12-sign coverage and two multi-sign/single-sign cases, correctly separates Phase 1 approved vs video exported vs published; a legacy ZIP and a current Studio project appear exactly once; archive+restore round-trip does not delete approved assets.
+**Gate P5:** body/hair/outfit/pose/face/physical prop/context/meme previews display from the real compiler and can be selected in S01; retired/incompatible assets are blocked; single-asset edit invalidates only dependent scenes.
 
-## 6 — Full E2E, export and legacy retirement gate
+## 6 — Concept × 12, episode library and packages
 
-**Deliverable:** one real episode travels Phase 1 → approved audio → actual V4 scenes → Visual Review → MP4, cover, captions, copy and optional Job@5 ZIP, with no manual app switching.
+**Deliverable:** one truthful concept×sign×episode registry and usable voice/video/ZIP/cover browsing, with existing cleanup/restore reused.
 
-- **6.1** Studio-native export adapter consumes pinned immutable revision, approved take hashes, Visual Intent, media QA and existing Phase 3 validation semantics; ZIP is optional portable artifact, not mandatory internal transit.
-- **6.2** Real full-video parity/acceptance: captions exactly two lines with Vietnamese font, watermark, cover opening frame, audio mix and punchline sync, no missing assets/states, checkpoint/resume on cancellation; benchmark cold/warm single-edit RAM and render time on actual Windows PC.
-- **6.3** Migration and rollback: run old and new jobs, verify old ZIP open/replay; mark Qt/Zodiac Video Local orchestration as compatibility only **after** all user workflows pass; keep pinned Remotion for legacy and production until HyperFrames encoder is separately proven.
+- **6.1** Merge existing checklist/series tracker/planned concepts into evidence-based concept×sign×episode projection. Unknown != finished; single-/multi-sign scopes remain distinct.
+- **6.2** Episode library displays blockers, approvals, voice takes, covers, video and package status from one index. No manual "done" flag substituted for receipts.
+- **6.3** Reuse package/media scanners, artifact lineage and reversible archive/restore; import old Job@5; never delete last healthy ZIP or source.
 
-**Gate P6:** all user journeys, technical/native gates, genuine voice/Visual Review and full audio/visual QA pass with real artifacts; resource budget acceptable; no old project lost. If HyperFrames renderer parity fails, **release one-window editor with Remotion production fallback**, not a broken renderer migration.
+**Gate P6:** 12-sign coverage correct for single/multi-sign cases; approved content, accepted voice, reviewed visual, exported video and published states stay distinct; old/current projects appear once; archive+restore proven.
+
+## 7 — Full E2E, export backend trial and legacy retirement gate
+
+**Deliverable:** a real episode travels Phase 1 → approved audio → P3 compiler + V4 assets → P4 editor + genuine Visual Review → MP4/cover/captions/copy and optional Job@5 ZIP with no app switching.
+
+- **7.1** Versioned export adapter consumes a pinned immutable source revision, actual voice-take hashes and validated scene graph, maintaining Phase 3/Job@5 and performance-review semantics. ZIP is optional portable artifact rather than a compulsory intermediate.
+- **7.2** Compare **HyperFrames Producer**, pinned **Remotion** and conditional **static-state-frame + FFmpeg** fast path on the *same representative Zodiac scenes*: 1080×1920, voice/caption alignment, 2-line Vietnamese captions, glyph/font/watermark, cover opening frame, scene/meme fidelity, disk/RAM/cold/warm render time. Streaming/intermediate frames must respect Windows disk budget.
+- **7.3** Default renderer selection only after measured quality/performance gate. Keep Remotion as legacy/rollback while old packages require it. Compare one whole final real episode plus restart/cancel/retry recovery, QA and Visual Review; only then mark old Zodiac Video Local orchestration/Qt GUI as compatibility.
+
+**Gate P7:** all real user journeys and exact source-bound technical/human review gates PASS, full MP4 proof with captions/voice/visual parity, no source/data loss and acceptable measured resource use. HyperFrames Producer is the preferred **candidate**, not an automatic win; if it fails, ship the unified editor with the best proven production renderer until fixed.
 
 ## Anti-omission delivery protocol — required in every code PR
 
@@ -131,22 +144,24 @@ Review at task completion: (1) contract/data correctness, (2) actual user-facing
 ## Dependency and rollout
 
 ~~~text
-P0 Project Core
+P0 Project Core + compiler baseline/quality fixtures
    ↓
-P1 One-window shell + Agent adapter
+P1 One-window shell + agent bridge
    ↓
 P2 Voice Lab / measured timeline
    ↓
-P3 HyperFrames scene editor
-   ├──────────────┐
-   ↓              ↓
-P4 Asset Gallery  P5 Concepts/Packages (can be implemented separately after P1/P3)
-   └──────┬───────┘
-          ↓
-P6 Full E2E + optional ZIP + migration gate
+P3 Compiler VNext modular refactor + incremental scene/asset build + quality gates
+   ↓
+P4 HyperFrames scene editor with SDK round-trip
+   ├──────────────────┐
+   ↓                  ↓
+P5 Asset Gallery   P6 Concepts/Packages
+   └────────┬─────────┘
+            ↓
+P7 Full E2E + renderer benchmark + optional ZIP + migration
 ~~~
 
-P4 and P5 can be independently developed on separate branches after their prerequisites, but integrated one at a time because they share the same project registry and Studio UI. Do not simultaneously mutate shared registry contracts or Qt launcher. Distinguish full Studio deployment from a throwaway HyperFrames compatibility spike.
+P5 and P6 can be developed in isolated worktrees with shared P3/P4 interface frozen; integrate one at a time. P3 itself is a bounded dedicated refactor PR, not concurrent edits with the editor PR. The P7 rendering trial does NOT determine the source/asset compiler ownership.
 
 ## What is deliberately NOT in the MVP
 
@@ -158,6 +173,6 @@ P4 and P5 can be independently developed on separate branches after their prereq
 
 ## Before implementation begins
 
-- Review/accept this roadmap and P0 detailed plan. Write detailed P1–P6 implementation plans **at each phase gate**, using observed previous phase APIs, benchmarks and failures; do not pre-author invented exact signatures for future unbuilt modules.
+- Review/accept this roadmap and P0 detailed plan. Write detailed P1–P7 implementation plans **at each phase gate**, using observed previous phase APIs, benchmarks and failures; do not pre-author invented exact signatures for future unbuilt modules.
 - Use isolated worktrees/branches for code phases, red/green TDD, short commits, fresh reviews. Do not apply code changes to this docs-only PR #221.
 - Maintain a phase summary at the end of each PR: what shipped, user workflow demo, test receipts, unresolved issues with scope, dependency updates and next phase's actual ready prerequisites.
