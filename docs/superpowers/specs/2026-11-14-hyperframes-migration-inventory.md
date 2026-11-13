@@ -1,12 +1,12 @@
 # HyperFrames migration inventory — modules, assets, contracts
 
 > Status: **REVISED / EMBEDDED EDITOR FIRST / PLANNING ONLY**, 2026-11-14. No implementation, migration or full-video benchmark in this PR.
-> Parent: [Studio platform ADR](./2026-11-14-studio-platform-choice-adr.md) and [Agent-native Studio design](./2026-11-14-agent-native-creative-studio-design.md).
+> Parent: [Studio platform ADR](./2026-11-14-studio-platform-choice-adr.md), [Agent-native Studio design](./2026-11-14-agent-native-creative-studio-design.md) and [Compiler VNext addendum](./2026-11-14-zodiac-compiler-refactor-design.md).
 > Repository baseline: `fa457a9351c33ace1da66bd089af8a1861e53838`.
 
 ## 1. Answer: this impacts the asset library, but not its authored artwork
 
-**First migration is the unified editing UI, NOT a compulsory rendering-engine replacement.** Use HyperFrames's embedded React Studio components and SDK inside the one-window Zodiac app. Keep Zodiac Core, voice pipeline and V4 library. Only after working voice-first editor preview, reverse edits and a benchmark should HyperFrames final rendering replace pinned Remotion. The existing V4 Character Assembly bakes SVG per planned identity, pose, expression and crop. The current renderer receives those baked SVG assets; HyperFrames can initially consume the exact output with stable paths and rendered HTML/SVG elements.
+**First product goal is a unified Studio with a reliable modular V4 compiler, NOT a compulsory rendering-engine replacement.** Use HyperFrames's embedded React Studio components and SDK inside the one-window Zodiac app. Keep Zodiac Core, voice pipeline and V4 library. Only after working voice-first editor preview, reverse edits and a benchmark should HyperFrames final rendering replace pinned Remotion. The existing V4 Character Assembly bakes SVG per planned identity, pose, expression and crop. The current renderer receives those baked SVG assets; HyperFrames can initially consume the exact output with stable paths and rendered HTML/SVG elements.
 
 The source library is not the same as its runtime presentation. To prevent mismatch, preserve the canonical source and test a new adapter.
 
@@ -23,6 +23,7 @@ The source library is not the same as its runtime presentation. To prevent misma
 | Local handoff import | `phases/local/import-phase1-handoff.mjs` | KEEP + ADD integration | Import into revisioned Studio project; no direct source overwrites. |
 | Visual Intent canonical source | `features/visual-composition/compile-visual-intent.mjs`; `.authoring/visual-intent.json` | KEEP | Fresh source stays one; compiler-owned projections remain immutable. |
 | Visual Grammar/Scene Direction | `references/asset-library-v4/compile-visual-grammar.mjs`, `scene-direction/compile-scene-direction.mjs` | KEEP / adapter impact | Continue to produce Zodiac entities/transforms/state refs; translate into HyperFrames. |
+| Complete scene build/transaction | `phases/phase02/phase02-execute.mjs`, `core/cache/{incremental-cache,phase02-semantic-cache}.mjs`, `features/scene-production/native-scene-executor.mjs`, `build-native-preview-pairs.mjs` | COMPILER VNEXT PHASE 3 | Add one revision-scoped `scene.compile` command that resolves and verifies **every** S03 component, reuses valid cached nodes, stages an atomic scene package and emits `scene.preview_ready`; preserve old entrypoints during transition. |
 | Character SVG compiler | `references/asset-library-v4/characters/compile-character-assembly.mjs` | KEEP | SVG state baking is renderer independent; retain identity and component IDs. |
 | Meme/props/environment compilers | `references/asset-library-v4/memes/compile-meme-props.mjs`, `environments/compile-environment.mjs`, `scene-set/...` | KEEP, test output compatibility | Consume generated SVG/assets; never re-enable retired fresh Scene Set through migration. |
 | Asset registry and provenance | `references/asset-library-v4/manifest.json`, `characters/components/catalog.json`, `props/index.json`, `memes/index.json`, `creative/library-catalog.json` | KEEP + EXTEND index | Add materialization metadata, preview thumbs, hash and source-to-renderer refs; don't duplicate catalogs. |
@@ -110,19 +111,21 @@ Never patch a rendered `<img>` source or generated HTML and call the resulting s
 
 ## 5. Work sequence and blocking pilot
 
-**A. Inventory + contract tests:** map the existing project/episode/voice/scene/asset/galleries/checklist/ZIP entrypoints and all used entity/event refs. Pin HyperFrames package version; never use rolling latest in production. Freeze a real Phase 1 fixture and an actual V4 SVG scene.
+**A. Phase 0 — compatibility/baseline:** map native V4/scene compiler owners, asset/preview dependency caches, approved handoffs, Job@5 and known quality scene examples; record real vs unmeasured wall time, warm and one-scene edit behavior.
 
-**B. One-window embedded editor prototype:** the `zodiac` launcher starts ONE application/window hosting a Zodiac React shell with an embedded HyperFrames preview, plus a managed local Zodiac engine. One actual S01 using native baked SVG at 1080×1920; validate fonts, SVG, layout and preview lifecycle. Do not open standalone HyperFrames Studio.
+**B. Phase 1 — one-window host and managed agent:** `zodiac` opens one Zodiac UI and a project-backed event/command API, with embedded HyperFrames SDK compatibility spike; no second GUI. Define the command envelope early, but do **not** claim the S03 compiler command works before Phase 3.
 
-**C. Voice-first workflow:** import approved Phase 1 directly, audition and accept audio with real user evidence, measure time; derive storyboard visual timing. Verify text bytes remain locked. Translate simple scene state/caption/cover into embedded preview.
+**C. Phase 2 — Voice Lab first:** audibly approve a selected take and derive actual speech anchors, preserving immutable Phase 1 narration.
 
-**D. Reverse editing + integrated screens:** allow narrow SDK edits (move actor, adjust visual event, replace asset ref) round-tripping to Visual Intent. Add same-window Voice Lab, concept×12 board, package/media manager, searchable V4 preview gallery. Reuse existing preview and import/cleanup tools. Unsupported operations fail visibly.
+**D. Phase 3 — Compiler VNext refactor:** keep V4 geometry and all native gates; implement **single logical `scene.compile`** that builds the complete S03 actor/pose/expression/prop/Narrative Visual-or-Story Text/event/voice/caption/preview dependency closure, with exact manifest inventory. Missing elements BLOCK; atomic publication; old valid preview and source preserved. Benchmark cold/warm/scene edit and negative cases. [Compiler architecture and acceptance](./2026-11-14-zodiac-compiler-refactor-design.md).
 
-**E. Voice changes without script edits:** swap selected voice take, recompute only affected alignment and visual frame offsets, reuse unrelated audio/asset caches, keep unchanged narration SHA. Post-handoff script revisions are deferred to a separate exceptional workflow.
+**E. Phase 4 — scene editor:** SDK semantic edit → Studio source revision → `scene.compile` → committed scene artifact refs + `scene.preview_ready` → React/HyperFrames UI displays actual output. Agent requests the build but neither directly writes compiler-owned SVG/ZIP nor uploads result bytes into Studio.
 
-**F. Encoder pilot (independent gate):** render final MP4 from HyperFrames ONLY after single-window editing works. Compare against pinned Remotion on audio sync, captions, character/prop state, still-image correctness, startup RAM and render time. Retain Remotion until success.
+**F. Phases 5–6 — gallery and evidence registry:** search and preview actual lazily-compiled asset components, concept×12 and archives from existing scanners with no second data owner.
 
-**G. Decision gate:** only after round-trip, quality and performance gates pass should a feature flag switch production default from Remotion to HyperFrames. Keep Remotion runtime and original Job@5 recovery until legacy projects are reproducible.
+**G. Phase 7 — independent render gate:** same episode through HyperFrames Producer, pinned Remotion, and conditional static-state-frame+FFmpeg; compare full audio/caption/visual parity, performance and disk/memory. Prefer proven path, keep old ZIP recovery and Remotion until the replacement really passes.
+
+**Decision:** all green UI/preview statuses must point to a real immutable source/hash/artifact revision; the agent's acknowledgement is never a compiler receipt or a human review.
 
 ## 6. What must NOT be thrown away
 
