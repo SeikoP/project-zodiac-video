@@ -10,11 +10,12 @@
 
 **Tech Stack:** Python 3.9-compatible stdlib domain module (`sqlite3`, `pathlib`, `unittest`) plus existing Node 20+ phase1 importer. Next phases may require Python 3.10+ for desktop PySide/React host. No new DB dependency.
 
-**Spec:** [Unified design](../specs/2026-11-14-agent-native-creative-studio-design.md), [roadmap](./2026-11-14-unified-zodiac-studio-roadmap.md).
+**Spec:** [Unified design](../specs/2026-11-14-agent-native-creative-studio-design.md), [roadmap](./2026-11-14-unified-zodiac-studio-roadmap.md), [Compiler VNext architecture](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
 
 ## Global Constraints
 
 - Do not alter immutable Phase 1 handoff source, receipt, or narration; v2 must pass exact existing ZIP inventory and content source-hash checks.
+- P0 must **freeze the existing compiler regression, quality and profiling surface** for Phase 3. Audit historical native last receipts and explicitly mark absent wall/agent time as UNMEASURED. P0 must not rewrite current V4 compilers or treat golden fixtures as actual user Visual Review.
 - Do not replace or edit `.authoring/visual-intent.json` or derived projections; no fresh Visual Intent writer in P0.
 - New metadata may be stored in a single SQLite `studio-index.sqlite3`, but canonical episode/project files and existing Job@5 artifacts stay in their own source trees. **Index is not production source**.
 - Keep `tools/studio_v2/session.py`, `tools/application/service.py`, `tools/studio_qt/*` and old ZIP import functional. P0 has no UI change and cannot claim a one-window product.
@@ -37,7 +38,7 @@
 
 | Owner | Create / modify | Owns and does not own |
 | --- | --- | --- |
-| P0 compatibility | `docs/audits/2026-11-14-studio-phase00-baseline.md`; `tests/test_studio_project_baseline.py` | Owned source/test matrix, not rewritten runtime |
+| P0 compatibility | `docs/audits/2026-11-14-studio-phase00-baseline.md`; `tests/test_studio_project_baseline.py` | Owned source/test matrix **plus compiler step/scene-quality/benchmark coverage**, not rewritten runtime |
 | Project models | `tools/studio_project/__init__.py`; `models.py` | `ProjectHandle`, `StudioIssue`, `EpisodeStatus` typed shapes; no second visual source |
 | Index/event store | `tools/studio_project/registry.py`; `events.py` | SQLite episode index, unique source identity, ordered events, idempotent command records |
 | Node importer bridge | `tools/studio_project/handoff_bridge.mjs`; `importer.py` | Verified Phase 1 import and filesystem-safe materialization; invoke current canonical importer, don't reimplement validator |
@@ -81,15 +82,15 @@ P0 defines statuses, not approvals. Later phase add take and scene evidence, but
 - Create `tests/test_studio_project_baseline.py`
 - Read-only references: `tests/test_studio_v2_zip_import.py`, `tests/test_studio_v2_voice.py`, `tests/test_studio_production_checklist.py`, `tests/test_library.py`; `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/phases/local/import-phase1-handoff.mjs`
 
-**Interfaces:** fixture helper `baseline_sources(repo_root: Path) -> dict[str, Path]`, indicating actual existing sources. This is a test/audit utility, not a new public application API.
+**Interfaces:** fixture helper `baseline_sources(repo_root: Path) -> dict[str, Path]`, indicating actual existing sources. This is a test/audit utility, not a new public application API. Define a benchmark manifest (baseline-only) with `scenario_id`, `source_sha256`, `compiler_version`, `cache_mode`, `wall_ms` or `null`, `step_ms`, `agent_ms` or `null`, `preview_ms` or `null`, `cache_reuse`, `scene_count`, `artifact_hashes`, `measurement_environment`; NEVER invent a duration for an unobserved step.
 
-- [ ] **Step 1: Write failing tests** `test_existing_import_contract_is_present`, `test_existing_voice_take_contract_is_present`, `test_existing_asset_and_library_adapters_exist`; assert exact source paths and availability, not synthetic native PASS.
+- [ ] **Step 1: Write failing tests** `test_existing_import_contract_is_present`, `test_existing_voice_take_contract_is_present`, `test_existing_asset_and_library_adapters_exist`, `test_compiler_modules_and_perf_collectors_mapped`, `test_unknown_agent_wall_time_is_null`; assert canonical compiler, preview, semantic cache, native scene worker, profiler and V4 owner paths, not synthetic PASS.
 - [ ] **Step 2: Verify RED** via `python -m unittest discover -s tests -p 'test_studio_project_baseline.py' -v` (missing module/helper).
-- [ ] **Step 3: Implement `baseline_sources`**; add concise baseline mapping to audit MD. Document current behavior: Job@5 precondition for V2 session, `local-bootstrap` queue, V4 cache, old version pins; capture baseline test commands and existing fixture IDs.
-- [ ] **Step 4: Verify GREEN** with the new test and a focused existing baseline set: `python -m unittest discover -s tests -p 'test_studio_v2_zip_import.py' -v`; `python -m unittest discover -s tests -p 'test_studio_v2_voice.py' -v`. Record any environment-dependent failure, never change expected verdict to green.
+- [ ] **Step 3: Implement `baseline_sources`**; add baseline map and benchmark manifest to audit MD. Document current behavior: Job@5 precondition for V2 session, `local-bootstrap` queue, V4 Character Assembly / scene-direction worker / preview-pair cache / semantic dependency graph / preflight validators / legacy renderer and pins. Capture regression commands and actual fixture IDs. Identify golden scene tests for Libra 3-state scale, Gemini actor relation, Scorpio meme before/after and caption/hand overlap; **reuse already approved review evidence only when it exists**, else label fixture synthetic or PENDING. Run read-only `core/performance/diagnose-phase02.mjs` on a verified available workspace if possible, and otherwise document unmeasured instead of manufacturing numbers.
+- [ ] **Step 4: Verify GREEN** with the new test and a focused existing baseline set: `python -m unittest discover -s tests -p 'test_studio_v2_zip_import.py' -v`; `python -m unittest discover -s tests -p 'test_studio_v2_voice.py' -v`. Record cold / unchanged warm / one-scene-edit **only when a runnable representative fixture and reproducible cache state are actually available**; also record missing run cases and unmeasured categories. Record any environment-dependent failure, never change expected verdict to green.
 - [ ] **Step 5: Commit** source/test map and tests, e.g. `test(studio): freeze project import and voice compatibility baseline`.
 
-**Task done:** a new engineer can identify the exact authoritative import/voice/checklist/library paths; existing source untouched.
+**Task done:** a new engineer can identify the exact authoritative import/voice/checklist/library paths **and compiler/quality/perf baseline**, distinguishing measured data from missing data; existing source untouched.
 
 ## Task 0.2: Durable project index, typed events and restart recovery
 
@@ -153,7 +154,7 @@ P0 defines statuses, not approvals. Later phase add take and scene evidence, but
 
 ## Phase 0 end-to-end integration and handoff gate
 
-- [ ] Execute the Phase 0 tests and the focused existing regression commands above; document exact command, exit code, test count, commit and failures. No test execution is claimed by this plan.
+- [ ] Execute Phase 0 tests and focused existing regression commands above; document exact command, exit code, test count, commit and failures. Preserve compiler quality/bench manifest, including cold/warm/one-scene edit if measurable and UNMEASURED if not. No test execution is claimed by this plan.
 - [ ] Run one **real** approved Phase 1 v2 capsule in an isolated workspace: import → reopen → status derived → restart registry → import again (idempotent) → read events. The imported source SHA and exact bytes must match the capsule.
 - [ ] Run an invalid/tampered capsule and missing Node scenario: no healthy episode mutated or marked APPROVED.
 - [ ] Reopen a completed old Job@5 package using existing Studio V2 and confirm it is not orphaned by new index. Keep Qt unchanged.
@@ -161,6 +162,6 @@ P0 defines statuses, not approvals. Later phase add take and scene evidence, but
 - [ ] Record `zodiac-studio-phase-evidence@1` with P0.1–P0.4 task results, reviewer signoff, baseline/implementation commit, rollback and `handoff_ready`. The user must see remaining PENDING items rather than false DONE.
 - [ ] Confirm isolated worktree/branch PR and rollback: revert the new `tools/studio_project` entrypoint/index, preserve all existing ZIPs/projects; no destructive migration ran.
 
-**Definition of ready for Phase 1:** real project registry/event API and importer are tested; one approved episode reopens without Job@5; old Job@5 and V4 pipeline regressions stay valid; agent/context ownership documented; P0 report has no missing mandatory ID or fabricated review.
+**Definition of ready for Phase 1:** real project registry/event API and importer are tested; one approved episode reopens without Job@5; old Job@5 and V4 pipeline regressions stay valid; compiler/preview/quality ownership and baseline scenarios are documented with actual vs unknown timings; agent/context ownership documented; P0 report has no missing mandatory ID or fabricated review.
 
 **Out of scope until next plans:** HyperFrames installation and editor UI, Codex App Server launch, VieNeu synthesis quality tuning, asset gallery, concept×12 UI, scene authoring, media export. Their phase charters are in the [roadmap](./2026-11-14-unified-zodiac-studio-roadmap.md). Create detailed task-level plans for them only after measuring P0 actual artifacts and stability.
