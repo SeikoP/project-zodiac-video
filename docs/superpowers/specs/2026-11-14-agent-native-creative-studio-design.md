@@ -1,6 +1,6 @@
 # Zodiac Unified Studio — Voice-First, HyperFrames-Embedded Architecture
 
-> **Status: REVISED DESIGN / NOT IMPLEMENTED · 2026-11-14.** This is the canonical new-flow specification for PR #221. It supersedes the previous post-handoff-script-editor-led proposal. The [platform ADR](./2026-11-14-studio-platform-choice-adr.md), [migration inventory](./2026-11-14-hyperframes-migration-inventory.md), [Compiler VNext addendum](./2026-11-14-zodiac-compiler-refactor-design.md), [Visual V5 and palette design](./2026-11-14-zodiac-visual-v5-color-system-design.md), [Audio Design / music-SFX library](./2026-11-14-zodiac-audio-library-sound-design.md) and [V1 contract audit](../../audits/2026-11-14-version-upgrade-candidates.md) are subordinate technical decisions.
+> **Status: REVISED DESIGN / NOT IMPLEMENTED · 2026-11-14.** This is the canonical new-flow specification for PR #221. It supersedes the previous post-handoff-script-editor-led proposal. The [platform ADR](./2026-11-14-studio-platform-choice-adr.md), [migration inventory](./2026-11-14-hyperframes-migration-inventory.md), [Compiler VNext addendum](./2026-11-14-zodiac-compiler-refactor-design.md), [Visual V5 and palette design](./2026-11-14-zodiac-visual-v5-color-system-design.md), [Studio Asset Intelligence](./2026-11-14-zodiac-studio-asset-knowledge-graph.md), [Audio Design / music-SFX library](./2026-11-14-zodiac-audio-library-sound-design.md) and [V1 contract audit](../../audits/2026-11-14-version-upgrade-candidates.md) are subordinate technical decisions.
 >
 > Audited against `SeikoP/project-zodiac-video` main (`fa457a9351c33ace1da66bd089af8a1861e53838`) and the source modules listed in §3. **Code inspection only**; no local Windows benchmark, actual audio listening, implementation or end-to-end test occurred in this revision.
 
@@ -186,6 +186,7 @@ Do not present historical Scene Set artifacts as current selectable fresh backgr
 | Concept coverage | For a concept, see all 12 sign states and linked episodes; missing evidence shows UNKNOWN; multi-sign episode counted accurately |
 | Asset gallery | Preview a body, hair, outfit, pose, expression, prop, accent and representative meme setup/reaction without a second app; no retired fresh Scene Set |
 | Visual V5 and color | At least three reviewed visibly distinct themes including one dark; character identity and Vietnamese captions readable, no per-theme asset library cloning, no automatic zodiac-sign palette bias |
+| Agent semantic asset selection | Agent proposes full actor/pose/prop/mechanic/meme **bundles** grounded in current catalog IDs, exact source and role/contact constraints; user can inspect why each fits or fails, missing unique art becomes a creation request rather than random generic filler, and selection updates the one canonical Visual Intent with scoped preview |
 | Music Library + SFX | Licensed imported BGM is previewable, true silence also valid; optional selected sound cue binds to measured story event and is audible, voice remains intelligible, third-party source files are not distributed raw |
 | Audio-only change | Change music/SFX without re-running TTS, ASR alignment or visual render; final mix hash and provenance update, old video-only segment cache remains valid |
 | Packages | Find approved handoff, generated video, captions/cover, ZIP and archive; distinguish handoff-ready/video-ready/published, restore archive safely |
@@ -225,6 +226,14 @@ Validated MP4/cover/subtitles/copy with real status and archive lineage
 - **Latency/evidence:** report entire handoff→review-ready and handoff→MP4 wall time as well as agent authoring, tool wait, native startup, cache, candidate preview, review and renderer spans. Existing native last-receipt figures are not overall episode duration.
 
 See [Compiler VNext §3.2](./2026-11-14-zodiac-compiler-refactor-design.md) for the normative proposed `episode.build` request, DAG, caching and transaction contract. Both commands are **planned, not implemented yet**; Phase 3 implements the core and Phase 4 connects the HyperFrames UI.
+
+## 7.2. Studio Agent visual asset retrieval is source-derived and explainable
+
+The current plugin's selection guide, policy and V4 catalogs tell an agent what it may use but do **not** provide a Studio-native semantic candidate/ranking API. `selectAssetGuidance` only validates **preselected** IDs and chooses plugin docs to load; standalone asset review HTML filters by ID, and its exported `environment_mode:scene_set` is stale for fresh canvas-native production. The existing Studio Qt app doesn't yet provide the embedded agent-facing asset recommender.
+
+The new **Agent Asset Intelligence** is a local, source-derived knowledge graph: capabilities and mechanical requirements `→` roles/props/states/character identity/meme context `→` explainable candidate scene bundles. The agent queries `assets.search`, `assets.suggest_bundle` and real previews through Studio project command API, then proposes one authorized source-revision edit. Hard gates reject retired/unsupported objects, wrong contact mechanics, missing identity and unsupported creative gaps; novel Narrative Visual artwork is a separate explicit asset-authoring/review request, not a catalogue icon. Agent and human gallery share one index, not duplicate plugin context.
+
+**Do not confuse this retrieval graph with the compiler's build DAG:** selection answers what fits the narration and why; build resolves selected source references into verified SVG/scene/video outputs and dirty dependencies. Initial implementation is a small SQLite/FTS5/typed-edge index generated from existing JSON, with bounded queries and no remote Neo4j/vector model. [Detailed source audit and interface](./2026-11-14-zodiac-studio-asset-knowledge-graph.md).
 
 ## 8.1. Compiler VNext is a dedicated production dependency, not an editor detail
 
