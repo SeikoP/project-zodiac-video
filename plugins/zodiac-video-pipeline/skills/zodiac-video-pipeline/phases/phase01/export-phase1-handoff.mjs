@@ -39,6 +39,8 @@ export async function buildPhase1HandoffManifest(workspace){
   brief:sha256(payload.find(x=>x.rel==='writer-brief.json').data),
   voice:sha256(payload.find(x=>x.rel==='voice-profile.json').data)
  };
+ if(!review.source_hashes)throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_SOURCE_HASHES_REQUIRED');
+ for(const key of ['narration','plan','scope','brief','voice'])if(review.source_hashes[key]!==source_hashes[key])throw Error('CONTENT_APPROVAL_SOURCE_DRIFT '+key);
  const normalizedReview={...review,source_hashes};
  payload.find(x=>x.rel==='content-review-receipt.json').data=Buffer.from(JSON.stringify(normalizedReview,null,2)+'\n');
  const scope=JSON.parse(payload.find(x=>x.rel==='episode-scope.json').data);
