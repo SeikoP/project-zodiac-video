@@ -1,7 +1,7 @@
 {
   "profile": "web",
   "name": "zodiac-video-web",
-  "description": "Zodiac Phase 1 authoring on ChatGPT Web with immutable handoff export.",
+  "description": "Creative-first Zodiac Phase 1 on ChatGPT Web with lightweight approved handoff.",
   "entry_skill": "skills/zodiac-video-web/SKILL.md",
   "include_humanizer": false,
   "interface": {
@@ -9,10 +9,10 @@
       "Interactive"
     ],
     "category": "Productivity",
-    "defaultPrompt": "Run Zodiac Phase 1 only. Complete Evidence, Voice, Concept, Narrative Design and Narration, require Semantic + Voice Fidelity + Story review, preserve genuine Content Review, then export exactly one zodiac-phase1-handoff@1 ZIP. Never activate Phase 2 on Web.",
+    "defaultPrompt": "Run creative Zodiac Phase 1 only: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Do not bootstrap native source, install runtime dependencies, run validators or optimization overlays on Web. After explicit approval, export one zodiac-phase1-handoff@2 capsule for Local.",
     "developerName": "Personal",
     "displayName": "Zodiac Video Web",
-    "longDescription": "Author and approve Zodiac Phase 1 on ChatGPT Web, then export a source-bound handoff capsule for local visual production.",
-    "shortDescription": "Zodiac Phase 1 and handoff"
+    "longDescription": "Creative-first Zodiac authoring on ChatGPT Web, split into focused microphases with one Content Review boundary and a lightweight handoff to local visual production.",
+    "shortDescription": "Creative Phase 1 → lightweight handoff"
   }
 }
