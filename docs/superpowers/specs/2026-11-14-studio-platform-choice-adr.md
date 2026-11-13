@@ -1,13 +1,13 @@
 # ADR — Zodiac Studio platform choice: PySide6, Remotion Studio, or HyperFrames
 
-- Status: **PROPOSED / SPIKE REQUIRED**, 2026-11-14
+- Status: **REVISED TARGET CHOICE / SPIKE REQUIRED**, 2026-11-14. The editor integration direction is selected; migration of final rendering is NOT selected.
 - Parent design: [Agent-Native Creative Studio](./2026-11-14-agent-native-creative-studio-design.md).
 - Main baseline: `fa457a9351c33ace1da66bd089af8a1861e53838`.
 - Scope: platform selection **only**. This ADR does not authorize migration, removal, implementation, plugin version changes or release.
 
 ## 1. Problem
 
-The `zodiac` executable enters `tools.zodiac_qt:main` via `pyproject.toml` and uses PySide6 screens, Studio V2 and the existing control plane. The actual render path is Remotion, with pinned `runtime/zodiac-renderer/2.0.x`. The new goal is an editable story-driven, agent-driven video project, not simply a more attractive job runner.
+The `zodiac` executable enters `tools.zodiac_qt:main` via `pyproject.toml` and uses PySide6 screens, Studio V2 and the existing control plane. The actual render path is Remotion, with pinned `runtime/zodiac-renderer/2.0.x`. The new goal is ONE Zodiac application window for Voice Lab, concept × 12 signs, packages/media, V4 asset previews and an embedded story-driven, agent-driven editor, not a second separate Studio app or merely a more attractive job runner.
 
 We must decide which interface/rendering base to use without invalidating Phase 1 approved source, `zodiac-visual-intent@1`, existing asset compilers, voice/timing caches, Job@5 and real parity tests.
 
@@ -57,17 +57,20 @@ We must decide which interface/rendering base to use without invalidating Phase 
 | D. Adopt HyperFrames browser Studio/SDK as editing base and migrate rendering | Medium, requires adapters | Strong existing timeline/canvas/asset editing | Typed operations and patches available | High for renderer and motion parity | Apache-2.0, favorable to fork/modify |
 | E. Keep Zodiac domain/CLI, build **isolated HyperFrames adapter pilot**, choose editor/renderer later | High for existing production | Prove Studio edit mapping first | Prove event/patch adapter on a real scene | Controlled, reversible | No production migration required during test |
 
-## 4. Provisional recommendation
+## 4. Selected direction for the NEW EDITOR; renderer remains a separate choice
 
-**Choose E as the next engineering step, not immediate A/B/D migration.**
+**Target UX decision:** make HyperFrames browser-editor **React components and SDK** part of the single Zodiac Studio application. The user runs `zodiac` and manages all screens inside one window. Zodiac owns the top-level UI and project; the embedded editor does not open another desktop app.
 
-- Keep `zodiac` as a user-facing **command name**, not necessarily forever as a PySide6 implementation. Keep Qt available during migration.
-- Keep Python Studio V2 / Control Plane, Phase 1 handoff v2, Visual Intent, semantic cache, TTS and review receipt logic as domain authority.
-- Do **not** fork Remotion Studio. Continue using the existing pinned renderer for production during the pilot.
-- Evaluate HyperFrames **open-source browser editor and SDK**, not presume the whole HeyGen desktop assistant is forkable. Prototype a `zodiac-visual-intent@1 → HyperFrames composition` adapter and a constrained `HyperFrames EditOp → Zodiac semantic command` adapter.
-- For the spike, run a real Remotion and HyperFrames render side by side with identical generated asset/input provenance. Do not have two production renderer sources of truth.
-- After benchmark, if HyperFrames yields better true editability/agent work at acceptable memory, parity, and maintenance cost, **select HyperFrames as vNext editor/render core**; else retain Remotion and build a smaller Zodiac-specific editor (or evaluate Editor Starter).
-- Never choose only by star counts, release cadence, promised “determinism,” or UI screenshots.
+- Use `@hyperframes/studio` (`EditorShell`, `Player`, `NLEPreview`, `Timeline`, `PropertyPanel`) and `@hyperframes/sdk` as the editor foundation. These require host project-state/API contexts; they cannot simply be mounted without integration. **Do not fork the separate HeyGen desktop application.**
+- Keep Python Zodiac Core/Studio V2/Control Plane, Phase 1 handoff v2, Visual Intent/V4 compilers, semantic cache, VieNeu and review receipts as authoritative services. It is a backend/managed sidecar, not an extra user-facing app.
+- **Voice Lab first:** after Phase 1 narration approval, natural Vietnamese audio/take audition and measured timing precede visual scene design. A post-approval script editor and complex animation timeline are NOT first-release priorities.
+- Embed concept×12 coverage, native V4 asset preview gallery, episode/package/media manager, lightweight storyboard and agent activity in the same React shell. Reuse existing Qt checklist/concept/library data scanners and native preview generators.
+- **Pilot first:** build a bounded S01 read-only composition + SDK move/edit round-trip to canonical Visual Intent, then integrate user voice audition, metadata and one view. The pilot validates this *editor* direction before irreversible UI migration.
+- Keep the existing pinned Remotion renderer for production/legacy while evaluating whether HyperFrames Producer should eventually replace it. A HyperFrames **editor** is not a commitment to HyperFrames **final renderer**.
+- Retain the `zodiac` command. Decommission Qt screens only when the new single-window UI has feature parity, recovery and low-RAM startup on the target machine.
+- Do not choose by release cadence, star counts, generic AI marketing claims or animated demo smoothness. Verify native story scenes and voice alignment.
+
+This is a cohesive app-host integration, not Option D interpreted as “launch both existing GUIs.” Option E remains the **safe delivery mechanism** for the selected embedded editor direction, not an open-ended debate about which UX to build.
 
 ## 5. Critical adapter seam
 
@@ -98,7 +101,7 @@ Two controlled runs (separate workspaces):
 1. **Remotion baseline:** compile real Job@5, run faithful event preview, production MP4 and measure CPU/RAM/elapsed time.
 2. **HyperFrames pilot:** generate equivalent scene HTML from Visual Intent, present in browser Studio, drag actor, trim one visual event, change one asset; map typed operations back into Visual Intent; rebuild preview and final MP4; compare to baseline.
 
-Human-agent co-edit experiment: agent edits S03 concurrently with user moving S03 actor. Verify optimistic revision conflicts, rejected stale patch and undo. Narration edit experiment: change one sentence after handoff, create new revision and trusted approval, regenerate only dependent audio/scene data; preserve unaffected assets and TTS cache. HyperFrames script-editor features alone do not satisfy this.
+Human-agent co-edit experiment: agent edits S03 concurrently with user moving S03 actor. Verify optimistic revision conflicts, rejected stale patch and undo. **Voice-first experiment:** keep approved script bytes locked; generate/listen/select a distinct take, align to actual selected WAV, rebuild only affected timing/preview and preserve unaffected V4 asset/cache. Real human listening approval must not be inferred from a compatibility-tagged technical VoiceArtifactStore entry. Post-handoff text editing is explicitly deferred.
 
 Record:
 
@@ -111,13 +114,13 @@ Record:
 
 ### Go/no-go rules
 
-**Adopt HyperFrames** only after the pilot meets minimum gates: no approval/lineage breach, native content/visual review preserved, real frame parity on key story interactions, all required edits map to canonical Zodiac sources, no unacceptable RAM regression, and better edit/review workflow than existing CLI+Remotion baseline. Do not set arbitrary performance percentages before baseline exists.
+**Ship embedded HyperFrames editor** only after the pilot meets minimum gates: one Zodiac window (no separate user-managed HyperFrames GUI), no source/approval lineage breach, native voice/visual review preserved, representative actor/prop/caption preview, selected SDK edits round-trip to canonical Zodiac sources, acceptable RAM, and a demonstrably usable voice-to-scene workflow. **Switch final rendering to HyperFrames** only after a separate full-video fidelity, output, benchmark and rollback gate. Do not set arbitrary speedup percentages before baseline exists.
 
-**Otherwise**, preserve existing Remotion production and implement a smaller, Zodiac-owned web timeline/player. If required editor features are mostly generic, separately weigh the current Remotion Editor Starter license, cost, and integration rather than forking Studio.
+**Otherwise**, keep the single-window Zodiac UX requirement and use a smaller Zodiac-owned frontend/Remotion Player or assess Editor Starter. Do not fall back to two manually launched GUIs. Preserve pinned Remotion production regardless of editor pilot outcome until renderer migration independently passes.
 
-## 7. Follow-on design changes if pilot passes
+## 7. Follow-on implementation changes if the embedded-editor pilot passes
 
-Amend the parent Studio spec's renderer technology decision; add version-pinned HyperFrames project/materialization artifact, stable source map schema, edit operation support table, preview/production parity harness, migration of Remotion-specific motion semantics, old Job@5 import compatibility and rollback plan. Do not delete runtime/zodiac-renderer until a real completed episode passes E2E and old ZIP support is covered.
+Implement one Zodiac shell containing Voice Lab, concept coverage, native V4 preview gallery, episode package management and the embedded HyperFrames components. Add version-pinned HyperFrames materialization, stable source map, edit operation support table and voice-first schedule. The renderer selection remains separate; keep old Job@5 import and Remotion runtime until full E2E and rollback are covered. Motion migration is intentionally a small vocabulary: hold/cut, show/hide, state swap, optional fade/slide/zoom, not generic VFX reproduction.
 
 ## 8. Unresolved questions for spike (no assumptions)
 
