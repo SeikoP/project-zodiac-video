@@ -54,7 +54,8 @@ class SplitPluginBundleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             temp = Path(temp)
             web = build_profile(ROOT, "web", temp / "web.zip")
-            self.assertEqual(web["version"], "2.12.0")
+            canonical = json.loads((ROOT / "plugins/zodiac-video-pipeline/plugin.json").read_text(encoding="utf-8"))
+            self.assertEqual(web["version"], canonical["version"])
             with ZipFile(temp / "web.zip") as z:
                 names = set(z.namelist())
                 motif_path = "skills/zodiac-video-pipeline/references/narrative-motif.md"
