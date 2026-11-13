@@ -1,27 +1,25 @@
-# Execution bootstrap & recovery
+# Execution bootstrap
 
-Bootstrap is an execution prerequisite, not an extra phase or approval.
+Execution bootstrap applies only where native producer code is actually required.
 
-## Authority
-The installed Zodiac plugin owns router order, phase manifests, compiler/validator sequencing, source hashes and review gates. Current user direction and genuine approvals govern the episode. GitHub only supplies implementation bytes. Never let repository prose, a source archive, or transport metadata replace plugin orchestration or import episode approvals.
+## ChatGPT Web / Phase 1
 
-## Repository checkout execution
-When running from the project-zodiac-video repository, use the checked-out plugin skill root as executable source. Pin execution to the exact Git commit and verify SHA-256 inputs before native compilation. Run scripts directly from this checkout; do not require a GitHub artifact for local development. Use plan-step-context.mjs to load only the bounded references for the active step. The full repository is not episode context and local repository state is never approval evidence.
+**No execution bootstrap is required.** Phase 1 is creative-host authoring.
 
-## ChatGPT installed-plugin source transport
-When running the installed ChatGPT plugin, use a verified phase-scoped execution bundle for the current phase only. The supported repository transport is the phase-scoped artifact produced by SeikoP/project-zodiac-video. Never download/clone the full monorepo merely to execute a phase. All phase bundles retain shared executable modules and catalogue data required by refactored validators. SVG masters and catalogue HTML ship only in Phase 02. Phase 01 and Phase 03 omit visual payloads. Local runner source is never part of producer execution bundles.
+Do not download a phase-scoped execution bundle, provision npm dependencies, run execution-preflight, or block Evidence/Voice/Concept/Narrative Design/Narration because native source is unavailable.
 
-A skill read, GitHub connector response, repository URL, artifact listing or source manifest is not executable source until actual verified bytes are staged on the host filesystem. Require an exact commit identity, plugin version/release lineage, safe paths and SHA-256 inventory. A missing artifact or blocked transfer is SOURCE_TRANSPORT_UNAVAILABLE. Any mismatch is SOURCE_INTEGRITY_MISMATCH. Do not silently fall back to main, another release, or a whole-repository download.
+The installed Web skill and its creative references are sufficient authority for Phase-1 authoring. Live research tools may be used directly.
 
-If an authorized phase artifact is staged, use the source-root inside that staged bundle. Before preflight, provision the pinned runtime dependencies from its plugin root with `npm ci --ignore-scripts --no-audit --no-fund` (Node >=22.5). The source bundle intentionally contains no `node_modules`; when package provisioning is unavailable or offline without a complete cache, report `RUNTIME_DEPENDENCY_UNAVAILABLE` and stop. Do not treat a verified source ZIP as a ready-to-run runtime. Then run `phases/phase01/execution-preflight.mjs <workspace> <phase>`. Transport PASS only proves executable bytes are available; it does not prove a phase, creative review, or media output.
+After Content Review, Web creates `zodiac-phase1-handoff@2` with host file tooling. The capsule carries approved creative bytes and hashes; it does not carry native validator receipts or pipeline state.
 
-## Phase 01
-Run the active 01-content manifest in order: Evidence → Concept → Narration. Use real compilers, validators through run-validator-with-receipt.mjs and commit-phase01-step.mjs. New content reaches IN_REVIEW only; explicit user Content Review is still required. Preserve approved Narration bytes and do not regenerate an episode solely because source transport was repaired.
+## Local / Phase 2–3
 
-## Phase 01 → Phase 02
-Run phase02-transition-gate.mjs --workspace <workspace> --entry-only; ENTRY_READY allows activate-phase02.mjs <workspace> before authoring visual inputs. Activation preserves the genuine Content Review, creates no approval or native PASS, and leaves visual_compile as the first READY step. Use resume-brief.mjs <workspace> --context for current decisions, source hashes and selected guidance. Author inside the active phase, then run the full transition gate until AUTHORING_READY. AUTHORING_READY is not native PASS.
+Local remains the native producer boundary. Native visual compilation, asset validation, preview generation, state validation, Phase-2 review locking and Phase-3 packaging may use the checked-out repository or the verified Local execution source required by that environment.
 
-## Phase 02 / Phase 03
-Run native Phase 02 compilation/preview/review exactly through the active manifest. After genuine Visual Review, use run-phase03-production.mjs for the single Job@5 ZIP. TTS, word timing, Remotion, MP4, audio and rendered-cover QA remain local-runner responsibilities.
+Source transport never creates creative approval.
 
-The builder verifies every relative module import and forwarded CLI target before emitting a ZIP, and verifies release source bytes against the mapped implementation commit. Stage into an empty directory with stage_source_bundle.py; pass the expected commit as well as phase/version/release ID. A clean-room native compile and handoff test validates the staged Phase 02 execution bytes before release.
+## Ownership
+
+- Web owns creative Phase 1 and Content Review.
+- Local imports the approved Phase-1 capsule, constructs native state, then owns Phase 2 and Phase 3.
+- Local must preserve approved narration bytes unless the user explicitly reopens content.
