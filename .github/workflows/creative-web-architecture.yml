@@ -1,0 +1,34 @@
+name: Creative Web architecture checks
+on:
+  push:
+    branches:
+      - refactor/creative-web-microphases
+  pull_request:
+    paths:
+      - 'plugins/zodiac-video-pipeline/**'
+      - 'tools/release/build_split_plugin_bundle.py'
+      - 'tests/test_split_plugin_bundle_builder.py'
+jobs:
+  creative-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.5.1'
+          cache: npm
+          cache-dependency-path: plugins/zodiac-video-pipeline/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install plugin runtime for Local compatibility tests
+        working-directory: plugins/zodiac-video-pipeline
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Split plugin package tests
+        run: python -m unittest tests.test_split_plugin_bundle_builder
+      - name: Legacy source bundle regression
+        run: python -m unittest tests.test_phase_source_bundle
+      - name: Phase-1 handoff v2 tests
+        run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase1-handoff-export.test.mjs
+      - name: Local bootstrap v1/v2 tests
+        run: node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/local-phase1-bootstrap.test.mjs
