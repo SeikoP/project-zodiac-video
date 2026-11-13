@@ -50,5 +50,30 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertNotIn("skills/humanizer/SKILL.md", names)
 
 
+    def test_web_phase1_packages_prewrite_motif_and_rhythm_guidance(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            web = build_profile(ROOT, "web", temp / "web.zip")
+            self.assertEqual(web["version"], "2.12.0")
+            with ZipFile(temp / "web.zip") as z:
+                names = set(z.namelist())
+                motif_path = "skills/zodiac-video-pipeline/references/narrative-motif.md"
+                self.assertIn(motif_path, names)
+                motif = z.read(motif_path).decode("utf-8")
+                self.assertIn("narrative_motif", motif)
+                self.assertIn("removal_test", motif)
+                self.assertIn("second-half", motif)
+
+                phase = json.loads(z.read("skills/zodiac-video-pipeline/orchestration/phases/01-content.json"))
+                design = next(step for step in phase["steps"] if step["id"] == "narrative_design")
+                self.assertIn("references/narrative-motif.md", design["load_references"])
+                self.assertIn("narrative-motif", design["creative_outputs"])
+
+                skill = z.read("skills/zodiac-video-web/SKILL.md").decode("utf-8")
+                self.assertIn("Narrative Motif", skill)
+                self.assertIn("second-half", skill)
+                self.assertIn("no stale", skill.lower())
+
+
 if __name__ == "__main__":
     unittest.main()
