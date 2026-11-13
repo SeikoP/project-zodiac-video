@@ -180,6 +180,7 @@ Do not present historical Scene Set artifacts as current selectable fresh backgr
 | Compiler change | Single-scene edit rebuilds only correctly dependent assets/scene/preview, no stale outputs; corrupt/tampered outputs trigger rebuild; benchmark cold/warm/single-edit using one frozen fixture |
 | Visual quality | Libra 3-state balance, Gemini actor continuity, Scorpio meme setup→reaction and an actual voice reveal preserve actor/prop/event/focus and readable caption/layers; technical native PASS is not a human Visual Review |
 | Edit with agent | Agent moves one actor or changes a prop by semantic ID, single commit, validated preview refresh, correct undo/conflict |
+| Full episode build | Agent submits whole-episode Visual Intent once and calls `episode.build` via Studio; shared assets compiled once, all scenes validated, complete revision-aware episode artifact inventory emitted; partial scene previews are labeled candidates, missing scene input BLOCKS |
 | One-shot S03 build | Agent triggers one `scene.compile` through Studio after authoring; all required actors/states/props/events/text/voice anchors/preview are built or returned as a typed BLOCKED list; Studio displays the exact committed revision after `scene.preview_ready` |
 | Concept coverage | For a concept, see all 12 sign states and linked episodes; missing evidence shows UNKNOWN; multi-sign episode counted accurately |
 | Asset gallery | Preview a body, hair, outfit, pose, expression, prop, accent and representative meme setup/reaction without a second app; no retired fresh Scene Set |
@@ -188,18 +189,38 @@ Do not present historical Scene Set artifacts as current selectable fresh backgr
 | Render migration | Same episode through Remotion reference and HyperFrames pilot, caption/character/audio and story parity reviewed; benchmarks RAM/latency on actual target PC |
 | Source integrity | Compiler projections and reviewed source snapshots are not casually writable; no ghost creative approval or fake PASS |
 
-## 7.1. Agent → Studio → Compiler → visible scene (single command)
+## 7.1. Agent → Studio → episode build → preview → video
 
-The **agent does not compile or upload scene images on its own**. It reads the approved script/timeline and allowed V4 catalog through the Studio task API, proposes a semantic `Visual Intent` edit through an authorized revision-checked command, and then invokes the planned Studio command `scene.compile` for one scene (e.g. S03). Zodiac Core resolves its **entire declared component manifest**, runs V4 asset builders + scene composition + voice/caption anchors + scoped validators, commits one immutable scene preview/artifact snapshot and emits `scene.preview_ready`. The embedded HyperFrames UI subscribes to that event and fetches the versioned local output. It should remain visible if agent disconnects.
+The main new-production path is **episode-centric**, not one externally orchestrated scene at a time:
 
-- **One request, all components:** when S03 requires three actor states, a physical prop, a Narrative Visual, a meme reaction and voice-anchored reveal, all are part of the **same logical build transaction**. Internal worker/process count is hidden.
-- **Never ship an incomplete scene:** a missing or invalid component blocks the entire candidate snapshot with structured `missing_nodes` and repair guidance; preserve previous healthy preview, no fake PASS.
-- **Cache correctly:** rebuild only dirty nodes (including shared asset consumers); verify all reused SHA/outputs and perform required validations. One changed prop must not trigger unconditional full episode rebuild.
-- **Separate authoring from compilation:** compiler cannot creatively invent an unsupported illustration simply because the agent requested it. For new unique art, agent must use an explicit authorized generator or propose a new V4 asset; it then becomes source-bound input.
-- **Mode distinction:** `preview` gives a complete technical-scene preview but **not human approval**; `review` includes full scene QC preparation without recording an approval decision.
-- **Protocol ownership:** `scene.compile` is handled by the Zodiac Core command/event boundary, not by the Codex App Server itself. A failing agent task never becomes a green scene state by a chat message.
+```text
+Approved Phase 1 + user-selected voice/time anchors
+     ↓
+Agent makes one complete episode storyboard / Visual Intent (source-revisioned)
+     ↓
+Studio: episode.build(project, revision, mode)  [ONE logical task]
+     ↓
+Zodiac Core computes one shared dependency DAG:
+    V4 actor/identity/pose SVGs + memes/props/context shared across scenes
+       →  scene composition/events/voice/captions on dependent ready scenes
+       →  progressive candidate previews / grouped technical and visual QA
+       →  one coherent episode artifact inventory and build receipt
+     ↓
+Studio receives episode progress + candidate scene previews; eventual episode.build_ready
+     ↓
+User reviews actual image/voice (never auto-approved) → selected export renderer
+     ↓
+Validated MP4/cover/subtitles/copy with real status and archive lineage
+```
 
-The normative proposed command/result and regression cases are in [Compiler VNext §3.1](./2026-11-14-zodiac-compiler-refactor-design.md). The API is **planned, not yet implemented**. Phase 3 owns its implementation and transaction tests; Phase 4 owns visible Studio binding.
+- **Primary public action: `episode.build`** compiles all scenes of the active episode from one canonical Visual Intent. Agent does not have to call the 15+ native scripts or create a Job@5 ZIP to view/edit an unfinished video. The compiler coordinates reusable assets across scenes once and schedules independent tasks concurrently within the measured Windows memory/disk budget.
+- **Secondary public action: `scene.compile(S03)`** is an *incremental iteration* command reusing the same episode DAG/contract, not the primary production job. Its scope prevents unrelated scenes from rebuilding.
+- **Fast feedback without fake completion:** Studio may display individual `scene.preview_candidate_ready` events while the full candidate builds. Only a complete verified episode produces `episode.build_ready`; candidate scene previews are not a full build/review PASS.
+- **Agent creativity is a separate bottleneck:** give the agent a compact episode-level planning capsule and structured first-draft contract, then a single grouped preflight issue report and targeted repair batch. Don't allow repeated agent context reload and full build for each single validator. Compiler quality checks protect required story/actor/prop/voice meaning.
+- **Ownership:** Studio owns source edits and approved project revision; Zodiac Core owns generated assets/build/receipts and local artifact service; agent submits semantic changes and commands only. No direct agent image upload into Studio, no silent human approval.
+- **Latency/evidence:** report entire handoff→review-ready and handoff→MP4 wall time as well as agent authoring, tool wait, native startup, cache, candidate preview, review and renderer spans. Existing native last-receipt figures are not overall episode duration.
+
+See [Compiler VNext §3.2](./2026-11-14-zodiac-compiler-refactor-design.md) for the normative proposed `episode.build` request, DAG, caching and transaction contract. Both commands are **planned, not implemented yet**; Phase 3 implements the core and Phase 4 connects the HyperFrames UI.
 
 ## 8.1. Compiler VNext is a dedicated production dependency, not an editor detail
 
@@ -221,7 +242,7 @@ The compiler refactor is **Phase 3** of the [eight-phase implementation roadmap]
 
 **Phase 2 — Real Voice Lab:** actual take listening/selection and measured speech timing before scene work, with immutable narration.
 
-**Phase 3 — Compiler VNext:** modularize the V4 core and ownership, make dependency-based asset/scene/preview rebuild reliable and fast, add story/visual fidelity gates and measured proof. Keep old entrypoints until parity.
+**Phase 3 — Compiler VNext:** unify V4 compiler ownership with an **episode-wide dependency DAG** and a one-command `episode.build` for all scenes; dedupe shared asset compilation, bounded parallelism, targeted `scene.compile` for edits, full story/visual QA and real end-to-end timing proof. Keep old entrypoints until parity.
 
 **Phase 4 — HyperFrames editor round-trip:** render S01 through new scene compiler API, bind editor SDK semantic edits → canonical Visual Intent → scoped rebuild and preview.
 
