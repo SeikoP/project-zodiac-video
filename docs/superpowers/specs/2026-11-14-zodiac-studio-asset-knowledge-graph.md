@@ -39,7 +39,7 @@ Source audit on repository main (November 14, 2026):
 
 ### 3.1 Episode semantic planning (creative)
 
-The agent reads the approved Phase 1 narration, selected measured voice anchors, concept and cast continuity. **Once per episode** where possible, it proposes explicit per-beat requirements:
+The agent reads the approved Phase 1 narration, selected measured voice anchors, concept and cast continuity. It also reads a **bounded recent-episode Visual Reuse Profile** from reviewed/published artifact manifests: repeated prop *model+appearance+view+action+shot*, not just family ID; see [V5 prop diversity](./2026-11-14-v5-prop-variant-diversity.md). **Once per episode** where possible, it proposes explicit per-beat requirements:
 
 - intended audience insight/visual payoff and why an image is needed (not all narration needs a prop);
 - performing actors and their relations; action, target, attention/gaze and before→after reaction;
@@ -71,7 +71,7 @@ If nothing satisfies the requirements: return `NO_FIT_ASSET` plus typed **new sc
 
 ### 3.4 Soft story ranking (human-testable, not fake quality score)
 
-Only feasible candidates are ranked by *relative* evidence: narrative causal relevance/payoff clarity, action/prop interaction readability, cast/scene continuity, meaningful variation across the episode, production/reuse cost, visual density and whether the candidate delays the reveal correctly. It may use an agent/LLM to compare **small candidate sets** and explain tradeoffs, but deterministic hard constraints must not be overridden by subjective LLM preference.
+Only feasible candidates are ranked by *relative* evidence: narrative causal relevance/payoff clarity, action/prop interaction readability, cast/scene continuity, **physical model/silhouette and recent-episode shot reuse**, meaningful variation across the episode, production/reuse cost, visual density and whether the candidate delays the reveal correctly. Five screen states of one phone are NOT five physical designs; preserving a character's intentionally recurring device overrides a soft novelty penalty. It may use an agent/LLM to compare **small candidate sets** and explain tradeoffs, but deterministic hard constraints must not be overridden by subjective LLM preference.
 
 Return 2–3 candidates with **source IDs, required acting states, feature reasons, proof of constraints, cost/reuse estimate, real thumbnail reference if available** and `not_approved`. Do not invent probabilities such as '94% viral' or rank from unverified prior clicks.
 
@@ -136,7 +136,7 @@ Implement the simplest in-memory indexed selector first. If free-text retrieval 
 - **P1:** Studio read-only `assets.describe` source/revision API, no pretend semantic recommender.
 - **P3:** implement BeatVisualRequirement type, typed capability map, hard filters, bounded bundle generation and minimal rank rationale **alongside** one `episode.build` manifest owner. Unit/negative tests for constraints and action/prop correctness. The selector is not the build DAG.
 - **P4:** agent receives structured scene/episode selection suggestions; Studio shows rationale and preview, user selection commits canonical intent via one revisioned command.
-- **P5:** use same capability map for V5 asset/theme/interaction gallery, incremental source refresh, previous episode usage and new asset creation review. No second graph, gallery DB or plugin HTML for fresh flow.
+- **P5:** use same capability map for V5 asset/theme/interaction gallery, incremental source refresh, previous episode usage and new asset creation review; **pilot 3 physically distinct approved phone SVG masters**, real state/view/hand-contact combinations and deliberate reuse warnings, not superficial recolors. No second graph, gallery DB or plugin HTML for fresh flow.
 - **P7:** A/B with existing plugin-based selection and same sample scenes; ship only if candidate feasibility, Visual Review and end-to-end agent repair time improve with no regression.
 
 ## 7. Acceptance criteria (behavior, not diagram presence)
