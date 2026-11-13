@@ -92,25 +92,27 @@
 
 **Gate P4:** real V4/V5 S01 acting, one voice reveal, and two visibly different light/dark theme renders round-trip through source/Studio with identity unchanged and no narration drift; crash/reopen and unsupported ops are safe.
 
-## 5 — Visual V5 Palette + Asset Factory + BGM/SFX Library in Studio
+## 5 — Visual V5 palette, performance asset factory and real gallery
 
-**Deliverable:** a real selectable palette/character/prop/meme gallery and a separate source-checked **music/SFX library** inside the same Zodiac window. Keep V5 extension tasks reviewable and independent from video export.
+**Deliverable:** the new **V5 visual-theme system** and performance-aware actor/prop/meme library can be inspected and edited inside Zodiac, with real scene previews and no duplicate renderer or shadow asset catalog.
 
-- **5.1** Authoritative V4/V5 capability/retirement registry for bodies/hair/outfits/faces/poses/physical props/meme before-after and genuine context; retire Scene Set from fresh selection, preserve legacy package decode.
-- **5.2** Role-based visual-theme resolver, source/appearance fingerprint cache and real editor preview; vet **three genuinely distinct palette families including a dark palette**, with contrast and foreground/outfit/caption QA. No blind global hex-substitution for fresh SVGs.
-- **5.3** Expand towards **up to eight candidate** visual theme families, useful V5 facial/outfit/hand-contact/procedural prop diversity, lazy thumbnails and proof of effect on real scenes. No palette × actor eager cross-product and no mandatory generative-image service.
-- **5.4** **Audio Library + integrated gallery:** one catalog of actual playable local files with hash/license/preview, existing 16 Mixkit tracks **metadata-only until legitimately imported**, original CC0 SFX selectively auditioned, curated voice-friendly BGM mood bins and sparse semantic SFX cues. Search/listen/select on the measured voice timeline; missing/unlicensed items cannot be used silently; do not package raw third-party sound assets by default.
+- **5.1** One authoritative V4/V5 registry for bodies/hair/outfits/faces/poses, prop/meme/contact and retired Scene Set capabilities; preserve pinned legacy decode, remove Scene Set from fresh selection and check interaction anchors.
+- **5.2** Role-based visual theme resolver and source/appearance fingerprints; vet first **three genuinely distinct palettes including one dark** with real 1080×1920 frames, caption/character/prop contrast QA, no blind hex substitutions.
+- **5.3** Expand to **up to eight V5 visual theme candidates**, quality improvements in hair/face/outfit/hand-contact and selected procedurally-authored story props; lazy preview/raster cache without a theme × actor cross-product.
+- **5.4** In-Studio **visual gallery**: inspect actual component state/pose/hair/face, physical prop and meme before/after, select theme and update S01 intent through approved commands; agent reads the same registry and revision.
 
-**Gate P5:** all real V5 actor/asset/meme previews and at least three **human-reviewed** visually different palettes available; a dark theme keeps two-line Vietnamese captions and actor/props legible; imported local music and event SFX can be auditioned and provenance verified. Silence remains a valid choice; catalog-only file is labeled unavailable.
-## 6 — Concept × 12, episode library and packages
+**Gate P5:** at least three human-reviewed distinct visual palettes including one dark, actual V4/V5 body/hair/outfit/pose/face/prop/context/meme previews, safe scene palette selection, source hashes and identity/contrast QA; old Job@5 remains reproducible.
 
-**Deliverable:** one truthful concept×sign×episode registry and usable voice/video/ZIP/cover browsing, with existing cleanup/restore reused.
+## 6 — Concept × 12, episode library, licensed audio catalog and packages
 
-- **6.1** Merge existing checklist/series tracker/planned concepts into evidence-based concept×sign×episode projection. Unknown != finished; single-/multi-sign scopes remain distinct.
-- **6.2** Episode library displays blockers, approvals, voice takes, covers, video and package status from one index. No manual "done" flag substituted for receipts.
-- **6.3** Reuse package/media scanners, artifact lineage and reversible archive/restore; import old Job@5; never delete last healthy ZIP or source.
+**Deliverable:** one evidence-based concept×sign×episode registry and in-Studio media browser including a **real local rights-aware BGM/SFX catalog**, finished MP4/covers/voice/ZIP and reversible archive operations. No playable files fabricated from catalog metadata.
 
-**Gate P6:** 12-sign coverage correct for single/multi-sign cases; approved content, accepted voice, reviewed visual, exported video and published states stay distinct; old/current projects appear once; archive+restore proven.
+- **6.1** Merge existing checklist/series/concept backlog into evidence-based concept×sign×episode projection; unknown != finished, single/multi-sign scopes distinct.
+- **6.2** Episode project library reports genuine Content Review, voice-take selection, Visual Review, exported-vs-published states and blockers; no manual unverified DONE flag.
+- **6.3** **Audio Library**: scan/import legitimate local music/SFX plus optional original CC0 samples, model Mixkit entries as metadata-only until independently imported; catalog by mood/action, license/rights SHA and `FILE_MISSING` status. Audition/select BGM and event-anchored optional SFX in Studio from the measured audio timeline. No raw third-party audio in publicly distributed Studio/ZIP by default.
+- **6.4** Existing media/package scanners, ZIP/cover/voice video records and provenance, safe archive/restore; preserve last healthy source/video and old Job@5 importer.
+
+**Gate P6:** accurate concept×12 status; selected playable audio files must be verifiably present/licensed and audio audition functional, event cue anchors source-bound, silence also valid; legacy/current projects de-duplicated, archive+restore safe, media artifact evidence unambiguous.
 
 ## 7 — Full E2E, Audio Mix V2, export backend trial and retirement gate
 
