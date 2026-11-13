@@ -1,20 +1,40 @@
-# Native Phase1 briefing
+# Creative Phase-1 briefing
 
-Fresh >=2.4.48: Evidence writes evidence-ledger.json/evidence-summary.md, runs compile-evidence-brief.mjs <root> --write before evidence validator. Ledger entries require actual HTTP(S) URL, claim_class (astrology_interpretation/editorial_inference/fictional_example/language_corpus), scope, exact supported interpretation, canonical_url/original_author/source_origin when known, and actual date when available. Mark unresolved conflicts; compilation blocks them. Mirrors/shared original author are one source. Never invent authors/dates or claim statistical behavior from archetype evidence. Select a useful bounded ledger before compilation; oversized briefs block instead of silently dropping evidence.
+Phase 1 is a writing workflow, not a producer-runtime workflow.
 
-Stop research when central interpretation has independent useful support, scope is clear and material conflicts are resolved. Extra tools reading one page add no independence. Record actual provider results; fallback routing is a plan, not proof.
+## Evidence
 
-Concept may author `narrative_visuals[]` only when a central story point is clearer as one concrete visible subject/action than as actor performance, a physical prop, or short Story Text. There is no Narrative Visual quota. When used, author one `visual_idea` only, with source-bounded `trait_basis`, `story_point`, `viewer_read`, concrete `visible_subject`/`visible_action`, `centrality_reason`, `why_visual_not_text`, concept/tone fit and optional payoff. Validate with `validate-narrative-visual-direction.mjs <root>`. Phase 2 executes that exact direction; it must not invent another concept. Concept also authors writer-brief-extras.json with compact rhythm_direction, forbidden_claims and optional audience_vibe/narrator_vibe/situation_territories/motif_candidates/creative_direction. Compile with compile-writer-brief.mjs <root> --write. Canonical premise, Story Spine, identity facets and mechanics come from actual candidates/plans/evidence. Do not put raw plans, SRT or full QC in extras.
+Use current research when it materially improves the episode. Two independent, useful sources are normally enough for the central interpretation. Separate astrological tradition from empirical fact; do not present archetype language as scientifically verified personality behavior.
 
-Narration draft uses brief + minimal evidence. Set context_role=review for editorial review of actual narration/plan/QC; this is one native reviewer pass, not an imaginary independent agent. The role change does not waive gates or create user approval. Search occurs in Evidence/Concept, not inside isolated draft context.
+Extract only what helps the story: mechanism, tension, contradiction, emotional stake and distinctive behavior.
 
-Commit each step with commit-phase01-step.mjs <root> <evidence-file>. Include expected_state_sha256, nonempty expected_source_hashes keyed by real safe paths, files with path/kind, actual capability receipts, outputs and gate_results. Compiler changes are material operations. State/source drift, missing outputs, invalid receipts or failed gates block atomic commit. Final Narration advances to IN_REVIEW, never APPROVED. Recovery records reconstructed provenance; unchanged approved narration stays byte-locked, changed words require genuine review.
+## Voice
 
-## Episode writer path
-For fresh scoped runs read episode-formats.md. Compile Narrative2.1 into zodiac-episode-writer-brief@1, selected evidence and exact member lenses; never alias the group to sign. Keep 10KB hard budget and rhythm_direction. Draft excludes pool; review challenges each spoken identity plus shared thesis/ranking order.
+Write a compact Voice Profile before narration. It should describe:
+- narrator attitude;
+- normal versus sharp delivery;
+- sentence length/shape;
+- humor behavior;
+- emotional restraint;
+- phrases or habits to avoid;
+- any user-supplied style anchors.
 
-creative_direction preserves compact user intent, including humor, restraint, narrative freedom and exclusions; compiler carries it unchanged and fingerprints extras. Do not lose creative instructions while minimizing context.
+The first narration draft should already sound like this voice.
 
+## Concept
 
-## Review surface policy
-Phase 1 creates no user-facing ZIP. Present concept selection, final Narration, compact QC and review status directly in chat. Keep workspace/state/receipt artifacts internal; expose a specific diagnostic file only when it helps resolve a concrete issue. Packaging belongs exclusively to Phase 3.
+Compete genuinely different premises. A concept must depend on the target sign's mechanism, not merely mention the sign. Prefer an idea with conflict, irony or contradiction over a catalogue of traits.
+
+## Narrative Design
+
+Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `narrative_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
+
+The Writer Brief is a compact creative bridge, not a compiler product. Preserve creative direction, voice, rhythm, key beats and exclusions.
+
+## Narration and review
+
+Write first, then review the actual text. Review for Zodiac identity, voice fidelity, story progression, hook strength, spoken flow and ending payoff. Repair locally when the premise still works; return to Concept only when the story engine is wrong.
+
+No native validator or performance optimizer is required on Web.
+
+After explicit user approval, create a lightweight handoff capsule containing only the approved creative artifacts and Content Review proof. Local owns native state and production validation.
