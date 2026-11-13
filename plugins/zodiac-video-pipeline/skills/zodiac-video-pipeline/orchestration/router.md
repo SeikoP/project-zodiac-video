@@ -1,107 +1,43 @@
-# Three-phase router
+# Zodiac router
 
-The installed router owns order and review. Phase manifests own capabilities,
-validators and outputs. Current user direction and genuine approvals govern the
-episode; source transport never becomes a creative brief.
+The workflow has three ownership zones:
 
-## Execution source
-Read `execution-bootstrap.md`. Restore only verified phase-scoped executable
-bytes with commit identity, version and SHA-256 inventory. A skill read or file
-listing is not executable source. Run `execution-preflight.mjs` before native
-compilation. Missing source blocks; preflight READY does not grant phase PASS.
-Production source transport must not use Plugin Creator. It is an update tool.
-Do not fall back to main, another release or a whole-repository runtime download.
+1. **01-content / Web** — creative microphases and Content Review.
+2. **02-visual-production / Local** — native visual authoring, compilation and Visual Review.
+3. **03-handoff / Local** — validated Job@5 handoff.
 
-## Flow
-1. `01-content`: Evidence → Concept → Narration → CONTENT REVIEW.
-2. `02-visual-production`: Visual Compile → Semantic Assets → Publish Prep → VISUAL REVIEW.
-3. `03-handoff`: seal approved source → Job@5 Assemble → static gates → one ZIP export and archive QC.
+Current user direction and genuine approvals govern the episode.
 
-Use only the active phase manifest and current-step guidance. Run
-`resume-brief.mjs <workspace> --context` for source-bound task delivery, or `plan-step-context.mjs` for its exact bounded references in the loading plan. Fetch pending required blocks before their capability is used. Reuse across steps/phases requires explicit caller-held capsule acknowledgement; see `references/chatgpt-runtime.md`. Do not reload the whole router or unrelated phases between steps. Deferred review guidance enters only at review; all validators remain required. Retired source,
-old episode examples and migration prose are absent from the current asset
-surface; no agent should search them to fill a missing choice. Continuity jobs
-requiring removed capabilities use their separately pinned recovery snapshot,
-never an implicit compatibility flag in the current library.
+## Phase 01 — creative-first Web
 
-## Native state and evidence
-- Durable outputs and executed validator receipts precede step commits.
-- Run validators through `run-validator-with-receipt.mjs`; record real operations.
-- Required-review phases finish in IN_REVIEW until explicit user approval.
-- Bind genuine user-message review receipts to exact source hashes. Recovery may
-  preserve an evidenced approval; it must not fabricate one or silently migrate it.
-- Missing pipeline state returns PIPELINE_STATE_MISSING_NO_AUTO_APPROVAL.
-- Reuse requires matching input, compiler, selected asset and output SHA-256.
-  SKIPPED_REUSED creates neither approval nor export permission.
+Run:
 
-## Fast execution overlay
+**Evidence → Voice → Concept → Narrative Design → Narration → CONTENT REVIEW**
 
-Use `orchestration/fast-pipeline.md` as an optional performance-only overlay; it never changes the three phases, required gates, or approval semantics. After `plan-step-context.mjs`, the agent may use `core/performance/compile-step-capsule.mjs` to receive the same current references in a bounded, SHA-verified bundle. Reuse/delta requires an explicit caller-held matching capsule ID; otherwise provide complete current references. Record agent/tool/review wait separately using `core/performance/fast-profile-cli.mjs` when observable. Native Phase 2 automatically records `.authoring/fast-pipeline-profile.json` and runs independent preflight validators concurrently with separate receipts; all required checks remain blocking.
+Phase 1 intentionally does not use native execution bootstrap, npm/runtime dependencies, compiler receipts, validator receipts, cache/reuse infrastructure or performance overlays. Splitting the work into smaller creative phases is the optimization.
 
-## Contract-first resume loop
+After scope is known, continue autonomously. Do not ask for routine approval between microphases. The Content Engine selects the strongest concept unless the user explicitly requests options.
 
-Before each step, re-read `.authoring/pipeline-state.json`, resolve the phase through
-`phase-index.json`, and select the current manifest step. Use `plan-step-context.mjs`
-to load its bounded references and capability routes. Apply conditional capabilities
-only when the current state satisfies their manifest condition. Do not trust a copied
-Studio pointer after the workspace may have changed.
+Evidence should be sufficient, not exhaustive. Concept generation should remain broad until a sign-specific premise wins. Narrative Design owns Story Spine and creative direction. Narration owns the exact spoken text.
 
-After each step, verify its required outputs, gates and validator receipts before
-committing state. Move to the next step only after that commit succeeds. At phase
-boundaries, use the existing gates:
+There is one required human boundary: Content Review.
 
-| Phase | Entry and exit contract |
-| --- | --- |
-| 01-content | Complete manifest outputs and content gates, obtain the required user review receipt, then pass `phase02-transition-gate.mjs --entry-only` as `ENTRY_READY` before `activate-phase02.mjs`. |
-| 02-visual-production | Use activated Phase 01 source; complete manifest outputs and native visual evidence, obtain visual review approval, then pass the seal gate and write the review lock. |
-| 03-handoff | Start from the approved source and review lock; validate and export one Job@5 ZIP. Report local-runner import readiness separately from rendered MP4 and media acceptance. |
+After explicit approval, export one `zodiac-phase1-handoff@2` capsule with the approved creative artifacts. Web never activates Phase 2.
 
-The phase manifests stay the only source for per-step capabilities, outputs and
-gates. This resume loop adds no second orchestration engine and never creates approval.
+## Phase 02 — native Local production
 
-## Phase 01
-Use `references/phase01-briefing.md` and the selected episode format. Fresh scoped episodes use Narrative 2.1, sourced claims and one coherent Story Spine. The series tracker is a ledger; only minimized selected scope enters authoring. Commit actual authored files with real checks through `commit-phase01-step.mjs`.
+Local imports the Phase-1 capsule, verifies its inventory and genuine Content Review, reconstructs native pipeline state, and activates Phase 2.
 
-**Autopilot rule:** after scope is known, do not stop between Evidence, Concept and Narration for user confirmation. Research, candidate competition, concept selection, hook/story-spine construction, QC repairs and validator retries are internal work. Ask only when scope is materially ambiguous or when the completed Narration reaches the single Content Review boundary. If the user explicitly asks to choose among options, surface them; otherwise the Content Engine selects the winner and continues.
+Author the canonical Visual Intent from the approved narration and Narrative Plan. Preserve sign identity, Story Spine, Voice Profile and any Phase-1 narrative-visual direction. Phase 2 may invent visual execution but must not rewrite the approved story.
 
-## Phase 01 → Phase 02
-Run `phase02-transition-gate.mjs --entry-only`, read its approved handoff context
-and source hashes, then `activate-phase02.mjs` on ENTRY_READY. Create Visual Intent and derived plans inside the active phase; full authoring readiness still gates native compilation. Activation changes orchestration
-state only. Preserve the approved narration and scope. It creates no native PASS.
+Use the current native asset/scene/preview validators and require genuine Visual Review before sealing production.
 
-## Phase 02
-Read `phases/02-visual-production.md` and the current JSON manifest. Current
-selection uses `references/asset-library-v4/selection-guide.md`; generate the
-native catalog surface through `features/asset-selection/build-current-asset-review.mjs`.
-No old package, sign example, identity or environment is an automatic default.
+## Phase 03 — handoff
 
-Author only the canonical `.authoring/visual-intent.json`. The explicit episode cast mapping, Scene Plan, Director beats, art direction, semantic asset decisions and scene events live in that source. Run `write-phase02-authoring.mjs` to project production, Character Assembly, Visual Grammar, Asset Plan, Director Plan, Art Direction and Episode Cast Plan. Never hand-edit a projection; projection drift is a blocker. Select character identity once; state changes only pose/expression. Plan actions and state assets before SVG generation. No post-generation deduplication. Fresh runs use canvas-native backgrounds; Scene Set is compatibility-only and must never be selected for fresh authoring. Foreground characters keep independent composition and physical support. Scene Accents are optional canvas-relative context cues and never enclose actors; Narrative Visuals do not replace the background.
+Use the approved Phase-2 source and review lock to assemble and validate one Job@5 ZIP. LocalRunner owns TTS, measured timing, captions, Remotion, audio and MP4 acceptance.
 
-Before `phase02-execute.mjs`, fill the semantic completeness structure **inside Visual Intent**: Scene Plan → cast/character identity → context/background decision → physical prop participation → Narrative Visual decision/entities → director beats → per-beat visual coverage → scene events. The compiler expands those decisions into the derived plans. Missing any required layer blocks before native asset compilation. Run `phase02-execute.mjs` with verified source and actual authoring inputs, then
-all manifest capabilities, selected meme/prop work and Director/native QC.
-NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED is not Visual Review PASS. Compile
-scene-complete review frames and two actual endpoints per event, validate them,
-then prepare the clean review surface through `prepare-phase02-review.mjs`.
-Inspect every scene and endpoint. No substitute HTML or fabricated SVG counts as
-compiler evidence. Motion-only endpoints retain runner temporal QA pending.
+## Review semantics
 
-## Phase 03 and runner
-Use `run-phase03-production.mjs` against approved source and review lock. Every
-authored event has explicit motion intent; handoff does not invent performance.
-Export `zodiac-job@5` with canonical `production.ir.json`, `design-token.json`,
-ordered narration, referenced assets and publish files. One root-flat ZIP per
-revision, reopened for CRC and roundtrip, reaches LOCAL_RUNNER_IMPORT_READY.
-Preserve the renderer version selected by the canonical contract.
+Content Review and Visual Review are user decisions. Technical checks can verify structure and production readiness but never create approval.
 
-Local runner owns TTS, measured timing, Remotion, captions, cover rasterization,
-audio and MP4 acceptance. Native review, ZIP readiness and final media readiness
-are separate. A missing runner is not a producer blocker. Recover a verified
-existing ZIP through `commit-phase03-release.mjs`; do not export duplicates.
-Content creates no assets or ZIP; Phase 01 and Phase 02 create no user-facing ZIP. Their normal output surface is direct chat text/images plus specific diagnostic files only when needed. Only Phase-03 export owns packaging. `zodiac-publish-bundle.zip` is forbidden.
-
-## Advertisement and revision ownership
-Fresh workspaces use one fictional ad in the canonical Narrative Plan and narration; real affiliate routing is paused. Follow references/affiliate-commerce.md in the owning step. No commerce files, discovery, product media or affiliate handoff are required. Preserve existing approved workspaces; do not silently add an ad to them.
-
-For revisions, use assess-revision-impact.mjs on the approved snapshot and working copy before changing state. Its resume_from names the earliest affected step; its tasks and semantic guidance identify revalidation and reusable scenes. The report grants no approval. For an unapproved Phase 02 in review, use reopen-phase02-for-source-update.mjs --amend with a reason before write-phase02-authoring.mjs --revise. The writer updates all derived plans from the canonical Visual Intent and restores prior bytes on failure. Approved content stays hash-bound.
-
-Do not create additional summaries, copied plans/checklists or per-attempt diagnostics by default. Required projections and genuine receipts remain internal. An impact report can stay on stdout; only explicit --output creates a report file.
+A content revision after approval reopens Phase 1 only when narration or its story meaning changes. Pure visual changes stay in Phase 2.

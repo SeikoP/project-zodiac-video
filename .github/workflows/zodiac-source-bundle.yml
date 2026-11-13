@@ -7,7 +7,6 @@ on:
         required: true
         type: choice
         options:
-          - 01-content
           - 02-visual-production
           - 03-handoff
   push:
@@ -23,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        phase: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.phase) || '["01-content","02-visual-production","03-handoff"]') }}
+        phase: ${{ fromJSON(github.event_name == 'workflow_dispatch' && format('["{0}"]', inputs.phase) || '["02-visual-production","03-handoff"]') }}
     env:
       BUNDLE_PHASE: ${{ matrix.phase }}
     steps:

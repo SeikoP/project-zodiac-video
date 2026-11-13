@@ -5,7 +5,7 @@ description: Resume Zodiac production locally from phase1-done/, run Phase 2 and
 
 # Zodiac Video Local
 
-This distribution owns Phase 1 handoff import plus **Phase 2 and Phase 3**. It never performs new Evidence/Concept/Narration work.
+This distribution owns Phase-1 handoff import plus **Phase 2 and Phase 3**. It never performs new Evidence/Voice/Concept/Narrative Design/Narration work. It accepts legacy `zodiac-phase1-handoff@1` and the creative-first `zodiac-phase1-handoff@2`; for v2 it verifies approved creative hashes and constructs native pipeline state locally.
 
 ## Execution source
 
@@ -17,7 +17,7 @@ For episode production, immediately on invocation, before asking the user for an
 
 `node skills/zodiac-video-pipeline/phases/local/local-bootstrap.mjs <queue-root> [--run-id <run-id>]`
 
-The default queue root is `ZODIAC_QUEUE_ROOT` when set, otherwise the current working directory. The bootstrap atomically claims the oldest valid handoff in `phase1-done/` before resuming existing work, preserving every active workspace. When no handoff is waiting it resumes the sole active workspace; if several are active, select the intended one with `--run-id <run-id>`.
+The default queue root is `ZODIAC_QUEUE_ROOT` when set, otherwise the current working directory. The bootstrap atomically claims the oldest valid handoff in `phase1-done/` before resuming existing work, preserving every active workspace. A v2 capsule deliberately contains no Web pipeline-state or validator receipts; Local synthesizes the native Phase-1 PASS boundary from the genuine Content Review and approved payload hashes before activation. When no handoff is waiting it resumes the sole active workspace; if several are active, select the intended one with `--run-id <run-id>`.
 
 For pipeline review, audit or performance work, inspect existing sources and receipts without claiming a handoff or starting an episode.
 

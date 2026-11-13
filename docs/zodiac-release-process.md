@@ -1,67 +1,62 @@
 # Zodiac Plugin Release Process
 
-The normal release flow is **main-native**. Do not create temporary release transport branches.
+The normal release flow is **main-native**.
 
 ## Canonical version
 
-One canonical version is maintained in:
+Keep one version aligned across:
 - `plugins/zodiac-video-pipeline/plugin.json`
 - `plugins/zodiac-video-pipeline/.codex-plugin/plugin.json`
 - `plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json`
 
-The repository builds three archives from that source:
-1. `zodiac-video-web` — the installable ChatGPT Web Phase-1 distribution.
-2. `zodiac-video-local` — the installable ChatGPT CLI/local Phase-2/3 distribution.
-3. the monolithic candidate — transition/rollback only, not the normal user entrypoint.
+The normal installables are:
+1. `zodiac-video-web` — creative Phase 1.
+2. `zodiac-video-local` — native Phase 2–3.
+3. monolithic candidate — rollback/transition only.
 
-`.github/workflows/zodiac-plugin-release.yml` builds all three deterministically after the canonical version/source changes.
+## Web release
 
-## Split plugin release lineage
+Web is intentionally lightweight. It packages the Web skill, creative Phase-1 guidance and the handoff contract only.
 
-After installing/publishing the Web and Local archives, record their release identities in `docs/zodiac-plugin-release.json` using `zodiac-plugin-release@2`:
+Web does **not** need:
+- a phase-scoped execution source bundle;
+- npm/runtime dependencies;
+- native validators or compiler receipts;
+- cache/performance modules;
+- pipeline-state during authoring.
 
-```json
-{
-  "format": "zodiac-plugin-release@2",
-  "plugin_version": "2.8.0",
-  "source_commit": "<implementation commit>",
-  "web_plugin": {"plugin_id": "<id>", "release_id": "<release>"},
-  "local_plugin": {"plugin_id": "<id>", "release_id": "<release>"}
-}
-```
+After Content Review, Web exports `zodiac-phase1-handoff@2` using host file tooling.
 
-Phase-scoped source provenance resolves ownership as:
-- `01-content` → Web plugin release.
-- `02-visual-production` and `03-handoff` → Local plugin release.
+## Local release and execution source
 
-Legacy `zodiac-plugin-release@1` remains supported for the 2.7.16 rollback baseline.
+Local remains the native producer. After publishing Web and Local, record the installed release IDs in `docs/zodiac-plugin-release.json`.
 
-## Phase-scoped execution bundles
+The release record maps native execution provenance only for:
+- `02-visual-production` → Local release.
+- `03-handoff` → Local release.
 
-1. Merge the implementation/plugin archive commit to `main`.
-2. Install/publish both split archives and obtain release IDs.
-3. Commit the v2 release record to `main`, with `source_commit` pointing at the implementation commit.
-4. `.github/workflows/zodiac-source-bundle.yml` builds exactly `01-content`, `02-visual-production`, and `03-handoff`.
-5. Verify each artifact's distribution, release ID, source commit, SHA-256 inventory, and execution preflight.
-
-Plugin archives and source bundles never imply Content Review or Visual Review approval.
+`.github/workflows/zodiac-source-bundle.yml` builds only those two native execution bundles. Legacy tooling may still understand a Phase-1 source bundle for rollback/recovery, but it is not part of the normal Web path.
 
 ## Episode transport
 
-Web Phase 1 exports `zodiac-phase1-handoff@1`. The user copies the ZIP to local `phase1-done/`, then invokes `zodiac-video-local`. The local bootstrap verifies and claims it into `processing/`. After Phase 2 approval and Phase 3 validation, only the canonical Job@5 ZIP is atomically published into `ready/`.
+Web exports `zodiac-phase1-handoff@2` with:
+- narration;
+- Narrative Plan;
+- Episode Scope;
+- Writer Brief;
+- Voice Profile;
+- genuine Content Review proof;
+- SHA-256 inventory.
 
-Git is not episode transport.
+Local verifies the capsule, reconstructs native pipeline state, activates Phase 2, and never rewrites approved narration unless content is explicitly reopened.
 
-## Manual recovery
-
-Plugin and source workflows retain `workflow_dispatch`. Manual dispatch is for recovery/diagnostics only.
-
-Rollback baseline 2.7.16 is pinned by `backup/zodiac-2.7.16` and `docs/backups/zodiac-2.7.16.json`.
+Legacy `zodiac-phase1-handoff@1` remains import-compatible.
 
 ## Invariants
 
-- Web owns Phase 1 and never activates Phase 2.
-- Local owns imported handoff + Phase 2–3 and never rewrites approved narration.
-- Phase source bundles must match the release ID of the distribution that owns that phase.
-- `ready/` contains only validated Job@5 producer packages; LocalRunner still owns media runtime.
+- Web owns creative Phase 1 and never activates Phase 2.
+- One explicit Content Review is the Phase-1 human boundary.
+- Local owns native Phase 2–3 validation and production.
+- Source transport never creates approval.
+- `ready/` contains only validated Job@5 producer packages; LocalRunner owns media runtime.
 - Existing released ZIPs are never overwritten.

@@ -11,14 +11,14 @@
           "Interactive"
         ],
         "category": "Productivity",
-        "defaultPrompt": "Follow skills/zodiac-video-pipeline/SKILL.md and orchestration/router.md: 01-content → 02-visual-production → 03-handoff. Before each step, run orchestration/resume-brief.mjs <workspace> --context and use its source-bound task, policy and selected references. Fresh episodes use character_deconstruction. Fresh runs include one story-triggered fictional product parody in the Narrative Plan without spoken or on-screen meta labels; real affiliate routing and commerce artifacts are paused. Preserve approved narration and genuine Content Review / Visual Review. Keep all scene beats and use native compiler, validator, and receipt gates. In ChatGPT, execute only from the verified phase-scoped bundle matching installed version and commit.",
+        "defaultPrompt": "Route Web Phase 1 as creative microphases: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Web uses no native source bootstrap, runtime dependency provisioning, validator receipts or performance overlay. Local owns native Phase 2-3 execution and preserves approved content.",
         "developerName": "Personal",
         "displayName": "Zodiac Video Pipeline",
-        "longDescription": "Zodiac story production with semantic V4 visuals and Job@5 handoff.",
+        "longDescription": "Creative-first Web authoring with native Local visual production and Job@5 handoff.",
         "shortDescription": "3-phase Zodiac video workflow"
       }
     }
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.11.3"
+  "version": "2.12.0"
 }
