@@ -21,7 +21,7 @@
 | `plugins/.../contracts/production-model-v1.schema.json` | **Keep v1 as legacy adapter** unless new functionality truly consumes it | New canonical Visual Intent / typed scene graph supersedes full model duplication | P3 compatibility |
 | `contracts/error-v1.schema.json` and `contracts/manifest.json` (`zodiac-contract-registry@1`) | **Keep v1** unless their *own* wire semantics change | Stable error and registry metadata aid backward compatibility; version inflation has no benefit | P0/P3 regression |
 | `contracts/zodiac-job-v5.schema.json` | **Keep v5** for existing package import/export | No need to bump old Job@5 merely because Studio adopts V5 artwork; optional new package must negotiate or embed versioned media manifest | P6/P7 |
-| `tools/studio_v2/executor.py` `AUDIO` stage, internal producer version `1` | **Audio mix engine v2 HIGH** (internal implementation version) + new **`zodiac-audio-design@1`** contract; don't pretend an old audio-design schema exists | Current path can mix one looping music track with voice at fixed gains, but has no cue tracks/ducking/rights proof/preview score | P5 library and P7 mixer, optionally P2 audition/preview |
+| `tools/studio_v2/executor.py` `AUDIO` stage, internal producer version `1` | **Audio mix engine v2 HIGH** (internal implementation version) + new **`zodiac-audio-design@1`** contract; don't pretend an old audio-design schema exists | Current path can mix one looping music track with voice at fixed gains, but has no cue tracks/ducking/rights proof/preview score | P6 media/audio catalog and P7 mixer, optionally P2 voice-only audition/preview |
 
 ## 2. What was NOT found
 
@@ -35,7 +35,7 @@
 - **Runtime/plugin/package version** is an independent lifecycle: do not infer it from a schema name, or unilaterally bump plugin version on a docs-only PR. Every migration requires unit/negative tests and legacy completed-episode open/replay.
 - **New contracts start @1:** `zodiac-audio-design@1`, `zodiac-visual-theme@1`, `zodiac-v5-performance-graph@1` if a separately materialized **derived** performance graph is needed. Do not call them v2 because nearby contracts use v1.
 - **No duplicated native and plugin schema owners:** retain `contracts/manifest.json` as public contract registry; use generated plugin bundle and hash tests for mirrored schemas, not independent manual copies.
-- **Priority:** first ship P2 timing semantics and P3 compiler/performance/motion/theme contracts; P5 media library schema and P7 audio/export metadata follow. Keep untouched formats pinned when old runtime needs them.
+- **Priority:** first ship P2 timing semantics and P3 compiler/performance/motion/theme contracts; P6 audio/media library schema and P7 audio/export metadata follow. Keep untouched formats pinned when old runtime needs them.
 
 ## 4. Required migration tests
 
