@@ -13,11 +13,33 @@
       "conditional_capabilities": [],
       "required_outputs": [],
       "gate_checks": [],
-      "allowed_operations": ["read_context", "external_tool_call", "write_authoring"],
-      "allowed_context_categories": ["current_request", "current_attachment", "live_research", "explicit_reference"],
-      "forbidden_context_categories": ["old_package", "asset_rules", "renderer_rules", "runtime_rules"],
-      "load_references": ["references/research-and-viral-tools.md", "references/zodiac-identity-first.md", "references/episode-formats.md"],
-      "creative_outputs": ["evidence-summary", "identity-mechanism", "tension-map"]
+      "allowed_operations": [
+        "read_context",
+        "external_tool_call",
+        "write_authoring"
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "current_attachment",
+        "live_research",
+        "explicit_reference"
+      ],
+      "forbidden_context_categories": [
+        "old_package",
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules"
+      ],
+      "load_references": [
+        "references/research-and-viral-tools.md",
+        "references/zodiac-identity-first.md",
+        "references/episode-formats.md"
+      ],
+      "creative_outputs": [
+        "evidence-summary",
+        "identity-mechanism",
+        "tension-map"
+      ]
     },
     {
       "id": "voice",
@@ -26,11 +48,29 @@
       "conditional_capabilities": [],
       "required_outputs": [],
       "gate_checks": [],
-      "allowed_operations": ["read_context", "write_authoring"],
-      "allowed_context_categories": ["current_request", "current_attachment", "evidence_summary", "explicit_reference"],
-      "forbidden_context_categories": ["asset_rules", "renderer_rules", "runtime_rules"],
-      "load_references": ["references/voice-profile.md", "references/voice-benchmark.md", "references/narrator-performance.md"],
-      "creative_outputs": ["voice-profile"]
+      "allowed_operations": [
+        "read_context",
+        "write_authoring"
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "current_attachment",
+        "evidence_summary",
+        "explicit_reference"
+      ],
+      "forbidden_context_categories": [
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules"
+      ],
+      "load_references": [
+        "references/voice-profile.md",
+        "references/voice-benchmark.md",
+        "references/narrator-performance.md"
+      ],
+      "creative_outputs": [
+        "voice-profile"
+      ]
     },
     {
       "id": "concept",
@@ -39,11 +79,34 @@
       "conditional_capabilities": [],
       "required_outputs": [],
       "gate_checks": [],
-      "allowed_operations": ["read_context", "external_tool_call", "write_authoring"],
-      "allowed_context_categories": ["current_request", "evidence_summary", "voice_profile", "explicit_reference", "capability_output"],
-      "forbidden_context_categories": ["old_package", "asset_rules", "renderer_rules", "runtime_rules"],
-      "load_references": ["references/content-craft.md", "references/content-quality-engine.md", "references/narrative-modes.md", "references/engagement-engine.md"],
-      "creative_outputs": ["concept-candidates", "selected-concept"]
+      "allowed_operations": [
+        "read_context",
+        "external_tool_call",
+        "write_authoring"
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "evidence_summary",
+        "voice_profile",
+        "explicit_reference",
+        "capability_output"
+      ],
+      "forbidden_context_categories": [
+        "old_package",
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules"
+      ],
+      "load_references": [
+        "references/content-craft.md",
+        "references/content-quality-engine.md",
+        "references/narrative-modes.md",
+        "references/engagement-engine.md"
+      ],
+      "creative_outputs": [
+        "concept-candidates",
+        "selected-concept"
+      ]
     },
     {
       "id": "narrative_design",
@@ -52,11 +115,34 @@
       "conditional_capabilities": [],
       "required_outputs": [],
       "gate_checks": [],
-      "allowed_operations": ["read_context", "write_authoring"],
-      "allowed_context_categories": ["current_request", "evidence_summary", "voice_profile", "selected_concept", "explicit_reference"],
-      "forbidden_context_categories": ["asset_rules", "renderer_rules", "runtime_rules"],
-      "load_references": ["references/narrative-modes.md", "references/narrative-visual-direction.md", "references/engagement-engine.md"],
-      "creative_outputs": ["narrative-plan", "writer-brief"]
+      "allowed_operations": [
+        "read_context",
+        "write_authoring"
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "evidence_summary",
+        "voice_profile",
+        "selected_concept",
+        "explicit_reference"
+      ],
+      "forbidden_context_categories": [
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules"
+      ],
+      "load_references": [
+        "references/narrative-modes.md",
+        "references/narrative-motif.md",
+        "references/narrative-visual-direction.md",
+        "references/engagement-engine.md"
+      ],
+      "creative_outputs": [
+        "narrative-plan",
+        "writer-brief",
+        "narrative-motif",
+        "second-half-pulse"
+      ]
     },
     {
       "id": "narration",
@@ -65,11 +151,35 @@
       "conditional_capabilities": [],
       "required_outputs": [],
       "gate_checks": [],
-      "allowed_operations": ["read_context", "write_authoring"],
-      "allowed_context_categories": ["current_request", "minimal_evidence", "voice_profile", "selected_concept", "narrative_design", "bounded_voice_reference"],
-      "forbidden_context_categories": ["asset_rules", "renderer_rules", "runtime_rules", "package_rules"],
-      "load_references": ["references/narration-rhythm.md", "references/narrator-performance.md", "references/performance-surfaces.md", "references/voice-benchmark.md"],
-      "creative_outputs": ["narration", "editorial-review"]
+      "allowed_operations": [
+        "read_context",
+        "write_authoring"
+      ],
+      "allowed_context_categories": [
+        "current_request",
+        "minimal_evidence",
+        "voice_profile",
+        "selected_concept",
+        "narrative_design",
+        "bounded_voice_reference"
+      ],
+      "forbidden_context_categories": [
+        "asset_rules",
+        "renderer_rules",
+        "runtime_rules",
+        "package_rules"
+      ],
+      "load_references": [
+        "references/narrative-motif.md",
+        "references/narration-rhythm.md",
+        "references/narrator-performance.md",
+        "references/performance-surfaces.md",
+        "references/voice-benchmark.md"
+      ],
+      "creative_outputs": [
+        "narration",
+        "editorial-review"
+      ]
     }
   ]
 }
