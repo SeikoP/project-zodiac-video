@@ -117,9 +117,9 @@ Never patch a rendered `<img>` source or generated HTML and call the resulting s
 
 **C. Phase 2 — Voice Lab first:** audibly approve a selected take and derive actual speech anchors, preserving immutable Phase 1 narration.
 
-**D. Phase 3 — Compiler VNext refactor:** keep V4 geometry and all native gates; implement **single logical `scene.compile`** that builds the complete S03 actor/pose/expression/prop/Narrative Visual-or-Story Text/event/voice/caption/preview dependency closure, with exact manifest inventory. Missing elements BLOCK; atomic publication; old valid preview and source preserved. Benchmark cold/warm/scene edit and negative cases. [Compiler architecture and acceptance](./2026-11-14-zodiac-compiler-refactor-design.md).
+**D. Phase 3 — Compiler VNext refactor:** keep V4 geometry and all native gates; implement **primary `episode.build`** for every scene in one episode via one dependency DAG, deduplicating shared asset builds and bounded parallel tasks. Keep `scene.compile` for fast local revision, which builds complete S03 actor/pose/expression/prop/Narrative Visual-or-Story Text/event/voice/caption/preview dependency closure, with exact manifest inventory. Missing elements BLOCK; atomic publication; old valid preview and source preserved. Benchmark cold/warm/scene edit and negative cases. [Compiler architecture and acceptance](./2026-11-14-zodiac-compiler-refactor-design.md).
 
-**E. Phase 4 — scene editor:** SDK semantic edit → Studio source revision → `scene.compile` → committed scene artifact refs + `scene.preview_ready` → React/HyperFrames UI displays actual output. Agent requests the build but neither directly writes compiler-owned SVG/ZIP nor uploads result bytes into Studio.
+**E. Phase 4 — scene editor:** SDK semantic edit → Studio source revision → `scene.compile` for a targeted change or `episode.build` for whole video → candidate previews + eventual verified episode manifest / `episode.build_ready` → React/HyperFrames UI displays actual revisions without falsely marking early previews as full video PASS. Agent requests the build but neither directly writes compiler-owned SVG/ZIP nor uploads result bytes into Studio.
 
 **F. Phases 5–6 — gallery and evidence registry:** search and preview actual lazily-compiled asset components, concept×12 and archives from existing scanners with no second data owner.
 
