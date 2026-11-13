@@ -180,12 +180,26 @@ Do not present historical Scene Set artifacts as current selectable fresh backgr
 | Compiler change | Single-scene edit rebuilds only correctly dependent assets/scene/preview, no stale outputs; corrupt/tampered outputs trigger rebuild; benchmark cold/warm/single-edit using one frozen fixture |
 | Visual quality | Libra 3-state balance, Gemini actor continuity, Scorpio meme setup→reaction and an actual voice reveal preserve actor/prop/event/focus and readable caption/layers; technical native PASS is not a human Visual Review |
 | Edit with agent | Agent moves one actor or changes a prop by semantic ID, single commit, validated preview refresh, correct undo/conflict |
+| One-shot S03 build | Agent triggers one `scene.compile` through Studio after authoring; all required actors/states/props/events/text/voice anchors/preview are built or returned as a typed BLOCKED list; Studio displays the exact committed revision after `scene.preview_ready` |
 | Concept coverage | For a concept, see all 12 sign states and linked episodes; missing evidence shows UNKNOWN; multi-sign episode counted accurately |
 | Asset gallery | Preview a body, hair, outfit, pose, expression, prop, accent and representative meme setup/reaction without a second app; no retired fresh Scene Set |
 | Packages | Find approved handoff, generated video, captions/cover, ZIP and archive; distinguish handoff-ready/video-ready/published, restore archive safely |
 | Recovery | Crash/reopen resumes last committed task/voice selection/scenes without redoing valid cached assets |
 | Render migration | Same episode through Remotion reference and HyperFrames pilot, caption/character/audio and story parity reviewed; benchmarks RAM/latency on actual target PC |
 | Source integrity | Compiler projections and reviewed source snapshots are not casually writable; no ghost creative approval or fake PASS |
+
+## 7.1. Agent → Studio → Compiler → visible scene (single command)
+
+The **agent does not compile or upload scene images on its own**. It reads the approved script/timeline and allowed V4 catalog through the Studio task API, proposes a semantic `Visual Intent` edit through an authorized revision-checked command, and then invokes the planned Studio command `scene.compile` for one scene (e.g. S03). Zodiac Core resolves its **entire declared component manifest**, runs V4 asset builders + scene composition + voice/caption anchors + scoped validators, commits one immutable scene preview/artifact snapshot and emits `scene.preview_ready`. The embedded HyperFrames UI subscribes to that event and fetches the versioned local output. It should remain visible if agent disconnects.
+
+- **One request, all components:** when S03 requires three actor states, a physical prop, a Narrative Visual, a meme reaction and voice-anchored reveal, all are part of the **same logical build transaction**. Internal worker/process count is hidden.
+- **Never ship an incomplete scene:** a missing or invalid component blocks the entire candidate snapshot with structured `missing_nodes` and repair guidance; preserve previous healthy preview, no fake PASS.
+- **Cache correctly:** rebuild only dirty nodes (including shared asset consumers); verify all reused SHA/outputs and perform required validations. One changed prop must not trigger unconditional full episode rebuild.
+- **Separate authoring from compilation:** compiler cannot creatively invent an unsupported illustration simply because the agent requested it. For new unique art, agent must use an explicit authorized generator or propose a new V4 asset; it then becomes source-bound input.
+- **Mode distinction:** `preview` gives a complete technical-scene preview but **not human approval**; `review` includes full scene QC preparation without recording an approval decision.
+- **Protocol ownership:** `scene.compile` is handled by the Zodiac Core command/event boundary, not by the Codex App Server itself. A failing agent task never becomes a green scene state by a chat message.
+
+The normative proposed command/result and regression cases are in [Compiler VNext §3.1](./2026-11-14-zodiac-compiler-refactor-design.md). The API is **planned, not yet implemented**. Phase 3 owns its implementation and transaction tests; Phase 4 owns visible Studio binding.
 
 ## 8.1. Compiler VNext is a dedicated production dependency, not an editor detail
 
