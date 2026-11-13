@@ -1,6 +1,6 @@
 # Zodiac Unified Studio — Voice-First, HyperFrames-Embedded Architecture
 
-> **Status: REVISED DESIGN / NOT IMPLEMENTED · 2026-11-14.** This is the canonical new-flow specification for PR #221. It supersedes the previous post-handoff-script-editor-led proposal. The [platform ADR](./2026-11-14-studio-platform-choice-adr.md), [migration inventory](./2026-11-14-hyperframes-migration-inventory.md) and [Compiler VNext addendum](./2026-11-14-zodiac-compiler-refactor-design.md) are subordinate technical decisions.
+> **Status: REVISED DESIGN / NOT IMPLEMENTED · 2026-11-14.** This is the canonical new-flow specification for PR #221. It supersedes the previous post-handoff-script-editor-led proposal. The [platform ADR](./2026-11-14-studio-platform-choice-adr.md), [migration inventory](./2026-11-14-hyperframes-migration-inventory.md), [Compiler VNext addendum](./2026-11-14-zodiac-compiler-refactor-design.md), [Visual V5 and palette design](./2026-11-14-zodiac-visual-v5-color-system-design.md), [Audio Design / music-SFX library](./2026-11-14-zodiac-audio-library-sound-design.md) and [V1 contract audit](../../audits/2026-11-14-version-upgrade-candidates.md) are subordinate technical decisions.
 >
 > Audited against `SeikoP/project-zodiac-video` main (`fa457a9351c33ace1da66bd089af8a1861e53838`) and the source modules listed in §3. **Code inspection only**; no local Windows benchmark, actual audio listening, implementation or end-to-end test occurred in this revision.
 
@@ -53,6 +53,7 @@ For new production use only **hold, cut, show/hide, state swap**, with optional 
 | P1 | `features/visual-composition/compile-visual-intent.mjs`, `core/cache/phase02-semantic-cache.mjs` | One authoring source and scene/asset dirty graph already exist | **KEEP**, use for bounded invalidation; SDK edits round-trip through the owner |
 | P1 | `phases/phase02/phase02-execute.mjs`, `phase02-selected-dependencies.mjs`, `core/cache/incremental-cache.mjs` | Multi-step native coordinator with source-bound receipts, signature/checkpoint caching and selected-dependency mode; full-source dependency collection still exists as a fallback | **COMPILER VNEXT P3:** one owned graph/planner with exact hashes, measured dependency collection and less redundant startup, not a blind cache rewrite |
 | P1 | `features/scene-production/native-scene-executor.mjs`, `build-native-preview-pairs.mjs`, `core/performance/critical-path.mjs` | Per-scene workers and cache exist, in-process mode for <=3 scenes; preview has its own per-scene hash cache, profiler exists | **REUSE + UNIFY** for one-scene preview, repeated cold/warm/single-edit comparison and the same scene graph for preview/export |
+| P1 | `assets/music/livestream/LICENSES.md`, `tools/livestream-pk/audio-pack.json`, `tools/studio_v2/executor.py::_default_audio_handler` | 16 Mixkit music metadata rows and licensed SFX *for livestream* but main GitHub tree has no referenced Mixkit MP3s; Studio V2 optional one-looping-track FFmpeg `amix` with fixed gain, no semantic cues/ducking | **NEW STUDIO AUDIO DESIGN**, verified playable license/hash catalog, optional sparse beat/voice-anchored SFX and audio-only remix; never redistribute raw third-party media in Studio or legacy ZIP by default |
 | P1 | `tools/control_plane/artifact_graph.py`, `tools/control_plane/segments.py`, `tools/studio_v2/timing.py` | Validated content-addressed artifacts, cut-safe render segmentation and per-scene timing cache | **KEEP** as backend infrastructure, adapt to speech-unit scheduling |
 | P1 | `tools/studio_v2/runner.py` and `tools/studio_v2/progress.py` | Structured subprocess progress/error reporting exists | **REUSE** via one visible job progress UI |
 | P1 | `tools/studio_qt/vieneu_service.py` | VieNeu service lifecycle/reuse, ownership and readiness check already exist | **PRESERVE** lifecycle semantics; don't spawn a duplicate server |
@@ -184,6 +185,9 @@ Do not present historical Scene Set artifacts as current selectable fresh backgr
 | One-shot S03 build | Agent triggers one `scene.compile` through Studio after authoring; all required actors/states/props/events/text/voice anchors/preview are built or returned as a typed BLOCKED list; Studio displays the exact committed revision after `scene.preview_ready` |
 | Concept coverage | For a concept, see all 12 sign states and linked episodes; missing evidence shows UNKNOWN; multi-sign episode counted accurately |
 | Asset gallery | Preview a body, hair, outfit, pose, expression, prop, accent and representative meme setup/reaction without a second app; no retired fresh Scene Set |
+| Visual V5 and color | At least three reviewed visibly distinct themes including one dark; character identity and Vietnamese captions readable, no per-theme asset library cloning, no automatic zodiac-sign palette bias |
+| Music Library + SFX | Licensed imported BGM is previewable, true silence also valid; optional selected sound cue binds to measured story event and is audible, voice remains intelligible, third-party source files are not distributed raw |
+| Audio-only change | Change music/SFX without re-running TTS, ASR alignment or visual render; final mix hash and provenance update, old video-only segment cache remains valid |
 | Packages | Find approved handoff, generated video, captions/cover, ZIP and archive; distinguish handoff-ready/video-ready/published, restore archive safely |
 | Recovery | Crash/reopen resumes last committed task/voice selection/scenes without redoing valid cached assets |
 | Render migration | Same episode through Remotion reference and HyperFrames pilot, caption/character/audio and story parity reviewed; benchmarks RAM/latency on actual target PC |
@@ -234,6 +238,14 @@ The compiler refactor is **Phase 3** of the [eight-phase implementation roadmap]
 - Visual quality is a first-class output: golden frames for actors, hair/face/hands, spatial relationships, props, Narrative Visual vs Story Text, meme reaction timing and 2-line Vietnamese caption collision. Verify preview/export parity.
 - HyperFrames Producer and a possible static-frame + FFmpeg fast path are **export adapters in Phase 7**, not a reason to rebuild character geometry. Remotion remains proven legacy/rollback until the renderer trials pass.
 
+## 8.2. V1 compatibility migrations and Audio Mix V2
+
+The correct v1→v2 upgrade set is based on **missing semantics**, not version numbers. Prioritize `timing-v1 → v2` for approved speech-unit source hashes/event anchors, `performance-context-v1 → v2` and `motion-registry-v1 → v2` for V5 acting/contact, and `render-plan-v1 → v2` as a renderer-neutral derived scene contract. `publish-v1 → v2` is needed at export when real media/audio rights and published-vs-exported status differ. Keep stable error/contract registry, old production-model, Job@5 and legacy reader paths at their existing versions if their wire formats do not change. The canonical `zodiac-visual-intent@1` is preserved until a necessary schema migration is proven, not forked by inventing a second editable authoring IR. [V1 upgrade audit](../../audits/2026-11-14-version-upgrade-candidates.md).
+
+Studio V2 already mixes voice and **one optional looping music file**, but no per-event SFX or dynamic ducking. V5 Studio adds a **separate** source-checked music/SFX library, actual playback, mood/semantic cue selection and a versioned `zodiac-audio-design@1` plan anchored to measured approved voice. Audio Mix V2 consumes that plan and produces a new final mix/mux through FFmpeg. It must not re-run TTS or visual rendering when only sound changes. Rights-unknown audio is not publish-ready, and Mixkit music/SFX metadata does not prove the MP3 is present or licensed for redistributing raw in the app/ZIP. [Audio design](./2026-11-14-zodiac-audio-library-sound-design.md).
+
+**Phase owners:** P0 audits; P2 timing v2 and true voice; P3 Visual V5/motion/performance roles; P4 color/acting commands and audio timeline markers; P5 V5 theme+asset gallery AND rights-aware music/SFX library; P6 artifact/publication evidence; P7 renderer-neutral plan/export and true Audio Mix V2/rights QA. Preserve eight phases.
+
 ## 9. Implementation plan waves: cohesive vertical slices
 
 **Phase 0 — Source evidence + compiler benchmark fixtures:** freeze approved Phase 1, existing V4 compile outputs/golden scenes, real native-source ownership and cold/warm/single-edit measuring commands. Record unknown timings as unmeasured, not zero.
@@ -246,11 +258,11 @@ The compiler refactor is **Phase 3** of the [eight-phase implementation roadmap]
 
 **Phase 4 — HyperFrames editor round-trip:** render S01 through new scene compiler API, bind editor SDK semantic edits → canonical Visual Intent → scoped rebuild and preview.
 
-**Phase 5 — V4 asset gallery:** on-demand verified real SVG/component/meme thumbnails and one click selection via the same compiler API.
+**Phase 5 — V5 and audio catalog:** versioned diverse visual theme gallery, V4/V5 body/hair/face/prop/meme previews with real semantic acting, plus licensed playable BGM/SFX selection and measured event cues.
 
 **Phase 6 — Concepts × 12 and Packages:** re-index existing concepts/checklist and media/ZIP scanner into the one-window project registry.
 
-**Phase 7 — Full video and renderer gate:** test full source-to-MP4 experience, HyperFrames Producer vs pinned Remotion vs conditional static FFmpeg path with frame/audio/quality/resource parity. Choose default only with evidence, keep rollback.
+**Phase 7 — Full video, Audio Mix V2 and renderer gate:** complete source-to-MP4 with voice ducking, optional sparse SFX, audio-rights and output QA; HyperFrames Producer vs pinned Remotion vs conditional static FFmpeg path with visual/audio quality and resource parity. Choose default only with evidence, keep rollback.
 
 Every phase must leave a runnable, tested integrated slice; don't ship an editor UI without real compiled V4 imagery. The [phase roadmap](../plans/2026-11-14-unified-zodiac-studio-roadmap.md) owns the detailed scopes, stop conditions and anti-omission evidence ledger.
 
@@ -261,7 +273,8 @@ Every phase must leave a runnable, tested integrated slice; don't ship an editor
 - **Voice:** Speech units and selection must preserve current signed source, voice artifact cache and timing. The existing per-scene TTS path requires an adapter and regression tests; do not silently flatten units into scene chunks. Objective audio validation cannot replace actual listening.
 - **Approval:** Content Review is imported immutable. Voice user listening, Visual Review, native validation and final video QA are distinct. Auto/migrated voice take flags from legacy are not trusted human review.
 - **Concept status:** published means genuinely published, not just exported; evidence-based coverage can include multiple episodes of the same concept/sign.
-- **Gallery:** do not generate every cross-product of character states; lazy selected variants satisfy “preview each component” without exponential storage.
+- **Gallery/V5 palettes:** do not generate every cross-product of character states or theme variants; lazy selected variants satisfy “preview each component” without exponential storage. A palette needs real reviewed scene contrast, not merely different color swatches.
+- **Audio:** approved voice is primary; sparse cue-timed SFX and optional licensed music must be listened to, not automatically approved. Music-only edit must invalidate only audio mix and mux, never selected voice, alignment or unchanged video segments.
 - **Compiler:** do not reimplement V4 characters/memes/environments merely to rename modules. Phase 3 must preserve source-specific dependency/cache/worker behavior, use progressive QA, show clean extension points and report measured warm/single-edit gains without cold regression.
 - **Version/rollback:** source/projection/adapter/renderer versions in artifact keys, atomic output and legacy ZIP compatibility. Do not delete Qt or Remotion before a proven complete episode.
 - **Security:** local agent process can connect directly; ChatGPT Web needs explicitly authorized connectivity and cannot assume a localhost tunnel.
