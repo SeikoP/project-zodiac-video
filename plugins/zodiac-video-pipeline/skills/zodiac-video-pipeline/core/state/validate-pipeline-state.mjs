@@ -27,7 +27,8 @@ if(state.plugin_version!==installedPlugin.version)fail('PLUGIN_VERSION_MISMATCH'
 if(!['fresh','continuity'].includes(state.run_mode))fail('PIPELINE_STATE_INVALID','run_mode must be fresh or continuity');
 if(state.flags?.affiliate_enabled)fail('AFFILIATE_PAUSED','preserve commerce files and explicitly disable affiliate routing before resuming');
 const [major,minor,patch]=installedPlugin.version.split('.').map(Number);
-const creativePhase1=major>2||(major===2&&minor>=12);\nconst contentQualityRequired=!creativePhase1&&(major>2||(major===2&&(minor>4||(minor===4&&patch>=13))));
+const creativePhase1=major>2||(major===2&&minor>=12);
+const contentQualityRequired=!creativePhase1&&(major>2||(major===2&&(minor>4||(minor===4&&patch>=13))));
 if(state.run_mode==='fresh'&&contentQualityRequired&&state.flags?.content_quality_engine!==true)fail('CONTENT_QUALITY_REQUIRED','new fresh 2.4.13+ pipeline requires Content Quality Engine');
 if(!phaseIds.includes(state.current_phase))fail('PIPELINE_STATE_INVALID','unknown current_phase');
 if(state.phases?.[state.current_phase]?.status==='LOCKED')fail('CURRENT_PHASE_LOCKED',`${state.current_phase} cannot be LOCKED`);
