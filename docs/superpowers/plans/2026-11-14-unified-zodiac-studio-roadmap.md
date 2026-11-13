@@ -10,7 +10,7 @@
 >
 > **Tech Stack:** Python 3.10+ for current desktop (existing Python 3.9-compatible domain code remains compatible where needed); current Python/Node V4 compilers; React/TypeScript; version-pinned HyperFrames Studio/SDK; managed Codex App Server integration after verifying its real local protocol during Phase 1; SQLite stdlib for new project index/ordered events (proposed implementation decision, review in Phase 0); existing VieNeu, ASR, FFmpeg and pinned Remotion.
 >
-> **Spec:** [Unified Studio design](../specs/2026-11-14-agent-native-creative-studio-design.md), [platform ADR](../specs/2026-11-14-studio-platform-choice-adr.md), [migration inventory](../specs/2026-11-14-hyperframes-migration-inventory.md).
+> **Spec:** [Unified Studio design](../specs/2026-11-14-agent-native-creative-studio-design.md), [platform ADR](../specs/2026-11-14-studio-platform-choice-adr.md), [migration inventory](../specs/2026-11-14-hyperframes-migration-inventory.md). [Visual V5](../specs/2026-11-14-zodiac-visual-v5-color-system-design.md), [Audio Library + Mix V2](../specs/2026-11-14-zodiac-audio-library-sound-design.md), [V1 contract audit](../../audits/2026-11-14-version-upgrade-candidates.md).
 >
 > **Immediate detailed plan:** [Phase 0: foundation and contracts](./2026-11-14-zodiac-studio-phase-00-foundation.md).
 
@@ -24,6 +24,8 @@
 - The V4 compiler must be maintained as **one episode-wide modular build/quality system**, not copied into HyperFrames or rewritten from scratch: source-bound dependencies, incremental assets/scenes/previews, deterministic receipts, full review gates and rollback. The detailed contract is [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
 - The HyperFrames **renderer** is a separate Phase 7 benchmark decision from the HyperFrames **editor**. Static state-frame + FFmpeg export is an experimental fast path, not an assumed correct replacement for dynamic caption/voice timing.
 - Keep V4 Character Assembly, meme/prop/environment compilers, genuine Visual Review and source-bound validation; no revival of retired fresh Scene Sets. Narrative Visual is scene-authored and mutually exclusive with Story Text in one scene.
+- **Visual V5** is a versioned capability atop the existing V4 SVG masters: one derived Performance Graph, semantic theme roles, actual character/prop contact, up to eight *vetted candidate* color families and separate geometry/appearance cache. Do not copy all assets for each palette.
+- **Audio V2** preserves approved Vietnamese narration as the leading track; background music is optional, SFX are sparse/event-bound, cue timing follows measured voice, provenance/rights must be verified. Music/SFX-only changes must not trigger TTS or video rerender; raw third-party audio cannot silently ship in Studio/ZIP.
 - No full-featured animation editor: hold, cut, state swap, show/hide, and only justified simple fades/slides/zoom. Image/story legibility and voice timing come first.
 - Keep `VoiceArtifactStore`, scene/timing cache, semantic dirty graph, artifact graph, Job@5 import/export, reversible archive restore and pinned Remotion runtime until real parity tests authorize retirement.
 - No fake progress, no pass-through approval, no direct agent JSON/ZIP rewriting, no accepted orphan source without ownership/lineage, no deletion of original handoffs or last recoverable ZIP/MP4.
@@ -70,37 +72,36 @@
 
 **Gate P2:** real VieNeu synthesis and human listening test on representative Vietnamese punchline; choose a different take only for the affected speech unit, keep old take and unaffected audio; no fake prosody verification; measurable caption/voice alignment; ASR error routes to review, not silent source rewrite.
 
-## 3 — Compiler VNext: episode-wide production throughput, incremental speed and quality
+## 3 — Compiler VNext, Visual V5 foundation and whole-episode build
 
-**Deliverable:** ONE `episode.build` Studio command compiles the *entire* authored episode and shared V4 asset set with a versioned DAG, conditional bounded parallel tasks, native validators and verified episode receipts. `scene.compile(S03)` uses the same core only for scoped iteration; no agent-managed per-part build script sequence. Goal is to reduce **end-to-end completion time**, not just speed one native module.
+**Deliverable:** one `episode.build` assembles a verified entire episode, with a shared dependency DAG and safe legacy compatibility. Base V5 performance and semantic color contracts are integrated into this *same* build engine, not forked into a second V5 compiler.
 
-- **3.1** One compiler owner/typed API, entire-episode required-components manifest (all scenes/actors/states/props/memes/story imagery/audio anchors/captions), pure compile seam and legacy script adapters; freeze V4 output/semantic golden fixtures.
-- **3.2** One **episode-wide dependency DAG** over existing semantic/step/scene caches: compile shared assets once, schedule independent ready nodes concurrently, await dependencies for scene builds, use bounded worker pool adapted to Windows RAM/CPU/disk and remove redundant process/file hashing only if measured. Validate exact output SHA and rollback.
-- **3.3** **Atomic `episode.build`:** plan/compile/verify all scenes, publish `episode.build_ready` with full proven output inventory only when complete; early per-scene previews tagged `scene.preview_candidate_ready` not approved; missing input/stale revision/cancel returns grouped blockers and retains last healthy episode. `scene.compile` shares the planner and compiles just dirty closure. Human Visual Review remains separate.
-- **3.4** **Full-production throughput**: benchmark agent scene authoring, tool/context time, grouped repairs, native preflight/compiler, preview, review waits and export separately; compare cold/warm/single edit/shared-actor edit and full 6–10-scene episode; preserve story clarity and caption/voice parity. See [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
+- **3.1** One compiler API/owner, required all-scene component inventory and pure build seam; freeze V4 golden fixtures. Versioned **derived Performance Graph**, `performance-context-v2` / `motion-registry-v2` candidates and role-based `zodiac-visual-theme@1` schema; V4 read adapters remain.
+- **3.2** Episode-wide ready-queue DAG over existing scene/step/asset caches: build shared geometry once, cache **palette-independent geometry vs theme-dependent appearance** separately, parallelize nonconflicting ready nodes within Windows CPU/RAM/disk budget, validate all output/source hashes and rollback atomically.
+- **3.3** Atomic `episode.build` publication only after every authored scene passes; scoped `scene.compile` for edits, fast candidate previews explicitly not human approval, grouped repair issues and no partial false-green receipts. V5 performance/hand-contact/voice-reveal events must preserve V4 story semantics.
+- **3.4** Benchmark cold/warm/scene-edit/shared-character/theme-only edit and 6–10-scene episode including agent authoring/retries/native/preview/render; Visual V5 compatibility and at least one light and one dark **technical** theme prototype, with quality review still pending.
 
-**Gate P3:** one request builds a complete 6–10 scene fixture with verified hashes/receipts and reused shared actor/prop/meme assets compiled once. Independent safe tasks run concurrently; unchanged and one-scene edits reuse unaffected results; broken shared assets return grouped errors, interrupted builds never become full PASS and candidate previews cannot count as episode approval. Compare real elapsed time/agent turns and Windows RAM/disk, not native-step totals alone; keep old V4 and Job@5 reproducible.
+**Gate P3:** complete verified episode from one request, shared assets compiled once, warm/scoped reuse proven and no narration/voice invalidation on theme-only edit; V4/Job@5 compatibility and real Libra/Gemini/Scorpio actor/prop/reaction parity, technical light/dark theme contrast and measured CPU/RAM/disk evidence. No fabricated human acceptance.
+## 4 — Embedded HyperFrames scene editor and V5 art direction
 
-## 4 — Embedded HyperFrames scene editor (S01 → full episode)
+**Deliverable:** within the one Zodiac window, agent/human can edit actual V4/V5 states and interactions and choose an episode palette / justified scene override, with actual same-source preview.
 
-**Deliverable:** a scene backed by the P3 compiler appears in the **same Zodiac window**, and SDK edits round-trip into Visual Intent with a fresh scoped preview.
+- **4.1** Visual Intent → HyperFrames source map for real SVG assets, derived Performance Graph, acting/prop/meme state transitions, voice anchors, captions and resolved V5 palette. Editor DOM stays non-authoritative.
+- **4.2** Semantic edit/undo with revision checks: actor pose/expression, gaze/contact/prop, selected episode theme and bounded scene override; `scene.compile` scopes updates and `episode.build` completes the episode; no agent-uploaded generated media.
+- **4.3** Preview V5 light/dark, reaction/reveal timing and real caption-safe/contrast/identity/occlusion QA; emit candidate/committed revision events; preserve last good preview. Optional Audio Design timeline markers never count as listened/approved sounds.
 
-- **4.1** Visual Intent ↔ HyperFrames visual source map, scene IDs, actual V4 SVG elements and P2 measured speech anchors; HyperFrames DOM is a derived view, not a new Zodiac authoring schema.
-- **4.2** UI scene editor + agent semantic commands: move/scale actor, choose state, place props, show/hide/swap actions; command commit, optimistic concurrency and undo. Agent invokes `scene.compile` to update one scene or `episode.build` to finish all scenes; Studio handles the DAG/build, artifact inventory and progress, **agent never uploads asset bytes or writes generated files**. Unsupported SDK override is rejected.
-- **4.3** S01 preview → edit → re-preview with existing real V4 props/meme/caption/speech, geometry and source-bound validation; UI subscribes to `scene.preview_ready` and retrieves a revisioned local artifact from Zodiac Core, showing `BLOCKED` or `FAILED` without concealing the last valid preview. True Visual Review gate before finishing all scenes. No full ZIP or MP4 needed merely to view one scene.
+**Gate P4:** real V4/V5 S01 acting, one voice reveal, and two visibly different light/dark theme renders round-trip through source/Studio with identity unchanged and no narration drift; crash/reopen and unsupported ops are safe.
 
-**Gate P4:** one real V4 episode S01 with setup/reaction/voice reveal renders correctly inside Zodiac; agent edit visible without a second GUI; crash/reopen retains source; preview matches reviewed scene within declared tolerances; approved narration unaffected.
+## 5 — Visual V5 Palette + Asset Factory + BGM/SFX Library in Studio
 
-## 5 — Real V4 asset gallery within Studio
+**Deliverable:** a real selectable palette/character/prop/meme gallery and a separate source-checked **music/SFX library** inside the same Zodiac window. Keep V5 extension tasks reviewable and independent from video export.
 
-**Deliverable:** browse/inspect/select **real compiled and thumbnailed V4 components** and selected variants, all inside Zodiac, with the agent seeing the same registry.
+- **5.1** Authoritative V4/V5 capability/retirement registry for bodies/hair/outfits/faces/poses/physical props/meme before-after and genuine context; retire Scene Set from fresh selection, preserve legacy package decode.
+- **5.2** Role-based visual-theme resolver, source/appearance fingerprint cache and real editor preview; vet **three genuinely distinct palette families including a dark palette**, with contrast and foreground/outfit/caption QA. No blind global hex-substitution for fresh SVGs.
+- **5.3** Expand towards **up to eight candidate** visual theme families, useful V5 facial/outfit/hand-contact/procedural prop diversity, lazy thumbnails and proof of effect on real scenes. No palette × actor eager cross-product and no mandatory generative-image service.
+- **5.4** **Audio Library + integrated gallery:** one catalog of actual playable local files with hash/license/preview, existing 16 Mixkit tracks **metadata-only until legitimately imported**, original CC0 SFX selectively auditioned, curated voice-friendly BGM mood bins and sparse semantic SFX cues. Search/listen/select on the measured voice timeline; missing/unlicensed items cannot be used silently; do not package raw third-party sound assets by default.
 
-- **5.1** Index current V4 IDs/roles/status/version/ref and actual usage as read-through compiler adapters, not a manually duplicated library.
-- **5.2** Reuse character identity compilation and native meme before/after preview; use resvg-js *if benchmarked and needed* for thumbnails, lazy render/cache to bound RAM/disk; include hair, body, outfit, face, pose, prop and context.
-- **5.3** Selected asset → safe canonical scene edit with provenance/compatibility, preview refresh, usage links and undo; no cross-product eager asset generation.
-
-**Gate P5:** body/hair/outfit/pose/face/physical prop/context/meme previews display from the real compiler and can be selected in S01; retired/incompatible assets are blocked; single-asset edit invalidates only dependent scenes.
-
+**Gate P5:** all real V5 actor/asset/meme previews and at least three **human-reviewed** visually different palettes available; a dark theme keeps two-line Vietnamese captions and actor/props legible; imported local music and event SFX can be auditioned and provenance verified. Silence remains a valid choice; catalog-only file is labeled unavailable.
 ## 6 — Concept × 12, episode library and packages
 
 **Deliverable:** one truthful concept×sign×episode registry and usable voice/video/ZIP/cover browsing, with existing cleanup/restore reused.
@@ -111,16 +112,15 @@
 
 **Gate P6:** 12-sign coverage correct for single/multi-sign cases; approved content, accepted voice, reviewed visual, exported video and published states stay distinct; old/current projects appear once; archive+restore proven.
 
-## 7 — Full E2E, export backend trial and legacy retirement gate
+## 7 — Full E2E, Audio Mix V2, export backend trial and retirement gate
 
-**Deliverable:** a real episode travels Phase 1 → approved audio → P3 compiler + V4 assets → P4 editor + genuine Visual Review → MP4/cover/captions/copy and optional Job@5 ZIP with no app switching.
+**Deliverable:** one real episode moves from immutable approved Phase 1/voice to V5 storyboard, Visual Review, optional **licensed BGM + semantic SFX** and validated MP4/cover/captions/copy and optional ZIP without another app.
 
-- **7.1** Versioned export adapter consumes a pinned immutable source revision, actual voice-take hashes and validated scene graph, maintaining Phase 3/Job@5 and performance-review semantics. ZIP is optional portable artifact rather than a compulsory intermediate.
-- **7.2** Compare **HyperFrames Producer**, pinned **Remotion** and conditional **static-state-frame + FFmpeg** fast path on the *same representative Zodiac scenes*: 1080×1920, voice/caption alignment, 2-line Vietnamese captions, glyph/font/watermark, cover opening frame, scene/meme fidelity, disk/RAM/cold/warm render time. Streaming/intermediate frames must respect Windows disk budget.
-- **7.3** Default renderer selection only after measured quality/performance gate. Keep Remotion as legacy/rollback while old packages require it. Compare one whole final real episode plus restart/cancel/retry recovery, QA and Visual Review; only then mark old Zodiac Video Local orchestration/Qt GUI as compatibility.
+- **7.1** Versioned export from actual approved voice-take SHA, validated V5 scene graph and **`zodiac-audio-design@1`** cue/rights plan; **Audio Mix V2** uses FFmpeg voice-first ducking, optional beat/voice-anchor SFX, fades, clipping/peak checks and human audition. Keep legacy one-track music handler for old Job@5; no redistribution of third-party raw audio.
+- **7.2** Compare HyperFrames Producer vs pinned Remotion vs conditional static-state FFmpeg, same V5 scenes/themes at 1080×1920 with two-line Vietnamese font/cover/watermark, audio/caption sync, event SFX timing, RAM/disk/speed and voice intelligibility. **Music/SFX-only edits rebuild only audio mix/mux**, not TTS/ASR/geometry/video-only segments.
+- **7.3** Choose new default only after measurable whole-episode output quality/resource performance; retain stable Remotion/legacy ZIP until parity. Test reopen/archive/retry/cancel without losing licensed-audio provenance, last healthy video, human voice/visual approval.
 
-**Gate P7:** all real user journeys and exact source-bound technical/human review gates PASS, full MP4 proof with captions/voice/visual parity, no source/data loss and acceptable measured resource use. HyperFrames Producer is the preferred **candidate**, not an automatic win; if it fails, ship the unified editor with the best proven production renderer until fixed.
-
+**Gate P7:** a genuine reviewed V5 whole video with legible approved palettes, optional verified licensed music/SFX and voice-first mix, accurate audio rights receipt and full source-bound QA; legacy packages reopen; no silent status promotion or fabricated reviewer hearing. Renderer choice follows observed parity/benchmark, not preference.
 ## Anti-omission delivery protocol — required in every code PR
 
 Every task PR must contain a machine-readable `phase-evidence.json` or structurally equivalent checked-in report (format `zodiac-studio-phase-evidence@1`), whose schema and generator are defined in P0. Required fields:
