@@ -244,7 +244,7 @@ The correct v1→v2 upgrade set is based on **missing semantics**, not version n
 
 Studio V2 already mixes voice and **one optional looping music file**, but no per-event SFX or dynamic ducking. V5 Studio adds a **separate** source-checked music/SFX library, actual playback, mood/semantic cue selection and a versioned `zodiac-audio-design@1` plan anchored to measured approved voice. Audio Mix V2 consumes that plan and produces a new final mix/mux through FFmpeg. It must not re-run TTS or visual rendering when only sound changes. Rights-unknown audio is not publish-ready, and Mixkit music/SFX metadata does not prove the MP3 is present or licensed for redistributing raw in the app/ZIP. [Audio design](./2026-11-14-zodiac-audio-library-sound-design.md).
 
-**Phase owners:** P0 audits; P2 timing v2 and true voice; P3 Visual V5/motion/performance roles; P4 color/acting commands and audio timeline markers; P5 V5 theme+asset gallery AND rights-aware music/SFX library; P6 artifact/publication evidence; P7 renderer-neutral plan/export and true Audio Mix V2/rights QA. Preserve eight phases.
+**Phase owners:** P0 audits; P2 timing v2 and true voice; P3 Visual V5/motion/performance roles; P4 color/acting commands and audio timeline markers; P5 V5 theme+asset gallery; **P6 rights-aware music/SFX catalog within the media/episode library** plus artifact/publication evidence; P7 renderer-neutral plan/export and true Audio Mix V2/rights QA. Preserve eight phases.
 
 ## 9. Implementation plan waves: cohesive vertical slices
 
@@ -258,9 +258,9 @@ Studio V2 already mixes voice and **one optional looping music file**, but no pe
 
 **Phase 4 — HyperFrames editor round-trip:** render S01 through new scene compiler API, bind editor SDK semantic edits → canonical Visual Intent → scoped rebuild and preview.
 
-**Phase 5 — V5 and audio catalog:** versioned diverse visual theme gallery, V4/V5 body/hair/face/prop/meme previews with real semantic acting, plus licensed playable BGM/SFX selection and measured event cues.
+**Phase 5 — Visual V5:** distinct light/dark visual theme gallery, V4/V5 body/hair/face/prop/meme previews with performance/contact semantics and safe cached themed SVG outputs.
 
-**Phase 6 — Concepts × 12 and Packages:** re-index existing concepts/checklist and media/ZIP scanner into the one-window project registry.
+**Phase 6 — Concepts × 12, Packages and Audio Library:** re-index evidence-based concepts/checklist, media/ZIP scanner and rights-verified locally playable BGM/SFX (metadata-only tracks are not playable) into the same Zodiac window.
 
 **Phase 7 — Full video, Audio Mix V2 and renderer gate:** complete source-to-MP4 with voice ducking, optional sparse SFX, audio-rights and output QA; HyperFrames Producer vs pinned Remotion vs conditional static FFmpeg path with visual/audio quality and resource parity. Choose default only with evidence, keep rollback.
 
