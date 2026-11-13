@@ -42,7 +42,7 @@ Required payload:
 - `HANDOFF.json`
 - `SHA256SUMS`
 
-The capsule binds the approved narration and creative context by SHA-256 inventory. `content-review-receipt.json` must come from the actual user approval; use a deterministic `user-message-sha256:<hash>` reference derived from the exact approval text when the host does not expose a stable message ID.
+The capsule binds the approved narration and creative context by SHA-256 inventory. Create `content-review-receipt.json` **at the moment of approval** with SHA-256 hashes for `narration`, `plan`, `scope`, `brief`, and `voice`; export must reject any later drift. The receipt must come from the actual user approval. Use a deterministic `user-message-sha256:<hash>` reference derived from the exact approval text when the host does not expose a stable message ID.
 
 Local owns creation of pipeline state, Phase-2 activation, native validators, visual production and Phase 3. Web must not activate Phase 2.
 
