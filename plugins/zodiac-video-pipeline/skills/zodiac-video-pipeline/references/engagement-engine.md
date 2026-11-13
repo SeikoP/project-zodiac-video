@@ -85,3 +85,13 @@ When `narrative_archetype` is present:
 - repeat a recently used mode only with a substantive reason.
 
 A Scorpio story can therefore behave like a detective case without the narrator saying “Bọ Cạp là thám tử.” The audience inference is the success condition.
+
+## Second-half continuity
+
+Do not judge engagement only from the opening. A strong first half followed by explanation-heavy prose is still a weak episode.
+
+Before Narration, design a second-half pulse. After the midpoint, each beat must do at least one new semantic job: action/event, decision, failed workaround, consequence, contrast, reframe/reveal, payoff or callback. Two consecutive post-midpoint explanation beats are a redesign signal.
+
+When a Narrative Motif is present, its state should continue to change after the midpoint. Do not abandon the motif once it has done the hook work.
+
+During revision, if the user says the opening works but the later section loses rhythm, keep the accepted opening and repair the post-midpoint pull chain first.
