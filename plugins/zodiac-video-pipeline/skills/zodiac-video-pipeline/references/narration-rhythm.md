@@ -24,3 +24,15 @@ For an expressly reviewed, unchanged narration estimated over 120 seconds, the e
 
 ## Spoken readiness before Content Review
 Run references/short-form-duration.mjs against narration before approval. Review acronym, number, ellipsis and known foreign-word spans; keep performance tags outside approved narration. Estimate uses explicit token rate + pause + tail and is never measured TTS duration. Above 120 seconds requires editorial review or a documented exception, never automatic rewriting to a sentence/scene quota. Fresh scoped plans use Narrative 2.1; reviewed 2.0 single-sign readers remain supported. Review evidence, sign/member identity, motif repetition, specific premise and whole-episode payoff; return NEEDS_REVISION on editorial failures. Do not mutate narration after approval. Runner owns synthesis and measured timing; actual pronunciation, word timing, prosody, punchline landing and ending cadence require the evidence-bound TTS Performance Review in references/spoken-performance.md.
+
+## Second-half rhythm floor
+
+A script may begin fast and still fail because the back half becomes explanation. Protect a rhythm floor after the midpoint:
+
+- prefer a new action, decision, consequence, contrast, reframe or callback over another explanatory paragraph;
+- when a Narrative Motif exists, return to it in a changed state instead of introducing a new unrelated metaphor;
+- preserve accepted opening lines during a second-half repair unless the premise itself is being reopened;
+- compress interpretation after the viewer has already seen the behavior;
+- let the ending land on payoff/callback, not a generic summary or moral.
+
+This is an editorial rule, not a timer or sentence quota. The goal is semantic movement, not artificial speed.
