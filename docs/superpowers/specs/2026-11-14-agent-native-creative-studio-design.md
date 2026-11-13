@@ -1,328 +1,213 @@
-# Zodiac Agent-Native Creative Studio — Architecture Design Spec
+# Zodiac Unified Studio — Voice-First, HyperFrames-Embedded Architecture
 
-> Status: PROPOSED / SPEC ONLY. No runtime implementation, migration, creative approval, or release is authorized by this document.
+> **Status: REVISED DESIGN / NOT IMPLEMENTED · 2026-11-14.** This is the canonical new-flow specification for PR #221. It supersedes the previous post-handoff-script-editor-led proposal. The [platform ADR](./2026-11-14-studio-platform-choice-adr.md) and [migration inventory](./2026-11-14-hyperframes-migration-inventory.md) are subordinate technical decisions.
 >
-> Date: 2026-11-14. Baseline: SeikoP/project-zodiac-video main @ fa457a9351c33ace1da66bd089af8a1861e53838.
->
-> Method: problem framing → constraints → alternatives → architecture decisions → contracts → acceptance gates → rollout. Implementation plans and TDD come after review.
+> Audited against `SeikoP/project-zodiac-video` main (`fa457a9351c33ace1da66bd089af8a1861e53838`) and the source modules listed in §3. **Code inspection only**; no local Windows benchmark, actual audio listening, implementation or end-to-end test occurred in this revision.
 
-## 1. Problem and outcome
+## 1. Product contract: one window, one episode, one engine
 
-Zodiac currently produces Web Phase 1 creative content and an immutable, approval-bound handoff, then runs Local Phase 2–3 with canonical Visual Intent, native validation, compilation, preview and final rendering. The desktop Qt application and Studio V2 can manage jobs and media but do not yet jointly offer an editable, authoritative project, a continuously updating timeline, or an agent edit protocol.
+**The user starts `zodiac` and works in ONE Zodiac Studio application.** All features are screens within that one window, bound to the same active project ID. The user must not have to open a second HyperFrames desktop app, Remotion Studio, a separate browser editor, or a terminal to finish a newly authored video.
 
-The intended product is **one durable creative project** simultaneously operated by a human in Studio and an AI agent through structured commands. Both observe the same revisions and real preview. Users can edit narration after import, manage assets, adjust scenes/timing, and review a scene while the rest is still under construction. Phase 1 creative authoring stays in ChatGPT Web; Phase 2–3 are integrated into the Studio project.
+- **Embedded editor:** integrate the Apache-licensed `@hyperframes/studio` React components and `@hyperframes/sdk` inside the Zodiac React frontend. `EditorShell`, `NLEPreview`, `Player`, `Timeline`, `PropertyPanel` are building blocks, **not drop-in independent editors**: supply project state, API contexts, callbacks and asset resolver. Favor an integrated small storyboard/timeline over copying the entire generic Studio interface. Do not fork/assume access to the separate HeyGen desktop AI app.
+- **Zodiac Core:** one local Python production/domain service manages imports, projects, voice, review, character/asset compilation, scene intent, cache, exports, state and security. It is a backend or managed sidecar process, **not a second GUI**.
+- **Launcher:** preserve the `zodiac` command. Its future desktop shell may use a single embedded webview (Tauri or an equivalent) once measured. Current Qt remains working until replacement passes parity. Any local server is started/stopped automatically by the application.
+- **Agent:** local CLI and a thin MCP adapter speak to the same commands/events as the human editor. The agent cannot write arbitrary JSON, invoke user approval, or create a second source of truth. A ChatGPT Web plugin cannot assume access to local `127.0.0.1`; remote access is a separate optional secure connector, not an MVP dependency.
 
-This is not a request to rewrite every compiler. The biggest new components are a project/revision engine, transactional command API, draft validation and approval lifecycle, incremental preview scheduler, and agent bridge.
+### All required screens in the same application
 
-### Measurable outcomes
-
-1. Import an approved Phase 1 v2 capsule into a new Studio project without rewriting or invalidating its immutable source.
-2. Edit a bounded narration segment **after import**, retain a traceable before/after, and safely create a new approval-bound revision. Only necessary technical artifacts rebuild; semantic story dependencies receive editorial review.
-3. Agent can create/update one scene or asset via an API. Studio timeline/preview reflect the newest valid state without final MP4 rendering.
-4. Human and agent edits cannot silently overwrite one another; undo, conflict handling, event replay and crash recovery work.
-5. Preview and final output share rendering primitives and are tested for parity. Draft placeholder states are clearly distinguished from renderer-faithful states.
-6. Preserve voice-first creative quality, actual human approval, Job@5 compatibility, version pinning, asset provenance, deterministic contracts and cache reuse.
-
-## 2. Verified baseline and current constraints
-
-Current source to preserve:
-
-- Web Phase 1: Evidence → Voice → Concept → Narrative Design → Narration → Content Review, defined in orchestration/phases/01-content.md. Web should not bootstrap native tooling or issue fake validator receipts.
-- Handoff: zodiac-phase1-handoff@2, immutable content-review receipt bound to hashes of narration, narrative plan, episode scope, writer brief and voice profile. Export rejects CONTENT_APPROVAL_SOURCE_DRIFT. Local imports v1/v2 and reconstructs native Phase 1 state for v2.
-- Phase 2: .authoring/visual-intent.json (zodiac-visual-intent@1) is the single agent-authored visual canonical source. Compiler projections such as production.json, asset-plan.json and visual grammar must NOT be edited directly.
-- Incremental cache: phase02-semantic-cache already tracks scene/asset/preview dirty closure. Studio V2 already has artifact graph, per-scene TTS and per-scene timing cache.
-- Studio: tools/studio_qt is a PySide6 job/workbench/media interface, not an end-to-end semantic timeline editor. tools/studio_v2 is executor/session/pipeline infrastructure. Existing Remotion scripts can launch a real renderer preview, but this is not a controlled bi-directional live authoring protocol.
-- Older docs/ZODIAC_STUDIO_REFACTOR_SPEC.md proposes Tauri/React + Python engine; it is partially historical (Tkinter and old runtime assumptions). This spec supersedes its **interaction, revision and agent-integration decisions**, not its tested functionality.
-
-### Architectural invariants
-
-- **One canonical owner per authored field.** Content revisions own narration/voice-profile/plan edits; Visual Intent owns scene composition and authored visual events; timing-adjustment source owns manual timing edits. Compiler outputs remain derived.
-- Studio project graph is an **index, revision ledger and coordinator**, NOT a second editable copy of Visual Intent.
-- Never treat a handoff ZIP, approved snapshot, compiler-owned projection, render-plan.json, generated asset or review receipt as a scratch file.
-- Preserve stable IDs across content beats, semantic units, scenes, entities and events. Explicit migrations are needed when splitting/merging IDs.
-- Human content approval, human visual review, deterministic native PASS, and final audiovisual QA are distinct evidence types.
-- Do not manufacture approvals, reuse approvals against edited bytes, or infer creative quality from deterministic validators.
-- Keep the three public phases. Studio can have many internal working states without adding public phase complexity.
-- No mandatory prop/effect quotas, Scene Set resurrection, decorative Narrative Visuals, or duplicate Story Text and Narrative Visual in the same scene.
-
-## 3. Main architecture decision
-
-~~~text
-Phase 1 Web — creative authoring + explicit Content Review
-    ↓ approved, hash-bound handoff@2 (immutable import)
-Studio Engine (Python domain orchestration; project/revisions)
-    ├── Content revisions and approval ledger
-    ├── Visual Intent + timeline authoring transactions
-    ├── Asset registry + provenance
-    ├── Command/patch API + event stream
-    ├── Dependency DAG + incremental scheduler
-    └── Draft/validated/rendered artifact graph
-         ↕                  ↕
-Human Studio UI          Local CLI / MCP Agent adapter
-         ↘                  ↙
-        Shared Remotion render core + Player
-                    ↓
-       Measured TTS/timing, FFmpeg, MP4 QA, export
-~~~
-
-Start with one local engine process, local-only commands and events. An in-process command adapter should also be callable by current Python/CLI entrypoints. A local WebSocket (or HTTP commands + WebSocket events) is a transport; it is not the domain model. MCP is an adapter for agents, not the authoritative store.
-
-### Desktop decision
-
-**Do not block the core refactor on an immediate Tauri migration.** First prove the command API, editable project, and real preview with a local web UI or bridge from current Qt workbench. Once contracts are stable, migrate toward React/TypeScript frontend + optionally Tauri shell while retaining Python engine. Avoid two competing canonical desktop editors. Retire Qt functionality only after parity and migration tests.
-
-### Alternatives rejected
-
-- Put a new editor on top of immutable Job@5 ZIP or render-plan.json: too late; source ownership and regeneration become ambiguous.
-- Let agent write arbitrary JSON/files then notify Studio: bypasses transactions, approval-boundaries, leases, revisions and safe invalidation.
-- Rebuild the entire project on every narration edit: expensive and unnecessary for lexical edits; still insufficient for judging changed story meaning.
-- Automatically preserve old Content Review approval when any approved source changes: invalid and currently explicitly blocked.
-- Make all editing occur through ChatGPT Web with no local agent: local Studio on localhost is not directly reachable from arbitrary remote Web chat.
-- Build full collaborative multi-user CRDT infrastructure at launch: premature; use optimistic revision checks and short bounded leases.
-
-## 4. Phase 1 validation and post-handoff narration editing
-
-### 4.1 Separate three kinds of validation
-
-1. **Draft checks (cheap, repeatable):** shape, spoken text normalization, missing content, known forbidden tokens/style restrictions, structural beat coverage, estimated duration if required by the current brief. Nonblocking warnings can surface inline; no native runtime receipt.
-2. **Editorial review:** human/agent-assisted semantic judgment for voice, hook, recognition, progression, story logic, payoff and actual voiced-read quality. Agent may evaluate and suggest; only an explicit user act creates the approval evidence required by the boundary.
-3. **Native production validation:** import checks, compiler contracts, IDs, asset dependencies, spatial layout, preview/render parity, audio measurements and export checks. These are Local responsibilities; do not drag native compiler execution into Web Phase 1.
-
-Progressive checks may exist in source, but Web Phase 1 does **not** need to load or execute them as a mandatory native authoring pipeline. At Web Content Review, the exact final canonical bytes and meaningful editorial criteria are presented once. Never label a provisional draft PASS as an approved final.
-
-### 4.2 Imported snapshot and working branch
-
-On v2 handoff import:
-
-- Save exact original bytes, inventory, manifest, SHA256SUMS and receipt in a read-only imported snapshot.
-- Verify approval/hash binding BEFORE creating project state.
-- Create a working revision derived from this snapshot, with content and visual documents independently versioned.
-- Keep a ledger: imported revision ID, current head, parent ID, author, command, timestamp, base revision and source fingerprint.
-- Old approval is evidence for the old snapshot only. It is not copied to a changed content revision.
-- If an imported project is reopened, resume its current working revision rather than importing destructively.
-
-Proposed content lifecycle:
-
-~~~text
-IMPORTED_APPROVED (immutable)
-  → WORKING_DRAFT (user/agent edits)
-  → VALIDATION_READY (cheap structural checks pass)
-  → CONTENT_REVIEW_REQUIRED (meaning/voice approved sources changed)
-  → APPROVED_REVISION (new explicit user approval + hash binding)
-  → PRODUCTION_READY
-~~~
-
-A new approved revision has a **new** content-review receipt referencing the new exact source hashes and explicit user action. It does not claim that the original Web handoff was edited or that the user's approval from Phase 1 magically applies to it. A source-only lexical edit still requires a new approval at the changed content boundary, but need not rerun full research/ideation.
-
-### 4.3 Stable script segmentation
-
-Introduce a semantic narration-document authoring format with stable IDs:
-
-~~~json
-{
-  "format": "zodiac-narration-document@1",
-  "segments": [
-    {
-      "id": "beat-03-line-02",
-      "text": "Ví dụ lời kể...",
-      "beat_id": "beat-03",
-      "voice_profile_ref": "voice-profile:rev-1"
-    }
-  ]
-}
-~~~
-
-This is a proposed **new Studio source contract**, not evidence that the current handoff includes these IDs. On import, derive initial stable segments from narration and the narrative plan; do not pretend automatic mapping is always exact. If mapping is ambiguous, require a user/agent review instead of falsely preserving anchors. A deterministic serializer materializes narration.txt for existing downstream contracts. Normalization must not silently change approved bytes.
-
-### 4.4 Edit classification and impact
-
-A command modifying narration MUST capture old/new text, affected semantic segment IDs, scene/beat dependencies, and an impact classification:
-
-| Edit type | Technical response | Editorial response |
+| Screen | User can do | Authoritative backend |
 | --- | --- | --- |
-| Punctuation / orthography with same spoken bytes | Recompute hashes; TTS reuses only if actual TTS normalized input and settings truly unchanged | Reapprove changed canonical text; compact targeted review |
-| Reword sentence, same intention | Invalidate owning speech unit, voice/timing/caption and dependent absolute placements; preserve independent assets | Review voice and payoff continuity |
-| Change claim, joke, beat intent or meaning | Invalidate semantics and visual relationships in affected beats and callbacks | Review story spine, linked scenes and affected narrative visuals |
-| Split/merge/reorder beats | Rebind stable IDs or record explicit migration; recalibrate audio/video ordering | Broader editorial review required |
-| Change voice profile | Invalidate TTS units sharing voice profile and subsequent timing | Voice review |
-| Change only visual/asset | No content approval invalidation | Visual review for changed scene/asset |
-| Change only music | Audio mix and final QA | No narration review |
+| **Home / Episodes** | Create/import approved episode, resume pending task, inspect job/phase status, failures, cover, final media, disk usage | Episode registry + actual receipts |
+| **Concept × 12 signs** | Choose concept, see which signs have drafts/approved narration/video/published; filter projects and spot gaps; support multi-sign videos | Concept and episode identities + evidence graph |
+| **Voice Lab** | Listen to phrase/scene/full-episode takes; switch NORMAL↔SHARP delivery intent, pronunciation/pause, choose usable audio, retry limited units | Approved locked text + voice performance/take store |
+| **Editor** | Storyboard, scene preview, actor and prop inspection, basic timing, captions, changes by agent or human | Visual Intent, timing and renderer adapter |
+| **Asset Gallery** | Browse and preview **every supported selectable V4 component** and generated variant/state; select and inspect usage | V4 authoritative registries + preview generators |
+| **Packages & Media** | Find ZIPs, Job@5 jobs, raw/selected WAV, captions, covers, MP4, export metadata and history; safe archive/recover | Manifest/ArtifactGraph + existing library scanner |
 
-Do not trust the model's semantic-neutral label as proof: the edit-classification verdict is advisory until native checks and human review resolve required checks. Use two graphs: **technical invalidation** (hash/dependencies) and **editorial impact** (beat callbacks, tone, concept, story focus, approval).
+One active episode selector, one status/progress area and one contextual action such as **Continue**, **Listen**, **Review** or **Export**. Advanced logs, hashes and detailed validation remain in expandable diagnostics, never required as ordinary manual steps.
 
-For durations, regenerated speech can shift later absolute timeline positions. Recompute the cumulative offsets and caption positions, but do not regenerate independent later TTS/audio or assets solely because their absolute time shifted. If segmentation or alignment cannot be guaranteed, escalate scoped regeneration.
+## 2. Creative priorities and non-goals
 
-### 4.5 Mid-render edits
+Priorities: **(1) approved story → (2) natural Vietnamese narration → (3) legible story images, character expression and physical props → (4) precise speech/caption/scene timing → (5) minimal motion**. A good static frame must still communicate the scene. Never create effects to fill a motion quota.
 
-A render job always reads a fixed immutable build snapshot. Editing during render creates a newer working revision; it does not mutate the running renderer's input. Mark older output as produced-from-revision-N, never current. Offer cancel/rebuild from changed revision or retain the old export as historical evidence.
+**Phase 1 approved script is LOCKED**, not a normal mutable Studio document. The user has explicitly deprioritized editing the script after handoff. An exceptional source correction may use a separate future review/re-anchoring path, but that is not an MVP blocker. **Changing how the text is spoken must not mutate the approved narration bytes.**
 
-## 5. Studio project, timeline and asset model
+Voice style should follow the approved Voice Profile and favor natural NORMAL↔SHARP changes where required; do not impose an extra “warm” mode. Avoid artificial punctuation tricks, forced excitement or robotic pauses merely to meet a metadata checklist.
 
-### 5.1 Project structure (illustrative, not mandatory directory migration)
+For new production use only **hold, cut, show/hide, state swap**, with optional small fade/slide/zoom when justified. No animation graph, advanced easing, elaborate camera rig, 60 FPS requirement, broad multi-track professional NLE or heavy VFX pipeline.
+
+## 3. Source-grounded audit: strengths, gaps and preservation rules
+
+| Priority | Existing source | Verified capability / problem | Requirement |
+| --- | --- | --- | --- |
+| P0 | `orchestration/phases/01-content.md`; `contracts/phase1-handoff.mjs` | Voice-first *creative* Web Phase 1; approved v2 handoff bound to source hashes | **KEEP** approved narration, Voice Profile, Narrative Plan and receipt immutable; import once |
+| P0 | `orchestration/phases/02-visual-production.md`, `03-handoff.md`; `tools/studio_v2/executor.py` | Current route completes visual/ZIP before local VOICE→TIMING | **CHANGE ORDER** for fresh Studio projects: audible voice first, measured timing, then visuals |
+| P0 | `tools/studio_v2/voice_performance.py`, `tools/zodiac_local.py` | Requested `performance_context` is carried/hashed but `prosody_verified:false`, `applied_controls:[]` on current VieNeu text/voice path | **DON'T CLAIM** instructions automatically changed the generated sound; real listening and tested mechanisms |
+| P0 | `tools/studio/artifacts.py`, `tools/studio_v2/voice.py` | Immutable voice take store, hashes and restore logic EXIST. The compatibility path can `register_approved(... approval_source="studio-v2-compatibility", migrated_from_checkpoint=True)` without proof of user listening | **SPLIT** technical validity/legacy compatibility from human listening approval; no false VOICE_ACCEPTED |
+| P0 | `tools/studio_v2/session.py`, `tools/studio_v2/executor.py` | Execution requires a Job@5 import with PACKAGE DONE | **NEW** Studio-native entrypoint from Phase 1 source. Do not patch ZIP-import-only session to fake the state |
+| P1 | `tools/studio/pipeline.py`, `tools/studio_v2/pipeline.py` and `tools/studio_qt/app.py` | Legacy and V2 workflow/status vocabularies still coexist | **CONSOLIDATE** one project-level state machine and event bus, with legacy adapters |
+| P1 | `tools/studio_qt/production_checklist.py` and `screens/production_checklist.py` | Phase manifest, episode scope/concept and 12-sign binary checklist ALREADY EXIST | **REUSE + EXTEND**, unify concept×sign×episode evidence instead of adding another checklist |
+| P1 | `tools/studio_qt/screens/concepts.py` | Concept backlog exists as separate planned-concepts.json | **MIGRATE/INDEX** and link concept IDs to real episodes; no second manual backlog |
+| P1 | `tools/application/library.py`; `screens/library.py` | ZIP/workspace scan, exported video discovery, safe archive/restore and cleanup ALREADY EXIST | **KEEP** reversible cleanup/legacy import; use as scanners, not a second source of status truth |
+| P1 | `features/asset-selection/build-current-asset-review.mjs`, `characters/build-identity-preview.mjs`, `core/audit/preview-meme-acting.mjs` | Real native SVG gallery/character/meme previews already exist | **EMBED/EXTEND** rather than rewriting preview generation |
+| P1 | `features/visual-composition/compile-visual-intent.mjs`, `core/cache/phase02-semantic-cache.mjs` | One authoring source and scene/asset dirty graph already exist | **KEEP**, use for bounded invalidation; SDK edits round-trip through the owner |
+| P1 | `tools/control_plane/artifact_graph.py`, `tools/control_plane/segments.py`, `tools/studio_v2/timing.py` | Validated content-addressed artifacts, cut-safe render segmentation and per-scene timing cache | **KEEP** as backend infrastructure, adapt to speech-unit scheduling |
+| P1 | `tools/studio_v2/runner.py` and `tools/studio_v2/progress.py` | Structured subprocess progress/error reporting exists | **REUSE** via one visible job progress UI |
+| P1 | `tools/studio_qt/vieneu_service.py` | VieNeu service lifecycle/reuse, ownership and readiness check already exist | **PRESERVE** lifecycle semantics; don't spawn a duplicate server |
+| P1 | `phases/phase03/run-phase03-production.mjs`; `tools/studio_v2/session.py` | Versioned, manifest-validated Job@5 handoff and importer; published ZIP != rendered video | **KEEP** portable export / import compatibility while eliminating mandatory intermediate ZIP for fresh Studio projects |
+| P1 | `runtime/zodiac-renderer/2.0.2` | Pinned Remotion rendering/cover/caption/fonts and QA | **KEEP** as rollback and reference while assessing HyperFrames renderer separately |
+
+The audit identifies **workflow seams**, not proof of actual memory/runtime bottleneck percentages. No E2E or live Windows benchmark was performed here.
+
+## 4. Unified project model: no duplicate checklists or hidden state
+
+A single local project registry links six concepts:
+
+- **Concept**: durable concept ID, theme/premise, planned sign coverage, whether it is draft/selected/approved. Distinguish general theme (“tình yêu”) from a specific approved episode idea.
+- **Episode**: stable episode ID, concept ID, scope format (`single_sign`, `element_group`, `ranked_shortlist`, `comparison`), member sign IDs, approved Phase 1 source, production revision, status.
+- **Voice take**: phrase/speech-unit ID, source excerpt fingerprint, actual generation settings, WAV hash, review provenance, selection, measured timing.
+- **Scene**: stable scene ID, semantic goal, Visual Intent, asset refs, current preview and validation/review state.
+- **Artifact/package**: path, hash, type (imported handoff, Job@5, WAV, SRT, MP4, cover, metadata), producer version, source episode/revision and status.
+- **Series coverage**: derived view over `(concept_id, sign_id)` linked to one or more episodes, with **separate evidence-based columns** for PLANNED, PHASE1_APPROVED, VOICE_ACCEPTED, VISUAL_REVIEWED, VIDEO_EXPORTED, PUBLISHED. A multi-sign episode may cover more than one member without pretending each has a separate finished single-sign video.
+
+**No new manual “done” field if a receipt/output can establish it.** Unknown/missing source data becomes UNKNOWN or NEEDS_LINK, never DONE. Publication needs actual user-confirmed publish evidence/link rather than a ZIP or MP4.
+
+Import/migrate old `planned-concepts.json`, `zodiac-series-checklist@1`, known workspaces, Job@5 manifests and `ready/*.zip` via scanners. Normalize identities with a migration report and an ambiguous-match review. Maintain legacy files read-only during parallel validation. Do not infer which concept was made from filenames or generic tags. The currently separate checklist and backlog views become projections of the same registry.
+
+**Packages & Media management** must retain safe archive/restore (`_archive/<timestamp>/moved.json`) and idempotent import, deduplicate identical content by hash, show source lineage, resolve corrupted/missing files, and **never auto-delete** referenced/approved assets, active jobs or last recoverable exports. Use actual status distinctions: HANDOFF_READY != VIDEO_READY != PUBLISHED.
+
+## 5. Target pipeline: Voice FIRST after approved Web Phase 1
+
+### Stage A — Single import, automatic preflight
+
+Verify approved Phase 1 v2 manifest, source hashes and real review receipt, preserve original exact bytes and create one Studio episode. The Studio opens its overview and Voice Lab. No native tools added to Web Phase 1; no fake local PASS. A duplicate import reopens the same episode or explicitly creates a new revision, never silently duplicates jobs.
+
+### Stage B — Voice Lab, the first major production task
+
+Use the existing `spoken-performance-plan` and voice profile as guidance; **do not create a competing approved narration script**. The operator must be able to audition the actual synthesized voice while seeing locked narration, the selected voice identity and waveform.
+
+- Build a **speech-unit plan** from semantic phrases/breath groups independent of visual scene boundaries. Preserve exact source byte spans and stable IDs. MVP may use existing scene-WAV adapters as a compatibility transition, but should not create unnatural breaks merely because a later video scene ends. This is a *real refactor*, not a renaming of the existing per-scene TTS.
+- Keep one voice identity and reproducible generation settings. Produce default take, evaluate objective audio problems, then offer bounded alternate takes for poor units. Retake only the affected audio units; no automatic unbounded sampling.
+- Requested NORMAL/SHARP, energy, pace, emphasis and punctuation in metadata are **intended delivery**, not proof VieNeu executed them. Only apply controls actually supported and verified in the selected VieNeu backend. Spoken pronunciation overrides must affect speech input with full traceability without changing canonical captions or approved source.
+- Automatic QC detects empty/clipped WAV, implausible duration, missing/duplicated words where alignment provides evidence, abrupt joins and long pauses. WPS is diagnostic only, not a reason to regenerate every scene.
+- **Approval semantics:** TECHNICAL_VALID means WAV is readable and measurable. CANDIDATE or COMPAT_MIGRATED is not USER_LISTENED_APPROVED. Actual voice approval requires an explicit user action on the selected take plus a complete-episode (or junction-level) listening confirmation. Preserve compatibility-import labels separately from trusted approval receipts.
+- Use `VoiceArtifactStore` for immutable take hashes/reuse; correct the migration path so an artifact automatically marked APPROVED is never presented as a genuine human-listening approval. Keep previous takes and undo selection; reusing identical audio must not require regenerating TTS.
+- After selection, stitch/join voice with measured boundaries and intentional pauses; avoid automatic equal-length gaps between every scene. Run measured ASR/word alignment against the approved text and generate the time map. Final timings must come from selected WAV bytes, not predicted words-per-second.
+
+Changing a selected take invalidates affected audio alignment and downstream absolute time positions/captions/scene preview, but **not** unaffected V4 SVG source assets or scene meaning. Preserve exact source. If downstream scene anchors cannot be reliably mapped, show review-needed for those scenes, not a silent rewrite.
+
+### Stage C — Storyboard, characters, asset selection and real previews
+
+Use the approved Story Spine/Narrative Visual direction and the measured speech timeline to create scene intent. A static scene must show a concrete relationship/reaction; an expressive character/physical prop has more value than generic symbols and animation. Use the existing `zodiac-visual-intent@1` canonical source, V4 character/meme/prop compiler and selective scene/asset dirty closure.
+
+IMPORTANT: Visual Intent currently uses **contiguous UTF-8 byte ranges `narration_range`** and a narration SHA check. Audio time and byte range are different coordinates: compute original source ranges deterministically and map scene time through measured word/phrase anchors; never replace UTF-8 byte offsets with a visual timeline timestamp or reserialize the approved script.
+
+Scene Accent is canvas-native; fresh Scene Set containment is retired by current compiler. Narrative Visual carries only approved Phase-1 story meaning, is **scene-authored** rather than a generic asset choice, and cannot coexist with Story Text in the same scene. Character identity remains stable across states. No mandatory VFX or motion quotas.
+
+**Progressive preview:** as soon as one scene's assets and visual source are ready, render a still plus short transition if necessary at the correct scale, with draft/correct audio labels; update HyperFrames viewport without waiting for all scenes, a ZIP or full MP4. Preserve current playhead where safe. Invalidations only rebuild actual dependencies; retain authored edits and stable IDs.
+
+### Stage D — Human/agent edit loop and final QA
+
+One command/event API handles `project.get`, `scene.inspect`, `asset.search`, `scene.apply_patch`, `asset.select`, `voice.get_takes`, `voice.select_take`, `preview.request`, `validation.get`, `events.subscribe`, `undo`. Use transactional `base_revision`, idempotent commands, per-scene scope, structured conflicts and recent edit history. Avoid remote chat round trips for every pixel of a drag: local UI may display a transient preview, and commits one validated semantic edit on drag-end.
+
+No agent operation may grant creative review or spoken take approval. Show agent activity and human edits in one shared activity timeline; respect a visible user override.
+
+**Renderer boundary:** choose HyperFrames editor components for the new UI, but keep renderer selection a separate decision. During integration pilot, preview can use HyperFrames with clearly labeled fidelity; final Remotion path remains available until HyperFrames rendering passes parity for character positions, font/caption breaks, voice timing, cover, MP4 audio and story visuals. No claim of pixel-exact output across different engines.
+
+### Stage E — One-click export, packages and publish artifacts
+
+Export pins immutable project source revision, selected and genuinely approved voice takes, measured alignment, compiled assets, renderer version and QA receipt. User gets one consistent output set: final MP4, cover first-frame parity, captions/SRT, voice/media source, caption + TikTok publish text/hashtags and lineage manifest. Keep old Job@5 ZIP as **optional** portable/export/legacy-compatibility format, not a mandatory internal transfer.
+
+Apply existing atomic/staged package validation, source hash checks, render segmentation and final audiovisual QA. Preserve a verified prior output if export is canceled or crashes; mark stale exports as belonging to older revisions, not as current. No publishing status without user evidence.
+
+## 6. Asset gallery: preview **each real component**, not a decorative catalog
+
+Reuse the current authoritative library `references/asset-library-v4` and its generators:
+- `features/asset-selection/build-current-asset-review.mjs` for selectable V4 components and selected-source preview receipt.
+- `characters/build-identity-preview.mjs` for compiled identity/body/hair/shirt preview.
+- `core/audit/preview-meme-acting.mjs` for all current meme action situations and before/after states.
+- Existing prop/Scene Accent/environment SVG and selected baked character state SVGs.
+
+**MVP gallery behaviors:** searchable category filters; real still thumbnail generated from the native source SVG; choose body/hair/outfit/pose/expression and inspect representative assembled identities; show meme setup/reaction before/after; see SVG source hash, compatibility, role, source licensing/provenance, used-in scenes, current/retired policy; click to use a compatible asset. Refresh thumbnails by source hash; lazy-generate only visible/selected entries and cap in-memory cache on weak Windows hardware.
+
+The existing selected-asset HTML preview is **not proof every possible identity combination and all generated states are already browsable**. New index/virtualized view must support coverage without eagerly generating a combinatorial explosion of SVG variants. The gallery may show a catalog component on a standardized mannequin and generate an actual selected-state thumbnail on demand.
+
+Do not present historical Scene Set artifacts as current selectable fresh backgrounds. Respect current `FRESH_SCENE_SET_RETIRED` validation even though V4 README/manifest still mention scene-set. Narrative Visual is an approved scene-specific creative decision, not a random reusable icon to select. The Gallery must not create a second asset ownership system.
+
+## 7. Frontend / backend boundaries and reliability
 
 ~~~text
-projects/<project-id>/
-  project.json                   # IDs, current revision pointers
-  imports/<handoff-id>/          # pristine original v1/v2 ZIP + inventory
-  revisions/<revision-id>/
-    content/narration-document.json
-    content/narration.txt
-    content/narrative-plan.json
-    content/voice-profile.json
-    visual/.authoring/visual-intent.json
-    timing/timing-overrides.json # only if edited
-    revision.json                # parents, dependency hashes, approval refs
-  events/                        # append-only revision/command log
-  artifacts/<hash>/              # generated, immutable by hash
-  cache/                         # content-addressed
-  exports/<run-id>/              # exact source-revision lineage
+                         zodiac launcher
+                    ONE UI / one active project
+┌───────────────────────────────────────────────────────────────────────┐
+│ React Zodiac shell: Home / Concepts x Signs / Voice / Editor / Assets │
+│ Packages / agent activity / one status/progress bar                   │
+│ Embedded HyperFrames Studio primitives + SDK (not separate app)      │
+└───────────────────────────────┬───────────────────────────────────────┘
+                                │ typed commands + ordered events
+┌───────────────────────────────▼───────────────────────────────────────┐
+│ Zodiac Project Engine (managed Python sidecar / existing compilers)   │
+│ Episode Registry, Voice Takes, Story Scenes, V4 Assets, Cache, Export  │
+│ One state reducer, ArtifactGraph, validation, transaction & undo      │
+└──────────────┬───────────────────────────────────────┬────────────────┘
+               │                                       │
+      Local CLI/MCP agent                    Renderer adapter
+      same commands/state                    HyperFrames pilot
+                                             Remotion fallback
+               └───────────────┬───────────────────────┘
+                               ▼
+            pinned artifacts + audio/video QA + exports
 ~~~
 
-Keep existing .authoring workspace layout as a compatibility materialization, owned by Studio Engine. Do not create two writable copies in production; a transaction commits source first, then derived materializations atomically or via journal recovery.
+- Single local engine process and single app window; any worker/TTS process auto-managed without a second manually opened GUI. Keep process ownership, readiness checks, graceful shutdown and crash restart; never kill an external VieNeu server merely because the UI closes.
+- One durable project/episode registry and one state machine; legacy scanner/job/checklist files become readers/adapters. Explicit schema versioning and migration from legacy planned-concepts, series-checklist, Job@5 and Qt workspace. Read-only fallback when migration/identity matching is ambiguous.
+- One event stream (project_id, revision, sequence, changed IDs, artifact hashes). Reconnect/replay and stale revision conflict. Scheduler batches/deduplicates requests, one writer per canonical source, guarantees atomic commit and hash-validated cache reuse; no duplicate voice/render/export when resumed.
+- Local-only loopback listener, authentication and origin checks if using HTTP/WebSocket. File access restricted to project-owned sandbox paths. No raw arbitrary shell or filesystem API for agent.
+- Preview markers: PLACEHOLDER, DRAFT, RENDERER_READY, USER_REVIEWED. A rendered still is useful even without animated playback; a generated frame is not proof of user approval. Progressive UI should report actual checks, not fake completion percentages.
+- Windows low-resource mode: one foreground preview, lazy thumbnails, capped parallel TTS/asset jobs, no duplicate browser+Qt+Remotion Studio apps, disk-space preflight and bounded cache retention.
 
-### 5.2 Timeline and scene editor
+## 8. Required user journeys and acceptance tests
 
-Timeline lanes: narration/voice, captions, actor states, props, scene accent/background, optional Narrative Visual, Story Text, motion/camera, music and audio mix. Rows and clips reference semantic owner IDs, source anchors and frame/time ranges. The timeline is a **view/editor of authored intents and explicit overrides**, NOT a second graph privately serialized by React.
+| Journey | Acceptance criterion |
+| --- | --- |
+| Start `zodiac` | **One application window** with all six views; sidecar ready without manual terminal/app launch |
+| Import Phase 1 | Immutable, hash-verified approved source and one episode; reopen is idempotent |
+| Voice Lab | Generate/listen/retake/select one unit, previous WAV retained; actual user listening status separated from technical audio validity |
+| Natural voice | Listen through whole assembled audio, adjust pauses/joins, no fake “verified prosody” flag and no changes to approved narration |
+| Draft image appears | S01 preview visible while later scenes remain pending, no ZIP/full MP4 prerequisite |
+| Edit with agent | Agent moves one actor or changes a prop by semantic ID, single commit, validated preview refresh, correct undo/conflict |
+| Concept coverage | For a concept, see all 12 sign states and linked episodes; missing evidence shows UNKNOWN; multi-sign episode counted accurately |
+| Asset gallery | Preview a body, hair, outfit, pose, expression, prop, accent and representative meme setup/reaction without a second app; no retired fresh Scene Set |
+| Packages | Find approved handoff, generated video, captions/cover, ZIP and archive; distinguish handoff-ready/video-ready/published, restore archive safely |
+| Recovery | Crash/reopen resumes last committed task/voice selection/scenes without redoing valid cached assets |
+| Render migration | Same episode through Remotion reference and HyperFrames pilot, caption/character/audio and story parity reviewed; benchmarks RAM/latency on actual target PC |
+| Source integrity | Compiler projections and reviewed source snapshots are not casually writable; no ghost creative approval or fake PASS |
 
-Editor support: scene inspector; actor/cast identity and hair; transform/placement; event states; asset references; clip start/end and easing; caption layout; audio audition; visible invalidation warnings; source vs built vs approved badges.
+## 9. Implementation plan waves: cohesive vertical slices
 
-Derived outputs: production.json, render-plan.json and measured timing are not manually writable. Edits must be made to the correct canonical intent or timing override source and projected through compiler.
+**Wave 0: Audit, contracts and red tests**. Freeze one actual approved Phase 1 fixture, Job@5 legacy sample, voice take/artifact fingerprints, V4 asset states, checklist/series/backlog data. Create a concrete module ownership map and baseline. No UI rewrite in isolation.
 
-### 5.3 Asset library 2.0
+**Wave 1: Unified project registry + one-window skeleton**. `zodiac` launcher, embedded editor smoke test, managed Python core, one project selector, imports, state/error event bus. Migrate existing library/checklist/concept scanners as adapters. Test crash/reopen and low-memory startup.
 
-Index asset ID, content hash, category, provenance, license/usage, compatibility, previews, selected state variants, original/generation intent, character identity bindings, scene references and source revisions. Deduplicate by content hash without merging semantic identity. Do not delete active referenced assets. Separate ephemeral generated previews and approved reusable library assets; import legacy asset packs via explicit migration, no blanket reactivation of retired Scene Sets.
+**Wave 2: Voice-first vertical slice**. Phase 1 import → Voice Lab using existing take/caches and measured alignment → genuine listening confirmation → prepared scene voice timeline. This is the first production-quality feature, not a later add-on.
 
-## 6. Agent bridge contract
+**Wave 3: S01 edit/preview loop**. Actual V4 actor/prop/Scene Accent, Visual Intent → HyperFrames scene preview, SDK edit → semantic Zodiac patch → one revision/dirty closure → updated still, alongside measured voice timing. Validate narration byte ranges and visual contracts.
 
-### 6.1 One API for human and agent
+**Wave 4: Integrated Gallery + Concept × 12 + Packages**. Reuse native preview generation, metadata hashes, old library scanning/cleanup. Complete all user-facing screens in **same Zodiac UI**, with actual statuses and useful list filters.
 
-Command transport independent of model or UI. Recommended commands:
+**Wave 5: Full episode + exporter/compatibility**. All scenes, one-click publish artifacts, strict audiovisual QA, Remotion rollback, HyperFrames backend pilot; compare real edit cycles, render performance, memory and user effort; eliminate retired duplicate public controls only after parity.
 
-- project.open, project.get_state, project.list_revisions, project.checkout_revision
-- content.get_segments, content.propose_patch, content.apply_patch, content.request_review, content.approve_revision
-- scene.list, scene.inspect, scene.apply_patch, timeline.inspect, timeline.apply_patch
-- asset.search, asset.inspect, asset.import, asset.generate, asset.replace_reference
-- build.preview_frame, build.preview_scene, build.validate, build.export
-- agent.get_context_capsule, task.claim, task.release, command.undo, events.subscribe
+A wave must leave a runnable, tested integrated slice; never “finish editor UI first” while the engine, voice, status and actual assets are disconnected. Each stage needs unit/contract tests, e2e restart/recovery tests and one real episode smoke test. Do not merge a frontend-only facade with inert buttons.
 
-No generic unvalidated filesystem write operation exposed to model. Content approval command must require a trusted human UI/user action; an agent may request approval but cannot call content.approve_revision on its own.
+## 10. Decisions, risks and remaining questions
 
-### 6.2 Transaction semantics
+- **Chosen editor direction:** HyperFrames browser React components/SDK embedded **inside Zodiac**; no second GUI or desktop app; this is the intended build direction, contingent on a small compatibility spike.
+- **Renderer:** HyperFrames final encoding is **not yet chosen**. Pin a tested version, compare on representative Zodiac scenes; continue Remotion as production/legacy backend until proof of parity.
+- **Voice:** Speech units and selection must preserve current signed source, voice artifact cache and timing. The existing per-scene TTS path requires an adapter and regression tests; do not silently flatten units into scene chunks. Objective audio validation cannot replace actual listening.
+- **Approval:** Content Review is imported immutable. Voice user listening, Visual Review, native validation and final video QA are distinct. Auto/migrated voice take flags from legacy are not trusted human review.
+- **Concept status:** published means genuinely published, not just exported; evidence-based coverage can include multiple episodes of the same concept/sign.
+- **Gallery:** do not generate every cross-product of character states; lazy selected variants satisfy “preview each component” without exponential storage.
+- **Version/rollback:** source/projection/adapter/renderer versions in artifact keys, atomic output and legacy ZIP compatibility. Do not delete Qt or Remotion before a proven complete episode.
+- **Security:** local agent process can connect directly; ChatGPT Web needs explicitly authorized connectivity and cannot assume a localhost tunnel.
 
-Each write includes:
-
-~~~json
-{
-  "protocol": "zodiac-studio/next",
-  "command_id": "cmd-unique-id",
-  "project_id": "project-123",
-  "base_revision": "rev-004",
-  "scope": {"scene_ids": ["S03"], "entities": ["actor-taurus"]},
-  "operation": "scene.apply_patch",
-  "patch": [{"op": "replace", "path": "/scenes/S03/events/event-07/start_anchor", "value": "beat-03-line-02"}],
-  "idempotency_key": "agent-run-x-cmd-07"
-}
-~~~
-
-Use semantic-ID-addressed patch paths or domain operations, not fragile JSON array indices. The server verifies scope, authorizations, source ownership, expected revision, referential integrity, and mutation constraints. It returns committed revision and typed dirty nodes (or structured error). Transaction is atomic and durable; retry with same idempotency key cannot duplicate edits.
-
-If head changed since base_revision, either rebase a genuinely disjoint patch verified by engine or return REVISION_CONFLICT with a small diff and fresh context capsule. No last-writer-wins on overlapping content. A scoped lease may temporarily prevent simultaneous destructive writes, but never strands project state after crash.
-
-### 6.3 Events and hot reload
-
-Examples: revision.committed, source.invalidated, asset.ready, scene.preview_ready, timeline.updated, build.progress, validation.failed, review.required, export.ready.
-
-Events have project_id, revision_id, monotonic sequence, changed IDs, dirty closure and artifact hashes. UI/agent reconnect with sequence cursor and receive replay or a fresh authoritative snapshot. Debounce rapid editor changes, cancel superseded preview work, prioritize visible scene, never cancel a user's explicitly pinned export without instruction.
-
-Preview fidelity states: PLACEHOLDER, DRAFT, NATIVE_READY, VERIFIED. Placeholder is visually distinct and never marked verified. Current Remotion composition should be refactored into a shared render core consumed by interactive preview and final render; parity tests are mandatory. Do not maintain an unrelated HTML approximation as the final quality preview.
-
-### 6.4 Agent context and cost
-
-Provide a small task-scoped capsule: approved content revision reference, relevant beat text, voice constraints, active scene intent, required asset IDs/available variants, scene-preview frame, recent failed checks, and dirty closure. Lazy-fetch full catalogs; no complete repository tree per task. Support run-scoped compiler/runtime hash pinning and receipt IDs. Track tool round trips, tokens loaded, change-to-visible-preview latency, cache hit rate, scene revisions and final quality outcomes.
-
-### 6.5 Remote ChatGPT limitation
-
-Local CLI connected to the engine can call it directly. A ChatGPT Web plugin cannot assume access to 127.0.0.1 on a user's machine. Any Web bridge needs explicit user-configured trusted transport/connection, authentication, local consent and a clear online/offline signal. Start with local CLI; evaluate a remote bridge only when data security and useful workflows justify it. Default local listener should be loopback-only, authenticated, and resistant to cross-origin access; do not expose arbitrary filesystem paths or shell commands.
-
-## 7. Effectiveness hypothesis and measurement
-
-The agent bridge is **not intrinsically faster** than current CLI/source editing. It adds transport, synchronization, schema and UI work. It should be justified by fewer authoring cycles and better quality control.
-
-| Dimension | Current pattern | Proposed pattern | Required benchmark |
-| --- | --- | --- | --- |
-| Initial Phase 1 creative | Web voice-first; efficient | Keep existing Web path | No regression |
-| First full video creation | Local authoring, native compile, review, final render | Same compilers plus per-scene visible progress | Compare full elapsed and result quality |
-| Edit a single scene | File/source diff, re-run relevant commands, separate preview | Bounded patch, dirty graph, automatic preview | Measure edit-to-preview p50/p95 and work reused |
-| Small narration edit | Approval hash drift blocks direct production | Controlled content revision, scoped audio and review | Measure manual steps, generated TTS units, outcome |
-| Human correction | External chat instructions and source edits | Direct inspector/timeline edit with agent revision awareness | Compare number of correction cycles |
-| Fault recovery | Native receipts/logs and workspace | Structured scene-level errors plus history/undo | Compare recovery time, no false PASS |
-
-Pilot should use same input and acceptance rubric on at least: one fresh episode, one one-sentence narration change, one multi-beat semantic rewrite, one visual S03 asset replacement, one agent/human concurrent edit, and one interrupted build. Record real wall-clock and quality outcomes, not fabricated speedup percentages.
-
-**Go/no-go criterion:** retain new bridge only if correctness/creative review are maintained and scoped edit workloads reduce user effort and/or measurable time. If not, keep minimal Studio status/preview integration and continue efficient CLI authoring.
-
-## 8. Implementation waves and test-first gates
-
-### Wave 0 — contract inventory (spec review, then TDD plan)
-- Identify canonical source owner for all current files, approval sources, native projections, and stale/legacy pathways.
-- Freeze baseline fixtures on main (handoff v1/v2, Job@5, visual intent, Studio V2, real preview).
-- Write rejection tests for mutating imported snapshot and compiler outputs.
-- Preserve current main; implement only on feature branches; no plugin version bump before functional release.
-
-### Wave 1 — project/revision and content edits
-- Project import, immutable source snapshot, working revision journal, semantic content segments.
-- Targeted authoring validation and explicit post-import reapproval.
-- Tests: original handoff remains valid; changed content loses current-approval status; new trusted approval binds new hashes; crash resume; undo; stale write conflicts.
-
-### Wave 2 — command protocol and incremental graph
-- Shared domain commands; scoped optimistic transactions; typed events/replay.
-- Integrate existing phase02-semantic-cache, StudioV2 ArtifactGraph, per-scene TTS and timing caches.
-- Tests: unchanged scenes/assets reused, tampered outputs rejected, global timing positions recomputed after audio change, semantic impact flagged.
-
-### Wave 3 — live preview and visual editing
-- Shared Remotion render core and first interactive scene/timeline editor.
-- Preview compiled and invalid draft states with explicit badges; no full MP4 requirement.
-- Tests: frame parity, caption/asset/occlusion fidelity, hidden/pending asset behavior, resource limits on weak Windows laptop.
-
-### Wave 4 — asset catalog and agent bridge
-- Browse, tag, preview, use/replace/restrict assets; bounded scene commands.
-- MCP adapter for local CLI; context capsule and concurrency reconciliation.
-- Tests: asset provenance, multi-scene dependency invalidation, no generic arbitrary path writes, agent/human interleaving, request replay.
-
-### Wave 5 — export integration and migration
-- Stabilize Final QA, publish text, audio mix and Job@5 generation from a pinned project revision.
-- Qt-to-new-UI parity migration only once stable, with rollback and legacy package recovery.
-- Tests: Web v1/v2 → Studio → Job@5 → real Remotion/FFmpeg; copy/edit/undo/re-export, voice/timing fidelity and reproducibility; no duplicate public MP4 output.
-
-## 9. Blocking acceptance cases
-
-- A changed narration.txt never inherits an APPROVED receipt for its former SHA.
-- User can amend one line of imported narration without going back to full concept research or manually recreating a handoff ZIP.
-- Content review remains an explicit human boundary; no agent, validator or file edit automatically issues approval.
-- Changing one S03 prop does not rebuild unrelated scenes unless a real shared dependency changed.
-- A changed spoken sentence regenerates affected TTS and timing as needed; later global frame offsets may shift but unaffected TTS cache remains reusable.
-- Scene preview becomes available progressively while other scenes remain pending; a user-visible DRAFT frame is never labeled VERIFIED.
-- Human/agent simultaneous edits never silently lose data. Out-of-date command returns a recoverable conflict.
-- Crash/restart preserves immutable imported source, last committed revision, task state and event cursor.
-- Final rendering reads a fixed snapshot. Live edits cannot mutate a running export.
-- Fresh production never revives Scene Set containment or misclassifies physical props as Narrative Visuals.
-- Local import v1/v2, Job@5 and pinned renderer behavior remain compatible through adapters.
-- Performance comparisons include full human/agent wall-clock and the quality of resulting video, not only compiler milliseconds.
-
-## 10. Risks and open design decisions
-
-1. **Speech segmentation:** exact alignment between imported narration/plan beats and production scenes is not guaranteed. Use stable IDs with explicit migration and fallback review.
-2. **Semantic edit scope:** automated meaning-change estimation is advisory. Review callback/payoff and story-focus dependencies even when no file hash detects them.
-3. **Qt vs Tauri:** commit the Engine/API contract first; decide shell after a real low-RAM prototype.
-4. **Renderer live fidelity:** measured timing/audio may not exist at draft time. Render provisional time must be visibly different from measured final time.
-5. **Review provenance:** Studio needs its own trusted UI approval receipt format linked to user action and approved bytes; never reuse generic agent API for it.
-6. **Asset licensing:** generated/user-imported asset reusability and provenance need explicit policy.
-7. **MCP vs direct CLI:** start local direct command API and a thin MCP adapter; benchmark before adding complex remote transport.
-
-## 11. Decision summary
-
-**Accept:** immutable Web handoff + editable revision branch; incremental content/technical/editorial invalidation; per-scene preview via shared rendering core; structured agent commands with optimistic concurrency; user-gated approval; staged migration; measurement-driven effectiveness decision.
-
-**Reject:** rewriting all native compilers; unrestricted agent file edits; pass-through old content approval; rebuilding every scene on minor text edits; immediate wholesale UI rewrite; pretending local Studio is directly reachable from ChatGPT Web.
-
-**Next artifact after design review:** an implementation plan with numbered TDD tasks, concrete code owners/files, red tests, acceptance checks, migration/rollback plan and a pilot fixture. This design document itself authorizes no implementation.
+**Next implementation artifact:** a separate task-by-task TDD plan with concrete source owners, migrations, proof of performance, stop/go thresholds and a real selected episode. This design is not an implementation or test result.
