@@ -32,7 +32,7 @@
 ## Phase sizing rule: medium, reviewable vertical slices
 
 - **Eight medium-sized phases, ~3 reviewable tasks each**, except Phase 0 and the dedicated Compiler Phase 3 (4 tasks each). Do not create a giant compiler rewrite or dozens of micro-PRs. A task crosses UI/domain/testing layers when necessary to deliver observable behavior; don't split by each button/file.
-- Each phase delivers **one user-verifiable outcome**, including real backend wiring and a replayable smoke test. A screen that only displays a mock is NOT phase completion.
+- Each phase delivers **one user-verifiable outcome**, including real backend wiring and a replayable smoke test. A screen that only displays a mock is NOT phase completion. For compiler tasks, **one logical S03 request must fulfill its entire declared component manifest or explicitly BLOCK**, not require the agent to orchestrate each component manually.
 - One agent takes one work task from `READY` to `TESTED`. Each task must include schema/contract, source owner, implementation files, tests, positive and negative behaviors, migration/rollback, committed evidence.
 - Agent receives a **small scope capsule**, not the full repository context. It cannot mark its task DONE without actual test receipts and a reviewer verdict.
 - A phase may be split into two PRs **only** if separately independently runnable and revertible. A large review requiring broader context triggers division at an interface boundary, not arbitrary micro-tasks. Avoid an entire phase spanning weeks of unreviewed changes.
@@ -55,7 +55,7 @@
 **Deliverable:** `zodiac` opens ONE Zodiac Studio frontend connected to the P0 Project Core. The user sees live project state and an agent can inspect a legitimate task, perform one safe test command and receive completion feedback in that window.
 
 - **1.1** Managed launcher/shell: React host, HyperFrames packages installed/pinned (verify the actual package API), native project picker and one shared status area; retain Qt safe fallback.
-- **1.2** Project command + event transport from P0; authentication/origin/path boundaries; reconnect/replay; real error display and project selection persistence.
+- **1.2** Project command + event transport from P0; authentication/origin/path boundaries; reconnect/replay; real error display and project selection persistence. Reserve typed `scene.compile` (S03, base revision, idempotency key, mode) as a P3 command handler; P1 must **not** silently implement a mock successful compiler.
 - **1.3** Managed Codex App Server adapter (confirm official current protocol before code), scoped capabilities, task capsule, cancellation/retry and user interaction gate; demonstrate agent can inspect a project and submit a harmless/validated update through the project API. Do not require user to open CLI.
 
 **Gate P1:** single-window smoke on Windows; no standalone HyperFrames GUI/CLI terminal; real project data, API errors and reconnection; agent cannot write outside project or impersonate human approvals; measured idle RAM/startup compared with existing Qt. App Server absence degrades gracefully to manual Studio, not crash.
@@ -74,20 +74,20 @@
 
 **Deliverable:** V4 Visual Intent is compiled through ONE documented and versioned core with stable source hashes, bounded scene/asset rebuilds, on-demand preview, validated quality and reproducible performance evidence. It remains compatible with current Phase 2 scripts and Job@5. This is a standalone engineering phase, not an appendix to the editor.
 
-- **3.1** Consolidate the *compiler interface/ownership* with pure Visual Intent→assets→scene graph stages and legacy script adapters; freeze existing actor/pose/expression/meme/scene/event semantics as golden fixtures. No duplicate catalogs and no automatic narration edits.
+- **3.1** Consolidate the *compiler interface/ownership* with pure Visual Intent→assets→scene graph stages and legacy script adapters; define exact **`scene.compile` one-request contract** and a scene required-components manifest (actors/states/props/events/visual/story text/captions/voice anchors). Freeze actor/pose/expression/meme/scene/event semantics as golden fixtures. No duplicate catalogs or automatic narration edits.
 - **3.2** Reuse and unify existing `phase02-semantic-cache.mjs`, `incremental-cache.mjs`, selected dependency graph and `native-scene-executor.mjs`; remove avoidable full-tree hashing and process startups **only when benchmarked**. Keep exact source/dependency/output SHA validation and transactional rollback.
-- **3.3** On-demand single-scene/one-frame compilation for the editor plus native progressive visual QA: readable prop/face/layers/captions, event-before/after meaning, Narrative Visual vs Story Text, real voice anchors and preview/export parity; preserve actual user Visual Review.
+- **3.3** **Atomic one-command S03 build**: `scene.compile(project,scene,revision,mode)` plans and compiles all required scene constituents with verified cache reuse, stages full scene/preview outputs, validates every required ID/state/event and publishes one artifact set plus `scene.preview_ready` event; otherwise return `BLOCKED` with exact missing items and leave old output untouched. On-demand preview and progressive QA check readable prop/face/layers/captions, before/after meaning, Narrative Visual vs Story Text, real voice anchors and preview/export parity; preserve actual user Visual Review.
 - **3.4** Repeat cold/warm/one-scene/actor-change performance benchmarks and quality regressions, report actual agent/native/preview/render intervals, document extension API for new characters/props/effects and fallback/rollback. See [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
 
-**Gate P3:** real Libra/Gemini/Scorpio narrative fixtures and an audio-synced scene compile with no missing actor, prop, meme or event; unchanged and single-scene edit reuse independently verified; negative tamper/missing-asset tests block; Windows CPU/RAM/disk timing evidence available; old outputs still reproducible; no fabricated human approvals. No claim of universal speedup without measured baseline.
+**Gate P3:** **one `scene.compile` S03 request produces a complete verified scene+preview package** even with multiple actors/props/states/events; real Libra/Gemini/Scorpio narrative fixtures and audio-synced scene preserve every authored item; unchanged and single-scene edit reuse independently verified; missing asset/state/prop, stale revision and interrupted transaction BLOCK without publishing partial/stale output; Windows CPU/RAM/disk timing evidence available; old outputs still reproducible; no fabricated human approvals. No claim of universal speedup without measured baseline.
 
 ## 4 — Embedded HyperFrames scene editor (S01 → full episode)
 
 **Deliverable:** a scene backed by the P3 compiler appears in the **same Zodiac window**, and SDK edits round-trip into Visual Intent with a fresh scoped preview.
 
 - **4.1** Visual Intent ↔ HyperFrames visual source map, scene IDs, actual V4 SVG elements and P2 measured speech anchors; HyperFrames DOM is a derived view, not a new Zodiac authoring schema.
-- **4.2** UI scene editor + agent semantic commands: move/scale actor, choose state, place props, show/hide/swap actions; command commit, optimistic concurrency, undo and correct P3 dirty-closure invalidation. Unsupported SDK override is rejected.
-- **4.3** S01 preview → edit → re-preview with existing real V4 props/meme/caption/speech, geometry and source-bound validation; true Visual Review gate before finishing all scenes. No full ZIP or MP4 needed merely to view one scene.
+- **4.2** UI scene editor + agent semantic commands: move/scale actor, choose state, place props, show/hide/swap actions; command commit, optimistic concurrency and undo. Agent invokes Studio command `scene.compile` after the intentional edit; Studio handles build and exposes artifacts, **agent never uploads asset bytes or writes generated files**. Unsupported SDK override is rejected.
+- **4.3** S01 preview → edit → re-preview with existing real V4 props/meme/caption/speech, geometry and source-bound validation; UI subscribes to `scene.preview_ready` and retrieves a revisioned local artifact from Zodiac Core, showing `BLOCKED` or `FAILED` without concealing the last valid preview. True Visual Review gate before finishing all scenes. No full ZIP or MP4 needed merely to view one scene.
 
 **Gate P4:** one real V4 episode S01 with setup/reaction/voice reveal renders correctly inside Zodiac; agent edit visible without a second GUI; crash/reopen retains source; preview matches reviewed scene within declared tolerances; approved narration unaffected.
 
