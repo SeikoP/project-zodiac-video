@@ -72,6 +72,8 @@ export async function materializePhase1Handoff(zipPath,workspace){
  }
  let state;
  if(inspected.manifest.contract_major===2){
+  const current=await approvalSourceHashes(root),approved=inspected.manifest.content_review?.source_hashes??{};
+  for(const key of ['narration','plan','scope','brief','voice'])if(approved[key]!==current[key])throw Error('CONTENT_APPROVAL_SOURCE_DRIFT '+key);
   state=await synthesizeV2State(root,inspected.manifest);
  }else{
   await validatePipelineState(path.join(root,'.authoring','pipeline-state.json'));
