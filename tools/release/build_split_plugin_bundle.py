@@ -29,6 +29,7 @@ WEB_CREATIVE_FILES={
     "skills/zodiac-video-pipeline/references/content-craft.md",
     "skills/zodiac-video-pipeline/references/content-quality-engine.md",
     "skills/zodiac-video-pipeline/references/narrative-modes.md",
+    "skills/zodiac-video-pipeline/references/narrative-motif.md",
     "skills/zodiac-video-pipeline/references/engagement-engine.md",
     "skills/zodiac-video-pipeline/references/narrative-visual-direction.md",
     "skills/zodiac-video-pipeline/references/narration-rhythm.md",
