@@ -76,5 +76,13 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertIn("no stale", skill.lower())
 
 
+    def test_phase1_ci_no_longer_runs_legacy_native_web_authoring(self):
+        workflow = (ROOT / ".github/workflows/phase1-voice-first.yml").read_text(encoding="utf-8")
+        self.assertNotIn("phase01-agent-e2e.test.mjs", workflow)
+        self.assertNotIn("episode-phase01-e2e.test.mjs", workflow)
+        self.assertIn("phase1-handoff-export.test.mjs", workflow)
+        self.assertIn("local-phase1-bootstrap.test.mjs", workflow)
+
+
 if __name__ == "__main__":
     unittest.main()
