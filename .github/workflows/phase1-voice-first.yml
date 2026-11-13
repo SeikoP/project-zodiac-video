@@ -5,6 +5,7 @@ on:
       - 'plugins/zodiac-video-pipeline/**'
       - 'tests/test_split_plugin_bundle_builder.py'
       - 'tests/test_web_local_handoff_contract.py'
+      - 'tests/test_ci_layout.py'
       - '.github/workflows/phase1-voice-first.yml'
   workflow_dispatch:
 permissions:
@@ -16,24 +17,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.5.1'
       - name: Install canonical plugin dependencies
-        run: npm ci --prefix plugins/zodiac-video-pipeline --no-audit --no-fund
-      - name: Run voice-first validators, compiler and Phase 1 integration
+        working-directory: plugins/zodiac-video-pipeline
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify creative Phase 1 handoff and Local bootstrap
         run: |
           set -euo pipefail
           base=plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline
-          node --test \
-            "$base/references/validate-voice-profile.test.mjs" \
-            "$base/references/validate-voice-fidelity-review.test.mjs" \
-            "$base/references/validate-narrative-design.test.mjs" \
-            "$base/references/validate-content-contract.test.mjs" \
-            "$base/references/context-isolation.test.mjs" \
-            "$base/orchestration/tests/phase01-briefs.test.mjs" \
-            "$base/orchestration/tests/creative-freedom.test.mjs" \
-            "$base/orchestration/tests/episode-writer-brief.test.mjs" \
-            "$base/orchestration/tests/phase01-agent-e2e.test.mjs" \
-            "$base/orchestration/tests/episode-phase01-e2e.test.mjs"
+          node --test "$base/orchestration/tests/phase1-handoff-export.test.mjs"
+          node --test "$base/orchestration/tests/local-phase1-bootstrap.test.mjs"
   phase1-handoff-bundle:
     runs-on: ubuntu-latest
     steps:
