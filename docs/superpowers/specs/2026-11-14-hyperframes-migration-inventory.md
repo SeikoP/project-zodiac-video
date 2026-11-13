@@ -1,12 +1,12 @@
 # HyperFrames migration inventory — modules, assets, contracts
 
-> Status: PROPOSED / PLANNING ONLY; 2026-11-14. No migration code in this PR.
+> Status: **REVISED / EMBEDDED EDITOR FIRST / PLANNING ONLY**, 2026-11-14. No implementation, migration or full-video benchmark in this PR.
 > Parent: [Studio platform ADR](./2026-11-14-studio-platform-choice-adr.md) and [Agent-native Studio design](./2026-11-14-agent-native-creative-studio-design.md).
 > Repository baseline: `fa457a9351c33ace1da66bd089af8a1861e53838`.
 
 ## 1. Answer: this impacts the asset library, but not its authored artwork
 
-HyperFrames migration is primarily a **presentation/render/runtime replacement**. It must not be a wipe/rebuild of Zodiac's canonical creative library. Zodiac's V4 Character Assembly bakes SVG per planned identity, pose, expression and crop into production assets. The current renderer receives baked SVG, not the character assembly metadata. HyperFrames can initially consume those baked assets through stable paths and rendered HTML/SVG elements.
+**First migration is the unified editing UI, NOT a compulsory rendering-engine replacement.** Use HyperFrames's embedded React Studio components and SDK inside the one-window Zodiac app. Keep Zodiac Core, voice pipeline and V4 library. Only after working voice-first editor preview, reverse edits and a benchmark should HyperFrames final rendering replace pinned Remotion. The existing V4 Character Assembly bakes SVG per planned identity, pose, expression and crop. The current renderer receives those baked SVG assets; HyperFrames can initially consume the exact output with stable paths and rendered HTML/SVG elements.
 
 The source library is not the same as its runtime presentation. To prevent mismatch, preserve the canonical source and test a new adapter.
 
@@ -14,6 +14,11 @@ The source library is not the same as its runtime presentation. To prevent misma
 
 | Area | Concrete source | Change | Explanation |
 | --- | --- | --- | --- |
+| One-window Zodiac shell (new frontend) | new Zodiac React host, `@hyperframes/studio`, `@hyperframes/sdk` | NEW FRONTEND | One `zodiac` app, single project selector; embedded preview/inspector/timeline, not separate HyperFrames desktop app | 
+| Voice-first Studio entrypoint | `tools/studio_v2/session.py`, `executor.py`, `voice.py`, `timing.py` | NEW ADAPTER + REORDER | Import approved Phase 1 directly into local Episode Project, audio take selection/measurement BEFORE scene timing and visuals | 
+| Concept/series checklist | `tools/studio_qt/production_checklist.py`, `screens/concepts.py` | KEEP LOGIC, REPLACE UI | Unified concept × 12 sign × episode evidence projection, migrate planned-concepts.json and series checklist; no duplicate manual tracker | 
+| Packages/media/library | `tools/application/library.py`, `screens/library.py` | KEEP LOGIC, REPLACE UI | Scan old ZIP and workspaces, safe reversible archive/restore; index source lineage and actual exported assets | 
+| V4 thumbnails/gallery | `features/asset-selection/build-current-asset-review.mjs`, `characters/build-identity-preview.mjs`, `core/audit/preview-meme-acting.mjs` | REUSE + EMBED | Preview each selectable component and generated variant on demand; not a second V4 catalog | 
 | Phase 1 Web, narration/concept/review | `orchestration/phases/01-content.md`; `contracts/phase1-handoff.mjs` | KEEP | Phase 1 is renderer independent; preserve immutable approved v2 handoff. |
 | Local handoff import | `phases/local/import-phase1-handoff.mjs` | KEEP + ADD integration | Import into revisioned Studio project; no direct source overwrites. |
 | Visual Intent canonical source | `features/visual-composition/compile-visual-intent.mjs`; `.authoring/visual-intent.json` | KEEP | Fresh source stays one; compiler-owned projections remain immutable. |
@@ -23,15 +28,27 @@ The source library is not the same as its runtime presentation. To prevent misma
 | Asset registry and provenance | `references/asset-library-v4/manifest.json`, `characters/components/catalog.json`, `props/index.json`, `memes/index.json`, `creative/library-catalog.json` | KEEP + EXTEND index | Add materialization metadata, preview thumbs, hash and source-to-renderer refs; don't duplicate catalogs. |
 | Native render-plan validation | `tools/control_plane/render_plan.py`; `contracts/render-plan-v1.schema.json` | KEEP as input validation, ADD adapter | Allow render-plan@1 as intermediate for migration; emit versioned HyperFrames project. |
 | Timeline/audio alignment | `tools/control_plane/timeline.py`; `tools/studio_v2/timing.py` | KEEP core logic, ADAPT display and render schema | Measured word/phrase alignment remains authoritative; retain voice anchors and scene ranges. |
-| Original Remotion renderer | `runtime/zodiac-renderer/2.0.2/renderer/src/Root.tsx`, `ZodiacRenderPlan.tsx` | REPLACE for HyperFrames path | React Remotion hooks/Sequence/Img depend on Remotion; translate behavior to HTML, CSS, seekable animation. |
-| Preview/render process | `runtime/zodiac-renderer/2.0.2/renderer/scripts/preview.mjs`, CLI render | ADD sibling runtime, not in-place overwrite | Ship `runtime/zodiac-hyperframes/<pinned-version>/...`; keep old renderer for rollback. |
+| Original Remotion renderer | `runtime/zodiac-renderer/2.0.2/renderer/src/Root.tsx`, `ZodiacRenderPlan.tsx` | **KEEP for production/legacy until independent renderer pilot passes** | Do not rewrite Remotion to embed a HyperFrames editor. Translate simple story rendering behavior only if final backend migration is later approved. |
+| Preview/render process | `runtime/zodiac-renderer/2.0.2/renderer/scripts/preview.mjs`, CLI render | **NEW embedded browser preview adapter**; later optional sibling renderer | Preview S01 progressively inside the same Zodiac UI. A future `runtime/zodiac-hyperframes/<pinned-version>` is gated by E2E fidelity. |
 | Local executor | `tools/studio_v2/executor.py`, `tools/studio_v2/controller.py`, `tools/control_plane/segments.py` | ADAPT | Renderer adapter dispatch, artifact graph, segment render, progress and error mapping. |
 | TTS and per-scene audio | `tools/studio_v2/voice.py`, `tools/studio_v2/timing.py` | KEEP | Voice generation, scene cache and measured timing are independent from video renderer. |
 | Audio mix and final export | `tools/studio_v2/executor.py` plus FFmpeg calls | KEEP audio semantics, VERIFY mux | Avoid rebuilding unaffected audio; test voice/music levels, drift and MP4 metadata. |
-| GUI launcher | `pyproject.toml` command `zodiac = tools.zodiac_qt:main` | KEEP until UI replacement | Name can be retained as launcher to a future web/desktop editor. |
-| New editor/agent | new HyperFrames editor integration and Studio project/revision engine | NEW | Bidirectional editing, source maps, transaction conflict detection, trusted approvals; do not let UI write projections. |
+| GUI launcher | `pyproject.toml` command `zodiac = tools.zodiac_qt:main` | KEEP command, progressively redirect | The user must start a **single Zodiac window**. Replace Qt screens only after editor/voice/gallery/package/checklist parity. Python core is managed backend, not separate GUI. |
+| New editor/agent | embedded HyperFrames React editor/SDK inside Zodiac Studio, Zodiac domain engine | NEW | One app, one active episode, voice-first timeline, source maps, semantic transactions, agent tools; trusted approval is a UI action only. |
 | Semantic cache | `core/cache/phase02-semantic-cache.mjs`, Studio V2 artifact graph | KEEP + extend cache keys | Include renderer identity and adapter ABI in render fingerprints; reuse unchanged baked assets and voice. |
 | QA parity | renderer tests, visual reviews, native preview pairs, control-plane tests | EXPAND | Compare actors/captions/occlusion/motion/audio across Remotion and HyperFrames on real episodes. |
+
+## 2.1 Essential existing functionality not to rewrite
+
+The source audit confirmed **working building blocks, not a complete unified product**:
+
+- **Voice take/caching:** `tools/studio/artifacts.py` provides immutable job-local take storage and restoring selected WAV; `studio_v2/voice.py` reuses TTS by scene; `studio_v2/timing.py` has measured timing and scene caches. Existing compatibility code may register a take as `APPROVED` without genuine user-listening evidence. Separate TECHNICALLY_VALID, COMPAT_IMPORTED and USER_LISTENED_APPROVED, then give the user a take audition/approval UI. This is a correctness fix, not a library rewrite.
+- **Artifact cache, scene render resume and crash recovery:** `tools/control_plane/artifact_graph.py`, `segments.py`, `studio_v2/state.py`, `studio_v2/session.py` handle validated hash tracking, grouped scene render segments and persisted job state. Keep these primitives and generalize their project adapters; do not replace with basic file-exists checks.
+- **Checklist and concept data:** `tools/studio_qt/production_checklist.py` already reads real Phase manifests and an optional 12-sign `done/todo` series tracker, while `screens/concepts.py` stores independent plans. Merge identities into one concept × sign × episode status view. Published requires real evidence, not a bare checkbox.
+- **Project/package management:** `tools/application/library.py` scans ZIP/workspaces/video and supports **reversible archive with moved.json restore**, not immediate deletion. Preserve this safety model and do not lose old episode artifacts during migration.
+- **Asset previews:** the V4 current asset gallery, character identity preview, meme acting gallery and native SVGs already generate real examples. Reuse their compiler output and show per-category/item/state thumbnails inside the same UI. Existing catalogs do not automatically imply every possible combinatorial variant exists; synthesize previews only on demand.
+- **Voice service lifecycle:** Qt's `vieneu_service.py` already distinguishes a server it owns from external VieNeu service. Preserve ownership, readiness and clean shutdown in the new single launcher.
+- **Quality boundaries:** content approval, Visual Review and final audiovisual checks are separate. Existing Job@5 export does preflight, hash and ZIP checks. Retain source lineage rather than copying raw ZIP contents into a mutable editor.
 
 ## 3. Asset library risk by category
 
@@ -44,7 +61,7 @@ The source library is not the same as its runtime presentation. To prevent misma
 | Scene Accent / backgrounds | `scene-set/accents/`, `environments/`, frame SVG | LOW–MEDIUM | Rear layer must not constrain actors; fresh Scene Set remains retired by fresh compiler. |
 | Narrative Visual and Story Text | `creative/README.md`, per-scene authored objects | HIGH semantic-risk, not necessarily asset format risk | Preserve mutually exclusive rule and source-bounded visual provenance, no decorative fallback. |
 | Fonts/captions | renderer/fonts, caption rendering contracts, measured timing | HIGH parity risk | Verify Vietnamese glyphs, line wraps, two-line captions, watermark, glyph paths, font loading and collision. |
-| Effects/transitions/motion | motion semantics, renderer `ZodiacRenderPlan.tsx`, events | HIGH | Translate motion semantics and verify intermediate frames, not only before/after stills. |
+| Effects/transitions/motion | motion semantics, renderer `ZodiacRenderPlan.tsx`, events | **LOW creative priority** / MEDIUM technical if switching renderer | New work uses hold/cut/show-hide/state swap and optional short fade/slide/zoom. Preserve old pinned Remotion compatibility for legacy complex motion; verify visible state endpoints, timing and story payoff. |
 | Music/SFX/TTS | audio paths, waveform/cache metadata | LOW for files; MEDIUM for timing/mux | Reuse WAV/MP3 but validate audio trim, gain, timeline offsets, final peak and sync. |
 | Asset source/provenance | inventory, hashes, semantic role IDs and scene references | MEDIUM | Keep original content hashes and usage trace; add media materialization map to HyperFrames path/ref. |
 
@@ -54,7 +71,7 @@ Current fresh `compile-visual-intent.mjs` checks `FRESH_SCENE_SET_RETIRED` and n
 
 ## 4. Migration adapter contract (proposed)
 
-Use an intermediate output from existing production compiler for pilot:
+For the first **embedded-editor** pilot, use existing production compiler output; final HyperFrames MP4 is an independent later experiment. The new Studio voice-first entrypoint precedes Visual Intent authoring. A later read-only compatibility fixture may start from a completed existing render-plan:
 
 ```
 Web Phase 1 approved snapshot
@@ -67,7 +84,8 @@ validated zodiac-render-plan@1
      ↓ NEW zodiac-to-hyperframes adapter + content-hash asset resolver
 HyperFrames HTML/CSS/JS composition + provenance map
      ↕ HF SDK edits -> Zodiac semantic authoring commands
-HyperFrames Studio preview → HyperFrames MP4 export
+Embedded HyperFrames Preview inside Zodiac
+     ↓ final output: Remotion fallback until independent HyperFrames encoder parity succeeds
 ```
 
 **Source mapping example** (illustrative; not a final schema):
@@ -92,17 +110,17 @@ Never patch a rendered `<img>` source or generated HTML and call the resulting s
 
 ## 5. Work sequence and blocking pilot
 
-**A. Inventory + contract tests:** map every used production entity role/state/events and all relevant asset refs. Pin HyperFrames version; no install as rolling latest in production.
+**A. Inventory + contract tests:** map the existing project/episode/voice/scene/asset/galleries/checklist/ZIP entrypoints and all used entity/event refs. Pin HyperFrames package version; never use rolling latest in production. Freeze a real Phase 1 fixture and an actual V4 SVG scene.
 
-**B. Read-only HTML prototype:** one actual S01/episode, same existing baked SVG assets, frame sizes 1080x1920, transforms, layers and captions; test viewBox, effects, fonts, transparent SVG and asset path resolver. No edits back yet.
+**B. One-window embedded editor prototype:** the `zodiac` launcher starts ONE application/window hosting a Zodiac React shell with an embedded HyperFrames preview, plus a managed local Zodiac engine. One actual S01 using native baked SVG at 1080×1920; validate fonts, SVG, layout and preview lifecycle. Do not open standalone HyperFrames Studio.
 
-**C. Deterministic playback:** translate scene/event state changes, cover frame and semantic caption layouts; compare keyframes and motion segments to Remotion reference.
+**C. Voice-first workflow:** import approved Phase 1 directly, audition and accept audio with real user evidence, measure time; derive storyboard visual timing. Verify text bytes remain locked. Translate simple scene state/caption/cover into embedded preview.
 
-**D. Reverse editing:** allow a narrow set of HF SDK operations (move actor, adjust timing of non-speech event, replace asset ref) and map to Zodiac Visual Intent via transactional commands. Unsupported operations must fail visibly.
+**D. Reverse editing + integrated screens:** allow narrow SDK edits (move actor, adjust visual event, replace asset ref) round-tripping to Visual Intent. Add same-window Voice Lab, concept×12 board, package/media manager, searchable V4 preview gallery. Reuse existing preview and import/cleanup tools. Unsupported operations fail visibly.
 
-**E. Voice/timing and script revision:** import approved handoff, new narration working revision, scoped reapproval, regenerate affected TTS/timing, update caption/scene offsets, reuse unaffected assets.
+**E. Voice changes without script edits:** swap selected voice take, recompute only affected alignment and visual frame offsets, reuse unrelated audio/asset caches, keep unchanged narration SHA. Post-handoff script revisions are deferred to a separate exceptional workflow.
 
-**F. Production pilot:** final MP4, audio QA, rendering segmentation/resume, resource usage on target Windows laptop, back-compat, no approval drift.
+**F. Encoder pilot (independent gate):** render final MP4 from HyperFrames ONLY after single-window editing works. Compare against pinned Remotion on audio sync, captions, character/prop state, still-image correctness, startup RAM and render time. Retain Remotion until success.
 
 **G. Decision gate:** only after round-trip, quality and performance gates pass should a feature flag switch production default from Remotion to HyperFrames. Keep Remotion runtime and original Job@5 recovery until legacy projects are reproducible.
 
@@ -120,5 +138,5 @@ Never patch a rendered `<img>` source or generated HTML and call the resulting s
 - Full automatic migration of every past asset pack and legacy Scene Set.
 - Regenerating all character SVG variants as HyperFrames-native DOM components.
 - Forking HeyGen's desktop assistant app or relying on HeyGen cloud services.
-- Replacing per-scene TTS, voice review, Phase 1 creative process or every compiler at once.
+- Removing per-scene TTS/take storage during speech-unit refactor, discarding voice review, Phase 1 creative process or every compiler at once.
 - Declaring a benchmark victory without running the same episode on both systems.
