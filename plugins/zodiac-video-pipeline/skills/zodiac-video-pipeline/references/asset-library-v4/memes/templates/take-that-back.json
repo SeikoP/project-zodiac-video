@@ -4,18 +4,19 @@
   "id": "take-that-back",
   "kind": "primary_meme_composition",
   "source_references": [
-    "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp"
+    "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp",
+    "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn10.jpg"
   ],
   "roles": {
     "actor": "existing scene participant"
   },
   "trigger_hints": [
     "Đòi thu hồi lời nói",
-    "Bạn vừa nói gì cơ?",
-    "Cho bạn thu hồi lời vừa nói."
+    "Trông mày giống người yêu cũ tao.",
+    "Ý tao là... người đẹp nhất đời tao!"
   ],
   "mechanic": "express-reaction",
-  "reviewed_visual_note": "Đòi thu hồi lời nói; adapt acting and optional lettering to the existing channel cast.",
+  "reviewed_visual_note": "Reworked reaction: Trông mày giống người yêu cũ tao. → Ý tao là... người đẹp nhất đời tao! Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reference_character_policy": {
     "embedded_characters": "visual_reference_only",
     "bind_roles_to_existing_scene_entities": true,
@@ -39,5 +40,5 @@
     ],
     "caption_free_readability_required": true
   },
-  "optional_text": "Thu hồi lời vừa nói"
+  "optional_text": "NÓI LẠI CÒN KỊP"
 }

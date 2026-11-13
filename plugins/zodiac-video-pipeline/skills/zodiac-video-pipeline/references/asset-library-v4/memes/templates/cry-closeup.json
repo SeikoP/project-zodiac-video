@@ -9,14 +9,15 @@
     "actor": "crying character"
   },
   "trigger_hints": [
-    "comic crying closeup",
-    "emotional overreaction"
+    "Mạnh miệng rồi bật khóc",
+    "Nó bảo tụi tao vẫn là bạn.",
+    "Ừ. Bạn... dự đám cưới nó."
   ],
   "mechanic": "cry-overreaction",
   "caption_slot": "bottom",
   "required_contact": "tears→eyes",
   "body_orientation": "face fills frame / closer crop",
-  "reviewed_visual_note": "Close-up khóc sửa bằng sad face thật và tear roots bám ngay dưới mắt.",
+  "reviewed_visual_note": "Reworked reaction: Nó bảo tụi tao vẫn là bạn. → Ừ. Bạn... dự đám cưới nó. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": null,
   "reference_character_policy": {
@@ -79,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "BẠN... DỰ ĐÁM CƯỚI"
 }

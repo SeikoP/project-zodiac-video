@@ -9,15 +9,15 @@
     "actor": "crying character"
   },
   "trigger_hints": [
-    "comic crying",
-    "overwhelmed",
-    "meltdown"
+    "Ôm đồ khóc hết nước mắt",
+    "Quà người cũ tao vứt hết rồi.",
+    "Hộp này chưa vứt. Tại còn bảo hành."
   ],
   "mechanic": "overreaction-hug",
   "caption_slot": null,
   "required_contact": "both arms→prop / tears→eyes",
   "body_orientation": "shoulders inward / sad expression",
-  "reviewed_visual_note": "Nước mắt gắn trực tiếp từ vị trí mắt trong local face; không còn lệch overlay.",
+  "reviewed_visual_note": "Reworked reaction: Quà người cũ tao vứt hết rồi. → Hộp này chưa vứt. Tại còn bảo hành. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": null,
   "reference_character_policy": {
@@ -80,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "HẾT YÊU CÒN BẢO HÀNH"
 }

@@ -11,11 +11,11 @@
   },
   "trigger_hints": [
     "Sốt ruột chống nạnh",
-    "Chờ có năm phút thôi mà.",
-    "Năm phút lần thứ mười rồi!"
+    "Tao tới rồi, xuống đi.",
+    "Nó đang tới... đoạn chọn áo."
   ],
   "mechanic": "express-reaction",
-  "reviewed_visual_note": "Sốt ruột chống nạnh; adapt acting and optional lettering to the existing channel cast.",
+  "reviewed_visual_note": "Reworked reaction: Tao tới rồi, xuống đi. → Nó đang tới... đoạn chọn áo. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reference_character_policy": {
     "embedded_characters": "visual_reference_only",
     "bind_roles_to_existing_scene_entities": true,
@@ -39,5 +39,5 @@
     ],
     "caption_free_readability_required": true
   },
-  "optional_text": "Sốt cả ruột"
+  "optional_text": "TỚI RỒI TỚI ĐOẠN CHỌN ÁO"
 }

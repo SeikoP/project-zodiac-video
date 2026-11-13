@@ -11,11 +11,11 @@
   },
   "trigger_hints": [
     "Kiệt sức hết pin",
-    "Mình xử lý được hết.",
-    "Nhưng pin mình hết rồi."
+    "Tao ngủ đủ tám tiếng.",
+    "Tổng cộng. Từ thứ Hai."
   ],
   "mechanic": "express-reaction",
-  "reviewed_visual_note": "Kiệt sức hết pin; adapt acting and optional lettering to the existing channel cast.",
+  "reviewed_visual_note": "Reworked reaction: Tao ngủ đủ tám tiếng. → Tổng cộng. Từ thứ Hai. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reference_character_policy": {
     "embedded_characters": "visual_reference_only",
     "bind_roles_to_existing_scene_entities": true,
@@ -39,5 +39,5 @@
     ],
     "caption_free_readability_required": true
   },
-  "optional_text": "Hết pin..."
+  "optional_text": "TÁM TIẾNG MỘT TUẦN"
 }

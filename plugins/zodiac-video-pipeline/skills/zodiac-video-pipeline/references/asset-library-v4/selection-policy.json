@@ -30,11 +30,22 @@
         "take-that-back",
         "innocent-shrug",
         "awkward-grin",
-        "silent-judgment"
+        "silent-judgment",
+        "plead-mercy",
+        "sarcastic-applause",
+        "stunned-wow",
+        "contempt-dismissal",
+        "ultimatum-choice",
+        "never-again",
+        "confused-shrug",
+        "stop-talking",
+        "serious-please",
+        "call-for-help"
       ],
       "kind": "meme",
       "refs": [
-        "references/asset-library-v4/memes/index.json"
+        "references/asset-library-v4/memes/index.json",
+        "references/asset-library-v4/memes/README.md"
       ]
     },
     {
@@ -109,7 +120,19 @@
         "cheek-poke",
         "slump",
         "shrug",
-        "weary"
+        "weary",
+        "clap",
+        "stop-hand",
+        "phone-call",
+        "meme-panic",
+        "meme-smug",
+        "meme-deadpan",
+        "meme-side-eye",
+        "meme-cringe",
+        "meme-grimace",
+        "meme-sob",
+        "meme-drained",
+        "meme-confused"
       ],
       "kind": "character",
       "refs": [

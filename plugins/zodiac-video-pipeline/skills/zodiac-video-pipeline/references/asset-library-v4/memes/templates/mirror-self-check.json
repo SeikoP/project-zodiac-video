@@ -9,15 +9,15 @@
     "actor": "self-checking character"
   },
   "trigger_hints": [
-    "self-check",
-    "appearance check",
-    "self-aware reaction"
+    "Soi lại chính mình",
+    "Ai mà rảnh soi story người yêu cũ?",
+    "Cái gương im lặng hơi lâu."
   ],
   "mechanic": "self-check",
   "caption_slot": null,
   "required_contact": "hand→prop",
   "body_orientation": "gaze toward prop",
-  "reviewed_visual_note": "Bổ sung thêm object-driven template dùng asset dự án.",
+  "reviewed_visual_note": "Reworked reaction: Ai mà rảnh soi story người yêu cũ? → Cái gương im lặng hơi lâu. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": null,
   "reference_character_policy": {
@@ -80,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "ĐỐI TƯỢNG TRONG GƯƠNG"
 }

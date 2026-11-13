@@ -105,6 +105,56 @@
       "id": "silent-judgment",
       "path": "templates/silent-judgment.json",
       "source_reference": "https://theselfishmeme.co.uk/cac-meme-noi-tieng-nhat"
+    },
+    {
+      "id": "plead-mercy",
+      "path": "templates/plead-mercy.json",
+      "source_reference": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXcMWMLZbyQBTasl65xrW2QIMqwAJT6_qzhTFzBk_60iV9K059FPU56_g6ay2OpLNoKtV1WWXNgTptL-fNqaCO0dAohO4kz_rBwbpZpn9hNQdsmwMS_sFTrmz6HKQZsORdJleeeE2sc6S2OfLh-I6aBmbTwP?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "sarcastic-applause",
+      "path": "templates/sarcastic-applause.json",
+      "source_reference": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXc2ZSEhGpZRKHxg2cxYy3E4c3kduoGHD5CDlqCbnknAekmETVj_19YVopIGiIUIwT72Bo0XWSTDr80UNMHc_UwwVKycazB_tI5vUwHNma9ajDBHbGy9BmjWBgZhTEmfvxhCav7nhgyVVy5d_UPMeBV4sOxp?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "stunned-wow",
+      "path": "templates/stunned-wow.json",
+      "source_reference": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXc2ZSEhGpZRKHxg2cxYy3E4c3kduoGHD5CDlqCbnknAekmETVj_19YVopIGiIUIwT72Bo0XWSTDr80UNMHc_UwwVKycazB_tI5vUwHNma9ajDBHbGy9BmjWBgZhTEmfvxhCav7nhgyVVy5d_UPMeBV4sOxp?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "contempt-dismissal",
+      "path": "templates/contempt-dismissal.json",
+      "source_reference": "https://i.pinimg.com/236x/e3/53/98/e35398f93aff910195c7a4eb40cf2f94.jpg"
+    },
+    {
+      "id": "ultimatum-choice",
+      "path": "templates/ultimatum-choice.json",
+      "source_reference": "https://dongphucvina.vn/wp-content/uploads/2023/10/Meme-la-gi_-300-meme-hai-chat-nhat-qua-dat-de-ban-comment-dao-tha-ga-BlogAnChoi.jpeg"
+    },
+    {
+      "id": "never-again",
+      "path": "templates/never-again.json",
+      "source_reference": "https://cdn.pico.vn/2026/01/15/176844935437193017874.jpeg"
+    },
+    {
+      "id": "confused-shrug",
+      "path": "templates/confused-shrug.json",
+      "source_reference": "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn16.jpg"
+    },
+    {
+      "id": "stop-talking",
+      "path": "templates/stop-talking.json",
+      "source_reference": "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn32.jpg"
+    },
+    {
+      "id": "serious-please",
+      "path": "templates/serious-please.json",
+      "source_reference": "https://cdn.pico.vn/2026/01/15/176844935405586721985.jpeg"
+    },
+    {
+      "id": "call-for-help",
+      "path": "templates/call-for-help.json",
+      "source_reference": "https://cdn.pico.vn/2026/01/15/17684493549289594310.jpeg"
     }
   ]
 }

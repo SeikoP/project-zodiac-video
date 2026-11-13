@@ -9,15 +9,15 @@
     "actor": "flexing character"
   },
   "trigger_hints": [
-    "comic flex",
-    "money attitude",
-    "show-off"
+    "Khoe ví cho oai",
+    "Lương vừa về. Hôm nay tao bao!",
+    "Tiền nhà vừa nhắn: bao luôn chị nhé."
   ],
   "mechanic": "object-flex",
   "caption_slot": "bottom",
   "required_contact": "hand→prop",
   "body_orientation": "slight torso forward",
-  "reviewed_visual_note": "Bổ sung template flex với prop để framework đầy hơn.",
+  "reviewed_visual_note": "Reworked reaction: Lương vừa về. Hôm nay tao bao! → Tiền nhà vừa nhắn: bao luôn chị nhé. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": {
     "related_state_recipe": "fake_flex",
@@ -83,5 +83,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "MỜI... THÁNG SAU"
 }

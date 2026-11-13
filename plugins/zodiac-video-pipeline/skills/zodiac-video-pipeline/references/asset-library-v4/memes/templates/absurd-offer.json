@@ -10,15 +10,15 @@
     "target": "onscreen or offscreen"
   },
   "trigger_hints": [
-    "absurd suggestion",
-    "comic offer",
-    "give-this"
+    "Mời một món không ai hỏi",
+    "Mày bảo cuộc đời thiếu bất ngờ.",
+    "Tao có quà: thêm một deadline."
   ],
   "mechanic": "offer-object",
   "caption_slot": null,
   "required_contact": "hand→prop",
   "body_orientation": "torso slight forward",
-  "reviewed_visual_note": "Bổ sung 2 nét tách ra gần prop để đọc rõ hành động đưa đồ.",
+  "reviewed_visual_note": "Reworked reaction: Mày bảo cuộc đời thiếu bất ngờ. → Tao có quà: thêm một deadline. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": null,
   "reference_character_policy": {
@@ -81,5 +81,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "BẤT NGỜ CHƯA BÀ?"
 }

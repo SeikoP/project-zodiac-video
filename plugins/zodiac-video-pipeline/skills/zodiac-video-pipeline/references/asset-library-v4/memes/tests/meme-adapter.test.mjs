@@ -22,8 +22,8 @@ test('facepalm meme compiles its adapter, acting requirement, and composition la
   const scene=out.scenes[0];
   assert.equal(scene.visual_grammar.meme_composition.id,'facepalm-closeup');
   assert.deepEqual(scene.visual_grammar.meme_composition.acting_requirements.hero,
-    {pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'});
-  assert.deepEqual(scene.scene_direction.meme_layout.entities.hero,[540,560,700,760]);
+    {pose_id:'facepalm',expression_id:'meme-cringe',crop_id:'face-closeup'});
+  assert.deepEqual(scene.scene_direction.meme_layout.entities.hero,[540,850,900,1000]);
   assert.equal(scene.scene_direction.shot,'reaction-closeup');
 });
 
@@ -36,7 +36,7 @@ test('unknown meme composition fails closed',()=>{
 });
 
 test('registry covers every promoted V4 meme template',()=>{
-  const expected=['absurd-offer','cry-closeup','cry-hug-object','equip-this','facepalm-closeup','heart-offer-overkill','mirror-self-check','prop-pressure','receipt-in-face','side-eye-object','wallet-flex','impatient-wait','smiling-threat','polite-exit','playful-cheek-poke','exhausted-slump','take-that-back','innocent-shrug','awkward-grin','silent-judgment'];
+  const expected=['absurd-offer','cry-closeup','cry-hug-object','equip-this','facepalm-closeup','heart-offer-overkill','mirror-self-check','prop-pressure','receipt-in-face','side-eye-object','wallet-flex','impatient-wait','smiling-threat','polite-exit','playful-cheek-poke','exhausted-slump','take-that-back','innocent-shrug','awkward-grin','silent-judgment','plead-mercy','sarcastic-applause','stunned-wow','contempt-dismissal','ultimatum-choice','never-again','confused-shrug','stop-talking','serious-please','call-for-help'];
   assert.deepEqual(index.compositions.map(x=>x.id).sort(),expected.sort());
 });
 test('each registered meme declares the approved effect primitive and a stable locus',()=>{const expected={'absurd-offer':'offer-swish','cry-closeup':'tear-trails','cry-hug-object':'tear-squeeze','equip-this':'offer-impact','facepalm-closeup':'facepalm-impact','heart-offer-overkill':'sparkle-burst','mirror-self-check':'mirror-glint','prop-pressure':'contact-fan-pressure','receipt-in-face':'contact-fan-receipt','side-eye-object':'question-accent','wallet-flex':'wallet-shine'};for(const composition of index.compositions.filter(c=>c.effect)){assert.equal(composition.effect?.id,expected[composition.id],`${composition.id} effect`);assert.ok(composition.effect?.anchor,`${composition.id} effect anchor`);assert.ok(Array.isArray(composition.effect?.size_px)&&composition.effect.size_px.every(n=>Number.isFinite(n)&&n>0),`${composition.id} effect size`);}});
@@ -71,7 +71,7 @@ test('receipt confrontation maps both characters and the prop into distinct role
   assert.deepEqual(scene.scene_direction.interaction_roles,{speaker:'evidence',listener:'target',shared_prop:'receipt'});
   assert.equal(scene.scene_direction.meme_layout.entities.evidence[0],305);
   assert.equal(scene.scene_direction.meme_layout.entities.target[0],785);
-  assert.equal(scene.scene_direction.meme_layout.entities.receipt[0],550);
+  assert.equal(scene.scene_direction.meme_layout.entities.receipt[0],442);
 });
 
 test('required role cannot bind to the wrong entity kind',()=>{

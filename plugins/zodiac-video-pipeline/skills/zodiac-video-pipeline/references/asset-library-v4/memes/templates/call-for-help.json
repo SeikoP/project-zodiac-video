@@ -1,0 +1,45 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "call-for-help",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://cdn.pico.vn/2026/01/15/17684493549289594310.jpeg"
+  ],
+  "roles": {
+    "actor": "existing scene participant",
+    "phone": "native phone held against the actor ear"
+  },
+  "trigger_hints": [
+    "Gọi điện cầu cứu quá mức",
+    "Nó bảo yêu tao từ cái nhìn đầu tiên.",
+    "Mới nhìn số dư thôi mà?"
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Reworked reaction: Nó bảo yêu tao từ cái nhìn đầu tiên. → Mới nhìn số dư thôi mà? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": false,
+    "meme_text_readability_required": true
+  },
+  "optional_text": "ALO CHÚ CÔNG AN ƠI!"
+}

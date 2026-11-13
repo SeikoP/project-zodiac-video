@@ -9,15 +9,15 @@
     "actor": "offerer"
   },
   "trigger_hints": [
-    "overgenerous affection",
-    "flirty overkill",
-    "give-heart"
+    "Trao tim hơi quá đà",
+    "Người ta hỏi mượn cục sạc.",
+    "Mày đưa luôn trái tim làm gì?"
   ],
   "mechanic": "offer-heart",
   "caption_slot": null,
   "required_contact": "hands included in prop",
   "body_orientation": "centered front-offer",
-  "reviewed_visual_note": "Giữ pass; heart-hold đã có contact sẵn.",
+  "reviewed_visual_note": "Reworked reaction: Người ta hỏi mượn cục sạc. → Mày đưa luôn trái tim làm gì? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": "heart_offer",
   "routing": null,
   "reference_character_policy": {
@@ -80,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "MƯỢN SẠC THÔI MÀ"
 }

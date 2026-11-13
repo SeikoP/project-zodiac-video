@@ -9,15 +9,15 @@
     "actor": "reactor"
   },
   "trigger_hints": [
-    "suspicious message",
-    "seen-zone",
-    "object caused reaction"
+    "Liếc xéo món đồ",
+    "Nó bảo ngủ rồi, đừng nhắn nữa.",
+    "Story mới đăng: còn ai thức không?"
   ],
   "mechanic": "side-eye-at-prop",
   "caption_slot": null,
   "required_contact": "hand→prop / gaze→prop",
   "body_orientation": "gaze follows prop",
-  "reviewed_visual_note": "Giữ phone trong tay và trục nhìn khớp với object.",
+  "reviewed_visual_note": "Reworked reaction: Nó bảo ngủ rồi, đừng nhắn nữa. → Story mới đăng: còn ai thức không? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": "side_eye",
   "routing": null,
   "reference_character_policy": {
@@ -80,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "NGỦ RỒI TRỪ INSTAGRAM"
 }

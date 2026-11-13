@@ -1,0 +1,44 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "stunned-wow",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://lh7-rt.googleusercontent.com/docsz/AD_4nXc2ZSEhGpZRKHxg2cxYy3E4c3kduoGHD5CDlqCbnknAekmETVj_19YVopIGiIUIwT72Bo0XWSTDr80UNMHc_UwwVKycazB_tI5vUwHNma9ajDBHbGy9BmjWBgZhTEmfvxhCav7nhgyVVy5d_UPMeBV4sOxp?key=tE_qip6BHPL4g00JXL_X6Q"
+  ],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Sững người vì bất ngờ",
+    "Tao với nó chỉ là bạn thôi.",
+    "Bạn mà đặt cọc nhà hàng cưới rồi á?"
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Reworked reaction: Tao với nó chỉ là bạn thôi. → Bạn mà đặt cọc nhà hàng cưới rồi á? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": false,
+    "meme_text_readability_required": true
+  },
+  "optional_text": "Ú ÙAY!"
+}

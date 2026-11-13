@@ -252,6 +252,33 @@
     },
     {
       "id": "weary"
+    },
+    {
+      "id": "meme-panic"
+    },
+    {
+      "id": "meme-smug"
+    },
+    {
+      "id": "meme-deadpan"
+    },
+    {
+      "id": "meme-side-eye"
+    },
+    {
+      "id": "meme-cringe"
+    },
+    {
+      "id": "meme-grimace"
+    },
+    {
+      "id": "meme-sob"
+    },
+    {
+      "id": "meme-drained"
+    },
+    {
+      "id": "meme-confused"
     }
   ],
   "poses": [
@@ -353,6 +380,15 @@
     },
     {
       "id": "shrug"
+    },
+    {
+      "id": "clap"
+    },
+    {
+      "id": "stop-hand"
+    },
+    {
+      "id": "phone-call"
     }
   ],
   "crops": [

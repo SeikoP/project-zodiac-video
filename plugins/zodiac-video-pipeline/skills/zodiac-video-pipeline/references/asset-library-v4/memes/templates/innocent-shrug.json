@@ -11,11 +11,11 @@
   },
   "trigger_hints": [
     "Nhún vai vô tội",
-    "Ai vừa làm chuyện này?",
-    "Mình có biết gì đâu."
+    "Ai kể chuyện tao thích nó?",
+    "Tao có kể đâu. Tao chỉ forward."
   ],
   "mechanic": "express-reaction",
-  "reviewed_visual_note": "Nhún vai vô tội; native cast acting, no reference artwork.",
+  "reviewed_visual_note": "Reworked reaction: Ai kể chuyện tao thích nó? → Tao có kể đâu. Tao chỉ forward. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reference_character_policy": {
     "embedded_characters": "visual_reference_only",
     "bind_roles_to_existing_scene_entities": true,
@@ -39,5 +39,5 @@
     ],
     "caption_free_readability_required": true
   },
-  "optional_text": "Ai biết gì đâu"
+  "optional_text": "TAO CHỈ FORWARD THÔI"
 }

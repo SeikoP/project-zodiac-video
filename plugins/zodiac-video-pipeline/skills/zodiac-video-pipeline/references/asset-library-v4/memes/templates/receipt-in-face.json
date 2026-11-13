@@ -10,15 +10,15 @@
     "target": "recoils"
   },
   "trigger_hints": [
-    "proof shoved forward",
-    "caught",
-    "exposed"
+    "Đưa hóa đơn tận mặt",
+    "Tao chỉ tiêu có tí thôi.",
+    "Hóa đơn dài hơn mối tình trước."
   ],
   "mechanic": "evidence-thrust",
   "caption_slot": "bottom",
   "required_contact": "hand→bottom-center receipt",
   "body_orientation": "A advances / B recoils",
-  "reviewed_visual_note": "Cụm nét contact đặt tại vùng top-mid của tờ giấy để nhấn tâm điểm va chạm/áp lực.",
+  "reviewed_visual_note": "Reworked reaction: Tao chỉ tiêu có tí thôi. → Hóa đơn dài hơn mối tình trước. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": {
     "prefer_over_state_recipe": "receipt_shame",
@@ -84,5 +84,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "TÍ NÀY HƠI DÀI"
 }

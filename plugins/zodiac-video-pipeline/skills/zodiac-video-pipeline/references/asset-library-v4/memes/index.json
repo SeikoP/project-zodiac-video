@@ -21,7 +21,7 @@
           "required": true,
           "acting": {
             "pose_id": "offer",
-            "expression_id": "smug"
+            "expression_id": "meme-smug"
           }
         },
         "target": {
@@ -30,7 +30,7 @@
           "required": false,
           "acting": {
             "pose_id": "recoil",
-            "expression_id": "panic"
+            "expression_id": "meme-panic"
           }
         },
         "prop": {
@@ -58,16 +58,16 @@
           700
         ],
         "prop": [
-          590,
-          530,
+          397,
+          880,
           300,
           310
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -98,14 +98,18 @@
       "effects": [],
       "preview": {
         "title": "Mời một món không ai hỏi",
-        "setup": "Mình có quà cho bạn.",
-        "reaction": "Nhưng ai mượn vậy?",
+        "setup": "Mày bảo cuộc đời thiếu bất ngờ.",
+        "reaction": "Tao có quà: thêm một deadline.",
         "prop": "gift-box"
       },
       "text_label": {
         "role": "label",
-        "text": "Ai mượn?",
-        "default_enabled": false
+        "text": "BẤT NGỜ CHƯA BÀ?",
+        "default_enabled": false,
+        "lines": [
+          "BẤT NGỜ",
+          "CHƯA BÀ?"
+        ]
       },
       "asset_requirements": [
         {
@@ -130,7 +134,7 @@
           "required": true,
           "acting": {
             "pose_id": "cry-hug",
-            "expression_id": "cry",
+            "expression_id": "meme-sob",
             "crop_id": "face-closeup"
           }
         },
@@ -143,15 +147,15 @@
       "layout": {
         "actor": [
           540,
-          570,
-          780,
-          780
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -181,14 +185,18 @@
       "effects": [],
       "preview": {
         "title": "Mạnh miệng rồi bật khóc",
-        "setup": "Mình hoàn toàn ổn.",
-        "reaction": "Ổn được ba giây.",
+        "setup": "Nó bảo tụi tao vẫn là bạn.",
+        "reaction": "Ừ. Bạn... dự đám cưới nó.",
         "prop": ""
       },
       "text_label": {
         "role": "label",
-        "text": "Ổn được ba giây",
-        "default_enabled": false
+        "text": "BẠN... DỰ ĐÁM CƯỚI",
+        "default_enabled": false,
+        "lines": [
+          "BẠN...",
+          "DỰ ĐÁM CƯỚI"
+        ]
       },
       "asset_requirements": [
         {
@@ -213,7 +221,7 @@
           "required": true,
           "acting": {
             "pose_id": "cry-hug",
-            "expression_id": "cry"
+            "expression_id": "meme-sob"
           }
         },
         "prop": {
@@ -235,16 +243,16 @@
           840
         ],
         "prop": [
-          510,
-          780,
-          260,
-          260
+          431,
+          872,
+          310,
+          310
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -276,14 +284,18 @@
       "effects": [],
       "preview": {
         "title": "Ôm đồ khóc hết nước mắt",
-        "setup": "Không có gì phải tiếc.",
-        "reaction": "Trừ món quà này.",
+        "setup": "Quà người cũ tao vứt hết rồi.",
+        "reaction": "Hộp này chưa vứt. Tại còn bảo hành.",
         "prop": "gift-box"
       },
       "text_label": {
         "role": "label",
-        "text": "Không tiếc... mới lạ",
-        "default_enabled": false
+        "text": "HẾT YÊU CÒN BẢO HÀNH",
+        "default_enabled": false,
+        "lines": [
+          "HẾT YÊU",
+          "CÒN BẢO HÀNH"
+        ]
       },
       "asset_requirements": [
         {
@@ -308,7 +320,7 @@
           "required": true,
           "acting": {
             "pose_id": "offer-pants",
-            "expression_id": "smug"
+            "expression_id": "meme-smug"
           }
         },
         "embarrassed_target": {
@@ -317,7 +329,7 @@
           "required": true,
           "acting": {
             "pose_id": "receive-pants",
-            "expression_id": "embarrassed"
+            "expression_id": "meme-grimace"
           }
         },
         "pants": {
@@ -352,9 +364,9 @@
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -471,14 +483,18 @@
       "effects": [],
       "preview": {
         "title": "Đưa quần chữa ngượng",
-        "setup": "Bạn bảo không biết ngượng.",
-        "reaction": "Vậy nhận cái quần này đi.",
+        "setup": "Tao chúc người yêu cũ hạnh phúc.",
+        "reaction": "Quên mất đang nhắn trong nhóm có bồ mới của nó.",
         "prop": "pants"
       },
       "text_label": {
         "role": "label",
-        "text": "Đội quần lên nào",
-        "default_enabled": false
+        "text": "QUẦN ĐÂY ĐỘI ĐI",
+        "default_enabled": false,
+        "lines": [
+          "QUẦN ĐÂY",
+          "ĐỘI ĐI"
+        ]
       }
     },
     {
@@ -493,7 +509,7 @@
           "required": true,
           "acting": {
             "pose_id": "facepalm",
-            "expression_id": "exasperated",
+            "expression_id": "meme-cringe",
             "crop_id": "face-closeup"
           }
         },
@@ -506,15 +522,15 @@
       "layout": {
         "actor": [
           540,
-          560,
-          700,
-          760
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -544,14 +560,18 @@
       "effects": [],
       "preview": {
         "title": "Tự quê che mặt",
-        "setup": "Mình đã quên hết rồi.",
-        "reaction": "Nhưng vẫn nhớ từng chữ.",
+        "setup": "Tao vừa thả haha vào tin buồn.",
+        "reaction": "Tin của sếp. Trong nhóm công ty.",
         "prop": ""
       },
       "text_label": {
         "role": "label",
-        "text": "Xin đừng nhắc nữa",
-        "default_enabled": false
+        "text": "XIN NGHỈ LUÔN ĐƯỢC KHÔNG?",
+        "default_enabled": false,
+        "lines": [
+          "XIN NGHỈ LUÔN",
+          "ĐƯỢC KHÔNG?"
+        ]
       },
       "asset_requirements": [
         {
@@ -576,7 +596,7 @@
           "required": true,
           "acting": {
             "pose_id": "offer",
-            "expression_id": "smug"
+            "expression_id": "meme-smug"
           }
         },
         "heart": {
@@ -598,16 +618,16 @@
           840
         ],
         "heart": [
-          540,
-          620,
-          300,
+          549,
+          835,
+          299,
           280
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -638,14 +658,18 @@
       "effects": [],
       "preview": {
         "title": "Trao tim hơi quá đà",
-        "setup": "Chỉ quan tâm một chút thôi.",
-        "reaction": "Một chút bằng cả trái tim.",
+        "setup": "Người ta hỏi mượn cục sạc.",
+        "reaction": "Mày đưa luôn trái tim làm gì?",
         "prop": "heart"
       },
       "text_label": {
         "role": "label",
-        "text": "Thương hơi quá tay",
-        "default_enabled": false
+        "text": "MƯỢN SẠC THÔI MÀ",
+        "default_enabled": false,
+        "lines": [
+          "MƯỢN SẠC",
+          "THÔI MÀ"
+        ]
       },
       "asset_requirements": [
         {
@@ -677,7 +701,7 @@
           "required": true,
           "acting": {
             "pose_id": "inspect-prop",
-            "expression_id": "embarrassed"
+            "expression_id": "meme-grimace"
           }
         },
         "mirror": {
@@ -699,16 +723,16 @@
           820
         ],
         "mirror": [
-          735,
-          570,
+          556,
+          730,
           230,
-          360
+          276
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -739,14 +763,18 @@
       "effects": [],
       "preview": {
         "title": "Soi lại chính mình",
-        "setup": "Ai lại làm chuyện đó chứ?",
-        "reaction": "Khoan, hình như mình cũng vậy.",
+        "setup": "Ai mà rảnh soi story người yêu cũ?",
+        "reaction": "Cái gương im lặng hơi lâu.",
         "prop": "mirror"
       },
       "text_label": {
         "role": "label",
-        "text": "Ủa, là mình à?",
-        "default_enabled": false
+        "text": "ĐỐI TƯỢNG TRONG GƯƠNG",
+        "default_enabled": false,
+        "lines": [
+          "ĐỐI TƯỢNG",
+          "TRONG GƯƠNG"
+        ]
       },
       "asset_requirements": [
         {
@@ -771,7 +799,7 @@
           "required": true,
           "acting": {
             "pose_id": "confront",
-            "expression_id": "deadpan"
+            "expression_id": "meme-deadpan"
           }
         },
         "target": {
@@ -780,7 +808,7 @@
           "required": true,
           "acting": {
             "pose_id": "recoil",
-            "expression_id": "panic"
+            "expression_id": "meme-panic"
           }
         },
         "prop": {
@@ -815,9 +843,9 @@
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -848,14 +876,18 @@
       "effects": [],
       "preview": {
         "title": "Ép đối diện bằng chứng",
-        "setup": "Không có bằng chứng đâu.",
-        "reaction": "Vậy cái này là gì?",
+        "setup": "Tao ngủ từ mười giờ.",
+        "reaction": "Hai giờ sáng ai thả haha?",
         "prop": "phone"
       },
       "text_label": {
         "role": "label",
-        "text": "Bằng chứng đây",
-        "default_enabled": false
+        "text": "MA THẢ HAHA À?",
+        "default_enabled": false,
+        "lines": [
+          "MA THẢ",
+          "HAHA À?"
+        ]
       },
       "asset_requirements": [
         {
@@ -880,7 +912,7 @@
           "required": true,
           "acting": {
             "pose_id": "raise-evidence",
-            "expression_id": "deadpan"
+            "expression_id": "meme-deadpan"
           }
         },
         "target": {
@@ -889,7 +921,7 @@
           "required": true,
           "acting": {
             "pose_id": "recoil",
-            "expression_id": "panic"
+            "expression_id": "meme-panic"
           }
         },
         "receipt": {
@@ -917,16 +949,16 @@
           730
         ],
         "receipt": [
-          550,
-          640,
-          230,
-          330
+          442,
+          715,
+          300,
+          300
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -957,14 +989,18 @@
       "effects": [],
       "preview": {
         "title": "Đưa hóa đơn tận mặt",
-        "setup": "Mình chưa từng nói thế.",
-        "reaction": "Đọc lại tin nhắn này xem.",
+        "setup": "Tao chỉ tiêu có tí thôi.",
+        "reaction": "Hóa đơn dài hơn mối tình trước.",
         "prop": "receipt-roll"
       },
       "text_label": {
         "role": "label",
-        "text": "Đọc lại đi bạn",
-        "default_enabled": false
+        "text": "TÍ NÀY HƠI DÀI",
+        "default_enabled": false,
+        "lines": [
+          "TÍ NÀY",
+          "HƠI DÀI"
+        ]
       },
       "asset_requirements": [
         {
@@ -989,7 +1025,7 @@
           "required": true,
           "acting": {
             "pose_id": "inspect-prop",
-            "expression_id": "side-eye"
+            "expression_id": "meme-side-eye"
           }
         },
         "prop": {
@@ -1011,16 +1047,16 @@
           820
         ],
         "prop": [
-          760,
-          630,
+          588,
+          820,
           230,
-          270
+          260
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1051,14 +1087,18 @@
       "effects": [],
       "preview": {
         "title": "Liếc xéo món đồ",
-        "setup": "Chắc chỉ là trùng hợp.",
-        "reaction": "Trùng hợp lần thứ tám rồi.",
+        "setup": "Nó bảo ngủ rồi, đừng nhắn nữa.",
+        "reaction": "Story mới đăng: còn ai thức không?",
         "prop": "phone"
       },
       "text_label": {
         "role": "label",
-        "text": "Trùng hợp dữ chưa",
-        "default_enabled": false
+        "text": "NGỦ RỒI TRỪ INSTAGRAM",
+        "default_enabled": false,
+        "lines": [
+          "NGỦ RỒI",
+          "TRỪ INSTAGRAM"
+        ]
       },
       "asset_requirements": [
         {
@@ -1083,7 +1123,7 @@
           "required": true,
           "acting": {
             "pose_id": "flex-prop",
-            "expression_id": "smug"
+            "expression_id": "meme-grimace"
           }
         },
         "wallet": {
@@ -1105,16 +1145,16 @@
           830
         ],
         "wallet": [
-          665,
-          690,
-          240,
+          596,
+          760,
+          224,
           210
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1145,14 +1185,18 @@
       "effects": [],
       "preview": {
         "title": "Khoe ví cho oai",
-        "setup": "Mình luôn sẵn sàng thanh toán.",
-        "reaction": "Cho mình nhìn số dư trước đã.",
+        "setup": "Lương vừa về. Hôm nay tao bao!",
+        "reaction": "Tiền nhà vừa nhắn: bao luôn chị nhé.",
         "prop": "wallet"
       },
       "text_label": {
         "role": "label",
-        "text": "Để xem số dư",
-        "default_enabled": false
+        "text": "MỜI... THÁNG SAU",
+        "default_enabled": false,
+        "lines": [
+          "MỜI...",
+          "THÁNG SAU"
+        ]
       },
       "asset_requirements": [
         {
@@ -1177,7 +1221,8 @@
           "required": true,
           "acting": {
             "pose_id": "hands-on-hips",
-            "expression_id": "exasperated"
+            "expression_id": "meme-cringe",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1189,15 +1234,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1216,13 +1261,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Sốt cả ruột",
-        "default_enabled": false
+        "text": "TỚI RỒI TỚI ĐOẠN CHỌN ÁO",
+        "default_enabled": false,
+        "lines": [
+          "TỚI RỒI",
+          "TỚI ĐOẠN CHỌN ÁO"
+        ]
       },
       "preview": {
         "title": "Sốt ruột chống nạnh",
-        "setup": "Chờ có năm phút thôi mà.",
-        "reaction": "Năm phút lần thứ mười rồi!",
+        "setup": "Tao tới rồi, xuống đi.",
+        "reaction": "Nó đang tới... đoạn chọn áo.",
         "prop": ""
       },
       "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-19.webp"
@@ -1239,7 +1288,7 @@
           "required": true,
           "acting": {
             "pose_id": "hold-broom",
-            "expression_id": "smug"
+            "expression_id": "meme-smug"
           }
         },
         "label": {
@@ -1262,9 +1311,9 @@
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ],
         "prop": [
           540,
@@ -1296,13 +1345,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Nói lại xem?",
-        "default_enabled": false
+        "text": "TRẢ LỜI CHO KHÉO",
+        "default_enabled": false,
+        "lines": [
+          "TRẢ LỜI",
+          "CHO KHÉO"
+        ]
       },
       "preview": {
         "title": "Cười hiền cầm chổi",
-        "setup": "Mình đang rất bình tĩnh.",
-        "reaction": "Bạn nói lại lần nữa xem?",
+        "setup": "Tao không giận. Tao chỉ hỏi thôi.",
+        "reaction": "Ai ăn miếng cuối cùng?",
         "prop": "broom"
       },
       "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-18.webp"
@@ -1319,7 +1372,8 @@
           "required": true,
           "acting": {
             "pose_id": "clasp-hands",
-            "expression_id": "smug"
+            "expression_id": "meme-grimace",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1331,15 +1385,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1358,13 +1412,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Cáo từ",
-        "default_enabled": false
+        "text": "THÔI KHỎI THẲNG",
+        "default_enabled": false,
+        "lines": [
+          "THÔI",
+          "KHỎI THẲNG"
+        ]
       },
       "preview": {
         "title": "Chắp tay cáo từ",
-        "setup": "Mình vẫn đang lắng nghe.",
-        "reaction": "Đến đây thì xin phép cáo từ.",
+        "setup": "Mày cứ góp ý thẳng đi.",
+        "reaction": "Bắt đầu từ tính cách nhé.",
         "prop": ""
       },
       "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/hai-huoc-meme-hai-hot-22.webp"
@@ -1381,7 +1439,7 @@
           "required": true,
           "acting": {
             "pose_id": "cheek-poke",
-            "expression_id": "smug"
+            "expression_id": "meme-smug"
           }
         },
         "label": {
@@ -1395,7 +1453,7 @@
           "required": true,
           "acting": {
             "pose_id": "recoil",
-            "expression_id": "exasperated"
+            "expression_id": "meme-cringe"
           }
         }
       },
@@ -1408,9 +1466,9 @@
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ],
         "target": [
           675,
@@ -1435,13 +1493,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Thứ yêu nghiệt!",
-        "default_enabled": false
+        "text": "BỒ MÀY BIẾT CHƯA?",
+        "default_enabled": false,
+        "lines": [
+          "BỒ MÀY",
+          "BIẾT CHƯA?"
+        ]
       },
       "preview": {
         "title": "Chọc má bạn thân",
-        "setup": "Bạn thân nói một câu rất tự tin.",
-        "reaction": "Cái đồ yêu nghiệt này!",
+        "setup": "Tao có bồ rồi, khỏi lo cho tao.",
+        "reaction": "Ừ. Bồ mày biết chưa?",
         "prop": ""
       },
       "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/09/hai-huoc-meme-danh-nhau-cute-7.webp"
@@ -1458,7 +1520,8 @@
           "required": true,
           "acting": {
             "pose_id": "slump",
-            "expression_id": "weary"
+            "expression_id": "meme-drained",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1470,15 +1533,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1497,13 +1560,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Hết pin...",
-        "default_enabled": false
+        "text": "TÁM TIẾNG MỘT TUẦN",
+        "default_enabled": false,
+        "lines": [
+          "TÁM TIẾNG",
+          "MỘT TUẦN"
+        ]
       },
       "preview": {
         "title": "Kiệt sức hết pin",
-        "setup": "Mình xử lý được hết.",
-        "reaction": "Nhưng pin mình hết rồi.",
+        "setup": "Tao ngủ đủ tám tiếng.",
+        "reaction": "Tổng cộng. Từ thứ Hai.",
         "prop": ""
       },
       "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/11/anh-meme-chan-nan-cha-buon-noi-4.webp"
@@ -1520,7 +1587,7 @@
           "required": true,
           "acting": {
             "pose_id": "confront",
-            "expression_id": "deadpan"
+            "expression_id": "meme-deadpan"
           }
         },
         "label": {
@@ -1543,9 +1610,9 @@
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ],
         "prop": [
           667,
@@ -1577,16 +1644,23 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Thu hồi lời vừa nói",
-        "default_enabled": false
+        "text": "NÓI LẠI CÒN KỊP",
+        "default_enabled": false,
+        "lines": [
+          "NÓI LẠI",
+          "CÒN KỊP"
+        ]
       },
       "preview": {
         "title": "Đòi thu hồi lời nói",
-        "setup": "Bạn vừa nói gì cơ?",
-        "reaction": "Cho bạn thu hồi lời vừa nói.",
+        "setup": "Trông mày giống người yêu cũ tao.",
+        "reaction": "Ý tao là... người đẹp nhất đời tao!",
         "prop": "toy-water-pistol"
       },
-      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp"
+      "reference_url": "https://theselfishmeme.co.uk/wp-content/uploads/2025/10/meme-bua-anh-che-9.webp",
+      "source_references": [
+        "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn10.jpg"
+      ]
     },
     {
       "id": "innocent-shrug",
@@ -1600,7 +1674,8 @@
           "required": true,
           "acting": {
             "pose_id": "shrug",
-            "expression_id": "smug"
+            "expression_id": "meme-smug",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1612,15 +1687,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1639,13 +1714,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Ai biết gì đâu",
-        "default_enabled": false
+        "text": "TAO CHỈ FORWARD THÔI",
+        "default_enabled": false,
+        "lines": [
+          "TAO CHỈ",
+          "FORWARD THÔI"
+        ]
       },
       "preview": {
         "title": "Nhún vai vô tội",
-        "setup": "Ai vừa làm chuyện này?",
-        "reaction": "Mình có biết gì đâu.",
+        "setup": "Ai kể chuyện tao thích nó?",
+        "reaction": "Tao có kể đâu. Tao chỉ forward.",
         "prop": ""
       },
       "reference_url": "https://vanvn.net/meme-da-lam-gi-dau/"
@@ -1662,7 +1741,8 @@
           "required": true,
           "acting": {
             "pose_id": "scratch-head",
-            "expression_id": "embarrassed"
+            "expression_id": "meme-grimace",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1674,15 +1754,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1701,13 +1781,17 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Ờ... cũng đúng",
-        "default_enabled": false
+        "text": "TẮT LOA KHÔNG TẮT MIC",
+        "default_enabled": false,
+        "lines": [
+          "TẮT LOA",
+          "KHÔNG TẮT MIC"
+        ]
       },
       "preview": {
         "title": "Cười trừ cho qua",
-        "setup": "Mình đã tính rất kỹ rồi.",
-        "reaction": "Trừ đúng cái phần quan trọng nhất.",
+        "setup": "Tao tắt mic rồi, chửi thoải mái.",
+        "reaction": "Mày tắt loa, không phải mic.",
         "prop": ""
       },
       "reference_url": "https://time.com/5650967/kombucha-meme/"
@@ -1724,7 +1808,8 @@
           "required": true,
           "acting": {
             "pose_id": "hands-on-hips",
-            "expression_id": "side-eye"
+            "expression_id": "meme-side-eye",
+            "crop_id": "face-closeup"
           }
         },
         "label": {
@@ -1736,15 +1821,15 @@
       "layout": {
         "actor": [
           540,
-          800,
-          680,
-          980
+          850,
+          900,
+          1000
         ],
         "label": [
           540,
-          185,
-          900,
-          170
+          220,
+          940,
+          280
         ]
       },
       "required_contacts": [
@@ -1763,16 +1848,706 @@
       ],
       "text_label": {
         "role": "label",
-        "text": "Bạn chắc chưa?",
-        "default_enabled": false
+        "text": "KHÔNG HÓNG BIẾT HẾT",
+        "default_enabled": false,
+        "lines": [
+          "KHÔNG HÓNG",
+          "BIẾT HẾT"
+        ]
       },
       "preview": {
         "title": "Phán xét trong im lặng",
-        "setup": "Mình chỉ xem thôi, không phán xét.",
-        "reaction": "Ánh mắt thì kể câu chuyện khác.",
+        "setup": "Tao không thích drama.",
+        "reaction": "Sao mày biết cả tên con mèo nhà nó?",
         "prop": ""
       },
       "reference_url": "https://theselfishmeme.co.uk/cac-meme-noi-tieng-nhat"
+    },
+    {
+      "id": "plead-mercy",
+      "source": "./templates/plead-mercy.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "clasp-hands",
+            "expression_id": "meme-panic",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_PLEAD_MERCY",
+          "source_path": "../props/meme-label-plead-mercy.svg",
+          "output_path": "assets/props/meme-label-plead-mercy.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "CON XIN RÚT LỜI",
+        "default_enabled": false,
+        "lines": [
+          "CON XIN",
+          "RÚT LỜI"
+        ]
+      },
+      "preview": {
+        "title": "Chắp tay van xin",
+        "setup": "Mẹ bảo: kể mẹ nghe, mẹ không mắng.",
+        "reaction": "Cho con rút lại phần vừa kể.",
+        "prop": ""
+      },
+      "reference_url": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXcMWMLZbyQBTasl65xrW2QIMqwAJT6_qzhTFzBk_60iV9K059FPU56_g6ay2OpLNoKtV1WWXNgTptL-fNqaCO0dAohO4kz_rBwbpZpn9hNQdsmwMS_sFTrmz6HKQZsORdJleeeE2sc6S2OfLh-I6aBmbTwP?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "sarcastic-applause",
+      "source": "./templates/sarcastic-applause.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "clap",
+            "expression_id": "meme-smug",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SARCASTIC_APPLAUSE",
+          "source_path": "../props/meme-label-sarcastic-applause.svg",
+          "output_path": "assets/props/meme-label-sarcastic-applause.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "VỖ TAY CHÍ LÍ QUÁ!",
+        "default_enabled": false,
+        "lines": [
+          "VỖ TAY",
+          "CHÍ LÍ QUÁ!"
+        ]
+      },
+      "preview": {
+        "title": "Vỗ tay mỉa mai",
+        "setup": "Tao không đi làm để khỏi tốn xăng.",
+        "reaction": "Ừ. Mất lương nhưng được cái tiết kiệm.",
+        "prop": ""
+      },
+      "reference_url": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXc2ZSEhGpZRKHxg2cxYy3E4c3kduoGHD5CDlqCbnknAekmETVj_19YVopIGiIUIwT72Bo0XWSTDr80UNMHc_UwwVKycazB_tI5vUwHNma9ajDBHbGy9BmjWBgZhTEmfvxhCav7nhgyVVy5d_UPMeBV4sOxp?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "stunned-wow",
+      "source": "./templates/stunned-wow.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "recoil",
+            "expression_id": "meme-panic",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_STUNNED_WOW",
+          "source_path": "../props/meme-label-stunned-wow.svg",
+          "output_path": "assets/props/meme-label-stunned-wow.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "Ú ÙAY!",
+        "default_enabled": false,
+        "lines": [
+          "Ú ÙAY!"
+        ]
+      },
+      "preview": {
+        "title": "Sững người vì bất ngờ",
+        "setup": "Tao với nó chỉ là bạn thôi.",
+        "reaction": "Bạn mà đặt cọc nhà hàng cưới rồi á?",
+        "prop": ""
+      },
+      "reference_url": "https://lh7-rt.googleusercontent.com/docsz/AD_4nXc2ZSEhGpZRKHxg2cxYy3E4c3kduoGHD5CDlqCbnknAekmETVj_19YVopIGiIUIwT72Bo0XWSTDr80UNMHc_UwwVKycazB_tI5vUwHNma9ajDBHbGy9BmjWBgZhTEmfvxhCav7nhgyVVy5d_UPMeBV4sOxp?key=tE_qip6BHPL4g00JXL_X6Q"
+    },
+    {
+      "id": "contempt-dismissal",
+      "source": "./templates/contempt-dismissal.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "hands-on-hips",
+            "expression_id": "meme-side-eye",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CONTEMPT_DISMISSAL",
+          "source_path": "../props/meme-label-contempt-dismissal.svg",
+          "output_path": "assets/props/meme-label-contempt-dismissal.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "TA KHINH!",
+        "default_enabled": false,
+        "lines": [
+          "TA KHINH!"
+        ]
+      },
+      "preview": {
+        "title": "Chê thẳng không vòng vo",
+        "setup": "Tao không bao giờ quay lại với người cũ.",
+        "reaction": "Mày vừa nhắn ngủ ngon cho ai?",
+        "prop": ""
+      },
+      "reference_url": "https://i.pinimg.com/236x/e3/53/98/e35398f93aff910195c7a4eb40cf2f94.jpg"
+    },
+    {
+      "id": "ultimatum-choice",
+      "source": "./templates/ultimatum-choice.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "confront",
+            "expression_id": "meme-deadpan",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_ULTIMATUM_CHOICE",
+          "source_path": "../props/meme-label-ultimatum-choice.svg",
+          "output_path": "assets/props/meme-label-ultimatum-choice.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "BÂY GIỜ THÍCH NHƯ NÀO?",
+        "default_enabled": false,
+        "lines": [
+          "BÂY GIỜ",
+          "THÍCH NHƯ NÀO?"
+        ]
+      },
+      "preview": {
+        "title": "Ra tối hậu thư",
+        "setup": "Mày ăn gì cũng được đúng không?",
+        "reaction": "Trừ món này, món kia, món còn lại.",
+        "prop": ""
+      },
+      "reference_url": "https://dongphucvina.vn/wp-content/uploads/2023/10/Meme-la-gi_-300-meme-hai-chat-nhat-qua-dat-de-ban-comment-dao-tha-ga-BlogAnChoi.jpeg"
+    },
+    {
+      "id": "never-again",
+      "source": "./templates/never-again.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "rest_sitting",
+            "expression_id": "meme-sob",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_NEVER_AGAIN",
+          "source_path": "../props/meme-label-never-again.svg",
+          "output_path": "assets/props/meme-label-never-again.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "LẦN SAU KHÔNG DÁM NỮA",
+        "default_enabled": false,
+        "lines": [
+          "LẦN SAU",
+          "KHÔNG DÁM NỮA"
+        ]
+      },
+      "preview": {
+        "title": "Hối hận sau khi mạnh miệng",
+        "setup": "Tao gửi rồi thu hồi liền. Nó không thấy đâu.",
+        "reaction": "Nó trả lời: tao đọc rồi.",
+        "prop": ""
+      },
+      "reference_url": "https://cdn.pico.vn/2026/01/15/176844935437193017874.jpeg"
+    },
+    {
+      "id": "confused-shrug",
+      "source": "./templates/confused-shrug.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "shrug",
+            "expression_id": "meme-confused",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CONFUSED_SHRUG",
+          "source_path": "../props/meme-label-confused-shrug.svg",
+          "output_path": "assets/props/meme-label-confused-shrug.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ỦA RỒI GIẬN CHƯA?",
+        "default_enabled": false,
+        "lines": [
+          "ỦA RỒI",
+          "GIẬN CHƯA?"
+        ]
+      },
+      "preview": {
+        "title": "Hoang mang không hiểu",
+        "setup": "Nó giận vì tao không biết nó giận.",
+        "reaction": "Nhưng hỏi thì nó bảo không giận.",
+        "prop": ""
+      },
+      "reference_url": "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn16.jpg"
+    },
+    {
+      "id": "stop-talking",
+      "source": "./templates/stop-talking.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "stop-hand",
+            "expression_id": "meme-panic",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_STOP_TALKING",
+          "source_path": "../props/meme-label-stop-talking.svg",
+          "output_path": "assets/props/meme-label-stop-talking.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ĐỪNG NÓI NỮA",
+        "default_enabled": false,
+        "lines": [
+          "ĐỪNG",
+          "NÓI NỮA"
+        ]
+      },
+      "preview": {
+        "title": "Chặn lời vì biết quá nhiều",
+        "setup": "Nhớ hồi mày nhắn tin cho người cũ không?",
+        "reaction": "Đừng nói nữa. Nó đang ngồi đây.",
+        "prop": ""
+      },
+      "reference_url": "https://m.yodycdn.com/blog/gau-truc-meme-yodyvn32.jpg"
+    },
+    {
+      "id": "serious-please",
+      "source": "./templates/serious-please.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "explain",
+            "expression_id": "meme-deadpan",
+            "crop_id": "face-closeup"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SERIOUS_PLEASE",
+          "source_path": "../props/meme-label-serious-please.svg",
+          "output_path": "assets/props/meme-label-serious-please.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ĐỀ NGHỊ NGHIÊM TÚC!",
+        "default_enabled": false,
+        "lines": [
+          "ĐỀ NGHỊ",
+          "NGHIÊM TÚC!"
+        ]
+      },
+      "preview": {
+        "title": "Yêu cầu nghiêm túc giữa trò đùa",
+        "setup": "Tao đang kể chuyện buồn. Cấm cười.",
+        "reaction": "Rồi tao té ngay trước mặt người yêu cũ.",
+        "prop": ""
+      },
+      "reference_url": "https://cdn.pico.vn/2026/01/15/176844935405586721985.jpeg"
+    },
+    {
+      "id": "call-for-help",
+      "source": "./templates/call-for-help.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "phone-call",
+            "expression_id": "meme-panic"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        },
+        "phone": {
+          "slot": "focus_prop",
+          "kind": "object",
+          "required": true
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          820,
+          680,
+          980
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ],
+        "phone": [
+          741,
+          723,
+          210,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.right_grip→phone",
+        "phone→actor.ear"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CALL_FOR_HELP",
+          "source_path": "../props/meme-label-call-for-help.svg",
+          "output_path": "assets/props/meme-label-call-for-help.svg",
+          "category": "prop"
+        },
+        {
+          "role": "phone",
+          "asset_id": "MEME_CALL_PHONE",
+          "source_path": "../props/phone.svg",
+          "output_path": "assets/props/meme-call-phone.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ALO CHÚ CÔNG AN ƠI!",
+        "default_enabled": false,
+        "lines": [
+          "ALO",
+          "CHÚ CÔNG AN ƠI!"
+        ]
+      },
+      "preview": {
+        "title": "Gọi điện cầu cứu quá mức",
+        "setup": "Nó bảo yêu tao từ cái nhìn đầu tiên.",
+        "reaction": "Mới nhìn số dư thôi mà?",
+        "prop": ""
+      },
+      "reference_url": "https://cdn.pico.vn/2026/01/15/17684493549289594310.jpeg"
     }
   ]
 }

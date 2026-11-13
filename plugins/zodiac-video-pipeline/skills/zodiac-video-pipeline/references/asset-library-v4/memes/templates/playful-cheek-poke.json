@@ -12,11 +12,11 @@
   },
   "trigger_hints": [
     "Chọc má bạn thân",
-    "Bạn thân nói một câu rất tự tin.",
-    "Cái đồ yêu nghiệt này!"
+    "Tao có bồ rồi, khỏi lo cho tao.",
+    "Ừ. Bồ mày biết chưa?"
   ],
   "mechanic": "confront",
-  "reviewed_visual_note": "Chọc má bạn thân; adapt acting and optional lettering to the existing channel cast.",
+  "reviewed_visual_note": "Reworked reaction: Tao có bồ rồi, khỏi lo cho tao. → Ừ. Bồ mày biết chưa? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reference_character_policy": {
     "embedded_characters": "visual_reference_only",
     "bind_roles_to_existing_scene_entities": true,
@@ -40,5 +40,5 @@
     ],
     "caption_free_readability_required": true
   },
-  "optional_text": "Thứ yêu nghiệt!"
+  "optional_text": "BỒ MÀY BIẾT CHƯA?"
 }

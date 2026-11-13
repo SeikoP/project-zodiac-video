@@ -27,6 +27,9 @@ export const posePaths=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR,[h
  };
  p['hands-on-hips']={...p.neutral,la:`M${lx} ${ly} Q${lx-74} ${ly+46} ${lx-60} ${ly+91} Q${lx-37} ${ly+103} ${hlx-8} ${hly-36}`,ra:`M${rx} ${ry} Q${rx+72} ${ry+44} ${rx+59} ${ry+90} Q${rx+36} ${ry+101} ${hrx+8} ${hry-35}`};
  p['clasp-hands']={...p.neutral,la:`M${lx} ${ly} Q${lx-18} ${ly+64} 228 516 Q249 503 254 475`,ra:`M${rx} ${ry} Q${rx+17} ${ry+62} 294 515 Q275 499 270 476`};
+ p.clap={...p.neutral,la:`M${lx} ${ly} Q${lx-20} ${ly+60} 217 491 Q239 475 253 450`,ra:`M${rx} ${ry} Q${rx+20} ${ry+58} 303 491 Q280 473 270 450`};
+ p['stop-hand']={...p.neutral,ra:`M${rx} ${ry} Q${rx+58} ${ry+30} 430 449 Q443 395 430 355`};
+ p['phone-call']={...p.neutral,ra:`M${rx} ${ry} Q${rx+65} ${ry+32} 433 436 Q432 359 391 305`};
  p['hold-broom']={...p.neutral,la:`M${lx} ${ly} Q${lx-28} ${ly+53} 203 526 Q219 521 230 500`,ra:`M${rx} ${ry} Q${rx+26} ${ry+52} 321 526 Q308 519 295 500`};
  p['cheek-poke']={...p.neutral,ra:`M${rx} ${ry} Q${rx+54} ${ry-49} 441 374 Q469 344 500 325`};
  p.slump={...p.rest_sitting,la:`M${lx} ${ly} Q${lx-24} ${ly+109} 116 628 Q111 644 120 655`,ra:`M${rx} ${ry} Q${rx+29} ${ry+105} 405 630 Q414 646 401 658`};
@@ -69,10 +72,13 @@ export const handPoints=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR;r
  'open-barrier':[[140,430],[390,430]]
  ,'hands-on-hips':[[b.hipL[0]-8,b.hipL[1]-36],[b.hipR[0]+8,b.hipR[1]-35]]
  ,'clasp-hands':[[254,475],[270,476]]
+ ,clap:[[253,450],[270,450]]
+ ,'stop-hand':[[lx-65,ly+92],[430,355]]
+ ,'phone-call':[[lx-65,ly+92],[391,305]]
  ,'hold-broom':[[230,500],[295,500]]
  ,'cheek-poke':[[lx-65,ly+92],[500,325]]
  ,slump:[[120,655],[401,658]]
  ,shrug:[[95,430],[425,430]]
  })[id];};
 // A facepalm covers the brow; the ordinary hand contour reads as an eye-poking fingertip.
-export const handShape=([x,y],side,poseId)=>poseId==='facepalm'&&side==='right'?`M${x} ${y+10} Q${x-18} ${y+23} ${x-32} ${y+6} L${x-68} ${y-40} Q${x-75} ${y-50} ${x-68} ${y-56} Q${x-61} ${y-60} ${x-53} ${y-51} L${x-37} ${y-35} L${x-58} ${y-71} Q${x-63} ${y-82} ${x-55} ${y-85} Q${x-47} ${y-87} ${x-41} ${y-75} L${x-22} ${y-45} L${x-35} ${y-81} Q${x-38} ${y-92} ${x-29} ${y-93} Q${x-21} ${y-93} ${x-17} ${y-81} L${x-4} ${y-48} L${x-10} ${y-77} Q${x-12} ${y-87} ${x-4} ${y-88} Q${x+5} ${y-87} ${x+6} ${y-75} L${x+13} ${y-32} Q${x+20} ${y-23} ${x+16} ${y-11} L${x+8} ${y+5}Z`:side==='left'?`M${x-9} ${y} Q${x-3} ${y-11} ${x+7} ${y-4} Q${x+12} ${y+6} ${x+2} ${y+11} Q${x-8} ${y+9} ${x-9} ${y}Z`:`M${x-8} ${y-3} Q${x+1} ${y-11} ${x+10} ${y-1} Q${x+9} ${y+9} ${x-2} ${y+11} Q${x-11} ${y+5} ${x-8} ${y-3}Z`;
+export const handShape=([x,y],side,poseId)=>poseId==='stop-hand'&&side==='right'?`M${x-15} ${y+15} L${x-32} ${y-5} Q${x-41} ${y-19} ${x-30} ${y-22} L${x-15} ${y-10} L${x-18} ${y-57} Q${x-15} ${y-69} ${x-8} ${y-57} L${x-5} ${y-26} L${x-3} ${y-65} Q${x+2} ${y-76} ${x+7} ${y-63} L${x+10} ${y-25} L${x+14} ${y-58} Q${x+21} ${y-68} ${x+25} ${y-55} L${x+24} ${y-22} L${x+29} ${y-43} Q${x+37} ${y-53} ${x+39} ${y-39} L${x+33} ${y+1} Q${x+29} ${y+20} ${x+9} ${y+22}Z`:poseId==='facepalm'&&side==='right'?`M${x} ${y+10} Q${x-18} ${y+23} ${x-32} ${y+6} L${x-68} ${y-40} Q${x-75} ${y-50} ${x-68} ${y-56} Q${x-61} ${y-60} ${x-53} ${y-51} L${x-37} ${y-35} L${x-58} ${y-71} Q${x-63} ${y-82} ${x-55} ${y-85} Q${x-47} ${y-87} ${x-41} ${y-75} L${x-22} ${y-45} L${x-35} ${y-81} Q${x-38} ${y-92} ${x-29} ${y-93} Q${x-21} ${y-93} ${x-17} ${y-81} L${x-4} ${y-48} L${x-10} ${y-77} Q${x-12} ${y-87} ${x-4} ${y-88} Q${x+5} ${y-87} ${x+6} ${y-75} L${x+13} ${y-32} Q${x+20} ${y-23} ${x+16} ${y-11} L${x+8} ${y+5}Z`:side==='left'?`M${x-9} ${y} Q${x-3} ${y-11} ${x+7} ${y-4} Q${x+12} ${y+6} ${x+2} ${y+11} Q${x-8} ${y+9} ${x-9} ${y}Z`:`M${x-8} ${y-3} Q${x+1} ${y-11} ${x+10} ${y-1} Q${x+9} ${y+9} ${x-2} ${y+11} Q${x-11} ${y+5} ${x-8} ${y-3}Z`;

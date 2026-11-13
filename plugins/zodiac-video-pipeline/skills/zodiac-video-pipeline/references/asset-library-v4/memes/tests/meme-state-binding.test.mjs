@@ -10,7 +10,7 @@ import {validateCharacterAssembly} from '../../validation/validate-character-ass
 function fixture(){
  const production={version:'2.0',assets:{},scenes:[{id:'S01',voice:'Bọ Cạp bảo đã quên. Nhưng vẫn nhớ từng chữ.',entities:[{id:'hero',kind:'character',initial_state:'setup',states:{setup:{visible:true},punchline:{visible:true}}}],events:[{id:'reveal',target:'hero',state_before:'setup',state_after:'punchline',trigger:{type:'voice_anchor',text:'vẫn nhớ từng chữ'},motion:{preset:'state_swap',duration_frames:8}}]}]};
  const plan={format:'zodiac-visual-grammar-plan@1',scenes:[{scene_id:'S01',meme_composition:{id:'facepalm-closeup',bindings:{actor:'hero'},state_bindings:{actor:'punchline'}}}]};
- const cast={format:'zodiac-character-assembly-plan@1',characters:[{entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'zodiac-glyph-shirt',zodiac_sign_id:'scorpio',shirt_color_id:'teal',states:{setup:{pose_id:'neutral',expression_id:'neutral',crop_id:'face-closeup'},punchline:{pose_id:'facepalm',expression_id:'exasperated',crop_id:'face-closeup'}}}]};
+ const cast={format:'zodiac-character-assembly-plan@1',characters:[{entity_id:'hero',body_profile:'lean_tall',hair_id:'long-side-part',outfit_id:'zodiac-glyph-shirt',zodiac_sign_id:'scorpio',shirt_color_id:'teal',states:{setup:{pose_id:'neutral',expression_id:'neutral',crop_id:'face-closeup'},punchline:{pose_id:'facepalm',expression_id:'meme-cringe',crop_id:'face-closeup'}}}]};
  return {production,plan,cast};
 }
 

@@ -10,18 +10,15 @@
     "embarrassed_target": "another subject; may be offscreen"
   },
   "trigger_hints": [
-    "extreme embarrassment",
-    "secondhand embarrassment",
-    "quê độ",
-    "ngượng chín mặt",
-    "hố hàng",
-    "ngớ ngẩn"
+    "Đưa quần chữa ngượng",
+    "Tao chúc người yêu cũ hạnh phúc.",
+    "Quên mất đang nhắn trong nhóm có bồ mới của nó."
   ],
   "mechanic": "offer-pants-for-embarrassment",
   "caption_slot": "bottom",
   "required_contact": "left hand→left waistband, right hand→right waistband, pants offered toward recipient/head zone",
   "body_orientation": "front-facing giver / both arms raised and extended forward",
-  "reviewed_visual_note": "Meme 'đưa quần để đội': người đưa quần cho người khác đang quê độ/xấu hổ. Trọng tâm là hành động OFFER, không phải mặc quần thật.",
+  "reviewed_visual_note": "Reworked reaction: Tao chúc người yêu cũ hạnh phúc. → Quên mất đang nhắn trong nhóm có bồ mới của nó. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": {
     "prefer_over_state_recipe": "awkward",
@@ -87,5 +84,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "QUẦN ĐÂY ĐỘI ĐI"
 }

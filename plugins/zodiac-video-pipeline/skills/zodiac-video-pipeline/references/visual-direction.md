@@ -22,6 +22,8 @@ Native adapters by situation:
 - Exit/teasing: `polite-exit`, `playful-cheek-poke`; cheek contact must be real.
 - Concession/disbelief: `innocent-shrug`, `awkward-grin`, `silent-judgment`.
 
+For the full situation map and humor review, load `asset-library-v4/memes/README.md` when a meme is selected. Use a normal setup, a performed `meme-*` face at the reversal and story-specific focal lettering; do not treat a stock phrase plus a neutral sticker as a finished joke.
+
 Bind reaction states in the existing grammar:
 ```json
 "meme_composition": {

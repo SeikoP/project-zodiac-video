@@ -12,12 +12,31 @@ test('new meme actions preserve identity and handmade geometry on every native b
  for(const body of catalog.body_profiles){
   const identity={entity_id:'hero',body_profile:body.id,hair_id:'long-side-part',outfit_id:'plain-shirt'};
   const normal=compileCharacterSvg(identity,{pose_id:'neutral',expression_id:'neutral'});
-  for(const pose of ['hands-on-hips','clasp-hands','hold-broom','cheek-poke','slump','shrug']){
+  for(const pose of ['hands-on-hips','clasp-hands','hold-broom','cheek-poke','slump','shrug','clap','stop-hand','phone-call']){
    const result=compileCharacterSvg(identity,{pose_id:pose,expression_id:pose==='slump'?'weary':'smug'});
    assert.equal(result.identity_signature,normal.identity_signature);assert.notEqual(result.svg,normal.svg);
    validateHumanStroke(result.svg,'character');
   }
  }
+});
+
+test('new verbal reactions have distinct acting and readable complete stock phrases',async()=>{
+ const registry=JSON.parse(await readFile(new URL('../index.json',import.meta.url)));
+ for(const id of ['plead-mercy','sarcastic-applause','stunned-wow','contempt-dismissal','ultimatum-choice','never-again','confused-shrug','stop-talking','serious-please','call-for-help']){
+  const meme=registry.compositions.find(m=>m.id===id);
+  assert.ok(meme?.reference_url,id);
+  const template=JSON.parse(await readFile(new URL(meme.source,new URL('../',import.meta.url))));
+  assert.equal(template.optional_text,meme.text_label.text);
+  assert.equal(template.adaptation.meme_text_readability_required,true);
+  const label=meme.asset_requirements.find(r=>r.role==='label');
+  const svg=await readFile(new URL(label.source_path,new URL('../',import.meta.url)),'utf8');
+  assert.ok(svg.includes('<title>'+meme.text_label.text+'</title>'),id);
+  if(meme.text_label.text.length>20){assert.match(svg,/viewBox="0 0 [\d.]+ 240"/u);assert.match(svg,/fill="#E97A66"/u);}
+ }
+ const acting=id=>registry.compositions.find(m=>m.id===id).roles.actor.acting;
+ assert.notDeepEqual(acting('plead-mercy'),acting('polite-exit'));
+ assert.notDeepEqual(acting('confused-shrug'),acting('innocent-shrug'));
+ assert.notDeepEqual(acting('sarcastic-applause'),acting('stunned-wow'));
 });
 
 test('optional meme label can be absent or compile as native path art without extra cast',async()=>{

@@ -9,15 +9,15 @@
     "actor": "self-reacting character"
   },
   "trigger_hints": [
-    "self-cringe",
-    "exasperated",
-    "regret"
+    "Tự quê che mặt",
+    "Tao vừa thả haha vào tin buồn.",
+    "Tin của sếp. Trong nhóm công ty."
   ],
   "mechanic": "facepalm",
   "caption_slot": "bottom",
   "required_contact": "hand→face",
   "body_orientation": "head slight down / upper-body crop",
-  "reviewed_visual_note": "Che mặt bằng lòng bàn tay thật; không còn kiểu tay chọc vào mắt.",
+  "reviewed_visual_note": "Reworked reaction: Tao vừa thả haha vào tin buồn. → Tin của sếp. Trong nhóm công ty. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": null,
   "reference_character_policy": {
@@ -80,5 +80,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "XIN NGHỈ LUÔN ĐƯỢC KHÔNG?"
 }

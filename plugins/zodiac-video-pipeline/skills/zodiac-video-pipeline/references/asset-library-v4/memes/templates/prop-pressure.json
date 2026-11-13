@@ -10,15 +10,15 @@
     "target": "reacts/recoils"
   },
   "trigger_hints": [
-    "caught with evidence",
-    "pressure",
-    "receipts"
+    "Ép đối diện bằng chứng",
+    "Tao ngủ từ mười giờ.",
+    "Hai giờ sáng ai thả haha?"
   ],
   "mechanic": "pressure-with-prop",
   "caption_slot": "bottom",
   "required_contact": "hand→prop",
   "body_orientation": "A presses forward / B leans back",
-  "reviewed_visual_note": "Cụm nét contact đặt tại vùng top-mid của tờ giấy để nhấn tâm điểm va chạm/áp lực.",
+  "reviewed_visual_note": "Reworked reaction: Tao ngủ từ mười giờ. → Hai giờ sáng ai thả haha? Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
   "reuse_state_recipe": null,
   "routing": {
     "prefer_over_state_recipe": "receipt_shame",
@@ -84,5 +84,6 @@
       "torso_identity_replacement"
     ],
     "caption_free_readability_required": true
-  }
+  },
+  "optional_text": "MA THẢ HAHA À?"
 }

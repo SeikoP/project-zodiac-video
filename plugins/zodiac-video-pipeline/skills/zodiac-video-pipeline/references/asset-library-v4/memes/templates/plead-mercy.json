@@ -1,0 +1,44 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "plead-mercy",
+  "kind": "primary_meme_composition",
+  "source_references": [
+    "https://lh7-rt.googleusercontent.com/docsz/AD_4nXcMWMLZbyQBTasl65xrW2QIMqwAJT6_qzhTFzBk_60iV9K059FPU56_g6ay2OpLNoKtV1WWXNgTptL-fNqaCO0dAohO4kz_rBwbpZpn9hNQdsmwMS_sFTrmz6HKQZsORdJleeeE2sc6S2OfLh-I6aBmbTwP?key=tE_qip6BHPL4g00JXL_X6Q"
+  ],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Chắp tay van xin",
+    "Mẹ bảo: kể mẹ nghe, mẹ không mắng.",
+    "Cho con rút lại phần vừa kể."
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Reworked reaction: Mẹ bảo: kể mẹ nghe, mẹ không mắng. → Cho con rút lại phần vừa kể. Native performed face, exact voice-anchor reversal, readable meme wording. Creative effect still requires human review.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": false,
+    "meme_text_readability_required": true
+  },
+  "optional_text": "CON XIN RÚT LỜI"
+}
