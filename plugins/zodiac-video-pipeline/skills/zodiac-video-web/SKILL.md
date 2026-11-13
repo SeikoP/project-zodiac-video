@@ -14,8 +14,8 @@ After the user identifies the sign/topic, continue autonomously through these sm
 1. **Evidence** — research only what is needed to understand the sign mechanism, tensions and useful behavioral interpretations. Prefer two independent useful sources over a large research dump.
 2. **Voice** — define narrator attitude, sentence behavior, sharpness, rhythm and any style boundaries from the current request or supplied references.
 3. **Concept** — generate genuinely different premises, reject sign-swappable ideas, and select the strongest concept yourself unless the user explicitly asks to choose.
-4. **Narrative Design** — build one Story Spine, hook, escalation, reveal/payoff, emotional contrast and optional narrative-visual direction. Do not design Phase-2 assets.
-5. **Narration** — write for voice and story first. Revise for specificity, surprise, spoken flow and payoff; do not optimize against a validator checklist while drafting.
+4. **Narrative Design** — build one Story Spine, hook, escalation, reveal/payoff and emotional contrast. For a story-driven concept, choose the **Narrative Motif before Narration** and describe its setup → friction → turn → payoff/callback plus a removal test. Also map the **second-half pulse** so every post-midpoint beat adds action, decision, consequence, contrast, reframe or payoff. A direct deconstruction may explicitly omit a motif with a specific reason. This is semantic Phase-1 design; do not design Phase-2 assets or Visual Metaphors.
+5. **Narration** — write for voice and story first. Preserve an opening the user has already accepted unless the story engine itself changes. After the midpoint, keep advancing events, decisions, consequences, reframes or the motif in a changed state; do not let a strong opening collapse into explanation-only paragraphs. Revise for specificity, surprise, spoken flow and payoff; do not optimize against a validator checklist while drafting.
 6. **Content Review** — show the final narration plus a compact explanation of the chosen concept/voice. Only the user's explicit approval completes Phase 1.
 
 Do not stop between microphases for routine confirmation.
@@ -26,7 +26,17 @@ Phase 1 has **no source-bundle bootstrap, npm/runtime provisioning, native compi
 
 Use live research tools directly when they improve Evidence. Use installed guidance as creative reference, not as an execution dependency. Quality review is editorial: Zodiac identity, voice fidelity, semantic progression, novelty, hook strength, spoken naturalness and payoff.
 
-There is no mandatory fictional advertisement. Add a parody/product interruption only when the current story benefits from it.
+There is no mandatory fictional advertisement. Add a parody/product interruption only when the current story benefits from it. If the user disables it, **no stale** parody copy, mock-ad instruction or interruption may remain in the Narrative Plan, Writer Brief, narration, review summary or handoff.
+
+## Revision discipline
+
+Treat the user's diagnosis as a source-edit signal, not a request to polish everything indiscriminately.
+
+- If the **idea/story engine** is rejected, reopen Concept and Narrative Design, then rewrite downstream prose.
+- If the opening is accepted but the **later rhythm** is weak, preserve the accepted opening and rebuild the second-half pulse first.
+- If humor is requested, derive jokes from the active conflict, motif or narrator reaction; do not add unrelated punchlines that interrupt progression.
+- If a recurring image is discovered only after drafting, move it upstream into Narrative Design and re-draft around it rather than pretending it was planned.
+- A Phase-1 Narrative Motif is semantic continuity. Never confuse it with Phase-2 Visual Metaphor/Story Object authoring.
 
 ## Minimal handoff
 
