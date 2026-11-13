@@ -77,15 +77,85 @@ APPROVED NARRATION (immutable bytes)       V4 CATALOG / ASSETS (versioned)
 
 **Recommended file direction (subject to detailed Phase 3 plan):** a focused `features/compiler-core/` module boundary for graph/planning, asset compile, scene compile, preview adapter and receipt types; keep underlying existing V4 geometry functions in place. Avoid a mega-module or a duplicate copy of the V4 catalogs. One function/contract owner per artifact; do not migrate merely to rename files.
 
+## 3.1. One-shot scene completion contract — user request vs internal DAG
+
+**Product-level requirement:** for any S03 with an authored visual plan, the agent/user submits ONE bounded command, and Studio either returns one validated, fully resolved scene package or an actionable BLOCKED result. It must not require the agent to remember a dozen compiler scripts, run a separate step for hair/pose/props/memes and then guess whether the scene is complete.
+
+**Proposed public Studio command (NOT currently implemented):**
+
+```json
+{
+  "kind": "scene.compile",
+  "project_id": "episode-id",
+  "scene_id": "S03",
+  "base_revision": 7,
+  "mode": "preview",
+  "idempotency_key": "unique-client-request-id"
+}
+```
+
+- `mode=preview`: compile all **required authored scene constituents** and their coherent preview; cheap technical validation and missing-dependency checks are blocking. No human Visual Review is implied.
+- `mode=review`: same full scene closure, plus complete required native scene validators, visual/semantic before-and-after review evidence ready to be shown to a person. It **does not** automatically record user approval.
+- A command is a single **logical transaction**, not a promise that Node runs only one process. Internally the engine may use in-process compiler calls, bounded workers, cache, resvg or a renderer adapter as measured.
+- `base_revision` protects source against concurrent agent/user edits; repeated `idempotency_key` returns the same committed result. Newer revision means `REVISION_CONFLICT` with no stale scene publication.
+
+**Automatically discover and close the exact required scene manifest:**
+- Existing V4 actor identity, selected body/hair/outfit/accessory, pose/crop/expression and all required actor states.
+- All physical props and explicit scene events; narrative visual **or** story text as authored, never silently insert generic visual filler. Add Scene Accents only if the scene actually requests them.
+- Scene layout, transforms/occlusion/layer safety, spatial role bindings and before/after transitions including meme setup→reaction; approved narration UTF-8 byte spans and selected measured voice anchors.
+- Selected simple motion, caption segments/font/safe-area and scene preview states (as applicable); **no** media generated for scene elements absent from the authored intent.
+- Source provenance of every image/state and a required-present ledger: `required_nodes`, `satisfied_nodes`, `blocked_nodes`; check cardinality and IDs of actors/props/states/events against the authored manifest, not only `production.json` structural validity.
+
+**Internal orchestration:** resolve scene/asset closure -> validate source and exact active asset references -> plan reused/rebuilt nodes -> compile V4 assets -> compile scene state/layout/voice timing -> build on-demand scene/frame preview -> run scope-appropriate quality checks -> atomically publish verified scene artifact inventory and record one result. The engine may short-circuit unchanged nodes by verified SHA, but **not** skip required validators on a dirty dependency.
+
+**Transaction behavior:** stage outputs under a per-request isolated workdir; never overwrite last healthy scene/preview until all required outputs and references verify; atomic publish and a monotonically ordered project event. On failure or cancel: `BLOCKED` with exact missing component/owner/code and recommended fix; no partial green `READY`, no spoofed review receipt, no half-updated visual projection. Recover safely after crash and don't lose original approved source.
+
+**Proposed return envelope (fields will be locked in P3 tests):**
+
+```json
+{
+  "status": "READY",
+  "scene_id": "S03",
+  "project_revision": 7,
+  "scene_revision": "sha256:...",
+  "required_nodes": ["actor:lead:neutral", "actor:lead:react", "prop:phone", "event:reveal"],
+  "compiled_nodes": ["actor:lead:react", "event:reveal"],
+  "reused_nodes": ["actor:lead:neutral", "prop:phone"],
+  "missing_nodes": [],
+  "artifacts": [{"role": "scene_preview", "path": ".studio/previews/S03/...", "sha256": "..."}],
+  "validation": {"technical": "PASS", "visual_review": "PENDING"},
+  "event": "scene.preview_ready"
+}
+```
+
+These IDs and files are **illustrative shape**, not a claim that such artifacts or APIs exist now. A real result must include authoritative verified output refs, not merely a JSON response naming missing files.
+
+**Agent-to-Studio relationship:**
+
+```text
+Human requests scene S03
+  -> Studio Agent reads narration, approved storyboard and V4 catalog (read-only)
+  -> agent proposes/commits one semantic scene intent revision via Studio command API
+  -> agent requests scene.compile(project, S03, revision)
+  -> Zodiac Core builds + validates actual SVG/scene/preview in its own workspace
+  -> Zodiac Core commits immutable artifact refs/hashes and emits scene.preview_ready
+  -> Studio event subscription loads that result from local artifact service
+  -> human sees S03 and optionally authorizes Visual Review; agent may receive structured errors and propose a bounded fix
+```
+
+**Important distinction:** the agent does **not** send image bytes “up to Studio”, write compiler-owned JSON/ZIP directly, or fake approval. Studio owns the state and media, compiler owns the build. The agent authors scene **instructions** through allowed commands and reads result/repair feedback. When an art element cannot be assembled from V4 or a permitted procedural tool, the command must return `ASSET_CREATION_REQUIRED` or invoke an explicitly authorized asset generator; the compiler cannot invent arbitrary new drawings by merely being asked to compile.
+
+**Scene S03 acceptance tests** (must be real end-to-end integration, not mocked UI): full component closure from intent; one command with all asset families; missing prop or acting state blocks rather than shipping partial; unchanged repeated command reuses outputs; edit only S03 rebuilds its dependency closure; shared V4 asset mutation invalidates all consuming scenes; stale revision rejected; renderer/preview loads verified S03 revision without export ZIP or full video render; interruption preserves previous preview; idempotent retry; no fake Visual Review.
+
 ## 4. Work units, size and outputs — Phase 3
 
 Four reviewable tasks (not ten micro-phases; not one giant rewrite):
 
-**3.1 Contract/ownership and pure compiler seam.** Freeze golden representative input/output scenes and schema; map the current V4 owner, create one API for pure compile and plan, move no assets by default. Keep original entrypoints calling the new seam. Prove byte/semantic parity of scene IDs, actor states, event order, source hashes, post-review locks and generated artifact references.
+**3.1 Contract/ownership and pure compiler seam, including the proposed `scene.compile` request/result contract and required-component manifest.** Freeze golden representative input/output scenes and schema; map the current V4 owner, create one API for pure compile and plan, move no assets by default. Keep original entrypoints calling the new seam. Prove byte/semantic parity of scene IDs, actor states, event order, source hashes, post-review locks and generated artifact references.
 
 **3.2 Dependency-accurate incremental build and worker scheduling.** Consolidate cache/step planning around existing semantic+checkpoint+native scene caches; use selected dependency graph, bounded worker concurrency, persistent source-version hashes and atomic output validation; remove redundant subprocess startups only where measurement supports doing so. Editing scene S03 must not rebuild S01/S02 unless the exact shared asset or global source changed. Missing/tampered outputs invalidate correctly.
 
-**3.3 One-scene preview and integrated visual QA.** Expose on-demand scene/frame preview using real V4 SVG outputs and versioned snapshot; run cheap static checks first and expensive full-scene/review checks at explicit boundaries. Add *non-fake* checks for face/hand occlusion, prop/actor interaction, legible caption safe-area, accidental Scene Set containment, clip/crop mismatches, absent state swap, meme setup->reaction, lost Narrative Visual/Story Text contract and speech-anchor drift. Check visual meaning against approved beats and actual image review; static rules cannot alone prove narrative quality.
+**3.3 One-command scene transaction, one-scene preview and integrated visual QA.** Expose on-demand scene/frame preview using real V4 SVG outputs and versioned snapshot; run cheap static checks first and expensive full-scene/review checks at explicit boundaries. Add *non-fake* checks for face/hand occlusion, prop/actor interaction, legible caption safe-area, accidental Scene Set containment, clip/crop mismatches, absent state swap, meme setup->reaction, lost Narrative Visual/Story Text contract and speech-anchor drift. Check visual meaning against approved beats and actual image review; static rules cannot alone prove narrative quality.
 
 **3.4 Benchmarks, fixtures, compatibility and failure recovery.** Measure cold/unchanged warm/single-scene-edit/character-change/review and CPU/RAM/disk on the user's Windows machine. Compare the same work with old and new builds; report agent authoring, tooling, compilation, review and render separately. Preserve deterministic hashes and existing Job@5 adapters. Update developer guide: one route for adding a new hair/pose/meme/context asset, one for adding a validator, one for diagnosing a cache miss. Rollback switch without data loss.
 
@@ -124,4 +194,4 @@ Quality targets are **non-regression on existing reviewed scenes plus fewer visi
 
 **BLOCK:** any silent loss of an approved beat/event, unreadable SVG, wrong actor identity/hair/pose, false native PASS, review waiver, unrecoverable workspace mutation, unbounded Windows memory/disk pressure, or stale preview after a scene edit.
 
-**Exit gate:** typed stable API and ownership guide; existing V4 contracts still work; cold/warm/single-edit logs; actual visual parity and golden scene screenshots; source-bound receipts and review boundary intact; reproducible deterministic test plan; fallback tested. This phase is not PASS merely because new module files exist.
+**Exit gate:** `scene.compile` builds every required S03 component in one request, produces one validated scene package and one preview-ready event, blocks without partial publication when incomplete; typed stable API and ownership guide; existing V4 contracts still work; cold/warm/single-edit logs; actual visual parity and golden scene screenshots; source-bound receipts and review boundary intact; reproducible deterministic test plan; fallback tested. This phase is not PASS merely because new module files exist.
