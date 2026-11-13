@@ -65,6 +65,14 @@ These are eight **visually distinct candidate bases** rather than only remapping
 
 **V5 character improvements:** broaden facial silhouette/profile options, outfit families and hair/face coherence; introduce meaningful physical hand/contact anchors; prioritize selected real female tall/slim actor path and varied hair before exhaustive cross-product. New combinatorial options are lazy; do not eager-render 6×18×34×19 variants or duplicate every theme into asset library.
 
+## 4.1. Agent visual selection: Asset Knowledge Graph (Studio-first)
+
+V5 creative quality requires a genuine recommendation/compatibility surface, not merely more asset choices. The **[Studio Asset Intelligence graph](./2026-11-14-zodiac-studio-asset-knowledge-graph.md)** is a source-derived indexed view of existing V4/V5 catalogs, character profiles, pose/contact compatibility, props and their contexts, mechanics, meme roles, Scene Accents, theme roles and previous validated episode uses. **It is distinct from the episode build DAG.**
+
+The agent's flow is: approved narration/beat goal → ask Studio for 2–3 grounded compatible **scene bundles** → reason about story intent, required interaction/contact and cast continuity → choose/edit canonical Visual Intent → real compiler/preview → human review. Catalog metadata may inform candidates but does not create real artwork. Reject retired/legacy Scene Sets and superficial keyword-match symbols. A unique Narrative Visual is always a **scene-specific authored illustration need**, not a random result picked from a reused icon shelf.
+
+The same local read-only index serves both Studio visual gallery and managed agent commands. A small generated SQLite/FTS/typed-edge index is sufficient initially; no Neo4j, GPU embeddings or remote graph service. New V5 character/prop/theme capabilities update source registries and their incremental index once, not agent plugin prompts in several locations. A candidate is a recommendation, never automatic artwork approval.
+
 ## 5. Compiler, scene cache and render parity
 
 - Primary `episode.build` builds whole episode from one canonical Visual Intent plus `base_theme_id`; one shared DAG plans geometry/identity and palette-independent nodes, appearance variants and scene composition per selected role map. `scene.compile(S03)` shares the same DAG for scoped refresh.
