@@ -13,6 +13,16 @@ ROOT = Path(__file__).resolve().parents[2]
 LABELS = {"package": "GÓI", "job": "JOB", "legacy_job": "JOB CŨ", "cache": "ĐỆM"}
 
 
+def _print(text: str = "") -> None:
+    """Print Unicode when supported; degrade safely on legacy Windows code pages."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+        safe = text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+        print(safe)
+
+
 def _row(entry: library.Entry) -> str:
     when = datetime.fromtimestamp(entry.mtime).strftime("%Y-%m-%d %H:%M") if entry.mtime else "-"
     mark = "MỚI NHẤT" if entry.is_latest else ("lưu trữ" if entry.verdict == "archive" else "giữ")
@@ -47,38 +57,38 @@ def main(argv: list[str] | None = None) -> int:
     project = args.project.resolve()
     workspace = (args.workspace or project / ".zodiac-work").resolve()
     if args.command == "restore":
-        print(f"Đã khôi phục {library.restore(args.batch)} mục.")
+        _print(f"Đã khôi phục {library.restore(args.batch)} mục.")
         return 0
     if args.command == "purge":
         base = workspace / library.ARCHIVE_DIR
         batches = sorted((p for p in base.iterdir() if p.is_dir()), reverse=True)[args.keep:] if base.is_dir() else []
-        print(f"{len(batches)} lượt sẽ bị xóa hẳn." + ("" if args.yes else " Thêm --yes để thực hiện."))
+        _print(f"{len(batches)} lượt sẽ bị xóa hẳn." + ("" if args.yes else " Thêm --yes để thực hiện."))
         if args.yes:
             library.purge_archive(workspace, keep_latest=args.keep)
         return 0
     entries = library.scan(project, workspace, with_sizes=not args.no_sizes)
     if args.command == "list":
         for entry in sorted(entries, key=lambda e: (e.kind, e.group or "", -e.mtime)):
-            print(_row(entry))
-        print(f"\n{len(entries)} mục · {library.human_size(sum(e.size for e in entries))}")
+            _print(_row(entry))
+        _print(f"\n{len(entries)} mục · {library.human_size(sum(e.size for e in entries))}")
         return 0
     if args.command == "videos":
         done = library.export_videos(entries, (args.to or project / "videos").resolve())
         for source, target in done:
-            print(f"  {target.name}   ← {source.parent.parent.name}")
-        print(f"\nĐã chép {len(done)} video." if done else "Không có video mới cần chép.")
+            _print(f"  {target.name}   ← {source.parent.parent.name}")
+        _print(f"\nĐã chép {len(done)} video." if done else "Không có video mới cần chép.")
         return 0
     moves = library.plan_cleanup(entries, caches=args.caches)
     for move in moves:
-        print(f"  → _archive  {library.human_size(move.size):>9}  {move.source.name}  ({move.reason})")
+        _print(f"  → _archive  {library.human_size(move.size):>9}  {move.source.name}  ({move.reason})")
     total = library.human_size(sum(m.size for m in moves))
     if not moves:
-        print("Không có gì cần dọn.")
+        _print("Không có gì cần dọn.")
     elif not args.yes:
-        print(f"\n{len(moves)} mục ({total}) sẽ được chuyển. Chạy lại với --yes để thực hiện; có thể khôi phục bằng `restore`.")
+        _print(f"\n{len(moves)} mục ({total}) sẽ được chuyển. Chạy lại với --yes để thực hiện; có thể khôi phục bằng `restore`.")
     else:
         batch = library.apply_cleanup(moves, workspace)
-        print(f"\nĐã chuyển {len(moves)} mục ({total}) vào {batch}. Khôi phục: zodiac-library restore \"{batch}\"")
+        _print(f"\nĐã chuyển {len(moves)} mục ({total}) vào {batch}. Khôi phục: zodiac-library restore \"{batch}\"")
     return 0
 
 

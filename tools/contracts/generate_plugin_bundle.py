@@ -33,7 +33,7 @@ def generate(*, check: bool = False) -> dict:
             if not target.is_file() or json.loads(target.read_text(encoding='utf-8')) != value:
                 raise RuntimeError(f'CONTRACT_PLUGIN_COPY_DRIFT: {name}')
         else:
-            target.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            target.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
         rows[name] = {
             "canonical_path": spec["canonical_path"],
             "canonical_sha256": canonical_hash(value),
@@ -44,7 +44,7 @@ def generate(*, check: bool = False) -> dict:
         if not manifest.is_file() or json.loads(manifest.read_text(encoding='utf-8')) != result:
             raise RuntimeError('CONTRACT_GENERATED_MANIFEST_DRIFT')
     else:
-        manifest.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        manifest.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     return result
 
 

@@ -10,7 +10,7 @@
     "caption": {
       "color": "#111111",
       "font_family": "sans-serif",
-      "font_size_px": 84,
+      "font_size_px": 56,
       "font_weight": 400,
       "highlight_color": "#e97a66",
       "max_lines": 2,

@@ -3,7 +3,7 @@
   "contracts": {
     "authoring-ir-v1": {
       "canonical_path": "contracts/authoring-ir-v1.schema.json",
-      "canonical_sha256": "d6af8a599324fcf68dd43fb1627a0dc23f9b3db07ba0874eeb8a86e5df1a43c0"
+      "canonical_sha256": "b19949b9121ccf5036d4e3da524389c500110df49c4c0f72bf72c02311712144"
     },
     "design-token-v4": {
       "canonical_path": "contracts/design-token-v4.schema.json",
