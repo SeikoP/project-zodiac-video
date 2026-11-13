@@ -15,6 +15,26 @@ CANONICAL_ROOTS = {"bootstrap","core","features","phases","orchestration","refer
 EXCLUDED = {"tests","__pycache__",".cache",".pytest_cache","node_modules",".runtime",".codegraph",".authoring","retired-source","generated-previews"}
 STATIC_TIME=(1980,1,1,0,0,0)
 
+WEB_CREATIVE_FILES={
+    "skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs",
+    "skills/zodiac-video-pipeline/orchestration/phases/01-content.json",
+    "skills/zodiac-video-pipeline/orchestration/phases/01-content.md",
+    "skills/zodiac-video-pipeline/references/phase01-briefing.md",
+    "skills/zodiac-video-pipeline/references/zodiac-identity-first.md",
+    "skills/zodiac-video-pipeline/references/research-and-viral-tools.md",
+    "skills/zodiac-video-pipeline/references/episode-formats.md",
+    "skills/zodiac-video-pipeline/references/voice-profile.md",
+    "skills/zodiac-video-pipeline/references/voice-benchmark.md",
+    "skills/zodiac-video-pipeline/references/narrator-performance.md",
+    "skills/zodiac-video-pipeline/references/content-craft.md",
+    "skills/zodiac-video-pipeline/references/content-quality-engine.md",
+    "skills/zodiac-video-pipeline/references/narrative-modes.md",
+    "skills/zodiac-video-pipeline/references/engagement-engine.md",
+    "skills/zodiac-video-pipeline/references/narrative-visual-direction.md",
+    "skills/zodiac-video-pipeline/references/narration-rhythm.md",
+    "skills/zodiac-video-pipeline/references/performance-surfaces.md",
+}
+
 def _canonical_eligible(rel: Path) -> bool:
     parts=rel.parts
     if any(p in EXCLUDED for p in parts) or rel.name.endswith(".test.mjs") or rel.suffix in {".pyc",".log"}:
@@ -57,8 +77,14 @@ def build_profile(root: Path, profile: str, destination: Path) -> dict:
     files=sorted((p for p in src.rglob("*") if p.is_file() and _canonical_eligible(p.relative_to(src))),key=lambda p:p.relative_to(src).as_posix())
     source_count = len(files)
     if profile == "web":
-        selected = set(select_phase_files(root, [p.relative_to(root).as_posix() for p in files], "01-content"))
+        # Web Phase 1 is guidance-only creative authoring. Do not package the
+        # native producer runtime, npm manifests, validators, caches or source
+        # transport machinery. Local owns native execution.
+        selected = {str(PLUGIN / rel) for rel in WEB_CREATIVE_FILES}
         files = [p for p in files if p.relative_to(root).as_posix() in selected]
+        missing_web = [rel for rel in sorted(WEB_CREATIVE_FILES) if not (src / rel).is_file()]
+        if missing_web:
+            raise ValueError("SPLIT_WEB_CREATIVE_FILE_MISSING " + repr(missing_web))
     for rel in required:
         p=src/rel
         if not p.is_file(): raise ValueError(f"SPLIT_REQUIRED_FILE_MISSING {rel.as_posix()}")
