@@ -102,18 +102,18 @@ def evaluate_phase_gate(report: dict, required_ids: set[str],
     for name in ("contracts", "changed_files", "reused_components"):
         if not report.get(name):
             issue("EVIDENCE_SCOPE_MISSING", name)
-    for contract in report.get("contracts", []):
+    for contract in (report.get("contracts") if isinstance(report.get("contracts"), list) else []):
         if not isinstance(contract, dict) or not contract.get("name") or \
                 contract.get("result") not in ("PRESERVED", "COMPATIBLE", "NEW_VALIDATED"):
             issue("EVIDENCE_CONTRACT_UNVERIFIED", str(contract))
     for name in ("smoke_artifacts", "review_gates"):
         if not report.get(name):
             issue("EVIDENCE_PROOF_MISSING", name)
-    for artifact in report.get("smoke_artifacts", []):
+    for artifact in (report.get("smoke_artifacts") if isinstance(report.get("smoke_artifacts"), list) else []):
         if not isinstance(artifact, dict) or \
                 not _digest_file(root, artifact.get("path"), artifact.get("sha256")):
             issue("EVIDENCE_ARTIFACT_UNVERIFIED", str(artifact))
-    for gate in report.get("review_gates", []):
+    for gate in (report.get("review_gates") if isinstance(report.get("review_gates"), list) else []):
         if not isinstance(gate, dict) or gate.get("status") != "REVIEWED" or \
                 not _digest_file(root, gate.get("evidence_ref"), gate.get("evidence_sha256")):
             issue("EVIDENCE_REVIEW_PENDING", str(gate.get("id") if isinstance(gate, dict) else gate))

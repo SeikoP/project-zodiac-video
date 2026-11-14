@@ -136,6 +136,17 @@ class EvidenceTests(unittest.TestCase):
         report["review_gates"][0]["status"] = "PENDING"
         self.assertEqual(evaluate_phase_gate(report, {"P0-IMPORT"}, evidence_root=self.root)["status"], "BLOCKED")
 
+    def test_malformed_evidence_fields_block_without_exception(self):
+        report = self._report()
+        for field in ("contracts", "requirements", "smoke_artifacts", "review_gates",
+                      "test_runs", "reused_components", "changed_files"):
+            with self.subTest(field=field):
+                malformed = {**report, field: None}
+                self.assertEqual(
+                    evaluate_phase_gate(malformed, {"P0-IMPORT"}, evidence_root=self.root)["status"],
+                    "BLOCKED",
+                )
+
     def test_traversal_and_unlinked_test_are_not_evidence(self):
         report = self._report()
         report["test_runs"][0]["log_ref"] = "../outside.log"
