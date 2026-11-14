@@ -17,10 +17,11 @@ import uuid
 import wave
 
 from tools.studio.artifacts import VoiceArtifactStore, VoiceIdentity, canonical_hash, file_sha256
+from tools.studio.voice_catalog import preferred_voice, saved_voices
 from tools.runner.audio import concatenate_wavs, validate_voice
 from tools.runner.errors import PipelineError
 from tools.runner.process import observe_subprocesses, observe_subprocess_output, run_managed_subprocess
-from tools.zodiac_local import DEFAULT_TTS_ROOT, DEFAULT_TTS_VOICE, run_tts_batch, spoken_scene_text, _normalize_token
+from tools.zodiac_local import DEFAULT_TTS_ROOT, run_tts_batch, spoken_scene_text, _normalize_token
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
 
@@ -190,7 +191,7 @@ class VoiceLab:
         if not path.exists():
             return {"format": FORMAT, "project_id": handle.project_id, "source_sha256": handle.imported_source_sha256,
                     "narration_sha256": hashlib.sha256(raw).hexdigest(), "revision": 0, "units": plan,
-                    "voice": DEFAULT_TTS_VOICE, "job": None, "assembly": None, "timing": None, "playbacks": {}}
+                    "voice": preferred_voice(), "job": None, "assembly": None, "timing": None, "playbacks": {}}
         if path.is_symlink():
             raise StudioError("VOICE_STATE_INVALID", "Symlink voice state rejected", "voice")
         try:
@@ -247,6 +248,8 @@ class VoiceLab:
         with _exclusive_source_lock(handle.workspace, "voice-state"):
             state = self._read(handle)
             result = {**state, "status": voice_evidence(handle.workspace, handle.imported_source_sha256)}
+            voices = saved_voices()
+            result["voices"] = list(dict.fromkeys([preferred_voice(voices), *voices]))
             result.pop("playbacks", None)
             result["units"] = []
             store = VoiceArtifactStore(handle.workspace)

@@ -41,6 +41,8 @@ This is **source-tree development mode**, not a standalone distributable build. 
 
 Voice Lab now splits approved narration into semantic speech units with exact UTF-8 ranges. Generate missing audio, retry one unit, select an immutable take, edit intentional pauses, assemble the episode and measure ASR word anchors. Waveforms and playback use actual WAV bytes. Pronunciation changes only the TTS input. `NORMAL`/`SHARP` records intent; it does not certify audible prosody.
 
+The voice dropdown reads the existing VieNeu saved presets from `VIENEU_HOME/user_voices_v3_turbo.json` (default `~/.vieneu/`). New projects prefer the user's saved voice; the catalog refreshes while Voice Lab is open. Existing takes remain unchanged when a different voice is chosen for the next generation.
+
 Listen to each selected take and the full assembly before explicitly accepting them. Technical validity and measured timing never grant listening approval. Retakes preserve other units; selecting changed audio invalidates its assembly/timing without invalidating SVG assets. Alignment reuses the existing per-unit timing cache.
 
 **Not implemented:** embedded HyperFrames editing, preview/render or package publication. Creative approval always requires genuine human review.

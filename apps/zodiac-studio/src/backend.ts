@@ -58,7 +58,7 @@ export type SpeechUnit = {
   gap_after_ms: number; listened: { kind: string } | null; takes: VoiceTake[];
 };
 export type VoiceState = {
-  project_id: string; narration_sha256: string; revision: number; voice: string; status: string;
+  project_id: string; narration_sha256: string; revision: number; voice: string; voices: string[]; status: string;
   units: SpeechUnit[]; assembly: (VoiceTake & { listened: { kind: string } | null }) | null;
   timing: { words: { text: string; startMs: number; endMs: number; source_range: [number, number]; anchor_id: string }[]; duration_seconds: number } | null;
   job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;

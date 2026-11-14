@@ -51,7 +51,7 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
 export default function VoiceLab({ project, onChanged }: { project: Project | null; onChanged: () => void }) {
   const [state, setState] = useState<VoiceState | null>(null);
   const [activeId, setActiveId] = useState("");
-  const [speaker, setSpeaker] = useState("Hải Đăng");
+  const [speaker, setSpeaker] = useState("");
   const [intent, setIntent] = useState("NORMAL");
   const [pronunciation, setPronunciation] = useState("{}");
   const [gap, setGap] = useState(0);
@@ -69,7 +69,9 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
         const value = await backend.voiceOpen(projectId);
         if (live) {
           setState(value);
-          if (!initialized.current) { setSpeaker(value.voice); setActiveId(value.units[0]?.id ?? ""); initialized.current = true; }
+          setSpeaker(previous => value.voices.includes(previous) ? previous :
+            value.voices.includes(value.voice) ? value.voice : value.voices[0]);
+          if (!initialized.current) { setActiveId(value.units[0]?.id ?? ""); initialized.current = true; }
         }
       } catch (problem) { if (live) report(problem); }
     };
@@ -103,7 +105,9 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
         {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></section>
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
     <section className="panel voice-settings">
-      <label>Giọng VieNeu<input value={speaker} maxLength={80} disabled={running || busy} onChange={event => setSpeaker(event.target.value)}/></label>
+      <label>Giọng VieNeu<select value={speaker} disabled={!state || running || busy} onChange={event => setSpeaker(event.target.value)}>
+        {state?.voices.map(voice => <option key={voice} value={voice}>{voice}</option>)}
+      </select></label>
       <label>Chỉ dẫn đọc<select value={intent} disabled={running || busy} onChange={event => setIntent(event.target.value)}>
         <option value="NORMAL">Bình thường</option><option value="SHARP">Sắc / nhấn rõ</option></select></label>
       <div className="voice-settings-actions"><button className="primary-btn" disabled={!state || running || busy || count === state.units.length}

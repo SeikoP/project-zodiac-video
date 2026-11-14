@@ -90,6 +90,32 @@ class VoiceLabTests(unittest.TestCase):
             self.assertEqual(TEXT.encode("utf8")[a:b].decode("utf8"), unit["text"])
         self.assertEqual(units, speech_units(TEXT.encode("utf8")))
 
+    def test_saved_user_voices_are_listed_and_selected_preset_reaches_tts(self):
+        home = self.root/"vieneu"
+        home.mkdir()
+        catalog = home/"user_voices_v3_turbo.json"
+        catalog.write_text(json.dumps({"presets": {"cuongdepzai": {}, "cuongdepzaiver2": {}}}), encoding="utf8")
+        with patch.dict(os.environ, {"VIENEU_HOME": str(home)}):
+            state = self.state()
+            self.assertEqual(state["voices"], ["cuongdepzai", "cuongdepzaiver2"])
+            self.assertEqual(state["voice"], "cuongdepzai")
+            with patch("tools.studio_project.voice_lab.run_tts_batch", side_effect=self.generate) as engine:
+                self.lab.start(self.project, "generate", [], "cuongdepzaiver2", "NORMAL", {}, state["revision"])
+                state = self.wait()
+            self.assertEqual(engine.call_args.kwargs["voice"], "cuongdepzaiver2")
+            self.assertEqual(state["voice"], "cuongdepzaiver2")
+            self.assertTrue(all(u["takes"][0]["details"]["voice"] == "cuongdepzaiver2" for u in state["units"]))
+            catalog.write_text(json.dumps({"presets": {"cuongdepzai": {}, "cuongdepzaiver2": {}, "Giọng mới": {}}}), encoding="utf8")
+            self.assertIn("Giọng mới", self.state()["voices"])
+
+    def test_voice_catalog_fallback_preserves_existing_take_identity(self):
+        state = self.create()
+        before = state["units"][0]["takes"][0]["wav_sha256"]
+        with patch.dict(os.environ, {"VIENEU_HOME": str(self.root/"missing-vieneu")}):
+            state = self.state()
+            self.assertEqual(state["voices"], ["Hải Đăng"])
+            self.assertEqual(state["units"][0]["takes"][0]["wav_sha256"], before)
+
     def test_pronunciation_maps_spoken_words_back_to_original_bytes(self):
         raw="Deadline à?".encode("utf8")
         unit=speech_units(raw)[0]
