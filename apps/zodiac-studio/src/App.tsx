@@ -196,7 +196,7 @@ export default function App() {
   }
   async function agentApply() {
     if (!currentProject || !currentAgentTask ||
-        currentAgentTask.status !== "COMPLETED" || currentAgentTask.write_applied ||
+        currentAgentTask.status !== "COMPLETED" || currentAgentTask.kind !== "project.inspect" || currentAgentTask.write_applied ||
         agentBusy) return;
     setAgentBusy(true);
     try {
@@ -266,12 +266,11 @@ export default function App() {
           {item.view === "overview" && projects.length > 0 && <span className="nav-count">{projects.length}</span>}
         </button>)}</nav>
       <div className="sidebar-label sidebar-section">PRODUCTION · PHASE SAU</div>
-      <div className="locked-nav"><Clapperboard size={17}/> Scene editing (P4) <Lock size={13}/></div>
       <div className="locked-nav"><FileArchive size={17}/> Export <Lock size={13}/></div>
       <div className="sidebar-bottom">
-        <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 2</b></div>
+        <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 3 + 4</b></div>
           <div className="phase-track"><span/></div>
-          <p>Voice Lab · Takes · Measured timing</p></div>
+          <p>Episode build · Visual editor</p></div>
         <div className="sidebar-footnote"><ShieldCheck size={15}/> Local-first · Source-locked</div>
       </div>
     </aside>
@@ -445,13 +444,13 @@ export default function App() {
         </Suspense>}
 
         {view === "editor" && <>
-          <section className="page-header"><div><p className="eyebrow">HYPERFRAMES SDK <span> / </span> READ-ONLY</p>
+          <section className="page-header"><div><p className="eyebrow">HYPERFRAMES SDK <span> / </span> SOURCE-BOUND EDITOR</p>
             <h1>Visual Workspace<span className="star">✦</span></h1>
-            <p className="page-subtitle">Khung thử nghiệm HyperFrames chỉ đọc. Scene editor và preview sẽ được tích hợp ở P4.</p>
+            <p className="page-subtitle">Dựng episode, chỉnh actor/state và xem preview từ đúng nguồn. Narration và voice được giữ nguyên.</p>
           </div></section>
           <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
             detail="Nạp module riêng khi mở Visual Workspace."/>}>
-            <HyperframesWorkspace project={currentProject}/>
+            <HyperframesWorkspace key={currentProject?.project_id} project={currentProject}/>
           </Suspense>
         </>}
 
@@ -500,7 +499,7 @@ export default function App() {
               <div><ShieldCheck size={19}/><span><strong>Người dùng quyết định ghi chú</strong>
                 <small>Agent không thể phê duyệt Voice, Visual hay thay đổi bản kể đã duyệt.</small></span></div>
               <button className="send-btn" disabled={!currentProject || !currentAgentTask ||
-                  currentAgentTask.status !== "COMPLETED" || currentAgentTask.write_applied || agentBusy}
+                  currentAgentTask.status !== "COMPLETED" || currentAgentTask.kind !== "project.inspect" || currentAgentTask.write_applied || agentBusy}
                 onClick={() => void agentApply()}>
                 <Check size={15}/>{currentAgentTask?.write_applied ? "Đã lưu" : "Xác nhận & lưu ghi chú"}
               </button>
@@ -515,7 +514,7 @@ export default function App() {
         </>}
 
         <footer className="content-footer"><span>✦ &nbsp; ZODIAC STUDIO <strong>V5 PREVIEW</strong></span>
-          <span>Phase 2 · Voice Lab · Project Core: Python</span></footer>
+          <span>Phase 3 + 4 · Build & Visual Editor · Project Core: Python</span></footer>
       </main>
     </div>
   </div>;

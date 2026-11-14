@@ -113,6 +113,7 @@ impl Backend {
             "agent.tasks",
             "agent.cancel",
             "agent.apply",
+            "agent.visual.start",
             "voice.open",
             "voice.start",
             "voice.cancel",
@@ -121,6 +122,15 @@ impl Backend {
             "voice.audio",
             "voice.playback",
             "voice.confirm",
+            "visual.open",
+            "visual.command",
+            "visual.cancel",
+            "visual.preview",
+            "episode.build",
+            "scene.compile",
+            "assets.describe",
+            "assets.find_candidates",
+            "validation.get",
         ];
         if !METHODS.contains(&method) {
             return Err("RPC_METHOD_FORBIDDEN".into());

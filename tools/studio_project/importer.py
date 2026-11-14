@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 import os
+import errno
+import time
 import shutil
 import subprocess
 import tempfile
@@ -79,7 +81,16 @@ def _exclusive_source_lock(root: Path, source_sha: str):
         handle.seek(0)
         if os.name == "nt":
             import msvcrt
-            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            # LK_LOCK sleeps one second per collision, stalling frequent preview updates.
+            deadline = time.monotonic()+10
+            while True:
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError as error:
+                    if error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK) or time.monotonic()>=deadline:
+                        raise
+                    time.sleep(.01)
         else:
             import fcntl
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
