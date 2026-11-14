@@ -136,6 +136,25 @@ class EpisodeRegistry:
         with closing(self._connect()) as db:
             return int(db.execute("SELECT COUNT(*) FROM projects").fetchone()[0])
 
+    def list_projects(self, *, limit: int = 100,
+                      after_project_id: str | None = None) -> list[ProjectHandle]:
+        """Cursor-based stable project pages; metadata only, no implicit import."""
+        if type(limit) is not int or limit < 1 or limit > 500:
+            raise StudioError("REGISTRY_INVALID", "Project list limit must be 1..500")
+        if after_project_id is not None:
+            _require_id(after_project_id, "after_project_id")
+        with closing(self._connect()) as db:
+            if after_project_id is None:
+                rows = db.execute(
+                    "SELECT * FROM projects ORDER BY project_id ASC LIMIT ?", (limit,)
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    "SELECT * FROM projects WHERE project_id>? ORDER BY project_id ASC LIMIT ?",
+                    (after_project_id, limit),
+                ).fetchall()
+        return [self._handle(row) for row in rows]
+
     def current_revision(self, project_id: str) -> int:
         with closing(self._connect()) as db:
             row = db.execute("SELECT revision FROM projects WHERE project_id=?", (project_id,)).fetchone()
@@ -205,6 +224,30 @@ class EpisodeRegistry:
             "event_seq": row["seq"], "revision": row["revision"],
             "kind": row["kind"], "payload": json.loads(row["payload_json"])
         }
+
+    def events_recent(self, project_id: str, *, limit: int = 100) -> list[dict]:
+        """Newest bounded events for lightweight Studio activity panels."""
+        _require_id(project_id, "project_id")
+        if type(limit) is not int or not 1 <= limit <= 500:
+            raise StudioError("EVENT_CURSOR_INVALID", "Invalid recent event limit")
+        with closing(self._connect()) as db:
+            rows = db.execute(
+                "SELECT * FROM events WHERE project_id=? ORDER BY seq DESC LIMIT ?",
+                (project_id, limit),
+            ).fetchall()
+        return [self._event(row) for row in reversed(rows)]
+
+    def events_page(self, project_id: str, after_seq: int, *, limit: int = 100) -> list[dict]:
+        """Bounded event replay for desktop clients; P0 events_since stays unchanged."""
+        _require_id(project_id, "project_id")
+        if type(after_seq) is not int or after_seq < 0 or type(limit) is not int or not 1 <= limit <= 500:
+            raise StudioError("EVENT_CURSOR_INVALID", "Invalid event cursor or page size")
+        with closing(self._connect()) as db:
+            rows = db.execute(
+                "SELECT * FROM events WHERE project_id=? AND seq>? ORDER BY seq ASC LIMIT ?",
+                (project_id, after_seq, limit),
+            ).fetchall()
+        return [self._event(row) for row in rows]
 
     def events_since(self, project_id: str, after_seq: int) -> list[dict]:
         with closing(self._connect()) as db:

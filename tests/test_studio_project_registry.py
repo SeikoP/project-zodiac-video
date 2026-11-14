@@ -11,7 +11,8 @@ class RegistryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="zodiac-studio-registry-")
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        # Normalize Windows hosted runner 8.3 temp aliases (RUNNER~1 -> runneradmin).
+        self.root = Path(self.temp.name).resolve()
         self.project = ProjectHandle(
             project_id="ep-gemini",
             workspace=self.root / "episodes" / "gemini",
