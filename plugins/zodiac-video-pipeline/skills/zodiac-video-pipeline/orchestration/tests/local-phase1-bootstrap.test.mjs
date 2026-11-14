@@ -51,7 +51,7 @@ test('bootstrap imports v2, synthesizes state, activates phase2, and supports ex
   const older=await capsule(inbox,'run-old','old.zip'),newer=await capsule(inbox,'run-new','new.zip');
   await utimes(older,new Date(1000),new Date(1000));await utimes(newer,new Date(2000),new Date(2000));
   const first=await bootstrapLocal(root);
-  assert.equal(first.status,'PHASE2_LOCAL_READY');assert.equal(first.run_id,'run-old');assert.equal(first.phase,'02-visual-production');
+  assert.equal(first.status,'PHASE2_LOCAL_READY',first.error??JSON.stringify(first));assert.equal(first.run_id,'run-old');assert.equal(first.phase,'02-visual-production');
   const ws=path.join(root,'processing','run-old','workspace');
   const state=JSON.parse(await readFile(path.join(ws,'.authoring','pipeline-state.json'),'utf8'));
   assert.equal(state.current_phase,'02-visual-production');
