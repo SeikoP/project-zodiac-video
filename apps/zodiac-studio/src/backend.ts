@@ -48,6 +48,21 @@ export type BackendHealth = {
   scope: string[];
   approvals: string;
 };
+export type VoiceTake = {
+  take_id: string; wav_sha256: string; duration_seconds: number; peaks: number[];
+  warnings: string[]; details?: { voice: string; delivery_intent: string; prosody_verified: boolean };
+  valid?: boolean; error?: string;
+};
+export type SpeechUnit = {
+  id: string; text: string; source_range: [number, number]; selected_take: string | null;
+  gap_after_ms: number; listened: { kind: string } | null; takes: VoiceTake[];
+};
+export type VoiceState = {
+  project_id: string; narration_sha256: string; revision: number; voice: string; status: string;
+  units: SpeechUnit[]; assembly: (VoiceTake & { listened: { kind: string } | null }) | null;
+  timing: { words: { text: string; startMs: number; endMs: number; source_range: [number, number]; anchor_id: string }[]; duration_seconds: number } | null;
+  job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;
+};
 export type AgentHealth = {
   available: boolean;
   protocol: string;
@@ -93,6 +108,29 @@ export async function request<T>(method: string, params: object = {}): Promise<T
 }
 
 export const backend = {
+  voiceOpen: (project_id: string) => request<VoiceState>("voice.open", { project_id }),
+  voiceStart: (project_id: string, base_revision: number, action: "generate" | "align", unit_ids: string[], voice: string, intent: string, pronunciation: Record<string, string>) =>
+    request<VoiceState>("voice.start", { project_id, base_revision, action, unit_ids, voice, intent, pronunciation }),
+  voiceCancel: (project_id: string) => request<VoiceState>("voice.cancel", { project_id }),
+  voiceSelect: (project_id: string, base_revision: number, unit_id: string, take_id: string, gap_after_ms: number) =>
+    request<VoiceState>("voice.select", { project_id, base_revision, unit_id, take_id, gap_after_ms }),
+  voiceAssemble: (project_id: string, base_revision: number) => request<VoiceState>("voice.assemble", { project_id, base_revision }),
+  voicePlayback: (project_id: string, unit_id: string, take_id: string) => request<{ playback_id: string }>("voice.playback", { project_id, unit_id, take_id }),
+  voiceConfirm: (project_id: string, base_revision: number, unit_id: string, take_id: string, playback_id: string) =>
+    request<VoiceState>("voice.confirm", { project_id, base_revision, unit_id, take_id, playback_id, confirm: true }),
+  voiceAudio: async (project_id: string, unit_id: string, take_id: string): Promise<Blob> => {
+    const chunks: ArrayBuffer[] = [];
+    let offset = 0;
+    do {
+      const part = await request<{ data: string; total: number; offset: number }>("voice.audio", { project_id, unit_id, take_id, offset });
+      const raw = atob(part.data);
+      if (!raw.length) throw new BackendFailure("VOICE_AUDIO_TRUNCATED", "Không đọc đủ audio.");
+      chunks.push(Uint8Array.from(raw, c => c.charCodeAt(0)).buffer);
+      offset += raw.length;
+      if (offset >= part.total) return new Blob(chunks, { type: "audio/wav" });
+    } while (offset <= 64 * 1024 * 1024);
+    throw new BackendFailure("VOICE_AUDIO_TOO_LARGE", "Audio quá lớn.");
+  },
   health: () => request<BackendHealth>("health"),
   projects: async (): Promise<Project[]> => {
     const all: Project[] = [];

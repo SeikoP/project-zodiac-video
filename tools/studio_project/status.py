@@ -139,10 +139,15 @@ def _voice_status(workspace: Path) -> str:
 
 def resolve_episode_status(handle: ProjectHandle) -> EpisodeStatus:
     root = handle.workspace.resolve()
+    if (root / ".runtime/voice-lab/state.json").exists():
+        from .voice_lab import voice_evidence
+        voice = voice_evidence(root, handle.imported_source_sha256)
+    else:
+        voice = _voice_status(root)
     return EpisodeStatus(
         project_id=handle.project_id,
         content=_source_status(handle),
-        voice=_voice_status(root),
+        voice=voice,
         # Until later phases introduce verified human visual, actual exported
         # media and publication receipts, these remain evidence-absent UNKNOWN.
         visual="UNKNOWN",

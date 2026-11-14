@@ -9,6 +9,7 @@ on:
       - "apps/zodiac-studio/**"
       - "tools/studio_project/**"
       - "tests/test_studio_p1_*.py"
+      - "tests/test_studio_p2_*.py"
       - ".github/workflows/studio-v5-tauri-p1.yml"
   workflow_dispatch:
 
@@ -46,6 +47,8 @@ jobs:
           python -m unittest discover -s tests -p 'test_studio_project_*.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_studio_p1_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_job5_historical_contract.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

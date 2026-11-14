@@ -8,12 +8,12 @@ import {exportPhase1Handoff} from '../plugins/zodiac-video-pipeline/skills/zodia
 import {parsePortableZip,buildPortableZip} from '../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/core/portable/zip-primitives.mjs';
 import {buildInventory,formatSha256Sums} from '../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
-async function create(output,mode='valid'){
+async function create(output,mode='valid',narrationPath=null){
  const root=await mkdtemp(path.join(tmpdir(),'zodiac-p0-test-only-'));
  try{
   await mkdir(path.join(root,'.authoring'));
   const source={
-   narration:Buffer.from('Câu duyệt giả lập riêng cho unit test.\n','utf8'),
+   narration:narrationPath?await readFile(narrationPath):Buffer.from('Câu duyệt giả lập riêng cho unit test.\n','utf8'),
    plan:Buffer.from(JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tu',story_spine:{premise:'preview'}})),
    scope:Buffer.from(JSON.stringify({episode_id:'studio-test-only',sign:'Song Tu',concept:'fixture'})),
    brief:Buffer.from(JSON.stringify({creative_direction:{tone:'normal'}})),
@@ -51,6 +51,6 @@ async function create(output,mode='valid'){
   ]));
  }finally{await rm(root,{recursive:true,force:true});}
 }
-const [out,mode]=process.argv.slice(2);
+const [out,mode,narrationPath]=process.argv.slice(2);
 if(!out)throw Error('out required');
-create(out,mode).catch(error=>{console.error(error);process.exitCode=1;});
+create(out,mode,narrationPath).catch(error=>{console.error(error);process.exitCode=1;});

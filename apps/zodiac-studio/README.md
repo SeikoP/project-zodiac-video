@@ -1,4 +1,4 @@
-# Zodiac Studio V5 — Phase 1 Tauri pilot
+# Zodiac Studio V5 — Phase 2 Voice Lab
 
 This is an **experimental one-window Tauri 2 + React host**, separate from production `zodiac` (PySide6). It is based on the verified Phase 0 Python Project Core and existing Node/Remotion runtime, not a backend rewrite.
 
@@ -39,7 +39,11 @@ This is **source-tree development mode**, not a standalone distributable build. 
 - One Tauri window with an integrated draggable titlebar, project/connection context and minimize/maximize/close controls. Legacy Qt remains the default fallback.
 - Opt-in `zodiac --v5-preview` launches an existing native executable from `ZODIAC_STUDIO_V5_EXE`; it does not compile or install a release.
 
-**Not implemented:** embedded HyperFrames editing, Voice Lab/audio audition, preview/render or package publication. Creative approval always requires genuine human review.
+Voice Lab now splits approved narration into semantic speech units with exact UTF-8 ranges. Generate missing audio, retry one unit, select an immutable take, edit intentional pauses, assemble the episode and measure ASR word anchors. Waveforms and playback use actual WAV bytes. Pronunciation changes only the TTS input. `NORMAL`/`SHARP` records intent; it does not certify audible prosody.
+
+Listen to each selected take and the full assembly before explicitly accepting them. Technical validity and measured timing never grant listening approval. Retakes preserve other units; selecting changed audio invalidates its assembly/timing without invalidating SVG assets. Alignment reuses the existing per-unit timing cache.
+
+**Not implemented:** embedded HyperFrames editing, preview/render or package publication. Creative approval always requires genuine human review.
 
 The agent uses the existing Codex login in an isolated temporary home without loading user plugins, MCP servers or hooks. On Windows the bridge owns the native `codex.exe` PID rather than the npm launcher, so cancellation targets the actual server. An unusual installation can set `ZODIAC_STUDIO_CODEX_BIN` to that native executable. Missing Codex or login reports an unavailable/failed task while manual Studio remains usable. Closing the host's stdio transport cancels and joins its managed worker before exit; forced OS termination remains a separate recovery case.
 
@@ -49,6 +53,7 @@ The Rust host whitelist and Python P0 command validation both reject arbitrary s
 
 ```powershell
 python -m unittest discover -s tests -p 'test_studio_p1_*.py' -q
+python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
 python -m unittest discover -s tests -p 'test_studio_project_*.py' -q
 cd apps/zodiac-studio
 pnpm exec tsc --noEmit
@@ -68,4 +73,4 @@ Native checking, Rust tests, window/titlebar controls and agent lifecycle were e
 - **Python P0/P1:** SQLite state, project/handoff import, source/approval/receipt verification, revisioned metadata.
 - **Existing Node.js and Remotion:** future visual compilation and rendering. Not launched by P1.
 
-The native P1 technical workflow is now tested with an isolated synthetic source fixture: import/reopen, notes/revisions, reconnect, agent cancellation/retry/confirmation, shutdown and titlebar controls. This does not create genuine content/voice/visual approval. P1 remains `TESTED` pending review and experimental integration; the three existing GitHub Draft PRs have not been merged by this continuation. HyperFrames scene editing remains P4.
+P1 was integrated into `experiment/main-2` through PR #223. P2 verification and remaining human acceptance are recorded in [the phase receipt](../../docs/superpowers/plans/2026-11-15-studio-p2-voice-lab.md). HyperFrames scene editing remains P4.

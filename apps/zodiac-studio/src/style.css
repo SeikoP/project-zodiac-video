@@ -272,6 +272,42 @@ h1 { font-size: clamp(25px, 2.3vw, 36px); font-weight: 730; letter-spacing: -.9p
 .agent-capabilities div { display: flex; align-items: center; gap: 13px; color: #b8bac7; }
 .agent-capabilities svg { color: #c7addc; }
 .spin { animation: rotate .8s linear infinite; }
+.voice-settings { padding: 20px; display: flex; flex-wrap: wrap; gap: 18px; align-items: end; margin-bottom: 16px; }
+.voice-settings label, .voice-take-body label { display: grid; gap: 8px; font-size: 12px; color: #c7c4d3; }
+.voice-settings input, .voice-settings select, .voice-take-body select, .voice-pause input, .voice-settings textarea {
+  background: #11151f; color: #e8e5ed; border: 1px solid #41414f; border-radius: 8px; padding: 10px 12px;
+}
+.voice-settings input { width: 220px; }
+.voice-settings-actions { display: flex; gap: 10px; align-items: center; }
+.voice-settings small, .voice-settings details { flex: 1 0 100%; color: #9095a5; line-height: 1.6; }
+.voice-settings details label { margin-top: 14px; }
+.voice-settings textarea { min-height: 70px; }
+.voice-layout { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(340px, 1.15fr); gap: 18px; margin-bottom: 18px; }
+.voice-unit { border: 0; border-bottom: 1px solid #2c303e; width: 100%; background: none; color: #d8d9e1; text-align: left;
+  display: grid; grid-template-columns: 25px 1fr; gap: 9px; padding: 17px; }
+.voice-unit.active { background: #2b273d; box-shadow: inset 3px 0 #d3b4fc; }
+.voice-unit-text { white-space: pre-wrap; line-height: 1.65; }
+.voice-unit-number { color: #b9a3cf; font-size: 10px; padding-top: 4px; }
+.voice-unit-state { grid-column: 2; color: #9996aa; font-size: 10px; }
+.voice-take-body { padding: 22px; }
+.voice-take-body blockquote { margin: 0 0 20px; padding: 12px 16px; border-left: 2px solid #bda3dd; background: #141822; line-height: 1.7; white-space: pre-wrap; }
+.voice-player { display: grid; gap: 13px; margin: 18px 0; }
+.voice-player audio { width: 100%; }
+.voice-player small, .voice-muted { color: #9298a9; font-size: 12px; line-height: 1.65; }
+.voice-muted { display: flex; gap: 8px; align-items: center; }
+.voice-waveform { width: 100%; height: 74px; color: #c5acd8; background: #141822; border-radius: 8px; }
+.voice-player-caption { display: flex; justify-content: space-between; color: #a8a4b9; font-size: 11px; }
+.voice-player .outline-btn { justify-self: start; }
+.voice-pause { display: flex; gap: 12px; align-items: end; border-top: 1px solid #303342; padding-top: 18px; }
+.voice-pause input { width: 130px; }
+.voice-empty { text-align: center; padding: 42px 25px; color: #aaa9bb; }
+.voice-job { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: #aebfc9; padding: 14px 17px; background: #1b2230; margin-bottom: 17px; border-radius: 9px; }
+.voice-job strong { margin-left: auto; font-size: 11px; }
+.voice-job p { flex: 1 0 100%; white-space: pre-wrap; font-size: 12px; }
+.voice-warning { color: #e6bd86; }
+.voice-timing summary { cursor: pointer; margin-top: 20px; color: #cfb8e5; }
+.voice-timing table { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 12px; }
+.voice-timing th, .voice-timing td { text-align: left; border-bottom: 1px solid #303342; padding: 7px; }
 @keyframes rotate { to { transform: rotate(360deg); } }
 @media (max-width: 1150px) {
   .sidebar { width: 215px; flex-basis: 215px; }
