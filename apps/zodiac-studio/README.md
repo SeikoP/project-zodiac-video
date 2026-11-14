@@ -12,6 +12,16 @@ npm ci
 npm run desktop:dev
 ```
 
+### CI-built Windows debug preview (no local Windows SDK required)
+
+The GitHub Actions Windows job uploads a **debug-only** `zodiac-studio-p1-windows-debug` ZIP containing the executable, not a distributable installation. Download/unzip the artifact from the latest successful `Zodiac Studio V5 P1 Windows host` run, then launch it from the repo checkout:
+
+```powershell
+.\apps\zodiac-studio\scripts\launch-preview.ps1 -Executable "C:\path\to\zodiac-studio-v5.exe"
+```
+
+The script sets `ZODIAC_STUDIO_SOURCE_ROOT` to the **current repository**, and uses the locally installed Python interpreter. The compiler's GitHub runner source path is never treated as a valid runtime project directory. The preview remains **developer-only**: no embedded Python runtime, Node, V4 asset bundle, renderer or release installer has been shipped.
+
 The Rust host starts **one** Python `tools.studio_project.rpc_stdio` child process automatically from the repo checkout. It uses stdin/stdout JSON lines, a strict RPC allowlist and a single P0 SQLite Registry. Project files are kept under the Tauri application data directory, unless `ZODIAC_STUDIO_PROJECTS` explicitly points to an isolated project root. `ZODIAC_STUDIO_PYTHON` may optionally point to a trusted interpreter. **Never run the desktop host with an elevated administrator account.**
 
 This is **source-tree development mode**, not a standalone distributable build. Packaging Python/VieNeu/FFmpeg/Node and source provenance belongs to a later release gate. The Tauri configuration currently has `bundle.active=false` intentionally.

@@ -25,7 +25,7 @@ impl Drop for LivePython {
 
 struct Backend {
     project_root: PathBuf,
-    source_root: PathBuf,
+    source_root: Option<PathBuf>,
     child: Option<LivePython>,
     counter: u64,
 }
@@ -34,10 +34,18 @@ impl Backend {
     fn new(project_root: PathBuf) -> Self {
         // Source-tree development mode; shipping an embedded Python executable
         // requires a separate bundle/release gate, not a hidden production claim.
-        let source_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../..")
-            .canonicalize()
-            .expect("Zodiac repository unavailable for development runtime");
+        let mut candidates = Vec::new();
+        if let Some(override_dir) = env::var_os("ZODIAC_STUDIO_SOURCE_ROOT") {
+            candidates.push(PathBuf::from(override_dir));
+        }
+        candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
+        if let Ok(cwd) = env::current_dir() {
+            candidates.push(cwd);
+        }
+        let source_root = candidates
+            .into_iter()
+            .filter_map(|path| path.canonicalize().ok())
+            .find(|path| path.join("tools/studio_project/rpc_stdio.py").is_file());
         Self {
             project_root,
             source_root,
@@ -47,6 +55,9 @@ impl Backend {
     }
 
     fn spawn(&mut self) -> Result<(), String> {
+        let source_root = self.source_root.as_ref().ok_or(
+            "PYTHON_SOURCE_ROOT_MISSING: set ZODIAC_STUDIO_SOURCE_ROOT to the Zodiac repository",
+        )?;
         let python = env::var_os("ZODIAC_STUDIO_PYTHON").unwrap_or_else(|| "python".into());
         let mut process = Command::new(python)
             .args([
@@ -56,7 +67,7 @@ impl Backend {
                 "--projects-root",
             ])
             .arg(&self.project_root)
-            .current_dir(&self.source_root)
+            .current_dir(source_root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null()) // no unbounded pipe / UI deadlock

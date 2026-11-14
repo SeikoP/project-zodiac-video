@@ -28,6 +28,11 @@ class TauriHostIntegrationTests(unittest.TestCase):
         src = (APP / "src-tauri/src/lib.rs").read_text("utf8")
         self.assertIn("studio_request", src)
         self.assertIn("RPC_METHOD_FORBIDDEN", src)
+        self.assertIn("ZODIAC_STUDIO_SOURCE_ROOT", src)
+        self.assertIn("source_root: Option<PathBuf>", src)  # missing repo must not crash GUI
+        workflow = (ROOT / ".github/workflows/studio-v5-tauri-p1.yml").read_text("utf8")
+        self.assertIn("actions/upload-artifact@v4", workflow)
+        self.assertTrue((APP / "scripts/launch-preview.ps1").is_file())
         self.assertIn("apps", str(APP))  # correct repo-level pilot
 
     def test_end_to_end_approved_v2_import_note_and_restart(self):

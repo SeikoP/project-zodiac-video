@@ -61,3 +61,10 @@ jobs:
       - name: Tauri Windows executable (debug, no release bundle)
         working-directory: apps/zodiac-studio
         run: npx tauri build --debug --no-bundle
+      - name: Upload experimental desktop preview (not a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-studio-p1-windows-debug
+          path: apps/zodiac-studio/src-tauri/target/debug/zodiac-studio-v5.exe
+          if-no-files-found: error
+          retention-days: 7
