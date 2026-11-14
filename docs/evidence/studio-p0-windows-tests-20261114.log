@@ -1,0 +1,145 @@
+Zodiac Studio P0 Windows Python 3.11.9 / Node 26.5.1 real command output, 2026-11-14
+=== python -m unittest discover -s tests -p test_studio_project_*.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 43 tests in 18.682s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_studio_v2_zip_import.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 11 tests in 1.024s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_studio_v2_voice.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 9 tests in 1.141s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_studio_v2_session.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 8 tests in 0.233s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_studio_v2_state.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 7 tests in 0.001s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_library.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 13 tests in 0.369s
+
+OK
+  ? _archive      310 B  old.zip  (b?n c? c?a new.zip)
+
+1 m?c (310 B) s? ???c chuy?n. Ch?y l?i v?i --yes ?? th?c hi?n; c≤ th? kh⌠i ph?c b?ng `restore`.
+  ? _archive      310 B  old.zip  (b?n c? c?a new.zip)
+
+?π chuy?n 1 m?c (310 B) vαo <USERPROFILE>\AppData\Local\Temp\tmpcb9tqff6\.zodiac-work\_archive\20261114-130003. Kh⌠i ph?c: zodiac-library restore "<USERPROFILE>\AppData\Local\Temp\tmpcb9tqff6\.zodiac-work\_archive\20261114-130003"
+G╙I     M?I NH?T  1970-01-01 07:33      310 B  new.zip
+
+1 m?c ╖ 310 B
+  bocap__r1__19700101-0716.mp4   ? j
+
+?π chΘp 1 video.
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_episode_job5_import.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 1 test in 0.058s
+
+OK
+
+EXIT_CODE=0
+=== python -m unittest discover -s tests -p test_control_plane_cache.py -q ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:695
++ ... ='); $lines=& python -m unittest discover -s tests -p $p -q 2>&1 | Ou ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 7 tests in 0.001s
+
+OK
+
+EXIT_CODE=0
+=== node --test phase1-handoff-export.test.mjs ===
+Γ£ö exports deterministic lightweight phase1 handoff with approval-bound inventory (67.2983ms)
+Γ£ö Web handoff carries selected concept and Voice Profile (29.4271ms)
+Γ£ö export does not require Web pipeline state (26.7954ms)
+Γ£ö rejects content changed after approval (25.1941ms)
+Γä╣ tests 4
+Γä╣ suites 0
+Γä╣ pass 4
+Γä╣ fail 0
+Γä╣ cancelled 0
+Γä╣ skipped 0
+Γä╣ todo 0
+Γä╣ duration_ms 309.0838
+
+EXIT_CODE=0
+=== FINAL NEGATIVE-GATE REGRESSION AFTER MALFORMED REPORT TEST ===
+python.exe : ----------------------------------------------------------------------
+At line:1 char:251
++ ... =='; $lines=& python -m unittest discover -s tests -p test_studio_pro ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (---------------...---------------:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+Ran 13 tests in 9.505s
+
+OK
+
+EXIT_CODE=0
