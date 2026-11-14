@@ -263,6 +263,9 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     # Accept only this audited legacy fingerprint; all packages still undergo
     # validation against the current canonical schema below.
     legacy_hashes = {
+        # Exact canonical SHA-256 from commit 9996ff30 (before story_symbol role retirement).
+        # This does not bypass validation of production.ir.json against the CURRENT schema.
+        "d6af8a599324fcf68dd43fb1627a0dc23f9b3db07ba0874eeb8a86e5df1a43c0",
         # Audited historical Job@5 packages using pre-story-role authoring schema.
         "2ca8394b51a9b95174ee407731f309ec3cfd44b03f5f98f25655f46cbb625b85",
         "787bd1c4addd6cf3ec187b4019b5c988555df870563f75989d0ef6b5dfd52f21",

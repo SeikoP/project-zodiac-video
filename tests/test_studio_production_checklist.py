@@ -477,9 +477,11 @@ class ProductionChecklistScreenTests(unittest.TestCase):
         self.assertIn("first incomplete step", copied)
         self.assertIn(default_prompt, copied)
         self.assertIn("defaultPrompt", copied)
-        for route in ("skills/zodiac-video-pipeline/SKILL.md", "orchestration/router.md"):
-            self.assertIn(route, default_prompt)
-            self.assertIn(route, copied)
+        # The split Web/Local plugin routes by responsibility, not by stale file paths.
+        for instruction in ("Route Web Phase 1", "Local owns native Phase 2-3"):
+            self.assertIn(instruction, default_prompt)
+            self.assertIn(instruction, copied)
+        self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", default_prompt)
 
     def test_malformed_preferences_show_diagnostic_and_disable_mutations(self):
         path = self.config_path

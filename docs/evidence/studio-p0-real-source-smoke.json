@@ -1,0 +1,39 @@
+{
+  "format": "zodiac-studio-p0-real-source-smoke@1",
+  "classification": "REAL_SOURCE_BOUND_EXISTING_APPROVAL_TEST",
+  "synthetic_approval_generated": false,
+  "workspace_count": 2,
+  "tests": [
+    {
+      "case": "taurus",
+      "contract": "zodiac-phase1-handoff@2",
+      "source_capsule_sha256": "e15bd8967a9d6fa87bb5b340c43b1d40d06975114105a427946333b4e8cbd6d0",
+      "source_bound_content": "APPROVED_FROM_EXISTING_RECEIPT",
+      "import_reopen": "PASS",
+      "crash_recovery": "NOT_INJECTED",
+      "source_files_preserved": 5,
+      "source_workspace_read_only": true,
+      "voice_user_listened_approval": "NOT_ASSERTED"
+    },
+    {
+      "case": "comparison",
+      "contract": "zodiac-phase1-handoff@2",
+      "source_capsule_sha256": "1a8dc0ea930aaed2b19bcd53a3977f20561ca57e119c230406053e384be03e9f",
+      "source_bound_content": "APPROVED_FROM_EXISTING_RECEIPT",
+      "import_reopen": "PASS",
+      "crash_recovery": "PASS",
+      "source_files_preserved": 5,
+      "source_workspace_read_only": true,
+      "voice_user_listened_approval": "NOT_ASSERTED"
+    },
+    {
+      "case": "native-local-bootstrap",
+      "status": "PHASE2_LOCAL_READY",
+      "phase": "02-visual-production",
+      "resume": "PASS",
+      "source_workspace_read_only": true
+    }
+  ],
+  "not_video_e2e": true,
+  "not_a_new_user_approval": true
+}
