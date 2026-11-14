@@ -34,8 +34,8 @@ The design addresses actual seams in the current V4/Web/Local split. **The new S
 
 - P0.1 baseline fixture/audit: implemented; 8/8 source assertions, 11/11 Studio V2 ZIP tests and 9/9 Studio V2 voice tests pass on Windows Python 3.11.9.
 - P0.2 durable SQLite registry: implemented; 9/9 registry tests, 8/8 Studio V2 session tests and 7/7 Studio V2 state tests pass. Windows SQLite file-handle cleanup regression was found and fixed before commit.
-- P0.3 import a real approved v2 capsule: **PENDING**; no claim of import E2E.
-- P0.4 status and phase evidence gate: **PENDING**; no real human approval claimed.
+- P0.3 importer: **IMPLEMENTED / SYNTHETIC TESTED**. Atomic v2 ZIP import, re-open, dedup, symlink guard, source drift and injected crash recovery tested. **Real approved v2 smoke remains PENDING.**
+- P0.4 status + evidence gate: **IMPLEMENTED / TESTED**. Source-bound content, compatibility voice status, no ZIP/MP4/published inference, malformed evidence BLOCKED. No human voice/visual approval claimed.
 - P1–P7: **NOT STARTED**. Neither new phone master SVG, V5 palette, executable HyperFrames editor nor audio library has been built.
 
-**Next safe task:** P0.3 with strict negative cases and existing native importer reuse. If the approved capsule is missing, block the real E2E milestone rather than generating a fictional approval. Close P0 only after P0.4 and compatibility tests; open a focused implementation PR as a draft before requesting merge.
+**Current gate:** **BLOCKED**. A real approved Phase 1 v2 capsule was not found in the inspected local handoff candidate (the Song Tử ZIP is v1). On the clean PR #221 HEAD, existing tests already fail in 5 Studio checklist cases and 1 Node local bootstrap case, reproduced without P0 code. See `docs/evidence/studio-p0-phase-evidence.json` and attached Windows test log. Next task: repair existing baseline tests in a separate focused PR, run authentic v2 import/restart/legacy re-open smoke, receive independent review. Keep implementation PR Draft; no merge/release/version bump.

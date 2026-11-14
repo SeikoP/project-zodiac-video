@@ -1,0 +1,250 @@
+{
+  "format": "zodiac-studio-phase-evidence@1",
+  "phase_id": "P0",
+  "task_id": "P0.1-P0.4",
+  "baseline_commit": "217cebe2471e24c6dab023b4cf5365ad5286fd1b",
+  "implementation_commit": "26d41289b871b15e06516ad7cff52f8ca02ccee4",
+  "requirements": [
+    {
+      "id": "P0-01",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-all",
+        "zip-compat",
+        "voice-compat"
+      ]
+    },
+    {
+      "id": "P0-02",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-all",
+        "session-compat",
+        "state-compat"
+      ]
+    },
+    {
+      "id": "P0-03",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-all",
+        "zip-compat",
+        "job5-compat",
+        "web-handoff-export"
+      ],
+      "scope": "synthetic v2 only; actual approved capsule PENDING"
+    },
+    {
+      "id": "P0-04",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-all",
+        "p0-evidence-final",
+        "library-compat",
+        "cache-compat"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "name": "zodiac-phase1-handoff@2",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-job@5",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-visual-intent@1",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-studio-import@1",
+      "result": "NEW_VALIDATED"
+    },
+    {
+      "name": "zodiac-studio-phase-evidence@1",
+      "result": "NEW_VALIDATED"
+    }
+  ],
+  "reused_components": [
+    "canonical Node Phase 1 handoff inspector/materializer",
+    "Studio V2 VoiceArtifactStore index reader",
+    "Job@5 compatibility tests",
+    "native asset/preview/compiler legacy source"
+  ],
+  "changed_files": [
+    "tools/studio_project/__init__.py",
+    "tools/studio_project/models.py",
+    "tools/studio_project/registry.py",
+    "tools/studio_project/handoff_bridge.mjs",
+    "tools/studio_project/importer.py",
+    "tools/studio_project/status.py",
+    "tools/studio_project/evidence.py",
+    "tests/test_studio_project_baseline.py",
+    "tests/test_studio_project_registry.py",
+    "tests/test_studio_project_import.py",
+    "tests/test_studio_project_evidence.py",
+    "tests/studio_phase1_synthetic_fixture.mjs",
+    "docs/audits/2026-11-14-studio-phase00-baseline.md",
+    "docs/audits/2026-11-14-studio-v5-experimental-review.md"
+  ],
+  "test_runs": [
+    {
+      "id": "p0-all",
+      "command": "python -m unittest discover -s tests -p test_studio_project_*.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 43,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "zip-compat",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_zip_import.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 11,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "voice-compat",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_voice.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 9,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "session-compat",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_session.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 8,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "state-compat",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_state.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 7,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "library-compat",
+      "command": "python -m unittest discover -s tests -p test_library.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 13,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "job5-compat",
+      "command": "python -m unittest discover -s tests -p test_episode_job5_import.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 1,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "cache-compat",
+      "command": "python -m unittest discover -s tests -p test_control_plane_cache.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 7,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "web-handoff-export",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase1-handoff-export.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 4,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    },
+    {
+      "id": "p0-evidence-final",
+      "command": "python -m unittest discover -s tests -p test_studio_project_evidence.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 13,
+      "log_ref": "studio-p0-windows-tests-20261114.log",
+      "log_sha256": "92e6c592fc0c5c4ea0f867470c34c991fdcaa79445d88b19b58dec1e59ff72fc"
+    }
+  ],
+  "smoke_artifacts": [],
+  "review_gates": [
+    {
+      "id": "P0-REAL-V2-CAPSULE",
+      "status": "PENDING",
+      "evidence_ref": null,
+      "notes": "No independently confirmed real approved v2 capsule found; test-only fixture is not release evidence."
+    },
+    {
+      "id": "P0-BASELINE-REGRESSIONS",
+      "status": "PENDING",
+      "evidence_ref": null,
+      "notes": "At spec HEAD 217cebe2: 5 production checklist failures and 1 local-phase1-bootstrap test failure also reproduced."
+    },
+    {
+      "id": "P0-REVIEWER-VERDICT",
+      "status": "PENDING",
+      "evidence_ref": null,
+      "notes": "Needs independent reviewer verdict on P0 code and real-run smoke."
+    }
+  ],
+  "risks": [
+    {
+      "code": "BASELINE_CHECKLIST_5_FAILURES",
+      "status": "OPEN",
+      "owner": "Studio legacy QA"
+    },
+    {
+      "code": "BASELINE_NODE_BOOTSTRAP_1_FAILURE",
+      "status": "OPEN",
+      "owner": "Web/Local compatibility"
+    },
+    {
+      "code": "REAL_V2_CAPSULE_UNAVAILABLE",
+      "status": "OPEN",
+      "owner": "P0 integration smoke"
+    },
+    {
+      "code": "NO_HUMAN_APPROVAL_CLAIM",
+      "status": "GUARDED",
+      "owner": "P0 status reader"
+    }
+  ],
+  "deferred": [
+    {
+      "code": "P1_UI_AGENT_BRIDGE",
+      "reason": "P0 gate not passed"
+    },
+    {
+      "code": "P2_VOICE_LAB_LISTENING",
+      "reason": "No genuine user-take approval UI in P0"
+    },
+    {
+      "code": "P3_V5_COMPILER",
+      "reason": "Requires P0/P2 verified baselines"
+    }
+  ],
+  "rollback": "Revert experimental branch commits 8806e490,fde4500a,a917e083,0084b0ba,26d41289; no changes to main/legacy ZIP/source assets. Remove only the new tools/studio_project integration when gated.",
+  "handoff_ready": false,
+  "environment": {
+    "os": "Windows",
+    "python": "3.11.9",
+    "node": "26.5.1",
+    "source": "Remote Desktop Commander local test runs"
+  },
+  "note": "Machine gate intentionally BLOCKED. Synthetic test review is not production approval. No real v2 capsule, UI, TTS, E2E video or release performed."
+}
