@@ -52,6 +52,14 @@ class TransportTests(unittest.TestCase):
                 self.assertFalse(out["ok"])
                 self.assertTrue(out["error"]["code"].startswith("RPC_"))
 
+    def test_recent_event_query_is_scoped_to_known_project(self):
+        result = self.message("events", "events.recent", {"project_id": "missing"})
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["code"], "PROJECT_NOT_FOUND")
+        bad = self.message("events2", "events.recent", {"project_id": "missing", "approval": True})
+        self.assertFalse(bad["ok"])
+        self.assertEqual(bad["error"]["code"], "RPC_PARAMS_INVALID")
+
     def test_live_subprocess_round_trip_and_exit(self):
         cmd = [sys.executable, "-u", "-m", "tools.studio_project.rpc_stdio",
                "--projects-root", str(self.root / "projects")]

@@ -20,7 +20,7 @@ This is **source-tree development mode**, not a standalone distributable build. 
 
 - Import a genuine approved Phase 1 v2 ZIP, source-byte immutable, using the canonical Node verifier wrapped by Python.
 - List, reopen and inspect projects and their derived content/voice/visual/video/published evidence statuses.
-- Submit revision-checked, idempotent `project.note` metadata events; view replayed events after restart.
+- Submit revision-checked, idempotent `project.note` metadata events; show the **100 newest events** after restart. The `events.list` API supports cursor pagination for complete replay.
 - Filter real V4 prop asset IDs with their source catalog revision and SHA-256. **No actual preview thumbnails or semantic ranking in P1.**
 - One Tauri window; legacy Qt `zodiac` remains untouched as fallback.
 

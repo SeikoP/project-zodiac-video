@@ -122,6 +122,22 @@ class P1ProjectServiceTests(unittest.TestCase):
         with self.assertRaises(StudioError):
             self.service.list_projects(limit=100, after_project_id="../../outside")
 
+    def test_recent_event_journal_tracks_newest_after_hundred(self):
+        pid = self._register()["project_id"]
+        for index in range(110):
+            self.service.registry.record_command(
+                pid, f"note-{index:03d}", index, "project.note", {"text": str(index)}
+            )
+        recent = self.service.recent_events(pid)
+        self.assertEqual(len(recent), 100)
+        self.assertEqual(recent[0]["revision"], 11)
+        self.assertEqual(recent[-1]["revision"], 110)
+        first = self.service.events(pid, after_seq=0)
+        self.assertEqual(len(first), 100)
+        rest = self.service.events(pid, after_seq=first[-1]["event_seq"])
+        self.assertEqual(len(rest), 10)
+        self.assertEqual(rest[-1]["revision"], 110)
+
     def test_unknown_project_yields_typed_error(self):
         with self.assertRaises(StudioError) as cm:
             self.service.project("missing")

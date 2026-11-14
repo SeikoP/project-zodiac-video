@@ -85,6 +85,8 @@ export const backend = {
   importZip: (path: string) => request<Project>("projects.import", { path }),
   events: (project_id: string, after_seq = 0) =>
     request<StudioEvent[]>("events.list", { project_id, after_seq }),
+  recentEvents: (project_id: string) =>
+    request<StudioEvent[]>("events.recent", { project_id }),
   assets: (query = "", limit = 100) =>
     request<AssetCatalog>("assets.list", { query, limit }),
   note: (project_id: string, revision: number, text: string) =>

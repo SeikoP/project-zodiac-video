@@ -18,7 +18,7 @@ from .service import StudioProjectService
 _MAX_REQUEST_BYTES = 65536
 _ALLOWED = frozenset({
     "health", "projects.list", "projects.open", "projects.import",
-    "projects.command", "events.list", "assets.list",
+    "projects.command", "events.list", "events.recent", "assets.list",
 })
 
 
@@ -60,6 +60,9 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method == "events.list":
         _exact(p, "project_id", "after_seq")
         return service.events(p["project_id"], after_seq=p["after_seq"])
+    if method == "events.recent":
+        _exact(p, "project_id")
+        return service.recent_events(p["project_id"])
     if method == "assets.list":
         _exact(p, "query", "limit")
         return service.assets(query=p["query"], limit=p["limit"])

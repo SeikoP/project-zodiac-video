@@ -225,6 +225,18 @@ class EpisodeRegistry:
             "kind": row["kind"], "payload": json.loads(row["payload_json"])
         }
 
+    def events_recent(self, project_id: str, *, limit: int = 100) -> list[dict]:
+        """Newest bounded events for lightweight Studio activity panels."""
+        _require_id(project_id, "project_id")
+        if type(limit) is not int or not 1 <= limit <= 500:
+            raise StudioError("EVENT_CURSOR_INVALID", "Invalid recent event limit")
+        with closing(self._connect()) as db:
+            rows = db.execute(
+                "SELECT * FROM events WHERE project_id=? ORDER BY seq DESC LIMIT ?",
+                (project_id, limit),
+            ).fetchall()
+        return [self._event(row) for row in reversed(rows)]
+
     def events_page(self, project_id: str, after_seq: int, *, limit: int = 100) -> list[dict]:
         """Bounded event replay for desktop clients; P0 events_since stays unchanged."""
         _require_id(project_id, "project_id")

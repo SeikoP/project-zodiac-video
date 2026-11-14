@@ -69,6 +69,10 @@ class StudioProjectService:
         # P1 bounded SQL query, cursor = last event_seq; do not load entire table.
         return self.registry.events_page(project_id, after_seq, limit=100)
 
+    def recent_events(self, project_id: str) -> list[dict]:
+        self.project(project_id)
+        return self.registry.events_recent(project_id, limit=100)
+
     def command(self, request: dict) -> dict:
         if not isinstance(request, dict) or request.keys() != COMMAND_FIELDS:
             raise StudioError("COMMAND_CONTRACT_INVALID", "Expected versioned metadata command fields", "command")

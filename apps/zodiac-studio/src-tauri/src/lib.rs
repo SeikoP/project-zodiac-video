@@ -80,6 +80,7 @@ impl Backend {
             "projects.import",
             "projects.command",
             "events.list",
+            "events.recent",
             "assets.list",
         ];
         if !METHODS.contains(&method) {

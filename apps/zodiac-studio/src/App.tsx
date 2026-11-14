@@ -99,15 +99,9 @@ export default function App() {
 
   const refreshSelected = useCallback(async (projectId: string) => {
     try {
-      const history: StudioEvent[] = [];
-      let cursor = 0;
-      for (let page = 0; page < 50; page++) {
-        const batch = await backend.events(projectId, cursor);
-        history.push(...batch);
-        if (batch.length < 100) break;
-        cursor = batch[batch.length - 1].event_seq;
-      }
-      const project = await backend.project(projectId);
+      const [project, history] = await Promise.all([
+        backend.project(projectId), backend.recentEvents(projectId),
+      ]);
       if (activeProjectRef.current === projectId) {
         setSelected(project);
         setEvents(history);
@@ -158,9 +152,10 @@ export default function App() {
     if (!editing || activeProjectRef.current !== editing.project_id || !note.trim()) return;
     setSaving(true);
     try {
-      await backend.note(editing.project_id, editing.revision, note.trim());
+      const submitted = note.trim();
+      await backend.note(editing.project_id, editing.revision, submitted);
       if (activeProjectRef.current === editing.project_id) {
-        setNote("");
+        setNote(current => current.trim() === submitted ? "" : current);
         await refreshSelected(editing.project_id);
       }
       await loadProjects();
@@ -286,7 +281,7 @@ export default function App() {
               <PanelHeading icon={ShieldCheck} title="Ghi chú cho episode"
                 action={<span className="panel-meta">Metadata / revisioned</span>}/>
               <textarea value={note} onChange={event => setNote(event.target.value)}
-                disabled={!currentProject} maxLength={2000}
+                disabled={!currentProject || saving} maxLength={2000}
                 placeholder={currentProject ? "Ghi lại lưu ý về nhịp kể, hình ảnh hoặc kiểm thử…" : "Chọn episode trước khi ghi chú"}/>
               <div className="note-bottom"><span>{note.length}/2000 · Không sửa narration</span>
                 <button className="send-btn" onClick={() => void saveNote()}
@@ -335,12 +330,12 @@ export default function App() {
         {view === "activity" && <>
           <section className="page-header"><div><p className="eyebrow">PROJECT EVENT JOURNAL <span> / </span> 03</p>
             <h1>Nhật ký hoạt động<span className="star">✦</span></h1>
-            <p className="page-subtitle">Có thứ tự sự kiện, revision và khôi phục khi mở lại.</p></div>
+            <p className="page-subtitle">Hiển thị 100 sự kiện mới nhất; lịch sử đầy đủ vẫn đọc được qua API cursor.</p></div>
             <button className="outline-btn" onClick={() => selectedId && void refreshSelected(selectedId)}>
               <RefreshCcw size={15}/> Đồng bộ</button></section>
           <section className="panel activity-panel">
             <PanelHeading icon={Activity} title={currentProject ? currentProject.episode_id : "Chưa có episode"}
-              action={<span className="panel-meta">{events.length} sự kiện</span>}/>
+              action={<span className="panel-meta">{events.length} sự kiện gần nhất</span>}/>
             {events.length === 0 ? <EmptyState icon={FileClock} title="Chưa có sự kiện"
               detail="Ghi chú metadata sẽ được lưu vào ledger."/> :
               <div className="full-event-list">{events.map(event =>
