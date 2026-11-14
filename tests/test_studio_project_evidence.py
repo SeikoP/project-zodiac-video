@@ -41,6 +41,25 @@ class EvidenceTests(unittest.TestCase):
         (self.project.workspace / "narration.txt").write_text("altered", encoding="utf8")
         self.assertEqual(resolve_episode_status(self.project).content, "BLOCKED")
 
+    def test_preferred_authoring_narration_drift_blocks(self):
+        authoring = self.project.workspace / ".authoring/narration.txt"
+        authoring.write_text("shadow narration that overrides approved source", encoding="utf8")
+        self.assertEqual(resolve_episode_status(self.project).content, "BLOCKED")
+
+    def test_pipeline_run_identity_drift_blocks(self):
+        path = self.project.workspace / ".authoring/pipeline-state.json"
+        state = json.loads(path.read_text("utf8"))
+        state["run_id"] = "another-run-id"
+        path.write_text(json.dumps(state), encoding="utf8")
+        self.assertEqual(resolve_episode_status(self.project).content, "BLOCKED")
+
+    def test_import_receipt_run_identity_drift_blocks(self):
+        path = self.project.workspace / "studio-import-receipt.json"
+        receipt = json.loads(path.read_text("utf8"))
+        receipt["run_id"] = "another-run-id"
+        path.write_text(json.dumps(receipt), encoding="utf8")
+        self.assertEqual(resolve_episode_status(self.project).content, "BLOCKED")
+
     def test_missing_content_approval_receipt_blocks(self):
         (self.project.workspace / ".authoring/content-review-receipt.json").unlink()
         self.assertEqual(resolve_episode_status(self.project).content, "BLOCKED")

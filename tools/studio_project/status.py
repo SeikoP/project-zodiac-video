@@ -8,12 +8,14 @@ from pathlib import Path
 
 from .models import EpisodeStatus, ProjectHandle
 
+# Mirror canonical Node approvalPaths resolution order exactly.
 _SOURCE = {
-    "narration": "narration.txt",
-    "plan": ".authoring/narrative-plan.json",
-    "scope": ".authoring/episode-scope.json",
-    "brief": ".authoring/phase3-writer-brief.json",
-    "voice": ".authoring/voice-profile.json",
+    "narration": (".authoring/narration.txt", "narration.txt"),
+    "plan": (".authoring/narrative-plan.json", "narrative-plan.json"),
+    "scope": (".authoring/episode-scope.json",),
+    "brief": (".authoring/phase3-writer-brief.json", ".authoring/writer-brief.json",
+              ".authoring/narration-writer-brief.json"),
+    "voice": (".authoring/voice-profile.json", "voice-profile.json"),
 }
 
 
@@ -38,6 +40,16 @@ def _hash(path: Path, root: Path) -> str | None:
         return None
 
 
+def _canonical_source_hash(root: Path, choices: tuple[str, ...]) -> str | None:
+    # Node checks the first existing candidate, not a fixed path. A broken,
+    # unreadable or unsafe higher-priority source must block, not fall through.
+    for rel in choices:
+        candidate = root / rel
+        if candidate.is_symlink() or candidate.exists():
+            return _hash(candidate, root)
+    return None
+
+
 def _source_status(handle: ProjectHandle) -> str:
     root = handle.workspace.resolve()
     marker = _json(root / "studio-import-receipt.json")
@@ -49,6 +61,10 @@ def _source_status(handle: ProjectHandle) -> str:
     receipt = _json(root / ".authoring/content-review-receipt.json")
     state = _json(root / ".authoring/pipeline-state.json")
     if receipt is None or state is None:
+        return "BLOCKED"
+    run_id = receipt.get("run_id")
+    if (not isinstance(run_id, str) or not run_id.strip() or
+            state.get("run_id") != run_id or marker.get("run_id") != run_id):
         return "BLOCKED"
     proof = receipt.get("proof") or {}
     if not isinstance(proof, dict) or not isinstance(state.get("review_receipts"), list):
@@ -66,7 +82,8 @@ def _source_status(handle: ProjectHandle) -> str:
     if (len(approvals) != 1 or approvals[0].get("proof") != proof or
             not isinstance(approvals[0].get("source_hashes"), dict)):
         return "BLOCKED"
-    hashes = {k: _hash(root / name, root) for k, name in _SOURCE.items()}
+    hashes = {k: _canonical_source_hash(root, choices)
+              for k, choices in _SOURCE.items()}
     if any(value is None for value in hashes.values()) or \
             any(receipt.get("source_hashes", {}).get(k) != v or
                 approvals[0].get("source_hashes", {}).get(k) != v

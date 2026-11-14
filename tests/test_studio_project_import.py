@@ -118,6 +118,33 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(outputs[0], outputs[1])
         self.assertEqual(self.registry.project_count(), 1)
 
+    def test_archive_swapped_after_inspect_uses_stable_snapshot(self):
+        from unittest.mock import patch
+        import tools.studio_project.importer as importer_module
+        capsule = synthetic_capsule(self.root)
+        expected = capsule.read_bytes()
+        real_bridge = importer_module._bridge
+        swapped = [False]
+
+        def swap_after_inspect(command, archive, workspace=None, **kwargs):
+            result = real_bridge(command, archive, workspace, **kwargs)
+            if command == "inspect" and not swapped[0]:
+                swapped[0] = True
+                capsule.write_bytes(b"source replaced during import")
+            return result
+
+        with patch.object(importer_module, "_bridge", side_effect=swap_after_inspect):
+            episode = importer_module.import_handoff(
+                self.root / "projects", capsule, self.registry,
+            )
+        self.assertTrue(swapped[0])
+        self.assertNotEqual(capsule.read_bytes(), expected)
+        self.assertEqual(
+            (episode.workspace / "narration.txt").read_text("utf8"),
+            "Câu duyệt giả lập riêng cho unit test.\\n".replace("\\n", "\n"),
+        )
+        self.assertEqual(self.registry.project_count(), 1)
+
     def test_missing_capsule_is_typed_and_does_not_publish(self):
         with self.assertRaises(StudioError) as cm:
             import_handoff(self.root / "projects", self.root / "missing.zip", self.registry)

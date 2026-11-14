@@ -105,8 +105,8 @@ def _assert_receipt(workspace: Path, inspected: dict) -> None:
         raise StudioError("STUDIO_IMPORT_RECEIPT_INVALID", "Unknown import receipt format", "import")
 
 
-def import_handoff(projects_root: Path, capsule_path: Path, registry: EpisodeRegistry,
-                   *, node_executable: str = "node",
+def _import_verified_snapshot(projects_root: Path, capsule_path: Path, registry: EpisodeRegistry,
+                              *, node_executable: str = "node",
                    fault_after_publish: bool = False) -> ProjectHandle:
     """Import one approved v2 capsule with atomic publish and idempotent reopen.
 
@@ -173,3 +173,34 @@ def import_handoff(projects_root: Path, capsule_path: Path, registry: EpisodeReg
             # Never delete a published source; orphan adoption uses exact hashes.
             if not published and stage.exists():
                 shutil.rmtree(stage)
+
+
+def import_handoff(projects_root: Path, capsule_path: Path, registry: EpisodeRegistry,
+                   *, node_executable: str = "node",
+                   fault_after_publish: bool = False) -> ProjectHandle:
+    """Import from a private immutable snapshot, not a mutable caller-owned ZIP.
+
+    The original caller path may be swapped between inspect and materialize.
+    Keeping all bridge operations on one process-owned snapshot prevents that
+    TOCTOU race without mutating or consuming the supplied capsule.
+    """
+    root = Path(projects_root).resolve()
+    if registry.root != root:
+        raise StudioError("REGISTRY_ROOT_MISMATCH", "Registry must belong to projects root", "import")
+    try:
+        archive = Path(capsule_path).resolve(strict=True)
+    except OSError as exc:
+        raise StudioError("HANDOFF_SOURCE_INVALID", str(exc), "import") from exc
+    if not archive.is_file():
+        raise StudioError("HANDOFF_SOURCE_INVALID", "Not a capsule file", "import")
+    stage_dir = _trusted_dir(root, root / ".staging")
+    with tempfile.TemporaryDirectory(prefix="source-capsule-", dir=stage_dir) as temp:
+        snapshot = Path(temp) / "source.zip"
+        try:
+            shutil.copyfile(archive, snapshot)
+        except OSError as exc:
+            raise StudioError("HANDOFF_SOURCE_INVALID", str(exc), "import") from exc
+        return _import_verified_snapshot(
+            root, snapshot, registry,
+            node_executable=node_executable, fault_after_publish=fault_after_publish,
+        )
