@@ -5,13 +5,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Activity, ArrowRight, Bot, Check, CheckCircle2, CircleAlert, CircleDot,
   Clapperboard, Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
-  Headphones, Home, Image, Layers3, LoaderCircle, Lock, Mic2, Plus, RefreshCcw,
+  Headphones, Home, Image, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
   Search, Send, ShieldCheck, Minus, Square, X, type LucideIcon,
 } from "lucide-react";
 import { backend, type AgentHealth, type AgentTask, type AssetCatalog, type BackendHealth, type Project, type StudioEvent } from "./backend";
 
-type View = "overview" | "assets" | "activity" | "agent" | "editor";
+type View = "overview" | "assets" | "activity" | "agent" | "editor" | "voice";
 const HyperframesWorkspace = lazy(() => import("./HyperframesWorkspace"));
+const VoiceLab = lazy(() => import("./VoiceLab"));
 type Alert = { message: string; error: boolean } | null;
 const FIELDS = [
   { key: "content", label: "Nội dung" }, { key: "voice", label: "Giọng đọc" },
@@ -20,6 +21,7 @@ const FIELDS = [
 ] as const;
 const SECTIONS: { label: string; view: View; icon: LucideIcon }[] = [
   { label: "Tổng quan", view: "overview", icon: Home },
+  { label: "Voice Lab", view: "voice", icon: Headphones },
   { label: "Kho tài nguyên", view: "assets", icon: Layers3 },
   { label: "Visual Workspace", view: "editor", icon: Clapperboard },
   { label: "Nhật ký hoạt động", view: "activity", icon: Activity },
@@ -264,13 +266,12 @@ export default function App() {
           {item.view === "overview" && projects.length > 0 && <span className="nav-count">{projects.length}</span>}
         </button>)}</nav>
       <div className="sidebar-label sidebar-section">PRODUCTION · PHASE SAU</div>
-      <div className="locked-nav"><Mic2 size={17}/> Voice Lab <Lock size={13}/></div>
       <div className="locked-nav"><Clapperboard size={17}/> Scene editing (P4) <Lock size={13}/></div>
       <div className="locked-nav"><FileArchive size={17}/> Export <Lock size={13}/></div>
       <div className="sidebar-bottom">
-        <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 1</b></div>
+        <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 2</b></div>
           <div className="phase-track"><span/></div>
-          <p>Project shell · Import · Events</p></div>
+          <p>Voice Lab · Takes · Measured timing</p></div>
         <div className="sidebar-footnote"><ShieldCheck size={15}/> Local-first · Source-locked</div>
       </div>
     </aside>
@@ -279,7 +280,7 @@ export default function App() {
       <header className="topbar" data-tauri-drag-region>
         <div className="breadcrumbs"><span>Zodiac Studio</span><ArrowRight size={13}/>
           <strong>{view === "overview" ? "Tổng quan" : view === "assets" ? "Kho tài nguyên" :
-            view === "activity" ? "Nhật ký" : view === "editor" ? "Visual Workspace" : "Agent"}</strong>
+            view === "activity" ? "Nhật ký" : view === "editor" ? "Visual Workspace" : view === "voice" ? "Voice Lab" : "Agent"}</strong>
           {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
         </div>
         <div className="top-actions">
@@ -437,6 +438,12 @@ export default function App() {
           </section>
         </>}
 
+        {view === "voice" && <Suspense fallback={<p>Đang mở Voice Lab…</p>}>
+          <VoiceLab key={selectedId ?? "empty"} project={currentProject} onChanged={() => {
+            void loadProjects(); if (selectedId) void refreshSelected(selectedId);
+          }}/>
+        </Suspense>}
+
         {view === "editor" && <>
           <section className="page-header"><div><p className="eyebrow">HYPERFRAMES SDK <span> / </span> READ-ONLY</p>
             <h1>Visual Workspace<span className="star">✦</span></h1>
@@ -508,7 +515,7 @@ export default function App() {
         </>}
 
         <footer className="content-footer"><span>✦ &nbsp; ZODIAC STUDIO <strong>V5 PREVIEW</strong></span>
-          <span>Phase 1 · Tauri / React · Project Core: Python</span></footer>
+          <span>Phase 2 · Voice Lab · Project Core: Python</span></footer>
       </main>
     </div>
   </div>;

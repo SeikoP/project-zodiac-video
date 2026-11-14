@@ -29,6 +29,14 @@ class StudioProjectService:
     def __init__(self, projects_root: Path):
         self.registry = EpisodeRegistry(Path(projects_root))
         self._agent = None
+        self._voice = None
+
+    @property
+    def voice(self):
+        if self._voice is None:
+            from .voice_lab import VoiceLab
+            self._voice = VoiceLab(self)
+        return self._voice
 
     @property
     def agent(self):
@@ -38,8 +46,12 @@ class StudioProjectService:
         return self._agent
 
     def close(self) -> None:
-        if self._agent is not None:
-            self._agent.close()
+        try:
+            if self._voice is not None:
+                self._voice.close()
+        finally:
+            if self._agent is not None:
+                self._agent.close()
 
     @staticmethod
     def _id(value: object) -> str:

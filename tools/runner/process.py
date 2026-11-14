@@ -44,7 +44,8 @@ def emit_process_log(text: str, *, channel: str = "stdout") -> bool:
 
 def _process_group_kwargs() -> dict:
     if os.name == "nt":
-        flag = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        flag = (getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) |
+                getattr(subprocess, "CREATE_NO_WINDOW", 0))
         return {"creationflags": flag} if flag else {}
     return {"start_new_session": True}
 

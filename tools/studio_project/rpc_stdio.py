@@ -21,6 +21,8 @@ _ALLOWED = frozenset({
     "projects.command", "events.list", "events.recent", "assets.list",
     "agent.health", "agent.start", "agent.task", "agent.tasks",
     "agent.cancel", "agent.apply",
+    "voice.open", "voice.start", "voice.cancel", "voice.select", "voice.assemble",
+    "voice.audio", "voice.playback", "voice.confirm",
 })
 
 
@@ -43,6 +45,30 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         _exact(p)
         return {"status": "READY", "protocol": "zodiac-studio-rpc@1", "authority": "P0 Project Core",
                 "scope": ["read", "metadata-write"], "approvals": "NOT_GRANTED"}
+    if method == "voice.open":
+        _exact(p, "project_id")
+        return service.voice.snapshot(p["project_id"])
+    if method == "voice.start":
+        _exact(p, "project_id", "action", "unit_ids", "voice", "intent", "pronunciation", "base_revision")
+        return service.voice.start(**p)
+    if method == "voice.cancel":
+        _exact(p, "project_id")
+        return service.voice.cancel(p["project_id"])
+    if method == "voice.select":
+        _exact(p, "project_id", "unit_id", "take_id", "base_revision", "gap_after_ms")
+        return service.voice.select(**p)
+    if method == "voice.assemble":
+        _exact(p, "project_id", "base_revision")
+        return service.voice.assemble(**p)
+    if method == "voice.audio":
+        _exact(p, "project_id", "unit_id", "take_id", "offset")
+        return service.voice.audio(**p)
+    if method == "voice.playback":
+        _exact(p, "project_id", "unit_id", "take_id")
+        return service.voice.playback(**p)
+    if method == "voice.confirm":
+        _exact(p, "project_id", "unit_id", "take_id", "playback_id", "confirm", "base_revision")
+        return service.voice.confirm(**p)
     if method == "agent.health":
         _exact(p)
         return service.agent.health()
