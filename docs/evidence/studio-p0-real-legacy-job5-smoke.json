@@ -1,0 +1,15 @@
+{
+  "format": "zodiac-studio-p0-real-legacy-job5-smoke@1",
+  "existing_real_archive": true,
+  "archive_name": "zodiac-kimnguu-change-request-denied.zip",
+  "archive_sha256": "a1295f684b32c0a8f40cb1517a3f48e371ddbc8d7c88fd7a5315fd205cb96d94",
+  "audited_historical_contract_sha256": "d6af8a599324fcf68dd43fb1627a0dc23f9b3db07ba0874eeb8a86e5df1a43c0",
+  "schema_commit": "9996ff30b06169da0ab2458bad8cdb6bd26efdc6",
+  "current_contract_sha256": "b19949b9121ccf5036d4e3da524389c500110df49c4c0f72bf72c02311712144",
+  "studio_v2_import": "PASS",
+  "reopen_after_restart": "PASS",
+  "strict_current_schema_validation": "PRESERVED",
+  "synthetic_approval_generated": false,
+  "not_a_video_render": true,
+  "not_a_user_approval": true
+}

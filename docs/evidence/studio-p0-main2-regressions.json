@@ -1,0 +1,203 @@
+{
+  "format": "zodiac-studio-p0-main2-regressions@1",
+  "head": "25e4933877bf053d3b9b3fd094675249a4ae2832",
+  "environment": {
+    "python": "3.11.9",
+    "node": "26.5.1",
+    "os": "Windows"
+  },
+  "results": [
+    {
+      "id": "p0-new",
+      "command": "python -m unittest discover -s tests -p test_studio_project_*.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 48,
+      "duration_ms": 22624,
+      "raw_sha256": "4f3d57864cd58426ec3ecacea741d300e28a709fb81ac2e69d1e64530fdaa75f"
+    },
+    {
+      "id": "checklist",
+      "command": "python -m unittest discover -s tests -p test_studio_production_checklist.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 16,
+      "duration_ms": 3378,
+      "raw_sha256": "d14de3a57d57765a6b14a24709893f710c5d49d99c3ebe1272fbd0e51319917c"
+    },
+    {
+      "id": "job5-history",
+      "command": "python -m unittest discover -s tests -p test_job5_historical_contract.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 4,
+      "duration_ms": 688,
+      "raw_sha256": "856075942cef798bbaf44fc3c6982c2ac482ca8e1bd099406de1dc85ade723f3"
+    },
+    {
+      "id": "zip-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_zip_import.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 11,
+      "duration_ms": 1518,
+      "raw_sha256": "36ec0a4e80f7739fa584c51fc2aa6110e4ff976f2c4e650d7530ac89e0d8ad1c"
+    },
+    {
+      "id": "voice-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_voice.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 9,
+      "duration_ms": 1474,
+      "raw_sha256": "0f0dcb9c1c97197517742959da04c85adfaa32c2965fc5ea5e8d969a2413880b"
+    },
+    {
+      "id": "session-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_session.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 8,
+      "duration_ms": 814,
+      "raw_sha256": "7a734e4fd45e8e96555a06236dd8987e61cfe32e125ce19ab033f9d77e5d412f"
+    },
+    {
+      "id": "state-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_state.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 7,
+      "duration_ms": 236,
+      "raw_sha256": "03b2090628593c79000065014163b5a1cd6b07df50e36d902bec12dbfa175ed9"
+    },
+    {
+      "id": "library-legacy",
+      "command": "python -m unittest discover -s tests -p test_library.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 13,
+      "duration_ms": 967,
+      "raw_sha256": "72039964643c61b5c1197e67be45ba197e8c96c19e316474905b52784c6bce0e"
+    },
+    {
+      "id": "job5-import",
+      "command": "python -m unittest discover -s tests -p test_episode_job5_import.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 1,
+      "duration_ms": 324,
+      "raw_sha256": "d34fd5aabf4eb34c6646772aa7b9bc5b45dcaa3af1e526c83657e6b13d7658a4"
+    },
+    {
+      "id": "cache",
+      "command": "python -m unittest discover -s tests -p test_control_plane_cache.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 7,
+      "duration_ms": 253,
+      "raw_sha256": "03b2090628593c79000065014163b5a1cd6b07df50e36d902bec12dbfa175ed9"
+    },
+    {
+      "id": "job5-boundary",
+      "command": "python -m unittest discover -s tests -p test_job5_import_preflight_boundary.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 1,
+      "duration_ms": 317,
+      "raw_sha256": "065caa19b7881a3a9a0612f96e6596c2b691b923f4308b3ede81b037570c5d82"
+    },
+    {
+      "id": "spatial-contract",
+      "command": "python -m unittest discover -s tests -p test_spatial_contract_hash.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 1,
+      "duration_ms": 256,
+      "raw_sha256": "fbbc5b5977e32c4b45f6df7127cbb0e8618e6368e6eb2d438ef7b9edf642dd21"
+    },
+    {
+      "id": "contract-bundle",
+      "command": "python -m pytest tests/test_contract_bundle.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 2,
+      "duration_ms": 1960,
+      "raw_sha256": "8a8956d4151437327f00d4388fea6acd41d48d269da55320a99b47345538a7ca"
+    },
+    {
+      "id": "contracts",
+      "command": "python -m unittest discover -s tests -p test_control_plane_contracts.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 8,
+      "duration_ms": 266,
+      "raw_sha256": "b9c8e99c002afcda28d4e357ce3dd6294760d8431662b3ed04d35a425c008452"
+    },
+    {
+      "id": "job5-simplification",
+      "command": "python -m unittest discover -s tests -p test_simplification_package_import.py -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 3,
+      "duration_ms": 670,
+      "raw_sha256": "1a12c42a2f0099de3dc5b6e5190055d750828fe5daf48270b7f52f255dfdfadf"
+    },
+    {
+      "id": "node-phase1-export",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase1-handoff-export.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 4,
+      "duration_ms": 407,
+      "raw_sha256": "224238ecd3f7e04768a614e403d7b65de71319d9e2ba7d711a889fb4b438a2b7"
+    },
+    {
+      "id": "node-local-bootstrap",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/local-phase1-bootstrap.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 4,
+      "duration_ms": 2037,
+      "raw_sha256": "607e199b868ccb695a4c6de8d08468c5f2a4ec2504bd7ae3f22579259404a743"
+    },
+    {
+      "id": "node-current-assets",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/current-asset-surface.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 10,
+      "duration_ms": 471,
+      "raw_sha256": "1656a64393f83669983fd35e4a441d88a7f7e1ad4f6202013d52d8bde48b75c2"
+    },
+    {
+      "id": "node-phase2-framework",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 9,
+      "duration_ms": 2484,
+      "raw_sha256": "6211361e6773fa48f4583c6d63dab6f66fd1b58049f79f96745768dbf50d8edf"
+    },
+    {
+      "id": "node-semantic-scene",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-production-v2611.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 9,
+      "duration_ms": 319,
+      "raw_sha256": "0a92428bf74b2593f0ea4b16a2de81286818ea23029a73fca2c5e866e6dfd99b"
+    },
+    {
+      "id": "node-selected-deps",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase02-selected-dependency-scope.test.mjs",
+      "exit_code": 0,
+      "status": "PASS",
+      "test_count": 1,
+      "duration_ms": 273,
+      "raw_sha256": "21e17f8d9c75a3b31268a1a860d25fa859b00e98cb527b8c2e030ed9f704b91f"
+    }
+  ],
+  "passed": 21,
+  "failed": 0,
+  "test_total": 176
+}
