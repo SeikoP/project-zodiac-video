@@ -19,6 +19,8 @@ _MAX_REQUEST_BYTES = 65536
 _ALLOWED = frozenset({
     "health", "projects.list", "projects.open", "projects.import",
     "projects.command", "events.list", "events.recent", "assets.list",
+    "agent.health", "agent.start", "agent.task", "agent.tasks",
+    "agent.cancel", "agent.apply",
 })
 
 
@@ -41,6 +43,27 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         _exact(p)
         return {"status": "READY", "protocol": "zodiac-studio-rpc@1", "authority": "P0 Project Core",
                 "scope": ["read", "metadata-write"], "approvals": "NOT_GRANTED"}
+    if method == "agent.health":
+        _exact(p)
+        return service.agent.health()
+    if method == "agent.start":
+        _exact(p, "project_id")
+        return service.agent.start(p["project_id"])
+    if method == "agent.task":
+        _exact(p, "task_id")
+        return service.agent.task(p["task_id"])
+    if method == "agent.tasks":
+        _exact(p, "project_id")
+        return service.agent.tasks(p["project_id"])
+    if method == "agent.cancel":
+        _exact(p, "task_id")
+        return service.agent.cancel(p["task_id"])
+    if method == "agent.apply":
+        _exact(p, "task_id", "confirm", "base_revision", "command_id")
+        return service.agent.apply_suggestion(
+            p["task_id"], confirm=p["confirm"], base_revision=p["base_revision"],
+            command_id=p["command_id"],
+        )
     if method == "projects.list":
         if p:
             _exact(p, "limit", "after_project_id")
@@ -102,12 +125,15 @@ def main(argv: list[str] | None = None) -> int:
     service = StudioProjectService(args.projects_root)
     input_pipe = sys.stdin.buffer
     output_pipe = sys.stdout.buffer
-    while line := input_pipe.readline():
-        # Every inbound line gets exactly one reply, including errors.
-        response = handle_line(service, line.rstrip(b"\r\n"))
-        output_pipe.write((json.dumps(response, ensure_ascii=False, allow_nan=False,
-                                      separators=(",", ":")) + "\n").encode("utf-8"))
-        output_pipe.flush()
+    try:
+        while line := input_pipe.readline():
+            # Every inbound line gets exactly one reply, including errors.
+            response = handle_line(service, line.rstrip(b"\r\n"))
+            output_pipe.write((json.dumps(response, ensure_ascii=False, allow_nan=False,
+                                          separators=(",", ":")) + "\n").encode("utf-8"))
+            output_pipe.flush()
+    finally:
+        service.close()
     return 0
 
 

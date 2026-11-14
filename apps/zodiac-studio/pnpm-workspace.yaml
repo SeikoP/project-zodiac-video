@@ -1,0 +1,14 @@
+# Preserve the exact versions already installed in this experimental npm pilot.
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@hyperframes/core@0.9.45'
+  - '@hyperframes/lint@0.9.45'
+  - '@hyperframes/parsers@0.9.45'
+  - '@hyperframes/player@0.9.45'
+  - '@hyperframes/sdk@0.9.45'
+  - '@hyperframes/shader-transitions@0.9.45'
+  - '@hyperframes/studio-server@0.9.45'
+  - '@hyperframes/studio@0.9.45'
+  - 'lucide-react@1.73.0'
+  - 'postcss@8.5.33'

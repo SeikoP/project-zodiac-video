@@ -2,6 +2,7 @@
   "name": "zodiac-studio-v5-preview",
   "version": "0.1.0-preview.1",
   "private": true,
+  "packageManager": "pnpm@11.24.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
@@ -12,6 +13,8 @@
     "desktop:build": "tauri build --no-bundle"
   },
   "dependencies": {
+    "@hyperframes/sdk": "0.9.45",
+    "@hyperframes/studio": "0.9.45",
     "@tauri-apps/api": "2.12.4",
     "@tauri-apps/plugin-dialog": "2.8.4",
     "lucide-react": "^1.73.0",

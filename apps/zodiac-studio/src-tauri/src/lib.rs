@@ -12,12 +12,20 @@ use tauri::Manager;
 
 struct LivePython {
     process: Child,
-    input: ChildStdin,
+    input: Option<ChildStdin>,
     output: BufReader<ChildStdout>,
 }
 
 impl Drop for LivePython {
     fn drop(&mut self) {
+        // EOF lets Python cancel/reap its managed agent before we force exit.
+        self.input.take();
+        for _ in 0..150 {
+            if matches!(self.process.try_wait(), Ok(Some(_))) {
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
         let _ = self.process.kill();
         let _ = self.process.wait();
     }
@@ -59,7 +67,13 @@ impl Backend {
             "PYTHON_SOURCE_ROOT_MISSING: set ZODIAC_STUDIO_SOURCE_ROOT to the Zodiac repository",
         )?;
         let python = env::var_os("ZODIAC_STUDIO_PYTHON").unwrap_or_else(|| "python".into());
-        let mut process = Command::new(python)
+        let mut command = Command::new(python);
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x08000000); // CREATE_NO_WINDOW for managed Python
+        }
+        let mut process = command
             .args([
                 "-u",
                 "-m",
@@ -77,7 +91,7 @@ impl Backend {
         let output = process.stdout.take().ok_or("PYTHON_PIPE_MISSING: stdout")?;
         self.child = Some(LivePython {
             process,
-            input,
+            input: Some(input),
             output: BufReader::new(output),
         });
         Ok(())
@@ -93,6 +107,12 @@ impl Backend {
             "events.list",
             "events.recent",
             "assets.list",
+            "agent.health",
+            "agent.start",
+            "agent.task",
+            "agent.tasks",
+            "agent.cancel",
+            "agent.apply",
         ];
         if !METHODS.contains(&method) {
             return Err("RPC_METHOD_FORBIDDEN".into());
@@ -113,11 +133,11 @@ impl Backend {
             }
             let child = self.child.as_mut().expect("spawn succeeded");
             let mut buffer = String::new();
-            let outcome = child
-                .input
+            let input = child.input.as_mut().expect("live stdin");
+            let outcome = input
                 .write_all(&serialized)
-                .and_then(|_| child.input.write_all(b"\n"))
-                .and_then(|_| child.input.flush())
+                .and_then(|_| input.write_all(b"\n"))
+                .and_then(|_| input.flush())
                 .and_then(|_| {
                     child
                         .output

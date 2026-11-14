@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Activity, ArrowRight, Bot, Check, CheckCircle2, CircleAlert, CircleDot,
   Clapperboard, Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
   Headphones, Home, Image, Layers3, LoaderCircle, Lock, Mic2, Plus, RefreshCcw,
-  Search, Send, ShieldCheck, type LucideIcon,
+  Search, Send, ShieldCheck, Minus, Square, X, type LucideIcon,
 } from "lucide-react";
-import { backend, type AssetCatalog, type BackendHealth, type Project, type StudioEvent } from "./backend";
+import { backend, type AgentHealth, type AgentTask, type AssetCatalog, type BackendHealth, type Project, type StudioEvent } from "./backend";
 
-type View = "overview" | "assets" | "activity" | "agent";
+type View = "overview" | "assets" | "activity" | "agent" | "editor";
+const HyperframesWorkspace = lazy(() => import("./HyperframesWorkspace"));
 type Alert = { message: string; error: boolean } | null;
 const FIELDS = [
   { key: "content", label: "Nội dung" }, { key: "voice", label: "Giọng đọc" },
@@ -18,6 +21,7 @@ const FIELDS = [
 const SECTIONS: { label: string; view: View; icon: LucideIcon }[] = [
   { label: "Tổng quan", view: "overview", icon: Home },
   { label: "Kho tài nguyên", view: "assets", icon: Layers3 },
+  { label: "Visual Workspace", view: "editor", icon: Clapperboard },
   { label: "Nhật ký hoạt động", view: "activity", icon: Activity },
   { label: "Agent", view: "agent", icon: Bot },
 ];
@@ -64,6 +68,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
+  const [agentTask, setAgentTask] = useState<AgentTask | null>(null);
+  const [agentBusy, setAgentBusy] = useState(false);
   const activeProjectRef = useRef<string | null>(null);
   const chooseProject = useCallback((id: string | null) => {
     if (activeProjectRef.current !== id) {
@@ -75,10 +82,16 @@ export default function App() {
     }
   }, []);
   const currentProject = selected?.project_id === selectedId ? selected : null;
+  const currentAgentTask = agentTask?.project_id === selectedId ? agentTask : null;
+  const agentRunning = currentAgentTask?.status === "STARTING" || currentAgentTask?.status === "RUNNING";
 
   const notifyError = useCallback((error: unknown, fallback: string) => {
     setAlert({ message: error instanceof Error ? error.message : fallback, error: true });
   }, []);
+  async function windowAction(action: "minimize" | "toggleMaximize" | "close") {
+    try { await getCurrentWindow()[action](); }
+    catch (error) { notifyError(error, "Không thể điều khiển cửa sổ."); }
+  }
   const loadProjects = useCallback(async () => {
     try {
       const [up, list] = await Promise.all([backend.health(), backend.projects()]);
@@ -125,6 +138,75 @@ export default function App() {
     }, 180);
     return () => window.clearTimeout(timer);
   }, [view, assetQuery, notifyError]);
+
+  useEffect(() => {
+    if (view !== "agent" || !selectedId) {
+      setAgentTask(null);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [health, tasks] = await Promise.all([
+          backend.agentHealth(), backend.agentTasks(selectedId),
+        ]);
+        if (!cancelled) {
+          setAgentHealth(health);
+          setAgentTask(tasks[0] ?? null);
+        }
+      } catch (error) {
+        if (!cancelled) notifyError(error, "Không thể kết nối Agent.");
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [view, selectedId, notifyError]);
+  useEffect(() => {
+    if (view !== "agent" || !currentAgentTask ||
+        (currentAgentTask.status !== "STARTING" && currentAgentTask.status !== "RUNNING")) return;
+    let cancelled = false;
+    const timer = window.setInterval(async () => {
+      try {
+        const task = await backend.agentTask(currentAgentTask.task_id);
+        if (!cancelled && activeProjectRef.current === task.project_id) setAgentTask(task);
+      } catch (error) {
+        if (!cancelled) notifyError(error, "Mất kết nối với phiên Agent.");
+      }
+    }, 900);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [view, currentAgentTask?.task_id, currentAgentTask?.status, notifyError]);
+
+  async function agentInspect() {
+    if (!currentProject || agentBusy) return;
+    setAgentBusy(true);
+    try {
+      setAgentTask(await backend.agentStart(currentProject.project_id));
+      setAlert(null);
+    } catch (error) { notifyError(error, "Không thể khởi động Agent."); }
+    finally { setAgentBusy(false); }
+  }
+  async function agentCancel() {
+    if (!currentAgentTask || !agentRunning || agentBusy) return;
+    setAgentBusy(true);
+    try { setAgentTask(await backend.agentCancel(currentAgentTask.task_id)); }
+    catch (error) { notifyError(error, "Không thể hủy Agent."); }
+    finally { setAgentBusy(false); }
+  }
+  async function agentApply() {
+    if (!currentProject || !currentAgentTask ||
+        currentAgentTask.status !== "COMPLETED" || currentAgentTask.write_applied ||
+        agentBusy) return;
+    setAgentBusy(true);
+    try {
+      const event = await backend.agentApply(currentAgentTask.task_id, currentProject.revision);
+      setAgentTask(await backend.agentTask(currentAgentTask.task_id));
+      await refreshSelected(currentProject.project_id);
+      await loadProjects();
+      setAlert({ message: "Đã xác nhận và lưu đề xuất vào metadata revision " + event.revision +
+        ". Nội dung đã duyệt giữ nguyên.", error: false });
+    } catch (error) { notifyError(error, "Không thể lưu đề xuất Agent."); }
+    finally { setAgentBusy(false); }
+  }
 
   const approved = useMemo(() => projects.filter(p => p.status.content === "APPROVED").length, [projects]);
   const awaitingVoice = useMemo(() => projects.filter(p =>
@@ -183,7 +265,7 @@ export default function App() {
         </button>)}</nav>
       <div className="sidebar-label sidebar-section">PRODUCTION · PHASE SAU</div>
       <div className="locked-nav"><Mic2 size={17}/> Voice Lab <Lock size={13}/></div>
-      <div className="locked-nav"><Clapperboard size={17}/> Visual Editor <Lock size={13}/></div>
+      <div className="locked-nav"><Clapperboard size={17}/> Scene editing (P4) <Lock size={13}/></div>
       <div className="locked-nav"><FileArchive size={17}/> Export <Lock size={13}/></div>
       <div className="sidebar-bottom">
         <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 1</b></div>
@@ -194,17 +276,23 @@ export default function App() {
     </aside>
 
     <div className="main-shell">
-      <header className="topbar">
+      <header className="topbar" data-tauri-drag-region>
         <div className="breadcrumbs"><span>Zodiac Studio</span><ArrowRight size={13}/>
           <strong>{view === "overview" ? "Tổng quan" : view === "assets" ? "Kho tài nguyên" :
-            view === "activity" ? "Nhật ký" : "Agent"}</strong></div>
+            view === "activity" ? "Nhật ký" : view === "editor" ? "Visual Workspace" : "Agent"}</strong>
+          {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
+        </div>
         <div className="top-actions">
           <span className={"connection " + (health ? "connected" : "offline")}>
             <span className="conn-dot"/>{health ? "Project Core kết nối" : "Chưa kết nối"}
           </span>
           <span className="header-divider"/>
-          <button className="icon-btn" onClick={() => void loadProjects()} title="Làm mới"><RefreshCcw size={17}/></button>
-          <div className="avatar">✦</div>
+          <button className="icon-btn" onClick={() => void loadProjects()} title="Làm mới" aria-label="Làm mới"><RefreshCcw size={17}/></button>
+          {isTauri() && <div className="window-controls" aria-label="Điều khiển cửa sổ">
+            <button type="button" aria-label="Thu nhỏ" title="Thu nhỏ" onClick={() => void windowAction("minimize")}><Minus size={15}/></button>
+            <button type="button" aria-label="Phóng to hoặc khôi phục" title="Phóng to / khôi phục" onClick={() => void windowAction("toggleMaximize")}><Square size={13}/></button>
+            <button type="button" className="window-close" aria-label="Đóng cửa sổ" title="Đóng cửa sổ" onClick={() => void windowAction("close")}><X size={17}/></button>
+          </div>}
         </div>
       </header>
       <main className="content">
@@ -251,7 +339,7 @@ export default function App() {
                     className={"episode-item " + (selectedId === project.project_id ? "selected" : "")}
                     onClick={() => chooseProject(project.project_id)}>
                     <span className="episode-mark"><FileArchive size={20}/></span>
-                    <span className="episode-info"><strong>{project.episode_id}</strong>
+                    <span className="episode-info"><strong>{project.display_title || project.episode_id}</strong>
                       <small>Project {project.project_id.slice(0, 19)}… · Revision {project.revision}</small></span>
                     <StatusChip status={project.status.content}/><ArrowRight size={16} className="episode-arrow"/>
                   </button>)}</div>}
@@ -263,7 +351,9 @@ export default function App() {
               {!currentProject ? <EmptyState icon={Search} title="Chọn một episode"
                 detail="Trạng thái và bằng chứng sẽ hiển thị tại đây."/> : <>
                 <div className="inspector-head"><span className="overline">ĐANG CHỌN</span>
-                  <h2>{currentProject.episode_id}</h2><code>{currentProject.source_sha256.slice(0, 24)}…</code></div>
+                  <h2>{currentProject.display_title || currentProject.episode_id}</h2>
+                  <small className="panel-meta">{currentProject.sign || "Episode"}</small>
+                  <code>{currentProject.source_sha256.slice(0, 24)}…</code></div>
                 <div className="stage-list">{FIELDS.map(({ key, label }) => {
                   const status = currentProject.status[key];
                   return <div className="stage-row" key={key}><div className="stage-name">
@@ -347,22 +437,73 @@ export default function App() {
           </section>
         </>}
 
+        {view === "editor" && <>
+          <section className="page-header"><div><p className="eyebrow">HYPERFRAMES SDK <span> / </span> READ-ONLY</p>
+            <h1>Visual Workspace<span className="star">✦</span></h1>
+            <p className="page-subtitle">Khung thử nghiệm HyperFrames chỉ đọc. Scene editor và preview sẽ được tích hợp ở P4.</p>
+          </div></section>
+          <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
+            detail="Nạp module riêng khi mở Visual Workspace."/>}>
+            <HyperframesWorkspace project={currentProject}/>
+          </Suspense>
+        </>}
+
         {view === "agent" && <>
-          <section className="page-header"><div><p className="eyebrow">AGENT WORKSPACE <span> / </span> 04</p>
+          <section className="page-header"><div><p className="eyebrow">MANAGED CODEX APP SERVER <span> / </span> 04</p>
             <h1>Điều phối Agent<span className="star">✦</span></h1>
-            <p className="page-subtitle">Đường lệnh an toàn đã có. Codex App Server sẽ nối ở bước tiếp theo.</p></div>
+            <p className="page-subtitle">Đọc dự án qua Project Core, chạy Codex trong sandbox chỉ đọc và duyệt ghi chú trước khi lưu.</p></div>
+            <span className={"source-pill " + (!agentHealth?.available ? "offline" : "")}>
+              <ShieldCheck size={15}/>{agentHealth?.available ? "CODEX AVAILABLE" : "CODEX OFFLINE"}
+            </span>
           </section>
-          <div className="agent-setup"><div className="agent-art"><Bot size={52} strokeWidth={1.2}/>
-            <span className="agent-spark">✦</span></div>
-            <h2>Chưa kích hoạt Agent</h2>
-            <p>Studio Core đã cho phép đọc project và ghi metadata có kiểm soát.
-              Chúng tôi không giả vờ rằng Agent đã hoàn tất công việc.</p>
-            <div className="agent-capabilities">
-              <div><CheckCircle2 size={16}/> Project read / inspect</div>
-              <div><CheckCircle2 size={16}/> Revisioned project.note</div>
-              <div><Lock size={16}/> Creative approval bị khóa</div>
-              <div><Clock3 size={16}/> Task streaming: chưa tích hợp</div>
+          <section className="panel agent-workspace">
+            <PanelHeading icon={Bot} title="Agent Task" action={
+              <span className="panel-meta">{currentAgentTask ? currentAgentTask.status : "Chưa bắt đầu"}</span>}/>
+            <div className="agent-command">
+              <div><strong>Kiểm tra episode</strong>
+                <p>{currentProject ? currentProject.display_title || currentProject.episode_id : "Hãy chọn episode ở Tổng quan trước."}</p>
+                <small>Capability: project.inspect · Read-only · Approval: never</small>
+              </div>
+              <div className="agent-actions">
+                <button className="primary-btn" disabled={!currentProject || agentRunning || agentBusy || !agentHealth?.available}
+                  onClick={() => void agentInspect()}>
+                  {agentBusy || agentRunning ? <LoaderCircle className="spin" size={16}/> : <Bot size={16}/>}
+                  {agentRunning ? "Đang phân tích" : "Phân tích dự án"}
+                </button>
+                {agentRunning && <button className="outline-btn" disabled={agentBusy}
+                  onClick={() => void agentCancel()}>Hủy tác vụ</button>}
+              </div>
             </div>
+            <div className="agent-terminal">
+              <div className="agent-terminal-title"><Activity size={15}/> LIVE TASK OUTPUT
+                <span>{currentAgentTask ? currentAgentTask.status : "IDLE"}</span></div>
+              {!currentAgentTask ? <div className="agent-terminal-empty">
+                <Bot size={30} strokeWidth={1.4}/>
+                <p>{agentHealth?.available ? "Sẵn sàng kiểm tra bằng Codex App Server."
+                  : "Không tìm thấy Codex. Studio vẫn hoạt động thủ công."}</p></div>
+                : <div className="agent-output">
+                  <span className="agent-task-id">Task {currentAgentTask.task_id.slice(0, 12)} · Project revision {currentAgentTask.project_revision}</span>
+                  <p>{currentAgentTask.preview || (agentRunning
+                    ? "Đang khởi tạo phiên, xác minh nguồn và nhận phản hồi…"
+                    : currentAgentTask.error || "Chưa có phản hồi")}</p>
+                  {currentAgentTask.error && <div className="agent-error">{currentAgentTask.error}</div>}
+                </div>}
+            </div>
+            <div className="agent-approval">
+              <div><ShieldCheck size={19}/><span><strong>Người dùng quyết định ghi chú</strong>
+                <small>Agent không thể phê duyệt Voice, Visual hay thay đổi bản kể đã duyệt.</small></span></div>
+              <button className="send-btn" disabled={!currentProject || !currentAgentTask ||
+                  currentAgentTask.status !== "COMPLETED" || currentAgentTask.write_applied || agentBusy}
+                onClick={() => void agentApply()}>
+                <Check size={15}/>{currentAgentTask?.write_applied ? "Đã lưu" : "Xác nhận & lưu ghi chú"}
+              </button>
+            </div>
+          </section>
+          <div className="agent-capabilities agent-summary">
+            <div><CheckCircle2 size={16}/> Verified project read</div>
+            <div><CheckCircle2 size={16}/> Real Codex streaming</div>
+            <div><CheckCircle2 size={16}/> Cancel / retry / restore receipt</div>
+            <div><Lock size={16}/> Human creative approval protected</div>
           </div>
         </>}
 

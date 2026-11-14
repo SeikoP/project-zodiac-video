@@ -11,6 +11,8 @@ export type ProjectStatus = {
 export type Project = {
   project_id: string;
   episode_id: string;
+  display_title: string;
+  sign: string | null;
   source_sha256: string;
   revision: number;
   status: ProjectStatus;
@@ -45,6 +47,28 @@ export type BackendHealth = {
   authority: string;
   scope: string[];
   approvals: string;
+};
+export type AgentHealth = {
+  available: boolean;
+  protocol: string;
+  scope: string;
+  active: number;
+};
+export type AgentTask = {
+  task_id: string;
+  project_id: string;
+  project_revision: number;
+  source_sha256: string;
+  status: "STARTING" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED" | "INTERRUPTED";
+  started_at: number;
+  completed_at: number | null;
+  thread_id: string | null;
+  turn_id: string | null;
+  preview: string;
+  suggestion: string;
+  error: string | null;
+  kind: "project.inspect";
+  write_applied: boolean;
 };
 type RpcError = { code: string; stage: string; message: string };
 type Envelope<T> = { id: string | null; ok: true; result: T } |
@@ -89,6 +113,15 @@ export const backend = {
     request<StudioEvent[]>("events.recent", { project_id }),
   assets: (query = "", limit = 100) =>
     request<AssetCatalog>("assets.list", { query, limit }),
+  agentHealth: () => request<AgentHealth>("agent.health"),
+  agentStart: (project_id: string) => request<AgentTask>("agent.start", { project_id }),
+  agentTask: (task_id: string) => request<AgentTask>("agent.task", { task_id }),
+  agentTasks: (project_id: string) => request<AgentTask[]>("agent.tasks", { project_id }),
+  agentCancel: (task_id: string) => request<AgentTask>("agent.cancel", { task_id }),
+  agentApply: (task_id: string, base_revision: number) =>
+    request<StudioEvent>("agent.apply", {
+      task_id, confirm: true, base_revision, command_id: "agent-" + task_id,
+    }),
   note: (project_id: string, revision: number, text: string) =>
     request<StudioEvent>("projects.command", {
       request: {

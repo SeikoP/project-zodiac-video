@@ -28,6 +28,18 @@ class StudioProjectService:
 
     def __init__(self, projects_root: Path):
         self.registry = EpisodeRegistry(Path(projects_root))
+        self._agent = None
+
+    @property
+    def agent(self):
+        if self._agent is None:
+            from .agent_bridge import AgentManager
+            self._agent = AgentManager(self)
+        return self._agent
+
+    def close(self) -> None:
+        if self._agent is not None:
+            self._agent.close()
 
     @staticmethod
     def _id(value: object) -> str:
@@ -37,9 +49,28 @@ class StudioProjectService:
 
     def _snapshot(self, handle: ProjectHandle) -> dict[str, Any]:
         status = asdict(resolve_episode_status(handle))
+        label = handle.episode_id
+        sign = None
+        # Human-readable working title comes only from the hash-verified source.
+        # It is never promoted to a final publish title or creative approval.
+        if status["content"] == "APPROVED":
+            scope_path = handle.workspace / ".authoring/episode-scope.json"
+            if scope_path.is_file() and not scope_path.is_symlink():
+                try:
+                    scope = json.loads(scope_path.read_text(encoding="utf-8"))
+                    working = scope.get("title_working")
+                    if isinstance(working, str) and working.strip():
+                        label = " ".join(working.split())[:120]
+                    scope_sign = scope.get("sign")
+                    if isinstance(scope_sign, str):
+                        sign = scope_sign.strip()[:64]
+                except (OSError, ValueError, TypeError):
+                    pass
         return {
             "project_id": handle.project_id,
             "episode_id": handle.episode_id,
+            "display_title": label,
+            "sign": sign,
             "source_sha256": handle.imported_source_sha256,
             "revision": self.registry.current_revision(handle.project_id),
             "status": status,

@@ -2,6 +2,8 @@
 
 Review date: 2026-11-14. Documentation baseline: `217cebe2471e24c6dab023b4cf5365ad5286fd1b` (PR #221). Branch: `experiment/studio-v5-p0-20261114`.
 
+Later P1 working-tree progress is tracked separately in [Studio V5 P1 progress](./2026-11-14-studio-v5-p1-progress.md). The P1–P7 “not started” statements below describe the historical P0 review, not the current P1 branch.
+
 ## Verdict: proceed incrementally, do not merge/refactor everything
 
 The design addresses actual seams in the current V4/Web/Local split. **The new Studio is not production ready** and none of the P1–P7 contracts may be considered implemented. Retain old Job@5, source/voice/timing caches and the pinned Remotion path. This branch is for evidence-first P0 tasks, not a wholesale V5 renderer migration.

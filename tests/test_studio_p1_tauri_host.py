@@ -23,6 +23,9 @@ class TauriHostIntegrationTests(unittest.TestCase):
         self.assertEqual(manifest["app"]["windows"][0]["minWidth"], 1060)
         self.assertEqual(capability["windows"], ["main"])
         self.assertIn("dialog:allow-open", capability["permissions"])
+        self.assertFalse(manifest["app"]["windows"][0]["decorations"])
+        for action in ("close", "minimize", "toggle-maximize", "start-dragging"):
+            self.assertIn("core:window:allow-" + action, capability["permissions"])
         self.assertNotIn("shell:allow-execute", capability["permissions"])
         self.assertFalse(manifest["bundle"]["active"])  # avoid claiming distributable Python app
         src = (APP / "src-tauri/src/lib.rs").read_text("utf8")
@@ -33,6 +36,12 @@ class TauriHostIntegrationTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/studio-v5-tauri-p1.yml").read_text("utf8")
         self.assertIn("actions/upload-artifact@v4", workflow)
         self.assertTrue((APP / "scripts/launch-preview.ps1").is_file())
+        package = json.loads((APP / "package.json").read_text("utf8"))
+        self.assertTrue(package["packageManager"].startswith("pnpm@"))
+        self.assertTrue((APP / "pnpm-lock.yaml").is_file())
+        self.assertFalse((APP / "package-lock.json").exists())
+        self.assertIn("pnpm install --frozen-lockfile", workflow)
+        self.assertNotIn("npm ci", workflow)
         self.assertIn("apps", str(APP))  # correct repo-level pilot
 
     def test_end_to_end_approved_v2_import_note_and_restart(self):
