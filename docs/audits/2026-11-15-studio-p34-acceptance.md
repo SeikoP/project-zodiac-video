@@ -27,3 +27,9 @@ These measure visual build/cache behavior, not production episode throughput. Au
 Libra's three exact historical balance SVG blobs are frozen with commit/blob/hash provenance under `tests/fixtures/studio-p34-legacy/libra/`; they are not restored to the current catalog. Gemini/Scorpio tests preserve existing baked SVGs and compare state endpoints with the pinned V4 resolver. Unsupported old motion is explicitly `LEGACY_STATE_ENDPOINTS_ONLY`, not production renderer parity.
 
 Light/dark checks are technical prototypes. Human visual acceptance, human listening, artistic narrative/reaction quality and full renderer parity are **not granted**. Final encoding, audio mixing and packaging belong to later phases. No release installer or MP4 is claimed by this delivery.
+
+## Integration and remote CI
+
+[PR #225](https://github.com/SeikoP/project-zodiac-video/pull/225) merged to `experiment/main-2` as `28e4f3f86160accd4db1201de0bb404f67ca60d6`. A single native app then opened using that checkout's frontend and Python source. Native edit/theme/undo/actual SVG checks passed again; selected source was current with eight completed scenes. Voice Lab displayed the user's existing `cuongdepzai` and `cuongdepzaiver2` presets and preferred the former without changing old takes.
+
+Initial PR CI found two integration setup defects: Linux's full Python discovery lacked the pinned Studio dependencies, and Windows Git converted LF in the hash-frozen narration/SVG fixtures to CRLF. The follow-up adds locked pnpm installation to the Linux job and marks only those byte-sensitive fixtures `-text`; validators retain exact byte checks. The unrelated plugin-native job has 40 baseline failures. Renderer/control-plane/live/frame-progress/integrity jobs passed. Remote results remain separate from local validation.

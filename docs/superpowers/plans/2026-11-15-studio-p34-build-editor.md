@@ -62,7 +62,7 @@ Files: `tests/test_studio_p34_visual.py`, `tests/studio_p34_visual.test.mjs`, re
 - [x] Run all new P3/P4 tests together after implementation, then relevant P0/P1/P2/V4 compatibility regressions, frontend/native checks. Fix concrete failures.
 - [x] Freeze a 6–10-scene fixture; measure cold/warm/scoped/shared-character/theme builds, resource use, tamper recovery and unchanged audio/source hashes.
 - [x] Verify real Libra/Gemini/Scorpio states/props/reaction and native scene edit/voice reveal/theme/undo/reopen. Label synthetic data and human visual/listening acceptance honestly.
-- [ ] One fresh-context whole-branch review, fix important findings, focused PR merged into `experiment/main-2`, launch one app from merged source. Record reproducible evidence and remaining creative review separately.
+- [x] One fresh-context whole-branch review, fix important findings, focused PR merged into `experiment/main-2`, launch one app from merged source. Record reproducible evidence and remaining creative review separately.
 
 ## Final implementation rulings
 
@@ -71,3 +71,5 @@ The actual SDK T3 API and generated GSAP composition run on a private read-only 
 Historical V4 source/assets are read-only compatibility fixtures; current synthetic fixtures use explicit current catalog IDs. Unsupported historical motion retains endpoint-only fidelity. Tests never grant creative approval.
 
 The 8-scene service benchmark and the additional 48.56-second/244-word source benchmark measure visual build/cache behavior. The latter reuses exact existing ASR times after sequential source-token equality checks and uses a labeled synthetic visual fixture. Neither measures production authoring, TTS, ASR generation or final encoding. See the [acceptance receipt](../../audits/2026-11-15-studio-p34-acceptance.md).
+
+Integration: PR #225 merged as `28e4f3f86160accd4db1201de0bb404f67ca60d6`. One app opened from the fast-forwarded `main-2` checkout; native edit/theme/undo/images passed again and the voice dropdown exposed `cuongdepzai` and `cuongdepzaiver2`, preferring `cuongdepzai`. Initial remote CI exposed missing Studio dependencies in Linux full discovery and Windows checkout line-ending conversion in byte-frozen fixtures; a focused follow-up installs locked dependencies and preserves exact fixture bytes. The unrelated plugin-native job retains its 40 baseline failures.
