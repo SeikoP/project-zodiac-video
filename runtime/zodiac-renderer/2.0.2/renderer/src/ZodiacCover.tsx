@@ -32,7 +32,7 @@ export const ZodiacCover: React.FC<RendererV2Props & {hideWatermark?:boolean}> =
   const propScale = c?.supporting_prop_scale ?? 1;
   if (design && (!(heroScale >= 0.82 && heroScale <= 0.90) ||
     !(propScale >= 0.75 && propScale <= 0.85) ||
-    c?.read_order?.join(",") !== "hook,identity,character_story_object" ||
+    c?.read_order?.join(",") !== "hook,identity,character_narrative_visual" ||
     !Number.isInteger(c?.max_supporting_accents) || c!.max_supporting_accents < 0 || c!.max_supporting_accents > 2))
     throw new Error("COVER_DESIGN_UNSUPPORTED: composition");
   const visualsResolved = resolveCoverVisuals(visuals, scene, assets, {width:900,height:720});
