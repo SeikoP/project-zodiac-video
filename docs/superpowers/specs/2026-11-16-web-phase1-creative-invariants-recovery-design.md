@@ -71,3 +71,7 @@ Repository main currently lacks two guidance blocks present in the installed Web
 - No Local Phase 2/3 migration.
 - Patch version bump only.
 - Existing approved handoffs remain valid.
+
+## Verification-discovered compatibility regression
+
+Full-suite verification exposed a second branch-loss regression already present on current main: Studio's production checklist had reverted from accepting both `zodiac-phase-manifest@2` and the creative-host `@3` Phase-1 manifest to accepting `@2` only. The corresponding handoff test had also reverted to requiring stale monolithic route file paths even though the split plugin routes by Web/Local responsibility. Recover the previously green PR #226 behavior: accept `@2/@3` in the read-only Studio checklist and assert responsibility-based split routing. This does not alter Local production contracts or handoff schemas.
