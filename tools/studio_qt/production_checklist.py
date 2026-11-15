@@ -117,7 +117,7 @@ def _load_phase_manifests(plugin_root: Path) -> tuple[dict, dict, str | None]:
             manifest, error = _read_json(manifest_path, f"Phase manifest {item['id']} is unavailable or invalid")
             if error:
                 raise ValueError(error)
-            if manifest.get("format") != "zodiac-phase-manifest@2" or manifest.get("id") != item["id"] or not isinstance(manifest.get("title"), str):
+            if manifest.get("format") not in {"zodiac-phase-manifest@2", "zodiac-phase-manifest@3"} or manifest.get("id") != item["id"] or not isinstance(manifest.get("title"), str):
                 raise ValueError(f"Unsupported or mismatched phase manifest {item['id']}")
             steps = manifest.get("steps")
             if not isinstance(steps, list) or any(not isinstance(step, dict) or not isinstance(step.get("id"), str) or not isinstance(step.get("title"), str) for step in steps):
