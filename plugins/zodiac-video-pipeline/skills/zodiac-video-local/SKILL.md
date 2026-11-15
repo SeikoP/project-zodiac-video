@@ -59,6 +59,12 @@ Review-only visual-quality and retention guidance may be deferred during draft p
 
 Keep visual scenes economical. Preserve separate audio scene boundaries when performance semantics differ. Treat full-room backgrounds as scene anchors: use them for essential setting reveals, major location changes and callbacks, and avoid repeating one full-room background across a run of separate scenes. In connecting scenes, use one sparse, narration-grounded Scene Accent cue (such as a lamp, window or clock) behind the action instead of another full-room backdrop. Keep accents clear of actors, props and captions. Reuse framing and character positions across continuous beats; let pose, prop state and event carry progression. Every fictional advertisement must read clearly as an ad, foreground its product/Narrative Visual, show one product-specific demo, and land on a visual punchline. Keep the ad brief and stylistically consistent, and leave faces and captions readable.
 
+Keep the channel cute and witty: calibrate expression, pose and crop together; prefer gentle reactions and action-based humor. Never force a meme adapter or exaggerated face where ordinary acting fits. Current user tone corrections override older exaggeration requests. Review intermediate transitions as well as endpoints.
+
+## Revision against a newer Phase 2
+
+Treat an old preview as a visual reference only. Compare its canonical intent and generated assets with the current requested authoring guidance before revising. Review Story Text wording, treatment, hierarchy, reveal/release, meme setup/reaction, cast geometry/contact, context lifecycle and continuity individually. Recompile alone does not update creative choices or replace old SVG artwork. Re-author and bake affected text assets, refresh source-bound coverage byte ranges and anchors after narration edits, then inspect actual phone-size frames including the changed states. Present a concrete before/after surface and name deferred checks; a structural PASS is not evidence that the requested visual change occurred. Preserve prior approved work as the comparison baseline.
+
 ## Phase 3
 
 After genuine Visual Review and Phase 2 PASS, run the canonical local delivery wrapper:

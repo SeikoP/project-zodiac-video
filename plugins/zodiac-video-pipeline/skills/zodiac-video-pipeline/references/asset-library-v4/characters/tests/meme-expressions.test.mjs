@@ -5,7 +5,7 @@ import {compileCharacterSvg} from '../compile-character-assembly.mjs';
 import {expr} from '../geometry/expression-profiles.mjs';
 import {validateHumanStroke} from '../../validation/validate-human-stroke.mjs';
 
-test('performed meme faces have readable exaggeration on every body without changing cast identity',async()=>{
+test('performed meme faces have distinct playful reactions on every body without changing cast identity',async()=>{
  const catalog=JSON.parse(await readFile(new URL('../components/catalog.json',import.meta.url)));
  const faces=catalog.expressions.filter(e=>e.id.startsWith('meme-'));
  assert.equal(faces.length,9);
@@ -20,7 +20,8 @@ test('performed meme faces have readable exaggeration on every body without chan
    assert.match(result.svg,/id="face_performance"/u);
    const coords=expr(face.id).mouth.match(/-?\d+(?:\.\d+)?/gu).map(Number);
    const xs=coords.filter((_,i)=>i%2===0);
-   assert.ok(Math.max(...xs)-Math.min(...xs)>=50,face.id+' needs a visible mouth, not a tiny punctuation mark');
+   assert.ok(Math.max(...xs)-Math.min(...xs)<=70,face.id+' must retain a compact channel mouth');
+   assert.equal(expr(face.id).eye_backdrop,undefined,face.id+' must preserve the ordinary face silhouette');
    validateHumanStroke(result.svg,'character');
   }
  }

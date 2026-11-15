@@ -81,7 +81,7 @@ def build_profile(root: Path, profile: str, destination: Path) -> dict:
         # Web Phase 1 is guidance-only creative authoring. Do not package the
         # native producer runtime, npm manifests, validators, caches or source
         # transport machinery. Local owns native execution.
-        selected = {str(PLUGIN / rel) for rel in WEB_CREATIVE_FILES}
+        selected = {(PLUGIN / rel).as_posix() for rel in WEB_CREATIVE_FILES}
         files = [p for p in files if p.relative_to(root).as_posix() in selected]
         missing_web = [rel for rel in sorted(WEB_CREATIVE_FILES) if not (src / rel).is_file()]
         if missing_web:

@@ -38,6 +38,14 @@ Treat the user's diagnosis as a source-edit signal, not a request to polish ever
 - If a recurring image is discovered only after drafting, move it upstream into Narrative Design and re-draft around it rather than pretending it was planned.
 - A Phase-1 Narrative Motif is semantic continuity. Never confuse it with Phase-2 Visual Metaphor/Story Object authoring.
 
+## Single-voice TTS editorial review
+
+Write for a listener who cannot see quotation marks or the screen. Default to one narrator. Identify a speaker before every necessary quotation; convert repeated dialogue, unlabelled thoughts and question/answer chains into narrated action. Dialogue is optional, not a quota. Do not rely on the engine changing voice, punctuation alone creating a dramatic pause, or performance metadata controlling prosody.
+
+Before Content Review, make an audio-only editorial pass: track who acts/speaks, where the action happens, time jumps, cause and consequence, pronoun referents, breath-length clauses, repeated explanations, spoken numbers/abbreviations/foreign words, text-only jokes and the ending. Prefer concrete verbs and short connected sentences; vary sentence length naturally. Make essential signs/captions understandable in spoken narration. Keep stage directions and SSML out of narration.txt. Estimate duration and disclose it as an estimate. Preserve the channel's affectionate, cute wit; never turn mild suspicion into contempt or a lecture.
+
+Carry speaker strategy, transitions, emphasis and unresolved pronunciation risks into Voice Profile and Writer Brief. Actual synthesized audio still needs listening before TTS performance approval. On revision, show the exact revised narration and invalidate approvals tied to changed bytes; do not carry approval of a previous draft forward.
+
 ## Minimal handoff
 
 After genuine Content Review approval, create exactly one `zodiac-phase1-handoff@2` ZIP using the host file tools available in ChatGPT. Do not require Node or the native producer runtime.

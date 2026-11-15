@@ -11,7 +11,7 @@ Use semantic shot/focus/continuity and existing two-person cast. Camera changes 
 Keep native hands visible and bind actual post-pose grips/contact. Invalid: state-level identity swaps, legacy copies, repeated centered framing, prop wallpaper or camera motion hiding static storytelling.
 
 ## Meme is performed by the channel's cast
-Keep paper, ink, hair, silhouette and shirt/sign. Establish normal setup, narrated reversal and exaggerated reaction. Never import meme characters or materialize retired effect metadata; leave serious passages quiet.
+Keep paper, ink, hair, silhouette and shirt/sign. Establish normal setup, narrated reversal and a proportionate, affectionate reaction. Never import meme characters or materialize retired effect metadata; leave serious passages quiet.
 
 Native adapters by situation:
 - Self-cringe/bravado collapse: `facepalm-closeup`, `cry-closeup`.
@@ -22,7 +22,7 @@ Native adapters by situation:
 - Exit/teasing: `polite-exit`, `playful-cheek-poke`; cheek contact must be real.
 - Concession/disbelief: `innocent-shrug`, `awkward-grin`, `silent-judgment`.
 
-For the full situation map and humor review, load `asset-library-v4/memes/README.md` when a meme is selected. Use a normal setup, a performed `meme-*` face at the reversal and story-specific focal lettering; do not treat a stock phrase plus a neutral sticker as a finished joke.
+For the full situation map and humor review, load `asset-library-v4/memes/README.md` when a meme is selected. Use a normal setup, a readable cast reaction at the reversal; select a `meme-*` face only when it preserves the cute channel identity and story-specific focal lettering; do not treat a stock phrase plus a neutral sticker as a finished joke.
 
 Bind reaction states in the existing grammar:
 ```json
@@ -39,3 +39,7 @@ Every fresh beat declares `layers.meme=use/omit` with a specific reason. Use req
 Plan lettering independently with `references/story-text.md`: setup -> reaction -> payoff. Optional meme `label` binds an existing object with anchored visibility outside interaction participants. Release it when its job ends, and never pre-empt a punchline. Review phone-size endpoints and later audio-aligned runtime timing; native PASS is not creative approval.
 
 Every fresh coverage beat explicitly decides story_text and meme use/omit with an editorial reason. Selected lettering needs authored overlays. A selected meme needs native acting in a visible, reachable reaction state entered from a normal setup at the exact voice anchor; initial punchline poses alone do not perform a reversal. Quiet omissions remain valid.
+
+## Cute, witty expression calibration
+
+Default to small readable faces, gentle curiosity, a brief brow raise, mild surprise and warm satisfaction. Humor comes from the action, contrast and well-timed lettering. Adapter availability never requires maximum expression intensity. Avoid contemptuous smirks, prolonged weary faces, threatening/angry reactions, distorted eyes/mouths and repeated oversized face closeups unless the user explicitly requests that tone for the current revision. A newer request for restrained cuteness overrides older requests for exaggerated memes. When no adapter fits, explicitly omit meme and use ordinary cast acting; retain scene/event/story-text decisions. Review expression together with pose, crop and transition at phone size, including intermediate state swaps; static endpoints cannot prove temporal acting.

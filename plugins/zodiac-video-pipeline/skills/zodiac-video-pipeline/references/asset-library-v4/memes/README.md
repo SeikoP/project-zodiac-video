@@ -46,6 +46,10 @@ All 30 demo situations and stock phrases were reworked after the initial review 
 
 Choose the meme's social move and verbal turn, not merely a different pose. Avoid repeating the same reaction in adjacent beats unless it is an intentional callback. For wording-led memes, make the recognizable phrase the focal Story Text at the reaction anchor; use the text hierarchy and phone-size check in `references/story-text.md`. Keep the normal setup quiet so the reaction and words arrive together.
 
-The native adapters use performed `meme-*` expressions, not the small dialogue faces. Keep the setup face ordinary; exaggerate eyebrows, mouth, gaze, tears or asymmetry at the reversal. Close up a solo reaction when its face carries the joke; preserve hand/prop contact for physical actions. A stock phrase plus a neutral sticker is not a finished meme.
+The native adapters use performed `meme-*` expressions, not the small dialogue faces. Keep the setup face ordinary; use a playful brow raise, small smile, gaze shift or compact tear at the reversal. Close up a solo reaction when its face carries the joke; preserve hand/prop contact for physical actions. A stock phrase plus a neutral sticker is not a finished meme.
 
 Test the joke with a concrete setup and consequence: a muted speaker mistaken for a muted microphone, a long shopping receipt contradicting “có tí”, or praise that exposes obviously bad logic. The reaction must reveal, contradict or escalate something the setup made us expect. “Mình hoàn toàn ổn / Ổn được ba giây” and labels naming emotions are insufficient by themselves. Registry demos are review candidates, never lines to paste into approved narration or evidence that viewers will laugh.
+
+## Playful face revision (2.12.4)
+
+All nine existing meme expression IDs now use compact mouths, soft eyes and restrained brows. IDs and adapter contracts stay compatible. Keep the meme situation, pose, setup and punchline: gentler faces do not mean neutral acting. Prefer a knowing glance or sheepish grin over contempt. Tiny tears communicate mock disappointment; avoid giant mouths, bulging eye backdrops and sharp eye-size asymmetry. Check each full situation in the regenerated gallery; library candidates still need editorial review. Existing compiled SVG bytes remain unchanged until explicitly rebuilt.
