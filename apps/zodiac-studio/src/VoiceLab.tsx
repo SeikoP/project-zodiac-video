@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Headphones, LoaderCircle, Lock, Mic2, RefreshCcw, Waves } from "lucide-react";
 import { backend, type Project, type VoiceState, type VoiceTake } from "./backend";
 
+import { Paged, PagedText } from "./Paged";
+
 function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onError }: {
   projectId: string; unitId: string; take: VoiceTake; revision: number; listened: boolean;
   onChange: (state: VoiceState) => void; onError: (error: unknown) => void;
@@ -49,6 +51,9 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
 }
 
 export default function VoiceLab({ project, onChanged }: { project: Project | null; onChanged: () => void }) {
+  const [tab, setTab] = useState("takes");
+  const workspace = useRef<HTMLDivElement>(null);
+  useEffect(() => { workspace.current?.querySelectorAll("audio").forEach(audio => audio.pause()); }, [tab]);
   const [state, setState] = useState<VoiceState | null>(null);
   const [activeId, setActiveId] = useState("");
   const [speaker, setSpeaker] = useState("");
@@ -98,12 +103,13 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
   }
   if (!project) return <section className="panel voice-empty"><Headphones size={30}/><h2>Chọn episode để mở Voice Lab</h2>
     <p>Nhập gói Phase 1 đã duyệt ở Tổng quan. Bản kể được giữ nguyên trong suốt quá trình tạo giọng.</p></section>;
-  return <>
+  return <div ref={workspace} className={"voice-workspace voice-tab-" + tab}>
     <section className="page-header"><div><p className="eyebrow">VOICE FIRST / PHASE 2</p>
       <h1>Voice Lab<span className="star">✦</span></h1><p className="page-subtitle">Nghe giọng thật trước khi dựng hình. {project.display_title}</p></div>
       <span className={"source-pill " + (approved ? "" : "offline")}><Headphones size={15}/>
         {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></section>
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
+    <div className="workspace-tabs">{[["takes", "Từng đoạn"], ["episode", "Nghe toàn bài & timing"], ["settings", "Thiết lập giọng"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
     <section className="panel voice-settings">
       <label>Giọng VieNeu<select value={speaker} disabled={!state || running || busy} onChange={event => setSpeaker(event.target.value)}>
         {state?.voices.map(voice => <option key={voice} value={voice}>{voice}</option>)}
@@ -125,16 +131,16 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
     {!state ? <p className="voice-muted"><LoaderCircle size={17} className="spin"/> Đang đọc bản kể đã duyệt…</p> : <>
       <div className="voice-layout"><section className="panel voice-units">
         <div className="panel-heading"><span className="panel-title"><Lock size={15}/> Bản kể đã khóa</span><span className="panel-meta">{count}/{state.units.length} đoạn có audio</span></div>
-        {state.units.map((item, index) => <button key={item.id} className={"voice-unit " + (unit?.id === item.id ? "active" : "")}
+        <Paged size={2} label="Đoạn đọc">{state.units.map((item, index) => <button key={item.id} className={"voice-unit " + (unit?.id === item.id ? "active" : "")}
           onClick={() => setActiveId(item.id)} aria-pressed={unit?.id === item.id}>
-          <span className="voice-unit-number">{String(index+1).padStart(2, "0")}</span><span className="voice-unit-text">{item.text}</span>
+          <span className="voice-unit-number">{String(index+1).padStart(2, "0")}</span><span className="voice-unit-text" title={item.text}>{item.text}</span>
           <span className="voice-unit-state">{item.listened ? "Đã nghe" : item.selected_take ? "Chờ nghe" : "Chưa tạo"}</span>
-        </button>)}
+        </button>)}</Paged>
       </section><section className="panel voice-takes">
         <div className="panel-heading"><span className="panel-title"><Waves size={16}/> Take đang chọn</span>
           <button className="subtle-btn" disabled={running || busy || !unit} onClick={() => unit && generate([unit.id])}><RefreshCcw size={14}/> Tạo take khác</button></div>
         <div className="voice-take-body">{unit && <>
-          <blockquote>{unit.text}</blockquote>
+          <PagedText key={unit.id} size={300} label="Bản kể đoạn" text={unit.text}/>
           {selected ? <>
             <label>Đổi take (giữ nguyên các take cũ)<select value={selected.take_id} disabled={running || busy}
               onChange={event => void action(() => backend.voiceSelect(project.project_id, state.revision, unit.id, event.target.value, unit.gap_after_ms))}>
@@ -159,9 +165,8 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
           : <p className="voice-muted">Chọn audio cho mọi đoạn rồi ghép. Không tự thêm một khoảng nghỉ bằng nhau ở mọi ranh giới.</p>}
           <p className="voice-muted">Chỉ khi xác nhận từng take và audio toàn bài, trạng thái mới là “Đã nghe & duyệt”. ASR là bằng chứng timing, không phải duyệt giọng.</p>
           {state.timing && <details className="voice-timing"><summary>{state.timing.words.length} từ có thời gian đo thực tế · {state.timing.duration_seconds.toFixed(2)} giây</summary>
-            <table><thead><tr><th>Từ</th><th>Bắt đầu</th><th>Kết thúc</th></tr></thead><tbody>{state.timing.words.map(word =>
-              <tr key={word.anchor_id}><td>{word.text}</td><td>{(word.startMs/1000).toFixed(2)}s</td><td>{(word.endMs/1000).toFixed(2)}s</td></tr>)}</tbody></table></details>}
+            <Paged size={3} label="Timing">{state.timing.words.map(word => <div className="timing-word" key={word.anchor_id}>{word.text} · {(word.startMs/1000).toFixed(2)}s → {(word.endMs/1000).toFixed(2)}s</div>)}</Paged></details>}
         </div></section>
     </>}
-  </>;
+  </div>;
 }

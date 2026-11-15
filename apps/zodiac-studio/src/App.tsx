@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { backend, type AgentHealth, type AgentTask, type AssetCatalog, type BackendHealth, type Project, type StudioEvent } from "./backend";
 
+import { Paged, PagedText } from "./Paged";
+
 type View = "overview" | "assets" | "activity" | "agent" | "editor" | "voice";
 const HyperframesWorkspace = lazy(() => import("./HyperframesWorkspace"));
 const VoiceLab = lazy(() => import("./VoiceLab"));
@@ -57,6 +59,8 @@ function EmptyState({ icon: Icon, title, detail }: { icon: LucideIcon; title: st
 }
 
 export default function App() {
+  const [expanded, setExpanded] = useState(false);
+  const [overviewTab, setOverviewTab] = useState("projects");
   const [view, setView] = useState<View>("overview");
   const [health, setHealth] = useState<BackendHealth | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -252,8 +256,9 @@ export default function App() {
     } finally { setSaving(false); }
   }
 
-  return <div className="app-shell">
+  return <div className={"app-shell " + (expanded ? "nav-expanded" : "nav-compact")}>
     <aside className="sidebar">
+      <button className="nav-toggle" aria-label={expanded ? "Thu gọn menu" : "Mở rộng menu"} onClick={() => setExpanded(!expanded)}>☰</button>
       <div className="brand"><div className="brand-glyph">✦</div><div>
         <div className="brand-name">ZODIAC<span>STUDIO</span></div>
         <div className="brand-caption">CREATIVE WORKSPACE</div></div>
@@ -261,7 +266,7 @@ export default function App() {
       <div className="sidebar-label">WORKSPACE</div>
       <nav className="sidebar-nav">{SECTIONS.map(item =>
         <button key={item.view} className={"nav-item " + (view === item.view ? "active" : "")}
-          onClick={() => setView(item.view)}><item.icon size={18} strokeWidth={1.8}/>
+          title={item.label} aria-label={item.label} onClick={() => setView(item.view)}><item.icon size={18} strokeWidth={1.8}/>
           <span>{item.label}</span>
           {item.view === "overview" && projects.length > 0 && <span className="nav-count">{projects.length}</span>}
         </button>)}</nav>
@@ -295,7 +300,7 @@ export default function App() {
           </div>}
         </div>
       </header>
-      <main className="content">
+      <main className={"content view-" + view}>
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}
           <span>{alert.message}</span><button onClick={() => setAlert(null)}>×</button>
@@ -326,7 +331,8 @@ export default function App() {
               <div className="metric-bottom">{health ? "Source-bound · Revisioned" : "Chờ kết nối Tauri"}</div></div>
           </section>
 
-          <div className="dashboard-grid">
+          <div className="workspace-tabs"><button aria-pressed={overviewTab === "projects"} onClick={() => setOverviewTab("projects")}>Episode & trạng thái</button><button aria-pressed={overviewTab === "notes"} onClick={() => setOverviewTab("notes")}>Ghi chú & hoạt động</button></div>
+          <div className="dashboard-grid" hidden={overviewTab !== "projects"}>
             <section className="panel episodes-panel">
               <PanelHeading icon={FolderOpen} title="Dự án gần đây"
                 action={<button className="subtle-btn" onClick={() => void loadProjects()}>
@@ -334,7 +340,7 @@ export default function App() {
               {projects.length === 0 ? <EmptyState icon={Folder}
                 title={loading ? "Đang đọc dữ liệu…" : "Chưa có episode"}
                 detail="Nhập ZIP Phase 1 v2 đã được duyệt. Không tự tạo dữ liệu mẫu."/> :
-                <div className="episode-list">{projects.map(project =>
+                <div className="episode-list"><Paged label="Episode">{projects.map(project =>
                   <button key={project.project_id}
                     className={"episode-item " + (selectedId === project.project_id ? "selected" : "")}
                     onClick={() => chooseProject(project.project_id)}>
@@ -342,7 +348,7 @@ export default function App() {
                     <span className="episode-info"><strong>{project.display_title || project.episode_id}</strong>
                       <small>Project {project.project_id.slice(0, 19)}… · Revision {project.revision}</small></span>
                     <StatusChip status={project.status.content}/><ArrowRight size={16} className="episode-arrow"/>
-                  </button>)}</div>}
+                  </button>)}</Paged></div>}
               <div className="panel-footer">Đọc trực tiếp từ SQLite Project Registry, không phải nội dung demo.</div>
             </section>
             <section className="panel status-panel">
@@ -366,7 +372,7 @@ export default function App() {
               </>}
             </section>
           </div>
-          <div className="dashboard-grid lower-grid">
+          <div className="dashboard-grid lower-grid" hidden={overviewTab !== "notes"}>
             <section className="panel notes-panel">
               <PanelHeading icon={ShieldCheck} title="Ghi chú cho episode"
                 action={<span className="panel-meta">Metadata / revisioned</span>}/>
@@ -408,11 +414,11 @@ export default function App() {
               detail="Đang xác minh asset ID và hash từ Python backend."/> :
               catalog.items.length === 0 ? <EmptyState icon={Search} title="Không tìm thấy"
                 detail="Không có asset nào trong catalog phù hợp truy vấn."/> :
-                <div className="asset-grid">{catalog.items.map(asset =>
+                <div className="asset-grid"><Paged key={assetQuery} size={6} label="Tài nguyên">{catalog.items.map(asset =>
                   <div className="asset-card" key={asset.id}><div className="asset-visual">
                     <Image size={28} strokeWidth={1.2}/><span className="asset-type">SVG</span></div>
                     <strong>{asset.id}</strong><span className="asset-role">{asset.role}</span>
-                    <code>{asset.sha256.slice(0, 12)}…</code></div>)}</div>}
+                    <code>{asset.sha256.slice(0, 12)}…</code></div>)}</Paged></div>}
             <div className="panel-footer">Hiện chỉ lọc theo ID. Semantic ranking và biến thể hình thể thuộc P3/P5.</div>
           </section>
         </>}
@@ -428,12 +434,11 @@ export default function App() {
               action={<span className="panel-meta">{events.length} sự kiện gần nhất</span>}/>
             {events.length === 0 ? <EmptyState icon={FileClock} title="Chưa có sự kiện"
               detail="Ghi chú metadata sẽ được lưu vào ledger."/> :
-              <div className="full-event-list">{events.map(event =>
+              <div className="full-event-list"><Paged size={2} label="Hoạt động">{events.map(event =>
                 <div className="full-event" key={event.event_seq}><div className="timeline-dot"/>
                   <div className="full-event-main"><strong>{event.kind}</strong>
-                    <p>{typeof event.payload.text === "string" ? event.payload.text :
-                      JSON.stringify(event.payload)}</p></div>
-                  <span>r{event.revision} · #{event.event_seq}</span></div>)}</div>}
+                    <PagedText size={240} text={typeof event.payload.text === "string" ? event.payload.text : JSON.stringify(event.payload)}/></div>
+                  <span>r{event.revision} · #{event.event_seq}</span></div>)}</Paged></div>}
           </section>
         </>}
 
@@ -489,9 +494,9 @@ export default function App() {
                   : "Không tìm thấy Codex. Studio vẫn hoạt động thủ công."}</p></div>
                 : <div className="agent-output">
                   <span className="agent-task-id">Task {currentAgentTask.task_id.slice(0, 12)} · Project revision {currentAgentTask.project_revision}</span>
-                  <p>{currentAgentTask.preview || (agentRunning
+                  <PagedText size={650} text={currentAgentTask.preview || (agentRunning
                     ? "Đang khởi tạo phiên, xác minh nguồn và nhận phản hồi…"
-                    : currentAgentTask.error || "Chưa có phản hồi")}</p>
+                    : currentAgentTask.error || "Chưa có phản hồi")}/>
                   {currentAgentTask.error && <div className="agent-error">{currentAgentTask.error}</div>}
                 </div>}
             </div>

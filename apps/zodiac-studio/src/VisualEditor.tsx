@@ -4,7 +4,10 @@ import { HyperframesLogo } from "@hyperframes/studio/ui";
 import { Check, FileJson, Layers3, LoaderCircle, Pause, Play, RefreshCcw, Undo2 } from "lucide-react";
 import { backend, type AgentTask, type CandidateResult, type Project, type VisualPreview, type VisualState, type VisualTransform } from "./backend";
 
+import { Paged, PagedText } from "./Paged";
+
 export default function VisualEditor({ project }: { project: Project | null }) {
+  const [tab, setTab] = useState("object"), [logOpen, setLogOpen] = useState(false);
   const [state, setState] = useState<VisualState | null>(null), [sceneId, setSceneId] = useState("");
   const [entityId, setEntityId] = useState(""), [stateId, setStateId] = useState("");
   const [preview, setPreview] = useState<VisualPreview | null>(null), [error, setError] = useState("");
@@ -140,13 +143,14 @@ export default function VisualEditor({ project }: { project: Project | null }) {
     if (file.size > 2 * 1024 * 1024) { report(new Error("Visual Intent tối đa 2 MiB")); return; }
     setSourceText(await file.text()); setSourceOpen(true);
   }
+  useEffect(() => { setPlaying(false); }, [sourceOpen, logOpen]);
   const disabled = busy || running;
   if (!project) return <section className="panel voice-empty"><Layers3 size={30}/><h2>Chọn episode để mở Visual Workspace</h2></section>;
   return <section className="visual-editor">
     <div className="hf-head"><span className="hf-brand"><HyperframesLogo/><strong>Visual Workspace</strong></span>
       <span className="status-chip status-neutral">R{state?.revision ?? 0} · {sdkReady ? "HyperFrames SDK" : "Canonical Visual Intent"}</span></div>
     {error && <div className="inline-alert error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
-    <div className="visual-toolbar"><button className="outline-btn" onClick={() => setSourceOpen(!sourceOpen)}><FileJson size={15}/>Nguồn Visual Intent</button>
+    <div className="visual-toolbar"><button className="outline-btn" onClick={() => { setSourceOpen(!sourceOpen); setLogOpen(false); }}><FileJson size={15}/>Nguồn Visual Intent</button>
       <button className="outline-btn" disabled={disabled || !state?.can_undo} onClick={() => command("undo", {})}><Undo2 size={15}/>Undo</button>
       <button className="outline-btn" disabled={disabled || !state?.can_redo} onClick={() => command("redo", {})}>Redo</button>
       <label>Theme<select value={state?.theme ?? "light"} disabled={disabled || !state?.intent} onChange={event => command("theme.select", { theme: event.target.value })}>
@@ -155,15 +159,15 @@ export default function VisualEditor({ project }: { project: Project | null }) {
         {running ? <LoaderCircle size={15} className="spin"/> : <RefreshCcw size={15}/>}Dựng cả episode</button>
       {running && <button className="outline-btn" onClick={() => void action(() => backend.visualCancel(project.project_id))}>Dừng build</button>}</div>
     {sourceOpen && <div className="panel visual-source"><label>Nhập nguồn zodiac-visual-intent@1<input type="file" accept=".json,application/json" onChange={e => e.target.files?.[0] && void loadSource(e.target.files[0])}/></label>
-      <textarea aria-label="Canonical Visual Intent" value={sourceText} onChange={e => setSourceText(e.target.value)} placeholder="Dán Visual Intent do bạn hoặc agent soạn từ nội dung đã duyệt" spellCheck={false}/>
-      <div className="agent-actions"><button className="outline-btn" onClick={() => setSourceText(JSON.stringify(state?.intent, null, 2) ?? "")}>Đọc nguồn hiện tại</button>
+      <PagedText label="Canonical Visual Intent" size={900} text={sourceText} onChange={setSourceText}/>
+      <div className="agent-actions"><button className="outline-btn" onClick={() => setSourceText("")}>Soạn nguồn thay thế</button><button className="outline-btn" onClick={() => setSourceText(JSON.stringify(state?.intent, null, 2) ?? "")}>Đọc nguồn hiện tại</button>
         <button className="primary-btn" disabled={disabled || !sourceText.trim()} onClick={() => { try { command("source.replace", { intent: JSON.parse(sourceText) }); } catch (failure) { report(failure); } }}>Lưu nguồn có kiểm tra</button></div>
-      <small>Thao tác authoring giữ nguyên narration, receipt duyệt và voice. HTML preview không có quyền ghi nguồn.</small></div>}
+      <small>Sửa từng trang nguồn. Để dán thay toàn bộ JSON, chọn “Soạn nguồn thay thế” trước hoặc nhập tệp JSON. Narration, receipt và voice giữ nguyên.</small></div>}
     {state?.job && <div className="voice-progress"><span>{state.job.message}</span><span>{state.job.status} · {state.job.ready_scenes.length}/{state.job.total}</span>{state.job.error && <pre>{state.job.error}</pre>}</div>}
     {state?.stale_preview && <p className="voice-warning">Đang giữ preview tốt R{state.build?.revision}. Nguồn hiện tại R{state.revision}; dựng lại để xem thay đổi.</p>}
-    <div className="visual-layout"><aside className="panel visual-scenes"><div className="panel-heading">Scenes · {state?.intent?.scenes.length ?? 0}</div>
-      {state?.intent?.scenes.map((item, index) => <button key={item.id} className={scene?.id === item.id ? "active" : ""} onClick={() => { setSceneId(item.id); setEntityId(""); setStateId(""); setPlaying(false); }}>
-        <span>{String(index + 1).padStart(2, "0")} · {item.id}</span><small>{item.semantic_goal}</small><em>{state.build?.scenes.some(s => s.id === item.id) ? "Preview có thật" : state.job?.ready_scenes.includes(item.id) ? "Candidate đang build" : "Chưa dựng"}</em></button>)}
+    <div className="visual-layout" hidden={sourceOpen || logOpen}><aside className="panel visual-scenes"><div className="panel-heading">Scenes · {state?.intent?.scenes.length ?? 0}</div>
+      <Paged size={3} label="Cảnh">{(state?.intent?.scenes ?? []).map((item, index) => <button key={item.id} title={item.semantic_goal} className={scene?.id === item.id ? "active" : ""} onClick={() => { setSceneId(item.id); setEntityId(""); setStateId(""); setPlaying(false); }}>
+        <span>{String(index + 1).padStart(2, "0")} · {item.id}</span><small>{item.semantic_goal}</small><em>{state?.build?.scenes.some(s => s.id === item.id) ? "Preview có thật" : state?.job?.ready_scenes.includes(item.id) ? "Candidate đang build" : "Chưa dựng"}</em></button>)}</Paged>
       {!state?.intent && <p>Chưa có storyboard. Nhập Visual Intent đã soạn từ nguồn được duyệt.</p>}</aside>
       <div className="panel visual-stage"><div className="panel-heading"><span>{scene?.id ?? "Preview"}</span><small>{preview ? `Build ${preview.build_id.slice(0, 8)} · R${preview.revision}` : "Chưa có output"}</small></div>
         <div className="visual-viewport" ref={viewport}>{preview ? <iframe key={preview.url} ref={iframe} src={preview.url} title={`HyperFrames ${scene?.id}`} sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"
@@ -180,24 +184,25 @@ export default function VisualEditor({ project }: { project: Project | null }) {
           <small>{audioUrl ? "Voice đã chọn" : "Preview không audio"}</small></div>{audioUrl && <audio ref={audio} src={audioUrl} preload="metadata"/>}
         <div className="visual-fidelity"><strong>{preview?.candidate_only ? "Candidate trong lúc dựng" : "Preview kỹ thuật"}</strong><span>SVG nguồn · timing ASR · chưa duyệt hình</span></div>
         {built && <p className="voice-muted">Caption contrast {built.qa.caption_contrast.toFixed(1)}:1 · QA {built.qa.status} · {built.qa.issues.map(i => i.code).join(", ") || "Không có cảnh báo kỹ thuật"}</p>}</div>
-      <aside className="panel visual-inspector"><div className="panel-heading">Inspector · Semantic source</div>
+      <aside className="panel visual-inspector"><div className="workspace-tabs" aria-label="Thuộc tính cảnh">{[["object", "Đối tượng"], ["events", "Sự kiện"], ["assets", "Hình ảnh"], ["agent", "Agent"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
+        <div className="inspector-group" hidden={tab !== "object"}>
         <label>Entity<select value={entity?.id ?? ""} onChange={e => { setEntityId(e.target.value); setStateId(""); }}>{scene?.entities.map(e => <option key={e.id} value={e.id}>{e.id} · {e.kind}</option>)}</select></label>
         <label>State<select value={selectedStateId ?? ""} onChange={e => { setStateId(e.target.value); const map = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === e.target.value); if (map) send("state", { hf_id: map.hf_id }); }}>{Object.keys(entity?.states ?? {}).map(id => <option key={id}>{id}</option>)}</select></label>
         {draft && <><div className="visual-transform">{(["x", "y", "width", "height", "rotation"] as const).map(key => <label key={key}>{key}<input type="number" value={draft[key] ?? 0} disabled={disabled} onChange={e => setDraft({ ...draft, [key]: Number(e.target.value) })}/></label>)}</div>
           <button className="primary-btn" disabled={disabled || !sdkReady} onClick={() => void commitTransform(draft)}><Check size={15}/>Lưu & dựng cảnh</button></>}
         <small>Asset {mapped?.asset_id ?? selected?.asset ?? "—"}</small><small>Source {mapped?.source_sha256.slice(0, 16) ?? "Chưa build"}</small>
-        <div className="visual-events"><strong>Voice reveals / events</strong>{scene?.events.map(e => <p key={e.id}>{e.id} · {e.target}<small>{e.state_before} → {e.state_after} · {e.trigger.text ?? e.trigger.type}</small></p>)}</div>
-        <div className="visual-candidates"><strong>Composition candidates</strong><input aria-label="Asset constraints" value={query} placeholder="Family, ví dụ phone" onChange={e => setQuery(e.target.value)}/>
+        </div><div className="visual-events" hidden={tab !== "events"}><strong>Voice reveals / events</strong><Paged size={2} label="Sự kiện cảnh">{(scene?.events ?? []).map(e => <p key={e.id}>{e.id} · {e.target}<small>{e.state_before} → {e.state_after} · {e.trigger.text ?? e.trigger.type}</small></p>)}</Paged></div>
+        <div className="visual-candidates" hidden={tab !== "assets"}><strong>Composition candidates</strong><input aria-label="Asset constraints" value={query} placeholder="Family, ví dụ phone" onChange={e => setQuery(e.target.value)}/>
           <button className="outline-btn" disabled={!scene || disabled} onClick={() => { if (scene) void backend.visualCandidates(project.project_id, scene.id, query ? { family_id: query } : {}).then(setCandidates).catch(report); }}>Tìm bundle phù hợp</button>
-          {candidates?.bundles.map(c => <div className="visual-candidate" key={c.candidate_id}><b>{c.asset_id}</b><small>{c.identity.model_id}</small><p>{c.fit_reasons.join(" · ")}</p>{c.warnings.map(w => <small key={w}>{w}</small>)}
-            <button className="outline-btn" disabled={disabled} onClick={() => command("asset.select", { scene_id: scene?.id, candidate_id: c.candidate_id, requirement: query ? { family_id: query } : {} })}>Dùng composition</button></div>)}
+          <Paged size={1} label="Composition">{(candidates?.bundles ?? []).map(c => <div className="visual-candidate" key={c.candidate_id}><b>{c.asset_id}</b><small>{c.identity.model_id}</small><p>{c.fit_reasons.join(" · ")}</p>{c.warnings.map(w => <small key={w}>{w}</small>)}
+            <button className="outline-btn" disabled={disabled} onClick={() => command("asset.select", { scene_id: scene?.id, candidate_id: c.candidate_id, requirement: query ? { family_id: query } : {} })}>Dùng composition</button></div>)}</Paged>
           {candidates?.new_asset_task && <p className="voice-warning">NO_FIT_ASSET · {candidates.new_asset_task.reason}</p>}
-          {candidates && <details><summary>{candidates.rejected.length} lựa chọn bị loại</summary>{candidates.rejected.map(r => <small key={r.id}>{r.id}: {r.reason}</small>)}</details>}</div>
-        <div className="visual-candidates"><strong>Agent chỉnh cảnh đang chọn</strong>
+          {candidates && <details><summary>{candidates.rejected.length} lựa chọn bị loại</summary><Paged size={1} label="Lựa chọn bị loại">{candidates.rejected.map(r => <small key={r.id}>{r.id}: {r.reason}</small>)}</Paged></details>}</div>
+        <div className="visual-candidates" hidden={tab !== "agent"}><strong>Agent chỉnh cảnh đang chọn</strong>
           <textarea aria-label="Yêu cầu agent chỉnh cảnh" value={agentInstruction} maxLength={1200} onChange={e => setAgentInstruction(e.target.value)} placeholder="Ví dụ: Dịch actor lead sang phải 40px, giữ kích thước"/>
           <button className="outline-btn" disabled={disabled || !scene || !agentInstruction.trim() || !!agentTask && ["STARTING", "RUNNING"].includes(agentTask.status)}
             onClick={() => scene && void backend.visualAgentStart(project.project_id, scene.id, agentInstruction).then(setAgentTask).catch(report)}>Đề xuất chỉnh sửa</button>
-          {agentTask && <><small>{agentTask.status} · {agentTask.error ?? "Chưa ghi nguồn khi chưa xác nhận"}</small><pre className="visual-agent-proposal">{agentTask.suggestion || agentTask.preview}</pre>
+          {agentTask && <><small>{agentTask.status} · {agentTask.error ?? "Chưa ghi nguồn khi chưa xác nhận"}</small><PagedText size={220} text={agentTask.suggestion || agentTask.preview}/>
             {["STARTING", "RUNNING"].includes(agentTask.status) && <button className="outline-btn" onClick={() => void backend.agentCancel(agentTask.task_id).then(setAgentTask).catch(report)}>Dừng agent</button>}
             <button className="primary-btn" disabled={disabled || agentTask.status !== "COMPLETED" || agentTask.write_applied} onClick={() => state && void action(async () => {
               const next = await backend.visualAgentApply(agentTask.task_id, state.revision);
@@ -206,6 +211,7 @@ export default function VisualEditor({ project }: { project: Project | null }) {
             })}>Xác nhận edit & dựng cảnh</button></>}
         </div></aside></div>
     {state?.build && <div className="visual-receipt">{state.build.scenes.length} scenes · {state.build.cache.reused} nodes cache / {state.build.cache.rebuilt} dựng lại · {(state.build.resources.wall_ms / 1000).toFixed(2)}s · {(state.build.resources.peak_rss_bytes / 1024 / 1024).toFixed(0)} MiB peak · Renderer parity: {state.build.renderer_parity}</div>}
-    <details className="panel visual-log"><summary>Hoạt động chỉnh sửa và build</summary>{state?.events.slice().reverse().map(e => <p key={e.event_seq}>R{e.revision} · {e.kind} · {String(e.payload.scene_id ?? e.payload.build_id ?? "")}</p>)}</details>
+    <button className="subtle-btn log-toggle" aria-expanded={logOpen} onClick={() => { setLogOpen(!logOpen); setSourceOpen(false); }}>{logOpen ? "Đóng nhật ký" : "Hoạt động chỉnh sửa và build"}</button>
+    {logOpen && <div className="panel visual-log"><Paged size={5} label="Nhật ký build">{(state?.events ?? []).slice().reverse().map(e => <p key={e.event_seq}>R{e.revision} · {e.kind} · {String(e.payload.scene_id ?? e.payload.build_id ?? "")}</p>)}</Paged></div>}
   </section>;
 }
