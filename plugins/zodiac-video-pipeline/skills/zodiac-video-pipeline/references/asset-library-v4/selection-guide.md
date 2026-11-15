@@ -67,3 +67,7 @@ Fresh 2.6.11+ scene-level execution uses the canonical Visual Intent for a
 source-fingerprinted scene graph and separate continuity verification. It must
 not independently author a derived production/asset plan per scene. Native
 compilation and final review remain the existing manifest-owned gate.
+
+## Physical action selection
+
+For selected interactive props, read `props/README.md`. Choose from the approved action and consequence before choosing artwork. A physical prop may carry recurring action and a changed-state callback; record that chain in existing story-focus links/events and actual spatial bindings. Do not satisfy interaction with a generic action label or a static sticker. No prop quota applies.

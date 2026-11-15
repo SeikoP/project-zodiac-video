@@ -38,6 +38,10 @@ Treat the user's diagnosis as a source-edit signal, not a request to polish ever
 - If a recurring image is discovered only after drafting, move it upstream into Narrative Design and re-draft around it rather than pretending it was planned.
 - A Phase-1 Narrative Motif is semantic continuity. Never confuse it with Phase-2 Visual Metaphor/Story Object authoring.
 
+## Physical situations in Narrative Design
+
+When the premise benefits from a concrete situation, let the approved story contain an object someone actually uses, a physical obstacle, and the resulting choice or consequence. One familiar item can return with changed meaning. Carry this action in the Story Spine and beat purpose; do not design assets, coordinates, contacts or a Phase2 prop quota. Keep direct or reflective episodes sparse when physical staging adds nothing. Never force the car example into unrelated signs or rewrite a good premise merely to fit the asset catalog. Local translates approved physical actions into interactive props and scene direction.
+
 ## Single-voice TTS editorial review
 
 Write for a listener who cannot see quotation marks or the screen. Default to one narrator. Identify a speaker before every necessary quotation; convert repeated dialogue, unlabelled thoughts and question/answer chains into narrated action. Dialogue is optional, not a quota. Do not rely on the engine changing voice, punctuation alone creating a dramatic pause, or performance metadata controlling prosody.

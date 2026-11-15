@@ -197,11 +197,15 @@
         "meme-label-wallet-flex",
         "meme-label-innocent-shrug",
         "meme-label-awkward-grin",
-        "meme-label-silent-judgment"
+        "meme-label-silent-judgment",
+        "car-front",
+        "road-pothole",
+        "road-barrier"
       ],
       "kind": "prop",
       "refs": [
-        "references/asset-library-v4/props/index.json"
+        "references/asset-library-v4/props/index.json",
+        "references/asset-library-v4/props/README.md"
       ]
     },
     {

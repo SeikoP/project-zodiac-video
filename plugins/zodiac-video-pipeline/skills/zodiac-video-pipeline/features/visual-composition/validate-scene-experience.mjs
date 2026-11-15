@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {buildSceneGraph} from '../scene-production/scene-graph.mjs';
 import {reviewSceneContinuity} from '../scene-production/scene-continuity.mjs';
 import {writeSceneCheckpoints} from '../scene-production/scene-checkpoints.mjs';
+import {classifyEventChange} from './scene-state-trace.mjs';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const meaningful=v=>typeof v==='string'&&v.trim().length>=12;
@@ -64,11 +65,17 @@ export function reviewSceneExperience(intent){
   if(!scene.experience_profile||!text(profile.story_mode))issues.push({code:'EXPERIENCE_PROFILE_MISSING'});
   const characters=entities.filter(isCharacter),physical=entities.filter(isPhysical),narrative=entities.filter(isNarrative),accents=entities.filter(isAccent);
   const events=scene.events??[];
-  const physicalActions=events.filter(ev=>physical.some(p=>p.id===ev.target)&&text(ev.action));
+  const physicalActions=events.filter(ev=>{
+   const prop=physical.find(p=>p.id===ev.target),before=prop?.states?.[ev.state_before],after=prop?.states?.[ev.state_after];
+   return before&&after&&text(ev.action)&&classifyEventChange(ev,before,after)!=='no_op';
+  });
   const narrativeActions=events.filter(ev=>narrative.some(n=>n.id===ev.target)&&(ev.state_before!==ev.state_after||text(ev.action)));
   const required=profile.required_physical_entities??[];
   for(const id of required)if(!physical.some(e=>e.id===id))issues.push({code:'PHYSICAL_STORY_ENTITY_MISSING',entity_id:id});
   const mode=profile.story_mode??'general',sparse=text(profile.sparse_reason);
+  if(['behavior','relationship'].includes(mode))for(const prop of physical){
+   if(!physicalActions.some(ev=>ev.target===prop.id))issues.push({code:'PHYSICAL_PROP_PASSIVE',entity_id:prop.id});
+  }
   const actorActions=events.filter(ev=>characters.some(c=>c.id===ev.target)&&text(ev.action));
   const activeStory=physicalActions.length>0||narrativeActions.length>0||actorActions.length>0;
   if(['behavior','relationship'].includes(mode)&&characters.length&&!activeStory&&physical.length===0&&narrative.length===0)issues.push({code:'PASSIVE_STORYTELLING'});
@@ -85,7 +92,7 @@ export function reviewSceneExperience(intent){
    story_focus_alignment:{result:focusReview.required?(focusPass?'PASS':'REVIEW'):focusReview.focus?(focusPass?'PASS':'REVIEW'):'OMIT',reason:focusPass?'Focal and supporting story entities form a goal-bound relation chain.':focusReview.required?'Required story focus is missing, invalid or disconnected.':'No story-focus chain required for this sparse/simple beat.'},
    character_action:{result:activeStory||mode==='reflection'?'PASS':'REVIEW',reason:activeStory?'A scene event changes actor/prop/narrative state.':mode==='reflection'&&sparse?profile.sparse_reason:'No meaningful action is authored.'},
    environment_specificity:{result:text(authored.environment_specificity)||accents.length?'PASS':'OMIT',reason:authored.environment_specificity??(accents.length?'Context cue is present.':'No context cue required.')},
-   physical_storytelling:{result:physicalActions.length?'PASS':required.length?'REVIEW':'OMIT',reason:physicalActions.length?'Physical prop participates in an authored action.':authored.physical_storytelling??'No physical story action required.'},
+   physical_storytelling:{result:issues.some(i=>i.code==='PHYSICAL_PROP_PASSIVE')?'REVIEW':physicalActions.length?'PASS':required.length?'REVIEW':'OMIT',reason:physicalActions.length?'Physical prop has a visible asset, geometry, visibility or supported motion change; narrative causality still needs editorial review.':authored.physical_storytelling??'No visible physical action is authored.'},
    depth_separation:{result:focusPass&&focusReview.supportIds.length?'PASS':(mode==='reflection'&&sparse)?'OMIT':'REVIEW',reason:focusPass&&focusReview.supportIds.length?'Depth comes from linked story roles, not asset count.':mode==='reflection'&&sparse?'Negative space is intentional.':'Visual layers exist without a validated semantic relationship chain.'},
    secondary_action:{result:events.length>1?'PASS':'OMIT',reason:events.length>1?'More than one authored event supports the beat.':'Secondary action is not required.'},
    visual_callback:{result:text(authored.visual_callback)?'PASS':'OMIT',reason:authored.visual_callback??'No callback selected.'},

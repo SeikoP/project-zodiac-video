@@ -43,3 +43,7 @@ Every fresh coverage beat explicitly decides story_text and meme use/omit with a
 ## Cute, witty expression calibration
 
 Default to small readable faces, gentle curiosity, a brief brow raise, mild surprise and warm satisfaction. Humor comes from the action, contrast and well-timed lettering. Adapter availability never requires maximum expression intensity. Avoid contemptuous smirks, prolonged weary faces, threatening/angry reactions, distorted eyes/mouths and repeated oversized face closeups unless the user explicitly requests that tone for the current revision. A newer request for restrained cuteness overrides older requests for exaggerated memes. When no adapter fits, explicitly omit meme and use ordinary cast acting; retain scene/event/story-text decisions. Review expression together with pose, crop and transition at phone size, including intermediate state swaps; static endpoints cannot prove temporal acting.
+
+## Interactive prop staging
+
+Use `asset-library-v4/props/README.md` when a physical object carries the action. Stage normal use, a concrete change/obstacle and the visible consequence. Use existing event actions, story-focus links, spatial bindings and per-beat props coverage. Car/driver motion, contact and obstacle placement must form one readable scene; a reveal animation alone does not prove narrative interaction. Keep semantic prominence tied to the action; no required prop count or forced callback.

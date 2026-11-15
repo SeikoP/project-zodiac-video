@@ -1,6 +1,6 @@
 {
   "format": "zodiac-v4-prop-catalog@1",
-  "version": "4.3",
+  "version": "4.4",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -746,6 +746,37 @@
       "contexts": [
         "optional-meme-lettering",
         "silent-judgment"
+      ]
+    },
+    {
+      "id": "car-front",
+      "path": "props/car-front.svg",
+      "role": "story_prop",
+      "contexts": [
+        "travel",
+        "routine",
+        "detour",
+        "arrival"
+      ]
+    },
+    {
+      "id": "road-pothole",
+      "path": "props/road-pothole.svg",
+      "role": "story_prop",
+      "contexts": [
+        "travel",
+        "obstacle",
+        "avoidance"
+      ]
+    },
+    {
+      "id": "road-barrier",
+      "path": "props/road-barrier.svg",
+      "role": "story_prop",
+      "contexts": [
+        "travel",
+        "obstacle",
+        "blocked-route"
       ]
     }
   ]

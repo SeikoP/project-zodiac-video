@@ -17,13 +17,13 @@ test('behavior scene with only passive actor and passive accent is REVIEW',()=>{
 
 test('an action alone no longer proves focused storytelling',()=>{
  const goal='Remember a drink preference';
- const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior'},entities:[char,prop],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held'}],art_direction:{scene_experience:{environment_specificity:'Minimal counter.'}}}));
+ const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior'},entities:[char,prop],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held',motion:{preset:'slide',duration_frames:12}}],art_direction:{scene_experience:{environment_specificity:'Minimal counter.'}}}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='STORY_FOCUS_MISSING'));
 });
 
 test('meaningful physical action plus a goal-bound relation chain satisfies behavior storytelling',()=>{
  const goal='Remember a drink preference';
- const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior',story_focus:focus(goal)},entities:[char,prop],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held'}],spatial_bindings:[{entity:'cup',anchor:'lead',relation:'held_by'}],art_direction:{scene_experience:{environment_specificity:'Intentionally minimal counter space.',visual_callback:'Cup is the remembered detail.'}}}));
+ const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior',story_focus:focus(goal)},entities:[char,prop],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held',motion:{preset:'slide',duration_frames:12}}],spatial_bindings:[{entity:'cup',anchor:'lead',relation:'held_by'}],art_direction:{scene_experience:{environment_specificity:'Intentionally minimal counter space.',visual_callback:'Cup is the remembered detail.'}}}));
  assert.equal(r.decision,'PASS');assert.equal(r.scenes[0].criteria.story_focus_alignment.result,'PASS');assert.equal(r.scenes[0].criteria.depth_separation.result,'PASS');
 });
 
@@ -55,4 +55,18 @@ test('narrated physical object cannot be replaced only by narrative visual',()=>
 test('fresh scene without experience profile is REVIEW instead of silently passing',()=>{
  const r=reviewSceneExperience(intent({id:'S00',semantic_goal:'A behavior beat',entities:[char,accent],events:[]}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='EXPERIENCE_PROFILE_MISSING'));
+});
+
+test('naming an action without a visual prop change is REVIEW',()=>{
+ const goal='Remember a drink preference';
+ const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior',story_focus:focus(goal)},entities:[char,prop],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held',motion:{preset:'state_swap'}}],spatial_bindings:[{entity:'cup',anchor:'lead',relation:'held_by'}]}));
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='PHYSICAL_PROP_PASSIVE'&&x.entity_id==='cup'));
+ assert.equal(r.scenes[0].criteria.physical_storytelling.result,'REVIEW');
+});
+
+test('one active prop cannot hide another passive interactive prop',()=>{
+ const goal='Remember a drink preference',other={...prop,id:'bag'};
+ const r=reviewSceneExperience(intent({id:'S01',semantic_goal:goal,experience_profile:{story_mode:'behavior',story_focus:focus(goal,['cup','bag'])},entities:[char,prop,other],events:[{id:'E1',target:'cup',action:'raise',state_before:'held',state_after:'held',motion:{preset:'slide'}}]}));
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='PHYSICAL_PROP_PASSIVE'&&x.entity_id==='bag'));
+ assert.ok(!r.scenes[0].issues.some(x=>x.code==='PHYSICAL_PROP_PASSIVE'&&x.entity_id==='cup'));
 });
