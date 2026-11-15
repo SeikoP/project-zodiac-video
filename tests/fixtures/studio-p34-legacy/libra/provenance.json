@@ -1,0 +1,23 @@
+{
+  "format": "zodiac-legacy-regression-assets@1",
+  "source_git_commit": "1dc19371caf3a25e6bc25aadcd3b937aecf24128",
+  "classification": "READ_ONLY_LEGACY_COMPATIBILITY_NOT_FRESH_CATALOG",
+  "human_visual_approval": "NOT_ASSERTED",
+  "assets": [
+    {
+      "file": "balanced.svg",
+      "source_path": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/visual-metaphors/balance-scale/balanced.svg",
+      "sha256": "b4b646f6d2bd0def37798e53ccd6be46fb82c51752e84a05ae6d3b8a5f4638fc"
+    },
+    {
+      "file": "tilt_left.svg",
+      "source_path": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/visual-metaphors/balance-scale/tilt_left.svg",
+      "sha256": "86a394752a1302d8b41157cd9ad5ae792134d7b012d4481ea350f9079ec04605"
+    },
+    {
+      "file": "tilt_right.svg",
+      "source_path": "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/visual-metaphors/balance-scale/tilt_right.svg",
+      "sha256": "4e27431aac82e81b21bfdc9ea579834580511f79982ad04f74cbd6927672ef05"
+    }
+  ]
+}

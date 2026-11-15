@@ -78,6 +78,10 @@ class VoiceArtifactStore:
 
     @staticmethod
     def _atomic_write(path: Path, payload: dict) -> None:
+        if os.name == "nt":
+            absolute = str(path.resolve())
+            if not absolute.startswith("\\\\?\\"):
+                path = Path("\\\\?\\UNC\\"+absolute[2:] if absolute.startswith("\\\\") else "\\\\?\\"+absolute)
         path.parent.mkdir(parents=True, exist_ok=True)
         temp = path.with_name(path.name + f".{uuid.uuid4().hex}.tmp")
         try:

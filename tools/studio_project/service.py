@@ -30,6 +30,14 @@ class StudioProjectService:
         self.registry = EpisodeRegistry(Path(projects_root))
         self._agent = None
         self._voice = None
+        self._visual = None
+
+    @property
+    def visual(self):
+        if self._visual is None:
+            from .visual_workspace import VisualWorkspace
+            self._visual = VisualWorkspace(self)
+        return self._visual
 
     @property
     def voice(self):
@@ -47,8 +55,12 @@ class StudioProjectService:
 
     def close(self) -> None:
         try:
-            if self._voice is not None:
-                self._voice.close()
+            try:
+                if self._visual is not None:
+                    self._visual.close()
+            finally:
+                if self._voice is not None:
+                    self._voice.close()
         finally:
             if self._agent is not None:
                 self._agent.close()

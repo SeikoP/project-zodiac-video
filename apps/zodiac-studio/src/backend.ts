@@ -69,6 +69,26 @@ export type AgentHealth = {
   scope: string;
   active: number;
 };
+export type VisualTransform = { x: number; y: number; width: number; height: number; rotation?: number };
+export type VisualEntity = { id: string; kind: string; initial_state: string; visual_role?: string;
+  states: Record<string, { asset: string; transform: VisualTransform; visible?: boolean; opacity?: number; layer?: number }> };
+export type VisualScene = { id: string; semantic_goal: string; narration_range: [number, number]; entities: VisualEntity[];
+  events: { id: string; target: string; state_before: string; state_after: string; trigger: { type: string; text?: string } }[] };
+export type VisualIntent = { format: string; scenes: VisualScene[]; [key: string]: unknown };
+export type BuiltScene = { id: string; start_ms: number; end_ms: number; duration_seconds: number; preview_sha256: string;
+  source_map: { hf_id: string; scene_id: string; entity_id: string; state_id: string; asset_id: string; source_sha256: string }[];
+  qa: { status: string; caption_contrast: number; issues: { code: string; entity_id?: string }[] }; fidelity: string };
+export type VisualState = { project_id: string; revision: number; source_hash: string | null; intent: VisualIntent | null;
+  theme: "light" | "dark"; can_undo: boolean; can_redo: boolean; stale_preview: boolean;
+  job: { id: string; revision: number; status: string; ready_scenes: string[]; total: number; message: string; error: string | null } | null;
+  build: { id: string; revision: number; voice_sha256: string; scenes: BuiltScene[]; theme: string; cache: { reused: number; rebuilt: number };
+    resources: { wall_ms: number; peak_rss_bytes: number }; renderer_parity: string } | null;
+  events: { event_seq: number; revision: number; kind: string; at: number; payload: Record<string, unknown> }[] };
+export type VisualPreview = { url: string; html: string; sha256: string; scene: BuiltScene; build_id: string; revision: number; candidate_only: boolean; stale: boolean };
+export type CandidateResult = { status: string; source_sha256: string; catalog_revision: string;
+  bundles: { candidate_id: string; asset_id: string; entity_id: string; actors: { entity_id: string; states: string[] }[];
+    fit_reasons: string[]; warnings: string[]; identity: { model_id: string; family_id: string } }[];
+  rejected: { id: string; reason: string }[]; new_asset_task: { reason: string } | null };
 export type AgentTask = {
   task_id: string;
   project_id: string;
@@ -82,7 +102,7 @@ export type AgentTask = {
   preview: string;
   suggestion: string;
   error: string | null;
-  kind: "project.inspect";
+  kind: "project.inspect" | "scene.propose";
   write_applied: boolean;
 };
 type RpcError = { code: string; stage: string; message: string };
@@ -108,6 +128,16 @@ export async function request<T>(method: string, params: object = {}): Promise<T
 }
 
 export const backend = {
+  visualOpen: (project_id: string) => request<VisualState>("visual.open", { project_id }),
+  visualCommand: (project_id: string, base_revision: number, kind: string, payload: object, command_id = crypto.randomUUID()) =>
+    request<VisualState>("visual.command", { project_id, base_revision, kind, payload, command_id }),
+  episodeBuild: (project_id: string, base_revision: number, scene_id?: string) =>
+    request<VisualState>(scene_id ? "scene.compile" : "episode.build", { project_id, base_revision, ...(scene_id ? { scene_id } : {}) }),
+  visualCancel: (project_id: string) => request<VisualState>("visual.cancel", { project_id }),
+  visualPreview: (project_id: string, scene_id: string, build_id: string | null = null) => request<VisualPreview>("visual.preview", { project_id, scene_id, build_id }),
+  visualCandidates: (project_id: string, scene_id: string, requirement: object) => request<CandidateResult>("assets.find_candidates", { project_id, scene_id, requirement }),
+  visualAgentStart: (project_id: string, scene_id: string, instruction: string) => request<AgentTask>("agent.visual.start", { project_id, scene_id, instruction }),
+  visualAgentApply: (task_id: string, base_revision: number) => request<VisualState>("agent.apply", { task_id, base_revision, command_id: crypto.randomUUID(), confirm: true }),
   voiceOpen: (project_id: string) => request<VoiceState>("voice.open", { project_id }),
   voiceStart: (project_id: string, base_revision: number, action: "generate" | "align", unit_ids: string[], voice: string, intent: string, pronunciation: Record<string, string>) =>
     request<VoiceState>("voice.start", { project_id, base_revision, action, unit_ids, voice, intent, pronunciation }),

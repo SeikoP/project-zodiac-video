@@ -1,4 +1,4 @@
-# Zodiac Studio V5 — Phase 2 Voice Lab
+# Zodiac Studio V5 — Phase 3 + 4 Build and Visual Editor
 
 This is an **experimental one-window Tauri 2 + React host**, separate from production `zodiac` (PySide6). It is based on the verified Phase 0 Python Project Core and existing Node/Remotion runtime, not a backend rewrite.
 
@@ -35,7 +35,7 @@ This is **source-tree development mode**, not a standalone distributable build. 
 - Submit revision-checked, idempotent `project.note` metadata events; show the **100 newest events** after restart. The `events.list` API supports cursor pagination for complete replay.
 - Filter real V4 prop asset IDs with their source catalog revision and SHA-256. **No actual preview thumbnails or semantic ranking in P1.**
 - Native Codex App Server inspection with streamed output, durable task receipts, cancel/retry, and an explicit user-confirmed `project.note`. Stale project revisions require a fresh inspection. The model cannot grant creative approvals.
-- Pinned HyperFrames Studio/SDK 0.9.45; lazy-loaded read-only workspace skeleton. This is not an embedded scene editor or verified preview.
+- Pinned HyperFrames SDK 0.9.45 with scene selection, semantic transform editing, measured voice timeline and actual generated SVG preview in the same window.
 - One Tauri window with an integrated draggable titlebar, project/connection context and minimize/maximize/close controls. Legacy Qt remains the default fallback.
 - Opt-in `zodiac --v5-preview` launches an existing native executable from `ZODIAC_STUDIO_V5_EXE`; it does not compile or install a release.
 
@@ -45,7 +45,11 @@ The voice dropdown reads the existing VieNeu saved presets from `VIENEU_HOME/use
 
 Listen to each selected take and the full assembly before explicitly accepting them. Technical validity and measured timing never grant listening approval. Retakes preserve other units; selecting changed audio invalidates its assembly/timing without invalidating SVG assets. Alignment reuses the existing per-unit timing cache.
 
-**Not implemented:** embedded HyperFrames editing, preview/render or package publication. Creative approval always requires genuine human review.
+Visual Workspace accepts canonical Visual Intent JSON after voice assembly/alignment. Build the episode, select a scene/entity/state, move or resize it, choose a constrained prop candidate, switch light/dark, or undo/redo. Each change commits a revision; stale commands are rejected. Agent proposals use the same scoped commands and require explicit application. Missing exact voice anchors or missing assets block the build and preserve the last verified preview. The private preview server serves only generated, hash-verified compositions; SDK HTML is never the authoring source.
+
+`episode.build` and `scene.compile` share the V4 compiler, dependency graph and verified content cache. Geometry, scene placement and appearance have separate keys. `assets.find_candidates` reports fit/rejection reasons and `NO_FIT_ASSET` instead of inventing art. Inspect cache miss reasons, required/satisfied/blocked nodes, resource use, source hashes and technical QA in the build receipt. Add art through the existing V4 catalog/compiler ownership; do not edit generated SVG/HTML. Validator/compiler/font/catalog changes invalidate their dependent cache entries.
+
+The real SDK uses compiler-owned GSAP compositions on a private loopback origin rather than HyperFrames Studio's server-dependent Player wrapper. Old V4 SVG/state compatibility is tested separately; unsupported historical motion is labeled `LEGACY_STATE_ENDPOINTS_ONLY`. **Not implemented here:** final production rendering, mixing, export or publication. Creative and listening approval require genuine human review.
 
 The agent uses the existing Codex login in an isolated temporary home without loading user plugins, MCP servers or hooks. On Windows the bridge owns the native `codex.exe` PID rather than the npm launcher, so cancellation targets the actual server. An unusual installation can set `ZODIAC_STUDIO_CODEX_BIN` to that native executable. Missing Codex or login reports an unavailable/failed task while manual Studio remains usable. Closing the host's stdio transport cancels and joins its managed worker before exit; forced OS termination remains a separate recovery case.
 
@@ -57,6 +61,8 @@ The Rust host whitelist and Python P0 command validation both reject arbitrary s
 python -m unittest discover -s tests -p 'test_studio_p1_*.py' -q
 python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
 python -m unittest discover -s tests -p 'test_studio_project_*.py' -q
+python -m unittest discover -s tests -p 'test_studio_p34_*.py' -q
+node --test tests/studio_p34_visual.test.mjs
 cd apps/zodiac-studio
 pnpm exec tsc --noEmit
 cd src-tauri
@@ -71,8 +77,8 @@ Native checking, Rust tests, window/titlebar controls and agent lifecycle were e
 ## Architectural ownership
 
 - **Tauri/Rust:** process lifecycle, native window, method whitelist, single request transport. No narration/approval mutation.
-- **React/TypeScript:** presentation, safe project actions, asset ID filter and event timeline.
+- **React/TypeScript:** presentation, semantic inspector, SDK selection/edit bridge, timeline and bounded agent proposals.
 - **Python P0/P1:** SQLite state, project/handoff import, source/approval/receipt verification, revisioned metadata.
-- **Existing Node.js and Remotion:** future visual compilation and rendering. Not launched by P1.
+- **Existing Node.js:** shared V4 visual compilation, semantic dependency graph, cache and generated HyperFrames preview. Remotion remains the separate production rendering path.
 
-P1 was integrated into `experiment/main-2` through PR #223. P2 verification and remaining human acceptance are recorded in [the phase receipt](../../docs/superpowers/plans/2026-11-15-studio-p2-voice-lab.md). HyperFrames scene editing remains P4.
+P1 and P2 were integrated into `experiment/main-2` through PRs #223 and #224. Combined P3/P4 implementation, review fixes, benchmark scope and outstanding human acceptance are recorded in [the phase receipt](../../docs/audits/2026-11-15-studio-p34-acceptance.md).

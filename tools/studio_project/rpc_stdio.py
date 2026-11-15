@@ -20,9 +20,11 @@ _ALLOWED = frozenset({
     "health", "projects.list", "projects.open", "projects.import",
     "projects.command", "events.list", "events.recent", "assets.list",
     "agent.health", "agent.start", "agent.task", "agent.tasks",
-    "agent.cancel", "agent.apply",
+    "agent.cancel", "agent.apply", "agent.visual.start",
     "voice.open", "voice.start", "voice.cancel", "voice.select", "voice.assemble",
     "voice.audio", "voice.playback", "voice.confirm",
+    "visual.open", "visual.command", "visual.cancel", "visual.preview",
+    "episode.build", "scene.compile", "assets.describe", "assets.find_candidates", "validation.get",
 })
 
 
@@ -45,6 +47,26 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         _exact(p)
         return {"status": "READY", "protocol": "zodiac-studio-rpc@1", "authority": "P0 Project Core",
                 "scope": ["read", "metadata-write"], "approvals": "NOT_GRANTED"}
+    if method in ("visual.open", "visual.cancel", "assets.describe", "validation.get"):
+        _exact(p, "project_id")
+        operation = {"visual.open": service.visual.snapshot, "visual.cancel": service.visual.cancel,
+                     "assets.describe": service.visual.describe, "validation.get": service.visual.validation}[method]
+        return operation(p["project_id"])
+    if method == "visual.command":
+        _exact(p, "project_id", "command_id", "base_revision", "kind", "payload")
+        return service.visual.command(**p)
+    if method == "episode.build":
+        _exact(p, "project_id", "base_revision")
+        return service.visual.start(**p)
+    if method == "scene.compile":
+        _exact(p, "project_id", "base_revision", "scene_id")
+        return service.visual.start(**p)
+    if method == "visual.preview":
+        _exact(p, "project_id", "scene_id", "build_id")
+        return service.visual.preview(**p)
+    if method == "assets.find_candidates":
+        _exact(p, "project_id", "scene_id", "requirement")
+        return service.visual.candidates(**p)
     if method == "voice.open":
         _exact(p, "project_id")
         return service.voice.snapshot(p["project_id"])
@@ -75,6 +97,9 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method == "agent.start":
         _exact(p, "project_id")
         return service.agent.start(p["project_id"])
+    if method == "agent.visual.start":
+        _exact(p, "project_id", "scene_id", "instruction")
+        return service.agent.start_visual(**p)
     if method == "agent.task":
         _exact(p, "task_id")
         return service.agent.task(p["task_id"])
@@ -121,9 +146,11 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
 def handle_line(service: StudioProjectService, raw: bytes) -> dict:
     message_id = None
     try:
-        if len(raw) > _MAX_REQUEST_BYTES:
+        if len(raw) > 2*1024*1024:
             raise StudioError("RPC_REQUEST_TOO_LARGE", "Maximum request size 64 KiB", "transport")
         req = json.loads(raw.decode("utf-8"))
+        if len(raw) > _MAX_REQUEST_BYTES and (not isinstance(req, dict) or req.get("method") != "visual.command"):
+            raise StudioError("RPC_REQUEST_TOO_LARGE", "Maximum request size 64 KiB", "transport")
         if not isinstance(req, dict) or set(req) != {"id", "method", "params"}:
             raise StudioError("RPC_REQUEST_INVALID", "Expected id, method, params", "transport")
         message_id = req["id"]
