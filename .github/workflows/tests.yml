@@ -25,7 +25,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends libegl1 libopengl0 libxkbcommon-x11-0 libxcb-cursor0 libpulse0
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/zodiac-studio/package.json
+      - name: Install pinned Studio dependencies for visual integration tests
+        working-directory: apps/zodiac-studio
+        run: pnpm install --frozen-lockfile
       - name: Install renderer 2.0.1 dependencies
         run: npm install --prefix runtime/zodiac-renderer/2.0.1/renderer --no-audit --no-fund
       - name: Install Zodiac and test dependencies
