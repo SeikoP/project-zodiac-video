@@ -264,6 +264,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
     # validation against the current canonical schema below.
     legacy_hashes = {
         # Audited historical Job@5 packages using pre-story-role authoring schema.
+        "d6af8a599324fcf68dd43fb1627a0dc23f9b3db07ba0874eeb8a86e5df1a43c0",
         "2ca8394b51a9b95174ee407731f309ec3cfd44b03f5f98f25655f46cbb625b85",
         "787bd1c4addd6cf3ec187b4019b5c988555df870563f75989d0ef6b5dfd52f21",
         "06233fa281c8a10479038209af3ef98e6dc01e14ba99a912b3f0269aa0581544",
