@@ -1,13 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,readFile,writeFile,rm,mkdir} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,rm,realpath} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
+import vm from 'node:vm';
 import {buildEpisode,validateIntent} from '../tools/studio_project/visual_compiler.mjs';
-import {describeAssets,findCandidates,safeSvg,confined} from '../tools/studio_project/visual_candidates.mjs';
+import {describeAssets,findCandidates,safeSvg,confined,digest as sha256} from '../tools/studio_project/visual_candidates.mjs';
 import {makeFixture,syntheticTiming} from './studio_p34_fixture.mjs';
+import {renderPreview,previewRuntime} from '../tools/studio_project/visual_preview.mjs';
+import {resolveEntityState} from '../runtime/zodiac-renderer/2.0.1/renderer/src/spatial-layout.mjs';
+import {compileCharacterSvg} from '../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/characters/compile-character-assembly.mjs';
 
 const narration=Array.from({length:8},(_,i)=>`Song Tử hỏi thêm câu ${i+1}.`).join('\n');
 async function setup(t){const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-p34-'));t.after(()=>rm(root,{recursive:true,force:true}));return {root,intent:makeFixture(narration),input:{action:'build',narration,timing:syntheticTiming(narration),workspace:root,cache:path.join(root,'cache'),output:path.join(root,'cold'),revision:1,theme:'light'}};}
@@ -75,4 +79,63 @@ test('existing Gemini Visual Intent remains a readable V4 source and retains all
   const root=path.resolve('tests/fixtures/phase2-gemini'),intent=JSON.parse(await readFile(path.join(root,'visual-intent.json'),'utf8')),text=await readFile(path.join(root,'narration.txt'),'utf8');
   const out=validateIntent(intent,text);assert.equal(out.production.scenes.length,intent.scenes.length);assert.equal(out.character_assembly.characters.length,2);
   assert.deepEqual(out.character_assembly.characters.map(c=>Object.keys(c.states)),intent.cast.map(c=>Object.keys(c.states)));
+});
+
+test('an absent exact measured anchor never falls forward to a different word',async t=>{
+  const {input,root}=await setup(t),text='Song Tử hỏi thêm câu này.';
+  input.intent=makeFixture(text,1);input.narration=text;input.timing=syntheticTiming(text);
+  input.timing.words=input.timing.words.filter(w=>w.text!=='Tử');
+  await assert.rejects(buildEpisode({...input,output:path.join(root,'missing-anchor')}),/ANCHOR_UNMEASURED/u);
+});
+
+test('frame-owned contacts reject a different physical prop model',async t=>{
+  const {intent}=await setup(t);
+  intent.scenes[0].environment={frame:{contacts:[{entity:'phone',anchor:'gemini',relation:'near',max_distance_px:850}]}};
+  const result=await findCandidates(intent,'s01',{asset_id:'notebook'});
+  assert.equal(result.status,'NO_FIT_ASSET');assert.equal(result.bundles.length,0);
+  assert.ok(result.rejected.some(r=>r.id==='notebook'&&r.reason==='CONTACT_MODEL_MISMATCH'));
+});
+
+async function runPreview(html){
+  const sdk=await realpath(path.resolve('apps/zodiac-studio/node_modules/@hyperframes/sdk/dist/index.js'));
+  const {parseHTML}=createRequire(sdk)('linkedom'),{document}=parseHTML(html),window={};let at=0,update;
+  const timeline={time:()=>at,to:()=>timeline,seek(t){at=t;update();return timeline;},pause:()=>timeline};
+  const context={document,window,parent:{postMessage(){}},addEventListener(){},gsap:{timeline(options){update=options.onUpdate;return timeline;}}};
+  vm.runInNewContext([...document.querySelectorAll('script')].at(-1).textContent,context);
+  return {document,seek:seconds=>timeline.seek(seconds)};
+}
+
+test('existing Gemini and Scorpio compiled SVG/state endpoints survive the preview adapter',async()=>{
+  const runtime=await previewRuntime(path.resolve('.'));
+  for(const [planPath,assetRoot]of [
+    ['runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu/render-plan.json','runtime/zodiac-renderer/2.0.1/renderer/tests/fixtures/songtu'],
+    ['tests/fixtures/scorpio-two-versions/expected/render-plan.json','tests/fixtures/scorpio-two-versions/package'],
+  ]){
+    const plan=JSON.parse(await readFile(planPath,'utf8')),scene=structuredClone(plan.scenes[0]),assets={};
+    for(const entity of scene.entities)for(const state of Object.values(entity.states)){
+      state.transform={x:0,y:0,width:520,height:520,...state.transform};
+      if(!assets[state.asset]){const bytes=await readFile(await confined(path.resolve(assetRoot),plan.assets[state.asset].path));safeSvg(bytes);assets[state.asset]={svg:bytes.toString('utf8'),source_sha256:sha256(bytes)};}
+    }
+    const timing={startMs:0,endMs:scene.duration_frames/plan.fps*1000,words:[],events:scene.events.map(e=>({...e,id:e.event_id,at:e.start_frame/plan.fps,preview_motion:typeof e.motion==='string'?e.motion:'state_swap',preview_duration:(e.end_frame-e.start_frame)/plan.fps}))};
+    const preview=renderPreview(scene,assets,timing,'light',runtime.gsap,runtime.font),played=await runPreview(preview.html);
+    for(const event of scene.events){played.seek(event.end_frame/plan.fps+.0001);const expected=resolveEntityState(scene,scene.entities.find(e=>e.id===event.target),event.end_frame);
+      const visible=[...played.document.querySelectorAll('[data-entity-id]')].find(e=>e.dataset.entityId===event.target&&e.style.visibility==='visible');
+      if(expected.visible!==false){assert.ok(visible);assert.equal(visible.dataset.stateId,event.state_after);}
+    }
+    for(const mapping of preview.source_map)assert.equal(mapping.source_sha256,assets[mapping.asset_id].source_sha256);
+  }
+});
+
+test('real historical Libra balance SVG and current V4 actor preserve three-state geometry without granting artwork acceptance',async()=>{
+  const scene={id:'libra',entities:[{id:'balance',initial_state:'center',states:Object.fromEntries([['center',0],['left',-12],['right',12]].map(([id,rotation])=>[id,{asset:'LEGACY_BALANCE',visible:true,transform:{x:370,y:260,width:340,height:220,rotation}}]))}],events:[
+    {id:'tilt-left',target:'balance',state_before:'center',state_after:'left',start_frame:4,end_frame:7},
+    {id:'tilt-right',target:'balance',state_before:'left',state_after:'right',start_frame:8,end_frame:11},
+    {id:'center',target:'balance',state_before:'right',state_after:'center',start_frame:12,end_frame:15}]};
+  const runtime=await previewRuntime(path.resolve('.')),root=path.resolve('tests/fixtures/studio-p34-legacy/libra'),provenance=JSON.parse(await readFile(path.join(root,'provenance.json'),'utf8'));
+  for(const asset of provenance.assets){const bytes=await readFile(path.join(root,asset.file));assert.equal(sha256(bytes),asset.sha256);safeSvg(bytes);}
+  const svg=await readFile(path.join(root,'balanced.svg'),'utf8'),actor=compileCharacterSvg({entity_id:'libra',body_profile:'standard_compact',hair_id:'short-curl',face_profile_id:'balanced',outfit_id:'zodiac-glyph-shirt',zodiac_sign_id:'libra',shirt_color_id:'teal',accessory_id:'none',variant_seed:'p34-libra-regression'},{pose_id:'neutral',expression_id:'neutral'});
+  assert.ok(actor.svg.includes('zodiac_sign_id=libra'));scene.entities.push({id:'libra',initial_state:'idle',states:{idle:{asset:'LIBRA_ACTOR',visible:true,transform:{x:340,y:610,width:400,height:550}}}});
+  const preview=renderPreview(scene,{LEGACY_BALANCE:{svg,source_sha256:sha256(svg)},LIBRA_ACTOR:{svg:actor.svg,source_sha256:sha256(actor.svg)}},{startMs:0,endMs:1000,words:[],events:scene.events.map(e=>({...e,at:e.start_frame/24,preview_motion:'state_swap',preview_duration:(e.end_frame-e.start_frame)/24}))},'light',runtime.gsap,runtime.font);
+  const played=await runPreview(preview.html);
+  for(const event of scene.events){played.seek(event.end_frame/24+.0001);const expected=resolveEntityState(scene,scene.entities[0],event.end_frame),element=[...played.document.querySelectorAll('[data-state-id]')].find(e=>e.dataset.entityId==='balance'&&e.style.visibility==='visible');assert.equal(element.style.transform,`rotate(${expected.transform.rotation}deg)`);assert.equal(played.document.querySelector('[data-entity-id=libra]').style.visibility,'visible');}
 });

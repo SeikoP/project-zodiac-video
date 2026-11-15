@@ -2,7 +2,6 @@
 import {readFile,writeFile,mkdir,readdir,stat,statfs,rename} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createRequire} from 'node:module';
 import os from 'node:os';
 import {performance} from 'node:perf_hooks';
 import {compileVisualIntent} from '../../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/visual-composition/compile-visual-intent.mjs';
@@ -13,7 +12,7 @@ import {runSafeParallel} from '../../plugins/zodiac-video-pipeline/skills/zodiac
 import {compileMemeProps} from '../../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/memes/compile-meme-props.mjs';
 import {traceSceneStates} from '../../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/visual-composition/scene-state-trace.mjs';
 import {LIBRARY,digest,json,confined,safeSvg,describeAssets,findCandidates} from './visual_candidates.mjs';
-import {THEMES,renderPreview,quality} from './visual_preview.mjs';
+import {THEMES,renderPreview,quality,previewRuntime} from './visual_preview.mjs';
 
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
 const MOTION=await json(path.join(LIBRARY,'../../contracts/motion-registry-v1.json'));
@@ -78,8 +77,12 @@ function measuredScenes(intent,narration,timing){
         let offset=fragment.indexOf(text);
         assert(offset>=0,'VISUAL_VOICE_ANCHOR_NOT_IN_SOURCE '+event.id);
         const byteAt=a+Buffer.byteLength(fragment.slice(0,offset));
-        const anchor=selected.find(w=>w.source_range[0]<=byteAt&&w.source_range[1]>byteAt)||selected.find(w=>w.source_range[0]>=byteAt);
-        assert(anchor,'VISUAL_VOICE_ANCHOR_UNMEASURED '+event.id);at=(anchor.startMs-startMs)/1000;
+        const anchor=selected.find(w=>w.source_range[0]<=byteAt&&w.source_range[1]>byteAt);
+        const covered=[...text.matchAll(/\S+/gu)].every(match=>{
+          const left=byteAt+Buffer.byteLength(text.slice(0,match.index)),right=left+Buffer.byteLength(match[0]);
+          return selected.some(w=>w.source_range[0]<=left&&w.source_range[1]>=right);
+        });
+        assert(anchor&&covered,'VISUAL_VOICE_ANCHOR_UNMEASURED '+event.id);at=(anchor.startMs-startMs)/1000;
       }
       const preset=event.motion?.preset??'state_swap',motion=MOTION.motions[preset];
       assert(motion,'VISUAL_MOTION_UNSUPPORTED '+preset);
@@ -96,6 +99,7 @@ async function compilerIdentity(){
   const files=[];
   async function walk(root){for(const row of await readdir(root,{withFileTypes:true})){if(row.isSymbolicLink())throw Error('VISUAL_COMPILER_SYMLINK');const file=path.join(root,row.name);if(row.isDirectory())await walk(file);else if(/\.(mjs|json|svg)$/u.test(row.name))files.push([path.relative(ROOT,file),digest(await readFile(file))]);}}
   await walk(LIBRARY);
+  files.push(['caption-font',digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf')))]);
   for(const rel of ['features/visual-composition/compile-visual-intent.mjs','core/cache/incremental-cache.mjs','core/cache/phase02-semantic-cache.mjs','contracts/motion-registry-v1.json'])files.push([rel,digest(await readFile(path.join(LIBRARY,'../..',rel)))]);
   for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
   return hash(files.sort(([a],[b])=>a.localeCompare(b)));
@@ -177,17 +181,21 @@ export async function buildEpisode(input){
     const source=digest(bytes),result=await node('geometry:asset:'+id,{asset,source},[],async()=>{const object=await putObject(cache,bytes);return {objects:[object],source_sha256:source};});
     assetMap[id]={svg:(await readObject(cache,result.source_sha256)).toString('utf8'),source_sha256:source,geometry_node:'geometry:asset:'+id};
   }
-  const require=createRequire(import.meta.url),studio=require.resolve('@hyperframes/studio/package.json',{paths:[path.join(ROOT,'apps/zodiac-studio')]}),gsap=await readFile(createRequire(studio).resolve('gsap/dist/gsap.min.js'),'utf8');
+  const runtime=await previewRuntime(ROOT);
   assert(Object.values(assetMap).reduce((n,a)=>n+Buffer.byteLength(a.svg),0)<=32*1024*1024,'VISUAL_ASSET_MEMORY_BUDGET');
   const scenes=[];let previewBytes=0;
   for(const scene of projections.production.scenes){
     assert(scene.entities.reduce((n,e)=>n+Object.values(e.states).reduce((m,s)=>m+Buffer.byteLength(assetMap[s.asset].svg),0),0)<=4*1024*1024,'VISUAL_SCENE_PREVIEW_BUDGET '+scene.id);
     const time=measured.find(t=>t.scene_id===scene.id),deps=[...new Set(scene.entities.flatMap(e=>Object.values(e.states).map(s=>assetMap[s.asset].geometry_node)))];
     const geometry=await node('scene:'+scene.id,{scene,time},deps,async()=>({scene,time,asset_hashes:Object.fromEntries(scene.entities.flatMap(e=>Object.values(e.states).map(s=>[s.asset,assetMap[s.asset].source_sha256])))}));
-    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme]},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,gsap));
+    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme],font_sha256:runtime.font.sha256},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,runtime.gsap,runtime.font));
     previewBytes+=Buffer.byteLength(appearance.html);assert(previewBytes<=32*1024*1024,'VISUAL_EPISODE_PREVIEW_BUDGET');
     const file=scene.id+'.html';await writeFile(path.join(out,file),appearance.html);
+    const required_nodes=scene.entities.flatMap(e=>Object.keys(e.states).map(s=>'state:'+e.id+':'+s)).concat(scene.events.map(e=>'event:'+e.id));
+    const satisfied_nodes=appearance.source_map.map(m=>'state:'+m.entity_id+':'+m.state_id).concat(time.events.map(e=>'event:'+e.id));
+    assert(required_nodes.every(id=>satisfied_nodes.includes(id)),'VISUAL_REQUIRED_COMPONENT_MISSING '+scene.id);
     scenes.push({id:scene.id,preview_file:file,preview_sha256:digest(appearance.html),source_map:appearance.source_map,
+      required_nodes,satisfied_nodes,blocked_nodes:[],font_sha256:runtime.font.sha256,
       start_ms:time.startMs,end_ms:time.endMs,duration_seconds:appearance.duration_seconds,fidelity:appearance.fidelity,
       qa:quality(scene,theme),entity_count:scene.entities.length,event_count:scene.events.length,asset_ids:Object.keys(geometry.asset_hashes)});
     process.stderr.write(JSON.stringify({event:'scene.preview_ready',scene_id:scene.id,completed:scenes.length,total:intent.scenes.length})+'\n');

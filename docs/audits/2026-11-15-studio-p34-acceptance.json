@@ -1,0 +1,394 @@
+{
+  "format": "zodiac-studio-p34-acceptance@1",
+  "technical_status": "PASS_LOCAL",
+  "human_visual_review": "NOT_GRANTED",
+  "human_listening": "NOT_GRANTED",
+  "production_renderer_parity": "NOT_ASSERTED",
+  "tests": {
+    "node_p34": {
+      "passed": 11,
+      "duration_ms": 9832.7905
+    },
+    "affected_python": {
+      "passed": 48,
+      "seconds": 82.443
+    },
+    "prior_regression_python": {
+      "passed": 117,
+      "seconds": 96.168,
+      "scope": "P0/P1/P2/voice/timing/Job5; followed by affected 48-test rerun after shared helper fixes"
+    },
+    "typescript_vite": "PASS",
+    "cargo_check": "PASS",
+    "cargo_test": {
+      "passed": 1
+    },
+    "cargo_fmt": "PASS"
+  },
+  "review": {
+    "base": "1e333f6059474c6d12de39561e4de563de1a5bfd",
+    "reviewed_head": "affeeef4faa2ee2d581e6baf46ebd7f5313b21ab",
+    "critical": 0,
+    "important_fixed": [
+      "Require exact measured anchor coverage; no falling forward to another word",
+      "Apply frame-owned contact constraints before candidate replacement",
+      "Clear progressive preview after cancel/failure/revision changes",
+      "Check actual process/instance ownership before marking a build interrupted"
+    ],
+    "verification": "Node/Python regressions and native frontend lifecycle fault injection"
+  },
+  "native": {
+    "actual_svg_images_loaded": true,
+    "actual_sdk_selection_edit": true,
+    "native_scene_edit_undo_theme": true,
+    "measured_reveal_timeline": true,
+    "real_wav_metadata_duration_seconds": 2.88,
+    "audible_quality": "NOT_ASSERTED",
+    "narration_voice_unchanged": true,
+    "lifecycle": {
+      "classification": "NATIVE_FRONTEND_FAULT_INJECTION_ONLY",
+      "restored_after_cancel": true,
+      "cleared_without_fallback": true,
+      "cleared_on_source_change": true,
+      "approval": "NOT_GRANTED"
+    },
+    "agent": {
+      "task_id": "ac97fcf97dcf4307a8766ed19c0943ed",
+      "kind": "scene.propose",
+      "proposal": {
+        "kind": "scene.patch",
+        "payload": {
+          "scene_id": "s01",
+          "entity_id": "gemini",
+          "state_id": "neutral",
+          "changes": {
+            "x": 350,
+            "y": 480
+          }
+        }
+      },
+      "before_revision": 13,
+      "after_revision": 14,
+      "before_x": 340,
+      "after_x": 350,
+      "build_id": "863d023c4c934709b4af00685defdd31",
+      "voice_sha256": "b6dcbd4211056307d8d34746caebae667bc35287b468f0675449858dc3bf6fb5",
+      "creative_approval": "NOT_GRANTED"
+    }
+  },
+  "legacy": {
+    "gemini_scorpio": "Existing baked SVG hashes and state endpoints compared with pinned V4 renderer state resolver",
+    "libra": "Exact historical balance SVG blobs, three states and current V4 actor; see tests/fixtures/studio-p34-legacy/libra/provenance.json",
+    "unsupported_historical_motion": "LEGACY_STATE_ENDPOINTS_ONLY; no motion/pixel parity claim"
+  },
+  "service_benchmark": {
+    "format": "zodiac-studio-p34-benchmark@1",
+    "project_id": "studio-a4e87a7e6a146290e31382da",
+    "source_capsule_sha256": "a771155fd07c12aea82a3deca8d84f24a7402c530c144fc8326c3c5ae7e39b2d",
+    "source_intent_sha256": "e84fa57dd4eb52c90644b5155fb7d14fa60e882322f4d70bf04e27c31a796f26",
+    "scene_count": 8,
+    "narration_unchanged": true,
+    "existing_audio_unchanged": true,
+    "timing_provenance": "Reused selected source-bound Voice Lab ASR; no timing or voice regenerated",
+    "source_approval": "Existing capsule receipt; synthetic receipts remain synthetic",
+    "human_visual_review": "NOT_ASSERTED",
+    "renderer_parity": "NOT_ASSERTED",
+    "runs": [
+      {
+        "case": "cold",
+        "observed_ms": 3222,
+        "reused": 0,
+        "rebuilt": 18,
+        "cache_misses": [
+          "geometry:character:gemini",
+          "geometry:asset:phone",
+          "scene:s01",
+          "appearance:s01",
+          "scene:s02",
+          "appearance:s02",
+          "scene:s03",
+          "appearance:s03",
+          "scene:s04",
+          "appearance:s04",
+          "scene:s05",
+          "appearance:s05",
+          "scene:s06",
+          "appearance:s06",
+          "scene:s07",
+          "appearance:s07",
+          "scene:s08",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 666,
+          "cpu_microseconds": {
+            "user": 484000,
+            "system": 157000
+          },
+          "peak_rss_bytes": 90300416,
+          "free_memory_bytes": 9767735296,
+          "free_disk_bytes": 24952774656,
+          "output_bytes": 3096263
+        }
+      },
+      {
+        "case": "warm",
+        "observed_ms": 2829,
+        "reused": 18,
+        "rebuilt": 0,
+        "cache_misses": [],
+        "resources": {
+          "wall_ms": 545,
+          "cpu_microseconds": {
+            "user": 328000,
+            "system": 125000
+          },
+          "peak_rss_bytes": 88543232,
+          "free_memory_bytes": 9825906688,
+          "free_disk_bytes": 24946262016,
+          "output_bytes": 3096263
+        }
+      },
+      {
+        "case": "scene-edit",
+        "observed_ms": 3009,
+        "reused": 16,
+        "rebuilt": 2,
+        "cache_misses": [
+          "scene:s03",
+          "appearance:s03"
+        ],
+        "resources": {
+          "wall_ms": 577,
+          "cpu_microseconds": {
+            "user": 344000,
+            "system": 204000
+          },
+          "peak_rss_bytes": 88481792,
+          "free_memory_bytes": 9817894912,
+          "free_disk_bytes": 24942997504,
+          "output_bytes": 3096263
+        }
+      },
+      {
+        "case": "theme-only",
+        "observed_ms": 3118,
+        "reused": 10,
+        "rebuilt": 8,
+        "cache_misses": [
+          "appearance:s01",
+          "appearance:s02",
+          "appearance:s03",
+          "appearance:s04",
+          "appearance:s05",
+          "appearance:s06",
+          "appearance:s07",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 626,
+          "cpu_microseconds": {
+            "user": 391000,
+            "system": 172000
+          },
+          "peak_rss_bytes": 89395200,
+          "free_memory_bytes": 9807912960,
+          "free_disk_bytes": 24939216896,
+          "output_bytes": 3096263
+        }
+      },
+      {
+        "case": "shared-character-edit",
+        "observed_ms": 3310,
+        "reused": 1,
+        "rebuilt": 17,
+        "cache_misses": [
+          "geometry:character:gemini",
+          "scene:s01",
+          "appearance:s01",
+          "scene:s02",
+          "appearance:s02",
+          "scene:s03",
+          "appearance:s03",
+          "scene:s04",
+          "appearance:s04",
+          "scene:s05",
+          "appearance:s05",
+          "scene:s06",
+          "appearance:s06",
+          "scene:s07",
+          "appearance:s07",
+          "scene:s08",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 631,
+          "cpu_microseconds": {
+            "user": 359000,
+            "system": 157000
+          },
+          "peak_rss_bytes": 88121344,
+          "free_memory_bytes": 9811070976,
+          "free_disk_bytes": 24935956480,
+          "output_bytes": 3096263
+        }
+      }
+    ]
+  },
+  "compiler_long_source_benchmark": {
+    "classification": "REAL_LEGACY_48_SECOND_AUDIO_WITH_SYNTHETIC_CURRENT_VISUAL_FIXTURE",
+    "source_job": "songtu-bi-tuong-doi-phe",
+    "scene_count": 8,
+    "word_count": 244,
+    "duration_seconds": 48.56,
+    "narration_sha256": "6f47db3fdc905960426e85340cce63203de7578b6a26ba7efd3312df82aa6eb5",
+    "voice_sha256": "eec058b311b58edc498ab921c8583f8a0054293b954e0da3905d8b36f633cd48",
+    "legacy_timing_sha256": "c903ae0b5db85e600223b8e1d528a7c65e409c5124f8ee486a5e5c36c08ed314",
+    "timing_adapter": "Exact sequential caption/source token equality; existing absolute ASR milliseconds unchanged",
+    "source_unchanged": true,
+    "human_visual_review": "NOT_ASSERTED",
+    "production_total_latency": "NOT_MEASURED: authoring, TTS, ASR and final rendering excluded",
+    "runs": [
+      {
+        "case": "cold",
+        "observed_ms": 920,
+        "reused": 0,
+        "rebuilt": 18,
+        "cache_misses": [
+          "geometry:character:gemini",
+          "geometry:asset:phone",
+          "scene:s01",
+          "appearance:s01",
+          "scene:s02",
+          "appearance:s02",
+          "scene:s03",
+          "appearance:s03",
+          "scene:s04",
+          "appearance:s04",
+          "scene:s05",
+          "appearance:s05",
+          "scene:s06",
+          "appearance:s06",
+          "scene:s07",
+          "appearance:s07",
+          "scene:s08",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 915,
+          "cpu_microseconds": {
+            "user": 469000,
+            "system": 172000
+          },
+          "peak_rss_bytes": 88457216,
+          "free_memory_bytes": 11192426496,
+          "free_disk_bytes": 24936321024,
+          "output_bytes": 3118396
+        }
+      },
+      {
+        "case": "warm",
+        "observed_ms": 741,
+        "reused": 18,
+        "rebuilt": 0,
+        "cache_misses": [],
+        "resources": {
+          "wall_ms": 739,
+          "cpu_microseconds": {
+            "user": 250000,
+            "system": 141000
+          },
+          "peak_rss_bytes": 105897984,
+          "free_memory_bytes": 11180232704,
+          "free_disk_bytes": 24928088064,
+          "output_bytes": 3118396
+        }
+      },
+      {
+        "case": "scene-edit",
+        "observed_ms": 734,
+        "reused": 16,
+        "rebuilt": 2,
+        "cache_misses": [
+          "scene:s03",
+          "appearance:s03"
+        ],
+        "resources": {
+          "wall_ms": 731,
+          "cpu_microseconds": {
+            "user": 329000,
+            "system": 187000
+          },
+          "peak_rss_bytes": 131186688,
+          "free_memory_bytes": 11152388096,
+          "free_disk_bytes": 24926277632,
+          "output_bytes": 3118396
+        }
+      },
+      {
+        "case": "theme-only",
+        "observed_ms": 792,
+        "reused": 10,
+        "rebuilt": 8,
+        "cache_misses": [
+          "appearance:s01",
+          "appearance:s02",
+          "appearance:s03",
+          "appearance:s04",
+          "appearance:s05",
+          "appearance:s06",
+          "appearance:s07",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 789,
+          "cpu_microseconds": {
+            "user": 421000,
+            "system": 172000
+          },
+          "peak_rss_bytes": 136323072,
+          "free_memory_bytes": 11130195968,
+          "free_disk_bytes": 24922501120,
+          "output_bytes": 3118396
+        }
+      },
+      {
+        "case": "shared-character-edit",
+        "observed_ms": 973,
+        "reused": 1,
+        "rebuilt": 17,
+        "cache_misses": [
+          "geometry:character:gemini",
+          "scene:s01",
+          "appearance:s01",
+          "scene:s02",
+          "appearance:s02",
+          "scene:s03",
+          "appearance:s03",
+          "scene:s04",
+          "appearance:s04",
+          "scene:s05",
+          "appearance:s05",
+          "scene:s06",
+          "appearance:s06",
+          "scene:s07",
+          "appearance:s07",
+          "scene:s08",
+          "appearance:s08"
+        ],
+        "resources": {
+          "wall_ms": 970,
+          "cpu_microseconds": {
+            "user": 485000,
+            "system": 141000
+          },
+          "peak_rss_bytes": 151273472,
+          "free_memory_bytes": 11110182912,
+          "free_disk_bytes": 24919252992,
+          "output_bytes": 3118396
+        }
+      }
+    ]
+  },
+  "integration": "PR and merged-source launch recorded separately; production main unchanged"
+}

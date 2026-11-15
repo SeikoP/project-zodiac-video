@@ -4,12 +4,14 @@ from __future__ import annotations
 import copy
 import json
 import math
+import os
 from pathlib import Path
 import re
 import subprocess
 import threading
 import time
 import uuid
+import weakref
 
 from tools.runner.process import observe_subprocesses, observe_subprocess_output, run_managed_subprocess
 from tools.studio.artifacts import VoiceArtifactStore, canonical_hash, file_sha256
@@ -22,6 +24,35 @@ ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$")
 BUILD_ID = re.compile(r"^[a-f0-9]{32}$")
 FORMAT = "zodiac-visual-workspace@1"
 COMMANDS = frozenset({"source.replace", "scene.patch", "theme.select", "asset.select", "undo", "redo"})
+_OWNERS = weakref.WeakValueDictionary()
+
+
+def _process_alive(pid):
+    if type(pid) is not int or pid<=0:
+        return False
+    if os.name=="nt":
+        import ctypes
+        from ctypes import wintypes
+        kernel=ctypes.WinDLL("kernel32",use_last_error=True)
+        kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+        kernel.OpenProcess.restype=wintypes.HANDLE
+        kernel.GetExitCodeProcess.argtypes=[wintypes.HANDLE,ctypes.POINTER(wintypes.DWORD)]
+        kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+        handle=kernel.OpenProcess(0x1000,False,pid)
+        if not handle:
+            return ctypes.get_last_error()==5  # Access denied is not evidence of death.
+        try:
+            code=wintypes.DWORD()
+            return not kernel.GetExitCodeProcess(handle,ctypes.byref(code)) or code.value==259
+        finally:
+            kernel.CloseHandle(handle)
+    try:
+        os.kill(pid,0)
+        return True
+    except PermissionError:
+        return True
+    except ProcessLookupError:
+        return False
 
 
 def _error(code, message):
@@ -42,6 +73,19 @@ class VisualWorkspace:
         self._job_ids = {}
         self._cancelled = set()
         self._server = None
+        self._instance_id = uuid.uuid4().hex
+        _OWNERS[self._instance_id] = self
+
+    @staticmethod
+    def _job_alive(project_id, job):
+        owner = _OWNERS.get(job.get("owner_instance"))
+        if owner is not None:
+            with owner._guard:
+                worker = owner._workers.get(project_id)
+                return bool(worker and worker.is_alive())
+        if job.get("owner_pid") == os.getpid():
+            return False
+        return _process_alive(job.get("owner_pid"))
 
     def _handle(self, project_id):
         if self.service.project(project_id)["status"]["content"] != "APPROVED":
@@ -148,9 +192,7 @@ class VisualWorkspace:
                         canonical_hash(voice.get("timing")) != state["build"].get("voice_timing_fingerprint")):
                     result.update(stale_preview=True, stale_reason="SELECTED_VOICE_OR_TIMING_CHANGED")
             if state["job"] and state["job"]["status"] == "RUNNING":
-                with self._guard:
-                    alive = project_id in self._workers and self._workers[project_id].is_alive()
-                if not alive:
+                if not self._job_alive(project_id, state["job"]):
                     state["job"].update(status="INTERRUPTED", error="Studio restarted; last good build preserved")
                     self._save(handle, state)
                     result["job"] = state["job"]
@@ -275,6 +317,8 @@ class VisualWorkspace:
         with _exclusive_source_lock(handle.workspace, "visual-state"):
             state, intent = self._read(handle)
             self._revision(state, base_revision)
+            if state.get("job") and state["job"]["status"]=="RUNNING" and self._job_alive(project_id,state["job"]):
+                raise _error("VISUAL_BUSY", "An active service owns this build")
             if not intent:
                 raise _error("VISUAL_SOURCE_REQUIRED", "Import canonical Visual Intent first")
             if scene_id is not None and scene_id not in {s["id"] for s in intent["scenes"]}:
@@ -294,6 +338,7 @@ class VisualWorkspace:
                        "theme": state["theme"], "revision": state["revision"], "workspace": str(handle.workspace),
                        "output": str(output), "cache": str(cache), "scene_id": scene_id}
             state["job"] = {"id": build_id, "status": "RUNNING", "revision": state["revision"], "scene_id": scene_id,
+                            "owner_pid": os.getpid(), "owner_instance": self._instance_id,
                             "ready_scenes": [], "total": len(intent["scenes"]), "error": None, "message": "Building source-bound episode"}
             self._event(state, "scene.compile" if scene_id else "episode.build", {"build_id": build_id, "scene_id": scene_id})
             self._save(handle, state)
@@ -441,3 +486,4 @@ class VisualWorkspace:
             worker.join(timeout=3)
         if self._server is not None:
             self._server.close()
+        _OWNERS.pop(self._instance_id, None)

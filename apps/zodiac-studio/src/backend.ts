@@ -80,7 +80,7 @@ export type BuiltScene = { id: string; start_ms: number; end_ms: number; duratio
   qa: { status: string; caption_contrast: number; issues: { code: string; entity_id?: string }[] }; fidelity: string };
 export type VisualState = { project_id: string; revision: number; source_hash: string | null; intent: VisualIntent | null;
   theme: "light" | "dark"; can_undo: boolean; can_redo: boolean; stale_preview: boolean;
-  job: { id: string; status: string; ready_scenes: string[]; total: number; message: string; error: string | null } | null;
+  job: { id: string; revision: number; status: string; ready_scenes: string[]; total: number; message: string; error: string | null } | null;
   build: { id: string; revision: number; voice_sha256: string; scenes: BuiltScene[]; theme: string; cache: { reused: number; rebuilt: number };
     resources: { wall_ms: number; peak_rss_bytes: number }; renderer_parity: string } | null;
   events: { event_seq: number; revision: number; kind: string; at: number; payload: Record<string, unknown> }[] };

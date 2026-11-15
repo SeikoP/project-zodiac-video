@@ -14,6 +14,7 @@ export default function VisualEditor({ project }: { project: Project | null }) {
   const [sdkReady, setSdkReady] = useState(false), [audioUrl, setAudioUrl] = useState("");
   const [agentInstruction, setAgentInstruction] = useState(""), [agentTask, setAgentTask] = useState<AgentTask | null>(null);
   const iframe = useRef<HTMLIFrameElement>(null), viewport = useRef<HTMLDivElement>(null), sdk = useRef<Composition | null>(null);
+  const loadedPreview = useRef<{ sha256: string; build_id: string; scene_id: string } | null>(null);
   const audio = useRef<HTMLAudioElement>(null), playhead = useRef(0), pointer = useRef<{ x: number; y: number; transform: VisualTransform } | null>(null);
   const projectId = project?.project_id, running = state?.job?.status === "RUNNING";
   const scene = state?.intent?.scenes.find(s => s.id === sceneId) ?? state?.intent?.scenes[0];
@@ -22,6 +23,8 @@ export default function VisualEditor({ project }: { project: Project | null }) {
   const selected = selectedStateId ? entity?.states[selectedStateId] : undefined;
   const built = state?.build?.scenes.find(s => s.id === scene?.id), sourceMap = preview?.scene?.source_map ?? [];
   const mapped = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === selectedStateId);
+  const candidateBuildId = scene && state?.job?.status === "RUNNING" && state.job.revision === state.revision && state.job.ready_scenes.includes(scene.id) ? state.job.id : null;
+  const effectiveBuildId = candidateBuildId ?? state?.build?.id;
   const duration = preview?.scene?.duration_seconds ?? built?.duration_seconds ?? 0;
   const report = useCallback((value: unknown) => setError(value instanceof Error ? value.message : String(value)), []);
 
@@ -40,18 +43,25 @@ export default function VisualEditor({ project }: { project: Project | null }) {
     observer.observe(node); return () => observer.disconnect();
   }, [!!preview]);
   useEffect(() => {
-    if (!projectId || !scene) return;
-    const buildId = state?.job?.status === "RUNNING" && state.job.ready_scenes.includes(scene.id) ? state.job.id : state?.build?.id;
-    if (!buildId) return;
+    if (!projectId || !scene || !effectiveBuildId) {
+      sdk.current?.dispose(); sdk.current = null; loadedPreview.current = null; setPreview(null); setSdkReady(false); setPlaying(false);
+      return;
+    }
     let live = true;
-    void backend.visualPreview(projectId, scene.id, buildId).then(async next => {
+    void backend.visualPreview(projectId, scene.id, effectiveBuildId).then(async next => {
+      if (loadedPreview.current?.sha256 === next.sha256 && loadedPreview.current.build_id === next.build_id && sdk.current) {
+        if (live) setPreview(next);
+        return;
+      }
       const composition = await openComposition(next.html, { overrides: {}, history: false });
       if (!live) { composition.dispose(); return; }
       sdk.current?.dispose(); sdk.current = composition;
-      setPreview(next); setSdkReady(true); setPlaying(false); setTime(0); playhead.current = 0;
+      const at = loadedPreview.current?.scene_id === scene.id ? Math.min(playhead.current, next.scene.duration_seconds ?? 0) : 0;
+      loadedPreview.current = { sha256: next.sha256, build_id: next.build_id, scene_id: scene.id };
+      setPreview(next); setSdkReady(true); setPlaying(false); setTime(at); playhead.current = at;
     }).catch(failure => { if (live) report(failure); });
     return () => { live = false; };
-  }, [projectId, scene?.id, state?.build?.id, state?.job?.id, state?.job?.ready_scenes.length, report]);
+  }, [projectId, scene?.id, effectiveBuildId, candidateBuildId, report]);
   useEffect(() => () => sdk.current?.dispose(), []);
   useEffect(() => {
     if (!agentTask || !["STARTING", "RUNNING"].includes(agentTask.status)) return;
@@ -175,7 +185,7 @@ export default function VisualEditor({ project }: { project: Project | null }) {
         <label>State<select value={selectedStateId ?? ""} onChange={e => { setStateId(e.target.value); const map = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === e.target.value); if (map) send("state", { hf_id: map.hf_id }); }}>{Object.keys(entity?.states ?? {}).map(id => <option key={id}>{id}</option>)}</select></label>
         {draft && <><div className="visual-transform">{(["x", "y", "width", "height", "rotation"] as const).map(key => <label key={key}>{key}<input type="number" value={draft[key] ?? 0} disabled={disabled} onChange={e => setDraft({ ...draft, [key]: Number(e.target.value) })}/></label>)}</div>
           <button className="primary-btn" disabled={disabled || !sdkReady} onClick={() => void commitTransform(draft)}><Check size={15}/>Lưu & dựng cảnh</button></>}
-        <small>Asset {selected?.asset ?? "—"}</small><small>Source {mapped?.source_sha256.slice(0, 16) ?? "Chưa build"}</small>
+        <small>Asset {mapped?.asset_id ?? selected?.asset ?? "—"}</small><small>Source {mapped?.source_sha256.slice(0, 16) ?? "Chưa build"}</small>
         <div className="visual-events"><strong>Voice reveals / events</strong>{scene?.events.map(e => <p key={e.id}>{e.id} · {e.target}<small>{e.state_before} → {e.state_after} · {e.trigger.text ?? e.trigger.type}</small></p>)}</div>
         <div className="visual-candidates"><strong>Composition candidates</strong><input aria-label="Asset constraints" value={query} placeholder="Family, ví dụ phone" onChange={e => setQuery(e.target.value)}/>
           <button className="outline-btn" disabled={!scene || disabled} onClick={() => { if (scene) void backend.visualCandidates(project.project_id, scene.id, query ? { family_id: query } : {}).then(setCandidates).catch(report); }}>Tìm bundle phù hợp</button>

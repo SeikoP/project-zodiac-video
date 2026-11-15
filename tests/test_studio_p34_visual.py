@@ -86,6 +86,15 @@ class VisualWorkspaceTests(unittest.TestCase):
             worker=threading.Thread(target=reader);worker.start();self.assertTrue(entered.wait(1));time.sleep(.06)
         worker.join(timeout=2);self.assertEqual(len(observed),1);self.assertLess(observed[0],.8)
 
+    @unittest.skipUnless(os.name=="nt","Windows MAX_PATH regression")
+    def test_atomic_request_temp_name_can_exceed_windows_max_path(self):
+        folder=self.root
+        while len(str(folder.resolve()))<210:folder=folder/("nested-"+"x"*14)
+        target=folder/"request-input.json"
+        self.assertGreater(len(str(target))+37,260)
+        VoiceArtifactStore._atomic_write(target,{"source":"unchanged","revision":1})
+        self.assertEqual(json.loads(target.read_text(encoding="utf8"))["revision"],1)
+
     def test_transaction_crash_recovers_one_consistent_source_revision(self):
         state=self.authored();real=VoiceArtifactStore._atomic_write
         def crash(path,payload):
@@ -176,6 +185,27 @@ class VisualWorkspaceTests(unittest.TestCase):
         result=manager.apply_suggestion(task_id,confirm=True,base_revision=state["revision"],command_id="agent-edit")
         self.assertEqual(result["intent"]["scenes"][0]["entities"][0]["states"]["neutral"]["transform"]["x"],300)
         self.assertEqual(self.service.project(self.project)["status"]["visual"],"UNKNOWN")
+
+    def test_second_service_reader_does_not_interrupt_live_owner(self):
+        state=self.authored();entered,release=threading.Event(),threading.Event();original=self.visual._node
+        def held(handle,payload,*args):
+            if payload["action"]=="build":entered.set();release.wait(5)
+            return original(handle,payload,*args)
+        with patch.object(self.visual,"_node",side_effect=held):
+            self.visual.start(self.project,state["revision"]);self.assertTrue(entered.wait(2))
+            second=StudioProjectService(self.root/"projects");self.addCleanup(second.close)
+            read=second.visual.snapshot(self.project)
+            self.assertEqual(read["job"]["status"],"RUNNING")
+            with self.assertRaises(StudioError):second.visual.start(self.project,read["revision"])
+            release.set();self.assertEqual(self.wait()["job"]["status"],"COMPLETED")
+
+    def test_genuinely_dead_owner_is_marked_interrupted_without_losing_source(self):
+        state=self.authored();root,_=self.visual._paths(self.handle)
+        record=json.loads((root/"state.json").read_text(encoding="utf8"))
+        record["job"]={"id":"f"*32,"status":"RUNNING","owner_pid":os.getpid(),"owner_instance":"dead-instance","ready_scenes":[],"revision":state["revision"],"error":None}
+        VoiceArtifactStore._atomic_write(root/"state.json",record)
+        recovered=self.state();self.assertEqual(recovered["job"]["status"],"INTERRUPTED")
+        self.assertEqual(recovered["intent"],self.intent)
 
 
 if __name__=="__main__":unittest.main()

@@ -62,7 +62,9 @@ export async function findCandidates(intent, sceneId, requirement={}, recent=[])
     const target=scene.entities.find(e=>['interactive_prop','prop'].includes(e.visual_role)||e.kind==='prop');
     if(!target) { rejected.push({id:asset.id,reason:'NO_PROP_SLOT_IN_SCENE'}); continue; }
     const current=intent.assets[target.states[target.initial_state]?.asset];
-    const bound=(scene.spatial_bindings??[]).some(b=>b.entity===target.id);
+    const frameContacts=scene.environment?.frame?.contacts;
+    const contacts=Array.isArray(frameContacts)?frameContacts:(scene.spatial_bindings??[]);
+    const bound=contacts.some(b=>b.entity===target.id);
     if(bound && current?.path && !current.path.endsWith('/'+path.basename(asset.path))) {
       const currentRow=catalog.items.find(r=>current.path.endsWith('/'+path.basename(r.path)));
       if(!currentRow || currentRow.identity.model_id!==asset.identity.model_id) { rejected.push({id:asset.id,reason:'CONTACT_MODEL_MISMATCH'}); continue; }

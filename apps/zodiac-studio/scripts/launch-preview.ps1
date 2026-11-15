@@ -18,7 +18,7 @@ if ($ProjectsRoot -ne "") {
     New-Item -ItemType Directory -Path $ProjectsRoot -Force | Out-Null
     $env:ZODIAC_STUDIO_PROJECTS = (Resolve-Path $ProjectsRoot).Path
 }
-Write-Host "Zodiac Studio P1 preview (non-production)" -ForegroundColor Cyan
+Write-Host "Zodiac Studio V5 experimental preview (non-production)" -ForegroundColor Cyan
 Write-Host "Source: $repoRoot"
 Write-Host "Runtime: $python"
 Write-Host "Executable: $exe"

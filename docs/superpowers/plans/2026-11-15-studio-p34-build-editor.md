@@ -4,7 +4,7 @@
 
 **Goal:** One native Studio workflow from canonical Visual Intent through incremental episode build to an editable HyperFrames preview, integrated into `experiment/main-2`.
 
-**Architecture:** Keep Python Project Core as the command authority, existing Node V4 compilers/cache as the build owner, and pinned HyperFrames SDK/Player as the embedded editing/preview surface. A canonical source transaction commits semantic changes; the generated DOM is disposable. Immutable build revisions preserve the last good output.
+**Architecture:** Keep Python Project Core as the command authority, existing Node V4 compilers/cache as the build owner, and pinned HyperFrames SDK as the embedded editing/preview surface. A canonical source transaction commits semantic changes; the generated DOM is disposable. Immutable build revisions preserve the last good output.
 
 **Tech Stack:** Existing Python 3.11, Node, Tauri 2, React, pnpm, HyperFrames 0.9.45, V4 compiler and Remotion compatibility.
 
@@ -32,8 +32,8 @@ Files: `tools/studio_project/visual_workspace.py`, `service.py`, `rpc_stdio.py`,
 
 Interfaces: `visual.open`, revisioned/idempotent `visual.command`, `episode.build`, `scene.compile`, `visual.cancel`, bounded `visual.preview`, `assets.describe`, `assets.find_candidates`, `validation.get`. Source replacement is explicit authoring, never approval. Commands share scene scope and events for human and agent callers.
 
-- [ ] Implement crash-recoverable canonical source transactions, immutable history, undo/redo, structural validation and conflict errors.
-- [ ] Connect managed asynchronous build/cancel lifecycle, stale source rejection, progress/events and latest verified artifact pointer.
+- [x] Implement crash-recoverable canonical source transactions, immutable history, undo/redo, structural validation and conflict errors.
+- [x] Connect managed asynchronous build/cancel lifecycle, stale source rejection, progress/events and latest verified artifact pointer.
 
 ### Task 2: shared compiler and constrained candidate resolver
 
@@ -41,25 +41,33 @@ Files: `tools/studio_project/visual_compiler.mjs`, `visual_candidates.mjs`, `vis
 
 Interfaces: source-bound Node manifest -> complete verified scene/asset inventory, measured anchors, source map, performance graph, resource/cache receipts and HyperFrames composition HTML. Separate geometry/appearance nodes; `scene.compile` uses the same engine/owner as `episode.build`.
 
-- [ ] Adapt existing Visual Intent/V4 character and prop compilers and semantic graph; verify source hashes and full inventory.
-- [ ] Implement bounded ready-node scheduling, cache verification and immutable atomic build publication; preserve old outputs on failure/cancel.
-- [ ] Add versioned theme/performance contracts and V4→V5 prop identity compatibility (phone pilot), role/contact constraints and source-backed prior-use profile.
-- [ ] Return up to three feasible scene bundles with fit/rejection reasons; missing art returns `NO_FIT_ASSET`, never an unrelated substitute.
-- [ ] Emit source-mapped HyperFrames preview from actual SVG/state/event/timing inputs; light/dark theme prototypes and technical readability/occlusion diagnostics.
+- [x] Adapt existing Visual Intent/V4 character and prop compilers and semantic graph; verify source hashes and full inventory.
+- [x] Implement bounded ready-node scheduling, cache verification and immutable atomic build publication; preserve old outputs on failure/cancel.
+- [x] Add versioned theme/performance contracts and V4→V5 prop identity compatibility (phone pilot), role/contact constraints and source-backed prior-use profile.
+- [x] Return up to three feasible scene bundles with fit/rejection reasons; missing art returns `NO_FIT_ASSET`, never an unrelated substitute.
+- [x] Emit source-mapped HyperFrames preview from actual SVG/state/event/timing inputs; light/dark theme prototypes and technical readability/occlusion diagnostics.
 
 ### Task 3: complete embedded editor
 
 Files: `apps/zodiac-studio/src/HyperframesWorkspace.tsx`, `backend.ts`, `App.tsx`, `style.css`, native CSP.
 
-- [ ] Replace skeleton with scene list, actual embedded HyperFrames Player, SDK selection/edit bridge, state/entity inspector and measured timeline.
-- [ ] Support canonical source import, build/stop, validated move/resize/state/asset/theme changes, candidate inspector, undo/redo and last-good preview with revision/fidelity labels.
-- [ ] Use bounded native transport and sandboxed generated compositions; never persist arbitrary SDK HTML as canonical source.
+- [x] Replace skeleton with scene list, actual embedded HyperFrames SDK composition, SDK selection/edit bridge, state/entity inspector and measured timeline.
+- [x] Support canonical source import, build/stop, validated move/resize/state/asset/theme changes, candidate inspector, undo/redo and last-good preview with revision/fidelity labels.
+- [x] Use bounded native transport and sandboxed generated compositions; never persist arbitrary SDK HTML as canonical source.
 
 ### Task 4: integrated verification and delivery
 
 Files: `tests/test_studio_p34_visual.py`, `tests/studio_p34_visual.test.mjs`, reproducible fixture/benchmark and phase evidence; Studio workflow/README.
 
-- [ ] Run all new P3/P4 tests together after implementation, then relevant P0/P1/P2/V4 compatibility regressions, frontend/native checks. Fix concrete failures.
-- [ ] Freeze a 6–10-scene fixture; measure cold/warm/scoped/shared-character/theme builds, resource use, tamper recovery and unchanged audio/source hashes.
-- [ ] Verify real Libra/Gemini/Scorpio states/props/reaction and native scene edit/voice reveal/theme/undo/reopen. Label synthetic data and human visual/listening acceptance honestly.
+- [x] Run all new P3/P4 tests together after implementation, then relevant P0/P1/P2/V4 compatibility regressions, frontend/native checks. Fix concrete failures.
+- [x] Freeze a 6–10-scene fixture; measure cold/warm/scoped/shared-character/theme builds, resource use, tamper recovery and unchanged audio/source hashes.
+- [x] Verify real Libra/Gemini/Scorpio states/props/reaction and native scene edit/voice reveal/theme/undo/reopen. Label synthetic data and human visual/listening acceptance honestly.
 - [ ] One fresh-context whole-branch review, fix important findings, focused PR merged into `experiment/main-2`, launch one app from merged source. Record reproducible evidence and remaining creative review separately.
+
+## Final implementation rulings
+
+The actual SDK T3 API and generated GSAP composition run on a private read-only origin. The Studio Player wrapper requires its own server and strips the origin from directUrl, so it is not embedded. This preserves canonical semantic ownership and native isolation.
+
+Historical V4 source/assets are read-only compatibility fixtures; current synthetic fixtures use explicit current catalog IDs. Unsupported historical motion retains endpoint-only fidelity. Tests never grant creative approval.
+
+The 8-scene service benchmark and the additional 48.56-second/244-word source benchmark measure visual build/cache behavior. The latter reuses exact existing ASR times after sequential source-token equality checks and uses a labeled synthetic visual fixture. Neither measures production authoring, TTS, ASR generation or final encoding. See the [acceptance receipt](../../audits/2026-11-15-studio-p34-acceptance.md).
