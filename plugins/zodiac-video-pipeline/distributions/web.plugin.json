@@ -9,10 +9,10 @@
       "Interactive"
     ],
     "category": "Productivity",
-    "defaultPrompt": "Run creative Zodiac Phase 1 only: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Do not bootstrap native source, install runtime dependencies, run validators or optimization overlays on Web. After explicit approval, export one zodiac-phase1-handoff@2 capsule for Local.",
+    "defaultPrompt": "Run creative Zodiac Phase 1 only: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Apply the broad-recognition and Zodiac-identity gate before selecting a concept; keep interpretation evidence-bounded. Do not bootstrap native source, install runtime dependencies, execute native validators or optimization overlays on Web. After explicit approval, export one zodiac-phase1-handoff@2 capsule for Local.",
     "developerName": "Personal",
     "displayName": "Zodiac Video Web",
-    "longDescription": "Creative-first Zodiac authoring on ChatGPT Web, split into focused microphases with one Content Review boundary and a lightweight handoff to local visual production.",
+    "longDescription": "Creative-first Zodiac authoring on ChatGPT Web with broad-recognition, Zodiac-identity and dual editorial-read safeguards, one Content Review boundary, and a lightweight handoff to local visual production.",
     "shortDescription": "Creative Phase 1 → lightweight handoff"
   }
 }
