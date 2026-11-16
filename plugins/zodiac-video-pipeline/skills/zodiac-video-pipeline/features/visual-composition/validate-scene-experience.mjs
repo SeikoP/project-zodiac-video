@@ -16,6 +16,51 @@ const isAccent=e=>e?.kind==='scene_accent'||e?.role==='scene_accent'||e?.visual_
 const isCharacter=e=>e?.kind==='character'||e?.visual_role==='character';
 const isStoryEntity=e=>isCharacter(e)||isPhysical(e)||isNarrative(e);
 
+const initialState=e=>e?.states?.[e.initial_state]??Object.values(e?.states??{})[0]??null;
+const rectOf=e=>{const t=initialState(e)?.transform;return t&&['x','y','width','height'].every(k=>Number.isFinite(t[k]))&&t.width>0&&t.height>0?t:null;};
+const layerOf=e=>Number(initialState(e)?.layer);
+const intersection=(a,b)=>{const w=Math.max(0,Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x));const h=Math.max(0,Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y));return w*h;};
+const clipped=(r,b)=>intersection(r,b);
+
+function geometryExperience(scene,{entities,mode,sparse,focusPass,supportIds}){
+ const canvas=scene.layout_contract?.canvas??{width:1080,height:1920};
+ const captionY=Number(scene.layout_contract?.caption_safe_zone?.y);
+ const storyField={x:0,y:0,width:canvas.width,height:Number.isFinite(captionY)?Math.max(1,captionY):Math.min(canvas.height,1400)};
+ const geometryAvailable=entities.some(e=>rectOf(e));
+ if(!geometryAvailable)return {
+  geometryAvailable:false,
+  environmentPass:text(scene.art_direction?.scene_experience?.environment_specificity)||entities.some(isAccent),
+  depthPass:focusPass&&supportIds.length>0,
+  occupancyPass:true,
+  occupancyRatio:null,
+  minOccupancy:null,
+  reason:'Geometry is not available at this review boundary.'
+ };
+
+ const visible=entities.filter(e=>rectOf(e));
+ const story=visible.filter(isStoryEntity);
+ const support=visible.filter(e=>isAccent(e)||String(e.id??'').startsWith('depth__')||e.visual_role==='foreground_environment');
+ const frame=scene.environment?.frame?.version==='zodiac-environment-frame@1';
+ const depthEntities=support.filter(e=>String(e.id??'').startsWith('depth__'));
+ const backgroundArea=support.reduce((n,e)=>n+clipped(rectOf(e),{x:0,y:0,width:canvas.width,height:canvas.height}),0);
+ const backgroundRatio=backgroundArea/(canvas.width*canvas.height);
+ const environmentPass=frame||depthEntities.length>0||backgroundRatio>=0.07;
+
+ const storyLayers=new Set(story.map(layerOf).filter(Number.isFinite));
+ const storyAreas=story.map(e=>{const r=rectOf(e);return r.width*r.height;}).filter(n=>n>0);
+ const areaRatio=storyAreas.length>=2?Math.max(...storyAreas)/Math.min(...storyAreas):1;
+ const foregroundStory=story.some(e=>e.visual_role==='foreground_environment');
+ const depthPass=frame||depthEntities.length>0||foregroundStory||storyLayers.size>=2||areaRatio>=1.35;
+
+ let occupied=story.reduce((n,e)=>n+clipped(rectOf(e),storyField),0);
+ for(let i=0;i<story.length;i++)for(let j=i+1;j<story.length;j++)occupied-=intersection(rectOf(story[i]),rectOf(story[j]));
+ occupied=Math.max(0,occupied);
+ const occupancyRatio=occupied/(storyField.width*storyField.height);
+ const minOccupancy=mode==='relationship'||mode==='payoff'?0.26:mode==='behavior'?0.24:0.20;
+ const occupancyPass=sparse||!['relationship','behavior','payoff'].includes(mode)||occupancyRatio>=minOccupancy;
+ return {geometryAvailable:true,environmentPass,depthPass,occupancyPass,occupancyRatio,minOccupancy,backgroundRatio};
+}
+
 function reviewStoryFocus(scene,{entities,events,mode,sparse}){
  const issues=[],focus=scene.experience_profile?.story_focus;
  const storyEntities=entities.filter(isStoryEntity),byId=new Map(storyEntities.map(e=>[e.id,e]));
@@ -33,9 +78,6 @@ function reviewStoryFocus(scene,{entities,events,mode,sparse}){
  for(const id of supportIds)if(id===focal||!byId.has(id))issues.push({code:'STORY_FOCUS_SUPPORT_INVALID',entity_id:id});
  if(storyEntities.length>1&&!supportIds.length)issues.push({code:'STORY_FOCUS_SUPPORT_REQUIRED'});
 
- // Entities that actively carry meaning must be named in the focus chain. Physical
- // props and Narrative Visuals always count; co-actors count in relationship scenes;
- // any event-targeted story entity also counts.
  const mustLink=storyEntities.filter(e=>e.id!==focal&&(isPhysical(e)||isNarrative(e)||evented.has(e.id)||(mode==='relationship'&&isCharacter(e))));
  for(const e of mustLink)if(!supportIds.includes(e.id))issues.push({code:'STORY_ENTITY_UNLINKED',entity_id:e.id});
 
@@ -81,12 +123,18 @@ export function reviewSceneExperience(intent){
    const keep=issues.filter(x=>x.code==='PHYSICAL_STORY_ENTITY_MISSING');issues.splice(0,issues.length,...keep);
   }
   const focusPass=Boolean(focusReview.focus)&&focusReview.issues.length===0;
+  const geometry=geometryExperience(scene,{entities,mode,sparse,focusPass,supportIds:focusReview.supportIds});
+  if(geometry.geometryAvailable&&!sparse&&['relationship','behavior','payoff'].includes(mode)&&!geometry.environmentPass)issues.push({code:'ENVIRONMENT_VISUAL_UNDERDEVELOPED',background_ratio:Number((geometry.backgroundRatio??0).toFixed(3))});
+  if(geometry.geometryAvailable&&!sparse&&focusReview.supportIds.length&&!geometry.depthPass)issues.push({code:'VISUAL_DEPTH_UNDERDEVELOPED'});
+  if(geometry.geometryAvailable&&!geometry.occupancyPass)issues.push({code:'FRAME_OCCUPANCY_LOW',ratio:Number(geometry.occupancyRatio.toFixed(3)),minimum:geometry.minOccupancy});
+
   const criteria={
    story_focus_alignment:{result:focusReview.required?(focusPass?'PASS':'REVIEW'):focusReview.focus?(focusPass?'PASS':'REVIEW'):'OMIT',reason:focusPass?'Focal and supporting story entities form a goal-bound relation chain.':focusReview.required?'Required story focus is missing, invalid or disconnected.':'No story-focus chain required for this sparse/simple beat.'},
    character_action:{result:activeStory||mode==='reflection'?'PASS':'REVIEW',reason:activeStory?'A scene event changes actor/prop/narrative state.':mode==='reflection'&&sparse?profile.sparse_reason:'No meaningful action is authored.'},
-   environment_specificity:{result:text(authored.environment_specificity)||accents.length?'PASS':'OMIT',reason:authored.environment_specificity??(accents.length?'Context cue is present.':'No context cue required.')},
+   environment_specificity:{result:(mode==='reflection'&&sparse)?'OMIT':geometry.environmentPass?'PASS':geometry.geometryAvailable&&['relationship','behavior','payoff'].includes(mode)?'REVIEW':text(authored.environment_specificity)||accents.length?'PASS':'OMIT',reason:(mode==='reflection'&&sparse)?profile.sparse_reason:geometry.environmentPass?'Context occupies a meaningful part of the frame or uses an explicit depth/frame layer.':'A tiny accent or prose rationale alone does not establish a readable environment.'},
    physical_storytelling:{result:physicalActions.length?'PASS':required.length?'REVIEW':'OMIT',reason:physicalActions.length?'Physical prop participates in an authored action.':authored.physical_storytelling??'No physical story action required.'},
-   depth_separation:{result:focusPass&&focusReview.supportIds.length?'PASS':(mode==='reflection'&&sparse)?'OMIT':'REVIEW',reason:focusPass&&focusReview.supportIds.length?'Depth comes from linked story roles, not asset count.':mode==='reflection'&&sparse?'Negative space is intentional.':'Visual layers exist without a validated semantic relationship chain.'},
+   depth_separation:{result:(mode==='reflection'&&sparse)?'OMIT':focusReview.supportIds.length?(geometry.depthPass?'PASS':'REVIEW'):'OMIT',reason:(mode==='reflection'&&sparse)?'Negative space is intentional.':geometry.depthPass?'Actual geometry/layers create readable separation between story roles.':focusReview.supportIds.length?'Semantic links exist but the rendered geometry is visually flat.':'No supporting story role requires depth separation.'},
+   frame_occupancy:{result:(mode==='reflection'&&sparse)?'OMIT':geometry.geometryAvailable?(geometry.occupancyPass?'PASS':'REVIEW'):'OMIT',reason:(mode==='reflection'&&sparse)?'Sparse reflection intentionally preserves negative space.':geometry.geometryAvailable?('Story mass occupies '+(geometry.occupancyRatio*100).toFixed(1)+'% of the pre-caption field; minimum '+((geometry.minOccupancy??0)*100).toFixed(0)+'%.'):'Geometry is not available at this review boundary.'},
    secondary_action:{result:events.length>1?'PASS':'OMIT',reason:events.length>1?'More than one authored event supports the beat.':'Secondary action is not required.'},
    visual_callback:{result:text(authored.visual_callback)?'PASS':'OMIT',reason:authored.visual_callback??'No callback selected.'},
    narrative_visual_role:{result:narrative.length?(narrativeActions.length?'PASS':'REVIEW'):'OMIT',reason:narrative.length?(narrativeActions.length?'Narrative visual has a meaningful state/action change.':'Narrative visual is passive.'):'No narrative visual selected.'}

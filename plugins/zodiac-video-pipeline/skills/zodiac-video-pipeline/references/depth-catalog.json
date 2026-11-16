@@ -93,6 +93,11 @@
       "context": "payoff",
       "geometry": "abstract",
       "divider": "spotlight"
+    },
+    "relationship-space": {
+      "context": "relational",
+      "geometry": "abstract",
+      "divider": "soft-distance"
     }
   },
   "policy": {

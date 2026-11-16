@@ -44,6 +44,22 @@ test('revision refuses drift in approved content and preserves existing projecti
  try{const original=await readFile(path.join(root,'production.json'),'utf8');s.review_receipts[0].source_hashes={narration:'0'.repeat(64)};await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify(s));p.production.scenes[0].semantic_goal='new';await writeFile(payloadPath,JSON.stringify(p));await assert.rejects(()=>writePhase02Authoring({workspace:root,payloadPath,revise:true}),/CONTENT_APPROVAL_SOURCE_DRIFT/);assert.equal(await readFile(path.join(root,'production.json'),'utf8'),original);}finally{await rm(root,{recursive:true,force:true});}
 });
 
+test('canonical Visual Intent projects approved Narrative Plan performance without a separate coverage artifact',async()=>{
+ const {root,payloadPath}=await revisionWorkspace();
+ try{
+  const token={id:'zodiac-paper-doodle-meme-v4',version:'4.0',hard_style_lock:true,handmade_profile:'human-stroke-v2'};
+  await writeFile(path.join(root,'design.md'),'<!-- STYLE_TOKEN_BEGIN -->\n```json\n'+JSON.stringify(token)+'\n```\n<!-- STYLE_TOKEN_END -->');
+  const input={format:'zodiac-visual-intent@1',narration_sha256:hash,assets:{a:{path:'assets/cup.svg'}},video:{width:1080,height:1920,fps:30},cast:[],frames:[],taxonomy_version:'narrative_visual@1',narrative_visual_decision:{mode:'omitted',reason:'Phase 1 selected no Narrative Visual.'},scenes:[{id:'s01',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'}},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],semantic_asset_decisions:[{entity_id:'cup',reason:'Physical cup'}],events:[]}]};
+  const plan={version:'2.1',beats:[{id:'B1',voice_anchor:'Cung Bảo Bình nghĩ khác.',performance:{delivery:'observational',energy:.45,emotion:'curious',pace:'medium',emphasis:['nghĩ khác'],reason:'Approved Phase-1 delivery.'}}]};
+  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify(plan));
+  await writeFile(payloadPath,JSON.stringify(input));
+  await writePhase02Authoring({workspace:root,payloadPath,revise:true});
+  const output=JSON.parse(await readFile(path.join(root,'production.json'),'utf8'));
+  assert.equal(output.scenes[0].performance_context.delivery,'observational');
+  await assert.rejects(()=>readFile(path.join(root,'.authoring/narration-performance-coverage.json'),'utf8'),error=>error.code==='ENOENT');
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('canonical Visual Intent revision restores every prior projection if cache update fails',async()=>{
  const {root,payloadPath}=await revisionWorkspace();
  try{

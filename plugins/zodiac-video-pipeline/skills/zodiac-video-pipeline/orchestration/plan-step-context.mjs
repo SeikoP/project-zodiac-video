@@ -15,7 +15,8 @@ const manifestByPhase={'01-content':'01-content.json','02-visual-production':'02
 const workUnits=new Set(['design','scene','assets','validate','review','publish']);
 export function workUnitForTask(task){
  if(!task||task.phase&&task.phase!=='02-visual-production')return null;
- if(task.kind==='DESIGN_VISUAL')return 'design';
+ if(['DESIGN_VISUAL','REPAIR_VISUAL_INTENT','REPROJECT_VISUAL_INTENT'].includes(task.kind))return 'design';
+ if(task.kind==='AUTHOR_VISUAL_ASSETS')return 'assets';
  if(task.kind==='DESIGN_SCENE_BEATS')return 'scene';
  if(['WAIT_FOR_GENUINE_USER_REVIEW','RUN_PHASE_GATE_PER_ROUTER'].includes(task.kind))return 'review';
  if(task.kind==='AUTHOR_STEP'&&task.step==='assets')return 'assets';

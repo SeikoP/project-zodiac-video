@@ -2,17 +2,26 @@ import test from 'node:test';import assert from 'node:assert/strict';import {mkd
 import {runParallelNativePreflight} from '../../core/performance/parallel-native-preflight.mjs';
 async function fixture(){
  const root=await mkdtemp(path.join(os.tmpdir(),'z-fast-preflight-')),skill=path.join(root,'skill'),ws=path.join(root,'ws');
- await mkdir(path.join(skill,'core/evidence'),{recursive:true});await mkdir(path.join(skill,'features/visual-composition'),{recursive:true});await mkdir(path.join(ws,'.authoring'),{recursive:true});
+ await mkdir(path.join(skill,'core/evidence'),{recursive:true});await mkdir(path.join(skill,'features/visual-composition'),{recursive:true});await mkdir(path.join(skill,'references/asset-library-v4/scene-direction'),{recursive:true});await mkdir(path.join(ws,'.authoring'),{recursive:true});
  const js="import {writeFile} from 'node:fs/promises'; const ms=Number(process.env.Z_FAST_TEST_DELAY_MS??50);await new Promise(r=>setTimeout(r,ms));if(process.env.Z_FAST_TEST_FAIL==='1' && process.argv[1].includes('character'))process.exit(2);";
  await writeFile(path.join(skill,'features/visual-composition/validate-character-intent-preflight.mjs'),js);
  await writeFile(path.join(skill,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),'process.exit(0)');
  await writeFile(path.join(skill,'features/visual-composition/validate-phase02-art-direction.mjs'),'process.exit(0)');
  await writeFile(path.join(skill,'features/visual-composition/validate-phase02-progressive-preflight.mjs'),'process.exit(0)');
  await writeFile(path.join(skill,'features/visual-composition/validate-scene-experience.mjs'),'process.exit(0)');
+ await writeFile(path.join(skill,'references/asset-library-v4/scene-direction/validate-scene-direction.mjs'),'process.exit(0)');
  await writeFile(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),"import {writeFile} from 'node:fs/promises';import {spawnSync} from 'node:child_process';const [id,out,file,...args]=process.argv.slice(2);const r=spawnSync(process.execPath,[file,...args],{encoding:'utf8'});const status=r.status===0?'PASS':'FAIL';await writeFile(out,JSON.stringify({format:'zodiac-validator-receipt@1',capability_id:id,status,exit_code:r.status??1,stdout:r.stdout??'',stderr:r.stderr??''}));process.exitCode=r.status??1;");
  return {root,skill,ws};
 }
-test('parallel preflight creates separate receipts and preserves gate results',async()=>{const f=await fixture();try{const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'PASS');assert.deepEqual(r.plan.batches,[['seam','character','art']]);for(const id of ['seam','art'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');}finally{await rm(f.root,{recursive:true,force:true});}});
+test('parallel preflight creates separate receipts and preserves gate results',async()=>{const f=await fixture();try{const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true});assert.equal(r.status,'PASS');assert.deepEqual(r.plan.batches,[['seam','character','scene_direction','art']]);for(const id of ['seam','art'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');}finally{await rm(f.root,{recursive:true,force:true});}});
+
+test('parallel preflight executes canonical scene-direction manifest validator with a receipt',async()=>{
+ const f=await fixture();try{
+  const r=await runParallelNativePreflight(f.skill,f.ws);
+  assert.equal(r.checks.scene_direction.status,'PASS');
+  assert.equal(JSON.parse(await readFile(r.receipts.scene_direction,'utf8')).capability_id,'scene_direction_validation');
+ }finally{await rm(f.root,{recursive:true,force:true});}
+});
 
 test('parallel preflight retains first and last scene diagnostics from large native output',async()=>{
  const f=await fixture();try{
@@ -30,7 +39,7 @@ test('failed character preflight blocks while retaining other independent native
 test('fresh preflight runs progressive and scene-experience gates before native compilation',async()=>{const f=await fixture();try{
  const r=await runParallelNativePreflight(f.skill,f.ws,{artDirectionRequired:true,fresh:true});
  assert.equal(r.status,'PASS');
- assert.deepEqual(r.plan.batches,[['seam','character','progressive','experience','art']]);
+ assert.deepEqual(r.plan.batches,[['seam','character','scene_direction','progressive','experience'],['art']]);
  for(const id of ['progressive','experience'])assert.equal(r.checks[id].status,'PASS');
  for(const id of ['progressive','experience'])assert.equal(JSON.parse(await readFile(r.receipts[id],'utf8')).status,'PASS');
 }finally{await rm(f.root,{recursive:true,force:true});}});

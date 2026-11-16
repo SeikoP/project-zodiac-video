@@ -1,11 +1,11 @@
-import {readFile,stat} from 'node:fs/promises';
+﻿import {readFile,stat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const fail=(m)=>{throw new Error('SCENE_DIRECTION_INVALID: '+m);};
 const idx=JSON.parse(await readFile(path.join(here,'index.json'),'utf8'));
 if(idx.format!=='zodiac-scene-direction@1')fail('format');
-if(idx.version!=='1.1.0')fail('version');
+if(idx.version!=='1.2.0')fail('version');
 const p=idx.policy??{};
 if(p.compile_time_only!==true)fail('compile_time_only');
 if(p.runtime_contract!=='existing_scene_entities_and_camera_primitives')fail('runtime contract');

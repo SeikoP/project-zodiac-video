@@ -9,11 +9,14 @@ export async function runParallelNativePreflight(sourceRoot,workspace,{artDirect
  const artReceipt=path.join(workspace,'.authoring/native-validator-phase02_art_direction_validation.json');
  const progressiveReceipt=path.join(workspace,'.authoring/native-validator-phase02_progressive_preflight.json');
  const experienceReceipt=path.join(workspace,'.authoring/native-validator-scene_experience_review.json');
+ const sceneDirectionReceipt=path.join(workspace,'.authoring/native-validator-scene_direction_validation.json');
  const tasks=[
   {id:'seam',reads:['production.json','narration.txt','design.md'],writes:['.authoring/native-validator-precompile_seam_validation.json'],dependencies:[],
     file:validator,args:['precompile_seam_validation',seamReceipt,path.join(sourceRoot,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),workspace]},
   {id:'character',reads:['production.json','.authoring/visual-intent.json'],writes:[],dependencies:[],
-    file:path.join(sourceRoot,'features/visual-composition/validate-character-intent-preflight.mjs'),args:[workspace]}
+    file:path.join(sourceRoot,'features/visual-composition/validate-character-intent-preflight.mjs'),args:[workspace]},
+  {id:'scene_direction',reads:['production.json'],writes:['.authoring/native-validator-scene_direction_validation.json'],dependencies:[],
+    file:validator,args:['scene_direction_validation',sceneDirectionReceipt,path.join(sourceRoot,'references/asset-library-v4/scene-direction/validate-scene-direction.mjs'),path.join(workspace,'production.json')]}
  ];
  if(fresh){
   tasks.push(
@@ -28,5 +31,5 @@ export async function runParallelNativePreflight(sourceRoot,workspace,{artDirect
  const checks=Object.fromEntries(result.results.map(x=>[x.id,x.status==='PASS'?x.value:{status:'FAIL',reason:x.error}]));
  // A child may exit nonzero without rejecting. Validate its native exit status.
  const issues=Object.entries(checks).filter(([,v])=>v.status!=='PASS').flatMap(([id,v])=>[{id,code:'PHASE02_ENTRY_CHECK_FAILED',step:id,exit_code:v.exit_code??1,stderr:v.stderr??v.reason??''},...(v.issues??[]).map(issue=>({...issue,step:id}))]);
- return {status:issues.length?'BLOCKED':'PASS',wall_ms:+(performance.now()-fastStarted).toFixed(2),serial_equivalent_native_ms:+Object.values(checks).reduce((n,x)=>n+(x.elapsed_ms??0),0).toFixed(2),checks,issues,plan:result.plan,receipts:{seam:seamReceipt,...(fresh?{progressive:progressiveReceipt,experience:experienceReceipt}:{}),...(artDirectionRequired?{art:artReceipt}:{})},not_an_approval:true};
+ return {status:issues.length?'BLOCKED':'PASS',wall_ms:+(performance.now()-fastStarted).toFixed(2),serial_equivalent_native_ms:+Object.values(checks).reduce((n,x)=>n+(x.elapsed_ms??0),0).toFixed(2),checks,issues,plan:result.plan,receipts:{seam:seamReceipt,scene_direction:sceneDirectionReceipt,...(fresh?{progressive:progressiveReceipt,experience:experienceReceipt}:{}),...(artDirectionRequired?{art:artReceipt}:{})},not_an_approval:true};
 }

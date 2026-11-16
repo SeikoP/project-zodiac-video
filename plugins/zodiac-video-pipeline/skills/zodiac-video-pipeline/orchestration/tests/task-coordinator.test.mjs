@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 const api=await import('../../core/workflow/task-coordinator.mjs').catch(()=>({}));
 const root=new URL('../../',import.meta.url);
 const manifests=await Promise.all(['01-content','02-visual-production','03-handoff'].map(async id=>JSON.parse(await readFile(new URL('orchestration/phases/'+id+'.json',root),'utf8'))));
@@ -23,7 +24,7 @@ test('many director beats cannot hide an uncovered event, even in a sparse scene
 
 test('XState is inside the plugin and routes one task without changing state',()=>{
  assert.equal(api.taskMachine?.id,'zodiac-task-router');const state=structuredClone(template),before=JSON.stringify(state);
- const t=api.resolveNextTask({state,manifests});assert.equal(t.kind,'AUTHOR_STEP');assert.equal(t.phase,'01-content');assert.equal(t.step,'evidence');assert.equal(JSON.stringify(state),before);assert.equal(t.not_an_approval,true);
+ const t=api.resolveNextTask({state,manifests});assert.equal(t.kind,'VALIDATE_AND_COMMIT_STEP');assert.deepEqual(t.allowed_writes,[]);assert.equal(t.phase,'01-content');assert.equal(t.step,'evidence');assert.equal(JSON.stringify(state),before);assert.equal(t.not_an_approval,true);
 });
 test('phase ordering follows manifests and a review boundary cannot be bypassed',()=>{
  const state=visualState();state.phases=Object.fromEntries(Object.entries(state.phases).reverse());
@@ -46,6 +47,177 @@ test('sparse scene justification does not waive event coverage',()=>{
  s.experience_profile.story_mode='reflection';assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'DESIGN_SCENE_BEATS');
  s.director_beats[0].event_ids=['s1event'];assert.equal(api.resolveNextTask({state:visualState(),manifests,visualIntent:{scenes:[s]}}).kind,'VALIDATE_AND_COMMIT_STEP');
 });
+test('missing authored visual assets route to a scoped asset repair task before validation',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const repairIssues=[
+  {code:'PHASE02_BACKGROUND_ASSET_MISSING_OR_UNSAFE',asset:'assets/environment/a.svg'},
+  {code:'AUTHORED_SVG_READ',path:'assets/props/bag.svg'},
+  {code:'AUTHORED_SVG_READ',path:'../escape.svg'}
+ ];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues});
+ assert.equal(task.kind,'AUTHOR_VISUAL_ASSETS');
+ assert.deepEqual(task.allowed_writes,['assets/environment/a.svg','assets/props/bag.svg']);
+ assert.deepEqual(task.asset_paths,task.allowed_writes);
+});
+
+test('canonical scene-direction preflight failure routes to Visual Intent grammar repair',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues:[{code:'PHASE02_ENTRY_CHECK_FAILED',step:'scene_direction',stderr:'SCENE_DIRECTION_INVALID: scene 2 bad continuity_relation'}]});
+ assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+ assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+ assert.equal(task.repair_owner,'visual_intent.scenes.grammar.continuity_relation');
+});
+
+test('scene-direction shot repetition routes to Visual Intent framing repair, not continuity repair',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues:[{code:'PHASE02_ENTRY_CHECK_FAILED',step:'scene_direction',stderr:'SCENE_DIRECTION_INVALID: shot streak > 2 at scene 3'}]});
+ assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+ assert.equal(task.repair_owner,'visual_intent.scenes.grammar.framing');
+});
+
+test('composition narrative anchor failure routes back to canonical Visual Intent',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues:[{code:'COMPOSITION_NARRATIVE_REASON_MISSING',scene_id:'s1',entity_id:'hero'}]});
+ assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+ assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+ assert.equal(task.repair_owner,'visual_intent.scenes.narrative_intent');
+});
+
+test('performance projection drift routes to a source-preserving Visual Intent reprojection task',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues:[{code:'NARRATION_PERFORMANCE_INVALID',detail:'NARRATION_PERFORMANCE_INVALID SOURCE_PERFORMANCE_DRIFT'}]});
+ assert.equal(task.kind,'REPROJECT_VISUAL_INTENT');
+ assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+});
+
+test('episode cast scope failure routes back to canonical Visual Intent instead of projection edits',()=>{
+ const state=visualState(),s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+ const task=api.resolveNextTask({state,manifests,visualIntent:{scenes:[s]},repairIssues:[{code:'EPISODE_HANDOFF_INVALID',detail:'EPISODE_HANDOFF_INVALID CAST_SCOPE'}]});
+ assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+ assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+});
+
+test('resume brief loads a current blocked asset receipt into the scoped repair task',async()=>{
+ const w=await mkdtemp(path.join(tmpdir(),'z-task-asset-repair-'));
+ try{
+  await mkdir(path.join(w,'.authoring'),{recursive:true});
+  const state=visualState();state.run_id='repair-run';state.run_mode='continuity';
+  const phase1=state.phases['01-content'];phase1.status='SKIPPED_REUSED';phase1.reuse_source='synthetic-fixture:phase1';
+  for(const step of Object.values(phase1.steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:phase1';}
+  const s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+  const intent={format:'zodiac-visual-intent@1',scenes:[s]};
+  const intentRaw=JSON.stringify(intent);
+  await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
+  await writeFile(path.join(w,'.authoring/visual-intent.json'),intentRaw);
+  await writeFile(path.join(w,'narration.txt'),'The exact approved words.');
+  await writeFile(path.join(w,'.authoring/phase02-execution-receipt.json'),JSON.stringify({
+   status:'BLOCKED',
+   repair_source_hashes:{'.authoring/visual-intent.json':createHash('sha256').update(intentRaw).digest('hex')},
+   issues:[{code:'AUTHORED_SVG_READ',path:'assets/environment/context.svg'}]
+  }));
+  const {resumeBrief}=await import('../resume-brief.mjs');
+  const task=(await resumeBrief(w)).next_task;
+  assert.equal(task.kind,'AUTHOR_VISUAL_ASSETS');
+  assert.deepEqual(task.allowed_writes,['assets/environment/context.svg']);
+ }finally{await rm(w,{recursive:true,force:true})}
+});
+
+test('resume brief routes a current CAST_SCOPE receipt back to canonical Visual Intent',async()=>{
+ const w=await mkdtemp(path.join(tmpdir(),'z-task-cast-repair-'));
+ try{
+  await mkdir(path.join(w,'.authoring'),{recursive:true});
+  const state=visualState();state.run_id='cast-repair-run';state.run_mode='continuity';
+  const phase1=state.phases['01-content'];phase1.status='SKIPPED_REUSED';phase1.reuse_source='synthetic-fixture:phase1';
+  for(const step of Object.values(phase1.steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:phase1';}
+  const s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+  const intent={format:'zodiac-visual-intent@1',scenes:[s]},intentRaw=JSON.stringify(intent);
+  await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
+  await writeFile(path.join(w,'.authoring/visual-intent.json'),intentRaw);
+  await writeFile(path.join(w,'narration.txt'),'The exact approved words.');
+  await writeFile(path.join(w,'.authoring/phase02-execution-receipt.json'),JSON.stringify({
+   status:'BLOCKED',
+   repair_source_hashes:{'.authoring/visual-intent.json':createHash('sha256').update(intentRaw).digest('hex')},
+   issues:[{code:'EPISODE_HANDOFF_INVALID',detail:'EPISODE_HANDOFF_INVALID CAST_SCOPE'}]
+  }));
+  const {resumeBrief}=await import('../resume-brief.mjs');
+  const task=(await resumeBrief(w)).next_task;
+  assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+  assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+ }finally{await rm(w,{recursive:true,force:true})}
+});
+
+test('resume brief routes current canonical scene-direction preflight failure to grammar repair',async()=>{
+ const w=await mkdtemp(path.join(tmpdir(),'z-task-direction-repair-'));
+ try{
+  await mkdir(path.join(w,'.authoring'),{recursive:true});
+  const state=visualState();state.run_id='direction-repair-run';state.run_mode='continuity';
+  const phase1=state.phases['01-content'];phase1.status='SKIPPED_REUSED';phase1.reuse_source='synthetic-fixture:phase1';
+  for(const step of Object.values(phase1.steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:phase1';}
+  const s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+  const intent={format:'zodiac-visual-intent@1',scenes:[s]},intentRaw=JSON.stringify(intent);
+  await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
+  await writeFile(path.join(w,'.authoring/visual-intent.json'),intentRaw);
+  await writeFile(path.join(w,'narration.txt'),'The exact approved words.');
+  await writeFile(path.join(w,'.authoring/phase02-execution-receipt.json'),JSON.stringify({
+   status:'BLOCKED',
+   repair_source_hashes:{'.authoring/visual-intent.json':createHash('sha256').update(intentRaw).digest('hex')},
+   issues:[{code:'PHASE02_ENTRY_CHECK_FAILED',step:'scene_direction',stderr:'SCENE_DIRECTION_INVALID: scene 2 bad continuity_relation'}]
+  }));
+  const {resumeBrief}=await import('../resume-brief.mjs');
+  const task=(await resumeBrief(w)).next_task;
+  assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+  assert.equal(task.repair_owner,'visual_intent.scenes.grammar.continuity_relation');
+ }finally{await rm(w,{recursive:true,force:true})}
+});
+
+test('resume brief routes current composition narrative anchor failures to Visual Intent repair',async()=>{
+ const w=await mkdtemp(path.join(tmpdir(),'z-task-composition-repair-'));
+ try{
+  await mkdir(path.join(w,'.authoring'),{recursive:true});
+  const state=visualState();state.run_id='composition-repair-run';state.run_mode='continuity';
+  const phase1=state.phases['01-content'];phase1.status='SKIPPED_REUSED';phase1.reuse_source='synthetic-fixture:phase1';
+  for(const step of Object.values(phase1.steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:phase1';}
+  const s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+  const intent={format:'zodiac-visual-intent@1',scenes:[s]},intentRaw=JSON.stringify(intent);
+  await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
+  await writeFile(path.join(w,'.authoring/visual-intent.json'),intentRaw);
+  await writeFile(path.join(w,'narration.txt'),'The exact approved words.');
+  await writeFile(path.join(w,'.authoring/phase02-execution-receipt.json'),JSON.stringify({
+   status:'BLOCKED',
+   repair_source_hashes:{'.authoring/visual-intent.json':createHash('sha256').update(intentRaw).digest('hex')},
+   issues:[{code:'COMPOSITION_NARRATIVE_REASON_MISSING',scene_id:'s1',entity_id:'hero'}]
+  }));
+  const {resumeBrief}=await import('../resume-brief.mjs');
+  const task=(await resumeBrief(w)).next_task;
+  assert.equal(task.kind,'REPAIR_VISUAL_INTENT');
+  assert.equal(task.repair_owner,'visual_intent.scenes.narrative_intent');
+ }finally{await rm(w,{recursive:true,force:true})}
+});
+
+test('resume brief loads SOURCE_PERFORMANCE_DRIFT as a reprojection task',async()=>{
+ const w=await mkdtemp(path.join(tmpdir(),'z-task-performance-reproject-'));
+ try{
+  await mkdir(path.join(w,'.authoring'),{recursive:true});
+  const state=visualState();state.run_id='performance-reproject-run';state.run_mode='continuity';
+  const phase1=state.phases['01-content'];phase1.status='SKIPPED_REUSED';phase1.reuse_source='synthetic-fixture:phase1';
+  for(const step of Object.values(phase1.steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:phase1';}
+  const s=scene('s1',1);s.director_beats[0].event_ids=['s1event'];
+  const intent={format:'zodiac-visual-intent@1',scenes:[s]},intentRaw=JSON.stringify(intent);
+  await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
+  await writeFile(path.join(w,'.authoring/visual-intent.json'),intentRaw);
+  await writeFile(path.join(w,'narration.txt'),'The exact approved words.');
+  await writeFile(path.join(w,'.authoring/phase02-execution-receipt.json'),JSON.stringify({
+   status:'BLOCKED',
+   repair_source_hashes:{'.authoring/visual-intent.json':createHash('sha256').update(intentRaw).digest('hex')},
+   issues:[{code:'NARRATION_PERFORMANCE_INVALID',detail:'NARRATION_PERFORMANCE_INVALID SOURCE_PERFORMANCE_DRIFT'}]
+  }));
+  const {resumeBrief}=await import('../resume-brief.mjs');
+  const task=(await resumeBrief(w)).next_task;
+  assert.equal(task.kind,'REPROJECT_VISUAL_INTENT');
+  assert.deepEqual(task.allowed_writes,['.authoring/visual-intent.json']);
+ }finally{await rm(w,{recursive:true,force:true})}
+});
+
 test('workflow graph links a capability to its phase, step and execution source',()=>{
  const graph=api.buildWorkflowGraph(manifests,template);const q=api.queryWorkflowGraph(graph,'character_assembly');
  assert.ok(q.matches.length>0);assert.ok(q.edges.some(e=>e.kind==='uses_source'));assert.ok(q.nodes.some(n=>n.kind==='step'));assert.equal(q.not_an_approval,true);
@@ -53,14 +225,15 @@ test('workflow graph links a capability to its phase, step and execution source'
 });
 test('resume emits a revision-bound task and stale task IDs cannot authorize writes',async()=>{
  const w=await mkdtemp(path.join(tmpdir(),'z-task-'));
- try{await mkdir(path.join(w,'.authoring'));await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(template));
+ const state=visualState();state.run_mode='continuity';state.phases['01-content'].current_step='narration';for(const step of Object.values(state.phases['01-content'].steps)){step.status='SKIPPED_REUSED';step.reuse_source='synthetic-fixture:content';}state.review_receipts=[{phase_id:'01-content',status:'APPROVED',proof:{kind:'user_message',ref:'synthetic-fixture:review'}}];
+ try{await mkdir(path.join(w,'.authoring'));await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify(state));
  const {resumeBrief}=await import('../resume-brief.mjs');const b=await resumeBrief(w);
  assert.match(b.next_task.id,/^[a-f0-9]{64}$/);assert.equal(b.next_task.state_sha256,b.state_sha256);
- await api.assertTaskWrite(w,b.next_task.id,'.authoring/evidence-ledger.json');
- const clone=await mkdtemp(path.join(tmpdir(),'z-task-clone-'));try{await mkdir(path.join(clone,'.authoring'));await writeFile(path.join(clone,'.authoring/pipeline-state.json'),JSON.stringify(template));await assert.rejects(()=>api.assertTaskWrite(clone,b.next_task.id,'.authoring/evidence-ledger.json'),/TASK_REVISION_CHANGED/);}finally{await rm(clone,{recursive:true,force:true});}
+ await api.assertTaskWrite(w,b.next_task.id,'.authoring/visual-intent.json');
+ const clone=await mkdtemp(path.join(tmpdir(),'z-task-clone-'));try{await mkdir(path.join(clone,'.authoring'));await writeFile(path.join(clone,'.authoring/pipeline-state.json'),JSON.stringify(state));await assert.rejects(()=>api.assertTaskWrite(clone,b.next_task.id,'.authoring/visual-intent.json'),/TASK_REVISION_CHANGED/);}finally{await rm(clone,{recursive:true,force:true});}
  await assert.rejects(()=>api.assertTaskWrite(w,b.next_task.id,'narration.txt'),/TASK_WRITE_FORBIDDEN/);
- await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify({...template,run_id:'changed'}));
- await assert.rejects(()=>api.assertTaskWrite(w,b.next_task.id,'.authoring/evidence-ledger.json'),/TASK_REVISION_CHANGED/);
+ await writeFile(path.join(w,'.authoring/pipeline-state.json'),JSON.stringify({...state,run_id:'changed'}));
+ await assert.rejects(()=>api.assertTaskWrite(w,b.next_task.id,'.authoring/visual-intent.json'),/TASK_REVISION_CHANGED/);
  }finally{await rm(w,{recursive:true,force:true});}
 });
 

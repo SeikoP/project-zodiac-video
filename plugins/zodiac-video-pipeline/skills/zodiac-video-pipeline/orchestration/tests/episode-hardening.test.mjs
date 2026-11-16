@@ -16,4 +16,19 @@ test('external Web scope requires bound approval and rejects source drift',async
  assert.equal((await episodeHandoffWorkspace(root)).status,'VALID');
  await write('.authoring/episode-scope.json',{...s,title_working:s.title_working+' changed'});await assert.rejects(()=>episodeHandoffWorkspace(root),/CONTENT_APPROVAL_SOURCE_DRIFT scope/);
  }finally{await rm(root,{recursive:true,force:true});}});
+test('approved Web plan may carry a partial episode identity reference but cannot drift from approved scope',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'episode-web-scope-ref-'));try{
+  await mkdir(path.join(root,'.authoring'));const s=scope(),write=(rel,value)=>writeFile(path.join(root,rel),JSON.stringify(value));
+  const scopeRef={episode_id:s.episode_id,episode_format:s.episode_format,member_ids:s.member_ids};
+  await write('.authoring/narrative-plan.json',{version:'2.1',episode_scope:scopeRef});await write('.authoring/episode-scope.json',s);
+  await write('production.json',{scenes:[{id:'S1',voice:'',entities:[{id:'hero',kind:'character'}]}]});
+  await write('.authoring/episode-cast-plan.json',{format:'zodiac-episode-cast-plan@1',scope_sha256:compositionHash(assertEpisodeScope(s)),bindings:s.member_ids.map(member_id=>({member_id,entity_id:'hero',scene_ids:['S1'],role:'shared_narrator',reason:'Explicit shared narration',story_relation:'Same approved episode'}))});
+  await write('.authoring/pipeline-state.json',{review_receipts:[{phase_id:'01-content',status:'APPROVED',source_hashes:await approvalSourceHashes(root)}]});
+  assert.equal((await episodeHandoffWorkspace(root)).status,'VALID');
+  await write('.authoring/narrative-plan.json',{version:'2.1',episode_scope:{...scopeRef,member_ids:[...scopeRef.member_ids].reverse()}});
+  await write('.authoring/pipeline-state.json',{review_receipts:[{phase_id:'01-content',status:'APPROVED',source_hashes:await approvalSourceHashes(root)}]});
+  await assert.rejects(()=>episodeHandoffWorkspace(root),/SOURCE_SCOPE_DRIFT/);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+
 test('scoped runs cannot accept the legacy adapter and silently drop selected scope',async()=>{const root=await mkdtemp(path.join(tmpdir(),'episode-version-'));try{await mkdir(path.join(root,'.authoring'));await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0'}));await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({flags:{episode_selected:true}}));await assert.rejects(()=>episodeHandoffWorkspace(root),/EPISODE_NARRATIVE_REQUIRED/);}finally{await rm(root,{recursive:true,force:true});}});

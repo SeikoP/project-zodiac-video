@@ -83,7 +83,11 @@ export async function writePhase02Authoring({workspace,payloadPath,revise=false,
   if(taskId!==null)await assertTaskWrite(root,taskId,'.authoring/visual-intent.json',{visualIntent:authored});
   assertPhase02AuthoringSource(authored.format,state.run_mode);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
-  if(generated){let coverage=null;try{coverage=await decode(path.join(dir,'narration-performance-coverage.json'));}catch(e){if(e.code!=='ENOENT')throw e;}if(coverage){let planRaw;try{planRaw=await readFile(path.join(dir,'narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;planRaw=await readFile(path.join(root,'narrative-plan.json'),'utf8');}generated.production=compileNarrationPerformance(generated.production,resolveNarrationPerformancePlan(planRaw,source,coverage),source);generated.receipt.projection_hashes.production=compositionHash(generated.production);}}
+  if(generated){
+   let coverage=null,planRaw=null;try{coverage=await decode(path.join(dir,'narration-performance-coverage.json'));}catch(e){if(e.code!=='ENOENT')throw e;}
+   try{planRaw=await readFile(path.join(dir,'narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;try{planRaw=await readFile(path.join(root,'narrative-plan.json'),'utf8');}catch(e2){if(e2.code!=='ENOENT')throw e2;}}
+   if(planRaw){generated.production=compileNarrationPerformance(generated.production,resolveNarrationPerformancePlan(planRaw,source,coverage),source);generated.receipt.projection_hashes.production=compositionHash(generated.production);}
+  }
   const payload=generated?{format:'zodiac-phase02-authored-handoff@1',plugin_version:manifest.version,approved_narration_sha256:authored.narration_sha256,production:generated.production,asset_plan:generated.asset_plan,visual_grammar_plan:generated.visual_grammar_plan,character_assembly_plan:generated.character_assembly}:authored;
   const verdict=assessAuthoringPayload(payload,{narration:source,pluginVersion:manifest.version,state});
   if(verdict.status==='BLOCKED')throw new Error('AUTHORING_PAYLOAD_BLOCKED '+JSON.stringify(verdict.issues));
