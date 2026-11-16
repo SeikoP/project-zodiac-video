@@ -8,13 +8,19 @@ import {buildPortableZip,parsePortableZip} from '../../core/portable/zip-primiti
 import {buildInventory} from '../../contracts/phase1-handoff.mjs';
 import {exportPhase1Handoff} from '../../phases/phase01/export-phase1-handoff.mjs';
 import {bootstrapLocal} from '../../phases/local/local-bootstrap.mjs';
+import {compileNarrationPerformanceWorkspace} from '../../features/narration-performance/compile-narration-performance.mjs';
+import {formatSha256Sums} from '../../contracts/phase1-handoff.mjs';
 
 const hash=data=>createHash('sha256').update(data).digest('hex');
 
 async function approvedWorkspace(runId){
  const root=await mkdtemp(path.join(tmpdir(),'z-local-src-'));await mkdir(path.join(root,'.authoring'),{recursive:true});
- const narration=Buffer.from('Approved narration '+runId+'\n');
- const plan=Buffer.from(JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tử',story_spine:{premise:'p'}}));
+ const narration=Buffer.from('Approved narration '+runId+'.\\nSecond beat '+runId+'.\\n');
+ const performance=(reason)=>({delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:[],reason});
+ const plan=Buffer.from(JSON.stringify({version:'2.1',selected_concept_id:'C1',story_spine:{premise:'p'},beats:[
+  {id:'B1',voice_anchor:'Approved narration '+runId,performance:performance('Carry the setup.')},
+  {id:'B2',voice_anchor:'Second beat '+runId,performance:performance('Advance the approved narration.')}
+ ]}));
  const scope=Buffer.from(JSON.stringify({episode_id:runId,sign:'Song Tử',concept:runId}));
  const brief=Buffer.from(JSON.stringify({creative_direction:{tone:'normal'}}));
  const voice=Buffer.from(JSON.stringify({format:'zodiac-voice-profile@1',narrator_vibe:'normal ↔ sharp'}));
@@ -35,6 +41,20 @@ async function approvedWorkspace(runId){
 async function capsule(inbox,runId,name=runId+'.zip'){
  const source=await approvedWorkspace(runId);const file=path.join(inbox,name);
  try{await exportPhase1Handoff(source,file);return file}finally{await rm(source,{recursive:true,force:true})}
+}
+
+async function rewriteCapsulePlan(file,mutate){
+ const entries=parsePortableZip(await readFile(file)),by=new Map(entries.map(x=>[x.rel,x]));
+ const plan=JSON.parse(by.get('narrative-plan.json').data);mutate(plan);
+ const planRaw=Buffer.from(JSON.stringify(plan));by.get('narrative-plan.json').data=planRaw;
+ const review=JSON.parse(by.get('content-review-receipt.json').data);review.source_hashes.plan=hash(planRaw);
+ by.get('content-review-receipt.json').data=Buffer.from(JSON.stringify(review,null,2));
+ const payload=[...by.values()].filter(x=>!['HANDOFF.json','SHA256SUMS'].includes(x.rel));
+ const inventory=buildInventory(payload);
+ const handoff=JSON.parse(by.get('HANDOFF.json').data);handoff.inventory=inventory;handoff.content_review=review;
+ by.get('HANDOFF.json').data=Buffer.from(JSON.stringify(handoff,null,2)+'\\n');
+ by.get('SHA256SUMS').data=Buffer.from(formatSha256Sums(inventory));
+ await writeFile(file,buildPortableZip([...by.values()].map(({rel,data})=>({rel,data}))));
 }
 
 test('handoff inventory order is locale-independent',()=>{
@@ -67,6 +87,37 @@ test('bootstrap imports v2, synthesizes state, activates phase2, and supports ex
   await writeFile(path.join(blocked,'import-receipt.json'),JSON.stringify({status:'BLOCKED'}));
   assert.equal((await bootstrapLocal(root)).status,'LOCAL_BLOCKED_HANDOFFS_PRESENT');
   assert.deepEqual(await readdir(inbox),[]);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+
+test('bootstrap blocks hash-valid handoff missing narrative version before PHASE2_LOCAL_READY',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
+  const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});const file=await capsule(inbox,'run-no-version');
+  await rewriteCapsulePlan(file,plan=>{delete plan.version;});
+  const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE1_HANDOFF_BLOCKED');assert.match(r.error,/PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID VERSION/);
+  assert.deepEqual(await readdir(path.join(root,'processing')).catch(()=>[]),[]);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+
+test('bootstrap blocks hash-valid handoff missing performance beats before PHASE2_LOCAL_READY',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
+  const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});const file=await capsule(inbox,'run-no-beats');
+  await rewriteCapsulePlan(file,plan=>{delete plan.beats;});
+  const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE1_HANDOFF_BLOCKED');assert.match(r.error,/PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID BEATS/);
+  assert.deepEqual(await readdir(path.join(root,'processing')).catch(()=>[]),[]);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+
+test('valid Web handoff imports and its approved beats cover a two-scene native performance compile',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
+  const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});await capsule(inbox,'run-native');
+  const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE2_LOCAL_READY');
+  const ws=r.workspace,narration=await readFile(path.join(ws,'narration.txt'),'utf8');
+  const [first,second]=narration.split('\\n').filter(Boolean);
+  await writeFile(path.join(ws,'production.json'),JSON.stringify({scenes:[{id:'S01',voice:first},{id:'S02',voice:second}]}));
+  const compiled=await compileNarrationPerformanceWorkspace(ws,{write:true});assert.equal(compiled.status,'PASS');assert.equal(compiled.plan_version,'2.1');
+  const production=JSON.parse(await readFile(path.join(ws,'production.json'),'utf8'));
+  assert.equal(production.scenes.length,2);assert.equal(production.scenes[0].performance_context.delivery,'dry teasing');assert.equal(production.scenes[1].performance_context.delivery,'dry teasing');
  }finally{await rm(root,{recursive:true,force:true})}
 });
 
