@@ -72,4 +72,5 @@ Focused fixture and split-entrypoint tests pass with their meaningful assertions
 - After import closure and Web-contract correction: 17 PASS / 1 FAIL; the remaining sentinel-receipt mismatch is described above and has a targeted test correction.
 - Split bundle suite: `python -m pytest tests/test_split_plugin_bundle_builder.py -q` → 6 PASS after the mechanical concept rename.
 - Handoff export/bootstrap suites → 15 PASS after the mechanical concept rename, including tamper, approval drift, missing visual decision, missing plan version and performance coverage failures.
-- Final focused rerun is pending while the parent implements the unified Story Visual contract. No broad suite, installation, episode mutation or rendered-media verification was performed by this audit worker.
+- Final focused rerun: **18 PASS / 0 FAIL** (71.6 seconds), including cache reuse, tamper repair, dependency invalidation, distinct executed preflight/asset receipts and current Web/Local ownership.
+- No broad suite, installation, episode mutation or rendered-media verification was performed by this audit worker. Parent work on the unified Story Visual contract continues separately.

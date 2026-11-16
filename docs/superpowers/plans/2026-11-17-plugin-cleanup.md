@@ -46,7 +46,7 @@ Paths below use `S = plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline`
 
 - [x] **Step 1:** Reproduce using `node --test S/orchestration/tests/phase02-execute.test.mjs`. Record failing names and confirm the temporary-source missing import in stdout/receipt; do not attribute this to production cache invalidation.
 - [x] **Step 2:** Add one real-file copy of `core/evidence/approval-source-hashes.mjs` to `makeSource`. Remove exact duplicate fixture writes only. Preserve the fake binaries and checks for cache reuse, tamper repair, source invalidation, failures and lease release. Replace the newly exposed obsolete preflight sentinel assertion with executed PASS/exit-code/validator-path assertions for both distinct preflight and native-asset receipts.
-- [ ] **Step 3:** Run the same suite. Expected: PASS, with previous cache/execution tests now reaching their intended assertions. If another missing dependency appears, add only that actual imported helper and rerun; do not stub an approval check.
+- [x] **Step 3:** Run the same suite. Observed: combined coordinator/entrypoint batch **18 PASS / 0 FAIL**, with previous cache/execution tests reaching their intended assertions. No approval checks were stubbed.
 - [ ] **Step 4:** Review `git diff --check` and the single-file diff, then make a focused commit only when parent integration permits it.
 
 ### Task 2: Test creative Web ownership instead of native CLI instructions
