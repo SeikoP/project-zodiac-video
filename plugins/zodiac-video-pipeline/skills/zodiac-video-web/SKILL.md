@@ -115,7 +115,7 @@ Before Content Review, bind the approved narration to non-empty semantic `beats`
 - `occurrence` when the same anchor appears more than once;
 - `performance.delivery`, `energy` (0..1), `emotion`, `pace` (slow/medium/fast), `emphasis[]`, and `reason`.
 
-Use the smallest set of beats that preserves the actual semantic/performance changes in the approved narration. Performance intent is authored in Phase 1; it is not a Phase-2 invention. Local may map approved beats to scene boundaries at authored paragraph seams, but it must not invent a missing beat, anchor, occurrence, delivery, energy, emotion, pace, emphasis, or reason and then treat that data as approved.
+Use the smallest set of beats that preserves the actual semantic/performance changes in the approved narration. Performance intent is authored in Phase 1; it is not a Phase-2 invention. Local may map approved beats to scene boundaries at authored paragraph seams. Do not invent a missing beat, anchor, occurrence, delivery, energy, emotion, pace, emphasis, or reason in Local and then treat that data as approved.
 
 Run the anchor/occurrence/performance check **before Content Review**. If a later scene split cannot be covered by the approved beats, Local must block and request supplementary review rather than manufacture coverage. Do not add or rewrite performance beats after Content Review while retaining the old approval receipt; any plan-byte change invalidates the plan hash and requires genuine approval again.
 
