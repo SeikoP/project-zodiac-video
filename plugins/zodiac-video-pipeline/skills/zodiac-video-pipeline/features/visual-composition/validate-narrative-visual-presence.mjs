@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
 import {validateNarrativeVisualKit} from './validate-narrative-visual-kit.mjs';
 import {reachableStates,classifyEventChange} from './scene-state-trace.mjs';
+import {validateNarrativeVisualDecision} from '../../references/validate-narrative-visual-direction.mjs';
 
 const safeRel=p=>typeof p==='string'&&p.length>0&&!path.isAbsolute(p)&&!p.split(/[\\/]/u).includes('..')&&!p.includes('\\');
 export async function validateNarrativeVisualPresence(workspace){
@@ -18,12 +19,14 @@ export async function validateNarrativeVisualPresence(workspace){
  catch{if(state.run_mode!=='fresh')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};add('NARRATIVE_VISUAL_INTENT_MISSING');return {status:'BLOCKED',issues,not_an_approval:true};}
  if(state.run_mode!=='fresh'&&intent?.format!=='zodiac-visual-intent@1')return {status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const plan=await load('.authoring/narrative-plan.json').catch(()=>({}));
+ if(state.run_mode==='fresh')issues.push(...validateNarrativeVisualDecision(plan));
  const directions=Array.isArray(plan.narrative_visuals)?plan.narrative_visuals:[];
  const directionIds=new Set(directions.map(x=>x.id));
  const expectedMode=directions.length?'required':'omitted';
  const decision=intent.taxonomy_version==='narrative_visual@1'?intent.narrative_visual_decision:null;
  if(!decision||!['required','omitted'].includes(decision.mode)||!String(decision.reason??'').trim())add('NARRATIVE_VISUAL_DECISION_MISSING');
  else if(state.run_mode==='fresh'&&decision.mode!==expectedMode)add('NARRATIVE_VISUAL_DECISION_DRIFT',null,{expected:expectedMode,actual:decision.mode});
+ if(state.run_mode==='fresh'&&decision?.mode==='omitted'&&plan.narrative_visual_decision?.mode==='omitted'&&decision.reason!==plan.narrative_visual_decision.reason)add('NARRATIVE_VISUAL_PHASE1_OMISSION_DRIFT');
 
  const speech=await readFile(path.join(root,'narration.txt')),present=[],usedDirections=new Set();
  for(const scene of intent.scenes??[]){

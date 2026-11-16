@@ -9,7 +9,7 @@ const hash=x=>createHash('sha256').update(Buffer.isBuffer(x)||typeof x==='string
 const clone=x=>structuredClone(x);
 // Fresh taxonomy is normalized to an existing Job@5 transport role, not a physical prop.
 const runtimeRole=role=>({narrative_visual:'story_object',scene_set:'background',scene_accent:'background'}[role]??role);
-const projectEntity=({narrative_intent,ownership,story_text,...e})=>({...e,kind:['narrative_visual','scene_set','scene_accent'].includes(e.kind)?'object':e.kind,visual_role:runtimeRole(e.visual_role),...(e.kind==='scene_accent'?{role:'scene_accent'}:{})});
+const projectEntity=({narrative_intent,ownership,story_text,context,...e})=>({...e,kind:['narrative_visual','scene_set','scene_accent'].includes(e.kind)?'object':e.kind,visual_role:runtimeRole(e.visual_role),...(e.kind==='scene_accent'?{role:'scene_accent'}:{})});
 const projectAssets=assets=>Object.fromEntries(Object.entries(clone(assets)).map(([id,a])=>[id,{...a,category:a.category==='narrative_visual'?'story_object':['scene_set','scene_accent'].includes(a.category)?'environment':a.category}]));const fail=m=>{throw Error('VISUAL_INTENT_'+m)};
 export const projectionPaths={production:'production.json',character_assembly:'.authoring/character-assembly-plan.json',visual_grammar_plan:'visual-grammar-plan.json',asset_plan:'asset-plan.json',director_plan:'.authoring/director-plan.json',art_direction:'.authoring/scene-art-direction.json',episode_cast_plan:'.authoring/episode-cast-plan.json'};
 export function sceneSetComponentIntents(env,voice){
@@ -30,7 +30,7 @@ export function compileVisualIntent(intent,{narration,token,catalog}={}){
  for(const s of intent.scenes){if(s.frame_ref){const ref=intent.frames.find(f=>f.asset_id===s.frame_ref.asset_id);if(!ref||hash(ref)!==hash(s.frame_ref))fail('FRAME_REFERENCE');}}
  const bytes=Buffer.from(narration),ids=new Set();partitionNarration(bytes,intent.scenes.map(s=>s.narration_range));let end=0;
  if(freshNarrative)for(const scene of intent.scenes){
-   const checked=validateCanvasAccents(scene,intent.assets,intent.video);
+   const checked=validateCanvasAccents({...scene,voice:bytes.subarray(...scene.narration_range).toString('utf8')},intent.assets,intent.video);
    if(checked.status!=='PASS')fail('SCENE_ACCENT '+JSON.stringify(checked.issues));
  }
  const scenes=intent.scenes.map(s=>{if(!s.id||ids.has(s.id)||!s.semantic_goal?.trim()||!s.grammar||!Array.isArray(s.entities)||!Array.isArray(s.events))fail('SCENE_INCOMPLETE');if(s.grammar?.environment?.scene_set_id&&s.art_direction?.environment_profile)fail('LEGACY_ENVIRONMENT_PROFILE_ON_SCENE_SET '+s.id);ids.add(s.id);

@@ -12,6 +12,16 @@ function run(d){const r=spawnSync(process.execPath,[script,'--workspace',d],{enc
 test('missing authored plans is explicit, not a fabricated PASS',async()=>{const d=await fixture(false);try{const r=run(d);assert.equal(r.code,0);assert.equal(r.report.status,'AUTHORING_REQUIRED');assert.equal(r.report.authoring_ready,false);}finally{await rm(d,{recursive:true,force:true})}});
 test('complete inputs only grant AUTHORING_READY',async()=>{const d=await fixture(true);try{const r=run(d);assert.equal(r.code,0);assert.equal(r.report.status,'AUTHORING_READY');assert.equal(Object.keys(r.report.hashes).length,5)}finally{await rm(d,{recursive:true,force:true})}});
 
+test('fresh entry blocks absent visual intent from Phase 1 instead of inferring omission',async()=>{
+ const d=await fixture(false);try{
+  const {readFile}=await import('node:fs/promises'),file=path.join(d,'.authoring/pipeline-state.json'),state=JSON.parse(await readFile(file,'utf8'));
+  state.run_mode='fresh';await writeFile(file,JSON.stringify(state));
+  await writeFile(path.join(d,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.1',beats:[]}));
+  const r=spawnSync(process.execPath,[script,'--workspace',d,'--entry-only'],{encoding:'utf8'}),report=JSON.parse(r.stdout);
+  assert.equal(r.status,2);assert.equal(report.entry_ready,false);assert.ok(report.issues.some(x=>x.code==='NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED'));
+ }finally{await rm(d,{recursive:true,force:true});}
+});
+
 test('entry-only gate opens authoring without demanding the plans Phase 2 will create',async()=>{const d=await fixture(false);try{const r=spawnSync(process.execPath,[script,'--workspace',d,'--entry-only'],{encoding:'utf8'});assert.equal(r.status,0,r.stderr);const report=JSON.parse(r.stdout);assert.equal(report.status,'ENTRY_READY');assert.equal(report.entry_ready,true);assert.equal(report.authoring_ready,false);await rm(path.join(d,'narration.txt'));const missing=spawnSync(process.execPath,[script,'--workspace',d,'--entry-only'],{encoding:'utf8'});assert.equal(missing.status,2);}finally{await rm(d,{recursive:true,force:true})}});
 test('missing user approval blocks even with phase PASS label',async()=>{const d=await fixture(true);try{const p=path.join(d,'.authoring/pipeline-state.json');const s=JSON.parse(await (await import('node:fs/promises')).readFile(p,'utf8'));s.review_receipts=[];await writeFile(p,JSON.stringify(s));const r=run(d);assert.equal(r.code,2);assert.equal(r.report.status,'BLOCKED');assert.ok(r.report.issues.some(i=>i.code==='CONTENT_APPROVAL_RECEIPT_MISSING'))}finally{await rm(d,{recursive:true,force:true})}});
 

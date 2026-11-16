@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {validateNarrativeVisualPresence} from '../validate-narrative-visual-presence.mjs';
@@ -16,7 +16,7 @@ async function fixture({withDirection=true,withStoryText=false}={}){
  const voice='A small clue becomes a question.';
  await writeFile(path.join(root,'narration.txt'),voice);
  await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({run_mode:'fresh'}));
- await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visuals:withDirection?[direction]:[]}));
+ await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visual_decision:{mode:withDirection?'required':'omitted',reason:withDirection?'Phase 1 selected one concrete visual.':'Phase 1 selected no Narrative Visual.'},narrative_visuals:withDirection?[direction]:[]}));
  const event={id:'N1',target:'NV',state_before:'hidden',state_after:'shown',trigger:{type:'voice_anchor',text:'question'}};
  const assets=withDirection?{A:{category:'narrative_visual',path:'assets/clue.svg',creative_origin:{mode:'phase1_directed',phase1_visual_id:'NV1',scene_id:'S01',anchor_phrase:'question'}}}:{};
  const entities=withDirection?[{id:'NV',kind:'narrative_visual',initial_state:'hidden',states:{hidden:{visible:false},shown:{visible:true,asset:'A',transform:{x:350,y:300,width:350,height:230}}}}]:[];
@@ -27,7 +27,11 @@ async function fixture({withDirection=true,withStoryText=false}={}){
  return {root,intent};
 }
 
-test('no Phase-1 direction means Narrative Visual omission passes',async()=>{const {root}=await fixture({withDirection:false});try{assert.equal((await validateNarrativeVisualPresence(root)).status,'PASS');}finally{await rm(root,{recursive:true,force:true});}});
+test('explicit Phase-1 omission passes without a visual quota',async()=>{const {root}=await fixture({withDirection:false});try{assert.equal((await validateNarrativeVisualPresence(root)).status,'PASS');}finally{await rm(root,{recursive:true,force:true});}});
+
+test('Local cannot turn a missing Phase-1 decision into an omission',async()=>{const {root}=await fixture({withDirection:false});try{const file=path.join(root,'.authoring/narrative-plan.json'),plan=JSON.parse(await readFile(file,'utf8'));delete plan.narrative_visual_decision;await writeFile(file,JSON.stringify(plan));const result=await validateNarrativeVisualPresence(root);assert.equal(result.status,'BLOCKED');assert.ok(result.issues.some(i=>i.code==='NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED'));}finally{await rm(root,{recursive:true,force:true});}});
+
+test('Local cannot replace the approved omission reason',async()=>{const {root,intent}=await fixture({withDirection:false});try{intent.narrative_visual_decision.reason='Local substitutes a different editorial rationale.';await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify(intent));assert.ok((await validateNarrativeVisualPresence(root)).issues.some(i=>i.code==='NARRATIVE_VISUAL_PHASE1_OMISSION_DRIFT'));}finally{await rm(root,{recursive:true,force:true});}});
 test('Phase-1 direction requires real SVG, lineage and anchored coverage',async()=>{const {root,intent}=await fixture();try{assert.equal((await validateNarrativeVisualPresence(root)).status,'PASS');intent.scenes[0].entities=[];await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify(intent));const result=await validateNarrativeVisualPresence(root);assert(result.issues.some(i=>i.code==='NARRATIVE_VISUAL_REQUIRED_BUT_ABSENT'));}finally{await rm(root,{recursive:true,force:true});}});
 test('Narrative Visual and Story Text block in one scene',async()=>{const {root}=await fixture({withStoryText:true});try{const result=await validateNarrativeVisualPresence(root);assert(result.issues.some(i=>i.code==='STORY_FOCUS_LAYER_CONFLICT'));}finally{await rm(root,{recursive:true,force:true});}});
 test('missing authored SVG fails closed',async()=>{const {root}=await fixture();try{await rm(path.join(root,'assets/clue.svg'));const result=await validateNarrativeVisualPresence(root);assert(result.issues.some(i=>i.code==='NARRATIVE_VISUAL_ASSET_MISSING'));}finally{await rm(root,{recursive:true,force:true});}});

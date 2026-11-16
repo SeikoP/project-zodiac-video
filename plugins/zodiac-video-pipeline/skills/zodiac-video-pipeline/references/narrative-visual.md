@@ -31,6 +31,8 @@ Reject a Narrative Visual when it is only a generic symbol, mood decoration, zod
 5. Keep it visually focal only for the scene/beat that owns the story point. Remove or hide it when its job ends.
 6. Run provenance, kit, coverage, event/state, preview, and human Visual Review gates.
 
+At Visual Review, inspect the actual before/after pair at phone size with audio muted. State who changes what and the consequence visible in the second frame; compare that reading with the approved `viewer_read`. Check that the image reveals information beyond the actor/prop performance, rather than merely occupying space or changing color. If the intended cause cannot be read, repair the execution. If the approved idea itself adds nothing, report it for Phase-1 revision; do not invent replacement meaning or certify contribution from a state-swap PASS.
+
 Runtime Job@5 currently serializes this authoring role as `story_object`. That token is transport vocabulary only and is never exposed as a creative authoring option.
 
 Changing the story point, viewer read, or visual idea requires reopening Phase 1. Phase 2 may change drawing geometry, layout, and state execution only.

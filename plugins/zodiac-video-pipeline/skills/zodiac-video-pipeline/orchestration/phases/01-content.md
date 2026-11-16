@@ -63,3 +63,7 @@ There is no fixed fictional-ad requirement and no fixed duration band unless the
 This is the only required human approval boundary. Present the exact final narration and a compact concept/voice summary. Explicit user approval completes Phase 1.
 
 After approval, package the approved bytes into `zodiac-phase1-handoff@2`. Web does not create or activate native pipeline state. Local reconstructs the native boundary state from the approved capsule.
+
+## User says chốt
+
+Treat chốt as an instruction to finish validation and repair the current phase, never as a validator waiver. Run the owning checks against current sources, fill omissions and repair failures, then validate again. Missing input, REVIEW, BLOCKED, stale receipts or incomplete required outputs prevent phase transition even after chốt. Keep the user's approval intent while doing this work; do not ask for the same confirmation merely because checks had to run. Bind an APPROVED receipt only after the current reviewed creative sources and required checks pass. If a repair changes the reviewed creative meaning, present the concrete revision for review; never transfer approval to unseen content. Technical checks do not replace source-bound content/visual inspection.

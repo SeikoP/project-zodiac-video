@@ -19,7 +19,11 @@ const visual=()=>({
 });
 const plan=()=>({version:'2.0',selected_concept_id:'C1',beats:[{id:'B1',evidence_refs:['E1']},{id:'B2',evidence_refs:['E2']}],narrative_visuals:[visual()]});
 
-test('Narrative Visual is optional and zero directions pass',()=>{const p=plan();delete p.narrative_visuals;assert.equal(validateNarrativeVisualDirection(p,{selectedCandidate:candidate}).status,'PASS');});
+test('missing directions are not an editorial omission decision',()=>{const p=plan();delete p.narrative_visuals;assert.equal(validateNarrativeVisualDirection(p,{selectedCandidate:candidate}).status,'BLOCKED');});
+
+test('explicit Phase-1 omission is valid without a visual quota',()=>{const p=plan();p.narrative_visuals=[];p.narrative_visual_decision={mode:'omitted',reason:'The offered hand and physical bag already show the rejected help.'};assert.equal(validateNarrativeVisualDirection(p,{selectedCandidate:candidate}).status,'PASS');});
+
+test('invalid plan version cannot pass through the empty-visual path',()=>{const p=plan();p.version='bad';p.narrative_visuals=[];assert.equal(validateNarrativeVisualDirection(p).status,'BLOCKED');});
 test('accepts one concrete trait-first direction',()=>assert.equal(validateNarrativeVisualDirection(plan(),{selectedCandidate:candidate}).status,'PASS'));
 test('rejects missing concrete visible action',()=>{const p=plan();p.narrative_visuals[0].visible_action='';assert.match(JSON.stringify(validateNarrativeVisualDirection(p,{selectedCandidate:candidate}).issues),/NARRATIVE_VISUAL_FIELD_REQUIRED/);});
 test('rejects overlapping visual ownership of one beat',()=>{const p=plan();p.narrative_visuals.push({...visual(),id:'NV2'});assert.match(JSON.stringify(validateNarrativeVisualDirection(p,{selectedCandidate:candidate}).issues),/NARRATIVE_VISUAL_BEAT_OVERLAP/);});

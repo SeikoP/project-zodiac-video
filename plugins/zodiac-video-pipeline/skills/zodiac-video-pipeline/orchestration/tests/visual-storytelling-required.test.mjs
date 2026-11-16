@@ -29,12 +29,12 @@ test('off-canvas background cannot satisfy scene readiness',()=>{
  const entity=structuredClone(context);entity.states.shown.transform.x=2000;
  assert.ok(check([entity],{scene_accent:{decision:'use',entity_ids:['window']}}).includes('PHASE02_SCENE_BACKGROUND_REQUIRED'));
 });
-test('fresh episode-wide Narrative Visual omission passes when Phase 1 has no direction',async()=>{
+test('fresh episode-wide Narrative Visual omission passes when Phase 1 explicitly decided omission',async()=>{
  const root=await mkdtemp(path.join(tmpdir(),'zodiac-visual-optional-'));
  try{
   await mkdir(path.join(root,'.authoring'));
   await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({run_mode:'fresh'}));
-  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visuals:[]}));
+  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visual_decision:{mode:'omitted',reason:'Actor performance and Story Text are sufficient.'},narrative_visuals:[]}));
   await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify({taxonomy_version:'narrative_visual@1',narrative_visual_decision:{mode:'omitted',reason:'Actor performance and Story Text are sufficient.'},scenes:[]}));
   await writeFile(path.join(root,'narration.txt'),'Story');
   const result=await validateNarrativeVisualPresence(root);
@@ -46,7 +46,7 @@ test('fresh intent cannot require a Narrative Visual that Phase 1 did not select
  try{
   await mkdir(path.join(root,'.authoring'));
   await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({run_mode:'fresh'}));
-  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visuals:[]}));
+  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',narrative_visual_decision:{mode:'omitted',reason:'Actor performance and Story Text are sufficient.'},narrative_visuals:[]}));
   await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify({taxonomy_version:'narrative_visual@1',narrative_visual_decision:{mode:'required',reason:'Phase 2 tried to invent one.'},scenes:[]}));
   await writeFile(path.join(root,'narration.txt'),'Story');
   const result=await validateNarrativeVisualPresence(root);

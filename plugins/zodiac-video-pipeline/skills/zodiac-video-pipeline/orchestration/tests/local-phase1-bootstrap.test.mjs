@@ -17,7 +17,7 @@ async function approvedWorkspace(runId){
  const root=await mkdtemp(path.join(tmpdir(),'z-local-src-'));await mkdir(path.join(root,'.authoring'),{recursive:true});
  const narration=Buffer.from('Approved narration '+runId+'.\nSecond beat '+runId+'.\n');
  const performance=(reason)=>({delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:[],reason});
- const plan=Buffer.from(JSON.stringify({version:'2.1',selected_concept_id:'C1',story_spine:{premise:'p'},beats:[
+ const plan=Buffer.from(JSON.stringify({version:'2.1',narrative_visual_decision:{mode:'omitted',reason:'The offered hand and physical bag already show the rejected help.'},selected_concept_id:'C1',story_spine:{premise:'p'},beats:[
   {id:'B1',voice_anchor:'Approved narration '+runId,performance:performance('Carry the setup.')},
   {id:'B2',voice_anchor:'Second beat '+runId,performance:performance('Advance the approved narration.')}
  ]}));
@@ -95,6 +95,15 @@ test('bootstrap blocks hash-valid handoff missing narrative version before PHASE
   const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});const file=await capsule(inbox,'run-no-version');
   await rewriteCapsulePlan(file,plan=>{delete plan.version;});
   const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE1_HANDOFF_BLOCKED');assert.match(r.error,/PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID VERSION/);
+  assert.deepEqual(await readdir(path.join(root,'processing')).catch(()=>[]),[]);
+ }finally{await rm(root,{recursive:true,force:true})}
+});
+
+test('bootstrap blocks hash-valid handoff with no Narrative Visual decision',async()=>{
+ const root=await mkdtemp(path.join(tmpdir(),'z-local-'));try{
+  const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});const file=await capsule(inbox,'run-no-visual-decision');
+  await rewriteCapsulePlan(file,plan=>{delete plan.narrative_visual_decision;});
+  const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE1_HANDOFF_BLOCKED');assert.match(r.error,/NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED/);
   assert.deepEqual(await readdir(path.join(root,'processing')).catch(()=>[]),[]);
  }finally{await rm(root,{recursive:true,force:true})}
 });

@@ -1,6 +1,6 @@
 # Narrative Visual — Hình ảnh kể chuyện (Phase 1)
 
-**Narrative Visual** is the single fresh storytelling-image concept. It is **optional**. Do not create one to satisfy a quota.
+**Narrative Visual** is the single fresh storytelling-image concept. It is **optional**. Do not create one to satisfy a quota. Omission must be an explicit Phase-1 editorial decision in the approved Narrative Plan: `narrative_visual_decision={mode:"omitted",reason:"..."}`. Name the concrete actor/physical-prop action or text that makes another image unnecessary. An absent or empty array alone is incomplete input, not a decision. Export and Local import block it.
 
 Use it only when one concrete image can explain a central story point more clearly than actor performance, a physical prop, or Story Text. If the scene is better served by a short readable phrase, choose Story Text instead. Phase 2 may never show Story Text and Narrative Visual in the same scene.
 
@@ -38,6 +38,18 @@ Use a Narrative Visual only when all are true:
 5. **Better than text:** a short Story Text card would communicate the point less effectively.
 
 For Libra, a stock scale is not enough. A scale is acceptable only when the current story conflict is visibly encoded in what is on each side, who changes it, and what that change reveals. Otherwise use a more literal scene action or Story Text.
+
+## Show the missing information
+
+Start with the exact narration sentence. Name what the audience still cannot see or infer from the actors and physical props. If nothing is missing, omit Narrative Visual. Repeating the sentence as a pictogram adds no information.
+
+Describe two drawable endpoints: who has what before, who does what, and what visibly differs afterward. `viewer_read` describes the causal fact a viewer can point to, rather than a feeling such as pressure, loneliness or responsibility. A color change, floating icon, enlarged object or abstract meter alone does not show that cause.
+
+For the Ma Ket responsibility story, a battery draining beside a clock does not explain why the partner stops helping. Show the offered hand, the task being taken back, and the hand withdrawing. Those are actor/physical-prop actions, so they do not need an additional Narrative Visual. Likewise, handing over the real shopping bag already explains the ending; an abstract permission icon would dilute it.
+
+When an actual comparison cannot be staged clearly with the cast, one concrete diagram can earn its place: show the same three recognizable task objects moving from two people's sides to one person's side while the other side becomes empty. Specify object identities, ownership, order and the exact consequence; generic dots or arrows labelled only as responsibility do not carry that information. Use this only when approved narration supports the comparison and the simpler physical action cannot do the job.
+
+Before approving the direction, describe the image without using the narration's abstract nouns. Then remove it mentally: state the specific fact or story turn that is lost. If no fact is lost, omit it. This is an editorial judgment, not something field lengths or SVG lint can certify.
 
 ## Phase 2 handoff
 

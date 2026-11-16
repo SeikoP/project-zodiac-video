@@ -2,6 +2,7 @@
 const overlap=(a,b)=>Math.max(0,Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x))*
  Math.max(0,Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y));
 const bounds=x=>x&&['x','y','width','height'].every(k=>Number.isFinite(x[k]))&&x.width>0&&x.height>0;
+const text=x=>typeof x==='string'&&x.trim().length>0;
 export function validateCanvasAccents(scene,assets,{width=1080,height=1920}={}){
  const issues=[],add=(code,id)=>issues.push({code,scene_id:scene.id,entity_id:id});
  const entities=new Map((scene.entities??[]).map(e=>[e.id,e]));
@@ -9,6 +10,9 @@ export function validateCanvasAccents(scene,assets,{width=1080,height=1920}={}){
  for(const e of scene.entities??[]){
   if(e.kind!=='scene_accent'&&e.visual_role!=='scene_accent')continue;
   if(e.visual_role!=='scene_accent'||e.kind!=='scene_accent')add('SCENE_ACCENT_ROLE_MISMATCH',e.id);
+  const context=e.context;
+  if(context?.kind!=='environment_detail'||!text(context.setting)||!text(context.visible_detail))add('SCENE_ACCENT_CONTEXT_REQUIRED',e.id);
+  if(!text(e.narrative_intent?.voice_anchor)||!String(scene.voice??'').includes(e.narrative_intent.voice_anchor))add('SCENE_ACCENT_CONTEXT_ANCHOR_MISSING',e.id);
   if(e.anchor?.type&&!['canvas','actor'].includes(e.anchor.type))add('SCENE_ACCENT_ANCHOR_INVALID',e.id);
   if(e.anchor?.type==='actor'&&!entities.has(e.anchor.actor_id))add('SCENE_ACCENT_ANCHOR_MISSING',e.id);
   if(!e.states||!e.states[e.initial_state]){add('SCENE_ACCENT_INITIAL_STATE_MISSING',e.id);continue;}
@@ -16,6 +20,8 @@ export function validateCanvasAccents(scene,assets,{width=1080,height=1920}={}){
    const a=assets?.[state.asset];
    if(!a||a.category!=='scene_accent'||!a.path) add('SCENE_ACCENT_ASSET_INVALID',e.id);
    if(state.visible===false)continue;
+   const actorLayers=(scene.entities??[]).filter(x=>x.kind==='character').flatMap(x=>Object.values(x.states??{}).filter(s=>s.visible!==false).map(s=>s.layer??20));
+   if(!Number.isFinite(state.layer)||state.layer>=Math.min(20,...actorLayers))add('SCENE_ACCENT_REAR_LAYER_REQUIRED',e.id);
    const t=state.transform;
    if(!bounds(t)||t.x<0||t.y<0||t.x+t.width>width||t.y+t.height>height){add('SCENE_ACCENT_CANVAS_BOUNDS',e.id);continue;}
    if(caption&&bounds(caption)&&overlap(t,caption)>0)add('SCENE_ACCENT_CAPTION_COLLISION',e.id);

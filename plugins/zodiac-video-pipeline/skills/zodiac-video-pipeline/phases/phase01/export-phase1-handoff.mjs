@@ -4,7 +4,7 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {buildPortableZip} from '../../core/portable/zip-primitives.mjs';
-import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest,validatePhase1NarrativePerformance} from '../../contracts/phase1-handoff.mjs';
+import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest,validatePhase1NarrativePerformance,validatePhase1NarrativeVisuals} from '../../contracts/phase1-handoff.mjs';
 
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const pluginRoot=path.resolve(skill,'../..');
@@ -42,7 +42,7 @@ export async function buildPhase1HandoffManifest(workspace){
  };
  if(!review.source_hashes)throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_SOURCE_HASHES_REQUIRED');
  for(const key of ['narration','plan','scope','brief','voice'])if(review.source_hashes[key]!==source_hashes[key])throw Error('CONTENT_APPROVAL_SOURCE_DRIFT '+key);
- validatePhase1NarrativePerformance(planRaw,narration);
+ validatePhase1NarrativeVisuals(validatePhase1NarrativePerformance(planRaw,narration));
  const normalizedReview={...review,source_hashes};
  payload.find(x=>x.rel==='content-review-receipt.json').data=Buffer.from(JSON.stringify(normalizedReview,null,2)+'\n');
  const scope=JSON.parse(payload.find(x=>x.rel==='episode-scope.json').data);

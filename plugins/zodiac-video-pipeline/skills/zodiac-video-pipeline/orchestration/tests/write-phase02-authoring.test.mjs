@@ -44,6 +44,19 @@ test('revision refuses drift in approved content and preserves existing projecti
  try{const original=await readFile(path.join(root,'production.json'),'utf8');s.review_receipts[0].source_hashes={narration:'0'.repeat(64)};await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify(s));p.production.scenes[0].semantic_goal='new';await writeFile(payloadPath,JSON.stringify(p));await assert.rejects(()=>writePhase02Authoring({workspace:root,payloadPath,revise:true}),/CONTENT_APPROVAL_SOURCE_DRIFT/);assert.equal(await readFile(path.join(root,'production.json'),'utf8'),original);}finally{await rm(root,{recursive:true,force:true});}
 });
 
+test('fresh write cannot synthesize a Phase-1 omission or change existing projections',async()=>{
+ const {root,payloadPath,s}=await revisionWorkspace();try{
+  s.run_mode='fresh';await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify(s));
+  const token={id:'zodiac-paper-doodle-meme-v4',version:'4.0',hard_style_lock:true,handmade_profile:'human-stroke-v2'};
+  await writeFile(path.join(root,'design.md'),'<!-- STYLE_TOKEN_BEGIN -->\n```json\n'+JSON.stringify(token)+'\n```\n<!-- STYLE_TOKEN_END -->');
+  const input={format:'zodiac-visual-intent@1',taxonomy_version:'narrative_visual@1',narration_sha256:hash,video:{width:1080,height:1920,fps:30},cast:[],assets:{a:{path:'assets/cup.svg'}},narrative_visual_decision:{mode:'omitted',reason:'Local decided to omit the image without Phase-1 input.'},scenes:[{id:'s01',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'}},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],semantic_asset_decisions:[{entity_id:'cup',reason:'Physical cup'}],events:[]}]};
+  await writeFile(payloadPath,JSON.stringify(input));await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',beats:[]}));
+  const before=await readFile(path.join(root,'production.json'));
+  await assert.rejects(()=>writePhase02Authoring({workspace:root,payloadPath,revise:true}),/NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED/);
+  assert.deepEqual(await readFile(path.join(root,'production.json')),before);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('canonical Visual Intent projects approved Narrative Plan performance without a separate coverage artifact',async()=>{
  const {root,payloadPath}=await revisionWorkspace();
  try{

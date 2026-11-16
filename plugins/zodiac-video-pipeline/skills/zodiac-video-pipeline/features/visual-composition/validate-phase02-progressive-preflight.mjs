@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateScenePlan} from '../../phases/phase02/scene-plan.mjs';
 import {validateCreativeProvenance} from './validate-creative-asset-provenance.mjs';
+import {validateNarrativeVisualDecision} from '../../references/validate-narrative-visual-direction.mjs';
 
 const text=v=>typeof v==='string'&&v.trim().length>0;
 const authored=a=>['authored','authored_derivative','derive_new'].includes(a?.lineage?.mode)||a?.ownership?.kind==='authored';
@@ -59,7 +60,7 @@ export async function validateProgressivePreflight({intent,production,motionRegi
  return {format:'zodiac-phase02-progressive-preflight@1',status:issues.length?'BLOCKED':'PASS',issues,not_an_approval:true};
 }
 
-async function workspace(root){
+export async function validateProgressivePreflightWorkspace(root){
  const [intent,production,motionRegistry,design,plan]=await Promise.all([
   readFile(path.join(root,'.authoring/visual-intent.json'),'utf8').then(JSON.parse),
   readFile(path.join(root,'production.json'),'utf8').then(JSON.parse),
@@ -72,7 +73,9 @@ async function workspace(root){
   const {designToken:parse}=await import('./phase02-composition.mjs');const t=parse(design);
   designToken={...designToken,...t,colors:[...new Set(JSON.stringify(t).match(/#[0-9A-Fa-f]{6}/g)??[])]};
  }catch{}
- return validateProgressivePreflight({intent,production,motionRegistry,designToken,phase1Visuals:plan.narrative_visuals??[],readAsset:p=>readFile(path.join(root,p),'utf8')});
+ const result=await validateProgressivePreflight({intent,production,motionRegistry,designToken,phase1Visuals:plan.narrative_visuals??[],readAsset:p=>readFile(path.join(root,p),'utf8')});
+ if(intent.taxonomy_version==='narrative_visual@1')result.issues.push(...validateNarrativeVisualDecision(plan));
+ result.status=result.issues.length?'BLOCKED':'PASS';return result;
 }
 const direct=process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url);
-if(direct){const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-progressive-preflight.mjs <workspace>');process.exit(2);}try{const r=await workspace(path.resolve(root));console.log(JSON.stringify(r,null,2));if(r.status!=='PASS')process.exitCode=1;}catch(e){console.error(e.message);process.exitCode=2;}}
+if(direct){const root=process.argv[2];if(!root){console.error('Usage: node validate-phase02-progressive-preflight.mjs <workspace>');process.exit(2);}try{const r=await validateProgressivePreflightWorkspace(path.resolve(root));console.log(JSON.stringify(r,null,2));if(r.status!=='PASS')process.exitCode=1;}catch(e){console.error(e.message);process.exitCode=2;}}
