@@ -76,6 +76,48 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertIn("no stale", skill.lower())
 
 
+    def test_web_phase1_preserves_creative_editorial_invariants(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            build_profile(ROOT, "web", temp / "web.zip")
+            with ZipFile(temp / "web.zip") as z:
+                skill = z.read("skills/zodiac-video-web/SKILL.md").decode("utf-8")
+                lower = skill.lower()
+                for phrase in (
+                    "behavior core",
+                    "broad recognition",
+                    "multi-context test",
+                    "scenario-dependency test",
+                    "scene dominance",
+                    "moral drift",
+                    "unsupported motive",
+                    "style-only firewall",
+                    "recognition is not progression",
+                    "behavior first, label second",
+                    "silent-read",
+                    "audio-only editorial pass",
+                    "physical situations in narrative design",
+                ):
+                    self.assertIn(phrase, lower)
+                self.assertIn("zodiac-phase1-handoff@2", skill)
+
+                manifest = json.loads(z.read("plugin.json"))
+                prompt = manifest["extensions"]["com.openai"]["interface"]["defaultPrompt"].lower()
+                self.assertIn("recognition", prompt)
+                self.assertIn("identity", prompt)
+                self.assertNotIn("run validators", prompt)
+
+
+    def test_canonical_router_prompt_keeps_phase1_creative_checks(self):
+        plugin_root = ROOT / "plugins/zodiac-video-pipeline"
+        manifest = json.loads((plugin_root / "plugin.json").read_text(encoding="utf-8"))
+        codex = json.loads((plugin_root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+        prompt = manifest["extensions"]["com.openai"]["interface"]["defaultPrompt"].lower()
+        self.assertEqual(prompt, codex["interface"]["defaultPrompt"].lower())
+        for requirement in ("broad-recognition", "zodiac-identity", "evidence-bounded", "audio-only", "silent-read"):
+            self.assertIn(requirement, prompt)
+        self.assertIn("no native source bootstrap", prompt)
+
     def test_phase1_ci_no_longer_runs_legacy_native_web_authoring(self):
         workflow = (ROOT / ".github/workflows/phase1-voice-first.yml").read_text(encoding="utf-8")
         self.assertNotIn("phase01-agent-e2e.test.mjs", workflow)
