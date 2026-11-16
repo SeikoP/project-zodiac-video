@@ -23,7 +23,7 @@ test('asset capability index covers fresh scene, cast, interaction and effect ne
  assert.equal(capabilities.format,'zodiac-asset-capability-index@1');
  assert.equal(coverage.format,'zodiac-asset-coverage-matrix@1');
  for(const id of NEW_SCENES){
-  assert.equal(capabilities.scene_sets?.[id]?.fresh,true,id+' must be fresh');
+  assert.equal(capabilities.scene_sets?.[id]?.fresh,false,id+' must be compatibility-only');
   assert.deepEqual(capabilities.scene_sets[id].cast,[1,2,3]);
  }
  assert.deepEqual(capabilities.layouts?.['three-person-comparison']?.cast,[3]);

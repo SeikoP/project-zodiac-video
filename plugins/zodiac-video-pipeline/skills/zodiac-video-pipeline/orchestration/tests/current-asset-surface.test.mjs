@@ -79,3 +79,11 @@ test('current contracts contain no retired character source or profile geometry'
   for(const id of policy.retired_hair_ids)assert.equal(raw.includes('"'+id+'"'),false,rel+' '+id);
  }
 });
+
+ test('default gallery exports canvas selection without compatibility scene sets',async()=>{
+ const {buildCurrentAssetReview}=await import('../../features/asset-selection/build-current-asset-review.mjs');
+ const result=await buildCurrentAssetReview();
+ assert.ok(result.receipt.items.some(i=>i.group==='scene_accent'));
+ assert.equal(result.receipt.items.some(i=>i.group==='scene_set'),false);
+ assert.ok(result.html.includes('environment_mode:"canvas"'));
+ });

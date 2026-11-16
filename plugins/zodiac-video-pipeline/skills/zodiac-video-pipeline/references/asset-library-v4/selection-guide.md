@@ -33,7 +33,9 @@ Hair diversity does not replace body-silhouette diversity. Body + hair + shirt c
 ## Native selection surface
 Run `features/asset-selection/build-current-asset-review.mjs <output-directory>`
 from the skill root. Optional `--selection <asset-selection.json>` renders only
-selected IDs. The surface groups components, backdrops and props; clicking
+selected IDs. The surface groups components, canvas Accents and props; Scene Sets appear only
+when explicitly requested for compatibility inspection. Fresh exports use
+`environment_mode: canvas`. Clicking
 a whole card selects it and exports `zodiac-asset-selection@1` JSON. Selection is
 not an approval or compiler receipt. Identity review still precedes full scenes.
 
@@ -67,3 +69,22 @@ Fresh 2.6.11+ scene-level execution uses the canonical Visual Intent for a
 source-fingerprinted scene graph and separate continuity verification. It must
 not independently author a derived production/asset plan per scene. Native
 compilation and final review remain the existing manifest-owned gate.
+
+## Meaningful prop diversity
+
+Choose the performed action before choosing a prop. A scene may need no physical
+prop. Preserve one owner's device identity across related scenes and state swaps.
+
+Phone, phone-busy, phone-ping, phone-quiet and phone-silent share one V4 body
+silhouette: these are story states, not five physical models. Changing color,
+notification, framing or rotation does not create a new geometric model. Inspect
+actual registered SVG geometry before claiming a different design is available.
+If the story needs an unsupported model or view, report the missing capability
+and request new source artwork plus Visual Review; never substitute invented art.
+
+When recent accepted episode evidence is explicitly supplied, compare the full
+visible treatment (model, appearance, shot and action). Suggest a different
+story-grounded action, framing or no-prop treatment for unmotivated repetition;
+do not impose a reuse ban or change a continuing owner's identity. Do not scan
+historical jobs for inspiration or claim cross-episode diversity was measured
+without source-backed accepted/rendered manifests.

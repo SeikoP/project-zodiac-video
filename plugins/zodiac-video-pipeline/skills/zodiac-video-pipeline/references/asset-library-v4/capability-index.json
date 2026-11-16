@@ -2,7 +2,7 @@
   "format": "zodiac-asset-capability-index@1",
   "scene_sets": {
     "scene-set-home": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
@@ -13,7 +13,7 @@
       ]
     },
     "scene-set-cafe": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
@@ -24,7 +24,7 @@
       ]
     },
     "scene-set-classroom": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
@@ -35,7 +35,7 @@
       ]
     },
     "scene-set-study": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
@@ -46,7 +46,7 @@
       ]
     },
     "scene-set-street": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
@@ -57,7 +57,7 @@
       ]
     },
     "scene-set-neutral": {
-      "fresh": true,
+      "fresh": false,
       "cast": [
         1,
         2,
