@@ -105,6 +105,20 @@ Read the final narration while deliberately ignoring TTS delivery, music, captio
 
 If a weak paragraph only becomes interesting after imagining a voice actor, sound effect, zoom, caption reveal or edit, revise the owning Concept/Narrative Design/Narration layer instead of asking Phase 2 to rescue it.
 
+## Runnable narration-performance plan before Content Review
+
+For a fresh Web-authored handoff, `narrative-plan.json` must use `version: "2.1"`. A format-like label is not a substitute for the required `version` field.
+
+Before Content Review, bind the approved narration to non-empty semantic `beats`. Every beat that carries spoken performance intent must include:
+- a stable `id`;
+- an exact `voice_anchor` present in `narration.txt`;
+- `occurrence` when the same anchor appears more than once;
+- `performance.delivery`, `energy` (0..1), `emotion`, `pace` (slow/medium/fast), `emphasis[]`, and `reason`.
+
+Use the smallest set of beats that preserves the actual semantic/performance changes in the approved narration. Performance intent is authored in Phase 1; it is not a Phase-2 invention. Local may map approved beats to scene boundaries at authored paragraph seams, but it must not invent a missing beat, anchor, occurrence, delivery, energy, emotion, pace, emphasis, or reason and then treat that data as approved.
+
+Run the anchor/occurrence/performance check **before Content Review**. If a later scene split cannot be covered by the approved beats, Local must block and request supplementary review rather than manufacture coverage. Do not add or rewrite performance beats after Content Review while retaining the old approval receipt; any plan-byte change invalidates the plan hash and requires genuine approval again.
+
 ## Minimal handoff
 
 After genuine Content Review approval, create exactly one `zodiac-phase1-handoff@2` ZIP using the host file tools available in ChatGPT. Do not require Node or the native producer runtime.
