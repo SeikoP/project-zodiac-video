@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parsePortableZip} from '../../core/portable/zip-primitives.mjs';
 import {approvalSourceHashes,assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
-import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_REQUIRED,PHASE1_HANDOFF_REQUIRED_V1,requiredForHandoff,validateHandoffManifest} from '../../contracts/phase1-handoff.mjs';
+import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_REQUIRED,PHASE1_HANDOFF_REQUIRED_V1,requiredForHandoff,validateHandoffManifest,validatePhase1NarrativePerformance} from '../../contracts/phase1-handoff.mjs';
 import {validatePipelineState} from '../../core/state/validate-pipeline-state.mjs';
 
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
@@ -39,6 +39,7 @@ export async function inspectPhase1Handoff(zipPath){
  const inventory=buildInventory(payload);
  if(JSON.stringify(inventory)!==JSON.stringify(manifest.inventory))throw Error('PHASE1_HANDOFF_INVENTORY_HASH_MISMATCH');
  if(by.get('SHA256SUMS').data.toString('utf8')!==formatSha256Sums(inventory))throw Error('PHASE1_HANDOFF_SHA256SUMS_MISMATCH');
+ if(manifest.contract_major===2)validatePhase1NarrativePerformance(by.get('narrative-plan.json').data,by.get('narration.txt').data.toString('utf8'));
  return {manifest,entries,payload};
 }
 
