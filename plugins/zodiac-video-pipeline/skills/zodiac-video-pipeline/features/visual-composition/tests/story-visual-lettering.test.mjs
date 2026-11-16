@@ -63,3 +63,17 @@ test('separate lettering coverage is rejected even when its entity is relabelled
  const plan={components:[{id:'words',visual_role:'story_visual'}],visual_coverage:{format:'zodiac-visual-coverage@1',layers_version:'story_visual@1',narration_sha256:createHash('sha256').update(scene.voice).digest('hex'),beats:[{id:'b',goal:'Read the image',narration_range:[0,Buffer.byteLength(scene.voice)],event_ids:['enter','exit'],layers:{story_visual:{decision:'use',reason:'The image conveys the point',entity_ids:['words']},lettering:{decision:'omit',reason:'legacy layer'}}}]}};
  assert.ok(validateVisualCoverage(scene,plan,{deriveEmptyLayers:true}).some(x=>x.code==='COVERAGE_LAYER_UNKNOWN'&&x.layer==='lettering'));
 });
+
+test('compiled story_object transport keeps the same story visual coverage entry',()=>{
+ const {intent,production}=fixture(),source=intent.scenes[0],scene={...source,voice:production.scenes[0].voice,entities:source.entities.map(({lettering,...entity})=>({...entity,kind:'object',visual_role:'story_object'}))};
+ const plan={components:[{id:'words',visual_role:'story_object',narrative_role:'story_visual'}],visual_coverage:{format:'zodiac-visual-coverage@1',layers_version:'story_visual@1',narration_sha256:createHash('sha256').update(scene.voice).digest('hex'),beats:[{id:'b',goal:'Read the image',narration_range:[0,Buffer.byteLength(scene.voice)],event_ids:['enter','exit'],layers:{story_visual:{decision:'use',reason:'The image conveys the point',entity_ids:['words']}}}]}};
+ assert.deepEqual(validateVisualCoverage(scene,plan,{deriveEmptyLayers:true}).filter(x=>x.layer!=='caption'),[]);
+ scene.entities[0].visual_role='story_visual';
+ assert.ok(validateVisualCoverage(scene,plan,{deriveEmptyLayers:true}).some(x=>x.code==='COVERAGE_ROLE_MISMATCH'));
+});
+test('drawing can stay visible before and after the words appear',()=>{
+ const {intent,production}=fixture(),scene=intent.scenes[0],entity=scene.entities[0];
+ entity.states.drawing={visible:true,asset:'DRAWING'};intent.assets.DRAWING={category:'story_visual'};entity.initial_state='drawing';
+ scene.events[1].state_after='drawing';
+ assert.deepEqual(validateStoryVisualLettering(intent,production),[]);
+});
