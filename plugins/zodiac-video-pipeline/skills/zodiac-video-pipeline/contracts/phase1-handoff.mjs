@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {validateBeatPerformance,anchorPositions} from '../references/narration-rhythm.mjs';
+import {validateBeatPerformance,anchorPositions} from './narration-performance-contract.mjs';
 
 export const PHASE1_HANDOFF_FORMAT='zodiac-phase1-handoff@2';
 export const PHASE1_HANDOFF_MAJOR=2;
