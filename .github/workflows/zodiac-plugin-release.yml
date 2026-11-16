@@ -5,14 +5,11 @@ on:
     branches:
       - main
     paths:
-      - plugins/zodiac-video-pipeline/plugin.json
-      - plugins/zodiac-video-pipeline/.codex-plugin/plugin.json
-      - plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json
-      - tools/release/build_plugin_bundle.py
-      - tools/release/build_split_plugin_bundle.py
-      - plugins/zodiac-video-pipeline/distributions/**
-      - plugins/zodiac-video-pipeline/skills/zodiac-video-web/**
-      - plugins/zodiac-video-pipeline/skills/zodiac-video-local/**
+      # A reference-only edit can change Web's packaged behavior.
+      # Track canonical plugin sources rather than only entry skills/manifests.
+      - plugins/zodiac-video-pipeline/**
+      - tools/release/**
+      - tools/build_source_bundle.py
       - .github/workflows/zodiac-plugin-release.yml
 permissions:
   contents: read
