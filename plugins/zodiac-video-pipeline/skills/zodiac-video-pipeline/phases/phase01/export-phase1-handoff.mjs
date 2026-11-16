@@ -30,7 +30,6 @@ export async function buildPhase1HandoffManifest(workspace){
   payload.push({rel:target,data:found.data});
  }
  const narration=payload.find(x=>x.rel==='narration.txt').data.toString('utf8'),planRaw=payload.find(x=>x.rel==='narrative-plan.json').data.toString('utf8');
- validatePhase1NarrativePerformance(planRaw,narration);
  const review=JSON.parse(payload.find(x=>x.rel==='content-review-receipt.json').data);
  if(review.status!=='APPROVED'||review.phase_id!=='01-content'||review.proof?.kind!=='user_message'||!String(review.proof?.ref??'').trim())throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_INVALID');
  if(typeof review.proof.text!=='string')throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_TEXT_REQUIRED');
@@ -43,6 +42,7 @@ export async function buildPhase1HandoffManifest(workspace){
  };
  if(!review.source_hashes)throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_SOURCE_HASHES_REQUIRED');
  for(const key of ['narration','plan','scope','brief','voice'])if(review.source_hashes[key]!==source_hashes[key])throw Error('CONTENT_APPROVAL_SOURCE_DRIFT '+key);
+ validatePhase1NarrativePerformance(planRaw,narration);
  const normalizedReview={...review,source_hashes};
  payload.find(x=>x.rel==='content-review-receipt.json').data=Buffer.from(JSON.stringify(normalizedReview,null,2)+'\n');
  const scope=JSON.parse(payload.find(x=>x.rel==='episode-scope.json').data);
