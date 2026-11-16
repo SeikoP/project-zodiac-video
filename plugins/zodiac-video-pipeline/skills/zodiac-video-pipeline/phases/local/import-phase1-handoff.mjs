@@ -39,7 +39,13 @@ export async function inspectPhase1Handoff(zipPath){
  const inventory=buildInventory(payload);
  if(JSON.stringify(inventory)!==JSON.stringify(manifest.inventory))throw Error('PHASE1_HANDOFF_INVENTORY_HASH_MISMATCH');
  if(by.get('SHA256SUMS').data.toString('utf8')!==formatSha256Sums(inventory))throw Error('PHASE1_HANDOFF_SHA256SUMS_MISMATCH');
- if(manifest.contract_major===2)validatePhase1NarrativePerformance(by.get('narrative-plan.json').data,by.get('narration.txt').data.toString('utf8'));
+ if(manifest.contract_major===2){
+  const review=JSON.parse(by.get('content-review-receipt.json').data.toString('utf8')),approved=review?.source_hashes??{},current={
+   narration:sha256(by.get('narration.txt').data),plan:sha256(by.get('narrative-plan.json').data),scope:sha256(by.get('episode-scope.json').data),brief:sha256(by.get('writer-brief.json').data),voice:sha256(by.get('voice-profile.json').data)
+  };
+  for(const key of ['narration','plan','scope','brief','voice'])if(approved[key]!==current[key])throw Error('CONTENT_APPROVAL_SOURCE_DRIFT '+key);
+  validatePhase1NarrativePerformance(by.get('narrative-plan.json').data,by.get('narration.txt').data.toString('utf8'));
+ }
  return {manifest,entries,payload};
 }
 
