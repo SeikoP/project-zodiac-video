@@ -15,7 +15,7 @@ const hash=data=>createHash('sha256').update(data).digest('hex');
 
 async function approvedWorkspace(runId){
  const root=await mkdtemp(path.join(tmpdir(),'z-local-src-'));await mkdir(path.join(root,'.authoring'),{recursive:true});
- const narration=Buffer.from('Approved narration '+runId+'.\\nSecond beat '+runId+'.\\n');
+ const narration=Buffer.from('Approved narration '+runId+'.\nSecond beat '+runId+'.\n');
  const performance=(reason)=>({delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:[],reason});
  const plan=Buffer.from(JSON.stringify({version:'2.1',selected_concept_id:'C1',story_spine:{premise:'p'},beats:[
   {id:'B1',voice_anchor:'Approved narration '+runId,performance:performance('Carry the setup.')},
@@ -52,7 +52,7 @@ async function rewriteCapsulePlan(file,mutate){
  const payload=[...by.values()].filter(x=>!['HANDOFF.json','SHA256SUMS'].includes(x.rel));
  const inventory=buildInventory(payload);
  const handoff=JSON.parse(by.get('HANDOFF.json').data);handoff.inventory=inventory;handoff.content_review=review;
- by.get('HANDOFF.json').data=Buffer.from(JSON.stringify(handoff,null,2)+'\\n');
+ by.get('HANDOFF.json').data=Buffer.from(JSON.stringify(handoff,null,2)+'\n');
  by.get('SHA256SUMS').data=Buffer.from(formatSha256Sums(inventory));
  await writeFile(file,buildPortableZip([...by.values()].map(({rel,data})=>({rel,data}))));
 }
@@ -113,7 +113,7 @@ test('valid Web handoff imports and its approved beats cover a two-scene native 
   const inbox=path.join(root,'phase1-done');await mkdir(inbox,{recursive:true});await capsule(inbox,'run-native');
   const r=await bootstrapLocal(root);assert.equal(r.status,'PHASE2_LOCAL_READY');
   const ws=r.workspace,narration=await readFile(path.join(ws,'narration.txt'),'utf8');
-  const [first,second]=narration.split('\\n').filter(Boolean);
+  const [first,second]=narration.split('\n').filter(Boolean);
   await writeFile(path.join(ws,'production.json'),JSON.stringify({scenes:[{id:'S01',voice:first},{id:'S02',voice:second}]}));
   const compiled=await compileNarrationPerformanceWorkspace(ws,{write:true});assert.equal(compiled.status,'PASS');assert.equal(compiled.plan_version,'2.1');
   const production=JSON.parse(await readFile(path.join(ws,'production.json'),'utf8'));
