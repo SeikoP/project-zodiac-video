@@ -118,6 +118,28 @@ class SplitPluginBundleTests(unittest.TestCase):
             self.assertIn(requirement, prompt)
         self.assertIn("no native source bootstrap", prompt)
 
+    def test_web_phase1_handoff_guidance_requires_runnable_performance_plan(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp = Path(temp)
+            build_profile(ROOT, "web", temp / "web.zip")
+            with ZipFile(temp / "web.zip") as z:
+                skill = z.read("skills/zodiac-video-web/SKILL.md").decode("utf-8").lower()
+                for phrase in (
+                    'version: "2.1"',
+                    "voice_anchor",
+                    "occurrence",
+                    "delivery",
+                    "energy",
+                    "emotion",
+                    "pace",
+                    "emphasis",
+                    "reason",
+                    "before content review",
+                    "do not invent",
+                ):
+                    self.assertIn(phrase, skill)
+
+
     def test_phase1_ci_no_longer_runs_legacy_native_web_authoring(self):
         workflow = (ROOT / ".github/workflows/phase1-voice-first.yml").read_text(encoding="utf-8")
         self.assertNotIn("phase01-agent-e2e.test.mjs", workflow)

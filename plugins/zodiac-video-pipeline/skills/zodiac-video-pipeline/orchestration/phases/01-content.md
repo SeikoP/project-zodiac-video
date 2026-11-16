@@ -52,7 +52,9 @@ Draft from the selected concept, Story Spine, Narrative Motif when present, seco
 - post-midpoint movement instead of explanation plateaus;
 - a finish that lands through payoff/callback rather than fades.
 
-Do not write to pass a validator. Editorial review happens after a real draft exists.
+After the prose exists, bind the final narration back to the Narrative Plan before Content Review. Fresh Web handoffs use Narrative Plan `version: "2.1"` with non-empty `beats`; each performance beat carries an exact `voice_anchor`, `occurrence` when an anchor repeats, and `performance={delivery,energy,emotion,pace,emphasis,reason}`. These directions are approved creative intent. Local may map them onto later scene boundaries but must not invent missing performance semantics.
+
+Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval.
 
 There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 

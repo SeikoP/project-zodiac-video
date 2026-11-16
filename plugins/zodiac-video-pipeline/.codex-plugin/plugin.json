@@ -4,14 +4,14 @@
       "Interactive"
     ],
     "category": "Productivity",
-    "defaultPrompt": "Route Web Phase 1 as creative microphases: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Apply broad-recognition and Zodiac-identity checks before concept selection, keep interpretation evidence-bounded, and use dual audio-only/silent-read editorial review. Web uses no native source bootstrap, runtime dependency provisioning, validator receipts or performance overlay. Local owns native Phase 2-3 execution and preserves approved content.",
+    "defaultPrompt": "Route Web Phase 1 as creative microphases: Evidence → Voice → Concept → Narrative Design → Narration → Content Review. Apply broad-recognition and Zodiac-identity checks before concept selection, keep interpretation evidence-bounded, bind runnable narration-performance beats before Content Review, and use dual audio-only/silent-read editorial review. Web uses no native source bootstrap, runtime dependency provisioning, validator receipts or performance overlay. Local owns native Phase 2-3 execution and preserves approved content.",
     "developerName": "Personal",
     "displayName": "Zodiac Video Pipeline",
     "longDescription": "Creative-first Web authoring with native Local visual production and Job@5 handoff.",
     "shortDescription": "3-phase Zodiac video workflow"
   },
   "name": "zodiac-video-pipeline",
-  "version": "2.12.8",
+  "version": "2.12.9",
   "description": "Zodiac native visual pipeline, episode formats and Job@5 compatibility.",
   "author": {
     "name": "Personal"
