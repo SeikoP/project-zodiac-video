@@ -3,7 +3,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parsePortableZip} from '../../core/portable/zip-primitives.mjs';
 import {approvalSourceHashes,assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
-import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_REQUIRED,PHASE1_HANDOFF_REQUIRED_V1,requiredForHandoff,validateHandoffManifest,validatePhase1NarrativePerformance} from '../../contracts/phase1-handoff.mjs';
+import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_REQUIRED,PHASE1_HANDOFF_REQUIRED_V1,requiredForHandoff,sha256,validateHandoffManifest,validatePhase1NarrativePerformance} from '../../contracts/phase1-handoff.mjs';
 import {validatePipelineState} from '../../core/state/validate-pipeline-state.mjs';
 
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
