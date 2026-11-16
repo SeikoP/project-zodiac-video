@@ -14,7 +14,7 @@ async function fixture(){
   await mkdir(path.join(root,'.authoring'),{recursive:true});
   const narration=Buffer.from('Approved narration\\n');
   const performance={delivery:'dry teasing',energy:.45,emotion:'amused',pace:'medium',emphasis:[],reason:'Carry the approved setup without changing meaning.'};
-  const plan=Buffer.from(JSON.stringify({version:'2.1',narrative_visual_decision:{mode:'omitted',reason:'The offered hand and physical bag already show the rejected help.'},selected_concept_id:'C1',story_spine:{premise:'attention can be misread as commitment'},beats:[{id:'B1',voice_anchor:'Approved narration',performance}]}));
+  const plan=Buffer.from(JSON.stringify({version:'2.1',story_visual_decision:{mode:'omitted',reason:'The offered hand and physical bag already show the rejected help.'},selected_concept_id:'C1',story_spine:{premise:'attention can be misread as commitment'},beats:[{id:'B1',voice_anchor:'Approved narration',performance}]}));
   const scope=Buffer.from(JSON.stringify({episode_id:'handoff-test-run',sign:'Song Tử',concept:'Sự quan tâm bị hiểu nhầm'}));
   const brief=Buffer.from(JSON.stringify({creative_direction:{tone:'bình thường ↔ gắt'}}));
   const voice=Buffer.from(JSON.stringify({format:'zodiac-voice-profile@1',narrator_vibe:'sharp but controlled'}));
@@ -45,11 +45,11 @@ test('export blocks handoff narrative plan missing version',async()=>{
 
 test('export blocks missing visual decision even with matching approval hashes',async()=>{
  const root=await fixture();try{
-  const planPath=path.join(root,'.authoring/narrative-plan.json'),plan=JSON.parse(await readFile(planPath,'utf8'));delete plan.narrative_visual_decision;
+  const planPath=path.join(root,'.authoring/narrative-plan.json'),plan=JSON.parse(await readFile(planPath,'utf8'));delete plan.story_visual_decision;
   const raw=Buffer.from(JSON.stringify(plan));await writeFile(planPath,raw);
   const reviewPath=path.join(root,'.authoring/content-review-receipt.json'),review=JSON.parse(await readFile(reviewPath,'utf8'));
   review.source_hashes.plan=hash(raw);await writeFile(reviewPath,JSON.stringify(review));
-  await assert.rejects(()=>exportPhase1Handoff(root,path.join(root,'missing-decision.zip')),/NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED/);
+  await assert.rejects(()=>exportPhase1Handoff(root,path.join(root,'missing-decision.zip')),/STORY_VISUAL_PHASE1_DECISION_REQUIRED/);
  }finally{await rm(root,{recursive:true,force:true})}
 });
 

@@ -103,7 +103,7 @@
   "policy": {
     "max_depth_layers_per_scene": 3,
     "caption_exclusion_from_y": 1400,
-    "narrative_visual_must_remain_independent": true,
+    "story_visual_must_remain_independent": true,
     "random_palette": false
   }
 }

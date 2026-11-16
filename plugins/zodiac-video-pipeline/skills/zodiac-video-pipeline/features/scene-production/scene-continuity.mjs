@@ -2,7 +2,7 @@ const text=x=>typeof x==='string'&&x.trim().length>0;
 const identityFields=['body_profile','hair_id','face_profile_id','outfit_id','shirt_color_id','zodiac_sign_id'];
 const isCharacter=e=>e?.kind==='character'||e?.visual_role==='character';
 const isProp=e=>e?.visual_role==='interactive_prop'||e?.kind==='prop';
-const storyRole=e=>e?.kind==='narrative_visual'||e?.visual_role==='narrative_visual'||isProp(e);
+const storyRole=e=>e?.kind==='story_visual'||e?.visual_role==='story_visual'||isProp(e);
 
 export function reviewSceneContinuity(intent,{graph}={}){
  const issues=[],scenes=intent?.scenes??[],cast=intent?.cast??[],known=new Map();

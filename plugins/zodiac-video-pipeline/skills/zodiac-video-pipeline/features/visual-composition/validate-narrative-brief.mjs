@@ -1,4 +1,4 @@
-// Narrative Visual execution brief: concrete Phase-1 meaning + exact Phase-2 anchor/state change.
+// Hình kể chuyện execution brief: concrete Phase-1 meaning + exact Phase-2 anchor/state change.
 const text=x=>typeof x==='string'&&x.trim().length>0;
 export const narrativeBriefFormat='zodiac-narrative-brief@2';
 export function validateNarrativeBrief(scene,brief){

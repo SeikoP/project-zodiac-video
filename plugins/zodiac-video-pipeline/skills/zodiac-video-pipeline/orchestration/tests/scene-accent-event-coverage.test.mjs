@@ -19,12 +19,12 @@ test('fresh canvas accent entering on narration is counted as visible in its bea
   const planned={
     components:[{id:'cafe_window',visual_role:'scene_accent',narrative_role:'scene_accent'}],
     visual_coverage:{
-      format:'zodiac-visual-coverage@1',layers_version:'narrative_visual@1',
+      format:'zodiac-visual-coverage@1',layers_version:'story_visual@1',
       narration_sha256:createHash('sha256').update(voice).digest('hex'),
       beats:[{id:'B01',goal:'Establish cafe context',narration_range:[0,Buffer.byteLength(voice)],
         event_ids:['show_window'],
         layers:{actors:omit,scene_accent:{decision:'use',reason:'Cafe setting',entity_ids:['cafe_window']},
-          narrative_visual:omit,props:omit,support:omit,caption:omit}
+          story_visual:omit,props:omit,support:omit,caption:omit}
       }]
     }
   };

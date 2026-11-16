@@ -11,7 +11,7 @@ const meaningful=v=>typeof v==='string'&&v.trim().length>=12;
 const norm=v=>String(v??'').trim().replace(/\s+/gu,' ').toLocaleLowerCase('vi');
 const visibleEntity=e=>Object.values(e.states??{}).some(s=>s?.visible!==false);
 const isPhysical=e=>e?.visual_role==='interactive_prop'||e?.kind==='prop';
-const isNarrative=e=>e?.kind==='narrative_visual'||e?.visual_role==='narrative_visual';
+const isNarrative=e=>e?.kind==='story_visual'||e?.visual_role==='story_visual';
 const isAccent=e=>e?.kind==='scene_accent'||e?.role==='scene_accent'||e?.visual_role==='background';
 const isCharacter=e=>e?.kind==='character'||e?.visual_role==='character';
 const isStoryEntity=e=>isCharacter(e)||isPhysical(e)||isNarrative(e);
@@ -137,7 +137,7 @@ export function reviewSceneExperience(intent){
    frame_occupancy:{result:(mode==='reflection'&&sparse)?'OMIT':geometry.geometryAvailable?(geometry.occupancyPass?'PASS':'REVIEW'):'OMIT',reason:(mode==='reflection'&&sparse)?'Sparse reflection intentionally preserves negative space.':geometry.geometryAvailable?('Story mass occupies '+(geometry.occupancyRatio*100).toFixed(1)+'% of the pre-caption field; minimum '+((geometry.minOccupancy??0)*100).toFixed(0)+'%.'):'Geometry is not available at this review boundary.'},
    secondary_action:{result:events.length>1?'PASS':'OMIT',reason:events.length>1?'More than one authored event supports the beat.':'Secondary action is not required.'},
    visual_callback:{result:text(authored.visual_callback)?'PASS':'OMIT',reason:authored.visual_callback??'No callback selected.'},
-   narrative_visual_role:{result:narrative.length?(narrativeActions.length?'PASS':'REVIEW'):'OMIT',reason:narrative.length?(narrativeActions.length?'Narrative visual has a meaningful state/action change.':'Narrative visual is passive.'):'No narrative visual selected.'}
+   story_visual_role:{result:narrative.length?(narrativeActions.length?'PASS':'REVIEW'):'OMIT',reason:narrative.length?(narrativeActions.length?'Narrative visual has a meaningful state/action change.':'Narrative visual is passive.'):'No story visual selected.'}
   };
   if(Object.values(criteria).some(c=>c.result==='REVIEW')&&!issues.length&&!(mode==='reflection'&&sparse))issues.push({code:'SCENE_EXPERIENCE_CRITERION_REVIEW'});
   scenes.push({scene_id:scene.id,decision:issues.length?'REVIEW':'PASS',criteria,issues});

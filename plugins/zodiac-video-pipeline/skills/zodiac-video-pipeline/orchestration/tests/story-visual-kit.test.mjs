@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {validateNarrativeVisualKit as lint} from '../../features/visual-composition/validate-narrative-visual-kit.mjs';
+import {validateStoryVisualKit as lint} from '../../features/visual-composition/validate-story-visual-kit.mjs';
 const good='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><path d="M10 10L200 40" fill="none" stroke="#2F3A4A" stroke-width="4"/><path d="M20 200C80 120 160 260 300 180" fill="#F2E8D5" stroke="#2F3A4A" stroke-width="4"/></svg>';
 const o={palette:['#2f3a4a','#F2E8D5'],strokeWidths:[4,6],canvas:{width:1080,height:1920},rect:{x:100,y:300,width:400,height:300},captionSafeZone:{x:0,y:1500,width:1080,height:300}};
 const codes=(svg,opt=o)=>lint(svg,opt).map(i=>i.code);

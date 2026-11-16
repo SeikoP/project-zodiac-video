@@ -10,7 +10,7 @@ Use `core/performance/critical-path.mjs` to record full Phase 2 wall time, nativ
 For each step use `orchestration/core/performance/compile-step-capsule.mjs` to prepare a validated content manifest with hashes. This may make references economical for agents. It cannot mark any required reference read as completed without actually supplying the current content. No implicit reuse of an earlier agent's context is permitted; delta mode requires a matching caller-held capsule ID and all current hashes reverified.
 
 ## Authoring and validation
-Fresh Phase 2 remains single-source `.authoring/visual-intent.json`. Complete all Scene Plan, cast, props, Narrative Visual, director beats, art-direction coverage and events BEFORE native SVG compilation. The existing completeness/precompile validators are mandatory.
+Fresh Phase 2 remains single-source `.authoring/visual-intent.json`. Complete all Scene Plan, cast, props, Hình kể chuyện, director beats, art-direction coverage and events BEFORE native SVG compilation. The existing completeness/precompile validators are mandatory.
 
 ## Parallel execution
 Only independent tasks with explicitly enumerated input and output ownership may run concurrently. `core/performance/safe-parallel-scheduler.mjs` rejects missing dependencies, cycles, conflicting writes and read/write races. Steps not proven safe remain sequential through the existing Phase 2 executor. No parallel writer may touch production.json, pipeline-state.json or shared receipt paths.

@@ -4,7 +4,7 @@ import {sha256,cacheRoot,readCacheGraph,writeCacheGraph,propagateDirty} from './
 
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
 const hash=x=>sha256(JSON.stringify(canonical(x)));
-const symbolic=e=>e.kind==='narrative_visual'||['narrative_visual','story_object'].includes(e.visual_role);
+const symbolic=e=>e.kind==='story_visual'||['story_visual','story_object'].includes(e.visual_role);
 const assetsForEntity=(entity,assets)=>[...new Set(Object.values(entity.states??{}).map(s=>s.asset).filter(Boolean))].sort().map(id=>[id,assets?.[id]??null]);
 export function buildPhase02SemanticGraph(intent){
  const nodes={},sceneRefs=new Map(),assets=intent.assets??{},assetInstances=new Map();
@@ -18,7 +18,7 @@ export function buildPhase02SemanticGraph(intent){
     if(!sceneRefs.has(id))sceneRefs.set(id,new Set());sceneRefs.get(id).add(scene.id);
     continue;
    }
-   const category=symbolic(e)?'narrative_visual':e.visual_role==='interactive_prop'||e.kind==='prop'?'prop':e.kind==='scene_accent'?'scene_accent':'asset';
+   const category=symbolic(e)?'story_visual':e.visual_role==='interactive_prop'||e.kind==='prop'?'prop':e.kind==='scene_accent'?'scene_accent':'asset';
    const id='asset:'+category+':'+e.id;
    if(!assetInstances.has(id))assetInstances.set(id,{kind:category,occurrences:[]});
    assetInstances.get(id).occurrences.push({scene_id:scene.id,entity:e,assets:assetsForEntity(e,assets)});

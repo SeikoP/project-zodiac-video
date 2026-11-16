@@ -34,10 +34,10 @@
           "stage": "entry"
         },
         {
-          "id": "narrative_visual_presence_validation",
+          "id": "story_visual_presence_validation",
           "kind": "internal_validator",
           "when": "fresh",
-          "tool_locator": "features/visual-composition/validate-narrative-visual-presence.mjs",
+          "tool_locator": "features/visual-composition/validate-story-visual-presence.mjs",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -230,10 +230,10 @@
           "stage": "entry"
         },
         {
-          "id": "narrative_visual_contract",
+          "id": "story_visual_contract",
           "kind": "internal_reference",
           "when": "fresh",
-          "guidance_uri": "references/narrative-visual.md",
+          "guidance_uri": "references/story-visual.md",
           "unavailable_policy": "block",
           "stage": "entry"
         },
@@ -345,7 +345,7 @@
       ],
       "gate_checks": [
         "precompile_seam",
-        "narrative_visual_presence",
+        "story_visual_presence",
         "authoring_completeness",
         "production_contract",
         "visual_progression",
@@ -431,7 +431,7 @@
             "references/visual-quality.md",
             "orchestration/phase02-composition-contract.md",
             "references/retention-quality.md",
-            "references/story-text.md"
+            "references/story-visual.md"
           ]
         },
         "design": {
@@ -440,7 +440,7 @@
             "references/visual-quality.md",
             "orchestration/phase02-composition-contract.md",
             "references/retention-quality.md",
-            "references/story-text.md"
+            "references/story-visual.md"
           ],
           "context_capability_ids": [
             "visual_compile_contract",
@@ -448,7 +448,7 @@
             "scene_direction_contract",
             "cast_library_contract",
             "visual_intent_contract",
-            "narrative_visual_contract",
+            "story_visual_contract",
             "scene_accent_canvas_contract"
           ]
         },
@@ -457,7 +457,7 @@
             "references/visual-direction.md",
             "references/visual-quality.md",
             "orchestration/phase02-composition-contract.md",
-            "references/story-text.md"
+            "references/story-visual.md"
           ],
           "context_capability_ids": [
             "visual_compile_contract",
@@ -465,7 +465,7 @@
             "scene_direction_contract",
             "director_performance_contract",
             "visual_intent_contract",
-            "narrative_visual_contract",
+            "story_visual_contract",
             "scene_accent_canvas_contract"
           ]
         },
@@ -479,7 +479,7 @@
             "scene_direction_contract",
             "director_performance_contract",
             "visual_intent_contract",
-            "narrative_visual_contract"
+            "story_visual_contract"
           ]
         },
         "review": {
@@ -493,7 +493,7 @@
             "scene_direction_contract",
             "director_performance_contract",
             "visual_intent_contract",
-            "narrative_visual_contract",
+            "story_visual_contract",
             "caption_compile_contract"
           ]
         }

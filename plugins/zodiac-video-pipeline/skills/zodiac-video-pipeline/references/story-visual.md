@@ -1,14 +1,14 @@
-# Narrative Visual — Hình ảnh kể chuyện
+# Hình kể chuyện — Hình ảnh kể chuyện
 
-Narrative Visual is the **only** fresh storytelling-image type: `narrative_visual`. It is optional. Phase 1 decides whether the episode needs one and owns its meaning; Phase 2 only executes that approved direction.
+Hình kể chuyện is the **only** fresh storytelling-image type: `story_visual`. It is optional. Phase 1 decides whether the episode needs one and owns its meaning; Phase 2 only executes that approved direction.
 
 ## When to use it
 
-Use a Narrative Visual only for a central point that is easier to understand as a concrete visible action/state than as actor performance, a physical prop, or a short Story Text phrase. There is no per-video quota.
+Use a Hình kể chuyện only for a central point that is easier to understand as a concrete visible action/state than as actor performance, a physical prop, or a short chữ trong hình phrase. There is no per-video quota.
 
-A scene may contain **Narrative Visual or Story Text, never both**. Quiet scenes may use neither.
+A scene may contain **Hình kể chuyện or chữ trong hình, never both**. Quiet scenes may use neither.
 
-Reject a Narrative Visual when it is only a generic symbol, mood decoration, zodiac icon, or abstract noun. The image must preserve the Phase-1 `story_point`, `viewer_read`, `visible_subject`, `visible_action`, and `visual_idea`.
+Reject a Hình kể chuyện when it is only a generic symbol, mood decoration, zodiac icon, or abstract noun. The image must preserve the Phase-1 `story_point`, `viewer_read`, `visible_subject`, `visible_action`, and `visual_idea`.
 
 ## Phase 2 execution
 

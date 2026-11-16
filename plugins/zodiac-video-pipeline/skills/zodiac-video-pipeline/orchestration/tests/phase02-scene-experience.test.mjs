@@ -45,8 +45,8 @@ test('intentional sparse reflection scene can pass with explicit omissions',()=>
  assert.equal(r.decision,'PASS');
 });
 
-test('narrated physical object cannot be replaced only by narrative visual',()=>{
- const nv={id:'memory',kind:'narrative_visual',visual_role:'narrative_visual',initial_state:'on',states:{on:{visible:true}}};
+test('narrated physical object cannot be replaced only by story visual',()=>{
+ const nv={id:'memory',kind:'story_visual',visual_role:'story_visual',initial_state:'on',states:{on:{visible:true}}};
  const goal='She remembers the cup';
  const r=reviewSceneExperience(intent({id:'S03',semantic_goal:goal,experience_profile:{story_mode:'behavior',required_physical_entities:['cup'],story_focus:{goal,focal_entity_id:'lead',supporting_entity_ids:['memory'],links:[{from:'lead',to:'memory',relation:'recalls the image',purpose:'Makes the memory visible while keeping the actor as the focal point.'}]}},entities:[char,nv],events:[{id:'E1',target:'memory',action:'reveal',state_before:'off',state_after:'on'}],art_direction:{scene_experience:{environment_specificity:'Memory space.',visual_callback:'Thread callback.'}}}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='PHYSICAL_STORY_ENTITY_MISSING'));

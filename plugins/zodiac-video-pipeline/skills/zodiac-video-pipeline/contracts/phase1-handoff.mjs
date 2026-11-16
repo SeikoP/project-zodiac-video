@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {validateBeatPerformance,anchorPositions} from './narration-performance-contract.mjs';
-import {validateNarrativeVisualDirection} from './narrative-visual-contract.mjs';
+import {validateStoryVisualDirection} from './story-visual-contract.mjs';
 
 export const PHASE1_HANDOFF_FORMAT='zodiac-phase1-handoff@2';
 export const PHASE1_HANDOFF_MAJOR=2;
@@ -19,9 +19,9 @@ export const PHASE1_HANDOFF_REQUIRED=[
 
 export const sha256=data=>createHash('sha256').update(data).digest('hex');
 
-export function validatePhase1NarrativeVisuals(plan){
- const result=validateNarrativeVisualDirection(plan);
- if(result.status!=='PASS')throw Error('PHASE1_HANDOFF_NARRATIVE_VISUAL_INVALID '+JSON.stringify(result.issues));
+export function validatePhase1StoryVisuals(plan){
+ const result=validateStoryVisualDirection(plan);
+ if(result.status!=='PASS')throw Error('PHASE1_HANDOFF_STORY_VISUAL_INVALID '+JSON.stringify(result.issues));
  return plan;
 }
 

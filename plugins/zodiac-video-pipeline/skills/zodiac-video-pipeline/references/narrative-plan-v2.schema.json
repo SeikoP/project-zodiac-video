@@ -209,10 +209,10 @@
         }
       }
     },
-    "narrative_visuals": {
+    "story_visuals": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/narrative_visual"
+        "$ref": "#/$defs/story_visual"
       }
     }
   },
@@ -346,7 +346,7 @@
         }
       }
     },
-    "narrative_visual": {
+    "story_visual": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -361,7 +361,7 @@
         "visual_idea",
         "concept_fit",
         "centrality_reason",
-        "why_visual_not_text",
+        "contribution",
         "tone_fit"
       ],
       "properties": {
@@ -419,7 +419,7 @@
           "type": "string",
           "minLength": 12
         },
-        "why_visual_not_text": {
+        "contribution": {
           "type": "string",
           "minLength": 12
         },

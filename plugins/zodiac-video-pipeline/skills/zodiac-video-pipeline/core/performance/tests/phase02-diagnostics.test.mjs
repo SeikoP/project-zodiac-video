@@ -20,7 +20,7 @@ test('diagnosis reads current native preview metrics before legacy preview locat
 });
 
 test('lettering and meme repairs point to canonical scene sources without granting approval',()=>{
- const plan=planBatchRepair([{code:'STORY_TEXT_ANCHOR_INVALID',scene_id:'S01'},{code:'PHASE02_MEME_REACTION_REQUIRED',scene_id:'S05'}]);
- assert.deepEqual(plan.groups.map(g=>g.owner),['visual_intent.scenes.story_text','visual_intent.scenes.grammar.meme_composition']);
+ const plan=planBatchRepair([{code:'STORY_VISUAL_LETTERING_ANCHOR_INVALID',scene_id:'S01'},{code:'PHASE02_MEME_REACTION_REQUIRED',scene_id:'S05'}]);
+ assert.deepEqual(plan.groups.map(g=>g.owner),['visual_intent.scenes.lettering','visual_intent.scenes.grammar.meme_composition']);
  assert.equal(plan.requires_revalidation,true);assert.equal(plan.no_automatic_approval,true);
 });

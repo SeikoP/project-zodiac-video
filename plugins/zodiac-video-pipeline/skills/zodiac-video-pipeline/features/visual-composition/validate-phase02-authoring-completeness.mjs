@@ -5,10 +5,10 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {reachableStates,traceSceneStates} from './scene-state-trace.mjs';
-import {validateStoryText} from './validate-story-text.mjs';
+import {validateStoryVisualLettering} from './validate-story-visual-lettering.mjs';
 const used=(layer,id)=>layer?.decision==='use'&&Array.isArray(layer.entity_ids)&&layer.entity_ids.includes(id);
 export function validatePhase02AuthoringCompleteness({run_mode,intent,production,art,director,character,episodeScope,episodeCast}={}){
- const issues=validateStoryText(intent,production),add=(code,scene_id,detail)=>issues.push({code,...(scene_id?{scene_id}:{}),...(detail?{detail}:{})});
+ const issues=validateStoryVisualLettering(intent,production),add=(code,scene_id,detail)=>issues.push({code,...(scene_id?{scene_id}:{}),...(detail?{detail}:{})});
  if(run_mode!=='fresh'&&intent?.format!=='zodiac-visual-intent@1')return {format:'zodiac-phase02-authoring-completeness@1',status:'NOT_APPLICABLE',issues,not_an_approval:true};
  const scenes=production?.scenes??[],ids=scenes.map(s=>s.id);
  if(!intent)add('PHASE02_VISUAL_INTENT_REQUIRED');
@@ -42,11 +42,6 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
   for(const actor of (scene.entities??[]).filter(e=>e.kind==='character'))if(!charIds.has(actor.id))add('PHASE02_CHARACTER_ASSEMBLY_REQUIRED',scene.id,actor.id);
   if(!scene.environment)add('PHASE02_CONTEXT_DECISION_REQUIRED',scene.id);
   const authored=intent?.scenes?.find(s=>s.id===scene.id),events=scene.events??[],beats=sceneArt?.visual_coverage?.beats??[];
-  const authoredVisuals=(authored?.entities??[]).filter(e=>e.kind==='narrative_visual');
-  const authoredStoryText=(authored?.entities??[]).filter(e=>e.story_text);
-  const narrativeUse=beats.some(b=>b.layers?.narrative_visual?.decision==='use');
-  const storyTextUse=beats.some(b=>b.layers?.story_text?.decision==='use');
-  if((authoredVisuals.length&&authoredStoryText.length)||(narrativeUse&&storyTextUse))add('PHASE02_STORY_FOCUS_CONFLICT',scene.id);
   const trace=run_mode==='fresh'?traceSceneStates(scene):[];
   if(run_mode==='fresh')for(const beat of beats){
    const request=authored?.grammar?.meme_composition;
@@ -54,7 +49,7 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
     const id=request.bindings?.[role],actor=(scene.entities??[]).find(e=>e.id===id&&e.kind==='character');
     return events.filter((e,index)=>actor?.states?.[state]&&actor.initial_state!==state&&e.target===id&&e.state_after===state&&e.state_before!==state&&trace[index]?.before[id]===e.state_before&&actor.states[state].visible!==false&&e.trigger?.type==='voice_anchor'&&typeof e.trigger.text==='string'&&e.trigger.text.trim()&&scene.voice?.includes(e.trigger.text)&&beat.event_ids?.includes(e.id));
    });
-   for(const layer of ['story_text','meme']){
+   for(const layer of ['meme']){
     const decision=beat.layers?.[layer];
     if(!decision||!['use','omit'].includes(decision.decision)||typeof decision.reason!=='string'||!decision.reason.trim()){add('PHASE02_EDITORIAL_DECISION_REQUIRED',scene.id,layer);continue;}
     if(decision.decision==='omit'){
@@ -63,9 +58,7 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
      continue;
     }
     const ids=decision.entity_ids;
-    if(layer==='story_text'){
-     if(!Array.isArray(ids)||!ids.length||ids.some(id=>!authored?.entities?.some(e=>e.id===id&&e.story_text&&e.kind==='object'&&e.visual_role==='overlay')))add('PHASE02_STORY_TEXT_SELECTION_REQUIRED',scene.id,beat.id);
-    }else if(!request?.id||!Array.isArray(ids)||!ids.length||ids.some(id=>!reactions.some(e=>e.target===id))||reactions.some(e=>!ids.includes(e.target)))add('PHASE02_MEME_REACTION_REQUIRED',scene.id,beat.id);
+    if(!request?.id||!Array.isArray(ids)||!ids.length||ids.some(id=>!reactions.some(e=>e.target===id))||reactions.some(e=>!ids.includes(e.target)))add('PHASE02_MEME_REACTION_REQUIRED',scene.id,beat.id);
    }
   }
   const backgrounds=(scene.entities??[]).filter(e=>e.kind==='scene_accent'||e.visual_role==='background'||e.visual_role==='scene_accent');
@@ -78,8 +71,8 @@ export function validatePhase02AuthoringCompleteness({run_mode,intent,production
   const visuals=(scene.entities??[]).filter(e=>e.visual_role==='story_object');
   if(visuals.length){
    for(const visual of visuals){
-    if(!beats.some(b=>used(b.layers?.narrative_visual,visual.id)))add('PHASE02_NARRATIVE_VISUAL_COVERAGE_REQUIRED',scene.id,visual.id);
-    if(!events.some(e=>e.target===visual.id&&e.state_before!==e.state_after))add('PHASE02_NARRATIVE_VISUAL_EVENT_REQUIRED',scene.id,visual.id);
+    if(!beats.some(b=>used(b.layers?.story_visual,visual.id)))add('PHASE02_STORY_VISUAL_COVERAGE_REQUIRED',scene.id,visual.id);
+    if(!events.some(e=>e.target===visual.id&&e.state_before!==e.state_after))add('PHASE02_STORY_VISUAL_EVENT_REQUIRED',scene.id,visual.id);
    }
   }
  }

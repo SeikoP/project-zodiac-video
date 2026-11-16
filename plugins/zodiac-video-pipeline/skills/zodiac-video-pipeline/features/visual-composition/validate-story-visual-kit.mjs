@@ -1,4 +1,4 @@
-// Mechanical kit lint for a hand-drawn narrative visual. It constrains form
+// Mechanical kit lint for a hand-drawn story visual. It constrains form
 // (style, safety, size, placement), never content. Pure: no I/O, no stroke generation.
 export const KIT_MIN_AREA=30000;
 const issue=(issues,code,detail={})=>issues.push({code,...detail});
@@ -8,7 +8,7 @@ const valid=r=>r&&['x','y','width','height'].every(k=>Number.isFinite(r[k]))&&r.
 const normHex=c=>{const h=c.trim().toLowerCase();return /^#[0-9a-f]{3}$/.test(h)?'#'+[...h.slice(1)].map(x=>x+x).join(''):h;};
 const colors=svg=>{const out=[];for(const m of svg.matchAll(/\b(?:fill|stroke|stop-color)\s*[:=]\s*["']?\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\)|[a-zA-Z]+)/g))out.push(m[1]);return out;};
 /** @param {string} svg @param {{palette?:string[],strokeWidths?:number[],canvas?:{width:number,height:number},rect?:object,captionSafeZone?:object,minArea?:number,minPaths?:number}} o */
-export function validateNarrativeVisualKit(svg,o={}){
+export function validateStoryVisualKit(svg,o={}){
  const issues=[],s=String(svg??'');
  if(!/<svg[\s>]/i.test(s)){issue(issues,'NARRATIVE_KIT_NOT_SVG');return issues;}
  if(/<\s*(text|tspan|textPath)\b/i.test(s))issue(issues,'NARRATIVE_KIT_TEXT_GLYPHS');

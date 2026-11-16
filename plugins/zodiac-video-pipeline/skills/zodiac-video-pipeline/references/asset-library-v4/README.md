@@ -13,7 +13,7 @@ Fresh scenes use independent canvas coordinates. Context Accents stay behind act
 and outside caption areas; they do not constrain actor placement. Scene Set
 registries and masters remain available only for explicit compatibility inspection
 and pinned historical recovery; they are not fresh authoring choices. Physical props require physical contacts only when
-a physical action is authored; Narrative Visuals follow their authored scene relationship without becoming physical props.
+a physical action is authored; Hình kể chuyệns follow their authored scene relationship without becoming physical props.
 
 Current registry coverage is validated from data, not prose quotas. Historical
 masters, room cues, migration guides and compatibility hair are absent. Resume

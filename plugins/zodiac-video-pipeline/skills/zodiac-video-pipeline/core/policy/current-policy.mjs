@@ -6,7 +6,7 @@ const orchestrationDir=path.dirname(fileURLToPath(import.meta.url));
 const skillRoot=path.resolve(orchestrationDir,'../..');
 const requiredKeys=[
  'narrative',
- 'narrative_visual',
+ 'story_visual',
  'visual_grammar',
  'scene_system',
  'character_assembly',

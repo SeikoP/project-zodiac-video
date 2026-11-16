@@ -13,7 +13,7 @@ test('Phase 2 work units reduce model guidance without waiving entry capabilitie
  assert.ok(full.context_manifest.reduce((n,r)=>n+r.bytes,0)<70000);
  for(const context of [design,scene]){
   assert.ok(context.context_manifest.reduce((n,r)=>n+r.bytes,0)<45000);
-  assert.ok(context.required_references.includes('references/story-text.md'));
+  assert.ok(context.required_references.includes('references/story-visual.md'));
   assert.ok(context.required_references.includes('references/visual-direction.md'));
  }
  assert.ok(scene.required_references.includes('references/director-performance-v2.md'));

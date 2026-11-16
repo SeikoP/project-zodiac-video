@@ -15,8 +15,8 @@ export function assessPublishEditorial(publish,scene,{fresh=false}={}){
  if(actors.length&&!actors.some(e=>selected.has(e.id)))add('COVER_CHARACTER_MISSING');
  if(actors.length>1&&actors.some(e=>!selected.has(e.id))&&!text(cover.visual_omissions?.actors))
   add('COVER_CAST_INCOMPLETE');
- const semantic=[...entities.values()].filter(e=>e.kind==='narrative_visual'||e.visual_role==='story_object');
- if(semantic.length&&!semantic.some(e=>selected.has(e.id))&&!text(cover.visual_omissions?.narrative_visual))
+ const semantic=[...entities.values()].filter(e=>e.kind==='story_visual'||e.visual_role==='story_object');
+ if(semantic.length&&!semantic.some(e=>selected.has(e.id))&&!text(cover.visual_omissions?.story_visual))
   add('COVER_SEMANTIC_VISUAL_MISSING');
  if(new Set((cover.visuals??[]).map(v=>v.entity_id)).size!==(cover.visuals??[]).length)add('COVER_VISUAL_DUPLICATE');
  return {status:issues.length?'REVIEW_REQUIRED':'EDITORIAL_STRUCTURE_PASS',issues};

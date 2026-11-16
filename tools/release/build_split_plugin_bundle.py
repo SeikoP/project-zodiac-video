@@ -18,7 +18,7 @@ STATIC_TIME=(1980,1,1,0,0,0)
 WEB_CREATIVE_FILES={
     "skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs",
     "skills/zodiac-video-pipeline/contracts/narration-performance-contract.mjs",
-    "skills/zodiac-video-pipeline/contracts/narrative-visual-contract.mjs",
+    "skills/zodiac-video-pipeline/contracts/story-visual-contract.mjs",
     "skills/zodiac-video-pipeline/orchestration/phases/01-content.json",
     "skills/zodiac-video-pipeline/orchestration/phases/01-content.md",
     "skills/zodiac-video-pipeline/references/phase01-briefing.md",
@@ -33,7 +33,7 @@ WEB_CREATIVE_FILES={
     "skills/zodiac-video-pipeline/references/narrative-modes.md",
     "skills/zodiac-video-pipeline/references/narrative-motif.md",
     "skills/zodiac-video-pipeline/references/engagement-engine.md",
-    "skills/zodiac-video-pipeline/references/narrative-visual-direction.md",
+    "skills/zodiac-video-pipeline/references/story-visual-direction.md",
     "skills/zodiac-video-pipeline/references/narration-rhythm.md",
     "skills/zodiac-video-pipeline/references/performance-surfaces.md",
 }

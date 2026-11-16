@@ -10,13 +10,13 @@ Each fresh scene may contain:
 - one or more narration-grounded Scene Accents for context;
 - physical props/support relationships when the action needs them;
 - optional reaction/effect/meme acting;
-- **either Narrative Visual or Story Text, never both**;
+- **either Hình kể chuyện or chữ trong hình, never both**;
 - runtime caption safe space.
 
-Palette alone is not context. Narrative Visual has no per-video quota and cannot be selected from a symbolic catalog. It exists only when Phase 1 supplied a concrete `narrative_visuals[]` direction. Story Text is the alternative when short words communicate the point better.
+Palette alone is not context. Hình kể chuyện has no per-video quota and cannot be selected from a symbolic catalog. It exists only when Phase 1 supplied a concrete `story_visuals[]` direction. chữ trong hình is the alternative when short words communicate the point better.
 
-Phase 02 owns implementation in `.authoring/visual-intent.json`: scene plan, cast, layout, context, physical interactions, exact narration anchors, state changes, and coverage. Phase 1 remains authoritative for Narrative Visual story meaning.
+Phase 02 owns implementation in `.authoring/visual-intent.json`: scene plan, cast, layout, context, physical interactions, exact narration anchors, state changes, and coverage. Phase 1 remains authoritative for Hình kể chuyện story meaning.
 
 Before SVG writes, inventory each scene in `.authoring/scene-art-direction.json` with components, occlusion relations, spatial bindings, layout contract, and visual coverage. Native compilers materialize geometry and projections; generated files are not authoring sources.
 
-Run the progressive preflight, coverage/completeness, Narrative Visual or Story Text gate as applicable, native compilation, Director review, endpoint previews, and genuine Visual Review. Runtime timing and final media QA stay downstream.
+Run the progressive preflight, coverage/completeness, Hình kể chuyện or chữ trong hình gate as applicable, native compilation, Director review, endpoint previews, and genuine Visual Review. Runtime timing and final media QA stay downstream.

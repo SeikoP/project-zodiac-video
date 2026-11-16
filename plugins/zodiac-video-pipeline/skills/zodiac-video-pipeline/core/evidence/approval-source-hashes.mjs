@@ -8,8 +8,8 @@ export async function buildSourceBoundReviewReceipt(workspace,{phase_id,proof}={
  const before=await approvalSourceHashes(workspace),missing=['narration','plan','scope','brief','voice'].filter(key=>!before[key]);
  if(missing.length)throw Error('REVIEW_INPUTS_REQUIRED '+missing.join(','));
  const readSource=async key=>{for(const rel of approvalPaths[key])try{return await readFile(path.join(workspace,rel),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}throw Error('REVIEW_INPUTS_REQUIRED '+key);};
- const {validatePhase1NarrativePerformance,validatePhase1NarrativeVisuals}=await import('../../contracts/phase1-handoff.mjs');
- validatePhase1NarrativeVisuals(validatePhase1NarrativePerformance(await readSource('plan'),await readSource('narration')));
+ const {validatePhase1NarrativePerformance,validatePhase1StoryVisuals}=await import('../../contracts/phase1-handoff.mjs');
+ validatePhase1StoryVisuals(validatePhase1NarrativePerformance(await readSource('plan'),await readSource('narration')));
  (await import('../../features/episode/episode-scope.mjs')).assertEpisodeScope(JSON.parse(await readSource('scope')));
  (await import('../../references/validate-voice-profile.mjs')).validateVoiceProfile(JSON.parse(await readSource('voice')));
  const brief=JSON.parse(await readSource('brief'));if(!brief||typeof brief!=='object'||Array.isArray(brief)||!Object.keys(brief).length)throw Error('REVIEW_WRITER_BRIEF_REQUIRED');
@@ -23,7 +23,7 @@ export async function buildSourceBoundReviewReceipt(workspace,{phase_id,proof}={
   for(const validate of [
    (await import('../../features/visual-composition/validate-phase02-progressive-preflight.mjs')).validateProgressivePreflightWorkspace,
    (await import('../../features/visual-composition/validate-phase02-authoring-completeness.mjs')).validatePhase02AuthoringCompletenessWorkspace,
-   (await import('../../features/visual-composition/validate-narrative-visual-presence.mjs')).validateNarrativeVisualPresence
+   (await import('../../features/visual-composition/validate-story-visual-presence.mjs')).validateStoryVisualPresence
   ]){
    const result=await validate(workspace);
    if(result.status!=='PASS')throw Error('REVIEW_VALIDATION_BLOCKED '+JSON.stringify(result.issues));

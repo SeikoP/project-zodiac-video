@@ -36,19 +36,13 @@ const makeSource=async()=>{
  await write(path.join(skill,'references/asset-library-v4/characters/compile-character-assembly.mjs'),fakeCharacter);
  await write(path.join(skill,'references/asset-library-v4/environments/compile-environment.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/environment-compile-receipt.json'),'{}');console.log('ENV_FIXTURE_OK')`);
  await write(path.join(skill,'references/asset-library-v4/scene-direction/compile-scene-direction.mjs'),`import {mkdir,writeFile} from 'node:fs/promises';import path from 'node:path';const root=process.argv[2];await mkdir(path.join(root,'.authoring'),{recursive:true});await writeFile(path.join(root,'.authoring/scene-direction-compile-receipt.json'),'{}');console.log('SCENE_FIXTURE_OK')`);
- await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
+ await write(path.join(skill,'core/evidence/approval-source-hashes.mjs'),await readFile(new URL('../../core/evidence/approval-source-hashes.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/evidence/run-validator-with-receipt.mjs'),await readFile(new URL('../../core/evidence/run-validator-with-receipt.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'core/state/authoring-lease.mjs'),await readFile(new URL('../../core/state/authoring-lease.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'phases/phase02/finalize-phase02-workspace.mjs'),await readFile(new URL('../../phases/phase02/finalize-phase02-workspace.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'phases/phase02/phase02-selected-dependencies.mjs'),await readFile(new URL('../../phases/phase02/phase02-selected-dependencies.mjs',import.meta.url),'utf8'));
  await write(path.join(skill,'features/visual-composition/compile-visual-intent.mjs'),await readFile(new URL('../../features/visual-composition/compile-visual-intent.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'features/episode/episode-handoff.mjs'),await readFile(new URL('../../features/episode/episode-handoff.mjs',import.meta.url),'utf8'));
  for(const name of ['episode-handoff.mjs','episode-scope.mjs'])await write(path.join(skill,'features/episode',name),await readFile(new URL('../../features/episode/'+name,import.meta.url),'utf8'));
- await write(path.join(skill,'features/episode/episode-scope.mjs'),await readFile(new URL('../../features/episode/episode-scope.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'features/visual-composition/phase02-composition.mjs'),await readFile(new URL('../../features/visual-composition/phase02-composition.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'features/visual-composition/phase02-composition-core.mjs'),await readFile(new URL('../../features/visual-composition/phase02-composition-core.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'features/visual-composition/validate-phase02-precompile-boundary.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-precompile-boundary.mjs',import.meta.url),'utf8'));
- await write(path.join(skill,'features/visual-composition/validate-phase02-art-direction.mjs'),await readFile(new URL('../../features/visual-composition/validate-phase02-art-direction.mjs',import.meta.url),'utf8'));
  for(const name of ['phase02-composition.mjs','phase02-composition-core.mjs','validate-phase02-precompile-boundary.mjs','validate-phase02-art-direction.mjs','current-visual-mode.mjs']) await write(path.join(skill,'features/visual-composition',name),await readFile(new URL('../../features/visual-composition/'+name,import.meta.url),'utf8'));
  await write(path.join(skill,'features/scene-set/scene-set-detection.mjs'),await readFile(new URL('../../features/scene-set/scene-set-detection.mjs',import.meta.url),'utf8'));
  for(const f of ['palette-registry.json','environment-registry.json']) await write(path.join(skill,'art-direction',f),await readFile(new URL('../../art-direction/'+f,import.meta.url),'utf8'));
@@ -117,7 +111,6 @@ test('missing pipeline state remains blocked without fabricated approval',async(
 
 test('native run invokes fixture compilers and receipt-wrapped validators in order; resume reuses validated outputs',async()=>{
  const ws=await makeWorkspace(),src=await makeSource();await write(path.join(ws,'.authoring/pipeline-state.json'),JSON.stringify({plugin_version:'2.2.9'}));
- await write(path.join(ws,'.authoring/native-validator-scene_direction_validation.json'),'visual-compile-receipt');
  const r=run(ws,src,['--run']);assert.equal(r.status,0,r.stderr+'\n'+r.stdout);
  const e=JSON.parse(await readFile(path.join(ws,'.authoring/phase02-execution-receipt.json')));
  assert.equal(e.status,'NATIVE_CORE_PASS_MANIFEST_REVIEW_REQUIRED');assert.equal(e.steps.length,16);
@@ -125,7 +118,11 @@ test('native run invokes fixture compilers and receipt-wrapped validators in ord
  assert.ok(e.steps.every(x=>x.status==='PASS'));
  const p=JSON.parse(await readFile(path.join(ws,'production.json')));
  assert.equal(p.scenes[0].entities[0].states.neutral.asset,'demo');
- assert.equal(await readFile(path.join(ws,'.authoring/native-validator-scene_direction_validation.json'),'utf8'),'visual-compile-receipt');
+ const preflight=JSON.parse(await readFile(path.join(ws,'.authoring/native-validator-scene_direction_validation.json'),'utf8'));
+ const compiled=JSON.parse(await readFile(path.join(ws,'.authoring/native-assets-validator-scene_direction_validation.json'),'utf8'));
+ for(const receipt of [preflight,compiled]){assert.equal(receipt.format,'zodiac-validator-receipt@1');assert.equal(receipt.status,'PASS');assert.equal(receipt.exit_code,0);}
+ assert.equal(path.basename(preflight.validator),'validate-scene-direction.mjs');
+ assert.equal(path.basename(compiled.validator),'validate-scene-direction-compile.mjs');
  const v=JSON.parse(await readFile(path.join(ws,'.authoring/native-assets-validator-visual_quality.json')));
  assert.equal(v.format,'zodiac-validator-receipt@1');
  const again=run(ws,src,['--run']);assert.equal(again.status,0,again.stderr);

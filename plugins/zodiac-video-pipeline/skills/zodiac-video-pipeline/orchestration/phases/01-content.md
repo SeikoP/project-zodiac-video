@@ -37,7 +37,7 @@ Build one coherent Story Spine with:
 - a payoff that changes how the opening is understood;
 - a **Narrative Motif** chosen before prose for story-driven concepts, with setup, friction, turn, payoff/callback and a removal test;
 - a **second-half pulse** that specifies how post-midpoint beats keep moving through action, decision, consequence, contrast, reframe or payoff;
-- optional narrative-visual direction only when a concrete image is central to the story.
+- optional story-visual direction only when a concrete image is central to the story.
 
 A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not Phase-2 Visual Metaphor/Story Object authoring. Do not pre-design Phase-2 scenes or assets.
 

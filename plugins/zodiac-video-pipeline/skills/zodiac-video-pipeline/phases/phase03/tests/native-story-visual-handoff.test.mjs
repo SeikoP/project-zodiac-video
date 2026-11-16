@@ -5,9 +5,9 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..');
-test('Job5 keeps story_object only as Narrative Visual transport vocabulary',async()=>{
+test('Job5 keeps story_object only as Hình kể chuyện transport vocabulary',async()=>{
  const compiler=await readFile(path.join(skill,'phases/phase03/compile-job-v5.mjs'),'utf8');
- assert.match(compiler,/value==='narrative_visual'\?'story_object'/u);
+ assert.match(compiler,/value==='story_visual'\?'story_object'/u);
  assert.doesNotMatch(compiler,/story_symbol|visual_metaphor/u);
 });
 test('Phase3 no longer loads a separate Story Object authoring feature',async()=>{

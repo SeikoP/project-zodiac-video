@@ -6,7 +6,7 @@ const docs=()=>({production:{scenes:[{id:'s01',voice:'Xử Nữ suy nghĩ',entit
 test('derive compact current references without legacy story plan',()=>{
  const c=deriveSceneContext(docs(),'s01');
  assert.equal(c.event_count,1);
- assert.deepEqual(c.narrative_visual_ids,['focus']);
+ assert.deepEqual(c.story_visual_ids,['focus']);
  assert.equal(c.decisions.story_object,undefined);
  assert.equal(c.decisions.depth.palette,'cool-reflective');
  assert.ok(!JSON.stringify(c).includes('school tension'));

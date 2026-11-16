@@ -68,10 +68,10 @@ lettering_by_path = {}
 art_by_path = {}
 for scene in intent['scenes']:
     for entity in scene['entities']:
-        for state_id, text in entity.get('story_text', {}).get('states', {}).items():
+        for state_id, text in entity.get('lettering', {}).get('states', {}).items():
             target = (root / intent['assets'][entity['states'][state_id]['asset']]['path']).resolve()
             assert target.is_relative_to(root / 'assets'), 'Lettering must stay inside assets/'
-            style = entity['story_text'].get('styles', {}).get(state_id, 'note')
+            style = entity['lettering'].get('styles', {}).get(state_id, 'note')
             assert style in styles, 'Unknown story text style'
             assert text.strip() and '\n' not in text and all(ord(c) in cmap for c in text)
             signature = (text, style)
@@ -80,19 +80,19 @@ for scene in intent['scenes']:
             art_by_path[target] = compose(text, style)
 for scene in intent['scenes']:
     for entity in scene['entities']:
-        for state_id, text in entity.get('story_text', {}).get('states', {}).items():
+        for state_id, text in entity.get('lettering', {}).get('states', {}).items():
             assert text.strip() and '\n' not in text and all(ord(c) in cmap for c in text)
             asset = intent['assets'][entity['states'][state_id]['asset']]
-            assert asset['category'] == 'overlay' and entity['visual_role'] == 'overlay'
+            assert asset['category'] == 'story_visual' and entity['kind'] == 'story_visual' and entity['visual_role'] == 'story_visual'
             target = (root / asset['path']).resolve()
             assert target.is_relative_to(root / 'assets'), 'Lettering must stay inside assets/'
-            style = entity['story_text'].get('styles', {}).get(state_id, 'note')
+            style = entity['lettering'].get('styles', {}).get(state_id, 'note')
             art = art_by_path[target]
             box = '0 0 520 350' if style == 'burst' else '0 0 600 350' if style == 'thought' else '0 0 600 300' if style in compact_styles else '0 0 1000 280'
-            svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{box}" role="img" aria-label="{html.escape(text, quote=True)}"><title>{html.escape(text)}</title><metadata>asset_role=story_text;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;lettering=PatrickHand-outlined;treatment={style};production_safe=true</metadata>{art}</svg>\n'
+            svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{box}" role="img" aria-label="{html.escape(text, quote=True)}"><title>{html.escape(text)}</title><metadata>asset_role=lettering;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;lettering=PatrickHand-outlined;treatment={style};production_safe=true</metadata>{art}</svg>\n'
             assert '<text' not in svg and '<image' not in svg
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(svg, encoding='utf-8', newline='\n')
             count += 1
-assert count, 'No story_text states authored'
+assert count, 'No lettering states authored'
 print(f'Outlined {count} story text states')

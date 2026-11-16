@@ -18,7 +18,7 @@ test('fresh entry blocks absent visual intent from Phase 1 instead of inferring 
   state.run_mode='fresh';await writeFile(file,JSON.stringify(state));
   await writeFile(path.join(d,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.1',beats:[]}));
   const r=spawnSync(process.execPath,[script,'--workspace',d,'--entry-only'],{encoding:'utf8'}),report=JSON.parse(r.stdout);
-  assert.equal(r.status,2);assert.equal(report.entry_ready,false);assert.ok(report.issues.some(x=>x.code==='NARRATIVE_VISUAL_PHASE1_DECISION_REQUIRED'));
+  assert.equal(r.status,2);assert.equal(report.entry_ready,false);assert.ok(report.issues.some(x=>x.code==='STORY_VISUAL_PHASE1_DECISION_REQUIRED'));
  }finally{await rm(d,{recursive:true,force:true});}
 });
 

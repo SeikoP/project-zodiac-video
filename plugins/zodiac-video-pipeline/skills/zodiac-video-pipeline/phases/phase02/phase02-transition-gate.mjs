@@ -6,7 +6,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {buildPhase02HandoffContext} from './phase02-handoff-context.mjs';
 import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
-import {validateNarrativeVisualDirection} from '../../references/validate-narrative-visual-direction.mjs';
+import {validateStoryVisualDirection} from '../../references/validate-story-visual-direction.mjs';
 const args=process.argv.slice(2), option=k=>{const i=args.indexOf(k);return i<0?null:args[i+1]??null};
 const workspace=option('--workspace');
 if(!workspace){console.error('Usage: node phase02-transition-gate.mjs --workspace <dir>');process.exit(2)}
@@ -27,7 +27,7 @@ if(state&&!['PASS','SKIPPED_REUSED'].includes(content?.status))issues.push({code
 if(state&&!state.review_receipts?.some(r=>r.phase_id==='01-content'&&r.status==='APPROVED'&&r.proof?.kind==='user_message'&&typeof r.proof.ref==='string'&&r.proof.ref.trim()&&!r.proof.ref.includes('<')))issues.push({code:'CONTENT_APPROVAL_RECEIPT_MISSING'});
 if(state?.run_mode==='fresh'){
  const plan=await readJson(path.join(root,'.authoring/narrative-plan.json'))??await readJson(path.join(root,'narrative-plan.json'));
- issues.push(...validateNarrativeVisualDirection(plan).issues);
+ issues.push(...validateStoryVisualDirection(plan).issues);
 }
 const missing=[];
 for(const rel of required){const file=path.join(root,rel);if(!(await exists(file))){missing.push(rel);continue;}const data=await readFile(file);hashes[rel]=createHash('sha256').update(data).digest('hex');if(rel.endsWith('.json')&&!await readJson(file))issues.push({code:'AUTHORING_JSON_INVALID',path:rel});}

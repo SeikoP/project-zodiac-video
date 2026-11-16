@@ -27,7 +27,7 @@ Compete genuinely different premises. A concept must depend on the target sign's
 
 ## Narrative Design
 
-Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `narrative_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
+Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `story_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
 
 The Writer Brief is a compact creative bridge, not a compiler product. Preserve creative direction, voice, rhythm, key beats and exclusions.
 
