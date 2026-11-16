@@ -4,7 +4,7 @@ import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {buildPortableZip} from '../../core/portable/zip-primitives.mjs';
-import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest} from '../../contracts/phase1-handoff.mjs';
+import {buildInventory,formatSha256Sums,PHASE1_HANDOFF_FORMAT,PHASE1_HANDOFF_MAJOR,PHASE1_HANDOFF_REQUIRED,sha256,validateHandoffManifest,validatePhase1NarrativePerformance} from '../../contracts/phase1-handoff.mjs';
 
 const skill=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const pluginRoot=path.resolve(skill,'../..');
@@ -29,6 +29,8 @@ export async function buildPhase1HandoffManifest(workspace){
   if(!found)throw Error('PHASE1_HANDOFF_REQUIRED_MISSING '+target);
   payload.push({rel:target,data:found.data});
  }
+ const narration=payload.find(x=>x.rel==='narration.txt').data.toString('utf8'),planRaw=payload.find(x=>x.rel==='narrative-plan.json').data.toString('utf8');
+ validatePhase1NarrativePerformance(planRaw,narration);
  const review=JSON.parse(payload.find(x=>x.rel==='content-review-receipt.json').data);
  if(review.status!=='APPROVED'||review.phase_id!=='01-content'||review.proof?.kind!=='user_message'||!String(review.proof?.ref??'').trim())throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_INVALID');
  if(typeof review.proof.text!=='string')throw Error('PHASE1_HANDOFF_CONTENT_REVIEW_TEXT_REQUIRED');
