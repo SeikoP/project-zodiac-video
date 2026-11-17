@@ -11,6 +11,8 @@ const colors=svg=>{const out=[];for(const m of svg.matchAll(/\b(?:fill|stroke|st
 export function validateStoryVisualKit(svg,o={}){
  const issues=[],s=String(svg??'');
  if(!/<svg[\s>]/i.test(s)){issue(issues,'NARRATIVE_KIT_NOT_SVG');return issues;}
+ // Inline HTML previews do not render XML-prefixed SVG elements emitted by some serializers.
+ if(/<\/?[\w.-]+:[A-Za-z][\w.-]*[\s/>]/u.test(s))issue(issues,'STORY_VISUAL_SVG_NAMESPACE_PREFIX');
  if(/<\s*(text|tspan|textPath)\b/i.test(s))issue(issues,'NARRATIVE_KIT_TEXT_GLYPHS');
  if(/<\s*(filter|fe[A-Z]\w*|script|foreignObject|image|animate\w*|set)\b/.test(s)||/\bfilter\s*[:=]/i.test(s))issue(issues,'NARRATIVE_KIT_FORBIDDEN_ELEMENT');
  const vb=/viewBox\s*=\s*["']\s*(-?[\d.]+)[\s,]+(-?[\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(s);

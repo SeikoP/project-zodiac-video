@@ -1,52 +1,29 @@
 # Hình kể chuyện — Story Visual
 
-`story_visual` is the **only active storytelling-image concept** for fresh production. It is optional and Phase 1 owns its meaning; Phase 2 only executes the approved direction.
+A `story_visual` makes one story fact visible: **who does what, what changes, and what that change means**. It can be an illustration, outlined lettering, or illustration and lettering combined in the same Story Visual entity/state/SVG asset. It is a storytelling explanation, not an image attached because the narration mentions an emotion.
 
-A Story Visual can be:
-- an illustration;
-- outlined lettering;
-- or illustration and outlined lettering combined.
+Read the exact narration beat and approved Phase-1 direction first. Write the intended viewer read in plain language before choosing a drawing. Someone unfamiliar with this episode must be able to name the participants, follow the change and explain its consequence with audio muted.
 
-Those are expressions of the **same entity, same visible state and same SVG asset**. Optional `lettering` metadata describes the words and treatment for that Story Visual state. It is never a second entity kind, overlay role, coverage layer, approval path or competing focal concept.
+## Worked examples and removal test
 
-## When to use it
+| Narration point | Concrete visual progression | Added information |
+| --- | --- | --- |
+| Ma Ket handles everything | Task cards start under named Ma Ket / partner columns, then collect under Ma Ket; the partner's side ends at a large 0 | Accumulated responsibility and unequal ownership, not merely tired acting |
+| Repeated offers are declined | Show first offer/refusal, another attempt, then the hand withdrawing; reveal the count of three only at the third occurrence | Why the other person stops offering |
+| Finally accepting help | The physical bag changes hands; a label on that bag changes from ĐỂ TÔI! to ĐƯỢC XÁCH! | The small handoff becomes the permission payoff |
 
-Use a Story Visual only when it adds a central fact, relationship, comparison or consequence that actor performance, physical props and scene context do not already make clear. There is no per-video quota. Quiet scenes may omit it explicitly.
+A floating battery, an unlabelled meter, a zodiac glyph or the word TRÁCH NHIỆM alone does not identify this relationship. A lamp establishes setting; an actor's slumped pose shows fatigue; runtime captions transcribe speech. None automatically supplies the causal explanation above. If removing the proposed visual loses no important fact, omit it explicitly. Quiet scenes need no extra explanation; there is no quota.
 
-Reject generic symbols, zodiac glyphs, abstract nouns, decorative meters, floating icons or color changes that merely restate the narration. A Story Visual must preserve the approved Phase-1 `story_point`, `viewer_read`, `visible_subject`, `visible_action` and `visual_idea`.
+## Approved meaning and execution
 
-When exact words are part of the meaning, Phase 1 may include optional `lettering`. Phase 2 may choose its style and placement, but the words remain inside the same Story Visual state/asset. Runtime captions stay separate and runtime-owned.
+Phase 1 records `story_visuals[]` and an explicit `story_visual_decision`. Each direction supplies `id`, `beat_ids`, `story_point`, `viewer_read`, `visible_subject`, `visible_action`, `visual_idea` and `contribution` (what is lost without it). Optional `lettering[]` supplies exact necessary wording. Optional `evidence_refs[]` copies real source IDs; otherwise use approved beat lineage and the plan evidence boundary. No image needed: `{mode:"omitted",reason:"..."}`. Missing input is a blocker.
 
-## Phase 1 direction
+Phase 2 preserves that meaning and:
+1. Binds `phase1_visual_id` and exact narration anchors in `art_direction.narrative_brief`, including drawable before/change/after states.
+2. Authors one `story_visual` entity with one SVG per state and matching asset category. Optional `lettering` metadata belongs to that same entity; bake glyph paths into its SVG, never a separate text overlay or coverage lane.
+3. Makes identity, ownership and direction explicit in the picture. Keep short words large enough at phone size. Hide future outcomes until their exact anchor; remove the visual when its job ends.
+4. Declares `layers.story_visual` use/omit, names its actual entities/events, and runs provenance, completeness, presence, event/state and preview gates.
 
-Fresh Narrative Plans use `story_visuals[]` plus an explicit `story_visual_decision`.
+At Visual Review, inspect every transition and final frame at phone size, muted. Explain the change without relying on the brief. Check count/reveal timing, clipping, faces, handoffs and caption space. A machine PASS checks structure; it does not prove the picture communicates. Changing story meaning or necessary wording reopens Phase 1; drawing, geometry and treatment remain Phase 2 work.
 
-A direction contains:
-- `id`;
-- `beat_ids[]`;
-- optional `evidence_refs[]`: use when the current approved plan actually carries source IDs; otherwise evidence lineage is inherited through the approved `beat_ids` and plan evidence boundary;
-- `story_point`;
-- `viewer_read`;
-- `visible_subject`;
-- `visible_action`;
-- `visual_idea`;
-- `contribution`: the specific information the Story Visual adds beyond the actor/prop/context performance;
-- optional `lettering[]`: exact short wording that is semantically necessary.
-
-If no Story Visual is needed, Phase 1 records `story_visual_decision={mode:"omitted",reason:"..."}`. Absence is not an omission decision.
-
-## Phase 2 execution
-
-1. Read the selected Phase-1 direction by `id`; never invent a replacement meaning.
-2. Bind it to exact approved narration and the matching director beat.
-3. Author `art_direction.narrative_brief` with the Phase-1 identity, story point, viewer read, exact anchor and concrete state changes.
-4. Author one scene-specific `story_visual` entity. Each visible state points to one `story_visual` SVG asset.
-5. If a state has lettering, bake outlined glyph paths into that same SVG. Do not create SVG `<text>`, a separate overlay entity, or a separate coverage decision.
-6. Keep one semantic owner for the direction. Hide or change the Story Visual when its job ends.
-7. Run provenance, asset/kit, coverage, event/state, preview and genuine Visual Review gates.
-
-At Visual Review, inspect the actual before/after pair at phone size with audio muted. State what changed and what fact the second frame communicates. If removing the Story Visual loses no information, it should have been omitted. If the approved idea itself adds nothing, reopen Phase 1 instead of inventing a substitute locally.
-
-Runtime Job@5 may serialize `story_visual` as `story_object`. That token is transport vocabulary only and is never exposed as a fresh creative authoring option.
-
-Changing the story point, viewer read, visible subject/action, visual idea or semantically required wording reopens Phase 1. Phase 2 may refine geometry, drawing, layout, state transitions and lettering treatment only.
+Runtime Job@5 serializes this entity as `story_object` internally; fresh authoring uses only `story_visual`.

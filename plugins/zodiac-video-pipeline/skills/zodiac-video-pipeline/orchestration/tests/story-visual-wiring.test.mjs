@@ -35,6 +35,11 @@ test('caption safe zone overlap is reported',async()=>assert.ok((await codes(pro
 test('an asset that is not authored yet is skipped, not failed',async()=>assert.deepEqual((await lintStoryVisualAssets(prod({x:100,y:300,width:400,height:400}),async()=>null)),[]));
 test('text glyphs are rejected',async()=>assert.ok((await codes(prod({x:100,y:300,width:400,height:400}),'<svg viewBox="0 0 1 1"><text>hi</text><path d="M0 0"/><path d="M1 1"/></svg>')).includes('NARRATIVE_KIT_TEXT_GLYPHS')));
 
+test('prefixed graphics that disappear in inline HTML previews are rejected',async()=>{
+ const svg=svgOk.replace('</svg>','<ns0:g xmlns:ns0="http://www.w3.org/2000/svg"><ns0:path d="M0 0L30 30"/></ns0:g></svg>');
+ assert.ok((await codes(prod({x:100,y:300,width:400,height:400}),svg)).includes('STORY_VISUAL_SVG_NAMESPACE_PREFIX'));
+});
+
 import {auditNarrativeBriefReuse} from '../../core/audit/audit-creative-reuse.mjs';
 test('reuse check flags a repeated viewer read for editorial review and ignores different ones',()=>{
  const prior=[{episode:'ep-1',scene_id:'S03',viewer_read:'Chiếc ghế trống nói thay sự vắng mặt'}];
@@ -54,11 +59,13 @@ test('active guidance exposes one story visual concept with lettering inside the
   new URL('../../references/story-visual.md',import.meta.url),
   new URL('../../references/story-visual-direction.md',import.meta.url),
   new URL('../../references/phase02-visual-rules.md',import.meta.url),
-  new URL('../../references/asset-library-v4/creative/README.md',import.meta.url)
+  new URL('../../references/asset-library-v4/creative/README.md',import.meta.url),
+  new URL('../../references/visual-direction.md',import.meta.url)
  ];
  const texts=await Promise.all(files.map(file=>readFile(file,'utf8')));
  for(const [i,text] of texts.entries()){
   assert.equal(/chữ trong hình|never both|mutually exclusive/iu.test(text),false,files[i].pathname);
+  assert.equal(/Plan lettering independently|Selected lettering needs authored overlays|decides lettering and meme/iu.test(text),false,files[i].pathname);
  }
  const canonical=texts[4];
  assert.match(canonical,/lettering.+same.+story visual|same.+story visual.+lettering/isu);

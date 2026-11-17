@@ -6,6 +6,6 @@ Use [contract/authoring.md](contract/authoring.md) for authoring and `compile-sc
 
 Optional `scene_accents[]` come from [accents/index.json](accents/index.json). Keep every visible accent inside the selected wall region. An empty selection adds no room cues; deselection removes compiler-owned accents. Windows, sofas and tables are never defaults for this path. Old profiles resolve only through explicit selected-cue or legacy compatibility.
 
-Shot-layouts describe composition, actions describe behavior, physical props are handled objects, and Hình kể chuyệns carry symbolic/story progression. See [the canonical Hình kể chuyện contract](../../story-visual.md). Foreground character composition is independent of the supporting rear artwork; scene-set geometry uses its dedicated bounds policy instead of ordinary caption occupancy.
+Shot-layouts describe composition, actions describe behavior, and physical props are handled objects. Hình kể chuyện makes a concrete story relationship or consequence visible; see [its contract](../../story-visual.md). Foreground characters remain independent of supporting rear artwork; scene-set geometry uses its dedicated bounds policy.
 
 Reusing the same scene-set is valid continuity. Review actor blocking, state and story progression rather than requiring a new background. Preview receipts bind current intent, projection, production and SVG hashes. Structural validation never grants creative approval or runtime media QA.

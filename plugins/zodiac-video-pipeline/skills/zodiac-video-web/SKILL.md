@@ -5,6 +5,8 @@ description: Creative-first Zodiac Phase 1 on ChatGPT Web. Research, design the 
 
 # Zodiac Video Web
 
+**Hình kể chuyện (`story_visual`) makes one story fact visible: who does what, what changes, and its consequence.** Example: tasks move from two people's columns to Ma Ket's side, leaving the partner with none. Define that before/change/consequence from the actual narration beat; drawing and any necessary words form one visual. Read `references/story-visual-direction.md` before selecting it.
+
 This distribution owns **creative Phase 1 only**. It does not run the native producer runtime.
 
 ## Creative microphases

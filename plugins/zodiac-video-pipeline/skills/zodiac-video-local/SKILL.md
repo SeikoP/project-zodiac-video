@@ -47,6 +47,8 @@ Persistent pipeline contracts, receipts, approvals and Job@5 stay JSON. The cont
 
 ## Phase 2
 
+**Hình kể chuyện (`story_visual`) makes one story fact visible: who does what, what changes, and its consequence.** For example, tasks visibly collect on Ma Ket's side while the partner's side becomes empty. Identify ownership and progression in the picture; an emotion icon or a repeated subtitle does not explain that fact. Read the worked examples in `references/story-visual.md` before drafting.
+
 Run the canonical Phase 2 manifest, author Visual Intent, compile assets/scenes/previews, fix native failures, and stop for genuine Visual Review. The Local distribution **must not rewrite approved narration** or replace Content Review.
 
 Fresh visual readiness requires a visible narration-grounded Scene Accent/context component in every scene. Hình kể chuyện has no quota. **Do not invent it locally:** if the approved Phase-1 handoff contains `story_visual_direction`, execute that concrete direction; otherwise require and copy the approved Narrative Plan `story_visual_decision={mode:"omitted",reason:"..."}`. Missing directions plus a missing decision is an upstream blocker; never infer omission from absence. A Story Visual may be illustration, outlined lettering, or both in the same entity/state/asset; lettering is never a separate role or coverage layer. Preserve the Phase-1 story point/viewer read and author only SVG/states/layout, optional lettering treatment and exact narration anchors. Job@5 may serialize `story_visual` as `story_object`; that is transport vocabulary only. Run authoring-completeness, creative-provenance and story-visual-presence gates; do not accept old PASS receipts after source changes.

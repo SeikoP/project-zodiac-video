@@ -1,6 +1,6 @@
 # Hình kể chuyện — Phase 1 direction
 
-**Hình kể chuyện** (`story_visual`) is the single fresh storytelling-image concept. It is optional. Do not create one to satisfy a quota. Omission is an explicit approved Narrative Plan decision: `story_visual_decision={mode:"omitted",reason:"..."}`.
+**Hình kể chuyện** (`story_visual`) makes one story fact visible: who does what, what changes, and what that change means. Start from the exact narration beat, not a symbol or asset catalog. A viewer must recognize the participants and infer the consequence without reading your brief or hearing the voice. It is optional, with no quota. Omission is an explicit approved Narrative Plan decision: `story_visual_decision={mode:"omitted",reason:"..."}`.
 
 A Story Visual may be an illustration, outlined lettering, or both in the same visible state and SVG asset. Lettering is not a separate Phase-2 concept or layer.
 
@@ -40,6 +40,8 @@ Use `lettering[]` only when the exact words are part of what the viewer must rea
 
 ## Ma Kết reference direction
 
+For each idea write a before -> change -> consequence sentence. Example: both people own tasks -> recognizable tasks move to Ma Ket -> the partner has no remaining task. The labels identify ownership; the large zero communicates the consequence. A battery losing charge would only suggest tiredness and miss the relationship.
+
 For the responsibility story, three accepted uses are:
 - **B2:** recognizable task objects visibly move from two people's ownership to one person's side, so the workload concentration is readable rather than represented by an abstract pressure icon;
 - **B4:** repeated refusal and the other person's withdrawal are shown as one causal progression; any short refusal wording is integrated into the same states rather than becoming an independent text overlay;
@@ -49,4 +51,4 @@ Do not add a battery, permission icon, balance glyph or other symbolic decoratio
 
 ## Phase 2 handoff
 
-Phase 2 references the direction by `phase1_visual_id`, binds exact narration anchors, and authors one `story_visual` entity with state assets. Optional lettering is metadata on those states. A separate independent lettering overlay entity is invalid fresh authoring.
+Phase 2 references the direction by `phase1_visual_id`, binds exact narration anchors, and authors one `story_visual` entity with state assets. Optional lettering is metadata on those states. Supply enough story context to execute without guessing: whose objects these are, their starting ownership, the visible change, its consequence, necessary words and the exact reveal anchor. A final result or repetition count must not appear before it happens in narration. Inspect the actual phone-size before/after images; field completeness alone cannot prove comprehension.
