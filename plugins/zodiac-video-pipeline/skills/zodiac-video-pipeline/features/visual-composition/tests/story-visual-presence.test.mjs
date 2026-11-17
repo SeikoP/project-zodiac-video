@@ -52,3 +52,13 @@ test('independent focal images still exceed scene density',async()=>{
   assert.ok((await validateStoryVisualPresence(root)).issues.some(i=>i.code==='STORY_VISUAL_SCENE_DENSITY'));
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('story visuals cannot be smuggled in by changing only kind or role',async()=>{
+ for(const [kind,visual_role] of [['object','story_visual'],['story_visual','overlay']]){
+  const {root,intent}=await fixture();try{
+   Object.assign(intent.scenes[0].entities[0],{kind,visual_role});
+   await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify(intent));
+   assert.ok((await validateStoryVisualPresence(root)).issues.some(i=>i.code==='STORY_VISUAL_ENTITY_ROLE_INVALID'));
+  }finally{await rm(root,{recursive:true,force:true});}
+ }
+});

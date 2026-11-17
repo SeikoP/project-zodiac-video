@@ -19,11 +19,12 @@ test('plugin release archive triggers for any canonical source change on main',a
  assert.match(yml,/workflow_dispatch:/u);
 });
 
-test('phase bundle release record push on main builds all three phases',async()=>{
+test('native source bundle release builds only Local-owned Phase 2 and Phase 3',async()=>{
  const yml=await read('.github/workflows/zodiac-source-bundle.yml');
  assert.match(yml,/push:\s*[\s\S]*branches:\s*(?:\[\s*)?(?:-\s*)?main(?:\s*\])?/u);
  assert.ok(yml.includes('docs/zodiac-plugin-release.json'));
- for(const phase of ['01-content','02-visual-production','03-handoff'])assert.ok(yml.includes(phase),phase);
+ for(const phase of ['02-visual-production','03-handoff'])assert.ok(yml.includes(phase),phase);
+ assert.ok(!yml.includes('- 01-content'));
  assert.match(yml,/matrix:/u);
  assert.match(yml,/workflow_dispatch:/u);
  assert.match(yml,/matrix\.phase/u);

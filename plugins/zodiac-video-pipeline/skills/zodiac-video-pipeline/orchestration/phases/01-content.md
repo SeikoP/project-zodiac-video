@@ -39,7 +39,7 @@ Build one coherent Story Spine with:
 - a **second-half pulse** that specifies how post-midpoint beats keep moving through action, decision, consequence, contrast, reframe or payoff;
 - optional story-visual direction only when a concrete image is central to the story.
 
-A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not Phase-2 Visual Metaphor/Story Object authoring. Do not pre-design Phase-2 scenes or assets.
+A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not a Phase-2 Story Visual direction. Do not pre-design Phase-2 scenes or assets.
 
 ### Narration
 

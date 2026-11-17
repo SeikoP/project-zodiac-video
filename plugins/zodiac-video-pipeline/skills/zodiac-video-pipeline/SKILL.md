@@ -18,10 +18,11 @@ Read `orchestration/execution-bootstrap.md` once to establish the current execut
 Revoked or excluded sources require explicit user re-authorization before reuse.
 Fresh Run Isolation: old episode examples, migration prose and retired assets are absent from fresh creative context. Raw trackers are not creative input. Missing choices block; no fallback.
 
-## Phase 01: no user-facing ZIP
+## Phase 01: creative Web ownership
 Use `references/phase01-briefing.md` in the owning step. Complete Evidence → Voice → Concept → Narrative Design → Narration autonomously after scope is known. Use real evidence and one Story Spine; pause at final Content Review. Voice ownership lives in `voice-profile.json`; beat delivery ownership lives in `narrative-design.json`. Draft from the bounded writer context plus those first-class voice artifacts, never from generic prose with slang painted on afterward.
-Run entry preflight and draft checkpoint, then review the exact final narration on separate surfaces: Story Quality, Silent Read, Voice Fidelity, Spoken Performance Plan and TTS Text Preflight. Follow `references/performance-surfaces.md`. Content Review approves text/content only; it does not certify synthesized prosody or final audiovisual effect. IN_REVIEW requires actual outputs/receipts; APPROVED requires the genuine user message bound to source hashes.
-Fresh runs include one story-triggered fictional product parody without spoken or on-screen disclaimer using `references/affiliate-commerce.md`. Keep `mock_ad` inside the canonical Narrative Plan; do not create commerce files or invoke real affiliate discovery.
+Web is a creative host, not a native producer. Review the exact final narration on separate surfaces: Story Quality, Silent Read, Voice Fidelity, Spoken Performance Plan and TTS Text Preflight. Follow `references/performance-surfaces.md`. Content Review approves text/content only; it does not certify synthesized prosody or final audiovisual effect. APPROVED requires the genuine user message bound to the approved source hashes.
+After approval, Web exports the lightweight `zodiac-phase1-handoff@2` capsule. Local imports that capsule, verifies hashes/performance/Story Visual decision, then synthesizes native pipeline state. Web never activates Phase 2 or fabricates native validator receipts.
+A fictional parody is optional. Load `references/affiliate-commerce.md` only when the current brief selects one; otherwise `mock_ad_enabled=false` and no stale parody copy or instruction may remain in active Phase-1 artifacts.
 
 ## Phase 02: no user-facing ZIP
 Preserve approved narration. Activate after the entry-only gate; create visual plans inside Phase 02. Author `.authoring/visual-intent.json`; use `write-phase02-authoring.mjs` to generate derived plans. Never hand-edit projections. Load selected asset guidance only when needed.

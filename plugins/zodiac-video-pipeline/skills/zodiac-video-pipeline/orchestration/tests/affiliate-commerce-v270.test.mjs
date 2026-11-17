@@ -7,21 +7,22 @@ const json=async rel=>JSON.parse(await readFile(new URL(rel,skill),'utf8'));
 test('entry prompt is compact and defers step details to persisted state',async()=>{
  const plugin=await json('../../plugin.json'),prompt=plugin.extensions['com.openai'].interface.defaultPrompt;
  assert.ok(Buffer.byteLength(prompt)<1500);
- assert.match(prompt,/resume-brief/);assert.doesNotMatch(prompt,/Thêm quảng cáo Affiliate|Fresh 2\.|Kalodata/);
- const entry=await readFile(new URL('SKILL.md',skill),'utf8');assert.ok(Buffer.byteLength(entry)<5000);assert.ok(entry.split(/\r?\n/).length<=80);
+ assert.match(prompt,/Evidence → Voice → Concept → Narrative Design → Narration → Content Review/);assert.match(prompt,/Web uses no native source bootstrap/);assert.doesNotMatch(prompt,/Thêm quảng cáo Affiliate|Fresh 2\.|Kalodata/);
+ const entry=await readFile(new URL('SKILL.md',skill),'utf8');assert.ok(Buffer.byteLength(entry)<5500);assert.ok(entry.split(/\r?\n/).length<=80);
 });
 
-test('fresh defaults use one fictional ad without affiliate provider dependencies',async()=>{
+test('fresh defaults keep fictional ads opt-in without affiliate provider dependencies',async()=>{
  const state=await json('orchestration/pipeline-state.template.json');
- assert.equal(state.flags.affiliate_enabled,false);assert.equal(state.flags.mock_ad_enabled,true);assert.equal(state.flags.mock_ad_story_hijack_required,true);
+ assert.equal(state.flags.affiliate_enabled,false);assert.equal(state.flags.mock_ad_enabled,false);assert.equal(state.flags.mock_ad_story_hijack_required,false);
  const cap=await json('bootstrap/capabilities.json'),mock=cap.capabilities.find(x=>x.id==='mock_advertisement');
  assert.ok(mock);assert.ok(mock.refs.includes('references/affiliate-commerce.md'));
- for(const phase of ['01-content','02-visual-production']){
-  const m=await json(`orchestration/phases/${phase}.json`);
+ const p1=await json('orchestration/phases/01-content.json'),p2=await json('orchestration/phases/02-visual-production.json');
+ for(const m of [p1,p2]){
   assert.doesNotMatch(JSON.stringify(m),/kalodata-client|product-media-adapter|flag:affiliate_enabled/);
   assert.equal(m.steps.flatMap(s=>s.conditional_outputs??[]).filter(o=>o.name.includes('/commerce/')).length,0);
-  assert.ok(m.steps.some(s=>s.conditional_capabilities?.some(c=>c.when==='flag:mock_ad_enabled'&&c.kind==='internal_validator')));
  }
+ assert.equal(p1.steps.some(s=>s.conditional_capabilities?.some(c=>c.when==='flag:mock_ad_enabled'&&c.kind==='internal_validator')),false);
+ assert.ok(p2.steps.some(s=>s.conditional_capabilities?.some(c=>c.when==='flag:mock_ad_enabled'&&c.kind==='internal_validator')));
 });
 
 test('fictional ad guidance reuses creative structure inside the canonical narrative plan',async()=>{

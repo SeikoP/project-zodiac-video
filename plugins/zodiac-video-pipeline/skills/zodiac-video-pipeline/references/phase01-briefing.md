@@ -45,6 +45,6 @@ For story-driven concepts, Narrative Design chooses a Phase-1 `narrative_motif` 
 
 Also map the second-half pulse before prose: after the midpoint, each beat should add action, decision, failed workaround, consequence, contrast, reframe or payoff. Do not spend the back half merely explaining the interpretation established by the front half.
 
-This motif is semantic continuity only. Do not turn it into Phase-2 asset, shot, prop, Visual Metaphor or Story Object authoring.
+This motif is semantic continuity only. Do not turn it into Phase-2 Story Visual, asset, shot or prop authoring.
 
 When revising, preserve an opening the user explicitly likes unless the premise itself changes. If the user disables a fictional ad/parody, remove any stale interruption copy or instruction from the active plan, brief and narration before Content Review.

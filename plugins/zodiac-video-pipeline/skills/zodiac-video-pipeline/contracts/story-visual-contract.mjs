@@ -6,7 +6,7 @@ export function validateStoryVisualDecision(plan){
  const issues=[],visuals=plan?.story_visuals,decision=plan?.story_visual_decision;
  if(visuals!==undefined&&!Array.isArray(visuals))issue(issues,'STORY_VISUAL_DIRECTIONS_INVALID');
  const required=Array.isArray(visuals)&&visuals.length>0;
- if(!decision){if(!required)issue(issues,'STORY_VISUAL_PHASE1_DECISION_REQUIRED');}
+ if(!decision)issue(issues,'STORY_VISUAL_PHASE1_DECISION_REQUIRED');
  else {
   if(!meaningful(decision.reason))issue(issues,'STORY_VISUAL_PHASE1_DECISION_REASON_REQUIRED');
   if(decision.mode!==(required?'required':'omitted'))issue(issues,'STORY_VISUAL_PHASE1_DECISION_DRIFT');
@@ -41,8 +41,8 @@ export function validateStoryVisualDirection(plan,{selectedCandidate=null}={}){
    if(prior&&prior!==visual.id)issue(issues,'STORY_VISUAL_BEAT_OVERLAP',{at,beat_id:beatId,prior_visual_id:prior});
    else claimedBeats.set(beatId,visual.id);
   }
-  if(!Array.isArray(visual?.evidence_refs)||!visual.evidence_refs.length)issue(issues,'STORY_VISUAL_EVIDENCE_REQUIRED',{at});
-  else for(const ref of visual.evidence_refs)if(allowedEvidence.size&&!allowedEvidence.has(ref))issue(issues,'STORY_VISUAL_EVIDENCE_UNKNOWN',{at,evidence_ref:ref});
+  if(visual?.evidence_refs!==undefined&&!Array.isArray(visual.evidence_refs))issue(issues,'STORY_VISUAL_EVIDENCE_INVALID',{at});
+  else for(const ref of visual?.evidence_refs??[])if(allowedEvidence.size&&!allowedEvidence.has(ref))issue(issues,'STORY_VISUAL_EVIDENCE_UNKNOWN',{at,evidence_ref:ref});
  }
  return {format:'zodiac-story-visual-direction-qc@2',status:issues.length?'BLOCKED':'PASS',visuals:visuals.length,issues,not_an_approval:true};
 }

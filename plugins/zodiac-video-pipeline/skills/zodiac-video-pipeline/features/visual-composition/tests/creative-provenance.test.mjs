@@ -31,3 +31,9 @@ test('blocks beat mismatch',()=>{const x=directed();x.scenes[0].director_beats=[
 test('blocks identical art reused across scenes without reason',()=>{const x=directed();x.assets.b={path:'assets/b.svg',category:'story_visual',creative_origin:{...x.assets.a.creative_origin,scene_id:'S02'}};x.scenes.push({...x.scenes[0],id:'S02',entities:[{id:'visual2',kind:'story_visual',states:{visible:{asset:'b',visible:true}}}]});assert.match(JSON.stringify(validateCreativeProvenance(x,{a:svg,b:svg},[direction]).issues),/CREATIVE_STOCK_REUSE_REQUIRES_REVIEW/);});
 test('rejects unsafe embedded script',()=>{const result=validateCreativeProvenance(directed(),{a:svg.replace('</svg>','<script>evil()</script></svg>')},[direction]);assert.match(JSON.stringify(result.issues),/CREATIVE_SVG_UNSAFE/);});
 test('non Hình kể chuyện taxonomy remains not applicable',()=>assert.equal(validateCreativeProvenance({taxonomy_version:'other'},{}).status,'NOT_APPLICABLE'));
+
+test('compact Phase-1 direction does not require the retired rationale fields',()=>{
+ const compact=structuredClone(direction);
+ for(const key of ['trait_basis','concept_fit','centrality_reason','tone_fit','payoff_image'])delete compact[key];
+ assert.equal(validateCreativeProvenance(directed(),{a:svg},[compact]).status,'PASS');
+});

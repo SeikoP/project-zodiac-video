@@ -9,7 +9,11 @@ import {fileURLToPath} from 'node:url';
 
 const script=fileURLToPath(new URL('../../phases/phase02/phase02-execute.mjs',import.meta.url));
 const write=async(p,s)=>{await mkdir(path.dirname(p),{recursive:true});await writeFile(p,s);};
-const run=(ws,root,extra=[])=>spawnSync(process.execPath,[script,'--workspace',ws,'--source-root',root,...extra],{encoding:'utf8',timeout:12000});
+const run=(ws,root,extra=[])=>{
+ const result=spawnSync(process.execPath,[script,'--workspace',ws,'--source-root',root,...extra],{encoding:'utf8',timeout:30000});
+ assert.ifError(result.error);
+ return result;
+};
 const makeWorkspace=async()=>{
  const root=await mkdtemp(path.join(os.tmpdir(),'phase02-exec-workspace-'));
  await write(path.join(root,'production.json'),JSON.stringify({version:'2.0',assets:{},scenes:[{id:'s01',voice:'Song Tử nói khác.',entities:[{id:'gemini',kind:'character',initial_state:'neutral',states:{neutral:{asset:null}}}],events:[]}]}));

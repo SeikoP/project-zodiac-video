@@ -115,4 +115,10 @@ Paths below use `S = plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline`
 
 ## Self-review
 
+## Execution closure — 2026-11-17
+
+Tasks 1–5 were integrated and verified; see `docs/reviews/2026-11-17-story-visual-final-audit.md` for final evidence and retained callers. Full guidance is 69,843 bytes (2,796 below the measured starting snapshot) without increasing the existing budget. The final orchestration run passes 813/813; Python baker/distribution checks pass 13/13. The fresh review's two retained receipt negatives and missing-target baker regression are included. Retired native Phase-1 fixture suites were removed only after checking the current creative-host/import boundary and transplanting their unique shared-state security checks.
+
+Web/Local private account releases and installed source bytes are synchronized to 2.12.10. Capricorn has a verified review package and remains IN_REVIEW; exact-source human Visual Review, Job@5 publication and rendered-media acceptance are separate pending work.
+
 The spec's keep/remove/defer table maps to Tasks 1–4; unresolved baseline classification maps to Task 5. Public interfaces and canonical sources remain unchanged. Every review-focus condition has an owning verification step. No deletion is justified solely by archive absence, and no threshold increase substitutes for reducing context.

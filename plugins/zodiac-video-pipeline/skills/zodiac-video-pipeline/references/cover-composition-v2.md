@@ -29,7 +29,7 @@ Add this object within `cover`, keeping `layout: tilted_top_hook`, `identity`, `
 }
 ```
 
-The above is **producer intent** metadata. It does not prove the runtime has implemented `cover.design`; renderer must either apply it or explicitly report `COVER_DESIGN_UNSUPPORTED` (never silently ignore it). Runtime screenshot QA checks shadow pixels, thumbnail readability, character/Narrative-Visual scale, native assets, crop and visible token palette. If `cover.design` is not handled in the local runner, output must be reported as `COVER_RUNTIME_PARITY_UNVERIFIED`, NOT PASS.
+The above is **producer intent** metadata. It does not prove the runtime has implemented `cover.design`; renderer must either apply it or explicitly report `COVER_DESIGN_UNSUPPORTED` (never silently ignore it). Runtime screenshot QA checks shadow pixels, thumbnail readability, character/Story-Visual scale, native assets, crop and visible token palette. If `cover.design` is not handled in the local runner, output must be reported as `COVER_RUNTIME_PARITY_UNVERIFIED`, NOT PASS.
 
 ## Review process
 ## Cover as the video opening — 2.4.49

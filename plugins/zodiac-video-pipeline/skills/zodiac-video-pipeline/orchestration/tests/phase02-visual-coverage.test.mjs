@@ -22,21 +22,17 @@ test('current coverage has one Hình kể chuyện layer and no Story Object lay
 test('current minimal coverage passes without Hình kể chuyện quota',()=>assert.deepEqual(codes(fixture()),[]));
 test('missing current layer decision blocks',()=>{const f=fixture();delete f.planned.visual_coverage.beats[0].layers.story_visual;assert.ok(codes(f).includes('COVERAGE_LAYER_DECISION_MISSING'));});
 test('stale narration hash blocks',()=>{const f=fixture();f.planned.visual_coverage.narration_sha256='stale';assert.ok(codes(f).includes('COVERAGE_NARRATION_STALE'));});
-test('Hình kể chuyện and chữ trong hình cannot be used in the same beat',()=>{
- const f=fixture(),nv={id:'nv',kind:'object',initial_state:'on',states:{on:{visible:true}}},txt={id:'txt',kind:'object',initial_state:'on',states:{on:{visible:true}}};
- f.scene.entities.push(nv,txt);f.planned.components.push({id:'nv',narrative_role:'story_visual',visual_role:'story_visual'},{id:'txt',visual_role:'overlay'});
- const l=f.planned.visual_coverage.beats[0].layers;
- l.story_visual={decision:'use',reason:'Hình giải thích trọng tâm.',entity_ids:['nv']};
- l.lettering={decision:'use',reason:'Chữ cũng giải thích trọng tâm.',entity_ids:['txt']};
- assert.ok(codes(f).includes('COVERAGE_STORY_FOCUS_CONFLICT'));
+test('legacy independent lettering coverage is rejected',()=>{
+ const f=fixture();
+ f.planned.visual_coverage.beats[0].layers.lettering={decision:'use',reason:'Legacy standalone lettering lane.',entity_ids:['actor']};
+ assert.ok(codes(f).includes('COVERAGE_LAYER_UNKNOWN'));
 });
-test('Hình kể chuyện and chữ trong hình cannot split ownership across beats in one scene',()=>{
- const f=fixture();f.scene.voice='Một. Hai.';f.planned.visual_coverage.narration_sha256=createHash('sha256').update(f.scene.voice).digest('hex');
- const nv={id:'nv',kind:'object',initial_state:'on',states:{on:{visible:true}}},txt={id:'txt',kind:'object',initial_state:'off',states:{off:{visible:false}}};
- f.scene.entities.push(nv,txt);f.planned.components.push({id:'nv',narrative_role:'story_visual',visual_role:'story_visual'},{id:'txt',visual_role:'overlay'});
- const first=JSON.parse(JSON.stringify(f.planned.visual_coverage.beats[0])),cut=Buffer.byteLength('Một. ');
- first.id='B1';first.narration_range=[0,cut];first.layers.story_visual={decision:'use',reason:'Hình sở hữu scene.',entity_ids:['nv']};first.layers.lettering=hidden();
- const second=JSON.parse(JSON.stringify(first));second.id='B2';second.narration_range=[cut,Buffer.byteLength(f.scene.voice)];second.layers.story_visual=hidden();second.layers.lettering={decision:'use',reason:'Chữ cố chen vào scene.',entity_ids:['txt']};
- f.planned.visual_coverage.beats=[first,second];
- assert.ok(codes(f).includes('COVERAGE_STORY_FOCUS_CONFLICT'));
+
+test('outlined lettering may live inside the same Story Visual without a second coverage lane',()=>{
+ const f=fixture();
+ const sv={id:'sv',kind:'story_visual',visual_role:'story_visual',initial_state:'on',states:{on:{visible:true}},lettering:{states:{on:'ĐỂ TÔI'}}};
+ f.scene.entities.push(sv);
+ f.planned.components.push({id:'sv',narrative_role:'story_visual',visual_role:'story_visual'});
+ f.planned.visual_coverage.beats[0].layers.story_visual={decision:'use',reason:'One Story Visual owns drawing and wording.',entity_ids:['sv']};
+ assert.deepEqual(codes(f),[]);
 });

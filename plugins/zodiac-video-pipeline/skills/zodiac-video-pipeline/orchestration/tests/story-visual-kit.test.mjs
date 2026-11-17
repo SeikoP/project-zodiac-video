@@ -5,7 +5,7 @@ const o={palette:['#2f3a4a','#F2E8D5'],strokeWidths:[4,6],canvas:{width:1080,hei
 const codes=(svg,opt=o)=>lint(svg,opt).map(i=>i.code);
 test('a clean hand-drawn visual passes',()=>assert.deepEqual(codes(good),[]));
 test('non-svg input is rejected',()=>assert.deepEqual(codes('hi'),['NARRATIVE_KIT_NOT_SVG']));
-test('text glyphs are forbidden (words belong to captions)',()=>assert.ok(codes(good.replace('</svg>','<text x="1" y="1">hi</text></svg>')).includes('NARRATIVE_KIT_TEXT_GLYPHS')));
+test('live SVG text glyphs are forbidden (story visual lettering uses outlines)',()=>assert.ok(codes(good.replace('</svg>','<text x="1" y="1">hi</text></svg>')).includes('NARRATIVE_KIT_TEXT_GLYPHS')));
 test('filters, turbulence, scripts and animation are forbidden (Human Stroke v2)',()=>{
  for(const bad of ['<filter id="f"><feTurbulence/></filter>','<script>1</script>','<animate attributeName="x"/>','<image href="a.png"/>'])
   assert.ok(codes(good.replace('</svg>',bad+'</svg>')).includes('NARRATIVE_KIT_FORBIDDEN_ELEMENT'),bad);

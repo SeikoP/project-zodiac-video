@@ -1,38 +1,52 @@
-# Hình kể chuyện — Hình ảnh kể chuyện
+# Hình kể chuyện — Story Visual
 
-Hình kể chuyện is the **only** fresh storytelling-image type: `story_visual`. It is optional. Phase 1 decides whether the episode needs one and owns its meaning; Phase 2 only executes that approved direction.
+`story_visual` is the **only active storytelling-image concept** for fresh production. It is optional and Phase 1 owns its meaning; Phase 2 only executes the approved direction.
+
+A Story Visual can be:
+- an illustration;
+- outlined lettering;
+- or illustration and outlined lettering combined.
+
+Those are expressions of the **same entity, same visible state and same SVG asset**. Optional `lettering` metadata describes the words and treatment for that Story Visual state. It is never a second entity kind, overlay role, coverage layer, approval path or competing focal concept.
 
 ## When to use it
 
-Use a Hình kể chuyện only for a central point that is easier to understand as a concrete visible action/state than as actor performance, a physical prop, or a short chữ trong hình phrase. There is no per-video quota.
+Use a Story Visual only when it adds a central fact, relationship, comparison or consequence that actor performance, physical props and scene context do not already make clear. There is no per-video quota. Quiet scenes may omit it explicitly.
 
-A scene may contain **Hình kể chuyện or chữ trong hình, never both**. Quiet scenes may use neither.
+Reject generic symbols, zodiac glyphs, abstract nouns, decorative meters, floating icons or color changes that merely restate the narration. A Story Visual must preserve the approved Phase-1 `story_point`, `viewer_read`, `visible_subject`, `visible_action` and `visual_idea`.
 
-Reject a Hình kể chuyện when it is only a generic symbol, mood decoration, zodiac icon, or abstract noun. The image must preserve the Phase-1 `story_point`, `viewer_read`, `visible_subject`, `visible_action`, and `visual_idea`.
+When exact words are part of the meaning, Phase 1 may include optional `lettering`. Phase 2 may choose its style and placement, but the words remain inside the same Story Visual state/asset. Runtime captions stay separate and runtime-owned.
+
+## Phase 1 direction
+
+Fresh Narrative Plans use `story_visuals[]` plus an explicit `story_visual_decision`.
+
+A direction contains:
+- `id`;
+- `beat_ids[]`;
+- optional `evidence_refs[]`: use when the current approved plan actually carries source IDs; otherwise evidence lineage is inherited through the approved `beat_ids` and plan evidence boundary;
+- `story_point`;
+- `viewer_read`;
+- `visible_subject`;
+- `visible_action`;
+- `visual_idea`;
+- `contribution`: the specific information the Story Visual adds beyond the actor/prop/context performance;
+- optional `lettering[]`: exact short wording that is semantically necessary.
+
+If no Story Visual is needed, Phase 1 records `story_visual_decision={mode:"omitted",reason:"..."}`. Absence is not an omission decision.
 
 ## Phase 2 execution
 
-1. Read the selected Phase-1 direction by `id`; never invent a second concept.
+1. Read the selected Phase-1 direction by `id`; never invent a replacement meaning.
 2. Bind it to exact approved narration and the matching director beat.
-3. Author `art_direction.narrative_brief` as:
-   ```json
-   {
-     "format": "zodiac-narrative-brief@2",
-     "phase1_visual_id": "NV1",
-     "story_point": "exact Phase-1 story point",
-     "viewer_read": "exact Phase-1 silent-read meaning",
-     "anchor_phrase": "exact approved narration",
-     "state_changes": [
-       {"from": "concrete visible state", "to": "concrete changed state", "event_id": "E1", "anchor_phrase": "exact approved narration"}
-     ]
-   }
-   ```
-4. Author one scene-specific SVG identity with meaningful states. Every visible asset records `creative_origin.mode=phase1_directed`, `phase1_visual_id`, `scene_id`, and exact `anchor_phrase`.
-5. Keep it visually focal only for the scene/beat that owns the story point. Remove or hide it when its job ends.
-6. Run provenance, kit, coverage, event/state, preview, and human Visual Review gates.
+3. Author `art_direction.narrative_brief` with the Phase-1 identity, story point, viewer read, exact anchor and concrete state changes.
+4. Author one scene-specific `story_visual` entity. Each visible state points to one `story_visual` SVG asset.
+5. If a state has lettering, bake outlined glyph paths into that same SVG. Do not create SVG `<text>`, a separate overlay entity, or a separate coverage decision.
+6. Keep one semantic owner for the direction. Hide or change the Story Visual when its job ends.
+7. Run provenance, asset/kit, coverage, event/state, preview and genuine Visual Review gates.
 
-At Visual Review, inspect the actual before/after pair at phone size with audio muted. State who changes what and the consequence visible in the second frame; compare that reading with the approved `viewer_read`. Check that the image reveals information beyond the actor/prop performance, rather than merely occupying space or changing color. If the intended cause cannot be read, repair the execution. If the approved idea itself adds nothing, report it for Phase-1 revision; do not invent replacement meaning or certify contribution from a state-swap PASS.
+At Visual Review, inspect the actual before/after pair at phone size with audio muted. State what changed and what fact the second frame communicates. If removing the Story Visual loses no information, it should have been omitted. If the approved idea itself adds nothing, reopen Phase 1 instead of inventing a substitute locally.
 
-Runtime Job@5 currently serializes this authoring role as `story_object`. That token is transport vocabulary only and is never exposed as a creative authoring option.
+Runtime Job@5 may serialize `story_visual` as `story_object`. That token is transport vocabulary only and is never exposed as a fresh creative authoring option.
 
-Changing the story point, viewer read, or visual idea requires reopening Phase 1. Phase 2 may change drawing geometry, layout, and state execution only.
+Changing the story point, viewer read, visible subject/action, visual idea or semantically required wording reopens Phase 1. Phase 2 may refine geometry, drawing, layout, state transitions and lettering treatment only.

@@ -54,7 +54,12 @@ test('loadStepContext materializes registry-selected capabilities into bounded r
   selected_asset_ids:['scene-accent-cafe'],
   environment_mode:'canvas'
  });
- assert.deepEqual(result.selected_capabilities,['character_assembly','mock_advertisement']);
+ assert.deepEqual(result.selected_capabilities,['character_assembly']);
+ const withMock=await loadStepContext('02-visual-production','visual_compile',{...state.flags,mock_ad_enabled:true},{
+  selected_asset_ids:['scene-accent-cafe'],
+  environment_mode:'canvas'
+ });
+ assert.deepEqual(withMock.selected_capabilities,['character_assembly','mock_advertisement']);
  assert.ok(result.required_references.includes('references/asset-library-v4/scene-set/accents/index.json'));
  assert.equal(result.required_references.includes('references/asset-library-v4/scene-set/index.json'),false);
  assert.equal(result.required_references.some(ref=>ref.includes('visual-metaphor')),false);

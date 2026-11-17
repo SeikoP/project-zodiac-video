@@ -7,7 +7,6 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from tools.build_source_bundle import select_phase_files
 
 PLUGIN = Path("plugins/zodiac-video-pipeline")
 ROOT_FILES = {"package.json", "package-lock.json"}

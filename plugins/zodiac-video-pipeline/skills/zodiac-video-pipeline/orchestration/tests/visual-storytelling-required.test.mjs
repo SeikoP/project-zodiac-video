@@ -34,8 +34,8 @@ test('fresh episode-wide Hình kể chuyện omission passes when Phase 1 explic
  try{
   await mkdir(path.join(root,'.authoring'));
   await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({run_mode:'fresh'}));
-  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',story_visual_decision:{mode:'omitted',reason:'Actor performance and chữ trong hình are sufficient.'},story_visuals:[]}));
-  await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify({taxonomy_version:'story_visual@1',story_visual_decision:{mode:'omitted',reason:'Actor performance and chữ trong hình are sufficient.'},scenes:[]}));
+  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',story_visual_decision:{mode:'omitted',reason:'Actor performance is sufficient.'},story_visuals:[]}));
+  await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify({taxonomy_version:'story_visual@1',story_visual_decision:{mode:'omitted',reason:'Actor performance is sufficient.'},scenes:[]}));
   await writeFile(path.join(root,'narration.txt'),'Story');
   const result=await validateStoryVisualPresence(root);
   assert.equal(result.status,'PASS');
@@ -46,11 +46,20 @@ test('fresh intent cannot require a Hình kể chuyện that Phase 1 did not sel
  try{
   await mkdir(path.join(root,'.authoring'));
   await writeFile(path.join(root,'.authoring/pipeline-state.json'),JSON.stringify({run_mode:'fresh'}));
-  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',story_visual_decision:{mode:'omitted',reason:'Actor performance and chữ trong hình are sufficient.'},story_visuals:[]}));
+  await writeFile(path.join(root,'.authoring/narrative-plan.json'),JSON.stringify({version:'2.0',story_visual_decision:{mode:'omitted',reason:'Actor performance is sufficient.'},story_visuals:[]}));
   await writeFile(path.join(root,'.authoring/visual-intent.json'),JSON.stringify({taxonomy_version:'story_visual@1',story_visual_decision:{mode:'required',reason:'Phase 2 tried to invent one.'},scenes:[]}));
   await writeFile(path.join(root,'narration.txt'),'Story');
   const result=await validateStoryVisualPresence(root);
   assert.equal(result.status,'BLOCKED');
   assert.ok(result.issues.some(i=>i.code==='STORY_VISUAL_DECISION_DRIFT'));
  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('complete scene has no independent lettering coverage decision',()=>{
+ const result=validatePhase02AuthoringCompleteness({run_mode:'fresh',
+  intent:{format:'zodiac-visual-intent@1',scene_plan:{scenes:[{id:'scene'}]},scenes:[{id:'scene',entities:[]}]},
+  production:{scenes:[{id:'scene',environment:{mode:'canvas'},entities:[context]}]},
+  art:{scenes:[{id:'scene',visual_coverage:{beats:[{layers:{scene_accent:{decision:'use',entity_ids:['window']},meme:{decision:'omit',reason:'Actor action communicates the beat.'}}}]}}]},
+  director:{beats:[{scene_id:'scene'}]}});
+ assert.equal(result.status,'PASS');
 });

@@ -35,6 +35,7 @@ export async function validateStoryVisualPresence(workspace){
   const voice=speech.subarray(...(scene.narration_range??[0,0])).toString('utf8');
   const entities=(scene.entities??[]).filter(e=>e.kind==='story_visual');
   if(entities.length>1)add('STORY_VISUAL_SCENE_DENSITY',scene.id,{count:entities.length});
+  for(const entity of scene.entities??[])if((entity.kind==='story_visual'||entity.visual_role==='story_visual')&&(entity.kind!=='story_visual'||entity.visual_role!=='story_visual'))add('STORY_VISUAL_ENTITY_ROLE_INVALID',scene.id,{entity_id:entity.id});
   for(const beat of scene.art_direction?.visual_coverage?.beats??[])if(Object.hasOwn(beat.layers??{},'lettering'))add('STORY_VISUAL_COVERAGE_LAYER_INVALID',scene.id);
   for(const entity of scene.entities??[])if(['narrative_visual','story_text'].includes(entity.kind)||['narrative_visual','story_text'].includes(entity.visual_role))add('STORY_VISUAL_LEGACY_ENTITY_FORBIDDEN',scene.id,{entity_id:entity.id});
   for(const entity of entities){

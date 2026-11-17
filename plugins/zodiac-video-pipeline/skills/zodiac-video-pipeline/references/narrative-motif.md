@@ -2,7 +2,7 @@
 
 A **Narrative Motif** is a Phase-1 semantic story device: one recurring image, phrase, behavior, route, object idea, rule, or relationship that changes meaning as the Story Spine progresses.
 
-It is authored **before Narration** when the selected concept depends on a recurring story image or continuity device. It is not a Phase-2 Visual Metaphor, Story Object, asset request, scene composition, prop specification, or animation instruction.
+It is authored **before Narration** when the selected concept depends on a recurring story image or continuity device. It is semantic continuity, not a Phase-2 Story Visual direction, asset request, scene composition, prop specification, or animation instruction.
 
 ## Why it exists
 

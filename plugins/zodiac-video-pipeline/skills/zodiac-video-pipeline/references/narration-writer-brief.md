@@ -28,19 +28,16 @@ narrative_design_ref: narrative-design.json
 motif_candidates:
   - <optional payoff image>
 story_visual_direction:
-  - id: <Phase-1 Hình kể chuyện id>
+  - id: <Phase-1 Story Visual id>
     beat_ids: [<Narrative Plan beat ids>]
-    trait_basis: <source-bounded Zodiac trait>
-    story_point: <exact point the image explains>
+    evidence_refs: [<optional real source ids when available in the approved plan; never synthesize ids>]
+    story_point: <exact point the visual explains>
     viewer_read: <silent-read meaning>
     visible_subject: <concrete visible subject/object relationship>
     visible_action: <observable action/state change>
-    visual_idea: <one concrete drawable image idea>
-    concept_fit: <why it belongs to this episode>
-    centrality_reason: <why this point deserves visual focus>
-    contribution: <why image beats short chữ trong hình>
-    tone_fit: <how it preserves episode tone>
-    payoff_image: <optional later callback/resolution>
+    visual_idea: <one concrete drawable state/action idea>
+    contribution: <specific information this visual adds beyond actor/prop/context performance>
+    lettering: [<optional exact short wording that belongs inside this same Story Visual>]
 engagement_direction:
   entry_hook: <compact first spoken move>
   open_question: <question/tension to carry>

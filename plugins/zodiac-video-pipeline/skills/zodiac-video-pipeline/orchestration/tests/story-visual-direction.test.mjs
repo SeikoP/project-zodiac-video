@@ -17,7 +17,7 @@ const visual=()=>({
  tone_fit:'Deadpan và hơi buồn cười vì hành động quá nghiêm túc cho một lựa chọn đời thường.',
  payoff_image:'Cuối beat nhân vật đặt hẳn một thẻ xuống và đẩy thẻ kia ra khỏi bàn.'
 });
-const plan=()=>({version:'2.0',selected_concept_id:'C1',beats:[{id:'B1',evidence_refs:['E1']},{id:'B2',evidence_refs:['E2']}],story_visuals:[visual()]});
+const plan=()=>({version:'2.0',selected_concept_id:'C1',beats:[{id:'B1',evidence_refs:['E1']},{id:'B2',evidence_refs:['E2']}],story_visual_decision:{mode:'required',reason:'Phase 1 selected one concrete Story Visual direction.'},story_visuals:[visual()]});
 
 test('missing directions are not an editorial omission decision',()=>{const p=plan();delete p.story_visuals;assert.equal(validateStoryVisualDirection(p,{selectedCandidate:candidate}).status,'BLOCKED');});
 
@@ -28,3 +28,32 @@ test('accepts one concrete trait-first direction',()=>assert.equal(validateStory
 test('rejects missing concrete visible action',()=>{const p=plan();p.story_visuals[0].visible_action='';assert.match(JSON.stringify(validateStoryVisualDirection(p,{selectedCandidate:candidate}).issues),/STORY_VISUAL_FIELD_REQUIRED/);});
 test('rejects overlapping visual ownership of one beat',()=>{const p=plan();p.story_visuals.push({...visual(),id:'NV2'});assert.match(JSON.stringify(validateStoryVisualDirection(p,{selectedCandidate:candidate}).issues),/STORY_VISUAL_BEAT_OVERLAP/);});
 test('rejects evidence outside concept/plan',()=>{const p=plan();p.story_visuals[0].evidence_refs=['E9'];assert.match(JSON.stringify(validateStoryVisualDirection(p,{selectedCandidate:candidate}).issues),/STORY_VISUAL_EVIDENCE_UNKNOWN/);});
+
+
+test('current narrative schemas accept the explicit decision and compact Story Visual contract',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ for(const rel of ['../../references/narrative-plan-v2.schema.json','../../references/narrative-plan-v2.1.schema.json']){
+  const schema=JSON.parse(await readFile(new URL(rel,import.meta.url),'utf8'));
+  assert.ok(schema.properties.story_visual_decision,rel);
+  assert.deepEqual(schema.properties.story_visual_decision.required,['mode','reason']);
+  assert.deepEqual(schema.$defs.story_visual.required,[
+   'id','beat_ids','story_point','viewer_read','visible_subject','visible_action','visual_idea','contribution'
+  ],rel);
+  assert.ok(schema.$defs.story_visual.properties.lettering,rel);
+ }
+});
+
+test('a selected Story Visual still requires an explicit required decision',()=>{
+ const p=plan();delete p.story_visual_decision;
+ const result=validateStoryVisualDirection(p,{selectedCandidate:candidate});
+ assert.equal(result.status,'BLOCKED');
+ assert.ok(result.issues.some(i=>i.code==='STORY_VISUAL_PHASE1_DECISION_REQUIRED'));
+});
+
+test('Story Visual inherits evidence lineage through approved beat ids when lightweight handoff has no evidence refs',()=>{
+ const p=plan();
+ p.evidence_boundary={allowed_interpretation:'Approved Phase-1 interpretation boundary.',forbidden_inference:'Do not invent motives.'};
+ delete p.story_visuals[0].evidence_refs;
+ const result=validateStoryVisualDirection(p,{selectedCandidate:null});
+ assert.equal(result.status,'PASS',JSON.stringify(result.issues));
+});

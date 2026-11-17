@@ -38,7 +38,7 @@ Use dynamic cadence: accelerating banter, clearer lines at emotional reversal, s
 - User-approved Story Spine/narration remain locked. Existing receipts and Content Review remain mandatory.
 
 ## Focal visual thinking
-Do not force a metaphor. If one central story point becomes clearer through a concrete visible subject/action than through actor performance or short chữ trong hình, Phase 1 may author one Hình kể chuyện direction. Otherwise use chữ trong hình, acting, or a physical prop. Phase 2 executes the approved direction through `references/story-visual.md`; it never invents a replacement.
+Do not force a Story Visual. If one central story point becomes clearer through a concrete visible subject/action than through actor performance, physical props and context alone, Phase 1 may author one Hình kể chuyện direction. Optional short wording may be part of that same Story Visual. Phase 2 executes the approved direction through `references/story-visual.md`; it never invents a replacement.
 
 ## Visual boundary
 Only banter spans omit room/environment background: character + meaningful prop/effect on token canvas. All other facets keep selected native V4 backgrounds. Visual Compile owns semantic mapping, Semantic Assets materializes geometry, local runner owns measured timing and final QA. No changes to Job@5 schema, phase count or asset naming.

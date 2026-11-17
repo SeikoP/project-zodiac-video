@@ -12,7 +12,8 @@
     "story_spine",
     "beats",
     "episode_scope",
-    "member_lenses"
+    "member_lenses",
+    "story_visual_decision"
   ],
   "properties": {
     "version": {
@@ -195,6 +196,26 @@
         }
       }
     },
+    "story_visual_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "reason"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "required",
+            "omitted"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 12
+        }
+      }
+    },
     "story_visuals": {
       "type": "array",
       "items": {
@@ -347,17 +368,12 @@
       "required": [
         "id",
         "beat_ids",
-        "evidence_refs",
-        "trait_basis",
         "story_point",
         "viewer_read",
         "visible_subject",
         "visible_action",
         "visual_idea",
-        "concept_fit",
-        "centrality_reason",
-        "contribution",
-        "tone_fit"
+        "contribution"
       ],
       "properties": {
         "id": {
@@ -425,6 +441,14 @@
         "payoff_image": {
           "type": "string",
           "minLength": 12
+        },
+        "lettering": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     }

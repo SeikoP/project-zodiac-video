@@ -34,6 +34,6 @@ test('export flag accepts one actual canonical delivery path',async()=>{const s=
 test('export rejects a ZIP path outside the manifest filename contract',async()=>{const s=valid({flags:{export_zip:true}});s.operations.find(x=>x.kind==='create_zip').path='zodiac-job.zip';const out=await run(s);assert.notEqual(out.status,0);assert.match(out.stderr,/ZIP_OUTPUT_NAME_INVALID/);});
 test('pipeline state rejects a stale plugin version',async()=>{const s=valid();s.plugin_version='2.0.0';const out=await run(s);assert.notEqual(out.status,0);assert.match(out.stderr,/PLUGIN_VERSION_MISMATCH/);});
 
-test('fresh current release cannot silently disable content quality engine',async()=>{
- const out=await run(valid({flags:{content_quality_engine:false}}));assert.notEqual(out.status,0);assert.match(out.stderr,/CONTENT_QUALITY_REQUIRED/);
+test('fresh current release permits optional content quality engine to stay disabled on Web',async()=>{
+ const out=await run(valid({flags:{content_quality_engine:false}}));assert.equal(out.status,0,out.stderr);
 });

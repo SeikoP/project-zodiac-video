@@ -42,3 +42,25 @@ test('reuse check flags a repeated viewer read for editorial review and ignores 
  assert.equal(same.length,1);assert.equal(same[0].code,'NARRATIVE_CONCEPT_REPEATED');assert.equal(same[0].severity,'EDITORIAL_REVIEW');assert.equal(same[0].prior.episode,'ep-1');
  assert.deepEqual(auditNarrativeBriefReuse([{scene_id:'S02',viewer_read:'Đồng hồ chạy ngược khi lo lắng'}],prior),[]);
 });
+
+
+test('active guidance exposes one story visual concept with lettering inside the same entity state',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const files=[
+  new URL('../../../zodiac-video-local/SKILL.md',import.meta.url),
+  new URL('../phase02-composition-contract.md',import.meta.url),
+  new URL('../scene-art-direction.md',import.meta.url),
+  new URL('../phases/02-visual-production.md',import.meta.url),
+  new URL('../../references/story-visual.md',import.meta.url),
+  new URL('../../references/story-visual-direction.md',import.meta.url),
+  new URL('../../references/phase02-visual-rules.md',import.meta.url),
+  new URL('../../references/asset-library-v4/creative/README.md',import.meta.url)
+ ];
+ const texts=await Promise.all(files.map(file=>readFile(file,'utf8')));
+ for(const [i,text] of texts.entries()){
+  assert.equal(/chữ trong hình|never both|mutually exclusive/iu.test(text),false,files[i].pathname);
+ }
+ const canonical=texts[4];
+ assert.match(canonical,/lettering.+same.+story visual|same.+story visual.+lettering/isu);
+ assert.match(canonical,/illustration.+lettering.+combin(?:ed|ation)|illustration.+combin(?:ed|ation).+lettering/isu);
+});

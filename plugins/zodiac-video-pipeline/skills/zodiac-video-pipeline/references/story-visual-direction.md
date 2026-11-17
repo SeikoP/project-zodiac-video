@@ -1,56 +1,52 @@
-# Hình kể chuyện — Hình ảnh kể chuyện (Phase 1)
+# Hình kể chuyện — Phase 1 direction
 
-**Hình kể chuyện** is the single fresh storytelling-image concept. It is **optional**. Do not create one to satisfy a quota. Omission must be an explicit Phase-1 editorial decision in the approved Narrative Plan: `story_visual_decision={mode:"omitted",reason:"..."}`. Name the concrete actor/physical-prop action or text that makes another image unnecessary. An absent or empty array alone is incomplete input, not a decision. Export and Local import block it.
+**Hình kể chuyện** (`story_visual`) is the single fresh storytelling-image concept. It is optional. Do not create one to satisfy a quota. Omission is an explicit approved Narrative Plan decision: `story_visual_decision={mode:"omitted",reason:"..."}`.
 
-Use it only when one concrete image can explain a central story point more clearly than actor performance, a physical prop, or chữ trong hình. If the scene is better served by a short readable phrase, choose chữ trong hình instead. Phase 2 may never show chữ trong hình and Hình kể chuyện in the same scene.
+A Story Visual may be an illustration, outlined lettering, or both in the same visible state and SVG asset. Lettering is not a separate Phase-2 concept or layer.
 
-## One direction, not variants
+## Author one concrete direction
 
-When a Hình kể chuyện is justified, author exactly one concrete direction in `narrative_plan.story_visuals[]`. Do not create literal/metaphor/exaggeration variants. Do not browse a symbolic catalog.
+When justified, add one concrete direction to `narrative_plan.story_visuals[]` for the story point it owns. Do not generate literal/metaphor/exaggeration variants or browse a symbolic catalog.
 
 Each direction contains:
+- `id`: stable identity;
+- `beat_ids[]`: beats it explains;
+- optional `evidence_refs[]`: copy real source IDs only when the approved plan/candidate carries them; lightweight handoffs may inherit evidence lineage through approved `beat_ids` plus the plan evidence boundary;
+- `story_point`: exact content point the viewer needs to understand;
+- `viewer_read`: what a muted viewer should infer;
+- `visible_subject`: concrete person/object relationship on screen;
+- `visible_action`: visible action or state change;
+- `visual_idea`: drawable endpoints, not an abstract noun;
+- `contribution`: the specific information lost if this Story Visual is removed;
+- optional `lettering[]`: exact short wording required for the visual meaning.
 
-- `id`: stable identity.
-- `beat_ids[]`: the Narrative Plan beats it explains.
-- `evidence_refs[]`: evidence supporting the Zodiac trait used by the image.
-- `trait_basis`: the source-bounded Zodiac characteristic.
-- `story_point`: the exact content point the viewer needs to understand.
-- `viewer_read`: what a viewer should understand with audio muted.
-- `visible_subject`: the concrete person/object relationship visible on screen.
-- `visible_action`: the observable action or state change that carries meaning.
-- `visual_idea`: one specific image composition, described literally enough to draw.
-- `concept_fit`: why it belongs to this episode's selected concept.
-- `centrality_reason`: why this point deserves the scene's focal semantic layer.
-- `contribution`: why an image communicates this better than chữ trong hình.
-- `tone_fit`: how the image preserves this episode's comic, sharp, restrained or warm tone.
-- `payoff_image` (optional): a later concrete callback or resolution when the story actually needs one.
-
-A direction must describe visible nouns and verbs. “Balance”, “pressure”, “conflict”, “choice” or “harmony” by themselves are not drawable ideas.
+Phase 2 owns drawing geometry, state layout and lettering treatment. It does not rewrite these semantic fields.
 
 ## Editorial test
 
-Use a Hình kể chuyện only when all are true:
+Use a Story Visual only when all are true:
 
-1. **Central:** removing it would make an important story turn harder to understand.
-2. **Concrete:** the direction names a visible subject plus a visible action/state change.
-3. **Zodiac-specific:** the meaning is tied to selected evidence, not a generic sign icon.
-4. **Silent-readable:** a viewer can infer the intended point without hearing the line.
-5. **Better than text:** a short chữ trong hình card would communicate the point less effectively.
+1. **Central:** removing it makes an important turn, comparison or consequence harder to understand.
+2. **Concrete:** it names a visible subject plus a visible action/state change.
+3. **Zodiac-grounded:** the meaning follows the selected evidence/concept rather than a generic sign icon.
+4. **Silent-readable:** a viewer can infer the intended fact with audio muted.
+5. **Additive:** it contributes information beyond actor performance, physical props and environmental context.
 
-For Libra, a stock scale is not enough. A scale is acceptable only when the current story conflict is visibly encoded in what is on each side, who changes it, and what that change reveals. Otherwise use a more literal scene action or chữ trong hình.
+Generic scales, hearts, batteries, question marks, abstract meters, arrows between anonymous dots or decorative color changes fail this test unless the story-specific identities and causal change are visibly encoded.
 
-## Show the missing information
+## Lettering inside the visual
 
-Start with the exact narration sentence. Name what the audience still cannot see or infer from the actors and physical props. If nothing is missing, omit Hình kể chuyện. Repeating the sentence as a pictogram adds no information.
+Use `lettering[]` only when the exact words are part of what the viewer must read. Keep it short. The words and drawing are not two competing concepts: Phase 2 bakes the lettering into the same Story Visual state/asset, using outlines rather than live SVG text.
 
-Describe two drawable endpoints: who has what before, who does what, and what visibly differs afterward. `viewer_read` describes the causal fact a viewer can point to, rather than a feeling such as pressure, loneliness or responsibility. A color change, floating icon, enlarged object or abstract meter alone does not show that cause.
+## Ma Kết reference direction
 
-For the Ma Ket responsibility story, a battery draining beside a clock does not explain why the partner stops helping. Show the offered hand, the task being taken back, and the hand withdrawing. Those are actor/physical-prop actions, so they do not need an additional Hình kể chuyện. Likewise, handing over the real shopping bag already explains the ending; an abstract permission icon would dilute it.
+For the responsibility story, three accepted uses are:
+- **B2:** recognizable task objects visibly move from two people's ownership to one person's side, so the workload concentration is readable rather than represented by an abstract pressure icon;
+- **B4:** repeated refusal and the other person's withdrawal are shown as one causal progression; any short refusal wording is integrated into the same states rather than becoming an independent text overlay;
+- **B6:** the real bag/ownership handoff remains physical, while any permission wording used for the payoff is integrated into the same Story Visual state when it materially sharpens the viewer read.
 
-When an actual comparison cannot be staged clearly with the cast, one concrete diagram can earn its place: show the same three recognizable task objects moving from two people's sides to one person's side while the other side becomes empty. Specify object identities, ownership, order and the exact consequence; generic dots or arrows labelled only as responsibility do not carry that information. Use this only when approved narration supports the comparison and the simpler physical action cannot do the job.
-
-Before approving the direction, describe the image without using the narration's abstract nouns. Then remove it mentally: state the specific fact or story turn that is lost. If no fact is lost, omit it. This is an editorial judgment, not something field lengths or SVG lint can certify.
+Do not add a battery, permission icon, balance glyph or other symbolic decoration when the cast and real prop already communicate the fact. The Story Visual must earn its space by adding information.
 
 ## Phase 2 handoff
 
-Phase 2 references the direction by `phase1_visual_id`, binds an exact narration anchor, and authors the SVG/states/layout. It may refine execution but may not change the story point or invent another symbolic concept.
+Phase 2 references the direction by `phase1_visual_id`, binds exact narration anchors, and authors one `story_visual` entity with state assets. Optional lettering is metadata on those states. A separate independent lettering overlay entity is invalid fresh authoring.
