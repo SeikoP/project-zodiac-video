@@ -16,5 +16,9 @@ test("Cover v2 honors producer design metadata and native V4 tokens", async () =
   assert.match(source,/role==="interactive_prop"\|\|role==="effect"\?propScale/);
   assert.match(source,/role==="background"/);
   assert.match(source,/crooked-paper-note/);
+  // Cover order follows the merged story-visual contract but accepts legacy job packages.
+  assert.match(source,/readOrder === "hook,identity,character_story_visual"/);
+  assert.match(source,/readOrder === "hook,identity,character_story_object"/);
+  assert.match(source,/!supportedReadOrder/);
   assert.doesNotMatch(source,/boxShadow:\s*["']\d+px\s+\d+px\s+\d+px\s+black/);
 });

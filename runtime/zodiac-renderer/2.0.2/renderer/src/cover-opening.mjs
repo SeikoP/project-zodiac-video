@@ -1,5 +1,10 @@
 // Presentation only: never prepend time or reschedule narration/events.
+// The cover is a visual overlay, not a silent preroll: narration starts at frame zero.
+// Render one caption copy above the cover during its opening, then let the
+// ordinary scene caption take over without losing or repeating any word.
 export const coverCaptionVisible = (opening, frame) => !opening || frame >= opening.duration_frames;
+export const coverCaptionOverlayVisible = (opening, frame) =>
+  !!opening && frame >= 0 && frame < opening.duration_frames;
 export const resolveCoverOpening = (publish, fps, scenes) => {
   const o=publish?.cover?.opening;
   if(o===undefined)return null;
