@@ -27,7 +27,7 @@ Compete genuinely different premises. A concept must depend on the target sign's
 
 ## Narrative Design
 
-Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `narrative_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
+Keep one Story Spine. The plan should contain a premise, hook, escalation, reveal/reframe, payoff and the intended emotional movement. Optional `story_visuals[]` may preserve a central image for Local, but Phase 1 does not choose assets or compose scenes.
 
 The Writer Brief is a compact creative bridge, not a compiler product. Preserve creative direction, voice, rhythm, key beats and exclusions.
 
@@ -45,6 +45,6 @@ For story-driven concepts, Narrative Design chooses a Phase-1 `narrative_motif` 
 
 Also map the second-half pulse before prose: after the midpoint, each beat should add action, decision, failed workaround, consequence, contrast, reframe or payoff. Do not spend the back half merely explaining the interpretation established by the front half.
 
-This motif is semantic continuity only. Do not turn it into Phase-2 asset, shot, prop, Visual Metaphor or Story Object authoring.
+This motif is semantic continuity only. Do not turn it into Phase-2 Story Visual, asset, shot or prop authoring.
 
 When revising, preserve an opening the user explicitly likes unless the premise itself changes. If the user disables a fictional ad/parody, remove any stale interruption copy or instruction from the active plan, brief and narration before Content Review.

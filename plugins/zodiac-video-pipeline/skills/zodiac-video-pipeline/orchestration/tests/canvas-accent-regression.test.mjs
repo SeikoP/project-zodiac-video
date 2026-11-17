@@ -1,9 +1,9 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {validateCanvasAccents,resolveCanvasAccentEntities} from '../../features/visual-composition/validate-canvas-accents.mjs';
 const make=()=>{
- const accent=(id,x)=>({id,kind:'scene_accent',visual_role:'scene_accent',initial_state:'hidden',states:{
-  hidden:{asset:id,visible:false,transform:{x,y:120,width:220,height:180}},
-  shown:{asset:id,visible:true,transform:{x,y:120,width:220,height:180}}
+ const accent=(id,x)=>({id,kind:'scene_accent',visual_role:'scene_accent',context:{kind:'environment_detail',setting:'Cafe',visible_detail:id==='window'?'Cafe window':'Wall menu'},narrative_intent:{voice_anchor:id==='window'?'Cửa sổ':'thực đơn'},initial_state:'hidden',states:{
+  hidden:{asset:id,visible:false,layer:5,transform:{x,y:120,width:220,height:180}},
+  shown:{asset:id,visible:true,layer:5,transform:{x,y:120,width:220,height:180}}
  }});
  return {scene:{id:'S01',voice:'Cửa sổ hiện ra, thực đơn biến mất.',
   layout_contract:{caption_safe_zone:{x:80,y:1400,width:900,height:330}},
@@ -19,6 +19,22 @@ test('cafe has optional accents without Scene Set',()=>{
 });
 test('accent with missing referenced asset is blocked',()=>{
  const {scene,assets}=make();delete assets.menu;assert.ok(validateCanvasAccents(scene,assets).issues.some(x=>x.code==='SCENE_ACCENT_ASSET_INVALID'));
+});
+
+test('an ungrounded idea icon cannot satisfy the Scene Accent contract',()=>{
+ const {scene,assets}=make();delete scene.entities[0].context;
+ assert.ok(validateCanvasAccents(scene,assets).issues.some(x=>x.code==='SCENE_ACCENT_CONTEXT_REQUIRED'));
+ scene.entities[0].context={kind:'idea_symbol',setting:'Relationship pressure',visible_detail:'A draining battery'};
+ assert.ok(validateCanvasAccents(scene,assets).issues.some(x=>x.code==='SCENE_ACCENT_CONTEXT_REQUIRED'));
+});
+
+test('Scene Accent must remain behind the actors and bind to scene narration',()=>{
+ const {scene,assets}=make();scene.entities.push({id:'hero',kind:'character',states:{idle:{layer:20}}});
+ scene.entities[0].states.shown.layer=30;
+ scene.entities[0].narrative_intent={voice_anchor:'Missing sentence'};
+ const codes=validateCanvasAccents(scene,assets).issues.map(x=>x.code);
+ assert.ok(codes.includes('SCENE_ACCENT_REAR_LAYER_REQUIRED'));
+ assert.ok(codes.includes('SCENE_ACCENT_CONTEXT_ANCHOR_MISSING'));
 });
 test('accent heading into caption safe zone is blocked',()=>{
  const {scene,assets}=make();scene.entities[0].states.shown.transform.y=1440;

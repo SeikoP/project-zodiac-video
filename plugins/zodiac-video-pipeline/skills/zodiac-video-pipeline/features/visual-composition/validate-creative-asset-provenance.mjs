@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Fresh Narrative Visual provenance gate: every authored image must execute one concrete Phase-1 direction.
+// Fresh Hình kể chuyện provenance gate: every authored image must execute one concrete Phase-1 direction.
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
@@ -12,18 +12,18 @@ const normalize=s=>String(s??'').trim();
 
 export function validateCreativeProvenance(intent,svgByAsset={},phase1Visuals=[]){
  const issues=[],seenByHash=new Map();
- if(intent?.taxonomy_version!=='narrative_visual@1')return {status:'NOT_APPLICABLE',issues,review_required:false};
+ if(intent?.taxonomy_version!=='story_visual@1')return {status:'NOT_APPLICABLE',issues,review_required:false};
  const directions=new Map((phase1Visuals??[]).map(v=>[v.id,v]));
  for(const scene of intent.scenes??[]){
   const voice=String(scene.voice??scene.narration_text??'');
-  const visuals=(scene.entities??[]).filter(x=>x.kind==='narrative_visual');
+  const visuals=(scene.entities??[]).filter(x=>x.kind==='story_visual');
   if(!visuals.length)continue;
-  if(visuals.length>1)issues.push(entry('CREATIVE_NARRATIVE_VISUAL_DENSITY',scene.id,null,String(visuals.length)));
+  if(visuals.length>1)issues.push(entry('CREATIVE_STORY_VISUAL_DENSITY',scene.id,null,String(visuals.length)));
   const brief=scene.art_direction?.narrative_brief??{};
-  if(!meaningful(brief.story_point)||!meaningful(brief.viewer_read))issues.push(entry('CREATIVE_SCENE_MEANING_REQUIRED',scene.id,null,'Narrative Visual needs concrete story_point and viewer_read'));
+  if(!meaningful(brief.story_point)||!meaningful(brief.viewer_read))issues.push(entry('CREATIVE_SCENE_MEANING_REQUIRED',scene.id,null,'Hình kể chuyện needs concrete story_point and viewer_read'));
   for(const entity of visuals){
    const states=Object.entries(entity.states??{}).filter(([,s])=>s?.asset&&s.visible!==false);
-   if(!states.length){issues.push(entry('CREATIVE_VISIBLE_STATE_REQUIRED',scene.id,entity.id,'At least one visible Narrative Visual state is needed'));continue;}
+   if(!states.length){issues.push(entry('CREATIVE_VISIBLE_STATE_REQUIRED',scene.id,entity.id,'At least one visible Hình kể chuyện state is needed'));continue;}
    for(const [stateId,state] of states){
     const asset=intent.assets?.[state.asset],origin=asset?.creative_origin;
     if(!asset){issues.push(entry('CREATIVE_ASSET_MISSING',scene.id,entity.id,state.asset));continue;}
@@ -40,7 +40,7 @@ export function validateCreativeProvenance(intent,svgByAsset={},phase1Visuals=[]
      if(normalize(brief.phase1_visual_id)!==normalize(direction.id))issues.push(entry('CREATIVE_PHASE1_BRIEF_LINK_MISMATCH',scene.id,entity.id,origin.phase1_visual_id));
      if(normalize(brief.story_point)!==normalize(direction.story_point)||normalize(brief.viewer_read)!==normalize(direction.viewer_read))
       issues.push(entry('CREATIVE_PHASE1_MEANING_DRIFT',scene.id,entity.id,origin.phase1_visual_id));
-     for(const key of ['visible_subject','visible_action','visual_idea','centrality_reason','why_visual_not_text','tone_fit'])
+     for(const key of ['visible_subject','visible_action','visual_idea','contribution'])
       if(!meaningful(direction[key]))issues.push(entry('CREATIVE_PHASE1_DIRECTION_INCOMPLETE',scene.id,entity.id,key));
     }
     const anchor=normalize(origin.anchor_phrase);
@@ -75,7 +75,7 @@ export async function validateCreativeWorkspace(root){
   if(!Number.isInteger(start)||!Number.isInteger(end)||start<0||end<=start||end>narration.length)throw Error('CREATIVE_NARRATION_RANGE_INVALID '+scene.id);
   scene.voice=narration.subarray(start,end).toString('utf8');
  }
- const assetIds=new Set((intent.scenes??[]).flatMap(s=>(s.entities??[]).filter(e=>e.kind==='narrative_visual').flatMap(e=>Object.values(e.states??{}).map(st=>st?.asset).filter(Boolean))));
+ const assetIds=new Set((intent.scenes??[]).flatMap(s=>(s.entities??[]).filter(e=>e.kind==='story_visual').flatMap(e=>Object.values(e.states??{}).map(st=>st?.asset).filter(Boolean))));
  const svgByAsset={},issues=[];
  for(const id of assetIds){
   const rel=intent.assets?.[id]?.path;
@@ -84,7 +84,7 @@ export async function validateCreativeWorkspace(root){
   if(!full.startsWith(workspace+path.sep)){issues.push(entry('CREATIVE_ASSET_PATH_TRAVERSAL',null,id,rel));continue;}
   try{svgByAsset[id]=await readFile(full,'utf8')}catch(e){issues.push(entry('CREATIVE_SVG_MISSING',null,id,e.code??e.message));}
  }
- const result=validateCreativeProvenance(intent,svgByAsset,plan.narrative_visuals??[]);
+ const result=validateCreativeProvenance(intent,svgByAsset,plan.story_visuals??[]);
  return {...result,status:(issues.length||result.issues.length)?'BLOCKED':result.status,issues:[...issues,...result.issues]};
 }
 

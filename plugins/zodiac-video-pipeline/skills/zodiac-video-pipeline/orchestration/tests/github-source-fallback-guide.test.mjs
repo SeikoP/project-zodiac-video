@@ -1,12 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+
 const root=new URL('../',import.meta.url);
-test('GitHub transport fallback requires version+integrity and does not certify failed CI',async()=>{
+
+test('Web does not depend on repository transport and Local owns verified native source',async()=>{
  const t=await readFile(new URL('execution-bootstrap.md',root),'utf8');
- for(const phrase of ['phase-scoped','SeikoP/project-zodiac-video','plugin version/release lineage','SHA-256','SOURCE_INTEGRITY_MISMATCH','SOURCE_TRANSPORT_UNAVAILABLE'])assert.ok(t.includes(phrase),phrase);
+ assert.match(t,/No execution bootstrap is required/iu);
+ assert.match(t,/checked-out repository or the verified Local execution source/iu);
+ assert.match(t,/Source transport never creates creative approval/iu);
+ assert.doesNotMatch(t,/SeikoP\/project-zodiac-video/);
 });
-test('skill references exact optional fallback',async()=>{
+
+test('top-level skill keeps execution-source integrity separate from editorial authority',async()=>{
  const s=await readFile(new URL('../SKILL.md',root),'utf8');
- assert.ok(s.includes('phase-scoped execution bundle'));
+ assert.match(s,/Pin commit\/version and verify SHA-256/iu);
+ assert.match(s,/Transport never changes editorial authority/iu);
 });

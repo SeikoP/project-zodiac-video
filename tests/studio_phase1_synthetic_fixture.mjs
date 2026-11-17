@@ -12,9 +12,13 @@ async function create(output,mode='valid',narrationPath=null){
  const root=await mkdtemp(path.join(tmpdir(),'zodiac-p0-test-only-'));
  try{
   await mkdir(path.join(root,'.authoring'));
+  const narration=narrationPath?await readFile(narrationPath):Buffer.from('Câu duyệt giả lập riêng cho unit test.\n','utf8');
   const source={
-   narration:narrationPath?await readFile(narrationPath):Buffer.from('Câu duyệt giả lập riêng cho unit test.\n','utf8'),
-   plan:Buffer.from(JSON.stringify({format:'zodiac-narrative-plan@1',sign:'Song Tu',story_spine:{premise:'preview'}})),
+   narration,
+   plan:Buffer.from(JSON.stringify({version:'2.1',sign:'Song Tu',story_spine:{premise:'preview'},
+    story_visual_decision:{mode:'omitted',reason:'Synthetic fixture exercises physical acting without story visuals.'},
+    beats:[{id:'B1',voice_anchor:narration.toString('utf8').trim(),performance:{delivery:'conversational',energy:.45,
+     emotion:'amused',pace:'medium',emphasis:[],reason:'Synthetic test narration performance.'}}]})),
    scope:Buffer.from(JSON.stringify({episode_id:'studio-test-only',sign:'Song Tu',concept:'fixture'})),
    brief:Buffer.from(JSON.stringify({creative_direction:{tone:'normal'}})),
    voice:Buffer.from(JSON.stringify({format:'zodiac-voice-profile@1',narrator_vibe:'normal sharp'}))

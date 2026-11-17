@@ -28,7 +28,7 @@ After explicit approval, export one `zodiac-phase1-handoff@2` capsule with the a
 
 Local imports the Phase-1 capsule, verifies its inventory and genuine Content Review, reconstructs native pipeline state, and activates Phase 2.
 
-Author the canonical Visual Intent from the approved narration and Narrative Plan. Preserve sign identity, Story Spine, Voice Profile and any Phase-1 narrative-visual direction. Phase 2 may invent visual execution but must not rewrite the approved story.
+Author the canonical Visual Intent from the approved narration and Narrative Plan. Preserve sign identity, Story Spine, Voice Profile and any Phase-1 story-visual direction. Phase 2 may invent visual execution but must not rewrite the approved story.
 
 Use the current native asset/scene/preview validators and require genuine Visual Review before sealing production.
 

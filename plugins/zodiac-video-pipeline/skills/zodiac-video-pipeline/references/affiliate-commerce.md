@@ -1,9 +1,9 @@
 # Fictional advertisement contract
 
-Real affiliate commerce is paused. Fresh workspaces default to `mock_ad_enabled=true` and `affiliate_enabled=false`. Do not ask the affiliate YES/NO question, call Kalodata, request a key, discover products, download product media or create `.authoring/commerce/` files. Existing commerce files remain untouched; an old active affiliate flag requires an explicit routing decision before resuming.
+Real affiliate commerce is paused. Fresh workspaces default to `mock_ad_enabled=false` and `affiliate_enabled=false`; a fictional parody is opt-in from the current brief/story, never a baseline requirement. Do not ask the affiliate YES/NO question, call Kalodata, request a key, discover products, download product media or create `.authoring/commerce/` files. Existing commerce files remain untouched; an old active affiliate flag requires an explicit routing decision before resuming.
 
 ## One source, shared review
-After the stable base narration exists, author one `mock_ad` object inside `.authoring/narrative-plan.json` and insert its exact `text` into `narration.txt` before final QC and Content Review. Do not hand-edit the minimized writer brief or force the base story to serve an advertisement. An unchanged base story may reuse its Engagement Design after adding only `mock_ad`; final reviews still bind the complete updated plan and narration. Recompile writer-brief lineage after updating the Narrative Plan, then rerun the narration checkpoint and grounded reviews against the final text. This is a scripted parody for an invented product, not a real endorsement or offer.
+When a fictional parody is enabled, after the stable base narration exists, author one `mock_ad` object inside `.authoring/narrative-plan.json` and insert its exact `text` into `narration.txt` before final QC and Content Review. Do not hand-edit the minimized writer brief or force the base story to serve an advertisement. An unchanged base story may reuse its Engagement Design after adding only `mock_ad`; final reviews still bind the complete updated plan and narration. Recompile writer-brief lineage after updating the Narrative Plan, then rerun the narration checkpoint and grounded reviews against the final text. This is a scripted parody for an invented product, not a real endorsement or offer.
 
 The object contains only:
 - `fictional_product`: an invented product name, spoken in the copy;
@@ -18,9 +18,9 @@ Reuse the advertising structure, not product intelligence:
 
 Use one contiguous 5–18 second estimated exposure. For split/seed/callback structures, the opening hint or later callback belongs to the story; the advertising copy remains contiguous. Removing the interlude must leave the Zodiac story coherent. Avoid copying the same gag across episodes. No real seller, product ID, price, commission, affiliate URL, testimonial or market/health/financial claim. Duration remains estimated until runner TTS.
 
-## Mandatory story-hijack (new fresh workspaces)
+## Story-hijack when the parody is enabled
 
-Fresh state sets `mock_ad_story_hijack_required=true`; older episodes stay compatible. At both commerce gates, `mock_ad.story_hijack` requires seven exact strings: `trigger` (in `story_before_anchor`), `pivot`, `product_reveal` (must name `fictional_product`), `demo`, `wordplay`, `cta` (the last four spoken-commercial beats occur in order after pivot), and `snapback` (must immediately start `story_after_anchor`). Keep one 5–18s interlude.
+When the selected parody format uses story hijack, set `mock_ad_story_hijack_required=true`; otherwise leave it false. Older episodes stay compatible. At both commerce gates, `mock_ad.story_hijack` requires seven exact strings: `trigger` (in `story_before_anchor`), `pivot`, `product_reveal` (must name `fictional_product`), `demo`, `wordplay`, `cta` (the last four spoken-commercial beats occur in order after pivot), and `snapback` (must immediately start `story_after_anchor`). Keep one 5–18s interlude.
 
 Creative rule: hijack a **real story detail** → sudden product pitch for a **tangible everyday object** → fast visual demo + punchy pun → short CTA → hard-cut back by dismissing/reframing the product and continuing the Zodiac tension. Do not sell an abstract personality fix, explain the ad transition or add a moral after the cut. Removing the spot must leave a coherent story. Automated checks cover source/ordering/copy only; editorial Content Review owns humor, relevance and abruptness. Do not add an advertisement disclaimer to the spoken script or on-screen overlay; the cut itself communicates the fictional parody format.
 

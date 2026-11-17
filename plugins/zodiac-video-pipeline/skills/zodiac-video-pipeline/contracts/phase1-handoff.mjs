@@ -1,4 +1,6 @@
 import {createHash} from 'node:crypto';
+import {validateBeatPerformance,anchorPositions} from './narration-performance-contract.mjs';
+import {validateStoryVisualDirection} from './story-visual-contract.mjs';
 
 export const PHASE1_HANDOFF_FORMAT='zodiac-phase1-handoff@2';
 export const PHASE1_HANDOFF_MAJOR=2;
@@ -16,6 +18,31 @@ export const PHASE1_HANDOFF_REQUIRED=[
 ];
 
 export const sha256=data=>createHash('sha256').update(data).digest('hex');
+
+export function validatePhase1StoryVisuals(plan){
+ const result=validateStoryVisualDirection(plan);
+ if(result.status!=='PASS')throw Error('PHASE1_HANDOFF_STORY_VISUAL_INVALID '+JSON.stringify(result.issues));
+ return plan;
+}
+
+export function validatePhase1NarrativePerformance(planRaw,narration){
+ let plan;
+ try{plan=typeof planRaw==='string'||Buffer.isBuffer(planRaw)?JSON.parse(String(planRaw)):structuredClone(planRaw);}catch{throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID JSON');}
+ if(!['2.0','2.1'].includes(plan?.version))throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID VERSION');
+ if(!Array.isArray(plan.beats)||!plan.beats.length)throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID BEATS');
+ const spoken=String(narration??''),ids=new Set();
+ for(const beat of plan.beats){
+  if(!beat||typeof beat!=='object'||Array.isArray(beat)||typeof beat.id!=='string'||!beat.id.trim()||ids.has(beat.id))throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID BEAT_ID');
+  ids.add(beat.id);
+  if(typeof beat.voice_anchor!=='string'||!beat.voice_anchor.trim())throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID VOICE_ANCHOR '+beat.id);
+  try{validateBeatPerformance(beat.performance,spoken);}catch(e){throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID PERFORMANCE '+beat.id+' '+e.message);}
+  const hits=anchorPositions(spoken,beat.voice_anchor),occurrence=beat.occurrence??1;
+  if(!hits.length)throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID ANCHOR_MISSING '+beat.id);
+  if(hits.length>1&&beat.occurrence===undefined)throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID OCCURRENCE_REQUIRED '+beat.id);
+  if(!Number.isInteger(occurrence)||occurrence<1||occurrence>hits.length)throw Error('PHASE1_HANDOFF_NARRATIVE_PLAN_INVALID OCCURRENCE '+beat.id);
+ }
+ return plan;
+}
 
 export function requiredForHandoff(manifest){
   return manifest?.contract_major===PHASE1_HANDOFF_MAJOR_V1?PHASE1_HANDOFF_REQUIRED_V1:PHASE1_HANDOFF_REQUIRED;

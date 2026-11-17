@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {createHash} from 'node:crypto';
 const api=await import('../../features/visual-composition/compile-visual-intent.mjs').catch(()=>({}));const narration='Xin chào.';const sha=x=>createHash('sha256').update(x).digest('hex');
-const intent=()=>({format:'zodiac-visual-intent@1',taxonomy_version:'narrative_visual@1',narration_sha256:sha(narration),assets:{a:{path:'a.svg',category:'prop'}},video:{width:1080,height:1920,fps:30},visual_system:{},cast:[],frames:[],narrative_visual_decision:{mode:'omitted',reason:'No Narrative Visual needed.'},scenes:[{id:'s',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A calm greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'},environment:{background_palette_id:'warm-paper'}},environment:{mode:'canvas',background_palette_id:'warm-paper'},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],events:[],director_beats:[],art_direction:{},semantic_asset_decisions:[]}]});
+const intent=()=>({format:'zodiac-visual-intent@1',taxonomy_version:'story_visual@1',narration_sha256:sha(narration),assets:{a:{path:'a.svg',category:'prop'}},video:{width:1080,height:1920,fps:30},visual_system:{},cast:[],frames:[],story_visual_decision:{mode:'omitted',reason:'No Hình kể chuyện needed.'},scenes:[{id:'s',narration_range:[0,Buffer.byteLength(narration)],semantic_goal:'A calm greeting',grammar:{frame_id:'prop-focus',mechanic_id:'reveal',bindings:{focus_prop:'cup'},environment:{background_palette_id:'warm-paper'}},environment:{mode:'canvas',background_palette_id:'warm-paper'},entities:[{id:'cup',kind:'object',initial_state:'on',states:{on:{asset:'a'}}}],events:[],director_beats:[],art_direction:{},semantic_asset_decisions:[]}]});
 test('one authored entity change reaches native projections deterministically',()=>{assert.equal(typeof api.compileVisualIntent,'function');const a=api.compileVisualIntent(intent(),{narration});assert.deepEqual(a,api.compileVisualIntent(intent(),{narration}));assert.equal(a.production.scenes[0].environment.mode,'canvas');const b=intent();b.scenes[0].entities[0].id='bowl';b.scenes[0].grammar.bindings.focus_prop='bowl';const result=api.compileVisualIntent(b,{narration});assert.equal(result.production.scenes[0].entities[0].id,'bowl');assert.equal(result.visual_grammar_plan.scenes[0].bindings.focus_prop,'bowl');assert.equal(result.receipt.owner,'visual-intent');assert.throws(()=>api.compileVisualIntent(b,{narration:'Changed'}),/NARRATION/);assert.throws(()=>api.compileVisualIntent({...b,format:'legacy'},{narration}),/FORMAT/);});
 test('tampering a derived projection invalidates ownership receipt',()=>{assert.equal(typeof api.verifyIntentProjections,'function');const outputs=api.compileVisualIntent(intent(),{narration});assert.equal(api.verifyIntentProjections(outputs,outputs.receipt).status,'PASS');outputs.asset_plan.semantic_asset_fit.decisions.push({fake:true});assert.equal(api.verifyIntentProjections(outputs,outputs.receipt).status,'BLOCKED');});
 test('scene art direction is projected to the native intent contract',()=>{const input=intent();input.scenes[0].entities[0].visual_role='interactive_prop';input.scenes[0].entities[0].narrative_intent={reason:'Cup carries the greeting',voice_anchor:'Xin chào.'};const result=api.compileVisualIntent(input,{narration});assert.equal(result.art_direction.format,'zodiac-scene-art-direction@2');assert.equal(result.art_direction.composition_stage,'intent');assert.equal(result.art_direction.scenes[0].id,'s');assert.equal(result.art_direction.scenes[0].components[0].id,'cup');assert.equal(result.art_direction.scenes[0].components[0].ownership.kind,'authored');});
@@ -20,17 +20,17 @@ test('manifest finalization permits forced native revalidation only after genuin
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('fresh narrative visual authoring accepts simple representation without three-beat object plan',()=>{
+test('fresh story visual authoring accepts simple representation without three-beat object plan',()=>{
  const input=intent();
- input.taxonomy_version='narrative_visual@1';
- input.narrative_visual_decision={mode:'required',reason:'Phase 1 selected a concrete visual direction.'};
- input.scenes[0].entities[0].kind='narrative_visual';
- input.scenes[0].entities[0].visual_role='narrative_visual';
- input.assets.a.category='narrative_visual';
+ input.taxonomy_version='story_visual@1';
+ input.story_visual_decision={mode:'required',reason:'Phase 1 selected a concrete visual direction.'};
+ input.scenes[0].entities[0].kind='story_visual';
+ input.scenes[0].entities[0].visual_role='story_visual';
+ input.assets.a.category='story_visual';
  const out=api.compileVisualIntent(input,{narration});
  assert.equal(out.production.scenes[0].entities[0].kind,'object');
  assert.equal(out.production.scenes[0].entities[0].visual_role,'story_object');
- assert.equal(input.scenes[0].entities[0].kind,'narrative_visual');
+ assert.equal(input.scenes[0].entities[0].kind,'story_visual');
  input.scenes[0].entities[0].visual_role='story_object';
  assert.throws(()=>api.compileVisualIntent(input,{narration}),/FRESH_TRANSPORT_ROLE_FORBIDDEN/);
 });

@@ -10,8 +10,8 @@ job recovery uses a separately pinned snapshot outside this package.
 - Shot layout: independent actor composition from `shot-layouts/index.json`.
 - Character: native body/hair/shirt identity, persistent across states.
 - Prop: a real physically interacted item from `props/index.json`.
-- Narrative Visual: **do not select it from an asset catalog.** Phase 1 has already selected the story image direction in `narrative_plan.narrative_visuals[]` from Zodiac evidence + concept fit. Phase 2 authors a new scene-specific SVG/states from that direction, binds an exact narration anchor, and sets `narrative_visual_decision.mode=required`. Runtime compatibility may serialize the role as `story_object`; that name is not exposed as a fresh creative option.
-- Scene Accent: independent context SVG (window, menu, notice board, lights). Select at least one visible context component per scene, with `scene_accent=use` coverage where it appears. Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
+- Hình kể chuyện: **do not select it from an asset catalog.** Phase 1 has already selected the story image direction in `narrative_plan.story_visuals[]` from Zodiac evidence + concept fit. Phase 2 authors a new scene-specific SVG/states from that direction, binds an exact narration anchor, and sets `story_visual_decision.mode=required`. Runtime compatibility may serialize the role as `story_object`; that name is not exposed as a fresh creative option.
+- Scene Accent: independent context SVG (window, menu, notice board, lights), never a floating idea/mood icon. Declare its concrete `context` and exact narration anchor per `references/scene-accent-contract.md`. Select at least one visible context component per scene, with `scene_accent=use` coverage where it appears. Its transform uses canvas coordinates and optional actor-relative anchor. It stays behind the actors and must not overlap captions.
 - Effect: optional emphasis of action or emotion, not mandatory decoration.
 
 Each beat must explicitly use or omit Scene Accent in fresh Visual Coverage.
@@ -33,7 +33,9 @@ Hair diversity does not replace body-silhouette diversity. Body + hair + shirt c
 ## Native selection surface
 Run `features/asset-selection/build-current-asset-review.mjs <output-directory>`
 from the skill root. Optional `--selection <asset-selection.json>` renders only
-selected IDs. The surface groups components, backdrops and props; clicking
+selected IDs. The surface groups components, canvas Accents and props; Scene Sets appear only
+when explicitly requested for compatibility inspection. Fresh exports use
+`environment_mode: canvas`. Clicking
 a whole card selects it and exports `zodiac-asset-selection@1` JSON. Selection is
 not an approval or compiler receipt. Identity review still precedes full scenes.
 
@@ -44,7 +46,7 @@ Do not transfer visual references between actors.
 
 ## Geometry and context
 
-Characters are placed independently on canvas. Accents supplement spatial context without constraining cast positions; they remain behind action and must be caption-safe. Narrative Visuals are positioned for readability and do not inherit physical prop contact requirements.
+Characters are placed independently on canvas. Accents supplement spatial context without constraining cast positions; they remain behind action and must be caption-safe. Hình kể chuyệns are positioned for readability and do not inherit physical prop contact requirements.
 
 Load core guidance and only selected extension registries via
 `selection-policy.json`. Required compiler/validator/review gates remain active.
@@ -67,3 +69,22 @@ Fresh 2.6.11+ scene-level execution uses the canonical Visual Intent for a
 source-fingerprinted scene graph and separate continuity verification. It must
 not independently author a derived production/asset plan per scene. Native
 compilation and final review remain the existing manifest-owned gate.
+
+## Meaningful prop diversity
+
+Choose the performed action before choosing a prop. A scene may need no physical
+prop. Preserve one owner's device identity across related scenes and state swaps.
+
+Phone, phone-busy, phone-ping, phone-quiet and phone-silent share one V4 body
+silhouette: these are story states, not five physical models. Changing color,
+notification, framing or rotation does not create a new geometric model. Inspect
+actual registered SVG geometry before claiming a different design is available.
+If the story needs an unsupported model or view, report the missing capability
+and request new source artwork plus Visual Review; never substitute invented art.
+
+When recent accepted episode evidence is explicitly supplied, compare the full
+visible treatment (model, appearance, shot and action). Suggest a different
+story-grounded action, framing or no-prop treatment for unmotivated repetition;
+do not impose a reuse ban or change a continuing owner's identity. Do not scan
+historical jobs for inspiration or claim cross-episode diversity was measured
+without source-backed accepted/rendered manifests.

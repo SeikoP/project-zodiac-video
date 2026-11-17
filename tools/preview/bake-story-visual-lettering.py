@@ -2,6 +2,7 @@
 import argparse
 import html
 import json
+import re
 from pathlib import Path
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
@@ -63,36 +64,81 @@ def compose(text, style):
     assert len(words) >= 3, 'Title lettering needs a setup and emphasis line'
     return paper + line(' '.join(words[:-2]), 98, 500, 117, 840) + line(' '.join(words[-2:]), 154, 500, 226, 850, '#E97A66')
 
+def natural_box(style):
+    if style == 'burst':
+        return 520.0, 350.0
+    if style == 'thought':
+        return 600.0, 350.0
+    if style in compact_styles:
+        return 600.0, 300.0
+    return 1000.0, 280.0
+
+def placed_group(art, style, placement, base_box):
+    natural_w, natural_h = natural_box(style)
+    if placement is None:
+        x0, y0, width, height = base_box
+        placement = {'x': x0 + width * .08, 'y': y0 + height * .05,
+                     'width': width * .84, 'height': height * .28}
+    vals = [float(placement[k]) for k in ('x', 'y', 'width', 'height')]
+    assert all(v >= 0 for v in vals) and vals[2] > 0 and vals[3] > 0, 'Invalid lettering placement'
+    x, y, width, height = vals
+    scale = min(width / natural_w, height / natural_h)
+    tx = x + (width - natural_w * scale) / 2
+    ty = y + (height - natural_h * scale) / 2
+    return (f'<g data-story-visual-lettering="outlined" data-treatment="{style}" '
+            f'transform="translate({round(tx, 3)} {round(ty, 3)}) scale({round(scale, 6)})">{art}</g>')
+
+def strip_baked(raw):
+    start = '<!-- story-visual-lettering:start -->'
+    end = '<!-- story-visual-lettering:end -->'
+    if start not in raw:
+        return raw
+    assert end in raw, 'Corrupt baked lettering marker'
+    return raw[:raw.index(start)] + raw[raw.index(end) + len(end):]
+
+def view_box(raw):
+    match = re.search(r'viewBox=["\']([^"\']+)["\']', raw)
+    assert match, 'Existing Story Visual needs a viewBox'
+    values = [float(n) for n in match.group(1).split()]
+    assert len(values) == 4 and values[2] > 0 and values[3] > 0
+    return values
+
 count = 0
 lettering_by_path = {}
 art_by_path = {}
 for scene in intent['scenes']:
     for entity in scene['entities']:
-        for state_id, text in entity.get('story_text', {}).get('states', {}).items():
+        for state_id, text in entity.get('lettering', {}).get('states', {}).items():
             target = (root / intent['assets'][entity['states'][state_id]['asset']]['path']).resolve()
             assert target.is_relative_to(root / 'assets'), 'Lettering must stay inside assets/'
-            style = entity['story_text'].get('styles', {}).get(state_id, 'note')
-            assert style in styles, 'Unknown story text style'
+            style = entity['lettering'].get('styles', {}).get(state_id, 'note')
+            placement = entity['lettering'].get('placements', {}).get(state_id)
+            assert style in styles, 'Unknown story visual lettering style'
             assert text.strip() and '\n' not in text and all(ord(c) in cmap for c in text)
-            signature = (text, style)
-            assert target not in lettering_by_path or lettering_by_path[target] == signature, 'Conflicting story text for one asset path'
+            signature = (text, style, json.dumps(placement, sort_keys=True))
+            assert target not in lettering_by_path or lettering_by_path[target] == signature, 'Conflicting story visual lettering for one asset path'
             lettering_by_path[target] = signature
-            art_by_path[target] = compose(text, style)
-for scene in intent['scenes']:
-    for entity in scene['entities']:
-        for state_id, text in entity.get('story_text', {}).get('states', {}).items():
-            assert text.strip() and '\n' not in text and all(ord(c) in cmap for c in text)
-            asset = intent['assets'][entity['states'][state_id]['asset']]
-            assert asset['category'] == 'overlay' and entity['visual_role'] == 'overlay'
-            target = (root / asset['path']).resolve()
-            assert target.is_relative_to(root / 'assets'), 'Lettering must stay inside assets/'
-            style = entity['story_text'].get('styles', {}).get(state_id, 'note')
-            art = art_by_path[target]
-            box = '0 0 520 350' if style == 'burst' else '0 0 600 350' if style == 'thought' else '0 0 600 300' if style in compact_styles else '0 0 1000 280'
-            svg = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{box}" role="img" aria-label="{html.escape(text, quote=True)}"><title>{html.escape(text)}</title><metadata>asset_role=story_text;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;lettering=PatrickHand-outlined;treatment={style};production_safe=true</metadata>{art}</svg>\n'
-            assert '<text' not in svg and '<image' not in svg
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(svg, encoding='utf-8', newline='\n')
-            count += 1
-assert count, 'No story_text states authored'
-print(f'Outlined {count} story text states')
+            art_by_path[target] = (compose(text, style), style, placement, text)
+
+for target, (art, style, placement, text) in art_by_path.items():
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        raw = strip_baked(target.read_text(encoding='utf-8'))
+        assert '<svg' in raw and '</svg>' in raw, 'Existing Story Visual must be SVG'
+        assert '<text' not in raw and '<image' not in raw, 'Story Visual must stay portable'
+    else:
+        natural_w, natural_h = natural_box(style)
+        box = f'0 0 {int(natural_w)} {int(natural_h)}'
+        raw = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{box}" role="img" aria-label="{html.escape(text, quote=True)}"><title>{html.escape(text)}</title><metadata>asset_role=lettering;style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2;lettering=PatrickHand-outlined;treatment={style};production_safe=true</metadata></svg>\n'
+    base_box = view_box(raw)
+    if placement is None and 'asset_role=lettering;' in raw:
+        placement = dict(zip(('x', 'y', 'width', 'height'), base_box))
+    group = placed_group(art, style, placement, base_box)
+    marker = f'<!-- story-visual-lettering:start -->{group}<!-- story-visual-lettering:end -->'
+    svg = raw.replace('</svg>', marker + '</svg>', 1)
+    assert '<text' not in svg and '<image' not in svg
+    target.write_text(svg, encoding='utf-8', newline='\n')
+    count += 1
+
+assert count, 'No lettering states authored'
+print(f'Outlined {count} Story Visual lettering states')

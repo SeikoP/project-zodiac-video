@@ -6,7 +6,7 @@ const norm=s=>String(s??'').trim().toLocaleLowerCase('vi-VN').replace(/\s+/g,' '
 const sceneKey=o=>String(o?.scene_id??o?.id??'');
 const words=s=>new Set(norm(s).replace(/[^\p{L}\p{N}\s]/gu,' ').split(/\s+/u).filter(w=>w.length>1));
 const jaccard=(a,b)=>{if(!a.size||!b.size)return 0;let n=0;for(const w of a)if(b.has(w))n++;return n/(a.size+b.size-n);};
-/** Editorial only: flags a narrative-visual claim that closely repeats one from an earlier episode. Never blocks. */
+/** Editorial only: flags a story-visual claim that closely repeats one from an earlier episode. Never blocks. */
 export function auditNarrativeBriefReuse(briefs=[],priorBriefs=[],{threshold=0.6}={}){
  const flags=[];
  for(const b of briefs){

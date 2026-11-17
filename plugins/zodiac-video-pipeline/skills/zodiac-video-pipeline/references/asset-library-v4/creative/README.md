@@ -1,42 +1,46 @@
 # Creative Asset System
 
-Fresh storytelling imagery has one semantic type: **Narrative Visual — Hình ảnh kể chuyện** (`narrative_visual`). It is not an asset-library category.
+Fresh storytelling imagery has one semantic type: **Hình kể chuyện / Story Visual** (`story_visual`). It is not a reusable asset-library category.
 
 ## Ownership
 
-**Phase 1** decides whether a Narrative Visual is justified. There is no quota. When used, `narrative_plan.narrative_visuals[]` contains one concrete drawable idea per visual: source-bounded trait, exact story point, silent viewer read, visible subject/action, concept/tone fit, centrality reason, and why image communicates better than Story Text.
+**Phase 1** decides whether a Story Visual is justified. There is no quota. When used, `narrative_plan.story_visuals[]` contains one concrete direction with the exact story point, muted viewer read, visible subject/action, visual idea, contribution and optional semantically required lettering.
 
-**Phase 2** executes that direction. It may change geometry, states, placement and transition mechanics, but it may not change the story point or invent another symbol.
+**Phase 2** executes that direction. It may change geometry, state assets, placement, transitions and lettering treatment, but it may not change the approved meaning or invent another symbol.
 
-## Scene focus
+## One semantic owner
 
-A scene may use **Narrative Visual or Story Text, never both**. Actors, physical props, Scene Accent, optional reaction effects/meme acting and runtime captions are separate layers.
+A Story Visual may be:
+- illustration;
+- outlined lettering;
+- or illustration plus outlined lettering.
 
-Narrative Visual is valid only when:
+Optional `lettering` belongs to the same Story Visual entity/state/SVG asset. It is never a second role, overlay entity, coverage lane or approval path. Runtime captions remain separate.
 
+Story Visual is valid only when:
 - it explains a central story point;
 - its visible subject and action/state are concrete;
 - it is tied to the approved Zodiac evidence/concept;
 - it remains understandable with audio muted;
-- it is more useful than a short Story Text phrase.
+- it adds information beyond actor performance, physical props and environmental context.
 
-Generic zodiac glyphs, stock scales, hearts, question marks and other decorative symbols do not qualify by themselves.
+Generic zodiac glyphs, stock scales, hearts, question marks and decorative symbols do not qualify by themselves.
 
 ## Phase 2 provenance
 
-Every visible Narrative Visual asset records:
+Every visible Story Visual asset records:
 
 ```json
 {
   "creative_origin": {
     "mode": "phase1_directed",
-    "phase1_visual_id": "NV1",
+    "phase1_visual_id": "SV1",
     "scene_id": "S01",
     "anchor_phrase": "exact approved narration"
   }
 }
 ```
 
-Run Narrative Visual presence/provenance, kit lint, semantic event, scene experience, endpoint preview and genuine Visual Review. Reuse is allowed only when the callback/continuity meaning is explicit.
+Run Story Visual presence/provenance, kit lint, semantic event, scene experience, endpoint preview and genuine Visual Review. If lettering is present, it must be outlined inside the same Story Visual asset and validated through that same lineage/coverage path.
 
-Reusable construction assets remain characters, physical props, context accents, layouts and motion mechanics. Narrative Visual itself is always scene-authored from Phase 1 meaning, never selected from a thematic catalog.
+Reusable construction assets remain characters, physical props, context accents, layouts and motion mechanics. Story Visual itself is always scene-authored from Phase-1 meaning, never selected from a thematic catalog.

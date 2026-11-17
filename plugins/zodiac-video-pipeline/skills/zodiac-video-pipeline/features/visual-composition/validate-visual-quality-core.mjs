@@ -46,7 +46,7 @@ for(const [assetId,a] of Object.entries(assetById)){
 // Frame-composition quality gate: validate actual 1080x1920 geometry before VISUAL REVIEW.
 const design=await readFile(path.join(packageRoot,'design.md'),'utf8');const tokenMatch=design.match(/<!-- STYLE_TOKEN_BEGIN -->\s*```json\s*([\s\S]*?)\s*```\s*<!-- STYLE_TOKEN_END -->/u);if(!tokenMatch)fail('FRAME_COMPOSITION_INVALID','design.md missing STYLE_TOKEN');let designToken;try{designToken=JSON.parse(tokenMatch[1]);}catch(e){fail('FRAME_COMPOSITION_INVALID','invalid STYLE_TOKEN JSON: '+e.message);}const safe=designToken.safe_zone;const canvas={width:1080,height:1920};if(!safe||!['x','y','width','height'].every(k=>Number.isFinite(safe[k])))fail('FRAME_COMPOSITION_INVALID','design safe_zone missing/nonnumeric');
 const intersection=(a,b)=>{const w=Math.max(0,Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x));const h=Math.max(0,Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y));return w*h;};const area=r=>r.width*r.height;const initialRect=e=>e?.states?.[e.initial_state]?.transform;const visibleInitial=e=>e?.states?.[e.initial_state]?.visible!==false;
-const wallpaper=new Map();const inferredSceneSet=e=>e?.visual_role==='scene_set'||(e?.visual_role==='background'&&String(e?.id??'').startsWith('env__scene-set'));
+const wallpaper=new Map(),actorLayouts=new Map();const inferredSceneSet=e=>e?.visual_role==='scene_set'||(e?.visual_role==='background'&&String(e?.id??'').startsWith('env__scene-set'));
 for(const scene of production.scenes??[]){
  const env=scene.environment??{};const roles=env.roles??{};const roleOf=new Map();for(const [role,ids] of Object.entries(roles))for(const id of ids??[])roleOf.set(id,role);const shot=scene.scene_direction?.shot??'unknown';const sceneSetAsset=env.scene_set?.asset??env.scene_set?.asset_id;const hasSceneSet=hasPrimarySceneSet(scene,production);
  const chars=[];const envSignature=[];
@@ -58,11 +58,13 @@ for(const scene of production.scenes??[]){
    if(entity.kind==='character')chars.push({id:entity.id,rect});
    if(role)envSignature.push(`${role}:${entity.id}:${rect.x},${rect.y},${rect.width},${rect.height}`);
  }
+ if(chars.length){const sig=shot+'|'+chars.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(x=>`${x.id}:${x.rect.x},${x.rect.y},${x.rect.width},${x.rect.height}`).join('|');const row=actorLayouts.get(sig)??{count:0,scenes:[]};row.count++;row.scenes.push(scene.id);actorLayouts.set(sig,row);}
  if(shot==='two-person'&&chars.length>=2){const [a,b]=chars;const ax=a.rect.x+a.rect.width/2,bx=b.rect.x+b.rect.width/2;if(Math.abs(ax-bx)<260)fail('FRAME_TWO_PERSON_BLOCKING',`${scene.id} character centers are too close for readable two-person blocking`);}
  if(shot==='caption-led'){for(const entity of scene.entities??[]){if(!visibleInitial(entity)||primarySceneSetEntities(scene,production).some(e=>e.id===entity.id))continue;const rect=initialRect(entity);if(rect.y+rect.height>safe.y+40)fail('FRAME_CAPTION_LED_BLOCKED',`${scene.id}/${entity.id} extends too far into caption-led field`);}}
  if(env.mode==='micro_environment'&&!hasSceneSet&&envSignature.length){const sig=envSignature.sort().join('|');const row=wallpaper.get(sig)??{count:0,shots:new Set(),scenes:[]};row.count++;row.shots.add(shot);row.scenes.push(scene.id);wallpaper.set(sig,row);}
 }
 for(const row of wallpaper.values())if(row.count>=3&&row.shots.size>=2)fail('FRAME_ENVIRONMENT_WALLPAPER',`identical environment geometry repeats across reframed scenes: ${row.scenes.join(', ')}`);
+for(const row of actorLayouts.values())if(row.count>=3)fail('FRAME_CHARACTER_WALLPAPER',`identical character framing repeats across ${row.count} scenes: ${row.scenes.join(', ')}`);
 
 console.log(`CAST_DIVERSITY_PASS: cast=${cast.size} profiles=${new Set([...cast.values()].map(v=>v.profile)).size}`);
 console.log('CHARACTER_APPEARANCE_LOCK_PASS');

@@ -14,11 +14,12 @@ test('fresh Phase 2 accepts only canonical Visual Intent source',()=>{
  assert.equal(assertPhase02AuthoringSource('zodiac-phase02-authored-handoff@1','continuity'),true);
 });
 
-test('Phase 1 policy has one normal pause at final Content Review',async()=>{
+test('Phase 1 is a creative Web workflow with one human boundary',async()=>{
  const doc=await read('phases/01-content.md');
- assert.match(doc,/autopilot authoring phase/iu);
- assert.match(doc,/Do \*\*not\*\* ask the user to:[\s\S]*choose among concept candidates/iu);
- assert.match(doc,/final Narration \+ compact QC[\s\S]*Content Review/iu);
+ assert.match(doc,/creative-host workflow/iu);
+ assert.match(doc,/select the strongest valid concept automatically unless the user asks to choose/iu);
+ assert.match(doc,/only required human approval boundary/iu);
+ assert.match(doc,/Web does not create or activate native pipeline state/iu);
 });
 
 test('Phase 2 policy makes Visual Intent the only agent-authored visual source',async()=>{

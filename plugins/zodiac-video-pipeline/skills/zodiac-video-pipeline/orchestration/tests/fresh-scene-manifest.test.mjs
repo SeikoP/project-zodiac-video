@@ -9,10 +9,10 @@ test('fresh Phase02 capabilities never require Scene Set or wall validators',()=
   assert.equal((step.conditional_gate_checks??[]).filter(c=>c.when==='fresh'&&c.name.startsWith('scene_set')).length,0);
  }
 });
-test('fresh routing loads independent Narrative Visual and Scene Accent contracts',()=>{
+test('fresh routing loads independent Hình kể chuyện and Scene Accent contracts',()=>{
  const compile=manifest.steps.find(s=>s.id==='visual_compile');
  const fresh=compile.required_capabilities.filter(x=>x.when==='fresh');
- for(const id of ['narrative_visual_contract','scene_accent_canvas_contract']){
+ for(const id of ['story_visual_contract','scene_accent_canvas_contract']){
   const contract=fresh.find(x=>x.id===id);
   assert.ok(contract, id+' is required for fresh context');
   assert.equal(contract.stage,'entry');

@@ -6,7 +6,7 @@ import React, {useEffect, useState} from "react";
 import {AbsoluteFill, Img, Sequence, useCurrentFrame, delayRender, continueRender, cancelRender} from "remotion";
 
 import {resolveSemanticMotion} from "./semantic-motion.mjs";
-import {resolveCoverOpening, coverOpeningOpacity, coverCaptionVisible} from './cover-opening.mjs';
+import {resolveCoverOpening, coverOpeningOpacity, coverCaptionVisible, coverCaptionOverlayVisible} from './cover-opening.mjs';
 import {ZodiacCover} from './ZodiacCover';
 
 import type {
@@ -49,7 +49,8 @@ const SceneLayer: React.FC<{
   presentation: RenderPlanPresentation;
   video: RendererV2Props["video"];
   showCaptions: boolean;
-}> = ({scene, assets, presentation, video, showCaptions}) => {
+  showVisuals?: boolean;
+}> = ({scene, assets, presentation, video, showCaptions, showVisuals = true}) => {
   const relativeFrame = useCurrentFrame();
   const frame = relativeFrame + scene.start_frame;
   const captions = scene.captions ?? [];
@@ -67,7 +68,7 @@ const SceneLayer: React.FC<{
 
   return (
     <AbsoluteFill>
-      {resolveLayerOrder(scene, assets, states)
+      {showVisuals && resolveLayerOrder(scene, assets, states)
         .map((entity, index) => {
           const state = states[entity.id];
           const assetId = state?.asset;
@@ -189,6 +190,7 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
   const frame=useCurrentFrame();
   const opening=resolveCoverOpening(publish,fps,scenes);
   const openingOpacity=coverOpeningOpacity(opening,frame);
+  const openingScene = scenes.find((scene) => scene.start_frame === 0);
   return (
   <AbsoluteFill style={{backgroundColor: presentation.paper ?? "#ffffff"}}>
     {scenes.map((scene) => (
@@ -204,6 +206,11 @@ export const ZodiacRenderPlan: React.FC<RendererV2Props> = ({
       <ZodiacCover scenes={scenes} assets={assets} presentation={presentation} video={video}
         publish={publish} fps={fps} contract="zodiac-render-plan@1" hideWatermark />
     </AbsoluteFill> : null}
+    {openingScene && coverCaptionOverlayVisible(opening,frame) ?
+      <AbsoluteFill data-cover-caption="active" style={{zIndex:90,pointerEvents:'none'}}>
+        <SceneLayer scene={openingScene} assets={assets} presentation={presentation}
+          video={video} showCaptions showVisuals={false} />
+      </AbsoluteFill> : null}
     <Watermark presentation={presentation} />
   </AbsoluteFill>
   );

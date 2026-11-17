@@ -21,6 +21,13 @@ class WebLocalHandoffReleaseTests(unittest.TestCase):
         studio=(ROOT/"tools/studio_qt/app.py").read_text(encoding="utf-8")
         self.assertIn('ROOT / "ready"',studio)
 
+    def test_release_workflow_rebuilds_on_any_plugin_source_change(self):
+        """Reference-only edits must not silently skip archive generation."""
+        workflow=(ROOT/".github/workflows/zodiac-plugin-release.yml").read_text(encoding="utf-8")
+        self.assertIn("      - plugins/zodiac-video-pipeline/**",workflow)
+        self.assertIn("      - tools/release/**",workflow)
+        self.assertIn("      - tools/build_source_bundle.py",workflow)
+
     def test_release_workflow_builds_both_split_archives(self):
         workflow=(ROOT/".github/workflows/zodiac-plugin-release.yml").read_text(encoding="utf-8")
         self.assertIn("zodiac-video-web-plugin-",workflow)

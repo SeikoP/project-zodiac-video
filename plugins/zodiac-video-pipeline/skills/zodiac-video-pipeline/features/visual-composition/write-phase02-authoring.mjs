@@ -15,6 +15,7 @@ import {assertContentApprovalSources} from '../../core/evidence/approval-source-
 import {assertTaskWrite} from '../../core/workflow/task-coordinator.mjs';
 import {compileNarrationPerformance,resolveNarrationPerformancePlan} from '../narration-performance/compile-narration-performance.mjs';
 import {compositionHash} from './phase02-composition.mjs';
+import {validatePhase1StoryVisuals} from '../../contracts/phase1-handoff.mjs';
 import os from 'node:os';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const decode=async p=>JSON.parse(await readFile(p,'utf8'));
@@ -83,7 +84,16 @@ export async function writePhase02Authoring({workspace,payloadPath,revise=false,
   if(taskId!==null)await assertTaskWrite(root,taskId,'.authoring/visual-intent.json',{visualIntent:authored});
   assertPhase02AuthoringSource(authored.format,state.run_mode);
   const generated=authored.format==='zodiac-visual-intent@1'?compileVisualIntent(authored,{narration:source,token:designToken(await readFile(path.join(root,'design.md'),'utf8'))}):null;
-  if(generated){let coverage=null;try{coverage=await decode(path.join(dir,'narration-performance-coverage.json'));}catch(e){if(e.code!=='ENOENT')throw e;}if(coverage){let planRaw;try{planRaw=await readFile(path.join(dir,'narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;planRaw=await readFile(path.join(root,'narrative-plan.json'),'utf8');}generated.production=compileNarrationPerformance(generated.production,resolveNarrationPerformancePlan(planRaw,source,coverage),source);generated.receipt.projection_hashes.production=compositionHash(generated.production);}}
+  if(generated){
+   let coverage=null,planRaw=null;try{coverage=await decode(path.join(dir,'narration-performance-coverage.json'));}catch(e){if(e.code!=='ENOENT')throw e;}
+   try{planRaw=await readFile(path.join(dir,'narrative-plan.json'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;try{planRaw=await readFile(path.join(root,'narrative-plan.json'),'utf8');}catch(e2){if(e2.code!=='ENOENT')throw e2;}}
+   if(state.run_mode==='fresh'){
+    if(!planRaw)throw Error('STORY_VISUAL_PHASE1_DECISION_REQUIRED');
+    const plan=validatePhase1StoryVisuals(JSON.parse(planRaw));
+    if(!plan.story_visuals?.length&&(authored.story_visual_decision?.mode!=='omitted'||authored.story_visual_decision.reason!==plan.story_visual_decision.reason))throw Error('STORY_VISUAL_PHASE1_OMISSION_DRIFT');
+   }
+   if(planRaw){generated.production=compileNarrationPerformance(generated.production,resolveNarrationPerformancePlan(planRaw,source,coverage),source);generated.receipt.projection_hashes.production=compositionHash(generated.production);}
+  }
   const payload=generated?{format:'zodiac-phase02-authored-handoff@1',plugin_version:manifest.version,approved_narration_sha256:authored.narration_sha256,production:generated.production,asset_plan:generated.asset_plan,visual_grammar_plan:generated.visual_grammar_plan,character_assembly_plan:generated.character_assembly}:authored;
   const verdict=assessAuthoringPayload(payload,{narration:source,pluginVersion:manifest.version,state});
   if(verdict.status==='BLOCKED')throw new Error('AUTHORING_PAYLOAD_BLOCKED '+JSON.stringify(verdict.issues));

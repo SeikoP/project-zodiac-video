@@ -27,20 +27,17 @@ voice_profile_ref: voice-profile.json
 narrative_design_ref: narrative-design.json
 motif_candidates:
   - <optional payoff image>
-narrative_visual_direction:
-  - id: <Phase-1 Narrative Visual id>
+story_visual_direction:
+  - id: <Phase-1 Story Visual id>
     beat_ids: [<Narrative Plan beat ids>]
-    trait_basis: <source-bounded Zodiac trait>
-    story_point: <exact point the image explains>
+    evidence_refs: [<optional real source ids when available in the approved plan; never synthesize ids>]
+    story_point: <exact point the visual explains>
     viewer_read: <silent-read meaning>
     visible_subject: <concrete visible subject/object relationship>
     visible_action: <observable action/state change>
-    visual_idea: <one concrete drawable image idea>
-    concept_fit: <why it belongs to this episode>
-    centrality_reason: <why this point deserves visual focus>
-    why_visual_not_text: <why image beats short Story Text>
-    tone_fit: <how it preserves episode tone>
-    payoff_image: <optional later callback/resolution>
+    visual_idea: <one concrete drawable state/action idea>
+    contribution: <specific information this visual adds beyond actor/prop/context performance>
+    lettering: [<optional exact short wording that belongs inside this same Story Visual>]
 engagement_direction:
   entry_hook: <compact first spoken move>
   open_question: <question/tension to carry>
@@ -60,7 +57,7 @@ Fresh 2.6.8+ also compiles `engagement_direction` from validated `engagement-des
 
 Prefer the `source_id + instruction` form so `validate-content-contract.mjs` can prove lineage. Legacy plain strings remain readable only when they textually resolve to the source artifact.
 
-Keep the brief compact. `narrative_visual_direction` is semantic Phase-1 story intent only: it may guide lines that give the selected image a natural anchor, but it must not turn narration into stage directions. Never include raw SRT/reference lines, reference Zodiac claims, full beat objects, `devices`, the full evidence ledger/research, full QC, assets, animation, runtime or package rules. `audience_vibe` is concept-driven, not automatically `student_peer`. All planner vocabulary is internal-only and must be translated into natural viewer-facing Vietnamese.
+Keep the brief compact. `story_visual_direction` is semantic Phase-1 story intent only: it may guide lines that give the selected image a natural anchor, but it must not turn narration into stage directions. Never include raw SRT/reference lines, reference Zodiac claims, full beat objects, `devices`, the full evidence ledger/research, full QC, assets, animation, runtime or package rules. `audience_vibe` is concept-driven, not automatically `student_peer`. All planner vocabulary is internal-only and must be translated into natural viewer-facing Vietnamese.
 
 ## Mandatory Zodiac-first brief for fresh v2.4.15+
 Include `sign_identity_mechanism`, `misread_vs_reframe`, `three_facets`, `sign_swap_counterfactual`, `scene_usage_limit`, and `non_moral_payoff` from the chosen candidate. three_facets is a compatibility field name for a nonempty list, not an exact count. misread_vs_reframe is recognition context, not mandatory misunderstanding/twist. They are *creative essential context*, not full research or QC. Explicitly instruct the writer to **explain the sign, not narrate a long fictional episode**. Scenes are compact manifestations; no obligatory moral transformation. Distinguish behavioral observation from evidence about individual people.

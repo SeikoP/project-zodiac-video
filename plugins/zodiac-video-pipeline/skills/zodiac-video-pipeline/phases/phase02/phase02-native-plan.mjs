@@ -44,6 +44,7 @@ export const sourcePaths=[
  'references/asset-library-v4/environments/validate-environment-binding.mjs',
  'references/asset-library-v4/scene-set/index.json',
  'references/asset-library-v4/scene-direction/compile-scene-direction.mjs',
+ 'references/asset-library-v4/scene-direction/validate-scene-direction.mjs',
  'references/asset-library-v4/scene-direction/compiler-profile.json',
  'references/asset-library-v4/scene-direction/validate-scene-direction-compile.mjs',
 ];

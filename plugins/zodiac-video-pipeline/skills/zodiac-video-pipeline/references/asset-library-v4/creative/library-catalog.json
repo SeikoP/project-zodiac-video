@@ -22,7 +22,7 @@
   },
   "rules": [
     "Never select a reusable prop solely because the shape resembles a theme.",
-    "New narrative_visual SVG identities require a per-scene claim and exact voice anchor.",
+    "New story_visual SVG identities require a per-scene claim and exact voice anchor.",
     "Do not pre-stock zodiac-specific metaphors, revelation/payoff imagery, or fixed story sequences.",
     "Similarity or deliberate cross-episode reuse requires recorded rationale and editorial review, not silent random substitution."
   ]

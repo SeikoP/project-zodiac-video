@@ -5,7 +5,7 @@ const nonempty=x=>typeof x==='string'&&x.trim().length>0;
 const uniq=a=>[...new Set(a)];
 const character=e=>e?.kind==='character'||e?.visual_role==='character';
 const physical=e=>e?.kind==='prop'||e?.visual_role==='interactive_prop';
-const narrative=e=>e?.kind==='narrative_visual'||e?.visual_role==='narrative_visual';
+const narrative=e=>e?.kind==='story_visual'||e?.visual_role==='story_visual';
 const story=e=>character(e)||physical(e)||narrative(e);
 
 /** Build a deterministic read-only per-scene DAG from the canonical Visual Intent.

@@ -12,7 +12,7 @@ test('Phase-1 link and concrete meaning are required',()=>{const b=ok();b.phase1
 test('anchor must exist in voice',()=>{const b=ok();b.anchor_phrase='không có';assert.ok(codes(b).includes('NARRATIVE_BRIEF_ANCHOR_NOT_IN_VOICE'));});
 test('state change needs a real change tied to an anchor',()=>{const b=ok();b.state_changes[0].to=b.state_changes[0].from;b.state_changes[0].anchor_phrase='x';const c=codes(b);assert.ok(c.includes('NARRATIVE_BRIEF_STATE_CHANGE_INVALID')&&c.includes('NARRATIVE_BRIEF_CHANGE_ANCHOR_NOT_IN_VOICE'));});
 test('unknown event is rejected',()=>{const b=ok();b.state_changes[0].event_id='E9';assert.ok(codes(b).includes('NARRATIVE_BRIEF_EVENT_UNKNOWN'));});
-const cov=(layers)=>({format:'zodiac-visual-coverage@1',layers_version:'narrative_visual@1',narration_sha256:createHash('sha256').update(voice).digest('hex'),beats:[{id:'B1',goal:'g',narration_range:[0,Buffer.byteLength(voice)],event_ids:[],layers}]});
+const cov=(layers)=>({format:'zodiac-visual-coverage@1',layers_version:'story_visual@1',narration_sha256:createHash('sha256').update(voice).digest('hex'),beats:[{id:'B1',goal:'g',narration_range:[0,Buffer.byteLength(voice)],event_ids:[],layers}]});
 const caption={decision:'use',reason:'Runner hiển thị',entity_ids:[]};
 const sc={id:'S01',voice,entities:[],events:[],layout_contract:{caption_safe_zone:{x:0,y:0,width:10,height:10}}};
 const run=(layers,opt)=>validateVisualCoverage(sc,{components:[],visual_coverage:cov(layers)},{required:true,...opt}).map(i=>i.code);

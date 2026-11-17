@@ -18,7 +18,7 @@ test('current core owners exist and compatibility source tree is absent',async()
 });
 
 test('current feature owners exist without retired storytelling variants',async()=>{
- for(const rel of ['features/episode/episode-scope.mjs','features/narration-performance/compile-narration-performance.mjs','features/scene-set/validate-scene-set.mjs','features/visual-composition/phase02-composition.mjs','features/visual-composition/validate-narrative-visual-presence.mjs','features/cover/validate-cover-design.mjs','features/meme/validate-meme-selection.mjs','features/publish/validate-publish-prep.mjs'])assert.equal(await exists(path.join(skill,rel)),true,rel+' missing');
+ for(const rel of ['features/episode/episode-scope.mjs','features/narration-performance/compile-narration-performance.mjs','features/scene-set/validate-scene-set.mjs','features/visual-composition/phase02-composition.mjs','features/visual-composition/validate-story-visual-presence.mjs','features/cover/validate-cover-design.mjs','features/meme/validate-meme-selection.mjs','features/publish/validate-publish-prep.mjs'])assert.equal(await exists(path.join(skill,rel)),true,rel+' missing');
 });
 
 test('capability registry points only at existing current owners',async()=>{
@@ -57,7 +57,7 @@ test('active phase manifests use canonical non-retired references',async()=>{
  for(const name of ['01-content.json','02-visual-production.json','03-handoff.json']){
   const m=JSON.parse(await readFile(path.join(orchestration,'phases',name),'utf8'));
   const serialized=JSON.stringify(m);
-  assert.doesNotMatch(serialized,/visual-metaphor|story-object-plan|narrative-visual-contract|narrative-visual-authoring/u,name);
+  assert.doesNotMatch(serialized,/visual-metaphor|story-object-plan|story-visual-contract|story-visual-authoring/u,name);
   for(const step of m.steps??[])for(const cap of [...(step.required_capabilities??[]),...(step.conditional_capabilities??[])])if(typeof cap.tool_locator==='string'&&cap.tool_locator.startsWith('orchestration/'))assert.ok(allow.has(cap.tool_locator),name+':'+cap.id+' '+cap.tool_locator);
  }
 });

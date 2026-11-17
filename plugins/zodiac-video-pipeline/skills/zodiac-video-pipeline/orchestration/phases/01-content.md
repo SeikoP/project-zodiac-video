@@ -37,9 +37,9 @@ Build one coherent Story Spine with:
 - a payoff that changes how the opening is understood;
 - a **Narrative Motif** chosen before prose for story-driven concepts, with setup, friction, turn, payoff/callback and a removal test;
 - a **second-half pulse** that specifies how post-midpoint beats keep moving through action, decision, consequence, contrast, reframe or payoff;
-- optional narrative-visual direction only when a concrete image is central to the story.
+- optional story-visual direction only when a concrete image is central to the story.
 
-A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not Phase-2 Visual Metaphor/Story Object authoring. Do not pre-design Phase-2 scenes or assets.
+A direct deconstruction may explicitly omit the motif with a specific reason. The Narrative Motif is Phase-1 semantic continuity, not a Phase-2 Story Visual direction. Do not pre-design Phase-2 scenes or assets.
 
 ### Narration
 
@@ -52,7 +52,9 @@ Draft from the selected concept, Story Spine, Narrative Motif when present, seco
 - post-midpoint movement instead of explanation plateaus;
 - a finish that lands through payoff/callback rather than fades.
 
-Do not write to pass a validator. Editorial review happens after a real draft exists.
+After the prose exists, bind the final narration back to the Narrative Plan before Content Review. Fresh Web handoffs use Narrative Plan `version: "2.1"` with non-empty `beats`; each performance beat carries an exact `voice_anchor`, `occurrence` when an anchor repeats, and `performance={delivery,energy,emotion,pace,emphasis,reason}`. These directions are approved creative intent. Local may map them onto later scene boundaries but must not invent missing performance semantics.
+
+Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval.
 
 There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 
@@ -61,3 +63,7 @@ There is no fixed fictional-ad requirement and no fixed duration band unless the
 This is the only required human approval boundary. Present the exact final narration and a compact concept/voice summary. Explicit user approval completes Phase 1.
 
 After approval, package the approved bytes into `zodiac-phase1-handoff@2`. Web does not create or activate native pipeline state. Local reconstructs the native boundary state from the approved capsule.
+
+## User says chốt
+
+Treat chốt as an instruction to finish validation and repair the current phase, never as a validator waiver. Run the owning checks against current sources, fill omissions and repair failures, then validate again. Missing input, REVIEW, BLOCKED, stale receipts or incomplete required outputs prevent phase transition even after chốt. Keep the user's approval intent while doing this work; do not ask for the same confirmation merely because checks had to run. Bind an APPROVED receipt only after the current reviewed creative sources and required checks pass. If a repair changes the reviewed creative meaning, present the concrete revision for review; never transfer approval to unseen content. Technical checks do not replace source-bound content/visual inspection.

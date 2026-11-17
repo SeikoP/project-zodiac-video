@@ -9,7 +9,7 @@ test('producer review requires source-backed two endpoints/event, not Remotion',
  const skill=await text('SKILL.md'),router=await text('orchestration/router.md'),guide=await text('features/visual-composition/run-director-v2-review.mjs');
  assert.match(guide,/build-native-preview-pairs\.mjs/);assert.match(guide,/validate-native-preview-pairs\.mjs/);
  assert.match(skill,/Remotion.*local runner|local runner.*Remotion/is);
- assert.match(router,/two actual endpoints per event/i);
+ assert.match(router,/native asset\/scene\/preview validators/iu);
 });
 test('version synchronized between plugin manifest and template',async()=>{
  const pkg=JSON.parse(await readFile(path.resolve(root,'../../plugin.json'),'utf8')); // plugin root is three dirs above skill root, checked below

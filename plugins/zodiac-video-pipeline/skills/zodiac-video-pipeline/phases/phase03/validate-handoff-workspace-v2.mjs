@@ -76,7 +76,7 @@ export async function validateHandoffV2(root){
     if(category==='overlay'&&entity.visual_role==='overlay')return 'overlay';
     // Native mental imagery is projected to story_object at the Job@5 boundary.
     // Count it against prominent visual effects, never infer that it is an actor.
-    if(category==='story_object'||category==='narrative_visual')return 'effect';
+    if(category==='story_object'||category==='story_visual')return 'effect';
     // Legacy fixtures without category retain the former naming behavior.
     if(category!==undefined)fail('unknown asset category '+scene.id+' '+entity.id+' '+category);
     if(entity.id.startsWith('env__'))return 'environment';

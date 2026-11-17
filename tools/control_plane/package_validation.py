@@ -171,6 +171,29 @@ def _validate_narration(root: Path, ir: dict[str, Any]) -> None:
         )
 
 
+def _validate_cover_narration_separation(ir: dict[str, Any], publish: dict[str, Any]) -> None:
+    """Do not read a printed, all-caps cover heading as the opening TTS line.
+
+    Voice-first playback starts at frame zero; a distinct cover hook belongs in
+    publish metadata, never as an all-caps label prepended to scene.voice.
+    Natural spoken hooks, including emphasized dialogue, remain supported.
+    """
+    cover = publish.get("cover")
+    if not isinstance(cover, dict) or (cover.get("opening") or {}).get("enabled") is not True:
+        return
+    scenes = ir.get("scenes") or []
+    if not scenes:
+        return
+    opening_line = str(scenes[0].get("voice") or "").split("\n", 1)[0].strip()
+    if (opening_line.isupper() and ":" in opening_line
+            and len(opening_line.split()) >= 6):
+        _fail(
+            "PACKAGE_VOICE_COVER_TITLE_DUPLICATED",
+            "opening scene voice starts with an uppercase cover heading; move it to publish.cover and keep only naturally spoken narration",
+            detail={"scene_id": scenes[0].get("id"), "heading": opening_line},
+        )
+
+
 def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> dict[str, Any]:
     """Validate the exact Job@5 package boundary before importing it into a workspace."""
     source = Path(root).expanduser()
@@ -331,6 +354,7 @@ def validate_job5_package_root(root: Path, *, local_workspace: bool = False) -> 
                   detail={"path": spoken_path.name})
 
     _validate_narration(root, ir)
+    _validate_cover_narration_separation(ir, publish)
     _validate_asset_files(root, ir)
 
     # Legacy producer 2.1.x and existing 2.2.2 packages must remain readable.

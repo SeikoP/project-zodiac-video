@@ -3,7 +3,7 @@
 Moved verbatim from SKILL.md so Phase 01 and Phase 03 work does not load them. The Fresh Run Isolation rule stays in SKILL.md. Read this file in full before any Phase 02 authoring or visual selection.
 
 ## Current visual selection
-Current visual selection uses a fixed native face, plain or intrinsic zodiac-glyph shirts with selected colors, no accessories by default; optional restrained reaction/effect assets remain allowed when narration or acting requires them. Preserve the sign's icon baked on its shirt; omit decorative halos, rays and floating marks around that icon. Never infer a supporting actor's sign. Prefer feminine presentation with a tall slim silhouette for leads unless explicit episode design requests otherwise. Preserve pose/expression acting, props, Narrative Visuals and supporting backdrops.
+Current visual selection uses a fixed native face, plain or intrinsic zodiac-glyph shirts with selected colors, no accessories by default; optional restrained reaction/effect assets remain allowed when narration or acting requires them. Preserve the sign's icon baked on its shirt; omit decorative halos, rays and floating marks around that icon. Never infer a supporting actor's sign. Prefer feminine presentation with a tall slim silhouette for leads unless explicit episode design requests otherwise. Preserve pose/expression acting, props, Hình kể chuyệns and supporting backdrops.
 
 ### Character identity variation
 For fresh `zodiac-character-assembly-plan@2`, hair is an explicit story-first identity choice, not a fallback. Every character must own a `hair_id` and a meaningful hair decision reason. Use the expanded feminine pool across distinct silhouette families (bob/lob, wave, long loose, braid, bun, half-up, ponytail) rather than repeatedly choosing the same long-side-part or ponytail. Co-visible recurring people should have distinct hair IDs; intentional matching requires `design_intent.hair_reuse_reason` for every colliding character. Hair variation complements rather than replaces body-silhouette variation.
@@ -11,10 +11,10 @@ For fresh `zodiac-character-assembly-plan@2`, hair is an explicit story-first id
 ## Scene Accents
 Every fresh scene requires a visible narration-grounded background/context cue, with per-beat use/omission in Visual Coverage. Extra Scene Accents are optional. Fresh accents have their own authoring category `scene_accent`, canvas-relative placement, optional actor-relative anchor, rear layering, one reusable SVG per identity, and voice-anchored visibility states. They do not require a Scene Set and must not constrain character positioning. Canvas, spatial and caption safety remain mandatory.
 
-Scene accents are sparse narrative context cues, not a permanently decorated room. Their `initial_state` and visibility states may be driven by ordinary voice-anchored events, reusing one SVG. Narrative Visual is optional and only executes a concrete Phase-1 direction. Story Text is its mutually exclusive scene-level alternative. Neither is added for decoration or quota.
+Scene accents are sparse narrative context cues, not a permanently decorated room. Their `initial_state` and visibility states may be driven by ordinary voice-anchored events, reusing one SVG. Hình kể chuyện is optional and only executes a concrete Phase-1 direction. It may contain illustration, outlined lettering or both inside the same state/asset; lettering never becomes another semantic layer. Story Visual is never added for decoration or quota.
 
 ## Visual coverage before SVG compilation
-Fresh Phase 02 requires per-beat visual_coverage in Visual Intent art_direction before SVG compilation. Fill actor, optional Scene Accent, Narrative Visual, ordinary prop, support and caption decisions with actual references or explicit omissions. The native seam and Visual Quality enforce coverage; a symbolic metaphor cannot substitute for ordinary props used by the narration.
+Fresh Phase 02 requires per-beat visual_coverage in Visual Intent art_direction before SVG compilation. Fill actor, optional Scene Accent, Hình kể chuyện, ordinary prop, support and caption decisions with actual references or explicit omissions. The native seam and Visual Quality enforce coverage; a symbolic metaphor cannot substitute for ordinary props used by the narration.
 
 ## Scene Experience review
 
@@ -27,7 +27,7 @@ experience_profile:
   required_physical_entities: [<entity ids explicitly required by the narrated physical action>]
   story_focus:
     goal: <exact semantic_goal for this scene>
-    focal_entity_id: <one visible character/prop/narrative_visual carrying the beat>
+    focal_entity_id: <one visible character/prop/story_visual carrying the beat>
     supporting_entity_ids: [<visible story entities that materially support the focal entity>]
     links:
       - from: <focal/support entity id>
@@ -40,13 +40,13 @@ experience_profile:
 
 Fresh 2.6.10+ runs review story experience before native SVG generation. This is not a decoration-density quota. A scene does **not** gain depth because it has more layers. Depth is credited only when the focal entity and supporting story entities form a valid relation chain bound to the scene `semantic_goal`.
 
-For each scene, explicitly consider character action, environment specificity, physical storytelling, depth separation, secondary action, visual callback and Narrative Visual role. Behavior or relationship narration should have an authored story action or meaningful physical/Narrative Visual progression; a passive actor plus passive context cue is a REVIEW condition, not a sufficient scene.
+For each scene, explicitly consider character action, environment specificity, physical storytelling, depth separation, secondary action, visual callback and Hình kể chuyện role. Behavior or relationship narration should have an authored story action or meaningful physical/Hình kể chuyện progression; a passive actor plus passive context cue is a REVIEW condition, not a sufficient scene.
 
-Every physical prop, Narrative Visual, event-targeted story entity, and co-actor required by a relationship scene must be either the focal entity or a supporting entity connected through authored `links`. An unlinked prop/Narrative Visual is decoration even if it has an event. Link `purpose` must explain how the relationship serves the exact semantic goal; do not add components merely to make a checklist green.
+Every physical prop, Hình kể chuyện, event-targeted story entity, and co-actor required by a relationship scene must be either the focal entity or a supporting entity connected through authored `links`. An unlinked prop/Hình kể chuyện is decoration even if it has an event. Link `purpose` must explain how the relationship serves the exact semantic goal; do not add components merely to make a checklist green.
 
-Sparse composition remains valid for reflection/payoff beats when negative space serves the semantic job and the omission rationale is explicit. Never add props, Scene Accents, effects or Narrative Visuals only to make a checklist green.
+Sparse composition remains valid for reflection/payoff beats when negative space serves the semantic job and the omission rationale is explicit. Never add props, Scene Accents, effects or Hình kể chuyệns only to make a checklist green.
 
-If narration explicitly involves a physical object, a symbolic Narrative Visual cannot replace that physical storytelling obligation. Scene Accents remain rear/context-only and independent from actor composition.
+If narration explicitly involves a physical object, a symbolic Hình kể chuyện cannot replace that physical storytelling obligation. Scene Accents remain rear/context-only and independent from actor composition.
 
 ## Scene Production Pipeline (fresh 2.6.11+)
 

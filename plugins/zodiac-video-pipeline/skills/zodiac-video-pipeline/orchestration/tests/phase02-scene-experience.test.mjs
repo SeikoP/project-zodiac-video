@@ -45,8 +45,8 @@ test('intentional sparse reflection scene can pass with explicit omissions',()=>
  assert.equal(r.decision,'PASS');
 });
 
-test('narrated physical object cannot be replaced only by narrative visual',()=>{
- const nv={id:'memory',kind:'narrative_visual',visual_role:'narrative_visual',initial_state:'on',states:{on:{visible:true}}};
+test('narrated physical object cannot be replaced only by story visual',()=>{
+ const nv={id:'memory',kind:'story_visual',visual_role:'story_visual',initial_state:'on',states:{on:{visible:true}}};
  const goal='She remembers the cup';
  const r=reviewSceneExperience(intent({id:'S03',semantic_goal:goal,experience_profile:{story_mode:'behavior',required_physical_entities:['cup'],story_focus:{goal,focal_entity_id:'lead',supporting_entity_ids:['memory'],links:[{from:'lead',to:'memory',relation:'recalls the image',purpose:'Makes the memory visible while keeping the actor as the focal point.'}]}},entities:[char,nv],events:[{id:'E1',target:'memory',action:'reveal',state_before:'off',state_after:'on'}],art_direction:{scene_experience:{environment_specificity:'Memory space.',visual_callback:'Thread callback.'}}}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='PHYSICAL_STORY_ENTITY_MISSING'));
@@ -55,4 +55,29 @@ test('narrated physical object cannot be replaced only by narrative visual',()=>
 test('fresh scene without experience profile is REVIEW instead of silently passing',()=>{
  const r=reviewSceneExperience(intent({id:'S00',semantic_goal:'A behavior beat',entities:[char,accent],events:[]}));
  assert.equal(r.decision,'REVIEW');assert.ok(r.scenes[0].issues.some(x=>x.code==='EXPERIENCE_PROFILE_MISSING'));
+});
+
+
+test('relationship scene with tiny accent and flat repeated geometry is REVIEW',()=>{
+ const goal='One partner keeps taking over while the other gets pushed out';
+ const lead={id:'lead',kind:'character',visual_role:'character',initial_state:'idle',states:{idle:{visible:true,layer:20,transform:{x:141,y:450,width:328,height:480}}}};
+ const peer={id:'friend',kind:'character',visual_role:'character',initial_state:'idle',states:{idle:{visible:true,layer:20,transform:{x:611,y:450,width:328,height:480}}}};
+ const cue={id:'cue',kind:'scene_accent',visual_role:'background',initial_state:'on',states:{on:{visible:true,layer:5,transform:{x:70,y:100,width:300,height:190}}}};
+ const r=reviewSceneExperience(intent({id:'S02',semantic_goal:goal,layout_contract:{canvas:{width:1080,height:1920},caption_safe_zone:{x:100,y:1450,width:880,height:360}},experience_profile:{story_mode:'relationship',story_focus:{goal,focal_entity_id:'lead',supporting_entity_ids:['friend'],links:[{from:'lead',to:'friend',relation:'takes over the shared task',purpose:'Shows the relational imbalance directly in the two-person beat.'}]}},entities:[lead,peer,cue],events:[{id:'E1',target:'lead',action:'take over'},{id:'E2',target:'friend',action:'step back'}],art_direction:{scene_experience:{environment_specificity:'Small context cue.'}}}));
+ assert.equal(r.decision,'REVIEW');
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='ENVIRONMENT_VISUAL_UNDERDEVELOPED'));
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='VISUAL_DEPTH_UNDERDEVELOPED'));
+ assert.ok(r.scenes[0].issues.some(x=>x.code==='FRAME_OCCUPANCY_LOW'));
+});
+
+test('relationship scene passes geometry criteria with real depth and stronger occupancy',()=>{
+ const goal='One partner finally shares the task';
+ const lead={id:'lead',kind:'character',visual_role:'character',initial_state:'idle',states:{idle:{visible:true,layer:20,transform:{x:85,y:466,width:430,height:629}}}};
+ const peer={id:'friend',kind:'character',visual_role:'character',initial_state:'idle',states:{idle:{visible:true,layer:20,transform:{x:565,y:466,width:430,height:629}}}};
+ const depth={id:'depth__S06__rear',kind:'object',visual_role:'background',initial_state:'visible',states:{visible:{visible:true,layer:-12,transform:{x:170,y:160,width:740,height:430}}}};
+ const r=reviewSceneExperience(intent({id:'S06',semantic_goal:goal,layout_contract:{canvas:{width:1080,height:1920},caption_safe_zone:{x:100,y:1450,width:880,height:360}},experience_profile:{story_mode:'relationship',story_focus:{goal,focal_entity_id:'lead',supporting_entity_ids:['friend'],links:[{from:'lead',to:'friend',relation:'shares the task',purpose:'Makes the payoff readable through a clear relationship change.'}]}},entities:[lead,peer,depth],events:[{id:'E1',target:'lead',action:'accept help'},{id:'E2',target:'friend',action:'step in'}],art_direction:{scene_experience:{environment_specificity:'Abstract depth frame supports the handoff.'}}}));
+ assert.equal(r.decision,'PASS');
+ assert.equal(r.scenes[0].criteria.environment_specificity.result,'PASS');
+ assert.equal(r.scenes[0].criteria.depth_separation.result,'PASS');
+ assert.equal(r.scenes[0].criteria.frame_occupancy.result,'PASS');
 });

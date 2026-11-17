@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generic authoring-only gate; no sign-specific entity, shot quotas or forced Narrative Visuals.
+// Generic authoring-only gate; no sign-specific entity, shot quotas or forced Hình kể chuyệns.
 import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';import {hasPrimarySceneSet} from '../scene-set/scene-set-detection.mjs';
 import {validateVisualCoverage} from './validate-visual-coverage.mjs';
 import {validateNarrativeBrief} from './validate-narrative-brief.mjs';
@@ -32,8 +32,8 @@ export function validatePhase02ArtDirection(production,plan,narration,palettes,e
   if(!String(d?.performer??'').trim()||!String(d?.action??'').trim()||!String(d?.semantic_goal??'').trim())fail('PERFORMANCE_INTENT_MISSING',scene_id);
   if(!String(d?.color_reason??'').trim()||(!fresh&&!String(d?.environment_reason??'').trim()))fail('ART_REASON_MISSING',scene_id);
   if(source)issues.push(...validateVisualCoverage(source,d,{required:requireCoverage,deriveEmptyLayers:fresh}));
-  // Fresh runs only: a used Narrative Visual must preserve Phase-1 meaning, anchor and state change.
-  if(source&&fresh){const usesNarrative=(d?.visual_coverage?.beats??[]).some(b=>b?.layers?.narrative_visual?.decision==='use');if(usesNarrative||d?.narrative_brief)issues.push(...validateNarrativeBrief(source,d.narrative_brief));}
+  // Fresh runs only: a used Hình kể chuyện must preserve Phase-1 meaning, anchor and state change.
+  if(source&&fresh){const usesNarrative=(d?.visual_coverage?.beats??[]).some(b=>b?.layers?.story_visual?.decision==='use');if(usesNarrative||d?.narrative_brief)issues.push(...validateNarrativeBrief(source,d.narrative_brief));}
  }
  if(compact(scenes.map(s=>s.voice).join(''))!==compact(narration))fail('APPROVED_NARRATION_MISMATCH');
  return {format:'zodiac-art-direction-qc@2',status:issues.length?'BLOCKED':'PASS',scenes:directed.length,issues};

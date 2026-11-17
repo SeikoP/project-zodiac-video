@@ -1,8 +1,20 @@
 import {readFile} from 'node:fs/promises';import path from 'node:path';
-import {assertEpisodeScope,MEMBER_LABELS} from './episode-scope.mjs';import {compositionHash} from '../visual-composition/phase02-composition.mjs';
+import {assertEpisodeScope,normalizeEpisodeScope,MEMBER_LABELS} from './episode-scope.mjs';import {compositionHash} from '../visual-composition/phase02-composition.mjs';
+import {assertContentApprovalSources} from '../../core/evidence/approval-source-hashes.mjs';
 const ascii=v=>String(v??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase().replaceAll('đ','d');
 const slug=v=>ascii(v).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
 const text=v=>typeof v==='string'&&Boolean(v.trim());const fail=m=>{throw Error('EPISODE_HANDOFF_INVALID '+m);};
+const scopeReferenceKeys=new Set(['episode_id','episode_format','member_ids','group_element','comparison_axis']);
+function assertEpisodeScopeReference(reference,scope){
+ try{const full=assertEpisodeScope(reference);if(compositionHash(scope)!==compositionHash(full))fail('SOURCE_SCOPE_DRIFT');return {partial:false};}
+ catch(error){
+  if(!String(error?.message??'').startsWith('EPISODE_SCOPE_INVALID '))throw error;
+  if(!reference||typeof reference!=='object'||Array.isArray(reference))fail('SOURCE_SCOPE_REFERENCE');
+  const keys=Object.keys(reference);if(!['episode_id','episode_format','member_ids'].every(key=>keys.includes(key))||keys.some(key=>!scopeReferenceKeys.has(key)))fail('SOURCE_SCOPE_REFERENCE');
+  const normalized=normalizeEpisodeScope(reference);for(const key of keys)if(compositionHash(normalized[key])!==compositionHash(scope[key]))fail('SOURCE_SCOPE_DRIFT');
+  return {partial:true};
+ }
+}
 export function episodeIdentity(input,concept){const scope=assertEpisodeScope(input),c=slug(concept);if(!c)fail('CONCEPT');const base=scope.episode_format==='single_sign'?ascii(MEMBER_LABELS[scope.member_ids[0]]).replace(/[^a-z0-9]/g,''):'zodiac-'+scope.episode_id;const job_id=base+'-'+c;if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(job_id))fail('JOB_ID_LENGTH');return {job_id,package_slug:scope.episode_format==='single_sign'?'zodiac-'+job_id:job_id,scope_sha256:compositionHash(scope),scope,concept:c};}
 export function assertEpisodeIdentity(identity){const expected=episodeIdentity(identity?.scope,identity?.concept);for(const key of ['job_id','package_slug','scope_sha256'])if(identity[key]!==expected[key])fail('IDENTITY_DRIFT');return expected;}
 export function validateEpisodeCast(c,input,production){const scope=assertEpisodeScope(input);if(c?.format!=='zodiac-episode-cast-plan@1'||c.scope_sha256!==compositionHash(scope)||!Array.isArray(c.bindings)||!c.bindings.length)fail('CAST_SCOPE');const covered=new Set(),seen=new Set();
@@ -19,4 +31,7 @@ export function validateEpisodeCover(cover,input){const scope=assertEpisodeScope
  else{if(identity.episode_id!==scope.episode_id||Object.hasOwn(identity,'sign_id'))fail('COVER_EPISODE_IDENTITY');const element={fire:'lua',air:'khi',earth:'dat',water:'nuoc'}[scope.group_element];const ok=scope.episode_format==='element_group'?label.includes('nhom '+element):scope.episode_format==='ranked_shortlist'?new RegExp('\\btop\\s*'+scope.member_ids.length+'\\b').test(label):label===ascii(scope.title_working).trim()||scope.member_ids.every(m=>label.includes(ascii(MEMBER_LABELS[m])));if(!ok)fail('COVER_SCOPE_LABEL');}
  return {status:'VALID',not_an_approval:true};}
 export async function episodeHandoffWorkspace(root,{cover=false}={}){const read=async rel=>JSON.parse(await readFile(path.join(root,rel),'utf8'));let p;try{p=await read('.authoring/narrative-plan.json');}catch(e){if(e.code!=='ENOENT')throw e;try{p=await read('narrative-plan.json');}catch(e2){if(e2.code==='ENOENT')return {status:'LEGACY_COMPATIBLE'};throw e2;}}
- if(p.version!=='2.1'){const state=await read('.authoring/pipeline-state.json').catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(state?.flags?.episode_selected===true)fail('EPISODE_NARRATIVE_REQUIRED');return {status:'LEGACY_COMPATIBLE'};}const scope=assertEpisodeScope(await read('.authoring/episode-scope.json'));if(compositionHash(scope)!==compositionHash(assertEpisodeScope(p.episode_scope)))fail('SOURCE_SCOPE_DRIFT');const production=await read('production.json'),cast=await read('.authoring/episode-cast-plan.json');validateEpisodeCast(cast,scope,production);if(cover)validateEpisodeCover((await read('publish/publish.json')).cover,scope);return {status:'VALID',scope,cast,not_an_approval:true};}
+ if(p.version!=='2.1'){const state=await read('.authoring/pipeline-state.json').catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(state?.flags?.episode_selected===true)fail('EPISODE_NARRATIVE_REQUIRED');return {status:'LEGACY_COMPATIBLE'};}const scope=assertEpisodeScope(await read('.authoring/episode-scope.json'));
+ if(p.episode_scope!==undefined){const reference=assertEpisodeScopeReference(p.episode_scope,scope);if(reference.partial){const state=await read('.authoring/pipeline-state.json');if((await assertContentApprovalSources(root,state)).status!=='BOUND')fail('SOURCE_SCOPE_APPROVAL_REQUIRED');}}
+ else {const state=await read('.authoring/pipeline-state.json');if((await assertContentApprovalSources(root,state)).status!=='BOUND')fail('SOURCE_SCOPE_APPROVAL_REQUIRED');}
+ const production=await read('production.json'),cast=await read('.authoring/episode-cast-plan.json');validateEpisodeCast(cast,scope,production);if(cover)validateEpisodeCover((await read('publish/publish.json')).cover,scope);return {status:'VALID',scope,cast,not_an_approval:true};}

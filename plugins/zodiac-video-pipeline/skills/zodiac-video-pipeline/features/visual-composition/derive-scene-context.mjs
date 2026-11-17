@@ -34,12 +34,12 @@ export function deriveSceneContext(docs,sceneId,{budget=12,detail='bounded'}={})
  const castItems=cast.filter(c=>characters.includes(c.entity_id));
  const missing=characters.filter(id=>!castItems.some(c=>c.entity_id===id));
  const events=source.events??[];
- const narrativeVisualIds=(source.entities??[]).filter(e=>e.visual_role==='story_object').map(e=>e.id);
+ const storyVisualIds=(source.entities??[]).filter(e=>e.visual_role==='story_object').map(e=>e.id);
  const authored=docs.composition?.scenes?.find(s=>s.id===sceneId),diagnostics=[];
  if(docs.resolved&&docs.resolved.source_sha256!==compositionHash(prod))diagnostics.push({code:'SCENE_CONTEXT_RESOLVED_STALE'});
  const concise={format:'zodiac-scene-context@1',scene_id:sceneId,source_is_authoritative:true,
   voice_ref:{file:'production.json',scene_id:sceneId,characters:String(source.voice??'').length},
-  character_ids:characters,narrative_visual_ids:narrativeVisualIds,
+  character_ids:characters,story_visual_ids:storyVisualIds,
   event_ids:ids(events),event_count:events.length,
   decisions:{
    visual_grammar:plans.visual_grammar?{frame_id:plans.visual_grammar.frame_id??null,mechanic_id:plans.visual_grammar.mechanic_id??null,ref:`visual-grammar-plan.json#${sceneId}`} : null,

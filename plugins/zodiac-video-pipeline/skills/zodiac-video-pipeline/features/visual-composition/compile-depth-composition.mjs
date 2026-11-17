@@ -12,6 +12,7 @@ export function makeLayer(profile,palette,role,sceneId){
  const c=palette;
  const wrap=(w,h,shapes)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${escape(profile)} ${escape(role)}"><g stroke-linejoin="round" stroke-linecap="round">${shapes}</g></svg>`;
  if(role==='rear'){
+  if(profile==='relationship-space')return wrap(740,430,`<path d="M42 356Q166 72 352 176T704 94" fill="none" stroke="${c.edge}" stroke-width="8" opacity=".46"/><path d="M74 382Q228 324 370 350T676 320" fill="none" stroke="${c.accent}" stroke-width="7" opacity=".58"/><ellipse cx="360" cy="342" rx="260" ry="48" fill="${c.light}" opacity=".42"/><circle cx="130" cy="116" r="24" fill="${c.light}" opacity=".8"/><circle cx="620" cy="154" r="18" fill="${c.accent}" opacity=".35"/>`);
   if(profile==='bedroom-night')return wrap(740,430,`<path d="M28 378V56H705V378" fill="${c.wall}" fill-opacity=".43" stroke="${c.edge}" stroke-width="7"/><path d="M330 65V354M125 210H548" fill="none" stroke="${c.edge}" stroke-width="6"/><circle cx="555" cy="116" r="39" fill="${c.light}" opacity=".82"/><path d="M475 92Q510 50 544 92" fill="none" stroke="${c.accent}" stroke-width="5"/>`);
   if(profile==='study-corner')return wrap(740,430,`<path d="M42 90H690M55 245H677" fill="none" stroke="${c.edge}" stroke-width="8"/><path d="M80 98V218M143 112V222M350 112V228M512 120V224" stroke="${c.accent}" stroke-width="13" stroke-linecap="round"/><path d="M590 145Q615 90 644 150V236" fill="none" stroke="${c.ink}" stroke-width="6"/>`);
   if(profile==='classroom-day')return wrap(740,430,`<path d="M65 80Q65 63 88 63H670V331H65Z" fill="${c.wall}" fill-opacity=".43" stroke="${c.edge}" stroke-width="8"/><path d="M112 115H565M115 175H388" stroke="${c.accent}" opacity=".55" stroke-width="6" stroke-dasharray="26 18"/><circle cx="615" cy="118" r="26" fill="${c.light}" stroke="${c.ink}" stroke-width="5"/>`);
@@ -22,6 +23,7 @@ export function makeLayer(profile,palette,role,sceneId){
   return wrap(740,430,`<path d="M20 382V90Q22 30 84 30H648Q720 40 720 98V382" fill="${c.wall}" fill-opacity=".32" stroke="${c.edge}" stroke-width="7"/><path d="M95 65V336M650 68V335" stroke="${c.light}" stroke-width="12" opacity=".9"/>`);
  }
  if(role==='divider'){
+  if(profile==='relationship-space')return wrap(360,520,`<path d="M176 38Q136 142 180 242T174 482" fill="none" stroke="${c.shadow}" stroke-opacity=".13" stroke-width="28"/><path d="M176 38Q142 142 180 242T174 482" fill="none" stroke="${c.accent}" stroke-width="6" stroke-dasharray="24 17"/><circle cx="176" cy="244" r="14" fill="${c.light}" stroke="${c.edge}" stroke-width="4"/>`);
   if(profile==='bedroom-night')return wrap(360,520,`<path d="M45 40Q75 120 56 205T48 480M294 39Q259 130 293 238T310 471" fill="none" stroke="${c.accent}" stroke-width="15" opacity=".6"/><path d="M35 45H318" stroke="${c.edge}" stroke-width="7"/>`);
   if(profile==='study-corner')return wrap(360,520,`<path d="M62 35V483M275 35V483M50 207H305M45 381H300" fill="none" stroke="${c.edge}" stroke-width="8"/><path d="M75 148H225" stroke="${c.accent}" stroke-width="6"/>`);
   if(profile==='classroom-day')return wrap(360,520,`<path d="M62 68V455H300" fill="none" stroke="${c.edge}" stroke-width="7"/><path d="M88 115H280M88 173H230" stroke="${c.accent}" stroke-width="6" stroke-dasharray="17 13"/>`);
@@ -42,7 +44,7 @@ export function compileDepth(production,plan,catalog){
   if(!scene||!profile||!palette||seen.has(item.scene_id))fail('DEPTH_PLAN_INVALID',String(item.scene_id));
   seen.add(item.scene_id);
   if(!String(item.rationale??'').trim()||!Array.isArray(item.layers)||item.layers.length<1||item.layers.length>3||new Set(item.layers).size!==item.layers.length||item.layers.some(x=>!['rear','divider','front'].includes(x)))fail('DEPTH_LAYER_INVALID',item.scene_id);
-  if(item.narrative_visual_entity_id && !(scene.entities??[]).some(e=>e.id===item.narrative_visual_entity_id))fail('NARRATIVE_VISUAL_MISSING',item.scene_id);
+  if(item.story_visual_entity_id && !(scene.entities??[]).some(e=>e.id===item.story_visual_entity_id))fail('STORY_VISUAL_MISSING',item.scene_id);
   for(const role of item.layers){
    const id='depth__'+safe(item.scene_id)+'__'+role,asset='DEPTH_'+safe(item.scene_id).toUpperCase()+'_'+role.toUpperCase(),rel='assets/environment/depth-'+safe(item.scene_id)+'-'+role+'.svg';
    if(out.assets[asset] || (scene.entities??[]).some(e=>e.id===id))fail('DEPTH_ENTITY_COLLISION',id);
@@ -51,7 +53,7 @@ export function compileDepth(production,plan,catalog){
    const wh=role==='rear'&&['spotlight-payoff','social-pressure','split-thought'].includes(item.profile)?({ 'spotlight-payoff':[720,460],'social-pressure':[740,360],'split-thought':[730,410]}[item.profile]):role==='divider'&&['spotlight-payoff','social-pressure','split-thought'].includes(item.profile)?[360,490]:sizes[role];
    const t=role==='rear'?{x:170,y:160,width:wh[0],height:wh[1]}:role==='divider'?{x:item.profile==='split-thought'?375:695,y:320,width:wh[0],height:wh[1]}:{x:190,y:1130,width:wh[0],height:wh[1]};
    const layer=role==='rear'?-12:role==='divider'?-7:15;
-   scene.entities.push({id,kind:'object',initial_state:'visible',states:{visible:{asset,transform:t,layer,visible:true}}});
+   scene.entities.push({id,kind:'object',visual_role:role==='front'?'foreground_environment':'background',depth_role:role,initial_state:'visible',states:{visible:{asset,transform:t,layer,visible:true}}});
    out.assets[asset]={path:rel,category:'environment',style_id:catalog.style_token,lineage:{mode:'native_derived',source_library:'zodiac-depth-background@1',source_master:item.profile,semantic_intent:item.rationale}};
   }
  }
