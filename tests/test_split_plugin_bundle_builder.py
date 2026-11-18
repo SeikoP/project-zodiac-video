@@ -26,8 +26,8 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertIn("skills/zodiac-video-web/SKILL.md", names)
                 self.assertIn("skills/zodiac-narrative-mechanics/SKILL.md", names)
                 mechanics = z.read("skills/zodiac-narrative-mechanics/SKILL.md").decode("utf-8")
-                for term in ("Escalating Roast", "Defense Collapse", "Reverse Reveal", "PENDING_USER_APPROVAL"):
-                    self.assertIn(term, mechanics.replace("Only a real explicit user Content Review approval", "PENDING_USER_APPROVAL"))
+                for term in ("Escalating Roast", "Defense Collapse", "Reverse Reveal", "Only a real explicit user Content Review approval"):
+                    self.assertIn(term, mechanics)
                 self.assertNotIn("skills/zodiac-video-local/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs", names)
@@ -48,6 +48,7 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertEqual(manifest["name"], "zodiac-video-local")
                 self.assertTrue(manifest["extensions"]["com.openai"]["interface"]["shortDescription"].startswith(f"v{manifest['version']} | "))
                 self.assertIn("skills/zodiac-video-local/SKILL.md", names)
+                self.assertNotIn("skills/zodiac-narrative-mechanics/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-web/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/phases/local/local-bootstrap.mjs", names)
