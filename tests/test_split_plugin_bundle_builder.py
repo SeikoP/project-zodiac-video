@@ -24,6 +24,10 @@ class SplitPluginBundleTests(unittest.TestCase):
                 manifest = json.loads(z.read("plugin.json"))
                 self.assertEqual(manifest["name"], "zodiac-video-web")
                 self.assertIn("skills/zodiac-video-web/SKILL.md", names)
+                self.assertIn("skills/zodiac-narrative-mechanics/SKILL.md", names)
+                mechanics = z.read("skills/zodiac-narrative-mechanics/SKILL.md").decode("utf-8")
+                for term in ("Escalating Roast", "Defense Collapse", "Reverse Reveal", "PENDING_USER_APPROVAL"):
+                    self.assertIn(term, mechanics.replace("Only a real explicit user Content Review approval", "PENDING_USER_APPROVAL"))
                 self.assertNotIn("skills/zodiac-video-local/SKILL.md", names)
                 self.assertNotIn("skills/zodiac-video-pipeline/SKILL.md", names)
                 self.assertIn("skills/zodiac-video-pipeline/contracts/phase1-handoff.mjs", names)
