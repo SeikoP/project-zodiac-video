@@ -74,6 +74,8 @@ def build_profile(root: Path, profile: str, destination: Path) -> dict:
     if config.get("profile")!=profile: raise ValueError("SPLIT_PROFILE_CONFIG_INVALID")
     entry=Path(config["entry_skill"])
     required=[entry]
+    if profile == "web":
+        required.append(Path("skills/zodiac-narrative-mechanics/SKILL.md"))
     if config.get("include_humanizer"):
         required += [Path("skills/humanizer/SKILL.md"),Path("skills/humanizer/LICENSE")]
     files=sorted((p for p in src.rglob("*") if p.is_file() and _canonical_eligible(p.relative_to(src))),key=lambda p:p.relative_to(src).as_posix())
