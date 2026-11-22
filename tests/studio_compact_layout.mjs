@@ -57,6 +57,7 @@ try {
   assert.deepEqual(overflow,{width:false,height:false,outside:[]},label);
  }
  await page.goto(process.env.STUDIO_URL || 'http://127.0.0.1:1420');
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Tổng quan',exact:true}).click();
  await page.waitForSelector('.episode-item');
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
@@ -73,6 +74,9 @@ try {
     assert.match(await page.locator('.episode-list').innerText(),/p4/);
     await page.getByRole('button',{name:'Ghi chú & hoạt động',exact:true}).click(); await fit('notes');
     await page.getByRole('button',{name:'Episode & trạng thái',exact:true}).click();
+    await page.getByRole('button',{name:'Mở bước Giọng đọc',exact:true}).click();
+    assert.equal(await page.locator('.workflow-tabs').getByRole('button',{name:'Giọng đọc',exact:true}).getAttribute('aria-pressed'),'true');
+    await page.locator('.workflow-tabs').getByRole('button',{name:'Tổng quan',exact:true}).click();
    }
    if(view==='Giọng đọc') {
     for(const tab of ['Nghe toàn bài & timing','Thiết lập giọng','Từng đoạn']) {
@@ -82,7 +86,7 @@ try {
     }
    }
    if(view==='Hình ảnh') {
-    await page.locator('.episode-context').getByRole('button',{name:/Tiếp theo: Xuất/}).waitFor({timeout:5000});
+    await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).waitFor({timeout:5000});
     await page.getByRole('button',{name:'Cảnh: trang sau',exact:true}).click();
     await page.getByRole('button',{name:'Kho hình ảnh',exact:true}).click();
     await page.locator('.gallery-card').first().waitFor(); await fit('embedded gallery');

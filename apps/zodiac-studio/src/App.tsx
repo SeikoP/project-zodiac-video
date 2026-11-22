@@ -5,15 +5,17 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Activity, ArrowRight, Bot, Check, CheckCircle2, CircleAlert, CircleDot,
   Clapperboard, Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
-  Headphones, Home, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
-  Search, Send, ShieldCheck, Minus, Square, X, Lightbulb, type LucideIcon,
+  Headphones, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
+  Search, Send, ShieldCheck, Minus, Square, X, type LucideIcon,
 } from "lucide-react";
 import { backend, type AgentHealth, type AgentTask, type BackendHealth, type Project, type StudioEvent } from "./backend";
 
 import { Paged, PagedText } from "./Paged";
 import AgentProposal from "./AgentProposal";
+import EditingWorkbench from "./EditingWorkbench";
+import type { WorkbenchSelection } from "./workbench-state";
+import { StudioSidebar, WorkflowBar, SECTIONS, groupFor, nextEpisodeStep, type View } from "./studio-navigation";
 
-type View = "overview" | "progress" | "assets" | "activity" | "agent" | "editor" | "voice" | "ideas" | "review";
 const AssetGallery = lazy(() => import("./AssetGallery"));
 const Ideas = lazy(() => import("./Ideas"));
 const EpisodeExport = lazy(() => import("./EpisodeExport"));
@@ -25,12 +27,9 @@ const FIELDS = [
   { key: "visual", label: "Hình ảnh" }, { key: "video", label: "Video" },
   { key: "published", label: "Đăng tải" },
 ] as const;
-const SECTIONS: { label: string; view: View; icon: LucideIcon }[] = [
-  { label: "Kế hoạch", view: "ideas", icon: Lightbulb },
-  { label: "Episode", view: "overview", icon: Home },
-  { label: "Tài nguyên", view: "assets", icon: Layers3 },
-];
-const EPISODE_TABS: [View, string][] = [["overview", "Tổng quan"], ["voice", "Giọng đọc"], ["editor", "Hình ảnh"], ["review", "Xuất & duyệt"]];
+const STAGE_VIEWS: Record<(typeof FIELDS)[number]["key"], View> = {
+  content: "overview", voice: "voice", visual: "editor", video: "review", published: "review",
+};
 function readableStatus(status: string) {
   if (status === "APPROVED" || status === "REVIEWED") return "Đã duyệt";
   if (status === "USER_LISTENED_APPROVED") return "Đã nghe & duyệt";
@@ -62,12 +61,13 @@ function EmptyState({ icon: Icon, title, detail }: { icon: LucideIcon; title: st
 }
 
 export default function App() {
+  const [selection, setSelection] = useState<WorkbenchSelection>({projectId: "", sceneId: null, entityId: null, timeMs: 0});
   const [expanded, setExpanded] = useState(false);
   const [overviewTab, setOverviewTab] = useState("projects");
-  const [view, changeView] = useState<View>("overview");
-  const [visited, setVisited] = useState<Set<View>>(new Set(["overview"]));
+  const [view, changeView] = useState<View>("editor");
+  const [visited, setVisited] = useState<Set<View>>(new Set(["editor"]));
   function setView(next: View) { setVisited(previous => new Set([...previous, next])); changeView(next); }
-  const group = view === "ideas" || view === "progress" ? "ideas" : view === "assets" ? "assets" : "overview";
+  const group = groupFor(view);
   const [reviewConceptId, setReviewConceptId] = useState("");
   const [health, setHealth] = useState<BackendHealth | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -88,6 +88,7 @@ export default function App() {
     if (activeProjectRef.current !== id) {
       activeProjectRef.current = id;
       setSelectedId(id);
+      setSelection({projectId: id ?? "", sceneId: null, entityId: null, timeMs: 0});
       setSelected(null);
       setEvents([]);
       setNote("");
@@ -100,12 +101,7 @@ export default function App() {
   const currentProject = selected?.project_id === selectedId ? selected : null;
   const currentAgentTask = agentTask?.project_id === selectedId ? agentTask : null;
   const agentRunning = currentAgentTask?.status === "STARTING" || currentAgentTask?.status === "RUNNING";
-  const nextStep: [View, string] = !currentProject ? ["overview", "Nhập hoặc chọn episode"]
-    : currentProject.status.content !== "APPROVED" ? ["overview", "Kiểm tra nguồn Phase 1"]
-    : ["UNKNOWN", "BLOCKED", "STALE"].includes(currentProject.status.voice) ? ["voice", "Tạo giọng và căn thời gian"]
-    : builtProjectId === selectedId || currentProject.status.video === "EXPORTED" ? ["review", "Xuất, nghe và xem video"]
-    : ["UNKNOWN", "BLOCKED", "STALE"].includes(currentProject.status.visual) ? ["editor", "Soạn và dựng hình ảnh"]
-    : ["review", "Xuất, nghe và xem video"];
+  const nextStep = nextEpisodeStep(currentProject, builtProjectId === selectedId);
 
   const notifyError = useCallback((error: unknown, fallback: string) => {
     setAlert({ message: error instanceof Error ? error.message : fallback, error: true });
@@ -242,7 +238,7 @@ export default function App() {
       const project = await backend.importZip(file);
       await loadProjects();
       chooseProject(project.project_id);
-      setView("overview");
+      setView("editor");
       setAlert({ message: "Đã xác minh và nhập handoff, không thay đổi nguồn gốc.", error: false });
     } catch (error) {
       notifyError(error, "Import bị chặn.");
@@ -271,25 +267,8 @@ export default function App() {
   }
 
   return <div className={"app-shell " + (expanded ? "nav-expanded" : "nav-compact")}>
-    <aside className="sidebar">
-      <button className="nav-toggle" aria-label={expanded ? "Thu gọn menu" : "Mở rộng menu"} onClick={() => setExpanded(!expanded)}>☰</button>
-      <div className="brand"><div className="brand-glyph">✦</div><div>
-        <div className="brand-name">ZODIAC<span>STUDIO</span></div>
-        <div className="brand-caption">CREATIVE WORKSPACE</div></div>
-      </div>
-      <div className="sidebar-label">WORKSPACE</div>
-      <nav className="sidebar-nav" aria-label="Điều hướng chính">{SECTIONS.map(item =>
-        <button key={item.view} className={"nav-item " + (group === item.view ? "active" : "")}
-          title={item.label} aria-label={item.label} onClick={() => setView(item.view)}><item.icon size={18} strokeWidth={1.8}/>
-          <span>{item.label}</span>
-          {item.view === "overview" && projects.length > 0 && <span className="nav-count">{projects.length}</span>}
-        </button>)}</nav>
-      <div className="sidebar-bottom">
-        <div className="phase-meter"><div className="phase-top"><span>ĐANG MỞ</span><b>{EPISODE_TABS.find(([id]) => id === view)?.[1] ?? SECTIONS.find(s => s.view === group)?.label}</b></div>
-          <p>Trạng thái hoàn tất theo bằng chứng.</p></div>
-        <div className="sidebar-footnote"><ShieldCheck size={15}/> Local-first · Source-locked</div>
-      </div>
-    </aside>
+    <StudioSidebar expanded={expanded} toggle={() => setExpanded(!expanded)} view={view}
+      projectCount={projects.length} onNavigate={setView}/>
 
     <div className="main-shell">
       <header className="topbar" data-tauri-drag-region>
@@ -311,23 +290,16 @@ export default function App() {
         </div>
       </header>
       <main className={"content view-" + view}>
-        <nav className="workspace-tabs workflow-tabs" aria-label="Các bước làm việc">
-          {(group === "ideas" ? [["ideas", "Ý tưởng"], ["progress", "Tiến độ"]] as [View, string][] : group === "overview" ? EPISODE_TABS : [["assets", "Kho tài nguyên"]] as [View, string][]).map(([id, label]) =>
-            <button key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}
-          {group === "overview" && <span className="episode-tools"><button aria-pressed={view === "agent"} onClick={() => setView("agent")}><Bot size={13}/> Agent</button><button aria-pressed={view === "activity"} onClick={() => setView("activity")}><Activity size={13}/> Nhật ký</button></span>}
-        </nav>
-        {group === "overview" && <div className="episode-context"><select aria-label="Episode đang làm" value={selectedId ?? ""} onChange={e => chooseProject(e.target.value || null)}>
-          {!projects.length && <option value="">Chưa có episode</option>}{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.display_title || p.episode_id}</option>)}</select>
-          <button className="text-link" onClick={() => setView(nextStep[0])}>Tiếp theo: {nextStep[1]} <ArrowRight size={13}/></button>
-        </div>}
-        {view === "ideas" && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
+        <WorkflowBar view={view} projects={projects} selectedId={selectedId}
+          onNavigate={setView} onChoose={chooseProject} nextStep={nextStep}/>
+        {(view === "ideas" || view === "progress") && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas mode={view} onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
         {visited.has("review") && <div className="workflow-screen" hidden={view !== "review"}><Suspense fallback={<p>Đang mở trình xem MP4…</p>}><EpisodeExport key={selectedId ?? "empty"} project={currentProject} initialConceptId={reviewConceptId} active={view === "review"}/></Suspense></div>}
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}
           <span>{alert.message}</span><button onClick={() => setAlert(null)}>×</button>
         </div>}
 
-        {(view === "overview" || view === "progress") && <>
+        {view === "overview" && <>
           <section className="page-header">
             <div><p className="eyebrow">CREATIVE CONTROL CENTER <span> / </span> 01</p>
               <h1>Không gian sáng tạo<span className="star">✦</span></h1>
@@ -383,10 +355,11 @@ export default function App() {
                   <code>{currentProject.source_sha256.slice(0, 24)}…</code></div>
                 <div className="stage-list">{FIELDS.map(({ key, label }) => {
                   const status = currentProject.status[key];
-                  return <div className="stage-row" key={key}><div className="stage-name">
-                    <span className={"stage-icon " + (status === "APPROVED" ? "is-ready" : "")}>
-                      {status === "APPROVED" ? <Check size={13}/> : <CircleDot size={12}/>}
-                    </span>{label}</div><StatusChip status={status}/></div>;
+                  const ready = /^(APPROVED|REVIEWED|USER_LISTENED_APPROVED|EXPORTED|CONFIRMED)$/.test(status);
+                  return <button type="button" className="stage-row" key={key} aria-label={"Mở bước " + label} onClick={() => setView(STAGE_VIEWS[key])}><div className="stage-name">
+                    <span className={"stage-icon " + (ready ? "is-ready" : "")}>
+                      {ready ? <Check size={13}/> : <CircleDot size={12}/>}
+                    </span>{label}</div><StatusChip status={status}/><ArrowRight size={13}/></button>;
                 })}</div>
                 <div className="source-note"><Lock size={16}/>
                   <span>Approved narration & receipt được giữ nguyên. Ghi chú không duyệt nội dung.</span></div>
@@ -454,7 +427,9 @@ export default function App() {
         {visited.has("editor") && <div className="workflow-screen" hidden={view !== "editor"}>
           <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
             detail="Nạp module riêng khi mở Visual Workspace."/>}>
-            <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor"} onBuildReady={updateBuildReady}/>
+            <EditingWorkbench title={currentProject?.display_title || currentProject?.episode_id} onVoice={() => setView("voice")} onExport={() => setView("review")} onImport={() => void importCapsule()}>
+              <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor"} onBuildReady={updateBuildReady} selection={selection} onSelectionChange={setSelection} onVoice={() => setView("voice")} onImport={() => void importCapsule()}/>
+            </EditingWorkbench>
           </Suspense>
         </div>}
 

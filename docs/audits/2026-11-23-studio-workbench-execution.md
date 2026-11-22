@@ -12,3 +12,9 @@ Verification: test first failed because timeline module was absent, then `node -
 Ruling: wire App/editor selection in Task 2 alongside the shell, keeping this task a self-contained pure model; old App/VisualEditor contain pre-existing dirty changes and are preserved until that integration.
 
 Human listening/visual/video gates remain PENDING. Full native E2E has not yet been rerun.
+
+## Task 2 — editor-first shell
+
+Default opening/import now enters the editing workbench, with large preview, contextual object/state labels, voice/export actions and shared selection owned by App. Ideas/project overview/resources stay reachable. Existing dirty navigation extraction and QA type/UI improvements are required compatible dependencies and are included without discarding them.
+
+RED: new workbench browser test timed out on absent editing-workbench. GREEN: workbench shell/context/3 viewport checks passed; existing compact suite passed six views, all inspector/voice/source/log/pagination checks at three sizes; frontend TypeScript/Vite build passed (existing large-chunk/externalized-os warnings). Fixture catalog was completed for export navigation, rather than suppressing a real page error. No release/package generated.

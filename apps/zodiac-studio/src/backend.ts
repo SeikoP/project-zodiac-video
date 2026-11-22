@@ -86,7 +86,8 @@ export type VisualScene = { id: string; semantic_goal: string; narration_range: 
 export type VisualIntent = { format: string; scenes: VisualScene[]; [key: string]: unknown };
 export type BuiltScene = { id: string; start_ms: number; end_ms: number; duration_seconds: number; preview_sha256: string;
   source_map: { hf_id: string; scene_id: string; entity_id: string; state_id: string; asset_id: string; source_sha256: string }[];
-  qa: { status: string; caption_contrast: number; issues: { code: string; entity_id?: string }[] }; fidelity: string };
+  qa: { status: string; caption_contrast: number; issues: { code: string; entity_id?: string }[];
+    review_warnings?: { code: string; detail: string }[] }; fidelity: string };
 export type VisualState = { project_id: string; revision: number; source_hash: string | null; intent: VisualIntent | null;
   export?: VideoExport;
   theme: string; can_undo: boolean; can_redo: boolean; stale_preview: boolean;
@@ -97,6 +98,9 @@ export type VisualState = { project_id: string; revision: number; source_hash: s
 export type VisualPreview = { url: string; html: string; sha256: string; scene: BuiltScene; build_id: string; revision: number; candidate_only: boolean; stale: boolean };
 export type VideoExport = { id: string; revision: number; path: string; sha256: string; renderer: string;
   duration_seconds: number; bytes: number; human_review: string; approval_granted: false;
+  audio_contract?: { mode: string; voice_sha256: string; music_tracks: number; sfx_tracks: number };
+  cover_contract?: { mode: string; opening?: { sign: string; topic: string; series: string; duration_frames: number } };
+  cover?: { source_frame?: number; sha256: string };
   url?: string; file_path?: string; stale?: boolean };
 export type CandidateResult = { status: string; source_sha256: string; catalog_revision: string;
   usage_evidence?: { coverage?: { truncated: boolean } } | null;

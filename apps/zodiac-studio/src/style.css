@@ -160,7 +160,9 @@ h1 { font-size: clamp(25px, 2.3vw, 36px); font-weight: 730; letter-spacing: -.9p
 .inspector-head h2 { font-size: 19px; margin: 9px 0; letter-spacing: -.4px; font-weight: 650; overflow-wrap: anywhere; }
 .inspector-head code { color: #7f8494; font-size: 10px; }
 .stage-list { padding: 0 22px; }
-.stage-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 41px; border-top: 1px solid #2c2e39; }
+.stage-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 41px; width: 100%; padding: 0; background: transparent; border: 0; border-top: 1px solid #2c2e39; color: inherit; text-align: left; cursor: pointer; }
+.stage-row:hover { background: #292935; }
+.stage-row:focus-visible { outline: 2px solid #b19acb; outline-offset: -2px; }
 .stage-name { display: flex; align-items: center; gap: 9px; color: #adb0bb; font-size: 11.5px; }
 .stage-icon { width: 19px; height: 19px; border-radius: 7px; background: #35323e; color: #9696a7; display: grid; place-items: center; }
 .stage-icon.is-ready { background: #234033; color: #a0dbb5; }
@@ -602,3 +604,43 @@ h1 { font-size:21px; letter-spacing:-.3px; }
   .visual-transform { gap:4px; }
 }
 @media (max-height:700px) { .gallery-toolbar { gap:5px; } .gallery-toolbar strong { font-size:12px; } .gallery-toolbar input,.gallery-toolbar select { padding:5px; max-width:170px; } .gallery-preview { padding:8px; } }
+
+/* Episode editing surface: one bounded canvas, tools follow selection. */
+.editing-workbench { display:flex; flex-direction:column; flex:1; min-height:0; gap:8px; }
+.workbench-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-shrink:0; }
+.workbench-heading h1 { display:flex; align-items:center; gap:8px; font-size:19px; margin:0; letter-spacing:-.3px; }
+.workbench-heading p { margin:3px 0 0; color:#a8afbe; font-size:12px; max-width:40vw; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
+.workbench-actions { display:flex; gap:6px; }
+.app-shell:has(.view-editor) .sidebar { width:54px; flex:0 0 54px; }
+.view-editor { padding:8px 14px; gap:7px; }
+.view-editor .content-footer { display:none; }
+.view-editor .episode-context .text-link { display:none; }
+.view-editor .episode-context { position:absolute; top:7px; left:200px; z-index:2; width:36%; }
+.view-editor .episode-context select { max-width:100%; width:100%; }
+.view-editor .workflow-tabs { gap:4px; border:0; }
+.view-editor .workflow-tabs button { padding:5px 10px; font-size:11px; }
+.view-editor .visual-editor .hf-head { display:none; }
+.view-editor .visual-layout { grid-template-columns:156px minmax(220px,1fr) 270px; gap:8px; }
+.view-editor .visual-stage { background:#090c12; border-color:#303743; overflow:hidden; }
+.view-editor .visual-viewport { min-height:0; }
+.view-editor .visual-fidelity, .view-editor .visual-stage>.voice-muted { display:none; }
+.view-editor .visual-receipt { display:none; }
+.view-editor .visual-toolbar { gap:5px; }
+.view-editor .visual-toolbar button { padding:6px 9px; font-size:11px; }
+.view-editor .visual-editor>.log-toggle { padding:2px; font-size:10px; }
+.view-editor .visual-inspector { background:#161c26; border-color:#303743; }
+.view-editor .visual-inspector>.workspace-tabs { flex-wrap:wrap; }
+.view-editor .visual-scenes { background:#131923; }
+.view-editor .visual-scenes .paged-items>button { padding:10px 8px; }
+.view-editor .visual-scenes em { font-size:10px; font-style:normal; color:#a1b7c8; }
+.view-editor .visual-scenes .paged { flex:1; min-height:0; }
+.view-editor .voice-empty { text-align:center; }
+@media (max-height:700px) {
+ .workbench-heading h1 { font-size:16px; }
+ .workbench-heading p { display:none; }
+ .workbench-actions button { padding:6px 9px; }
+ .view-editor .visual-layout { grid-template-columns:136px minmax(200px,1fr) 250px; }
+}
+
+.view-editor .visual-inspector { gap:6px; padding:7px; }
+.view-editor .visual-candidates { gap:5px; }
