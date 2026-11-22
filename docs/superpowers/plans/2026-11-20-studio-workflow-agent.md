@@ -48,15 +48,15 @@ Interface: three primary navigation groups and episode sub-tabs. Retain mounted 
 
 Files: scoped native GUI automation under `.runtime/workflow-agent-e2e/`, checked-in evidence docs.
 
-- [ ] Start dev app on an isolated project store; import actual approved Nhân Mã handoff through UI. Preserve real WAV provenance if reused.
-- [ ] Drive agent initial authoring, apply, build, scene edit/apply and export through UI only. Fix any capability failures; never substitute scripts for authoring.
-- [ ] Record task/thread/turn, revisions, hashes, duration, screenshots, decode/probe and actual native playback. Reopen and verify receipts/media.
-- [ ] Keep human listening/visual/final review pending; report exact blockers if any.
+- [x] Start dev app on an isolated project store; import actual approved Nhân Mã handoff through UI. Preserve real WAV provenance if reused.
+- [x] Drive agent initial authoring, apply, build, scene edit/apply and export through UI only. Fix any capability failures; never substitute scripts for authoring.
+- [x] Record task/thread/turn, revisions, hashes, duration, screenshots, decode/probe and actual native playback. Reopen and verify receipts/media.
+- [x] Keep human listening/visual/final review pending; report exact blockers if any.
 
 ### Task 4: Review and handoff
 
-- [ ] Run related regressions and CRLF-aware diff checks. Review changes independently per executing-plans; fix material findings.
-- [ ] Update README and evidence report with commands, outputs and remaining gates; report dev acceptance separately from production approval.
+- [x] Run related regressions and CRLF-aware diff checks. Review changes independently per executing-plans; fix material findings.
+- [x] Update README and evidence report with commands, outputs and remaining gates; report dev acceptance separately from production approval.
 
 ## Execution ledger
 
@@ -69,3 +69,7 @@ Files: scoped native GUI automation under `.runtime/workflow-agent-e2e/`, checke
 2026-11-22 Task 1 pushed: `8de1f612` on `origin/experiment/main-2`.
 
 2026-11-22 Task 2: complete. Three primary navigation groups, episode sub-tabs, source-bound next action, readable/restored proposals, contextual agent/journal and export/review are implemented. Hidden media pause and hidden workspace polling stops; slow reads are single-flight after a real cold Voice Lab read measured 25.454s. TypeScript, compact/expanded Ideas/review, gallery and export browser fixtures pass at the established sizes. Regression also covers a newly exported episode not disabling an independently opened local MP4. Full native workflow has produced and played its new 74.4s MP4; Task 3 still verifies reopen and publishes its source-bound evidence.
+
+2026-11-22 Task 2 pushed: `3ab63d34` on `origin/experiment/main-2`.
+
+2026-11-22 Tasks 3/4: complete. Actual GUI-native run passed in 833.897s with reused real voice. Initial task `9ab42cd670834eeea8de39ae1cf149a0` and scene task `ff86ee3bdfbf4c09a5da4e528d173969` were confirmed through GUI; export `29d4feff5c804ad3a8eb7c45837b7a13` is a new 74.4s H.264/AAC MP4, SHA `012871b8ef9937181f441fe52d8925b9d700e1c9b84306726ae1c14b2962753f`. Full decode, sidecar hashes and actual playback after native process restart passed. Review fixed the two Important findings; layout/Ideas/gallery/export fixtures and TypeScript passed. One verified dev app remains open on the isolated store. See `docs/audits/2026-11-22-studio-workflow-agent-e2e.{md,json}`. Human quality and broader P5/P6/P7 gates remain PENDING; no release/publication/production merge.

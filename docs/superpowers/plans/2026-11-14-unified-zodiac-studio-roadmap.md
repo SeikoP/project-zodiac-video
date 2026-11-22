@@ -23,6 +23,12 @@
 > The previous Nhân Mã E2E used external visual-authoring scripts and does not
 > establish in-app agent acceptance. The replacement GUI run is tracked in
 > [the implementation plan](./2026-11-20-studio-workflow-agent.md).
+> **2026-11-22 technical acceptance:** grouped GUI, real initial/scene agents,
+> persisted MP4 and native restart playback are now verified in the
+> [workflow acceptance receipt](../../audits/2026-11-22-studio-workflow-agent-e2e.md).
+> Backend task pushed as `8de1f612`; grouped UI task pushed as `3ab63d34` on
+> `origin/experiment/main-2`. The GUI run took 833.897s with reused real voice;
+> this does not close human quality gates or all remaining P5/P6/P7 work.
 >
 > **Goal:** Replace the multi-application and plugin-directed local production experience with **one** Zodiac Studio window: approved Phase 1 → Voice Lab → measured audio → V4 visual scene editing in embedded HyperFrames → video/package export; with concept×12 coverage, gallery, and a scoped agent.
 >
