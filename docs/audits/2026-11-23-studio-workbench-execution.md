@@ -26,3 +26,11 @@ Added measured scene blocks, global ruler/scrubber, zoom, selected-assembly wave
 RED: missing whole-episode timeline and duplicate-navigation assertion failed before implementation. GREEN: workbench browser test covers global seek, scene 6 page reveal, reload restoration, continuous silent fixture playback over a scene boundary, pause and failed-preview clearing; 3 viewport layouts pass. Compact suite passed all six views/panels at three sizes; pure timeline tests3/3 and TypeScript passed. Fixture playback is not real audio acceptance. Native real audio/video remains Task5.
 
 Ruling: show measured words as `Lời đọc`; no separate exported-caption track is invented from word timing. Reading existing measured voice/peaks is reused; missing matching audio is explicit. Collapse redundant editor navigation and completed job banner to enlarge the canvas. Timeline uses original measured order/durations.
+
+## Task 4 — contextual agent/resources
+
+Health now accurately lists inspection/initial/scene proposals, credential-file detection, tools-disabled and live-readiness-not-checked. GUI explains that finding Codex is not a successful live model connection. Initial authoring guides missing voice/timing first; scene proposals appear only beside their own selected scene, with completed/unapplied vs applied states distinct. Candidate inspector uses actual gallery previews when available, fit/rejection/no-fit context and canonical apply.
+
+RED: new health capability test failed with missing capabilities. GREEN: 23 Python agent/authoring/gallery-transport checks passed in26.180s; six Node asset/candidate/source-history tests passed; workbench browser context/restoration/playback/error/3size test and TypeScript passed. No live inference claim yet.
+
+Only the health hunk of pre-existing dirty agent_bridge.py is staged for this task; unrelated prompt/art changes remain local. No duplicate resource catalog or arbitrary tool-calling loop added.

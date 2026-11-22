@@ -52,6 +52,10 @@ try {
  await page.evaluate(()=>{window.previewFails=false;});
  await page.locator('.visual-scenes button').nth(1).click();
  assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+ await page.locator('.visual-inspector').getByRole('button',{name:'Agent',exact:true}).click();
+ await page.getByText(/Kết nối model được kiểm tra khi gửi yêu cầu/).waitFor();
+ assert.equal(await page.locator('.visual-inspector .agent-proposal:visible').count(),0,'proposal for another scene stays out of current selection');
+ await page.locator('.visual-inspector').getByRole('button',{name:'Đối tượng',exact:true}).click();
  await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
  await page.locator('.voice-workspace').waitFor();
  await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();

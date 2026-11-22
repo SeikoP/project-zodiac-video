@@ -449,9 +449,9 @@ export default function App() {
         {view === "agent" && <>
           <section className="page-header"><div><p className="eyebrow">MANAGED CODEX APP SERVER <span> / </span> 04</p>
             <h1>Agent của episode<span className="star">✦</span></h1>
-            <p className="page-subtitle">Đọc dự án qua Project Core, chạy Codex trong sandbox chỉ đọc và duyệt ghi chú trước khi lưu.</p></div>
+            <p className="page-subtitle">Agent kiểm tra dự án hoặc đề xuất hình ảnh. Bạn xem và áp dụng trước khi lưu qua Studio.</p></div>
             <span className={"source-pill " + (!agentHealth?.available ? "offline" : "")}>
-              <ShieldCheck size={15}/>{agentHealth?.available ? "CODEX AVAILABLE" : "CODEX OFFLINE"}
+              <ShieldCheck size={15}/>{agentHealth?.available ? "ĐÃ TÌM THẤY CODEX" : "CHƯA TÌM THẤY CODEX"}
             </span>
           </section>
           <section className="panel agent-workspace">
@@ -478,7 +478,7 @@ export default function App() {
                 <span>{currentAgentTask ? currentAgentTask.status : "IDLE"}</span></div>
               {!currentAgentTask ? <div className="agent-terminal-empty">
                 <Bot size={30} strokeWidth={1.4}/>
-                <p>{agentHealth?.available ? "Sẵn sàng kiểm tra bằng Codex App Server."
+                <p>{agentHealth?.available ? "Có Codex cục bộ. Kết nối model được kiểm tra khi gửi yêu cầu."
                   : "Không tìm thấy Codex. Studio vẫn hoạt động thủ công."}</p></div>
                 : <div className="agent-output">
                   <span className="agent-task-id">Task {currentAgentTask.task_id.slice(0, 12)} · Project revision {currentAgentTask.project_revision}</span>

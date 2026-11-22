@@ -105,10 +105,15 @@ class AgentManager:
         return None
 
     def health(self) -> dict:
+        credential = Path(os.environ.get("CODEX_HOME") or (Path.home() / ".codex")) / "auth.json"
         return {
             "available": self._bin() is not None,
             "protocol": "codex-app-server-v2",
-            "scope": "read-only inspection + human-confirmed project.note",
+            "scope": "bounded inspection/initial visuals/scene proposals + human-confirmed canonical apply",
+            "capabilities": ["project.inspect", "episode.propose", "scene.propose"],
+            "credential_available": credential.is_file() and not credential.is_symlink(),
+            "connection_status": "not_checked",
+            "tools_enabled": False,
             "active": sum(t["status"] in ("STARTING", "RUNNING") for t in self._tasks.values()),
         }
 

@@ -73,6 +73,7 @@ export type VoiceState = {
   job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;
 };
 export type AgentHealth = {
+  capabilities?: string[]; credential_available?: boolean; connection_status?: string; tools_enabled?: boolean;
   available: boolean;
   protocol: string;
   scope: string;

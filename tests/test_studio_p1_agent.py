@@ -45,6 +45,15 @@ class AgentTests(unittest.TestCase):
             self.assertEqual(cm.exception.code, "AGENT_UNAVAILABLE")
         self.assertEqual(self.manager.tasks(self.project["project_id"]), [])
 
+    def test_health_reports_bounded_proposals_without_claiming_live_readiness(self):
+        with patch.object(self.manager, "_bin", return_value="codex.exe"):
+            health = self.manager.health()
+        self.assertEqual(health["capabilities"], ["project.inspect", "episode.propose", "scene.propose"])
+        self.assertEqual(health["connection_status"], "not_checked")
+        self.assertFalse(health["tools_enabled"])
+        self.assertIsInstance(health["credential_available"], bool)
+        self.assertIn("human-confirmed", health["scope"])
+
     def test_user_confirmation_and_revision_gate_are_required(self):
         tid = self._completed()
         for confirm in (False, None, "true"):

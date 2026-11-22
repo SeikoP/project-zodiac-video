@@ -53,7 +53,7 @@ P5/P6/P7 remain open; this planning checkpoint does not promote phase status.
 
 ## Workbench execution — 2026-11-23
 
-Implementation authorized. [Execution evidence](../../audits/2026-11-23-studio-workbench-execution.md) records measured timeline Tasks 1–3 (model, editor shell and measured whole-episode timeline) verification; GUI/native acceptance remains in progress. P5/P6/P7 gates stay open.
+Implementation authorized. [Execution evidence](../../audits/2026-11-23-studio-workbench-execution.md) records measured timeline Tasks 1–4 (model, editor shell, measured timeline and contextual agent/resources) verification; GUI/native acceptance remains in progress. P5/P6/P7 gates stay open.
 
 ## Global Constraints (every phase)
 
