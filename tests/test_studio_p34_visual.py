@@ -181,8 +181,11 @@ class VisualWorkspaceTests(unittest.TestCase):
         proposal={"kind":"scene.patch","payload":{"scene_id":"s01","entity_id":"gemini","state_id":"neutral","changes":{"x":300}}}
         task={"task_id":task_id,"project_id":self.project,"status":"COMPLETED","kind":"scene.propose","suggestion":json.dumps(proposal),"source_sha256":project["source_sha256"],"visual_source_hash":state["source_hash"],"visual_revision":state["revision"],"scene_id":"s01","write_applied":False}
         manager._tasks[task_id]=task
+        from tools.studio_project.agent_authoring import dependencies
+        task["dependencies"] = dependencies(self.service, self.project)
         with self.assertRaises(StudioError):manager.apply_suggestion(task_id,confirm=False,base_revision=state["revision"],command_id="no-confirm")
-        result=manager.apply_suggestion(task_id,confirm=True,base_revision=state["revision"],command_id="agent-edit")
+        with patch.object(self.service.voice, "_read", side_effect=lambda _: copy.deepcopy(self.voice)):
+            result=manager.apply_suggestion(task_id,confirm=True,base_revision=state["revision"],command_id="agent-edit")
         self.assertEqual(result["intent"]["scenes"][0]["entities"][0]["states"]["neutral"]["transform"]["x"],300)
         self.assertEqual(self.service.project(self.project)["status"]["visual"],"UNKNOWN")
 

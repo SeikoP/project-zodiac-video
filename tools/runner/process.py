@@ -69,6 +69,8 @@ def run_managed_subprocess(
     should_capture = capture_output or log_observer is not None
     if should_capture:
         popen_kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if text:
+        popen_kwargs.update(encoding='utf-8', errors='replace')
     process = subprocess.Popen(
         arguments,
         cwd=cwd,

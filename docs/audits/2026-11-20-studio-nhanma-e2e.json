@@ -1,0 +1,182 @@
+{
+  "format": "zodiac-studio-phase-evidence@1",
+  "phase_id": "P7",
+  "task_id": "nhanma-v7-real-e2e",
+  "baseline_commit": "4a4325223cab7e53056002280553b8ff5b47134b",
+  "implementation_commit": null,
+  "requirements": [
+    {
+      "id": "P2-TTS-progress-recovery",
+      "tests": [
+        "tests/test_studio_p2_voice_lab.py"
+      ]
+    },
+    {
+      "id": "P7-real-source-voice-MP4",
+      "tests": [
+        "native Rust/Python export and WebView2 playback",
+        "full FFmpeg decode",
+        "HyperFrames runtime/layout checks"
+      ]
+    },
+    {
+      "id": "P7-captions-cover",
+      "tests": [
+        "tests/studio_hyperframes_export.test.mjs",
+        "actual output hashes/PNG/SRT checks"
+      ]
+    },
+    {
+      "id": "P7-caption-safe-area",
+      "tests": [
+        "actual whole-episode HyperFrames layout check: 0 warnings"
+      ]
+    }
+  ],
+  "contracts": [
+    {
+      "name": "approved Phase1 narration",
+      "status": "PRESERVED"
+    },
+    {
+      "name": "human voice/visual approval",
+      "status": "PENDING"
+    },
+    {
+      "name": "HyperFrames export receipt",
+      "status": "ADDITIVE cover/captions hashes"
+    }
+  ],
+  "reused_components": [
+    "StudioProjectService",
+    "VoiceArtifactStore",
+    "V4 scene compiler",
+    "measured ASR",
+    "HyperFrames painter/CLI",
+    "managed export",
+    "FFmpeg",
+    "native WebView2"
+  ],
+  "changed_files": [
+    "tools/studio_project/voice_lab.py",
+    "tools/zodiac_local.py",
+    "tools/studio_project/visual_export.mjs",
+    "tools/studio_project/visual_workspace.py",
+    "tools/studio_project/visual_preview.mjs",
+    "tests/test_studio_p2_voice_lab.py",
+    "tests/studio_hyperframes_export.test.mjs",
+    "apps/zodiac-studio/README.md",
+    "docs/superpowers/plans/2026-11-14-unified-zodiac-studio-roadmap.md",
+    "docs/audits/2026-11-20-studio-nhanma-e2e.md",
+    "docs/audits/2026-11-20-studio-nhanma-e2e.json"
+  ],
+  "test_runs": [
+    {
+      "command": "python -m unittest tests.test_studio_p2_voice_lab -q",
+      "status": "PASS",
+      "tests": 19,
+      "seconds": 33.353,
+      "log_ref": ".runtime/nhanma-e2e/voice-tests.log"
+    },
+    {
+      "command": "python -m unittest tests.test_studio_hyperframes_export tests.test_studio_p34_visual tests.test_studio_p5_performance -q",
+      "status": "PASS",
+      "tests": 33,
+      "seconds": 101.073,
+      "log_ref": ".runtime/nhanma-e2e/regression-python.log"
+    },
+    {
+      "command": "python -m unittest tests.test_studio_hyperframes_export -q",
+      "status": "PASS",
+      "tests": 11,
+      "seconds": 18.838,
+      "log_ref": ".runtime/nhanma-e2e/export-python-final.log"
+    },
+    {
+      "command": "node --test tests/studio_hyperframes_export.test.mjs tests/studio_p34_visual.test.mjs",
+      "status": "PASS",
+      "tests": 16,
+      "seconds": 10.666,
+      "log_ref": ".runtime/nhanma-e2e/regression-node-final.log"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit",
+      "status": "PASS",
+      "seconds": null,
+      "log_ref": null
+    },
+    {
+      "command": "git -c core.whitespace=cr-at-eol diff --check -- <changed files>",
+      "status": "PASS",
+      "seconds": null,
+      "log_ref": null
+    }
+  ],
+  "smoke_artifacts": [
+    {
+      "path": ".runtime/nhanma-e2e/episode.mp4",
+      "sha256": "490690d1368825465ddf125078c643d820c7b70f657f6a45d3ab43251bf65c91",
+      "bytes": 2738324
+    },
+    {
+      "path": ".runtime/nhanma-e2e/captions.srt",
+      "sha256": "cc2c4c0fe2a75e2030399822920de26bdd489e1a95b2cbfc697f9915292f1f1c",
+      "bytes": 4297
+    },
+    {
+      "path": ".runtime/nhanma-e2e/cover.png",
+      "sha256": "28ed390b3cf3c8819cfa090a0fcebf7ba3375268c95fe82ea64503f6a91324a1",
+      "bytes": 189843
+    }
+  ],
+  "source_archive_sha256": "14ea54182f832cd5b52a8cb3b5b107d6760c39f64c534146d306589fe3035de9",
+  "source_visual_sha256": "8cba41495150c0509115b0a979df70109d8e55834ec1ac146f0758bf142e136e",
+  "voice_sha256": "e5f35bb23d0897bdf8a23fce95d03a7fdb203772eed82cbe2740f03806689394",
+  "duration_seconds": 74.4,
+  "fps": 30,
+  "frames": 2232,
+  "native_playback": "PASS; 1080x1920 / 74.4s; muted automation",
+  "whole_episode_wall_seconds": null,
+  "review_gates": [
+    {
+      "id": "voice-listening",
+      "status": "PENDING"
+    },
+    {
+      "id": "visual-performance",
+      "status": "PENDING"
+    },
+    {
+      "id": "P7-final-video",
+      "status": "PENDING"
+    }
+  ],
+  "risks": [
+    "No genuine listening/video approval",
+    "Non-strict HyperFrames lint/craft warnings remain: generated nested structure, reused image states, separately muxed audio and speech-rate reading heuristics",
+    "No full repository suite or remote CI"
+  ],
+  "deferred": [
+    {
+      "owner": "P5",
+      "item": "reviewed palettes/phone contact/model acceptance"
+    },
+    {
+      "owner": "P6/P7",
+      "item": "optional licensed Audio V2 library/mix and delivery packaging"
+    }
+  ],
+  "rollback": "Revert only this slice hunks; retain dirty work, original sources/takes and immutable exports",
+  "handoff_ready": false,
+  "native_playback_evidence": {
+    "log_ref": ".runtime/nhanma-e2e/native-playback-final.json",
+    "width": 1080,
+    "height": 1920,
+    "duration": 74.4,
+    "currentTime": 0.665305,
+    "playing": true,
+    "muted": true,
+    "stale": false,
+    "sha256": "490690d1368825465ddf125078c643d820c7b70f657f6a45d3ab43251bf65c91"
+  }
+}

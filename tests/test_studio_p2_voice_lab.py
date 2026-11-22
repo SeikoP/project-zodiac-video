@@ -6,6 +6,7 @@ import math
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -18,6 +19,7 @@ from tools.studio_project.models import StudioError
 from tools.studio_project.rpc_stdio import handle_line
 from tools.studio_project.service import StudioProjectService
 from tools.studio_project.voice_lab import speech_units, speech_input, voice_evidence
+from tools.runner.process import run_managed_subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 TEXT = "Kim Ngưu không hề chậm.\r\nHọ chỉ đọc kỹ điều khoản trước khi bắt đầu!\n"
@@ -239,6 +241,29 @@ class VoiceLabTests(unittest.TestCase):
             release.set()
             self.lab.close()
         self.assertTrue(all(not u["selected_take"] for u in self.state()["units"]))
+
+    def test_partial_tts_failure_keeps_completed_take_and_retries_only_missing_units(self):
+        before = self.state()
+        first = before["units"][0]["id"]
+        progress = []
+        def partial(runtime, rows, **settings):
+            self.generate(runtime, rows[:1], **settings)
+            run_managed_subprocess([sys.executable, "-c", "print('VieNeu DONE: ' + " + repr(first) + ")"], text=True, check=True)
+            progress.append(self.state()["job"]["completed"])
+            (runtime/"tts-scenes"/(rows[1]["scene_id"]+".wav")).write_bytes(b"RIFF")
+            raise RuntimeError("second unit failed")
+        with patch("tools.studio_project.voice_lab.run_tts_batch", side_effect=partial):
+            self.lab.start(self.project, "generate", [], "Hải Đăng", "NORMAL", {}, before["revision"])
+            state = self.wait()
+        self.assertEqual(state["job"]["status"], "REVIEW")
+        self.assertEqual(progress, [1])
+        self.assertEqual(state["job"]["completed"], 1)
+        self.assertIsNotNone(state["units"][0]["selected_take"])
+        self.assertIsNone(state["units"][0]["listened"])
+        recovered = state["units"][0]["selected_take"]
+        self.create()
+        self.assertNotIn(first, [row["scene_id"] for row in self.calls[-1]])
+        self.assertEqual(self.state()["units"][0]["selected_take"], recovered)
 
     def test_shared_store_legacy_approved_api_keeps_original_behavior(self):
         audio=self.root/"legacy.wav";pcm(audio)

@@ -1206,6 +1206,7 @@ def run_tts_batch(
             "for row in rows:\n"
             "    print('VieNeu:', row['scene_id'], flush=True)\n"
             "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars), row['output'])\n"
+            "    print('VieNeu DONE:', row['scene_id'], flush=True)\n"
         )
         actual = effective_tts_generation_config(
             mode=mode,

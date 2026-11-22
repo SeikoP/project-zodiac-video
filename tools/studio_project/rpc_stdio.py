@@ -17,14 +17,15 @@ from .service import StudioProjectService
 
 _MAX_REQUEST_BYTES = 65536
 _ALLOWED = frozenset({
+    "ideas.list", "ideas.update",
     "health", "projects.list", "projects.open", "projects.import",
     "projects.command", "events.list", "events.recent", "assets.list",
     "agent.health", "agent.start", "agent.task", "agent.tasks",
-    "agent.cancel", "agent.apply", "agent.visual.start",
+    "agent.cancel", "agent.apply", "agent.visual.start", "agent.author.start",
     "voice.open", "voice.start", "voice.cancel", "voice.select", "voice.assemble",
     "voice.audio", "voice.playback", "voice.confirm",
     "visual.open", "visual.command", "visual.cancel", "visual.preview",
-    "episode.build", "scene.compile", "assets.describe", "assets.find_candidates", "validation.get",
+    "episode.build", "scene.compile", "video.export", "video.get", "assets.describe", "assets.gallery", "assets.find_candidates", "validation.get",
 })
 
 
@@ -43,10 +44,25 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method not in _ALLOWED:
         raise StudioError("RPC_METHOD_FORBIDDEN", "Operation is not permitted", "transport")
     p = _object(params)
+    if method == 'video.export':
+        _exact(p, 'project_id', 'base_revision')
+        return service.visual.export(**p)
+    if method == 'video.get':
+        _exact(p, 'project_id')
+        return service.visual.video(p['project_id'])
+    if method == "ideas.list":
+        _exact(p)
+        return service.ideas.snapshot()
+    if method == "ideas.update":
+        _exact(p, "concept_id", "sign", "status")
+        return service.ideas.update(**p)
     if method == "health":
         _exact(p)
         return {"status": "READY", "protocol": "zodiac-studio-rpc@1", "authority": "P0 Project Core",
                 "scope": ["read", "metadata-write"], "approvals": "NOT_GRANTED"}
+    if method == "assets.gallery":
+        _exact(p, "project_id")
+        return service.visual.gallery(p["project_id"])
     if method in ("visual.open", "visual.cancel", "assets.describe", "validation.get"):
         _exact(p, "project_id")
         operation = {"visual.open": service.visual.snapshot, "visual.cancel": service.visual.cancel,
@@ -100,6 +116,9 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method == "agent.visual.start":
         _exact(p, "project_id", "scene_id", "instruction")
         return service.agent.start_visual(**p)
+    if method == "agent.author.start":
+        _exact(p, "project_id", "instruction")
+        return service.agent.start_authoring(**p)
     if method == "agent.task":
         _exact(p, "task_id")
         return service.agent.task(p["task_id"])

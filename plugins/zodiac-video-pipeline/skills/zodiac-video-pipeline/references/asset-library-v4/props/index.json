@@ -747,6 +747,225 @@
         "optional-meme-lettering",
         "silent-judgment"
       ]
+    },
+    {
+      "id": "phone-rounded",
+      "path": "props/phone-rounded.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-rounded",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          65,
+          180
+        ],
+        "right_grip": [
+          251,
+          180
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          86,
+          58,
+          144,
+          250
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          43
+        ],
+        "front_surface": [
+          86,
+          58,
+          144,
+          250
+        ],
+        "safe_overlay": [
+          86,
+          58,
+          144,
+          250
+        ]
+      },
+      "review": "PENDING"
+    },
+    {
+      "id": "phone-compact",
+      "path": "props/phone-compact.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-compact",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          54,
+          182
+        ],
+        "right_grip": [
+          268,
+          182
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          76,
+          95,
+          170,
+          170
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          82
+        ],
+        "front_surface": [
+          76,
+          95,
+          170,
+          170
+        ],
+        "safe_overlay": [
+          76,
+          95,
+          170,
+          170
+        ]
+      },
+      "review": "PENDING"
+    },
+    {
+      "id": "phone-angular",
+      "path": "props/phone-angular.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-angular",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          44,
+          184
+        ],
+        "right_grip": [
+          272,
+          184
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          70,
+          62,
+          176,
+          235
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          43
+        ],
+        "front_surface": [
+          70,
+          62,
+          176,
+          235
+        ],
+        "safe_overlay": [
+          70,
+          62,
+          176,
+          235
+        ]
+      },
+      "review": "PENDING"
     }
   ]
 }

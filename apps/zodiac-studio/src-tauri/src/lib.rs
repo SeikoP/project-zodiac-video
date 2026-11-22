@@ -99,6 +99,8 @@ impl Backend {
 
     fn request(&mut self, method: &str, params: Value) -> Result<Value, String> {
         const METHODS: &[&str] = &[
+            "ideas.list",
+            "ideas.update",
             "health",
             "projects.list",
             "projects.open",
@@ -114,6 +116,7 @@ impl Backend {
             "agent.cancel",
             "agent.apply",
             "agent.visual.start",
+            "agent.author.start",
             "voice.open",
             "voice.start",
             "voice.cancel",
@@ -128,7 +131,10 @@ impl Backend {
             "visual.preview",
             "episode.build",
             "scene.compile",
+            "video.export",
+            "video.get",
             "assets.describe",
+            "assets.gallery",
             "assets.find_candidates",
             "validation.get",
         ];
@@ -239,5 +245,21 @@ mod tests {
                 .unwrap_err(),
             "RPC_METHOD_FORBIDDEN"
         );
+    }
+
+    #[test]
+    fn video_method_reaches_python_without_approving_a_project() {
+        let temp = std::env::temp_dir().canonicalize().unwrap();
+        let root = temp.join(format!("zodiac-export-host-{}", std::process::id()));
+        {
+            let mut host = Backend::new(root.clone());
+            let result = host
+                .request("video.get", json!({"project_id":"missing"}))
+                .unwrap();
+            assert_eq!(result["ok"], false);
+            assert_eq!(result["error"]["code"], "PROJECT_NOT_FOUND");
+        }
+        assert!(root.is_absolute() && root.starts_with(&temp));
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

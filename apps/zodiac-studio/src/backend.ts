@@ -1,4 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import type { IdeaBoard, IdeaProgress, IdeaStatus } from "./idea-board";
 
 export type ProjectStatus = {
   project_id: string;
@@ -41,6 +42,14 @@ export type AssetCatalog = {
   selection: string;
   items: Asset[];
 };
+export type GalleryTheme = { id: string; title?: string; canvas: string; ink: string; accent: string; caption: string; caption_ink: string };
+export type AssetUsage = { project_id: string; episode_id: string; build_id: string; manifest_sha256: string;
+  source_sha256: string; review_status: "NOT_REVIEWED"; scene_ids: string[] };
+export type GalleryAsset = { id: string; role: string; contexts: string[]; source_sha256: string;
+  preview_data_uri?: string; svg?: string; path?: string; contact?: unknown; usage?: AssetUsage[];
+  identity?: { family_id?: string; model_id?: string; state_id?: string; view_id?: string } };
+export type AssetGalleryData = { format: string; source_revision: string; items: GalleryAsset[]; themes: GalleryTheme[];
+  usage_evidence?: { coverage?: { truncated: boolean } } | null };
 export type BackendHealth = {
   status: string;
   protocol: string;
@@ -79,15 +88,20 @@ export type BuiltScene = { id: string; start_ms: number; end_ms: number; duratio
   source_map: { hf_id: string; scene_id: string; entity_id: string; state_id: string; asset_id: string; source_sha256: string }[];
   qa: { status: string; caption_contrast: number; issues: { code: string; entity_id?: string }[] }; fidelity: string };
 export type VisualState = { project_id: string; revision: number; source_hash: string | null; intent: VisualIntent | null;
-  theme: "light" | "dark"; can_undo: boolean; can_redo: boolean; stale_preview: boolean;
-  job: { id: string; revision: number; status: string; ready_scenes: string[]; total: number; message: string; error: string | null } | null;
+  export?: VideoExport;
+  theme: string; can_undo: boolean; can_redo: boolean; stale_preview: boolean;
+  job: { id: string; action?: string; render_percent?: number; revision: number; status: string; ready_scenes: string[]; total: number; message: string; error: string | null } | null;
   build: { id: string; revision: number; voice_sha256: string; scenes: BuiltScene[]; theme: string; cache: { reused: number; rebuilt: number };
     resources: { wall_ms: number; peak_rss_bytes: number }; renderer_parity: string } | null;
   events: { event_seq: number; revision: number; kind: string; at: number; payload: Record<string, unknown> }[] };
 export type VisualPreview = { url: string; html: string; sha256: string; scene: BuiltScene; build_id: string; revision: number; candidate_only: boolean; stale: boolean };
+export type VideoExport = { id: string; revision: number; path: string; sha256: string; renderer: string;
+  duration_seconds: number; bytes: number; human_review: string; approval_granted: false;
+  url?: string; file_path?: string; stale?: boolean };
 export type CandidateResult = { status: string; source_sha256: string; catalog_revision: string;
+  usage_evidence?: { coverage?: { truncated: boolean } } | null;
   bundles: { candidate_id: string; asset_id: string; entity_id: string; actors: { entity_id: string; states: string[] }[];
-    fit_reasons: string[]; warnings: string[]; identity: { model_id: string; family_id: string } }[];
+    fit_reasons: string[]; warnings: string[]; usage?: AssetUsage[]; identity: { model_id: string; family_id: string } }[];
   rejected: { id: string; reason: string }[]; new_asset_task: { reason: string } | null };
 export type AgentTask = {
   task_id: string;
@@ -102,7 +116,10 @@ export type AgentTask = {
   preview: string;
   suggestion: string;
   error: string | null;
-  kind: "project.inspect" | "scene.propose";
+  kind: "project.inspect" | "scene.propose" | "episode.propose";
+  visual_revision?: number;
+  scene_id?: string;
+  applied_command_id?: string | null;
   write_applied: boolean;
 };
 type RpcError = { code: string; stage: string; message: string };
@@ -128,6 +145,13 @@ export async function request<T>(method: string, params: object = {}): Promise<T
 }
 
 export const backend = {
+  authorAgentStart: (project_id: string, instruction: string) => request<AgentTask>("agent.author.start", { project_id, instruction }),
+  exportVideo: (project_id: string, base_revision: number) => request<VisualState>('video.export', { project_id, base_revision }),
+  video: (project_id: string) => request<VideoExport>('video.get', { project_id }),
+  assetGallery: (project_id: string) => request<AssetGalleryData>("assets.gallery", { project_id }),
+  ideas: () => request<IdeaBoard>("ideas.list"),
+  ideaUpdate: (concept_id: string, sign: string, status: IdeaStatus) =>
+    request<IdeaProgress>("ideas.update", { concept_id, sign, status }),
   visualOpen: (project_id: string) => request<VisualState>("visual.open", { project_id }),
   visualCommand: (project_id: string, base_revision: number, kind: string, payload: object, command_id = crypto.randomUUID()) =>
     request<VisualState>("visual.command", { project_id, base_revision, kind, payload, command_id }),
@@ -137,7 +161,7 @@ export const backend = {
   visualPreview: (project_id: string, scene_id: string, build_id: string | null = null) => request<VisualPreview>("visual.preview", { project_id, scene_id, build_id }),
   visualCandidates: (project_id: string, scene_id: string, requirement: object) => request<CandidateResult>("assets.find_candidates", { project_id, scene_id, requirement }),
   visualAgentStart: (project_id: string, scene_id: string, instruction: string) => request<AgentTask>("agent.visual.start", { project_id, scene_id, instruction }),
-  visualAgentApply: (task_id: string, base_revision: number) => request<VisualState>("agent.apply", { task_id, base_revision, command_id: crypto.randomUUID(), confirm: true }),
+  visualAgentApply: (task_id: string, base_revision: number) => request<VisualState>("agent.apply", { task_id, base_revision, command_id: "agent-" + task_id, confirm: true }),
   voiceOpen: (project_id: string) => request<VoiceState>("voice.open", { project_id }),
   voiceStart: (project_id: string, base_revision: number, action: "generate" | "align", unit_ids: string[], voice: string, intent: string, pronunciation: Record<string, string>) =>
     request<VoiceState>("voice.start", { project_id, base_revision, action, unit_ids, voice, intent, pronunciation }),

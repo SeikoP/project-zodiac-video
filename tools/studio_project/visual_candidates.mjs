@@ -22,6 +22,7 @@ export function safeSvg(bytes) {
 }
 
 export function propIdentity(row, bytes) {
+  if(row.identity)return {format:'zodiac-prop-identity@1',...row.identity};
   const phone = /^phone(?:-|$)/u.test(row.id);
   // V4 phone notification states share one outer model; color/state are not new geometry.
   const body = phone ? bytes.toString('utf8').match(/<path\b[^>]*\bd="([^"]+)"/u)?.[1] : null;
@@ -35,35 +36,47 @@ export async function describeAssets() {
     const bytes = await readFile(await confined(LIBRARY,row.path)); safeSvg(bytes);
     result.push({...row, source_sha256:digest(bytes), identity:propIdentity(row,bytes), fresh:true});
   }
-  return {format:'zodiac-source-capabilities@1', source_revision:digest(catalog), items:result,
+  return {format:'zodiac-source-capabilities@1', source_revision:digest(result), items:result,
     retired:['scene_set'], authority:'asset-library-v4', ranking:'hard-constraints-then-context', not_an_approval:true};
 }
 
-export async function findCandidates(intent, sceneId, requirement={}, recent=[]) {
+export function assetUsage(asset, history){
+  return (history?.records??[]).flatMap(({assets,...evidence})=>{
+    const match=assets.find(row=>row.source_sha256===asset.source_sha256);
+    return match?[{...evidence,scene_ids:match.scene_ids}]:[];
+  });
+}
+
+export async function findCandidates(intent, sceneId, requirement={}, history) {
   const scene = intent.scenes.find(s=>s.id===sceneId); if(!scene) throw Error('VISUAL_SCENE_UNKNOWN');
   const catalog=await describeAssets(), rejected=[], eligible=[];
   const terms=String(requirement.context || scene.semantic_goal).toLowerCase().split(/[^\p{L}\p{N}_-]+/u).filter(t=>t.length>1);
   const existing=new Set(scene.entities.flatMap(e=>Object.values(e.states).map(s=>s.asset)).filter(Boolean));
-  const used=new Set(recent.flatMap(r=>r.asset_ids??[]));
   for(const row of catalog.items) {
     let reason=null;
     if(requirement.family_id && row.identity.family_id!==requirement.family_id) reason='FAMILY_MISMATCH';
+    else if(requirement.state_id && row.identity.state_id!==requirement.state_id) reason='STATE_UNSUPPORTED';
+    else if(requirement.model_id && row.identity.model_id!==requirement.model_id) reason='MODEL_MISMATCH';
+    else if(requirement.view_id && row.identity.view_id!==requirement.view_id) reason='VIEW_UNSUPPORTED';
     else if(requirement.asset_id && row.id!==requirement.asset_id) reason='EXACT_ASSET_REQUIRED';
     else if(requirement.role && !['interactive_prop','prop','story_prop'].includes(requirement.role)) reason='ROLE_MISMATCH';
     const relevant=(row.contexts??[]).some(c=>terms.includes(c.toLowerCase())) || existing.has(row.id) || requirement.asset_id===row.id || requirement.family_id===row.identity.family_id;
     if(!reason && !relevant) reason='NO_SOURCE_CONTEXT_MATCH';
     if(requirement.contact && ![...existing].some(id=>intent.assets[id]?.path?.endsWith('/'+path.basename(row.path))) && row.identity.family_id!=='phone') reason='CONTACT_GEOMETRY_UNVERIFIED';
     if(reason) rejected.push({id:row.id,reason});
-    else eligible.push({...row, score:(requirement.asset_id===row.id?100:0)+(existing.has(row.id)?10:0)-(used.has(row.id)?1:0), repeated:used.has(row.id)});
+    else eligible.push({...row, score:(requirement.asset_id===row.id?100:0)+(existing.has(row.id)?10:0), usage:assetUsage(row,history)});
   }
   eligible.sort((a,b)=>b.score-a.score || a.id.localeCompare(b.id));
   const bundles=[];
-  for(const asset of eligible.slice(0,3)) {
+  for(const asset of eligible) {
+    if(bundles.length===3)break;
     const target=scene.entities.find(e=>['interactive_prop','prop'].includes(e.visual_role)||e.kind==='prop');
     if(!target) { rejected.push({id:asset.id,reason:'NO_PROP_SLOT_IN_SCENE'}); continue; }
     const current=intent.assets[target.states[target.initial_state]?.asset];
     const frameContacts=scene.environment?.frame?.contacts;
     const contacts=Array.isArray(frameContacts)?frameContacts:(scene.spatial_bindings??[]);
+    const siblingModels=new Set(Object.values(target.states).map(s=>catalog.items.find(r=>intent.assets[s.asset]?.path?.endsWith('/'+path.basename(r.path)))?.identity.model_id).filter(Boolean));
+    if(siblingModels.size && !siblingModels.has(asset.identity.model_id) && Object.keys(target.states).length>1){rejected.push({id:asset.id,reason:'OWNER_MODEL_CONTINUITY'});continue;}
     const bound=contacts.some(b=>b.entity===target.id);
     if(bound && current?.path && !current.path.endsWith('/'+path.basename(asset.path))) {
       const currentRow=catalog.items.find(r=>current.path.endsWith('/'+path.basename(r.path)));
@@ -74,10 +87,10 @@ export async function findCandidates(intent, sceneId, requirement={}, recent=[])
       actors:scene.entities.filter(e=>e.kind==='character').map(e=>({entity_id:e.id,states:Object.keys(e.states)})),
       mechanic_id:scene.grammar?.mechanic_id, frame_id:scene.grammar?.frame_id,
       fit_reasons:['Exact current catalog hash','Existing semantic prop slot','Actor identity and acting states retained',bound?'Same physical model preserves authored contact':'No authored contact binding changed'],
-      warnings:asset.repeated?['Recent reviewed episode used this source asset; continuity may justify reuse']:[], not_an_approval:true};
+      usage:asset.usage, warnings:[], not_an_approval:true};
     bundles.push({...bundle, candidate_id:digest({scene_id:scene.id,entity_id:target.id,state_id:target.initial_state,asset_id:asset.id,
       asset_source_sha256:asset.source_sha256,catalog_revision:catalog.source_revision,source_sha256:digest(intent)})});
   }
   return {format:'zodiac-scene-candidates@1', status:bundles.length?'CANDIDATES':'NO_FIT_ASSET', source_sha256:digest(intent),
-    catalog_revision:catalog.source_revision, bundles, rejected, new_asset_task:bundles.length?null:{scene_id:sceneId,requirement,reason:'No source-backed feasible scene bundle; author and review a suitable asset.'}};
+    catalog_revision:catalog.source_revision, usage_evidence:history?{format:history.format,coverage:history.coverage,episode_count:history.records.length,not_an_approval:true}:null, bundles, rejected, new_asset_task:bundles.length?null:{scene_id:sceneId,requirement,reason:'No source-backed feasible scene bundle; author and review a suitable asset.'}};
 }

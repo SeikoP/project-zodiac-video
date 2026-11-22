@@ -7,6 +7,8 @@ import wave
 from pathlib import Path
 
 from .models import EpisodeStatus, ProjectHandle
+from tools.studio.artifacts import canonical_hash
+import re
 
 # Mirror canonical Node approvalPaths resolution order exactly.
 _SOURCE = {
@@ -137,6 +139,62 @@ def _voice_status(workspace: Path) -> str:
     return "TECHNICAL_VALID"
 
 
+def _export_matches_build(root: Path, state: dict, receipt: dict) -> bool:
+    build = state.get('build') or {}
+    identifier = build.get('id') if isinstance(build, dict) else None
+    expected = receipt.get('build_manifest_sha256')
+    return bool(isinstance(expected, str) and re.fullmatch(r'[a-f0-9]{64}', expected) and isinstance(identifier, str) and re.fullmatch(r'[a-f0-9]{32}', identifier) and
+                receipt.get('build_manifest_sha256') == _hash(root / '.runtime/visual-workspace/builds' / identifier / 'manifest.json', root))
+
+
+def _video_status(root: Path) -> str:
+    file = root / '.runtime/visual-workspace/state.json'
+    if not file.exists():
+        return 'UNKNOWN'
+    if _hash(file, root) is None:
+        return 'BLOCKED'
+    state = _json(file) or {}
+    receipt = state.get('export')
+    if not receipt:
+        return 'UNKNOWN'
+    if not isinstance(receipt, dict):
+        return 'BLOCKED'
+    try:
+        identifier = receipt['id']
+        if not re.fullmatch(r'[a-f0-9]{32}', identifier):
+            return 'BLOCKED'
+        prefix = '.runtime/visual-workspace/exports/' + identifier + '/'
+        stored_path = root / (prefix + 'receipt.json')
+        if _hash(stored_path, root) is None:
+            return 'BLOCKED'
+        stored = _json(stored_path) or {}
+        if stored.get('format') != 'zodiac-hyperframes-export@1' or any(receipt.get(k) != v for k, v in stored.items()):
+            return 'BLOCKED'
+        if receipt['path'] != prefix + 'episode.mp4' or _hash(root / receipt['path'], root) != receipt['sha256']:
+            return 'BLOCKED'
+        source = root / '.authoring/visual-intent.json'
+        if _hash(source, root) is None:
+            return 'BLOCKED'
+        if (receipt['revision'] != state['revision'] or receipt['source_sha256'] != state['source_hash'] or
+                canonical_hash(_json(source)) != state['source_hash'] or not _export_matches_build(root, state, receipt)):
+            return 'STALE'
+        voice_path = root / '.runtime/voice-lab/state.json'
+        if _hash(voice_path, root) is None:
+            return 'BLOCKED'
+        voice = _json(voice_path) or {}
+        take = voice.get('assembly') or {}
+        if not isinstance(take, dict):
+            return 'BLOCKED'
+        if (take.get('wav_sha256') != receipt['voice_sha256'] or
+                canonical_hash(voice.get('timing')) != state['build']['voice_timing_fingerprint']):
+            return 'STALE'
+        if _hash(root / take['path'], root) != receipt['voice_sha256']:
+            return 'BLOCKED'
+        return 'EXPORTED'
+    except (KeyError, TypeError, ValueError):
+        return 'BLOCKED'
+
+
 def resolve_episode_status(handle: ProjectHandle) -> EpisodeStatus:
     root = handle.workspace.resolve()
     if (root / ".runtime/voice-lab/state.json").exists():
@@ -151,6 +209,6 @@ def resolve_episode_status(handle: ProjectHandle) -> EpisodeStatus:
         # Until later phases introduce verified human visual, actual exported
         # media and publication receipts, these remain evidence-absent UNKNOWN.
         visual="UNKNOWN",
-        video="UNKNOWN",
+        video=_video_status(root) if _source_status(handle) == 'APPROVED' else 'BLOCKED',
         published="UNKNOWN",
     )

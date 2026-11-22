@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import copy
+from contextlib import nullcontext
+import hashlib
 import json
 import math
 import os
 from pathlib import Path
 import re
+import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -17,13 +21,14 @@ from tools.runner.process import observe_subprocesses, observe_subprocess_output
 from tools.studio.artifacts import VoiceArtifactStore, canonical_hash, file_sha256
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
+from .status import _hash, _export_matches_build
 from .visual_server import PreviewServer
 
 ROOT = Path(__file__).resolve().parents[2]
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$")
 BUILD_ID = re.compile(r"^[a-f0-9]{32}$")
 FORMAT = "zodiac-visual-workspace@1"
-COMMANDS = frozenset({"source.replace", "scene.patch", "theme.select", "asset.select", "undo", "redo"})
+COMMANDS = frozenset({"source.replace", "scene.patch", "scene.performance", "theme.select", "asset.select", "undo", "redo"})
 _OWNERS = weakref.WeakValueDictionary()
 
 
@@ -198,13 +203,19 @@ class VisualWorkspace:
                     result["job"] = state["job"]
             return result
 
-    def command(self, project_id, command_id, base_revision, kind, payload):
+    def command(self, project_id, command_id, base_revision, kind, payload, *, voice_dependencies=None):
         if not isinstance(command_id, str) or not ID.fullmatch(command_id) or kind not in COMMANDS:
             raise _error("VISUAL_COMMAND_FORBIDDEN", "Unsupported visual command or command id")
         if len(json.dumps(payload, allow_nan=False)) > 2*1024*1024:
             raise _error("VISUAL_COMMAND_TOO_LARGE", "Visual command exceeds 2 MiB")
         handle = self._handle(project_id)
-        with _exclusive_source_lock(handle.workspace, "visual-state"):
+        with _exclusive_source_lock(handle.workspace, "visual-state"), (_exclusive_source_lock(handle.workspace, "voice-state") if voice_dependencies else nullcontext()):
+            held_voice = None
+            if voice_dependencies:
+                from .agent_authoring import voice_dependencies as fingerprint_voice
+                held_voice = self.service.voice._read(handle)
+                if fingerprint_voice(held_voice) != voice_dependencies:
+                    raise _error("AGENT_DEPENDENCIES_CHANGED", "Giọng hoặc timing đã thay đổi; yêu cầu đề xuất mới.")
             state, intent = self._read(handle)
             fingerprint = canonical_hash({"kind": kind, "payload": payload, "base_revision": base_revision})
             prior = state["commands"].get(command_id)
@@ -232,9 +243,26 @@ class VisualWorkspace:
                         intent = copy.deepcopy(entry)
                 elif kind == "theme.select":
                     _exact(payload, "theme")
-                    if payload["theme"] not in ("light", "dark"):
-                        raise _error("VISUAL_THEME_UNKNOWN", "Choose light or dark")
+                    if payload["theme"] not in ("light", "dark", "apricot-campus", "rose-social", "indigo-noir"):
+                        raise _error("VISUAL_THEME_UNKNOWN", "Choose a registered visual palette")
                     state["theme"] = payload["theme"]
+                elif kind == "scene.performance":
+                    _exact(payload, "scene_id", "events")
+                    scene = next((s for s in intent["scenes"] if s["id"] == payload["scene_id"]), None)
+                    if scene is None:
+                        raise _error("VISUAL_SCENE_UNKNOWN", "Choose an authored scene")
+                    events = payload["events"]
+                    if not isinstance(events, list) or len(events) > 100:
+                        raise _error("VISUAL_PERFORMANCE_INVALID", "At most 100 canonical events are supported")
+                    for event in events:
+                        if not isinstance(event, dict) or set(event)-{"id", "target", "state_before", "state_after", "trigger", "motion"}:
+                            raise _error("VISUAL_PERFORMANCE_INVALID", "Only canonical state events are supported")
+                    scene["events"] = copy.deepcopy(events)
+                    voice = held_voice if held_voice is not None else self.service.voice.snapshot(project_id)
+                    if not voice.get("timing") or not voice.get("assembly") or voice["timing"].get("wav_sha256") != voice["assembly"].get("wav_sha256"):
+                        raise _error("VISUAL_MEASURED_TIMING_REQUIRED", "Select and align the voice before authoring acting")
+                    self._node(handle, {"action": "validate_performance", "intent": intent,
+                                        "scene_id": scene["id"], "narration": self._narration(handle), "timing": voice["timing"]})
                 elif kind == "scene.patch":
                     _exact(payload, "scene_id", "entity_id", "state_id", "changes")
                     scene, entity, target = self._target(intent, payload)
@@ -255,7 +283,7 @@ class VisualWorkspace:
                         raise _error("VISUAL_CONTACT_EDIT_UNSUPPORTED", "Bound actors/props must retain authored contact; edit the complete source composition")
                 elif kind == "asset.select":
                     _exact(payload, "scene_id", "candidate_id", "requirement")
-                    result = self._node(handle, {"action": "candidates", "intent": intent, "scene_id": payload["scene_id"], "requirement": payload["requirement"], "recent": []})
+                    result = self._node(handle, {"action": "candidates", "intent": intent, "scene_id": payload["scene_id"], "requirement": payload["requirement"]})
                     bundle = next((b for b in result["bundles"] if b["candidate_id"] == payload["candidate_id"]), None)
                     if not bundle:
                         raise _error("VISUAL_CANDIDATE_STALE", "Candidate source or constraints changed")
@@ -290,27 +318,110 @@ class VisualWorkspace:
         return scene, entity, state
 
     def candidates(self, project_id, scene_id, requirement):
-        if not isinstance(requirement, dict) or set(requirement)-{"context", "family_id", "asset_id", "role", "contact"}:
+        if not isinstance(requirement, dict) or set(requirement)-{"context", "family_id", "model_id", "view_id", "asset_id", "role", "contact"}:
             raise _error("VISUAL_REQUIREMENT_INVALID", "Unsupported candidate constraints")
         if any(type(v) not in (str, bool) or isinstance(v, str) and len(v)>200 for v in requirement.values()):
             raise _error("VISUAL_REQUIREMENT_INVALID", "Invalid candidate constraints")
         handle = self._handle(project_id)
+        usage = self.usage_history(project_id)
         with _exclusive_source_lock(handle.workspace, "visual-state"):
             state, intent = self._read(handle)
             if not intent:
                 raise _error("VISUAL_SOURCE_REQUIRED", "Import Visual Intent first")
-            # Only actually reviewed manifests contribute a reuse warning; technical previews do not.
-            recent = []
-            for other in self.service.registry.list_projects():
-                if other.project_id != project_id and self.service.project(other.project_id)["status"]["visual"] == "APPROVED":
-                    path = other.workspace/".runtime/visual-workspace/state.json"
-                    if path.is_file():
-                        record = self._read_json(path).get("build") or {}
-                        recent.append({"asset_ids": list(record.get("assets", {}))})
-            return self._node(handle, {"action": "candidates", "intent": intent, "scene_id": scene_id, "requirement": requirement, "recent": recent})
+            return self._node(handle, {"action": "candidates", "intent": intent, "scene_id": scene_id, "requirement": requirement, "usage": usage})
+
+    def usage_history(self, project_id):
+        records, scanned, cursor = [], 0, None
+        # shortcut: scan at most 500 registered projects; add an indexed projection when libraries exceed this bound.
+        for _ in range(5):
+            page = self.service.registry.list_projects(limit=100, after_project_id=cursor)
+            for other in page:
+                scanned += 1
+                if other.project_id == project_id:
+                    continue
+                try:
+                    root = other.workspace
+                    def checked(relative, expected=None):
+                        file = root / relative
+                        if not file.resolve().is_relative_to(root.resolve()):
+                            raise ValueError('Usage path outside project')
+                        if any(p.is_symlink() for p in (file, *file.parents) if p == root or root in p.parents):
+                            raise ValueError('Usage symlink rejected')
+                        digest = _hash(file, root)
+                        if digest is None or (expected is not None and digest != expected):
+                            raise ValueError('Usage file missing or changed')
+                        return file, digest
+                    if self.service.project(other.project_id)['status']['content'] != 'APPROVED':
+                        continue
+                    state_file, _ = checked('.runtime/visual-workspace/state.json')
+                    state = self._read_json(state_file)
+                    if not isinstance(state, dict):
+                        continue
+                    build = state.get('build') or {}
+                    if not isinstance(build, dict):
+                        continue
+                    build_id = build.get('id', '')
+                    if not isinstance(build_id, str) or not BUILD_ID.fullmatch(build_id):
+                        continue
+                    prefix = '.runtime/visual-workspace/builds/' + build_id + '/'
+                    manifest_file, manifest_hash = checked(prefix + 'manifest.json')
+                    manifest = self._read_json(manifest_file)
+                    if not isinstance(manifest, dict):
+                        continue
+                    if manifest.get('format') != 'zodiac-episode-build@1' or manifest.get('status') != 'TECHNICAL_VALID':
+                        continue
+                    if any(build.get(k) != value for k, value in manifest.items()):
+                        continue
+                    source_file, _ = checked('.authoring/visual-intent.json')
+                    source = self._read_json(source_file)
+                    if (state['revision'] != build['revision'] or state['source_hash'] != canonical_hash(source)
+                            or manifest['source_sha256'] != state['source_hash']):
+                        continue
+                    if hashlib.sha256(self._narration(other).encode('utf8')).hexdigest() != manifest['narration_sha256']:
+                        continue
+                    scenes = manifest['scenes']
+                    if not scenes or [s['id'] for s in scenes] != [s['id'] for s in source['scenes']]:
+                        continue
+                    assets = {}
+                    for scene in scenes:
+                        checked(prefix + scene['preview_file'], scene['preview_sha256'])
+                        for asset_id in scene['asset_ids']:
+                            sha = manifest['assets'][asset_id]['sha256']
+                            if not isinstance(sha, str) or not re.fullmatch(r'[a-f0-9]{64}', sha):
+                                raise ValueError('Invalid usage asset hash')
+                            if sha not in assets:
+                                checked(prefix + 'assets/' + sha + '.svg', sha)
+                                assets[sha] = {'source_sha256': sha, 'scene_ids': []}
+                            if scene['id'] not in assets[sha]['scene_ids']:
+                                assets[sha]['scene_ids'].append(scene['id'])
+                    # A concurrent edit/build cannot lend old outputs to a new source revision.
+                    if self._read_json(state_file) != state or canonical_hash(self._read_json(source_file)) != state['source_hash']:
+                        continue
+                    events = state['events']
+                    if not isinstance(events, list) or any(not isinstance(e, dict) or not isinstance(e.get('payload'), dict) for e in events):
+                        continue
+                    at = next((e['at'] for e in reversed(events) if e['kind'] == 'episode.build_ready' and e['payload'].get('build_id') == build_id), 0)
+                    if type(at) not in (int, float) or not math.isfinite(at) or at < 0:
+                        continue
+                    records.append({'project_id': other.project_id, 'episode_id': other.episode_id,
+                                    'build_id': build_id, 'manifest_sha256': manifest_hash,
+                                    'source_sha256': manifest['source_sha256'], 'built_at': at,
+                                    'review_status': 'NOT_REVIEWED', 'assets': list(assets.values())})
+                except (OSError, ValueError, TypeError, KeyError, StudioError):
+                    continue
+            if len(page) < 100:
+                break
+            cursor = page[-1].project_id
+        records.sort(key=lambda row: (-row['built_at'], row['project_id']))
+        return {'format': 'zodiac-asset-usage@1', 'records': records[:50],
+                'coverage': {'projects_scanned': scanned, 'scan_limit': 500, 'record_limit': 50,
+                             'truncated': scanned == 500 or len(records) > 50}, 'not_an_approval': True}
 
     def describe(self, project_id):
         return self._node(self._handle(project_id), {"action": "assets"})
+
+    def gallery(self, project_id):
+        return self._node(self._handle(project_id), {"action": "gallery", "usage": self.usage_history(project_id)})
 
     def start(self, project_id, base_revision, scene_id=None):
         handle = self._handle(project_id)
@@ -408,20 +519,176 @@ class VisualWorkspace:
                 self._job_ids.pop(project_id, None)
 
     def cancel(self, project_id):
+        handle = self.service.registry.get(self.service._id(project_id))
+        if handle is None:
+            raise _error('PROJECT_NOT_FOUND', 'Unknown project')
         with self._guard:
             job_id = self._job_ids.get(project_id)
             if job_id:
                 self._cancelled.add(job_id)
             process = self._processes.get(project_id)
+        try:
+            with _exclusive_source_lock(handle.workspace, "visual-state"):
+                state, _ = self._read(handle)
+                if state["job"] and state["job"]["status"] == "RUNNING":
+                    state["job"].update(status="CANCELLED", message="Cancelled; last good output preserved")
+                    self._save(handle, state)
+        finally:
+            # Cleanup must still run when source/approval verification has failed.
             if process and process.poll() is None:
-                process.kill()
-        handle = self._handle(project_id)
-        with _exclusive_source_lock(handle.workspace, "visual-state"):
-            state, _ = self._read(handle)
-            if state["job"] and state["job"]["status"] == "RUNNING":
-                state["job"].update(status="CANCELLED", message="Cancelled; last good output preserved")
-                self._save(handle, state)
+                try:
+                    if type(process.pid) is int and process.pid > 0:
+                        if os.name == 'nt':
+                            subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW, timeout=10)
+                        else:
+                            os.killpg(process.pid, signal.SIGKILL)
+                finally:
+                    process.kill()
         return self.snapshot(project_id)
+
+    def _export_inputs(self, handle, state, intent):
+        build = state.get('build') or {}
+        if not build or build['revision'] != state['revision'] or build['source_sha256'] != state['source_hash']:
+            raise _error('EXPORT_REBUILD_REQUIRED', 'Dựng lại episode hiện tại trước khi xuất MP4')
+        if not build.get('production_sha256'):
+            raise _error('EXPORT_REBUILD_REQUIRED', 'Dựng lại episode để tạo nguồn HyperFrames có hash')
+        if not isinstance(build.get('id'), str) or not BUILD_ID.fullmatch(build['id']):
+            raise _error('EXPORT_BUILD_DRIFT', 'Invalid build identity')
+        root, _ = self._paths(handle)
+        folder = _trusted_dir(handle.workspace, root / 'builds' / build['id'])
+        manifest = self._read_json(folder / 'manifest.json')
+        if any(build.get(key) != value for key, value in manifest.items()):
+            raise _error('EXPORT_BUILD_DRIFT', 'Build manifest changed')
+        # Callers hold voice-state through final verification and publication.
+        voice = self.service.voice._read(handle)
+        take, audio = self.service.voice._take(handle, voice, 'episode')
+        if file_sha256(audio) != take['wav_sha256']:
+            raise _error('EXPORT_VOICE_CHANGED', 'Selected audio bytes changed')
+        if (not voice.get('timing') or take['wav_sha256'] != build['voice_sha256'] or
+                canonical_hash(voice['timing']) != build['voice_timing_fingerprint']):
+            raise _error('EXPORT_VOICE_CHANGED', 'Voice/timing changed; rebuild first')
+        inputs = {'action': 'export_prepare', 'build_root': str(folder), 'manifest_sha256': file_sha256(folder / 'manifest.json'),
+                  'source_sha256': state['source_hash'], 'voice_sha256': take['wav_sha256'], 'source_root': str(ROOT),
+                  'audio': str(audio), 'voice_duration': take['duration_seconds']}
+        inputs['binding'] = canonical_hash({'revision': state['revision'], 'build_id': build['id'], **inputs})
+        return inputs
+
+    def export(self, project_id, base_revision):
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, 'visual-state'):
+            state, intent = self._read(handle)
+            self._revision(state, base_revision)
+            if state.get('job') and state['job']['status'] == 'RUNNING' and self._job_alive(project_id, state['job']):
+                raise _error('VISUAL_BUSY', 'Finish or cancel the current task first')
+            with self._guard:
+                if project_id in self._workers and self._workers[project_id].is_alive():
+                    raise _error('VISUAL_BUSY', 'Previous worker is still stopping')
+            with _exclusive_source_lock(handle.workspace, 'voice-state'):
+                inputs = self._export_inputs(handle, state, intent)
+            job_id = uuid.uuid4().hex
+            state['job'] = {'id': job_id, 'action': 'export', 'status': 'RUNNING', 'revision': state['revision'],
+                            'owner_pid': os.getpid(), 'owner_instance': self._instance_id,
+                            'ready_scenes': [], 'total': 1, 'message': 'Chuẩn bị HyperFrames', 'error': None}
+            self._save(handle, state)
+            worker = threading.Thread(target=self._export_worker, args=(handle, job_id, inputs), daemon=True)
+            with self._guard:
+                self._workers[project_id] = worker
+                self._job_ids[project_id] = job_id
+            worker.start()
+        return self.snapshot(project_id)
+
+    def _export_worker(self, handle, job_id, inputs):
+        project_id = handle.project_id
+        try:
+            receipt = self._render_export(handle, job_id, inputs)
+            self._handle(project_id)
+            with _exclusive_source_lock(handle.workspace, 'visual-state'):
+                state, intent = self._read(handle)
+                if state['job']['id'] != job_id or state['job']['status'] != 'RUNNING':
+                    return
+                with _exclusive_source_lock(handle.workspace, 'voice-state'):
+                    if self._export_inputs(handle, state, intent).get('binding') != inputs.get('binding'):
+                        raise _error('EXPORT_SOURCE_CHANGED', 'Nguồn thay đổi trong lúc render; giữ MP4 trước')
+                    state['export'] = {**receipt, 'id': job_id, 'revision': state['revision']}
+                    state['job'].update(status='COMPLETED', render_percent=100, message='MP4 HyperFrames đã xuất; chờ xem và duyệt')
+                    self._event(state, 'video.exported', {'export_id': job_id, 'sha256': receipt['sha256'], 'not_an_approval': True})
+                    self._save(handle, state)
+        except Exception as error:
+            with _exclusive_source_lock(handle.workspace, 'visual-state'):
+                state, _ = self._read(handle)
+                if state.get('job') and state['job']['id'] == job_id and state['job']['status'] == 'RUNNING':
+                    state['job'].update(status='BLOCKED', error=str(error)[-3000:], message='Xuất MP4 bị chặn; giữ video tốt trước đó')
+                    self._save(handle, state)
+        finally:
+            with self._guard:
+                self._workers.pop(project_id, None)
+                self._processes.pop(project_id, None)
+                self._job_ids.pop(project_id, None)
+
+    def _render_export(self, handle, job_id, inputs):
+        root, _ = self._paths(handle)
+        output = _trusted_dir(handle.workspace, root / 'exports' / job_id)
+        last_log = [0.0]
+        def process(child):
+            with self._guard:
+                if child is None:
+                    self._processes.pop(handle.project_id, None)
+                else:
+                    self._processes[handle.project_id] = child
+                    if job_id in self._cancelled:
+                        child.kill()
+        def log(line, **_):
+            if time.monotonic() - last_log[0] < .5:
+                return
+            last_log[0] = time.monotonic()
+            clean = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', line)[-240:]
+            progress = None
+            if line.startswith('@hf-progress '):
+                try:
+                    progress = json.loads(line.removeprefix('@hf-progress '))
+                    clean = 'HyperFrames · ' + str(progress.get('code', 'render'))
+                except ValueError:
+                    pass
+            with _exclusive_source_lock(handle.workspace, 'visual-state'):
+                state, _ = self._read(handle)
+                if state['job']['id'] == job_id and state['job']['status'] == 'RUNNING':
+                    state['job']['message'] = clean
+                    if progress and type(progress.get('pct')) in (int, float) and 0 <= progress['pct'] <= 100:
+                        state['job']['render_percent'] = progress['pct']
+                    self._save(handle, state)
+        receipt = self._node(handle, {**inputs, 'output': str(output)}, process, log)
+        shutil.copyfile(inputs['audio'], output / 'voice.wav')
+        if file_sha256(output / 'voice.wav') != inputs['voice_sha256']:
+            raise _error('EXPORT_VOICE_CHANGED', 'Selected voice changed during snapshot')
+        cli = ROOT / 'apps/zodiac-studio/node_modules/hyperframes/bin/hyperframes.mjs'
+        if not cli.is_file():
+            raise _error('HYPERFRAMES_MISSING', 'Run pnpm install in apps/zodiac-studio')
+        def run(command):
+            with observe_subprocesses(process), observe_subprocess_output(log):
+                return run_managed_subprocess(command, cwd=output, check=True, capture_output=True, text=True)
+        run(['node', str(cli), 'check', str(output)])
+        run(['node', str(cli), 'render', str(output), '--output', str(output / 'video-only.mp4'), '--fps', str(receipt['fps']), '--quality', 'looks', '--workers', '1', '--no-best-effort'])
+        run(['ffmpeg', '-v', 'error', '-y', '-i', str(output / 'video-only.mp4'), '-i', str(output / 'voice.wav'), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-movflags', '+faststart', str(output / 'episode.mp4')])
+        result = run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(output / 'episode.mp4')])
+        probe = json.loads(result.stdout)
+        video = next(row for row in probe['streams'] if row['codec_type'] == 'video')
+        audio = next(row for row in probe['streams'] if row['codec_type'] == 'audio')
+        rate = video['avg_frame_rate'].split('/')
+        if ((video['width'], video['height']) != (1080, 1920) or abs(float(rate[0])/float(rate[1])-receipt['fps']) > .01 or
+                abs(float(video['duration'])-receipt['duration_seconds']) > 2/receipt['fps'] or
+                float(audio['duration'])+.12 < inputs['voice_duration']):
+            raise _error('EXPORT_MEDIA_INVALID', 'Video/audio dimensions, frame rate or duration mismatch')
+        captions = output / 'captions.srt'
+        if file_sha256(captions) != receipt['captions_sha256']:
+            raise _error('EXPORT_CAPTIONS_DRIFT', 'Measured captions changed during export')
+        cover = output / 'cover.png'
+        run(['ffmpeg', '-v', 'error', '-y', '-ss', str(min(1, receipt['duration_seconds']/2)), '-i', str(output / 'episode.mp4'), '-frames:v', '1', '-update', '1', str(cover)])
+        receipt.update(path=(output / 'episode.mp4').relative_to(handle.workspace).as_posix(), sha256=file_sha256(output / 'episode.mp4'),
+                       bytes=(output / 'episode.mp4').stat().st_size, probe=probe, binding=inputs['binding'],
+                       captions={'path': captions.relative_to(handle.workspace).as_posix(), 'sha256': file_sha256(captions)},
+                       cover={'path': cover.relative_to(handle.workspace).as_posix(), 'sha256': file_sha256(cover), 'source_video_sha256': file_sha256(output / 'episode.mp4')})
+        VoiceArtifactStore._atomic_write(output / 'receipt.json', receipt)
+        return receipt
 
     def _preview_data(self, project_id, build_id, scene_id):
         if not BUILD_ID.fullmatch(build_id) or not ID.fullmatch(scene_id):
@@ -449,9 +716,42 @@ class VisualWorkspace:
             return data
 
     def _resource(self, project_id, build_id, filename):
+        if filename == 'episode.mp4':
+            return self._video_data(project_id, build_id), 'video/mp4'
         if not filename.endswith(".html"):
             raise _error("VISUAL_PREVIEW_INVALID", "Only compiled scene HTML may be served")
         return self._preview_data(project_id, build_id, filename[:-5])
+
+    def _video_data(self, project_id, export_id):
+        if not BUILD_ID.fullmatch(export_id):
+            raise _error('VIDEO_INVALID', 'Invalid export identity')
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, 'visual-state'):
+            state, _ = self._read(handle)
+            receipt = state.get('export') or {}
+            if receipt.get('id') != export_id:
+                raise _error('VIDEO_MISSING', 'No verified export with this identity')
+            root, _ = self._paths(handle)
+            folder = _trusted_dir(handle.workspace, root / 'exports' / export_id)
+            file = folder / 'episode.mp4'
+            # shortcut: private playback reads up to 256 MiB; stream from disk for larger exports.
+            if file.is_symlink() or file.stat().st_size > 256*1024*1024 or _hash(file, handle.workspace) != receipt['sha256']:
+                raise _error('VIDEO_OUTPUT_DRIFT', 'Exported video changed; export again')
+            return file.read_bytes()
+
+    def video(self, project_id):
+        state = self.snapshot(project_id)
+        receipt = state.get('export')
+        if not receipt:
+            raise _error('VIDEO_MISSING', 'Xuất MP4 từ Visual Workspace trước')
+        self._video_data(project_id, receipt['id'])
+        with self._guard:
+            if self._server is None:
+                self._server = PreviewServer(self._resource)
+            url = self._server.video_url(project_id, receipt['id'])
+        handle = self._handle(project_id)
+        return {**receipt, 'url': url, 'file_path': str(handle.workspace / receipt['path']),
+                'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt), 'not_an_approval': True}
 
     def preview(self, project_id, scene_id, build_id=None):
         state = self.snapshot(project_id)

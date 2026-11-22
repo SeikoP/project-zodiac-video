@@ -57,7 +57,7 @@ test('missing timing, incomplete inventory, invalid state transitions and unsafe
 
 test('phone compatibility distinguishes state from physical model and returns feasible scene bundles',async t=>{
   const {intent}=await setup(t),catalog=await describeAssets();
-  const phones=catalog.items.filter(a=>a.identity.family_id==='phone');assert.ok(phones.length>=5);
+  const phones=catalog.items.filter(a=>a.identity.family_id==='phone'&&a.identity.compatibility==='V4_ADAPTER');assert.ok(phones.length>=5);
   assert.equal(new Set(phones.map(a=>a.identity.model_id)).size,1);
   const found=await findCandidates(intent,'s01',{family_id:'phone'});assert.equal(found.status,'CANDIDATES');assert.equal(found.bundles.length,3);
   assert.ok(found.bundles.every(b=>b.actors.some(a=>a.entity_id==='gemini')&&b.asset_source_sha256.length===64&&b.fit_reasons.length));

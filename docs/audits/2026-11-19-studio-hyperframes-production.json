@@ -1,0 +1,257 @@
+{
+  "format": "zodiac-studio-phase-evidence@1",
+  "phase_id": "07-hyperframes-production-review-export",
+  "task_id": "2026-11-19-production-path",
+  "status": "TESTED",
+  "recorded_at": "2026-11-18T19:11:44.690532+00:00",
+  "baseline_commit": "4a4325223cab7e53056002280553b8ff5b47134b",
+  "implementation_commit": null,
+  "implementation_state": "uncommitted dirty worktree; prior P5/Ideas work preserved",
+  "requirements": [
+    {
+      "id": "HF-01",
+      "requirement": "Same deterministic limited-2D painter in preview and MP4",
+      "tests": [
+        "studio_hyperframes_export.test.mjs",
+        "studio_p34_visual.test.mjs"
+      ]
+    },
+    {
+      "id": "HF-02",
+      "requirement": "Source-bound production, scene, asset and selected voice export",
+      "tests": [
+        "studio_hyperframes_export.test.mjs",
+        "test_studio_hyperframes_export.py",
+        "managed real service smoke"
+      ]
+    },
+    {
+      "id": "HF-03",
+      "requirement": "Cancel/retry, stale detection, voice-lock atomic commit, preserve last healthy media",
+      "tests": [
+        "test_studio_hyperframes_export.py",
+        "test_studio_p34_visual.py"
+      ]
+    },
+    {
+      "id": "HF-04",
+      "requirement": "MP4 playback/ranges/path/progress, no approval promotion",
+      "tests": [
+        "test_studio_hyperframes_export.py",
+        "studio_hyperframes_export_browser.mjs",
+        "Rust video_method_reaches_python_without_approving_a_project"
+      ]
+    },
+    {
+      "id": "HF-05",
+      "requirement": "Actual persistent 1080x1920 30fps H264/AAC and inspected state frames",
+      "tests": [
+        "managed HyperFrames check/render + FFmpeg + ffprobe + range GET",
+        "setup/acting/reaction PNGs extracted from encoded MP4"
+      ]
+    }
+  ],
+  "contracts": [
+    "zodiac-visual-intent@1 canonical source preserved",
+    "zodiac-episode-build@1 adds production hash and measured words",
+    "zodiac-hyperframes-export@1 technical review receipt",
+    "exact video.export(project_id,base_revision) and video.get(project_id)",
+    "voice/content/visual human approval unchanged"
+  ],
+  "reused_components": [
+    "Project Core/Voice Lab",
+    "VisualWorkspace managed jobs",
+    "compiler GSAP painter",
+    "private PreviewServer",
+    "FFmpeg",
+    "HyperFrames SDK 0.9.45 + pinned CLI 0.9.63"
+  ],
+  "changed_files": [
+    {
+      "path": "tools/studio_project/visual_preview.mjs",
+      "current_worktree_sha256": "776ab925f751b909aaa85771fca36d46826b2a4c468ec1788d8fb688d0617a4c"
+    },
+    {
+      "path": "tools/studio_project/visual_compiler.mjs",
+      "current_worktree_sha256": "8c02ca72cd8bad3fddc24d8825dc1dd6c4821ff1a41697e24044fe211b1ef36a"
+    },
+    {
+      "path": "tools/studio_project/visual_export.mjs",
+      "current_worktree_sha256": "c8cd20449047501ce8ce0fb232d8cc2f741dca248d553507ac8324ef2d8538dc"
+    },
+    {
+      "path": "tools/studio_project/visual_workspace.py",
+      "current_worktree_sha256": "2ba0bd2f7ddd4db947dc107ec61249b05700ef426fac5d8e764dfe513883c21f"
+    },
+    {
+      "path": "tools/studio_project/visual_server.py",
+      "current_worktree_sha256": "2753a07f72abe5179fb303706c328f8000f31c8c7cdc5c002d1dbdfbb7285197"
+    },
+    {
+      "path": "tools/studio_project/status.py",
+      "current_worktree_sha256": "9c8f38d6d0977a7056ea7d1248c581f8ec185644edfdc06ea001563af9a92a22"
+    },
+    {
+      "path": "tools/studio_project/rpc_stdio.py",
+      "current_worktree_sha256": "0bf87aceeba6707f7d29e081ab1eaccd325c3bbfed1f73d300c15b15e5b7556a"
+    },
+    {
+      "path": "tools/runner/process.py",
+      "current_worktree_sha256": "f50a751f60dfae145c57ae2553730ebdcde6912dc4866b7074f9b01d77383e61"
+    },
+    {
+      "path": "apps/zodiac-studio/src/VisualEditor.tsx",
+      "current_worktree_sha256": "5fd2a7e961c1fc39f855504d0989679d8db8c13da817322b06ab446215c2cdea"
+    },
+    {
+      "path": "apps/zodiac-studio/src/backend.ts",
+      "current_worktree_sha256": "903efb1b978df4191be89b77a3621fbf1b5ce7209e7a58f9e788d51e773f42c2"
+    },
+    {
+      "path": "apps/zodiac-studio/src/App.tsx",
+      "current_worktree_sha256": "ca0695e524a666e4312afc002c7ae6569eeeffb8dcafcb6e4ab38cced39a24e0"
+    },
+    {
+      "path": "apps/zodiac-studio/src/style.css",
+      "current_worktree_sha256": "4f29b0591794fa208e514e27f90b909505572743e141873dca27b25fb45d5e9e"
+    },
+    {
+      "path": "apps/zodiac-studio/src-tauri/src/lib.rs",
+      "current_worktree_sha256": "b61f8ada4a07b9b3b63d1784f2f9cdec99ed45c07b5c78000fdea48371b97d41"
+    },
+    {
+      "path": "apps/zodiac-studio/src-tauri/tauri.conf.json",
+      "current_worktree_sha256": "925f09f189e029685ca1feee48a6a6bbe8629083b8cbb2e2bbe7ba2405a006d5"
+    },
+    {
+      "path": "apps/zodiac-studio/package.json",
+      "current_worktree_sha256": "e1860de45085a19fbb000a2ede45d28be9af09017b0c5c3d85c0c9ed61e0ed84"
+    },
+    {
+      "path": "apps/zodiac-studio/pnpm-lock.yaml",
+      "current_worktree_sha256": "f0bebd4c3a9df3a3a10a25c060f390dc960c69302add3b1b0b037662b2178bd3"
+    },
+    {
+      "path": "tests/test_studio_hyperframes_export.py",
+      "current_worktree_sha256": "6b252d0b2fdabc014947d938ca7522b3c03458fa74949826fbb32ad789f4f345"
+    },
+    {
+      "path": "tests/studio_hyperframes_export.test.mjs",
+      "current_worktree_sha256": "8a7ff951ec63acae46ca69acbb4af7ec7515853b519c2aade3106d1cba4e0f9d"
+    },
+    {
+      "path": "tests/studio_hyperframes_export_browser.mjs",
+      "current_worktree_sha256": "e121f516c7fef0ecd7bbdd6da4a4e1dbaeaddbc0ffd7e722fb9260ea1087b2ac"
+    },
+    {
+      "path": ".github/workflows/studio-v5-tauri-p1.yml",
+      "current_worktree_sha256": "2a0604c1f61160d96679ac26f7bdccfd18ff740593d894272ec9ef3a28dab8e8"
+    }
+  ],
+  "test_runs": [
+    {
+      "command": "Python export/P34/P5 performance+transport/P1 RPC/P0 evidence affected suite",
+      "status": "PASS",
+      "count": 55,
+      "seconds": 105.221,
+      "log_ref": ".runtime/hf-python-final.log"
+    },
+    {
+      "command": "node --test tests/studio_hyperframes_export.test.mjs tests/studio_p34_visual.test.mjs tests/studio_p5_assets.test.mjs",
+      "status": "PASS",
+      "count": 20,
+      "log_ref": ".runtime/hf-node-final.log"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit",
+      "status": "PASS"
+    },
+    {
+      "command": "cargo test --locked",
+      "status": "PASS",
+      "count": 2,
+      "log_ref": ".runtime/hf-cargo-final.log"
+    },
+    {
+      "command": "export browser + compact browser",
+      "status": "PASS",
+      "viewport_sizes": [
+        [
+          1366,
+          768
+        ],
+        [
+          1060,
+          650
+        ],
+        [
+          1093,
+          614
+        ]
+      ],
+      "log_refs": [
+        ".runtime/hf-export-browser-final.log",
+        ".runtime/hf-compact-final.log"
+      ]
+    }
+  ],
+  "smoke_artifacts": [
+    {
+      "path": ".runtime/hyperframes-production-service-smoke/episode.mp4",
+      "sha256": "c76766c841e09045e60d57fd58948841955a6e441e7655be7e7654c7bdade23a",
+      "bytes": 62892,
+      "duration_seconds": 1.5,
+      "fps": 30,
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "fidelity": "ACTUAL_HYPERFRAMES_MP4_WITH_AAC",
+      "classification": "SYNTHETIC_CONTENT_TIMING_AND_TEST_TONE"
+    },
+    {
+      "path": ".runtime/hyperframes-production-service-smoke/setup.png",
+      "sha256": "1b12cb6590cd9a25b8320d5e4ad7b5f68fd5e658f53efb8449b0e98eb956153c",
+      "fidelity": "EXTRACTED_FROM_ENCODED_MP4"
+    },
+    {
+      "path": ".runtime/hyperframes-production-service-smoke/acting.png",
+      "sha256": "d295f8e08ebf5e3b3557859a7f09f7be67a38fc609c6234c74f2f091fa99f368",
+      "fidelity": "EXTRACTED_FROM_ENCODED_MP4"
+    },
+    {
+      "path": ".runtime/hyperframes-production-service-smoke/reaction.png",
+      "sha256": "08690d79a5cbcba1eae88c374f5c3e1b3b4dfbd94ba8ad94ebbcf27709995d3c",
+      "fidelity": "EXTRACTED_FROM_ENCODED_MP4"
+    }
+  ],
+  "review_gates": [
+    {
+      "gate": "independent code review",
+      "status": "three Important findings reproduced and fixed; verified by tests; no second reviewer pass"
+    },
+    {
+      "gate": "human visual/listening review",
+      "status": "PENDING"
+    },
+    {
+      "gate": "real production episode",
+      "status": "PENDING"
+    }
+  ],
+  "risks": [
+    "Non-strict HyperFrames check warnings remain for nested structure, audio mux staging and synthetic short-scene craft/safe-zone",
+    "Native dispatch tested; native GUI playback and real episode quality not certified",
+    "Private playback currently caps file reads at 256 MiB"
+  ],
+  "deferred": [
+    "selected real handoff and actual voice/listening/visual review",
+    "complete scene/meme/contact authoring on the production episode",
+    "optional licensed BGM/SFX, packaging and publication",
+    "renderer parity benchmarking for legacy packages"
+  ],
+  "rollback": "Reverse only production-slice hunks and pinned dependency; retain immutable source and healthy export artifacts",
+  "technical_export_ready": true,
+  "handoff_ready": false,
+  "approval_granted": false
+}

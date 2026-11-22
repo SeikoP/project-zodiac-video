@@ -12,6 +12,7 @@ import {runSafeParallel} from '../../plugins/zodiac-video-pipeline/skills/zodiac
 import {compileMemeProps} from '../../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/memes/compile-meme-props.mjs';
 import {traceSceneStates} from '../../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/visual-composition/scene-state-trace.mjs';
 import {LIBRARY,digest,json,confined,safeSvg,describeAssets,findCandidates} from './visual_candidates.mjs';
+import {describeGallery} from './visual_gallery.mjs';
 import {THEMES,renderPreview,quality,previewRuntime} from './visual_preview.mjs';
 
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
@@ -101,13 +102,27 @@ async function compilerIdentity(){
   await walk(LIBRARY);
   files.push(['caption-font',digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf')))]);
   for(const rel of ['features/visual-composition/compile-visual-intent.mjs','core/cache/incremental-cache.mjs','core/cache/phase02-semantic-cache.mjs','contracts/motion-registry-v1.json'])files.push([rel,digest(await readFile(path.join(LIBRARY,'../..',rel)))]);
-  for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
+  for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
   return hash(files.sort(([a],[b])=>a.localeCompare(b)));
 }
 
 export async function buildEpisode(input){
   const begun=performance.now(),usage=process.cpuUsage(),{intent,narration}=input;
   const projections=validateIntent(intent,narration);
+  if(input.action==='validate_performance'){
+    assert(intent.scenes.some(scene=>scene.id===input.scene_id),'VISUAL_SCENE_UNKNOWN');
+    for(const scene of measuredScenes(intent,narration,input.timing)){
+      if(scene.scene_id!==input.scene_id)continue;
+      traceSceneStates({...intent.scenes.find(authored=>authored.id===scene.scene_id),events:scene.events});
+      const ends=new Map(),duration=(scene.endMs-scene.startMs)/1000;
+      for(const event of scene.events){
+        assert(event.at+event.preview_duration<=duration+.001,'VISUAL_PERFORMANCE_OUTSIDE_SCENE '+event.id);
+        assert(event.at>=(ends.get(event.target)??0),'VISUAL_PERFORMANCE_OVERLAP '+event.id);
+        ends.set(event.target,event.at+event.preview_duration);
+      }
+    }
+    return {status:'VALID',source_sha256:hash(intent),not_an_approval:true};
+  }
   if(input.action==='validate')return {status:'VALID',source_sha256:hash(intent),scene_ids:intent.scenes.map(s=>s.id),projection_sha256:hash(projections),not_an_approval:true};
   const measured=measuredScenes(intent,narration,input.timing),theme=input.theme??'light';assert(THEMES[theme],'VISUAL_THEME_UNKNOWN');
   if(input.scene_id)assert(intent.scenes.some(s=>s.id===input.scene_id),'VISUAL_SCENE_UNKNOWN');
@@ -208,7 +223,8 @@ export async function buildEpisode(input){
   const manifest={format:'zodiac-episode-build@1',status:'TECHNICAL_VALID',revision:input.revision,source_sha256:hash(intent),narration_sha256:digest(narration),
     voice_sha256:input.timing.wav_sha256,timing_sha256:hash(input.timing),theme,compiler_sha256:compiler,scenes,dag,semantic_graph:buildPhase02SemanticGraph(intent),
     assets:Object.fromEntries(Object.entries(assetMap).map(([id,a])=>[id,{sha256:a.source_sha256,identity_signature:a.identity_signature??null}])),
-    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events}))},
+    production_sha256:digest(await readFile(path.join(out,'production.json'))),
+    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events,words:t.words,measured:true}))},
     contracts:{theme:'zodiac-visual-theme@1',performance:'zodiac-performance-graph@1',motion:MOTION.format,motion_registry_sha256:hash(MOTION),source_map:'zodiac-hyperframes-source-map@1',legacy:'V4_JOB5_DERIVED_PRODUCTION'},
     cache:{events,reused:events.filter(e=>e.hit).length,rebuilt:events.filter(e=>!e.hit).length,concurrency},
     resources:{wall_ms:Math.round(performance.now()-begun),cpu_microseconds:process.cpuUsage(usage),peak_rss_bytes:process.resourceUsage().maxRSS*1024,free_memory_bytes:os.freemem(),free_disk_bytes:Number(disk.bavail)*Number(disk.bsize),output_bytes:(await Promise.all(scenes.map(s=>stat(path.join(out,s.preview_file))))).reduce((n,s)=>n+s.size,0)},
@@ -218,7 +234,9 @@ export async function buildEpisode(input){
 
 async function main(){const input=await json(process.argv[2]);let output;
   if(input.action==='assets')output=await describeAssets();
-  else if(input.action==='candidates')output=await findCandidates(input.intent,input.scene_id,input.requirement,input.recent);
+  else if(input.action==='export_prepare'){const {prepareExport}=await import('./visual_export.mjs');output=await prepareExport(input);}
+  else if(input.action==='gallery')output=await describeGallery(input.usage);
+  else if(input.action==='candidates')output=await findCandidates(input.intent,input.scene_id,input.requirement,input.usage);
   else output=await buildEpisode(input);
   await writeFile(process.argv[3],JSON.stringify(output));
 }

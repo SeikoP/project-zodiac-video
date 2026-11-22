@@ -15,6 +15,7 @@ from typing import Any
 from .importer import import_handoff
 from .models import ProjectHandle, StudioError
 from .registry import EpisodeRegistry
+from .ideas import IdeasBoard
 from .status import resolve_episode_status
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +29,7 @@ class StudioProjectService:
 
     def __init__(self, projects_root: Path):
         self.registry = EpisodeRegistry(Path(projects_root))
+        self.ideas = IdeasBoard(self.registry)
         self._agent = None
         self._voice = None
         self._visual = None

@@ -359,7 +359,14 @@ class VoiceLab:
                     if job_id in self._cancelled:
                         process.kill()
         def log(line, **_):
-            self._update_job(handle, job_id, message=str(line)[-250:])
+            fields = {"message": str(line)[-250:]}
+            if str(line).startswith("VieNeu DONE:"):
+                completed = str(line).split(":", 1)[1].strip()
+                if completed in ids:
+                    completed_ids.add(completed)
+                    fields["completed"] = len(completed_ids)
+            self._update_job(handle, job_id, **fields)
+        completed_ids = set()
         try:
             folder, _ = self._paths(handle)
             job_root = _trusted_dir(handle.workspace, folder/"jobs"/job_id)
@@ -374,13 +381,26 @@ class VoiceLab:
                             contexts[unit["id"]] = {"tts_text": text, "speech_map": spans, "delivery_intent": intent,
                                                     "prosody_verified": False, "pronunciation": pronunciation}
                             rows.append({"scene_id": unit["id"], "text": text})
-                    run_tts_batch(job_root, rows, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
-                                  voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
+                    generation_error = None
+                    try:
+                        run_tts_batch(job_root, rows, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
+                                      voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
+                    except Exception as error:
+                        generation_error = error
                     generated = {}
                     for row in rows:
                         audio = job_root/"tts-scenes"/(row["scene_id"]+".wav")
-                        info = wav_info(audio)
+                        if generation_error is not None and not audio.exists():
+                            continue
+                        try:
+                            info = wav_info(audio)
+                        except (OSError, PipelineError, StudioError, wave.Error, EOFError):
+                            if generation_error is not None:
+                                continue
+                            raise
                         if "SILENT_AUDIO" in info["warnings"]:
+                            if generation_error is not None:
+                                continue
                             raise StudioError("VOICE_SILENT_AUDIO", "Generated audio is silent", "voice")
                         unit = next(u for u in state["units"] if u["id"] == row["scene_id"])
                         generated[unit["id"]] = VoiceArtifactStore(handle.workspace).register_candidate(
@@ -402,7 +422,12 @@ class VoiceLab:
                                for i, u in enumerate(current["units"])):
                             self._invalidate(current, list(generated))
                         current["revision"] += 1
-                        current["job"].update(status="COMPLETED", completed=len(generated), message="Audio ready — listen before approving")
+                        if generation_error is None:
+                            current["job"].update(status="COMPLETED", completed=len(generated), message="Audio ready — listen before approving")
+                        else:
+                            # Commit partial recovery and REVIEW together; never expose a false COMPLETED.
+                            detail = (generation_error.stderr or generation_error.stdout or str(generation_error)) if isinstance(generation_error, subprocess.CalledProcessError) else str(generation_error)
+                            current["job"].update(status="REVIEW", completed=len(generated), error=str(detail)[-1200:], message="Audio needs review; completed takes preserved")
                         self._save(handle, current)
                 else:
                     words, offset = [], 0.0
