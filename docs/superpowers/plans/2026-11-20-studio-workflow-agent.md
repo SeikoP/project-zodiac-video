@@ -40,9 +40,9 @@ Files: `App.tsx`, `style.css`, `VisualEditor.tsx`, `VideoReview.tsx`, new `Episo
 
 Interface: three primary navigation groups and episode sub-tabs. Retain mounted VoiceLab/VisualEditor for the selected episode, reset by project key; agent receipts restore on open. Export/review consumes current backend video receipt and existing concept picker.
 
-- [ ] Update browser test navigation to fail against old eight-item shell.
-- [ ] Implement navigation, shared episode selector/status/next step, contextual agent/journal, initial authoring and readable proposals, export/review placement.
-- [ ] Run TypeScript and layout tests at existing viewport sizes; exercise switch/restore/error behavior.
+- [x] Update browser test navigation to fail against old eight-item shell.
+- [x] Implement navigation, shared episode selector/status/next step, contextual agent/journal, initial authoring and readable proposals, export/review placement.
+- [x] Run TypeScript and layout tests at existing viewport sizes; exercise switch/restore/error behavior.
 
 ### Task 3: Native GUI acceptance
 
@@ -65,3 +65,7 @@ Files: scoped native GUI automation under `.runtime/workflow-agent-e2e/`, checke
 2026-11-22: User superseded the commit/push exclusion: finish each task, verify, update roadmap/evidence, commit and push to the working branch. Instruction/spec/plan handoff is its own documentation task. Implementation tasks remain IN_PROGRESS until their checks pass; the initial 17 focused agent tests passed, but the broad visual fixture needs its new dependency hash and compact Voice Lab still has a 614 px overflow to fix. No native agent-authoring E2E success claimed yet.
 
 2026-11-22 Task 1: complete. Final related Python sweep passed 93 tests in 482.039s; Node passed 25 tests; native Rust passed 2 tests. Independent review found and confirmed the fix for a voice/timing apply race: compare under visual→voice locks through commit. Existing synthetic scene/performance receipts were updated to supply the new dependency fingerprint. Initial agent and scene-edit commands have also executed in the actual app; whole GUI export acceptance is still Task 3. Commit includes the pre-existing compatible backend gallery/ideas/export/TTS dependencies required to run these APIs remotely, preserving their tests and evidence.
+
+2026-11-22 Task 1 pushed: `8de1f612` on `origin/experiment/main-2`.
+
+2026-11-22 Task 2: complete. Three primary navigation groups, episode sub-tabs, source-bound next action, readable/restored proposals, contextual agent/journal and export/review are implemented. Hidden media pause and hidden workspace polling stops; slow reads are single-flight after a real cold Voice Lab read measured 25.454s. TypeScript, compact/expanded Ideas/review, gallery and export browser fixtures pass at the established sizes. Regression also covers a newly exported episode not disabling an independently opened local MP4. Full native workflow has produced and played its new 74.4s MP4; Task 3 still verifies reopen and publishes its source-bound evidence.

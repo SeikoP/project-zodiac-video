@@ -14,24 +14,32 @@ export function Paged({ children, size = 3, label = "Danh sách" }: { children: 
   </div>;
 }
 
-export function PagedText({ text, onChange, label = "Nội dung", size = 360 }: { text: string; onChange?: (text: string) => void; label?: string; size?: number }) {
+export function PagedText({ text, onChange, label = "Nội dung", size = 360, maxLines = 7 }: { text: string; onChange?: (text: string) => void; label?: string; size?: number; maxLines?: number }) {
   const [requested, setPage] = useState(0);
   const root = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(30);
+  const [rows, setRows] = useState(maxLines);
   useEffect(() => {
     const node = root.current;
     if (!node) return;
+    const editor = node.querySelector("textarea");
     const observer = new ResizeObserver(() => {
       if (node.clientWidth) setColumns(Math.max(1, Math.floor((node.clientWidth - 28) / 7.3)));
+      if (editor && editor.clientHeight) {
+        const style = getComputedStyle(editor);
+        const available = editor.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        setRows(Math.max(1, Math.min(maxLines, Math.floor(available / parseFloat(style.lineHeight)) - 1)));
+      }
     });
     observer.observe(node);
+    if (editor) observer.observe(editor);
     return () => observer.disconnect();
   }, []);
   const chars = Array.from(text);
   const boundaries = [0];
   let lines = 1, column = 0;
   for (let i = 0; i < chars.length; i++) {
-    if (i - boundaries[boundaries.length - 1] >= size || lines > 7) {
+    if (i - boundaries[boundaries.length - 1] >= size || lines > rows) {
       boundaries.push(i); lines = 1; column = 0;
     }
     if (chars[i] === "\n") { lines++; column = 0; }

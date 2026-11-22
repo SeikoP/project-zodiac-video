@@ -50,10 +50,11 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
   </div>;
 }
 
-export default function VoiceLab({ project, onChanged }: { project: Project | null; onChanged: () => void }) {
+export default function VoiceLab({ project, onChanged, active = true }: { project: Project | null; onChanged: () => void; active?: boolean }) {
   const [tab, setTab] = useState("takes");
   const workspace = useRef<HTMLDivElement>(null);
   useEffect(() => { workspace.current?.querySelectorAll("audio").forEach(audio => audio.pause()); }, [tab]);
+  useEffect(() => { if (!active) workspace.current?.querySelectorAll("audio").forEach(audio => audio.pause()); }, [active]);
   const [state, setState] = useState<VoiceState | null>(null);
   const [activeId, setActiveId] = useState("");
   const [speaker, setSpeaker] = useState("");
@@ -67,9 +68,11 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
   const report = useCallback((value: unknown) => setError(value instanceof Error ? value.message : String(value)), []);
   const changed = (value: VoiceState) => { setState(value); onChanged(); };
   useEffect(() => {
-    if (!projectId) return;
-    let live = true;
+    if (!projectId || !active) return;
+    let live = true, pending = false;
     const refresh = async () => {
+      if (pending || !live) return;
+      pending = true;
       try {
         const value = await backend.voiceOpen(projectId);
         if (live) {
@@ -79,11 +82,12 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
           if (!initialized.current) { setActiveId(value.units[0]?.id ?? ""); initialized.current = true; }
         }
       } catch (problem) { if (live) report(problem); }
+      finally { pending = false; }
     };
     void refresh();
     const timer = window.setInterval(() => void refresh(), 1500);
     return () => { live = false; window.clearInterval(timer); };
-  }, [projectId, report]);
+  }, [projectId, active, report]);
   const unit = state?.units.find(item => item.id === activeId) ?? state?.units[0];
   const selected = unit?.takes.find(take => take.take_id === unit.selected_take);
   const running = state?.job?.status === "RUNNING";
@@ -140,7 +144,7 @@ export default function VoiceLab({ project, onChanged }: { project: Project | nu
         <div className="panel-heading"><span className="panel-title"><Waves size={16}/> Take đang chọn</span>
           <button className="subtle-btn" disabled={running || busy || !unit} onClick={() => unit && generate([unit.id])}><RefreshCcw size={14}/> Tạo take khác</button></div>
         <div className="voice-take-body">{unit && <>
-          <PagedText key={unit.id} size={300} label="Bản kể đoạn" text={unit.text}/>
+          <PagedText key={unit.id} size={300} maxLines={3} label="Bản kể đoạn" text={unit.text}/>
           {selected ? <>
             <label>Đổi take (giữ nguyên các take cũ)<select value={selected.take_id} disabled={running || busy}
               onChange={event => void action(() => backend.voiceSelect(project.project_id, state.revision, unit.id, event.target.value, unit.gap_after_ms))}>

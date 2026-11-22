@@ -36,6 +36,18 @@ Voice style should follow the approved Voice Profile and favor natural NORMAL↔
 
 For new production use only **hold, cut, show/hide, state swap**, with optional small fade/slide/zoom when justified. No animation graph, advanced easing, elaborate camera rig, 60 FPS requirement, broad multi-track professional NLE or heavy VFX pipeline.
 
+### 2.1 Main-2 visual direction: character-led situational comedy
+
+**User-selected direction · 2026-11-18:** favor **limited 2D character animation for situational comedy**, using the channel's existing paper-doodle artwork. After the Ma Kết “Người thừa” auditions, the user preferred the acting demo and requested this direction in the main-2 spec. This records a creative preference; it does not grant episode Visual Review, final MP4 approval or production implementation acceptance. Vox-inspired editorial cutting remains an optional explicit experiment.
+
+- **Start from the existing episode package.** Reuse its narration, measured voice, character identities, available poses/expressions, physical props, background, palette, font and captions. A style audition must not invent story content, regenerate voice, add props or create decorative titles, character labels, callouts, diagram cards, rings or other overlays unless the user explicitly requests them. Preserve existing source-authored Story Text/Narrative Visual and brand elements under their current contracts.
+- **Animate the interaction:** intention → action/contact → response → readable reaction hold. For the Ma Kết bag beat, the partner reaches toward the existing handle, Ma Kết pulls the held bag back, and the partner stops/recoils into an available reaction pose on the original dialogue. Moving a held prop must preserve hand contact; keep object count, owner and character identity continuous.
+- **Use the smallest existing motion vocabulary.** Pose/state swaps, short translations, a restrained lean/recoil and justified cuts or small camera moves are sufficient. Camera framing serves the action or face; avoid constant drifting, decorative movement and effect quotas. Do not require skeletal rigs, newly drawn in-betweens or a new renderer to adopt this direction.
+- **Report asset limits.** An unavailable expression, pose or contact geometry is a concrete limitation. Under an existing-assets-only request, choose a feasible existing pose or simplify the action; do not hide the gap with invented decoration or silently generate assets. New asset work requires the applicable source/review workflow and task authorization.
+- **Review the actual MP4 at phone size.** Check the approach, hand/handle contact, ownership through the pull, the reaction and its hold against measured voice anchors. Preserve readable captions without competing text. A technical pass or a convincing still is insufficient evidence of continuous, readable acting.
+
+Local audition references (review aids, not production acceptance): [existing-assets acting demo](../../../tmp/maket-acting-10s/REVIEW.md), [constrained Vox revision](../../../tmp/vox-maket-10s/REVIEW.md). The demos use the same original 0–10s audio and assets; the revised A/B comparison varies camera treatment. These scratch paths are not portable production dependencies. P3/P4 must express adopted acting decisions through canonical Visual Intent and derived performance/source maps; P7 retains the real-video acceptance gate.
+
 ## 3. Source-grounded audit: strengths, gaps and preservation rules
 
 | Priority | Existing source | Verified capability / problem | Requirement |

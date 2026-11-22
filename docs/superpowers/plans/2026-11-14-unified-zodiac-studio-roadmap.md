@@ -2,7 +2,27 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans for a phase's detailed implementation plan. This roadmap is a gate/ownership contract, NOT permission to implement all phases at once.
 >
-> **Status:** PLAN ONLY · 2026-11-14 · no production source changed.
+> **Status:** IMPLEMENTATION IN PROGRESS · updated 2026-11-22. The original 2026-11-14 document was a planning baseline; use the task evidence below for current acceptance.
+> **Implementation tracking (2026-11-18):** the line above describes the original
+> planning baseline. P0–P2 are implemented; P3/P4 have [technical acceptance](../../audits/2026-11-15-studio-p34-acceptance.md).
+> P5 gallery/palettes/acting now have [local verification](../../audits/2026-11-18-studio-p5-progress.md),
+> with the full P5 acceptance gate still open. P6/P7 are not delivered by this receipt.
+> **2026-11-19:** P5 [source-bound technical asset history](../../audits/2026-11-19-studio-p5-usage-progress.md)
+> is connected to gallery/candidates; genuine reviewed/model-level reuse remains pending.
+> **User reprioritization (2026-11-19):** continue expansion, use HyperFrames for
+> fresh MP4 export and retain the established limited 2D acting style. Production
+> work may proceed ahead of optional P5/P6 tasks; their pending reviews are not
+> fabricated. [Production-path evidence](../../audits/2026-11-19-studio-hyperframes-production.md).
+> **2026-11-20 real-episode E2E:** Nhân Mã v7 now exercises immutable import,
+> actual TTS/ASR, eight-scene compilation and persisted HyperFrames MP4/native
+> playback. TTS partial-failure recovery and review SRT/cover outputs are added.
+> [Evidence and remaining human gates](../../audits/2026-11-20-studio-nhanma-e2e.md).
+> This technical episode does not close P5/P6/P7 or grant creative approval.
+> **2026-11-22 workflow repair:** the user approved grouped navigation, contextual
+> agent authoring and GUI-native E2E in [this design](../specs/2026-11-20-studio-workflow-agent-design.md).
+> The previous Nhân Mã E2E used external visual-authoring scripts and does not
+> establish in-app agent acceptance. The replacement GUI run is tracked in
+> [the implementation plan](./2026-11-20-studio-workflow-agent.md).
 >
 > **Goal:** Replace the multi-application and plugin-directed local production experience with **one** Zodiac Studio window: approved Phase 1 → Voice Lab → measured audio → V4 visual scene editing in embedded HyperFrames → video/package export; with concept×12 coverage, gallery, and a scoped agent.
 >
@@ -16,19 +36,26 @@
 
 ## Global Constraints (every phase)
 
+- At each completed task: verify its required checks, update evidence/roadmap,
+  commit and push to the current working branch for remote repair. This is an
+  explicit user requirement added 2026-11-22; see [repository instructions](../../../AGENTS.md).
+  Keep human acceptance separate from technical completion. A local commit
+  without successful push is not a remote handoff.
+
 - Exactly **one** user-visible application launched by `zodiac`; embedded HyperFrames React editor, managed local Python Core and agent sidecar; no separately opened HyperFrames/Remotion GUI in the fresh flow.
 - Phase 1 `zodiac-phase1-handoff@2` + genuine Content Review remains immutable. No routine rewrite of approved narration.
 - Voice Lab is a first-class stage **before** visual authoring; generated TTS prosody metadata is not evidence of actual audible delivery.
 - Only genuine user actions can grant human voice, visual or publish approval. Technical PASS, compatibility migration and approval are separate evidence classes.
 - The only fresh visual authoring owner is `.authoring/visual-intent.json` (`zodiac-visual-intent@1`); `production.json` / render plans and previews are derived.
 - The V4 compiler must be maintained as **one episode-wide modular build/quality system**, not copied into HyperFrames or rewritten from scratch: source-bound dependencies, incremental assets/scenes/previews, deterministic receipts, full review gates and rollback. The detailed contract is [Compiler VNext design](../specs/2026-11-14-zodiac-compiler-refactor-design.md).
-- The HyperFrames **renderer** is a separate Phase 7 benchmark decision from the HyperFrames **editor**. Static state-frame + FFmpeg export is an experimental fast path, not an assumed correct replacement for dynamic caption/voice timing.
+- The user selected the HyperFrames **renderer** for fresh review export on 2026-11-19, alongside its editor. Verify actual dynamic acting/caption/voice timing and source provenance; do not substitute static state-frame + FFmpeg slideshows. Retain legacy Remotion support and do not infer renderer parity or artistic acceptance.
 - Keep V4 Character Assembly, meme/prop/environment compilers, genuine Visual Review and source-bound validation; no revival of retired fresh Scene Sets. Narrative Visual is scene-authored and mutually exclusive with Story Text in one scene.
 - **Visual V5** is a versioned capability atop the existing V4 SVG masters: one derived Performance Graph, semantic theme roles, actual character/prop contact, up to eight *vetted candidate* color families and separate geometry/appearance cache. Do not copy all assets for each palette.
 - **V5 diversity:** model/source silhouette, appearance, story state and camera view are separate dimensions. V4 has five phone SVG states but **one identical exterior-body path**; treat them as one model. Pilot three genuinely different V5 phone masters and soft cross-episode repeat detection with stable in-story prop ownership; don't force unnecessary new props or expand all 57 at once.
 - **Agent Asset Intelligence:** **constraint-first decision engine**, not graph-first: episode beat planning → existing catalog capability maps → hard role/prop/contact/fresh constraints → bounded viable bundles → story-aware ranking + real preview. Relationships are derived metadata, not a required graph DB. No Neo4j/FTS/vector index unless a measured need, no shadow catalog or repeated full plugin-context reload.
 - **Audio V2** preserves approved Vietnamese narration as the leading track; background music is optional, SFX are sparse/event-bound, cue timing follows measured voice, provenance/rights must be verified. Music/SFX-only changes must not trigger TTS or video rerender; raw third-party audio cannot silently ship in Studio/ZIP.
 - No full-featured animation editor: hold, cut, state swap, show/hide, and only justified simple fades/slides/zoom. Image/story legibility and voice timing come first.
+- **Visual direction (user-selected 2026-11-18):** character-led situational comedy with limited 2D acting from existing episode assets; intention → contact/action → reaction hold, source-bound voice timing and physical continuity. Style auditions add no unsolicited visual/text elements. Apply the [canonical creative rules, asset limits and MP4 review criteria](../specs/2026-11-14-agent-native-creative-studio-design.md#21-main-2-visual-direction-character-led-situational-comedy) in P3/P4; retain P7 human video acceptance. This is a direction decision, not implementation or episode approval.
 - Keep `VoiceArtifactStore`, scene/timing cache, semantic dirty graph, artifact graph, Job@5 import/export, reversible archive restore and pinned Remotion runtime until real parity tests authorize retirement.
 - No fake progress, no pass-through approval, no direct agent JSON/ZIP rewriting, no accepted orphan source without ownership/lineage, no deletion of original handoffs or last recoverable ZIP/MP4.
 - Each code phase lives in its **own focused implementation PR**, with frozen dependencies and a recorded rollback path. This spec PR #221 stays documentation-only; code PRs depend on accepted previous gates.
@@ -116,15 +143,15 @@
 
 **Gate P6:** accurate concept×12 status; selected playable audio files must be verifiably present/licensed and audio audition functional, event cue anchors source-bound, silence also valid; legacy/current projects de-duplicated, archive+restore safe, media artifact evidence unambiguous.
 
-## 7 — Full E2E, Audio Mix V2, export backend trial and retirement gate
+## 7 — Full E2E, HyperFrames export, Audio Mix V2 and retirement gate
 
 **Deliverable:** one real episode moves from immutable approved Phase 1/voice to V5 storyboard, Visual Review, optional **licensed BGM + semantic SFX** and validated MP4/cover/captions/copy and optional ZIP without another app.
 
 - **7.1** Versioned export from actual approved voice-take SHA, validated V5 scene graph and **`zodiac-audio-design@1`** cue/rights plan; **Audio Mix V2** uses FFmpeg voice-first ducking, optional beat/voice-anchor SFX, fades, clipping/peak checks and human audition. Keep legacy one-track music handler for old Job@5; no redistribution of third-party raw audio.
-- **7.2** Compare HyperFrames Producer vs pinned Remotion vs conditional static-state FFmpeg, same V5 scenes/themes at 1080×1920 with two-line Vietnamese font/cover/watermark, audio/caption sync, event SFX timing, RAM/disk/speed and voice intelligibility. **Music/SFX-only edits rebuild only audio mix/mux**, not TTS/ASR/geometry/video-only segments.
+- **7.2** Fresh export uses the user-selected HyperFrames renderer and the same source-bound V5 acting/caption composition as preview. Verify 1080×1920, Vietnamese fonts, audio/caption sync and actual state/reaction timing. Keep compatibility comparisons for old Remotion packages where needed; do not require an engine-selection benchmark before an explicitly requested HyperFrames technical review export. **Music/SFX-only edits rebuild only audio mix/mux**, not TTS/ASR/geometry/video-only segments.
 - **7.3** Choose new default only after measurable whole-episode output quality/resource performance; retain stable Remotion/legacy ZIP until parity. Test reopen/archive/retry/cancel without losing licensed-audio provenance, last healthy video, human voice/visual approval.
 
-**Gate P7:** a genuine reviewed V5 whole video with legible approved palettes, optional verified licensed music/SFX and voice-first mix, accurate audio rights receipt and full source-bound QA; legacy packages reopen; no silent status promotion or fabricated reviewer hearing. Renderer choice follows observed parity/benchmark, not preference.
+**Gate P7:** a genuine reviewed V5 whole video with legible approved palettes, optional verified licensed music/SFX and voice-first mix, accurate audio rights receipt and full source-bound QA; legacy packages reopen; no silent status promotion or fabricated reviewer hearing. HyperFrames is selected for fresh export; production quality and compatibility still require measured evidence. The technical review export does not close this gate.
 ## Anti-omission delivery protocol — required in every code PR
 
 Every task PR must contain a machine-readable `phase-evidence.json` or structurally equivalent checked-in report (format `zodiac-studio-phase-evidence@1`), whose schema and generator are defined in P0. Required fields:

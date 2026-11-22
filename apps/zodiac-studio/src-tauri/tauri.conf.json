@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Zodiac Studio  ✦  Build & Visual Editor",
+        "title": "Zodiac Studio  ✦  Episode workflow",
         "width": 1380,
         "height": 860,
         "minWidth": 1060,
@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; frame-src http://127.0.0.1:*; img-src 'self' asset: http://asset.localhost data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; frame-src http://127.0.0.1:*; img-src 'self' asset: http://asset.localhost data:; media-src 'self' blob: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {

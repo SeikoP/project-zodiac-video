@@ -5,14 +5,18 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Activity, ArrowRight, Bot, Check, CheckCircle2, CircleAlert, CircleDot,
   Clapperboard, Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
-  Headphones, Home, Image, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
-  Search, Send, ShieldCheck, Minus, Square, X, type LucideIcon,
+  Headphones, Home, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
+  Search, Send, ShieldCheck, Minus, Square, X, Lightbulb, type LucideIcon,
 } from "lucide-react";
-import { backend, type AgentHealth, type AgentTask, type AssetCatalog, type BackendHealth, type Project, type StudioEvent } from "./backend";
+import { backend, type AgentHealth, type AgentTask, type BackendHealth, type Project, type StudioEvent } from "./backend";
 
 import { Paged, PagedText } from "./Paged";
+import AgentProposal from "./AgentProposal";
 
-type View = "overview" | "assets" | "activity" | "agent" | "editor" | "voice";
+type View = "overview" | "progress" | "assets" | "activity" | "agent" | "editor" | "voice" | "ideas" | "review";
+const AssetGallery = lazy(() => import("./AssetGallery"));
+const Ideas = lazy(() => import("./Ideas"));
+const EpisodeExport = lazy(() => import("./EpisodeExport"));
 const HyperframesWorkspace = lazy(() => import("./HyperframesWorkspace"));
 const VoiceLab = lazy(() => import("./VoiceLab"));
 type Alert = { message: string; error: boolean } | null;
@@ -22,19 +26,18 @@ const FIELDS = [
   { key: "published", label: "Đăng tải" },
 ] as const;
 const SECTIONS: { label: string; view: View; icon: LucideIcon }[] = [
-  { label: "Tổng quan", view: "overview", icon: Home },
-  { label: "Voice Lab", view: "voice", icon: Headphones },
-  { label: "Kho tài nguyên", view: "assets", icon: Layers3 },
-  { label: "Visual Workspace", view: "editor", icon: Clapperboard },
-  { label: "Nhật ký hoạt động", view: "activity", icon: Activity },
-  { label: "Agent", view: "agent", icon: Bot },
+  { label: "Kế hoạch", view: "ideas", icon: Lightbulb },
+  { label: "Episode", view: "overview", icon: Home },
+  { label: "Tài nguyên", view: "assets", icon: Layers3 },
 ];
+const EPISODE_TABS: [View, string][] = [["overview", "Tổng quan"], ["voice", "Giọng đọc"], ["editor", "Hình ảnh"], ["review", "Xuất & duyệt"]];
 function readableStatus(status: string) {
   if (status === "APPROVED" || status === "REVIEWED") return "Đã duyệt";
   if (status === "USER_LISTENED_APPROVED") return "Đã nghe & duyệt";
   if (status === "TECHNICAL_VALID") return "Hợp lệ kỹ thuật";
   if (status === "COMPAT_MIGRATED") return "Bản tương thích";
   if (status === "BLOCKED") return "Bị chặn";
+  if (status === "STALE") return "Nguồn đã thay đổi";
   if (status === "EXPORTED") return "Đã xuất";
   if (status === "CONFIRMED") return "Đã xác nhận";
   return "Chưa có bằng chứng";
@@ -61,14 +64,17 @@ function EmptyState({ icon: Icon, title, detail }: { icon: LucideIcon; title: st
 export default function App() {
   const [expanded, setExpanded] = useState(false);
   const [overviewTab, setOverviewTab] = useState("projects");
-  const [view, setView] = useState<View>("overview");
+  const [view, changeView] = useState<View>("overview");
+  const [visited, setVisited] = useState<Set<View>>(new Set(["overview"]));
+  function setView(next: View) { setVisited(previous => new Set([...previous, next])); changeView(next); }
+  const group = view === "ideas" || view === "progress" ? "ideas" : view === "assets" ? "assets" : "overview";
+  const [reviewConceptId, setReviewConceptId] = useState("");
   const [health, setHealth] = useState<BackendHealth | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [builtProjectId, setBuiltProjectId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Project | null>(null);
   const [events, setEvents] = useState<StudioEvent[]>([]);
-  const [catalog, setCatalog] = useState<AssetCatalog | null>(null);
-  const [assetQuery, setAssetQuery] = useState("");
   const [note, setNote] = useState("");
   const [alert, setAlert] = useState<Alert>(null);
   const [loading, setLoading] = useState(true);
@@ -85,11 +91,21 @@ export default function App() {
       setSelected(null);
       setEvents([]);
       setNote("");
+      setBuiltProjectId(null);
     }
+  }, []);
+  const updateBuildReady = useCallback((projectId: string, ready: boolean) => {
+    if (activeProjectRef.current === projectId) setBuiltProjectId(ready ? projectId : null);
   }, []);
   const currentProject = selected?.project_id === selectedId ? selected : null;
   const currentAgentTask = agentTask?.project_id === selectedId ? agentTask : null;
   const agentRunning = currentAgentTask?.status === "STARTING" || currentAgentTask?.status === "RUNNING";
+  const nextStep: [View, string] = !currentProject ? ["overview", "Nhập hoặc chọn episode"]
+    : currentProject.status.content !== "APPROVED" ? ["overview", "Kiểm tra nguồn Phase 1"]
+    : ["UNKNOWN", "BLOCKED", "STALE"].includes(currentProject.status.voice) ? ["voice", "Tạo giọng và căn thời gian"]
+    : builtProjectId === selectedId || currentProject.status.video === "EXPORTED" ? ["review", "Xuất, nghe và xem video"]
+    : ["UNKNOWN", "BLOCKED", "STALE"].includes(currentProject.status.visual) ? ["editor", "Soạn và dựng hình ảnh"]
+    : ["review", "Xuất, nghe và xem video"];
 
   const notifyError = useCallback((error: unknown, fallback: string) => {
     setAlert({ message: error instanceof Error ? error.message : fallback, error: true });
@@ -132,18 +148,16 @@ export default function App() {
   useEffect(() => { void loadProjects(); }, [loadProjects]);
   useEffect(() => {
     if (!selectedId) { setSelected(null); setEvents([]); return; }
-    void refreshSelected(selectedId);
-    const timer = window.setInterval(() => void refreshSelected(selectedId), 5000);
+    let pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try { await refreshSelected(selectedId); } finally { pending = false; }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [selectedId, refreshSelected]);
-  useEffect(() => {
-    if (view !== "assets") return;
-    const timer = window.setTimeout(async () => {
-      try { setCatalog(await backend.assets(assetQuery, 120)); }
-      catch (error) { notifyError(error, "Không thể đọc catalog."); }
-    }, 180);
-    return () => window.clearTimeout(timer);
-  }, [view, assetQuery, notifyError]);
 
   useEffect(() => {
     if (view !== "agent" || !selectedId) {
@@ -264,18 +278,15 @@ export default function App() {
         <div className="brand-caption">CREATIVE WORKSPACE</div></div>
       </div>
       <div className="sidebar-label">WORKSPACE</div>
-      <nav className="sidebar-nav">{SECTIONS.map(item =>
-        <button key={item.view} className={"nav-item " + (view === item.view ? "active" : "")}
+      <nav className="sidebar-nav" aria-label="Điều hướng chính">{SECTIONS.map(item =>
+        <button key={item.view} className={"nav-item " + (group === item.view ? "active" : "")}
           title={item.label} aria-label={item.label} onClick={() => setView(item.view)}><item.icon size={18} strokeWidth={1.8}/>
           <span>{item.label}</span>
           {item.view === "overview" && projects.length > 0 && <span className="nav-count">{projects.length}</span>}
         </button>)}</nav>
-      <div className="sidebar-label sidebar-section">PRODUCTION · PHASE SAU</div>
-      <div className="locked-nav"><FileArchive size={17}/> Export <Lock size={13}/></div>
       <div className="sidebar-bottom">
-        <div className="phase-meter"><div className="phase-top"><span>STUDIO V5</span><b>PHASE 3 + 4</b></div>
-          <div className="phase-track"><span/></div>
-          <p>Episode build · Visual editor</p></div>
+        <div className="phase-meter"><div className="phase-top"><span>ĐANG MỞ</span><b>{EPISODE_TABS.find(([id]) => id === view)?.[1] ?? SECTIONS.find(s => s.view === group)?.label}</b></div>
+          <p>Trạng thái hoàn tất theo bằng chứng.</p></div>
         <div className="sidebar-footnote"><ShieldCheck size={15}/> Local-first · Source-locked</div>
       </div>
     </aside>
@@ -283,8 +294,7 @@ export default function App() {
     <div className="main-shell">
       <header className="topbar" data-tauri-drag-region>
         <div className="breadcrumbs"><span>Zodiac Studio</span><ArrowRight size={13}/>
-          <strong>{view === "overview" ? "Tổng quan" : view === "assets" ? "Kho tài nguyên" :
-            view === "activity" ? "Nhật ký" : view === "editor" ? "Visual Workspace" : view === "voice" ? "Voice Lab" : "Agent"}</strong>
+          <strong>{SECTIONS.find(section => section.view === group)?.label}</strong>
           {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
         </div>
         <div className="top-actions">
@@ -301,12 +311,23 @@ export default function App() {
         </div>
       </header>
       <main className={"content view-" + view}>
+        <nav className="workspace-tabs workflow-tabs" aria-label="Các bước làm việc">
+          {(group === "ideas" ? [["ideas", "Ý tưởng"], ["progress", "Tiến độ"]] as [View, string][] : group === "overview" ? EPISODE_TABS : [["assets", "Kho tài nguyên"]] as [View, string][]).map(([id, label]) =>
+            <button key={id} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}
+          {group === "overview" && <span className="episode-tools"><button aria-pressed={view === "agent"} onClick={() => setView("agent")}><Bot size={13}/> Agent</button><button aria-pressed={view === "activity"} onClick={() => setView("activity")}><Activity size={13}/> Nhật ký</button></span>}
+        </nav>
+        {group === "overview" && <div className="episode-context"><select aria-label="Episode đang làm" value={selectedId ?? ""} onChange={e => chooseProject(e.target.value || null)}>
+          {!projects.length && <option value="">Chưa có episode</option>}{projects.map(p => <option key={p.project_id} value={p.project_id}>{p.display_title || p.episode_id}</option>)}</select>
+          <button className="text-link" onClick={() => setView(nextStep[0])}>Tiếp theo: {nextStep[1]} <ArrowRight size={13}/></button>
+        </div>}
+        {view === "ideas" && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
+        {visited.has("review") && <div className="workflow-screen" hidden={view !== "review"}><Suspense fallback={<p>Đang mở trình xem MP4…</p>}><EpisodeExport key={selectedId ?? "empty"} project={currentProject} initialConceptId={reviewConceptId} active={view === "review"}/></Suspense></div>}
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}
           <span>{alert.message}</span><button onClick={() => setAlert(null)}>×</button>
         </div>}
 
-        {view === "overview" && <>
+        {(view === "overview" || view === "progress") && <>
           <section className="page-header">
             <div><p className="eyebrow">CREATIVE CONTROL CENTER <span> / </span> 01</p>
               <h1>Không gian sáng tạo<span className="star">✦</span></h1>
@@ -400,28 +421,9 @@ export default function App() {
           </div>
         </>}
 
-        {view === "assets" && <>
-          <section className="page-header"><div><p className="eyebrow">REAL ASSET INVENTORY <span> / </span> 02</p>
-            <h1>Kho tài nguyên<span className="star">✦</span></h1>
-            <p className="page-subtitle">Đọc trực tiếp từ V4, có SHA-256. Không giả lập xếp hạng thông minh.</p></div>
-            <div className="source-pill"><ShieldCheck size={15}/> SOURCE VERIFIED</div></section>
-          <section className="panel asset-panel">
-            <div className="asset-toolbar"><div className="search-field"><Search size={17}/>
-              <input value={assetQuery} onChange={e => setAssetQuery(e.target.value)}
-                placeholder="Tìm theo asset ID, ví dụ: phone…"/></div>
-              <span className="asset-count">{catalog?.total ?? "…"} kết quả</span></div>
-            {!catalog ? <EmptyState icon={Layers3} title="Đang đọc catalog"
-              detail="Đang xác minh asset ID và hash từ Python backend."/> :
-              catalog.items.length === 0 ? <EmptyState icon={Search} title="Không tìm thấy"
-                detail="Không có asset nào trong catalog phù hợp truy vấn."/> :
-                <div className="asset-grid"><Paged key={assetQuery} size={6} label="Tài nguyên">{catalog.items.map(asset =>
-                  <div className="asset-card" key={asset.id}><div className="asset-visual">
-                    <Image size={28} strokeWidth={1.2}/><span className="asset-type">SVG</span></div>
-                    <strong>{asset.id}</strong><span className="asset-role">{asset.role}</span>
-                    <code>{asset.sha256.slice(0, 12)}…</code></div>)}</Paged></div>}
-            <div className="panel-footer">Hiện chỉ lọc theo ID. Semantic ranking và biến thể hình thể thuộc P3/P5.</div>
-          </section>
-        </>}
+        {view === "assets" && <Suspense fallback={<p>Đang đọc thư viện hình ảnh…</p>}>
+          <AssetGallery projectId={selectedId}/>
+        </Suspense>}
 
         {view === "activity" && <>
           <section className="page-header"><div><p className="eyebrow">PROJECT EVENT JOURNAL <span> / </span> 03</p>
@@ -442,26 +444,23 @@ export default function App() {
           </section>
         </>}
 
-        {view === "voice" && <Suspense fallback={<p>Đang mở Voice Lab…</p>}>
-          <VoiceLab key={selectedId ?? "empty"} project={currentProject} onChanged={() => {
+        {visited.has("voice") && <div className="workflow-screen" hidden={view !== "voice"}><Suspense fallback={<p>Đang mở Voice Lab…</p>}>
+          <VoiceLab key={selectedId ?? "empty"} project={currentProject} active={view === "voice"} onChanged={() => {
+            setBuiltProjectId(null);
             void loadProjects(); if (selectedId) void refreshSelected(selectedId);
           }}/>
-        </Suspense>}
+        </Suspense></div>}
 
-        {view === "editor" && <>
-          <section className="page-header"><div><p className="eyebrow">HYPERFRAMES SDK <span> / </span> SOURCE-BOUND EDITOR</p>
-            <h1>Visual Workspace<span className="star">✦</span></h1>
-            <p className="page-subtitle">Dựng episode, chỉnh actor/state và xem preview từ đúng nguồn. Narration và voice được giữ nguyên.</p>
-          </div></section>
+        {visited.has("editor") && <div className="workflow-screen" hidden={view !== "editor"}>
           <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
             detail="Nạp module riêng khi mở Visual Workspace."/>}>
-            <HyperframesWorkspace key={currentProject?.project_id} project={currentProject}/>
+            <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor"} onBuildReady={updateBuildReady}/>
           </Suspense>
-        </>}
+        </div>}
 
         {view === "agent" && <>
           <section className="page-header"><div><p className="eyebrow">MANAGED CODEX APP SERVER <span> / </span> 04</p>
-            <h1>Điều phối Agent<span className="star">✦</span></h1>
+            <h1>Agent của episode<span className="star">✦</span></h1>
             <p className="page-subtitle">Đọc dự án qua Project Core, chạy Codex trong sandbox chỉ đọc và duyệt ghi chú trước khi lưu.</p></div>
             <span className={"source-pill " + (!agentHealth?.available ? "offline" : "")}>
               <ShieldCheck size={15}/>{agentHealth?.available ? "CODEX AVAILABLE" : "CODEX OFFLINE"}
@@ -476,6 +475,7 @@ export default function App() {
                 <small>Capability: project.inspect · Read-only · Approval: never</small>
               </div>
               <div className="agent-actions">
+                <button className="outline-btn" disabled={!currentProject} onClick={() => setView("editor")}>Soạn hoặc chỉnh hình</button>
                 <button className="primary-btn" disabled={!currentProject || agentRunning || agentBusy || !agentHealth?.available}
                   onClick={() => void agentInspect()}>
                   {agentBusy || agentRunning ? <LoaderCircle className="spin" size={16}/> : <Bot size={16}/>}
@@ -494,9 +494,7 @@ export default function App() {
                   : "Không tìm thấy Codex. Studio vẫn hoạt động thủ công."}</p></div>
                 : <div className="agent-output">
                   <span className="agent-task-id">Task {currentAgentTask.task_id.slice(0, 12)} · Project revision {currentAgentTask.project_revision}</span>
-                  <PagedText size={650} text={currentAgentTask.preview || (agentRunning
-                    ? "Đang khởi tạo phiên, xác minh nguồn và nhận phản hồi…"
-                    : currentAgentTask.error || "Chưa có phản hồi")}/>
+                  <AgentProposal task={currentAgentTask}/>
                   {currentAgentTask.error && <div className="agent-error">{currentAgentTask.error}</div>}
                 </div>}
             </div>
@@ -519,7 +517,7 @@ export default function App() {
         </>}
 
         <footer className="content-footer"><span>✦ &nbsp; ZODIAC STUDIO <strong>V5 PREVIEW</strong></span>
-          <span>Phase 3 + 4 · Build & Visual Editor · Project Core: Python</span></footer>
+          <span>Dev app · Chất lượng giọng, hình và video cần người dùng duyệt</span></footer>
       </main>
     </div>
   </div>;
