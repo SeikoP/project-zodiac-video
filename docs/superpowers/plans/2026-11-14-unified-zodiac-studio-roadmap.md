@@ -40,6 +40,17 @@
 >
 > **Immediate detailed plan:** [Phase 0: foundation and contracts](./2026-11-14-zodiac-studio-phase-00-foundation.md).
 
+## Workbench refactor planning checkpoint — 2026-11-22
+
+The user rejected the current GUI as confusing and selected a large-preview,
+timeline-centered video editor. The [new design draft](../specs/2026-11-22-studio-editing-workbench-design.md)
+and [task plan](./2026-11-22-studio-editing-workbench.md) are for review; trimming/reorder
+scope is unresolved and product implementation has not started. The
+[current readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md)
+distinguishes the prior real native E2E from newer revision-6 media evidence,
+records 22 freshly passing focused tests and explains the bounded proposal agent.
+P5/P6/P7 remain open; this planning checkpoint does not promote phase status.
+
 ## Global Constraints (every phase)
 
 - At each completed task: verify its required checks, update evidence/roadmap,
