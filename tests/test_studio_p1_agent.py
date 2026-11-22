@@ -54,6 +54,25 @@ class AgentTests(unittest.TestCase):
         self.assertIsInstance(health["credential_available"], bool)
         self.assertIn("human-confirmed", health["scope"])
 
+    def test_receipt_retries_transient_permission_error_and_preserves_last_good_on_failure(self):
+        tid = self._completed()
+        task = dict(self.manager.task(tid), preview="new preview")
+        original = os.replace
+        calls = []
+        def transient(src, dst):
+            calls.append(1)
+            if len(calls) < 3:
+                raise PermissionError("temporary sharing violation")
+            return original(src, dst)
+        with patch("tools.studio_project.agent_bridge.os.replace", side_effect=transient), patch("tools.studio_project.agent_bridge.time.sleep"):
+            self.manager._save(task)
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(json.loads(self.manager._path(tid).read_text("utf8"))["preview"], "new preview")
+        task["preview"] = "must not destroy last good"
+        with patch("tools.studio_project.agent_bridge.os.replace", side_effect=PermissionError("locked")), patch("tools.studio_project.agent_bridge.time.sleep"), self.assertRaises(PermissionError):
+            self.manager._save(task)
+        self.assertEqual(json.loads(self.manager._path(tid).read_text("utf8"))["preview"], "new preview")
+
     def test_user_confirmation_and_revision_gate_are_required(self):
         tid = self._completed()
         for confirm in (False, None, "true"):

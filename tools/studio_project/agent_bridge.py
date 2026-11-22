@@ -53,8 +53,18 @@ class AgentManager:
         # Receipts hold bounded proposals and provenance, never user credentials.
         path = self._path(task["task_id"])
         tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(task, ensure_ascii=False, sort_keys=True), encoding="utf-8")
-        os.replace(tmp, path)
+        payload = json.dumps(task, ensure_ascii=False, sort_keys=True)
+        for attempt in range(6):
+            try:
+                tmp.write_text(payload, encoding="utf-8")
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                # Windows scanners/readers can briefly deny atomic replacement.
+                # Keep the last good receipt and surface a sustained denial.
+                if attempt == 5:
+                    raise
+                time.sleep(.05 * (attempt + 1))
 
     def _load_receipts(self) -> None:
         receipts = []

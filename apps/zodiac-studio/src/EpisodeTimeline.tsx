@@ -23,7 +23,7 @@ export default function EpisodeTimeline({scenes, sceneId, timeMs, playing, canPl
       <label>Thu phóng<select aria-label="Thu phóng timeline" value={zoom} onChange={e=>setZoom(Number(e.target.value))}><option value={1}>Vừa khung</option><option value={2}>2×</option><option value={4}>4×</option></select></label>
     </div>
     {duration ? <>
-      <input className="episode-scrubber" type="range" aria-label="Vị trí toàn video" min={0} max={duration} step={1000/30} value={Math.min(timeMs,duration)} onChange={e=>onSeek(Number(e.target.value))}/>
+      <input className="episode-scrubber" type="range" aria-label="Vị trí toàn video" min={0} max={duration} step={1} value={Math.min(timeMs,duration)} onChange={e=>onSeek(Number(e.target.value))}/>
       <div className="timeline-scroll"><div className="timeline-tracks" style={{width:`${zoom*100}%`}}>
         <div className="timeline-ruler">{Array.from({length:7},(_,i)=><span key={i}>{timecode(duration*i/6)}</span>)}</div>
         <div className="timeline-scene-track">{scenes.map((s,i)=><button key={s.id} aria-label={`Cảnh ${i+1} · ${titles[s.id] || s.id}`} aria-pressed={s.id===sceneId} style={{left:`${s.startMs/duration*100}%`,width:`${(s.endMs-s.startMs)/duration*100}%`}} title={`${titles[s.id] || s.id} · ${timecode(s.startMs)}–${timecode(s.endMs)}`} onClick={()=>onSeek(s.startMs)}><b>{String(i+1).padStart(2,"0")}</b><span>{titles[s.id] || s.id}</span></button>)}</div>

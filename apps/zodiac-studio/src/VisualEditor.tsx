@@ -13,6 +13,9 @@ import type { WorkbenchSelection } from "./workbench-state";
 
 export default function VisualEditor({ project, active = true, onBuildReady, selection, onSelectionChange, onVoice, onImport }: { project: Project | null; active?: boolean; onBuildReady?: (projectId: string, ready: boolean) => void; selection?: WorkbenchSelection; onSelectionChange?: (selection: WorkbenchSelection) => void; onVoice?: () => void; onImport?: () => void }) {
   const [galleryOpen, setGalleryOpen] = useState(false), [eventsOpen, setEventsOpen] = useState(false), [eventsText, setEventsText] = useState("");
+  const [dismissedTask,setDismissedTask]=useState<string | null>(null);
+  const candidateRequest=useRef(0), candidateContext=useRef("");
+  const candidateQuery=useRef("");
   const [connection,setConnection]=useState<AgentHealth | null>(null);
   const [galleryAssets,setGalleryAssets]=useState<GalleryAsset[]>([]);
   const [themes, setThemes] = useState<{ id: string; title?: string }[]>([]);
@@ -26,6 +29,10 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   const [episodeTime,setEpisodeTime] = useState(selection?.timeMs ?? 0);
   const globalPlayhead = useRef(selection?.timeMs ?? 0);
   const [voiceInfo,setVoiceInfo] = useState<VoiceState | null>(null);
+  const [previewAttempt,setPreviewAttempt]=useState(0);
+  const previewCache=useRef(new Map<string,Promise<VisualPreview>>());
+  const loadedFrames=useRef(new Set<string>());
+  const [nextPreview,setNextPreview]=useState<VisualPreview | null>(null);
   const [frameReady,setFrameReady] = useState(false);
   const [time, setTime] = useState(0), [playing, setPlaying] = useState(false), [scale, setScale] = useState(.25);
   const [sdkReady, setSdkReady] = useState(false), [audioUrl, setAudioUrl] = useState("");
@@ -35,10 +42,11 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   const audio = useRef<HTMLAudioElement>(null), playhead = useRef(0), pointer = useRef<{ x: number; y: number; transform: VisualTransform } | null>(null);
   const projectId = project?.project_id, running = state?.job?.status === "RUNNING";
   const scene = state?.intent?.scenes.find(s => s.id === sceneId) ?? state?.intent?.scenes[0];
-  useEffect(() => {
-    if (projectId && scene) onSelectionChange?.({projectId, sceneId: scene.id, entityId: entityId || scene.entities[0]?.id || null, timeMs: episodeTime});
-  }, [projectId, scene?.id, entityId, episodeTime, onSelectionChange]);
+  candidateContext.current=`${projectId}:${state?.revision}:${scene?.id}`;candidateQuery.current=query;
   const entity = scene?.entities.find(e => e.id === entityId) ?? scene?.entities[0];
+  useEffect(() => {
+    if(projectId && scene) onSelectionChange?.({projectId,sceneId:scene.id,entityId:entity?.id ?? null,timeMs:episodeTime});
+  },[projectId,scene?.id,entity?.id,episodeTime,onSelectionChange]);
   const selectedStateId = entity?.states[stateId] ? stateId : entity?.initial_state;
   const selected = selectedStateId ? entity?.states[selectedStateId] : undefined;
   const built = state?.build?.scenes.find(s => s.id === scene?.id), sourceMap = preview?.scene?.source_map ?? [];
@@ -50,6 +58,15 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     catch (e) { return {scenes:[],error:e instanceof Error ? e.message : String(e)}; }
   }, [state?.build?.scenes]);
   const timeline=timelineResult.scenes, episodeDuration=timeline.at(-1)?.endMs ?? 0;
+  const inGap=timeline.length>0 && locateEpisodeTime(timeline,episodeTime)===null;
+  useEffect(()=>{
+    if(!state?.intent)return;
+    const at=Math.max(0,Math.min(episodeDuration,globalPlayhead.current));
+    const position=locateEpisodeTime(timeline,at);
+    if(position && position.sceneId!==sceneId)setSceneId(position.sceneId);
+    globalPlayhead.current=at;setEpisodeTime(at);
+  },[state?.source_hash,state?.build?.id,episodeDuration]);
+  useEffect(()=>{if(scene && entityId && !scene.entities.some(e=>e.id===entityId))setEntityId(scene?.entities[0]?.id ?? "");},[scene?.id,state?.source_hash,entityId]);
   const duration = preview?.scene?.duration_seconds ?? built?.duration_seconds ?? 0;
   useEffect(()=>{if(!active || !projectId)return;let live=true;
     void backend.agentHealth().then(h=>{if(live)setConnection(h);}).catch(()=>{if(live)setConnection(null);});
@@ -93,39 +110,61 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     const observer = new ResizeObserver(() => setScale(Math.min(node.clientWidth / 1080, node.clientHeight / 1920)));
     observer.observe(node); return () => observer.disconnect();
   }, [!!preview]);
+  function cachedPreview(id: string) {
+    const key=`${projectId}:${effectiveBuildId}:${id}`;
+    let pending=previewCache.current.get(key);
+    if(!pending){
+      pending=backend.visualPreview(projectId!,id,effectiveBuildId!);
+      previewCache.current.set(key,pending);
+      void pending.catch(()=>previewCache.current.delete(key));
+    }
+    return pending;
+  }
+  useEffect(()=>{
+    previewCache.current.clear();loadedFrames.current.clear();setNextPreview(null);
+  },[projectId,effectiveBuildId]);
+  useEffect(()=>{
+    if(!active || !projectId || !effectiveBuildId || !scene)return;
+    const index=timeline.findIndex(s=>s.id===scene.id), next=timeline[index+1];
+    let live=true;
+    if(next) void cachedPreview(next.id).then(p=>{if(live)setNextPreview(p);}).catch(()=>{if(live)setNextPreview(null);});
+    else setNextPreview(null);
+    // Retain only current and next scene payloads.
+    for(const key of previewCache.current.keys()) if(key!==`${projectId}:${effectiveBuildId}:${scene.id}` && key!==`${projectId}:${effectiveBuildId}:${next?.id}`)previewCache.current.delete(key);
+    return ()=>{live=false;};
+  },[active,projectId,scene?.id,effectiveBuildId,previewAttempt]);
   useEffect(() => {
     if (!projectId || !scene || !effectiveBuildId) {
-      sdk.current?.dispose(); sdk.current = null; loadedPreview.current = null; setPreview(null); setSdkReady(false); setPlaying(false);
-      return;
+      sdk.current?.dispose();sdk.current=null;loadedPreview.current=null;setPreview(null);setSdkReady(false);setPlaying(false);return;
     }
-    let live = true;
-    setFrameReady(false); setPreview(null); setSdkReady(false);
-    void backend.visualPreview(projectId, scene.id, effectiveBuildId).then(async next => {
-      if (loadedPreview.current?.sha256 === next.sha256 && loadedPreview.current.build_id === next.build_id && sdk.current) {
-        if (live) setPreview(next);
-        return;
+    let live=true;
+    setFrameReady(false);setPreview(null);setSdkReady(false);
+    void cachedPreview(scene.id).then(async next=>{
+      if(!live)return;
+      if(loadedPreview.current?.scene_id===scene.id && loadedPreview.current.sha256===next.sha256 && loadedPreview.current.build_id===next.build_id && sdk.current) {
+        setPreview(next);setSdkReady(true);setFrameReady(loadedFrames.current.has(next.url));return;
       }
-      const composition = await openComposition(next.html, { overrides: {}, history: false });
-      if (!live) { composition.dispose(); return; }
-      sdk.current?.dispose(); sdk.current = composition;
+      const composition=await openComposition(next.html,{overrides:{},history:false});
+      if(!live){composition.dispose();return;}
+      sdk.current?.dispose();sdk.current=composition;
       const position=locateEpisodeTime(timeline,globalPlayhead.current);
       const at=position?.sceneId===scene.id ? position.localMs/1000 : 0;
-      loadedPreview.current = { sha256: next.sha256, build_id: next.build_id, scene_id: scene.id };
-      setPreview(next); setSdkReady(true); setTime(at); playhead.current = at;
-    }).catch(failure => { if (live) {setPlaying(false); report(failure);} });
-    return () => { live = false; };
-  }, [projectId, scene?.id, effectiveBuildId, candidateBuildId, report]);
+      loadedPreview.current={sha256:next.sha256,build_id:next.build_id,scene_id:scene.id};
+      setPreview(next);setSdkReady(true);setFrameReady(loadedFrames.current.has(next.url));setTime(at);playhead.current=at;
+    }).catch(failure=>{if(live){setPlaying(false);report(failure);}});
+    return ()=>{live=false;};
+  },[projectId,scene?.id,effectiveBuildId,candidateBuildId,previewAttempt,report]);
   useEffect(() => () => sdk.current?.dispose(), []);
   useEffect(() => {
-    if (!agentTask || !["STARTING", "RUNNING"].includes(agentTask.status)) return;
+    if (!active || !agentTask || !["STARTING", "RUNNING"].includes(agentTask.status)) return;
     let live = true;
     const timer = window.setInterval(() => void backend.agentTask(agentTask.task_id).then(task => { if (live) setAgentTask(task); }).catch(failure => { if (live) report(failure); }), 1000);
     return () => { live = false; window.clearInterval(timer); };
-  }, [agentTask?.task_id, agentTask?.status, report]);
+  }, [active, agentTask?.task_id, agentTask?.status, report]);
   useEffect(() => {
     let live = true, local = "";
     setAudioUrl(""); setVoiceInfo(null);
-    if (!projectId || !state) return;
+    if (!active || !projectId || !state) return;
     void backend.voiceOpen(projectId).then(async voice => {
       if (!state.build) {if(live)setVoiceInfo(voice);return;}
       if (!voice.assembly || voice.assembly.valid===false || voice.assembly.wav_sha256 !== state.build?.voice_sha256) { if (live) setAudioUrl(""); return; }
@@ -134,7 +173,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       if (live) setAudioUrl(local); else URL.revokeObjectURL(local);
     }).catch(failure => { if (live) report(failure); });
     return () => { live = false; if (local) URL.revokeObjectURL(local); };
-  }, [projectId, !!state, state?.build?.id, report]);
+  }, [active,projectId, !!state, state?.build?.id,state?.stale_preview,report]);
   useEffect(() => {
     function message(event: MessageEvent) {
       if (!preview || event.source !== iframe.current?.contentWindow || event.origin !== new URL(preview.url).origin) return;
@@ -148,6 +187,11 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   function send(action: string, extra: object) {
     if (preview) iframe.current?.contentWindow?.postMessage({ type: "zodiac-preview", action, ...extra }, new URL(preview.url).origin);
   }
+  useEffect(()=>{
+    if(!preview || !frameReady || !active)return;
+    const position=locateEpisodeTime(timeline,globalPlayhead.current);
+    if(position?.sceneId===preview.scene.id)send("seek",{time:position.localMs/1000});
+  },[preview?.url,frameReady,active]);
   function seekEpisode(value: number) {
     const at=Math.max(0,Math.min(episodeDuration,value));
     globalPlayhead.current=at; setEpisodeTime(at);
@@ -165,31 +209,36 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     const row=timeline.find(s=>s.id===id); if(row) seekEpisode(row.startMs);
   }
   useEffect(() => {setPlaying(false); audio.current?.pause();}, [state?.revision,state?.build?.id,state?.stale_preview]);
-  useEffect(() => {
-    if (!playing || !active || !preview || !frameReady || !episodeDuration || state?.stale_preview) {audio.current?.pause();return;}
-    let frame=0, last=performance.now(), painted=0, live=true;
+  useEffect(()=>{
     const player=audio.current;
-    if (player && audioUrl) {
-      player.currentTime=globalPlayhead.current/1000;
-      void player.play().catch(e=>{if(live){setPlaying(false);report(e);}});
-    }
-    const tick=(now: number) => {
+    if(!playing || !active || state?.stale_preview){player?.pause();return;}
+    if(player && audioUrl){player.currentTime=globalPlayhead.current/1000;void player.play().catch(e=>{setPlaying(false);report(e);});}
+    return ()=>player?.pause();
+  },[playing,active,audioUrl,state?.stale_preview,report]);
+  useEffect(() => {
+    if (!playing || !active || !episodeDuration || state?.stale_preview) return;
+    let frame=0,last=performance.now(),painted=0;
+    const tick=(now: number)=>{
+      const player=audio.current;
       const at=Math.min(episodeDuration,player && audioUrl ? player.currentTime*1000 : globalPlayhead.current+now-last);
-      last=now; globalPlayhead.current=at;
+      last=now;globalPlayhead.current=at;
       const position=locateEpisodeTime(timeline,at);
-      if (position && position.sceneId!==scene?.id) {
-        setEpisodeTime(at); setSceneId(position.sceneId); setEntityId(""); setStateId("");
-        setFrameReady(false); player?.pause(); return;
-      }
-      if(now-painted>=1000/30 || at>=episodeDuration) {
+      if(position && position.sceneId!==scene?.id){setSceneId(position.sceneId);setEntityId("");setStateId("");}
+      if(now-painted>=1000/30 || at>=episodeDuration){
         painted=now;setEpisodeTime(at);
-        if(position){playhead.current=position.localMs/1000;setTime(playhead.current);send("seek",{time:playhead.current});}
+        if(position && position.sceneId===preview?.scene.id && frameReady){playhead.current=position.localMs/1000;setTime(playhead.current);send("seek",{time:playhead.current});}
       }
-      if(at>=episodeDuration) setPlaying(false); else frame=requestAnimationFrame(tick);
+      if(at>=episodeDuration)setPlaying(false);else frame=requestAnimationFrame(tick);
     };
-    frame=requestAnimationFrame(tick);
-    return ()=>{live=false;cancelAnimationFrame(frame);player?.pause();};
-  }, [playing,active,preview?.url,frameReady,audioUrl,episodeDuration,scene?.id,state?.stale_preview]);
+    frame=requestAnimationFrame(tick);return ()=>cancelAnimationFrame(frame);
+  },[playing,active,preview?.url,frameReady,audioUrl,episodeDuration,scene?.id,state?.stale_preview]);
+  function findCandidates(requirement: object, expectedQuery=query) {
+    if(!projectId || !scene)return;
+    const request=++candidateRequest.current, context=candidateContext.current;
+    void backend.visualCandidates(projectId,scene.id,requirement).then(result=>{
+      if(request===candidateRequest.current && context===candidateContext.current && candidateQuery.current===expectedQuery)setCandidates(result);
+    }).catch(failure=>{if(context===candidateContext.current && request===candidateRequest.current)report(failure);});
+  }
   async function action(operation: () => Promise<VisualState>) {
     setBusy(true); setError("");
     try { setState(await operation()); } catch (failure) { report(failure); } finally { setBusy(false); }
@@ -241,7 +290,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       {!voiceInfo?.timing?.words.length && <p>Chuẩn bị giọng đọc và căn thời gian trước khi nhờ agent soạn hình. <button className="outline-btn" onClick={onVoice}>Mở phần giọng đọc</button></p>}<small>Agent dùng bản kể đã duyệt và timing của giọng đã chọn. Xem đề xuất trước khi áp dụng.</small>
       <textarea aria-label="Yêu cầu agent soạn hình ảnh" maxLength={1200} value={agentInstruction} onChange={e => setAgentInstruction(e.target.value)} placeholder="Diễn rõ lời bào chữa và bằng chứng phản bác, giữ phản ứng đủ đọc."/>
       <button className="primary-btn" disabled={!state || !voiceInfo?.assembly || !voiceInfo?.timing?.words.length || disabled || !!agentTask && ["STARTING", "RUNNING"].includes(agentTask.status)} onClick={() => void backend.authorAgentStart(project.project_id, agentInstruction.trim() || "Dựng các cảnh theo narrative plan đã duyệt, có hành động và phản ứng rõ.").then(setAgentTask).catch(report)}>Soạn bản dựng ban đầu</button>
-      {agentTask?.kind === "episode.propose" && <><AgentProposal task={agentTask}/>
+      {agentTask?.kind === "episode.propose" && dismissedTask!==agentTask.task_id && <><AgentProposal task={agentTask}/>{agentTask.status === "COMPLETED" && !agentTask.write_applied && <button className="outline-btn" onClick={()=>setDismissedTask(agentTask.task_id)}>Bỏ đề xuất</button>}
         {["STARTING", "RUNNING"].includes(agentTask.status) && <button className="outline-btn" onClick={() => void backend.agentCancel(agentTask.task_id).then(setAgentTask).catch(report)}>Dừng agent</button>}
         <button className="primary-btn" disabled={disabled || agentTask.status !== "COMPLETED" || agentTask.write_applied} onClick={() => state && void action(async () => {
           const next = await backend.visualAgentApply(agentTask.task_id, state.revision);
@@ -251,7 +300,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     </div>}
     {galleryOpen && <AssetGallery projectId={projectId ?? null} onFind={id => {
       setGalleryOpen(false); setTab("assets"); setQuery(id);
-      if (scene) void backend.visualCandidates(project.project_id, scene.id, { asset_id: id }).then(setCandidates).catch(report);
+      if (scene) findCandidates({asset_id:id},id);
     }}/>}
     {eventsOpen && <div className="panel visual-source"><strong>Nhịp diễn · {scene?.id}</strong><small>Dùng state và đạo cụ có sẵn: ý định → hành động/tiếp xúc → phản ứng → giữ đủ đọc. Voice anchor phải đúng lời đã duyệt; giữ tiếp xúc tay–đạo cụ khi chuyển động.</small>
       <PagedText label="Sự kiện diễn xuất" size={600} text={eventsText} onChange={setEventsText}/>
@@ -264,14 +313,21 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     {state?.job && <div className="voice-progress" data-job-state={state.job.status}><span>{state.job.message}</span><span>{state.job.status}{state.job.action === 'export' ? ` · HyperFrames MP4${state.job.render_percent === undefined ? '' : ` · ${state.job.render_percent}%`}` : ` · ${state.job.ready_scenes.length}/${state.job.total}`}</span>{state.job.error && <pre>{state.job.error}</pre>}</div>}
     {state?.stale_preview && <p className="voice-warning">Đang giữ preview tốt R{state.build?.revision}. Nguồn hiện tại R{state.revision}; dựng lại để xem thay đổi.</p>}
     <div className="visual-layout" hidden={sourceOpen || logOpen || galleryOpen || eventsOpen}><aside className="panel visual-scenes"><div className="panel-heading">Cảnh · {state?.intent?.scenes.length ?? 0}</div>
-      <Paged size={3} label="Cảnh" revealIndex={state?.intent?.scenes.findIndex(s=>s.id===scene?.id)}>{(state?.intent?.scenes ?? []).map((item, index) => <button key={item.id} title={item.semantic_goal} className={scene?.id === item.id ? "active" : ""} onClick={() => chooseScene(item.id)}>
+      <Paged size={3} label="Cảnh" revealIndex={state?.intent?.scenes.findIndex(s=>s.id===scene?.id)}>{(state?.intent?.scenes ?? []).map((item, index) => <button key={item.id} data-scene-id={item.id} title={item.semantic_goal} className={scene?.id === item.id ? "active" : ""} onClick={() => chooseScene(item.id)}>
         <span>{String(index + 1).padStart(2, "0")} · {item.id}</span><small>{item.semantic_goal}</small><em>{state?.build?.scenes.some(s => s.id === item.id) ? "Preview có thật" : state?.job?.ready_scenes.includes(item.id) ? "Candidate đang build" : "Chưa dựng"}</em></button>)}</Paged>
       {!state?.intent && <p>Soạn bản dựng bằng agent ở phía trên, rồi dựng preview.</p>}</aside>
       <div className="panel visual-stage"><div className="panel-heading"><span>{scene?.id ?? "Preview"}</span><small>{preview ? `Build ${preview.build_id.slice(0, 8)} · R${preview.revision}` : "Chưa có output"}</small></div>
-        <div className="visual-viewport" ref={viewport}>{preview ? <iframe key={preview.url} ref={iframe} src={preview.url} title={`HyperFrames ${scene?.id}`} sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"
-          style={{ width: 1080, height: 1920, transform: `scale(${scale})` }} onLoad={() => {setFrameReady(true); send("seek", { time: playhead.current });}}/>
-          : <div className="voice-empty"><Layers3 size={36}/><p>Preview dùng SVG thật và timing ASR đã đo.</p><small>Tạo giọng và căn thời gian, sau đó dựng các cảnh để xem video.</small><button className="outline-btn" onClick={onVoice}>Chuẩn bị giọng đọc</button></div>}
-          {preview && draft && mapped && !playing && !state?.stale_preview && <div className="visual-drag-box" aria-label={`Di chuyển ${entity?.id}`} role="button" tabIndex={0}
+        <div className="visual-viewport" ref={viewport}>{[preview,nextPreview].filter((p,i,a): p is VisualPreview=>!!p && a.findIndex(other=>other?.url===p.url)===i).map(p=>{
+          const current=p.url===preview?.url;
+          return <iframe key={p.url} ref={node=>{if(current)iframe.current=node;}} src={p.url} title={`HyperFrames ${p.scene.id}`} aria-hidden={!current || inGap} sandbox="allow-scripts allow-same-origin" referrerPolicy="no-referrer"
+            style={{width:1080,height:1920,transform:`scale(${scale})`,visibility:current && !inGap ? "visible":"hidden"}}
+            onLoad={()=>{loadedFrames.current.add(p.url);if(current){setFrameReady(true);send("seek",{time:playhead.current});}}}/>;
+        })}
+          {inGap ? <div className="voice-empty"><strong>Khoảng nghỉ</strong><small>Không có cảnh tại vị trí này.</small></div> : !preview && <div className="voice-empty"><Layers3 size={36}/><p>{effectiveBuildId ? "Đang mở preview của cảnh" : "Chưa dựng hình ảnh"}</p>
+            {effectiveBuildId ? <button className="outline-btn" onClick={()=>{setError("");previewCache.current.delete(`${projectId}:${effectiveBuildId}:${scene?.id}`);setPreviewAttempt(a=>a+1);}}>Thử tải lại preview</button>
+             : voiceInfo?.timing && state?.intent ? <button className="primary-btn" disabled={disabled} onClick={()=>state && void action(()=>backend.episodeBuild(project.project_id,state.revision))}>Dựng video để xem</button>
+             : <button className="outline-btn" onClick={onVoice}>Chuẩn bị giọng đọc</button>}</div>}
+          {!inGap && preview && draft && mapped && !playing && !state?.stale_preview && <div className="visual-drag-box" aria-label={`Di chuyển ${entity?.id}`} role="button" tabIndex={0}
             style={{ left: `calc(50% - ${540 * scale}px + ${draft.x * scale}px)`, top: `calc(50% - ${960 * scale}px + ${draft.y * scale}px)`, width: draft.width * scale, height: draft.height * scale }}
             onPointerDown={e => { if (!disabled) { e.currentTarget.setPointerCapture(e.pointerId); pointer.current = { x: e.clientX, y: e.clientY, transform: { ...draft } }; } }}
             onPointerMove={e => { const p = pointer.current; if (p) setDraft({ ...p.transform, x: Math.round(p.transform.x + (e.clientX - p.x) / scale), y: Math.round(p.transform.y + (e.clientY - p.y) / scale) }); }}
@@ -279,20 +335,20 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
             onPointerCancel={() => { pointer.current = null; if (selected) setDraft({ ...selected.transform }); }}/>}</div>
         <div className="visual-transport"><button className="outline-btn" aria-label={playing ? "Tạm dừng cảnh" : "Phát từ cảnh này"} disabled={!preview || !duration || !!state?.stale_preview} onClick={() => {if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);setPlaying(!playing);}}>{playing ? <Pause size={16}/> : <Play size={16}/>}</button>
           <span>{time.toFixed(2)} / {duration.toFixed(2)}s</span><input type="range" aria-label="Measured scene timeline" min={0} max={duration || 1} step={1 / 30} value={time} onChange={e => { setPlaying(false); seek(Number(e.target.value)); }}/>
-          <small>{audioUrl ? "Voice đã chọn" : "Preview không audio"}</small></div>{audioUrl && <audio ref={audio} src={audioUrl} preload="metadata"/>}
+          <small>{audioUrl ? "Voice đã chọn" : "Preview không audio"}</small></div>{audioUrl && <audio ref={audio} src={audioUrl} preload="metadata" onEnded={()=>{seekEpisode(episodeDuration);setPlaying(false);}}/>}
         <div className="visual-fidelity"><strong>{preview?.candidate_only ? "Candidate trong lúc dựng" : "Preview kỹ thuật"}</strong><span>SVG nguồn · timing ASR · chưa duyệt hình</span></div>
         {built && <><p className="voice-muted">Caption contrast {built.qa.caption_contrast.toFixed(1)}:1 · QA {built.qa.status} · {built.qa.issues.map(i => i.code).join(", ") || "Không có cảnh báo kỹ thuật"}</p>
           {built.qa.review_warnings?.length ? <p className="voice-warning">Cần xem diễn xuất: {built.qa.review_warnings.map(item => item.detail).join(" · ")}</p> : null}</>}</div>
-      <aside className="panel visual-inspector"><div className="workspace-tabs" aria-label="Thuộc tính cảnh">{[["object", "Đối tượng"], ["events", "Sự kiện"], ["assets", "Hình ảnh"], ["agent", "Agent"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
+      <aside className="panel visual-inspector" hidden={inGap}><div className="workspace-tabs" aria-label="Thuộc tính cảnh">{[["object", "Đối tượng"], ["events", "Sự kiện"], ["assets", "Hình ảnh"], ["agent", "Agent"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
         <div className="inspector-group" hidden={tab !== "object"}>
-        <label>Đối tượng<select value={entity?.id ?? ""} onChange={e => { setEntityId(e.target.value); setStateId(""); }}>{scene?.entities.map(e => <option key={e.id} value={e.id}>{e.id} · {e.kind}</option>)}</select></label>
-        <label>Trạng thái<select value={selectedStateId ?? ""} onChange={e => { setStateId(e.target.value); const map = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === e.target.value); if (map) send("state", { hf_id: map.hf_id }); }}>{Object.keys(entity?.states ?? {}).map(id => <option key={id}>{id}</option>)}</select></label>
+        <label>Đối tượng<select aria-label="Đối tượng" value={entity?.id ?? ""} onChange={e => { setEntityId(e.target.value); setStateId(""); }}>{scene?.entities.map(e => <option key={e.id} value={e.id}>{e.id} · {e.kind}</option>)}</select></label>
+        <label>Trạng thái<select aria-label="Trạng thái" value={selectedStateId ?? ""} onChange={e => { setStateId(e.target.value); const map = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === e.target.value); if (map) send("state", { hf_id: map.hf_id }); }}>{Object.keys(entity?.states ?? {}).map(id => <option key={id}>{id}</option>)}</select></label>
         {draft && <><div className="visual-transform">{(["x", "y", "width", "height", "rotation"] as const).map(key => <label key={key}>{{x:"Vị trí ngang",y:"Vị trí dọc",width:"Chiều rộng",height:"Chiều cao",rotation:"Góc xoay"}[key]}<input type="number" value={draft[key] ?? 0} disabled={disabled} onChange={e => setDraft({ ...draft, [key]: Number(e.target.value) })}/></label>)}</div>
           <button className="primary-btn" disabled={disabled || !sdkReady} onClick={() => void commitTransform(draft)}><Check size={15}/>Lưu & dựng cảnh</button></>}
         <details><summary>Nguồn đối tượng</summary><small>Asset {mapped?.asset_id ?? selected?.asset ?? "—"}</small><small>SHA {mapped?.source_sha256.slice(0, 16) ?? "Chưa dựng"}</small></details>
         </div><div className="visual-events" hidden={tab !== "events"}><strong>Voice reveals / events</strong><button className="outline-btn" disabled={!scene || disabled} onClick={() => { setEventsText(JSON.stringify(scene?.events ?? [], null, 2)); setEventsOpen(true); setGalleryOpen(false); setSourceOpen(false); setLogOpen(false); setPlaying(false); }}>Chỉnh nhịp diễn theo lời kể</button><Paged size={2} label="Sự kiện cảnh">{(scene?.events ?? []).map(e => <p key={e.id}>{e.id} · {e.target}<small>{e.state_before} → {e.state_after} · {e.trigger.text ?? e.trigger.type}</small></p>)}</Paged></div>
         <div className="visual-candidates" hidden={tab !== "assets"}><strong>Đạo cụ phù hợp với cảnh</strong><input aria-label="Asset constraints" value={query} placeholder="ID đạo cụ hoặc chọn từ Kho hình ảnh" onChange={e => setQuery(e.target.value)}/>
-          <button className="outline-btn" disabled={!scene || disabled} onClick={() => { if (scene) void backend.visualCandidates(project.project_id, scene.id, query ? { asset_id: query } : {}).then(setCandidates).catch(report); }}>Tìm bundle phù hợp</button>
+          <button className="outline-btn" disabled={!scene || disabled} onClick={() => { if (scene) findCandidates(query ? {asset_id:query} : {}); }}>Tìm bundle phù hợp</button>
           <Paged size={1} label="Composition">{(candidates?.bundles ?? []).map(c => <div className="visual-candidate" key={c.candidate_id}><b>{c.asset_id}</b>{(()=>{const asset=galleryAssets.find(a=>a.id===c.asset_id || a.id===`prop:${c.asset_id}`);const src=asset?.preview_data_uri ?? (asset?.svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(asset.svg)}` : "");return src ? <img className="candidate-thumbnail" src={src} alt={`Đạo cụ ${c.asset_id}`}/> : <small>Chưa có ảnh xem trước cho lựa chọn này.</small>;})()}<small>{c.identity.model_id}</small><p>{c.fit_reasons.join(" · ")}</p>{c.warnings.map(w => <small key={w}>{w}</small>)}
             {!!c.usage?.length && <small>{c.usage.length} build kỹ thuật · chưa duyệt{candidates?.usage_evidence?.coverage?.truncated ? " · phạm vi quét giới hạn" : ""}</small>}
             <button className="outline-btn" disabled={disabled} onClick={() => command("asset.select", { scene_id: scene?.id, candidate_id: c.candidate_id, requirement: query ? { asset_id: query } : {} })}>Dùng composition</button></div>)}</Paged>
@@ -305,7 +361,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
           <textarea aria-label="Yêu cầu agent chỉnh cảnh" value={agentInstruction} maxLength={1200} onChange={e => setAgentInstruction(e.target.value)} placeholder="Ví dụ: Dịch actor lead sang phải 40px, giữ kích thước"/>
           <button className="outline-btn" disabled={disabled || !scene || !agentInstruction.trim() || !!agentTask && ["STARTING", "RUNNING"].includes(agentTask.status)}
             onClick={() => scene && void backend.visualAgentStart(project.project_id, scene.id, agentInstruction).then(setAgentTask).catch(report)}>Đề xuất chỉnh sửa</button>
-          {agentTask?.kind === "scene.propose" && agentTask.scene_id === scene?.id && <><AgentProposal task={agentTask}/>
+          {agentTask?.kind === "scene.propose" && agentTask.scene_id === scene?.id && dismissedTask!==agentTask.task_id && <><AgentProposal task={agentTask}/>{agentTask.status === "COMPLETED" && !agentTask.write_applied && <button className="outline-btn" onClick={()=>setDismissedTask(agentTask.task_id)}>Bỏ đề xuất</button>}
             {["STARTING", "RUNNING"].includes(agentTask.status) && <button className="outline-btn" onClick={() => void backend.agentCancel(agentTask.task_id).then(setAgentTask).catch(report)}>Dừng agent</button>}
             <button className="primary-btn" disabled={disabled || agentTask.status !== "COMPLETED" || agentTask.write_applied} onClick={() => state && void action(async () => {
               const next = await backend.visualAgentApply(agentTask.task_id, state.revision);
@@ -315,7 +371,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
         </div></aside></div>
     {!sourceOpen && !logOpen && !galleryOpen && !eventsOpen && <>
       {timelineResult.error && <p className="voice-warning">{timelineResult.error}</p>}
-      <EpisodeTimeline scenes={timeline} sceneId={scene?.id} timeMs={episodeTime} playing={playing} canPlay={!!preview && frameReady && !state?.stale_preview} voice={voiceInfo} titles={Object.fromEntries((state?.intent?.scenes ?? []).map(s=>[s.id,s.semantic_goal]))} onSeek={at=>{setPlaying(false);seekEpisode(at);}} onPlay={()=>{if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);setPlaying(!playing);}}/>
+      <EpisodeTimeline scenes={timeline} sceneId={inGap ? undefined : scene?.id} timeMs={episodeTime} playing={playing} canPlay={!!preview && frameReady && !state?.stale_preview} voice={voiceInfo} titles={Object.fromEntries((state?.intent?.scenes ?? []).map(s=>[s.id,s.semantic_goal]))} onSeek={at=>{setPlaying(false);seekEpisode(at);}} onPlay={()=>{if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);setPlaying(!playing);}}/>
     </>}
     {state?.build && <div className="visual-receipt">{state.build.scenes.length} scenes · {state.build.cache.reused} nodes cache / {state.build.cache.rebuilt} dựng lại · {(state.build.resources.wall_ms / 1000).toFixed(2)}s · {(state.build.resources.peak_rss_bytes / 1024 / 1024).toFixed(0)} MiB peak · Renderer parity: {state.build.renderer_parity}</div>}
     <button className="subtle-btn log-toggle" aria-expanded={logOpen} onClick={() => { setLogOpen(!logOpen); setSourceOpen(false); setGalleryOpen(false); setEventsOpen(false); }}>{logOpen ? "Đóng nhật ký" : "Hoạt động chỉnh sửa và build"}</button>

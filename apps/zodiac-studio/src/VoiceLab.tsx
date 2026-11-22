@@ -110,9 +110,13 @@ export default function VoiceLab({ project, onChanged, active = true }: { projec
   return <div ref={workspace} className={"voice-workspace voice-tab-" + tab}>
     <section className="page-header"><div><p className="eyebrow">VOICE FIRST / PHASE 2</p>
       <h1>Voice Lab<span className="star">✦</span></h1><p className="page-subtitle">Nghe giọng thật trước khi dựng hình. {project.display_title}</p></div>
+      <div className="voice-header-actions">      <div className="voice-primary-actions"><button className="primary-btn" disabled={!state || running || busy || count === state.units.length}
+        onClick={() => generate([])}><Mic2 size={15}/> Tạo audio còn thiếu</button>
+        {running && <button className="outline-btn" onClick={() => projectId && void action(() => backend.voiceCancel(projectId))}>Dừng tạo audio</button>}</div>
       <span className={"source-pill " + (approved ? "" : "offline")}><Headphones size={15}/>
-        {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></section>
+        {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></div></section>
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
+
     <div className="workspace-tabs">{[["takes", "Từng đoạn"], ["episode", "Nghe toàn bài & timing"], ["settings", "Thiết lập giọng"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
     <section className="panel voice-settings">
       <label>Giọng VieNeu<select value={speaker} disabled={!state || running || busy} onChange={event => setSpeaker(event.target.value)}>
@@ -120,15 +124,13 @@ export default function VoiceLab({ project, onChanged, active = true }: { projec
       </select></label>
       <label>Chỉ dẫn đọc<select value={intent} disabled={running || busy} onChange={event => setIntent(event.target.value)}>
         <option value="NORMAL">Bình thường</option><option value="SHARP">Sắc / nhấn rõ</option></select></label>
-      <div className="voice-settings-actions"><button className="primary-btn" disabled={!state || running || busy || count === state.units.length}
-        onClick={() => generate([])}><Mic2 size={15}/> Tạo audio còn thiếu</button>
-        {running && <button className="outline-btn" onClick={() => projectId && void action(() => backend.voiceCancel(projectId))}>Dừng tạo audio</button>}</div>
+
       <small>Chỉ dẫn đọc là ý định, chưa phải kết quả đã nghe. Backend hiện thực thi text và giọng; kiểm tra âm thanh để đánh giá nhịp.</small>
       <details><summary>Cách đọc từ đặc biệt</summary><label>Ánh xạ từ → cách đọc (JSON, áp dụng khi tạo take mới)
         <textarea value={pronunciation} onChange={event => setPronunciation(event.target.value)} spellCheck={false}/></label>
         <small>Chỉ thay đầu vào TTS; chữ đã duyệt và caption gốc không đổi.</small></details>
     </section>
-    {state?.job && <section className={"voice-job " + (state.job.error ? "voice-warning" : "")} role="status">
+    {state?.job && <section className={"voice-job " + (state.job.error ? "voice-warning" : "")} role="status" data-job-id={state.job.id} data-job-action={state.job.action}>
       {running && <LoaderCircle size={16} className="spin"/>}<span>{state.job.message}</span>
       <strong>{state.job.status} · {state.job.completed}/{state.job.total}</strong>
       {state.job.error && <p>{state.job.error}</p>}</section>}

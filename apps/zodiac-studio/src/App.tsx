@@ -84,8 +84,10 @@ export default function App() {
   const [agentTask, setAgentTask] = useState<AgentTask | null>(null);
   const [agentBusy, setAgentBusy] = useState(false);
   const activeProjectRef = useRef<string | null>(null);
+  const selectionRef=useRef(selection);selectionRef.current=selection;
   const chooseProject = useCallback((id: string | null) => {
     if (activeProjectRef.current !== id) {
+      try {if(selectionRef.current.projectId)localStorage.setItem(`studio-selection:${selectionRef.current.projectId}`,JSON.stringify(selectionRef.current));} catch {/* optional */}
       activeProjectRef.current = id;
       setSelectedId(id);
       let restored: WorkbenchSelection={projectId:id ?? "",sceneId:null,entityId:null,timeMs:0};

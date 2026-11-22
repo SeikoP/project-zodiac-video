@@ -11,6 +11,14 @@ from tools.studio_v2.voice import VoiceArtifact
 from tools.studio_v2.timing import _align_cached_scenes, _wav_seconds
 
 
+def relative_words(words, offset):
+    # Global-to-local subtraction can produce -3.6e-12 ms for a true zero.
+    # Round only arithmetic noise, far below a WAV sample; validation must still
+    # reject actual negative, reversed or out-of-audio measurements.
+    return [{**word, "startMs": round(word["startMs"] - offset, 6),
+             "endMs": round(word["endMs"] - offset, 6)} for word in words]
+
+
 def main():
     if sys.argv[1] == "batch":
         manifest = json.loads(Path(sys.argv[2]).read_text(encoding="utf8"))
@@ -36,8 +44,7 @@ def main():
         }, "voice-lab-measured@1")
         offset, result = 0.0, {}
         for row in timing["scenes"]:
-            result[row["scene_id"]] = [{**word, "startMs": word["startMs"]-offset, "endMs": word["endMs"]-offset}
-                                        for word in row["captions"]]
+            result[row["scene_id"]] = relative_words(row["captions"], offset)
             offset += _wav_seconds(scene_dir/(row["scene_id"]+".wav"))*1000
         Path(sys.argv[3]).write_text(json.dumps(result, ensure_ascii=False, allow_nan=False), encoding="utf8")
         return

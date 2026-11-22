@@ -1,6 +1,6 @@
 # Studio editing workbench — design draft
 
-Status: DRAFT FOR USER REVIEW. Planning is requested; implementation has not started.
+Status: IMPLEMENTATION AUTHORIZED by user on 2026-11-23. Scene-based workbench first; original timing/order retained.
 
 ## Intent and approaches
 
@@ -9,7 +9,7 @@ The user finds the GUI confusing and selected a video editor with a large previe
 1. **Scene-based workbench (recommended):** full-episode navigation timeline, large preview and contextual inspector, reusing existing edits, assets, voice, export and undo. This is a proposal, not confirmed detailed scope.
 2. **Free-form NLE:** trimming, duration changes, reorder and layered editing. This requires new canonical timing/edit contracts and voice/caption re-anchoring beyond GUI refactoring.
 
-The user has not answered whether trimming/reordering belongs in the first delivery. Resolve that before implementation; editor-style direction does not authorize changing approved narration or measured timing.
+The user authorized implementation after the recommended scene-based first delivery. Trimming/reordering remains future scope; approved narration and measured timing are preserved.
 
 ## Behavior
 

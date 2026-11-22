@@ -67,6 +67,7 @@ jobs:
           python -m unittest tests.test_studio_agent_authoring -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
+          python -m unittest tests.test_studio_voice_worker -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_job5_historical_contract.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -81,7 +82,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_studio_p34_*.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/studio_p34_visual.test.mjs
+          node --test tests/studio_p34_visual.test.mjs tests/studio_episode_timeline.test.mjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_studio_p5_*.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

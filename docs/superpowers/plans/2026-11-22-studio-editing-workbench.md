@@ -1,6 +1,6 @@
 # Studio Editing Workbench Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans or superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Open an episode into a legible video editing workbench with a large preview, whole-episode timeline and contextual tools.
 
@@ -12,8 +12,8 @@
 
 ## Global Constraints
 
-- PLANNED / DESIGN REVIEW PENDING; no product implementation in this planning task.
-- Editor-style direction is confirmed; trimming/reorder scope remains unresolved. Proposed first delivery supports scene navigation/editing, not a free-form NLE.
+- IMPLEMENTATION AUTHORIZED on 2026-11-23; Tasks 1–4 complete, Task 5 native/media acceptance in progress.
+- User accepted the recommended first delivery: scene navigation/editing; preserve measured duration/order. Trimming/reorder is future scope.
 - Preserve narration, selected voice, measured timings, identities, last good outputs and human approval evidence.
 - Fit 1366×768, 1060×650 and 1093×614 without document scrolling; bounded timeline panning is allowed.
 - No new renderer/shadow catalog, release, installer, production merge or publication.
@@ -37,11 +37,11 @@ Read [readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md) an
 
 **Interfaces:** Consume `BuiltScene` (`id`, `start_ms`, `end_ms`) from `backend.ts`. Produce `TimelineScene = {id: string; startMs: number; endMs: number}`, `makeEpisodeTimeline(scenes: BuiltScene[]): TimelineScene[]`, `locateEpisodeTime(scenes: TimelineScene[], timeMs: number): {sceneId: string; localMs: number} | null`, and `WorkbenchSelection = {projectId: string; sceneId: string | null; entityId: string | null; timeMs: number}`. App owns selection; backend remains authoritative.
 
-- [ ] Add failing tests: `maps_boundaries` (1000 ms boundary selects second scene/local 0), `rejects_overlaps_and_invalid_intervals`, `returns_null_in_gaps_or_empty`; final endpoint maps to final scene/local duration.
-- [ ] Run `node --test tests/studio_episode_timeline.test.mjs`; verify intended failures.
-- [ ] Implement mapping and shared selection; reset invalid targets on project/source change.
-- [ ] Run timeline tests and `pnpm.cmd -C apps/zodiac-studio exec tsc --noEmit`; require zero failures.
-- [ ] Record evidence, commit and push only this task after remote-tip checks.
+- [x] Add failing tests: `maps_boundaries` (1000 ms boundary selects second scene/local 0), `rejects_overlaps_and_invalid_intervals`, `returns_null_in_gaps_or_empty`; final endpoint maps to final scene/local duration.
+- [x] Run `node --test tests/studio_episode_timeline.test.mjs`; verify intended failures.
+- [x] Implement mapping and shared selection; reset invalid targets on project/source change.
+- [x] Run timeline tests and `pnpm.cmd -C apps/zodiac-studio exec tsc --noEmit`; require zero failures.
+- [x] Record evidence, commit and push only this task after remote-tip checks.
 
 ### Task 2: Editor-first shell and empty states
 
@@ -49,11 +49,11 @@ Read [readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md) an
 
 **Interfaces:** Consume Task 1 selection and existing project/voice/visual state. EditingWorkbench owns layout/docks, not mutation APIs; existing VoiceLab, AssetGallery and EpisodeExport supply contextual workflows.
 
-- [ ] Add failing browser assertions for direct editor opening, single preview, selected-object inspector, export action, three viewport sizes and actionable no-project/missing-timing/missing-source states; include project switching.
-- [ ] Run `node tests/studio_workbench_browser.mjs` against the fixture transport; inspect expected failures.
-- [ ] Implement header/docks/large preview/timeline region. Replace Entity/State labels with contextual Vietnamese; put hashes/logs/JSON in details. Preserve Ideas/progress and project selection access.
-- [ ] Run workbench and compact browser checks, then `pnpm.cmd -C apps/zodiac-studio build`; require no page errors/document overflow. This is frontend verification, not release packaging.
-- [ ] Record viewport evidence, commit and push scoped changes.
+- [x] Add failing browser assertions for direct editor opening, single preview, selected-object inspector, export action, three viewport sizes and actionable no-project/missing-timing/missing-source states; include project switching.
+- [x] Run `node tests/studio_workbench_browser.mjs` against the fixture transport; inspect expected failures.
+- [x] Implement header/docks/large preview/timeline region. Replace Entity/State labels with contextual Vietnamese; put hashes/logs/JSON in details. Preserve Ideas/progress and project selection access.
+- [x] Run workbench and compact browser checks, then `pnpm.cmd -C apps/zodiac-studio build`; require no page errors/document overflow. This is frontend verification, not release packaging.
+- [x] Record viewport evidence, commit and push scoped changes.
 
 ### Task 3: Whole-episode transport, voice and captions
 
@@ -61,11 +61,11 @@ Read [readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md) an
 
 **Interfaces:** Consume global `timeMs`, measured intervals, real selected assembly and available caption/timing data. Produce `onSeek(timeMs: number)` and `onSelectScene(sceneId: string)` callbacks. One assembly audio/clock owner drives scene-local SDK seeks.
 
-- [ ] Add failing tests for three unequal scene lengths, boundary advancement, pause/end/replay, preview failure, revision invalidation and hidden workspace; missing tracks remain explicitly absent.
-- [ ] Run timeline/browser checks and verify intended failures.
-- [ ] Implement ruler, scene blocks, measured voice/caption displays, bounded adjacent-scene preload and recoverable preview loading/error. Clamp seeking to episode duration; preserve real gaps. No competing per-scene audio. No trim/reorder without approved timing/source design.
-- [ ] Rerun timeline/browser/TypeScript checks; verify no hidden or deselected-project audio continues.
-- [ ] Record evidence, commit and push scoped task.
+- [x] Add failing tests for three unequal scene lengths, boundary advancement, pause/end/replay, preview failure, revision invalidation and hidden workspace; missing tracks remain explicitly absent.
+- [x] Run timeline/browser checks and verify intended failures.
+- [x] Implement ruler, scene blocks, measured voice/caption displays, bounded adjacent-scene preload and recoverable preview loading/error. Clamp seeking to episode duration; preserve real gaps. No competing per-scene audio. No trim/reorder without approved timing/source design.
+- [x] Rerun timeline/browser/TypeScript checks; verify no hidden or deselected-project audio continues.
+- [x] Record evidence, commit and push scoped task.
 
 ### Task 4: Contextual agent and explainable assets
 
@@ -73,11 +73,11 @@ Read [readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md) an
 
 **Interfaces:** Reuse `agent.author.start`, `agent.visual.start`, `agent.task(s)`, `agent.cancel`, `agent.apply`, `assets.describe`, `assets.gallery`, `assets.find_candidates` and existing edit/undo commands. Health distinguishes executable detection from authenticated live readiness and reports actual proposal kinds, without claiming a tool loop.
 
-- [ ] Add failing assertions for accurate capability labels, catalog/no-fit reasons, source/voice drift, completed-vs-applied state, cancellation/reopen and rejected unsupported edits; no automatic approval.
-- [ ] Run `python -m unittest tests.test_studio_p1_agent tests.test_studio_agent_authoring tests.test_studio_p5_transport -q` and browser test; verify intended failures.
-- [ ] Place requests/proposals/apply beside selection; show actual resource previews/reasons and distinguish initial authoring from scene editing. Fix outdated health scope; retain bounded proposal architecture.
-- [ ] Rerun focused checks and `node --test tests/studio_p5_assets.test.mjs`; verify unaffected scene/source/voice invariants after scoped edit.
-- [ ] Record evidence, commit and push scoped task.
+- [x] Add failing assertions for accurate capability labels, catalog/no-fit reasons, source/voice drift, completed-vs-applied state, cancellation/reopen and rejected unsupported edits; no automatic approval.
+- [x] Run `python -m unittest tests.test_studio_p1_agent tests.test_studio_agent_authoring tests.test_studio_p5_transport -q` and browser test; verify intended failures.
+- [x] Place requests/proposals/apply beside selection; show actual resource previews/reasons and distinguish initial authoring from scene editing. Fix outdated health scope; retain bounded proposal architecture.
+- [x] Rerun focused checks and `node --test tests/studio_p5_assets.test.mjs`; verify unaffected scene/source/voice invariants after scoped edit.
+- [x] Record evidence, commit and push scoped task.
 
 ### Task 5: Native acceptance, media and restart
 
