@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-export function Paged({ children, size = 3, label = "Danh sách" }: { children: ReactNode[]; size?: number; label?: string }) {
+export function Paged({ children, size = 3, label = "Danh sách", revealIndex }: { children: ReactNode[]; size?: number; label?: string; revealIndex?: number }) {
   const [requested, setPage] = useState(0);
+  useEffect(() => {if(revealIndex !== undefined && revealIndex>=0)setPage(Math.floor(revealIndex/size));},[revealIndex,size]);
   const pages = Math.max(1, Math.ceil(children.length / size));
   const page = Math.min(requested, pages - 1);
   return <div className="paged">

@@ -20,6 +20,36 @@ try {
   assert.ok(bounds.w<=bounds.iw && bounds.h<=bounds.ih+1,JSON.stringify(bounds));
   assert.ok(bounds.stage>=190,'Preview needs meaningful height '+JSON.stringify(bounds));
  }
+ await page.getByRole('region',{name:'Timeline toàn video',exact:true}).waitFor();
+ await page.locator('.episode-timeline').getByRole('button',{name:/Cảnh 3 ·/}).click();
+ assert.match(await page.locator('.visual-scenes button.active').innerText(),/s3/);
+ assert.equal(await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).inputValue(),'8000');
+ await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).fill('5000');
+ assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+
+ await mkdir('.runtime/workbench',{recursive:true});
+ await page.screenshot({path:'.runtime/workbench/layout.png'});
+ assert.equal(await page.locator('.workflow-tabs:visible').count(),0,'editor has one set of actions');
+ await page.locator('.episode-timeline').getByRole('button',{name:/Cảnh 6 ·/}).click();
+ await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
+ await page.waitForTimeout(700);
+ await page.reload();
+ await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
+ await page.evaluate(()=>{window.withPreviews=true;});
+ await page.locator('.visual-stage iframe').waitFor({timeout:15000});
+ await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).fill('3800');
+ await page.getByRole('button',{name:'Phát toàn video',exact:true}).click();
+ await page.waitForFunction(()=>Number(document.querySelector('[aria-label="Vị trí toàn video"]').value)>4200,{},{timeout:10000});
+ assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+ await page.getByRole('button',{name:'Tạm dừng video',exact:true}).click();
+ const paused=await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).inputValue();
+ await page.waitForTimeout(300);
+ assert.equal(await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).inputValue(),paused);
+ await page.evaluate(()=>{window.previewFails=true;});
+ await page.locator('.episode-timeline').getByRole('button',{name:/Cảnh 3 ·/}).click();
+ await page.getByRole('alert').filter({hasText:'Preview fixture unavailable'}).waitFor();
+ assert.equal(await page.locator('.visual-stage iframe').count(),0,'failed scene must not show old preview');
+ await page.evaluate(()=>{window.previewFails=false;});
  await page.locator('.visual-scenes button').nth(1).click();
  assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
  await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();

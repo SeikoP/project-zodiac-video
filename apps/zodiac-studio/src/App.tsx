@@ -88,13 +88,25 @@ export default function App() {
     if (activeProjectRef.current !== id) {
       activeProjectRef.current = id;
       setSelectedId(id);
-      setSelection({projectId: id ?? "", sceneId: null, entityId: null, timeMs: 0});
+      let restored: WorkbenchSelection={projectId:id ?? "",sceneId:null,entityId:null,timeMs:0};
+      try {
+        const saved=JSON.parse(localStorage.getItem(`studio-selection:${id}`) || "null");
+        if(saved?.projectId===id && typeof saved.sceneId==="string" && Number.isFinite(saved.timeMs) && saved.timeMs>=0) restored={projectId:id!,sceneId:saved.sceneId,entityId:typeof saved.entityId==="string"?saved.entityId:null,timeMs:saved.timeMs};
+        if(id)localStorage.setItem("studio-last-project",id);
+      } catch { /* Storage is optional; editing remains available. */ }
+      setSelection(restored);
       setSelected(null);
       setEvents([]);
       setNote("");
       setBuiltProjectId(null);
     }
   }, []);
+  useEffect(() => {
+    if(!selection.projectId)return;
+    const save=()=>{try{localStorage.setItem(`studio-selection:${selection.projectId}`,JSON.stringify(selection));}catch {/* optional */}};
+    const timer=setTimeout(save,400); window.addEventListener("beforeunload",save);
+    return ()=>{clearTimeout(timer);window.removeEventListener("beforeunload",save);};
+  },[selection]);
   const updateBuildReady = useCallback((projectId: string, ready: boolean) => {
     if (activeProjectRef.current === projectId) setBuiltProjectId(ready ? projectId : null);
   }, []);
@@ -115,7 +127,8 @@ export default function App() {
       const [up, list] = await Promise.all([backend.health(), backend.projects()]);
       setHealth(up);
       setProjects(list);
-      const previous = activeProjectRef.current;
+      let previous = activeProjectRef.current;
+      if(!previous) {try {previous=localStorage.getItem("studio-last-project");}catch {/* optional */}}
       const next = previous && list.some(item => item.project_id === previous)
         ? previous : list[0]?.project_id ?? null;
       chooseProject(next);

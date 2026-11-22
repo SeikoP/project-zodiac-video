@@ -11,17 +11,23 @@ export async function installWorkbenchFixture(page) {
   const scenes = Array.from({length:12}, (_,i) => ({id:`s${i+1}`, semantic_goal:'Phản ứng nhân vật trước tình huống bất ngờ', entities:[{id:'actor',kind:'character',initial_state:'normal',states:{normal:{asset:'gemini',transform:{x:50,y:50,width:300,height:600}}}}],events:Array.from({length:8},(_,j)=>({id:`e${j}`,target:'actor',state_before:'normal',state_after:'normal',trigger:{type:'voice',text:'Câu nói'}}))}));
   const take = {take_id:'t1',wav_sha256:'a'.repeat(64),duration_seconds:2,peaks:[.2,.8,.4],warnings:[]};
   const voice = {project_id:'p1',revision:1,voice:'voice1',voices:['voice1'],status:'TECHNICAL_VALID',units:Array.from({length:12},(_,i)=>({id:`u${i}`,text:'Đây là bản kể dài để kiểm tra việc đọc và phân trang. '.repeat(10),gap_after_ms:0,selected_take:'t1',takes:[take]})),assembly:take,timing:{words:Array.from({length:40},(_,i)=>({anchor_id:`w${i}`,text:'chữ',startMs:i*100,endMs:i*100+90})),duration_seconds:4}};
-  window.layoutFixture = (method) => {
+  window.layoutFixture = (method,p={}) => {
    if(method==='ideas.list') return {groups:[],signs:[],progress:[]};
+   if(method==='visual.preview') {
+    if(window.previewFails) throw Error('Preview fixture unavailable');
+    const html=`<!doctype html><html><body><div data-composition-id="${p.scene_id}" data-width="1080" data-height="1920" data-duration="4" style="background:#d9c8aa;width:1080px;height:1920px"><h1>${p.scene_id}</h1></div><script>addEventListener('message',e=>{if(e.data.action==='seek')window.fixtureTime=e.data.time;});</script></body></html>`;
+    return {url:URL.createObjectURL(new Blob([html],{type:'text/html'})),html,sha256:p.scene_id,build_id:'fixture-build',revision:1,scene:{id:p.scene_id,duration_seconds:4,source_map:[]}};
+   }
    if(method==='health') return {status:'READY'};
    if(method==='projects.list') return Array.from({length:20},(_,i)=>({...project,project_id:`p${i+1}`}));
    if(method==='projects.open'||method==='projects.get') return project;
    if(method.startsWith('events.')) return Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'project.note',payload:{text:'Ghi chú dài. '.repeat(60)}}));
    if(method==='assets.list') return {total:30,items:Array.from({length:30},(_,i)=>({id:`asset-${i}`,role:'prop',sha256:'a'.repeat(64)}))};
    if(method==='assets.gallery') return {format:'layout-fixture',source_revision:'a'.repeat(64),themes:[{id:'light',title:'Giấy sáng',canvas:'#fff9ef',ink:'#243540',caption:'#FFFDF9',caption_ink:'#15232D'}],items:Array.from({length:13},(_,i)=>({id:`asset-${i}`,role:'prop',contexts:['comedy'],source_sha256:'a'.repeat(64),preview_data_uri:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 100"><rect width="50" height="100" fill="purple"/></svg>')}))};
-   if(method==='visual.open') return {revision:1,theme:'light',intent:{scenes},events:Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'scene.patch',payload:{}})),build:{id:'',revision:1,scenes:scenes.map(s=>({id:s.id,duration_seconds:4,start_ms:0,qa:{caption_contrast:7,status:'PASS',issues:[]}})),cache:{reused:10,rebuilt:2},resources:{wall_ms:2000,peak_rss_bytes:10000000},renderer_parity:'PENDING'},job:{message:'Build hoàn tất',status:'COMPLETED',ready_scenes:[],total:12}};
+   if(method==='visual.open') return {revision:1,theme:'light',intent:{scenes},events:Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'scene.patch',payload:{}})),build:{id:window.withPreviews?'fixture-build':'',revision:1,scenes:scenes.map((s,i)=>({id:s.id,duration_seconds:4,start_ms:i*4000,end_ms:(i+1)*4000,qa:{caption_contrast:7,status:'PASS',issues:[]}})),cache:{reused:10,rebuilt:2},resources:{wall_ms:2000,peak_rss_bytes:10000000},renderer_parity:'PENDING'},job:{message:'Build hoàn tất',status:'COMPLETED',ready_scenes:[],total:12}};
    if(method==='assets.find_candidates') return {usage_evidence:{coverage:{truncated:true}},bundles:Array.from({length:3},(_,i)=>({candidate_id:`c${i}`,asset_id:`phone-${i}`,identity:{model_id:'phone'},fit_reasons:['Đúng vai trò'],warnings:[],usage:[{project_id:'old',episode_id:'previous-episode',build_id:'a'.repeat(32),manifest_sha256:'b'.repeat(64),source_sha256:'c'.repeat(64),scene_ids:['s02'],review_status:'NOT_REVIEWED'}]})),rejected:[]};
    if(method==='voice.open') {
+    if(window.withPreviews) return {...voice,assembly:null};
     if(!window.slowVoice) return voice;
     window.voiceReads=(window.voiceReads||0)+1;window.voicePending=(window.voicePending||0)+1;
     window.voicePeak=Math.max(window.voicePeak||0,window.voicePending);

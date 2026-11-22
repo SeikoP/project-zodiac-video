@@ -27,7 +27,7 @@ try {
    if(method.startsWith('events.')) return Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'project.note',payload:{text:'Ghi chú dài. '.repeat(60)}}));
    if(method==='assets.list') return {total:30,items:Array.from({length:30},(_,i)=>({id:`asset-${i}`,role:'prop',sha256:'a'.repeat(64)}))};
    if(method==='assets.gallery') return {format:'layout-fixture',source_revision:'a'.repeat(64),themes:[{id:'light',title:'Giấy sáng',canvas:'#fff9ef',ink:'#243540',caption:'#FFFDF9',caption_ink:'#15232D'}],items:Array.from({length:13},(_,i)=>({id:`asset-${i}`,role:'prop',contexts:['comedy'],source_sha256:'a'.repeat(64),preview_data_uri:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 100"><rect width="50" height="100" fill="purple"/></svg>')}))};
-   if(method==='visual.open') return {revision:1,theme:'light',intent:{scenes},events:Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'scene.patch',payload:{}})),build:{id:'',revision:1,scenes:scenes.map(s=>({id:s.id,duration_seconds:4,start_ms:0,qa:{caption_contrast:7,status:'PASS',issues:[]}})),cache:{reused:10,rebuilt:2},resources:{wall_ms:2000,peak_rss_bytes:10000000},renderer_parity:'PENDING'},job:{message:'Build hoàn tất',status:'COMPLETED',ready_scenes:[],total:12}};
+   if(method==='visual.open') return {revision:1,theme:'light',intent:{scenes},events:Array.from({length:30},(_,i)=>({event_seq:i,revision:i,kind:'scene.patch',payload:{}})),build:{id:'',revision:1,scenes:scenes.map((s,i)=>({id:s.id,duration_seconds:4,start_ms:i*4000,end_ms:(i+1)*4000,qa:{caption_contrast:7,status:'PASS',issues:[]}})),cache:{reused:10,rebuilt:2},resources:{wall_ms:2000,peak_rss_bytes:10000000},renderer_parity:'PENDING'},job:{message:'Build hoàn tất',status:'COMPLETED',ready_scenes:[],total:12}};
    if(method==='assets.find_candidates') return {usage_evidence:{coverage:{truncated:true}},bundles:Array.from({length:3},(_,i)=>({candidate_id:`c${i}`,asset_id:`phone-${i}`,identity:{model_id:'phone'},fit_reasons:['Đúng vai trò'],warnings:[],usage:[{project_id:'old',episode_id:'previous-episode',build_id:'a'.repeat(32),manifest_sha256:'b'.repeat(64),source_sha256:'c'.repeat(64),scene_ids:['s02'],review_status:'NOT_REVIEWED'}]})),rejected:[]};
    if(method==='voice.open') {
     if(!window.slowVoice) return voice;
@@ -57,7 +57,7 @@ try {
   assert.deepEqual(overflow,{width:false,height:false,outside:[]},label);
  }
  await page.goto(process.env.STUDIO_URL || 'http://127.0.0.1:1420');
- await page.locator('.workflow-tabs').getByRole('button',{name:'Tổng quan',exact:true}).click();
+ await page.locator('.sidebar-nav').getByRole('button',{name:'Episode',exact:true}).click();
  await page.waitForSelector('.episode-item');
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
@@ -65,7 +65,7 @@ try {
   for(const view of ['Tổng quan','Kho tài nguyên','Nhật ký','Agent','Giọng đọc','Hình ảnh']) {
    if(view==='Kho tài nguyên') await page.locator('.sidebar-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
    else {
-    if(!await page.locator('.workflow-tabs').getByRole('button',{name:view,exact:true}).count()) await page.locator('.sidebar-nav').getByRole('button',{name:'Episode',exact:true}).click();
+    if(!await page.locator('.workflow-tabs').getByRole('button',{name:view,exact:true}).isVisible()) await page.locator('.sidebar-nav').getByRole('button',{name:'Episode',exact:true}).click();
     await page.locator('.workflow-tabs').getByRole('button',{name:view,exact:true}).click();
    }
    await fit(`${width}x${height} ${view}`);
@@ -101,6 +101,7 @@ try {
      if(tab==='Hình ảnh') { await page.getByRole('button',{name:'Tìm bundle phù hợp',exact:true}).click(); await fit('candidates'); assert.match(await page.locator('.visual-candidates').filter({visible:true}).innerText(),/phạm vi quét giới hạn/); }
 
     }
+    if(!await page.getByRole('button',{name:'Nguồn Visual Intent',exact:true}).isVisible()) await page.getByRole('button',{name:'Chi tiết',exact:true}).click();
     await page.getByRole('button',{name:'Nguồn Visual Intent',exact:true}).click(); await fit('source');
     await page.getByRole('button',{name:'Đọc nguồn hiện tại',exact:true}).click();
     const textBefore = await page.getByRole('textbox',{name:'Canonical Visual Intent',exact:true}).inputValue();
@@ -124,7 +125,7 @@ try {
   await page.screenshot({path:`${process.env.TEMP}/studio-compact-${width}.png`});
  }
  await page.evaluate(()=>{window.slowVoice=true;});
- await page.locator('.workflow-tabs').getByRole('button',{name:'Giọng đọc',exact:true}).click();
+ await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
  await page.waitForFunction(()=>window.voicePending===1);
  await page.waitForTimeout(3200);
  assert.equal(await page.evaluate(()=>window.voicePeak),1,'slow reads must not overlap');
@@ -134,7 +135,7 @@ try {
  await page.waitForTimeout(3500);
  assert.equal(await page.evaluate(()=>window.voiceReads),reads,'hidden Voice Lab must stop polling');
  await page.evaluate(()=>{window.slowVoice=false;});
- await page.locator('.workflow-tabs').getByRole('button',{name:'Giọng đọc',exact:true}).click();
+ await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
  assert.equal(await page.locator('.voice-unit.active').innerText(),selectedUnit,'sub-tab switch must retain selection');
  assert.deepEqual(failures,[]);
  console.log('PASS: six views, inspector/voice/source/log tabs, pagination, three viewport sizes; fixture-only backend.');
