@@ -52,7 +52,7 @@ try {
  },catalog);
  const open=async()=>{
   await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
-  await page.locator('.sidebar-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();
+  await page.locator('.primary-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();
   await page.locator('.idea-card').first().waitFor();
  };
  async function fit(label){
@@ -76,8 +76,6 @@ try {
  await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
  for(const [width,height]of [[1366,768],[1060,650],[1093,614]]){
   await page.setViewportSize({width,height});await fit('library '+width);
-  await page.getByRole('button',{name:'Mở rộng menu',exact:true}).click();await fit('expanded library '+width);
-  await page.getByRole('button',{name:'Thu gọn menu',exact:true}).click();
   await page.locator('.idea-card').first().click();await fit('concept detail '+width);
   assert.match(await page.evaluate(()=>window.copied.at(-1)),/^Dùng plugin @Zodiac-Video-Web/);
   assert.match(await page.locator('.ideas-feedback').innerText(),/@Zodiac-Video-Web/);
@@ -103,8 +101,6 @@ try {
  assert.equal(await page.evaluate(()=>window.writes),0,'opening and playing video must not approve it');
  for(const [width,height]of [[1366,768],[1060,650],[1093,614]]){
   await page.setViewportSize({width,height});await fit('MP4 review '+width);
-  await page.getByRole('button',{name:'Mở rộng menu',exact:true}).click();await fit('expanded MP4 review '+width);
-  await page.getByRole('button',{name:'Thu gọn menu',exact:true}).click();
  }
  await approval.check();await page.getByRole('status').filter({hasText:'Đã duyệt MP4 cho Bạch Dương'}).waitFor();
  await page.evaluate(()=>{window.saveDenied=true;});await approval.click();
@@ -115,7 +111,7 @@ try {
  await page.getByLabel('Mở MP4',{exact:true}).setInputFiles(audioMp4);
  await page.waitForFunction(()=>document.querySelector('video')?.readyState>=1);
  assert.equal(await approval.isDisabled(),true,'audio-only MP4 must not enable video approval');
- await page.locator('.sidebar-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();await page.locator('.idea-card').first().click();
+ await page.locator('.primary-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();await page.locator('.idea-card').first().click();
  assert.ok((await page.evaluate(()=>window.copied.at(-1))).includes('MP4 đã duyệt: Bạch Dương'));
  assert.equal(await page.locator('.idea-sign.mp4_approved').count(),1);
  await page.evaluate(()=>{window.clipboardDenied=true;});await page.getByRole('button',{name:'Copy prompt',exact:true}).click();
@@ -137,5 +133,5 @@ try {
  await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
  await page.screenshot({path:process.env.TEMP+'/studio-ideas-simple-1093.png'});
  assert.deepEqual(errors,[]);
- console.log('PASS: simple library/detail, dynamic additions on focus, MP4 decode/playback/manual approval, failed save, invalid MP4, clipboard fallback, persistence, all-complete guard; compact/expanded at 3 sizes; fixture transport.');
+ console.log('PASS: simple library/detail, dynamic additions on focus, MP4 decode/playback/manual approval, failed save, invalid MP4, clipboard fallback, persistence, all-complete guard; titlebar at 3 sizes; fixture transport.');
 }finally{await browser.close();await rm(temp,{recursive:true,force:true});}

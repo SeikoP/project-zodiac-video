@@ -194,6 +194,10 @@ Every task PR must contain a machine-readable `phase-evidence.json` or structura
 
 Review at task completion: (1) contract/data correctness, (2) actual user-facing behavior, (3) negative/error cases, (4) cache/recovery, (5) QA and artifacts, (6) clean rollback; then one **phase-level E2E** before opening the next phase. A reviewer must be able to reproduce verification using exact commands and the fixture, not screenshots alone.
 
+## Titlebar and loading refinement — 2026-11-24
+
+Implemented the requested sidebar removal, titlebar navigation, shared Episode tools and line based surfaces. Deferred preview SDK and hidden audio loading; browser layout and editor workflow checks pass at three window sizes. [Evidence](../../audits/2026-11-24-studio-titlebar-performance.md) records bundle sizes and verification boundaries. Native startup timing and human media approval remain open; P5/P6/P7 phase status is unchanged.
+
 ## Dependency and rollout
 
 ~~~text
