@@ -7,6 +7,7 @@ This module owns process cancellation and durable task receipts for crash recove
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import platform
@@ -157,7 +158,24 @@ class AgentManager:
     def start_authoring(self, project_id: str, instruction: str) -> dict:
         if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1200:
             raise StudioError("AGENT_INSTRUCTION_INVALID", "Yêu cầu cần từ 1 đến 1200 ký tự.", "agent")
-        return self.start(project_id, author_task=agent_authoring.capsule(self.service, project_id, instruction))
+        capsule = agent_authoring.capsule(self.service, project_id, instruction)
+        for previous in self.tasks(project_id):
+            if (previous.get("kind") == "episode.propose" and previous.get("status") == "FAILED"
+                    and previous.get("preview") and previous.get("dependencies") == capsule["dependencies"]
+                    and previous.get("visual_source_hash") == capsule["source_hash"]
+                    and previous.get("catalog_hash") == agent_authoring.canonical_hash(capsule["catalog"])):
+                try:
+                    text, _ = agent_authoring.bind_proposal(previous["preview"], capsule)
+                    problem = None
+                    try:
+                        agent_authoring.proposal(text, self.service, project_id)
+                    except StudioError as error:
+                        problem = str(error)[:1500]
+                    capsule["previous_candidate"] = {"task_id": previous["task_id"], "json": text, "validator_error": problem}
+                except (ValueError, KeyError, TypeError):
+                    pass
+                break
+        return self.start(project_id, author_task=capsule)
 
     def start(self, project_id: str, *, visual_task=None, author_task=None) -> dict:
         project = self.service.project(project_id)
@@ -338,6 +356,8 @@ class AgentManager:
             turn_id = None
             preview = ""
             final_text = ""
+            turn_request_id = 3
+            validation_attempts = []
             authoring = "author_task" in project
             output_limit = agent_authoring.MAX_PROPOSAL if authoring else MAX_OUTPUT
             deadline = time.monotonic() + (360 if authoring else MAX_TASK_SECONDS)
@@ -403,9 +423,11 @@ class AgentManager:
                             "Return ONLY valid compact JSON {\"kind\":\"source.replace\",\"payload\":{\"intent\":<complete canonical intent>}}. "
                             "Close every JSON object and array, including the outer envelope. Scene grammar is an object with frame_id/mechanic_id/bindings, never prose. "
                             "Do not copy capsule narrative_plan, dependencies, revision or source_hash into intent. Keep only the requested canonical visual fields. "
+                            "If previous_candidate is present, repair its validator_error and preserve its valid scene decisions instead of redesigning it. Return the full repaired JSON. "
                             "MUST implement every required_story_visual_ids entry as an actual assets entry with category:'story_visual', phase1_visual_id at asset level, and visual:{type,...}; copying narrative_plan metadata alone is not implementation. "
                             "Use exactly ONE story_visual entity per scene for a chat comparison, referencing that asset in hidden/visible states and revealing on an exact narration anchor. "
                             "Use the supplied schema, exact scene ids/byte ranges and narration hash. Include taxonomy_version:'story_visual@1' and copy narrative_plan.story_visual_decision. "
+                            "Character design explanations must be full Vietnamese sentences of at least 18 characters each: identity_tension, audience_read, all body_profile/hair_id/shirt_color_id decision_reasons, rejected_alternative.reason, scene_anchor.meaning and every state_purposes value. "
                             "Choose 2 distinct cast identities from catalog; only known poses/expressions. Characters use entity_id-matching cast states. "
                             "Story Text stays as optional lettering on story_visual, never a separate story_text entity. "
                             "When the approved narrative_plan.story_visuals explicitly requests a sender comparison, allow ONE authored chat_compare asset: two compact, labeled conversation cards with a clear contrast and voice-timed reveal; never a giant board pasted over actors. "
@@ -424,7 +446,7 @@ class AgentManager:
                         "input": [{"type": "text", "text": prompt}],
                     }})
                     stage = "turn"
-                elif message.get("id") == 3 and stage == "turn":
+                elif message.get("id") == turn_request_id and stage == "turn":
                     turn_id = message.get("result", {}).get("turn", {}).get("id")
                     self._update(task_id, turn_id=turn_id)
                 elif message.get("method") == "item/agentMessage/delta":
@@ -451,7 +473,24 @@ class AgentManager:
                         raise RuntimeError("Codex returned empty inspection")
                     if len(text) > output_limit: raise RuntimeError("Agent output exceeded proposal limit")
                     if authoring:
-                        agent_authoring.proposal(text, self.service, project["project_id"])
+                        raw_hash = hashlib.sha256(text.encode("utf8")).hexdigest()
+                        try:
+                            text, bound_fields = agent_authoring.bind_proposal(text, project["author_task"])
+                            agent_authoring.proposal(text, self.service, project["project_id"])
+                        except (StudioError, ValueError, TypeError, KeyError) as error:
+                            if validation_attempts:
+                                raise
+                            validation_attempts.append({"error": str(error)[:1500], "raw_output_sha256": raw_hash, "turn_id": turn_id})
+                            self._update(task_id, validation_attempts=validation_attempts, preview="", error=None)
+                            preview = final_text = ""
+                            turn_request_id = 4
+                            self._send(process, {"id": turn_request_id, "method": "turn/start", "params": {
+                                "threadId": thread_id, "model": self.task(task_id).get("model", "gpt-6-luna"),
+                                "approvalPolicy": "never", "sandboxPolicy": {"type": "readOnly"},
+                                "input": [{"type": "text", "text": "Your proposal failed the canonical validator. Correct the invalid fields and return ONLY the complete source.replace JSON. Preserve all approved story/voice anchors and use supplied catalog IDs/compatible frame bindings. Do not use tools or edit files. Validator DATA: " + str(error)[:1500]}],
+                            }})
+                            continue
+                        self._update(task_id, raw_output_sha256=raw_hash, bound_fields=bound_fields)
                     elif "visual_task" not in project:
                         text = text[:2000]
                     if "visual_task" in project:

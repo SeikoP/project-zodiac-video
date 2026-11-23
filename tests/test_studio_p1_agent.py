@@ -245,6 +245,55 @@ class AgentTests(unittest.TestCase):
         self.assertTrue(process.stdin.closed)
         self.assertTrue(process.stdout.closed)
 
+    def test_authoring_uses_one_bounded_validation_repair_turn_without_applying_source(self):
+        tid = self._completed()
+        candidate = json.dumps({"kind": "source.replace", "payload": {"intent": {"format": "zodiac-visual-intent@1", "scenes": []}}})
+        messages = [{"id": 1, "result": {}}, {"id": 2, "result": {"thread": {"id": "thread-1"}}}]
+        for request, turn in [(3, "turn-1"), (4, "turn-2")]:
+            messages += [{"id": request, "result": {"turn": {"id": turn}}},
+                {"method": "turn/completed", "params": {"turn": {"status": "completed", "items": [{"type": "agentMessage", "text": candidate}]}}}]
+        process = MagicMock(stdin=io.BytesIO(), stdout=io.BytesIO(b"".join((json.dumps(m)+"\n").encode() for m in messages)))
+        process.poll.return_value = None
+        auth = self.root / "auth-home"; auth.mkdir(); (auth/"auth.json").write_text("{}", encoding="utf8")
+        context = {"narration_sha256": "h", "schema": {"video": {"width": 1080, "height": 1920, "fps": 30}}, "scene_ranges": []}
+        sent = []
+        with patch.dict(os.environ, {"CODEX_HOME": str(auth)}), patch.object(self.manager, "_bin", return_value="codex.exe"), \
+                patch("tools.studio_project.agent_bridge.subprocess.Popen", return_value=process), \
+                patch.object(self.manager, "_send", side_effect=lambda _, msg: sent.append(msg)), \
+                patch("tools.studio_project.agent_bridge.agent_authoring.proposal", side_effect=[StudioError("VISUAL_BUILD_BLOCKED", "frame lacks reaction_subject", "visual"), {}]):
+            self.manager._run(tid, {**self.project, "author_task": context})
+        result = self.manager.task(tid)
+        self.assertEqual(result["status"], "COMPLETED", result["error"])
+        turns = [m for m in sent if m.get("method") == "turn/start"]
+        self.assertEqual(len(turns), 2)
+        self.assertTrue(all(m["params"]["model"] == "gpt-6-luna" for m in turns))
+        self.assertIn("reaction_subject", turns[1]["params"]["input"][0]["text"])
+        self.assertEqual(len(result["validation_attempts"]), 1)
+        self.assertFalse(result["write_applied"])
+
+    def test_second_invalid_authoring_proposal_fails_without_another_model_turn(self):
+        tid = self._completed()
+        candidate = json.dumps({"kind": "source.replace", "payload": {"intent": {"scenes": []}}})
+        messages = [{"id": 1, "result": {}}, {"id": 2, "result": {"thread": {"id": "t"}}}]
+        for request in (3, 4):
+            messages += [{"id": request, "result": {"turn": {"id": str(request)}}},
+                         {"method": "turn/completed", "params": {"turn": {"status": "completed", "items": [{"type": "agentMessage", "text": candidate}]}}}]
+        process = MagicMock(stdin=io.BytesIO(), stdout=io.BytesIO(b"".join((json.dumps(m)+"\n").encode() for m in messages)))
+        process.poll.return_value = None
+        auth = self.root / "auth-home"; auth.mkdir(); (auth/"auth.json").write_text("{}", encoding="utf8")
+        context = {"narration_sha256": "h", "schema": {"video": {"fps": 30}}, "scene_ranges": []}
+        sent = []
+        with patch.dict(os.environ, {"CODEX_HOME": str(auth)}), patch.object(self.manager, "_bin", return_value="codex.exe"), \
+                patch("tools.studio_project.agent_bridge.subprocess.Popen", return_value=process), \
+                patch.object(self.manager, "_send", side_effect=lambda _, msg: sent.append(msg)), \
+                patch("tools.studio_project.agent_bridge.agent_authoring.proposal", side_effect=StudioError("VISUAL_BUILD_BLOCKED", "still invalid", "visual")):
+            self.manager._run(tid, {**self.project, "author_task": context})
+        result = self.manager.task(tid)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertIn("still invalid", result["error"])
+        self.assertEqual(sum(m.get("method") == "turn/start" for m in sent), 2)
+        self.assertFalse(result["write_applied"])
+
 
 if __name__ == "__main__":
     unittest.main()

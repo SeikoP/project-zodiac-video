@@ -13,6 +13,7 @@ try {
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
   await page.locator('.visual-scenes button').first().waitFor();
+  await page.getByLabel('Episode đang làm',{exact:true}).click({trial:true});
   assert.equal(await page.locator('.visual-stage:visible').count(),1);
   await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).waitFor();
   await page.getByRole('button',{name:'Xuất video',exact:true}).waitFor();

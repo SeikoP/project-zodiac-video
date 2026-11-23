@@ -16,6 +16,13 @@ import {compileCharacterSvg} from '../plugins/zodiac-video-pipeline/skills/zodia
 const narration=Array.from({length:8},(_,i)=>`Song Tử hỏi thêm câu ${i+1}.`).join('\n');
 async function setup(t){const root=await mkdtemp(path.join(os.tmpdir(),'zodiac-p34-'));t.after(()=>rm(root,{recursive:true,force:true}));return {root,intent:makeFixture(narration),input:{action:'build',narration,timing:syntheticTiming(narration),workspace:root,cache:path.join(root,'cache'),output:path.join(root,'cold'),revision:1,theme:'light'}};}
 
+test('proposal validation rejects character plans that would fail the real build',async t=>{
+ const {intent,input}=await setup(t);
+ intent.cast[0].design_intent.decision_reasons.hair_id='short';
+ assert.doesNotThrow(()=>validateIntent(intent,narration));
+ await assert.rejects(buildEpisode({...input,intent,action:'validate_authoring'}),/CHARACTER_INTENT_CHOICE_REASON_MISSING/);
+});
+
 test('one verified eight-scene build reuses exact geometry, scene nodes and measured timing',async t=>{
   const {intent,input,root}=await setup(t),original=structuredClone(intent);input.intent=intent;
   const cold=await buildEpisode(input),warm=await buildEpisode({...input,output:path.join(root,'warm')});

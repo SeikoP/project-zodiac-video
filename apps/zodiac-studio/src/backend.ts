@@ -110,6 +110,8 @@ export type CandidateResult = { status: string; source_sha256: string; catalog_r
   rejected: { id: string; reason: string }[]; new_asset_task: { reason: string } | null };
 export type AgentTask = {
   model?: string;
+  validation_attempts?: {error: string; raw_output_sha256: string; turn_id?: string}[];
+  bound_fields?: string[]; raw_output_sha256?: string;
   task_id: string;
   project_id: string;
   project_revision: number;

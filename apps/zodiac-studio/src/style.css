@@ -615,7 +615,8 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .view-editor { padding:8px 14px; gap:7px; }
 .view-editor .content-footer { display:none; }
 .view-editor .episode-context .text-link { display:none; }
-.view-editor .episode-context { position:absolute; top:7px; left:200px; z-index:2; width:36%; }
+.app-shell:has(.view-editor) .titlebar-project { visibility:hidden; }
+.view-editor .episode-context { position:absolute; top:7px; left:200px; z-index:51; width:36%; }
 .view-editor .episode-context select { max-width:100%; width:100%; }
 .view-editor .workflow-tabs { gap:4px; border:0; }
 .view-editor .workflow-tabs button { padding:5px 10px; font-size:11px; }

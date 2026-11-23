@@ -44,8 +44,7 @@
 
 The user rejected the current GUI as confusing and selected a large-preview,
 timeline-centered video editor. The [new design draft](../specs/2026-11-22-studio-editing-workbench-design.md)
-and [task plan](./2026-11-22-studio-editing-workbench.md) are for review; trimming/reorder
-scope is unresolved and product implementation has not started. The
+and [task plan](./2026-11-22-studio-editing-workbench.md) were subsequently authorized and implemented through Tasks 1–4; native acceptance is still in progress. Trimming/reorder remains outside the approved measured-timeline scope. The
 [current readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md)
 distinguishes the prior real native E2E from newer revision-6 media evidence,
 records 22 freshly passing focused tests and explains the bounded proposal agent.

@@ -21,6 +21,8 @@ class GrammarContextTests(unittest.TestCase):
         self.assertEqual(context["catalog"]["frames"], source.get("layouts", source.get("frames")))
         self.assertIn("requires", context["catalog"]["mechanics"][0])
         grammar = context["schema"]["grammar"]
+        self.assertIn("zodiac_sign_id", context["schema"]["character_constraints"])
+        self.assertIn("Every cast state", context["schema"]["character_constraints"])
         self.assertEqual(grammar["type"], "object")
         example = copy.deepcopy(grammar["example"])
         example["bindings"]["subject"] = self.intent["scenes"][0]["entities"][0]["id"]

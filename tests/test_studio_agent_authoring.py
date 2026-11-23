@@ -38,6 +38,21 @@ class AgentAuthoringTests(unittest.TestCase):
         self.assertEqual(self.manager.task(task["task_id"])["applied_command_id"], "author")
         self.assertNotEqual(self.service.project(self.project)["status"]["visual"], "APPROVED")
 
+    def test_retry_context_reuses_only_a_candidate_with_matching_source_voice_and_catalog(self):
+        old = self.start()
+        self.manager._update(old["task_id"], status="FAILED", preview=json.dumps({"kind": "source.replace", "payload": {"intent": self.intent}}))
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run") as run:
+            task = self.manager.start_authoring(self.project, "Sửa lỗi kiểm tra, giữ cảnh hợp lệ.")
+            self.manager._threads[task["task_id"]].join(timeout=2)
+            context = run.call_args.args[1]["author_task"]
+        self.assertEqual(context["previous_candidate"]["task_id"], old["task_id"])
+        self.manager._update(task["task_id"], status="FAILED", preview="")
+        self.manager._update(old["task_id"], dependencies="changed")
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run") as run:
+            fresh = self.manager.start_authoring(self.project, "Soạn lại.")
+            self.manager._threads[fresh["task_id"]].join(timeout=2)
+            self.assertNotIn("previous_candidate", run.call_args.args[1]["author_task"])
+
     def test_existing_intent_and_missing_timing_are_rejected(self):
         self.voice["timing"] = None
         with self.assertRaises(StudioError): self.start()

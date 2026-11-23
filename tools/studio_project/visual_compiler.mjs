@@ -135,7 +135,8 @@ export async function buildEpisode(input){
     }
     return {status:'VALID',source_sha256:hash(intent),not_an_approval:true};
   }
-  if(input.action==='validate')return {status:'VALID',source_sha256:hash(intent),scene_ids:intent.scenes.map(s=>s.id),projection_sha256:hash(projections),not_an_approval:true};
+  if(input.action==='validate_authoring')planCharacterStateAssets(projections.production,projections.character_assembly);
+  if(['validate','validate_authoring'].includes(input.action))return {status:'VALID',source_sha256:hash(intent),scene_ids:intent.scenes.map(s=>s.id),projection_sha256:hash(projections),not_an_approval:true};
   const measured=measuredScenes(intent,narration,input.timing),theme=input.theme??'light';assert(THEMES[theme],'VISUAL_THEME_UNKNOWN');
   if(input.scene_id)assert(intent.scenes.some(s=>s.id===input.scene_id),'VISUAL_SCENE_UNKNOWN');
   const cache=path.resolve(input.cache),out=path.resolve(input.output);

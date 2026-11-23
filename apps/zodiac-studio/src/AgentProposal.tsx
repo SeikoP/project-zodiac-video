@@ -15,7 +15,7 @@ export default function AgentProposal({ task }: { task: AgentTask }) {
     {task.status === "COMPLETED" && !task.write_applied && <strong>Đã có đề xuất · Chưa áp dụng</strong>}
     {task.write_applied && <small>Đã áp dụng · {task.applied_command_id}</small>}
     {task.error && <p className="voice-warning" role="alert">{task.status === "CANCELLED" ? "Đã dừng theo yêu cầu. Bạn có thể gửi yêu cầu mới." : "Chưa tạo được đề xuất hợp lệ. Thử lại hoặc mở chi tiết để xem nguyên nhân."}</p>}
-    {description.length ? <Paged size={2} label="Đề xuất agent">{description.map((s, i) => <p key={i}>{s}</p>)}</Paged> : <p>{task.status === "RUNNING" || task.status === "STARTING" ? `Agent đang soạn đề xuất… ${text.length} ký tự đã nhận` : task.kind === "project.inspect" ? text : "Chưa có đề xuất hợp lệ."}</p>}
-    {(text || task.error) && <details><summary>Chi tiết tác vụ</summary>{task.error && <p>{task.error}</p>}<small>Task {task.task_id} · Thread {task.thread_id ?? "đang tạo"}</small><PagedText size={400} text={text}/></details>}
+    {description.length ? <Paged size={2} label="Đề xuất agent">{description.map((s, i) => <p key={i}>{s}</p>)}</Paged> : <p>{task.status === "RUNNING" || task.status === "STARTING" ? `Agent đang ${task.validation_attempts?.length ? "sửa theo kiểm tra" : "soạn đề xuất"}… ${text.length} ký tự đã nhận` : task.kind === "project.inspect" ? text : "Chưa có đề xuất hợp lệ."}</p>}
+    {(text || task.error) && <details><summary>Chi tiết tác vụ</summary>{!!task.validation_attempts?.length && <small>Đã dùng 1 lượt sửa theo validator.</small>}{!!task.bound_fields?.length && <small>Core gắn metadata nguồn: {task.bound_fields.join(", ")}</small>}{task.error && <p>{task.error}</p>}<small>Task {task.task_id} · Thread {task.thread_id ?? "đang tạo"}</small><PagedText size={400} text={text}/></details>}
   </div>;
 }

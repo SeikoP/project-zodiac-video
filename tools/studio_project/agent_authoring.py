@@ -80,11 +80,43 @@ def capsule(service, project_id, instruction):
                             "description": "Scene grammar MUST be this structured object, NEVER a prose description. Choose exact frame_id/mechanic_id from catalog, bind required frame slots to actual scene entity IDs and respect slot kinds/mechanic requirements. Put prose directing in semantic_goal or narrative_intent.reason."},
                 "format": "zodiac-visual-intent@1", "video": {"width": 1080, "height": 1920, "fps": 30},
                 "cast": "Array of {entity_id,body_profile,hair_id,face_profile_id:'balanced',outfit_id:'plain-shirt',shirt_color_id:'coral' or 'teal',accessory_id:'none',variant_seed,asset_budget:{max_unique_states:8},states:{neutral:{pose_id:'neutral',expression_id:'deadpan'},reaction:{pose_id:catalog id,expression_id:catalog id}},design_intent:{selection_basis:'story_first',role:'lead' or 'support',identity_tension,audience_read,decision_reasons:{body_profile,hair_id,shirt_color_id},rejected_alternative:{choice,reason},reuse_strategy:'native_assembly_after_story',scene_anchor:{scene_id,excerpt,meaning},state_purposes:{neutral:reason,reaction:reason}}}",
+                "character_constraints": "When outfit_id is zodiac-glyph-shirt, zodiac_sign_id MUST be the matching English zodiac id (e.g. sagittarius); otherwise choose plain-shirt. Every cast state, including additional states, MUST have a design_intent.state_purposes entry with at least 18 characters. All choice reasons must have at least 18 characters.",
                 "episode_cast_plan": "{format:'zodiac-episode-cast-plan@1',bindings:[{member_id:English zodiac id,entity_id,scene_ids:[ids],role:'member',reason}]}",
                 "assets": "Map id -> {path:'library:'+exact catalog prop path,category:'prop'} for ordinary props. " + visual_schema() + " Never emit raw SVG, HTML, scripts or URLs.",
                 "opening": "{format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:episode_scope.sign,topic:suggested_opening_topic or a short theme-specific topic beginning 'Cách' or 'Khi',duration_frames:45,transition_frames:9}. Intro explains series/theme, never copies narration hook. Narration and captions start at frame zero.",
-                "scenes": "Use exact supplied ids/ranges. Each {id,narration_range,semantic_goal,grammar,entities:[{id,kind:'character'|'prop'|'story_visual',visual_role:canonical equivalent,initial_state,states:{state_id:{asset,visible,layer,transform:{x,y,width,height}}},narrative_intent:{voice_anchor:exact excerpt,reason}, optional lettering:{purpose,reason,states,styles}}],events:[{id,target,state_before,state_after,trigger:{type:'voice_anchor',text:exact substring inside scene},motion:{preset:'state_swap',duration_frames:12}}],layout_contract:{caption_safe_zone:{x:80,y:1470,width:920,height:360}}}. Story Text is optional lettering within ONE story_visual per scene. A split chat can be chosen ONLY when Phase 1 directs contrasting messages and must show named senders, short conversation bubbles and actor reaction; never default to a full-width floating board. Use exact voice anchors, reveal only on the relevant beat, keep actor contact and caption lane clear. Preserve native V4 characters and meaningful real props. Never invent decorative text graphics.",
+                "scenes": "Use exact supplied ids/ranges. Each {id,narration_range,semantic_goal,grammar,entities:[{id,kind:'character'|'object'|'story_visual',visual_role:canonical equivalent,initial_state,states:{state_id:{asset,visible,layer,transform:{x,y,width,height}}},narrative_intent:{voice_anchor:exact excerpt,reason}, optional lettering:{purpose,reason,states,styles}}],events:[{id,target,state_before,state_after,trigger:{type:'voice_anchor',text:exact substring inside scene},motion:{preset:'state_swap',duration_frames:12}}],layout_contract:{caption_safe_zone:{x:80,y:1470,width:920,height:360}}}. Story Text is optional lettering within ONE story_visual per scene. A split chat can be chosen ONLY when Phase 1 directs contrasting messages and must show named senders, short conversation bubbles and actor reaction; never default to a full-width floating board. Use exact voice anchors, reveal only on the relevant beat, keep actor contact and caption lane clear. Preserve native V4 characters and meaningful real props. Never invent decorative text graphics.",
             }}
+
+
+def bind_proposal(text, context):
+    changed = []
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as error:
+        if error.pos != len(text) or error.msg != "Expecting ',' delimiter":
+            raise
+        data = json.loads(text + "}")
+        changed.append("outer_json_brace")
+    if not isinstance(data, dict) or set(data) != {"kind", "payload"} or data["kind"] != "source.replace":
+        raise ValueError("Unsupported authoring envelope")
+    intent = data["payload"]["intent"]
+    # The source owner supplies immutable metadata; the model supplies scene decisions.
+    if intent.get("narration_sha256") != context["narration_sha256"]:
+        intent["narration_sha256"] = context["narration_sha256"]
+        changed.append("narration_sha256")
+    if "video" not in intent:
+        intent["video"] = copy.deepcopy(context["schema"]["video"])
+        changed.append("video")
+    ranges = {row["id"]: row["narration_range"] for row in context["scene_ranges"]}
+    for scene in intent.get("scenes", []):
+        if scene.get("id") in ranges and scene.get("narration_range") != ranges[scene["id"]]:
+            scene["narration_range"] = list(ranges[scene["id"]])
+            changed.append("narration_range:" + scene["id"])
+        for entity in scene.get("entities", []):
+            if entity.get("kind") == "prop":
+                entity["kind"] = "object"
+                changed.append("prop_kind:" + entity.get("id", ""))
+    return (json.dumps(data, ensure_ascii=False) if changed else text), changed
 
 
 def proposal(text, service, project_id, *, write_visuals=False):
@@ -177,7 +209,7 @@ def proposal(text, service, project_id, *, write_visuals=False):
         if plan.get("story_visual_decision", {}).get("mode") == "required":
             if not generated or set(directions) - (used_directions if generated else set()):
                 raise invalid("Story Visual bắt buộc của Phase 1 chưa được thực hiện trong cảnh.")
-        service.visual._node(handle, {"action": "validate", "intent": intent, "narration": service.visual._narration(handle)})
+        service.visual._node(handle, {"action": "validate_authoring", "intent": intent, "narration": service.visual._narration(handle)})
         # Stage deterministic SVG files only after all semantic/source validation passes.
         # This prevents invalid proposals from leaving unreferenced art in the project.
         if write_visuals:
