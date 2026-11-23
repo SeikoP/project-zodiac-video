@@ -192,6 +192,8 @@ class VisualWorkspace:
             result.update(intent=intent, can_undo=state["history_index"]>0, can_redo=state["history_index"]<len(state["history"])-1,
                           approval="NOT_GRANTED", stale_preview=bool(state["build"] and state["build"]["revision"] != state["revision"]))
             if state["build"]:
+                if state["build"].get("contracts", {}).get("presentation_contract_sha256") != file_sha256(Path(__file__).with_name("visual_contract.json")):
+                    result.update(stale_preview=True, stale_reason="VISUAL_PRESENTATION_CHANGED_REBUILD_REQUIRED")
                 voice = self.service.voice.snapshot(project_id)
                 if (not voice.get("assembly") or voice["assembly"]["wav_sha256"] != state["build"]["voice_sha256"] or
                         canonical_hash(voice.get("timing")) != state["build"].get("voice_timing_fingerprint")):
@@ -552,6 +554,8 @@ class VisualWorkspace:
             raise _error('EXPORT_REBUILD_REQUIRED', 'Dựng lại episode hiện tại trước khi xuất MP4')
         if not build.get('production_sha256'):
             raise _error('EXPORT_REBUILD_REQUIRED', 'Dựng lại episode để tạo nguồn HyperFrames có hash')
+        if build.get('contracts', {}).get('presentation_contract_sha256') != file_sha256(Path(__file__).with_name('visual_contract.json')):
+            raise _error('EXPORT_REBUILD_REQUIRED', 'Chuẩn hình ảnh đã thay đổi; dựng lại episode trước khi xuất MP4')
         if not isinstance(build.get('id'), str) or not BUILD_ID.fullmatch(build['id']):
             raise _error('EXPORT_BUILD_DRIFT', 'Invalid build identity')
         root, _ = self._paths(handle)
@@ -625,6 +629,26 @@ class VisualWorkspace:
                 self._processes.pop(project_id, None)
                 self._job_ids.pop(project_id, None)
 
+    @staticmethod
+    def _verify_export_probe(probe, receipt, voice_duration):
+        video = next(row for row in probe['streams'] if row['codec_type'] == 'video')
+        audio = next(row for row in probe['streams'] if row['codec_type'] == 'audio')
+        rate = video['avg_frame_rate'].split('/')
+        if ((video['width'], video['height']) != (1080, 1920) or
+                abs(float(rate[0]) / float(rate[1]) - receipt['fps']) > .01 or
+                abs(float(video['duration']) - receipt['duration_seconds']) > 2 / receipt['fps'] or
+                float(audio['duration']) + .12 < voice_duration or
+                abs(float(video['duration']) - voice_duration) > .25 or
+                abs(float(audio['duration']) - float(video['duration'])) > .25 or
+                (video.get('nb_frames') and abs(int(video['nb_frames']) - receipt['frames']) > 1)):
+            raise _error('EXPORT_MEDIA_INVALID', 'Video/audio dimensions, frame rate or duration mismatch')
+        return video, audio
+
+    @staticmethod
+    def _cover_first_frame_command(video_path, cover_path):
+        # The cover must be the video opening frame, never an arbitrary second.
+        return ['ffmpeg', '-v', 'error', '-y', '-i', str(video_path), '-frames:v', '1', '-update', '1', str(cover_path)]
+
     def _render_export(self, handle, job_id, inputs):
         root, _ = self._paths(handle)
         output = _trusted_dir(handle.workspace, root / 'exports' / job_id)
@@ -671,22 +695,25 @@ class VisualWorkspace:
         run(['ffmpeg', '-v', 'error', '-y', '-i', str(output / 'video-only.mp4'), '-i', str(output / 'voice.wav'), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-movflags', '+faststart', str(output / 'episode.mp4')])
         result = run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(output / 'episode.mp4')])
         probe = json.loads(result.stdout)
-        video = next(row for row in probe['streams'] if row['codec_type'] == 'video')
-        audio = next(row for row in probe['streams'] if row['codec_type'] == 'audio')
-        rate = video['avg_frame_rate'].split('/')
-        if ((video['width'], video['height']) != (1080, 1920) or abs(float(rate[0])/float(rate[1])-receipt['fps']) > .01 or
-                abs(float(video['duration'])-receipt['duration_seconds']) > 2/receipt['fps'] or
-                float(audio['duration'])+.12 < inputs['voice_duration']):
-            raise _error('EXPORT_MEDIA_INVALID', 'Video/audio dimensions, frame rate or duration mismatch')
+        video, audio = self._verify_export_probe(probe, receipt, inputs['voice_duration'])
+        if receipt.get('audio_contract') != {'mode': 'approved-voice-only@1', 'voice_sha256': inputs['voice_sha256'], 'music_tracks': 0, 'sfx_tracks': 0}:
+            raise _error('EXPORT_AUDIO_CONTRACT_INVALID', 'Audio mix contract changed or unsupported')
+        cover_contract = receipt.get('cover_contract')
+        if cover_contract != {'mode': 'first-encoded-video-frame@1'}:
+            if (not isinstance(cover_contract, dict) or cover_contract.get('mode') != 'series-topic-opening@1' or
+                    not isinstance(cover_contract.get('opening'), dict) or
+                    cover_contract['opening'].get('format') != 'zodiac-series-opening@1' or
+                    cover_contract['opening'].get('series') != '12 CUNG HOÀNG ĐẠO'):
+                raise _error('EXPORT_COVER_CONTRACT_INVALID', 'Cover policy changed or unsupported')
         captions = output / 'captions.srt'
         if file_sha256(captions) != receipt['captions_sha256']:
             raise _error('EXPORT_CAPTIONS_DRIFT', 'Measured captions changed during export')
         cover = output / 'cover.png'
-        run(['ffmpeg', '-v', 'error', '-y', '-ss', str(min(1, receipt['duration_seconds']/2)), '-i', str(output / 'episode.mp4'), '-frames:v', '1', '-update', '1', str(cover)])
+        run(self._cover_first_frame_command(output / 'episode.mp4', cover))
         receipt.update(path=(output / 'episode.mp4').relative_to(handle.workspace).as_posix(), sha256=file_sha256(output / 'episode.mp4'),
                        bytes=(output / 'episode.mp4').stat().st_size, probe=probe, binding=inputs['binding'],
                        captions={'path': captions.relative_to(handle.workspace).as_posix(), 'sha256': file_sha256(captions)},
-                       cover={'path': cover.relative_to(handle.workspace).as_posix(), 'sha256': file_sha256(cover), 'source_video_sha256': file_sha256(output / 'episode.mp4')})
+                       cover={'path': cover.relative_to(handle.workspace).as_posix(), 'sha256': file_sha256(cover), 'source_video_sha256': file_sha256(output / 'episode.mp4'), 'source_frame': 0})
         VoiceArtifactStore._atomic_write(output / 'receipt.json', receipt)
         return receipt
 

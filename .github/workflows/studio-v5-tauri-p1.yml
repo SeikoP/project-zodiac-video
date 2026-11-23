@@ -67,7 +67,7 @@ jobs:
           python -m unittest tests.test_studio_agent_authoring -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
-          python -m unittest tests.test_studio_voice_worker -q
+          python -m unittest tests.test_studio_voice_worker tests.test_studio_agent_grammar_context -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_job5_historical_contract.py' -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

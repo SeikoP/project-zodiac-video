@@ -240,6 +240,8 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(task["status"], "COMPLETED", task["error"])
         self.assertEqual(task["suggestion"], "Cần nghe giọng thật.")
         self.assertTrue(any(m.get("id") == 20 and "error" in m for m in sent))
+        self.assertEqual(next(m for m in sent if m.get("id") == 2)["params"]["model"], "gpt-6-luna")
+        self.assertEqual(next(m for m in sent if m.get("id") == 3)["params"]["model"], "gpt-6-luna")
         self.assertTrue(process.stdin.closed)
         self.assertTrue(process.stdout.closed)
 

@@ -14,6 +14,7 @@ import {traceSceneStates} from '../../plugins/zodiac-video-pipeline/skills/zodia
 import {LIBRARY,digest,json,confined,safeSvg,describeAssets,findCandidates} from './visual_candidates.mjs';
 import {describeGallery} from './visual_gallery.mjs';
 import {THEMES,renderPreview,quality,previewRuntime} from './visual_preview.mjs';
+import {validateSeriesOpening} from './visual_opening.mjs';
 
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
 const MOTION=await json(path.join(LIBRARY,'../../contracts/motion-registry-v1.json'));
@@ -23,6 +24,14 @@ const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fro
 const hash=x=>digest(JSON.stringify(stable(x)));
 
 export function validateIntent(intent,narration){
+  validateSeriesOpening(intent?.opening,intent?.video);
+  // Legacy media structures cannot be dropped silently at the Remotion → HF boundary.
+  // Visual Studio currently owns the approved voice track only; additional tracks
+  // and authored cover designs need a separate, validated production contract.
+  assert(intent?.publish?.cover?.opening?.enabled!==true,'VISUAL_COVER_OPENING_UNSUPPORTED');
+  assert(!intent?.publish?.cover || Object.keys(intent.publish.cover).length===0,'VISUAL_COVER_DESIGN_UNSUPPORTED');
+  const audioKeys=['audio','audio_mix','music','background_music','soundtrack','sfx'];
+  assert(!audioKeys.some(key=>intent?.[key]!==undefined),'VISUAL_AUDIO_MIX_UNSUPPORTED');
   assert(intent?.video?.width===1080 && intent.video.height===1920 && [24,30].includes(intent.video.fps),'VISUAL_VIDEO_UNSUPPORTED');
   assert(Array.isArray(intent.scenes)&&intent.scenes.length>0&&intent.scenes.length<=100,'VISUAL_SCENE_INVENTORY_INVALID');
   assert(intent.cast?.length<=20 && Object.keys(intent.assets??{}).length<=2000,'VISUAL_INVENTORY_LIMIT');
@@ -36,6 +45,7 @@ export function validateIntent(intent,narration){
         assert(ID.test(id),'VISUAL_STATE_ID_INVALID');
         const t=s.transform;assert(t&&['x','y','width','height'].every(k=>typeof t[k]==='number'&&Number.isFinite(t[k]))&&t.width>0&&t.height>0&&t.width<=4320&&t.height<=7680&&Math.abs(t.x)<=4320&&Math.abs(t.y)<=7680,'VISUAL_TRANSFORM_INVALID');
         if(t.rotation!==undefined)assert(Number.isFinite(t.rotation)&&Math.abs(t.rotation)<=360,'VISUAL_ROTATION_INVALID');
+        if(t.scale!==undefined)assert(Number.isFinite(t.scale)&&t.scale>0&&t.scale<=8,'VISUAL_SCALE_INVALID');
         if(s.opacity!==undefined)assert(Number.isFinite(s.opacity)&&s.opacity>=0&&s.opacity<=1,'VISUAL_OPACITY_INVALID');
         if(s.layer!==undefined)assert(Number.isInteger(s.layer)&&s.layer>=0&&s.layer<=10000,'VISUAL_LAYER_INVALID');
       }
@@ -92,7 +102,7 @@ function measuredScenes(intent,narration,timing){
       assert(frames===motion.default_duration_frames||event.motion?.duration_override===true,'VISUAL_MOTION_OVERRIDE_REQUIRED');
       return {...event,at,measured:true,preview_motion:preset,preview_duration:frames/intent.video.fps};
     }).sort((x,y)=>x.at-y.at);
-    return {scene_id:scene.id,startMs,endMs,words:selected,events,narration_range:[a,b],measured:true};
+    return {scene_id:scene.id,fps:intent.video.fps,startMs,endMs,words:selected,events,narration_range:[a,b],measured:true};
   });
 }
 
@@ -101,8 +111,10 @@ async function compilerIdentity(){
   async function walk(root){for(const row of await readdir(root,{withFileTypes:true})){if(row.isSymbolicLink())throw Error('VISUAL_COMPILER_SYMLINK');const file=path.join(root,row.name);if(row.isDirectory())await walk(file);else if(/\.(mjs|json|svg)$/u.test(row.name))files.push([path.relative(ROOT,file),digest(await readFile(file))]);}}
   await walk(LIBRARY);
   files.push(['caption-font',digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf')))]);
+  files.push(['caption-fontkit',digest(await readFile(path.join(ROOT,'apps/zodiac-studio/node_modules/fontkit/package.json')))]);
   for(const rel of ['features/visual-composition/compile-visual-intent.mjs','core/cache/incremental-cache.mjs','core/cache/phase02-semantic-cache.mjs','contracts/motion-registry-v1.json'])files.push([rel,digest(await readFile(path.join(LIBRARY,'../..',rel)))]);
-  for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
+  for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs','visual_presentation.mjs','visual_captions.mjs','visual_opening.mjs','visual_contract.json'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
+  for(const file of ['spatial-layout.mjs','semantic-motion.mjs','visual-role.mjs','caption-layout.mjs','caption-karaoke.mjs'])files.push(['renderer/'+file,digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/src',file)))]);
   return hash(files.sort(([a],[b])=>a.localeCompare(b)));
 }
 
@@ -194,7 +206,8 @@ export async function buildEpisode(input){
     const bytes=await readFile(file);assert(bytes.length<=2*1024*1024,'VISUAL_ASSET_TOO_LARGE');safeSvg(bytes);
     if(asset.source_sha256)assert(asset.source_sha256===digest(bytes),'VISUAL_ASSET_SOURCE_DRIFT '+id);
     const source=digest(bytes),result=await node('geometry:asset:'+id,{asset,source},[],async()=>{const object=await putObject(cache,bytes);return {objects:[object],source_sha256:source};});
-    assetMap[id]={svg:(await readObject(cache,result.source_sha256)).toString('utf8'),source_sha256:source,geometry_node:'geometry:asset:'+id};
+    assetMap[id]={svg:(await readObject(cache,result.source_sha256)).toString('utf8'),source_sha256:source,geometry_node:'geometry:asset:'+id,
+      metadata:asset};
   }
   const runtime=await previewRuntime(ROOT);
   assert(Object.values(assetMap).reduce((n,a)=>n+Buffer.byteLength(a.svg),0)<=32*1024*1024,'VISUAL_ASSET_MEMORY_BUDGET');
@@ -203,7 +216,8 @@ export async function buildEpisode(input){
     assert(scene.entities.reduce((n,e)=>n+Object.values(e.states).reduce((m,s)=>m+Buffer.byteLength(assetMap[s.asset].svg),0),0)<=4*1024*1024,'VISUAL_SCENE_PREVIEW_BUDGET '+scene.id);
     const time=measured.find(t=>t.scene_id===scene.id),deps=[...new Set(scene.entities.flatMap(e=>Object.values(e.states).map(s=>assetMap[s.asset].geometry_node)))];
     const geometry=await node('scene:'+scene.id,{scene,time},deps,async()=>({scene,time,asset_hashes:Object.fromEntries(scene.entities.flatMap(e=>Object.values(e.states).map(s=>[s.asset,assetMap[s.asset].source_sha256])))}));
-    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme],font_sha256:runtime.font.sha256},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,runtime.gsap,runtime.font));
+    const sceneOpening=scene.id===projections.production.scenes[0].id?intent.opening??null:null;
+    const appearance=await node('appearance:'+scene.id,{theme:THEMES[theme],font_sha256:runtime.font.sha256,gsap_sha256:digest(runtime.gsap),opening:sceneOpening},['scene:'+scene.id],async()=>renderPreview(geometry.scene,assetMap,geometry.time,theme,runtime.gsap,runtime.font,{},sceneOpening));
     previewBytes+=Buffer.byteLength(appearance.html);assert(previewBytes<=32*1024*1024,'VISUAL_EPISODE_PREVIEW_BUDGET');
     const file=scene.id+'.html';await writeFile(path.join(out,file),appearance.html);
     const required_nodes=scene.entities.flatMap(e=>Object.keys(e.states).map(s=>'state:'+e.id+':'+s)).concat(scene.events.map(e=>'event:'+e.id));
@@ -212,7 +226,7 @@ export async function buildEpisode(input){
     scenes.push({id:scene.id,preview_file:file,preview_sha256:digest(appearance.html),source_map:appearance.source_map,
       required_nodes,satisfied_nodes,blocked_nodes:[],font_sha256:runtime.font.sha256,
       start_ms:time.startMs,end_ms:time.endMs,duration_seconds:appearance.duration_seconds,fidelity:appearance.fidelity,
-      qa:quality(scene,theme),entity_count:scene.entities.length,event_count:scene.events.length,asset_ids:Object.keys(geometry.asset_hashes)});
+      qa:quality(scene,theme,time),entity_count:scene.entities.length,event_count:scene.events.length,asset_ids:Object.keys(geometry.asset_hashes)});
     process.stderr.write(JSON.stringify({event:'scene.preview_ready',scene_id:scene.id,completed:scenes.length,total:intent.scenes.length})+'\n');
   }
   assert(scenes.length===intent.scenes.length,'VISUAL_BUILD_INCOMPLETE');
@@ -224,8 +238,8 @@ export async function buildEpisode(input){
     voice_sha256:input.timing.wav_sha256,timing_sha256:hash(input.timing),theme,compiler_sha256:compiler,scenes,dag,semantic_graph:buildPhase02SemanticGraph(intent),
     assets:Object.fromEntries(Object.entries(assetMap).map(([id,a])=>[id,{sha256:a.source_sha256,identity_signature:a.identity_signature??null}])),
     production_sha256:digest(await readFile(path.join(out,'production.json'))),
-    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events,words:t.words,measured:true}))},
-    contracts:{theme:'zodiac-visual-theme@1',performance:'zodiac-performance-graph@1',motion:MOTION.format,motion_registry_sha256:hash(MOTION),source_map:'zodiac-hyperframes-source-map@1',legacy:'V4_JOB5_DERIVED_PRODUCTION'},
+    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,fps:t.fps,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events,words:t.words,measured:true}))},
+    contracts:{presentation_contract_sha256:digest(await readFile(new URL('./visual_contract.json',import.meta.url))),theme:'zodiac-visual-theme@1',performance:'zodiac-performance-graph@1',motion:MOTION.format,motion_registry_sha256:hash(MOTION),source_map:'zodiac-hyperframes-source-map@1',legacy:'V4_JOB5_DERIVED_PRODUCTION'},
     cache:{events,reused:events.filter(e=>e.hit).length,rebuilt:events.filter(e=>!e.hit).length,concurrency},
     resources:{wall_ms:Math.round(performance.now()-begun),cpu_microseconds:process.cpuUsage(usage),peak_rss_bytes:process.resourceUsage().maxRSS*1024,free_memory_bytes:os.freemem(),free_disk_bytes:Number(disk.bavail)*Number(disk.bsize),output_bytes:(await Promise.all(scenes.map(s=>stat(path.join(out,s.preview_file))))).reduce((n,s)=>n+s.size,0)},
     renderer:'hyperframes-sdk-preview',renderer_parity:'NOT_ASSERTED',human_visual_review:'PENDING',approval_granted:false};

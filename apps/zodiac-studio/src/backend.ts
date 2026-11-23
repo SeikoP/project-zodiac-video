@@ -73,7 +73,7 @@ export type VoiceState = {
   job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;
 };
 export type AgentHealth = {
-  capabilities?: string[]; credential_available?: boolean; connection_status?: string; tools_enabled?: boolean;
+  model?: string; capabilities?: string[]; credential_available?: boolean; connection_status?: string; tools_enabled?: boolean;
   available: boolean;
   protocol: string;
   scope: string;
@@ -109,6 +109,7 @@ export type CandidateResult = { status: string; source_sha256: string; catalog_r
     fit_reasons: string[]; warnings: string[]; usage?: AssetUsage[]; identity: { model_id: string; family_id: string } }[];
   rejected: { id: string; reason: string }[]; new_asset_task: { reason: string } | null };
 export type AgentTask = {
+  model?: string;
   task_id: string;
   project_id: string;
   project_revision: number;

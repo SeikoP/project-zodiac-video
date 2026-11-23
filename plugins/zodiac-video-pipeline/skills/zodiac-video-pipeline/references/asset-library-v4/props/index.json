@@ -966,6 +966,56 @@
         ]
       },
       "review": "PENDING"
+    },
+    {
+      "id": "route-planner-phone",
+      "path": "props/route-planner-phone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "route",
+        "restaurant",
+        "plan",
+        "chat",
+        "map",
+        "planning"
+      ]
+    },
+    {
+      "id": "saved-folder-phone",
+      "path": "props/saved-folder-phone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "saved",
+        "folder",
+        "love",
+        "chat",
+        "phone",
+        "evidence"
+      ]
+    },
+    {
+      "id": "banh-trang-nuong",
+      "path": "props/banh-trang-nuong.svg",
+      "role": "story_prop",
+      "contexts": [
+        "food",
+        "restaurant",
+        "street-food",
+        "date",
+        "meal"
+      ]
+    },
+    {
+      "id": "menu-photo",
+      "path": "props/menu-photo.svg",
+      "role": "story_prop",
+      "contexts": [
+        "menu",
+        "restaurant",
+        "photo",
+        "date",
+        "meal"
+      ]
     }
   ]
 }

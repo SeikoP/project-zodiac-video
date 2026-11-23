@@ -17,6 +17,7 @@
     "@hyperframes/studio": "0.9.45",
     "@tauri-apps/api": "2.12.4",
     "@tauri-apps/plugin-dialog": "2.8.4",
+    "fontkit": "2.0.4",
     "hyperframes": "0.9.63",
     "lucide-react": "^1.73.0",
     "react": "^19.3.1",

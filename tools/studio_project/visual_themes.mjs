@@ -2,7 +2,7 @@
 import {createHash} from 'node:crypto';
 const make=(id,title,canvas,ink,primary,secondary,accent)=>Object.freeze({format:'zodiac-visual-theme@1',id,title,canvas,ink,primary,secondary,accent,surface:'#FFFDF9',surface_alt:secondary,line:ink,muted_ink:'#59636E',caption:'#FFFDF9',caption_ink:'#15232D',human_review:'PENDING'});
 export const THEMES=Object.freeze({
- light:make('light','Giấy sáng tương thích','#fff9ef','#243540','#F2B66D','#80BDB1','#92502c'),
+ light:make('light','Giấy sáng tương thích','#F6F0E6','#2F3C44','#F2C45C','#8EC0B9','#E97A66'),
  dark:make('dark','Tối tương thích','#18232f','#f6eee3','#7ABBB9','#E5AE62','#e6b875'),
  'apricot-campus':make('apricot-campus','Mơ ấm đời thường','#FFF8EE','#2B2B37','#F2B66D','#80BDB1','#E26E72'),
  'rose-social':make('rose-social','Hồng trêu ghẹo','#FFF2F4','#342B39','#D96B87','#A989D2','#ECAF71'),

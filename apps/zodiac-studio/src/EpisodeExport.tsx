@@ -46,6 +46,11 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
     {state?.job && <div className="review-message" role="status">{state.job.message} · {state.job.status}{state.job.render_percent === undefined ? "" : ` · ${state.job.render_percent}%`}{state.job.error && ` · ${state.job.error}`}</div>}
     <VideoReview initialConceptId={initialConceptId} output={video} active={active}/>
     {video && <div className="export-path"><small>{video.file_path} · {video.stale ? "Nguồn đã thay đổi" : "Đúng bản xuất hiện tại"}</small>
+      <small>{video.audio_contract?.mode === "approved-voice-only@1" ? "Âm thanh: chỉ giọng đọc đã chọn · Nhạc nền: 0 · SFX: 0" : "Gói cũ: chưa xác minh hợp đồng âm thanh"}</small>
+      <small>{video.cover?.source_frame === 0 && video.cover_contract?.mode === "series-topic-opening@1"
+        ? `Cover series: ${video.cover_contract.opening?.topic ?? "Chủ đề tập"} · frame đầu MP4`
+        : video.cover?.source_frame === 0 && video.cover_contract?.mode === "first-encoded-video-frame@1"
+          ? "Cover: lấy đúng frame đầu MP4" : "Cover: chưa xác minh nguồn khung hình"}</small>
       <button className="subtle-btn" onClick={() => void navigator.clipboard.writeText(video.file_path ?? "").catch(e => setError(String(e)))}>Copy đường dẫn MP4</button>
       <details><summary>Receipt & tệp kèm</summary><small>SHA-256: {video.sha256}</small><small>MP4, captions.srt, cover.png và receipt được lưu cùng thư mục export.</small></details></div>}
   </section>;

@@ -579,7 +579,7 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .export-path details small { display:block; overflow-wrap:anywhere; }
 .initial-authoring { padding:12px; display:flex; flex-direction:column; gap:7px; flex:1; min-height:0; }
 .initial-authoring textarea { height:52px; min-height:45px; background:#191d29; border:1px solid #494455; color:inherit; padding:8px; resize:none; }
-.visual-editor:has(.initial-authoring) .visual-layout { display:none; }
+
 .initial-authoring .agent-proposal { flex:1; min-height:0; }
 .agent-proposal { display:flex; flex-direction:column; gap:6px; font-size:11px; min-width:0; }
 .agent-proposal p { margin:3px 0; overflow-wrap:anywhere; }
@@ -690,3 +690,18 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 
 .voice-header-actions { display:flex; align-items:center; gap:10px; }
 @media(max-height:700px) { .voice-header-actions>.source-pill { display:none; } .voice-primary-actions button { padding:7px 10px; } }
+
+.visual-inspector:has(.initial-authoring)>:not(.initial-authoring) { display:none; }
+.visual-inspector>.initial-authoring { padding:4px; border:0; background:transparent; gap:9px; }
+.visual-inspector>.initial-authoring>strong { font-size:14px; }
+.visual-inspector>.initial-authoring>small { color:#b7c1cf; font-size:11px; line-height:1.5; }
+.visual-inspector>.initial-authoring textarea { min-height:82px; height:82px; }
+.visual-inspector>.initial-authoring .primary-btn { white-space:normal; justify-content:center; }
+.visual-editor[data-has-source=false]>.visual-toolbar { display:none; }
+.preview-empty-frame { height:94%; aspect-ratio:9/16; max-width:96%; margin:auto; padding:18px; border:1px dashed #58687e; border-radius:5px; background:#141d2b; text-align:center; }
+.preview-empty-frame p { font-size:14px; color:#d9e4f2; line-height:1.5; }
+.preview-empty-frame small { color:#aebed2; line-height:1.6; }
+
+.visual-editor[data-has-source=false] .visual-scenes .paged { display:none; }
+.visual-editor[data-has-source=false] .visual-scenes>p { color:#aab8ca; font-size:12px; line-height:1.6; padding:0 10px; }
+.timeline-unbuilt { display:flex; align-items:center; height:100%; border:1px dashed #48596d; border-radius:4px; padding:4px 8px; color:#aab8ca; font-size:11px; }

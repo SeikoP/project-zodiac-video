@@ -25,6 +25,31 @@ TEXT="\n".join(f"Song Tử hỏi thêm câu {i+1}." for i in range(8))
 
 
 class VisualWorkspaceTests(unittest.TestCase):
+    def test_hyperframes_cover_uses_actual_first_frame_and_mux_rejects_tail(self):
+        from tools.studio_project.visual_workspace import VisualWorkspace
+        cmd = VisualWorkspace._cover_first_frame_command(Path('rendered.mp4'), Path('cover.png'))
+        self.assertEqual(cmd[-1], 'cover.png')
+        self.assertNotIn('-ss', cmd)
+        self.assertIn('-frames:v', cmd)
+        receipt = {'fps': 30, 'frames': 90, 'duration_seconds': 3}
+        probe = {'streams': [
+            {'codec_type': 'video', 'width': 1080, 'height': 1920, 'avg_frame_rate': '30/1', 'duration': '3', 'nb_frames': '90'},
+            {'codec_type': 'audio', 'duration': '3.02'},
+        ]}
+        VisualWorkspace._verify_export_probe(probe, receipt, 3)
+        for changed in (
+            {'video_duration': '2.5'}, {'audio_duration': '3.5'},
+            {'voice_duration': 3.6}, {'frames': '65'},
+        ):
+            bad = copy.deepcopy(probe)
+            bad_receipt = copy.deepcopy(receipt)
+            duration = changed.get('voice_duration', 3)
+            bad['streams'][0]['duration'] = changed.get('video_duration', '3')
+            bad['streams'][0]['nb_frames'] = changed.get('frames', '90')
+            bad['streams'][1]['duration'] = changed.get('audio_duration', '3.02')
+            with self.subTest(changed=changed), self.assertRaises(StudioError):
+                VisualWorkspace._verify_export_probe(bad, bad_receipt, duration)
+
     def setUp(self):
         temp=tempfile.TemporaryDirectory(prefix="studio-p34-");self.addCleanup(temp.cleanup)
         self.root=Path(temp.name);text=self.root/"source.txt";text.write_bytes(TEXT.encode("utf8"))
@@ -46,6 +71,21 @@ class VisualWorkspaceTests(unittest.TestCase):
         return self.visual.command(self.project,command_id or "test-"+str(time.time_ns()),self.state()["revision"],kind,payload)
 
     def authored(self):return self.command("source.replace",{"intent":self.intent})
+
+    def test_prior_presentation_build_stays_readable_but_requires_rebuild(self):
+        self.authored();self.visual.start(self.project,self.state()["revision"]);built=self.wait()
+        self.assertFalse(built["stale_preview"])
+        with _exclusive_source_lock(self.handle.workspace, "visual-state"):
+            state,_=self.visual._read(self.handle)
+            state["build"]["contracts"].pop("presentation_contract_sha256")
+            self.visual._save(self.handle,state)
+        old=self.state()
+        self.assertTrue(old["stale_preview"])
+        self.assertEqual(old["stale_reason"],"VISUAL_PRESENTATION_CHANGED_REBUILD_REQUIRED")
+        self.assertEqual(old["build"]["id"],built["build"]["id"])
+        with self.assertRaises(StudioError) as caught:
+            self.visual._export_inputs(self.handle,old,old["intent"])
+        self.assertEqual(caught.exception.code,"EXPORT_REBUILD_REQUIRED")
 
     def wait(self):
         deadline=time.monotonic()+45

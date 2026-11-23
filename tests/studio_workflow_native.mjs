@@ -20,9 +20,10 @@ async function record(name){
  console.log(name, evidence.steps.at(-1).seconds+'s');
 }
 async function tab(name){
- if(name==='Giọng đọc' && await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).isVisible()) return page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
- if(name==='Xuất & duyệt' && await page.getByRole('button',{name:'Xuất video',exact:true}).isVisible()) return page.getByRole('button',{name:'Xuất video',exact:true}).click();
- await page.locator('.workflow-tabs').getByRole('button',{name,exact:true}).click();
+ let target=page.locator('.workflow-tabs').getByRole('button',{name,exact:true});
+ const action=name==='Giọng đọc'?'Mở giọng đọc':name==='Xuất & duyệt'?'Xuất video':null;
+ if(action)target=target.or(page.getByRole('button',{name:action,exact:true}));
+ await target.filter({visible:true}).first().click({timeout:120000});
 }
 try{
  await page.locator('.sidebar-nav button').first().waitFor({timeout:60000});
@@ -62,6 +63,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('.initial-authoring')||document.querySelector('.visual-scenes button'),{},{timeout:60000});
  const initial=page.locator('.initial-authoring');
  if(await initial.count()){
+  if(process.env.STUDIO_INITIAL_DIRECTION) await page.getByLabel('Yêu cầu agent soạn hình ảnh',{exact:true}).fill(process.env.STUDIO_INITIAL_DIRECTION);
   await initial.getByRole('button',{name:'Soạn bản dựng ban đầu',exact:true}).click({timeout:60000});
   await initial.getByRole('button',{name:'Dừng agent',exact:true}).waitFor({timeout:30000});
   await tab('Giọng đọc');await tab('Hình ảnh');
@@ -126,7 +128,7 @@ try{
  await page.locator('.visual-stage iframe:visible').waitFor({timeout:120000});
  evidence.workbench_context=await page.evaluate(()=>({sceneId:document.querySelector('.visual-scenes button.active')?.dataset.sceneId,entityId:document.querySelector('.visual-inspector select')?.value,timeMs:Number(document.querySelector('[aria-label="Vị trí toàn video"]')?.value)}));
  await tab('Xuất & duyệt');
- const previousOutput=await page.locator('.export-path>small').first().textContent().catch(()=>null);
+ const previousOutput=await page.locator('.export-path>small').count() ? await page.locator('.export-path>small').first().textContent() : null;
  await page.getByRole('button',{name:'Xuất MP4',exact:true}).click();
  await page.waitForFunction(previous=>{
   const status=document.querySelector('.episode-export [role="status"]')?.textContent||'';
@@ -140,7 +142,8 @@ try{
  assert.equal(evidence.playback.width,1080);assert.equal(evidence.playback.height,1920);
  assert.equal(await page.getByRole('checkbox',{name:'MP4 đã được tôi xem và duyệt',exact:true}).isChecked(),false);
  evidence.export_text=await page.locator('.export-path').innerText();
- evidence.export_sha256=await page.locator('.export-path details').innerText();
+ evidence.export_sha256=(await page.locator('.export-path details').textContent()).match(/[a-f0-9]{64}/)?.[0];
+ assert.ok(evidence.export_sha256,'current export receipt hash required');
  evidence.project=await page.getByLabel('Episode đang làm',{exact:true}).inputValue();
  await page.screenshot({path:path.join(output,'native-final.png')});
  await record('MP4 exported and played in native GUI without quality approval');

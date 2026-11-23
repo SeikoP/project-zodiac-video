@@ -94,12 +94,83 @@ class AgentAuthoringTests(unittest.TestCase):
             task = dispatch(self.service, "agent.author.start", {"project_id": self.project, "instruction": "Soạn hình ảnh."})
         self.assertEqual(task["kind"], "episode.propose")
 
-    def test_native_board_supports_empty_chat_setup_and_rejects_unreadable_lines(self):
-        from tools.studio_project.agent_authoring import board_svg
-        self.assertIn(b'<path', board_svg({"title": "Chat", "lines": []}))
-        self.assertIn(b'stroke-width="3"', board_svg({"title": "Chat", "lines": ["Hội bạn → Nhân Mã"]}))
-        with self.assertRaises(StudioError): board_svg({"title": "Chat", "lines": ["x" * 61]})
-        with self.assertRaises(StudioError): board_svg({"title": "Chat", "lines": ["A"] * 5})
+    def test_authoring_uses_the_same_visual_contract_as_the_renderer(self):
+        from tools.studio_project.agent_authoring import capsule
+        from tools.studio_project.service import ROOT
+        data = capsule(self.service, self.project, "Giữ thiết kế gốc.")
+        contract = json.loads((ROOT / "tools/studio_project/visual_contract.json").read_text("utf8"))
+        self.assertEqual(data["visual_contract"], contract)
+        self.assertEqual(contract["caption"]["font_size_px"], 84)
+        self.assertNotIn("y:740", data["schema"]["scenes"])
+
+    def test_story_text_and_split_chat_are_native_story_visual_templates(self):
+        from tools.studio_project.agent_authoring import capsule, proposal
+        from tools.studio_project.story_visual_art import visual_svg
+        from tools.studio_project.service import ROOT
+        import hashlib
+
+        plan_path = self.handle.workspace / ".authoring/narrative-plan.json"
+        plan_path.write_text(json.dumps({"story_visual_decision": {"mode": "required", "reason": "Two senders and opposite replies"},
+                                          "story_visuals": [{"id": "SV01"}]}), encoding="utf8")
+        # The synthetic test modifies a sealed Phase 1 fixture in-place; bypass only
+        # its unrelated content signature guard, never the Story Visual validator.
+        approved = patch.object(self.service, 'project', return_value={'status': {'content': 'APPROVED'}})
+        approved.start(); self.addCleanup(approved.stop)
+        intent = copy.deepcopy(self.intent)
+        intent["taxonomy_version"] = "story_visual@1"
+        intent["story_visual_decision"] = {"mode": "required", "reason": "Two senders and opposite replies"}
+        spec = {"type": "chat_compare",
+                "left": {"sender": "Hội bạn", "question": "Thứ Bảy đi chơi không?", "reply": "Để xem"},
+                "right": {"sender": "Người ấy", "question": "Thứ Bảy đi chơi không?", "reply": "Bảy giờ, tớ qua đón"}}
+        intent["assets"]["contrast"] = {"category": "story_visual", "phase1_visual_id": "SV01", "visual": spec}
+        intent["scenes"][0]["entities"].append({
+            "id": "compare", "kind": "story_visual", "visual_role": "story_visual",
+            "initial_state": "hidden", "states": {
+                "hidden": {"asset": "contrast", "visible": False, "layer": 25,
+                           "transform": {"x": 60, "y": 100, "width": 950, "height": 550}},
+                "shown": {"asset": "contrast", "visible": True, "layer": 25,
+                          "transform": {"x": 60, "y": 100, "width": 950, "height": 550}}},
+            "lettering": {"purpose": "contrast", "reason": "Compare named senders; no generic chat board",
+                          "states": {"shown": "ĐỂ XEM / CHỐT LUÔN"}},
+        })
+        intent["scenes"][0]["events"].append({
+            "id": "compare-reveal", "target": "compare", "state_before": "hidden", "state_after": "shown",
+            "trigger": {"type": "voice_anchor", "text": "Song Tử"},
+            "motion": {"preset": "state_swap", "duration_frames": 12}})
+        data = capsule(self.service, self.project, "Keep Story Text within Story Visual.")
+        self.assertIn("chat_compare", data["schema"]["assets"])
+        self.assertIn("Story Text", data["schema"]["scenes"])
+        text = json.dumps({"kind": "source.replace", "payload": {"intent": intent}}, ensure_ascii=False)
+        dry = proposal(text, self.service, self.project)
+        asset = dry["assets"]["contrast"]
+        path = self.handle.workspace / asset["path"]
+        self.assertFalse(path.exists(), "review should not write generated images before confirmation")
+        committed = proposal(text, self.service, self.project, write_visuals=True)
+        self.assertEqual(committed, dry)
+        self.assertTrue(path.exists())
+        raw = path.read_bytes()
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), asset["source_sha256"])
+        self.assertNotIn(b"<text", raw, "Vietnamese glyphs are outlines; no browser fallback")
+        self.assertIn(b"<path", raw)
+        self.assertEqual(raw, visual_svg(spec))
+
+        story = visual_svg({"type": "story_text", "text": "ĐỂ XEM / CHỐT LUÔN", "purpose": "contrast"})
+        self.assertIn(b"<svg", story)
+        with self.assertRaises(ValueError):
+            visual_svg({"type": "chat_compare", "left": {"sender": "<script>", "question": "x", "reply": "y"},
+                        "right": spec["right"]})
+
+    def test_text_board_proposals_are_rejected_without_creating_art(self):
+        from tools.studio_project.agent_authoring import capsule, proposal
+        data = capsule(self.service, self.project, "Diễn bằng cử chỉ và điện thoại.")
+        self.assertNotIn("board_characters", data)
+        self.assertNotIn("board:{", data["schema"]["assets"])
+        intent = copy.deepcopy(self.intent)
+        intent["assets"]["board"] = {"board": {"title": "Chat", "lines": ["Tin nhắn"]}, "category": "story_visual"}
+        with self.assertRaises(StudioError) as caught:
+            proposal(json.dumps({"kind": "source.replace", "payload": {"intent": intent}}), self.service, self.project)
+        self.assertEqual(caught.exception.code, "AGENT_PROPOSAL_INVALID")
+        self.assertIsNone(self.visual.snapshot(self.project)["intent"])
 
 
 if __name__ == "__main__": unittest.main()
