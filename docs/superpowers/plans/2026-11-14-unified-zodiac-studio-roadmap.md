@@ -54,6 +54,8 @@ P5/P6/P7 remain open; this planning checkpoint does not promote phase status.
 
 Implementation authorized. [Execution evidence](../../audits/2026-11-23-studio-workbench-execution.md) records measured timeline Tasks 1–4 (model, editor shell, measured timeline and contextual agent/resources) verification; GUI/native acceptance remains in progress. P5/P6/P7 gates stay open.
 
+2026-11-24: Studio agent explicitly uses gpt-6-luna; editor keeps the canvas and timeline visible while initial authoring is docked right. Reused-real-voice native playback/edit/Undo/Redo/export/restart and full MP4 decode passed. The initial source required a GUI role-label correction, now blocked by canonical validation; uninterrupted fresh agent acceptance remains open. [Dated receipt](../../audits/2026-11-24-studio-workbench-evidence.json) separates this recovery run from fresh generation and human review. P5/P6/P7 and unrestricted tool-agent work are not closed.
+
 ## Global Constraints (every phase)
 
 - At each completed task: verify its required checks, update evidence/roadmap,

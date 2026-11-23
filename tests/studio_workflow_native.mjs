@@ -113,10 +113,12 @@ try{
  await page.waitForFunction(()=>{const p=document.querySelector('.visual-inspector .agent-proposal');return p&&/COMPLETED|FAILED|CANCELLED/.test(p.innerText)&&/Cảnh/.test(p.innerText);},{},{timeout:200000});
  assert.match(await proposal.innerText(),/COMPLETED/);
  await page.screenshot({path:path.join(output,'scene-proposal.png')});
+ const previousBuild=await page.locator('.visual-editor .voice-progress').getAttribute('data-job-id').catch(()=>null);
  await page.getByRole('button',{name:'Xác nhận edit & dựng cảnh',exact:true}).click();
- await page.waitForFunction(()=>document.querySelector('.visual-editor .voice-progress')?.innerText.includes('COMPLETED'),{},{timeout:120000});
+ await page.waitForFunction(previous=>{const e=document.querySelector('.visual-editor .voice-progress');return e?.dataset.jobId!==previous && e?.dataset.jobState==='COMPLETED';},previousBuild,{timeout:120000});
  await record('real scene agent edit confirmed and rebuilt');
  await page.locator('.visual-inspector').getByRole('button',{name:'Đối tượng',exact:true}).click();
+ await page.waitForFunction(x=>Number(document.querySelector('.visual-transform input')?.value)===x,originalX+20,{timeout:30000});
  assert.equal(Number(await page.getByLabel('Vị trí ngang',{exact:true}).inputValue()),originalX+20);
  await page.getByRole('button',{name:'Undo',exact:true}).click();
  await page.waitForFunction(x=>Number(document.querySelector('.visual-transform input')?.value)===x,originalX,{timeout:120000});

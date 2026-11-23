@@ -85,11 +85,13 @@ Read [readiness audit](../../audits/2026-11-22-studio-workbench-readiness.md) an
 
 **Interfaces:** Visible controls and real native transport only. Keep media/runtime stores ignored; checked-in evidence records exact commands, versions, revisions, hashes and timings.
 
-- [ ] Adapt native tests to new layout without API bypasses or approval clicks.
+- [x] Adapt native tests to new layout without API bypasses or approval clicks.
 - [ ] Run approved import → real fresh TTS/ASR → initial agent/apply → scene edit/undo → episode playback → HyperFrames MP4 export/playback. Separately measure and label a reused-voice iteration; retain failed/cancelled receipts.
-- [ ] Restart/reopen; verify project, selection, applied edit history and exact MP4. Probe/decode full video, compare voice/sidecar/cover hashes and inspect caption/boundary frames. Genuine user listening/visual review stays PENDING until received.
-- [ ] Run affected final Python/Node/browser/native checks; report local results separately from remote CI and production acceptance.
-- [ ] Record reproducible evidence, commit/push scoped work; do not close P5/P6/P7 independently unmet gates.
+- [x] Restart/reopen; verify project, selection, applied edit history and exact MP4. Probe/decode full video, compare voice/sidecar/cover hashes and inspect caption/boundary frames. Genuine user listening/visual review stays PENDING until received.
+- [x] Run affected final Python/Node/browser/native checks; report local results separately from remote CI and production acceptance.
+- [x] Record reproducible evidence, commit/push scoped work; do not close P5/P6/P7 independently unmet gates.
+
+2026-11-24: reused-real-voice native run, scene agent/apply, Undo/Redo, actual boundary/end/replay, new MP4 playback and restart PASS; full decode/voice/sidecars/first-frame cover PASS. Initial Luna source needed a GUI-only rendering-role correction, so the uninterrupted fresh TTS-to-agent-to-MP4 item above remains OPEN. See execution audit and dated evidence JSON. No human approval was granted.
 
 ## Separate follow-ups
 
