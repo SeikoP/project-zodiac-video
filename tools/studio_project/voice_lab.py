@@ -567,7 +567,7 @@ class VoiceLab:
             raise StudioError("VOICE_AUDIO_SIZE_INVALID", "Invalid or oversized audio", "voice")
         with path.open("rb") as reader:
             reader.seek(offset)
-            data = reader.read(48*1024)
+            data = reader.read(512*1024)
         return {"data": base64.b64encode(data).decode(), "offset": offset, "total": size, "wav_sha256": take["wav_sha256"]}
 
     def playback(self, project_id, unit_id, take_id):

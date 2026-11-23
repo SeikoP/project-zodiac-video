@@ -23,6 +23,11 @@ test('proposal validation rejects character plans that would fail the real build
  await assert.rejects(buildEpisode({...input,intent,action:'validate_authoring'}),/CHARACTER_INTENT_CHOICE_REASON_MISSING/);
 });
 
+test('source validation rejects grammar-slot names used as visual roles before saving',async t=>{
+ const {intent}=await setup(t);intent.scenes[0].entities[0].visual_role='speaker';
+ assert.throws(()=>validateIntent(intent,narration),/ROLE_RESOLUTION_INVALID/);
+});
+
 test('one verified eight-scene build reuses exact geometry, scene nodes and measured timing',async t=>{
   const {intent,input,root}=await setup(t),original=structuredClone(intent);input.intent=intent;
   const cold=await buildEpisode(input),warm=await buildEpisode({...input,output:path.join(root,'warm')});

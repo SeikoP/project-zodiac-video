@@ -191,7 +191,7 @@ class VoiceLabTests(unittest.TestCase):
         while True:
             part=self.lab.audio(self.project,unit["id"],unit["selected_take"],offset)
             chunk=base64.b64decode(part["data"])
-            self.assertLessEqual(len(chunk),48*1024)
+            self.assertLessEqual(len(chunk),512*1024)
             chunks.append(chunk);offset+=len(chunk)
             if offset>=part["total"]:break
         self.assertEqual(b"".join(chunks)[:4],b"RIFF")

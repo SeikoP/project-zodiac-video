@@ -15,6 +15,7 @@ import {LIBRARY,digest,json,confined,safeSvg,describeAssets,findCandidates} from
 import {describeGallery} from './visual_gallery.mjs';
 import {THEMES,renderPreview,quality,previewRuntime} from './visual_preview.mjs';
 import {validateSeriesOpening} from './visual_opening.mjs';
+import {resolveVisualRole} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/visual-role.mjs';
 
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
 const MOTION=await json(path.join(LIBRARY,'../../contracts/motion-registry-v1.json'));
@@ -59,7 +60,9 @@ export function validateIntent(intent,narration){
     }
     traceSceneStates(scene);
   }
-  return compileVisualIntent(intent,{narration});
+  const projections=compileVisualIntent(intent,{narration});
+  for(const scene of projections.production.scenes)for(const entity of scene.entities)resolveVisualRole(entity,projections.production.assets);
+  return projections;
 }
 
 function measuredScenes(intent,narration,timing){

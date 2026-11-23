@@ -82,6 +82,7 @@ try{
  const boundary=await page.locator('.timeline-scene-track button').nth(1).evaluate((b,total)=>parseFloat(b.style.left)/100*total,total);
  await scrubber.fill(String(Math.max(0,Math.floor(boundary-500))));
  await page.waitForFunction(()=>!document.querySelector('[aria-label="Phát toàn video"]')?.disabled,{},{timeout:120000});
+ await page.locator('.visual-stage audio').waitFor({state:'attached',timeout:120000});
  await page.locator('.visual-stage audio').evaluate(a=>{a.muted=true;window.nativePauseCount=0;a.addEventListener('pause',()=>window.nativePauseCount++);});
  await page.getByRole('button',{name:'Phát toàn video',exact:true}).click();
  await page.waitForFunction(b=>Number(document.querySelector('[aria-label="Vị trí toàn video"]').value)>b+700,boundary,{timeout:20000});
