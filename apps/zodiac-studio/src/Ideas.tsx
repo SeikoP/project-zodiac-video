@@ -4,7 +4,7 @@ import { backend } from "./backend";
 import { buildIdeaPrompt, statusFor, type IdeaBoard, type IdeaConcept } from "./idea-board";
 import { Paged, PagedText } from "./Paged";
 
-export default function Ideas({ onReview }: { onReview: (conceptId: string) => void }) {
+export default function Ideas({ onReview, mode = "ideas" }: { onReview: (conceptId: string) => void; mode?: "ideas" | "progress" }) {
   const [board, setBoard] = useState<IdeaBoard | null>(null);
   const [groupId, setGroupId] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -41,19 +41,19 @@ export default function Ideas({ onReview }: { onReview: (conceptId: string) => v
     finally { setBusy(false); }
   }
   return <section className="ideas-workspace" aria-label="Ý tưởng và tiến độ">
-    <header className="ideas-heading"><h1><Lightbulb size={23}/> Ý tưởng & tiến độ</h1>
+    <header className="ideas-heading"><h1><Lightbulb size={23}/> {mode === "progress" ? "Tiến độ 12 cung" : "Thư viện ý tưởng"}</h1>
       <span className="panel-meta">{board ? `${all.length} concept` : "Đang đọc…"}</span>
       <button className="subtle-btn" disabled={busy} onClick={() => void load()} aria-label="Đọc lại tiến độ"><RefreshCcw size={15}/> Làm mới</button></header>
     {error && <div role="alert" className="inline-alert error">{error}</div>}
-    <div className="ideas-feedback" role="status">{feedback || "Chọn concept để copy prompt. Trong ChatGPT, chọn @Zodiac-Video-Web trước khi gửi. Duyệt MP4 ở tab riêng."}</div>
+    <div className="ideas-feedback" role="status">{mode === "progress" ? "Chọn concept để xem tình trạng 12 cung. Chỉ MP4 được người dùng duyệt mới được đánh dấu hoàn thành." : feedback || "Chọn concept để copy prompt. Trong ChatGPT, chọn @Zodiac-Video-Web trước khi gửi. Duyệt MP4 ở tab riêng."}</div>
     <section className="panel ideas-catalog" hidden={!!selected} aria-label="Danh sách concept">
       <div className="ideas-toolbar"><label>Nhóm <select aria-label="Nhóm ý tưởng" value={groupId} onChange={e => setGroupId(e.target.value)}>
         <option value="">Tất cả nhóm</option>{board?.groups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></label>
         <input aria-label="Tìm concept" value={query} maxLength={120} onChange={e => setQuery(e.target.value)} placeholder="Tìm concept…"/></div>
       <Paged key={groupId + query} size={4} label="Concept">{concepts.map(concept =>
-        <button className="idea-card" key={concept.id} disabled={busy} onClick={() => void copy(concept)}>
+        <button className="idea-card" key={concept.id} disabled={busy} onClick={() => mode === "progress" ? (setSelectedId(concept.id), setShowPrompt(false)) : void copy(concept)}>
           <span className="idea-card-title"><strong>{concept.title}</strong><span>{count(concept)}/12 MP4 duyệt</span></span>
-          <span className="idea-direction">{concept.direction}</span><span className="idea-card-action"><Copy size={12}/> Chọn & copy prompt</span>
+          <span className="idea-direction">{concept.direction}</span><span className="idea-card-action">{mode === "progress" ? <><CheckCircle2 size={12}/> Xem tiến độ 12 cung</> : <><Copy size={12}/> Chọn & copy prompt</>}</span>
         </button>)}</Paged>
       {board && !concepts.length && <p className="panel-meta">Không có concept phù hợp.</p>}
     </section>
@@ -61,10 +61,10 @@ export default function Ideas({ onReview }: { onReview: (conceptId: string) => v
       <div className="ideas-toolbar"><button className="subtle-btn" disabled={busy} onClick={() => { setSelectedId(""); setFeedback(""); setError(""); }}><ArrowLeft size={14}/> Danh sách concept</button>
         <span className="panel-meta">{count(selected)}/12 MP4 đã duyệt</span></div>
       <div className="idea-detail-heading"><h2>{selected.title}</h2><p>{selected.direction}</p></div>
-      <div className="ideas-actions"><button className="primary-btn" disabled={busy || !prompt} onClick={() => void copy(selected)}><Copy size={15}/> Copy prompt</button>
+      <div className="ideas-actions">{mode === "ideas" && <button className="primary-btn" disabled={busy || !prompt} onClick={() => void copy(selected)}><Copy size={15}/> Copy prompt</button>}
         <button className="subtle-btn" onClick={() => onReview(selected.id)}>Xem & duyệt MP4</button>
-        <button className="text-link" onClick={() => setShowPrompt(!showPrompt)}>{showPrompt ? "Xem tiến độ 12 cung" : "Xem nội dung prompt"}</button></div>
-      {showPrompt ? <div className="idea-prompt" ref={promptArea} tabIndex={0} onCopy={e => {
+        {mode === "ideas" && <button className="text-link" onClick={() => setShowPrompt(!showPrompt)}>{showPrompt ? "Xem tiến độ 12 cung" : "Xem nội dung prompt"}</button>}</div>
+      {mode === "ideas" && showPrompt ? <div className="idea-prompt" ref={promptArea} tabIndex={0} onCopy={e => {
         if (prompt) { e.clipboardData.setData("text/plain", prompt); e.preventDefault(); }
       }}><PagedText key={selected.id} text={prompt ?? "Đã đủ 12 MP4 được duyệt. Không tạo prompt lặp."} label="Prompt cho agent"/>
         {prompt && <button className="subtle-btn" onClick={() => { if (promptArea.current) { promptArea.current.focus(); window.getSelection()?.selectAllChildren(promptArea.current); } }}>Chọn toàn bộ prompt để Ctrl+C</button>}</div>

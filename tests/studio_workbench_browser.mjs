@@ -8,15 +8,16 @@ try {
  const page=await browser.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
  await installWorkbenchFixture(page);
  await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();
  await page.locator('.editing-workbench').waitFor({timeout:10000});
- await page.getByRole('heading',{name:'Bàn dựng video',exact:true}).waitFor();
+ await page.getByRole('heading',{name:'Dựng hình ảnh',exact:true}).waitFor();
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
   await page.locator('.visual-scenes button').first().waitFor();
   await page.getByLabel('Episode đang làm',{exact:true}).click({trial:true});
   assert.equal(await page.locator('.visual-stage:visible').count(),1);
-  await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Xuất video',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Giọng đọc',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Xuất & duyệt',exact:true}).waitFor();
   const bounds=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight,iw:innerWidth,ih:innerHeight,stage:document.querySelector('.visual-viewport').getBoundingClientRect().height}));
   assert.ok(bounds.w<=bounds.iw && bounds.h<=bounds.ih+1,JSON.stringify(bounds));
   assert.ok(bounds.stage>=190,'Preview needs meaningful height '+JSON.stringify(bounds));
@@ -30,12 +31,13 @@ try {
 
  await mkdir('.runtime/workbench',{recursive:true});
  await page.screenshot({path:'.runtime/workbench/layout.png'});
- assert.equal(await page.locator('.workflow-tabs:visible').count(),0,'editor has one set of actions');
+ assert.equal(await page.locator('.workflow-tabs:visible').count(),1,'editor uses shared titlebar navigation');
  await page.locator('.episode-timeline').getByRole('button',{name:/Cảnh 6 ·/}).click();
  await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
  await page.getByLabel('Đối tượng',{exact:true}).selectOption('prop');
  await page.waitForTimeout(700);
  await page.reload();
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();
  await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
  assert.equal(await page.getByLabel('Đối tượng',{exact:true}).inputValue(),'prop','restores a non-first object after initial source load');
  await page.evaluate(()=>{window.withPreviews=true;});
@@ -84,7 +86,7 @@ try {
  assert.equal(await page.locator('.visual-inspector .agent-proposal:visible').count(),0,'proposal for another scene stays out of current selection');
  await page.locator('.visual-inspector').getByRole('button',{name:'Đối tượng',exact:true}).click();
  await page.evaluate(()=>{window.withPreviews=false;window.missingVoice=true;});
- await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
+ await page.getByRole('button',{name:'Giọng đọc',exact:true}).click();
  await page.locator('.voice-workspace').waitFor();
  await page.getByRole('button',{name:'Tạo audio còn thiếu',exact:true}).waitFor({timeout:3000});
  await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();
@@ -93,7 +95,7 @@ try {
  await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).waitFor();
  await page.getByLabel('Episode đang làm',{exact:true}).selectOption('p1');
  await page.waitForFunction(()=>Number(document.querySelector('[aria-label="Vị trí toàn video"]')?.value)>=6000);
- await page.getByRole('button',{name:'Xuất video',exact:true}).click();
+ await page.getByRole('button',{name:'Xuất & duyệt',exact:true}).click();
  await page.locator('.episode-export').waitFor();
  await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();
  await page.evaluate(()=>{window.withoutVisuals=true;window.missingVoice=true;});
@@ -102,7 +104,7 @@ try {
  assert.equal(await page.locator('.episode-timeline:visible').count(),1);
  assert.ok((await page.locator('.initial-authoring').boundingBox()).x>(await page.locator('.visual-stage').boundingBox()).x,'agent is docked beside preview');
  assert.equal(await author.isDisabled(),true);
- await page.getByRole('button',{name:'Mở giọng đọc',exact:true}).click();
+ await page.getByRole('button',{name:'Giọng đọc',exact:true}).click();
  await page.evaluate(()=>{window.missingVoice=false;});
  await page.locator('.workflow-tabs').getByRole('button',{name:'Hình ảnh',exact:true}).click();
  await page.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Soạn bản dựng ban đầu')?.disabled,{},{timeout:5000});

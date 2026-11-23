@@ -67,6 +67,13 @@ try {
   assert.deepEqual(result,{width:false,height:false,outside:[]},label);
  }
  await open();
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Tiến độ',exact:true}).click();
+ await page.locator('.ideas-heading').getByText('Tiến độ 12 cung').waitFor();
+ await page.locator('.idea-card').first().click();
+ assert.equal(await page.locator('.idea-sign').count(),12,'Progress tab must show actual concept coverage');
+ assert.equal(await page.locator('.ideas-detail').getByRole('button',{name:'Copy prompt',exact:true}).count(),0,'Progress should not silently start prompt copying');
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Ý tưởng',exact:true}).click();
+ await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
  for(const [width,height]of [[1366,768],[1060,650],[1093,614]]){
   await page.setViewportSize({width,height});await fit('library '+width);
   await page.getByRole('button',{name:'Mở rộng menu',exact:true}).click();await fit('expanded library '+width);

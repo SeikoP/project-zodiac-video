@@ -153,7 +153,7 @@ export default function VoiceLab({ project, onChanged, active = true }: { projec
               {unit.takes.map((take, i) => <option value={take.take_id} key={take.take_id} disabled={take.valid === false}>Take {i+1} · {take.valid === false ? "Audio cần tạo lại" : take.duration_seconds.toFixed(2)+"s"} · {take.details?.voice || "Bản tương thích"}</option>)}
             </select></label>
             {selected.valid === false ? <p className="voice-warning">{selected.error} · Tạo take khác để phục hồi.</p> :
-              <WavePlayer key={unit.id+selected.take_id} projectId={project.project_id} unitId={unit.id} take={selected}
+              active && tab === "takes" && <WavePlayer key={unit.id+selected.take_id} projectId={project.project_id} unitId={unit.id} take={selected}
                 revision={state.revision} listened={!!unit.listened} onChange={changed} onError={report}/>}
             <div className="voice-pause"><label>Khoảng nghỉ sau đoạn (ms)<input type="number" min={0} max={1000} step={50}
               value={gap} disabled={running || busy} onChange={event => setGap(Number(event.target.value))}/></label>
@@ -166,7 +166,7 @@ export default function VoiceLab({ project, onChanged, active = true }: { projec
         <div className="agent-actions"><button className="outline-btn" disabled={busy || running || count !== state.units.length}
           onClick={() => void action(() => backend.voiceAssemble(project.project_id, state.revision))}>Ghép audio đã chọn</button>
           <button className="primary-btn" disabled={busy || running || !state.assembly} onClick={() => generate([], "align")}>Đo timing bằng ASR</button></div></div>
-        <div className="voice-take-body">{state.assembly ? <WavePlayer key={state.assembly.take_id} projectId={project.project_id}
+        <div className="voice-take-body">{state.assembly ? active && tab === "episode" && <WavePlayer key={state.assembly.take_id} projectId={project.project_id}
           unitId="episode" take={state.assembly} revision={state.revision} listened={!!state.assembly.listened} onChange={changed} onError={report}/>
           : <p className="voice-muted">Chọn audio cho mọi đoạn rồi ghép. Không tự thêm một khoảng nghỉ bằng nhau ở mọi ranh giới.</p>}
           <p className="voice-muted">Chỉ khi xác nhận từng take và audio toàn bài, trạng thái mới là “Đã nghe & duyệt”. ASR là bằng chứng timing, không phải duyệt giọng.</p>

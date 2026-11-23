@@ -14,7 +14,7 @@ import { Paged, PagedText } from "./Paged";
 import AgentProposal from "./AgentProposal";
 import EditingWorkbench from "./EditingWorkbench";
 import type { WorkbenchSelection } from "./workbench-state";
-import { StudioSidebar, WorkflowBar, SECTIONS, groupFor, nextEpisodeStep, type View } from "./studio-navigation";
+import { StudioNavigation, WorkflowBar, nextEpisodeStep, type View } from "./studio-navigation";
 
 const AssetGallery = lazy(() => import("./AssetGallery"));
 const Ideas = lazy(() => import("./Ideas"));
@@ -62,12 +62,20 @@ function EmptyState({ icon: Icon, title, detail }: { icon: LucideIcon; title: st
 
 export default function App() {
   const [selection, setSelection] = useState<WorkbenchSelection>({projectId: "", sceneId: null, entityId: null, timeMs: 0});
-  const [expanded, setExpanded] = useState(false);
   const [overviewTab, setOverviewTab] = useState("projects");
-  const [view, changeView] = useState<View>("editor");
-  const [visited, setVisited] = useState<Set<View>>(new Set(["editor"]));
-  function setView(next: View) { setVisited(previous => new Set([...previous, next])); changeView(next); }
-  const group = groupFor(view);
+  const [view, changeView] = useState<View>("overview");
+  const [episodeTool, setEpisodeTool] = useState<Extract<View, "voice" | "editor" | "review">>("editor");
+  const [visited, setVisited] = useState<Set<View>>(new Set());
+  function setView(next: View) {
+    if (next === "voice" || next === "editor" || next === "review") {
+      setEpisodeTool(next);
+      setVisited(previous => new Set([...previous, next]));
+      changeView("editor");
+      return;
+    }
+    setVisited(previous => new Set([...previous, next]));
+    changeView(next);
+  }
   const [reviewConceptId, setReviewConceptId] = useState("");
   const [health, setHealth] = useState<BackendHealth | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -78,6 +86,7 @@ export default function App() {
   const [note, setNote] = useState("");
   const [alert, setAlert] = useState<Alert>(null);
   const [loading, setLoading] = useState(true);
+  const [healthPending, setHealthPending] = useState(true);
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
@@ -125,10 +134,12 @@ export default function App() {
     catch (error) { notifyError(error, "Không thể điều khiển cửa sổ."); }
   }
   const loadProjects = useCallback(async () => {
+    setHealthPending(true);
     try {
-      const [up, list] = await Promise.all([backend.health(), backend.projects()]);
-      setHealth(up);
+      const list = await backend.projects();
       setProjects(list);
+      void backend.health().then(up => { setHealth(up); setHealthPending(false); })
+        .catch(() => { setHealth(null); setHealthPending(false); });
       let previous = activeProjectRef.current;
       if(!previous) {try {previous=localStorage.getItem("studio-last-project");}catch {/* optional */}}
       const next = previous && list.some(item => item.project_id === previous)
@@ -137,6 +148,7 @@ export default function App() {
       setAlert(null);
     } catch (error) {
       setHealth(null);
+      setHealthPending(false);
       notifyError(error, "Không thể kết nối Project Core.");
     } finally {
       setLoading(false);
@@ -281,34 +293,30 @@ export default function App() {
     } finally { setSaving(false); }
   }
 
-  return <div className={"app-shell " + (expanded ? "nav-expanded" : "nav-compact")}>
-    <StudioSidebar expanded={expanded} toggle={() => setExpanded(!expanded)} view={view}
-      projectCount={projects.length} onNavigate={setView}/>
-
+  return <div className="app-shell">
     <div className="main-shell">
       <header className="topbar" data-tauri-drag-region>
-        <div className="breadcrumbs"><span>Zodiac Studio</span><ArrowRight size={13}/>
-          <strong>{SECTIONS.find(section => section.view === group)?.label}</strong>
+        <div className="titlebar-main">
+          <StudioNavigation view={view} projectCount={projects.length} onNavigate={setView}/>
           {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
+          <div className="top-actions">
+            <span className={"connection " + (health ? "connected" : healthPending ? "pending" : "offline")}>
+              <span className="conn-dot"/>{health ? "Project Core kết nối" : healthPending ? "Đang kiểm tra" : "Chưa kết nối"}
+            </span>
+            <span className="header-divider"/>
+            <button className="icon-btn" onClick={() => void loadProjects()} title="Làm mới" aria-label="Làm mới"><RefreshCcw size={17}/></button>
+            {isTauri() && <div className="window-controls" aria-label="Điều khiển cửa sổ">
+              <button type="button" aria-label="Thu nhỏ" title="Thu nhỏ" onClick={() => void windowAction("minimize")}><Minus size={15}/></button>
+              <button type="button" aria-label="Phóng to hoặc khôi phục" title="Phóng to / khôi phục" onClick={() => void windowAction("toggleMaximize")}><Square size={13}/></button>
+              <button type="button" className="window-close" aria-label="Đóng cửa sổ" title="Đóng cửa sổ" onClick={() => void windowAction("close")}><X size={17}/></button>
+            </div>}
+          </div>
         </div>
-        <div className="top-actions">
-          <span className={"connection " + (health ? "connected" : "offline")}>
-            <span className="conn-dot"/>{health ? "Project Core kết nối" : "Chưa kết nối"}
-          </span>
-          <span className="header-divider"/>
-          <button className="icon-btn" onClick={() => void loadProjects()} title="Làm mới" aria-label="Làm mới"><RefreshCcw size={17}/></button>
-          {isTauri() && <div className="window-controls" aria-label="Điều khiển cửa sổ">
-            <button type="button" aria-label="Thu nhỏ" title="Thu nhỏ" onClick={() => void windowAction("minimize")}><Minus size={15}/></button>
-            <button type="button" aria-label="Phóng to hoặc khôi phục" title="Phóng to / khôi phục" onClick={() => void windowAction("toggleMaximize")}><Square size={13}/></button>
-            <button type="button" className="window-close" aria-label="Đóng cửa sổ" title="Đóng cửa sổ" onClick={() => void windowAction("close")}><X size={17}/></button>
-          </div>}
-        </div>
+        <div className="titlebar-workflow"><WorkflowBar view={view} activeEpisodeView={view === "editor" ? episodeTool : view}
+          projects={projects} selectedId={selectedId} onNavigate={setView} onChoose={chooseProject} nextStep={nextStep}/></div>
       </header>
       <main className={"content view-" + view}>
-        <WorkflowBar view={view} projects={projects} selectedId={selectedId}
-          onNavigate={setView} onChoose={chooseProject} nextStep={nextStep}/>
         {(view === "ideas" || view === "progress") && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas mode={view} onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
-        {visited.has("review") && <div className="workflow-screen" hidden={view !== "review"}><Suspense fallback={<p>Đang mở trình xem MP4…</p>}><EpisodeExport key={selectedId ?? "empty"} project={currentProject} initialConceptId={reviewConceptId} active={view === "review"}/></Suspense></div>}
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}
           <span>{alert.message}</span><button onClick={() => setAlert(null)}>×</button>
@@ -432,20 +440,24 @@ export default function App() {
           </section>
         </>}
 
-        {visited.has("voice") && <div className="workflow-screen" hidden={view !== "voice"}><Suspense fallback={<p>Đang mở Voice Lab…</p>}>
-          <VoiceLab key={selectedId ?? "empty"} project={currentProject} active={view === "voice"} onChanged={() => {
-            setBuiltProjectId(null);
-            void loadProjects(); if (selectedId) void refreshSelected(selectedId);
-          }}/>
-        </Suspense></div>}
-
-        {visited.has("editor") && <div className="workflow-screen" hidden={view !== "editor"}>
-          <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
-            detail="Nạp module riêng khi mở Visual Workspace."/>}>
-            <EditingWorkbench title={currentProject?.display_title || currentProject?.episode_id} onVoice={() => setView("voice")} onExport={() => setView("review")} onImport={() => void importCapsule()}>
-              <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor"} onBuildReady={updateBuildReady} selection={selection} onSelectionChange={setSelection} onVoice={() => setView("voice")} onImport={() => void importCapsule()}/>
-            </EditingWorkbench>
-          </Suspense>
+        {(visited.has("voice") || visited.has("editor") || visited.has("review")) && <div className="workflow-screen episode-manager" hidden={view !== "editor"}>
+          {visited.has("voice") && <div className="episode-tool" hidden={episodeTool !== "voice"}><Suspense fallback={<p>Đang mở Voice Lab…</p>}>
+            <VoiceLab key={selectedId ?? "empty"} project={currentProject} active={view === "editor" && episodeTool === "voice"} onChanged={() => {
+              setBuiltProjectId(null);
+              void loadProjects(); if (selectedId) void refreshSelected(selectedId);
+            }}/>
+          </Suspense></div>}
+          {visited.has("editor") && <div className="episode-tool" hidden={episodeTool !== "editor"}>
+            <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
+              detail="Nạp module dựng khi mở phần Hình ảnh."/>}>
+              <EditingWorkbench title={currentProject?.display_title || currentProject?.episode_id} onImport={() => void importCapsule()}>
+                <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor" && episodeTool === "editor"} onBuildReady={updateBuildReady} selection={selection} onSelectionChange={setSelection} onVoice={() => setView("voice")} onImport={() => void importCapsule()}/>
+              </EditingWorkbench>
+            </Suspense>
+          </div>}
+          {visited.has("review") && <div className="episode-tool" hidden={episodeTool !== "review"}><Suspense fallback={<p>Đang mở trình xem MP4…</p>}>
+            <EpisodeExport key={selectedId ?? "empty"} project={currentProject} initialConceptId={reviewConceptId} active={view === "editor" && episodeTool === "review"}/>
+          </Suspense></div>}
         </div>}
 
         {view === "agent" && <>

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { openComposition, type Composition } from "@hyperframes/sdk";
-import { HyperframesLogo } from "@hyperframes/studio/ui";
+import type { Composition } from "@hyperframes/sdk";
 import { Check, FileJson, Layers3, LoaderCircle, Pause, Play, RefreshCcw, Undo2 } from "lucide-react";
 import { backend, type AgentTask, type CandidateResult, type Project, type VisualPreview, type VisualState, type VisualTransform, type VoiceState, type AgentHealth, type GalleryAsset } from "./backend";
 
@@ -135,6 +134,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     return ()=>{live=false;};
   },[active,projectId,scene?.id,effectiveBuildId,previewAttempt]);
   useEffect(() => {
+    if (!active) return;
     if (!projectId || !scene || !effectiveBuildId) {
       sdk.current?.dispose();sdk.current=null;loadedPreview.current=null;setPreview(null);setSdkReady(false);setPlaying(false);return;
     }
@@ -145,6 +145,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       if(loadedPreview.current?.scene_id===scene.id && loadedPreview.current.sha256===next.sha256 && loadedPreview.current.build_id===next.build_id && sdk.current) {
         setPreview(next);setSdkReady(true);setFrameReady(loadedFrames.current.has(next.url));return;
       }
+      const {openComposition}=await import("@hyperframes/sdk");
       const composition=await openComposition(next.html,{overrides:{},history:false});
       if(!live){composition.dispose();return;}
       sdk.current?.dispose();sdk.current=composition;
@@ -154,7 +155,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       setPreview(next);setSdkReady(true);setFrameReady(loadedFrames.current.has(next.url));setTime(at);playhead.current=at;
     }).catch(failure=>{if(live){setPlaying(false);report(failure);}});
     return ()=>{live=false;};
-  },[projectId,scene?.id,effectiveBuildId,candidateBuildId,previewAttempt,report]);
+  },[active,projectId,scene?.id,effectiveBuildId,candidateBuildId,previewAttempt,report]);
   useEffect(() => () => sdk.current?.dispose(), []);
   useEffect(() => {
     if (!active || !agentTask || !["STARTING", "RUNNING"].includes(agentTask.status)) return;
@@ -282,7 +283,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   </section>;
 
   return <section className="visual-editor" data-has-source={!!state?.intent}>
-    <div className="hf-head"><span className="hf-brand"><HyperframesLogo/><strong>Chọn cảnh · xem · chỉnh sửa</strong></span>
+    <div className="hf-head"><span className="hf-brand"><Layers3 size={16}/><strong>Chọn cảnh · xem · chỉnh sửa</strong></span>
       <span className="status-chip status-neutral">R{state?.revision ?? 0} · {sdkReady ? "HyperFrames SDK" : "Canonical Visual Intent"}</span></div>
     {error && <div className="inline-alert error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
     <div className="visual-toolbar"><button className="outline-btn" onClick={() => { setGalleryOpen(!galleryOpen); setSourceOpen(false); setLogOpen(false); setEventsOpen(false); setPlaying(false); }}>Kho hình ảnh</button><button className="outline-btn" hidden={!technicalOpen} onClick={() => { setSourceOpen(!sourceOpen); setLogOpen(false); setGalleryOpen(false); setEventsOpen(false); }}><FileJson size={15}/>Nguồn Visual Intent</button>

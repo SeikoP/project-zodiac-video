@@ -1,0 +1,1639 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 7,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"graphics\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#graphics",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"graphics\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-0\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-0",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-0\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-1\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-1",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-1\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-2\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-2",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-2\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-3\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-3",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-3\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-4\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-4",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-4\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      },
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"caption-5\"> is a timeline element that contains nested <p>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#caption-5",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-maket-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"caption-5\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 14,
+    "infoCount": 0,
+    "findings": [
+      {
+        "selector": "div.mast > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 120,
+          "y": 175,
+          "width": 351.69,
+          "height": 34
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 120,
+          "top": 175,
+          "right": 471.69,
+          "bottom": 209,
+          "width": 351.69,
+          "height": 34
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "MA KẾT / NGƯỜI THỪA",
+        "message": "<span> \"MA KẾT / NGƯỜI THỪA\" is outside the safe area: TikTok (top edge), Instagram Reels (top edge), YouTube Shorts (top edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.mast > strong:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 574.72,
+          "y": 181,
+          "width": 373.28,
+          "height": 34
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 574.72,
+          "top": 181,
+          "right": 948,
+          "bottom": 215,
+          "width": 373.28,
+          "height": 34
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "VOX STYLE ANIMATION",
+        "message": "<strong> \"VOX STYLE ANIMATION\" is outside the safe area: TikTok (top edge), Instagram Reels (top edge), YouTube Shorts (top edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "#cap-label",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 193,
+          "y": 1330,
+          "width": 137.09,
+          "height": 39
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 193,
+          "top": 1330,
+          "right": 330.09,
+          "bottom": 1369,
+          "width": 137.09,
+          "height": 39
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "MA KẾT",
+        "message": "<span> \"MA KẾT\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "#partner-label",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 763,
+          "y": 1330,
+          "width": 75.45,
+          "height": 39
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 763,
+          "top": 1330,
+          "right": 838.45,
+          "bottom": 1369,
+          "width": 75.45,
+          "height": 39
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "BẠN",
+        "message": "<span> \"BẠN\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.footer",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 120,
+          "y": 1780,
+          "width": 696.06,
+          "height": 34
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 120,
+          "top": 1780,
+          "right": 816.06,
+          "bottom": 1814,
+          "width": 696.06,
+          "height": 34
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "BẢN THỬ PHONG CÁCH · NỘI DUNG VÀ VOICE GỐC",
+        "message": "<div> \"BẢN THỬ PHONG CÁCH · NỘI DUNG VÀ VOICE GỐC\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "#caption-0 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 202.16,
+          "y": 1555.78,
+          "width": 675.67,
+          "height": 121.72
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 202.16,
+          "top": 1555.78,
+          "right": 877.83,
+          "bottom": 1677.5,
+          "width": 675.67,
+          "height": 121.72
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Ma Kết có thể chăm bạn đến mức...",
+        "message": "<p> \"Ma Kết có thể chăm bạn đến mức...\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 0.556,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          0.556
+        ]
+      },
+      {
+        "selector": "#caption-1 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 200.72,
+          "y": 1555.78,
+          "width": 678.55,
+          "height": 121.72
+        },
+        "time": 1.667,
+        "rect": {
+          "left": 200.72,
+          "top": 1555.78,
+          "right": 879.27,
+          "bottom": 1677.5,
+          "width": 678.55,
+          "height": 121.72
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "bạn bắt đầu thấy mình thành người thừa.",
+        "message": "<p> \"bạn bắt đầu thấy mình thành người thừa.\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 1.667,
+        "lastSeen": 2.778,
+        "occurrences": 2,
+        "heldMs": 0,
+        "times": [
+          1.667,
+          2.778
+        ]
+      },
+      {
+        "selector": "#caption-2 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 232.22,
+          "y": 1587.14,
+          "width": 615.55,
+          "height": 59
+        },
+        "time": 3.889,
+        "rect": {
+          "left": 232.22,
+          "top": 1587.14,
+          "right": 847.77,
+          "bottom": 1646.14,
+          "width": 615.55,
+          "height": 59
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Đi chơi, họ đã xem đường.",
+        "message": "<p> \"Đi chơi, họ đã xem đường.\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 3.889,
+        "lastSeen": 3.889,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          3.889
+        ]
+      },
+      {
+        "selector": "#caption-3 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 208,
+          "y": 1587.14,
+          "width": 664,
+          "height": 59
+        },
+        "time": 5,
+        "rect": {
+          "left": 208,
+          "top": 1587.14,
+          "right": 872,
+          "bottom": 1646.14,
+          "width": 664,
+          "height": 59
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Chọn chỗ ăn, họ đã đặt bàn.",
+        "message": "<p> \"Chọn chỗ ăn, họ đã đặt bàn.\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 5,
+        "lastSeen": 5,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          5
+        ]
+      },
+      {
+        "selector": "#help > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 119.28,
+          "y": 333,
+          "width": 335.64,
+          "height": 54
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 119.28,
+          "top": 333,
+          "right": 454.92,
+          "bottom": 387,
+          "width": 335.64,
+          "height": 54
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Bạn vừa đưa tay",
+        "message": "<p> \"Bạn vừa đưa tay\" is outside the safe area: TikTok (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 6.111,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          6.111
+        ]
+      },
+      {
+        "selector": "#help > h1:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 119.28,
+          "y": 472.67,
+          "width": 359.84,
+          "height": 114
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 119.28,
+          "top": 472.67,
+          "right": 479.12,
+          "bottom": 586.67,
+          "width": 359.84,
+          "height": 114
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "cái túi…",
+        "message": "<h1> \"cái túi…\" is outside the safe area: TikTok (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 6.111,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          6.111
+        ]
+      },
+      {
+        "selector": "#help > h1:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 119.28,
+          "y": 376.8,
+          "width": 423.86,
+          "height": 114
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 119.28,
+          "top": 376.8,
+          "right": 543.14,
+          "bottom": 490.8,
+          "width": 423.86,
+          "height": 114
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "xách giúp",
+        "message": "<span> \"xách giúp\" is outside the safe area: TikTok (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 6.111,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          6.111
+        ]
+      },
+      {
+        "selector": "#caption-4 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 172.09,
+          "y": 1524.42,
+          "width": 735.8,
+          "height": 184.44
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 172.09,
+          "top": 1524.42,
+          "right": 907.89,
+          "bottom": 1708.86,
+          "width": 735.8,
+          "height": 184.44
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Bạn vừa đưa tay xách giúp cái túi, Ma Kết đáp ng",
+        "message": "<p> \"Bạn vừa đưa tay xách giúp cái túi, Ma Kết đáp ng\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 8.333,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          6.111,
+          7.222,
+          8.333
+        ]
+      },
+      {
+        "selector": "#caption-5 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 172.91,
+          "y": 1587.14,
+          "width": 734.17,
+          "height": 59
+        },
+        "time": 9.444,
+        "rect": {
+          "left": 172.91,
+          "top": 1587.14,
+          "right": 907.08,
+          "bottom": 1646.14,
+          "width": 734.17,
+          "height": 59
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Mới đầu nghe cũng ấm áp thật.",
+        "message": "<p> \"Mới đầu nghe cũng ấm áp thật.\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 9.444,
+        "lastSeen": 9.444,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          9.444
+        ]
+      }
+    ],
+    "duration": 10,
+    "samples": [
+      0.556,
+      1.667,
+      2.778,
+      3.889,
+      5,
+      6.111,
+      7.222,
+      8.333,
+      9.444
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 14,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0.556,
+      2.778,
+      5,
+      7.222,
+      9.444
+    ],
+    "checked": 39,
+    "passed": 39
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 11,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Ma Kết có thể chăm bạn đến mức...\" (8 words) is on screen 1.33 s (±0.01 s), under its 2.17 s floor: hold it about 0.5 s + 0.3 s a word (2.90 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Ma Kết có thể chăm bạn đến mức...",
+        "selector": "#caption-0 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 202.16,
+          "y": 1555.78,
+          "width": 675.67,
+          "height": 121.72000000000003
+        },
+        "time": 0,
+        "words": 8,
+        "seconds": 1.332,
+        "floorSeconds": 2.175,
+        "measured": [
+          {
+            "time": 0,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 0.125,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 0.25,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 0.375,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 0.875,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1.125,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1.25,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.625,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"bạn bắt đầu thấy mình thành người thừa.\" (8 words) is on screen 1.23 s (±0.01 s), under its 2.17 s floor: hold it about 0.5 s + 0.3 s a word (2.90 s here) before it leaves or changes; see references/motion.md.",
+        "text": "bạn bắt đầu thấy mình thành người thừa.",
+        "selector": "#caption-1 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 200.72,
+          "y": 1555.78,
+          "width": 678.55,
+          "height": 121.72000000000003
+        },
+        "time": 1.57,
+        "words": 8,
+        "seconds": 1.234,
+        "floorSeconds": 2.175,
+        "measured": [
+          {
+            "time": 1.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.625,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1.75,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 1.875,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2.375,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2.5,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2.625,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2.75,
+            "opacity": 1,
+            "heightPx": 122
+          },
+          {
+            "time": 2.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3.125,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"bạn bắt đầu thấy mình thành\" (6 words) is on screen 1.40 s (±0.01 s), under its 1.72 s floor: hold it about 0.5 s + 0.3 s a word (2.30 s here) before it leaves or changes; see references/motion.md.",
+        "text": "bạn bắt đầu thấy mình thành",
+        "selector": "#surplus > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 120,
+          "y": 333.61,
+          "width": 607.21,
+          "height": 55.44999999999999
+        },
+        "time": 1.602,
+        "words": 6,
+        "seconds": 1.398,
+        "floorSeconds": 1.725,
+        "measured": [
+          {
+            "time": 1.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 1.625,
+            "opacity": 0.67,
+            "heightPx": 55
+          },
+          {
+            "time": 1.75,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 1.875,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 2,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 2.5,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 2.625,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 2.75,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 2.875,
+            "opacity": 1,
+            "heightPx": 54
+          },
+          {
+            "time": 3,
+            "opacity": 0.44,
+            "heightPx": 54
+          },
+          {
+            "time": 3.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3.25,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Đi chơi, họ đã xem đường.\" (6 words) is on screen 1.07 s (±0.01 s), under its 1.72 s floor: hold it about 0.5 s + 0.3 s a word (2.30 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Đi chơi, họ đã xem đường.",
+        "selector": "#caption-2 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 232.22,
+          "y": 1587.14,
+          "width": 615.55,
+          "height": 59
+        },
+        "time": 3.07,
+        "words": 6,
+        "seconds": 1.07,
+        "floorSeconds": 1.725,
+        "measured": [
+          {
+            "time": 2.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 2.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 3.125,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 3.25,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 3.375,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 3.5,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 3.75,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 3.875,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4.125,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.5,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Chọn chỗ ăn, họ đã đặt bàn.\" (7 words) is on screen 1.03 s (±0.01 s), under its 1.95 s floor: hold it about 0.5 s + 0.3 s a word (2.60 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Chọn chỗ ăn, họ đã đặt bàn.",
+        "selector": "#caption-3 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 208,
+          "y": 1587.14,
+          "width": 664,
+          "height": 59
+        },
+        "time": 4.469,
+        "words": 7,
+        "seconds": 1.031,
+        "floorSeconds": 1.95,
+        "measured": [
+          {
+            "time": 4.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.5,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4.625,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4.75,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 4.875,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 5,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 5.125,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 5.25,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 5.375,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 5.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.75,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"CHỌN CHỖ ĂN Họ đã đặt bàn.\" (7 words) is on screen 1.34 s (±0.01 s), under its 1.95 s floor: hold it about 0.5 s + 0.3 s a word (2.60 s here) before it leaves or changes; see references/motion.md.",
+        "text": "CHỌN CHỖ ĂN Họ đã đặt bàn.",
+        "selector": "#table",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 189.53,
+          "y": 565.53,
+          "width": 298.51,
+          "height": 60.950000000000045
+        },
+        "time": 4.5,
+        "words": 7,
+        "seconds": 1.336,
+        "floorSeconds": 1.95,
+        "measured": [
+          {
+            "time": 4.125,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.25,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.375,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 4.5,
+            "opacity": 0.54,
+            "heightPx": 61
+          },
+          {
+            "time": 4.625,
+            "opacity": 0.91,
+            "heightPx": 57
+          },
+          {
+            "time": 4.75,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 4.875,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 5.375,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 5.5,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 5.625,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 5.75,
+            "opacity": 1,
+            "heightPx": 56
+          },
+          {
+            "time": 5.875,
+            "opacity": 0.08,
+            "heightPx": 56
+          },
+          {
+            "time": 6,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 6.125,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"Bạn vừa đưa tay xách giúp cái túi, Ma Kết đáp ngay: “Thôi...\" (15 words) is on screen 2.84 s (±0.01 s), under its 3.75 s floor: hold it about 0.5 s + 0.3 s a word (5.00 s here) before it leaves or changes; see references/motion.md.",
+        "text": "Bạn vừa đưa tay xách giúp cái túi, Ma Kết đáp ngay: “Thôi, để tôi.”",
+        "selector": "#caption-4 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 172.09,
+          "y": 1524.42,
+          "width": 735.8,
+          "height": 184.44000000000005
+        },
+        "time": 5.938,
+        "words": 15,
+        "seconds": 2.836,
+        "floorSeconds": 3.75,
+        "measured": [
+          {
+            "time": 5.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 5.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 6,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 6.125,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 6.25,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 6.375,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 8.375,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 8.5,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 8.625,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 8.75,
+            "opacity": 1,
+            "heightPx": 184
+          },
+          {
+            "time": 8.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9.125,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "\"“THÔI, ĐỂ TÔI.”\" (3 words) is on screen 0.84 s (±0.01 s), under its 1.05 s floor: hold it about 0.5 s + 0.3 s a word (1.40 s here) before it leaves or changes; see references/motion.md.",
+        "text": "“THÔI, ĐỂ TÔI.”",
+        "selector": "#quote > h1:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 152.76,
+          "y": 454.06,
+          "width": 437.55999999999995,
+          "height": 137.53000000000003
+        },
+        "time": 7.938,
+        "words": 3,
+        "seconds": 0.836,
+        "floorSeconds": 1.05,
+        "measured": [
+          {
+            "time": 7.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 7.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8,
+            "opacity": 0.95,
+            "heightPx": 138
+          },
+          {
+            "time": 8.125,
+            "opacity": 1,
+            "heightPx": 136
+          },
+          {
+            "time": 8.25,
+            "opacity": 1,
+            "heightPx": 136
+          },
+          {
+            "time": 8.375,
+            "opacity": 1,
+            "heightPx": 136
+          },
+          {
+            "time": 8.5,
+            "opacity": 1,
+            "heightPx": 136
+          },
+          {
+            "time": 8.625,
+            "opacity": 1,
+            "heightPx": 136
+          },
+          {
+            "time": 8.75,
+            "opacity": 0.52,
+            "heightPx": 136
+          },
+          {
+            "time": 8.875,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 9.125,
+            "opacity": null,
+            "heightPx": null
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Mới đầu nghe cũng ấm áp thật.\" (7 words) is on screen 1.23 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Mới đầu nghe cũng ấm áp thật.",
+        "selector": "#caption-5 > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 172.91,
+          "y": 1587.14,
+          "width": 734.17,
+          "height": 59
+        },
+        "time": 8.773,
+        "words": 7,
+        "seconds": 1.23,
+        "floorSeconds": 2,
+        "measured": [
+          {
+            "time": 8.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.875,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.125,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.25,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.5,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.625,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.75,
+            "opacity": 1,
+            "heightPx": 59
+          },
+          {
+            "time": 9.875,
+            "opacity": 1,
+            "heightPx": 59
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Mới đầu nghe cũng ấm áp thật.\" (7 words) is on screen 1.14 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Mới đầu nghe cũng ấm áp thật.",
+        "selector": "#warm > h1:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 120,
+          "y": 406.77,
+          "width": 644.89,
+          "height": 99
+        },
+        "time": 8.867,
+        "words": 7,
+        "seconds": 1.137,
+        "floorSeconds": 2,
+        "measured": [
+          {
+            "time": 8.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.875,
+            "opacity": 0.63,
+            "heightPx": 99
+          },
+          {
+            "time": 9,
+            "opacity": 0.99,
+            "heightPx": 99
+          },
+          {
+            "time": 9.125,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.25,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.5,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.625,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.75,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.875,
+            "opacity": 1,
+            "heightPx": 99
+          }
+        ]
+      },
+      {
+        "code": "line_unread",
+        "severity": "warning",
+        "message": "The film's last line \"Mới đầu nghe\" (3 words) is on screen 1.14 s (±0.01 s), under the 2.00 s a closing line needs: hold it about 0.5 s + 0.3 s a word and at least 2 s before the film ends; see references/motion.md.",
+        "text": "Mới đầu nghe",
+        "selector": "#warm > h1:nth-of-type(1) > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 120,
+          "y": 311.59,
+          "width": 503.03,
+          "height": 99
+        },
+        "time": 8.867,
+        "words": 3,
+        "seconds": 1.137,
+        "floorSeconds": 2,
+        "measured": [
+          {
+            "time": 8.5,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.625,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.75,
+            "opacity": null,
+            "heightPx": null
+          },
+          {
+            "time": 8.875,
+            "opacity": 0.63,
+            "heightPx": 99
+          },
+          {
+            "time": 9,
+            "opacity": 0.99,
+            "heightPx": 99
+          },
+          {
+            "time": 9.125,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.25,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.5,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.625,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.75,
+            "opacity": 1,
+            "heightPx": 99
+          },
+          {
+            "time": 9.875,
+            "opacity": 1,
+            "heightPx": 99
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 80
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}
