@@ -58,6 +58,8 @@ Implementation authorized. [Execution evidence](../../audits/2026-11-23-studio-w
 
 ## Global Constraints (every phase)
 
+2026-11-24 phased implementation authorized: [independent Graph evaluation](../specs/2026-11-24-studio-graph-evaluation-design.md) and [new proposed roadmap / outstanding phase ledger](2026-11-24-studio-graph-roadmap.md) assess a scene relationship graph against the existing Timeline and a structure-tree alternative. R0 baseline and blockers run first; optional Graph/tree experiment follows the R0 gate. No default switch is approved; P5/P6/P7 and genuine human acceptance remain open.
+
 - At each completed task: verify its required checks, update evidence/roadmap,
   commit and push to the current working branch for remote repair. This is an
   explicit user requirement added 2026-11-22; see [repository instructions](../../../AGENTS.md).

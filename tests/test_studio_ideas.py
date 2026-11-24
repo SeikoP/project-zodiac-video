@@ -92,7 +92,7 @@ class IdeasTests(unittest.TestCase):
             self.assertIn('"' + method + '"', host)
 
     def test_existing_registry_projects_survive_additive_schema(self):
-        root = self.root / 'existing-store'
+        root = self.root.resolve() / 'existing-store'
         registry = EpisodeRegistry(root)
         project = ProjectHandle('ep-existing', root / 'episodes/existing', 'a' * 64, 'existing')
         registry.register(project, 'b' * 64)

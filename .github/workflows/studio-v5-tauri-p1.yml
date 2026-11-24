@@ -22,6 +22,10 @@ on:
       - "tests/test_studio_ideas.py"
       - "tests/test_studio_agent_authoring.py"
       - "tests/studio_ideas*"
+      - "tests/test_studio_ci.py"
+      - "tests/studio_episode_timeline.test.mjs"
+      - "tests/studio_workbench*"
+      - "tests/studio_compact_layout.mjs"
       - ".github/workflows/studio-v5-tauri-p1.yml"
   workflow_dispatch:
 
@@ -67,9 +71,12 @@ jobs:
           python -m unittest tests.test_studio_agent_authoring -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest tests.test_studio_voice_worker tests.test_studio_agent_grammar_context tests.test_studio_authoring_binding -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tests -p 'test_job5_historical_contract.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest tests.test_studio_ci -q
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Frontend dependencies (locked)
         working-directory: apps/zodiac-studio
@@ -97,6 +104,30 @@ jobs:
       - name: Rust typecheck (locked)
         working-directory: apps/zodiac-studio/src-tauri
         run: cargo check --locked
+      - name: Browser workbench and compact layout fixtures
+        shell: pwsh
+        run: |
+          npm install --prefix .runtime/ci-browser --no-save --package-lock=false playwright@1.65.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node .runtime/ci-browser/node_modules/playwright/cli.js install chromium
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:PLAYWRIGHT_MODULE = Join-Path $PWD '.runtime/ci-browser/node_modules/playwright/index.mjs'
+          $env:STUDIO_BROWSER = node --input-type=module -e "import {chromium} from './.runtime/ci-browser/node_modules/playwright/index.mjs'; console.log(chromium.executablePath())"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vite = Start-Process -FilePath 'node' -ArgumentList 'node_modules/vite/bin/vite.js --host 127.0.0.1 --port 1420 --strictPort' -WorkingDirectory (Join-Path $PWD 'apps/zodiac-studio') -WindowStyle Hidden -PassThru
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              try { $null = Invoke-WebRequest 'http://127.0.0.1:1420' -TimeoutSec 2; $ready = $true; break } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ready) { throw 'Studio Vite fixture server did not start' }
+            node tests/studio_workbench_browser.mjs
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            node tests/studio_compact_layout.mjs
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Stop-Process -Id $vite.Id -ErrorAction SilentlyContinue
+          }
       - name: Rust host tests (locked)
         working-directory: apps/zodiac-studio/src-tauri
         run: cargo test --locked
