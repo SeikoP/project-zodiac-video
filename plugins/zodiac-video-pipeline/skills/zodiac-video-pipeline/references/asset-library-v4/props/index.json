@@ -1,6 +1,6 @@
 {
   "format": "zodiac-v4-prop-catalog@1",
-  "version": "4.3",
+  "version": "4.4",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -1015,6 +1015,236 @@
         "photo",
         "date",
         "meal"
+      ]
+    },
+    {
+      "id": "laptop",
+      "path": "props/laptop.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "study",
+        "chat"
+      ]
+    },
+    {
+      "id": "alarm-clock",
+      "path": "props/alarm-clock.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "study",
+        "reaction"
+      ]
+    },
+    {
+      "id": "lightbulb",
+      "path": "props/lightbulb.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "megaphone",
+      "path": "props/megaphone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "evidence"
+      ]
+    },
+    {
+      "id": "bubble-tea",
+      "path": "props/bubble-tea.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "takeaway-cup",
+      "path": "props/takeaway-cup.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "camera",
+      "path": "props/camera.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "evidence",
+        "social"
+      ]
+    },
+    {
+      "id": "potted-plant",
+      "path": "props/potted-plant.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "sunglasses",
+      "path": "props/sunglasses.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "game-controller",
+      "path": "props/game-controller.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "shopping-bag",
+      "path": "props/shopping-bag.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "clipboard",
+      "path": "props/clipboard.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "evidence",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "padlock",
+      "path": "props/padlock.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "paper-plane",
+      "path": "props/paper-plane.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "social",
+        "reaction"
+      ]
+    },
+    {
+      "id": "trophy",
+      "path": "props/trophy.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "reaction",
+        "social"
+      ]
+    },
+    {
+      "id": "balloon",
+      "path": "props/balloon.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "piggy-bank",
+      "path": "props/piggy-bank.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "daily-life",
+        "reaction"
+      ]
+    },
+    {
+      "id": "earbuds-case",
+      "path": "props/earbuds-case.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "smartwatch",
+      "path": "props/smartwatch.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "evidence",
+        "general"
+      ]
+    },
+    {
+      "id": "flower-bouquet",
+      "path": "props/flower-bouquet.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "headphones",
+      "path": "props/headphones.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "daily-life",
+        "reaction"
+      ]
+    },
+    {
+      "id": "battery-low",
+      "path": "props/battery-low.svg",
+      "role": "story_prop",
+      "contexts": [
+        "reaction",
+        "evidence",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "tote-bag",
+      "path": "props/tote-bag.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
       ]
     }
   ]

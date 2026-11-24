@@ -40,7 +40,7 @@ export async function validateCharacterAssembly(packageRoot,planPath=null){
     const spec=byEntity.get(entity.id);if(!spec)fail('CHARACTER_ASSEMBLY_PLAN_INVALID',`character entity ${entity.id} is missing from assembly plan`);
     const {state_id:actingStateId=entity.initial_state,...acting}=scene.visual_grammar?.meme_composition?.acting_requirements?.[entity.id]??{};
     const shirtColorId=resolvedShirtColors.get(spec.entity_id);
-    const identity={entity_id:spec.entity_id,body_profile:spec.body_profile,hair_id:spec.hair_id,face_profile_id:spec.face_profile_id??'balanced',accessory_id:spec.accessory_id??'none',outfit_id:spec.outfit_id,zodiac_sign_id:spec.zodiac_sign_id,shirt_color_id:shirtColorId,variant_seed:spec.variant_seed??spec.entity_id};
+    const identity={entity_id:spec.entity_id,body_profile:spec.body_profile,hair_id:spec.hair_id,face_profile_id:spec.face_profile_id??'balanced',skin_tone_id:spec.skin_tone_id,accessory_id:spec.accessory_id??'none',outfit_id:spec.outfit_id,zodiac_sign_id:spec.zodiac_sign_id,shirt_color_id:shirtColorId,variant_seed:spec.variant_seed??spec.entity_id};
     const expectedSignature=identitySignature(identity);
     for(const [stateId,state] of Object.entries(entity.states??{})){
       const stateSpec=spec.states?.[stateId];if(!stateSpec)fail('CHARACTER_ASSEMBLY_PLAN_INVALID',`${entity.id} missing state spec ${stateId}`);
