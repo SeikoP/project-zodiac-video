@@ -77,6 +77,7 @@ class StudioProjectService:
         status = asdict(resolve_episode_status(handle))
         label = handle.episode_id
         sign = None
+        concept_code = None
         # Human-readable working title comes only from the hash-verified source.
         # It is never promoted to a final publish title or creative approval.
         if status["content"] == "APPROVED":
@@ -90,6 +91,9 @@ class StudioProjectService:
                     scope_sign = scope.get("sign")
                     if isinstance(scope_sign, str):
                         sign = scope_sign.strip()[:64]
+                    scope_concept = scope.get("concept_code")
+                    if isinstance(scope_concept, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", scope_concept.strip()):
+                        concept_code = scope_concept.strip()
                 except (OSError, ValueError, TypeError):
                     pass
         return {
@@ -97,6 +101,7 @@ class StudioProjectService:
             "episode_id": handle.episode_id,
             "display_title": label,
             "sign": sign,
+            "concept_code": concept_code,
             "source_sha256": handle.imported_source_sha256,
             "revision": self.registry.current_revision(handle.project_id),
             "status": status,

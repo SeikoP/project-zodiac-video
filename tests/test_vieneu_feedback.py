@@ -153,3 +153,19 @@ class VieNeuQtTests(unittest.TestCase):
         self.assertFalse(w.detail_body.isVisibleTo(w))
         w.reset_measured_progress()
         self.assertTrue(w.voice_detail.isHidden())
+
+
+class VieNeuModelChoiceTests(unittest.TestCase):
+    """A VieNeu update that renames a model must not break loading it from the studio."""
+
+    def test_choice_uses_the_server_spelling_and_falls_back_when_missing(self):
+        from tools.studio.vieneu_client import dropdown_choice
+        config = {"components": [
+            {"type": "textbox", "props": {"choices": [["x", "VieNeu-TTS-v3-Turbo"]]}},
+            {"type": "dropdown", "props": {"choices": [["Turbo", "VieNeu-TTS-v3-Turbo (new release)"], ["Nano", "VieNeu-TTS-v3-Nano (preview)"]]}},
+            {"type": "dropdown", "props": {"choices": ["NeuCodec (Distill)", "VieNeu-Codec"]}},
+        ]}
+        self.assertEqual(dropdown_choice(config, "VieNeu-TTS-v3-Turbo", "old"), "VieNeu-TTS-v3-Turbo (new release)")
+        self.assertEqual(dropdown_choice(config, "VieNeu-Codec", "old"), "VieNeu-Codec")
+        self.assertEqual(dropdown_choice(config, "Missing", "fallback"), "fallback")
+        self.assertEqual(dropdown_choice(None, "VieNeu-Codec", "fallback"), "fallback")
