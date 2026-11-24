@@ -432,6 +432,36 @@
     },
     {
       "id": "phone-call"
+    },
+    {
+      "id": "wave"
+    },
+    {
+      "id": "cheer"
+    },
+    {
+      "id": "arms-crossed"
+    },
+    {
+      "id": "think-chin"
+    },
+    {
+      "id": "shush"
+    },
+    {
+      "id": "hand-on-chest"
+    },
+    {
+      "id": "point-up"
+    },
+    {
+      "id": "beckon"
+    },
+    {
+      "id": "salute"
+    },
+    {
+      "id": "dance"
     }
   ],
   "crops": [

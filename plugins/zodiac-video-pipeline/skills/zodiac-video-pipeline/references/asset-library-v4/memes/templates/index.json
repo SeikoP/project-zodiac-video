@@ -155,6 +155,56 @@
       "id": "call-for-help",
       "path": "templates/call-for-help.json",
       "source_reference": "https://cdn.pico.vn/2026/01/15/17684493549289594310.jpeg"
+    },
+    {
+      "id": "cheer-too-early",
+      "path": "templates/cheer-too-early.json",
+      "historical_source": "new:2026-11-26/cheer-too-early"
+    },
+    {
+      "id": "arms-crossed-refuse",
+      "path": "templates/arms-crossed-refuse.json",
+      "historical_source": "new:2026-11-26/arms-crossed-refuse"
+    },
+    {
+      "id": "shush-secret",
+      "path": "templates/shush-secret.json",
+      "historical_source": "new:2026-11-26/shush-secret"
+    },
+    {
+      "id": "think-chin-overthink",
+      "path": "templates/think-chin-overthink.json",
+      "historical_source": "new:2026-11-26/think-chin-overthink"
+    },
+    {
+      "id": "point-up-idea",
+      "path": "templates/point-up-idea.json",
+      "historical_source": "new:2026-11-26/point-up-idea"
+    },
+    {
+      "id": "beckon-come-here",
+      "path": "templates/beckon-come-here.json",
+      "historical_source": "new:2026-11-26/beckon-come-here"
+    },
+    {
+      "id": "wave-goodbye-late",
+      "path": "templates/wave-goodbye-late.json",
+      "historical_source": "new:2026-11-26/wave-goodbye-late"
+    },
+    {
+      "id": "salute-yes-boss",
+      "path": "templates/salute-yes-boss.json",
+      "historical_source": "new:2026-11-26/salute-yes-boss"
+    },
+    {
+      "id": "hand-on-chest-promise",
+      "path": "templates/hand-on-chest-promise.json",
+      "historical_source": "new:2026-11-26/hand-on-chest-promise"
+    },
+    {
+      "id": "dance-payday",
+      "path": "templates/dance-payday.json",
+      "historical_source": "new:2026-11-26/dance-payday"
     }
   ]
 }

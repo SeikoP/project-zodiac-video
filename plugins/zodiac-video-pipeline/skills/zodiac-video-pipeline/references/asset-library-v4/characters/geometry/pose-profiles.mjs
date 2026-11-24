@@ -36,6 +36,16 @@ export const posePaths=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR,[h
  // Per-profile authored leg geometry: do not scale the entire sticker.
  // Preserve hip joints while changing knee/ankle/foot reach across every pose.
  p.shrug={...p.neutral,la:`M${lx} ${ly} Q${lx-50} ${ly+48} 112 470 Q96 449 95 430`,ra:`M${rx} ${ry} Q${rx+52} ${ry+46} 407 468 Q424 448 425 430`};
+ p.wave={...p.neutral,ra:`M${rx} ${ry} Q${rx+34} ${ry-14} ${Math.min(rx+50,490)} ${ry-62} Q${Math.min(rx+54,494)} ${ry-76} ${Math.min(rx+58,498)} ${ry-84}`};
+ p.cheer={...p.neutral,la:`M${lx} ${ly} Q${lx-36} ${ly-30} ${lx-48} ${ly-96} Q${lx-50} ${ly-112} ${lx-46} ${ly-122}`,ra:`M${rx} ${ry} Q${rx+38} ${ry-34} ${Math.min(rx+52,494)} ${ry-104} Q${Math.min(rx+55,497)} ${ry-120} ${Math.min(rx+50,492)} ${ry-130}`};
+ p['arms-crossed']={...p.neutral,la:`M${lx} ${ly} Q${lx+40} ${ly+62} ${rx-22} ${ry+54}`,ra:`M${rx} ${ry} Q${rx-40} ${ry+56} ${lx+26} ${ly+50}`};
+ p['think-chin']={...p.neutral,la:`M${lx} ${ly} Q${lx+26} ${ly+52} 254 ${ry+34}`,ra:`M${rx} ${ry} Q${rx+28} ${ry-8} 330 470 Q312 462 294 458`};
+ p.shush={...p.neutral,ra:`M${rx} ${ry} Q${rx+30} ${ry-34} 336 410 Q316 396 300 388`};
+ p['hand-on-chest']={...p.neutral,ra:`M${rx} ${ry} Q${rx-6} ${ry+30} 300 548`};
+ p['point-up']={...p.neutral,ra:`M${rx} ${ry} Q${rx+34} ${ry-60} ${Math.min(rx+40,480)} 300 Q${Math.min(rx+42,482)} 280 ${Math.min(rx+40,480)} 262`};
+ p.beckon={...p.neutral,ra:`M${rx} ${ry} Q${rx+36} ${ry+6} ${Math.min(rx+74,480)} ${ry-30} Q${Math.min(rx+86,492)} ${ry-44} ${Math.min(rx+80,490)} ${ry-60}`};
+ p.salute={...p.neutral,ra:`M${rx} ${ry} Q${rx+30} ${ry-40} 360 330 Q344 300 350 245`};
+ p.dance={la:`M${lx} ${ly} Q${lx-40} ${ly-30} ${lx-60} ${ly-84}`,ra:`M${rx} ${ry} Q${rx+36} ${ry+30} ${Math.min(rx+60,495)} ${ry+92}`,ll:`M${hlx} ${hly} Q${hlx-18} ${hly+28} ${hlx-34} 704 Q${hlx-41} 711 ${hlx-48} 714`,rl:`M${hrx} ${hry} Q${hrx+14} ${hry+27} ${hrx+30} 703 Q${hrx+38} 710 ${hrx+45} 714`};
  const footOffsets={standard_compact:0,round_soft:-9,lean_tall:31,stocky_short:-35,petite_compact:-42,lanky_slouch:25};
  const offset=footOffsets[b.profile_id??'standard_compact']??0;
  const ret=p[id];
@@ -79,6 +89,16 @@ export const handPoints=(id,b)=>{const [lx,ly]=b.shoulderL,[rx,ry]=b.shoulderR;r
  ,'cheek-poke':[[lx-65,ly+92],[500,325]]
  ,slump:[[120,655],[401,658]]
  ,shrug:[[95,430],[425,430]]
+ ,wave:[[lx-65,ly+92],[Math.min(rx+58,498),ry-84]]
+ ,cheer:[[lx-46,ly-122],[Math.min(rx+50,492),ry-130]]
+ ,'arms-crossed':[[rx-22,ry+54],[lx+26,ly+50]]
+ ,'think-chin':[[254,ry+34],[294,458]]
+ ,shush:[[lx-65,ly+92],[300,388]]
+ ,'hand-on-chest':[[lx-65,ly+92],[300,548]]
+ ,'point-up':[[lx-65,ly+92],[Math.min(rx+40,480),262]]
+ ,beckon:[[lx-65,ly+92],[Math.min(rx+80,490),ry-60]]
+ ,salute:[[lx-65,ly+92],[350,245]]
+ ,dance:[[lx-60,ly-84],[Math.min(rx+60,495),ry+92]]
  })[id];};
 // A facepalm covers the brow; the ordinary hand contour reads as an eye-poking fingertip.
 export const handShape=([x,y],side,poseId)=>poseId==='stop-hand'&&side==='right'?`M${x-15} ${y+15} L${x-32} ${y-5} Q${x-41} ${y-19} ${x-30} ${y-22} L${x-15} ${y-10} L${x-18} ${y-57} Q${x-15} ${y-69} ${x-8} ${y-57} L${x-5} ${y-26} L${x-3} ${y-65} Q${x+2} ${y-76} ${x+7} ${y-63} L${x+10} ${y-25} L${x+14} ${y-58} Q${x+21} ${y-68} ${x+25} ${y-55} L${x+24} ${y-22} L${x+29} ${y-43} Q${x+37} ${y-53} ${x+39} ${y-39} L${x+33} ${y+1} Q${x+29} ${y+20} ${x+9} ${y+22}Z`:poseId==='facepalm'&&side==='right'?`M${x} ${y+10} Q${x-18} ${y+23} ${x-32} ${y+6} L${x-68} ${y-40} Q${x-75} ${y-50} ${x-68} ${y-56} Q${x-61} ${y-60} ${x-53} ${y-51} L${x-37} ${y-35} L${x-58} ${y-71} Q${x-63} ${y-82} ${x-55} ${y-85} Q${x-47} ${y-87} ${x-41} ${y-75} L${x-22} ${y-45} L${x-35} ${y-81} Q${x-38} ${y-92} ${x-29} ${y-93} Q${x-21} ${y-93} ${x-17} ${y-81} L${x-4} ${y-48} L${x-10} ${y-77} Q${x-12} ${y-87} ${x-4} ${y-88} Q${x+5} ${y-87} ${x+6} ${y-75} L${x+13} ${y-32} Q${x+20} ${y-23} ${x+16} ${y-11} L${x+8} ${y+5}Z`:side==='left'?`M${x-9} ${y} Q${x-3} ${y-11} ${x+7} ${y-4} Q${x+12} ${y+6} ${x+2} ${y+11} Q${x-8} ${y+9} ${x-9} ${y}Z`:`M${x-8} ${y-3} Q${x+1} ${y-11} ${x+10} ${y-1} Q${x+9} ${y+9} ${x-2} ${y+11} Q${x-11} ${y+5} ${x-8} ${y-3}Z`;

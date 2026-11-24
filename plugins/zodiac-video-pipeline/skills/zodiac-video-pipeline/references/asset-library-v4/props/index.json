@@ -1246,6 +1246,96 @@
         "social",
         "general"
       ]
+    },
+    {
+      "id": "meme-label-cheer-too-early",
+      "path": "props/meme-label-cheer-too-early.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "cheer-too-early"
+      ]
+    },
+    {
+      "id": "meme-label-arms-crossed-refuse",
+      "path": "props/meme-label-arms-crossed-refuse.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "arms-crossed-refuse"
+      ]
+    },
+    {
+      "id": "meme-label-shush-secret",
+      "path": "props/meme-label-shush-secret.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "shush-secret"
+      ]
+    },
+    {
+      "id": "meme-label-think-chin-overthink",
+      "path": "props/meme-label-think-chin-overthink.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "think-chin-overthink"
+      ]
+    },
+    {
+      "id": "meme-label-point-up-idea",
+      "path": "props/meme-label-point-up-idea.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "point-up-idea"
+      ]
+    },
+    {
+      "id": "meme-label-beckon-come-here",
+      "path": "props/meme-label-beckon-come-here.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "beckon-come-here"
+      ]
+    },
+    {
+      "id": "meme-label-wave-goodbye-late",
+      "path": "props/meme-label-wave-goodbye-late.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "wave-goodbye-late"
+      ]
+    },
+    {
+      "id": "meme-label-salute-yes-boss",
+      "path": "props/meme-label-salute-yes-boss.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "salute-yes-boss"
+      ]
+    },
+    {
+      "id": "meme-label-hand-on-chest-promise",
+      "path": "props/meme-label-hand-on-chest-promise.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "hand-on-chest-promise"
+      ]
+    },
+    {
+      "id": "meme-label-dance-payday",
+      "path": "props/meme-label-dance-payday.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "dance-payday"
+      ]
     }
   ]
 }
