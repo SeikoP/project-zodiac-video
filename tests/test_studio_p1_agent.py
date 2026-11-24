@@ -292,6 +292,9 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAILED")
         self.assertIn("still invalid", result["error"])
         self.assertEqual(sum(m.get("method") == "turn/start" for m in sent), 2)
+        self.assertEqual(len(result["validation_attempts"]), 2)
+        self.assertTrue(all(row["raw_output_sha256"] for row in result["validation_attempts"]))
+        self.assertEqual(json.loads(result["preview"])["payload"]["intent"]["scenes"], [])
         self.assertFalse(result["write_applied"])
 
 

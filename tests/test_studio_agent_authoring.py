@@ -38,6 +38,19 @@ class AgentAuthoringTests(unittest.TestCase):
         self.assertEqual(self.manager.task(task["task_id"])["applied_command_id"], "author")
         self.assertNotEqual(self.service.project(self.project)["status"]["visual"], "APPROVED")
 
+    def test_missing_required_story_visual_names_the_reference_to_repair(self):
+        from tools.studio_project.agent_authoring import proposal
+        plan = {"story_visual_decision": {"mode": "required"}, "story_visuals": [{"id": "SV01"}]}
+        (self.handle.workspace / '.authoring/narrative-plan.json').write_text(json.dumps(plan), encoding='utf-8')
+        with patch.object(self.service, 'project', return_value={'status': {'content': 'APPROVED'}}):
+            with self.assertRaises(StudioError) as caught:
+                proposal(json.dumps({'kind': 'source.replace', 'payload': {'intent': self.intent}}),
+                         self.service, self.project)
+        self.assertEqual(caught.exception.code, 'AGENT_PROPOSAL_INVALID')
+        self.assertIn('SV01', str(caught.exception))
+        self.assertIn('phase1_visual_id', str(caught.exception))
+        self.assertFalse((self.handle.workspace / '.authoring/visual-intent.json').exists())
+
     def test_retry_context_reuses_only_a_candidate_with_matching_source_voice_and_catalog(self):
         old = self.start()
         self.manager._update(old["task_id"], status="FAILED", preview=json.dumps({"kind": "source.replace", "payload": {"intent": self.intent}}))

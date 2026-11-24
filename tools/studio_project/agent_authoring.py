@@ -207,8 +207,11 @@ def proposal(text, service, project_id, *, write_visuals=False):
                                      "reason": direction.get("contribution", scene["semantic_goal"]),
                                      "entity_ids": [entity["id"]]}}}]})
         if plan.get("story_visual_decision", {}).get("mode") == "required":
-            if not generated or set(directions) - (used_directions if generated else set()):
-                raise invalid("Story Visual bắt buộc của Phase 1 chưa được thực hiện trong cảnh.")
+            missing = sorted(set(directions) - (used_directions if generated else set()))
+            if not generated or missing:
+                raise invalid("Story Visual bắt buộc của Phase 1 chưa được thực hiện trong cảnh. "
+                              f"Thiếu: {', '.join(missing)}. Mỗi phase1_visual_id cần asset category story_visual, "
+                              "entity tham chiếu asset trong states và voice_anchor event reveal trong cảnh.")
         service.visual._node(handle, {"action": "validate_authoring", "intent": intent, "narration": service.visual._narration(handle)})
         # Stage deterministic SVG files only after all semantic/source validation passes.
         # This prevents invalid proposals from leaving unreferenced art in the project.

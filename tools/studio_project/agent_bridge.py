@@ -478,9 +478,10 @@ class AgentManager:
                             text, bound_fields = agent_authoring.bind_proposal(text, project["author_task"])
                             agent_authoring.proposal(text, self.service, project["project_id"])
                         except (StudioError, ValueError, TypeError, KeyError) as error:
-                            if validation_attempts:
-                                raise
                             validation_attempts.append({"error": str(error)[:1500], "raw_output_sha256": raw_hash, "turn_id": turn_id})
+                            if len(validation_attempts) > 1:
+                                self._update(task_id, validation_attempts=validation_attempts, preview=text)
+                                raise
                             self._update(task_id, validation_attempts=validation_attempts, preview="", error=None)
                             preview = final_text = ""
                             turn_request_id = 4
