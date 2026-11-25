@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import AgentProposal from "../AgentProposal";
 import { Paged } from "../Paged";
+import { TRANSITION_PRESETS, transitionLabel, type Transition, type TransitionPreset } from "./transition-edit";
 import type { AgentHealth, AgentTask, CandidateResult, GalleryAsset, VisualEntity, VisualScene, VisualTransform } from "../backend";
 
 /** The four tabs of the scene inspector. They own no state: the editor passes values and callbacks. */
@@ -55,6 +56,28 @@ export function AssetsTab({ scene, disabled, query, onQuery, candidates, gallery
       {candidates?.new_asset_task && <p className="voice-warning">NO_FIT_ASSET · {candidates.new_asset_task.reason}</p>}
       {candidates?.usage_evidence?.coverage?.truncated && !candidates.bundles.some((c) => c.usage?.length) && <small>Lịch sử: phạm vi quét giới hạn, tối đa 500 project / 50 build.</small>}
       {candidates && <details><summary>{candidates.rejected.length} lựa chọn bị loại</summary><Paged size={1} label="Lựa chọn bị loại">{candidates.rejected.map((r) => <small key={r.id}>{r.id}: {r.reason}</small>)}</Paged></details>}</div>
+  );
+}
+
+export function TransitionTab({ scene, isLast, disabled, onSet, onSetEverywhere }: {
+  scene: VisualScene | undefined; isLast: boolean; disabled: boolean;
+  onSet: (transition: Transition) => void; onSetEverywhere: (transition: Transition) => void;
+}) {
+  if (!scene) return <p className="voice-muted">Chọn một cảnh trên timeline.</p>;
+  if (isLast) return <p className="voice-muted">Cảnh cuối không có chuyển cảnh phía sau.</p>;
+  const current: Transition = scene.transition ?? { preset: "page-turn", frames: 12 };
+  const spec = TRANSITION_PRESETS[current.preset];
+  return (
+    <div className="visual-candidates"><strong>Chuyển sang cảnh sau · {transitionLabel(scene.transition?.preset)}</strong>
+      <small>Lật trang và trượt giấy chỉ lật phần hình; phụ đề đứng yên. Các thành phần của cảnh sau có thể bay vào từ ngoài màn hình (sự kiện “enter”).</small>
+      <label>Kiểu
+        <select value={current.preset} disabled={disabled} onChange={(e) => { const preset = e.target.value as TransitionPreset; onSet({ preset, frames: preset === "cut" ? 0 : Math.max(TRANSITION_PRESETS[preset].min, current.frames) }); }}>
+          {(Object.keys(TRANSITION_PRESETS) as TransitionPreset[]).map((id) => <option key={id} value={id}>{TRANSITION_PRESETS[id].label}</option>)}
+        </select></label>
+      {spec.max > 0 && <label>Độ dài: {current.frames} khung ({(current.frames / 30).toFixed(2)} giây)
+        <input type="range" min={spec.min} max={spec.max} value={current.frames} disabled={disabled} onChange={(e) => onSet({ preset: current.preset, frames: Number(e.target.value) })} /></label>}
+      <button className="outline-btn" disabled={disabled} onClick={() => onSetEverywhere(current)}>Áp dụng cho mọi cảnh</button>
+    </div>
   );
 }
 

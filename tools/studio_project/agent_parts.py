@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import json
 import re
+from pathlib import Path
 
 from .scene_ops import apply_scene_ops, scene_changes
 
@@ -17,11 +18,14 @@ ACTING_STYLE = (
     "ANIMATION STYLE = limited 2D cut-out (flat paper-doodle characters and props). Only the part that carries the beat moves; "
     "everything else holds. Every scene is 3 beats tied to exact voice anchors: (1) intention, (2) action/contact, "
     "(3) readable reaction hold. Change pose/expression by HARD CUT (event motion preset 'state_swap', never a cross-fade). "
+    "Components that appear in a scene may FLY IN from outside the screen: {preset:'enter',duration_frames:6-30,params:{from:'left'|'right'|'top'|'bottom'}} with trigger {type:'scene_start'} and state_before == state_after (Core measures the distance). Scenes are joined by a page-turn that Core adds; set scene.transition {preset:'cut'|'paper-slide'|'page-turn',frames} only for a hard cut or a deliberate change of mood. "
     "Use at least ONE acting move per scene: {preset:'lean',duration_frames:12,params:{degrees:<=20,dx,dy,settle:'hold'|'return'}}, "
     "{preset:'recoil',...degrees<=12}, or {preset:'pull-with-prop',params:{dx,dy,group:[actorId,propId]}}; for these events "
     "state_before must equal state_after. At most one acting event per target at a time; add an explicit event returning "
     "degrees/dx to 0 when the figure must go back. Characters must be BIG (about 390x780) and the main action must be visible "
     "at phone size; vary position and scale between scenes. No labels, rings, cards or decorative text.")
+
+TRANSITIONS = json.loads((Path(__file__).with_name("transitions.json")).read_text("utf8"))
 
 VISUAL_ROLES = frozenset({"character", "interactive_prop", "background", "foreground_environment", "story_object", "story_symbol", "effect",
                           "caption", "overlay", "story_visual", "prop", "object", "environment", "environment_cue", "character_pose",
@@ -206,6 +210,19 @@ def validate_scene(text: str, task: dict) -> str:
             box = (state or {}).get("transform") or {}
             if not all(isinstance(box.get(k), (int, float)) for k in ("x", "y", "width", "height")):
                 raise ValueError(f"{entity.get('id')}/{state_id}: transform cần số x, y, width, height")
+    transition = scene.get("transition")
+    if transition is not None:
+        spec = TRANSITIONS["presets"].get((transition or {}).get("preset"))
+        frames = (transition or {}).get("frames")
+        if spec is None or not isinstance(frames, int) or isinstance(frames, bool) or not spec["min_frames"] <= frames <= spec["max_frames"]:
+            ranges = ", ".join(k + " " + str(v["min_frames"]) + "-" + str(v["max_frames"]) for k, v in TRANSITIONS["presets"].items())
+            raise ValueError("transition phải có preset cut, paper-slide hoặc page-turn và frames trong khoảng của preset (" + ranges + ")")
+    for event in scene["events"]:
+        if ((event.get("motion") or {}).get("preset")) == "enter":
+            if (event.get("trigger") or {}).get("type") != "scene_start":
+                raise ValueError(f"Sự kiện {event.get('id')}: enter phải có trigger.type scene_start")
+            if event.get("state_before") != event.get("state_after"):
+                raise ValueError(f"Sự kiện {event.get('id')}: enter giữ nguyên trạng thái (state_before == state_after)")
     if not any(isinstance(e.get("action"), str) and e["action"].strip() for e in scene["events"]):
         raise ValueError("Mỗi cảnh cần ít nhất một event có trường action")
     if not isinstance(scene.get("experience_profile"), dict) or not scene["experience_profile"].get("story_mode"):

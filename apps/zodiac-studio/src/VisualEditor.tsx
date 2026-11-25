@@ -6,7 +6,8 @@ import { backend, type AgentTask, type CandidateResult, type Project, type Visua
 import AssetGallery from "./AssetGallery";
 import AgentProposal from "./AgentProposal";
 import { BuildLog, EventsEditor, SourcePanel } from "./scene/OverlayPanels";
-import { AgentTab, AssetsTab, EventsTab, ObjectTab } from "./scene/InspectorTabs";
+import { AgentTab, AssetsTab, EventsTab, ObjectTab, TransitionTab } from "./scene/InspectorTabs";
+import { withTransition, withTransitionEverywhere } from "./scene/transition-edit";
 import EpisodeTimeline from "./EpisodeTimeline";
 import {makeEpisodeTimeline, locateEpisodeTime} from "./episode-timeline";
 import type { WorkbenchSelection } from "./workbench-state";
@@ -357,7 +358,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
           return next;
         })}>Áp dụng bản dựng đề xuất</button></>}
     </div>}
-<div className="workspace-tabs" aria-label="Thuộc tính cảnh">{[["object", "Đối tượng"], ["events", "Sự kiện"], ["assets", "Hình ảnh"], ["agent", "Agent"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
+<div className="workspace-tabs" aria-label="Thuộc tính cảnh">{[["object", "Đối tượng"], ["events", "Sự kiện"], ["assets", "Hình ảnh"], ["transition", "Chuyển cảnh"], ["agent", "Sửa cảnh"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
         <div hidden={tab !== "object"}><ObjectTab scene={scene} entity={entity} stateId={selectedStateId} selectedAsset={selected?.asset} mapped={mapped} draft={draft} disabled={disabled} sdkReady={sdkReady}
           onEntity={id => { setEntityId(id); setStateId(""); }}
           onState={id => { setStateId(id); const map = sourceMap.find(m => m.entity_id === entity?.id && m.state_id === id); if (map) send("state", { hf_id: map.hf_id }); }}
@@ -366,6 +367,9 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
         <div hidden={tab !== "assets"}><AssetsTab scene={scene} disabled={disabled} query={query} onQuery={setQuery} candidates={candidates} galleryAssets={galleryAssets}
           onFind={() => { if (scene) findCandidates(query ? { asset_id: query } : {}); }}
           onUse={candidateId => command("asset.select", { scene_id: scene?.id, candidate_id: candidateId, requirement: query ? { asset_id: query } : {} })}/></div>
+        <div hidden={tab !== "transition"}><TransitionTab scene={scene} isLast={!!state?.intent && state.intent.scenes.at(-1)?.id === scene?.id} disabled={disabled}
+          onSet={transition => state?.intent && scene && command("source.replace", { intent: withTransition(state.intent, scene.id, transition) })}
+          onSetEverywhere={transition => state?.intent && command("source.replace", { intent: withTransitionEverywhere(state.intent, transition) })}/></div>
         <div hidden={tab !== "agent"}><AgentTab scene={scene} connection={connection} instruction={agentInstruction} onInstruction={setAgentInstruction} task={agentTask} dismissedTask={dismissedTask} disabled={disabled}
           onDismiss={setDismissedTask}
           onStart={() => scene && void backend.reviseScene(project.project_id, scene.id, agentInstruction).then(setAgentTask).catch(report)}

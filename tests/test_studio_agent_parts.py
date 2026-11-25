@@ -74,6 +74,26 @@ class PartsTests(unittest.TestCase):
         out = json.loads(agent_parts.validate_scene(scene_json("s01", entities=entities), self.task("s01")))["payload"]["scene"]["entities"]
         self.assertEqual([e["visual_role"] for e in out], ["character", "background", "interactive_prop", "overlay"])
 
+    def test_unknown_transition_preset_is_rejected_and_absent_is_allowed(self):
+        task = self.task("s01")
+        agent_parts.validate_scene(scene_json("s01"), task)  # absent: Core fills the default
+        agent_parts.validate_scene(scene_json("s01", transition={"preset": "page-turn", "frames": 12}), task)
+        for bad in ({"preset": "spin", "frames": 12}, {"preset": "page-turn", "frames": 3}, {"preset": "cut", "frames": 6}):
+            with self.subTest(bad=bad), self.assertRaises(ValueError) as caught:
+                agent_parts.validate_scene(scene_json("s01", transition=bad), task)
+            self.assertIn("cut, paper-slide hoặc page-turn", str(caught.exception))
+
+    def test_enter_events_must_start_with_the_scene_and_keep_the_state(self):
+        task = self.task("s01")
+        anchor = next(r["text"] for r in CAPSULE["scene_ranges"] if r["id"] == "s01")
+        fly = {"id": "fly", "target": "hero", "state_before": "neutral", "state_after": "neutral", "action": "bay vào",
+               "motion": {"preset": "enter", "duration_frames": 12, "params": {"from": "left"}}}
+        agent_parts.validate_scene(scene_json("s01", events=[{**fly, "trigger": {"type": "scene_start"}},
+            {"id": "e", "target": "hero", "action": "nghiêng", "trigger": {"type": "voice_anchor", "text": anchor}}]), task)
+        with self.assertRaises(ValueError) as caught:
+            agent_parts.validate_scene(scene_json("s01", events=[{**fly, "trigger": {"type": "voice_anchor", "text": anchor}}]), task)
+        self.assertIn("scene_start", str(caught.exception))
+
     def test_unprefixed_asset_keys_are_renamed_and_references_follow(self):
         data = json.loads(scene_json("s01", entities=[{"id": "depth__table", "kind": "object", "states": {"v": {"asset": "table", "layer": 10,
                           "transform": {"x": 0, "y": 0, "width": 1, "height": 1}}}}, {"id": "hero", "kind": "character"}]))
