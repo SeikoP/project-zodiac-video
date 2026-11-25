@@ -9,18 +9,21 @@ try {
  await installWorkbenchFixture(page);
  async function stage(label) {
   const id={'Giọng đọc':'voice','Hình ảnh':'visual','Xuất MP4':'export'}[label];
-  await page.locator(`.step-list .step-row[data-node-id="${id}"]`).first().click();
+  const row=page.locator(`.step-row[data-node-id="${id}"]`);
+  const phase=page.locator('.step-phase').filter({has:row});
+  if(!await phase.evaluate(el=>el.open)) await phase.locator(':scope > summary').click();
+  await row.locator('.step-main').click();
  }
  await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
  await page.locator('.workflow-tabs').getByRole('button',{name:'Quy trình',exact:true}).click();
  await page.locator('.production-manager').waitFor({timeout:10000});
- await page.getByRole('heading',{name:'Bàn quản lý episode',exact:true}).waitFor();
+ await page.locator('.episode-bar').waitFor();
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
   await page.locator('.episode-timeline .timeline-scene-track button').first().waitFor();
   await page.getByLabel('Episode đang làm',{exact:true}).click({trial:true});
   assert.equal(await page.locator('.visual-stage:visible').count(),1);
-  assert.equal(await page.locator('.pipeline-graph:visible').count(),1,'graph persists beside preview');
+  assert.equal(await page.locator('.step-list:visible').count(),1,'graph persists beside preview');
   assert.equal(await page.locator('.visual-inspector:visible').count(),1,'context inspector remains available');
   const bounds=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight,iw:innerWidth,ih:innerHeight,stage:document.querySelector('.visual-viewport').getBoundingClientRect().height}));
   assert.ok(bounds.w<=bounds.iw && bounds.h<=bounds.ih+1,JSON.stringify(bounds));
@@ -31,18 +34,18 @@ try {
  assert.equal(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label').then(t=>/Cảnh 3 ·/.test(t)),true);
  assert.equal(await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).inputValue(),'8000');
  await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).fill('5000');
- assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+ assert.match(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label'),/Cảnh 2 ·/);
 
  await mkdir('.runtime/workbench',{recursive:true});
  await page.screenshot({path:'.runtime/workbench/layout.png'});
  assert.equal(await page.locator('.workflow-tabs:visible').count(),1,'editor uses shared titlebar navigation');
  await page.locator('.episode-timeline').getByRole('button',{name:/Cảnh 6 ·/}).click();
- await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
+ await page.locator('.episode-timeline [aria-pressed=true][aria-label^="Cảnh 6 ·"]').waitFor({timeout:3000});
  await page.getByLabel('Đối tượng',{exact:true}).selectOption('prop');
  await page.waitForTimeout(700);
  await page.reload();
  await page.locator('.workflow-tabs').getByRole('button',{name:'Quy trình',exact:true}).click();
- await page.locator('.visual-scenes button.active').filter({hasText:'s6'}).waitFor({timeout:3000});
+ await page.locator('.episode-timeline [aria-pressed=true][aria-label^="Cảnh 6 ·"]').waitFor({timeout:3000});
  assert.equal(await page.getByLabel('Đối tượng',{exact:true}).inputValue(),'prop','restores a non-first object after initial source load');
  await page.evaluate(()=>{window.withPreviews=true;});
  await page.locator('.visual-stage iframe:visible').waitFor({timeout:15000});
@@ -58,7 +61,7 @@ try {
  await page.locator('.visual-stage audio').evaluate(a=>{a.muted=true;window.audioPauses=0;a.addEventListener('pause',()=>window.audioPauses++);});
  await page.getByRole('button',{name:'Phát toàn video',exact:true}).click();
  await page.waitForFunction(()=>Number(document.querySelector('[aria-label="Vị trí toàn video"]').value)>4200,{},{timeout:10000});
- assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+ assert.match(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label'),/Cảnh 2 ·/);
  assert.equal(await page.evaluate(()=>window.audioPauses),0,'voice must stay continuous at scene boundary');
  await page.getByRole('button',{name:'Tạm dừng video',exact:true}).click();
  const paused=await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).inputValue();
@@ -84,8 +87,8 @@ try {
  assert.equal(await page.locator('.visual-inspector:visible').count(),0);
  await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).fill('6000');
 
- assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
- await page.locator('.visual-inspector').getByRole('button',{name:'Agent',exact:true}).click();
+ assert.match(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label'),/Cảnh 2 ·/);
+ await page.locator('.visual-inspector').getByRole('button',{name:'Sửa cảnh',exact:true}).click();
  await page.getByText(/Kết nối model được kiểm tra khi gửi yêu cầu/).waitFor();
  assert.equal(await page.locator('.visual-inspector .agent-proposal:visible').count(),0,'proposal for another scene stays out of current selection');
  await page.locator('.visual-inspector').getByRole('button',{name:'Đối tượng',exact:true}).click();
@@ -94,7 +97,7 @@ try {
  await page.locator('.voice-workspace').waitFor();
  await page.getByRole('button',{name:'Tạo audio còn thiếu',exact:true}).waitFor({timeout:3000});
  await stage('Hình ảnh');
- assert.match(await page.locator('.visual-scenes button.active').innerText(),/s2/);
+ assert.match(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label'),/Cảnh 2 ·/);
  await page.getByLabel('Episode đang làm',{exact:true}).selectOption('p2');
  await page.getByRole('slider',{name:'Vị trí toàn video',exact:true}).waitFor();
  await page.getByLabel('Episode đang làm',{exact:true}).selectOption('p1');
@@ -118,8 +121,7 @@ try {
  await page.evaluate(()=>{window.noProjects=true;});
  await page.getByRole('button',{name:'Làm mới',exact:true}).click();
  await page.getByRole('heading',{name:'Bắt đầu một episode',exact:true}).waitFor({timeout:3000});
- assert.equal(await page.locator('.visual-stage:visible').count(),1);
- assert.equal(await page.locator('.episode-timeline:visible').count(),1);
+ assert.equal(await page.locator('.empty-episode:visible').count(),1,'no projects shows the empty episode guide');
  assert.deepEqual(errors,[]);
  await mkdir('.runtime/workbench',{recursive:true});
  console.log('PASS editor-first shell, context and layout at 3 sizes');

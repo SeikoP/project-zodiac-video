@@ -26,7 +26,7 @@ try {
   };
  });
  await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
- await page.locator('.sidebar-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
+ await page.locator('.primary-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
  await page.locator('.gallery-card').first().waitFor();
  await page.getByRole('button',{name:'Ngữ cảnh',exact:true}).click();
  assert.match(await page.locator('.gallery-inspector').innerText(),/episode-truoc/);

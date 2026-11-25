@@ -20,6 +20,11 @@ try {
   Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copiedPath=text;}}});
   window.exportFixture=(method,p)=>{
    window.exportCalls.push({method,p});
+   if(method.startsWith('pipeline.')){
+    const node=(id,inputs,kind='step',status='DONE')=>({id,title:{export:'Xuất MP4',visual_review:'Duyệt hình ảnh'}[id]||id,kind,status,inputs,detail:'',scene_id:null});
+    if(method==='pipeline.evidence')return {build_id:'b'.repeat(32),revision:1,source_hash:'h'};
+    return {format:'zodiac-pipeline@1',project_id:'p1',revision:1,revisions:{visual:1,voice:1},mode:'confirm',run:null,nodes:[node('content',[],'gate'),node('voice',['content']),node('visual_review',['voice'],'gate'),node('export',['visual_review'],'step','READY')]};
+   }
    if(method==='health')return {status:'READY'};
    if(method==='ideas.list')return {groups:[{id:'test',title:'Test',concepts:[{id:'test',title:'Test'}]}],signs:['Nhân Mã'],progress:[]};
    if(method==='projects.list')return [project];
@@ -34,7 +39,9 @@ try {
   };
  });
  await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
- await page.locator('.workflow-tabs').getByRole('button',{name:'Xuất & duyệt',exact:true}).click();
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Quy trình',exact:true}).click();
+ {const row=page.locator('.step-row[data-node-id="export"]'),phase=page.locator('.step-phase').filter({has:row});
+  if(!await phase.evaluate(el=>el.open))await phase.locator(':scope > summary').click();await row.locator('.step-main').click();}
  await page.getByRole('button',{name:'Xuất MP4',exact:true}).click();
  await page.getByText(/HyperFrames capture · RUNNING · 32%/).waitFor();
  assert.equal(await page.getByRole('button',{name:'Xuất MP4',exact:true}).isDisabled(),true);

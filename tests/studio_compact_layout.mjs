@@ -12,7 +12,10 @@ try {
  await installWorkbenchFixture(page);
  async function stage(label) {
   const id={'Giọng đọc':'voice','Hình ảnh':'visual','Xuất MP4':'export'}[label];
-  await page.locator(`.step-list .step-row[data-node-id="${id}"]`).first().click();
+  const row=page.locator(`.step-row[data-node-id="${id}"]`);
+  const phase=page.locator('.step-phase').filter({has:row});
+  if(!await phase.evaluate(el=>el.open)) await phase.locator(':scope > summary').click();
+  await row.locator('.step-main').click();
  }
  async function fit(label) {
   await page.waitForTimeout(180);
@@ -39,12 +42,12 @@ try {
  }
  await page.goto(process.env.STUDIO_URL || 'http://127.0.0.1:1420');
  await page.locator('.primary-nav').getByRole('button',{name:'Episode',exact:true}).click();
- await page.locator('.workflow-tabs').getByRole('button',{name:'Danh sách episode',exact:true}).click();
+ await page.locator('.workflow-tabs').getByRole('button',{name:'Danh sách',exact:true}).click();
  await page.waitForSelector('.episode-item');
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
   assert.equal(await page.locator('.primary-nav button').count(),3);
-  for(const view of ['Danh sách episode','Kho tài nguyên','Nhật ký','Agent','Giọng đọc','Hình ảnh']) {
+  for(const view of ['Danh sách','Kho tài nguyên','Nhật ký','Agent','Giọng đọc','Hình ảnh']) {
    if(view==='Kho tài nguyên') await page.locator('.primary-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
    else if(view==='Giọng đọc'||view==='Hình ảnh') {
     await page.locator('.primary-nav').getByRole('button',{name:'Episode',exact:true}).click();
@@ -54,14 +57,14 @@ try {
     await page.locator('.workflow-tabs').getByRole('button',{name:view,exact:true}).click();
    }
    await fit(`${width}x${height} ${view}`);
-   if(view==='Danh sách episode') {
+   if(view==='Danh sách') {
     await page.getByRole('button',{name:'Episode: trang sau',exact:true}).click();
     assert.match(await page.locator('.episode-list').innerText(),/p4/);
     await page.getByRole('button',{name:'Ghi chú & hoạt động',exact:true}).click(); await fit('notes');
     await page.getByRole('button',{name:'Episode & trạng thái',exact:true}).click();
     await page.getByRole('button',{name:'Mở bước Giọng đọc',exact:true}).click();
     assert.equal(await page.locator('.production-workspace').getAttribute('data-stage'),'voice');
-    await page.locator('.workflow-tabs').getByRole('button',{name:'Danh sách episode',exact:true}).click();
+    await page.locator('.workflow-tabs').getByRole('button',{name:'Danh sách',exact:true}).click();
    }
    if(view==='Giọng đọc') {
     for(const tab of ['Nghe toàn bài & timing','Thiết lập giọng','Từng đoạn']) {
@@ -77,7 +80,7 @@ try {
     await page.getByRole('button',{name:'Kho hình ảnh',exact:true}).click();
     await page.locator('.gallery-card').first().waitFor(); await fit('embedded gallery');
     await page.getByRole('button',{name:'Kho hình ảnh',exact:true}).click();
-    for(const tab of ['Sự kiện','Hình ảnh','Agent','Đối tượng']) {
+    for(const tab of ['Sự kiện','Hình ảnh','Sửa cảnh','Đối tượng']) {
      await page.locator('.visual-inspector').getByRole('button',{name:tab,exact:true}).click(); await fit(`inspector ${tab}`);
      if(tab==='Sự kiện') {
       await page.getByRole('button',{name:'Chỉnh nhịp diễn theo lời kể',exact:true}).click(); await fit('acting editor');
@@ -111,20 +114,21 @@ try {
   await page.screenshot({path:`${process.env.TEMP}/studio-compact-${width}.png`});
  }
  await stage('Giọng đọc');
- await page.getByLabel('Đoạn đọc',{exact:true}).waitFor();
+ await page.locator('.voice-unit-list .voice-unit').first().waitFor();
  await page.evaluate(()=>{window.slowVoice=true;});
  await page.waitForFunction(()=>window.voicePending===1);
  await page.waitForTimeout(3200);
  assert.equal(await page.evaluate(()=>window.voicePeak),1,'slow reads must not overlap');
- await page.getByLabel('Đoạn đọc',{exact:true}).selectOption('u7');
- const selectedUnit=await page.getByLabel('Đoạn đọc',{exact:true}).inputValue();
+ await page.locator('.voice-unit-list .voice-unit').nth(7).click();
+ const activeUnit=()=>page.locator('.voice-unit-list .voice-unit[aria-pressed=true]').innerText();
+ const selectedUnit=await activeUnit();
  await page.locator('.primary-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
  const reads=await page.evaluate(()=>window.voiceReads);
  await page.waitForTimeout(3500);
  assert.equal(await page.evaluate(()=>window.voiceReads),reads,'hidden Voice Lab must stop polling');
  await page.evaluate(()=>{window.slowVoice=false;});
  await page.locator('.primary-nav').getByRole('button',{name:'Episode',exact:true}).click();
- assert.equal(await page.getByLabel('Đoạn đọc',{exact:true}).inputValue(),selectedUnit,'returning to the episode must retain voice selection');
+ assert.equal(await activeUnit(),selectedUnit,'returning to the episode must retain voice selection');
  assert.deepEqual(failures,[]);
  console.log('PASS: Graph workspace and episode/resources/activity/agent views, inspector/voice/source/log tabs, bounded scrolling and pagination, three viewport sizes; fixture-only backend.');
 } finally { await browser.close(); }

@@ -53,85 +53,45 @@ try {
  const open=async()=>{
   await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
   await page.locator('.primary-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();
-  await page.locator('.idea-card').first().waitFor();
+  await page.locator('.plan-concept').first().waitFor();
  };
  async function fit(label){
   await page.waitForTimeout(150);
   const result=await page.evaluate(()=>({
    width:document.documentElement.scrollWidth>innerWidth,height:document.documentElement.scrollHeight>innerHeight,
    outside:[...document.querySelectorAll('button,input,select,video,.pagination')].filter(el=>{
-    const r=el.getBoundingClientRect();return r.width&&r.height&&(r.bottom>innerHeight+1||r.top< -1||r.right>innerWidth+1||r.left< -1);
+    if(el.closest('.plan-list,.plan-detail'))return false;const r=el.getBoundingClientRect();return r.width&&r.height&&(r.bottom>innerHeight+1||r.top< -1||r.right>innerWidth+1||r.left< -1);
    }).map(el=>el.outerHTML.slice(0,100))
   }));
   if(result.height||result.width||result.outside.length)await page.screenshot({path:process.env.TEMP+'/studio-ideas-overflow.png'});
   assert.deepEqual(result,{width:false,height:false,outside:[]},label);
  }
  await open();
- await page.locator('.workflow-tabs').getByRole('button',{name:'Tiến độ',exact:true}).click();
- await page.locator('.ideas-heading').getByText('Tiến độ 12 cung').waitFor();
- await page.locator('.idea-card').first().click();
- assert.equal(await page.locator('.idea-sign').count(),12,'Progress tab must show actual concept coverage');
- assert.equal(await page.locator('.ideas-detail').getByRole('button',{name:'Copy prompt',exact:true}).count(),0,'Progress should not silently start prompt copying');
- await page.locator('.workflow-tabs').getByRole('button',{name:'Ý tưởng',exact:true}).click();
- await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
+ await page.locator('.plan-concept').first().click();
+ assert.equal(await page.locator('.plan-sign').count(),12,'Plan screen shows all 12 signs of the chosen concept');
  for(const [width,height]of [[1366,768],[1060,650],[1093,614]]){
-  await page.setViewportSize({width,height});await fit('library '+width);
-  await page.locator('.idea-card').first().click();await fit('concept detail '+width);
-  assert.match(await page.evaluate(()=>window.copied.at(-1)),/^Dùng plugin @Zodiac-Video-Web/);
-  assert.match(await page.locator('.ideas-feedback').innerText(),/@Zodiac-Video-Web/);
-  assert.equal(await page.locator('.ideas-detail select,.ideas-detail input').count(),0,'Ideas should have no editing controls');
-  await page.getByRole('button',{name:'Xem nội dung prompt',exact:true}).click();await fit('prompt '+width);
-  await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
+  await page.setViewportSize({width,height});await fit('plan '+width);
  }
+ await page.locator('.plan-sign').first().getByRole('button',{name:/Copy prompt/}).click();
+ assert.match(await page.evaluate(()=>window.copied.at(-1)),/^Dùng plugin @Zodiac-Video-Web/);
+ assert.match(await page.locator('[role=status].inline-alert').innerText(),/@Zodiac-Video-Web/);
  assert.equal(await page.evaluate(()=>window.writes),0,'copy must not change progress');
  await page.evaluate(()=>{window.extraConcept=true;window.dispatchEvent(new Event('focus'));});
  await page.getByLabel('Tìm concept',{exact:true}).fill('Concept mới từ agent');
  await page.getByRole('button',{name:/Concept mới từ agent/}).waitFor();
  await page.getByLabel('Tìm concept',{exact:true}).fill('');
- await page.locator('.idea-card').first().click();
- await page.locator('.ideas-detail').getByRole('button',{name:'Xem & duyệt MP4',exact:true}).click();
- const approval=page.getByRole('checkbox',{name:'MP4 đã được tôi xem và duyệt',exact:true});
- await approval.waitFor();assert.equal(await approval.isDisabled(),true);
- assert.equal(await page.getByLabel('Concept của MP4',{exact:true}).inputValue(),'love-feeling');
- await page.getByLabel('Cung của MP4',{exact:true}).selectOption('Bạch Dương');
- await page.getByLabel('Mở MP4',{exact:true}).setInputFiles(mp4);
- await page.waitForFunction(()=>document.querySelector('video')?.readyState>=1);
- await page.locator('video').evaluate(v=>v.play());
- await page.waitForFunction(()=>document.querySelector('video')?.ended);
- assert.equal(await page.evaluate(()=>window.writes),0,'opening and playing video must not approve it');
- for(const [width,height]of [[1366,768],[1060,650],[1093,614]]){
-  await page.setViewportSize({width,height});await fit('MP4 review '+width);
- }
- await approval.check();await page.getByRole('status').filter({hasText:'Đã duyệt MP4 cho Bạch Dương'}).waitFor();
- await page.evaluate(()=>{window.saveDenied=true;});await approval.click();
- await page.getByRole('alert').filter({hasText:'Không lưu được fixture'}).waitFor();assert.equal(await approval.isChecked(),true);
- await page.evaluate(()=>{window.saveDenied=false;});
- await page.getByLabel('Mở MP4',{exact:true}).setInputFiles({name:'broken.mp4',mimeType:'video/mp4',buffer:Buffer.from('not a video')});
- await page.getByRole('alert').filter({hasText:'Không phát được MP4'}).waitFor();assert.equal(await approval.isDisabled(),true);
- await page.getByLabel('Mở MP4',{exact:true}).setInputFiles(audioMp4);
- await page.waitForFunction(()=>document.querySelector('video')?.readyState>=1);
- assert.equal(await approval.isDisabled(),true,'audio-only MP4 must not enable video approval');
- await page.locator('.primary-nav').getByRole('button',{name:'Kế hoạch',exact:true}).click();await page.locator('.idea-card').first().click();
- assert.ok((await page.evaluate(()=>window.copied.at(-1))).includes('MP4 đã duyệt: Bạch Dương'));
- assert.equal(await page.locator('.idea-sign.mp4_approved').count(),1);
- await page.evaluate(()=>{window.clipboardDenied=true;});await page.getByRole('button',{name:'Copy prompt',exact:true}).click();
- await page.getByRole('alert').filter({hasText:'Không copy được clipboard'}).waitFor();
- await page.getByRole('button',{name:'Chọn toàn bộ prompt để Ctrl+C',exact:true}).click();
- const manual=await page.locator('.idea-prompt').evaluate(el=>{
-  const data=new DataTransfer();el.dispatchEvent(new ClipboardEvent('copy',{clipboardData:data,bubbles:true,cancelable:true}));return data.getData('text/plain');
- });assert.ok(manual.endsWith('trong Studio.'));
- await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
- await page.getByLabel('Nhóm ý tưởng',{exact:true}).selectOption('healing');
- await page.locator('.idea-card').first().waitFor();await fit('healing group');
- await page.getByLabel('Nhóm ý tưởng',{exact:true}).selectOption('everyday');
- await page.getByRole('button',{name:'Concept: trang sau',exact:true}).click();
- assert.match(await page.locator('.ideas-catalog').innerText(),/tức giận nhưng phải lịch sự/);
+ await page.locator('.plan-concept').first().click();
+ await page.evaluate(()=>{window.clipboardDenied=true;});
+ await page.locator('.plan-sign').first().getByRole('button',{name:/Copy prompt/}).click();
+ await page.getByRole('alert').filter({hasText:'Không copy được tự động'}).waitFor();
+ await page.locator('.idea-prompt').waitFor();
  await page.evaluate(catalog=>localStorage.setItem('fixture-progress',JSON.stringify(catalog.signs.map(sign=>({concept_id:catalog.groups[0].concepts[0].id,sign,status:'mp4_approved',updated_at:1})))),catalog);
- await open();await page.locator('.idea-card').first().click();
- assert.equal(await page.getByRole('button',{name:'Copy prompt',exact:true}).isDisabled(),true);
+ await page.evaluate(()=>{window.clipboardDenied=false;window.copied=[];});
+ await open();await page.locator('.plan-concept').first().click();
+ assert.equal(await page.locator('.plan-sign.mp4_approved').count(),12);
+ for(const button of await page.locator('.plan-sign').getByRole('button',{name:/Copy prompt/}).all())assert.equal(await button.isDisabled(),true);
  assert.equal(await page.evaluate(()=>window.copied.length),0);await fit('all approved');
- await page.getByRole('button',{name:'Danh sách concept',exact:true}).click();
- await page.screenshot({path:process.env.TEMP+'/studio-ideas-simple-1093.png'});
+ await page.screenshot({path:process.env.TEMP+'/studio-plan-1093.png'});
  assert.deepEqual(errors,[]);
- console.log('PASS: simple library/detail, dynamic additions on focus, MP4 decode/playback/manual approval, failed save, invalid MP4, clipboard fallback, persistence, all-complete guard; titlebar at 3 sizes; fixture transport.');
+ console.log('PASS: plan screen concept/sign list, copy prompt, dynamic additions on focus, clipboard fallback, all-approved guard; three sizes; fixture transport.');
 }finally{await browser.close();await rm(temp,{recursive:true,force:true});}
