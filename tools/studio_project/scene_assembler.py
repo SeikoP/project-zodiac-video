@@ -17,18 +17,18 @@ LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 10, 20, 30, 40
 
 # frame id -> slot -> box (story field 1080x1400; the caption lane starts at y=1470). Characters keep the 1:2 ratio of the art.
 PLACEMENT: dict[str, dict[str, dict]] = {
-    "single-character-focus": {"subject": {"x": 60, "y": 340, "width": 460, "height": 920},
-                               "focus_prop": {"x": 560, "y": 900, "width": 280, "height": 360}},
-    "two-person-offset": {"speaker": {"x": 20, "y": 400, "width": 420, "height": 840},
-                          "listener": {"x": 640, "y": 400, "width": 420, "height": 840},
-                          "shared_prop": {"x": 450, "y": 980, "width": 180, "height": 260}},
-    "prop-focus": {"focus_prop": {"x": 40, "y": 500, "width": 560, "height": 560},
-                   "companion": {"x": 640, "y": 380, "width": 400, "height": 800}},
+    "single-character-focus": {"subject": {"x": 60, "y": 450, "width": 460, "height": 920},
+                               "focus_prop": {"x": 560, "y": 1010, "width": 280, "height": 360}},
+    "two-person-offset": {"speaker": {"x": 20, "y": 510, "width": 420, "height": 840},
+                          "listener": {"x": 640, "y": 510, "width": 420, "height": 840},
+                          "shared_prop": {"x": 450, "y": 1090, "width": 180, "height": 260}},
+    "prop-focus": {"focus_prop": {"x": 40, "y": 610, "width": 560, "height": 560},
+                   "companion": {"x": 640, "y": 490, "width": 400, "height": 800}},
     "reaction-closeup": {"subject": {"x": 265, "y": 260, "width": 550, "height": 1100}},
     "caption-payoff": {"subject": {"x": 290, "y": 300, "width": 500, "height": 1000}},
-    "three-person-comparison": {"lead": {"x": 375, "y": 260, "width": 330, "height": 660},
-                                "peer_a": {"x": 40, "y": 520, "width": 330, "height": 660},
-                                "peer_b": {"x": 710, "y": 520, "width": 330, "height": 660}},
+    "three-person-comparison": {"lead": {"x": 375, "y": 370, "width": 330, "height": 660},
+                                "peer_a": {"x": 40, "y": 630, "width": 330, "height": 660},
+                                "peer_b": {"x": 710, "y": 630, "width": 330, "height": 660}},
 }
 STORY_FIELD = 1400
 STORY_BAND_BOTTOM = 560  # a story visual owns y 90-510; the actors are moved up under it
