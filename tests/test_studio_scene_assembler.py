@@ -123,5 +123,83 @@ class AssemblerTests(unittest.TestCase):
         self.assertEqual(part["payload"]["scene"]["events"][0]["motion"]["preset"], "enter")
 
 
+TWO = {"cast": [{"entity_id": "ban", "states": {"neutral": {}, "asking": {}}}, {"entity_id": "kia", "states": {"neutral": {}, "smug": {}}}]}
+THREE = {"cast": TWO["cast"] + [{"entity_id": "ba", "states": {"neutral": {}}}]}
+CHAT = {"sv01-chat-compare": "chat_compare"}
+
+
+def cast_of(skeleton, count):
+    return [{"entity_id": m["entity_id"], "state_id": "neutral"} for m in skeleton["cast"][:count]]
+
+
+def build(skeleton, present, props, dressing="none", story=None, frame="two-person-offset"):
+    menus = authoring_menus.scene_menus(CAPSULE, skeleton, "s01", [])
+    stage = {"frame_id": frame, "mechanic_id": "explain", "present": present,
+             "props": [{"prop_id": p, "role": "focus" if i == 0 else "support"} for i, p in enumerate(props)], "dressing": dressing}
+    act = {"events": [{"anchor_id": menus["anchors"][0]["id"], "target": present[0]["entity_id"] if present else props[0],
+                       "action": "Làm gì đó", "state_after": "same"}]}
+    return scene_assembler.assemble_scene(menus, stage, act, "s01", RANGE, TEXT, GOAL, story_visuals=story)
+
+
+class SceneQualityTests(unittest.TestCase):
+    """What the spike showed: three phones, a missing required story visual, props on top of people. All Core's to prevent."""
+
+    def test_one_prop_per_family_and_dressing_never_repeats_a_story_prop(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping", "phone-busy"], dressing="phone-ping")
+        keys = [e["id"] for e in part["payload"]["scene"]["entities"] if e["kind"] == "object"]
+        self.assertEqual(keys, ["phone-ping"])
+        self.assertEqual(scene_assembler.scene_faults(part), [])
+        self.assertTrue(any("phone" in n for n in part["core_notes"]))
+
+    def test_dressing_of_another_family_is_kept(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop")
+        self.assertIn("depth__laptop", [e["id"] for e in part["payload"]["scene"]["entities"]])
+
+    def test_required_story_visual_is_present_and_nothing_overlaps_it(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop", story=CHAT)
+        scene = part["payload"]["scene"]
+        self.assertIn("sv01-chat-compare", [e["id"] for e in scene["entities"]])
+        self.assertEqual(scene_assembler.scene_faults(part, required_story_visuals=list(CHAT)), [])
+        self.assertEqual(scene["experience_profile"]["story_focus"]["focal_entity_id"], "phone-ping")
+
+    def test_faults_are_named(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"])
+        scene = copy.deepcopy(part["payload"]["scene"])
+        scene["entities"].append(copy.deepcopy(next(e for e in scene["entities"] if e["id"] == "phone-ping")))
+        scene["entities"][-1]["id"] = "phone-busy"
+        scene["entities"][-1]["states"]["idle"]["asset"] = "s01-phone-busy"
+        broken = {"payload": {"scene": scene, "assets": {**part["payload"]["assets"], "s01-phone-busy": {"path": "library:props/phone-busy.svg", "category": "prop"}}}}
+        codes = {f["code"] for f in scene_assembler.scene_faults(broken, required_story_visuals=["sv01-chat-compare"])}
+        self.assertEqual(codes, {"DUPLICATE_PROP_FAMILY", "ENTITY_OVERLAP", "STORY_VISUAL_MISSING"})
+
+    def test_no_faults_for_any_frame_prop_count_or_story_visual(self):
+        props = ["phone-ping", "laptop", "notebook"]
+        for frame, skeleton, count in (("single-character-focus", authoring_skeleton(1), 1), ("two-person-offset", TWO, 2),
+                                       ("prop-focus", TWO, 1), ("reaction-closeup", authoring_skeleton(1), 1),
+                                       ("caption-payoff", authoring_skeleton(1), 1), ("three-person-comparison", THREE, 3)):
+            for how_many in (1, 2):
+                for story in (None, CHAT):
+                    for dressing in ("none", "coffee-cup"):
+                        with self.subTest(frame=frame, props=how_many, story=bool(story), dressing=dressing):
+                            part = build(skeleton, cast_of(skeleton, count), props[:how_many], dressing, story, frame)
+                            self.assertEqual(scene_assembler.scene_faults(part, list(story or ())), [])
+
+
+class StoryVisualLookupTests(unittest.TestCase):
+    def test_scene_gets_the_asset_keys_of_the_phase1_visuals_its_beat_names(self):
+        context = {"scene_ranges": [{"id": "s01", "text": "Mở đầu."}, {"id": "s02", "text": "Cả nhóm rủ, nó bảo để xem."}],
+                   "required_story_visual_ids": ["sv01"],
+                   "narrative_plan": {"beats": [{"id": "b1", "voice_anchor": "nó bảo để xem"}],
+                                      "story_visuals": [{"id": "sv01", "beat_ids": ["b1"]}]}}
+        assets = {"sv01-chat-compare": {"category": "story_visual", "phase1_visual_id": "sv01", "visual": {"type": "chat_compare"}},
+                  "phone": {"category": "prop"}}
+        self.assertEqual(scene_assembler.story_visual_assets(context, assets, "s02"), {"sv01-chat-compare": "chat_compare"})
+        self.assertEqual(scene_assembler.story_visual_assets(context, assets, "s01"), {})
+
+
+def authoring_skeleton(count):
+    return {"cast": TWO["cast"][:count]}
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,9 +19,9 @@ LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 10, 20, 30, 40
 PLACEMENT: dict[str, dict[str, dict]] = {
     "single-character-focus": {"subject": {"x": 150, "y": 420, "width": 390, "height": 780},
                                "focus_prop": {"x": 600, "y": 700, "width": 360, "height": 360}},
-    "two-person-offset": {"speaker": {"x": 70, "y": 420, "width": 390, "height": 780},
-                          "listener": {"x": 620, "y": 380, "width": 390, "height": 780},
-                          "shared_prop": {"x": 410, "y": 880, "width": 260, "height": 260}},
+    "two-person-offset": {"speaker": {"x": 40, "y": 420, "width": 390, "height": 780},
+                          "listener": {"x": 650, "y": 380, "width": 390, "height": 780},
+                          "shared_prop": {"x": 440, "y": 880, "width": 200, "height": 280}},
     "prop-focus": {"focus_prop": {"x": 60, "y": 400, "width": 560, "height": 560},
                    "companion": {"x": 640, "y": 420, "width": 390, "height": 780}},
     "reaction-closeup": {"subject": {"x": 265, "y": 260, "width": 550, "height": 1100}},
@@ -30,9 +30,16 @@ PLACEMENT: dict[str, dict[str, dict]] = {
                                 "peer_a": {"x": 40, "y": 520, "width": 330, "height": 660},
                                 "peer_b": {"x": 710, "y": 520, "width": 330, "height": 660}},
 }
-SUPPORT_SPOTS = [{"x": 60, "y": 1000, "width": 240, "height": 240}, {"x": 780, "y": 1000, "width": 240, "height": 240}]
-DRESSING_BOX = {"x": 380, "y": 80, "width": 320, "height": 320}
-STORY_VISUAL_BOX = {"x": 90, "y": 150, "width": 900, "height": 520}
+STORY_FIELD = 1400
+STORY_BAND_BOTTOM = 600  # a story visual owns y 90-570; the actors are squeezed into the field below it
+STORY_VISUAL_BOX = {"x": 90, "y": 90, "width": 900, "height": 480}
+# free places for props and dressing that are not in a frame slot; the first one that touches nobody is used
+FREE_SPOTS = [{"x": 40, "y": 640, "width": 200, "height": 200}, {"x": 840, "y": 640, "width": 200, "height": 200},
+              {"x": 40, "y": 1100, "width": 200, "height": 200}, {"x": 840, "y": 1100, "width": 200, "height": 200},
+              {"x": 40, "y": 880, "width": 200, "height": 200}, {"x": 840, "y": 880, "width": 200, "height": 200},
+              {"x": 40, "y": 100, "width": 260, "height": 300}, {"x": 780, "y": 100, "width": 260, "height": 300},
+              {"x": 300, "y": 1230, "width": 200, "height": 150}, {"x": 580, "y": 1230, "width": 200, "height": 150},
+              {"x": 40, "y": 400, "width": 200, "height": 200}, {"x": 840, "y": 400, "width": 200, "height": 200}]
 
 MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-reaction": "reflection", "facepalm": "reflection",
                     "point-choice": "relationship", "compare-group": "relationship", "compare-two-props": "relationship"}
@@ -108,27 +115,63 @@ def _check(stage: dict, act: dict, menus: dict) -> None:
         need(event["anchor_id"], anchors, "anchor_id")
 
 
+def _family(prop_id: str) -> str:
+    return agent_authoring.prop_families_manifest()["by_prop"].get(prop_id, {}).get("family_id", prop_id)
+
+
+def _squeeze(box: dict) -> dict:
+    """Map a box of the full story field into the lower part of it, leaving the top band to a story visual."""
+    k = (STORY_FIELD - STORY_BAND_BOTTOM) / STORY_FIELD
+    return {"x": round(540 + (box["x"] - 540) * k), "y": round(STORY_BAND_BOTTOM + box["y"] * k),
+            "width": round(box["width"] * k), "height": round(box["height"] * k)}
+
+
+def _hits(a: dict, b: dict, margin: int = 12) -> bool:
+    return (a["x"] < b["x"] + b["width"] + margin and b["x"] < a["x"] + a["width"] + margin and
+            a["y"] < b["y"] + b["height"] + margin and b["y"] < a["y"] + a["height"] + margin)
+
+
+def _free_spot(placed: list[dict]) -> dict | None:
+    return next((spot for spot in FREE_SPOTS if not any(_hits(spot, other) for other in placed)), None)
+
+
 def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_range: list[int], scene_text: str, goal: str,
                    story_visuals: dict[str, str] | None = None) -> dict:
-    """Return ``{"kind":"scene.part","payload":{"scene":…,"assets":…}}`` that ``validate_scene`` accepts unchanged.
+    """Return ``{"kind":"scene.part","payload":{"scene":...,"assets":...}}`` that ``validate_scene`` accepts unchanged.
 
-    ``story_visuals`` maps asset key -> label for the Phase 1 story visuals this scene must carry (declared in the skeleton)."""
+    ``story_visuals`` maps asset key -> label for the Phase 1 story visuals this scene must carry (declared in the skeleton).
+    Core also guarantees what no validator did: one prop per family (dressing included), nothing overlapping, and a
+    required story visual in its own band above the actors. What it had to drop is reported in ``core_notes``."""
     _check(stage, act, menus)
     story_visuals = story_visuals or {}
     props = {p["id"]: p for p in agent_authoring._library_props()}
     present = stage["present"]
-    chosen_props = list(stage["props"])
-    focus_prop = next((p for p in chosen_props if p["role"] == "focus"), None)
-    frame, substituted = _pick_frame(stage["frame_id"], len(present), len(chosen_props) + len(story_visuals))
-    slots = PLACEMENT[frame["id"]]
-    notes = [f"frame {stage['frame_id']} -> {frame['id']}"] if substituted else []
+    notes: list[str] = []
+    kept, alias, families = [], {}, {}
+    for row in sorted(stage["props"], key=lambda p: p["role"] != "focus"):  # one prop per family, the focus first
+        family = _family(row["prop_id"])
+        if family in families:
+            alias[row["prop_id"]] = families[family]
+            notes.append(f"{row['prop_id']} bỏ: cùng họ {family} với {families[family]}")
+            continue
+        families[family] = row["prop_id"]
+        kept.append(row)
+    dressing = stage["dressing"]
+    if dressing != NONE and _family(dressing) in families:
+        notes.append(f"dressing {dressing} bỏ: cùng họ {_family(dressing)} với vật của cảnh")
+        dressing = NONE
+    focus_prop = next((p for p in kept if p["role"] == "focus"), None)
+    frame, substituted = _pick_frame(stage["frame_id"], len(present), len(kept) + len(story_visuals))
+    if substituted:
+        notes.append(f"frame {stage['frame_id']} -> {frame['id']}")
+    slots = {name: (_squeeze(box) if story_visuals else dict(box)) for name, box in PLACEMENT[frame["id"]].items()}
 
-    entities, assets, bindings = [], {}, {}
-    # characters fill the character slots in order
+    entities, assets, bindings, placed = [], {}, {}, []
     boxes_for = {}
     for slot, row in zip(_slots(frame, "character"), present):
         bindings[slot] = row["entity_id"]
         boxes_for[row["entity_id"]] = slots[slot]
+        placed.append(slots[slot])
     state_use = {row["entity_id"]: {row["state_id"]} for row in present}
     for event in act["events"]:
         target = event["target"]
@@ -137,50 +180,55 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
                 raise ValueError(f"state_after {event['state_after']!r} không thuộc {target}")
             state_use[target].add(event["state_after"])
     for row in present:
-        box = boxes_for[row["entity_id"]]
         entities.append({"id": row["entity_id"], "kind": "character", "visual_role": "character", "initial_state": row["state_id"],
-                         "states": {s: _state(s, box, LAYER_CHARACTER) for s in sorted(state_use[row["entity_id"]])},
+                         "states": {s: _state(s, boxes_for[row["entity_id"]], LAYER_CHARACTER) for s in sorted(state_use[row["entity_id"]])},
                          "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
-    # props: the focus prop first, then supports; object slots first, then spare spots
-    free_slots = [slots[s] for s in _slots(frame, "object") if s in slots]
-    spots = list(SUPPORT_SPOTS)
-    object_slot_names = _slots(frame, "object")
-    ordered = sorted(chosen_props, key=lambda p: p["role"] != "focus")
-    prop_entities = []
-    for index, row in enumerate(ordered):
-        library = props[row["prop_id"]]
-        box = free_slots.pop(0) if free_slots else (spots.pop(0) if spots else None)
-        if box is None:
-            raise ValueError("quá nhiều vật cho một cảnh")
-        if index < len(object_slot_names) and object_slot_names[index] in slots and not bindings.get(object_slot_names[index]):
-            bindings[object_slot_names[index]] = row["prop_id"]
-        key = f"{scene_id}-{row['prop_id']}"
-        assets[key] = {"path": "library:" + library["path"], "category": "prop"}
-        entities.append({"id": row["prop_id"], "kind": "object", "visual_role": "interactive_prop", "initial_state": "idle",
-                         "states": {"idle": _state(key, _fit(box, _aspect(library)), LAYER_PROP)},
-                         "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
-        prop_entities.append(row["prop_id"])
-    # story visuals declared by the skeleton: hidden until the first anchor
+    # a story visual takes its own band; props take an object slot, else a free spot that touches nobody
     sv_entities = []
-    sv_slot = next((n for n in object_slot_names if n not in bindings), None)
+    object_slots = _slots(frame, "object")
     for asset_key in story_visuals:
-        ident = "sv_" + re.sub(r"\W+", "_", asset_key)
-        entities.append({"id": ident, "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
+        entities.append({"id": asset_key, "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
                          "states": {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False),
                                     "shown": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY)},
                          "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
-        sv_entities.append(ident)
-        if sv_slot and sv_slot not in bindings:
-            bindings[sv_slot] = ident
-            sv_slot = None
-    # set dressing is added by Core and never named as a story entity
-    if stage["dressing"] != NONE:
-        library = props[stage["dressing"]]
-        key = f"{scene_id}-depth-{stage['dressing']}"
+        sv_entities.append(asset_key)
+        placed.append(STORY_VISUAL_BOX)
+    for row in kept:
+        library = props[row["prop_id"]]
+        slot = next((n for n in object_slots if n not in bindings), None)
+        box = slots[slot] if slot else _free_spot(placed)
+        if box is None:
+            if row is focus_prop:
+                raise ValueError(f"không còn chỗ trống cho vật chính {row['prop_id']}")
+            notes.append(f"{row['prop_id']} bỏ: không còn chỗ trống")
+            alias[row["prop_id"]] = focus_prop["prop_id"] if focus_prop else None
+            continue
+        if slot:
+            bindings[slot] = row["prop_id"]
+        fitted = _fit(box, _aspect(library))
+        placed.append(fitted)
+        key = f"{scene_id}-{row['prop_id']}"
         assets[key] = {"path": "library:" + library["path"], "category": "prop"}
-        entities.append({"id": "depth__" + stage["dressing"], "kind": "object", "visual_role": "background", "initial_state": "idle",
-                         "states": {"idle": _state(key, _fit(DRESSING_BOX, _aspect(library)), LAYER_DRESSING)}})
+        entities.append({"id": row["prop_id"], "kind": "object", "visual_role": "interactive_prop", "initial_state": "idle",
+                         "states": {"idle": _state(key, fitted, LAYER_PROP)},
+                         "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
+    sv_slot = next((n for n in object_slots if n not in bindings), None)
+    if sv_slot and sv_entities:
+        bindings[sv_slot] = sv_entities[0]
+    # set dressing is added by Core, behind everything, only where it touches nobody
+    if dressing != NONE:
+        library = props[dressing]
+        box = _free_spot(placed)
+        if box is None:
+            notes.append(f"dressing {dressing} bỏ: không còn chỗ trống")
+        else:
+            key = f"{scene_id}-depth-{dressing}"
+            assets[key] = {"path": "library:" + library["path"], "category": "prop"}
+            entities.append({"id": "depth__" + dressing, "kind": "object", "visual_role": "background", "initial_state": "idle",
+                             "states": {"idle": _state(key, _fit(box, _aspect(library)), LAYER_DRESSING)}})
 
+    act = {"events": [{**e, "target": alias.get(e["target"], e["target"])} for e in act["events"]
+                      if alias.get(e["target"], e["target"]) is not None]}
     scene = {"id": scene_id, "narration_range": list(scene_range), "semantic_goal": goal,
              "grammar": {"frame_id": frame["id"], "mechanic_id": stage["mechanic_id"], "bindings": bindings},
              "entities": entities, "events": _events(menus, act, entities, sv_entities, goal, scene_text),
@@ -191,6 +239,49 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if notes:
         part["core_notes"] = notes
     return part
+
+
+def _rect(entity: dict) -> dict | None:
+    boxes = [s["transform"] for s in (entity.get("states") or {}).values() if isinstance(s, dict) and s.get("transform")]
+    if not boxes:
+        return None
+    left, top = min(b["x"] for b in boxes), min(b["y"] for b in boxes)
+    return {"x": left, "y": top, "width": max(b["x"] + b["width"] for b in boxes) - left,
+            "height": max(b["y"] + b["height"] for b in boxes) - top}
+
+
+def scene_faults(part: dict, required_story_visuals=()) -> list[dict]:
+    """Faults no existing check names: a prop family twice, two things on top of each other, a required story visual missing."""
+    scene, assets = part["payload"]["scene"], part["payload"].get("assets") or {}
+    by_path = {"library:" + p["path"]: p["id"] for p in agent_authoring._library_props()}
+    faults, seen = [], {}
+    for entity in scene["entities"]:
+        if entity.get("kind") != "object":
+            continue
+        asset = next((s.get("asset") for s in entity["states"].values()), None)
+        prop = by_path.get((assets.get(asset) or {}).get("path", ""))
+        if prop is None:
+            continue
+        family = _family(prop)
+        if family in seen:
+            faults.append({"code": "DUPLICATE_PROP_FAMILY", "entities": [seen[family], entity["id"]], "family": family})
+        seen.setdefault(family, entity["id"])
+    rects = [(e["id"], _rect(e)) for e in scene["entities"] if _rect(e)]
+    for i, (a_id, a) in enumerate(rects):
+        for b_id, b in rects[i + 1:]:
+            if _hits(a, b, margin=0):
+                faults.append({"code": "ENTITY_OVERLAP", "entities": [a_id, b_id]})
+    present = {e["id"] for e in scene["entities"]}
+    faults += [{"code": "STORY_VISUAL_MISSING", "entity": key} for key in required_story_visuals if key not in present]
+    return faults
+
+
+def story_visual_assets(context: dict, intent_assets: dict, scene_id: str) -> dict[str, str]:
+    """{asset key: label} of the Phase 1 story visuals this scene must carry (the scene holding the beat's voice anchor)."""
+    from .agent_parts import story_visuals_by_scene
+    wanted = story_visuals_by_scene(context).get(scene_id, [])
+    return {key: (a.get("source_visual_type") or (a.get("visual") or {}).get("type") or "story_visual")
+            for key, a in intent_assets.items() if a.get("category") == "story_visual" and a.get("phase1_visual_id") in wanted}
 
 
 def _first_words(text: str) -> str:
