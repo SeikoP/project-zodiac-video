@@ -183,6 +183,19 @@ def _ground_spot(placed: list[dict], floor: int, size: int, aspect: float) -> di
     return None
 
 
+def _foreground_spot(placed: list[dict], floor: int, aspect: float) -> dict | None:
+    """In front of the actors, in the band between their feet and the bottom of the story field; None when it is too shallow."""
+    size = min(DRESSING_SIZE, STORY_FIELD - (floor + 10))
+    if size < 110:
+        return None
+    for x in GROUND_X:
+        fitted = _fit({"x": min(x, 1040 - size), "y": floor + 10, "width": size, "height": size}, aspect)
+        fitted["y"] = floor + 10
+        if not any(_hits(fitted, other, 0) for other in placed):
+            return fitted
+    return None
+
+
 def _wall_spot(placed: list[dict], aspect: float) -> dict | None:
     """A place high on the wall beside the top row, for set dressing when the floor row is full (a story visual leaves the sides)."""
     for size in (WALL_SIZE, 160):
@@ -292,7 +305,9 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     # set dressing is added by Core, behind everything, only where it touches nobody
     if dressing != NONE:
         library = props[dressing]
-        box = _ground_spot(placed, floor, DRESSING_SIZE, _aspect(library)) or _wall_spot(placed, _aspect(library))
+        aspect = _aspect(library)
+        box = (_ground_spot(placed, floor, DRESSING_SIZE, aspect) or _foreground_spot(placed, floor, aspect)
+               or _wall_spot(placed, aspect))
         if box is None:
             notes.append(f"dressing {dressing} bỏ: không còn chỗ trống")
         else:
