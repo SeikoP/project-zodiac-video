@@ -103,6 +103,8 @@ class RevisionTaskTests(unittest.TestCase):
         self.assertIn("keep every id", prompt)
         self.assertEqual(task["current_scene"]["id"], "s03")
         self.assertEqual(task["instruction"], "cho Nhân Mã lớn hơn")
+        self.assertEqual(task["must_use_story_visuals"], [])  # a revision never adds what the scene did not have
+        self.assertIn("nothing else", prompt)
 
     def test_finish_revision_builds_a_whole_intent_and_a_change_list(self):
         task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "x")

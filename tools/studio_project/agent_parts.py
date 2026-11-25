@@ -290,6 +290,7 @@ def revise_task(context: dict, intent: dict, scene_id: str, instruction: str) ->
     task.update(part="revise", instruction=instruction, known_assets=sorted((intent.get("assets") or {})),
                 current_scene=copy.deepcopy(next(s for s in intent["scenes"] if s["id"] == scene_id)))
     task.pop("previous_candidate", None)
+    task["must_use_story_visuals"] = []  # the scene is already authored; the story-visual placement was decided then
     return task
 
 
@@ -297,7 +298,7 @@ def revise_prompt(task: dict) -> str:
     return (
         "You revise ONE existing scene of a Zodiac Studio episode. Do not use tools or read files. The user's request is in 'instruction'. "
         "Return ONLY compact valid JSON {\"kind\":\"scene.ops\",\"payload\":{\"scene_id\":<scene_id>,\"ops\":[...],\"assets\":{<only NEW prop assets>}}}. "
-        "Return ONLY ops that change what the instruction asks, keep every id, and do not resend the scene. Ops: "
+        "Do exactly what the instruction asks and nothing else: do not add entities, events or story visuals it does not mention. Return ONLY ops that change what the instruction asks, keep every id, and do not resend the scene. Ops: "
         "{\"op\":\"set\",\"path\":\"entities/<entity>/states/<state>/transform/x\",\"value\":number} (also width, height, rotation, layer, visible), "
         "{\"op\":\"add\",\"path\":\"entities\"|\"events\",\"value\":{new item with a NEW id}}, "
         "{\"op\":\"remove\",\"path\":\"entities/<entity>\"|\"events/<event>\"} (remove an entity's events in the same ops), "
