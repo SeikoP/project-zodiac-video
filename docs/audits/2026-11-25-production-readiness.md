@@ -8,7 +8,7 @@ Branch `experiment/main-2`. Evidence from this run:
 | `node --test tests/studio_*.test.mjs` (15 files) | all pass (after fixing stale phone-contrast test) |
 | `tsc --noEmit` (apps/zodiac-studio) | clean |
 | `vite build` | built in ~1.6 s (one chunk >500 kB warning, `@hyperframes` bundle) |
-| `cargo check` (src-tauri) | NOT RUN: linker cannot find Windows SDK libs / GNU `link` shadows MSVC on this machine |
+| `cargo check` (src-tauri) | pass after installing Windows SDK 10.0.22621 |
 | Playwright browser suites (8 files, local Chromium) | all PASS; 4 were stale after the UI refactor and were updated |
 
 ## Changed in this pass
@@ -18,7 +18,6 @@ Branch `experiment/main-2`. Evidence from this run:
 - GUI: export step is two-column; a vertical MP4 no longer pushes the copy/approval controls off screen.
 
 ## Still open before release
-- Compile the Tauri host on a machine with the Windows SDK (installer needs UAC elevation; `winget install Microsoft.WindowsSDK.10.0.22621`).
 - Autopilot has an agent only for `visual`; assets/cover/publish/inspect are deterministic drafts (publish copy needs editing).
 - Only the scene-experience validator runs for real; others are SKIPPED/BLOCKED in Studio workspaces.
 - TTS is sequential (~3 s/unit).
