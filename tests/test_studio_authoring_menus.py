@@ -70,12 +70,14 @@ class MenuTests(unittest.TestCase):
         self.assertEqual(props["props"]["items"]["properties"]["prop_id"]["enum"], m["props"])
         self.assertEqual(props["props"]["items"]["properties"]["role"]["enum"], ["focus", "support"])
         self.assertEqual(props["dressing"]["enum"], m["dressing"])
-        present = props["present"]["items"]
-        self.assertEqual(present["properties"]["entity_id"]["enum"], sorted(m["cast"]))
-        self.assertEqual(present["properties"]["state_id"]["enum"], sorted({s for v in m["cast"].values() for s in v}))
-        event = act["properties"]["events"]["items"]["properties"]
-        self.assertEqual(event["anchor_id"]["enum"], [a["id"] for a in m["anchors"]])
-        self.assertEqual(event["action"]["maxLength"], 80)
+        present = props["present"]["items"]["anyOf"]
+        self.assertEqual([v["properties"]["entity_id"]["enum"] for v in present], [[e] for e in sorted(m["cast"])])
+        for variant in present:  # a state is only offered with the entity that owns it
+            self.assertEqual(variant["properties"]["state_id"]["enum"], m["cast"][variant["properties"]["entity_id"]["enum"][0]])
+        events = act["properties"]["events"]["items"]["anyOf"]
+        for event in (v["properties"] for v in events):
+            self.assertEqual(event["anchor_id"]["enum"], [a["id"] for a in m["anchors"]])
+            self.assertEqual(event["action"]["maxLength"], 80)
         for schema in (stage, act):
             for node in walk(schema):
                 if node.get("type") == "object":
@@ -91,6 +93,26 @@ class MenuTests(unittest.TestCase):
         big = menus(clauses)
         self.assertGreaterEqual(len(big["anchors"]), 12)
         self.assertLessEqual(menus_mod.act_schema(big)["properties"]["events"]["maxItems"], 8)
+
+    def test_act_states_belong_to_their_target(self):
+        m = menus()
+        variants = {v["properties"]["target"]["enum"][0]: v["properties"]["state_after"]["enum"]
+                    for v in menus_mod.act_schema(m)["properties"]["events"]["items"]["anyOf"] if len(v["properties"]["target"]["enum"]) == 1}
+        self.assertEqual(variants["ban"], ["neutral", "reaction", "same"])
+        self.assertEqual(variants["nguoi_kia"], ["neutral", "smug", "same"])
+        props = next(v for v in menus_mod.act_schema(m)["properties"]["events"]["items"]["anyOf"] if "phone" in v["properties"]["target"]["enum"])
+        self.assertEqual(props["properties"]["state_after"]["enum"], ["same"])  # a prop has no states to move to
+
+    def test_act_schema_for_a_stage_only_offers_whoever_is_in_it(self):
+        m = menus()
+        stage = {"present": [{"entity_id": "ban", "state_id": "neutral"}], "props": [{"prop_id": "phone", "role": "focus"}]}
+        targets = sorted(t for v in menus_mod.act_schema(m, stage)["properties"]["events"]["items"]["anyOf"]
+                         for t in v["properties"]["target"]["enum"])
+        self.assertEqual(targets, ["ban", "phone"])
+        good = {"events": [{"anchor_id": "a1", "target": "ban", "action": "x", "state_after": "reaction"}]}
+        bad = {"events": [{"anchor_id": "a1", "target": "ban", "action": "x", "state_after": "smug"}]}
+        self.assertEqual(menus_mod.schema_errors(good, menus_mod.act_schema(m, stage)), [])
+        self.assertTrue(menus_mod.schema_errors(bad, menus_mod.act_schema(m, stage)))
 
     def test_unknown_scene_is_an_error(self):
         with self.assertRaises(KeyError):

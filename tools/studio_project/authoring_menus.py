@@ -79,25 +79,37 @@ def _object(properties: dict) -> dict:
 
 def stage_schema(menus: dict) -> dict:
     cast = sorted(menus["cast"])
-    states = sorted({s for v in menus["cast"].values() for s in v})
+    # a state is offered only together with the entity that owns it (one anyOf variant per entity)
+    present = ([_object({"entity_id": _enum([e]), "state_id": _enum(menus["cast"][e])}) for e in cast]
+               or [_object({"entity_id": _enum([]), "state_id": _enum([])})])
     return _object({
         "frame_id": _enum(menus["frames"]),
         "mechanic_id": _enum(menus["mechanics"]),
-        "present": {"type": "array", "maxItems": len(cast),
-                    "items": _object({"entity_id": _enum(cast), "state_id": _enum(states)})},
+        "present": {"type": "array", "maxItems": len(cast), "items": {"anyOf": present}},
         "props": {"type": "array", "maxItems": MAX_PROPS,
                   "items": _object({"prop_id": _enum(menus["props"]), "role": {"type": "string", "enum": ["focus", "support"]}})},
         "dressing": _enum(menus["dressing"]),
     })
 
 
-def act_schema(menus: dict) -> dict:
-    targets = sorted(menus["cast"]) + [p for p in menus["props"] if p not in menus["cast"]]
-    states = sorted({s for v in menus["cast"].values() for s in v}) + [SAME]
-    return _object({
-        "events": {"type": "array", "maxItems": min(MAX_EVENTS, len(menus["anchors"])),
-                   "items": _object({"anchor_id": _enum(a["id"] for a in menus["anchors"]), "target": _enum(targets),
-                                     "action": {"type": "string", "maxLength": ACTION_LIMIT}, "state_after": _enum(states)})}})
+def act_schema(menus: dict, stage: dict | None = None) -> dict:
+    """Events the model may write. Given the chosen stage, only who is in it can act, and a character only moves to one of its
+    own states; a prop has none (``same``). Without a stage every cast member and prop is offered with its own states."""
+    if stage is None:
+        characters, props = sorted(menus["cast"]), list(menus["props"])
+    else:
+        characters = [row["entity_id"] for row in stage["present"]]
+        props = [row["prop_id"] for row in stage["props"]]
+    anchors = [a["id"] for a in menus["anchors"]]
+
+    def event(targets, states):
+        return _object({"anchor_id": _enum(anchors), "target": _enum(targets),
+                        "action": {"type": "string", "maxLength": ACTION_LIMIT}, "state_after": _enum(states)})
+    variants = [event([c], list(menus["cast"][c]) + [SAME]) for c in characters]
+    if props:
+        variants.append(event(props, [SAME]))
+    return _object({"events": {"type": "array", "maxItems": min(MAX_EVENTS, len(anchors)) if variants else 0,
+                               "items": {"anyOf": variants or [event([], [])]}}})
 
 
 def schema_errors(value, schema: dict, path: str = "$") -> list[str]:
@@ -108,6 +120,9 @@ def schema_errors(value, schema: dict, path: str = "$") -> list[str]:
     if kind in kinds and not isinstance(value, kinds[kind]):
         return [f"{path}: cần kiểu {kind}"]
     errors: list[str] = []
+    if "anyOf" in schema:
+        tries = [schema_errors(value, variant, path) for variant in schema["anyOf"]]
+        return [] if any(not t for t in tries) else min(tries, key=len)
     if "enum" in schema and value not in schema["enum"]:
         errors.append(f"{path}: {value!r} không có trong menu {schema['enum'][:12]}")
     if kind == "string" and "maxLength" in schema and len(value) > schema["maxLength"]:
