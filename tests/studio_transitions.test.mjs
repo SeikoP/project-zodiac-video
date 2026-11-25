@@ -8,7 +8,7 @@ import vm from 'node:vm';
 import {TRANSITIONS,DEFAULT_TRANSITION,validateTransition,resolveTransition,paintTransition,resetTransition} from '../tools/studio_project/visual_transitions.mjs';
 import {resolveActing,validateActingEvent,ACTING} from '../tools/studio_project/visual_acting.mjs';
 import {validateIntent} from '../tools/studio_project/visual_compiler.mjs';
-import {renderEpisode,previewRuntime} from '../tools/studio_project/visual_preview.mjs';
+import {renderEpisode,previewRuntime,quality} from '../tools/studio_project/visual_preview.mjs';
 import {makeFixture} from './studio_p34_fixture.mjs';
 
 const node=()=>({style:{}});
@@ -168,4 +168,61 @@ test('enter without a side starts from the nearest horizontal edge (decided defa
     validateIntent(intent,narration);
     assert.equal(intent.scenes[0].events[0].motion.params.from,expected,'x='+x);
   }
+});
+
+// ---- review pins: words at the cut, enter through the real painter and QA --------------------------------------
+test('a word ending exactly at the cut stays visible until the cut and the first word of the next scene appears at the cut',async()=>{
+  const runtime=await previewRuntime(path.resolve('.'));
+  const a={fps:30,startMs:0,endMs:2000,measured:true,words:[{text:'Xin',startMs:1700,endMs:2000}],events:[]};
+  const b={fps:30,startMs:2000,endMs:4000,measured:true,words:[{text:'Chào',startMs:2000,endMs:2300}],events:[]};
+  const full=renderEpisode([{scene:{...scene('s01'),transition:{preset:'page-turn',frames:12}},time:a},{scene:scene('s02'),time:b}],assets,'light',30,runtime);
+  const played=await play(full.html);
+  const [one,two]=[...played.document.querySelectorAll('.episode-caption')];
+  const shown=el=>el.style.display!=='none'&&el.textContent.trim().length>0;
+  played.seek(2-1/30);assert.equal(shown(one),true,'outgoing word still visible one frame before the cut');assert.equal(shown(two),false,'incoming not yet');
+  played.seek(2);assert.equal(shown(one),false,'outgoing caption gone at the cut');assert.equal(shown(two),true,'incoming first word shows at the cut');
+});
+
+test('enter through the real painter starts outside the canvas on frame 0 and rests on its authored pose',async()=>{
+  const runtime=await previewRuntime(path.resolve('.'));
+  const time={fps:30,startMs:0,endMs:2000,measured:true,words:[{text:'Xin',startMs:500,endMs:900}],
+    events:[{id:'fly',target:'actor',state_before:'idle',state_after:'idle',at:0,preview_motion:'enter',preview_duration:.4,preview_params:{from:'left',distance:520}}]};
+  const full=renderEpisode([{scene:scene('s01'),time}],assets,'light',30,runtime);
+  const played=await play(full.html);
+  const node=played.document.querySelector('.entity');
+  const shift=()=>{const m=/translate\((-?[\d.]+)px/.exec(node.style.transform);return m?Number(m[1]):0;};
+  const left=()=>parseFloat(node.style.left)+shift();
+  played.seek(0);assert.ok(left()+300<=0,'frame 0 is fully outside the left edge: '+left());
+  played.seek(1);assert.equal(left(),200,'rests on the authored x');
+});
+
+test('QA stays quiet for an authored enter (acting offsets are not sampled), so the off-canvas start is never reported',()=>{
+  const sc=scene('s01');
+  const timing={fps:30,startMs:0,endMs:2000,measured:true,words:[],events:[{id:'fly',target:'actor',state_before:'idle',state_after:'idle',at:0,preview_motion:'enter',preview_duration:.4,preview_params:{from:'left',distance:520}}]};
+  assert.deepEqual(quality(sc,'light',timing).issues.filter(i=>i.code==='OUTSIDE_CANVAS'),[]);
+});
+
+test('first scene transition and zero-hold neighbours never produce a window',async()=>{
+  assert.equal(resolveTransition({preset:'page-turn',frames:12},0,90),null);
+  assert.equal(resolveTransition({preset:'page-turn',frames:12},90,0),null);
+  const runtime=await previewRuntime(path.resolve('.'));
+  const full=renderEpisode([{scene:{...scene('s01'),transition:{preset:'page-turn',frames:24}},time:timing(0,2000)},{scene:scene('s02'),time:{fps:30,startMs:2000,endMs:2060,measured:true,words:[{text:'Xin',startMs:2000,endMs:2050}],events:[]}}],assets,'light',30,runtime);
+  const played=await play(full.html);
+  const [out,inc]=[...played.document.querySelectorAll('.scene-frame')];
+  for(const t of [1.9,2.0,2.03]){played.seek(t);assert.equal(Number(out.style.opacity)+Number(inc.style.opacity)>=1,true,'t='+t);}
+});
+
+test('a Core-measured enter distance follows the entity when it moves; an authored distance is kept',()=>{
+  const narration='Song Tử hỏi thêm câu một. Song Tử hỏi thêm câu hai.';
+  const intent=makeFixture(narration,1);
+  const target=intent.scenes[0].entities[0],box=target.states[target.initial_state].transform;
+  intent.scenes[0].events.unshift({id:'fly',target:target.id,state_before:target.initial_state,state_after:target.initial_state,trigger:{type:'scene_start'},motion:{preset:'enter',duration_frames:12,params:{from:'left'}}});
+  validateIntent(intent,narration);
+  const first=intent.scenes[0].events[0].motion.params.distance;
+  box.x+=300;validateIntent(intent,narration);
+  assert.equal(intent.scenes[0].events[0].motion.params.distance,first+300,'distance re-measured after the entity moved right');
+  const fixed=makeFixture(narration,1),t2=fixed.scenes[0].entities[0];
+  fixed.scenes[0].events.unshift({id:'fly',target:t2.id,state_before:t2.initial_state,state_after:t2.initial_state,trigger:{type:'scene_start'},motion:{preset:'enter',duration_frames:12,params:{from:'left',distance:2000}}});
+  t2.states[t2.initial_state].transform.x+=300;validateIntent(fixed,narration);
+  assert.equal(fixed.scenes[0].events[0].motion.params.distance,2000);
 });

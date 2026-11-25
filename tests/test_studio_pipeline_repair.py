@@ -21,9 +21,10 @@ def issue(scene_id, code="PASSIVE_STORYTELLING"):
 class FakeAgent:
     def __init__(self, fail=()):
         self.started, self.live, self.peak, self.lock = [], 0, 0, threading.Lock()
-        self.tasks, self.fail = {}, set(fail)
+        self.tasks, self.fail, self.deps, self.cancelled, self.boom = {}, set(fail), {}, [], set()
 
-    def start_scene_revision(self, project_id, scene_id, instruction):
+    def start_scene_revision(self, project_id, scene_id, instruction, automatic=False):
+        self.automatic = getattr(self, "automatic", []) + [automatic]
         with self.lock:
             if self.live >= 2:
                 raise StudioError("AGENT_BUSY", "full", "agent")
@@ -40,6 +41,8 @@ class FakeAgent:
         with self.lock:
             self.live = max(0, self.live - 1) if self.tasks[task_id].get("done") is None else self.live
             self.tasks[task_id]["done"] = True
+        if scene_id in self.boom:
+            raise KeyError("scene vanished")
         if scene_id in self.fail:
             return {"task_id": task_id, "status": "FAILED", "error": "boom"}
         intent = copy.deepcopy(INTENT)
@@ -47,7 +50,7 @@ class FakeAgent:
             if scene["id"] == scene_id:
                 scene["semantic_goal"] = "REVISED " + scene_id
         intent["assets"][scene_id + "-new"] = {"path": "library:props/x.svg"}
-        return {"task_id": task_id, "status": "COMPLETED", "dependencies": "fp-1",
+        return {"task_id": task_id, "status": "COMPLETED", "dependencies": self.deps.get(scene_id, "fp-1"),
                 "suggestion": json.dumps({"kind": "source.replace", "payload": {"intent": intent}})}
 
 
@@ -92,6 +95,36 @@ class ReviseScenesTests(unittest.TestCase):
     def test_a_failed_revision_falls_back_to_none_so_the_caller_can_regenerate(self):
         _, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]}, FakeAgent(fail={"s08"}))
         self.assertIsNone(items)
+
+    def test_revisions_are_started_as_automatic_so_repair_text_cannot_open_the_guards(self):
+        agent, _ = self.run_repair({"s03": [issue("s03")]})
+        self.assertEqual(agent.automatic, [True])
+
+    def test_scenes_revised_under_different_voice_fingerprints_are_not_merged(self):
+        agent = FakeAgent()
+        agent.deps = {"s03": "fp-1", "s08": "fp-2"}
+        _, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]}, agent)
+        self.assertIsNone(items)
+
+    def test_an_unexpected_error_in_a_revision_falls_back_instead_of_escaping(self):
+        agent = FakeAgent()
+        agent.boom = {"s08"}
+        _, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]}, agent)
+        self.assertIsNone(items)
+
+    def test_stopping_while_an_agent_runs_cancels_it(self):
+        agent = FakeAgent()
+        pilot = SimpleNamespace(_state_lock=threading.RLock(), _stopped=False)
+        original = agent.task
+        def task(task_id):
+            pilot._stopped = True  # the user stops the autopilot while the agent is still working
+            return {"task_id": task_id, "status": "RUNNING"}
+        agent.task = task
+        agent.cancel = lambda task_id: agent.cancelled.append(task_id)
+        with patch("tools.studio_project.pipeline.agent_runs.track"), self.assertRaises(StudioError) as caught:
+            _revise_scenes(service_with(agent), "p", "checks", {"s03": [issue("s03")]}, pilot)
+        self.assertEqual(caught.exception.code, "AGENT_CANCELLED")
+        self.assertEqual(len(agent.cancelled), 1)
 
     def test_a_stopped_autopilot_raises_cancelled(self):
         pilot = SimpleNamespace(_state_lock=threading.RLock(), _stopped=True)

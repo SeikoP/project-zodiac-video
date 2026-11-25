@@ -53,6 +53,27 @@ class BankTests(unittest.TestCase):
         self.assertIsNone(self.bank.lookup("t1", "v1", "g2"))
         self.assertIsNone(self.bank.lookup("t2", "v1", "g1"))
 
+    def test_concurrent_writers_of_the_same_key_never_collide(self):
+        import threading
+        errors = []
+        def write():
+            try:
+                for _ in range(15):
+                    self.bank.remember("t1", "v1", "g1", self.wav)
+            except Exception as error:  # pragma: no cover - the failure being tested
+                errors.append(error)
+        threads = [threading.Thread(target=write) for _ in range(6)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
+        self.assertEqual(errors, [])
+        self.assertEqual(self.bank.lookup("t1", "v1", "g1").read_bytes(), self.wav.read_bytes())
+        self.assertEqual([p.name for p in (self.root / "bank").glob("*.tmp*")], [])
+
+    def test_a_failing_bank_write_is_swallowed_by_the_caller_helper(self):
+        from tools.studio_project.voice_bank import remember_quietly
+        self.assertFalse(remember_quietly(self.bank, "t1", "v1", "g1", self.root / "missing.wav"))
+        self.assertTrue(remember_quietly(self.bank, "t1", "v1", "g1", self.wav))
+
     def test_a_tampered_bank_file_is_ignored(self):
         self.bank.remember("t1", "v1", "g1", self.wav)
         self.bank.lookup("t1", "v1", "g1").write_bytes(b"changed")

@@ -192,7 +192,7 @@ class AgentManager:
         capsule = agent_authoring.capsule(self.service, project_id, instruction, repair=repair)
         return self.start(project_id, author_task=capsule, group=True)
 
-    def start_scene_revision(self, project_id: str, scene_id: str, instruction: str) -> dict:
+    def start_scene_revision(self, project_id: str, scene_id: str, instruction: str, *, automatic: bool = False) -> dict:
         """Revise one existing scene with ops (see scene_ops); the result is a whole-intent proposal plus a change list."""
         if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1200:
             raise StudioError("AGENT_INSTRUCTION_INVALID", "Yêu cầu cần từ 1 đến 1200 ký tự.", "agent")
@@ -200,7 +200,7 @@ class AgentManager:
         intent = self.service.visual.snapshot(project_id)["intent"]
         if intent is None or not any(s["id"] == scene_id for s in intent["scenes"]):
             raise StudioError("VISUAL_SCENE_UNKNOWN", "Chọn một cảnh đã soạn", "agent")
-        part = agent_parts.revise_task(capsule, intent, scene_id, instruction.strip())
+        part = agent_parts.revise_task(capsule, intent, scene_id, instruction.strip(), automatic=automatic)
         return self.start(project_id, part_task=part, revise=(capsule, intent))
 
     def _set_part(self, group_id: str, part_id: str, status: str, **extra) -> None:

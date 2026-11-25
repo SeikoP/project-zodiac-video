@@ -53,6 +53,18 @@ class ApplyOpsTests(unittest.TestCase):
             with self.subTest(op=op), self.assertRaises(ValueError):
                 apply_scene_ops(SCENE, [op])
 
+    def test_ids_can_never_be_renamed_by_an_op(self):
+        for path in ("entities/gemini/id", "events/e1/id", "entities/gemini/states/neutral/id"):
+            with self.subTest(path=path), self.assertRaises(ValueError):
+                apply_scene_ops(SCENE, [{"op": "set", "path": path, "value": "renamed"}])
+
+    def test_changes_come_out_in_a_stable_order(self):
+        new = apply_scene_ops(SCENE, [{"op": "set", "path": "entities/gemini/states/neutral/transform/x", "value": 1},
+                                      {"op": "set", "path": "entities/phone/states/shown/transform/x", "value": 2},
+                                      {"op": "set", "path": "entities/phone/states/hidden/transform/x", "value": 3}])
+        lines = scene_changes(SCENE, new)
+        self.assertEqual([line.split(" (")[1].split(")")[0] for line in lines], ["neutral", "hidden", "shown"])  # entities then states, sorted
+
     def test_removing_an_entity_that_an_event_targets_names_the_event(self):
         with self.assertRaises(ValueError) as caught:
             apply_scene_ops(SCENE, [{"op": "remove", "path": "entities/phone"}])
@@ -122,6 +134,22 @@ class RevisionTaskTests(unittest.TestCase):
         text, _ = agent_parts.finish_revision(answer, task, self.intent())
         assets = json.loads(text)["payload"]["intent"]["assets"]
         self.assertEqual(assets, self.intent()["assets"])  # the existing asset wins; nothing renamed or added
+
+    def test_the_story_visual_guard_cannot_be_opened_by_words_inside_other_words_or_by_automatic_repair_text(self):
+        sv = {"id": "s03-SV", "kind": "story_visual", "initial_state": "v", "states": {"v": {"asset": "s03-phone", "visible": True, "layer": 40, "transform": dict(BOX)}}}
+        answer = json.dumps({"kind": "scene.ops", "payload": {"scene_id": "s03", "ops": [{"op": "add", "path": "entities", "value": sv}]}})
+        for instruction, automatic in (("PASSIVE_STORYTELLING: thêm hành động", True), ("fix the history of this scene", False), ("thêm story visual", True)):
+            with self.subTest(instruction=instruction):
+                task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", instruction, automatic=automatic)
+                self.assertFalse(task["allow_story_visual"])
+                with self.assertRaises(ValueError):
+                    agent_parts.finish_revision(answer, task, self.intent())
+        task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "thêm story visual hội thoại")
+        self.assertTrue(task["allow_story_visual"])
+
+    def test_removal_words_match_whole_words_only(self):
+        self.assertTrue(agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "bỏ cái điện thoại")["allow_removal"])
+        self.assertFalse(agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "đổi vị trí rồi để đó, không dùng trống")["allow_removal"])
 
     def test_a_story_visual_is_not_added_unless_the_instruction_asks(self):
         task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "cho nhân vật lớn hơn")

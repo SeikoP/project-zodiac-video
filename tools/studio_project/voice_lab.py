@@ -25,7 +25,7 @@ from tools.runner.process import observe_subprocesses, observe_subprocess_output
 from tools.zodiac_local import DEFAULT_TTS_ROOT, run_tts_batch, spoken_scene_text, _normalize_token
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
-from .voice_bank import VoiceBank, recompose_timing
+from .voice_bank import VoiceBank, recompose_timing, remember_quietly
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT = "zodiac-voice-lab@1"
@@ -551,7 +551,7 @@ class VoiceLab:
                                 voice_profile_hash=canonical_hash(voice),
                                 generation_profile_hash=canonical_hash({"backend": "v3turbo", "precision": "fp32", **contexts[unit["id"]]})),
                             details={**contexts[unit["id"]], "voice": voice, "origin": "bank" if unit["id"] in banked else "generated"})
-                        bank.remember(*identity_hashes(unit["id"]), audio)
+                        remember_quietly(bank, *identity_hashes(unit["id"]), audio)
                     self._handle(project_id)  # Recheck source after the external engine returns.
                     with _exclusive_source_lock(handle.workspace, "voice-state"):
                         current = self._read(handle)

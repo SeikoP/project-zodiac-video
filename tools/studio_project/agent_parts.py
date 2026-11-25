@@ -282,15 +282,24 @@ def failing_scenes(message: str, known: list[str]) -> list[str]:
 
 
 REMOVE_WORDS = ("xóa", "bỏ", "gỡ", "remove", "delete")
+STORY_WORDS = ("story visual", "story text", "hội thoại", "tin nhắn", "chat")
 
 
-def revise_task(context: dict, intent: dict, scene_id: str, instruction: str) -> dict:
+def _mentions(words: tuple, text: str) -> bool:
+    """Whole-word match, so "history" is not "story" and "bỏ" is not a piece of a longer word."""
+    return re.search(r"(?<!\w)(?:" + "|".join(re.escape(w) for w in words) + r")(?!\w)", text.lower()) is not None
+
+
+def revise_task(context: dict, intent: dict, scene_id: str, instruction: str, *, automatic: bool = False) -> dict:
     """One scene that already exists, plus what the user wants changed. The agent answers with ops, never a rewrite."""
     task = scene_task(context, {"payload": {"intent": intent}}, scene_id)
     task.update(part="revise", instruction=instruction, known_assets=sorted((intent.get("assets") or {})),
                 current_scene=copy.deepcopy(next(s for s in intent["scenes"] if s["id"] == scene_id)))
     task.pop("previous_candidate", None)
     task["must_use_story_visuals"] = []  # the scene is already authored; the story-visual placement was decided then
+    # Decided from the user's own words only; automatic repair text (issue codes such as PASSIVE_STORYTELLING) never opens them.
+    task["allow_removal"] = not automatic and _mentions(REMOVE_WORDS, instruction)
+    task["allow_story_visual"] = not automatic and _mentions(STORY_WORDS, instruction)
     return task
 
 
@@ -321,13 +330,11 @@ def finish_revision(text: str, task: dict, intent: dict) -> tuple[str, list[str]
         raise ValueError("ops cần từ 1 đến 40 thao tác")
     entities = task["current_scene"].get("entities", [])
     removed = sum(1 for op in ops if isinstance(op, dict) and op.get("op") == "remove" and str(op.get("path", "")).startswith("entities/"))
-    wants_removal = any(word in str(task.get("instruction", "")).lower() for word in REMOVE_WORDS)
-    if entities and removed / len(entities) > 0.3 and not wants_removal:
+    if entities and removed / len(entities) > 0.3 and not task.get("allow_removal"):
         raise ValueError("Xóa quá nhiều đối tượng trong khi yêu cầu không nói bỏ/xóa; chỉ sửa phần được yêu cầu")
     revised = apply_scene_ops(task["current_scene"], ops)
     old_ids = {e["id"] for e in task["current_scene"].get("entities", [])}
-    asks_story = any(word in str(task.get("instruction", "")).lower() for word in ("story", "hội thoại", "tin nhắn", "chat"))
-    if not asks_story and any(e.get("kind") == "story_visual" and e["id"] not in old_ids for e in revised.get("entities", [])):
+    if not task.get("allow_story_visual") and any(e.get("kind") == "story_visual" and e["id"] not in old_ids for e in revised.get("entities", [])):
         raise ValueError("Không thêm Story Visual khi yêu cầu không nói tới; chỉ sửa đúng phần được yêu cầu")
     known = set(intent.get("assets") or {})  # an asset the episode already has is reused, never re-sent under a new key
     new_only = {k: v for k, v in (payload.get("assets") or {}).items() if k not in known}

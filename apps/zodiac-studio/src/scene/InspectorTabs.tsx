@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useEffect, useState } from "react";
 import AgentProposal from "../AgentProposal";
 import { Paged } from "../Paged";
 import { TRANSITION_PRESETS, transitionLabel, type Transition, type TransitionPreset } from "./transition-edit";
@@ -63,6 +64,8 @@ export function TransitionTab({ scene, isLast, disabled, onSet, onSetEverywhere 
   scene: VisualScene | undefined; isLast: boolean; disabled: boolean;
   onSet: (transition: Transition) => void; onSetEverywhere: (transition: Transition) => void;
 }) {
+  const [draft, setDraft] = useState<number | null>(null); // the slider commits on release, not on every tick (each commit is an undo step)
+  useEffect(() => setDraft(null), [scene?.id]);
   if (!scene) return <p className="voice-muted">Chọn một cảnh trên timeline.</p>;
   if (isLast) return <p className="voice-muted">Cảnh cuối không có chuyển cảnh phía sau.</p>;
   const current: Transition = scene.transition ?? { preset: "page-turn", frames: 12 };
@@ -74,8 +77,11 @@ export function TransitionTab({ scene, isLast, disabled, onSet, onSetEverywhere 
         <select value={current.preset} disabled={disabled} onChange={(e) => { const preset = e.target.value as TransitionPreset; onSet({ preset, frames: preset === "cut" ? 0 : Math.max(TRANSITION_PRESETS[preset].min, current.frames) }); }}>
           {(Object.keys(TRANSITION_PRESETS) as TransitionPreset[]).map((id) => <option key={id} value={id}>{TRANSITION_PRESETS[id].label}</option>)}
         </select></label>
-      {spec.max > 0 && <label>Độ dài: {current.frames} khung ({(current.frames / 30).toFixed(2)} giây)
-        <input type="range" min={spec.min} max={spec.max} value={current.frames} disabled={disabled} onChange={(e) => onSet({ preset: current.preset, frames: Number(e.target.value) })} /></label>}
+      {spec.max > 0 && <label>Độ dài: {draft ?? current.frames} khung ({((draft ?? current.frames) / 30).toFixed(2)} giây)
+        <input type="range" min={spec.min} max={spec.max} value={draft ?? current.frames} disabled={disabled}
+          onChange={(e) => setDraft(Number(e.target.value))}
+          onPointerUp={() => { if (draft !== null && draft !== current.frames) onSet({ preset: current.preset, frames: draft }); setDraft(null); }}
+          onKeyUp={() => { if (draft !== null && draft !== current.frames) onSet({ preset: current.preset, frames: draft }); setDraft(null); }} /></label>}
       <button className="outline-btn" disabled={disabled} onClick={() => onSetEverywhere(current)}>Áp dụng cho mọi cảnh</button>
     </div>
   );

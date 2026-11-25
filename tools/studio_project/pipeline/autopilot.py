@@ -112,21 +112,27 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
     def one(scene_id: str, issues: list) -> dict:
         lines = [f"- {i.code}: {i.message}" for i in issues]
         instruction = (REPAIR_HINTS + chr(10) + chr(10).join(lines))[:1200]
+        slot_deadline = time.time() + 10 * 60
         while True:  # wait for a free agent slot
             with pilot._state_lock:
                 if pilot._stopped:
                     raise StudioError("AGENT_CANCELLED", "Autopilot đã dừng", "pipeline")
                 try:
-                    task = service.agent.start_scene_revision(project_id, scene_id, instruction)
+                    task = service.agent.start_scene_revision(project_id, scene_id, instruction, automatic=True)
                     break
                 except StudioError as error:
                     if error.code != "AGENT_BUSY":
                         raise
+            if time.time() > slot_deadline:
+                raise StudioError("AGENT_TIMEOUT", "Không có agent rảnh", "agent")
             time.sleep(0.5)
         agent_runs.track(service, project_id, node_id, task["task_id"])
         deadline = time.time() + 10 * 60
         while time.time() < deadline:
             task = service.agent.task(task["task_id"])
+            if pilot._stopped:  # a stop must not leave the agent working on a result nobody will apply
+                service.agent.cancel(task["task_id"])
+                raise StudioError("AGENT_CANCELLED", "Autopilot đã dừng", "pipeline")
             if task["status"] == "COMPLETED":
                 return task
             if task["status"] in ("FAILED", "CANCELLED"):
@@ -143,15 +149,23 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
         if error.code == "AGENT_CANCELLED":
             raise
         return None
-    merged = copy.deepcopy(service.visual.snapshot(project_id)["intent"])
-    for scene_id, task in tasks.items():
-        revised = json.loads(task["suggestion"])["payload"]["intent"]
-        scene = next(s for s in revised["scenes"] if s["id"] == scene_id)
-        merged["scenes"] = [scene if s["id"] == scene_id else s for s in merged["scenes"]]
-        for key, value in (revised.get("assets") or {}).items():
-            merged.setdefault("assets", {}).setdefault(key, value)
+    except Exception:  # a malformed revision must fall back to regenerating, not abort the repair
+        return None
+    fingerprints = {task["dependencies"] for task in tasks.values()}
+    if len(fingerprints) != 1:  # the voice changed between the revisions: none of them can be trusted together
+        return None
+    try:
+        merged = copy.deepcopy(service.visual.snapshot(project_id)["intent"])
+        for scene_id, task in tasks.items():
+            revised = json.loads(task["suggestion"])["payload"]["intent"]
+            scene = next(s for s in revised["scenes"] if s["id"] == scene_id)
+            merged["scenes"] = [scene if s["id"] == scene_id else s for s in merged["scenes"]]
+            for key, value in (revised.get("assets") or {}).items():
+                merged.setdefault("assets", {}).setdefault(key, value)
+    except (KeyError, ValueError, StopIteration, TypeError):
+        return None
     return [{"kind": "visual.intent", "payload": {"command": "source.replace", "payload": {"intent": merged}},
-             "voice_dependencies": next(iter(tasks.values()))["dependencies"]}]
+             "voice_dependencies": fingerprints.pop()}]
 
 
 def default_agent(service, project_id: str, node_id: str, spec, context_text: str, attempt: int, issues=()) -> list[dict]:

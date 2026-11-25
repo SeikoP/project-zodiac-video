@@ -74,6 +74,8 @@ def _apply(scene: dict, op: dict) -> None:
             raise ValueError(f"Không sửa được trường {segments[0]!r}; chỉ {', '.join(TOP_LEVEL)}")
         scene[segments[0]] = copy.deepcopy(op.get("value"))
         return
+    if segments[-1] == "id":
+        raise ValueError("Không đổi id: giữ nguyên id của entity, state và event")
     parent, key = _walk(scene, segments)
     if kind == "set":
         if not isinstance(parent, dict) or (key not in parent and not (isinstance(parent, dict) and segments[-2] in ("transform", "states"))):
@@ -127,7 +129,7 @@ def scene_changes(old: dict, new: dict) -> list[str]:
     new_entities = {e["id"]: e for e in new.get("entities", [])}
     lines += [f"Thêm {new_entities[i].get('kind', 'đối tượng')} {i}" for i in new_entities if i not in old_entities]
     lines += [f"Bỏ {old_entities[i].get('kind', 'đối tượng')} {i}" for i in old_entities if i not in new_entities]
-    for ident in old_entities.keys() & new_entities.keys():
+    for ident in sorted(old_entities.keys() & new_entities.keys()):
         before, after = old_entities[ident], new_entities[ident]
         for state in sorted(set(before.get("states", {})) | set(after.get("states", {}))):
             a, b = dict(_flat(before.get("states", {}).get(state, {}))), dict(_flat(after.get("states", {}).get(state, {})))
@@ -139,7 +141,7 @@ def scene_changes(old: dict, new: dict) -> list[str]:
     new_events = {e["id"]: e for e in new.get("events", [])}
     lines += [f"Thêm sự kiện {i}: {new_events[i].get('action', '')}".rstrip(": ") for i in new_events if i not in old_events]
     lines += [f"Bỏ sự kiện {i}" for i in old_events if i not in new_events]
-    lines += [f"Sửa sự kiện {i}" for i in old_events.keys() & new_events.keys() if old_events[i] != new_events[i]]
+    lines += [f"Sửa sự kiện {i}" for i in sorted(old_events.keys() & new_events.keys()) if old_events[i] != new_events[i]]
     for key, label in (("grammar", "Cấu trúc khung (grammar)"), ("semantic_goal", "Mục tiêu cảnh"), ("layout_contract", "Bố cục"),
                        ("experience_profile", "Hồ sơ trải nghiệm"), ("transition", "Chuyển cảnh")):
         if old.get(key) != new.get(key):
