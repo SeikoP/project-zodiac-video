@@ -192,6 +192,17 @@ class AgentManager:
         capsule = agent_authoring.capsule(self.service, project_id, instruction, repair=repair)
         return self.start(project_id, author_task=capsule, group=True)
 
+    def start_scene_revision(self, project_id: str, scene_id: str, instruction: str) -> dict:
+        """Revise one existing scene with ops (see scene_ops); the result is a whole-intent proposal plus a change list."""
+        if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1200:
+            raise StudioError("AGENT_INSTRUCTION_INVALID", "Yêu cầu cần từ 1 đến 1200 ký tự.", "agent")
+        capsule = agent_authoring.capsule(self.service, project_id, instruction, repair=True)
+        intent = self.service.visual.snapshot(project_id)["intent"]
+        if intent is None or not any(s["id"] == scene_id for s in intent["scenes"]):
+            raise StudioError("VISUAL_SCENE_UNKNOWN", "Chọn một cảnh đã soạn", "agent")
+        part = agent_parts.revise_task(capsule, intent, scene_id, instruction.strip())
+        return self.start(project_id, part_task=part, revise=(capsule, intent))
+
     def _set_part(self, group_id: str, part_id: str, status: str, **extra) -> None:
         with self._lock:
             if group_id in self._cancelled:
@@ -284,13 +295,13 @@ class AgentManager:
         except Exception as error:
             self._update(group_id, status="FAILED", error=str(error)[:350], completed_at=int(time.time()))
 
-    def start(self, project_id: str, *, visual_task=None, author_task=None, part_task=None, group=False) -> dict:
+    def start(self, project_id: str, *, visual_task=None, author_task=None, part_task=None, group=False, revise=None) -> dict:
         project = self.service.project(project_id)
         if self._bin() is None:
             raise StudioError("AGENT_UNAVAILABLE", "Codex App Server executable not found", "agent")
         with self._lock:
             active = [t for t in self._tasks.values() if t["status"] in ("STARTING", "RUNNING")]
-            if part_task is not None:  # parts of a running group: up to PARALLEL_AGENTS at once, nothing else
+            if part_task is not None and revise is None:  # parts of a running group: up to PARALLEL_AGENTS at once, nothing else
                 if any(t.get("kind") not in ("episode.part", "episode.propose") for t in active) or                         sum(t.get("kind") == "episode.part" for t in active) >= PARALLEL_AGENTS:
                     raise StudioError("AGENT_BUSY", "Agent slots are full", "agent")
             elif active:
@@ -312,7 +323,13 @@ class AgentManager:
                             visual_source_hash=visual_task["source_hash"], scene_id=visual_task["scene"]["id"],
                             dependencies=visual_task["dependencies"])
                 project = {**project, "visual_task": visual_task}
-            if part_task is not None:
+            if part_task is not None and revise is not None:
+                capsule, intent = revise
+                task.update(kind="scene.revise", part="revise", scene_id=part_task["scene_id"], visual_revision=capsule["revision"],
+                            visual_source_hash=capsule["source_hash"], dependencies=capsule["dependencies"],
+                            catalog_hash=agent_authoring.canonical_hash(capsule["catalog"]), changes=[])
+                project = {**project, "part_task": part_task, "revise_intent": intent}
+            elif part_task is not None:
                 task.update(kind="episode.part", part=part_task["part"], scene_id=part_task.get("scene_id"))
                 project = {**project, "part_task": part_task}
             if author_task is not None:
@@ -379,14 +396,15 @@ class AgentManager:
             project = self.service.project(task["project_id"])
             if project["source_sha256"] != task["source_sha256"]:
                 raise StudioError("SOURCE_MANIFEST_DRIFT", "Project source changed", "agent")
-            if task["kind"] in ("scene.propose", "episode.propose"):
+            if task["kind"] in ("scene.propose", "episode.propose", "scene.revise"):
                 visual = self.service.visual.snapshot(task["project_id"])
                 if not task.get("write_applied") and (base_revision != task["visual_revision"] or visual["source_hash"] != task["visual_source_hash"]):
                     raise StudioError("REVISION_CONFLICT", "Visual source changed; request a new proposal", "agent")
                 if not task.get("write_applied") and task.get("dependencies") != agent_authoring.dependencies(self.service, task["project_id"]):
                     raise StudioError("AGENT_DEPENDENCIES_CHANGED", "Giọng hoặc timing đã thay đổi; yêu cầu đề xuất mới.", "agent")
-                if task["kind"] == "episode.propose":
-                    if not task.get("write_applied") and (visual["intent"] is not None or task["catalog_hash"] != agent_authoring.canonical_hash(agent_authoring.catalog())):
+                if task["kind"] in ("episode.propose", "scene.revise"):
+                    stale_catalog = task["catalog_hash"] != agent_authoring.canonical_hash(agent_authoring.catalog())
+                    if not task.get("write_applied") and ((visual["intent"] is not None and task["kind"] == "episode.propose") or stale_catalog):
                         raise StudioError("REVISION_CONFLICT", "Nguồn hoặc danh mục đã thay đổi.", "agent")
                     intent = agent_authoring.proposal(task["suggestion"], self.service, task["project_id"], write_visuals=True)
                     result = self.service.visual.command(task["project_id"], command_id, base_revision, "source.replace", {"intent": intent},
@@ -541,7 +559,8 @@ class AgentManager:
                             + json.dumps(project["visual_task"], ensure_ascii=False, sort_keys=True)
                         )
                     if part is not None:
-                        prompt = agent_parts.skeleton_prompt(part) if part["part"] == "skeleton" else agent_parts.scene_prompt(part)
+                        prompt = (agent_parts.skeleton_prompt(part) if part["part"] == "skeleton" else
+                                  agent_parts.revise_prompt(part) if part["part"] == "revise" else agent_parts.scene_prompt(part))
                     elif authoring:
                         prompt = (
                             "You author initial Zodiac Studio visuals from an approved story. Do not use tools or read files. "
@@ -601,7 +620,12 @@ class AgentManager:
                     if authoring:
                         raw_hash = hashlib.sha256(text.encode("utf8")).hexdigest()
                         try:
-                            if part is not None:
+                            if part is not None and part["part"] == "revise":
+                                bound_fields = []
+                                text, changes = agent_parts.finish_revision(text, part, project["revise_intent"])
+                                agent_authoring.proposal(text, self.service, project["project_id"])  # the whole episode must still compile
+                                self._update(task_id, changes=changes)
+                            elif part is not None:
                                 bound_fields = []
                                 text = (agent_parts.validate_skeleton(text, part) if part["part"] == "skeleton"
                                         else agent_parts.validate_scene(text, part))

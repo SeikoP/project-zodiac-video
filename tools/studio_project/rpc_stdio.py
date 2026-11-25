@@ -174,6 +174,11 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         _exact(p, "project_id", "scene_id", "instruction")
         return service.agent.start_visual(**p)
     if method == "agent.author.start":
+        # With scene_id this revises that one scene by ops. It reuses this already-allowlisted method on purpose: the
+        # Tauri host only forwards methods named in lib.rs, so a new name would need a host rebuild.
+        if "scene_id" in p:
+            _exact(p, "project_id", "scene_id", "instruction")
+            return service.agent.start_scene_revision(**p)
         _exact(p, "project_id", "instruction")
         return service.agent.start_authoring_scenes(**p)
     if method == "agent.task":

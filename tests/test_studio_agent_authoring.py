@@ -178,6 +178,42 @@ class AgentAuthoringTests(unittest.TestCase):
         self.assertIn("depth__", data["schema"]["scenes"])
         self.assertIn("scene_set_id is retired", data["schema"]["scenes"])
 
+    def applied_intent(self):
+        self.manager.apply_suggestion(self.completed()["task_id"], confirm=True, base_revision=0, command_id="author")
+        return self.visual.snapshot(self.project)
+
+    def test_scene_revision_is_a_visible_task_with_voice_dependencies(self):
+        state = self.applied_intent()
+        scene_id = state["intent"]["scenes"][0]["id"]
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run"):
+            task = self.manager.start_scene_revision(self.project, scene_id, "cho nhân vật lớn hơn")
+        self.assertEqual((task["kind"], task["scene_id"]), ("scene.revise", scene_id))
+        self.assertTrue(task["dependencies"])
+        self.assertIn(task["task_id"], [t["task_id"] for t in self.manager.tasks(self.project)])  # shown, unlike group parts
+        with self.assertRaises(StudioError):
+            self.manager.start_scene_revision(self.project, "nope", "x")
+
+    def test_applying_a_revision_changes_only_that_scene(self):
+        state = self.applied_intent()
+        first = state["intent"]["scenes"][0]["id"]
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run"):
+            task = self.manager.start_scene_revision(self.project, first, "đổi mục tiêu")
+        revised = copy.deepcopy(state["intent"])
+        revised["scenes"][0]["semantic_goal"] = "Mục tiêu đã sửa"
+        self.manager._update(task["task_id"], status="COMPLETED", changes=["Mục tiêu cảnh đã đổi"],
+                             suggestion=json.dumps({"kind": "source.replace", "payload": {"intent": revised}}, ensure_ascii=False))
+        applied = self.manager.apply_suggestion(task["task_id"], confirm=True, base_revision=state["revision"], command_id="revise-1")
+        after = applied["intent"]["scenes"]
+        self.assertEqual(after[0]["semantic_goal"], "Mục tiêu đã sửa")
+        self.assertEqual(after[1:], state["intent"]["scenes"][1:])
+
+    def test_rpc_routes_author_start_with_a_scene_to_a_revision(self):
+        from tools.studio_project.rpc_stdio import dispatch
+        state = self.applied_intent()
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run"):
+            task = dispatch(self.service, "agent.author.start", {"project_id": self.project, "scene_id": state["intent"]["scenes"][0]["id"], "instruction": "x"})
+        self.assertEqual(task["kind"], "scene.revise")
+
     def test_story_text_and_split_chat_are_native_story_visual_templates(self):
         from tools.studio_project.agent_authoring import capsule, proposal
         from tools.studio_project.story_visual_art import visual_svg
