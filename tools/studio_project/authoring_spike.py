@@ -46,6 +46,8 @@ def real_checks(workspace: Path, merged: dict, scene_id: str) -> list[str]:
                 target = copy / source.relative_to(workspace)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
+        if (workspace / ".authoring/agent-art").is_dir():
+            shutil.copytree(workspace / ".authoring/agent-art", copy / ".authoring/agent-art")
         (copy / ".authoring/visual-intent.json").write_text(json.dumps(merged, ensure_ascii=False), "utf8")
         found = []
         for result in node_runner(copy, ("scene-experience", "story-visual-presence", "authoring-completeness")):
@@ -86,7 +88,9 @@ def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str
                     (SAVE_DIR / f"{scene_id}.intent.json").write_text(json.dumps(merged, ensure_ascii=False), "utf8")
                     (SAVE_DIR / f"{scene_id}.choices.json").write_text(json.dumps({"stage": stage, "act": act}, ensure_ascii=False, indent=1), "utf8")
                 result["compiled"] = True
-                result["checks"] = real_checks(service.visual._handle(project_id).workspace, merged, scene_id)
+                from . import agent_authoring  # the real path: proposal() completes story-visual briefs/coverage and re-validates
+                final = agent_authoring.proposal(json.dumps({"kind": "source.replace", "payload": {"intent": merged}}, ensure_ascii=False), service, project_id)
+                result["checks"] = real_checks(service.visual._handle(project_id).workspace, final, scene_id)
             except Exception as exc:  # measuring tool: record, never hide
                 error = f"{type(exc).__name__}: {str(exc)[:160]}"
     result.update(seconds=round(time.monotonic() - began, 1), error=error)
