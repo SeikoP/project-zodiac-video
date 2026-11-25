@@ -18,6 +18,7 @@ import {validateSeriesOpening} from './visual_opening.mjs';
 import {resolveVisualRole} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/visual-role.mjs';
 
 import {validateActingEvent,validateCameraShots,ACTING} from './visual_acting.mjs';
+import {validateTransition} from './visual_transitions.mjs';
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
 const MOTION=await json(path.join(LIBRARY,'../../contracts/motion-registry-v1.json'));
 const ID=/^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$/u;
@@ -58,8 +59,15 @@ export function validateIntent(intent,narration){
       assert(ID.test(event.id)&&!eventIds.has(event.id)&&entity?.states[event.state_before]&&entity.states[event.state_after],'VISUAL_EVENT_INVALID');eventIds.add(event.id);
       assert(['voice_anchor','scene_start','scene_end'].includes(event.trigger?.type),'VISUAL_EVENT_TRIGGER_UNSUPPORTED');
       if(event.trigger.type==='voice_anchor')assert(typeof event.trigger.text==='string'&&event.trigger.text.trim(),'VISUAL_EVENT_ANCHOR_REQUIRED');
+      if(event.motion?.preset==='enter'){ // the entrance is authored without geometry: Core measures how far outside the canvas it must start
+        assert(event.trigger.type==='scene_start','VISUAL_ENTER_TRIGGER');
+        const box=entity.states[event.state_before].transform,p=event.motion.params=event.motion.params??{};
+        const need={left:box.x+box.width,right:1080-box.x,top:box.y+box.height,bottom:1920-box.y}[p.from];
+        if(p.distance===undefined&&need!==undefined)p.distance=Math.ceil(need)+16;
+      }
       if(ACTING.motions[event.motion?.preset])validateActingEvent(event,scene,event.target);
     }
+    if(scene.transition!==undefined)validateTransition(scene.transition);
     if(scene.camera!==undefined){
       validateCameraShots(scene.camera);
       for(const shot of scene.camera)if(shot.trigger.type==='voice_anchor')assert(typeof shot.trigger.text==='string'&&shot.trigger.text.trim(),'VISUAL_CAMERA_ANCHOR_REQUIRED');
@@ -127,7 +135,7 @@ async function compilerIdentity(){
   files.push(['caption-font',digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf')))]);
   files.push(['caption-fontkit',digest(await readFile(path.join(ROOT,'apps/zodiac-studio/node_modules/fontkit/package.json')))]);
   for(const rel of ['features/visual-composition/compile-visual-intent.mjs','core/cache/incremental-cache.mjs','core/cache/phase02-semantic-cache.mjs','contracts/motion-registry-v1.json'])files.push([rel,digest(await readFile(path.join(LIBRARY,'../..',rel)))]);
-  for(const file of ['visual_acting.mjs','acting_registry.json','visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs','visual_presentation.mjs','visual_captions.mjs','visual_opening.mjs','visual_contract.json'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
+  for(const file of ['visual_acting.mjs','acting_registry.json','visual_transitions.mjs','transitions.json','visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs','visual_presentation.mjs','visual_captions.mjs','visual_opening.mjs','visual_contract.json'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
   for(const file of ['spatial-layout.mjs','semantic-motion.mjs','visual-role.mjs','caption-layout.mjs','caption-karaoke.mjs'])files.push(['renderer/'+file,digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/src',file)))]);
   return hash(files.sort(([a],[b])=>a.localeCompare(b)));
 }

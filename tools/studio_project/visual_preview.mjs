@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {ACTING} from './visual_acting.mjs';
+import {resolveTransition} from './visual_transitions.mjs';
 import {presentationFor,captionCss,watermarkHtml,presentationRuntime,resolveCaptionZone} from './visual_presentation.mjs';
 import {planMeasuredCaptionPages,captionCuesForEpisode} from './visual_captions.mjs';
 import {openingHtml,openingOpacity,validateSeriesOpening} from './visual_opening.mjs';
@@ -115,12 +116,27 @@ export function renderEpisode(rows,assets,themeId,fps,runtime,authoredPresentati
     models.push({model:preview.render_model,start:time.startMs/1000,end:time.endMs/1000});sourceMap.push(...preview.source_map);
     captionRows.push({time,pages:preview.render_model.captions});
     const id='scene-'+digest(scene.id).slice(0,16);
-    clips.push(`<section id="clip-${id}" class="clip" data-start="${time.startMs/1000}" data-duration="${preview.duration_seconds}" data-track-index="0"><div id="${id}" class="scene-frame">${preview.clips_html}<div id="caption-${id}" class="episode-caption"></div></div></section>`);
+    clips.push(`<section id="clip-${id}" class="clip" data-start="${time.startMs/1000}" data-duration="${preview.duration_seconds}" data-track-index="0"><div id="${id}" class="scene-frame"><div class="scene-art">${preview.clips_html}</div><div id="caption-${id}" class="episode-caption"></div></div></section>`);
   }
   const font=runtime.font?`@font-face{font-family:ZodiacCaption;src:url(data:font/ttf;base64,${runtime.font.base64}) format('truetype')}`:'';
   const modelRows=models.map((row,i)=>({...row,root:'scene-'+digest(rows[i].scene.id).slice(0,16)}));
-  const script=`${presentationRuntime()}function start(){const rows=${scriptJson(modelRows)},factory=${createScenePainter.toString()};const painters=rows.map(row=>({row,node:document.getElementById(row.root),paint:factory(row.model,document.getElementById('caption-'+row.root))}));function paint(){const at=tl.time();for(const p of painters){const active=at>=p.row.start&&at<p.row.end;p.node.style.opacity=active?'1':'0';if(active)p.paint(at-p.row.start);}}const tl=gsap.timeline({paused:true,onUpdate:paint});tl.to({progress:0},{progress:1,duration:${duration},ease:'none'});window.__timelines=window.__timelines||{};window.__timelines.episode=tl;paint();}if(document.fonts)verifyCaptionFont(start);else start();`;
-  const html=`<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>${font}html,body{margin:0;width:1080px;height:1920px;overflow:hidden}#root{position:relative;width:100%;height:100%;background:${presentation.paper};font-family:ZodiacCaption,Arial,sans-serif}.clip,.scene-frame{position:absolute;inset:0;width:100%;height:100%}.entity img{display:block}.episode-caption{${captionCss(presentation)}}</style></head><body><div id="root" data-composition-id="episode" data-width="1080" data-height="1920" data-duration="${duration}" data-fps="${fps}">${clips.join('')}${openingHtml(opening,theme,rows[0].scene,assets,themeId)}${watermarkHtml(presentation,escape)}</div><script>${runtime.gsap.replaceAll('</script','<\\/script')}</script><script>${script}</script></body></html>`;
+  const framesOf=r=>Math.round((r.time.endMs-r.time.startMs)/1000*fps);
+  const windows=rows.map((r,i)=>i<rows.length-1?resolveTransition(r.scene.transition,framesOf(r),framesOf(rows[i+1])):null);
+  const script=`${presentationRuntime()}function start(){const T=${scriptJson(windows)},FPS=${fps},PAPER=${scriptJson(presentation.paper)};const rows=${scriptJson(modelRows)},factory=${createScenePainter.toString()};const painters=rows.map(row=>({row,node:document.getElementById(row.root),paint:factory(row.model,document.getElementById('caption-'+row.root))}));function paint(){const at=tl.time();let pair=null;
+for(let i=0;i<T.length;i++){const w=T[i];if(!w)continue;const b=painters[i].row.end,s=b-w.before/FPS,e=b+w.after/FPS;if(at>=s&&at<e){pair={i,w,s};break;}}
+painters.forEach((p,idx)=>{const active=at>=p.row.start&&at<p.row.end,inPair=pair!==null&&(idx===pair.i||idx===pair.i+1);
+p.node.style.opacity=(active||inPair)?'1':'0';
+const art=p.node.querySelector('.scene-art');
+if(!inPair){resetTransition(art);p.node.style.zIndex='';}
+if(inPair){const t=idx===pair.i?Math.min(at,p.row.end-1/FPS)-p.row.start:Math.max(at,p.row.start)-p.row.start;p.paint(t);
+const cap=document.getElementById('caption-'+p.row.root);
+if(idx===pair.i&&at>=p.row.end)cap.style.display='none';
+if(idx===pair.i+1&&at<p.row.start)cap.style.display='none';
+p.node.style.zIndex=idx===pair.i?'2':'1';}
+else if(active)p.paint(at-p.row.start);});
+if(pair){const total=pair.w.before+pair.w.after,frame=Math.floor((at-pair.s)*FPS+1e-6),stepped=Math.floor(frame/2)*2;
+paintTransition(painters[pair.i].node.querySelector('.scene-art'),painters[pair.i+1].node.querySelector('.scene-art'),pair.w.preset,stepped/total,PAPER);}}const tl=gsap.timeline({paused:true,onUpdate:paint});tl.to({progress:0},{progress:1,duration:${duration},ease:'none'});window.__timelines=window.__timelines||{};window.__timelines.episode=tl;paint();}if(document.fonts)verifyCaptionFont(start);else start();`;
+  const html=`<!doctype html><html lang="vi"><head><meta charset="utf-8"><style>${font}html,body{margin:0;width:1080px;height:1920px;overflow:hidden}#root{position:relative;width:100%;height:100%;background:${presentation.paper};font-family:ZodiacCaption,Arial,sans-serif}.clip,.scene-frame,.scene-art{position:absolute;inset:0;width:100%;height:100%}.entity img{display:block}.episode-caption{${captionCss(presentation)}}</style></head><body><div id="root" data-composition-id="episode" data-width="1080" data-height="1920" data-duration="${duration}" data-fps="${fps}">${clips.join('')}${openingHtml(opening,theme,rows[0].scene,assets,themeId)}${watermarkHtml(presentation,escape)}</div><script>${runtime.gsap.replaceAll('</script','<\\/script')}</script><script>${script}</script></body></html>`;
   return {html,duration_seconds:duration,frames:Math.ceil(duration*fps),source_map:sourceMap,caption_cues:captionCuesForEpisode(captionRows),approval_granted:false};
 }
 

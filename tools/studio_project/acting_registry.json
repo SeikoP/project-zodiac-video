@@ -4,6 +4,7 @@
   "motions": {
     "lean": {"default_duration_frames": 14, "max_duration_frames": 120, "max_degrees": 20, "max_dx": 160, "max_dy": 80, "default_settle": "hold", "pivot": "bottom-center", "semantics": "absolute"},
     "recoil": {"default_duration_frames": 8, "max_duration_frames": 60, "max_degrees": 12, "max_dx": 60, "max_dy": 30, "default_settle": "hold", "pivot": "bottom-center", "semantics": "absolute"},
+    "enter": {"default_duration_frames": 12, "min_duration_frames": 6, "max_duration_frames": 30, "from": ["left", "right", "top", "bottom"], "max_distance": 4320, "semantics": "enter", "trigger": "scene_start"},
     "pull-with-prop": {"default_duration_frames": 8, "max_duration_frames": 60, "max_degrees": 0, "max_dx": 160, "max_dy": 80, "default_settle": "hold", "pivot": "bottom-center", "semantics": "relative-to-held-pose", "requires_group": true}
   },
   "camera": {"max_push_zoom": 1.25, "max_cut_zoom": 2, "min_zoom": 1, "max_shots_per_scene": 12, "max_duration_frames": 300, "reason_min_chars": 8, "canvas": {"width": 1080, "height": 1920}}

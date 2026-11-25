@@ -13,7 +13,7 @@ const ev=(over)=>({id:'e1',target:'actor',motion:'lean',start_frame:10,end_frame
 
 test('registry is Studio-only and bounded by the approved style spec',()=>{
   assert.equal(ACTING.format,'zodiac-studio-acting@1');
-  assert.deepEqual(Object.keys(ACTING.motions).sort(),['lean','pull-with-prop','recoil']);
+  assert.deepEqual(Object.keys(ACTING.motions).sort(),['enter','lean','pull-with-prop','recoil']);
   assert.equal(ACTING.motions.lean.max_degrees,20);
   assert.equal(ACTING.camera.max_push_zoom,1.25);
   assert.equal(ACTING.camera.max_cut_zoom,2);
