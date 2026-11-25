@@ -589,7 +589,7 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .view-editor .visual-scenes .paged-items { display:grid; grid-template-rows:repeat(3,minmax(0,1fr)); min-height:0; flex:1; }
 .view-editor .visual-scenes .paged-items>button { min-height:0; overflow:hidden; }
 .view-editor .visual-scenes .pagination { flex-shrink:0; }
-.episode-timeline { flex:0 0 auto; min-width:0; border:1px solid #354252; border-radius:8px; background:#101720; padding:7px 10px; }
+.episode-timeline { flex:0 0 auto; min-width:0; border:0; border-top:1px solid #2c3647; border-radius:0; background:transparent; padding:7px 0; }
 .timeline-header { display:flex; align-items:center; gap:12px; height:28px; }
 .timeline-header strong { font-variant-numeric:tabular-nums; font-size:12px; }
 .timeline-header strong span,.timeline-header small { color:#a8b7c9; font-size:11px; }
@@ -733,14 +733,14 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .plan-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .plan-head h1 { margin:0; font-size:19px; display:flex; align-items:center; gap:8px; }
 .plan-steps { list-style:none; margin:0; padding:0; display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#c7d3e6; }
-.plan-steps li { display:flex; align-items:center; gap:6px; padding:4px 10px; border:1px solid #344052; background:#121a27; }
+.plan-steps li { display:flex; align-items:center; gap:6px; padding:4px 6px; border:0; background:transparent; }
 .plan-steps li>span { width:18px; height:18px; border-radius:50%; display:grid; place-items:center; background:#d3b9ff; color:#1b1530; font-size:11px; font-weight:700; }
 .plan-body { display:grid; grid-template-columns:minmax(240px,.8fr) minmax(360px,1.6fr); gap:10px; flex:1; min-height:0; }
-.plan-list { display:flex; flex-direction:column; gap:6px; overflow:auto; min-height:0; padding:8px; }
+.plan-list { display:flex; flex-direction:column; gap:0; overflow:auto; min-height:0; padding:8px; }
 .plan-list input { width:100%; box-sizing:border-box; }
 .plan-group h2 { font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#9baac3; margin:8px 0 4px; }
-.plan-concept { display:flex; flex-direction:column; gap:3px; width:100%; text-align:left; padding:7px 9px; margin-bottom:4px; background:#161e2b; border:1px solid #2c3647; color:inherit; cursor:pointer; }
-.plan-concept[aria-pressed=true] { border-color:#dfc1ff; background:#1f2740; }
+.plan-concept { display:flex; flex-direction:column; gap:3px; width:100%; text-align:left; padding:7px 9px; margin-bottom:0; background:transparent; border:0; border-bottom:1px solid #232c3b; color:inherit; cursor:pointer; }
+.plan-concept[aria-pressed=true] { box-shadow:inset 3px 0 #dfc1ff; background:#ffffff0c; }
 .plan-concept strong { font-size:12px; }
 .plan-concept small { font-size:10px; color:#aeb6c8; }
 .plan-bar { display:block; height:4px; background:#2c3647; }
@@ -749,14 +749,14 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .plan-detail h2 { margin:0 0 4px; font-size:17px; }
 .plan-detail>p { margin:0 0 12px; color:#c7d3e6; line-height:1.55; }
 .plan-signs { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; }
-.plan-sign { display:flex; flex-direction:column; gap:5px; padding:8px 10px; border:1px solid #344052; background:#121a27; }
-.plan-sign.in_progress { border-color:#f0c36b; }
-.plan-sign.mp4_approved { border-color:#7fc99b; }
+.plan-sign { display:flex; flex-direction:column; gap:5px; padding:8px 10px; border:0; border-bottom:1px solid #232c3b; background:transparent; }
+.plan-sign.in_progress { box-shadow:inset 3px 0 #f0c36b; }
+.plan-sign.mp4_approved { box-shadow:inset 3px 0 #7fc99b; }
 .plan-sign-name { display:flex; align-items:center; gap:6px; }
 .plan-sign small { color:#aeb6c8; font-size:11px; }
 .plan-sign button { font-size:11px; align-self:flex-start; display:inline-flex; align-items:center; gap:5px; }
 .plan-actions { margin-top:12px; }
-.episode-identity { display:flex; flex-wrap:wrap; align-items:center; gap:6px 20px; padding:8px 12px; border:1px solid #3e4556; background:#121a27; }
+.episode-identity { display:flex; flex-wrap:wrap; align-items:center; gap:6px 20px; padding:8px 0; border:0; background:transparent; }
 .episode-identity>div { display:flex; flex-direction:column; min-width:0; }
 .episode-identity small { font-size:10px; color:#9baac3; text-transform:uppercase; letter-spacing:.04em; }
 .episode-identity strong { font-size:13px; }
