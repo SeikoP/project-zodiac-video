@@ -193,6 +193,18 @@ class AgentAuthoringTests(unittest.TestCase):
         with self.assertRaises(StudioError):
             self.manager.start_scene_revision(self.project, "nope", "x")
 
+    def test_two_scene_revisions_may_run_together_but_not_three_or_beside_authoring(self):
+        state = self.applied_intent()
+        ids = [s["id"] for s in state["intent"]["scenes"]]
+        with patch.object(self.manager, "_bin", return_value="unused"), patch.object(self.manager, "_run"):
+            self.manager.start_scene_revision(self.project, ids[0], "a")
+            self.manager.start_scene_revision(self.project, ids[0], "b")
+            with self.assertRaises(StudioError) as caught:
+                self.manager.start_scene_revision(self.project, ids[0], "c")
+            self.assertEqual(caught.exception.code, "AGENT_BUSY")
+            with self.assertRaises(StudioError):
+                self.manager.start_visual(self.project, ids[0], "other kind of task while revisions run")
+
     def test_applying_a_revision_changes_only_that_scene(self):
         state = self.applied_intent()
         first = state["intent"]["scenes"][0]["id"]

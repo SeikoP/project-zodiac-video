@@ -304,6 +304,9 @@ class AgentManager:
             if part_task is not None and revise is None:  # parts of a running group: up to PARALLEL_AGENTS at once, nothing else
                 if any(t.get("kind") not in ("episode.part", "episode.propose") for t in active) or                         sum(t.get("kind") == "episode.part" for t in active) >= PARALLEL_AGENTS:
                     raise StudioError("AGENT_BUSY", "Agent slots are full", "agent")
+            elif revise is not None:  # scene revisions: PARALLEL_AGENTS at once, never beside another kind of task
+                if any(t.get("kind") != "scene.revise" for t in active) or len(active) >= PARALLEL_AGENTS:
+                    raise StudioError("AGENT_BUSY", "Agent slots are full", "agent")
             elif active:
                 raise StudioError("AGENT_BUSY", "An agent task is already running", "agent")
             task_id = uuid.uuid4().hex

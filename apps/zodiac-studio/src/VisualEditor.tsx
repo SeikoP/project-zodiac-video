@@ -368,7 +368,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
           onUse={candidateId => command("asset.select", { scene_id: scene?.id, candidate_id: candidateId, requirement: query ? { asset_id: query } : {} })}/></div>
         <div hidden={tab !== "agent"}><AgentTab scene={scene} connection={connection} instruction={agentInstruction} onInstruction={setAgentInstruction} task={agentTask} dismissedTask={dismissedTask} disabled={disabled}
           onDismiss={setDismissedTask}
-          onStart={() => scene && void backend.visualAgentStart(project.project_id, scene.id, agentInstruction).then(setAgentTask).catch(report)}
+          onStart={() => scene && void backend.reviseScene(project.project_id, scene.id, agentInstruction).then(setAgentTask).catch(report)}
           onCancel={taskId => void backend.agentCancel(taskId).then(setAgentTask).catch(report)}
           onApply={task => state && void action(async () => {
             const next = await backend.visualAgentApply(task.task_id, state.revision);

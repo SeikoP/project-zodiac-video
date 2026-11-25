@@ -98,7 +98,63 @@ REPAIR_HINTS = ("Sửa Visual Intent hiện có, giữ nguyên các quyết đ�
                 "(bàn, điện thoại...) ở lớp khác nhân vật; KHÔNG dùng scene_set_id. FRAME_OCCUPANCY_LOW: phóng to nhân vật/đồ vật chính (khoảng 26% khung 1080x1400). PASSIVE_STORYTELLING / SCENE_EXPERIENCE_CRITERION_REVIEW (character_action): mỗi event của nhân vật/đồ vật phải có trường action (cụm từ tiếng Việt: nhân vật làm gì). Lỗi:")
 
 
-def default_agent(service, project_id: str, node_id: str, spec, context_text: str, attempt: int) -> list[dict]:
+def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot) -> list[dict] | None:
+    """Revise only the scenes the validator named (two agents at a time), then merge them into ONE source.replace.
+
+    Returns None when any revision fails, so the caller can fall back to regenerating; raises AGENT_CANCELLED when the
+    autopilot was stopped. The merge starts from the current intent, so every other scene stays byte-identical.
+    """
+    import copy
+    import json
+    from concurrent.futures import ThreadPoolExecutor
+    from . import agent_runs
+
+    def one(scene_id: str, issues: list) -> dict:
+        lines = [f"- {i.code}: {i.message}" for i in issues]
+        instruction = (REPAIR_HINTS + chr(10) + chr(10).join(lines))[:1200]
+        while True:  # wait for a free agent slot
+            with pilot._state_lock:
+                if pilot._stopped:
+                    raise StudioError("AGENT_CANCELLED", "Autopilot đã dừng", "pipeline")
+                try:
+                    task = service.agent.start_scene_revision(project_id, scene_id, instruction)
+                    break
+                except StudioError as error:
+                    if error.code != "AGENT_BUSY":
+                        raise
+            time.sleep(0.5)
+        agent_runs.track(service, project_id, node_id, task["task_id"])
+        deadline = time.time() + 10 * 60
+        while time.time() < deadline:
+            task = service.agent.task(task["task_id"])
+            if task["status"] == "COMPLETED":
+                return task
+            if task["status"] in ("FAILED", "CANCELLED"):
+                raise StudioError("AGENT_" + task["status"], str(task.get("error") or "agent không hoàn thành")[:300], "agent")
+            time.sleep(1.0)
+        service.agent.cancel(task["task_id"])
+        raise StudioError("AGENT_TIMEOUT", "Agent quá thời gian chờ", "agent")
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = {sid: pool.submit(one, sid, issues) for sid, issues in by_scene.items()}
+            tasks = {sid: future.result() for sid, future in futures.items()}
+    except StudioError as error:
+        if error.code == "AGENT_CANCELLED":
+            raise
+        return None
+    merged = copy.deepcopy(service.visual.snapshot(project_id)["intent"])
+    for scene_id, task in tasks.items():
+        revised = json.loads(task["suggestion"])["payload"]["intent"]
+        scene = next(s for s in revised["scenes"] if s["id"] == scene_id)
+        merged["scenes"] = [scene if s["id"] == scene_id else s for s in merged["scenes"]]
+        for key, value in (revised.get("assets") or {}).items():
+            merged.setdefault("assets", {}).setdefault(key, value)
+    return [{"kind": "visual.intent", "payload": {"command": "source.replace", "payload": {"intent": merged}},
+             "voice_dependencies": next(iter(tasks.values()))["dependencies"]}]
+
+
+def default_agent(service, project_id: str, node_id: str, spec, context_text: str, attempt: int, issues=()) -> list[dict]:
     """Real agent seam. Only initial visual authoring has a Studio agent task today."""
     if spec.id not in ("visual", "checks"):  # checks repairs the existing Visual Intent from its validator issues
         raise StudioError("PIPELINE_AGENT_UNSUPPORTED", f"{node_id}: agent chưa hỗ trợ trong Studio", "pipeline")
@@ -109,8 +165,15 @@ def default_agent(service, project_id: str, node_id: str, spec, context_text: st
     instruction = ("Soạn Visual Intent đầy đủ theo Phase 2." + ("\nSửa các lỗi sau:\n" + "\n".join(notes) if notes else ""))[:1200]
     if repair:
         instruction = (REPAIR_HINTS + (chr(10) + chr(10).join(notes) if notes else ""))[:1200]
-    capsule = agent_authoring.capsule(service, project_id, instruction, repair=repair)
     pilot = autopilot_for(service, project_id)
+    by_scene: dict = {}
+    for found in issues:
+        by_scene.setdefault(found.scene_id, []).append(found)
+    if repair and by_scene and None not in by_scene:  # every issue names a scene: edit those scenes, keep the rest
+        revised = _revise_scenes(service, project_id, node_id, by_scene, pilot)
+        if revised is not None:
+            return revised
+    capsule = agent_authoring.capsule(service, project_id, instruction, repair=repair)
     with pilot._state_lock:
         if pilot._stopped:
             raise StudioError("AGENT_CANCELLED", "Autopilot đã dừng", "pipeline")
@@ -365,7 +428,8 @@ class Autopilot:
         if self._stopped:
             return
         try:
-            items = self._agent(self.service, self.project_id, node_id, spec, context_text, attempt)
+            items = self._agent(self.service, self.project_id, node_id, spec, context_text, attempt,
+                                **({"issues": issues} if self._agent is default_agent else {}))
         except StudioError as error:
             if error.code == "PIPELINE_AGENT_UNSUPPORTED":
                 self._needs("WAITING_USER", "blocked", node, node["title"], str(error),

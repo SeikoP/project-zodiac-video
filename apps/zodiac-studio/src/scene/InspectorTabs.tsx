@@ -62,13 +62,13 @@ export function AgentTab({ scene, connection, instruction, onInstruction, task, 
   scene: VisualScene | undefined; connection: AgentHealth | null; instruction: string; onInstruction: (value: string) => void; task: AgentTask | null;
   dismissedTask: string | null; disabled: boolean; onDismiss: (taskId: string) => void; onStart: () => void; onCancel: (taskId: string) => void; onApply: (task: AgentTask) => void;
 }) {
-  const sceneTask = task?.kind === "scene.propose" && task.scene_id === scene?.id && dismissedTask !== task.task_id ? task : null;
+  const sceneTask = (task?.kind === "scene.propose" || task?.kind === "scene.revise") && task.scene_id === scene?.id && dismissedTask !== task.task_id ? task : null;
   return (
-    <div className="visual-candidates"><strong>Agent · {scene?.id ?? "Chọn cảnh"}</strong>
+    <div className="visual-candidates"><strong>Sửa cảnh này · {scene?.id ?? "Chọn cảnh"}</strong>
       <small className="agent-connection-note">{connection?.available ? "Đã tìm thấy Codex" : "Chưa xác nhận Codex"} · {connection?.credential_available ? "Có cấu hình đăng nhập" : "Chưa xác nhận đăng nhập"}. Kết nối model được kiểm tra khi gửi yêu cầu.</small>
-      <small>Đề xuất dùng kho hình hiện có. Bạn xem và áp dụng trước khi lưu.</small>
-      <textarea aria-label="Yêu cầu agent chỉnh cảnh" value={instruction} maxLength={1200} onChange={(e) => onInstruction(e.target.value)} placeholder="Ví dụ: Dịch actor lead sang phải 40px, giữ kích thước" />
-      <button className="outline-btn" disabled={disabled || !scene || !instruction.trim() || (!!task && BUSY.includes(task.status))} onClick={onStart}>Đề xuất chỉnh sửa</button>
+      <small>Agent chỉ sửa đúng phần bạn nói, giữ nguyên các cảnh khác. Bạn xem danh sách thay đổi và áp dụng; có thể Undo.</small>
+      <textarea aria-label="Yêu cầu agent chỉnh cảnh" value={instruction} maxLength={1200} onChange={(e) => onInstruction(e.target.value)} placeholder="Ví dụ: Cho Nhân Mã lớn hơn và đưa điện thoại ra gần tay" />
+      <button className="outline-btn" disabled={disabled || !scene || !instruction.trim() || (!!task && BUSY.includes(task.status))} onClick={onStart}>Sửa cảnh này</button>
       {sceneTask && <><AgentProposal task={sceneTask} />
         {sceneTask.status === "COMPLETED" && !sceneTask.write_applied && <button className="outline-btn" onClick={() => onDismiss(sceneTask.task_id)}>Bỏ đề xuất</button>}
         {BUSY.includes(sceneTask.status) && <button className="outline-btn" onClick={() => onCancel(sceneTask.task_id)}>Dừng agent</button>}

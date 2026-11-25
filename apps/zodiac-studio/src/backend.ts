@@ -120,6 +120,8 @@ export type AgentTask = {
   model?: string;
   validation_attempts?: {error: string; raw_output_sha256?: string; turn_id?: string; round?: number}[];
   /** Scene-by-scene authoring: one row per part (khung nhân vật, then each scene). */
+  /** scene.revise: one Vietnamese line per change the agent proposes. */
+  changes?: string[];
   parts?: {id: string; status: "RUNNING" | "DONE" | "FAILED"; seconds?: number; attempt?: number; error?: string}[];
   parts_total?: number;
   bound_fields?: string[]; raw_output_sha256?: string;
@@ -135,7 +137,7 @@ export type AgentTask = {
   preview: string;
   suggestion: string;
   error: string | null;
-  kind: "project.inspect" | "scene.propose" | "episode.propose";
+  kind: "project.inspect" | "scene.propose" | "scene.revise" | "episode.propose";
   visual_revision?: number;
   scene_id?: string;
   applied_command_id?: string | null;
@@ -194,6 +196,8 @@ export const backend = {
   visualPreview: (project_id: string, scene_id: string, build_id: string | null = null) => request<VisualPreview>("visual.preview", { project_id, scene_id, build_id }),
   visualCandidates: (project_id: string, scene_id: string, requirement: object) => request<CandidateResult>("assets.find_candidates", { project_id, scene_id, requirement }),
   visualAgentStart: (project_id: string, scene_id: string, instruction: string) => request<AgentTask>("agent.visual.start", { project_id, scene_id, instruction }),
+  /** Revise one existing scene by ops (kind scene.revise). Rides on agent.author.start, which the desktop host already forwards. */
+  reviseScene: (project_id: string, scene_id: string, instruction: string) => request<AgentTask>("agent.author.start", { project_id, scene_id, instruction }),
   visualAgentApply: (task_id: string, base_revision: number) => request<VisualState>("agent.apply", { task_id, base_revision, command_id: "agent-" + task_id, confirm: true }),
   voiceOpen: (project_id: string) => request<VoiceState>("voice.open", { project_id }),
   voiceStart: (project_id: string, base_revision: number, action: "generate" | "align", unit_ids: string[], voice: string, intent: string, pronunciation: Record<string, string>) =>

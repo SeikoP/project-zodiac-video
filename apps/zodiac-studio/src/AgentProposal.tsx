@@ -3,8 +3,9 @@ import { Paged, PagedText } from "./Paged";
 
 export default function AgentProposal({ task }: { task: AgentTask }) {
   const text = task.suggestion || task.preview;
-  let description: string[] = [];
+  let description: string[] = task.kind === "scene.revise" ? task.changes ?? [] : [];
   try {
+    if (task.kind === "scene.revise") throw new Error("shown from changes");
     const change = JSON.parse(task.suggestion);
     if (change.kind === "source.replace") description = (change.payload.intent.scenes as { id: string; semantic_goal: string }[]).map(s => `${s.id} · ${s.semantic_goal}`);
     else if (change.kind === "scene.patch") description = [`${change.payload.scene_id} · ${change.payload.entity_id} / ${change.payload.state_id}`, ...Object.entries(change.payload.changes).map(([k, v]) => `${k}: ${v}`)];
