@@ -4,7 +4,7 @@
 
 **Goal:** choose the least complex editor that makes scene relationships understandable while preserving measured timing, canonical ownership and recoverable production.
 **Design/audit:** [independent evaluation and schema](../specs/2026-11-24-studio-graph-evaluation-design.md).
-**Status:** Phase-by-phase implementation authorized by user on 2026-11-24. R0 IN PROGRESS; later phases remain gated by their dependencies and genuine human acceptance. This roadmap supplements the [original P0–P7 contract](2026-11-14-unified-zodiac-studio-roadmap.md); it does not erase pending requirements or reopen technically accepted foundations without evidence.
+**Status:** SUPERSEDED 2026-11-25 by [studio-production-graph](2026-11-25-studio-production-graph.md) (per-scene relationship graph dropped; ComfyUI-style production-flow graph instead). Original text: Phase-by-phase implementation authorized by user on 2026-11-24. R0 IN PROGRESS; later phases remain gated by their dependencies and genuine human acceptance. This roadmap supplements the [original P0–P7 contract](2026-11-14-unified-zodiac-studio-roadmap.md); it does not erase pending requirements or reopen technically accepted foundations without evidence.
 
 ## Existing phase ledger
 
