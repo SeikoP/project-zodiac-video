@@ -15,8 +15,9 @@
         "title": "Zodiac Studio  ✦  Episode workflow",
         "width": 1380,
         "height": 860,
-        "minWidth": 1060,
-        "minHeight": 650,
+        "minWidth": 800,
+        "minHeight": 580,
+        "maximized": true,
         "center": true,
         "decorations": false,
         "backgroundColor": "#10121a"

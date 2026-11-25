@@ -10,7 +10,7 @@ export const SECTIONS: { label: string; view: Group; icon: LucideIcon }[] = [
   { label: "Tài nguyên", view: "assets", icon: Layers3 },
 ];
 export const EPISODE_TABS: [View, string][] = [
-  ["overview", "Tổng quan"], ["voice", "Giọng đọc"], ["editor", "Hình ảnh"], ["review", "Xuất & duyệt"],
+  ["editor", "Quy trình"], ["overview", "Danh sách episode"],
 ];
 
 export function groupFor(view: View): Group {
@@ -48,13 +48,15 @@ export function WorkflowBar({ view, activeEpisodeView, projects, selectedId, onN
   onNavigate: (view: View) => void; onChoose: (id: string | null) => void; nextStep: [View, string];
 }) {
   const group = groupFor(view);
-  const tabs: [View, string][] = group === "ideas" ? [["ideas", "Ý tưởng"], ["progress", "Tiến độ"]]
-    : group === "overview" ? EPISODE_TABS : [["assets", "Kho tài nguyên"]];
+  const tabs: [View, string][] = group === "ideas" ? [["ideas", "Concept & tiến độ"]]
+    : group === "overview" ? [] : [["assets", "Kho tài nguyên"]];
   return <div className="workflow-bar">
     <nav className="workspace-tabs workflow-tabs" aria-label="Các bước làm việc">
-      {tabs.map(([id, label]) => <button key={id} aria-pressed={(id === "overview" || id === "voice" || id === "editor" || id === "review")
-        ? activeEpisodeView === id && group === "overview" : view === id} onClick={() => onNavigate(id)}>{label}</button>)}
+      {tabs.length > 1 && tabs.map(([id, label]) => <button key={id} aria-pressed={(id === "overview" || id === "voice" || id === "editor" || id === "review")
+        ? (id === "editor" ? view === "editor" : activeEpisodeView === id) && group === "overview" : view === id} onClick={() => onNavigate(id)}>{label}</button>)}
       {group === "overview" && <div className="episode-tools">
+        <button aria-pressed={view === "editor"} onClick={() => onNavigate("editor")}>Quy trình</button>
+        <button aria-pressed={view === "overview"} onClick={() => onNavigate("overview")}>Danh sách</button>
         <button aria-pressed={view === "agent"} onClick={() => onNavigate("agent")}><Bot size={13}/> Agent</button>
         <button aria-pressed={view === "activity"} onClick={() => onNavigate("activity")}><Activity size={13}/> Nhật ký</button>
       </div>}
@@ -62,7 +64,7 @@ export function WorkflowBar({ view, activeEpisodeView, projects, selectedId, onN
     {group === "overview" && <div className="episode-context">
       <select aria-label="Episode đang làm" value={selectedId ?? ""} onChange={e => onChoose(e.target.value || null)}>
         {!projects.length && <option value="">Chưa có episode</option>}
-        {projects.map(p => <option key={p.project_id} value={p.project_id}>{p.display_title || p.episode_id}</option>)}
+        {projects.map(p => <option key={p.project_id} value={p.project_id}>{(p.sign && !(p.display_title || "").startsWith(p.sign) ? p.sign + " · " : "") + (p.display_title || p.episode_id)}</option>)}
       </select>
       <button className="text-link" onClick={() => onNavigate(nextStep[0])}>Tiếp theo: {nextStep[1]} <ArrowRight size={13}/></button>
     </div>}

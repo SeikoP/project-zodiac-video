@@ -26,6 +26,7 @@ _ALLOWED = frozenset({
     "voice.audio", "voice.playback", "voice.confirm",
     "visual.open", "visual.command", "visual.cancel", "visual.preview",
     "episode.build", "scene.compile", "video.export", "video.get", "assets.describe", "assets.gallery", "assets.find_candidates", "validation.get",
+    "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "validators.run",
 })
 
 
@@ -50,6 +51,56 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method == 'video.get':
         _exact(p, 'project_id')
         return service.visual.video(p['project_id'])
+    if method == "pipeline.get":
+        _exact(p, "project_id")
+        from .pipeline.api import pipeline_get
+        return pipeline_get(service, p["project_id"])
+    if method == "pipeline.run":
+        _exact(p, "project_id", "node_id", "base_revision")
+        from .pipeline.runner import run_node
+        return run_node(service, p["project_id"], p["node_id"], p["base_revision"], caller="gui")
+    if method == "pipeline.cancel":
+        _exact(p, "project_id")
+        from .pipeline.runner import cancel_running
+        return cancel_running(service, p["project_id"])
+    if method == "pipeline.autopilot.start":
+        _exact(p, "project_id", "base_revision")
+        from .pipeline.autopilot import autopilot_for
+        return autopilot_for(service, p["project_id"]).start(p["base_revision"], background=True).to_dict()
+    if method == "pipeline.autopilot.stop":
+        _exact(p, "project_id")
+        from .pipeline.autopilot import autopilot_for
+        return autopilot_for(service, p["project_id"]).stop().to_dict()
+    if method in ("pipeline.gate.playback", "pipeline.gate.confirm"):
+        if method == "pipeline.gate.playback":
+            _exact(p, "project_id", "gate", "build_id")
+        else:
+            _exact(p, "project_id", "gate", "base_revision", "build_id", "playback_id")
+        if p["gate"] != "visual_review":
+            raise StudioError("PIPELINE_GATE_UNSUPPORTED", "Chỉ duyệt hình ảnh dùng RPC này", "pipeline")
+        from .pipeline.review import confirm_visual_review, issue_playback
+        if method == "pipeline.gate.playback":
+            return issue_playback(service, p["project_id"], p["build_id"])
+        result = confirm_visual_review(service, p["project_id"], p["base_revision"], p["build_id"], p["playback_id"], caller="gui")
+        from .pipeline.autopilot import autopilot_for
+        pilot = autopilot_for(service, p["project_id"])
+        if pilot.record.state == "WAITING_GATE":  # the user's own confirmation resumes a waiting autopilot
+            pilot.resume_after_gate(background=True)
+        return result
+    if method == "pipeline.evidence":
+        _exact(p, "project_id")
+        from .pipeline.api import pipeline_evidence
+        return pipeline_evidence(service, p["project_id"])
+    if method == "pipeline.mode.set":
+        _exact(p, "project_id", "mode")
+        from .pipeline.proposals import set_mode
+        return {"mode": set_mode(service.registry.get(p["project_id"]).workspace, p["mode"])}
+    if method == "validators.run":
+        _exact(p, "project_id", "names")
+        if not isinstance(p["names"], list) or not all(isinstance(n, str) for n in p["names"]):
+            raise StudioError("RPC_PARAMS_INVALID", "names must be a list of strings", "transport")
+        from .pipeline.validators import run_validators
+        return run_validators(service, p["project_id"], p["names"]).to_dict()
     if method == "ideas.list":
         _exact(p)
         return service.ideas.snapshot()
@@ -106,7 +157,13 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         return service.voice.playback(**p)
     if method == "voice.confirm":
         _exact(p, "project_id", "unit_id", "take_id", "playback_id", "confirm", "base_revision")
-        return service.voice.confirm(**p)
+        result = service.voice.confirm(**p)
+        if p["unit_id"] == "episode":
+            from .pipeline.autopilot import autopilot_for
+            pilot = autopilot_for(service, p["project_id"])
+            if pilot.record.state == "WAITING_GATE" and pilot.record.node == "voice_review":
+                pilot.resume_after_gate(background=True)
+        return result
     if method == "agent.health":
         _exact(p)
         return service.agent.health()
@@ -118,7 +175,7 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         return service.agent.start_visual(**p)
     if method == "agent.author.start":
         _exact(p, "project_id", "instruction")
-        return service.agent.start_authoring(**p)
+        return service.agent.start_authoring_scenes(**p)
     if method == "agent.task":
         _exact(p, "task_id")
         return service.agent.task(p["task_id"])

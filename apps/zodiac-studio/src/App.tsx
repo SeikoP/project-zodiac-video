@@ -4,7 +4,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Activity, ArrowRight, Bot, Check, CheckCircle2, CircleAlert, CircleDot,
-  Clapperboard, Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
+  Clock3, Compass, FileArchive, FileClock, Folder, FolderOpen,
   Headphones, Layers3, LoaderCircle, Lock, Plus, RefreshCcw,
   Search, Send, ShieldCheck, Minus, Square, X, type LucideIcon,
 } from "lucide-react";
@@ -12,15 +12,12 @@ import { backend, type AgentHealth, type AgentTask, type BackendHealth, type Pro
 
 import { Paged, PagedText } from "./Paged";
 import AgentProposal from "./AgentProposal";
-import EditingWorkbench from "./EditingWorkbench";
 import type { WorkbenchSelection } from "./workbench-state";
 import { StudioNavigation, WorkflowBar, nextEpisodeStep, type View } from "./studio-navigation";
 
 const AssetGallery = lazy(() => import("./AssetGallery"));
 const Ideas = lazy(() => import("./Ideas"));
-const EpisodeExport = lazy(() => import("./EpisodeExport"));
-const HyperframesWorkspace = lazy(() => import("./HyperframesWorkspace"));
-const VoiceLab = lazy(() => import("./VoiceLab"));
+const EpisodeShell = lazy(() => import("./pipeline/EpisodeShell"));
 type Alert = { message: string; error: boolean } | null;
 const FIELDS = [
   { key: "content", label: "Nội dung" }, { key: "voice", label: "Giọng đọc" },
@@ -63,12 +60,14 @@ function EmptyState({ icon: Icon, title, detail }: { icon: LucideIcon; title: st
 export default function App() {
   const [selection, setSelection] = useState<WorkbenchSelection>({projectId: "", sceneId: null, entityId: null, timeMs: 0});
   const [overviewTab, setOverviewTab] = useState("projects");
-  const [view, changeView] = useState<View>("overview");
+  const [view, changeView] = useState<View>("editor");
   const [episodeTool, setEpisodeTool] = useState<Extract<View, "voice" | "editor" | "review">>("editor");
-  const [visited, setVisited] = useState<Set<View>>(new Set());
+  const [toolTick, setToolTick] = useState(0); // bumps on every shortcut press so the shell re-selects even when the tool is unchanged
+  const [visited, setVisited] = useState<Set<View>>(new Set(["editor"]));
   function setView(next: View) {
     if (next === "voice" || next === "editor" || next === "review") {
       setEpisodeTool(next);
+      if (next !== "editor" || episodeTool !== "editor") setToolTick(tick => tick + 1); // re-entering the editor keeps the current selection
       setVisited(previous => new Set([...previous, next]));
       changeView("editor");
       return;
@@ -297,7 +296,7 @@ export default function App() {
     <div className="main-shell">
       <header className="topbar" data-tauri-drag-region>
         <div className="titlebar-main">
-          <StudioNavigation view={view} projectCount={projects.length} onNavigate={setView}/>
+          <StudioNavigation view={view} projectCount={projects.length} onNavigate={next=>setView(next === "overview" ? "editor" : next)}/>
           {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
           <div className="top-actions">
             <span className={"connection " + (health ? "connected" : healthPending ? "pending" : "offline")}>
@@ -316,7 +315,7 @@ export default function App() {
           projects={projects} selectedId={selectedId} onNavigate={setView} onChoose={chooseProject} nextStep={nextStep}/></div>
       </header>
       <main className={"content view-" + view}>
-        {(view === "ideas" || view === "progress") && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas mode={view} onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
+        {(view === "ideas" || view === "progress") && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas mode={view} projects={projects} selectedProjectId={selectedId} onOpenProject={id => { chooseProject(id); setView("editor"); }} onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}
           <span>{alert.message}</span><button onClick={() => setAlert(null)}>×</button>
@@ -441,23 +440,11 @@ export default function App() {
         </>}
 
         {(visited.has("voice") || visited.has("editor") || visited.has("review")) && <div className="workflow-screen episode-manager" hidden={view !== "editor"}>
-          {visited.has("voice") && <div className="episode-tool" hidden={episodeTool !== "voice"}><Suspense fallback={<p>Đang mở Voice Lab…</p>}>
-            <VoiceLab key={selectedId ?? "empty"} project={currentProject} active={view === "editor" && episodeTool === "voice"} onChanged={() => {
-              setBuiltProjectId(null);
-              void loadProjects(); if (selectedId) void refreshSelected(selectedId);
-            }}/>
-          </Suspense></div>}
-          {visited.has("editor") && <div className="episode-tool" hidden={episodeTool !== "editor"}>
-            <Suspense fallback={<EmptyState icon={Clapperboard} title="Đang tải HyperFrames"
-              detail="Nạp module dựng khi mở phần Hình ảnh."/>}>
-              <EditingWorkbench title={currentProject?.display_title || currentProject?.episode_id} onImport={() => void importCapsule()}>
-                <HyperframesWorkspace key={selectedId ?? "empty"} project={currentProject} active={view === "editor" && episodeTool === "editor"} onBuildReady={updateBuildReady} selection={selection} onSelectionChange={setSelection} onVoice={() => setView("voice")} onImport={() => void importCapsule()}/>
-              </EditingWorkbench>
-            </Suspense>
-          </div>}
-          {visited.has("review") && <div className="episode-tool" hidden={episodeTool !== "review"}><Suspense fallback={<p>Đang mở trình xem MP4…</p>}>
-            <EpisodeExport key={selectedId ?? "empty"} project={currentProject} initialConceptId={reviewConceptId} active={view === "editor" && episodeTool === "review"}/>
-          </Suspense></div>}
+          <Suspense fallback={<p>Đang mở bàn quản lý episode…</p>}>
+            <EpisodeShell key={selectedId ?? "empty"} project={currentProject} active={view === "editor"} tool={episodeTool} toolTick={toolTick}
+              selection={selection} onSelectionChange={setSelection} onBuildReady={updateBuildReady} onImport={() => void importCapsule()} onPlan={() => setView("ideas")}
+              initialConceptId={reviewConceptId} onChanged={() => {setBuiltProjectId(null);void loadProjects();if(selectedId)void refreshSelected(selectedId);}}/>
+          </Suspense>
         </div>}
 
         {view === "agent" && <>

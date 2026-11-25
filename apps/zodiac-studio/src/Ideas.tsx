@@ -1,22 +1,31 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Circle, Copy, Lightbulb, RefreshCcw } from "lucide-react";
-import { backend } from "./backend";
-import { buildIdeaPrompt, statusFor, type IdeaBoard, type IdeaConcept } from "./idea-board";
-import { Paged, PagedText } from "./Paged";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Circle, Copy, FolderOpen, Lightbulb, LoaderCircle, RefreshCcw } from "lucide-react";
+import { backend, type Project } from "./backend";
+import { buildIdeaPrompt, signState, statusFor, type IdeaBoard, type IdeaConcept, type SignState } from "./idea-board";
+import { PagedText } from "./Paged";
 
-export default function Ideas({ onReview, mode = "ideas" }: { onReview: (conceptId: string) => void; mode?: "ideas" | "progress" }) {
+const STATE_LABEL: Record<SignState, string> = { not_started: "Chưa làm", in_progress: "Đang làm", mp4_approved: "MP4 đã duyệt" };
+
+const STEPS = ["Chọn concept", "Chọn cung", "Copy prompt, dán vào ChatGPT", "Nhập ZIP đã duyệt ở tab Episode"];
+
+/**
+ * One screen for planning: concepts on the left with progress, the 12 signs of the chosen concept on the right.
+ * A sign that already has an imported episode shows "Mở episode" instead of asking to start again.
+ */
+export default function Ideas({ projects, selectedProjectId, onOpenProject, onReview }: {
+  projects: Project[]; selectedProjectId: string | null; onOpenProject: (projectId: string) => void; onReview: (conceptId: string) => void;
+  mode?: "ideas" | "progress";
+}) {
   const [board, setBoard] = useState<IdeaBoard | null>(null);
-  const [groupId, setGroupId] = useState("");
-  const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
+  const [promptFor, setPromptFor] = useState<{ sign: string; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [error, setError] = useState("");
-  const promptArea = useRef<HTMLDivElement>(null);
+
   async function load() {
-    try { setBoard(await backend.ideas()); setError(""); }
-    catch (e) { setError(e instanceof Error ? e.message : "Không đọc được thư viện concept."); }
+    try { setBoard(await backend.ideas()); setNotice(null); }
+    catch (e) { setNotice({ text: e instanceof Error ? e.message : "Không đọc được thư viện concept.", error: true }); }
   }
   useEffect(() => {
     void load();
@@ -24,54 +33,82 @@ export default function Ideas({ onReview, mode = "ideas" }: { onReview: (concept
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
   }, []);
-  const all = board?.groups.flatMap(g => g.concepts) ?? [];
-  const selected = all.find(c => c.id === selectedId);
-  const concepts = all.filter(c => (!groupId || board?.groups.find(g => g.id === groupId)?.concepts.some(x => x.id === c.id)) &&
-    (c.title + " " + c.direction).toLocaleLowerCase("vi").includes(query.toLocaleLowerCase("vi")));
-  const count = (concept: IdeaConcept) => board?.signs.filter(sign => statusFor(board, concept.id, sign) === "mp4_approved").length ?? 0;
-  const prompt = board && selected ? buildIdeaPrompt(board, selected) : null;
-  async function copy(concept: IdeaConcept) {
-    if (!board) return;
-    setSelectedId(concept.id); setFeedback(""); setError(""); setShowPrompt(false);
-    const text = buildIdeaPrompt(board, concept);
-    if (!text) { setFeedback("Concept đã đủ 12 MP4 duyệt. Chọn concept khác để làm tập mới."); return; }
-    setBusy(true);
-    try { await navigator.clipboard.writeText(text); setFeedback("Đã copy. Trong ChatGPT, chọn @Zodiac-Video-Web rồi dán và gửi. Copy văn bản không tự gắn plugin."); }
-    catch { setShowPrompt(true); setError("Không copy được clipboard. Bấm chọn toàn bộ rồi Ctrl+C để copy thủ công."); }
-    finally { setBusy(false); }
+
+  const byKey = useMemo(() => {
+    const map = new Map<string, Project>();
+    for (const project of projects) if (project.concept_code && project.sign) map.set(`${project.concept_code}|${project.sign}`, project);
+    return map;
+  }, [projects]);
+  const all = useMemo(() => board?.groups.flatMap((g) => g.concepts.map((c) => ({ ...c, group: g.title }))) ?? [], [board]);
+  const currentProject = projects.find((p) => p.project_id === selectedProjectId);
+  const concept: IdeaConcept | undefined = all.find((c) => c.id === (picked ?? currentProject?.concept_code ?? "")) ?? all[0];
+  const doneCount = (c: IdeaConcept) => board ? board.signs.filter((s) => signState(board, c.id, s, byKey.has(`${c.id}|${s}`)) === "mp4_approved").length : 0;
+  const startedCount = (c: IdeaConcept) => board ? board.signs.filter((s) => signState(board, c.id, s, byKey.has(`${c.id}|${s}`)) !== "not_started").length : 0;
+  const q = query.trim().toLocaleLowerCase("vi");
+  const visible = all.filter((c) => !q || (c.title + " " + c.direction).toLocaleLowerCase("vi").includes(q));
+
+  async function copy(sign: string) {
+    if (!board || !concept) return;
+    const text = buildIdeaPrompt(board, concept, sign);
+    if (!text) { setNotice({ text: `${sign} đã có MP4 duyệt cho concept này. Chọn cung khác.`, error: false }); return; }
+    setBusy(true); setPromptFor(null);
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ text: `Đã copy prompt cho ${sign}. Mở ChatGPT, chọn @Zodiac-Video-Web, dán và gửi. Khi có ZIP đã duyệt, nhập ở tab Episode.`, error: false });
+    } catch {
+      setPromptFor({ sign, text });
+      setNotice({ text: "Không copy được tự động. Chọn văn bản bên dưới và bấm Ctrl+C.", error: true });
+    } finally { setBusy(false); }
   }
-  return <section className="ideas-workspace" aria-label="Ý tưởng và tiến độ">
-    <header className="ideas-heading"><h1><Lightbulb size={23}/> {mode === "progress" ? "Tiến độ 12 cung" : "Thư viện ý tưởng"}</h1>
-      <span className="panel-meta">{board ? `${all.length} concept` : "Đang đọc…"}</span>
-      <button className="subtle-btn" disabled={busy} onClick={() => void load()} aria-label="Đọc lại tiến độ"><RefreshCcw size={15}/> Làm mới</button></header>
-    {error && <div role="alert" className="inline-alert error">{error}</div>}
-    <div className="ideas-feedback" role="status">{mode === "progress" ? "Chọn concept để xem tình trạng 12 cung. Chỉ MP4 được người dùng duyệt mới được đánh dấu hoàn thành." : feedback || "Chọn concept để copy prompt. Trong ChatGPT, chọn @Zodiac-Video-Web trước khi gửi. Duyệt MP4 ở tab riêng."}</div>
-    <section className="panel ideas-catalog" hidden={!!selected} aria-label="Danh sách concept">
-      <div className="ideas-toolbar"><label>Nhóm <select aria-label="Nhóm ý tưởng" value={groupId} onChange={e => setGroupId(e.target.value)}>
-        <option value="">Tất cả nhóm</option>{board?.groups.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></label>
-        <input aria-label="Tìm concept" value={query} maxLength={120} onChange={e => setQuery(e.target.value)} placeholder="Tìm concept…"/></div>
-      <Paged key={groupId + query} size={4} label="Concept">{concepts.map(concept =>
-        <button className="idea-card" key={concept.id} disabled={busy} onClick={() => mode === "progress" ? (setSelectedId(concept.id), setShowPrompt(false)) : void copy(concept)}>
-          <span className="idea-card-title"><strong>{concept.title}</strong><span>{count(concept)}/12 MP4 duyệt</span></span>
-          <span className="idea-direction">{concept.direction}</span><span className="idea-card-action">{mode === "progress" ? <><CheckCircle2 size={12}/> Xem tiến độ 12 cung</> : <><Copy size={12}/> Chọn & copy prompt</>}</span>
-        </button>)}</Paged>
-      {board && !concepts.length && <p className="panel-meta">Không có concept phù hợp.</p>}
+
+  return (
+    <section className="plan-workspace" aria-label="Kế hoạch concept">
+      <header className="plan-head">
+        <h1><Lightbulb size={22} /> Kế hoạch</h1>
+        <span className="panel-meta">{board ? `${all.length} concept · mỗi concept làm 12 tập, mỗi cung một tập` : "Đang đọc…"}</span>
+        <button className="subtle-btn" onClick={() => void load()} aria-label="Đọc lại"><RefreshCcw size={14} /> Làm mới</button>
+      </header>
+      <ol className="plan-steps" aria-label="Các bước">{STEPS.map((text, index) => <li key={text}><span>{index + 1}</span>{text}</li>)}</ol>
+      {notice && <div role={notice.error ? "alert" : "status"} className={"inline-alert " + (notice.error ? "error" : "success")}>{notice.text}</div>}
+      {!board ? <p className="panel-meta"><LoaderCircle size={14} className="spin" /> Đang đọc thư viện concept…</p> : (
+        <div className="plan-body">
+          <aside className="plan-list panel" aria-label="Danh sách concept">
+            <input aria-label="Tìm concept" value={query} maxLength={120} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm concept…" />
+            {board.groups.map((group) => {
+              const rows = visible.filter((c) => c.group === group.title);
+              if (!rows.length) return null;
+              return (
+                <div key={group.id} className="plan-group"><h2>{group.title}</h2>
+                  {rows.map((c) => (
+                    <button key={c.id} className="plan-concept" aria-pressed={concept?.id === c.id} onClick={() => { setPicked(c.id); setPromptFor(null); }}>
+                      <strong>{c.title}</strong>
+                      <span className="plan-bar" aria-hidden="true"><i style={{ width: `${(startedCount(c) / 12) * 100}%` }} /></span>
+                      <small>{doneCount(c)}/12 xong · {startedCount(c)}/12 đã bắt đầu</small>
+                    </button>))}
+                </div>);
+            })}
+            {!visible.length && <p className="panel-meta">Không có concept phù hợp.</p>}
+          </aside>
+          {concept && (
+            <section className="plan-detail panel" aria-label="Chi tiết concept">
+              <h2>{concept.title}</h2>
+              <p>{concept.direction}</p>
+              <div className="plan-signs" role="list">{board.signs.map((sign) => {
+                const project = byKey.get(`${concept.id}|${sign}`);
+                const state = signState(board, concept.id, sign, !!project);
+                return (
+                  <div key={sign} role="listitem" className={"plan-sign " + state} data-sign={sign}>
+                    <span className="plan-sign-name">{state === "mp4_approved" ? <CheckCircle2 size={16} /> : <Circle size={16} />}<strong>{sign}</strong></span>
+                    <small>{STATE_LABEL[state]}{statusFor(board, concept.id, sign) === "not_started" && project ? " · đã nhập gói" : ""}</small>
+                    {project
+                      ? <button className="primary-btn" onClick={() => onOpenProject(project.project_id)}><FolderOpen size={13} /> Mở episode</button>
+                      : <button className="outline-btn" disabled={busy || state === "mp4_approved"} onClick={() => void copy(sign)}><Copy size={13} /> Copy prompt cung này</button>}
+                  </div>);
+              })}</div>
+              <div className="plan-actions"><button className="subtle-btn" onClick={() => onReview(concept.id)}>Xem & duyệt MP4 của concept này</button></div>
+              {promptFor && <div className="idea-prompt"><strong>Prompt cho {promptFor.sign}</strong><PagedText key={promptFor.sign} text={promptFor.text} label="Prompt cho agent" /></div>}
+            </section>)}
+        </div>)}
     </section>
-    {board && selected && <section className="panel ideas-detail" aria-label="Chi tiết concept">
-      <div className="ideas-toolbar"><button className="subtle-btn" disabled={busy} onClick={() => { setSelectedId(""); setFeedback(""); setError(""); }}><ArrowLeft size={14}/> Danh sách concept</button>
-        <span className="panel-meta">{count(selected)}/12 MP4 đã duyệt</span></div>
-      <div className="idea-detail-heading"><h2>{selected.title}</h2><p>{selected.direction}</p></div>
-      <div className="ideas-actions">{mode === "ideas" && <button className="primary-btn" disabled={busy || !prompt} onClick={() => void copy(selected)}><Copy size={15}/> Copy prompt</button>}
-        <button className="subtle-btn" onClick={() => onReview(selected.id)}>Xem & duyệt MP4</button>
-        {mode === "ideas" && <button className="text-link" onClick={() => setShowPrompt(!showPrompt)}>{showPrompt ? "Xem tiến độ 12 cung" : "Xem nội dung prompt"}</button>}</div>
-      {mode === "ideas" && showPrompt ? <div className="idea-prompt" ref={promptArea} tabIndex={0} onCopy={e => {
-        if (prompt) { e.clipboardData.setData("text/plain", prompt); e.preventDefault(); }
-      }}><PagedText key={selected.id} text={prompt ?? "Đã đủ 12 MP4 được duyệt. Không tạo prompt lặp."} label="Prompt cho agent"/>
-        {prompt && <button className="subtle-btn" onClick={() => { if (promptArea.current) { promptArea.current.focus(); window.getSelection()?.selectAllChildren(promptArea.current); } }}>Chọn toàn bộ prompt để Ctrl+C</button>}</div>
-        : <div className="idea-signs" aria-label="Tiến độ 12 cung">{board.signs.map(sign => {
-          const status = statusFor(board, selected.id, sign);
-          return <div key={sign} className={"idea-sign " + status}>{status === "mp4_approved" ? <CheckCircle2 size={18}/> : <Circle size={18}/>}<div><strong>{sign}</strong><small>{status === "mp4_approved" ? "MP4 đã duyệt" : status === "in_progress" ? "Đang làm" : "Chưa duyệt MP4"}</small></div></div>;
-        })}</div>}
-    </section>}
-  </section>;
+  );
 }

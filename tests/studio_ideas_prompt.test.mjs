@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {buildIdeaPrompt, statusFor} from '../apps/zodiac-studio/src/idea-board.ts';
+import {buildIdeaPrompt, statusFor, signState, conceptById} from '../apps/zodiac-studio/src/idea-board.ts';
 
 const catalog=JSON.parse(await readFile(new URL('../tools/studio_project/idea_catalog.json',import.meta.url),'utf8'));
 const concept=catalog.groups[0].concepts[0];
@@ -41,4 +41,27 @@ test('all approved blocks duplicates and unfinished fallback remains explicit',(
  board.progress[0].status='in_progress';
  assert.ok(buildIdeaPrompt(board,concept).includes('Cung được chọn: Bạch Dương'));
  assert.ok(buildIdeaPrompt(board,concept).includes('tiếp tục phần còn thiếu'));
+});
+
+test('a chosen sign is fixed in the prompt and an approved sign cannot be requested again',()=>{
+ const board={...catalog,progress:[{concept_id:concept.id,sign:'Nhân Mã',status:'mp4_approved',updated_at:1}]};
+ const text=buildIdeaPrompt(board,concept,'Bạch Dương');
+ assert.ok(text.includes('Cung được chọn: Bạch Dương (đã chốt, không đổi cung).'));
+ assert.ok(!text.includes('Tự chọn đúng 1 cung'));
+ assert.equal(buildIdeaPrompt(board,concept,'Nhân Mã'),null);
+});
+
+test('an imported episode marks its sign as started, but never as approved',()=>{
+ const board={...catalog,progress:[]};
+ assert.equal(signState(board,concept.id,'Nhân Mã',true),'in_progress');
+ assert.equal(signState(board,concept.id,'Nhân Mã',false),'not_started');
+ const approved={...catalog,progress:[{concept_id:concept.id,sign:'Nhân Mã',status:'mp4_approved',updated_at:1}]};
+ assert.equal(signState(approved,concept.id,'Nhân Mã',true),'mp4_approved');
+});
+
+test('the concept code in a handoff resolves to a catalog title',()=>{
+ const found=conceptById({...catalog,progress:[]},'love-sincere');
+ assert.equal(found?.title,'Khi một cung hoàng đạo thật lòng yêu');
+ assert.equal(conceptById({...catalog,progress:[]},'does-not-exist'),undefined);
+ assert.equal(conceptById(null,'love-sincere'),undefined);
 });

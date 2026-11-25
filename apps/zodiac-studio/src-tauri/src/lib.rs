@@ -155,6 +155,15 @@ impl Backend {
             "assets.gallery",
             "assets.find_candidates",
             "validation.get",
+            "pipeline.get",
+            "pipeline.run",
+            "pipeline.cancel",
+            "pipeline.mode.set",
+            "pipeline.evidence",
+            "pipeline.autopilot.start",
+            "pipeline.autopilot.stop",
+            "pipeline.gate.playback",
+            "pipeline.gate.confirm",
         ];
         if !METHODS.contains(&method) {
             return Err("RPC_METHOD_FORBIDDEN".into());

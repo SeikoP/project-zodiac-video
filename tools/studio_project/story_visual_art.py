@@ -56,10 +56,10 @@ class Letterer:
             if self.width(candidate, size) <= max_width:
                 lines[-1] = candidate
             elif len(lines) < max_lines:
-                if self.width(word, size) > max_width:reject("word_overflow")
+                if self.width(word, size) > max_width:reject(f"word_overflow: {word!r} is wider than the box; use a shorter word")
                 lines.append(word)
             else:
-                reject("text_overflow")
+                reject(f"text_overflow: {text!r} needs more than {max_lines} line(s); shorten it (about {max(8, len(text) * 2 // 3)} characters)")
         return lines
 
     def draw(self, text, x, baseline, size, color=INK, align="left"):
@@ -156,6 +156,8 @@ def visual_schema():
         "category:'story_visual',phase1_visual_id:'approved narrative_plan.story_visuals ID'} OR "
         "{visual:{type:'chat_compare',left:{sender,question,reply},right:{sender,question,reply}}, "
         "category:'story_visual',phase1_visual_id:'approved narrative_plan.story_visuals ID'}. "
+        "Fixed boxes, so keep text SHORT: chat_compare sender <= 12 characters, question <= 34, reply <= 30 (story_text <= 40); "
+        "a longer line fails validation with text_overflow. "
         "These are deterministic native vector artwork, not scene-wide text boards. "
         "Reveal by an exact voice_anchor state change, hide or replace after its story beat; "
         "keep captions in the separate caption safe zone. "

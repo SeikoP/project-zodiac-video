@@ -198,6 +198,16 @@ class VoiceLabTests(unittest.TestCase):
         self.lab._save(self.handle,state)
         self.assertEqual(voice_evidence(self.handle.workspace,self.handle.imported_source_sha256),"BLOCKED")
 
+    def test_cached_voice_evidence_is_reverified_when_a_take_changes_on_disk(self):
+        state=self.create();unit=state["units"][0]
+        workspace,source=self.handle.workspace,self.handle.imported_source_sha256
+        before=voice_evidence(workspace,source)
+        self.assertEqual(voice_evidence(workspace,source),before)  # unchanged files: same verdict, from the cache
+        take=next(t for t in VoiceArtifactStore(workspace).takes(unit["id"]) if t["take_id"]==unit["selected_take"])
+        audio=workspace/take["path"]
+        audio.write_bytes(audio.read_bytes()+b"\x00\x00")  # different size, so the signature changes
+        self.assertEqual(voice_evidence(workspace,source),"BLOCKED")
+
     def test_audio_transport_returns_verified_bounded_real_wav_bytes(self):
         state=self.create();unit=state["units"][0]
         chunks=[];offset=0

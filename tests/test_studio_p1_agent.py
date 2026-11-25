@@ -271,11 +271,11 @@ class AgentTests(unittest.TestCase):
         self.assertEqual(len(result["validation_attempts"]), 1)
         self.assertFalse(result["write_applied"])
 
-    def test_second_invalid_authoring_proposal_fails_without_another_model_turn(self):
+    def test_third_invalid_authoring_proposal_fails_after_two_repairs(self):
         tid = self._completed()
         candidate = json.dumps({"kind": "source.replace", "payload": {"intent": {"scenes": []}}})
         messages = [{"id": 1, "result": {}}, {"id": 2, "result": {"thread": {"id": "t"}}}]
-        for request in (3, 4):
+        for request in (3, 4, 5):
             messages += [{"id": request, "result": {"turn": {"id": str(request)}}},
                          {"method": "turn/completed", "params": {"turn": {"status": "completed", "items": [{"type": "agentMessage", "text": candidate}]}}}]
         process = MagicMock(stdin=io.BytesIO(), stdout=io.BytesIO(b"".join((json.dumps(m)+"\n").encode() for m in messages)))
@@ -291,8 +291,8 @@ class AgentTests(unittest.TestCase):
         result = self.manager.task(tid)
         self.assertEqual(result["status"], "FAILED")
         self.assertIn("still invalid", result["error"])
-        self.assertEqual(sum(m.get("method") == "turn/start" for m in sent), 2)
-        self.assertEqual(len(result["validation_attempts"]), 2)
+        self.assertEqual(sum(m.get("method") == "turn/start" for m in sent), 3)
+        self.assertEqual(len(result["validation_attempts"]), 3)
         self.assertTrue(all(row["raw_output_sha256"] for row in result["validation_attempts"]))
         self.assertEqual(json.loads(result["preview"])["payload"]["intent"]["scenes"], [])
         self.assertFalse(result["write_applied"])

@@ -8,10 +8,78 @@ import sys
 import threading
 import time
 
-from tools.zodiac_local import load_word_aligner, _align_scene_words
+from tools.zodiac_local import load_word_aligner, _align_scene_words, _transcribe_raw_words, _clamp_aligned_words_to_wav_boundary
 from tools.studio.artifacts import file_sha256
 from tools.studio_v2.voice import VoiceArtifact
 from tools.studio_v2.timing import _align_cached_scenes, _wav_seconds
+
+
+WINDOW_SECONDS = 24.0  # Whisper always encodes a 30 s window, so many short units share one pass
+GAP_SECONDS = 0.5
+
+
+class BatchedWordSource:
+    """Hear several short units in one Whisper pass, then verify each unit exactly as a single pass would.
+
+    A unit whose words do not reproduce its own approved text is heard again on its own, so a boundary
+    mistake can only cost time, never a wrong timestamp.
+    """
+
+    def __init__(self, units):
+        # Keyed by the scene file name the aligner asks about; audio is read from the unit's own take.
+        self.units = [(u["id"] + ".wav", Path(u["audio"]), _wav_seconds(Path(u["audio"]))) for u in units]
+        self.heard = {}
+
+    def _hear_group(self, model, start):
+        import wave
+        group, total = [], 0.0
+        for name, path, seconds in self.units[start:]:
+            if group and total + seconds > WINDOW_SECONDS:
+                break
+            if name not in self.heard:
+                group.append((name, path, seconds, total))
+                total += seconds + GAP_SECONDS
+        if not group:
+            return
+        frames, params = [], None
+        for _, path, _, _ in group:
+            with wave.open(str(path), "rb") as source:
+                if params is None:
+                    params = source.getparams()
+                elif source.getparams()[:3] != params[:3]:
+                    return  # mixed formats: let each unit be heard alone
+                frames.append(source.readframes(source.getnframes()))
+        silence = b"\x00" * (int(params.framerate*GAP_SECONDS)*params.sampwidth*params.nchannels)
+        joined = group[0][1].with_name("batch-" + group[0][1].stem + ".wav")
+        with wave.open(str(joined), "wb") as target:
+            target.setparams(params)
+            target.writeframes(silence.join(frames))
+        try:
+            # Greedy decoding is ~2x faster; each unit is still verified against its approved text below.
+            words = _transcribe_raw_words(model, joined, beam_size=1, temperature=0.0)
+        finally:
+            joined.unlink(missing_ok=True)
+        for name, _, seconds, offset in group:
+            own = [{**w, "start": w["start"] - offset, "end": w["end"] - offset} for w in words
+                   if offset - GAP_SECONDS/2 <= w["start"] < offset + seconds + GAP_SECONDS/2]
+            self.heard[name] = own
+
+    def __call__(self, model, path, text):
+        path = Path(path)
+        index = next((i for i, unit in enumerate(self.units) if unit[0] == path.name), None)
+        if index is not None and path.name not in self.heard:
+            self._hear_group(model, index)
+        words = self.heard.pop(path.name, None)
+        if words is not None:
+            try:
+                aligned = _align_scene_words(model, path, text, raw_words=words)
+                # A word heard in the shared pass may spill into the gap after its unit: the same boundary rule as
+                # a single pass decides, and a unit that fails it is heard alone.
+                _clamp_aligned_words_to_wav_boundary(path.stem, aligned, self.units[index][2])
+                return aligned
+            except Exception:
+                pass  # heard together but not verifiable: hear this unit alone below
+        return _align_scene_words(model, path, text)
 
 
 def relative_words(words, offset):
@@ -27,10 +95,13 @@ HEARTBEAT_TIMEOUT = 8.0
 
 
 def align_workers(unit_count: int) -> int:
-    """Whisper on CPU does not get faster with more threads, so run several single-stream processes instead."""
+    """Whisper on CPU does not get faster with more threads, so run a few single-stream processes instead.
+
+    Units are heard in batches, so the work is CPU-bound: measured 36 s with 2 workers vs 47 s with 4 (32 units).
+    """
     requested = os.environ.get("ZODIAC_STUDIO_ALIGN_WORKERS")
     try:
-        workers = int(requested) if requested else min(4, max(1, (os.cpu_count() or 2) // 2))
+        workers = int(requested) if requested else min(2, max(1, (os.cpu_count() or 2) // 2))
     except ValueError:
         workers = 1
     return max(1, min(workers, unit_count // 2 or 1))
@@ -139,7 +210,7 @@ def main():
         timing = _align_cached_scenes(root, production, artifact, {
             "model": os.environ.get("ZODIAC_STUDIO_ALIGN_MODEL", "small"), "device": "cpu", "compute_type": "int8",
             "cpu_threads": 2, "num_workers": 1, "scene_gap_ms": 0, "auto_regenerate_alignment_failures": False,
-        }, "voice-lab-measured@1")
+        }, "voice-lab-measured@1", word_source=BatchedWordSource(manifest["units"]))
         offset, result = 0.0, {}
         for row in timing["scenes"]:
             result[row["scene_id"]] = relative_words(row["captions"], offset)

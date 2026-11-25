@@ -17,6 +17,7 @@ import {THEMES,renderPreview,quality,previewRuntime} from './visual_preview.mjs'
 import {validateSeriesOpening} from './visual_opening.mjs';
 import {resolveVisualRole} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/visual-role.mjs';
 
+import {validateActingEvent,validateCameraShots,ACTING} from './visual_acting.mjs';
 const ROOT=fileURLToPath(new URL('../../',import.meta.url));
 const MOTION=await json(path.join(LIBRARY,'../../contracts/motion-registry-v1.json'));
 const ID=/^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$/u;
@@ -36,7 +37,7 @@ export function validateIntent(intent,narration){
   assert(intent?.video?.width===1080 && intent.video.height===1920 && [24,30].includes(intent.video.fps),'VISUAL_VIDEO_UNSUPPORTED');
   assert(Array.isArray(intent.scenes)&&intent.scenes.length>0&&intent.scenes.length<=100,'VISUAL_SCENE_INVENTORY_INVALID');
   assert(intent.cast?.length<=20 && Object.keys(intent.assets??{}).length<=2000,'VISUAL_INVENTORY_LIMIT');
-  for(const scene of intent.scenes){
+  for(const scene of intent.scenes)try{
     assert(ID.test(scene.id)&&scene.entities?.length>0&&scene.entities.length<=100&&scene.events?.length<=100,'VISUAL_SCENE_INVALID');
     const entities=new Set();
     for(const entity of scene.entities){
@@ -57,9 +58,14 @@ export function validateIntent(intent,narration){
       assert(ID.test(event.id)&&!eventIds.has(event.id)&&entity?.states[event.state_before]&&entity.states[event.state_after],'VISUAL_EVENT_INVALID');eventIds.add(event.id);
       assert(['voice_anchor','scene_start','scene_end'].includes(event.trigger?.type),'VISUAL_EVENT_TRIGGER_UNSUPPORTED');
       if(event.trigger.type==='voice_anchor')assert(typeof event.trigger.text==='string'&&event.trigger.text.trim(),'VISUAL_EVENT_ANCHOR_REQUIRED');
+      if(ACTING.motions[event.motion?.preset])validateActingEvent(event,scene,event.target);
+    }
+    if(scene.camera!==undefined){
+      validateCameraShots(scene.camera);
+      for(const shot of scene.camera)if(shot.trigger.type==='voice_anchor')assert(typeof shot.trigger.text==='string'&&shot.trigger.text.trim(),'VISUAL_CAMERA_ANCHOR_REQUIRED');
     }
     traceSceneStates(scene);
-  }
+  }catch(error){if(error&&typeof error.message==='string'&&!error.message.includes('[scene '))error.message+=` [scene ${scene?.id}]`;throw error;}
   const projections=compileVisualIntent(intent,{narration});
   for(const scene of projections.production.scenes)for(const entity of scene.entities)resolveVisualRole(entity,projections.production.assets);
   return projections;
@@ -83,7 +89,7 @@ function measuredScenes(intent,narration,timing){
     const nextWord=next&&words.find(w=>w.source_range[0]>=next.narration_range[0]);
     const endMs=nextWord?.startMs??timing.duration_seconds*1000;
     assert(endMs>startMs&&selected.at(-1).endMs<=endMs+.1,'VISUAL_SCENE_TIMING_OVERLAP '+scene.id);
-    const events=scene.events.map(event=>{
+    const triggerAt=(event)=>{
       let at=0;
       if(event.trigger.type==='scene_end')at=(endMs-startMs)/1000;
       if(event.trigger.type==='voice_anchor'){
@@ -98,14 +104,19 @@ function measuredScenes(intent,narration,timing){
         });
         assert(anchor&&covered,'VISUAL_VOICE_ANCHOR_UNMEASURED '+event.id);at=(anchor.startMs-startMs)/1000;
       }
-      const preset=event.motion?.preset??'state_swap',motion=MOTION.motions[preset];
+      return at;
+    };
+    const events=scene.events.map(event=>{
+      const at=triggerAt(event);
+      const preset=event.motion?.preset??'state_swap',acting=ACTING.motions[preset],motion=MOTION.motions[preset]??acting;
       assert(motion,'VISUAL_MOTION_UNSUPPORTED '+preset);
       const frames=event.motion?.duration_frames??motion.default_duration_frames;
       assert(Number.isInteger(frames)&&frames>=0&&frames<=300,'VISUAL_MOTION_DURATION_INVALID');
-      assert(frames===motion.default_duration_frames||event.motion?.duration_override===true,'VISUAL_MOTION_OVERRIDE_REQUIRED');
-      return {...event,at,measured:true,preview_motion:preset,preview_duration:frames/intent.video.fps};
+      assert(acting||frames===motion.default_duration_frames||event.motion?.duration_override===true,'VISUAL_MOTION_OVERRIDE_REQUIRED');
+      return {...event,at,measured:true,preview_motion:preset,preview_duration:frames/intent.video.fps,preview_params:acting?{...(event.motion?.params??{})}:null};
     }).sort((x,y)=>x.at-y.at);
-    return {scene_id:scene.id,fps:intent.video.fps,startMs,endMs,words:selected,events,narration_range:[a,b],measured:true};
+    const camera=(scene.camera??[]).map(shot=>({id:shot.id,at:triggerAt(shot),duration:(shot.duration_frames??0)/intent.video.fps,from:shot.from,to:shot.to,reason:shot.reason??null})).sort((x,y)=>x.at-y.at);
+    return {scene_id:scene.id,fps:intent.video.fps,startMs,endMs,words:selected,events,camera,narration_range:[a,b],measured:true};
   });
 }
 
@@ -116,7 +127,7 @@ async function compilerIdentity(){
   files.push(['caption-font',digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf')))]);
   files.push(['caption-fontkit',digest(await readFile(path.join(ROOT,'apps/zodiac-studio/node_modules/fontkit/package.json')))]);
   for(const rel of ['features/visual-composition/compile-visual-intent.mjs','core/cache/incremental-cache.mjs','core/cache/phase02-semantic-cache.mjs','contracts/motion-registry-v1.json'])files.push([rel,digest(await readFile(path.join(LIBRARY,'../..',rel)))]);
-  for(const file of ['visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs','visual_presentation.mjs','visual_captions.mjs','visual_opening.mjs','visual_contract.json'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
+  for(const file of ['visual_acting.mjs','acting_registry.json','visual_compiler.mjs','visual_preview.mjs','visual_candidates.mjs','visual_themes.mjs','visual_presentation.mjs','visual_captions.mjs','visual_opening.mjs','visual_contract.json'])files.push([file,digest(await readFile(new URL(file,import.meta.url)))]);
   for(const file of ['spatial-layout.mjs','semantic-motion.mjs','visual-role.mjs','caption-layout.mjs','caption-karaoke.mjs'])files.push(['renderer/'+file,digest(await readFile(path.join(ROOT,'runtime/zodiac-renderer/2.0.2/renderer/src',file)))]);
   return hash(files.sort(([a],[b])=>a.localeCompare(b)));
 }

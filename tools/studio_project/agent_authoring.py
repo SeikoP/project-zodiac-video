@@ -14,6 +14,20 @@ from .story_visual_art import normalized_asset, visual_schema
 MAX_PROPOSAL = 96000
 
 
+# Plugin Phase 2 rule (references/phase02-visual-rules.md): authoring-only, stripped before compilation. The pipeline's
+# "Kiểm tra bản soạn" step runs scene-experience and reports EXPERIENCE_PROFILE_MISSING without it.
+EXPERIENCE_PROFILE_RULE = (
+    "REQUIRED on every scene, authoring-only (never projected into the render). Object {story_mode:'behavior'|'relationship'|"
+    "'exposition'|'transition'|'reflection'|'payoff'|'symbolic', required_physical_entities:[ids of props the narrated action "
+    "physically needs, else omit], sparse_reason:<only when deliberate negative space is the strategy>, "
+    "story_focus:{goal:<exactly the scene semantic_goal>,focal_entity_id:<one VISIBLE character/object/story_visual carrying the "
+    "beat>,supporting_entity_ids:[visible entity ids that support it],links:[{from:<focal/support id>,to:<focal/support id>,"
+    "relation:<visible action or relationship>,purpose:<why it clarifies the goal>}]}}. story_focus is mandatory for behavior, "
+    "relationship, symbolic and payoff scenes and for exposition scenes with several story entities; every supporting entity "
+    "must be linked. Every id must be an entity in that scene. Behavior/relationship scenes need a visible actor/prop/story "
+    "event, not a passive pose.")
+
+
 def invalid(message):
     return StudioError("AGENT_PROPOSAL_INVALID", message, "agent")
 
@@ -41,10 +55,10 @@ def catalog():
             "story_visual_templates": ["story_text", "chat_compare"]}
 
 
-def capsule(service, project_id, instruction):
+def capsule(service, project_id, instruction, *, repair=False):
     visual = service.visual
     state = visual.snapshot(project_id)
-    if state["intent"] is not None:
+    if state["intent"] is not None and not repair:
         raise StudioError("AGENT_INITIAL_SOURCE_EXISTS", "Đã có hình ảnh; chọn cảnh để chỉnh sửa.", "agent")
     voice = service.voice.snapshot(project_id)
     timing = voice.get("timing")
@@ -67,6 +81,15 @@ def capsule(service, project_id, instruction):
         if at > starts[-1]: starts.append(at)
     ranges = [{"id": f"s{i+1:02}", "narration_range": [len(narration[:at].encode()), len(narration[:stop].encode())],
                "text": narration[at:stop]} for i, (at, stop) in enumerate(zip(starts, starts[1:] + [len(narration)]))]
+    result = _capsule_body(service, project_id, instruction, state, voice, timing, handle, narration, plan, scope, ranges, suggested_topic)
+    if repair and state["intent"] is not None:
+        # Same contract as a retry: the model repairs this candidate and keeps what already validates.
+        result["previous_candidate"] = {"task_id": None, "validator_error": instruction, "json": json.dumps(
+            {"kind": "source.replace", "payload": {"intent": state["intent"]}}, ensure_ascii=False)}
+    return result
+
+
+def _capsule_body(service, project_id, instruction, state, voice, timing, handle, narration, plan, scope, ranges, suggested_topic):
     return {"revision": state["revision"], "source_hash": state["source_hash"],
             "visual_contract": json.loads((ROOT / "tools/studio_project/visual_contract.json").read_text("utf8")),
             "dependencies": dependencies(service, project_id), "catalog": catalog(), "instruction": instruction,
@@ -76,6 +99,7 @@ def capsule(service, project_id, instruction):
             if plan.get("story_visual_decision", {}).get("mode") == "required" else [],
             "suggested_opening_topic": suggested_topic, "duration_seconds": timing.get("duration_seconds"),
             "schema": {
+                "experience_profile": EXPERIENCE_PROFILE_RULE,
                 "grammar": {"type": "object", "example": {"frame_id": "single-character-focus", "mechanic_id": "explain", "bindings": {"subject": "actual_actor_entity_id"}},
                             "description": "Scene grammar MUST be this structured object, NEVER a prose description. Choose exact frame_id/mechanic_id from catalog, bind required frame slots to actual scene entity IDs and respect slot kinds/mechanic requirements. Put prose directing in semantic_goal or narrative_intent.reason."},
                 "format": "zodiac-visual-intent@1", "video": {"width": 1080, "height": 1920, "fps": 30},
@@ -84,7 +108,7 @@ def capsule(service, project_id, instruction):
                 "episode_cast_plan": "{format:'zodiac-episode-cast-plan@1',bindings:[{member_id:English zodiac id,entity_id,scene_ids:[ids],role:'member',reason}]}",
                 "assets": "Map id -> {path:'library:'+exact catalog prop path,category:'prop'} for ordinary props. " + visual_schema() + " Never emit raw SVG, HTML, scripts or URLs.",
                 "opening": "{format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:episode_scope.sign,topic:suggested_opening_topic or a short theme-specific topic beginning 'Cách' or 'Khi',duration_frames:45,transition_frames:9}. Intro explains series/theme, never copies narration hook. Narration and captions start at frame zero.",
-                "scenes": "Use exact supplied ids/ranges. Each {id,narration_range,semantic_goal,grammar,entities:[{id,kind:'character'|'object'|'story_visual',visual_role:canonical equivalent,initial_state,states:{state_id:{asset,visible,layer,transform:{x,y,width,height}}},narrative_intent:{voice_anchor:exact excerpt,reason}, optional lettering:{purpose,reason,states,styles}}],events:[{id,target,state_before,state_after,trigger:{type:'voice_anchor',text:exact substring inside scene},motion:{preset:'state_swap',duration_frames:12}}],layout_contract:{caption_safe_zone:{x:80,y:1470,width:920,height:360}}}. Story Text is optional lettering within ONE story_visual per scene. A split chat can be chosen ONLY when Phase 1 directs contrasting messages and must show named senders, short conversation bubbles and actor reaction; never default to a full-width floating board. Use exact voice anchors, reveal only on the relevant beat, keep actor contact and caption lane clear. Preserve native V4 characters and meaningful real props. Never invent decorative text graphics.",
+                "scenes": "Use exact supplied ids/ranges. Each {id,narration_range,semantic_goal,grammar,entities:[{id,kind:'character'|'object'|'story_visual',visual_role:canonical equivalent,initial_state,states:{state_id:{asset,visible,layer,transform:{x,y,width,height}}},narrative_intent:{voice_anchor:exact excerpt,reason}, optional lettering:{purpose,reason,states,styles}}],events:[{id,target,state_before,state_after,action:<short Vietnamese phrase for what the target character/prop DOES; REQUIRED, scenes without an authored action fail character_action>,trigger:{type:'voice_anchor',text:exact substring inside scene},motion:{preset:'state_swap',duration_frames:12}}],layout_contract:{caption_safe_zone:{x:80,y:1470,width:920,height:360}},SCENE DRESSING (scene_set_id is retired for fresh scenes; never use it): every relationship/behavior/payoff scene needs at least one visible set-dressing entity whose id starts with 'depth__' (an ordinary catalog prop such as a table or phone placed behind or in front of the actors, layer different from them), and the story entities together must cover about 26% of the 1080x1400 story field (large characters, e.g. 390x780 each), otherwise validation reports ENVIRONMENT_VISUAL_UNDERDEVELOPED / FRAME_OCCUPANCY_LOW,experience_profile:<see schema.experience_profile; REQUIRED on every scene>}. Story Text is optional lettering within ONE story_visual per scene. A split chat can be chosen ONLY when Phase 1 directs contrasting messages and must show named senders, short conversation bubbles and actor reaction; never default to a full-width floating board. Use exact voice anchors, reveal only on the relevant beat, keep actor contact and caption lane clear. Preserve native V4 characters and meaningful real props. Never invent decorative text graphics.",
             }}
 
 
@@ -107,6 +131,14 @@ def bind_proposal(text, context):
     if "video" not in intent:
         intent["video"] = copy.deepcopy(context["schema"]["video"])
         changed.append("video")
+    # Phase 1 owns the story-visual decision; the model only copied it, and a slip failed the whole compile.
+    decision = (context.get("narrative_plan") or {}).get("story_visual_decision")
+    if isinstance(decision, dict) and intent.get("story_visual_decision") != decision:
+        intent["story_visual_decision"] = copy.deepcopy(decision)
+        changed.append("story_visual_decision")
+    if intent.get("taxonomy_version") != "story_visual@1":
+        intent["taxonomy_version"] = "story_visual@1"
+        changed.append("taxonomy_version")
     ranges = {row["id"]: row["narration_range"] for row in context["scene_ranges"]}
     for scene in intent.get("scenes", []):
         if scene.get("id") in ranges and scene.get("narration_range") != ranges[scene["id"]]:
@@ -129,7 +161,15 @@ def proposal(text, service, project_id, *, write_visuals=False):
         intent = copy.deepcopy(proposed["payload"]["intent"])
         if not isinstance(intent, dict) or not isinstance(intent.get("assets"), dict) or len(intent["assets"]) > 100:
             raise invalid("Danh mục hình ảnh không hợp lệ.")
-        allowed = {"library:" + a["path"] for a in catalog()["props"]}
+        known = catalog()
+        allowed = {"library:" + a["path"] for a in known["props"]}
+        for member in intent.get("cast") or []:  # name the valid choices here instead of failing late in the compiler
+            for state_id, state in ((member or {}).get("states") or {}).items():
+                for field, options in (("expression_id", "expressions"), ("pose_id", "poses")):
+                    value = (state or {}).get(field)
+                    if value is not None and value not in known["components"][options]:
+                        raise invalid(f"Cast {member.get('entity_id')}/{state_id}: {field} {value!r} không có trong catalog. "
+                                      f"Chọn một trong: {', '.join(known['components'][options])}.")
         handle = service.visual._handle(project_id)
         plan_path = handle.workspace / ".authoring/narrative-plan.json"
         plan = json.loads(plan_path.read_text("utf8")) if plan_path.is_file() else {}

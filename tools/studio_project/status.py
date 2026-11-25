@@ -195,6 +195,11 @@ def _video_status(root: Path) -> str:
         return 'BLOCKED'
 
 
+def visual_status(root: Path) -> str:
+    from .pipeline.review import visual_review_status
+    return visual_review_status(root)
+
+
 def resolve_episode_status(handle: ProjectHandle) -> EpisodeStatus:
     root = handle.workspace.resolve()
     if (root / ".runtime/voice-lab/state.json").exists():
@@ -206,9 +211,8 @@ def resolve_episode_status(handle: ProjectHandle) -> EpisodeStatus:
         project_id=handle.project_id,
         content=_source_status(handle),
         voice=voice,
-        # Until later phases introduce verified human visual, actual exported
-        # media and publication receipts, these remain evidence-absent UNKNOWN.
-        visual="UNKNOWN",
+        # Visual is APPROVED only by a user-only review receipt bound to the current build and source.
+        visual=visual_status(root),
         video=_video_status(root) if _source_status(handle) == 'APPROVED' else 'BLOCKED',
         published="UNKNOWN",
     )

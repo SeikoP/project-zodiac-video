@@ -40,7 +40,7 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
         catch (e) { setError(String(e)); } finally { setBusy(false); }
       }}>Xuất MP4</button>
       {running && <button className="outline-btn" onClick={() => project && void backend.visualCancel(project.project_id).then(setState).catch(e => setError(String(e)))}>Dừng tác vụ</button>}
-      <small>{state?.stale_preview ? "Hình ảnh đã đổi: dựng lại ở tab Hình ảnh." : !state?.build ? "Dựng hình ảnh trước khi xuất." : "Xuất video không tự duyệt chất lượng."}</small>
+      <small>{state?.stale_preview ? "Hình ảnh đã đổi: chọn Hình ảnh trong Graph và dựng lại." : !state?.build ? "Dựng hình ảnh trước khi xuất." : "Xuất video không tự duyệt chất lượng."}</small>
     </div>
     {error && <div className="inline-alert error" role="alert">{error}</div>}
     {state?.job && <div className="review-message" role="status">{state.job.message} · {state.job.status}{state.job.render_percent === undefined ? "" : ` · ${state.job.render_percent}%`}{state.job.error && ` · ${state.job.error}`}</div>}

@@ -1,5 +1,7 @@
+import { shareRead } from "./rpc-reads";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import type { IdeaBoard, IdeaProgress, IdeaStatus } from "./idea-board";
+import type { PipelineApi, PipelineData, PipelineEvidence, PipelineMode, RunRecord } from "./pipeline/types";
 
 export type ProjectStatus = {
   project_id: string;
@@ -14,6 +16,8 @@ export type Project = {
   episode_id: string;
   display_title: string;
   sign: string | null;
+  /** Concept code from the approved handoff (e.g. love-sincere); resolves to a title in the idea library. */
+  concept_code?: string | null;
   source_sha256: string;
   revision: number;
   status: ProjectStatus;
@@ -110,7 +114,10 @@ export type CandidateResult = { status: string; source_sha256: string; catalog_r
   rejected: { id: string; reason: string }[]; new_asset_task: { reason: string } | null };
 export type AgentTask = {
   model?: string;
-  validation_attempts?: {error: string; raw_output_sha256: string; turn_id?: string}[];
+  validation_attempts?: {error: string; raw_output_sha256?: string; turn_id?: string; round?: number}[];
+  /** Scene-by-scene authoring: one row per part (khung nhân vật, then each scene). */
+  parts?: {id: string; status: "RUNNING" | "DONE" | "FAILED"; seconds?: number; attempt?: number; error?: string}[];
+  parts_total?: number;
   bound_fields?: string[]; raw_output_sha256?: string;
   task_id: string;
   project_id: string;
@@ -145,7 +152,7 @@ export async function request<T>(method: string, params: object = {}): Promise<T
   if (!isTauri()) {
     throw new BackendFailure("DESKTOP_ONLY", "Mở bằng ứng dụng Tauri để kết nối Project Core.");
   }
-  const envelope = await invoke<Envelope<T>>("studio_request", { method, params });
+  const envelope = await shareRead(method, params, () => invoke<Envelope<T>>("studio_request", { method, params }));
   if (!envelope.ok) {
     throw new BackendFailure(envelope.error.code, envelope.error.message);
   }
@@ -153,6 +160,20 @@ export async function request<T>(method: string, params: object = {}): Promise<T
 }
 
 export const backend = {
+  pipelineGet: (project_id: string) => request<PipelineData>("pipeline.get", { project_id }),
+  pipelineRun: (project_id: string, node_id: string, base_revision: number) =>
+    request<PipelineData>("pipeline.run", { project_id, node_id, base_revision }),
+  pipelineEvidence: (project_id: string) => request<PipelineEvidence>("pipeline.evidence", { project_id }),
+  pipelineCancel: (project_id: string) => request<PipelineData>("pipeline.cancel", { project_id }),
+  pipelineSetMode: (project_id: string, mode: PipelineMode) => request<{ mode: PipelineMode }>("pipeline.mode.set", { project_id, mode }),
+  pipelineAutopilotStart: (project_id: string, base_revision: number) =>
+    request<RunRecord>("pipeline.autopilot.start", { project_id, base_revision }),
+  pipelineAutopilotStop: (project_id: string) => request<RunRecord>("pipeline.autopilot.stop", { project_id }),
+  pipelinePlayback: (project_id: string, build_id: string) =>
+    request<{ playback_id: string }>("pipeline.gate.playback", { project_id, gate: "visual_review", build_id }),
+  pipelineConfirmVisual: (project_id: string, base_revision: number, build_id: string, playback_id: string) =>
+    request<{ status: string; build_id: string; source_hash: string }>("pipeline.gate.confirm",
+      { project_id, gate: "visual_review", base_revision, build_id, playback_id }),
   authorAgentStart: (project_id: string, instruction: string) => request<AgentTask>("agent.author.start", { project_id, instruction }),
   exportVideo: (project_id: string, base_revision: number) => request<VisualState>('video.export', { project_id, base_revision }),
   video: (project_id: string) => request<VideoExport>('video.get', { project_id }),
@@ -229,4 +250,14 @@ export const backend = {
         base_revision: revision, kind: "project.note", payload: { text },
       },
     }),
+};
+
+/** Adapter so the pipeline store depends on an interface, not on Tauri. */
+export const pipelineApi: PipelineApi = {
+  get: backend.pipelineGet,
+  run: backend.pipelineRun,
+  cancel: backend.pipelineCancel,
+  autopilotStart: backend.pipelineAutopilotStart,
+  autopilotStop: backend.pipelineAutopilotStop,
+  setMode: backend.pipelineSetMode,
 };

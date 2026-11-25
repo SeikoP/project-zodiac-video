@@ -115,7 +115,55 @@ def wav_info(path: Path) -> dict:
             "leading_silence_seconds": leading, "trailing_silence_seconds": trailing}
 
 
+_EVIDENCE_CACHE: dict[tuple[str, str], tuple[tuple, str]] = {}
+
+
+def _files_signature(workspace: Path) -> tuple:
+    """(path, size, mtime_ns) of every file the evidence verdict depends on; stat only, no hashing."""
+    roots = (workspace/".runtime/voice-lab", workspace/".runtime/artifacts/voice", workspace/".authoring/narration.txt",
+             workspace/"narration.txt")
+    signature = []
+
+    def walk(directory):
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.is_dir(follow_symlinks=False):
+                    walk(entry.path)
+                else:
+                    info = entry.stat(follow_symlinks=False)
+                    signature.append((entry.path, info.st_size, info.st_mtime_ns))
+    for root in roots:
+        try:
+            if root.is_dir():
+                walk(root)
+            else:
+                info = root.stat()
+                signature.append((str(root), info.st_size, info.st_mtime_ns))
+        except OSError:
+            signature.append((str(root), -1, -1))
+    return tuple(sorted(signature))
+
+
 def voice_evidence(workspace: Path, source_sha: str) -> str:
+    """Verdict on the voice evidence, re-verified only when a file it depends on changed.
+
+    Verifying hashes every selected take and the assembly (about 0.4 s for 32 units) and the status screens ask
+    several times per refresh. Any change to size or modification time re-runs the full check.
+    """
+    try:
+        signature = _files_signature(Path(workspace))
+    except OSError:
+        return _voice_evidence(workspace, source_sha)
+    key = (str(workspace), source_sha)
+    cached = _EVIDENCE_CACHE.get(key)
+    if cached and cached[0] == signature:
+        return cached[1]
+    verdict = _voice_evidence(workspace, source_sha)
+    _EVIDENCE_CACHE[key] = (signature, verdict)
+    return verdict
+
+
+def _voice_evidence(workspace: Path, source_sha: str) -> str:
     """A legacy APPROVED flag or a valid WAV cannot grant listening approval."""
     path = workspace / ".runtime/voice-lab/state.json"
     if not path.exists():
@@ -385,11 +433,26 @@ class VoiceLab:
                                                     "prosody_verified": False, "pronunciation": pronunciation}
                             rows.append({"scene_id": unit["id"], "text": text})
                     generation_error = None
+                    finished = threading.Event()
+
+                    def report_progress():  # the engine only returns at the end; its finished WAV files show real progress
+                        seen = -1
+                        while not finished.wait(2):
+                            count = sum(1 for row in rows if (job_root/"tts-scenes"/(row["scene_id"]+".wav")).exists())
+                            if count != seen:
+                                seen = count
+                                try:
+                                    self._update_job(handle, job_id, completed=count, message=f"Generating audio {count}/{len(rows)}")
+                                except Exception:
+                                    return
+                    threading.Thread(target=report_progress, daemon=True).start()
                     try:
                         run_tts_batch(job_root, rows, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
                                       voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
                     except Exception as error:
                         generation_error = error
+                    finally:
+                        finished.set()
                     generated = {}
                     for row in rows:
                         audio = job_root/"tts-scenes"/(row["scene_id"]+".wav")
@@ -443,6 +506,7 @@ class VoiceLab:
                         manifest["units"].append({"id": unit["id"], "audio": str(audio), "wav_sha256": take["wav_sha256"],
                                                   "tts_text": (take.get("details") or {}).get("tts_text") or spoken_scene_text(unit["text"])})
                     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf8")
+                    self._update_job(handle, job_id, message="Measuring word timing with ASR (about 40 s for a short episode)")
                     run_managed_subprocess([sys.executable, "-m", "tools.studio_project.voice_worker", "batch", str(manifest_path), str(result_path)],
                                            cwd=ROOT, check=True, capture_output=True, text=True)
                     aligned_by_unit = json.loads(result_path.read_text(encoding="utf8"))

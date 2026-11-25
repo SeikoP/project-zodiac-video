@@ -3,6 +3,7 @@ import {safeSvg,digest} from './visual_candidates.mjs';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {ACTING} from './visual_acting.mjs';
 import {presentationFor,captionCss,watermarkHtml,presentationRuntime,resolveCaptionZone} from './visual_presentation.mjs';
 import {planMeasuredCaptionPages,captionCuesForEpisode} from './visual_captions.mjs';
 import {openingHtml,openingOpacity,validateSeriesOpening} from './visual_opening.mjs';
@@ -42,15 +43,17 @@ export function createScenePainter(m,caption){
   const frame=Math.min(Math.ceil(m.duration*m.fps)-1,Math.max(0,Math.floor((Number(t)||0)*m.fps+1e-4)));
   if(m.opening){const el=document.getElementById('series-opening');if(el){const fadeAt=m.opening.duration_frames-m.opening.transition_frames;el.style.opacity=frame>=m.opening.duration_frames?'0':frame<=fadeAt?'1':String((m.opening.duration_frames-frame)/m.opening.transition_frames);}}
   const states=Object.fromEntries(scene.entities.map(e=>[e.id,resolveDisplayedEntityState(scene,e,frame)]));
+  const cam=resolveCamera(m.camera??[],frame);
   const order=resolveLayerOrder(scene,{},states);
   for(const [z,e]of order.entries()){
-   const state=states[e.id],event=scene.events.find(ev=>ev.target===e.id&&frame>=ev.start_frame&&frame<ev.end_frame),motion=resolveSemanticMotion(event,scene,e,frame);
+   const state=states[e.id],event=scene.events.find(ev=>ev.target===e.id&&frame>=ev.start_frame&&frame<ev.end_frame),motion=resolveSemanticMotion(event,scene,e,frame),acting=resolveActing(scene.events,e.id,frame);
    for(const [id,s]of Object.entries(e.states)){
     const n=document.getElementById(s.hf_id),active=s.hf_id===state?.hf_id,transform=state?.transform??s.transform;
     n.style.visibility=active&&state.visible!==false?'visible':'hidden';
-    n.style.opacity=motion.opacity*(state?.opacity??1);n.style.left=transform.x+'px';n.style.top=transform.y+'px';
-    n.style.width=transform.width+'px';n.style.height=transform.height+'px';n.style.zIndex=z;
-    n.style.transform=`translate(${motion.translateX}px, ${motion.translateY}px) scale(${(transform.scale??1)*motion.scale}) rotate(${(transform.rotation??0)+motion.rotateDeg}deg)`;
+    n.style.opacity=motion.opacity*(state?.opacity??1);n.style.left=((transform.x-cam.x)*cam.zoom+540)+'px';n.style.top=((transform.y-cam.y)*cam.zoom+960)+'px';
+    n.style.width=(transform.width*cam.zoom)+'px';n.style.height=(transform.height*cam.zoom)+'px';n.style.zIndex=z;
+    n.style.transformOrigin=acting.rotateDeg!==0?'50% 100%':'center center';
+    n.style.transform=`translate(${(motion.translateX+acting.translateX)*cam.zoom}px, ${(motion.translateY+acting.translateY)*cam.zoom}px) scale(${(transform.scale??1)*motion.scale}) rotate(${(transform.rotation??0)+motion.rotateDeg+acting.rotateDeg}deg)`;
    }
   }
   const cue=captions().find(c=>frame>=c.start_frame&&frame<c.end_frame);
@@ -78,11 +81,11 @@ export function renderPreview(scene, assets, timing, themeId, gsap, font=null, a
   const words=timing.words.map(word=>({...word,start:(word.startMs-timing.startMs)/1000,end:(word.endMs-timing.startMs)/1000}));
   const events=timing.events;
   const captionPages=planMeasuredCaptionPages(scene,{...timing,fps:timing.fps??30},presentation,font?Buffer.from(font.base64,'base64'):null);
-  const motions=['state_swap','hold','pop-in','fade-in','fade-out','subtle-tilt','small-bounce','focus-shift','slide'];
+  const motions=['state_swap','hold','pop-in','fade-in','fade-out','subtle-tilt','small-bounce','focus-shift','slide',...Object.keys(ACTING.motions)];
   const fps=timing.fps??30;
   const roleAssets=Object.fromEntries(Object.entries(assets).map(([id,a])=>[id,{...a,...a.metadata}]));
   const role=e=>!e.kind&&!e.visual_role&&!roleAssets[e.states[e.initial_state]?.asset]?.category?'overlay':resolveVisualRole(e,roleAssets);
-  const model={id:scene.id,duration,fps,motions,presentation,opening,scene:{...scene,start_frame:0,entities:scene.entities.map(e=>({...e,visual_role:role(e),states:Object.fromEntries(Object.entries(e.states).map(([s,v])=>[s,{...v,hf_id:hfId(scene.id,e.id,s)}]))})),events:events.map(e=>({...e,event_id:e.id??e.event_id,start_frame:Math.round(e.at*fps),end_frame:Math.round((e.at+e.preview_duration)*fps),motion:e.preview_motion}))},events,words,captions:captionPages};
+  const model={id:scene.id,duration,fps,motions,presentation,opening,scene:{...scene,start_frame:0,entities:scene.entities.map(e=>({...e,visual_role:role(e),states:Object.fromEntries(Object.entries(e.states).map(([s,v])=>[s,{...v,hf_id:hfId(scene.id,e.id,s)}]))})),events:events.map(e=>({...e,event_id:e.id??e.event_id,start_frame:Math.round(e.at*fps),end_frame:Math.round((e.at+e.preview_duration)*fps),motion:e.preview_motion,params:e.preview_params??null}))},camera:(timing.camera??[]).map(c=>({...c,start_frame:Math.round(c.at*fps),end_frame:Math.round((c.at+c.duration)*fps)})),events,words,captions:captionPages};
   // All executable code below is compiler-owned. Imported SVG is isolated in data images.
   const script=`${presentationRuntime()}const m=${scriptJson(model)};let at=0;const caption=document.getElementById('caption');function start(){
 const paint=(${createScenePainter.toString()})(m,caption);

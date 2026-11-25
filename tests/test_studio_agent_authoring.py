@@ -131,6 +131,53 @@ class AgentAuthoringTests(unittest.TestCase):
         self.assertEqual(contract["caption"]["font_size_px"], 84)
         self.assertNotIn("y:740", data["schema"]["scenes"])
 
+    def test_agent_is_told_to_author_experience_profile_on_every_scene(self):
+        from tools.studio_project.agent_authoring import capsule
+        data = capsule(self.service, self.project, "Soạn hình ảnh.")
+        self.assertIn("story_mode", data["schema"]["experience_profile"])
+        self.assertIn("story_focus", data["schema"]["experience_profile"])
+        self.assertIn("experience_profile", data["schema"]["scenes"])
+
+    def test_authored_experience_profile_survives_confirmed_apply(self):
+        for scene in self.intent["scenes"]:
+            scene["experience_profile"] = {"story_mode": "exposition"}
+        task = self.completed()
+        state = self.manager.apply_suggestion(task["task_id"], confirm=True, base_revision=0, command_id="author")
+        self.assertEqual([s["experience_profile"] for s in state["intent"]["scenes"]],
+                         [{"story_mode": "exposition"}] * len(self.intent["scenes"]))
+
+    def test_core_binds_phase1_story_visual_decision_and_taxonomy(self):
+        from tools.studio_project.agent_authoring import bind_proposal
+        decision = {"mode": "required", "reason": "Đối chiếu hai lời rủ."}
+        context = {"narration_sha256": "h", "schema": {"video": {}}, "scene_ranges": [], "narrative_plan": {"story_visual_decision": decision}}
+        text, changed = bind_proposal(json.dumps({"kind": "source.replace", "payload": {"intent": {"narration_sha256": "h", "scenes": []}}}), context)
+        intent = json.loads(text)["payload"]["intent"]
+        self.assertEqual(intent["story_visual_decision"], decision)
+        self.assertEqual(intent["taxonomy_version"], "story_visual@1")
+        self.assertIn("story_visual_decision", changed)
+
+    def test_unknown_expression_names_the_valid_choices(self):
+        from tools.studio_project.agent_authoring import catalog
+        bad = copy.deepcopy(self.intent)
+        bad["cast"][0]["states"]["neutral"]["expression_id"] = "focused"
+        self.manager._update(self.completed()["task_id"], status="COMPLETED")
+        with self.assertRaises(StudioError) as caught:
+            from tools.studio_project import agent_authoring
+            agent_authoring.proposal(json.dumps({"kind": "source.replace", "payload": {"intent": bad}}), self.service, self.project)
+        self.assertIn("expression_id 'focused'", str(caught.exception))
+        self.assertIn(catalog()["components"]["expressions"][0], str(caught.exception))
+
+    def test_repair_capsule_carries_the_current_intent_and_dressing_rule(self):
+        from tools.studio_project.agent_authoring import capsule
+        self.manager.apply_suggestion(self.completed()["task_id"], confirm=True, base_revision=0, command_id="author")
+        with self.assertRaises(StudioError):  # a plain authoring request still refuses to replace existing visuals
+            capsule(self.service, self.project, "x")
+        data = capsule(self.service, self.project, "ENVIRONMENT_VISUAL_UNDERDEVELOPED s01", repair=True)
+        self.assertEqual(json.loads(data["previous_candidate"]["json"])["payload"]["intent"]["scenes"], self.intent["scenes"])
+        self.assertIn("ENVIRONMENT_VISUAL_UNDERDEVELOPED", data["previous_candidate"]["validator_error"])
+        self.assertIn("depth__", data["schema"]["scenes"])
+        self.assertIn("scene_set_id is retired", data["schema"]["scenes"])
+
     def test_story_text_and_split_chat_are_native_story_visual_templates(self):
         from tools.studio_project.agent_authoring import capsule, proposal
         from tools.studio_project.story_visual_art import visual_svg

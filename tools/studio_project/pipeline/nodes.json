@@ -1,0 +1,27 @@
+{
+  "format": "zodiac-pipeline-nodes@1",
+  "nodes": [
+    {"id": "content", "title": "Nội dung", "kind": "gate", "inputs": []},
+    {"id": "voice", "title": "Giọng đọc", "kind": "step", "inputs": ["content"], "executor": "voice.start"},
+    {"id": "voice_review", "title": "Nghe và duyệt giọng", "kind": "gate", "inputs": ["voice"]},
+    {"id": "timing", "title": "Căn thời gian", "kind": "step", "inputs": ["voice_review"], "executor": "voice.start"},
+    {"id": "visual", "title": "Soạn hình ảnh", "kind": "step", "inputs": ["timing"], "executor": "agent.author.start",
+     "agent": {"proposal_kind": "visual.intent", "context_refs": ["phase02-work-loop", "story-visual", "visual-direction"],
+               "validators": ["authoring-completeness", "story-visual-presence"], "max_attempts": 2}},
+    {"id": "checks", "title": "Kiểm tra bản soạn", "kind": "step", "inputs": ["visual"], "executor": "validators.run",
+     "agent": {"proposal_kind": "visual.intent", "context_refs": ["phase02-work-loop", "scene-art-direction"],
+               "validators": ["progressive-preflight", "scene-experience", "authoring-completeness", "story-visual-presence"], "max_attempts": 2}},
+    {"id": "assets", "title": "Tài nguyên", "kind": "step", "inputs": ["checks"], "executor": "assets.resolve",
+     "agent": {"proposal_kind": "assets.select", "context_refs": ["asset-library-selection"], "validators": [], "max_attempts": 2}},
+    {"id": "cover", "title": "Ảnh bìa", "kind": "step", "inputs": ["checks"], "executor": "agent.cover.start",
+     "agent": {"proposal_kind": "cover.design", "context_refs": ["cover-composition-v2"], "validators": [], "max_attempts": 2}},
+    {"id": "publish", "title": "Nội dung đăng", "kind": "step", "inputs": ["checks"], "executor": "agent.publish.start",
+     "agent": {"proposal_kind": "publish.copy", "context_refs": ["publish-package"], "validators": [], "max_attempts": 2}},
+    {"id": "scene", "title": "Cảnh", "kind": "fan", "fan_over": "scenes", "inputs": ["assets"], "executor": "scene.compile"},
+    {"id": "build", "title": "Dựng video", "kind": "step", "inputs": ["scene"], "executor": "episode.build"},
+    {"id": "inspect", "title": "Kiểm khung hình", "kind": "step", "inputs": ["build"], "executor": "agent.inspect.start",
+     "agent": {"proposal_kind": "inspect.report", "context_refs": ["phase02-work-loop", "visual-quality"], "validators": [], "max_attempts": 1}},
+    {"id": "visual_review", "title": "Duyệt hình ảnh", "kind": "gate", "inputs": ["inspect", "cover", "publish"]},
+    {"id": "export", "title": "Xuất MP4", "kind": "step", "inputs": ["visual_review"], "executor": "video.export"}
+  ]
+}

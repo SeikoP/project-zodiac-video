@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {resolveEntityState,resolveDisplayedEntityState} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/spatial-layout.mjs';
 import {resolveVisualRole,resolveLayer,resolveLayerOrder} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/visual-role.mjs';
 import {MOTION_STEP_FRAMES,steppedMotionFrame,resolveSemanticMotion} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/semantic-motion.mjs';
+import {resolveActing,resolveCamera} from './visual_acting.mjs';
 import {resolveCaptionZone,resolveCaptionLayout,paginateCaption} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/caption-layout.mjs';
 import {CAPTION_STROKE_PX,CAPTION_STROKE_COLOR,CAPTION_BOUNCE_PX,validateCaptionWords,resolveCaptionWordLines} from '../../runtime/zodiac-renderer/2.0.2/renderer/src/caption-karaoke.mjs';
 export {resolveCaptionZone};
@@ -35,5 +36,5 @@ function verifyCaptionFont(start){
   window.__captionFontVerified=true;start();
  }).catch(error=>{window.__renderError=String(error);console.error(error);throw error;});
 }
-${[steppedMotionFrame,resolveSemanticMotion,resolveEntityState,resolveDisplayedEntityState,resolveVisualRole,resolveLayer,resolveLayerOrder,resolveCaptionZone,resolveCaptionLayout,paginateCaption,validateCaptionWords,resolveCaptionWordLines].map(f=>'const '+f.name+'='+f.toString()+';').join('\n')}
+${[steppedMotionFrame,resolveActing,resolveCamera,resolveSemanticMotion,resolveEntityState,resolveDisplayedEntityState,resolveVisualRole,resolveLayer,resolveLayerOrder,resolveCaptionZone,resolveCaptionLayout,paginateCaption,validateCaptionWords,resolveCaptionWordLines].map(f=>'const '+f.name+'='+f.toString()+';').join('\n')}
 `;}

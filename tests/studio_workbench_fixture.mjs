@@ -18,6 +18,24 @@ export async function installWorkbenchFixture(page) {
     const html=`<!doctype html><html><body><div data-composition-id="${p.scene_id}" data-width="1080" data-height="1920" data-duration="4" style="background:#d9c8aa;width:1080px;height:1920px"><h1>${p.scene_id}</h1></div><script>addEventListener('message',e=>{if(e.data.action==='seek')window.fixtureTime=e.data.time;});</script></body></html>`;
     return {url:URL.createObjectURL(new Blob([html],{type:'text/html'})),html,sha256:p.scene_id,build_id:p.build_id,revision:1,scene:{id:p.scene_id,duration_seconds:4,source_map:[]}};
    }
+   if(method.startsWith('pipeline.')) {
+    window.pipelineCalls=(window.pipelineCalls||[]).concat([[method,p]]);
+    const node=(id,inputs,kind='step',status='DONE',scene_id=null)=>({id,title:{content:'Nội dung',voice:'Giọng đọc',voice_review:'Nghe giọng',timing:'Căn giờ',visual:'Soạn hình',checks:'Kiểm tra',assets:'Tài nguyên',cover:'Ảnh bìa',publish:'Nội dung đăng',build:'Dựng video',inspect:'Kiểm khung hình',visual_review:'Duyệt hình ảnh',export:'Xuất MP4'}[id]||id,kind,status,inputs,detail:'chi tiết '+id,scene_id});
+    const status=window.pipelineStatus||{};
+    const ids=scenes.map(x=>'scene:'+x.id);
+    const base=[node('content',[],'gate'),node('voice',['content']),node('voice_review',['voice'],'gate'),node('timing',['voice_review']),node('visual',['timing']),node('checks',['visual']),node('assets',['checks']),node('cover',['checks']),node('publish',['checks']),
+      ...scenes.map(x=>node('scene:'+x.id,['assets'],'fan','DONE',x.id)),node('build',ids),node('inspect',['build']),node('visual_review',['inspect','cover','publish'],'gate','AWAITING_USER'),node('export',['visual_review'],'step','PENDING')];
+    if(window.unknownNode) base.push(node('mystery',['export']));
+    const data=()=>({format:'zodiac-pipeline@1',project_id:'p1',revision:1,revisions:{visual:1,voice:1},mode:window.pipelineMode||'confirm',run:window.pipelineRun||null,nodes:base.map(n=>({...n,status:status[n.id]||n.status}))});
+    if(['pipeline.get','pipeline.run','pipeline.cancel'].includes(method)) return data();
+    if(method==='pipeline.evidence') return {build_id:'b'.repeat(32),revision:1,source_hash:'h',checks:{ok:true,issues:[],receipt_sha256:'r'},inspect:{build_id:'b',method:'structural',findings:[{scene_id:'s1',severity:'ok',note:'khung hình ổn'}]},cover:{headline:'Tiêu đề bìa',scene_id:'s1'},publish:{title:'Tiêu đề đăng',description:'Mô tả',hashtags:['#cung']}};
+    if(method==='pipeline.autopilot.start') { window.pipelineRun={format:'zodiac-pipeline-run@1',run_id:'r1',state:'WAITING_GATE',node:'voice_review',log:[],needs_you:[{node_id:'voice_review',kind:'gate',title:'Cần bạn duyệt: Nghe giọng',detail:'Chờ bạn nghe giọng',issues:[]}]}; return window.pipelineRun; }
+    if(method==='pipeline.autopilot.stop') return {state:'STOPPED'};
+    if(method==='pipeline.mode.set') { window.pipelineMode=p.mode; return {mode:p.mode}; }
+    if(method==='pipeline.gate.playback') return {playback_id:'pb1'};
+    if(method==='pipeline.gate.confirm') return {status:'APPROVED',build_id:p.build_id,source_hash:'h'};
+    return {};
+   }
    if(method==='health') return {status:'READY'};
    if(method==='projects.list' && window.noProjects) return [];
    if(method==='projects.list') return Array.from({length:20},(_,i)=>({...project,project_id:`p${i+1}`}));

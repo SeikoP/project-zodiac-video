@@ -505,34 +505,44 @@ def _repair_aligner_word_timestamps(
     return repaired
 
 
-def _align_scene_words(model, audio_path: Path, approved_text: str) -> list[dict]:
+def _transcribe_raw_words(model, audio_path: Path, **options) -> list[dict]:
+    segments, _info = model.transcribe(
+        str(audio_path),
+        language="vi",
+        word_timestamps=True,
+        vad_filter=False,
+        condition_on_previous_text=False,
+        **options,
+    )
+    raw_words = []
+    for segment in segments:
+        for word in segment.words or []:
+            heard = str(word.word).strip()
+            if not _normalize_token(heard):
+                continue
+            raw_words.append(
+                {
+                    "heard": heard,
+                    "start": word.start,
+                    "end": word.end,
+                    "confidence": (
+                        float(word.probability)
+                        if word.probability is not None
+                        else None
+                    ),
+                }
+            )
+    return raw_words
+
+
+def _align_scene_words(
+    model, audio_path: Path, approved_text: str, *, raw_words: list[dict] | None = None
+) -> list[dict]:
+    """Align one scene. ``raw_words`` skips the (slow) ASR pass when a batch already heard this scene."""
     expected = _expected_caption_tokens(approved_text)
     try:
-        segments, _info = model.transcribe(
-            str(audio_path),
-            language="vi",
-            word_timestamps=True,
-            vad_filter=False,
-            condition_on_previous_text=False,
-        )
-        raw_words = []
-        for segment in segments:
-            for word in segment.words or []:
-                heard = str(word.word).strip()
-                if not _normalize_token(heard):
-                    continue
-                raw_words.append(
-                    {
-                        "heard": heard,
-                        "start": word.start,
-                        "end": word.end,
-                        "confidence": (
-                            float(word.probability)
-                            if word.probability is not None
-                            else None
-                        ),
-                    }
-                )
+        if raw_words is None:
+            raw_words = _transcribe_raw_words(model, audio_path)
 
         measured = []
         for word in _repair_aligner_word_timestamps(

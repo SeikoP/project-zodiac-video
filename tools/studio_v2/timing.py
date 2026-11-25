@@ -168,7 +168,9 @@ def _align_cached_scenes(
     settings: dict[str, Any],
     aligner_version: str,
     force: bool = False,
+    word_source: Any = None,
 ) -> dict[str, Any]:
+    # word_source(model, path, text) lets a caller hear several scenes per ASR pass; default is one pass per scene.
     paths = scene_voice_files(workspace, production)
     scene_settings = {
         key: value
@@ -221,7 +223,7 @@ def _align_cached_scenes(
                 )
             duration = _wav_seconds(path)
             try:
-                words = _align_scene_words(model, path, scene["voice"])
+                words = (word_source or _align_scene_words)(model, path, scene["voice"])
             except (AlignmentMismatchError, InvalidAlignmentTimestampError) as first_error:
                 # Retry only this scene with a more accurate ASR model; never infer timestamps.
                 primary_model = str(settings.get("model") or "small")

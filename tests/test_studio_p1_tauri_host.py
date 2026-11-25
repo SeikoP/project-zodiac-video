@@ -20,7 +20,7 @@ class TauriHostIntegrationTests(unittest.TestCase):
         manifest = json.loads((APP / "src-tauri/tauri.conf.json").read_text("utf8"))
         capability = json.loads((APP / "src-tauri/capabilities/default.json").read_text("utf8"))
         self.assertEqual(manifest["build"]["frontendDist"], "../dist")
-        self.assertEqual(manifest["app"]["windows"][0]["minWidth"], 1060)
+        self.assertEqual(manifest["app"]["windows"][0]["minWidth"], 800)
         self.assertEqual(capability["windows"], ["main"])
         self.assertIn("dialog:allow-open", capability["permissions"])
         self.assertFalse(manifest["app"]["windows"][0]["decorations"])
