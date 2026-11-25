@@ -10,6 +10,24 @@ use std::{
 };
 use tauri::Manager;
 
+fn retry_safe(method: &str) -> bool {
+    matches!(method, "health" | "projects.list" | "projects.open" | "events.list" |
+        "events.recent" | "assets.list" | "agent.health" | "agent.task" |
+        "agent.tasks" | "voice.audio")
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::retry_safe;
+    #[test]
+    fn only_explicit_reads_can_replay() {
+        for method in ["health", "projects.list", "voice.audio"] { assert!(retry_safe(method)); }
+        for method in ["projects.command", "voice.start", "agent.apply", "pipeline.run", "visual.command", "future.method"] {
+            assert!(!retry_safe(method));
+        }
+    }
+}
+
 struct LivePython {
     process: Child,
     input: Option<ChildStdin>,
@@ -147,7 +165,8 @@ impl Backend {
             "params": params,
         }))
         .map_err(|e| format!("RPC_SERIALIZE_FAILED: {e}"))?;
-        if serialized.len() > 65_536 {
+        let limit = if method == "visual.command" { 2 * 1024 * 1024 } else { 65_536 };
+        if serialized.len() > limit {
             return Err("RPC_REQUEST_TOO_LARGE".into());
         }
         self.counter = self.counter.wrapping_add(1);
@@ -186,7 +205,8 @@ impl Backend {
                 }
                 Err(error) => {
                     self.child = None; // Drop kills/reaps process
-                    if attempt == 1 {
+                    // A lost reply can follow a successful write; never replay mutations.
+                    if attempt == 1 || !retry_safe(method) {
                         return Err(format!("PYTHON_TRANSPORT_FAILED: {error}"));
                     }
                 }

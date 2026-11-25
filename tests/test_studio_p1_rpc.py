@@ -60,6 +60,18 @@ class TransportTests(unittest.TestCase):
         self.assertFalse(bad["ok"])
         self.assertEqual(bad["error"]["code"], "RPC_PARAMS_INVALID")
 
+    def test_oversized_frame_does_not_desync_next_request(self):
+        cmd = [sys.executable, "-m", "tools.studio_project.rpc_stdio",
+               "--projects-root", str(self.root / "projects")]
+        request = json.dumps({"id": "next", "method": "health", "params": {}}).encode()
+        result = subprocess.run(cmd, cwd=ROOT, input=b"x" * (3 * 1024 * 1024) + b"\n" + request + b"\n",
+                                capture_output=True, timeout=15, check=True)
+        replies = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual(len(replies), 2)
+        self.assertEqual(replies[0]["error"]["code"], "RPC_REQUEST_TOO_LARGE")
+        self.assertTrue(replies[1]["ok"])
+        self.assertEqual(replies[1]["id"], "next")
+
     def test_live_subprocess_round_trip_and_exit(self):
         cmd = [sys.executable, "-u", "-m", "tools.studio_project.rpc_stdio",
                "--projects-root", str(self.root / "projects")]

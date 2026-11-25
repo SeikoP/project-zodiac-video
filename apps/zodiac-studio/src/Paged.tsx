@@ -35,7 +35,7 @@ export function PagedText({ text, onChange, label = "Nội dung", size = 360, ma
     observer.observe(node);
     if (editor) observer.observe(editor);
     return () => observer.disconnect();
-  }, []);
+  }, [maxLines, onChange !== undefined]);
   const chars = Array.from(text);
   const boundaries = [0];
   let lines = 1, column = 0;

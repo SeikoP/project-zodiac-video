@@ -198,7 +198,12 @@ def main(argv: list[str] | None = None) -> int:
     input_pipe = sys.stdin.buffer
     output_pipe = sys.stdout.buffer
     try:
-        while line := input_pipe.readline():
+        while line := input_pipe.readline(2 * 1024 * 1024 + 2):
+            if len(line) > 2 * 1024 * 1024 and not line.endswith(b"\n"):
+                # Drain one oversized frame without retaining it or parsing its tail.
+                while tail := input_pipe.readline(65536):
+                    if tail.endswith(b"\n"):
+                        break
             # Every inbound line gets exactly one reply, including errors.
             response = handle_line(service, line.rstrip(b"\r\n"))
             output_pipe.write((json.dumps(response, ensure_ascii=False, allow_nan=False,
