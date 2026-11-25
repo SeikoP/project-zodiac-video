@@ -115,6 +115,24 @@ class RevisionTaskTests(unittest.TestCase):
         self.assertEqual(scene["entities"][0]["states"]["neutral"]["transform"]["width"], 520)
         self.assertEqual(len(changes), 1)
 
+    def test_assets_the_episode_already_has_are_not_duplicated_under_a_new_key(self):
+        task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "đổi vị trí")
+        answer = json.dumps({"kind": "scene.ops", "payload": {"scene_id": "s03", "assets": {"s03-phone": {"path": "library:props/other.svg"}},
+            "ops": [{"op": "set", "path": "entities/gemini/states/neutral/transform/x", "value": 99}]}})
+        text, _ = agent_parts.finish_revision(answer, task, self.intent())
+        assets = json.loads(text)["payload"]["intent"]["assets"]
+        self.assertEqual(assets, self.intent()["assets"])  # the existing asset wins; nothing renamed or added
+
+    def test_a_story_visual_is_not_added_unless_the_instruction_asks(self):
+        task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "cho nhân vật lớn hơn")
+        sv = {"id": "s03-SV", "kind": "story_visual", "initial_state": "v", "states": {"v": {"asset": "s03-phone", "visible": True, "layer": 40, "transform": dict(BOX)}}}
+        answer = json.dumps({"kind": "scene.ops", "payload": {"scene_id": "s03", "ops": [{"op": "add", "path": "entities", "value": sv}]}})
+        with self.assertRaises(ValueError) as caught:
+            agent_parts.finish_revision(answer, task, self.intent())
+        self.assertIn("Story Visual", str(caught.exception))
+        asked = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "thêm story visual hội thoại")
+        agent_parts.finish_revision(answer, asked, self.intent())
+
     def test_a_rewrite_instead_of_ops_is_rejected(self):
         task = agent_parts.revise_task(self.CAPSULE, self.intent(), "s03", "x")
         for answer in (json.dumps({"kind": "scene.part", "payload": {"scene": SCENE}}),

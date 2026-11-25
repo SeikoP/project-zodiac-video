@@ -325,7 +325,13 @@ def finish_revision(text: str, task: dict, intent: dict) -> tuple[str, list[str]
     if entities and removed / len(entities) > 0.3 and not wants_removal:
         raise ValueError("Xóa quá nhiều đối tượng trong khi yêu cầu không nói bỏ/xóa; chỉ sửa phần được yêu cầu")
     revised = apply_scene_ops(task["current_scene"], ops)
-    checked = json.loads(validate_scene(json.dumps({"kind": "scene.part", "payload": {"scene": revised, "assets": payload.get("assets") or {}}}), task))
+    old_ids = {e["id"] for e in task["current_scene"].get("entities", [])}
+    asks_story = any(word in str(task.get("instruction", "")).lower() for word in ("story", "hội thoại", "tin nhắn", "chat"))
+    if not asks_story and any(e.get("kind") == "story_visual" and e["id"] not in old_ids for e in revised.get("entities", [])):
+        raise ValueError("Không thêm Story Visual khi yêu cầu không nói tới; chỉ sửa đúng phần được yêu cầu")
+    known = set(intent.get("assets") or {})  # an asset the episode already has is reused, never re-sent under a new key
+    new_only = {k: v for k, v in (payload.get("assets") or {}).items() if k not in known}
+    checked = json.loads(validate_scene(json.dumps({"kind": "scene.part", "payload": {"scene": revised, "assets": new_only}}), task))
     new_scene, new_assets = checked["payload"]["scene"], checked["payload"]["assets"]
     changes = scene_changes(task["current_scene"], new_scene)
     if not changes:
