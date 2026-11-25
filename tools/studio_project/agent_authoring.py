@@ -214,7 +214,7 @@ def proposal(text, service, project_id, *, write_visuals=False):
                     raise invalid(str(error)) from error
                 generated.add(key)
             elif asset.get("category") == "story_visual" and _stored_story_visual(asset, handle.workspace):
-                continue  # already written by an earlier apply (a scene revision starts from the applied intent)
+                generated.add(key)  # already written by an earlier apply (a scene revision starts from the applied intent); the same placement rules apply
             elif (set(asset) - {"path", "category", "source_sha256"}
                   or asset.get("path") not in allowed or asset.get("category") != "prop"):
                 raise invalid("Chỉ được chọn đạo cụ trong catalog hoặc Story Visual dạng template đã duyệt.")
