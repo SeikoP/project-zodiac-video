@@ -339,15 +339,18 @@ class VoiceLab:
             self._take(handle, state, unit_id, take_id)
             unit = next(u for u in state["units"] if u["id"] == unit_id)
             if unit["selected_take"] != take_id or unit["gap_after_ms"] != gap_after_ms:
+                reason = "take_changed" if unit["selected_take"] != take_id else "pause_changed"
                 unit.update(selected_take=take_id, gap_after_ms=gap_after_ms, listened=None)
-                self._invalidate(state, [unit_id])
+                self._invalidate(state, [unit_id], reason)
                 state["revision"] += 1
                 self._save(handle, state)
         return self.snapshot(project_id)
 
     @staticmethod
-    def _invalidate(state, unit_ids):
-        state.update(assembly=None, timing=None, playbacks={})
+    def _invalidate(state, unit_ids, reason="take_changed"):
+        # Say why the listening approval went away, so the GUI can ask for the right thing instead of a blanket re-listen.
+        state.update(assembly=None, timing=None, playbacks={},
+                     approval_note={"reason": reason, "unit_ids": list(unit_ids), "at": time.time()})
         state["invalidated"] = {"speech_units": unit_ids, "artifacts": ["assembled_voice", "word_timing", "downstream_absolute_times"],
                                 "svg_assets_invalidated": False}
 
@@ -665,6 +668,8 @@ class VoiceLab:
             target = state["assembly"] if unit_id == "episode" else next(u for u in state["units"] if u["id"] == unit_id)
             if unit_id != "episode" and target["selected_take"] != take["take_id"]:
                 raise StudioError("VOICE_TAKE_NOT_SELECTED", "Selected audio changed", "voice")
+            if unit_id == "episode":
+                state.pop("approval_note", None)
             target["listened"] = {"kind": "user_listened", "wav_sha256": take["wav_sha256"], "confirmed_at": time.time(),
                                   "narration_sha256": state["narration_sha256"]}
             state["playbacks"].pop(unit_id, None)
