@@ -178,6 +178,19 @@ class VoiceLabTests(unittest.TestCase):
         self.assertEqual(restored.project(self.project)["status"]["voice"],"USER_LISTENED_APPROVED")
         self.assertEqual(restored.voice.snapshot(self.project)["units"][0]["selected_take"],state["units"][0]["selected_take"])
 
+    def test_listening_to_the_assembled_episode_once_is_enough_and_a_later_change_drops_it(self):
+        state=self.create()
+        state=self.lab.assemble(self.project,state["revision"])
+        self.assertEqual(state["status"],"TECHNICAL_VALID")
+        state=self.listened("episode",state["assembly"]["take_id"])
+        self.assertEqual(state["status"],"USER_LISTENED_APPROVED")
+        self.assertFalse(any(u["listened"] for u in state["units"]))
+        # Changing the pause after unit 0 changes the selection the assembly was built from.
+        unit=state["units"][0]
+        state=self.lab.select(self.project,unit["id"],unit["selected_take"],state["revision"],unit["gap_after_ms"]+50)
+        self.assertNotEqual(state["status"],"USER_LISTENED_APPROVED")
+        self.assertIsNone(state["assembly"])
+
     def test_voice_proof_cannot_omit_an_unheard_source_unit(self):
         self.create()
         state=self.lab._read(self.handle)

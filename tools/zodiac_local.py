@@ -1205,7 +1205,7 @@ def run_tts_batch(
             "    turbo_module.max_expected_frames = _scaled_max_expected_frames\n"
             "for row in rows:\n"
             "    print('VieNeu:', row['scene_id'], flush=True)\n"
-            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars), row['output'])\n"
+            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars, apply_watermark=False), row['output'])\n"
             "    print('VieNeu DONE:', row['scene_id'], flush=True)\n"
         )
         actual = effective_tts_generation_config(

@@ -3,7 +3,10 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
+import threading
+import time
 
 from tools.zodiac_local import load_word_aligner, _align_scene_words
 from tools.studio.artifacts import file_sha256
@@ -19,9 +22,104 @@ def relative_words(words, offset):
              "endMs": round(word["endMs"] - offset, 6)} for word in words]
 
 
+HEARTBEAT_SECONDS = 1.0
+HEARTBEAT_TIMEOUT = 8.0
+
+
+def align_workers(unit_count: int) -> int:
+    """Whisper on CPU does not get faster with more threads, so run several single-stream processes instead."""
+    requested = os.environ.get("ZODIAC_STUDIO_ALIGN_WORKERS")
+    try:
+        workers = int(requested) if requested else min(4, max(1, (os.cpu_count() or 2) // 2))
+    except ValueError:
+        workers = 1
+    return max(1, min(workers, unit_count // 2 or 1))
+
+
+def watch_parent(heartbeat: Path) -> None:
+    """A child must not outlive a cancelled parent: exit when the parent stops touching the heartbeat file."""
+    def loop():
+        while True:
+            time.sleep(HEARTBEAT_SECONDS)
+            try:
+                age = time.time() - heartbeat.stat().st_mtime
+            except OSError:
+                os._exit(3)
+            if age > HEARTBEAT_TIMEOUT:
+                os._exit(3)
+    threading.Thread(target=loop, daemon=True).start()
+
+
+def run_parallel(manifest: dict, workers: int, output: Path) -> None:
+    """Align round-robin shares of the units in separate processes and merge their per-unit local words.
+
+    Each share uses its own workspace folder, so scene caches and the artifact graph never race. Round-robin
+    keeps the shares stable between runs, so cached scenes are still reused.
+    """
+    root = Path(manifest["workspace"])
+    base = root/".runtime"/"align-parts"
+    base.mkdir(parents=True, exist_ok=True)
+    heartbeat = base/"heartbeat"
+    heartbeat.write_text("1")
+    stop = threading.Event()
+
+    def beat():
+        while not stop.wait(HEARTBEAT_SECONDS):
+            try:
+                heartbeat.touch()
+            except OSError:
+                pass
+    threading.Thread(target=beat, daemon=True).start()
+    children = []
+    try:
+        for index in range(workers):
+            part_dir = base/f"part-{index}"
+            part_dir.mkdir(parents=True, exist_ok=True)
+            part = {**manifest, "workspace": str(part_dir), "units": manifest["units"][index::workers], "part": index,
+                    "heartbeat": str(heartbeat)}
+            manifest_path, result_path = part_dir/"manifest.json", part_dir/"result.json"
+            manifest_path.write_text(json.dumps(part, ensure_ascii=False), encoding="utf8")
+            if result_path.exists():
+                result_path.unlink()
+            children.append((subprocess.Popen([sys.executable, "-m", "tools.studio_project.voice_worker", "batch",
+                                               str(manifest_path), str(result_path)]), result_path))
+        merged, failed = {}, []
+        for process, result_path in children:
+            if process.wait() != 0 or not result_path.exists():
+                failed.append(process.returncode)
+                continue
+            merged.update(json.loads(result_path.read_text(encoding="utf8")))
+        if failed:
+            raise RuntimeError(f"ASR worker failed (exit codes {failed})")
+        # A serial run stamps every word with its position on the whole-episode timeline (timestampMs). Each share only
+        # knew its own earlier units, so move the stamp by the difference between the two offsets.
+        durations = {unit["id"]: _wav_seconds(Path(unit["audio"]))*1000 for unit in manifest["units"]}
+        global_offset, share_offset = 0.0, [0.0]*workers
+        for position, unit in enumerate(manifest["units"]):
+            share = position % workers
+            delta = global_offset - share_offset[share]
+            if delta:
+                for word in merged.get(unit["id"], []):
+                    if "timestampMs" in word:
+                        word["timestampMs"] = round(word["timestampMs"] + delta, 6)
+            global_offset += durations[unit["id"]]
+            share_offset[share] += durations[unit["id"]]
+        output.write_text(json.dumps(merged, ensure_ascii=False, allow_nan=False), encoding="utf8")
+    finally:
+        stop.set()
+        for process, _ in children:
+            if process.poll() is None:
+                process.kill()
+
+
 def main():
     if sys.argv[1] == "batch":
         manifest = json.loads(Path(sys.argv[2]).read_text(encoding="utf8"))
+        if manifest.get("heartbeat"):
+            watch_parent(Path(manifest["heartbeat"]))
+        elif align_workers(len(manifest["units"])) > 1:
+            run_parallel(manifest, align_workers(len(manifest["units"])), Path(sys.argv[3]))
+            return
         root = Path(manifest["workspace"])
         # Windows cache filenames exceed MAX_PATH inside imported workspaces.
         if os.name == "nt":

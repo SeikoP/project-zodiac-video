@@ -149,7 +149,10 @@ def voice_evidence(workspace: Path, source_sha: str) -> str:
         assembly = state.get("assembly") or {}
         proof = assembly.get("listened") or {}
         selection_hash = canonical_hash(selected)
-        if (all_listened and assembly.get("selection_hash") == selection_hash and
+        # Hearing the assembled episode all the way through is the approval. The assembly is bound by hash to exactly
+        # these selected takes and pauses, so a take chosen or changed afterwards no longer matches and drops the
+        # approval. Listening to single units stays available (all_listened) but is not required.
+        if (assembly.get("selection_hash") == selection_hash and
                 proof.get("kind") == "user_listened" and proof.get("wav_sha256") == assembly.get("wav_sha256") and
                 proof.get("narration_sha256") == state["narration_sha256"]):
             audio = (workspace / assembly["path"]).resolve()
