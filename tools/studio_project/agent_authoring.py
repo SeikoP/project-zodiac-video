@@ -151,6 +151,16 @@ def bind_proposal(text, context):
     return (json.dumps(data, ensure_ascii=False) if changed else text), changed
 
 
+def _stored_story_visual(asset, workspace):
+    """A Story Visual asset exactly as normalized_asset() wrote it: same path pattern and file bytes matching its hash."""
+    path, sha = str(asset.get("path", "")), asset.get("source_sha256")
+    if not re.fullmatch(r"\.authoring/agent-art/story-[0-9a-f]{64}\.svg", path) or not isinstance(sha, str) or sha not in path:
+        return False
+    try:
+        return hashlib.sha256((workspace / path).read_bytes()).hexdigest() == sha
+    except OSError:
+        return False
+
 def proposal(text, service, project_id, *, write_visuals=False):
     if not isinstance(text, str) or len(text) > MAX_PROPOSAL: raise invalid("Đề xuất quá lớn.")
     try:
@@ -203,6 +213,8 @@ def proposal(text, service, project_id, *, write_visuals=False):
                 except (ValueError, OSError) as error:
                     raise invalid(str(error)) from error
                 generated.add(key)
+            elif asset.get("category") == "story_visual" and _stored_story_visual(asset, handle.workspace):
+                continue  # already written by an earlier apply (a scene revision starts from the applied intent)
             elif (set(asset) - {"path", "category", "source_sha256"}
                   or asset.get("path") not in allowed or asset.get("category") != "prop"):
                 raise invalid("Chỉ được chọn đạo cụ trong catalog hoặc Story Visual dạng template đã duyệt.")

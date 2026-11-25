@@ -193,6 +193,25 @@ class AgentAuthoringTests(unittest.TestCase):
         with self.assertRaises(StudioError):
             self.manager.start_scene_revision(self.project, "nope", "x")
 
+    def test_an_already_applied_story_visual_asset_is_accepted_when_revising(self):
+        from tools.studio_project import agent_authoring
+        from tools.studio_project.story_visual_art import normalized_asset
+        handle = self.service.visual._handle(self.project)
+        spec = {"type": "story_text", "text": "Chỉ để xem", "purpose": "contrast"}
+        stored = normalized_asset(spec, directory=handle.workspace, phase1_id="SV01", write=True)  # as persisted by a previous apply
+        intent = copy.deepcopy(self.intent)
+        intent["assets"]["SV01"] = stored
+        text = json.dumps({"kind": "source.replace", "payload": {"intent": intent}}, ensure_ascii=False)
+        try:
+            agent_authoring.proposal(text, self.service, self.project)
+        except StudioError as error:
+            self.assertNotIn("Chỉ được chọn đạo cụ", str(error))
+        tampered = copy.deepcopy(intent)
+        tampered["assets"]["SV01"]["source_sha256"] = "0" * 64
+        with self.assertRaises(StudioError) as caught:
+            agent_authoring.proposal(json.dumps({"kind": "source.replace", "payload": {"intent": tampered}}), self.service, self.project)
+        self.assertIn("Chỉ được chọn đạo cụ", str(caught.exception))
+
     def test_two_scene_revisions_may_run_together_but_not_three_or_beside_authoring(self):
         state = self.applied_intent()
         ids = [s["id"] for s in state["intent"]["scenes"]]
