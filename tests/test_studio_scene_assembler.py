@@ -132,12 +132,13 @@ def cast_of(skeleton, count):
     return [{"entity_id": m["entity_id"], "state_id": "neutral"} for m in skeleton["cast"][:count]]
 
 
-def build(skeleton, present, props, dressing="none", story=None, frame="two-person-offset", mechanic="explain"):
+def build(skeleton, present, props, dressing="none", story=None, frame="two-person-offset", mechanic="explain", acting=None):
     menus = authoring_menus.scene_menus(CAPSULE, skeleton, "s01", [])
     stage = {"frame_id": frame, "mechanic_id": mechanic, "present": present,
              "props": [{"prop_id": p, "role": "focus" if i == 0 else "support"} for i, p in enumerate(props)], "dressing": dressing}
-    act = {"events": [{"anchor_id": menus["anchors"][0]["id"], "target": present[0]["entity_id"] if present else props[0],
-                       "action": "Làm gì đó", "state_after": "same"}]}
+    targets = [present[0]["entity_id"] if present else props[0]] + list(acting or [])
+    act = {"events": [{"anchor_id": menus["anchors"][min(i, len(menus["anchors"]) - 1)]["id"], "target": t,
+                       "action": "Làm gì đó", "state_after": "same"} for i, t in enumerate(targets)]}
     return scene_assembler.assemble_scene(menus, stage, act, "s01", RANGE, TEXT, GOAL, story_visuals=story)
 
 
@@ -207,6 +208,77 @@ class SceneQualityTests(unittest.TestCase):
                         with self.subTest(frame=frame, props=how_many, story=bool(story), dressing=dressing):
                             part = build(skeleton, cast_of(skeleton, count), props[:how_many], dressing, story, frame)
                             self.assertEqual(scene_assembler.scene_faults(part, list(story or ())), [])
+
+
+def bottom(scene, entity_id):
+    entity = next(e for e in scene["entities"] if e["id"] == entity_id)
+    return max(s["transform"]["y"] + s["transform"]["height"] for s in entity["states"].values())
+
+
+class GroundedLayoutTests(unittest.TestCase):
+    def test_props_and_dressing_stand_on_the_floor_line_of_the_actors(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop", mechanic="confront")
+        scene = part["payload"]["scene"]
+        floor = bottom(scene, "ban")
+        self.assertEqual(bottom(scene, "phone-ping"), floor)
+        self.assertEqual(bottom(scene, "depth__laptop"), floor)
+
+    def test_a_support_prop_nobody_acts_on_is_dropped(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping", "laptop"], mechanic="confront")
+        ids = [e["id"] for e in part["payload"]["scene"]["entities"]]
+        self.assertNotIn("laptop", ids)
+        self.assertTrue(any("laptop" in n and "không có hành động" in n for n in part["core_notes"]))
+
+    def test_a_support_prop_with_an_action_but_no_room_is_dropped_and_reported(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping", "laptop"], mechanic="confront", acting=["laptop"])
+        scene = part["payload"]["scene"]
+        self.assertNotIn("laptop", [e["id"] for e in scene["entities"]])
+        self.assertNotIn("laptop", [e["target"] for e in scene["events"]])
+        self.assertTrue(any("laptop" in n and "chỗ trống" in n for n in part["core_notes"]))
+
+    def test_a_support_prop_with_an_action_and_room_is_kept(self):
+        part = build(authoring_skeleton(1), cast_of(authoring_skeleton(1), 1), ["phone-ping", "laptop"], mechanic="explain",
+                     frame="single-character-focus", acting=["laptop"])
+        self.assertIn("laptop", [e["id"] for e in part["payload"]["scene"]["entities"]], part.get("core_notes"))
+
+    def test_actors_are_big_enough_to_read_on_a_phone(self):
+        scene = build(authoring_skeleton(1), cast_of(authoring_skeleton(1), 1), [], frame="single-character-focus")["payload"]["scene"]
+        box = next(e for e in scene["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
+        self.assertGreaterEqual(box["height"], 900)
+        squeezed = build(TWO, cast_of(TWO, 2), [], story=CHAT)["payload"]["scene"]
+        self.assertGreaterEqual(next(e for e in squeezed["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]["height"], 500)
+
+
+class EventTimingTests(unittest.TestCase):
+    """The real export refuses two acting events of one target that overlap (EXPORT_ACTING_TIMING_INVALID)."""
+
+    def menus_with_times(self, times):
+        menus = authoring_menus.scene_menus({"scene_ranges": [{"id": "s01", "narration_range": RANGE,
+                                                                 "text": "Chờ nhé, để xem ngay, rồi sao nữa, thế đấy."}]}, TWO, "s01", [])
+        for anchor, t in zip(menus["anchors"], times):
+            anchor["t"] = t
+        return menus
+
+    def test_events_of_one_target_never_overlap_in_time(self):
+        menus = self.menus_with_times([1.54, 1.84, 3.0, 4.0])
+        stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none"}
+        events = [{"anchor_id": a["id"], "target": "ban", "action": "x", "state_after": "same"} for a in menus["anchors"][:4]]
+        part = scene_assembler.assemble_scene(menus, stage, {"events": events}, "s01", RANGE, "Chờ nhé, để xem ngay, rồi sao nữa, thế đấy.", GOAL)
+        mine = [e for e in part["payload"]["scene"]["events"] if e["target"] == "ban"]
+        at = {a["id"]: a["t"] for a in menus["anchors"]}
+        by_trigger = {a["text"]: a["t"] for a in menus["anchors"]}
+        times = [by_trigger[e["trigger"]["text"]] for e in mine]
+        for first, second, event in zip(times, times[1:], mine):
+            self.assertGreaterEqual(second, first + event["motion"]["duration_frames"] / 30)
+        self.assertLess(len(mine), 4)
+        self.assertTrue(any("quá sát" in n for n in part["core_notes"]))
+
+    def test_events_without_known_times_are_all_kept(self):
+        menus = self.menus_with_times([None, None, None, None])
+        stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none"}
+        events = [{"anchor_id": a["id"], "target": "ban", "action": "x", "state_after": "same"} for a in menus["anchors"][:3]]
+        part = scene_assembler.assemble_scene(menus, stage, {"events": events}, "s01", RANGE, "Chờ nhé, để xem ngay, rồi sao nữa, thế đấy.", GOAL)
+        self.assertEqual(len([e for e in part["payload"]["scene"]["events"] if e["target"] == "ban"]), 3)
 
 
 class StoryVisualLookupTests(unittest.TestCase):

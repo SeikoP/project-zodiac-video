@@ -57,6 +57,17 @@ def _anchors(text: str) -> list[dict]:
     return anchors
 
 
+def _time(anchors: list[dict], row: dict, words: list[dict]) -> None:
+    """Add ``t`` (seconds from the scene's first measured word) to each anchor; None when no timing is known."""
+    start, stop = row["narration_range"]
+    inside = [w for w in words if w.get("source_range") and start <= w["source_range"][0] < stop]
+    base = min((w["startMs"] for w in inside), default=None)
+    for anchor in anchors:
+        at = start + len(row["text"][:anchor["at"]].encode())
+        hit = next((w for w in inside if w["source_range"][0] <= at < w["source_range"][1]), None)
+        anchor["t"] = round((hit["startMs"] - base) / 1000, 3) if hit and base is not None else None
+
+
 def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list[dict]) -> dict:
     """Everything the model may choose from for one scene. Raises KeyError for a scene the capsule does not know."""
     row = next((r for r in capsule["scene_ranges"] if r["id"] == scene_id), None)
@@ -65,8 +76,10 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
     catalog = agent_authoring.catalog()
     props = _prop_ids()
     cast = {m["entity_id"]: sorted(m.get("states") or {}) for m in skeleton_intent.get("cast", [])}
+    anchors = _anchors(row["text"])
+    _time(anchors, row, words)
     return {"frames": [f["id"] for f in catalog["frames"]], "mechanics": [m["id"] for m in catalog["mechanics"]],
-            "cast": cast, "props": props, "dressing": props + [NONE], "anchors": _anchors(row["text"])}
+            "cast": cast, "props": props, "dressing": props + [NONE], "anchors": anchors}
 
 
 def _enum(values) -> dict:

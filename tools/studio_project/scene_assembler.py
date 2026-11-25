@@ -17,13 +17,13 @@ LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 10, 20, 30, 40
 
 # frame id -> slot -> box (story field 1080x1400; the caption lane starts at y=1470). Characters keep the 1:2 ratio of the art.
 PLACEMENT: dict[str, dict[str, dict]] = {
-    "single-character-focus": {"subject": {"x": 150, "y": 420, "width": 390, "height": 780},
-                               "focus_prop": {"x": 600, "y": 700, "width": 360, "height": 360}},
-    "two-person-offset": {"speaker": {"x": 40, "y": 420, "width": 390, "height": 780},
-                          "listener": {"x": 650, "y": 380, "width": 390, "height": 780},
-                          "shared_prop": {"x": 440, "y": 880, "width": 200, "height": 280}},
-    "prop-focus": {"focus_prop": {"x": 60, "y": 400, "width": 560, "height": 560},
-                   "companion": {"x": 640, "y": 420, "width": 390, "height": 780}},
+    "single-character-focus": {"subject": {"x": 60, "y": 340, "width": 460, "height": 920},
+                               "focus_prop": {"x": 560, "y": 900, "width": 280, "height": 360}},
+    "two-person-offset": {"speaker": {"x": 20, "y": 400, "width": 420, "height": 840},
+                          "listener": {"x": 640, "y": 400, "width": 420, "height": 840},
+                          "shared_prop": {"x": 450, "y": 980, "width": 180, "height": 260}},
+    "prop-focus": {"focus_prop": {"x": 40, "y": 500, "width": 560, "height": 560},
+                   "companion": {"x": 640, "y": 380, "width": 400, "height": 800}},
     "reaction-closeup": {"subject": {"x": 265, "y": 260, "width": 550, "height": 1100}},
     "caption-payoff": {"subject": {"x": 290, "y": 300, "width": 500, "height": 1000}},
     "three-person-comparison": {"lead": {"x": 375, "y": 260, "width": 330, "height": 660},
@@ -31,21 +31,18 @@ PLACEMENT: dict[str, dict[str, dict]] = {
                                 "peer_b": {"x": 710, "y": 520, "width": 330, "height": 660}},
 }
 STORY_FIELD = 1400
-STORY_BAND_BOTTOM = 600  # a story visual owns y 90-570; the actors are squeezed into the field below it
-STORY_VISUAL_BOX = {"x": 90, "y": 90, "width": 900, "height": 480}
-# free places for props and dressing that are not in a frame slot; the first one that touches nobody is used
-FREE_SPOTS = [{"x": 40, "y": 640, "width": 200, "height": 200}, {"x": 840, "y": 640, "width": 200, "height": 200},
-              {"x": 40, "y": 1100, "width": 200, "height": 200}, {"x": 840, "y": 1100, "width": 200, "height": 200},
-              {"x": 40, "y": 880, "width": 200, "height": 200}, {"x": 840, "y": 880, "width": 200, "height": 200},
-              {"x": 40, "y": 100, "width": 260, "height": 300}, {"x": 780, "y": 100, "width": 260, "height": 300},
-              {"x": 300, "y": 1230, "width": 200, "height": 150}, {"x": 580, "y": 1230, "width": 200, "height": 150},
-              {"x": 40, "y": 400, "width": 200, "height": 200}, {"x": 840, "y": 400, "width": 200, "height": 200}]
-
+STORY_BAND_BOTTOM = 540  # a story visual owns y 90-510; the actors are squeezed into the field below it
+STORY_VISUAL_BOX = {"x": 220, "y": 90, "width": 640, "height": 420}
+# props and dressing that are not in a frame slot stand on the actors' floor line, at the first of these x that touches nobody
+GROUND_X = [40, 880, 800, 300, 560, 160, 680]
+DEFAULT_FLOOR = 1200
+SUPPORT_SIZE, FOCUS_SIZE, DRESSING_SIZE = 180, 300, 240
 MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-reaction": "reflection", "facepalm": "reflection",
                     "point-choice": "relationship", "compare-group": "relationship", "compare-two-props": "relationship"}
 MODE_BY_FAMILY = {"state": "exposition", "interaction": "behavior", "narrative": "payoff"}
 NEEDS_DRESSING = frozenset({"relationship", "behavior", "payoff"})
 DRESSING_FALLBACK = ("laptop", "notebook", "coffee-cup", "potted-plant", "book", "lightbulb")  # ordinary props that read as scenery
+FPS = 30
 LEAN = {"preset": "lean", "duration_frames": 12, "params": {"degrees": 8, "dx": 0, "dy": 0, "settle": "return"}}
 SWAP = {"preset": "state_swap", "duration_frames": 12}
 _VIEWBOX = re.compile(r'viewBox="\s*([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)')
@@ -164,8 +161,22 @@ def _hits(a: dict, b: dict, margin: int = 12) -> bool:
             a["y"] < b["y"] + b["height"] + margin and b["y"] < a["y"] + a["height"] + margin)
 
 
-def _free_spot(placed: list[dict]) -> dict | None:
-    return next((spot for spot in FREE_SPOTS if not any(_hits(spot, other) for other in placed)), None)
+def _ground_spot(placed: list[dict], floor: int, size: int, aspect: float, solid: list[dict] | None = None) -> dict | None:
+    """The first standing place on the floor line, for a prop of this aspect, that touches nobody; None when the row is full."""
+    for x in GROUND_X:
+        fitted = _ground(_fit({"x": min(x, 1040 - size), "y": floor - size, "width": size, "height": size}, aspect), floor)
+        if not any(_hits(fitted, other) for other in placed):
+            return fitted
+    if solid is not None:  # set dressing may stand BEHIND an actor, never behind a prop or the story visual
+        for x in GROUND_X:
+            fitted = _ground(_fit({"x": min(x, 1040 - size), "y": floor - size, "width": size, "height": size}, aspect), floor)
+            if not any(_hits(fitted, other) for other in solid):
+                return fitted
+    return None
+
+
+def _ground(box: dict, floor: int) -> dict:
+    return {**box, "y": floor - box["height"]}
 
 
 def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_range: list[int], scene_text: str, goal: str,
@@ -189,6 +200,10 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
             continue
         families[family] = row["prop_id"]
         kept.append(row)
+    acted = {alias.get(e["target"], e["target"]) for e in act["events"]}
+    for row in [r for r in kept if r["role"] != "focus" and r["prop_id"] not in acted]:  # a prop with no action is clutter
+        kept.remove(row)
+        notes.append(f"{row['prop_id']} bỏ: không có hành động nào dùng tới")
     dressing = stage["dressing"]
     if dressing != NONE and _family(dressing) in families:
         notes.append(f"dressing {dressing} bỏ: cùng họ {_family(dressing)} với vật của cảnh")
@@ -223,6 +238,8 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     # a story visual takes its own band; props take an object slot, else a free spot that touches nobody
     sv_entities = []
     object_slots = _slots(frame, "object")
+    character_bottoms = [b["y"] + b["height"] for b in boxes_for.values()]
+    floor = max(character_bottoms) if character_bottoms else (_squeeze({"x": 0, "y": DEFAULT_FLOOR, "width": 0, "height": 0})["y"] if story_visuals else DEFAULT_FLOOR)
     for asset_key in story_visuals:
         entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
                          "states": {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False),
@@ -233,16 +250,17 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     for row in kept:
         library = props[row["prop_id"]]
         slot = next((n for n in object_slots if n not in bindings), None)
-        box = slots[slot] if slot else _free_spot(placed)
-        if box is None:
-            if row is focus_prop:
-                raise ValueError(f"không còn chỗ trống cho vật chính {row['prop_id']}")
+        aspect = _aspect(library)
+        fitted = (_ground(_fit(slots[slot], aspect), floor) if slot
+                  else _ground_spot(placed, floor, FOCUS_SIZE if row is focus_prop else SUPPORT_SIZE, aspect))
+        if fitted is None:
             notes.append(f"{row['prop_id']} bỏ: không còn chỗ trống")
-            alias[row["prop_id"]] = focus_prop["prop_id"] if focus_prop else None
+            alias[row["prop_id"]] = None
+            if row is focus_prop:
+                focus_prop = None
             continue
         if slot:
             bindings[slot] = row["prop_id"]
-        fitted = _fit(box, _aspect(library))
         placed.append(fitted)
         key = f"{scene_id}-{row['prop_id']}"
         assets[key] = {"path": "library:" + library["path"], "category": "prop"}
@@ -255,20 +273,22 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     # set dressing is added by Core, behind everything, only where it touches nobody
     if dressing != NONE:
         library = props[dressing]
-        box = _free_spot(placed)
+        box = _ground_spot(placed, floor, DRESSING_SIZE, _aspect(library), solid=[b for b in placed if b not in boxes_for.values()])
         if box is None:
             notes.append(f"dressing {dressing} bỏ: không còn chỗ trống")
         else:
             key = f"{scene_id}-depth-{dressing}"
             assets[key] = {"path": "library:" + library["path"], "category": "prop"}
             entities.append({"id": "depth__" + dressing, "kind": "object", "visual_role": "background", "initial_state": "idle",
-                             "states": {"idle": _state(key, _fit(box, _aspect(library)), LAYER_DRESSING)}})
+                             "states": {"idle": _state(key, box, LAYER_DRESSING)}})
 
     act = {"events": [{**e, "target": alias.get(e["target"], e["target"])} for e in act["events"]
                       if alias.get(e["target"], e["target"]) is not None]}
+    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text)
+    notes += timing_notes
     scene = {"id": scene_id, "narration_range": list(scene_range), "semantic_goal": goal,
              "grammar": {"frame_id": frame["id"], "mechanic_id": stage["mechanic_id"], "bindings": bindings},
-             "entities": entities, "events": _events(menus, act, entities, sv_entities, goal, scene_text),
+             "entities": entities, "events": events,
              "layout_contract": {"caption_safe_zone": dict(CAPTION_ZONE)},
              "experience_profile": _profile(menus, stage, entities, focus_prop, goal)}
     prune_non_story_references(scene)
@@ -303,10 +323,12 @@ def scene_faults(part: dict, required_story_visuals=()) -> list[dict]:
         if family in seen:
             faults.append({"code": "DUPLICATE_PROP_FAMILY", "entities": [seen[family], entity["id"]], "family": family})
         seen.setdefault(family, entity["id"])
+    kinds = {e["id"]: e.get("kind") for e in scene["entities"]}
     rects = [(e["id"], _rect(e)) for e in scene["entities"] if _rect(e)]
     for i, (a_id, a) in enumerate(rects):
         for b_id, b in rects[i + 1:]:
-            if _hits(a, b, margin=0):
+            behind = {a_id.startswith("depth__"), b_id.startswith("depth__")} == {True, False} and "character" in (kinds[a_id], kinds[b_id])
+            if _hits(a, b, margin=0) and not behind:
                 faults.append({"code": "ENTITY_OVERLAP", "entities": [a_id, b_id]})
     present = {e["id"] for e in scene["entities"]}
     faults += [{"code": "STORY_VISUAL_MISSING", "entity": key} for key in required_story_visuals if key.lower() not in present]
@@ -333,7 +355,7 @@ def _first_words(text: str) -> str:
     return " ".join(text.split()[:2]) or text
 
 
-def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str) -> list[dict]:
+def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str) -> tuple[list[dict], list[str]]:
     by_id = {e["id"]: e for e in entities}
     anchors = {a["id"]: a for a in menus["anchors"]}
     current = {e["id"]: e["initial_state"] for e in entities}
@@ -348,21 +370,30 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
         first = min(anchors.values(), key=lambda a: a["at"], default=None)
         trigger = {"type": "voice_anchor", "text": first["text"]} if first else {"type": "scene_start"}
         add(ident, "hidden", "shown", trigger, "Hiện nội dung của cảnh", SWAP)
+    busy_until: dict[str, float] = {}  # the export refuses a target's next acting event before the previous one has finished
+    dropped = []
     for row in sorted(act["events"], key=lambda r: anchors[r["anchor_id"]]["at"]):
         target = row["target"]
+        when = anchors[row["anchor_id"]].get("t")
+        if when is not None and when < busy_until.get(target, 0.0):
+            dropped.append(f"{target} @{when}s")
+            continue
         if target not in by_id or by_id[target]["kind"] == "story_visual":
             raise ValueError(f"target {target!r} không có mặt trong cảnh")
         after = current[target] if row["state_after"] == SAME else row["state_after"]
         if after not in by_id[target]["states"]:
             raise ValueError(f"state_after {after!r} không có trong {target}")
         trigger = {"type": "voice_anchor", "text": anchors[row["anchor_id"]]["text"]}
-        add(target, current[target], after, trigger, row["action"] or goal, SWAP if after != current[target] else LEAN)
+        motion = SWAP if after != current[target] else LEAN
+        add(target, current[target], after, trigger, row["action"] or goal, motion)
+        if when is not None:
+            busy_until[target] = when + motion["duration_frames"] / FPS + 0.02
     if not events:  # every scene needs one acting event: the first entity enters at the scene start
         first = next((e for e in entities if e["kind"] != "story_visual" and not e["id"].startswith("depth__")), None)
         if first is not None:
             add(first["id"], first["initial_state"], first["initial_state"], {"type": "scene_start"}, "Bước vào khung hình",
                 {"preset": "enter", "duration_frames": 12, "params": {"from": "left"}})
-    return events
+    return events, [f"sự kiện của {d} quá sát sự kiện trước, bỏ" for d in dropped]
 
 
 def _profile(menus: dict, stage: dict, entities: list[dict], focus_prop: dict | None, goal: str) -> dict:

@@ -114,6 +114,14 @@ class MenuTests(unittest.TestCase):
         self.assertEqual(menus_mod.schema_errors(good, menus_mod.act_schema(m, stage)), [])
         self.assertTrue(menus_mod.schema_errors(bad, menus_mod.act_schema(m, stage)))
 
+    def test_anchors_carry_their_measured_time_when_words_are_known(self):
+        text = "Chờ nhé, để xem."
+        words = [{"startMs": 1000 + 300 * i, "endMs": 1250 + 300 * i, "source_range": [b0, b1]}
+                 for i, (b0, b1) in enumerate(((0, 4), (5, 8), (10, 13), (14, 17)))]
+        m = menus_mod.scene_menus(capsule(text), SKELETON, "s01", words)
+        self.assertEqual([a["t"] for a in m["anchors"]], [0.0, 0.6])  # seconds from the scene's first word
+        self.assertIsNone(menus()["anchors"][0]["t"])  # no timing, no time
+
     def test_unknown_scene_is_an_error(self):
         with self.assertRaises(KeyError):
             menus_mod.scene_menus(capsule(), SKELETON, "s99", [])

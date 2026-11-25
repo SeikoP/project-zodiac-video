@@ -19,6 +19,7 @@ from .service import StudioProjectService
 
 
 SAVE_DIR: Path | None = None
+WORDS: list = []
 
 
 def wait(service, task_id: str, limit: float = 300.0) -> dict:
@@ -59,7 +60,7 @@ def real_checks(workspace: Path, merged: dict, scene_id: str) -> list[str]:
 
 def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str, narration: str, context: dict) -> dict:
     row = next(r for r in capsule["scene_ranges"] if r["id"] == scene_id)
-    menus = authoring_menus.scene_menus(capsule, intent, scene_id, [])
+    menus = authoring_menus.scene_menus(capsule, intent, scene_id, WORDS)
     goal = next((s.get("semantic_goal") for s in intent.get("scenes", []) if s.get("id") == scene_id), row["text"][:80])
     began, result = time.monotonic(), {"scene": scene_id, "schema_valid": False, "accepted": False, "compiled": False, "seconds": 0.0, "error": None, "notes": [], "faults": [], "checks": []}
     stage, error = choose(service, project_id, authoring_menus.stage_schema(menus),
@@ -105,7 +106,8 @@ def main() -> None:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--save-dir", type=Path, help="write each accepted scene's merged intent and choices here")
     args = parser.parse_args()
-    global SAVE_DIR
+    global SAVE_DIR, WORDS
+    WORDS = []
     SAVE_DIR = args.save_dir
     if SAVE_DIR:
         SAVE_DIR.mkdir(parents=True, exist_ok=True)
@@ -115,6 +117,7 @@ def main() -> None:
     narration = (workspace / "narration.txt").read_bytes().decode("utf8")
     plan_file = workspace / ".authoring/narrative-plan.json"
     plan = json.loads(plan_file.read_text("utf8")) if plan_file.is_file() else {}
+    WORDS = (service.voice.snapshot(args.project).get("timing") or {}).get("words") or []
     context = {"narrative_plan": plan, "required_story_visual_ids": [r["id"] for r in plan.get("story_visuals", []) if isinstance(r, dict) and r.get("id")]
                if (plan.get("story_visual_decision") or {}).get("mode") == "required" else []}
     capsule = {"scene_ranges": [{"id": sc["id"], "narration_range": sc["narration_range"],
