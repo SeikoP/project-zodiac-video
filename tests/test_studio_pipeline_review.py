@@ -53,6 +53,15 @@ class ReviewTests(ReviewCase):
         self.assertEqual(ctx.exception.code, "PIPELINE_PLAYBACK_REQUIRED")
         self.assertEqual(visual_review_status(self.root), "UNKNOWN")
 
+    def test_confirm_too_soon_after_opening_the_preview_is_refused(self):
+        import os
+        from unittest import mock
+        with mock.patch.dict(os.environ, {"ZODIAC_REVIEW_MIN_SECONDS": "30"}):
+            with self.assertRaises(StudioError) as ctx:
+                self.confirm()
+        self.assertEqual(ctx.exception.code, "PIPELINE_PLAYBACK_TOO_SHORT")
+        self.assertEqual(visual_review_status(self.root), "UNKNOWN")
+
     def test_playback_is_single_use(self):
         token = issue_playback(self.service, "p", "b1")["playback_id"]
         self.confirm(playback_id=token)

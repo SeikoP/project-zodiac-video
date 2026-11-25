@@ -1,6 +1,11 @@
 """Shared fakes mirroring the shapes of VisualWorkspace / VoiceLab / AgentManager snapshots."""
+import os
+
 from tools.studio.artifacts import canonical_hash
 from tools.studio_project.models import StudioError
+
+# Review gate demands real viewing time in production; tests confirm immediately unless they set it themselves.
+os.environ.setdefault("ZODIAC_REVIEW_MIN_SECONDS", "0")
 
 
 class _Handle:

@@ -29,7 +29,7 @@ export default function ReviewInspector({ project, node, onChanged }: InspectorP
         <li>Nội dung đăng: {evidence?.publish?.title ?? "chưa có"}</li>
       </ul>
       {ready && <>
-        <p>Xem toàn bộ video ở khung xem trước, rồi duyệt. Agent và autopilot không thể duyệt thay bạn.</p>
+        <p>Xem toàn bộ video ở khung xem trước (ít nhất 10 giây sau khi bấm bắt đầu), rồi duyệt. Agent và autopilot không thể duyệt thay bạn.</p>
         <button className="outline-btn" disabled={busy || !buildId || playback !== null}
           onClick={() => act(async () => { setPlayback((await backend.pipelinePlayback(project!.project_id, buildId!)).playback_id); })}>
           Bắt đầu xem bản dựng</button>

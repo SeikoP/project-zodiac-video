@@ -16,6 +16,16 @@ FORMAT = "zodiac-visual-review@1"
 RUNTIME = Path(".runtime/visual-workspace")
 PLAYBACKS = Path(".runtime/pipeline/playbacks.json")
 PLAYBACK_TTL_SECONDS = 6 * 3600
+# A review needs real viewing time: confirming sooner than this after the preview opened is refused.
+# Tests (and only tests) may set ZODIAC_REVIEW_MIN_SECONDS to a smaller value.
+MIN_REVIEW_SECONDS = 10.0
+
+
+def _min_review_seconds() -> float:
+    try:
+        return max(0.0, float(os.environ.get("ZODIAC_REVIEW_MIN_SECONDS", MIN_REVIEW_SECONDS)))
+    except ValueError:
+        return MIN_REVIEW_SECONDS
 _BUILD_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -109,6 +119,8 @@ def confirm_visual_review(service, project_id: str, base_revision: int, build_id
     if not proof or proof["build_id"] != build_id or proof["source_hash"] != snapshot["source_hash"]:
         raise _error("PIPELINE_PLAYBACK_REQUIRED", "Hãy xem bản dựng trước khi duyệt")
     _require_ready(service, project_id)
+    if time.time() - proof.get("issued_at", 0) < _min_review_seconds():
+        raise _error("PIPELINE_PLAYBACK_TOO_SHORT", "Hãy xem bản dựng thêm một chút trước khi duyệt")
     manifest = _manifest_hash(root, build_id)
     if manifest is None:
         raise _error("PIPELINE_BUILD_MISMATCH", "Không đọc được manifest của bản dựng")
