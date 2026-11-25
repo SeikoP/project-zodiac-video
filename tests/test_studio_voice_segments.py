@@ -34,8 +34,12 @@ class SegmentProofTests(unittest.TestCase):
         self.assertEqual(state["segments_needing_listen"], [unit["id"]])
         state = self.listened(unit["id"], unit["selected_take"])
         state = self.lab.assemble(self.project, state["revision"])
-        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
+        self.assertEqual(state["status"], "TECHNICAL_VALID")  # assembling never approves by itself
         self.assertEqual(state["segments_needing_listen"], [])
+        self.assertTrue(state["can_confirm_from_segments"])
+        state = self.lab.confirm_from_segments(self.project, state["revision"])
+        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
+        self.assertEqual(state["assembly"]["listened"]["derived_from"], "segment_proofs")
 
     def test_retake_needs_only_that_unit(self):
         state = self.approved()
@@ -48,6 +52,8 @@ class SegmentProofTests(unittest.TestCase):
         self.assertEqual(state["segments_needing_listen"], [unit["id"]])
         state = self.listened(unit["id"], take)
         state = self.lab.assemble(self.project, state["revision"])
+        self.assertEqual(state["status"], "TECHNICAL_VALID")
+        state = self.lab.confirm_from_segments(self.project, state["revision"])
         self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
 
     def test_listening_to_one_unit_never_approves_the_others(self):
@@ -65,6 +71,42 @@ class SegmentProofTests(unittest.TestCase):
         state = self.lab.assemble(self.project, state["revision"])
         self.assertEqual(state["segments_needing_listen"], [])
         self.assertEqual(state["status"], "TECHNICAL_VALID")  # seams between units were never heard
+
+    def test_confirming_from_segments_is_refused_when_anything_is_unheard_or_the_episode_was_never_heard(self):
+        state = self.create()
+        state = self.lab.assemble(self.project, state["revision"])
+        self.assertFalse(state["can_confirm_from_segments"])
+        with self.assertRaises(StudioError) as caught:  # nothing heard at all
+            self.lab.confirm_from_segments(self.project, state["revision"])
+        self.assertEqual(caught.exception.code, "VOICE_SEGMENTS_NOT_HEARD")
+        for unit in state["units"]:  # every unit heard alone, the assembled episode never
+            state = self.listened(unit["id"], unit["selected_take"])
+        state = self.lab.assemble(self.project, state["revision"])
+        self.assertFalse(state["can_confirm_from_segments"])
+        with self.assertRaises(StudioError):
+            self.lab.confirm_from_segments(self.project, state["revision"])
+
+    def test_the_rpc_confirms_from_segments_only_for_the_episode_and_only_when_asked_explicitly(self):
+        from tools.studio_project.rpc_stdio import dispatch
+        state = self.approved()
+        unit = state["units"][0]
+        self.lab.select(self.project, unit["id"], unit["selected_take"], self.state()["revision"], unit["gap_after_ms"] + 50)
+        state = self.listened(unit["id"], unit["selected_take"])
+        state = self.lab.assemble(self.project, state["revision"])
+        with self.assertRaises(StudioError):  # confirm must be exactly True, as for a normal listen
+            dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": "episode", "take_id": "", "playback_id": "", "confirm": "true", "base_revision": state["revision"]})
+        with self.assertRaises(StudioError):  # a unit can never be confirmed without a playback
+            dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": unit["id"], "take_id": "", "playback_id": "", "confirm": True, "base_revision": state["revision"]})
+        state = dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": "episode", "take_id": "", "playback_id": "", "confirm": True, "base_revision": state["revision"]})
+        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
+
+    def test_assembling_alone_never_mints_an_approval_even_when_every_segment_is_proven(self):
+        state = self.approved()
+        unit = state["units"][0]
+        state = self.lab.select(self.project, unit["id"], unit["selected_take"], state["revision"], unit["gap_after_ms"] + 50)
+        state = self.listened(unit["id"], unit["selected_take"])
+        state = self.lab.assemble(self.project, state["revision"])
+        self.assertIsNone(state["assembly"]["listened"])
 
     def test_no_proof_without_a_completed_playback(self):
         state = self.create()

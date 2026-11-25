@@ -78,6 +78,8 @@ export type VoiceState = {
   /** Why the listening approval was dropped by the last edit (cleared when the episode is heard again). */
   /** Unit ids whose take or pause the user has not heard yet. */
   segments_needing_listen?: string[];
+  /** The whole episode was heard once and every current segment has a proof: the user may confirm the new assembly. */
+  can_confirm_from_segments?: boolean;
   approval_note?: { reason: "take_changed" | "pause_changed" | "narration_changed" | "voice_changed"; unit_ids: string[]; at: number } | null;
 };
 export type AgentHealth = {

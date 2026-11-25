@@ -317,6 +317,33 @@ class VoiceLab:
         missing = [row["unit_id"] for row in current if (row["unit_id"], row["wav_sha256"], row["gap_after_ms"]) not in proven]
         return missing + [u["id"] for u in state["units"] if not u.get("selected_take")]
 
+    def _can_confirm_from_segments(self, handle, state):
+        assembly = state.get("assembly")
+        return bool(assembly and not assembly.get("listened") and state.get("episode_heard") == state["narration_sha256"]
+                    and not self._segments_needing_listen(handle, state))
+
+    def confirm_from_segments(self, project_id, base_revision):
+        """The user's explicit confirmation that the assembly may stand on what they already heard.
+
+        Only reachable from a user action (the GUI button); assemble() and the autopilot never call it. It needs the whole
+        episode to have been heard once for this narration and every segment of the current selection to carry a proof.
+        The seams around an edited unit and a changed pause were not played back: this click accepts that.
+        """
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, "voice-state"):
+            state = self._read(handle)
+            self._revision(state, base_revision)
+            if not self._can_confirm_from_segments(handle, state):
+                raise StudioError("VOICE_SEGMENTS_NOT_HEARD", "Còn đoạn chưa nghe hoặc chưa nghe cả tập một lần", "voice")
+            stamps = [p["confirmed_at"] for p in state.get("segment_proofs", [])]
+            state["assembly"]["listened"] = {"kind": "user_listened", "wav_sha256": state["assembly"]["wav_sha256"], "confirmed_at": time.time(),
+                                             "narration_sha256": state["narration_sha256"], "derived_from": "segment_proofs",
+                                             "segments_heard_at": max(stamps)}
+            state.pop("approval_note", None)
+            state["revision"] += 1
+            self._save(handle, state)
+        return self.snapshot(project_id)
+
     def snapshot(self, project_id):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "voice-state"):
@@ -326,6 +353,7 @@ class VoiceLab:
             result["voices"] = list(dict.fromkeys([preferred_voice(voices), *voices]))
             result.pop("playbacks", None)
             result["segments_needing_listen"] = self._segments_needing_listen(handle, state)
+            result["can_confirm_from_segments"] = self._can_confirm_from_segments(handle, state)
             result["units"] = []
             store = VoiceArtifactStore(handle.workspace)
             for unit in state["units"]:
@@ -685,13 +713,6 @@ class VoiceLab:
                 state["timing"] = {"format": "zodiac-speech-time-map@2", "narration_sha256": state["narration_sha256"],
                                    "wav_sha256": info["wav_sha256"], "words": recomposed, "duration_seconds": info["duration_seconds"],
                                    "source": "measured_asr"}
-            if (not state["assembly"]["listened"] and state.get("episode_heard") == state["narration_sha256"]
-                    and not self._segments_needing_listen(handle, state)):
-                # Every segment of this selection was heard by the user (episode listen or per-unit listen): the new
-                # assembly is the same audio in the same order, so the approval carries over. Never created otherwise.
-                stamps = [p["confirmed_at"] for p in state.get("segment_proofs", [])]
-                state["assembly"]["listened"] = {"kind": "user_listened", "wav_sha256": info["wav_sha256"], "confirmed_at": max(stamps),
-                                                 "narration_sha256": state["narration_sha256"], "derived_from": "segment_proofs"}
             state["revision"] += 1
             self._save(handle, state)
         return self.snapshot(project_id)
