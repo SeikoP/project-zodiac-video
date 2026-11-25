@@ -24,6 +24,7 @@ class World:
         self.status = {n: ("DONE" if n == "content" else "PENDING") for n, _ in ORDER}
         self.kind = dict(ORDER)
         self.runs, self.agent_calls, self.submits, self.cancelled = [], [], [], 0
+        self.submit_kwargs = []
         self.checks_script = []  # list of issue-lists; empty list means pass
         self.agent_script = []   # per agent call: list of {"kind","payload"} or exception
         self.apply_ok = True
@@ -75,8 +76,9 @@ class World:
             raise step
         return step
 
-    def submit(self, service, project_id, kind, payload, base_revision, command_id):
+    def submit(self, service, project_id, kind, payload, base_revision, command_id, **kwargs):
         self.submits.append((kind, command_id))
+        self.submit_kwargs.append(kwargs)
         if not self.apply_ok:
             return {"applied": False, "waiting": False, "issues": [{"code": "PROPOSAL_ASSET_DANGLING", "owner": "visual-intent",
                                                                      "scene_id": None, "message": "x", "repair_group": "visual-intent"}]}
@@ -312,6 +314,14 @@ class AgentAndRepairTests(AutopilotCase):
         self.assertEqual((node, attempt), ("checks", 1))
         self.assertIn("PASSIVE_STORYTELLING", context_text)
         self.assertEqual(self.world.status["checks"], "DONE")
+
+    def test_voice_fingerprint_from_the_agent_reaches_the_atomic_apply(self):
+        self.at_checks()
+        issue = {"code": "PASSIVE_STORYTELLING", "owner": "visual-intent", "scene_id": "s02", "message": "passive", "repair_group": "visual-intent:s02"}
+        self.world.checks_script = [[issue], []]
+        self.world.agent_script = [[{"kind": "visual.intent", "payload": {}, "voice_dependencies": "fp-captured-with-the-capsule"}]]
+        self.drive()
+        self.assertEqual(self.world.submit_kwargs[0], {"voice_dependencies": "fp-captured-with-the-capsule"})  # later steps submit without one
 
     def test_repair_budget_exhausted_marks_failed_and_lists_issues(self):
         self.at_checks()
