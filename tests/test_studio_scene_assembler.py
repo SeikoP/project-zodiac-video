@@ -245,8 +245,10 @@ class GroundedLayoutTests(unittest.TestCase):
         scene = build(authoring_skeleton(1), cast_of(authoring_skeleton(1), 1), [], frame="single-character-focus")["payload"]["scene"]
         box = next(e for e in scene["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
         self.assertGreaterEqual(box["height"], 900)
-        squeezed = build(TWO, cast_of(TWO, 2), [], story=CHAT)["payload"]["scene"]
-        self.assertGreaterEqual(next(e for e in squeezed["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]["height"], 500)
+        beside = build(TWO, cast_of(TWO, 2), [], story=CHAT)["payload"]["scene"]
+        ban = next(e for e in beside["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
+        self.assertGreaterEqual(ban["height"], 780)  # the actors fill the field below the story visual, they are not shrunk into a corner of it
+        self.assertLessEqual(ban["y"] - (scene_assembler.STORY_VISUAL_BOX["y"] + scene_assembler.STORY_VISUAL_BOX["height"]), 120)
 
 
 class EventTimingTests(unittest.TestCase):

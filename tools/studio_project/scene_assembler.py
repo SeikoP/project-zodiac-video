@@ -31,7 +31,7 @@ PLACEMENT: dict[str, dict[str, dict]] = {
                                 "peer_b": {"x": 710, "y": 520, "width": 330, "height": 660}},
 }
 STORY_FIELD = 1400
-STORY_BAND_BOTTOM = 540  # a story visual owns y 90-510; the actors are squeezed into the field below it
+STORY_BAND_BOTTOM = 560  # a story visual owns y 90-510; the actors are moved up under it
 STORY_VISUAL_BOX = {"x": 220, "y": 90, "width": 640, "height": 420}
 # props and dressing that are not in a frame slot stand on the actors' floor line, at the first of these x that touches nobody
 GROUND_X = [40, 880, 800, 300, 560, 160, 680]
@@ -149,11 +149,12 @@ def _family(prop_id: str) -> str:
     return agent_authoring.prop_families_manifest()["by_prop"].get(prop_id, {}).get("family_id", prop_id)
 
 
-def _squeeze(box: dict) -> dict:
-    """Map a box of the full story field into the lower part of it, leaving the top band to a story visual."""
-    k = (STORY_FIELD - STORY_BAND_BOTTOM) / STORY_FIELD
-    return {"x": round(540 + (box["x"] - 540) * k), "y": round(STORY_BAND_BOTTOM + box["y"] * k),
-            "width": round(box["width"] * k), "height": round(box["height"] * k)}
+def _below_band(boxes: dict[str, dict]) -> dict[str, dict]:
+    """Move a frame's boxes up under the story visual band and scale them only as much as it takes to fit above y=1400."""
+    top, bottom = min(b["y"] for b in boxes.values()), max(b["y"] + b["height"] for b in boxes.values())
+    k = min(1.0, (STORY_FIELD - STORY_BAND_BOTTOM) / (bottom - top))
+    return {name: {"x": round(540 + (b["x"] - 540) * k), "y": round(STORY_BAND_BOTTOM + (b["y"] - top) * k),
+                   "width": round(b["width"] * k), "height": round(b["height"] * k)} for name, b in boxes.items()}
 
 
 def _hits(a: dict, b: dict, margin: int = 12) -> bool:
@@ -216,7 +217,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     frame, mechanic_id, picked = _pick(stage["frame_id"], stage["mechanic_id"], len(present), len(kept) + len(story_visuals))
     notes += picked
     stage = {**stage, "mechanic_id": mechanic_id}
-    slots = {name: (_squeeze(box) if story_visuals else dict(box)) for name, box in PLACEMENT[frame["id"]].items()}
+    slots = _below_band(PLACEMENT[frame["id"]]) if story_visuals else {name: dict(box) for name, box in PLACEMENT[frame["id"]].items()}
 
     entities, assets, bindings, placed = [], {}, {}, []
     boxes_for = {}
@@ -239,7 +240,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     sv_entities = []
     object_slots = _slots(frame, "object")
     character_bottoms = [b["y"] + b["height"] for b in boxes_for.values()]
-    floor = max(character_bottoms) if character_bottoms else (_squeeze({"x": 0, "y": DEFAULT_FLOOR, "width": 0, "height": 0})["y"] if story_visuals else DEFAULT_FLOOR)
+    floor = max(character_bottoms) if character_bottoms else DEFAULT_FLOOR
     for asset_key in story_visuals:
         entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
                          "states": {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False),
