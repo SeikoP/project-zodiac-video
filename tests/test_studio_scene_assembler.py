@@ -221,7 +221,7 @@ class GroundedLayoutTests(unittest.TestCase):
         scene = part["payload"]["scene"]
         floor = bottom(scene, "phone-ping")
         for dressing in [e["id"] for e in scene["entities"] if e["id"].startswith("depth__")]:
-            self.assertIn(bottom(scene, dressing), (floor, 110 + 200), dressing)  # on the floor line, or hung on the wall
+            self.assertIn(bottom(scene, dressing), (floor, 110 + 200, 110 + 160), dressing)  # on the floor line, or hung on the wall
 
     def test_a_support_prop_nobody_acts_on_is_dropped(self):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping", "laptop"], mechanic="confront")
@@ -259,6 +259,11 @@ class FeetLineTests(unittest.TestCase):
         box = next(e for e in scene["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
         feet = box["y"] + box["height"] * scene_assembler.FEET
         self.assertAlmostEqual(bottom(scene, "phone-ping"), feet, delta=2)
+
+    def test_a_behavior_scene_with_a_story_visual_still_gets_its_depth_layer(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], mechanic="confront", story=CHAT)
+        self.assertEqual(len([e for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")]), 1, part.get("core_notes"))
+        self.assertEqual(scene_assembler.scene_faults(part, list(CHAT)), [])
 
     def test_dressing_never_stands_on_an_actor(self):
         for story in (None, CHAT):

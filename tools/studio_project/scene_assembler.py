@@ -184,12 +184,13 @@ def _ground_spot(placed: list[dict], floor: int, size: int, aspect: float) -> di
 
 
 def _wall_spot(placed: list[dict], aspect: float) -> dict | None:
-    """A place high on the wall (top corners), for set dressing when the floor row is full; None when a story visual holds the top."""
-    for x in (40, 840):
-        fitted = _fit({"x": min(x, 1040 - WALL_SIZE), "y": WALL_TOP, "width": WALL_SIZE, "height": WALL_SIZE}, aspect)
-        fitted["y"] = WALL_TOP + WALL_SIZE - fitted["height"]
-        if not any(_hits(fitted, other) for other in placed):
-            return fitted
+    """A place high on the wall beside the top row, for set dressing when the floor row is full (a story visual leaves the sides)."""
+    for size in (WALL_SIZE, 160):
+        for x in (30, 1050 - size):
+            fitted = _fit({"x": x, "y": WALL_TOP, "width": size, "height": size}, aspect)
+            fitted["y"] = WALL_TOP + size - fitted["height"]
+            if not any(_hits(fitted, other) for other in placed):
+                return fitted
     return None
 
 
