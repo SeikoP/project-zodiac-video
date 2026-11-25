@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -24,6 +25,7 @@ from tools.runner.process import observe_subprocesses, observe_subprocess_output
 from tools.zodiac_local import DEFAULT_TTS_ROOT, run_tts_batch, spoken_scene_text, _normalize_token
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
+from .voice_bank import VoiceBank, recompose_timing
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT = "zodiac-voice-lab@1"
@@ -404,7 +406,7 @@ class VoiceLab:
                 raise StudioError("VOICE_REQUEST_EMPTY", "Choose a unit for a retake", "voice")
             job_id = uuid.uuid4().hex
             state["job"] = {"id": job_id, "action": action, "status": "RUNNING", "completed": 0,
-                            "total": len(selected) if action == "generate" else len(state["units"]), "error": None, "message": "Preparing audio"}
+                            "total": len(selected) if action == "generate" else len(state["units"]), "error": None, "message": "Preparing audio", "explicit": bool(unit_ids)}
             state["revision"] += 1
             self._save(handle, state)
             worker = threading.Thread(target=self._run, args=(project_id, job_id, selected, voice.strip(), intent, pronunciation), daemon=True)
@@ -459,6 +461,23 @@ class VoiceLab:
                             contexts[unit["id"]] = {"tts_text": text, "speech_map": spans, "delivery_intent": intent,
                                                     "prosody_verified": False, "pronunciation": pronunciation}
                             rows.append({"scene_id": unit["id"], "text": text})
+                    # Automatic generation reuses a take already synthesised for the same text, voice and profile (TTS output is
+                    # not reproducible, so a fresh take would silently need a new listening approval). An explicit retake never does.
+                    bank, banked = VoiceBank(self.service.registry.root / "voice-bank"), set()
+
+                    def identity_hashes(unit_id):
+                        unit = next(u for u in state["units"] if u["id"] == unit_id)
+                        return (hashlib.sha256(unit["text"].encode("utf8")).hexdigest(), canonical_hash(voice),
+                                canonical_hash({"backend": "v3turbo", "precision": "fp32", **contexts[unit_id]}))
+                    if not state["job"].get("explicit"):
+                        (job_root/"tts-scenes").mkdir(parents=True, exist_ok=True)
+                        for row in rows:
+                            hit = bank.lookup(*identity_hashes(row["scene_id"]))
+                            if hit is not None:
+                                shutil.copyfile(hit, job_root/"tts-scenes"/(row["scene_id"]+".wav"))
+                                banked.add(row["scene_id"])
+                    if banked:
+                        self._update_job(handle, job_id, message=f"Reusing {len(banked)} existing takes")
                     generation_error = None
                     finished = threading.Event()
 
@@ -473,9 +492,11 @@ class VoiceLab:
                                 except Exception:
                                     return
                     threading.Thread(target=report_progress, daemon=True).start()
+                    to_synthesise = [r for r in rows if r["scene_id"] not in banked]
                     try:
-                        run_tts_batch(job_root, rows, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
-                                      voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
+                        if to_synthesise:
+                            run_tts_batch(job_root, to_synthesise, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
+                                          voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
                     except Exception as error:
                         generation_error = error
                     finally:
@@ -501,7 +522,8 @@ class VoiceLab:
                                 text_hash=hashlib.sha256(unit["text"].encode("utf8")).hexdigest(),
                                 voice_profile_hash=canonical_hash(voice),
                                 generation_profile_hash=canonical_hash({"backend": "v3turbo", "precision": "fp32", **contexts[unit["id"]]})),
-                            details={**contexts[unit["id"]], "voice": voice, "origin": "generated"})
+                            details={**contexts[unit["id"]], "voice": voice, "origin": "bank" if unit["id"] in banked else "generated"})
+                        bank.remember(*identity_hashes(unit["id"]), audio)
                     self._handle(project_id)  # Recheck source after the external engine returns.
                     with _exclusive_source_lock(handle.workspace, "voice-state"):
                         current = self._read(handle)
@@ -537,6 +559,7 @@ class VoiceLab:
                     run_managed_subprocess([sys.executable, "-m", "tools.studio_project.voice_worker", "batch", str(manifest_path), str(result_path)],
                                            cwd=ROOT, check=True, capture_output=True, text=True)
                     aligned_by_unit = json.loads(result_path.read_text(encoding="utf8"))
+                    unit_words = {}
                     for index, unit in enumerate(state["units"]):
                         if job_id in self._cancelled:
                             return
@@ -546,6 +569,7 @@ class VoiceLab:
                         spans = details.get("speech_map") or speech_input(unit, {})[1]
                         if len(aligned) != len(spans):
                             raise StudioError("VOICE_ALIGNMENT_REVIEW", "ASR words do not map to the approved byte ranges", "voice")
+                        local = []
                         for n, (word, span) in enumerate(zip(aligned, spans)):
                             if (not all(type(word[k]) in (int, float) and math.isfinite(word[k]) for k in ("startMs", "endMs")) or
                                     word["startMs"] < 0 or word["endMs"] <= word["startMs"] or
@@ -553,6 +577,8 @@ class VoiceLab:
                                 raise StudioError("VOICE_ALIGNMENT_REVIEW", "Invalid measured word timestamps", "voice")
                             words.append({**word, "startMs": offset+word["startMs"], "endMs": offset+word["endMs"],
                                           "source_range": span, "unit_id": unit["id"], "anchor_id": f"{unit['id']}:{n}"})
+                            local.append({**word, "source_range": span, "unit_id": unit["id"], "anchor_id": f"{unit['id']}:{n}"})
+                        unit_words[unit["id"]] = {"wav_sha256": take["wav_sha256"], "words": local}
                         offset += self._info(audio)["duration_seconds"]*1000 + round(self._info(audio)["sample_rate"]*unit["gap_after_ms"]/1000)/self._info(audio)["sample_rate"]*1000
                         self._update_job(handle, job_id, completed=index+1, message="Measured alignment: " + unit["id"])
                     with _exclusive_source_lock(handle.workspace, "voice-state"):
@@ -561,6 +587,7 @@ class VoiceLab:
                             return
                         if (current.get("assembly") or {}).get("wav_sha256") != state["assembly"]["wav_sha256"]:
                             raise StudioError("VOICE_ALIGNMENT_STALE", "Selected audio changed during alignment", "voice")
+                        current["unit_words"] = {**(current.get("unit_words") or {}), **unit_words}  # lets a later edit skip ASR
                         current["timing"] = {"format": "zodiac-speech-time-map@2", "narration_sha256": state["narration_sha256"],
                                              "wav_sha256": state["assembly"]["wav_sha256"], "words": words,
                                              "duration_seconds": state["assembly"]["duration_seconds"], "source": "measured_asr"}
@@ -646,6 +673,18 @@ class VoiceLab:
             state["assembly"] = {"take_id": key, "selection_hash": key, "path": out.relative_to(handle.workspace).as_posix(),
                                  "wav_sha256": info["wav_sha256"], **info, "units": timings,
                                  "listened": previous.get("listened") if previous.get("wav_sha256") == info["wav_sha256"] else None}
+            rows = []
+            for unit in state["units"]:
+                take, path = self._take(handle, state, unit["id"])
+                details = self._info(path)
+                rows.append({"id": unit["id"], "gap_after_ms": unit["gap_after_ms"], "duration_ms": details["duration_seconds"]*1000,
+                             "sample_rate": details["sample_rate"], "wav_sha256": take["wav_sha256"]})
+            stale = (state.get("timing") or {}).get("wav_sha256") != info["wav_sha256"]
+            recomposed = recompose_timing(rows, state.get("unit_words") or {}) if stale else None
+            if recomposed is not None:  # per-unit ASR is cached: a pause or retake of one unit does not need ASR again
+                state["timing"] = {"format": "zodiac-speech-time-map@2", "narration_sha256": state["narration_sha256"],
+                                   "wav_sha256": info["wav_sha256"], "words": recomposed, "duration_seconds": info["duration_seconds"],
+                                   "source": "measured_asr"}
             if (not state["assembly"]["listened"] and state.get("episode_heard") == state["narration_sha256"]
                     and not self._segments_needing_listen(handle, state)):
                 # Every segment of this selection was heard by the user (episode listen or per-unit listen): the new

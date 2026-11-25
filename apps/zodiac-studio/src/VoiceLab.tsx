@@ -9,6 +9,7 @@ import "./voice-layout.css";
 /** The backend reports job progress in English; show plain Vietnamese and keep the raw status code for scripts. */
 const JOB_MESSAGES: [RegExp, string][] = [
   [/^Preparing audio.*/, "Đang chuẩn bị audio…"],
+  [/^Reusing (\d+) existing takes/, "Dùng lại $1 đoạn giọng đã có."],
   [/^Generating audio /, "Đang tạo giọng đọc: "],
   [/^Audio ready.*/, "Audio đã sẵn sàng. Hãy nghe trước khi duyệt."],
   [/^Audio needs review.*/, "Có đoạn cần xem lại. Các take đã tạo vẫn được giữ."],
