@@ -62,6 +62,7 @@ export function validateIntent(intent,narration){
       if(event.motion?.preset==='enter'){ // the entrance is authored without geometry: Core measures how far outside the canvas it must start
         assert(event.trigger.type==='scene_start','VISUAL_ENTER_TRIGGER');
         const box=entity.states[event.state_before].transform,p=event.motion.params=event.motion.params??{};
+        if(p.from===undefined)p.from=box.x+box.width/2<540?'left':'right'; // decided default: the nearest horizontal edge
         const need={left:box.x+box.width,right:1080-box.x,top:box.y+box.height,bottom:1920-box.y}[p.from];
         if(p.distance===undefined&&need!==undefined)p.distance=Math.ceil(need)+16;
       }

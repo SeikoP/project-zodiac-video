@@ -157,3 +157,15 @@ test('validateIntent fills the distance so the component starts fully outside th
   const late=structuredClone(intent);late.scenes[0].events[0].trigger={type:'voice_anchor',text:'Song Tử hỏi thêm câu một.'};
   assert.throws(()=>validateIntent(late,narration),/VISUAL_ENTER_TRIGGER/);
 });
+
+test('enter without a side starts from the nearest horizontal edge (decided default)',()=>{
+  const narration='Song Tử hỏi thêm câu một. Song Tử hỏi thêm câu hai.';
+  for(const [x,expected] of [[40,'left'],[700,'right']]){
+    const intent=makeFixture(narration,1);
+    const target=intent.scenes[0].entities[0];
+    Object.assign(target.states[target.initial_state].transform,{x,width:300});
+    intent.scenes[0].events.unshift({id:'fly',target:target.id,state_before:target.initial_state,state_after:target.initial_state,trigger:{type:'scene_start'},motion:{preset:'enter',duration_frames:12}});
+    validateIntent(intent,narration);
+    assert.equal(intent.scenes[0].events[0].motion.params.from,expected,'x='+x);
+  }
+});
