@@ -132,9 +132,9 @@ def cast_of(skeleton, count):
     return [{"entity_id": m["entity_id"], "state_id": "neutral"} for m in skeleton["cast"][:count]]
 
 
-def build(skeleton, present, props, dressing="none", story=None, frame="two-person-offset"):
+def build(skeleton, present, props, dressing="none", story=None, frame="two-person-offset", mechanic="explain"):
     menus = authoring_menus.scene_menus(CAPSULE, skeleton, "s01", [])
-    stage = {"frame_id": frame, "mechanic_id": "explain", "present": present,
+    stage = {"frame_id": frame, "mechanic_id": mechanic, "present": present,
              "props": [{"prop_id": p, "role": "focus" if i == 0 else "support"} for i, p in enumerate(props)], "dressing": dressing}
     act = {"events": [{"anchor_id": menus["anchors"][0]["id"], "target": present[0]["entity_id"] if present else props[0],
                        "action": "Làm gì đó", "state_after": "same"}]}
@@ -150,6 +150,18 @@ class SceneQualityTests(unittest.TestCase):
         self.assertEqual(keys, ["phone-ping"])
         self.assertEqual(scene_assembler.scene_faults(part), [])
         self.assertTrue(any("phone" in n for n in part["core_notes"]))
+
+    def test_a_behavior_scene_always_gets_set_dressing_from_an_unused_family(self):
+        for dressing in ("none", "phone-ping"):
+            part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing=dressing, mechanic="confront")
+            ids = [e["id"] for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")]
+            self.assertEqual(len(ids), 1, dressing)
+            self.assertNotIn("phone", ids[0])
+            self.assertEqual(scene_assembler.scene_faults(part), [])
+
+    def test_an_exposition_scene_does_not_get_dressing_it_did_not_ask_for(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="none", mechanic="explain")
+        self.assertEqual([e["id"] for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")], [])
 
     def test_dressing_of_another_family_is_kept(self):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop")

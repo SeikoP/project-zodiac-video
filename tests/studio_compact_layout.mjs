@@ -67,7 +67,7 @@ try {
     await page.locator('.workflow-tabs').getByRole('button',{name:'Danh sách',exact:true}).click();
    }
    if(view==='Giọng đọc') {
-    for(const tab of ['Nghe toàn bài & timing','Thiết lập giọng','Từng đoạn']) {
+    for(const tab of ['Nghe toàn bài & timing','Thiết lập giọng','Theo cảnh']) {
      await page.getByRole('button',{name:tab,exact:true}).click(); await fit(`voice ${tab}`);
      if(tab==='Nghe toàn bài & timing') { await page.locator('.voice-timing summary').click(); await fit('timing pages'); }
 

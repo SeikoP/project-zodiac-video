@@ -74,25 +74,27 @@ class PartsTests(unittest.TestCase):
         out = json.loads(agent_parts.validate_scene(scene_json("s01", entities=entities), self.task("s01")))["payload"]["scene"]["entities"]
         self.assertEqual([e["visual_role"] for e in out], ["character", "background", "interactive_prop", "overlay"])
 
-    def test_unknown_transition_preset_is_rejected_and_absent_is_allowed(self):
+    def test_unknown_transition_preset_is_rejected_absent_is_allowed_and_frames_are_clamped(self):
         task = self.task("s01")
         agent_parts.validate_scene(scene_json("s01"), task)  # absent: Core fills the default
         agent_parts.validate_scene(scene_json("s01", transition={"preset": "page-turn", "frames": 12}), task)
-        for bad in ({"preset": "spin", "frames": 12}, {"preset": "page-turn", "frames": 3}, {"preset": "cut", "frames": 6}):
-            with self.subTest(bad=bad), self.assertRaises(ValueError) as caught:
-                agent_parts.validate_scene(scene_json("s01", transition=bad), task)
-            self.assertIn("cut, paper-slide hoặc page-turn", str(caught.exception))
+        with self.assertRaises(ValueError) as caught:  # an unknown preset is a real mistake: the model is told the valid ones
+            agent_parts.validate_scene(scene_json("s01", transition={"preset": "spin", "frames": 12}), task)
+        self.assertIn("cut, paper-slide hoặc page-turn", str(caught.exception))
+        for preset, frames in (("page-turn", 3), ("cut", 6), ("page-turn", 9999)):  # a frame count out of range is mechanical: clamped, not retried
+            spec = agent_parts.TRANSITIONS["presets"][preset]
+            out = json.loads(agent_parts.validate_scene(scene_json("s01", transition={"preset": preset, "frames": frames}), task))
+            self.assertTrue(spec["min_frames"] <= out["payload"]["scene"]["transition"]["frames"] <= spec["max_frames"])
 
-    def test_enter_events_must_start_with_the_scene_and_keep_the_state(self):
+    def test_enter_events_are_normalised_to_scene_start_with_a_steady_state(self):
         task = self.task("s01")
         anchor = next(r["text"] for r in CAPSULE["scene_ranges"] if r["id"] == "s01")
         fly = {"id": "fly", "target": "hero", "state_before": "neutral", "state_after": "neutral", "action": "bay vào",
                "motion": {"preset": "enter", "duration_frames": 12, "params": {"from": "left"}}}
         agent_parts.validate_scene(scene_json("s01", events=[{**fly, "trigger": {"type": "scene_start"}},
             {"id": "e", "target": "hero", "action": "nghiêng", "trigger": {"type": "voice_anchor", "text": anchor}}]), task)
-        with self.assertRaises(ValueError) as caught:
-            agent_parts.validate_scene(scene_json("s01", events=[{**fly, "trigger": {"type": "voice_anchor", "text": anchor}}]), task)
-        self.assertIn("scene_start", str(caught.exception))
+        out = json.loads(agent_parts.validate_scene(scene_json("s01", events=[{**fly, "trigger": {"type": "voice_anchor", "text": anchor}}]), task))
+        self.assertEqual(out["payload"]["scene"]["events"][0]["trigger"], {"type": "scene_start"})
 
     def test_unprefixed_asset_keys_are_renamed_and_references_follow(self):
         data = json.loads(scene_json("s01", entities=[{"id": "depth__table", "kind": "object", "states": {"v": {"asset": "table", "layer": 10,

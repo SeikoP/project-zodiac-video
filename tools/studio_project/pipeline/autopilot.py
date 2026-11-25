@@ -98,7 +98,11 @@ REPAIR_HINTS = ("Sửa Visual Intent hiện có, giữ nguyên các quyết đ�
                 "(bàn, điện thoại...) ở lớp khác nhân vật; KHÔNG dùng scene_set_id. FRAME_OCCUPANCY_LOW: phóng to nhân vật/đồ vật chính (khoảng 26% khung 1080x1400). PASSIVE_STORYTELLING / SCENE_EXPERIENCE_CRITERION_REVIEW (character_action): mỗi event của nhân vật/đồ vật phải có trường action (cụm từ tiếng Việt: nhân vật làm gì). Lỗi:")
 
 
-def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot) -> list[dict] | None:
+VISION_REPAIR_HINT = ("Sửa đúng cảnh này theo nhận xét của người xem KHUNG HÌNH ĐÃ DỰNG (không phải lỗi validator): giữ các quyết định "
+                      "đã đạt, chỉ đổi những gì nhận xét nêu, không động tới cảnh khác. Nhận xét:")
+
+
+def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot, hint: str = REPAIR_HINTS) -> list[dict] | None:
     """Revise only the scenes the validator named (two agents at a time), then merge them into ONE source.replace.
 
     Returns None when any revision fails, so the caller can fall back to regenerating; raises AGENT_CANCELLED when the
@@ -111,7 +115,7 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
 
     def one(scene_id: str, issues: list) -> dict:
         lines = [f"- {i.code}: {i.message}" for i in issues]
-        instruction = (REPAIR_HINTS + chr(10) + chr(10).join(lines))[:1200]
+        instruction = (hint + chr(10) + chr(10).join(lines))[:1200]
         slot_deadline = time.time() + 10 * 60
         while True:  # wait for a free agent slot
             with pilot._state_lock:
@@ -175,6 +179,11 @@ def default_agent(service, project_id: str, node_id: str, spec, context_text: st
     repair = spec.id == "checks"
     from . import agent_runs
     from .. import agent_authoring
+    pending = None if repair else agent_runs.pending_proposal(service, project_id)
+    if pending:  # a finished, still-valid run exists (e.g. the app was reset before it was applied): use it, do not pay again
+        intent = json.loads(pending["suggestion"])["payload"]["intent"]
+        return [{"kind": "visual.intent", "payload": {"command": "source.replace", "payload": {"intent": intent}},
+                 "voice_dependencies": pending["dependencies"]}]
     notes = [line for line in context_text.split("\n") if line.startswith("- ")]
     instruction = ("Soạn Visual Intent đầy đủ theo Phase 2." + ("\nSửa các lỗi sau:\n" + "\n".join(notes) if notes else ""))[:1200]
     if repair:
@@ -225,6 +234,9 @@ class Autopilot:
         self._workspace = Path(service.registry.get(project_id).workspace)
         self._step_lock, self._state_lock = threading.Lock(), threading.Lock()
         self._attempts: dict[str, int] = {}
+        self._autofix_rounds = 0
+        self._vision_rounds = 0
+        self._profile_rounds = 0
         self._issues: dict[str, tuple[Issue, ...]] = {}
         self._stopped = False
         self._thread: threading.Thread | None = None
@@ -358,6 +370,11 @@ class Autopilot:
             if status == "DONE":
                 self._attempts.pop(node["id"], None)
                 self._issues.pop(node["id"], None)
+                if node["id"] == "inspect":
+                    self._autofix_rounds = 0
+                    self._vision_rounds = 0
+                if node["id"] == "checks":
+                    self._profile_rounds = 0
                 continue
             if node["kind"] == "gate":
                 self._needs("WAITING_GATE", "gate", node, node["title"], node.get("detail") or "Chờ bạn xác nhận")
@@ -379,12 +396,91 @@ class Autopilot:
         spec = registry().spec(node["id"].split(":")[0])
         if spec.executor == "validators.run":
             self._checks(node, spec, graph)
+        elif spec.id == "inspect" and (self._autofix_geometry() or self._vision_review()):
+            return  # the source changed: the next pass rebuilds the affected scenes before inspecting again
         elif spec.id in DRAFTED and self._agent is default_agent:
             self._launch(node, graph)  # deterministic draft through the same runner as the Chạy button
         elif spec.agent is not None:
             self._agent_attempt(node, spec, ())
         else:
             self._launch(node, graph)
+
+    def _autofix_geometry(self) -> bool:
+        """Repair OUTSIDE_CANVAS / CAPTION_OCCLUSION from the build QA in code. True when a repair was applied."""
+        from .autofix import MAX_ROUNDS, propose_geometry_fix
+        if self._autofix_rounds >= MAX_ROUNDS or self._stopped:
+            return False
+        try:
+            items, changes = propose_geometry_fix(self.service, self.project_id)
+        except StudioError:
+            return False
+        if not items:
+            return False
+        revision = self._graph(self.service, self.project_id)["revision"]
+        command_id = re.sub(r"[^A-Za-z0-9_.-]", ".", f"ap-{self._rec.run_id}-autofix-{self._autofix_rounds + 1}")
+        item = items[0]
+        try:
+            with self._state_lock:
+                if self._stopped:
+                    return False
+                result = self._submit(self.service, self.project_id, item["kind"], item["payload"], revision, command_id,
+                                      voice_dependencies=item["voice_dependencies"])
+        except StudioError:
+            return False
+        if not result.get("applied"):
+            return False
+        self._autofix_rounds += 1
+        names = ", ".join(sorted({c["scene_id"] + "/" + c["entity_id"] for c in changes})[:4])
+        with self._state_lock:
+            self._set("RUNNING", "inspect", (), f"Tự sửa bố cục {len(changes)} thực thể ({names}); dựng lại cảnh đã đổi")
+        return True
+
+    def _vision_review(self) -> bool:
+        """Look at the built frames (vision role), fix only the scenes that look wrong (repair role). True when a fix was applied."""
+        from . import agent_runs, vision
+        if not vision.enabled() or self._stopped or self._vision_rounds >= vision.MAX_ROUNDS:
+            return False
+        agent = getattr(self.service, "agent", None)
+        if agent is None or not hasattr(agent, "start_frame_review") or getattr(agent, "_bin", lambda: None)() is None:
+            return False
+        try:
+            seen = vision.review_current_build(self.service, self.project_id, lambda: self._stopped,
+                                               lambda task_id: agent_runs.track(self.service, self.project_id, "inspect", task_id),
+                                               self._sleep)
+        except StudioError:
+            return False
+        if seen is None:
+            return False
+        build_id, review = seen
+        self._vision_rounds += 1
+        vision.save(self._workspace, build_id, self._vision_rounds, {"scenes": review["scenes"]})
+        from .. import agent_frame_review
+        failing = agent_frame_review.scenes_to_fix(review)
+        if not failing:
+            return False
+        by_scene = {sid: [Issue(i["code"], "visual-intent", sid, (row["instruction"] + " — " + i["note"])[:400], "visual-intent")
+                          for i in row["issues"][:3]] for sid, row in failing.items()}
+        try:
+            items = _revise_scenes(self.service, self.project_id, "inspect", by_scene, self, hint=VISION_REPAIR_HINT)
+        except StudioError:
+            return False
+        if not items:
+            return False  # the findings stay on the inspect report for the human review
+        revision = self._graph(self.service, self.project_id)["revision"]
+        command_id = re.sub(r"[^A-Za-z0-9_.-]", ".", f"ap-{self._rec.run_id}-vision-{self._vision_rounds}")
+        try:
+            with self._state_lock:
+                if self._stopped:
+                    return False
+                result = self._submit(self.service, self.project_id, items[0]["kind"], items[0]["payload"], revision, command_id,
+                                      voice_dependencies=items[0]["voice_dependencies"])
+        except StudioError:
+            return False
+        if not result.get("applied"):
+            return False
+        with self._state_lock:
+            self._set("RUNNING", "inspect", (), f"Review khung hình: sửa {len(failing)} cảnh ({', '.join(sorted(failing))}); dựng lại")
+        return True
 
     def _launch(self, node: dict, graph: dict) -> None:
         used = self._attempts.get(node["id"], 0)
@@ -427,7 +523,36 @@ class Autopilot:
         if any(i.owner in UPSTREAM_OWNERS for i in issues):
             self._needs("WAITING_USER", "blocked", node, node["title"], "Thiếu đầu vào từ Phase 1 hoặc Studio; agent không được tự bịa", issues)
             return
+        if self._autofix_profiles(issues):
+            return  # scenery named as a story entity was removed in code; the next pass checks again
         self._agent_attempt(node, spec, issues)
+
+    def _autofix_profiles(self, issues: Sequence[Issue]) -> bool:
+        from .autofix import MAX_ROUNDS, propose_profile_fix
+        if self._profile_rounds >= MAX_ROUNDS or self._stopped:
+            return False
+        try:
+            items, changes = propose_profile_fix(self.service, self.project_id, issues)
+        except StudioError:
+            return False
+        if not items:
+            return False
+        revision = self._graph(self.service, self.project_id)["revision"]
+        command_id = re.sub(r"[^A-Za-z0-9_.-]", ".", f"ap-{self._rec.run_id}-profile-{self._profile_rounds + 1}")
+        try:
+            with self._state_lock:
+                if self._stopped:
+                    return False
+                result = self._submit(self.service, self.project_id, items[0]["kind"], items[0]["payload"], revision, command_id,
+                                      voice_dependencies=items[0]["voice_dependencies"])
+        except StudioError:
+            return False
+        if not result.get("applied"):
+            return False
+        self._profile_rounds += 1
+        with self._state_lock:
+            self._set("RUNNING", "checks", (), f"Tự sửa hồ sơ cảnh: bỏ đồ nền khỏi danh sách nhân vật/đồ vật chính ({len(changes)} chỗ)")
+        return True
 
     def _agent_attempt(self, node: dict, spec, issues: Sequence[Issue]) -> None:
         node_id, limit = node["id"], spec.agent.max_attempts

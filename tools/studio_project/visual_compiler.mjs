@@ -56,7 +56,7 @@ export function validateIntent(intent,narration){
     const eventIds=new Set();
     for(const event of scene.events){
       const entity=scene.entities.find(e=>e.id===event.target);
-      assert(ID.test(event.id)&&!eventIds.has(event.id)&&entity?.states[event.state_before]&&entity.states[event.state_after],'VISUAL_EVENT_INVALID');eventIds.add(event.id);
+      assert(ID.test(event.id)&&!eventIds.has(event.id)&&entity?.states[event.state_before]&&entity.states[event.state_after],'VISUAL_EVENT_INVALID '+event.id+' target='+event.target+' '+event.state_before+'->'+event.state_after+' (entity states: '+Object.keys(entity?.states??{}).join(',')+')');eventIds.add(event.id);
       assert(['voice_anchor','scene_start','scene_end'].includes(event.trigger?.type),'VISUAL_EVENT_TRIGGER_UNSUPPORTED');
       if(event.trigger.type==='voice_anchor')assert(typeof event.trigger.text==='string'&&event.trigger.text.trim(),'VISUAL_EVENT_ANCHOR_REQUIRED');
       if(event.motion?.preset==='enter'){ // the entrance is authored without geometry: Core measures how far outside the canvas it must start
@@ -273,6 +273,7 @@ export async function buildEpisode(input){
 async function main(){const input=await json(process.argv[2]);let output;
   if(input.action==='assets')output=await describeAssets();
   else if(input.action==='export_prepare'){const {prepareExport}=await import('./visual_export.mjs');output=await prepareExport(input);}
+  else if(input.action==='autofix_geometry'){const {autofixIntent}=await import('./visual_autofix.mjs');output=autofixIntent(input.intent,{theme:input.theme,sceneIds:input.scene_ids??null});}
   else if(input.action==='gallery')output=await describeGallery(input.usage);
   else if(input.action==='candidates')output=await findCandidates(input.intent,input.scene_id,input.requirement,input.usage);
   else output=await buildEpisode(input);

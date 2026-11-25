@@ -41,10 +41,11 @@ def real_checks(workspace: Path, merged: dict, scene_id: str) -> list[str]:
     from .pipeline.validators import node_runner
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp)
-        for rel in ("narration.txt", "studio-import-receipt.json", ".authoring/narrative-plan.json", ".authoring/episode-scope.json"):
-            if (workspace / rel).is_file():
-                (copy / rel).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(workspace / rel, copy / rel)
+        for source in [workspace / "narration.txt", workspace / "studio-import-receipt.json", *(workspace / ".authoring").glob("*.json")]:
+            if source.is_file() and source.name != "visual-intent.json":
+                target = copy / source.relative_to(workspace)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, target)
         (copy / ".authoring/visual-intent.json").write_text(json.dumps(merged, ensure_ascii=False), "utf8")
         found = []
         for result in node_runner(copy, ("scene-experience", "story-visual-presence", "authoring-completeness")):
@@ -115,7 +116,8 @@ def main() -> None:
     capsule = {"scene_ranges": [{"id": sc["id"], "narration_range": sc["narration_range"],
                                  "text": narration.encode()[sc["narration_range"][0]:sc["narration_range"][1]].decode("utf8", "ignore")}
                                 for sc in intent["scenes"]]}
-    print("| scene | run | schema-valid | accepted | compiled | seconds | error |\n|---|---|---|---|---|---|---|")
+    context["scene_ranges"] = capsule["scene_ranges"]
+    print("| scene | run | schema-valid | accepted | compiled | faults | checks | core notes | seconds | error |\n|---|---|---|---|---|---|---|---|---|---|")
     for scene_id in args.scenes.split(","):
         for run in range(1, args.runs + 1):
             r = one_run(service, args.project, capsule, intent, scene_id, narration, context)

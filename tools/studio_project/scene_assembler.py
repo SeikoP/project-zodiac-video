@@ -44,6 +44,8 @@ FREE_SPOTS = [{"x": 40, "y": 640, "width": 200, "height": 200}, {"x": 840, "y": 
 MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-reaction": "reflection", "facepalm": "reflection",
                     "point-choice": "relationship", "compare-group": "relationship", "compare-two-props": "relationship"}
 MODE_BY_FAMILY = {"state": "exposition", "interaction": "behavior", "narrative": "payoff"}
+NEEDS_DRESSING = frozenset({"relationship", "behavior", "payoff"})
+DRESSING_FALLBACK = ("laptop", "notebook", "coffee-cup", "potted-plant", "book", "lightbulb")  # ordinary props that read as scenery
 LEAN = {"preset": "lean", "duration_frames": 12, "params": {"degrees": 8, "dx": 0, "dy": 0, "settle": "return"}}
 SWAP = {"preset": "state_swap", "duration_frames": 12}
 _VIEWBOX = re.compile(r'viewBox="\s*([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)')
@@ -115,6 +117,11 @@ def _check(stage: dict, act: dict, menus: dict) -> None:
         need(event["anchor_id"], anchors, "anchor_id")
 
 
+def _mode(mechanic_id: str) -> str:
+    mechanic = next((m for m in agent_authoring.catalog()["mechanics"] if m["id"] == mechanic_id), {})
+    return MODE_BY_MECHANIC.get(mechanic_id) or MODE_BY_FAMILY.get(mechanic.get("family"), "exposition")
+
+
 def _family(prop_id: str) -> str:
     return agent_authoring.prop_families_manifest()["by_prop"].get(prop_id, {}).get("family_id", prop_id)
 
@@ -160,6 +167,10 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if dressing != NONE and _family(dressing) in families:
         notes.append(f"dressing {dressing} bỏ: cùng họ {_family(dressing)} với vật của cảnh")
         dressing = NONE
+    if dressing == NONE and _mode(stage["mechanic_id"]) in NEEDS_DRESSING:  # the checks require a depth__ layer in these scenes
+        dressing = next((p for p in DRESSING_FALLBACK if p in props and _family(p) not in families), NONE)
+        if dressing != NONE:
+            notes.append(f"dressing {dressing}: Core thêm vì cảnh cần lớp nền")
     focus_prop = next((p for p in kept if p["role"] == "focus"), None)
     frame, substituted = _pick_frame(stage["frame_id"], len(present), len(kept) + len(story_visuals))
     if substituted:
@@ -321,8 +332,7 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
 
 
 def _profile(menus: dict, stage: dict, entities: list[dict], focus_prop: dict | None, goal: str) -> dict:
-    mechanic = next((m for m in agent_authoring.catalog()["mechanics"] if m["id"] == stage["mechanic_id"]), {})
-    mode = MODE_BY_MECHANIC.get(stage["mechanic_id"]) or MODE_BY_FAMILY.get(mechanic.get("family"), "exposition")
+    mode = _mode(stage["mechanic_id"])
     story = [e["id"] for e in entities if e["kind"] in ("character", "object", "story_visual") and not e["id"].startswith("depth__")]
     focal = (focus_prop["prop_id"] if focus_prop else next((e["id"] for e in entities if e["kind"] == "story_visual"), None)
              or next((e["id"] for e in entities if e["kind"] == "character"), None) or (story[0] if story else None))

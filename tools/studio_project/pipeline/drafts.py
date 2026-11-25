@@ -60,8 +60,16 @@ def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
         findings += [{"scene_id": str(item.get("scene_id") or "episode"), "severity": "warn",
                       "note": str(item.get("detail") or item.get("code") or item)[:500]} for item in qa.get("review_warnings", [])]
         flagged = {f["scene_id"] for f in findings}
-        findings += [{"scene_id": s["id"], "severity": "ok", "note": "Không có cảnh báo kỹ thuật"} for s in scenes if s["id"] not in flagged]
-        return "inspect.report", {"build_id": str(build["id"]), "method": "structural", "findings": findings[:200]}
+        from . import vision
+        seen = vision.load(Path(service.registry.get(project_id).workspace), str(build["id"]))
+        seen_rows = {r["scene_id"]: r for r in vision.inspect_findings(seen)}
+        for row in seen_rows.values():  # a frame review of THIS build: its warnings are findings, its ok marks the scene as looked at
+            if row["severity"] == "warn":
+                findings.append(row)
+                flagged.add(row["scene_id"])
+        findings += [{"scene_id": s["id"], "severity": "ok",
+                      "note": seen_rows.get(s["id"], {}).get("note") or "Không có cảnh báo kỹ thuật"} for s in scenes if s["id"] not in flagged]
+        return "inspect.report", {"build_id": str(build["id"]), "method": "visual" if seen else "structural", "findings": findings[:200]}
     raise StudioError("PIPELINE_AGENT_UNSUPPORTED", f"{spec_id}: không có bản nháp", "pipeline")
 
 

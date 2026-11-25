@@ -577,6 +577,41 @@ class VisualWorkspace:
         inputs['binding'] = canonical_hash({'revision': state['revision'], 'build_id': build['id'], **inputs})
         return inputs
 
+    def review_frames(self, project_id, times_by_scene):
+        """Photograph the CURRENT build with the same composition the export renders. {scene_id: [png path]}.
+
+        Read-only with respect to the project: it writes only under .runtime/visual-workspace/review/<build id>/.
+        Raises the same EXPORT_* errors as an export when the build is stale or a scene did not pass the technical QA,
+        so a caller can skip the review instead of looking at a frame that is about to change.
+        """
+        from . import agent_frame_review
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, 'visual-state'):
+            state, intent = self._read(handle)
+            with _exclusive_source_lock(handle.workspace, 'voice-state'):
+                inputs = self._export_inputs(handle, state, intent)
+            build_id = state['build']['id']
+        root, _ = self._paths(handle)
+        out = _trusted_dir(handle.workspace, root / 'review') / build_id
+        shutil.rmtree(out, ignore_errors=True)
+        out.mkdir(parents=True)
+        self._node(handle, {**inputs, 'output': str(out / 'project')})
+        cli = ROOT / 'apps/zodiac-studio/node_modules/hyperframes/bin/hyperframes.mjs'
+        if not cli.is_file():
+            raise _error('HYPERFRAMES_MISSING', 'Run pnpm install in apps/zodiac-studio')
+        moments = sorted({t for times in times_by_scene.values() for t in times})
+        run_managed_subprocess(['node', str(cli), 'snapshot', str(out / 'project'), '--at', ','.join(f'{t:g}' for t in moments),
+                                '--no-end', '--keep', '--output', str(out / 'frames')],
+                               cwd=out / 'project', check=True, capture_output=True, text=True)
+        frames = {}
+        for scene_id, times in times_by_scene.items():
+            paths = [out / 'frames' / agent_frame_review.frame_name(t) for t in times]
+            missing = [p.name for p in paths if not p.is_file()]
+            if missing:
+                raise _error('REVIEW_FRAME_MISSING', f'{scene_id}: {missing}')
+            frames[scene_id] = [str(p) for p in paths]
+        return frames
+
     def export(self, project_id, base_revision):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, 'visual-state'):

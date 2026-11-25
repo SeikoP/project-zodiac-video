@@ -47,7 +47,7 @@ def _voice(ctx: RunContext):
 
 _EXECUTORS: dict[str, Executor] = {
     "voice.start": _voice,
-    "agent.author.start": lambda c: c.service.agent.start_authoring_scenes(c.project_id, AUTHORING_INSTRUCTION),
+    "agent.author.start": lambda c: _author(c),
     "scene.compile": lambda c: c.service.visual.start(c.project_id, c.base_revision, c.scene_id),
     "episode.build": lambda c: c.service.visual.start(c.project_id, c.base_revision),
     "video.export": lambda c: c.service.visual.export(c.project_id, c.base_revision),
@@ -57,6 +57,18 @@ _EXECUTORS: dict[str, Executor] = {
     "agent.publish.start": lambda c: _drafted(c),
     "agent.inspect.start": lambda c: _drafted(c),
 }
+
+
+def _author(ctx):
+    """Run the authoring step: continue the last finished run when there is one (apply it), otherwise author."""
+    pending = agent_runs.pending_proposal(ctx.service, ctx.project_id)
+    if pending:
+        try:  # clicking Chạy is the confirmation, as for the drafted steps
+            return ctx.service.agent.apply_suggestion(pending["task_id"], confirm=True, base_revision=pending["visual_revision"],
+                                                      command_id=f"run-apply-{pending['task_id']}"[:60])
+        except StudioError:
+            pass  # no longer applicable: author again
+    return ctx.service.agent.start_authoring_scenes(ctx.project_id, AUTHORING_INSTRUCTION)
 
 
 def _drafted(ctx):

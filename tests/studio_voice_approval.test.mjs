@@ -10,8 +10,8 @@ test('names the reason and the 1-based unit number', () => {
 });
 
 test('asks for only the changed segments, not the whole episode', () => {
-  assert.equal(listenHintText({units, segments_needing_listen: ['U2']}), 'Chỉ cần nghe lại đoạn 2 ở tab “Từng đoạn”, rồi ghép audio lại.');
-  assert.equal(listenHintText({units, segments_needing_listen: ['U1', 'U3']}), 'Chỉ cần nghe lại đoạn 1, 3 ở tab “Từng đoạn”, rồi ghép audio lại.');
+  assert.equal(listenHintText({units, segments_needing_listen: ['U2']}), 'Chỉ cần nghe lại đoạn 2 ở tab “Theo cảnh”, rồi ghép audio lại.');
+  assert.equal(listenHintText({units, segments_needing_listen: ['U1', 'U3']}), 'Chỉ cần nghe lại đoạn 1, 3 ở tab “Theo cảnh”, rồi ghép audio lại.');
 });
 
 test('no segment hint when everything or nothing needs listening', () => {

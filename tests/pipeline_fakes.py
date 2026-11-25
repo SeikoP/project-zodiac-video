@@ -6,6 +6,8 @@ from tools.studio_project.models import StudioError
 
 # Review gate demands real viewing time in production; tests confirm immediately unless they set it themselves.
 os.environ.setdefault("ZODIAC_REVIEW_MIN_SECONDS", "0")
+# The frame review calls a real model; scheduling tests must never reach it (tests of the review enable it explicitly).
+os.environ.setdefault("ZODIAC_STUDIO_VISION_REVIEW", "off")
 
 
 class _Handle:
@@ -33,6 +35,9 @@ class _Part:
         return self.value
 
     def __getattr__(self, method):
+        if method == "tasks":  # a pure read of stored history: not a call the scheduling tests should have to list
+            return lambda *args, **kwargs: []
+
         def call(*args, **kwargs):
             self.calls.append((f"{self._name}.{method}", args, kwargs))
             if method.startswith("start_") or method == "task":

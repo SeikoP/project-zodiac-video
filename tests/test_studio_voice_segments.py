@@ -125,6 +125,41 @@ class SegmentProofTests(unittest.TestCase):
         self.lab._save(handle, raw)
         self.assertEqual(self.state()["segments_needing_listen"], [state["units"][0]["id"]])
 
+    def test_scenes_group_units_and_listening_every_scene_makes_the_episode_confirmable(self):
+        state = self.create()
+        scenes = state["scenes"]
+        self.assertGreaterEqual(len(scenes), 1)
+        self.assertEqual([uid for s in scenes for uid in s["unit_ids"]], [u["id"] for u in state["units"]])
+        self.assertTrue(all(s["take"] and s["take"]["duration_seconds"] > 0 for s in scenes))
+        state = self.lab.assemble(self.project, state["revision"])
+        for scene in state["scenes"]:
+            state = self.listened("scene:" + scene["id"], scene["take"]["take_id"])
+        self.assertEqual(state["segments_needing_listen"], [])
+        self.assertNotEqual(state["status"], "USER_LISTENED_APPROVED")  # a scene listen never approves the episode by itself
+        self.assertTrue(state["can_confirm_from_segments"])
+        self.assertTrue(all(u["listened"] for u in state["units"]))
+
+    def test_a_scene_can_be_accepted_without_playback_but_a_sentence_cannot(self):
+        state = self.create()
+        scene = state["scenes"][0]
+        state = self.lab.confirm(self.project, "scene:" + scene["id"], scene["take"]["take_id"], "", True, state["revision"])
+        members = [u for u in state["units"] if u["id"] in scene["unit_ids"]]
+        self.assertTrue(all(u["listened"]["playback"] == "skipped_by_user" for u in members))
+        other = next((u for u in state["units"] if u["id"] not in scene["unit_ids"]), state["units"][0])
+        with self.assertRaises(StudioError):
+            self.lab.confirm(self.project, other["id"], other["selected_take"], "", True, state["revision"])
+        with self.assertRaises(StudioError):
+            self.lab.confirm(self.project, "episode", "", "", True, state["revision"])
+
+    def test_one_scene_listen_marks_only_its_units(self):
+        state = self.create()
+        if len(state["scenes"]) < 2:
+            self.skipTest("fixture narration has a single scene")
+        scene = state["scenes"][0]
+        state = self.listened("scene:" + scene["id"], scene["take"]["take_id"])
+        heard = {u["id"] for u in state["units"] if u["listened"]}
+        self.assertEqual(heard, set(scene["unit_ids"]))
+
 
 if __name__ == "__main__":
     unittest.main()

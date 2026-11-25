@@ -29,6 +29,8 @@ from .voice_bank import VoiceBank, recompose_timing, remember_quietly
 
 ROOT = Path(__file__).resolve().parents[2]
 FORMAT = "zodiac-voice-lab@1"
+# VieNeu temperature per delivery intent: higher = livelier, more varied intonation (engine default 0.8).
+INTENT_TEMPERATURE = {"NORMAL": 0.95, "SHARP": 1.1}
 
 
 def speech_units(raw: bytes) -> list[dict]:
@@ -62,7 +64,60 @@ def speech_units(raw: bytes) -> list[dict]:
         start = end
     if not units:
         raise StudioError("VOICE_SOURCE_EMPTY", "Approved narration has no speech", "voice")
+    for unit in units:
+        unit["gap_after_ms"] = default_gap_ms(unit["text"])
     return units
+
+
+def default_gap_ms(text: str) -> int:
+    """Natural pause after a speech unit, from how its text ends. Without it every sentence is glued to the next."""
+    tail = text[len(text.rstrip()):]
+    body = text.rstrip()
+    if tail.count("\n") >= 2:
+        return 700
+    if tail.count("\n") == 1:
+        return 500
+    if body.endswith("…") or body.endswith("..."):
+        return 450
+    if body.endswith(("?", "!")):
+        return 400
+    if body.endswith("."):
+        return 320
+    return 120
+
+
+def scene_groups(text: str, units: list[dict], plan: dict | None) -> list[dict]:
+    """Group speech units into scenes for review: the plan's scene_direction when every beat anchor is found in
+    the narration, otherwise paragraphs. A scene is only a listening/review group; it never changes the units."""
+    def byte_at(index):
+        return len(text[:index].encode("utf-8"))
+    starts = []  # (byte start, id, title)
+    try:
+        beats = {b["id"]: b["voice_anchor"] for b in (plan or {}).get("beats", [])}
+        cursor = 0
+        for number, scene in enumerate((plan or {}).get("scene_direction", []), 1):
+            first = beats[scene["beat_ids"][0]]
+            found = text.find(first, cursor)
+            if found < 0:
+                raise KeyError(first)
+            cursor = found + len(first)
+            for beat_id in scene["beat_ids"][1:]:
+                anchor = beats[beat_id]
+                where = text.find(anchor, cursor)
+                if where < 0:
+                    raise KeyError(anchor)
+                cursor = where + len(anchor)
+            starts.append((0 if not starts else byte_at(found), scene["id"], f"Cảnh {number}" + (f" · {scene['purpose']}" if scene.get("purpose") else "")))
+    except (KeyError, TypeError, IndexError, AttributeError):
+        starts = []
+    if not starts:
+        for number, match in enumerate(re.finditer(r"\S[\s\S]*?(?=\n\s*\n|\Z)", text), 1):
+            starts.append((0 if number == 1 else byte_at(match.start()), f"P{number:02d}", f"Đoạn {number}"))
+    groups = [{"id": sid, "title": title, "unit_ids": [], "_start": start} for start, sid, title in starts]
+    for unit in units:
+        owner = [g for g in groups if g["_start"] <= unit["source_range"][0]]
+        (owner[-1] if owner else groups[0])["unit_ids"].append(unit["id"])
+    return [{k: v for k, v in g.items() if k != "_start"} for g in groups if g["unit_ids"]]
 
 
 def speech_input(unit: dict, pronunciation: dict) -> tuple[str, list[list[int]]]:
@@ -271,7 +326,55 @@ class VoiceLab:
                 raise StudioError("VOICE_AUDIO_INVALID", str(error), "voice") from error
         return self._audio_stats[signature]
 
+    def _scenes(self, handle, state):
+        source = next((p for p in (handle.workspace/".authoring/narration.txt", handle.workspace/"narration.txt") if p.exists()), None)
+        plan = None
+        plan_path = handle.workspace/".authoring/narrative-plan.json"
+        if plan_path.exists() and not plan_path.is_symlink():
+            try:
+                plan = json.loads(plan_path.read_text(encoding="utf8"))
+            except (OSError, ValueError):
+                plan = None
+        return scene_groups(source.read_text(encoding="utf8"), state["units"], plan) if source else []
+
+    def _scene_take(self, handle, state, scene_id):
+        """Audio of one scene: its units' selected takes joined with their own pauses (no pause after the last one)."""
+        scene = next((s for s in self._scenes(handle, state) if "scene:" + s["id"] == scene_id), None)
+        if scene is None:
+            raise StudioError("VOICE_SCENE_UNKNOWN", "Unknown scene", "voice")
+        folder, _ = self._paths(handle)
+        inputs, selection = [], []
+        units = [u for u in state["units"] if u["id"] in scene["unit_ids"]]
+        for i, unit in enumerate(units):
+            if not unit.get("selected_take"):
+                raise StudioError("VOICE_SCENE_INCOMPLETE", "Scene still has sentences without audio", "voice")
+            take, path = self._take(handle, state, unit["id"])
+            inputs.append(path)
+            gap = unit["gap_after_ms"] if i < len(units)-1 else 0
+            selection.append([unit["id"], take["take_id"], take["wav_sha256"], gap])
+            if gap:
+                with wave.open(str(path), "rb") as reader:
+                    params = reader.getparams()
+                pause = folder/f"pause-{params.nchannels}-{params.framerate}-{gap}.wav"
+                with wave.open(str(pause), "wb") as writer:
+                    writer.setparams(params)
+                    writer.writeframes(b"\0"*(round(params.framerate*gap/1000)*params.nchannels*params.sampwidth))
+                inputs.append(pause)
+        key = canonical_hash(selection)
+        out = _trusted_dir(handle.workspace, folder/"scenes")/(key+".wav")
+        if out.is_symlink() or not out.exists():
+            temp = out.with_suffix(".tmp.wav")
+            concatenate_wavs(inputs, temp)
+            os.replace(temp, out)
+        take = {"take_id": key, "path": out.relative_to(handle.workspace).as_posix(), "wav_sha256": file_sha256(out)}
+        return take, out
+
     def _take(self, handle, state, unit_id, take_id=None):
+        if unit_id.startswith("scene:"):
+            take, path = self._scene_take(handle, state, unit_id)
+            if take_id and take["take_id"] != take_id:
+                raise StudioError("VOICE_TAKE_CHANGED", "Scene audio changed; refresh the player", "voice")
+            return take, path
         if unit_id == "episode":
             take = state.get("assembly")
             if not take:
@@ -355,6 +458,15 @@ class VoiceLab:
             result["segments_needing_listen"] = self._segments_needing_listen(handle, state)
             result["can_confirm_from_segments"] = self._can_confirm_from_segments(handle, state)
             result["units"] = []
+            result["scenes"] = []
+            for scene in self._scenes(handle, state):
+                entry = {**scene, "take": None}
+                try:
+                    record, audio = self._take(handle, state, "scene:" + scene["id"])
+                    entry["take"] = {k: v for k, v in {**record, **self._info(audio), "valid": True}.items() if k != "path"}
+                except (StudioError, OSError, ValueError):
+                    pass
+                result["scenes"].append(entry)
             store = VoiceArtifactStore(handle.workspace)
             for unit in state["units"]:
                 takes = []
@@ -486,7 +598,7 @@ class VoiceLab:
                     for unit in state["units"]:
                         if unit["id"] in ids:
                             text, spans = speech_input(unit, pronunciation)
-                            contexts[unit["id"]] = {"tts_text": text, "speech_map": spans, "delivery_intent": intent,
+                            contexts[unit["id"]] = {"tts_text": text, "speech_map": spans, "delivery_intent": intent, "temperature": INTENT_TEMPERATURE[intent],
                                                     "prosody_verified": False, "pronunciation": pronunciation}
                             rows.append({"scene_id": unit["id"], "text": text})
                     # Automatic generation reuses a take already synthesised for the same text, voice and profile (TTS output is
@@ -524,7 +636,8 @@ class VoiceLab:
                     try:
                         if to_synthesise:
                             run_tts_batch(job_root, to_synthesise, tts_root=Path(os.environ.get("ZODIAC_STUDIO_TTS_ROOT", DEFAULT_TTS_ROOT)),
-                                          voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None)
+                                          voice=voice, vieneu_url=os.environ.get("ZODIAC_STUDIO_TTS_URL") or None,
+                                          temperature=INTENT_TEMPERATURE[intent])
                     except Exception as error:
                         generation_error = error
                     finally:
@@ -736,7 +849,7 @@ class VoiceLab:
         with _exclusive_source_lock(handle.workspace, "voice-state"):
             state = self._read(handle)
             take, path = self._take(handle, state, unit_id, take_id)
-            if unit_id != "episode" and next(u for u in state["units"] if u["id"] == unit_id)["selected_take"] != take["take_id"]:
+            if unit_id != "episode" and not unit_id.startswith("scene:") and next(u for u in state["units"] if u["id"] == unit_id)["selected_take"] != take["take_id"]:
                 raise StudioError("VOICE_TAKE_NOT_SELECTED", "Select this take before confirming it", "voice")
             token = uuid.uuid4().hex
             state["playbacks"][unit_id] = {"token": token, "wav_sha256": take["wav_sha256"], "started_at": time.time(),
@@ -753,22 +866,39 @@ class VoiceLab:
             self._revision(state, base_revision)
             take, _ = self._take(handle, state, unit_id, take_id)
             proof = state["playbacks"].get(unit_id) or {}
-            if (proof.get("token") != playback_id or proof.get("wav_sha256") != take["wav_sha256"] or
+            # A scene may be accepted at the user's own discretion, without finishing its playback (an explicit GUI click);
+            # single sentences and the whole episode still need a completed playback.
+            accepted_freely = unit_id.startswith("scene:") and not playback_id
+            if not accepted_freely and (proof.get("token") != playback_id or proof.get("wav_sha256") != take["wav_sha256"] or
                     time.time()-proof.get("started_at", time.time()) < proof.get("duration", math.inf)*.95):
                 raise StudioError("VOICE_PLAYBACK_INCOMPLETE", "Listen to the selected audio through the end first", "voice")
-            target = state["assembly"] if unit_id == "episode" else next(u for u in state["units"] if u["id"] == unit_id)
-            if unit_id != "episode" and target["selected_take"] != take["take_id"]:
+            is_scene = unit_id.startswith("scene:")
+            scene_units = []
+            if is_scene:
+                scene_ids = next(s["unit_ids"] for s in self._scenes(handle, state) if "scene:" + s["id"] == unit_id)
+                scene_units = [u for u in state["units"] if u["id"] in scene_ids]
+                target = {}
+            else:
+                target = state["assembly"] if unit_id == "episode" else next(u for u in state["units"] if u["id"] == unit_id)
+            if unit_id != "episode" and not is_scene and target["selected_take"] != take["take_id"]:
                 raise StudioError("VOICE_TAKE_NOT_SELECTED", "Selected audio changed", "voice")
             if unit_id == "episode":
                 state.pop("approval_note", None)
                 state["episode_heard"] = state["narration_sha256"]  # the whole assembled audio, seams included, was heard once
-            heard = self._segments(handle, state) if unit_id == "episode" else [r for r in self._segments(handle, state) if r["unit_id"] == unit_id]
+            heard_ids = {u["id"] for u in scene_units} if is_scene else {unit_id}
+            heard = self._segments(handle, state) if unit_id == "episode" else [r for r in self._segments(handle, state) if r["unit_id"] in heard_ids]
             kept = [p for p in state.get("segment_proofs", []) if p.get("narration_sha256") == state["narration_sha256"]
                     and p["unit_id"] not in {r["unit_id"] for r in heard}]
             state["segment_proofs"] = kept + [{**row, "confirmed_at": time.time(), "narration_sha256": state["narration_sha256"]} for row in heard]
-            target["listened"] = {"kind": "user_listened", "wav_sha256": take["wav_sha256"], "confirmed_at": time.time(),
-                                  "narration_sha256": state["narration_sha256"]}
+            stamp = {"kind": "user_listened", "wav_sha256": take["wav_sha256"], "confirmed_at": time.time(),
+                     "narration_sha256": state["narration_sha256"]}
+            if accepted_freely:
+                stamp["playback"] = "skipped_by_user"
+            for member in (scene_units if is_scene else [target]):
+                member["listened"] = dict(stamp)
             state["playbacks"].pop(unit_id, None)
+            if is_scene and not self._segments_needing_listen(handle, state):
+                state["episode_heard"] = state["narration_sha256"]  # every scene was heard through; only the scene-to-scene pauses were not
             state["revision"] += 1
             self._save(handle, state)
         return self.snapshot(project_id)

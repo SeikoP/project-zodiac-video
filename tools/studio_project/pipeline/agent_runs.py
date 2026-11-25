@@ -16,12 +16,40 @@ def friendly_error(raw: str) -> str:
     return first or "Agent không hoàn thành"
 
 
+def latest_run(service, project_id: str) -> dict | None:
+    """The newest whole-episode authoring run, from the stored tasks (so it survives an app reset), or None."""
+    try:
+        return next((t for t in service.agent.tasks(project_id) if t.get("kind") == "episode.propose"), None)
+    except Exception:
+        return None
+
+
+def pending_proposal(service, project_id: str) -> dict | None:
+    """The newest authoring run if it FINISHED, was never applied and is still valid for today's source, voice and catalog.
+
+    Running the step again should apply this, not pay for a new run; the same check the apply itself makes."""
+    task = latest_run(service, project_id)
+    if not task or task.get("status") != "COMPLETED" or not task.get("suggestion") or task.get("write_applied"):
+        return None
+    try:
+        from .. import agent_authoring
+        from tools.studio.artifacts import canonical_hash
+        visual = service.visual.snapshot(project_id) or {}
+        if (visual.get("intent") is not None or task.get("visual_source_hash") != visual.get("source_hash")
+                or task.get("dependencies") != agent_authoring.dependencies(service, project_id)
+                or task.get("catalog_hash") != canonical_hash(agent_authoring.prompt_catalog())):
+            return None
+    except Exception:
+        return None
+    return task
+
+
 def progress(service, project_id: str) -> dict[str, str]:
     """{node: "lượt 2/3 · 3 phút"} for a running tracked agent task, so a long run does not look frozen."""
     import time
     entry = tracked(service, project_id)
     if entry is None:
-        return {}
+        return {"visual": "Đã có đề xuất, bấm Chạy để áp dụng"} if pending_proposal(service, project_id) else {}
     node_id, task_id = entry
     try:
         task = service.agent.task(task_id)
@@ -62,6 +90,12 @@ def overlay(service, project_id: str) -> tuple[str | None, dict[str, str]]:
     """(running node id, failed {node: message}) for the tracked agent task, if any."""
     entry = tracked(service, project_id)
     if entry is None:
+        # Nothing tracked in memory (the app was reset): what happened last is still in the stored tasks.
+        last = latest_run(service, project_id)
+        if last and last.get("status") == "FAILED":
+            return None, {"visual": friendly_error(str(last.get("error") or ""))[:300]}
+        if last and last.get("status") == "INTERRUPTED":
+            return None, {"visual": "Lượt soạn bị gián đoạn khi app đóng. Bấm Chạy lại: phần đã soạn xong được dùng lại."}
         return None, {}
     node_id, task_id = entry
     try:
