@@ -40,8 +40,10 @@ test('phone screen markings stay legible against their resolved screen in every 
  for(const model of ['phone-rounded','phone-compact','phone-angular']){
   const source=await readFile(new URL(`../plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/props/${model}.svg`,import.meta.url),'utf8');
   for(const theme of Object.keys(THEMES)){
-   const svg=resolvePaletteSvg(source,theme),screen=svg.match(/<rect\b[^>]*data-palette-fill="surface"[^>]*>/u)?.[0],mark=svg.match(/<path\b[^>]*data-palette-stroke="muted_ink"[^>]*>/u)?.[0];
-   assert.ok(screen&&mark);
+   const svg=resolvePaletteSvg(source,theme),tags=svg.match(/<(?:rect|path)\b[^>]*>/gu)??[];
+   // v4 hand-drawn phones use literal colours; palette-tagged art still resolves per theme.
+   const screen=tags.find(t=>/data-palette-fill=.surface./u.test(t))??tags.find(t=>/fill=.#FFFDF9./iu.test(t)),mark=tags.find(t=>/data-palette-stroke=.muted_ink./u.test(t))??tags.find(t=>/fill=.none.[^>]*stroke=.#5C6B75./iu.test(t));
+   assert.ok(screen&&mark,`${model}/${theme}: screen and marking found`);
    const a=luminance(screen.match(/\sfill="(#[a-f0-9]{6})"/iu)[1]),b=luminance(mark.match(/\sstroke="(#[a-f0-9]{6})"/iu)[1]);
    assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,`${model}/${theme}: screen markings`);
   }
