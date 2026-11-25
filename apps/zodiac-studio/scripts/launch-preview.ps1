@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory=$true)]
     [string] $Executable,
-    [string] $ProjectsRoot = ""
+    [string] $ProjectsRoot = "",
+    [int] $CdpPort = 0  # >0: expose the window to tools/studio_e2e (WebView2 remote debugging)
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +18,9 @@ $env:ZODIAC_STUDIO_PYTHON = $python
 if ($ProjectsRoot -ne "") {
     New-Item -ItemType Directory -Path $ProjectsRoot -Force | Out-Null
     $env:ZODIAC_STUDIO_PROJECTS = (Resolve-Path $ProjectsRoot).Path
+}
+if ($CdpPort -gt 0) {
+    $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$CdpPort"
 }
 Write-Host "Zodiac Studio V5 experimental preview (non-production)" -ForegroundColor Cyan
 Write-Host "Source: $repoRoot"
