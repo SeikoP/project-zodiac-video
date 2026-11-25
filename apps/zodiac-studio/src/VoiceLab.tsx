@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Headphones, LoaderCircle, Lock, Mic2, RefreshCcw, Waves } from "lucide-react";
 import { backend, type Project, type VoiceState, type VoiceTake } from "./backend";
-import { approvalNoteText } from "./voice-approval";
+import { approvalNoteText, listenHintText } from "./voice-approval";
 
 import { Paged, PagedText } from "./Paged";
 import "./voice-layout.css";
@@ -153,7 +153,7 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
         {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></div></section>
     {state && <ol className="voice-steps" aria-label="Các bước làm giọng">{["Tạo audio", "Ghép audio", "Đo timing", "Nghe toàn bài & duyệt"].map((label, index) => (
       <li key={label} data-state={approved || index + 1 < step ? "done" : index + 1 === step ? "current" : "todo"}><span>{index + 1}</span>{label}</li>))}</ol>}
-    {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)}</p>}
+    {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)} {listenHintText(state)}</p>}
     {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Việc của bạn: mở tab “Nghe toàn bài & timing”, nghe hết một lần rồi bấm xác nhận. Nghe từng đoạn là tuỳ chọn, không bắt buộc.</p>}
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
 

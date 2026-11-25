@@ -294,6 +294,27 @@ class VoiceLab:
             raise StudioError("VOICE_AUDIO_DRIFT", "Audio hash changed", "voice")
         return take, path
 
+    def _segments(self, handle, state):
+        """(unit_id, wav_sha256, gap_after_ms) of the current selection, one row per unit that has a selected take."""
+        rows = []
+        for unit in state["units"]:
+            if not unit.get("selected_take"):
+                continue
+            take, _ = self._take(handle, state, unit["id"])
+            rows.append({"unit_id": unit["id"], "wav_sha256": take["wav_sha256"], "gap_after_ms": unit["gap_after_ms"]})
+        return rows
+
+    def _segments_needing_listen(self, handle, state):
+        """Units whose take or pause has not been heard by the user (zodiac-voice-segment-proof@1)."""
+        try:
+            current = self._segments(handle, state)
+        except (StudioError, OSError, ValueError, KeyError):
+            return [u["id"] for u in state["units"]]
+        proven = {(p["unit_id"], p["wav_sha256"], p["gap_after_ms"]) for p in state.get("segment_proofs", [])
+                  if p.get("narration_sha256") == state["narration_sha256"]}
+        missing = [row["unit_id"] for row in current if (row["unit_id"], row["wav_sha256"], row["gap_after_ms"]) not in proven]
+        return missing + [u["id"] for u in state["units"] if not u.get("selected_take")]
+
     def snapshot(self, project_id):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "voice-state"):
@@ -302,6 +323,7 @@ class VoiceLab:
             voices = saved_voices()
             result["voices"] = list(dict.fromkeys([preferred_voice(voices), *voices]))
             result.pop("playbacks", None)
+            result["segments_needing_listen"] = self._segments_needing_listen(handle, state)
             result["units"] = []
             store = VoiceArtifactStore(handle.workspace)
             for unit in state["units"]:
@@ -349,8 +371,10 @@ class VoiceLab:
     @staticmethod
     def _invalidate(state, unit_ids, reason="take_changed"):
         # Say why the listening approval went away, so the GUI can ask for the right thing instead of a blanket re-listen.
-        state.update(assembly=None, timing=None, playbacks={},
-                     approval_note={"reason": reason, "unit_ids": list(unit_ids), "at": time.time()})
+        had_approval = bool(((state.get("assembly") or {}).get("listened") or {}).get("kind") == "user_listened")
+        state.update(assembly=None, timing=None, playbacks={})
+        if had_approval:  # nothing to explain when the user had not approved yet
+            state["approval_note"] = {"reason": reason, "unit_ids": list(unit_ids), "at": time.time()}
         state["invalidated"] = {"speech_units": unit_ids, "artifacts": ["assembled_voice", "word_timing", "downstream_absolute_times"],
                                 "svg_assets_invalidated": False}
 
@@ -622,6 +646,13 @@ class VoiceLab:
             state["assembly"] = {"take_id": key, "selection_hash": key, "path": out.relative_to(handle.workspace).as_posix(),
                                  "wav_sha256": info["wav_sha256"], **info, "units": timings,
                                  "listened": previous.get("listened") if previous.get("wav_sha256") == info["wav_sha256"] else None}
+            if (not state["assembly"]["listened"] and state.get("episode_heard") == state["narration_sha256"]
+                    and not self._segments_needing_listen(handle, state)):
+                # Every segment of this selection was heard by the user (episode listen or per-unit listen): the new
+                # assembly is the same audio in the same order, so the approval carries over. Never created otherwise.
+                stamps = [p["confirmed_at"] for p in state.get("segment_proofs", [])]
+                state["assembly"]["listened"] = {"kind": "user_listened", "wav_sha256": info["wav_sha256"], "confirmed_at": max(stamps),
+                                                 "narration_sha256": state["narration_sha256"], "derived_from": "segment_proofs"}
             state["revision"] += 1
             self._save(handle, state)
         return self.snapshot(project_id)
@@ -670,6 +701,11 @@ class VoiceLab:
                 raise StudioError("VOICE_TAKE_NOT_SELECTED", "Selected audio changed", "voice")
             if unit_id == "episode":
                 state.pop("approval_note", None)
+                state["episode_heard"] = state["narration_sha256"]  # the whole assembled audio, seams included, was heard once
+            heard = self._segments(handle, state) if unit_id == "episode" else [r for r in self._segments(handle, state) if r["unit_id"] == unit_id]
+            kept = [p for p in state.get("segment_proofs", []) if p.get("narration_sha256") == state["narration_sha256"]
+                    and p["unit_id"] not in {r["unit_id"] for r in heard}]
+            state["segment_proofs"] = kept + [{**row, "confirmed_at": time.time(), "narration_sha256": state["narration_sha256"]} for row in heard]
             target["listened"] = {"kind": "user_listened", "wav_sha256": take["wav_sha256"], "confirmed_at": time.time(),
                                   "narration_sha256": state["narration_sha256"]}
             state["playbacks"].pop(unit_id, None)

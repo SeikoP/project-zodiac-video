@@ -51,6 +51,13 @@ class ApprovalMatrixTests(unittest.TestCase):
         self.assertEqual(state["approval_note"]["reason"], "take_changed")
         self.assertEqual(state["approval_note"]["unit_ids"], [unit["id"]])
 
+    def test_no_note_when_there_was_nothing_approved_to_lose(self):
+        state = self.create()
+        state = self.lab.assemble(self.project, state["revision"])
+        unit = state["units"][0]
+        state = self.lab.select(self.project, unit["id"], unit["selected_take"], state["revision"], unit["gap_after_ms"] + 50)
+        self.assertIsNone(state.get("approval_note"))
+
     def test_the_note_clears_when_the_episode_is_heard_again(self):
         state = self.approved()
         unit = state["units"][0]

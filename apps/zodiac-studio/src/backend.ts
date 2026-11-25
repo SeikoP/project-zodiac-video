@@ -76,6 +76,8 @@ export type VoiceState = {
   timing: { words: { text: string; startMs: number; endMs: number; source_range: [number, number]; anchor_id: string }[]; duration_seconds: number } | null;
   job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;
   /** Why the listening approval was dropped by the last edit (cleared when the episode is heard again). */
+  /** Unit ids whose take or pause the user has not heard yet. */
+  segments_needing_listen?: string[];
   approval_note?: { reason: "take_changed" | "pause_changed" | "narration_changed" | "voice_changed"; unit_ids: string[]; at: number } | null;
 };
 export type AgentHealth = {
