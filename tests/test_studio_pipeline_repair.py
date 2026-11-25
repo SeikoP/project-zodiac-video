@@ -5,6 +5,7 @@ import threading
 import time
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from tools.studio_project.models import StudioError
 from tools.studio_project.pipeline.autopilot import Issue, _revise_scenes
@@ -60,9 +61,8 @@ PILOT = SimpleNamespace(_state_lock=threading.RLock(), _stopped=False)
 class ReviseScenesTests(unittest.TestCase):
     def run_repair(self, by_scene, agent=None):
         agent = agent or FakeAgent()
-        import tools.studio_project.pipeline.agent_runs as runs
-        runs.track = lambda *a, **k: None  # tracking is covered by its own tests
-        return agent, _revise_scenes(service_with(agent), "p", "checks", by_scene, PILOT)
+        with patch("tools.studio_project.pipeline.agent_runs.track"):  # tracking is covered by its own tests
+            return agent, _revise_scenes(service_with(agent), "p", "checks", by_scene, PILOT)
 
     def test_only_the_named_scenes_are_revised_and_the_rest_are_byte_identical(self):
         agent, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]})
