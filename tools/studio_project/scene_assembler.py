@@ -198,11 +198,11 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     sv_entities = []
     object_slots = _slots(frame, "object")
     for asset_key in story_visuals:
-        entities.append({"id": asset_key, "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
+        entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
                          "states": {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False),
                                     "shown": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY)},
                          "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
-        sv_entities.append(asset_key)
+        sv_entities.append(asset_key.lower())
         placed.append(STORY_VISUAL_BOX)
     for row in kept:
         library = props[row["prop_id"]]
@@ -283,16 +283,24 @@ def scene_faults(part: dict, required_story_visuals=()) -> list[dict]:
             if _hits(a, b, margin=0):
                 faults.append({"code": "ENTITY_OVERLAP", "entities": [a_id, b_id]})
     present = {e["id"] for e in scene["entities"]}
-    faults += [{"code": "STORY_VISUAL_MISSING", "entity": key} for key in required_story_visuals if key not in present]
+    faults += [{"code": "STORY_VISUAL_MISSING", "entity": key} for key in required_story_visuals if key.lower() not in present]
     return faults
 
 
 def story_visual_assets(context: dict, intent_assets: dict, scene_id: str) -> dict[str, str]:
-    """{asset key: label} of the Phase 1 story visuals this scene must carry (the scene holding the beat's voice anchor)."""
+    """{asset key: label} of the Phase 1 story visuals this scene must carry (the scene holding the beat's voice anchor).
+    The skeleton's own asset is used, not a per-scene copy (key starting with a scene id) an earlier run made."""
     from .agent_parts import story_visuals_by_scene
     wanted = story_visuals_by_scene(context).get(scene_id, [])
-    return {key: (a.get("source_visual_type") or (a.get("visual") or {}).get("type") or "story_visual")
-            for key, a in intent_assets.items() if a.get("category") == "story_visual" and a.get("phase1_visual_id") in wanted}
+    found: dict[str, tuple[str, str]] = {}
+    for key, asset in intent_assets.items():
+        if asset.get("category") != "story_visual":
+            continue
+        phase1 = asset.get("phase1_visual_id") or (asset.get("creative_origin") or {}).get("phase1_visual_id")
+        if phase1 not in wanted or (phase1 in found and re.match(r"s\d\d-", key)):
+            continue
+        found[phase1] = (key, asset.get("source_visual_type") or (asset.get("visual") or {}).get("type") or "story_visual")
+    return {key: label for key, label in found.values()}
 
 
 def _first_words(text: str) -> str:

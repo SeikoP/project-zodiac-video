@@ -203,9 +203,11 @@ class StoryVisualLookupTests(unittest.TestCase):
                    "required_story_visual_ids": ["sv01"],
                    "narrative_plan": {"beats": [{"id": "b1", "voice_anchor": "nó bảo để xem"}],
                                       "story_visuals": [{"id": "sv01", "beat_ids": ["b1"]}]}}
-        assets = {"sv01-chat-compare": {"category": "story_visual", "phase1_visual_id": "sv01", "visual": {"type": "chat_compare"}},
+        assets = {"SV01": {"category": "story_visual", "creative_origin": {"phase1_visual_id": "sv01"}, "source_visual_type": "chat_compare"},
+                  "s02-chat-compare": {"category": "story_visual", "creative_origin": {"phase1_visual_id": "sv01"}, "source_visual_type": "chat_compare"},
                   "phone": {"category": "prop"}}
-        self.assertEqual(scene_assembler.story_visual_assets(context, assets, "s02"), {"sv01-chat-compare": "chat_compare"})
+        # the skeleton's own asset, not a copy an earlier run made under a scene prefix
+        self.assertEqual(scene_assembler.story_visual_assets(context, assets, "s02"), {"SV01": "chat_compare"})
         self.assertEqual(scene_assembler.story_visual_assets(context, assets, "s01"), {})
 
 
