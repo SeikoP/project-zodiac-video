@@ -163,6 +163,18 @@ class SceneQualityTests(unittest.TestCase):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="none", mechanic="explain")
         self.assertEqual([e["id"] for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")], [])
 
+    def test_the_frame_and_mechanic_are_chosen_together(self):
+        # the spike's s05: payoff needs a payoff_subject, only caption-payoff offers one, and it holds exactly one character
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], frame="caption-payoff", mechanic="payoff")
+        grammar = part["payload"]["scene"]["grammar"]
+        self.assertTrue(scene_assembler.supports(grammar["frame_id"], grammar["mechanic_id"], 2, 1), grammar)
+        self.assertTrue(part["core_notes"])
+
+    def test_a_valid_pair_is_left_alone(self):
+        part = build(TWO, cast_of(TWO, 2), ["phone-ping"], frame="two-person-offset", mechanic="confront")
+        self.assertEqual(part["payload"]["scene"]["grammar"]["mechanic_id"], "confront")
+        self.assertEqual(part["payload"]["scene"]["grammar"]["frame_id"], "two-person-offset")
+
     def test_dressing_of_another_family_is_kept(self):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop")
         self.assertIn("depth__laptop", [e["id"] for e in part["payload"]["scene"]["entities"]])

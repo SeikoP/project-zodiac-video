@@ -63,13 +63,39 @@ def _required(frame: dict, kind: str) -> int:
     return sum(1 for slot in frame["slots"].values() if slot["kind"] == kind and slot.get("required"))
 
 
-def _pick_frame(chosen: str, characters: int, objects: int) -> tuple[dict, bool]:
-    """The chosen frame when it can host exactly these entities, else the first catalog frame that can (reported)."""
-    frames = _frames()
-    ordered = sorted(frames, key=lambda f: f["id"] != chosen)
-    for frame in ordered:
-        if _required(frame, "character") <= characters <= len(_slots(frame, "character")) and objects >= _required(frame, "object"):
-            return frame, frame["id"] != chosen
+def _capabilities(frame: dict, characters: int, objects: int) -> set[str]:
+    """What the frame's FILLED slots offer: the first `characters` character slots and the first `objects` object slots."""
+    caps: set[str] = set()
+    for kind, count in (("character", characters), ("object", objects)):
+        for name in _slots(frame, kind)[:count]:
+            caps |= set(frame["slots"][name].get("capabilities") or ())
+    return caps
+
+
+def _hosts(frame: dict, characters: int, objects: int) -> bool:
+    return _required(frame, "character") <= characters <= len(_slots(frame, "character")) and objects >= _required(frame, "object")
+
+
+def supports(frame_id: str, mechanic_id: str, characters: int, objects: int) -> bool:
+    """True when this frame, filled with these entities, provides everything the mechanic requires."""
+    frame = next(f for f in _frames() if f["id"] == frame_id)
+    mechanic = next(m for m in agent_authoring.catalog()["mechanics"] if m["id"] == mechanic_id)
+    return _hosts(frame, characters, objects) and set(mechanic.get("requires") or ()) <= _capabilities(frame, characters, objects)
+
+
+def _pick(frame_id: str, mechanic_id: str, characters: int, objects: int) -> tuple[dict, str, list[str]]:
+    """The chosen frame and mechanic when they fit together and these entities, else the closest pair that does (reported)."""
+    frames = sorted(_frames(), key=lambda f: f["id"] != frame_id)
+    mechanics = agent_authoring.catalog()["mechanics"]
+    chosen = next((m for m in mechanics if m["id"] == mechanic_id), None)
+    ordered = sorted(mechanics, key=lambda m: (m["id"] != mechanic_id, (chosen or {}).get("family") != m.get("family")))
+    for frame in frames:  # keep the mechanic, move the frame
+        if supports(frame["id"], mechanic_id, characters, objects):
+            return frame, mechanic_id, ([f"frame {frame_id} -> {frame['id']}"] if frame["id"] != frame_id else [])
+    for frame in frames:  # else keep the frame that fits, move the mechanic
+        for mechanic in ordered:
+            if supports(frame["id"], mechanic["id"], characters, objects):
+                return frame, mechanic["id"], [f"frame {frame_id} -> {frame['id']}", f"mechanic {mechanic_id} -> {mechanic['id']}"]
     raise ValueError(f"Không có khung hình nào chứa {characters} nhân vật và {objects} vật")
 
 
@@ -172,9 +198,9 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         if dressing != NONE:
             notes.append(f"dressing {dressing}: Core thêm vì cảnh cần lớp nền")
     focus_prop = next((p for p in kept if p["role"] == "focus"), None)
-    frame, substituted = _pick_frame(stage["frame_id"], len(present), len(kept) + len(story_visuals))
-    if substituted:
-        notes.append(f"frame {stage['frame_id']} -> {frame['id']}")
+    frame, mechanic_id, picked = _pick(stage["frame_id"], stage["mechanic_id"], len(present), len(kept) + len(story_visuals))
+    notes += picked
+    stage = {**stage, "mechanic_id": mechanic_id}
     slots = {name: (_squeeze(box) if story_visuals else dict(box)) for name, box in PLACEMENT[frame["id"]].items()}
 
     entities, assets, bindings, placed = [], {}, {}, []

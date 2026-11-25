@@ -74,7 +74,7 @@ def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str
                 result["notes"] = part.get("core_notes", [])
                 result["faults"] = [f["code"] for f in scene_assembler.scene_faults(part, list(visuals))]
                 task = {"scene_id": scene_id, "scene_range": row["narration_range"], "scene_text": row["text"],
-                        "cast": [{"entity_id": m["entity_id"], "states": sorted(m["states"])} for m in intent["cast"]], "story_visual_assets": {}}
+                        "cast": [{"entity_id": m["entity_id"], "states": sorted(m["states"])} for m in intent["cast"]], "story_visual_assets": visuals}
                 text = agent_parts.validate_scene(json.dumps(part, ensure_ascii=False), task)
                 result["accepted"] = True
                 merged = json.loads(json.dumps(intent))
