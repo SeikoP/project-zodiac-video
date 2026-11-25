@@ -36,6 +36,8 @@ STORY_VISUAL_BOX = {"x": 220, "y": 90, "width": 640, "height": 420}
 # props and dressing that are not in a frame slot stand on the actors' floor line, at the first of these x that touches nobody
 GROUND_X = [40, 880, 800, 300, 560, 160, 680]
 DEFAULT_FLOOR = 1200
+WALL_TOP, WALL_SIZE = 110, 200
+FEET = 0.82  # the characters' art leaves empty space under the feet: the visible figure ends at this fraction of its box
 SUPPORT_SIZE, FOCUS_SIZE, DRESSING_SIZE = 180, 300, 240
 MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-reaction": "reflection", "facepalm": "reflection",
                     "point-choice": "relationship", "compare-group": "relationship", "compare-two-props": "relationship"}
@@ -157,22 +159,37 @@ def _below_band(boxes: dict[str, dict]) -> dict[str, dict]:
                    "width": round(b["width"] * k), "height": round(b["height"] * k)} for name, b in boxes.items()}
 
 
+def _figure(box: dict) -> dict:
+    """The part of a character's box that is drawn: narrower than the box and ending at the feet."""
+    return {"x": box["x"] + round(box["width"] * 0.12), "y": box["y"], "width": round(box["width"] * 0.76), "height": round(box["height"] * FEET)}
+
+
+def _visible(entity: dict) -> dict | None:
+    box = _rect(entity)
+    return _figure(box) if box and entity.get("kind") == "character" else box
+
+
 def _hits(a: dict, b: dict, margin: int = 12) -> bool:
     return (a["x"] < b["x"] + b["width"] + margin and b["x"] < a["x"] + a["width"] + margin and
             a["y"] < b["y"] + b["height"] + margin and b["y"] < a["y"] + a["height"] + margin)
 
 
-def _ground_spot(placed: list[dict], floor: int, size: int, aspect: float, solid: list[dict] | None = None) -> dict | None:
+def _ground_spot(placed: list[dict], floor: int, size: int, aspect: float) -> dict | None:
     """The first standing place on the floor line, for a prop of this aspect, that touches nobody; None when the row is full."""
     for x in GROUND_X:
         fitted = _ground(_fit({"x": min(x, 1040 - size), "y": floor - size, "width": size, "height": size}, aspect), floor)
         if not any(_hits(fitted, other) for other in placed):
             return fitted
-    if solid is not None:  # set dressing may stand BEHIND an actor, never behind a prop or the story visual
-        for x in GROUND_X:
-            fitted = _ground(_fit({"x": min(x, 1040 - size), "y": floor - size, "width": size, "height": size}, aspect), floor)
-            if not any(_hits(fitted, other) for other in solid):
-                return fitted
+    return None
+
+
+def _wall_spot(placed: list[dict], aspect: float) -> dict | None:
+    """A place high on the wall (top corners), for set dressing when the floor row is full; None when a story visual holds the top."""
+    for x in (40, 840):
+        fitted = _fit({"x": min(x, 1040 - WALL_SIZE), "y": WALL_TOP, "width": WALL_SIZE, "height": WALL_SIZE}, aspect)
+        fitted["y"] = WALL_TOP + WALL_SIZE - fitted["height"]
+        if not any(_hits(fitted, other) for other in placed):
+            return fitted
     return None
 
 
@@ -224,7 +241,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     for slot, row in zip(_slots(frame, "character"), present):
         bindings[slot] = row["entity_id"]
         boxes_for[row["entity_id"]] = slots[slot]
-        placed.append(slots[slot])
+        placed.append(_figure(slots[slot]))
     state_use = {row["entity_id"]: {row["state_id"]} for row in present}
     for event in act["events"]:
         target = event["target"]
@@ -239,7 +256,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     # a story visual takes its own band; props take an object slot, else a free spot that touches nobody
     sv_entities = []
     object_slots = _slots(frame, "object")
-    character_bottoms = [b["y"] + b["height"] for b in boxes_for.values()]
+    character_bottoms = [b["y"] + round(b["height"] * FEET) for b in boxes_for.values()]
     floor = max(character_bottoms) if character_bottoms else DEFAULT_FLOOR
     for asset_key in story_visuals:
         entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
@@ -274,7 +291,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     # set dressing is added by Core, behind everything, only where it touches nobody
     if dressing != NONE:
         library = props[dressing]
-        box = _ground_spot(placed, floor, DRESSING_SIZE, _aspect(library), solid=[b for b in placed if b not in boxes_for.values()])
+        box = _ground_spot(placed, floor, DRESSING_SIZE, _aspect(library)) or _wall_spot(placed, _aspect(library))
         if box is None:
             notes.append(f"dressing {dressing} bỏ: không còn chỗ trống")
         else:
@@ -325,7 +342,7 @@ def scene_faults(part: dict, required_story_visuals=()) -> list[dict]:
             faults.append({"code": "DUPLICATE_PROP_FAMILY", "entities": [seen[family], entity["id"]], "family": family})
         seen.setdefault(family, entity["id"])
     kinds = {e["id"]: e.get("kind") for e in scene["entities"]}
-    rects = [(e["id"], _rect(e)) for e in scene["entities"] if _rect(e)]
+    rects = [(e["id"], _visible(e)) for e in scene["entities"] if _visible(e)]
     for i, (a_id, a) in enumerate(rects):
         for b_id, b in rects[i + 1:]:
             behind = {a_id.startswith("depth__"), b_id.startswith("depth__")} == {True, False} and "character" in (kinds[a_id], kinds[b_id])

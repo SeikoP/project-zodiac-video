@@ -219,9 +219,9 @@ class GroundedLayoutTests(unittest.TestCase):
     def test_props_and_dressing_stand_on_the_floor_line_of_the_actors(self):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop", mechanic="confront")
         scene = part["payload"]["scene"]
-        floor = bottom(scene, "ban")
-        self.assertEqual(bottom(scene, "phone-ping"), floor)
-        self.assertEqual(bottom(scene, "depth__laptop"), floor)
+        floor = bottom(scene, "phone-ping")
+        for dressing in [e["id"] for e in scene["entities"] if e["id"].startswith("depth__")]:
+            self.assertIn(bottom(scene, dressing), (floor, 110 + 200), dressing)  # on the floor line, or hung on the wall
 
     def test_a_support_prop_nobody_acts_on_is_dropped(self):
         part = build(TWO, cast_of(TWO, 2), ["phone-ping", "laptop"], mechanic="confront")
@@ -249,6 +249,25 @@ class GroundedLayoutTests(unittest.TestCase):
         ban = next(e for e in beside["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
         self.assertGreaterEqual(ban["height"], 780)  # the actors fill the field below the story visual, they are not shrunk into a corner of it
         self.assertLessEqual(ban["y"] - (scene_assembler.STORY_VISUAL_BOX["y"] + scene_assembler.STORY_VISUAL_BOX["height"]), 120)
+
+
+class FeetLineTests(unittest.TestCase):
+    """Real render: the art has empty space under the feet, so 'the floor' is the feet line, not the bottom of the box."""
+
+    def test_the_floor_is_the_feet_line_of_the_actors(self):
+        scene = build(TWO, cast_of(TWO, 2), ["phone-ping"], mechanic="confront")["payload"]["scene"]
+        box = next(e for e in scene["entities"] if e["id"] == "ban")["states"]["neutral"]["transform"]
+        feet = box["y"] + box["height"] * scene_assembler.FEET
+        self.assertAlmostEqual(bottom(scene, "phone-ping"), feet, delta=2)
+
+    def test_dressing_never_stands_on_an_actor(self):
+        for story in (None, CHAT):
+            part = build(TWO, cast_of(TWO, 2), ["phone-ping"], dressing="laptop", mechanic="confront", story=story)
+            scene = part["payload"]["scene"]
+            rect = lambda i: scene_assembler._visible(next(e for e in scene["entities"] if e["id"] == i))
+            for actor in ("ban", "kia"):
+                for dressing in [e["id"] for e in scene["entities"] if e["id"].startswith("depth__")]:
+                    self.assertFalse(scene_assembler._hits(rect(actor), rect(dressing), 0), (story, actor, dressing))
 
 
 class EventTimingTests(unittest.TestCase):
