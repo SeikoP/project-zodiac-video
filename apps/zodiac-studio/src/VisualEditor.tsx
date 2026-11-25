@@ -8,6 +8,7 @@ import AgentProposal from "./AgentProposal";
 import { BuildLog, EventsEditor, SourcePanel } from "./scene/OverlayPanels";
 import { AgentTab, AssetsTab, EventsTab, ObjectTab, TransitionTab } from "./scene/InspectorTabs";
 import { withTransition, withTransitionEverywhere } from "./scene/transition-edit";
+import { buildBlockedText, buildJobMessage } from "./build-error";
 import EpisodeTimeline from "./EpisodeTimeline";
 import {makeEpisodeTimeline, locateEpisodeTime} from "./episode-timeline";
 import type { WorkbenchSelection } from "./workbench-state";
@@ -321,7 +322,7 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       onSave={raw => { try { const events = JSON.parse(raw); if (!Array.isArray(events)) throw Error("Sự kiện phải là một mảng JSON"); command("scene.performance", { scene_id: scene?.id, events }); } catch (failure) { report(failure); } }}/>}
     {sourceOpen && <SourcePanel state={state} text={sourceText} onText={setSourceText} disabled={disabled} onFile={file => void loadSource(file)}
       onSave={raw => { try { command("source.replace", { intent: JSON.parse(raw) }); } catch (failure) { report(failure); } }}/>}
-    {state?.job && <div className="voice-progress" data-job-state={state.job.status} data-job-id={state.job.id}><span>{state.job.message}</span><span>{state.job.status}{state.job.action === 'export' ? ` · HyperFrames MP4${state.job.render_percent === undefined ? '' : ` · ${state.job.render_percent}%`}` : ` · ${state.job.ready_scenes.length}/${state.job.total}`}</span>{state.job.error && <details><summary>Không dựng được · xem nguyên nhân</summary><pre>{state.job.error}</pre></details>}</div>}
+    {state?.job && <div className="voice-progress" data-job-state={state.job.status} data-job-id={state.job.id}><span>{buildJobMessage(state.job.message)}</span><span>{state.job.status}{state.job.action === 'export' ? ` · HyperFrames MP4${state.job.render_percent === undefined ? '' : ` · ${state.job.render_percent}%`}` : ` · ${state.job.ready_scenes.length}/${state.job.total}`}</span>{state.job.error && <details open={!!buildBlockedText(state.job.error).summary}><summary>{buildBlockedText(state.job.error).summary || "Không dựng được · xem nguyên nhân"}</summary><pre>{buildBlockedText(state.job.error).detail}</pre></details>}</div>}
     {state?.stale_preview && <p className="voice-warning">Đang giữ preview tốt R{state.build?.revision}. Nguồn hiện tại R{state.revision}; dựng lại để xem thay đổi.</p>}
     <div className="visual-layout" hidden={sourceOpen || logOpen || galleryOpen || eventsOpen}>      <div className="panel visual-stage"><div className="panel-heading"><span>{scene ? `Xem trước · Cảnh ${(state?.intent?.scenes.findIndex(s => s.id === scene.id) ?? 0) + 1}/${state?.intent?.scenes.length ?? 0}` : "Xem trước"}</span><small>{scene?.semantic_goal ?? (preview ? "" : "Chưa dựng video")}</small></div>
         <div className="visual-viewport" ref={viewport}>{[preview,nextPreview].filter((p,i,a): p is VisualPreview=>!!p && a.findIndex(other=>other?.url===p.url)===i).map(p=>{

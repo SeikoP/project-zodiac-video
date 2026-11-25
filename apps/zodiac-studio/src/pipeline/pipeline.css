@@ -42,3 +42,6 @@
 .step-phase>summary { display:flex; align-items:baseline; justify-content:space-between; cursor:pointer; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#9baac3; margin:0 0 4px; list-style:none; }
 .step-phase>summary::-webkit-details-marker { display:none; }
 .step-phase>summary small { font-size:10px; }
+/* Step details wrap to two lines instead of being cut, and the list never scrolls sideways. */
+.step-list { overflow-x:hidden; }
+.step-text small { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }

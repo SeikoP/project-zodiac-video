@@ -66,7 +66,7 @@ export function WorkflowBar({ view, activeEpisodeView, projects, selectedId, onN
         {!projects.length && <option value="">Chưa có episode</option>}
         {projects.map(p => <option key={p.project_id} value={p.project_id}>{(p.sign && !(p.display_title || "").startsWith(p.sign) ? p.sign + " · " : "") + (p.display_title || p.episode_id)}</option>)}
       </select>
-      <button className="text-link" onClick={() => onNavigate(nextStep[0])}>Tiếp theo: {nextStep[1]} <ArrowRight size={13}/></button>
+      <button className="text-link" onClick={() => onNavigate(nextStep[0])}title={`Tiếp theo: ${nextStep[1]}`}>Đi tới bước tiếp <ArrowRight size={13}/></button>
     </div>}
   </div>;
 }

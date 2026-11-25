@@ -297,7 +297,7 @@ export default function App() {
       <header className="topbar" data-tauri-drag-region>
         <div className="titlebar-main">
           <StudioNavigation view={view} projectCount={projects.length} onNavigate={next=>setView(next === "overview" ? "editor" : next)}/>
-          {currentProject && <span className="titlebar-project">{currentProject.display_title || currentProject.episode_id}</span>}
+          
           <div className="top-actions">
             <span className={"connection " + (health ? "connected" : healthPending ? "pending" : "offline")}>
               <span className="conn-dot"/>{health ? "Project Core kết nối" : healthPending ? "Đang kiểm tra" : "Chưa kết nối"}
