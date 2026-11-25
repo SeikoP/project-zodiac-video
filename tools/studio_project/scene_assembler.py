@@ -36,6 +36,7 @@ STORY_VISUAL_BOX = {"x": 220, "y": 90, "width": 640, "height": 420}
 # props and dressing that are not in a frame slot stand on the actors' floor line, at the first of these x that touches nobody
 GROUND_X = [40, 880, 800, 300, 560, 160, 680]
 DEFAULT_FLOOR = 1200
+CENTRE_Y = 800  # without a story visual the cast and props are centred about here, not left at the bottom of the field
 WALL_TOP, WALL_SIZE = 110, 200
 FEET = 0.82  # the characters' art leaves empty space under the feet: the visible figure ends at this fraction of its box
 SUPPORT_SIZE, FOCUS_SIZE, DRESSING_SIZE = 180, 300, 240
@@ -325,11 +326,28 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
              "entities": entities, "events": events,
              "layout_contract": {"caption_safe_zone": dict(CAPTION_ZONE)},
              "experience_profile": _profile(menus, stage, entities, focus_prop, goal)}
+    if not story_visuals:
+        _centre(scene)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
     if notes:
         part["core_notes"] = notes
     return part
+
+
+def _centre(scene: dict) -> None:
+    """Move everything up together so the group is centred about CENTRE_Y (never down, never above y=100)."""
+    rects = [r for r in (_visible(e) for e in scene["entities"]) if r]
+    if not rects:
+        return
+    top, low = min(r["y"] for r in rects), max(r["y"] + r["height"] for r in rects)
+    shift = max(round(CENTRE_Y - (top + low) / 2), 100 - top)
+    if shift >= 0:
+        return
+    for entity in scene["entities"]:
+        for state in (entity.get("states") or {}).values():
+            if isinstance(state, dict) and state.get("transform"):
+                state["transform"]["y"] += shift
 
 
 def _rect(entity: dict) -> dict | None:

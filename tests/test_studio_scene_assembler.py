@@ -286,6 +286,17 @@ class FeetLineTests(unittest.TestCase):
                     self.assertFalse(scene_assembler._hits(rect(actor), rect(dressing), 0), (story, actor, dressing))
 
 
+class CompositionTests(unittest.TestCase):
+    def test_a_scene_without_a_story_visual_is_centred_not_bottom_heavy(self):
+        for frame, skeleton, count in (("two-person-offset", TWO, 2), ("single-character-focus", authoring_skeleton(1), 1)):
+            scene = build(skeleton, cast_of(skeleton, count), ["phone-ping"], "laptop", None, frame, "confront")["payload"]["scene"]
+            rects = [scene_assembler._visible(e) for e in scene["entities"]]
+            top, low = min(r["y"] for r in rects), max(r["y"] + r["height"] for r in rects)
+            self.assertAlmostEqual((top + low) / 2, scene_assembler.CENTRE_Y, delta=60, msg=frame)
+            self.assertGreaterEqual(top, 100, frame)
+            self.assertLessEqual(low, 1400, frame)
+
+
 class EventTimingTests(unittest.TestCase):
     """The real export refuses two acting events of one target that overlap (EXPORT_ACTING_TIMING_INVALID)."""
 
