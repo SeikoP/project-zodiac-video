@@ -98,3 +98,31 @@ def act_schema(menus: dict) -> dict:
         "events": {"type": "array", "maxItems": min(MAX_EVENTS, len(menus["anchors"])),
                    "items": _object({"anchor_id": _enum(a["id"] for a in menus["anchors"]), "target": _enum(targets),
                                      "action": {"type": "string", "maxLength": ACTION_LIMIT}, "state_after": _enum(states)})}})
+
+
+def schema_errors(value, schema: dict, path: str = "$") -> list[str]:
+    """Violations of the small JSON Schema subset the menu schemas use: type, enum, required, additionalProperties,
+    properties, items, maxItems, maxLength. Empty list = valid."""
+    kind = schema.get("type")
+    kinds = {"object": dict, "array": list, "string": str}
+    if kind in kinds and not isinstance(value, kinds[kind]):
+        return [f"{path}: cần kiểu {kind}"]
+    errors: list[str] = []
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append(f"{path}: {value!r} không có trong menu {schema['enum'][:12]}")
+    if kind == "string" and "maxLength" in schema and len(value) > schema["maxLength"]:
+        errors.append(f"{path}: dài quá {schema['maxLength']} ký tự")
+    if kind == "object":
+        properties = schema.get("properties", {})
+        errors += [f"{path}.{name}: thiếu" for name in schema.get("required", []) if name not in value]
+        if schema.get("additionalProperties") is False:
+            errors += [f"{path}.{name}: không được phép" for name in value if name not in properties]
+        for name, sub in properties.items():
+            if name in value:
+                errors += schema_errors(value[name], sub, f"{path}.{name}")
+    if kind == "array":
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            errors.append(f"{path}: tối đa {schema['maxItems']} phần tử")
+        for index, item in enumerate(value):
+            errors += schema_errors(item, schema.get("items", {}), f"{path}[{index}]")
+    return errors
