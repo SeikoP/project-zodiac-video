@@ -197,6 +197,8 @@ export const backend = {
   episodeBuild: (project_id: string, base_revision: number, scene_id?: string) =>
     request<VisualState>(scene_id ? "scene.compile" : "episode.build", { project_id, base_revision, ...(scene_id ? { scene_id } : {}) }),
   visualCancel: (project_id: string) => request<VisualState>("visual.cancel", { project_id }),
+  visualEpisodePreview: (project_id: string, build_id: string) =>
+    request<{ html: string; build_id: string; duration_ms: number; stale: boolean }>("visual.episode_preview", { project_id, build_id }),
   visualPreview: (project_id: string, scene_id: string, build_id: string | null = null) => request<VisualPreview>("visual.preview", { project_id, scene_id, build_id }),
   visualCandidates: (project_id: string, scene_id: string, requirement: object) => request<CandidateResult>("assets.find_candidates", { project_id, scene_id, requirement }),
   visualAgentStart: (project_id: string, scene_id: string, instruction: string) => request<AgentTask>("agent.visual.start", { project_id, scene_id, instruction }),

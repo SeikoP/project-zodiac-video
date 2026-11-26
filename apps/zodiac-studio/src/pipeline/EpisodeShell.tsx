@@ -8,6 +8,7 @@ import EpisodeIdentity from "./EpisodeIdentity";
 import NeedsYou from "./NeedsYou";
 import NextActionBanner from "./NextAction";
 import StepList from "./StepList";
+import StillsStrip from "./StillsStrip";
 import { inspectorFor } from "./inspector-registry";
 import { createPipelineStore, type Visibility } from "./pipeline-store";
 import type { PipelineNode } from "./types";
@@ -74,14 +75,14 @@ export default function EpisodeShell({ project, active, tool, toolTick, selectio
       </div>
       <div className="production-workspace" data-stage={target.stage}>
         <div className="production-side">
-          <StepList store={store} onOpen={open} projectId={projectId} />
+          <StepList store={store} onOpen={open} />
           <NeedsYou store={store} onOpen={open} />
         </div>
         {fullStage && <div className="stage-panel">{panel}</div>}
         <div className="production-editor" style={fullStage ? { display: "none" } : undefined}>
           <Suspense fallback={<p>Đang mở phần đang chọn…</p>}>
             <VisualEditor project={project} active={active} selection={selection} onSelectionChange={onSelectionChange} onBuildReady={onBuildReady}
-              onVoice={() => open("voice")} graphTarget={target} contextPanel={fullStage ? undefined : panel} voiceRefresh={voiceRefresh}
+              onVoice={() => open("voice")} graphTarget={target} contextPanel={fullStage ? undefined : panel} sidePanelTop={<section className="side-scenes"><h3>Các cảnh</h3><StillsStrip store={store} projectId={projectId} onOpen={open} /></section>} voiceRefresh={voiceRefresh}
               agentRunning={snapshot.nodes.some((n) => n.status === "RUNNING" && n.id.split(":")[0] === "visual")} />
           </Suspense>
         </div>

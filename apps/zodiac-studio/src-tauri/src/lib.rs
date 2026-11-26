@@ -147,6 +147,7 @@ impl Backend {
             "visual.command",
             "visual.cancel",
             "visual.preview",
+            "visual.episode_preview",
             "episode.build",
             "scene.compile",
             "video.export",

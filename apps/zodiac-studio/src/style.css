@@ -768,3 +768,17 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .agent-parts { list-style:none; margin:6px 0; padding:0; display:grid; gap:2px; font-size:11px; }
 .agent-parts li { color:#a0a8bd; } .agent-parts li[data-status=RUNNING] { color:#e6d58a; } .agent-parts li[data-status=DONE] { color:#8ac4ab; } .agent-parts li[data-status=FAILED] { color:#e98a8a; }
 .style-note { display:block; margin:6px 0; padding:6px 8px; border-left:3px solid #c2a1df; background:#c2a1df14; line-height:1.5; }
+
+/* Whole-video player: one composition, so transitions play and nothing is swapped at a scene boundary. */
+.whole-video { display:flex; flex-direction:column; min-height:0; }
+.episode-player { display:flex; flex-direction:column; gap:8px; min-height:0; flex:1; }
+.episode-player-stage { position:relative; overflow:hidden; height:min(72vh,820px); min-height:390px; background:#0d1018; }
+.episode-player-stage > iframe { border:0; position:absolute; left:50%; top:50%; transform-origin:center; margin-left:-540px; margin-top:-960px; }
+.episode-player-stage > .voice-muted { position:absolute; inset:0; display:grid; place-items:center; margin:0; }
+
+/* Right panel: scenes first, then only the tabs that matter. */
+.side-scenes { border-bottom:1px solid #2c3647; padding:0 0 10px; margin-bottom:10px; }
+.side-scenes h3 { font-size:12px; margin:0 0 6px; color:#c7d3e6; }
+.more-title { font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#9baac3; margin:12px 0 6px; }
+.side-scenes .stills-strip { grid-template-columns:repeat(auto-fill,56px); }
+.side-scenes .still-tile iframe { transform:scale(.0519); }

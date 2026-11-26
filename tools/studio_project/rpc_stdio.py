@@ -24,7 +24,7 @@ _ALLOWED = frozenset({
     "agent.cancel", "agent.apply", "agent.visual.start", "agent.author.start",
     "voice.open", "voice.start", "voice.cancel", "voice.select", "voice.assemble",
     "voice.audio", "voice.playback", "voice.confirm",
-    "visual.open", "visual.command", "visual.cancel", "visual.preview",
+    "visual.open", "visual.command", "visual.cancel", "visual.preview", "visual.episode_preview",
     "episode.build", "scene.compile", "video.export", "video.get", "assets.describe", "assets.gallery", "assets.find_candidates", "validation.get",
     "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "pipeline.card.resolve", "validators.run",
 })
@@ -136,6 +136,9 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method == "scene.compile":
         _exact(p, "project_id", "base_revision", "scene_id")
         return service.visual.start(**p)
+    if method == "visual.episode_preview":
+        _exact(p, "project_id", "build_id")
+        return service.visual.episode_preview(**p)
     if method == "visual.preview":
         _exact(p, "project_id", "scene_id", "build_id")
         return service.visual.preview(**p)

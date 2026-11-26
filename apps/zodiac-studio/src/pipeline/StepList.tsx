@@ -2,7 +2,6 @@ import { useCallback, useSyncExternalStore } from "react";
 import { Check, Clock, Hand, LoaderCircle, Lock, OctagonX, Play, RotateCcw, type LucideIcon } from "lucide-react";
 import type { PipelineStore } from "./pipeline-store";
 import { groupByPhase, phasePrimary, runnableScenes, phaseProgress, phaseSummary, RUNNABLE, STATUS_LABEL } from "./status";
-import StillsStrip from "./StillsStrip";
 import type { NodeStatus, PipelineNode } from "./types";
 import "./pipeline.css";
 
@@ -26,24 +25,23 @@ function Row({ node, selected, onSelect, onRun }: { node: PipelineNode; selected
 }
 
 /** The visual phase at a glance: one bar, one button, the frames, and any question for the owner. */
-function Compact({ all, store, projectId, onOpen, onRun }: { all: PipelineNode[]; store: PipelineStore; projectId: string; onOpen: (id: string) => void; onRun: (id: string) => void }) {
+function Compact({ all, store, onRun }: { all: PipelineNode[]; store: PipelineStore; onRun: (id: string) => void }) {
   const { done, total, percent } = phaseProgress(all);
   const primary = phasePrimary(all);
   const running = all.some((n) => n.status === "RUNNING");
   return (
     <div className="phase-compact" data-phase="visual">
       <div className="phase-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Tiến độ hình ảnh"><span style={{ width: `${percent}%` }} /></div>
-      <div className="phase-actions"><small>{done}/{total} bước xong</small>
+      <div className="phase-actions"><small>{done}/{total} bước xong · các cảnh và câu hỏi ở khung bên phải</small>
         {primary && !running && <button className="outline-btn phase-primary" onClick={() => onRun(primary.id)}>{primary.status === "READY" ? "Chạy" : "Chạy lại"}: {primary.title}</button>}
         {!primary && !running && runnableScenes(all).length > 0 && <button className="outline-btn phase-primary" onClick={() => { void store.runScenes(); }}>Dựng các cảnh ({runnableScenes(all).length})</button>}
       </div>
-      <StillsStrip store={store} projectId={projectId} onOpen={onOpen} />
     </div>
   );
 }
 
 /** One column, top to bottom. This replaces the node graph: the order of work is fixed, so a list says it with less. */
-export default function StepList({ store, onOpen, projectId = "" }: { store: PipelineStore; onOpen: (nodeId: string) => void; projectId?: string }) {
+export default function StepList({ store, onOpen }: { store: PipelineStore; onOpen: (nodeId: string) => void }) {
   const snap = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const { nodes, selection } = snap;
   const select = useCallback((id: string) => { store.select(id); onOpen(id); }, [store, onOpen]);
@@ -73,7 +71,7 @@ export default function StepList({ store, onOpen, projectId = "" }: { store: Pip
         return (
         <details className="step-phase" key={phase.id} data-phase={phase.id} open={current}>
           <summary><span>{phase.title}</span><small>{finished}/{all.length}</small></summary>
-          {phase.id === "visual" && <Compact all={all} store={store} projectId={projectId} onOpen={select} onRun={run} />}
+          {phase.id === "visual" && <Compact all={all} store={store} onRun={run} />}
           {phase.id === "visual"
             ? <details className="phase-detail" open={all.some((n) => n.id === selection.nodeId)}><summary>Chi tiết</summary>{rows(steps, scenes)}</details>
             : rows(steps, scenes)}

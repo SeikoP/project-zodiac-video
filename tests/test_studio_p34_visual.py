@@ -156,6 +156,19 @@ class VisualWorkspaceTests(unittest.TestCase):
         self.visual.start(self.project,state["revision"]);warm=self.wait()
         self.assertEqual(warm["build"]["cache"]["rebuilt"],0);self.assertEqual(warm["approval"],"NOT_GRANTED")
 
+    def test_the_whole_episode_previews_as_one_seekable_composition_and_is_cached(self):
+        state=self.built();calls=[]
+        def fake(handle,payload,*args,**kw):  # the fixture's synthetic acting is preview-valid but not export-valid: stand in for the painter
+            calls.append(payload["action"]);out=Path(payload["output"]);out.mkdir(parents=True,exist_ok=True)
+            (out/"index.html").write_text("<html><script>window.__timelines.episode=1</script></html>","utf8");return {}
+        with patch.object(self.visual,"_node",side_effect=fake):
+            page=self.visual.episode_preview(self.project,state["build"]["id"])
+            again=self.visual.episode_preview(self.project,state["build"]["id"])
+            with self.assertRaises(StudioError):self.visual.episode_preview(self.project,"0"*32)
+        self.assertEqual(calls,["export_prepare"])  # prepared once, then reused while the manifest is unchanged
+        self.assertIn("__timelines.episode",page["html"]);self.assertEqual(again["html"],page["html"])
+        self.assertGreater(page["duration_ms"],0);self.assertFalse(page["stale"]);self.assertTrue(page["not_an_approval"])
+
     def test_scoped_edit_reuses_other_scenes_and_theme_preserves_voice(self):
         state=self.built();assets=state["build"]["assets"];voice=copy.deepcopy(self.voice)
         self.command("scene.patch",{"scene_id":"s03","entity_id":"gemini","state_id":"neutral","changes":{"x":280}})

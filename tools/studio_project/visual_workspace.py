@@ -184,6 +184,28 @@ class VisualWorkspace:
                                 "kind": kind, "revision": state["revision"], "at": time.time(), "payload": payload})
         state["events"] = state["events"][-100:]
 
+    def _voice_inputs(self, project_id, handle):
+        """(assembly wav sha256 or None, timing fingerprint): what a build is compared with to see whether it is stale.
+
+        The full voice snapshot validates every take on disk (about a second); the answer only changes when the voice state file
+        does, so it is remembered per (file mtime, size). The first call, and any change to the voice state, recomputes it."""
+        target = handle.workspace/".runtime"/"voice-lab"/"state.json"
+        try:
+            stat = target.stat()
+            key = (project_id, stat.st_mtime_ns, stat.st_size)
+        except OSError:
+            key = None
+        cache = self.__dict__.setdefault("_voice_input_cache", {})
+        if key is not None and key in cache:
+            return cache[key]
+        voice = self.service.voice.snapshot(project_id)
+        value = ((voice.get("assembly") or {}).get("wav_sha256"), canonical_hash(voice.get("timing")))
+        if key is not None:
+            for old in [k for k in cache if k[0] == project_id]:
+                cache.pop(old)
+            cache[key] = value
+        return value
+
     def snapshot(self, project_id):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "visual-state"):
@@ -194,9 +216,8 @@ class VisualWorkspace:
             if state["build"]:
                 if state["build"].get("contracts", {}).get("presentation_contract_sha256") != file_sha256(Path(__file__).with_name("visual_contract.json")):
                     result.update(stale_preview=True, stale_reason="VISUAL_PRESENTATION_CHANGED_REBUILD_REQUIRED")
-                voice = self.service.voice.snapshot(project_id)
-                if (not voice.get("assembly") or voice["assembly"]["wav_sha256"] != state["build"]["voice_sha256"] or
-                        canonical_hash(voice.get("timing")) != state["build"].get("voice_timing_fingerprint")):
+                wav_sha, timing_fp = self._voice_inputs(project_id, handle)
+                if wav_sha is None or wav_sha != state["build"]["voice_sha256"] or timing_fp != state["build"].get("voice_timing_fingerprint"):
                     result.update(stale_preview=True, stale_reason="SELECTED_VOICE_OR_TIMING_CHANGED")
             if state["job"] and state["job"]["status"] == "RUNNING":
                 if not self._job_alive(project_id, state["job"]):
@@ -752,10 +773,10 @@ class VisualWorkspace:
         VoiceArtifactStore._atomic_write(output / 'receipt.json', receipt)
         return receipt
 
-    def _preview_data(self, project_id, build_id, scene_id):
+    def _preview_data(self, project_id, build_id, scene_id, handle=None):
         if not BUILD_ID.fullmatch(build_id) or not ID.fullmatch(scene_id):
             raise _error("VISUAL_PREVIEW_INVALID", "Invalid preview identity")
-        handle = self._handle(project_id)
+        handle = handle or self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "visual-state"):
             state, _ = self._read(handle)
             build = state.get("build") or {}
@@ -816,20 +837,51 @@ class VisualWorkspace:
                 'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt), 'not_an_approval': True}
 
     def preview(self, project_id, scene_id, build_id=None):
+        handle = self._handle(project_id)
         state = self.snapshot(project_id)
         build_id = build_id or (state.get("build") or {}).get("id")
         if not build_id:
             raise _error("VISUAL_PREVIEW_MISSING", "Build this episode first")
-        data = self._preview_data(project_id, build_id, scene_id)
+        data = self._preview_data(project_id, build_id, scene_id, handle)
         with self._guard:
             if self._server is None:
                 self._server = PreviewServer(self._resource)
             url = self._server.url(project_id, build_id, scene_id)
         build = state.get("build") or {}
         row = next((s for s in build.get("scenes", []) if s["id"] == scene_id), {})
-        return {"url": url, "html": data.decode("utf8"), "sha256": file_sha256(self._paths(self._handle(project_id))[0]/"builds"/build_id/(scene_id+".html")),
+        return {"url": url, "html": data.decode("utf8"), "sha256": file_sha256(self._paths(handle)[0]/"builds"/build_id/(scene_id+".html")),
                 "scene": row, "build_id": build_id, "revision": build.get("revision", state["revision"]),
                 "candidate_only": build.get("id") != build_id, "stale": state["stale_preview"], "not_an_approval": True}
+
+    def episode_preview(self, project_id, build_id=None):
+        """The whole episode as ONE seekable HyperFrames composition (the export painter), so scene transitions play in the editor.
+
+        Derived from the current build only; nothing is exported or approved. The prepared page is kept next to the build and
+        reused while the manifest is unchanged."""
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, "visual-state"):
+            state, _ = self._read(handle)
+            build = state.get("build") or {}
+            build_id = build_id or build.get("id")
+            if not build or build.get("id") != build_id or not isinstance(build_id, str) or not BUILD_ID.fullmatch(build_id):
+                raise _error("VISUAL_PREVIEW_STALE", "Preview revision is no longer available")
+            root, _ = self._paths(handle)
+            folder = _trusted_dir(handle.workspace, root/"builds"/build_id)
+            manifest_path = folder/"manifest.json"
+            manifest = self._read_json(manifest_path)
+            if any(build.get(key) != value for key, value in manifest.items()):
+                raise _error("EXPORT_BUILD_DRIFT", "Build manifest changed")
+            manifest_sha = file_sha256(manifest_path)
+            output = folder/"episode-preview"
+            marker, page = output/"manifest.sha256", output/"index.html"
+            if not (page.is_file() and marker.is_file() and marker.read_text("utf8") == manifest_sha):
+                self._node(handle, {"action": "export_prepare", "build_root": str(folder), "manifest_sha256": manifest_sha,
+                                    "source_sha256": manifest["source_sha256"], "voice_sha256": manifest["voice_sha256"],
+                                    "source_root": str(ROOT), "output": str(output)})
+                marker.write_text(manifest_sha, "utf8")
+            graph = (manifest.get("performance_graph") or {}).get("scenes") or []
+            return {"html": page.read_text("utf8"), "build_id": build_id, "duration_ms": max((s.get("endMs", 0) for s in graph), default=0),
+                    "stale": bool(build.get("revision") != state["revision"]), "not_an_approval": True}
 
     def validation(self, project_id):
         state = self.snapshot(project_id)
