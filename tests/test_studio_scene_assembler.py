@@ -340,6 +340,16 @@ class SceneAccentTests(unittest.TestCase):
             self.assertGreaterEqual(t["y"], 0)
             self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"])
 
+    def test_every_registered_accent_is_big_enough_to_read_as_the_place(self):
+        # the plugin's own review wants the context cue to cover about 7 percent of the canvas
+        for accent_id in authoring_menus.accent_registry():
+            for story in (None, CHAT):
+                scene = with_accent(accent_stage(accent_id), story=story)["payload"]["scene"]
+                t = next(e for e in scene["entities"] if e["kind"] == "scene_accent")["states"]["visible"]["transform"]
+                self.assertGreaterEqual(t["width"] * t["height"] / (1080 * 1920), 0.07, (accent_id, bool(story)))
+                self.assertLessEqual(t["x"] + t["width"], 1080, accent_id)
+                self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"], accent_id)
+
     def test_an_accent_means_core_adds_no_filler_dressing(self):
         scene = with_accent(dressing="none")["payload"]["scene"]
         self.assertEqual([e["id"] for e in scene["entities"] if e["id"].startswith("depth__")], [])

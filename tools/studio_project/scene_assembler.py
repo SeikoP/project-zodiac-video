@@ -14,7 +14,7 @@ from .scene_repairs import prune_non_story_references
 
 CAPTION_ZONE = {"x": 80, "y": 1470, "width": 920, "height": 360}
 LAYER_ACCENT, LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 5, 10, 20, 30, 40
-ACCENT_WIDTH, ACCENT_MIN, ACCENT_TOP = 760, 360, 110
+ACCENT_AREA, ACCENT_MIN, ACCENT_MAX_WIDTH, ACCENT_TOP, ACCENT_OVERLAP = round(0.078 * 1080 * 1920), 360, 1000, 110, 0.5
 
 # frame id -> slot -> box (story field 1080x1400; the caption lane starts at y=1470). Characters keep the 1:2 ratio of the art.
 PLACEMENT: dict[str, dict[str, dict]] = {
@@ -336,7 +336,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if not story_visuals:
         _centre(scene)
     if has_accent:
-        _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals))
+        _add_accent(scene, assets, accent, menus, scene_id, scene_text)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
     if accent and accent["accent_id"] == NONE_FITS:  # the library has no such cue: ask for art, never substitute one
@@ -363,7 +363,7 @@ def _centre(scene: dict) -> None:
                 state["transform"]["y"] += shift
 
 
-def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: str, scene_text: str, has_story_visual: bool) -> None:
+def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: str, scene_text: str) -> None:
     """The scene's setting: a registered accent on a rear layer, canvas-native, declared with its context and exact anchor."""
     row = accent_registry()[accent["accent_id"]]
     anchor = next(a["text"] for a in menus["anchors"] if a["id"] == accent["anchor_id"])
@@ -372,12 +372,11 @@ def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: 
     aspect = _aspect({"path": "scene-set/" + row["path"]})
     actors = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
     top = min((r["y"] for r in actors), default=DEFAULT_FLOOR)
-    width = ACCENT_WIDTH
-    while width / aspect > max(top - ACCENT_TOP - 30, 0) and width > ACCENT_MIN and not has_story_visual:
-        width -= 40  # shrink until it fits in the free band above the cast
+    width = min(ACCENT_MAX_WIDTH, max(ACCENT_MIN, round((ACCENT_AREA * aspect) ** 0.5)))
     height = round(width / aspect)
-    y = (max(ACCENT_TOP, top - height - 30) if not has_story_visual else max(ACCENT_TOP, top - round(height * 0.4)))
-    box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": round(width), "height": height}
+    # a rear cue: it may reach behind the cast's heads, so it can be big enough to read as the place
+    y = max(ACCENT_TOP, top - round(height * ACCENT_OVERLAP))
+    box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": width, "height": height}
     scene["entities"].insert(0, {
         "id": "accent_" + scene_id, "kind": "scene_accent", "visual_role": "scene_accent", "initial_state": "visible",
         "context": {"kind": "environment_detail", "setting": accent["setting"], "visible_detail": accent["visible_detail"]},
