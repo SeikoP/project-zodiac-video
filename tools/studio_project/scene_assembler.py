@@ -393,15 +393,9 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
 
 
 def _move(scene: dict, menus: dict) -> list[str]:
-    """Core's acting and camera pass (scene_motion): reactions to pose changes and slow pushes on pictures."""
+    """Core's motion pass (scene_motion): registered presets on pose changes and on the first piece of a picture."""
     from . import scene_motion
-    by_text = {a["text"]: a.get("t") for a in menus["anchors"]}
-    times = {e["id"]: (0.0 if e["trigger"].get("type") == "scene_start" else by_text.get(e["trigger"].get("text")))
-             for e in scene["events"]}
-    known = [a["t"] for a in menus["anchors"] if a.get("t") is not None]
-    if not known:
-        return []
-    return scene_motion.animate(scene, menus["anchors"], times, FPS, max(known) + 1.2)
+    return scene_motion.animate(scene)
 
 
 def _centre(scene: dict) -> None:

@@ -3,39 +3,30 @@ import unittest
 from tools.studio_project import scene_motion
 
 
-def character(ident, x, states):
-    return {"id": ident, "kind": "character", "states": {s: {"visible": True, "transform": {"x": x, "y": 560, "width": 420, "height": 840}} for s in states}}
+def character(ident):
+    return {"id": ident, "kind": "character", "states": {}}
 
 
-def scene():
-    return {"entities": [character("a", 20, ["neutral", "commit"]), character("b", 640, ["judge", "exposed"]),
-                         {"id": "graphic_s1", "kind": "object", "states": {"hidden": {"visible": False}, "step1": {"visible": True}}}],
-            "events": [{"id": "e1", "target": "a", "state_before": "neutral", "state_after": "commit", "trigger": {"type": "voice_anchor", "text": "x"}, "motion": {"preset": "state_swap", "duration_frames": 12}},
-                       {"id": "e2", "target": "graphic_s1", "state_before": "hidden", "state_after": "step1", "trigger": {"type": "voice_anchor", "text": "g"}, "motion": {"preset": "state_swap", "duration_frames": 12}}]}
-
-
-ANCHORS = [{"text": f"w{i}", "t": i * 0.5} for i in range(20)]
+def event(ident, target, before, after, preset="state_swap", frames=12):
+    return {"id": ident, "target": target, "state_before": before, "state_after": after,
+            "trigger": {"type": "voice_anchor", "text": ident}, "motion": {"preset": preset, "duration_frames": frames}}
 
 
 class SceneMotionTests(unittest.TestCase):
-    def test_pose_change_gets_a_reaction_after_it_lands_and_a_camera_push(self):
-        s = scene()
-        scene_motion.animate(s, ANCHORS, {"e1": 1.0, "e2": 2.0}, 24, 9.0)
-        reaction = next(e for e in s["events"] if e["id"] == "m1")
-        self.assertEqual((reaction["target"], reaction["motion"]["preset"], reaction["state_before"]), ("a", "lean", "commit"))
-        self.assertEqual(s["events"].index(reaction), 1)
-        self.assertGreater(next(a["t"] for a in ANCHORS if a["text"] == reaction["trigger"]["text"]), 1.5)
-        self.assertEqual(len(s["camera"]), 1)
+    def test_pose_changes_use_registered_presets_after_a_calm_first_one(self):
+        scene = {"entities": [character("a"), character("b")],
+                 "events": [event("e1", "a", "neutral", "deny"), event("e2", "a", "deny", "commit"), event("e3", "a", "commit", "exposed"),
+                            event("e4", "b", "judge", "judge")]}
+        scene_motion.animate(scene)
+        presets = [e["motion"]["preset"] for e in scene["events"]]
+        self.assertEqual(presets, ["state_swap", "small-bounce", "small-bounce", "state_swap"])
+        self.assertTrue(all(e["motion"]["duration_frames"] == 12 for e in scene["events"][1:3]))
+        self.assertNotIn("camera", scene)
 
-    def test_no_motion_in_the_last_second_and_none_without_a_gap(self):
-        s = scene()
-        scene_motion.animate(s, ANCHORS, {"e1": 1.0, "e2": 2.0}, 24, 1.4)
-        self.assertFalse([e for e in s["events"] if e["id"].startswith("m")])
-
-    def test_existing_camera_is_kept(self):
-        s = scene(); s["camera"] = [{"id": "x"}]
-        scene_motion.animate(s, ANCHORS, {"e1": 1.0, "e2": 2.0}, 24, 9.0)
-        self.assertEqual(s["camera"], [{"id": "x"}])
+    def test_first_piece_of_a_picture_pops_in_later_pieces_do_not(self):
+        scene = {"entities": [], "events": [event("g1", "graphic_s1", "hidden", "step1"), event("g2", "graphic_s1", "step1", "step2")]}
+        scene_motion.animate(scene)
+        self.assertEqual([e["motion"]["preset"] for e in scene["events"]], ["pop-in", "state_swap"])
 
 
 if __name__ == "__main__":
