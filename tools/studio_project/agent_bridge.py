@@ -418,9 +418,8 @@ class AgentManager:
                     self._set_part(group_id, sid, "DONE", seconds=0)
             io.on_save = progress
             result = authoring_chain.run_chain(io, stopped=lambda: group_id in self._cancelled)
-            if result.cards:
-                from .pipeline import cards
-                cards.save_cards(self.service.registry.get(project_id).workspace, result.cards)
+            from .pipeline import cards  # always saved, so a run with no questions closes the ones an earlier run left
+            cards.save_cards(self.service.registry.get(project_id).workspace, result.cards)
             if result.proposal is None:
                 failed = {sid: outcome.reason for sid, outcome in result.scenes.items() if outcome.status == "failed"}
                 detail = "; ".join(f"{sid}: {reason[:90]}" for sid, reason in failed.items())
