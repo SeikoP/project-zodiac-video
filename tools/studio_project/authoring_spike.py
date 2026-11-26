@@ -32,8 +32,8 @@ def wait(service, task_id: str, limit: float = 300.0) -> dict:
     raise TimeoutError(task_id)
 
 
-def choose(service, project_id: str, schema: dict, data: dict) -> tuple[dict | None, str | None]:
-    task = wait(service, service.agent.start_choice(project_id, schema, data)["task_id"])
+def choose(service, project_id: str, schema: dict, data: dict, skill: str | None = None) -> tuple[dict | None, str | None]:
+    task = wait(service, service.agent.start_choice(project_id, schema, data, skill=skill)["task_id"])
     return (json.loads(task["suggestion"]), None) if task["status"] == "COMPLETED" else (None, task.get("error"))
 
 
@@ -64,11 +64,11 @@ def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str
     goal = next((s.get("semantic_goal") for s in intent.get("scenes", []) if s.get("id") == scene_id), row["text"][:80])
     began, result = time.monotonic(), {"scene": scene_id, "schema_valid": False, "accepted": False, "compiled": False, "seconds": 0.0, "error": None, "notes": [], "faults": [], "checks": []}
     stage, error = choose(service, project_id, authoring_menus.stage_schema(menus),
-                          {"scene_id": scene_id, "scene_text": row["text"], "goal": goal, "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing")}})
+                          {"scene_id": scene_id, "scene_text": row["text"], "goal": goal, "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing")}}, skill="stage")
     if stage:
         act, error = choose(service, project_id, authoring_menus.act_schema(menus, stage),
                             {"scene_id": scene_id, "scene_text": row["text"], "goal": goal, "stage": stage, "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]],
-                             "targets": [p["prop_id"] for p in stage["props"]] + [p["entity_id"] for p in stage["present"]]})
+                             "targets": [p["prop_id"] for p in stage["props"]] + [p["entity_id"] for p in stage["present"]]}, skill="act")
         result["schema_valid"] = act is not None
         if act:
             try:
