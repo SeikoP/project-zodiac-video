@@ -214,6 +214,7 @@ class CheckFilterTests(unittest.TestCase):
             {"code": "VISUAL_DEPTH_UNDERDEVELOPED", "scene_id": "s02"}, {"code": "PASSIVE_STORYTELLING", "scene_id": "s09"}]}]
         with tempfile.TemporaryDirectory() as tmp:
             io = LiveIOTests().make(tmp)
+            (io.workspace / ".authoring").mkdir()
             text = json.dumps({"payload": {"scene": {"id": "s02"}, "assets": {}}})
             skeleton = json.dumps({"payload": {"intent": {"scenes": [], "assets": {}}}})
             with mock.patch("tools.studio_project.pipeline.validators.node_runner", return_value=found):

@@ -292,6 +292,7 @@ class LiveIO:
                     shutil.copyfile(source, target)
             if (self.workspace / ".authoring/agent-art").is_dir():
                 shutil.copytree(self.workspace / ".authoring/agent-art", copy / ".authoring/agent-art")
+            (copy / ".authoring").mkdir(exist_ok=True)
             (copy / ".authoring/visual-intent.json").write_text(json.dumps(intent, ensure_ascii=False), "utf8")
             for result in node_runner(copy, ("scene-experience", "story-visual-presence", "authoring-completeness")):
                 for issue in result.get("issues", []):
