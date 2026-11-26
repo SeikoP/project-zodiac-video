@@ -1,0 +1,22 @@
+# Story Visual (Hình kể chuyện)
+
+A Story Visual makes **one story fact visible: who does what, what changes, what that means**. It may be an illustration, outlined lettering, or both inside the same entity, state and SVG. It is an explanation, not an image attached because the narration mentions an emotion.
+
+## Decide first
+Read the exact narration beat and the approved Phase 1 direction, then write the intended viewer read in plain words. Someone who has not seen the episode, muted, must name the participants, follow the change and state the consequence. **Removal test:** if removing it loses no important fact, omit it and say why. A lamp establishes a setting, a slumped pose shows fatigue, captions transcribe speech; none of them supplies a causal explanation. There is no quota, and quiet scenes need none.
+
+Examples of what counts: task cards that start in two named columns and collect on one side while the other ends at a large 0; a first offer, a refusal, another attempt, then the hand withdrawing, with the count revealed only at the third; a bag that changes hands while its label changes from "ĐỂ TÔI!" to "ĐƯỢC XÁCH!". A floating meter, an unlabeled battery, a glyph or one abstract word does not identify the relationship.
+
+## Input and execution
+Phase 1 records `story_visuals[]` plus an explicit `story_visual_decision` (`required`, or `omitted` with a reason). Each direction has `id`, `beat_ids`, `story_point`, `viewer_read`, `visible_subject`, `visible_action`, `visual_idea`, `contribution` (what is lost without it) and optional exact `lettering[]`. Missing input is a blocker for the owner, never something to invent. Phase 2 does not pick a Story Visual from a catalog; it authors one scene-specific drawing per state.
+
+Phase 2 then:
+1. binds `phase1_visual_id` and exact narration anchors in `art_direction.narrative_brief`, with drawable before / change / after states;
+2. authors one `story_visual` entity with one SVG per state and the matching asset category; any words are baked into that SVG's paths, never a separate text overlay or coverage lane;
+3. makes identity, ownership and direction explicit in the picture, with short words large enough at phone size; hides future outcomes until their exact anchor and removes the visual when its job ends;
+4. declares `layers.story_visual` use or omit, names its entities and events, and passes provenance, completeness, presence, event/state and preview checks.
+
+## Layout and review
+The Story Visual sits in its own band above the actors; actors, props and accents never overlap it. In review inspect every transition and the final frame at phone size, muted, without the brief: count and reveal timing, clipping, faces, handoffs, caption space. A machine PASS checks structure and does not prove the picture communicates. Changing the story meaning or necessary wording reopens Phase 1; drawing, geometry and treatment stay Phase 2.
+
+Story Visual art in Studio is **Core-rendered** from a small structured spec (templates such as `story_text`, `chat_compare`); the agent never emits raw SVG, HTML, scripts or URLs.

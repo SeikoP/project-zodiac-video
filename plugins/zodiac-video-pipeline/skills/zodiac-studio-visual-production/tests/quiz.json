@@ -1,0 +1,204 @@
+{
+ "format": "zodiac-skill-quiz@1",
+ "purpose": "Does an agent holding the skill answer Phase 2 specifics the way the plugin contracts require? Options are shuffled per run (the key is always B in this file) and kept similar in length so a letter or length bias cannot score. Baseline (no skill) must be clearly lower than with the skill, otherwise the question measures nothing.",
+ "questions": [
+  {
+   "id": "max_char_assets",
+   "q": "What is the default maximum of unique character assets for a fresh production unless an exception reason exists?",
+   "options": {
+    "A": "Five unique character assets.",
+    "B": "Three unique character assets.",
+    "C": "Eight unique character assets.",
+    "D": "One per scene, no cap overall."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "hair_reuse",
+   "q": "Two recurring characters visible together intentionally share one hair_id. Which authoring field must justify it for every colliding character?",
+   "options": {
+    "A": "design_intent.shared_hair_ok set to true.",
+    "B": "design_intent.hair_reuse_reason.",
+    "C": "assembly.hair_override with the sign name.",
+    "D": "Nothing; matching hair is always allowed."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "style_token",
+   "q": "Which style token id and handmade profile must every production asset carry?",
+   "options": {
+    "A": "zodiac-paper-doodle-meme-v3 with human-stroke-v1.",
+    "B": "zodiac-paper-doodle-meme-v4 with human-stroke-v2.",
+    "C": "zodiac-flat-vector-v4 with clean-stroke-v2.",
+    "D": "zodiac-paper-doodle-chibi-v2 with human-stroke-v2."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "caption_font",
+   "q": "Which caption font stack does the channel design lock use?",
+   "options": {
+    "A": "\"Comic Neue\", \"Segoe UI\", sans-serif.",
+    "B": "\"Patrick Hand\", \"Segoe Print\", cursive.",
+    "C": "\"Caveat\", \"Bradley Hand\", cursive.",
+    "D": "\"Nunito\", \"Arial\", sans-serif."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "profile_projection",
+   "q": "What happens to experience_profile when production.json / Job@5 is produced?",
+   "options": {
+    "A": "It is copied into production.json for the renderer.",
+    "B": "It is authoring-only and never projected.",
+    "C": "It is hashed into the cover.",
+    "D": "It is projected only for payoff scenes."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "coverage_lanes",
+   "q": "Fresh per-beat visual coverage decides use or explicit omission for which lanes?",
+   "options": {
+    "A": "Only story_visual.",
+    "B": "Actor, scene_accent, story_visual, ordinary prop, support, caption and meme, each with a reference or a reason.",
+    "C": "Only props and effects.",
+    "D": "Only the cover."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "scene_accent_category",
+   "q": "How is a fresh scene_accent serialized for Job@5 / the renderer?",
+   "options": {
+    "A": "Visual role background with asset category environment; not counted as prop or effect.",
+    "B": "Visual role prop with category prop, counted in prop density.",
+    "C": "Visual role effect with category effect.",
+    "D": "Visual role overlay with category overlay."
+   },
+   "answer": "A"
+  },
+  {
+   "id": "story_modes",
+   "q": "Which list is the complete set of experience_profile.story_mode values?",
+   "options": {
+    "A": "behavior, relationship, exposition, transition, reflection, payoff, symbolic.",
+    "B": "action, dialogue, exposition, transition, reflection, punchline.",
+    "C": "setup, conflict, payoff, symbolic, quiet.",
+    "D": "behavior, relationship, exposition, payoff."
+   },
+   "answer": "A"
+  },
+  {
+   "id": "occupancy_floor",
+   "q": "Roughly what share of the pre-caption story field must story entities occupy to pass frame occupancy?",
+   "options": {
+    "A": "About 10 percent.",
+    "B": "About 26 percent.",
+    "C": "About 50 percent.",
+    "D": "About 75 percent."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "blocking_between",
+   "q": "A Director blocking uses side 'between'. What else is required, and what bounds offset_px?",
+   "options": {
+    "A": "A distinct secondary_anchor; offset_px is 0 to 180.",
+    "B": "A third character; offset_px is 0 to 500.",
+    "C": "Nothing extra; offset_px is unbounded.",
+    "D": "A scene accent id; offset_px is 0 to 60."
+   },
+   "answer": "A"
+  },
+  {
+   "id": "slide_rule",
+   "q": "What must a changed-state slide event satisfy?",
+   "options": {
+    "A": "A real near binding, finite on-canvas endpoints, unchanged size/scale/rotation and 24 to 360 px of travel.",
+    "B": "Only a start and end frame.",
+    "C": "Any distance up to 1920 px, size may change.",
+    "D": "A camera move on the same frame."
+   },
+   "answer": "A"
+  },
+  {
+   "id": "sticker_edge",
+   "q": "How thick is the warm-white sticker edge under a character's ink, at 1080 px?",
+   "options": {
+    "A": "1 to 3 px.",
+    "B": "6 to 12 px.",
+    "C": "20 to 30 px.",
+    "D": "No sticker edge."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "watermark",
+   "q": "Which runtime brand overlay is canonical?",
+   "options": {
+    "A": "\"bungmoto\" bottom-right, baked into the character SVGs.",
+    "B": "\"✦ bungmoto\" top-left, runtime-owned, never baked into assets.",
+    "C": "\"Zodiac 12\" top-center, baked into the cover only.",
+    "D": "No overlay."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "caption_limits",
+   "q": "Which caption limits does the design token set?",
+   "options": {
+    "A": "Default 56 px, minimum 48 px, at most two lines, semantic pagination.",
+    "B": "Default 84 px, minimum 72 px, at most four lines, fixed 6-word slices.",
+    "C": "Default 40 px, minimum 24 px, one line.",
+    "D": "Any size; fixed word counts per caption."
+   },
+   "answer": "A"
+  },
+  {
+   "id": "scene_set_guard",
+   "q": "What does the compiler do when a fresh narrative intent selects a scene_set_id?",
+   "options": {
+    "A": "Accepts it and renders the wall backdrop.",
+    "B": "Rejects it (the fresh Scene Set is retired).",
+    "C": "Ignores it silently.",
+    "D": "Converts it to a Scene Accent."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "meme_binding",
+   "q": "What does a selected meme adapter need in a beat's coverage to count as used?",
+   "options": {
+    "A": "Only the adapter name.",
+    "B": "Reacting character entity_ids, the adapter, state_bindings and its actual anchored reaction in the beat's event_ids.",
+    "C": "A story visual in the same beat.",
+    "D": "A flag set once for the episode."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "approval_owner",
+   "q": "Who can grant Visual Review, and what does a native validator PASS mean?",
+   "options": {
+    "A": "The validator grants it automatically on PASS.",
+    "B": "Only a genuine user message grants it; PASS is structure evidence, never approval.",
+    "C": "The agent grants it after a preview renders.",
+    "D": "CI grants it on a green build."
+   },
+   "answer": "B"
+  },
+  {
+   "id": "angle_of_change",
+   "q": "Narration text changes after Phase 2 has started. What reopens?",
+   "options": {
+    "A": "Only captions.",
+    "B": "Content and visuals, including voice anchors and timing.",
+    "C": "Nothing; narration is locked forever.",
+    "D": "Only the cover."
+   },
+   "answer": "B"
+  }
+ ]
+}
