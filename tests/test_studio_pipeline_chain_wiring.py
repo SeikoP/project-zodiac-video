@@ -115,7 +115,7 @@ class ChainGroupTests(unittest.TestCase):
         self.assertEqual(task["status"], "COMPLETED", task.get("error"))
         self.assertEqual(json.loads(task["suggestion"]), {"merged": ["s01", "s02"]})
         self.assertEqual([c.scene_id for c in cards.list_cards(self.workspace)], ["s02"])
-        self.assertEqual({p["id"]: p["status"] for p in task["parts"]}, {"s01": "DONE", "s02": "DONE"})
+        self.assertEqual({p["id"]: p["status"] for p in task["parts"]}, {"skeleton": "DONE", "s01": "DONE", "s02": "DONE"})
 
     def test_a_proposal_the_validator_refuses_fails_the_task_with_the_message(self):
         def refuse(*a, **k):

@@ -54,6 +54,15 @@ class AgentRunOverlayTests(unittest.TestCase):
         agent_runs.track(running, "p", "visual", "t")
         self.assertEqual(agent_runs.progress(running, "p"), {"visual": "1/8 cảnh xong · 2 agent"})
 
+    def test_chain_progress_counts_the_choice_tasks_that_are_working(self):
+        import time
+        running = service({"status": "RUNNING", "started_at": time.time() - 30, "parts_total": 8,
+                           "parts": [{"id": "skeleton", "status": "DONE"}, {"id": "s01", "status": "DONE"}]})
+        running.agent.tasks = lambda pid: [{"kind": "scene.choice", "status": "RUNNING"}, {"kind": "scene.choice", "status": "COMPLETED"},
+                                           {"kind": "scene.choice", "status": "STARTING"}, {"kind": "episode.part", "status": "RUNNING"}]
+        agent_runs.track(running, "p", "visual", "t")
+        self.assertEqual(agent_runs.progress(running, "p"), {"visual": "1/8 cảnh xong · 2 agent"})
+
 
 if __name__ == "__main__":
     unittest.main()

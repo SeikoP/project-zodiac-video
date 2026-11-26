@@ -74,6 +74,11 @@ def progress(service, project_id: str) -> dict[str, str]:
         parts = task.get("parts") or []
         done = sum(1 for p in parts if p["id"] != "skeleton" and p.get("status") == "DONE")
         busy = sum(1 for p in parts if p.get("status") == "RUNNING")
+        if not busy:  # the chain's own menu choices run as separate tasks: count those that are working now
+            try:
+                busy = sum(1 for t in service.agent.tasks(project_id) if t.get("kind") == "scene.choice" and t.get("status") in _ACTIVE)
+            except Exception:
+                busy = 0
         head = "đang soạn khung nhân vật" if not any(p["id"] == "skeleton" and p.get("status") == "DONE" for p in parts) else f"{done}/{task['parts_total']} cảnh xong"
         return {node_id: f"{head} · {busy} agent · {minutes} phút" if minutes else f"{head} · {busy} agent"}
     attempt = len(task.get("validation_attempts") or []) + 1

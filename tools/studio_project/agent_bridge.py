@@ -411,7 +411,12 @@ class AgentManager:
             order = [row["id"] for row in capsule["scene_ranges"]]
             self._update(group_id, parts_total=len(order))
             io = authoring_chain.LiveIO(self.service, project_id, capsule.get("instruction") or "", capsule=capsule)
-            io.on_save = lambda state: [self._set_part(group_id, sid, "DONE", seconds=0) for sid in state.get("scenes", {})]
+            def progress(state: dict) -> None:  # the cast is stored first, then each finished scene: that is what the GUI counts
+                if state.get("skeleton"):
+                    self._set_part(group_id, "skeleton", "DONE", seconds=0)
+                for sid in state.get("scenes", {}):
+                    self._set_part(group_id, sid, "DONE", seconds=0)
+            io.on_save = progress
             result = authoring_chain.run_chain(io, stopped=lambda: group_id in self._cancelled)
             if result.cards:
                 from .pipeline import cards
