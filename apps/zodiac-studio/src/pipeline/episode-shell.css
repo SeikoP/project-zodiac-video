@@ -1,0 +1,108 @@
+body { min-width:0; }
+.production-manager { display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; gap:6px; }
+.production-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; }
+.production-heading>div:first-child { min-width:0; }
+.production-heading h1 { font-size:17px; margin:0; }
+.production-heading small { display:block; color:#aeb6c8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:48vw; margin-top:3px; }
+.production-actions { display:flex; gap:5px; flex-shrink:0; }
+.production-actions button { font-size:11px; }
+.scene-strip { display:flex; gap:4px; overflow-x:auto; flex-shrink:0; min-height:30px; padding:2px; }
+.scene-strip button { border:0; border-bottom:2px solid transparent; background:transparent; color:#bec9db; font-size:11px; padding:4px 10px; white-space:nowrap; }
+.scene-strip button[aria-pressed=true] { border-bottom-color:#d3b9ff; color:#f5e9ff; background:transparent; }
+.production-workspace { display:grid; grid-template-columns:minmax(260px,.85fr) minmax(480px,1.65fr); gap:10px; flex:1; min-height:0; min-width:0; }
+.production-workspace[data-graph-open=false] { grid-template-columns:minmax(0,1fr); }
+.production-editor { min-width:0; min-height:0; display:flex; flex-direction:column; }
+.production-editor .visual-editor { flex:1; min-height:0; min-width:0; }
+.production-editor .visual-layout { grid-template-columns:minmax(180px,1fr) minmax(250px,.8fr); }
+.production-editor .visual-inspector { min-height:0; overflow:auto; overscroll-behavior:contain; }
+.production-editor .visual-toolbar { flex-wrap:wrap; }
+.production-editor .visual-toolbar label { margin-left:auto; }
+.production-editor .visual-viewport { min-height:190px; }
+.production-editor .visual-stage { min-height:0; display:flex; flex-direction:column; }
+.production-editor .visual-stage .visual-viewport { flex:1; }
+.production-workspace[data-inspector-open=false] .visual-inspector { display:none; }
+.production-workspace[data-inspector-open=false] .visual-layout { grid-template-columns:minmax(0,1fr); }
+.source-context { padding:8px; line-height:1.6; overflow-wrap:anywhere; }
+.source-context h2 { font-size:15px; }
+.source-context dt { color:#9baac3; }
+.source-context dd { margin:0 0 12px; }
+@media(max-width:1100px) {
+ .production-workspace { grid-template-columns:260px minmax(0,1fr); gap:6px; }
+ .production-editor .visual-layout { grid-template-columns:minmax(160px,1fr) 250px; gap:6px; }
+ .production-heading small { max-width:35vw; }
+ .production-editor .visual-toolbar button { padding:5px 6px; font-size:10px; }
+ .titlebar-project,.connection { display:none; }
+}
+@media(max-width:900px) {
+ .production-workspace { grid-template-columns:240px minmax(0,1fr); }
+ .production-editor .visual-layout { grid-template-columns:minmax(160px,1fr) 240px; }
+ .production-heading small { display:none; }
+ .production-actions button { padding:5px; font-size:10px; }
+ .view-editor { padding:6px; }
+ .brand { min-width:140px; }
+ .nav-item { padding:0 5px; }
+ .episode-context .text-link { display:none; }
+}
+@media(max-width:740px) {
+ .production-workspace { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(180px,.65fr) minmax(300px,1.35fr); }
+ .production-workspace[data-graph-open=false] { grid-template-rows:minmax(0,1fr); }
+ .production-editor .visual-layout { grid-template-columns:minmax(130px,1fr) minmax(220px,1fr); }
+}
+.production-side { display:flex; flex-direction:column; gap:6px; min-width:0; min-height:0; }
+.production-side .pipeline-graph { flex:1; min-height:190px; }
+.production-side .needs-you { max-height:30%; flex-shrink:0; }
+.next-action { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 12px; border:0; border-left:3px solid #3e4556; background:transparent; flex-shrink:0; }
+.next-action strong { display:block; font-size:14px; }
+.next-action small { display:block; color:#aeb6c8; margin-top:2px; }
+.next-action[data-tone=you] { border-color:#e0a84a; }
+.next-action[data-tone=busy] { border-color:#6aa6e8; }
+.next-action[data-tone=done] { border-color:#5fbf8a; }
+.empty-episode { max-width:680px; margin:24px auto; padding:20px 24px; border:0; background:transparent; }
+.empty-episode h2 { margin:0 0 6px; font-size:18px; }
+.empty-episode p { color:#aeb6c8; margin:0 0 14px; }
+.empty-episode ol { list-style:none; padding:0; margin:0 0 18px; display:grid; gap:10px; }
+.empty-episode li { display:flex; gap:12px; align-items:flex-start; opacity:.7; }
+.empty-episode li[data-current=true] { opacity:1; }
+.empty-episode li>span { flex:none; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; border:1px solid #6a7390; font-size:13px; }
+.empty-episode li[data-current=true]>span { background:#d3b9ff; color:#1b1530; border-color:#d3b9ff; }
+.empty-episode li small { display:block; color:#aeb6c8; margin-top:2px; }
+.pipe-hint { font-size:11px; color:#aeb6c8; max-width:420px; }
+/* One bar for: which package, what is next, auto mode. One panel for voice/export/content. */
+.episode-bar { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr); gap:8px 20px; align-items:center; padding:10px 0; background:transparent; border-bottom:1px solid #2a3346; border-radius:0; flex-shrink:0; }
+.episode-bar .episode-identity,.episode-bar .next-action { border:0; background:transparent; padding:0; }
+.episode-bar .next-action { border-left:3px solid #2a3346; padding-left:14px; }
+.episode-bar .next-action[data-tone=you] { border-left-color:#e0a84a; }
+.episode-bar .autopilot-bar { grid-column:1 / -1; padding-top:6px; }
+.stage-panel { min-width:0; min-height:0; overflow:auto; }
+.production-workspace { grid-template-columns:minmax(240px,.38fr) minmax(0,2fr); }
+@media(max-width:1100px) { .episode-bar { grid-template-columns:minmax(0,1fr); } }
+.stage-panel .page-header .eyebrow,.stage-panel .page-header h1,.stage-panel .page-subtitle { display:none; }
+.stage-panel .voice-workspace { height:100%; }
+
+/* Export step: controls on the left, the vertical MP4 beside them, so nothing is pushed below the fold. */
+.stage-panel .episode-export { display:grid; grid-template-columns:minmax(0,1fr) minmax(150px,min(300px,32vw)); gap:6px 16px; align-content:start; flex:0 0 auto; }
+.stage-panel .episode-export > *, .stage-panel .episode-export .video-review > * { grid-column:1; min-width:0; }
+.stage-panel .episode-export .video-review { display:contents; }
+.stage-panel .review-stage { grid-column:2 !important; grid-row:1 / span 12; align-self:start; padding:0; min-height:0; }
+.stage-panel .review-stage video { width:auto; max-width:100%; height:auto; max-height:min(60vh,560px); }
+@media(max-width:700px) { .stage-panel .episode-export { grid-template-columns:minmax(0,1fr); } .stage-panel .review-stage { grid-column:1 !important; grid-row:auto; } }
+/* One short status card on top of the steps instead of a three-line bar across the page. */
+.production-side .next-action { padding:6px 10px; gap:8px; }
+.production-side .next-action strong { font-size:13px; line-height:1.35; }
+.production-side .next-action .primary-btn { font-size:11px; padding:4px 8px; flex:none; }
+.review-stage-panel { overflow:hidden; display:flex; }
+.review-inspector { display:grid; grid-template-columns:minmax(140px,1fr) minmax(200px,.8fr); gap:12px; width:100%; min-height:0; padding:0; }
+.review-preview { display:flex; min-width:0; min-height:0; background:#0d1018; }
+.review-placeholder { margin:auto; padding:16px; text-align:center; color:#b5c6db; }
+.review-controls { min-width:0; min-height:0; overflow:auto; padding:0 8px; }
+.review-controls h2 { margin:0 0 8px; }
+.review-controls p { font-size:12px; }
+.review-evidence { margin-top:16px; font-size:11px; color:#b5c6db; }
+.review-evidence summary { cursor:pointer; }
+.review-evidence ul { padding-left:16px; }
+.production-editor .whole-video { flex:1; }
+.production-editor .episode-player-stage,.review-inspector .episode-player-stage { flex:1; height:auto; min-height:0; }
+.review-inspector .visual-transport { flex-shrink:0; flex-wrap:wrap; padding:6px; }
+.review-inspector .visual-transport input { flex:1; min-width:60px; }
+.review-inspector .visual-transport small { display:none; }
+.view-editor .review-inspector .visual-transport,.view-editor .whole-video .visual-transport { display:flex; }

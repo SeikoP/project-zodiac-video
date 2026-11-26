@@ -1,0 +1,370 @@
+{
+  "format": "zodiac-studio-phase-evidence@1",
+  "phase_id": "P1/P7",
+  "task_id": "grouped-workflow-real-agent-gui",
+  "baseline_commit": "35ec0dfc5296608783817f669053b7bf5c89b1a3",
+  "implementation_commit": "3ab63d3496b01a6355efdfefff5b080ffc9e8297",
+  "requirements": [
+    {
+      "id": "grouped-navigation",
+      "status": "TECHNICAL_PASS"
+    },
+    {
+      "id": "context-preservation",
+      "status": "TECHNICAL_PASS"
+    },
+    {
+      "id": "real-initial-authoring",
+      "status": "TECHNICAL_PASS"
+    },
+    {
+      "id": "real-scene-edit",
+      "status": "TECHNICAL_PASS"
+    },
+    {
+      "id": "native-export-playback",
+      "status": "TECHNICAL_PASS"
+    },
+    {
+      "id": "immutable-sidecars",
+      "status": "TECHNICAL_PASS"
+    }
+  ],
+  "contracts": [
+    {
+      "name": "approved Phase1 narration",
+      "status": "PRESERVED"
+    },
+    {
+      "name": "human quality approvals",
+      "status": "PENDING"
+    }
+  ],
+  "reused_components": [
+    "AgentManager",
+    "Project Core",
+    "Voice Lab",
+    "VisualWorkspace commands/history",
+    "V4 compiler",
+    "HyperFrames",
+    "FFmpeg",
+    "native Tauri/WebView2"
+  ],
+  "changed_files": [
+    ".github/workflows/studio-v5-tauri-p1.yml",
+    "apps/zodiac-studio/README.md",
+    "apps/zodiac-studio/package.json",
+    "apps/zodiac-studio/pnpm-lock.yaml",
+    "apps/zodiac-studio/src-tauri/src/lib.rs",
+    "apps/zodiac-studio/src-tauri/tauri.conf.json",
+    "apps/zodiac-studio/src/AgentProposal.tsx",
+    "apps/zodiac-studio/src/App.tsx",
+    "apps/zodiac-studio/src/AssetGallery.tsx",
+    "apps/zodiac-studio/src/EpisodeExport.tsx",
+    "apps/zodiac-studio/src/Ideas.tsx",
+    "apps/zodiac-studio/src/Paged.tsx",
+    "apps/zodiac-studio/src/VideoReview.tsx",
+    "apps/zodiac-studio/src/VisualEditor.tsx",
+    "apps/zodiac-studio/src/VoiceLab.tsx",
+    "apps/zodiac-studio/src/backend.ts",
+    "apps/zodiac-studio/src/idea-board.ts",
+    "apps/zodiac-studio/src/style.css",
+    "docs/audits/2026-11-18-studio-p5-progress.md",
+    "docs/audits/2026-11-19-studio-hyperframes-production.json",
+    "docs/audits/2026-11-19-studio-hyperframes-production.md",
+    "docs/audits/2026-11-19-studio-p5-usage-progress.md",
+    "docs/audits/2026-11-20-studio-nhanma-e2e.json",
+    "docs/audits/2026-11-20-studio-nhanma-e2e.md",
+    "docs/audits/2026-11-22-studio-workflow-agent-backend.md",
+    "docs/audits/2026-11-22-studio-workflow-ui.md",
+    "docs/superpowers/plans/2026-11-14-unified-zodiac-studio-roadmap.md",
+    "docs/superpowers/plans/2026-11-18-studio-ideas.md",
+    "docs/superpowers/plans/2026-11-18-studio-phase-05.md",
+    "docs/superpowers/plans/2026-11-19-studio-hyperframes-production.md",
+    "docs/superpowers/plans/2026-11-20-studio-workflow-agent.md",
+    "docs/superpowers/specs/2026-11-14-agent-native-creative-studio-design.md",
+    "docs/superpowers/specs/2026-11-18-studio-ideas.md",
+    "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/props/index.json",
+    "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/props/phone-angular.svg",
+    "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/props/phone-compact.svg",
+    "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/props/phone-rounded.svg",
+    "tests/studio_compact_layout.mjs",
+    "tests/studio_hyperframes_export.test.mjs",
+    "tests/studio_hyperframes_export_browser.mjs",
+    "tests/studio_ideas_browser.mjs",
+    "tests/studio_ideas_prompt.test.mjs",
+    "tests/studio_p34_visual.test.mjs",
+    "tests/studio_p5_assets.test.mjs",
+    "tests/studio_p5_gallery_browser.mjs",
+    "tests/test_studio_agent_authoring.py",
+    "tests/test_studio_hyperframes_export.py",
+    "tests/test_studio_ideas.py",
+    "tests/test_studio_p2_voice_lab.py",
+    "tests/test_studio_p34_visual.py",
+    "tests/test_studio_p5_performance.py",
+    "tests/test_studio_p5_transport.py",
+    "tests/test_studio_p5_usage.py",
+    "tools/runner/process.py",
+    "tools/studio_project/AGENTS.md",
+    "tools/studio_project/agent_authoring.py",
+    "tools/studio_project/agent_bridge.py",
+    "tools/studio_project/idea_catalog.json",
+    "tools/studio_project/ideas.py",
+    "tools/studio_project/rpc_stdio.py",
+    "tools/studio_project/service.py",
+    "tools/studio_project/status.py",
+    "tools/studio_project/visual_candidates.mjs",
+    "tools/studio_project/visual_compiler.mjs",
+    "tools/studio_project/visual_export.mjs",
+    "tools/studio_project/visual_gallery.mjs",
+    "tools/studio_project/visual_preview.mjs",
+    "tools/studio_project/visual_server.py",
+    "tools/studio_project/visual_themes.mjs",
+    "tools/studio_project/visual_workspace.py",
+    "tools/studio_project/voice_lab.py",
+    "tools/zodiac_local.py",
+    "tests/studio_workflow_native.mjs",
+    "tests/studio_workflow_native_reopen.mjs"
+  ],
+  "test_runs": [
+    {
+      "command": "Python related regression sweep (see backend receipt)",
+      "status": "PASS",
+      "tests": 93,
+      "seconds": 482.039,
+      "log_ref": ".runtime/workflow-agent-e2e/backend-final.log"
+    },
+    {
+      "command": "node --test Studio visual/gallery/export/idea prompt suites",
+      "status": "PASS",
+      "tests": 25,
+      "log_ref": ".runtime/workflow-agent-e2e/node-tests.log"
+    },
+    {
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --locked",
+      "status": "PASS",
+      "tests": 2,
+      "log_ref": ".runtime/workflow-agent-e2e/rust-tests.log"
+    },
+    {
+      "command": "native GUI workflow",
+      "status": "PASS",
+      "seconds": 833.897,
+      "log_ref": ".runtime/workflow-agent-e2e/gui-evidence.json"
+    },
+    {
+      "command": "ffmpeg -v error -i episode.mp4 -f null -",
+      "status": "PASS",
+      "log_ref": ".runtime/workflow-agent-e2e/decode.log"
+    },
+    {
+      "command": "layout-final browser fixtures",
+      "status": "PASS",
+      "log_ref": ".runtime/workflow-agent-e2e/layout-final.log"
+    },
+    {
+      "command": "ideas-browser browser fixtures",
+      "status": "PASS",
+      "log_ref": ".runtime/workflow-agent-e2e/ideas-browser.log"
+    },
+    {
+      "command": "gallery-browser browser fixtures",
+      "status": "PASS",
+      "log_ref": ".runtime/workflow-agent-e2e/gallery-browser.log"
+    },
+    {
+      "command": "export-browser-final browser fixtures",
+      "status": "PASS",
+      "log_ref": ".runtime/workflow-agent-e2e/export-browser-final.log"
+    },
+    {
+      "command": "pnpm --dir apps/zodiac-studio exec tsc --noEmit",
+      "status": "PASS",
+      "log_ref": null
+    }
+  ],
+  "smoke_artifacts": [
+    {
+      "path": ".runtime/workflow-agent-e2e/episode.mp4",
+      "sha256": "012871b8ef9937181f441fe52d8925b9d700e1c9b84306726ae1c14b2962753f",
+      "bytes": 2561746
+    },
+    {
+      "path": ".runtime/workflow-agent-e2e/captions.srt",
+      "sha256": "cc2c4c0fe2a75e2030399822920de26bdd489e1a95b2cbfc697f9915292f1f1c",
+      "bytes": 4297
+    },
+    {
+      "path": ".runtime/workflow-agent-e2e/cover.png",
+      "sha256": "4ea4e978383ac21614617e8cd41363bd7a41d7868b642d34fad0085f6737637c",
+      "bytes": 137619
+    }
+  ],
+  "agent_tasks": [
+    {
+      "task_id": "2faac5dae177425b8f645163606db0b4",
+      "kind": "episode.propose",
+      "status": "FAILED",
+      "thread_id": "01a20220-a03a-74c0-9a5f-7e5e019cc0f8",
+      "turn_id": "01a20220-a670-7bc0-8771-02b756ddb7c0",
+      "visual_revision": 0,
+      "applied_command_id": null,
+      "write_applied": false,
+      "error": "AGENT_PROPOSAL_INVALID: Ký tự board không có trong font.",
+      "started_at": 1795332018.9194365,
+      "completed_at": 1795332182,
+      "proposal_sha256": null
+    },
+    {
+      "task_id": "9ab42cd670834eeea8de39ae1cf149a0",
+      "kind": "episode.propose",
+      "status": "COMPLETED",
+      "thread_id": "01a20230-6c4a-72e1-99c1-d13d1aa459e3",
+      "turn_id": "01a20230-7222-7e52-ae37-5dbd0c7b8157",
+      "visual_revision": 0,
+      "applied_command_id": "agent-9ab42cd670834eeea8de39ae1cf149a0",
+      "write_applied": true,
+      "error": null,
+      "started_at": 1795333054.612128,
+      "completed_at": 1795333218,
+      "proposal_sha256": "479fbd95f43527b868c9631af761b87795fd311886a92dbfe781fe64d379f013"
+    },
+    {
+      "task_id": "b817d4a5698f45e38b92fa43fde90ebc",
+      "kind": "episode.propose",
+      "status": "FAILED",
+      "thread_id": "01a20218-d63c-78d0-84d2-6a0700bf394c",
+      "turn_id": "01a20218-dd52-7682-89be-e309c0b3cac7",
+      "visual_revision": 0,
+      "applied_command_id": null,
+      "write_applied": false,
+      "error": "AGENT_PROPOSAL_INVALID: Board tối đa 4 dòng ngắn, mỗi dòng 60 ký tự.",
+      "started_at": 1795331510.6095512,
+      "completed_at": 1795331641,
+      "proposal_sha256": null
+    },
+    {
+      "task_id": "d415d0de58f849f3948012f493c2be54",
+      "kind": "episode.propose",
+      "status": "CANCELLED",
+      "thread_id": "01a2022c-7e4c-72d1-b392-180ca95ce881",
+      "turn_id": "01a2022c-8284-74c2-83e4-24b612312850",
+      "visual_revision": 0,
+      "applied_command_id": null,
+      "write_applied": false,
+      "error": "Cancelled by operator",
+      "started_at": 1795332798.665647,
+      "completed_at": 1795332944,
+      "proposal_sha256": null
+    },
+    {
+      "task_id": "ff86ee3bdfbf4c09a5da4e528d173969",
+      "kind": "scene.propose",
+      "status": "COMPLETED",
+      "thread_id": "01a20233-791e-7f51-ae1b-8af6758ac28b",
+      "turn_id": "01a20233-7d52-7502-8685-7d3ce761df2c",
+      "visual_revision": 1,
+      "applied_command_id": "agent-ff86ee3bdfbf4c09a5da4e528d173969",
+      "write_applied": true,
+      "error": null,
+      "started_at": 1795333256.1972053,
+      "completed_at": 1795333265,
+      "proposal_sha256": "41a5e371c4043923a52aa789298440adc50b5434904a63b094d0b80ccedd45a5"
+    }
+  ],
+  "gui": {
+    "started_at": "2026-11-22T07:36:37.647Z",
+    "steps": [
+      {
+        "name": "voice and measured timing available in GUI",
+        "seconds": 31.519
+      },
+      {
+        "name": "real initial agent proposal confirmed in GUI",
+        "seconds": 199.289
+      },
+      {
+        "name": "episode built and real preview opened",
+        "seconds": 14.385
+      },
+      {
+        "name": "real scene agent edit confirmed and rebuilt",
+        "seconds": 24.172
+      },
+      {
+        "name": "MP4 exported and played in native GUI without quality approval",
+        "seconds": 564.532
+      }
+    ],
+    "human_review": "PENDING",
+    "transport": "native Tauri/Rust/Python",
+    "voice": "existing real selected takes; see voice-reuse.json",
+    "playback": {
+      "width": 1080,
+      "height": 1920,
+      "duration": 74.4,
+      "currentTime": 0.534129,
+      "muted": true,
+      "playing": true
+    },
+    "export_text": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\.runtime\\workflow-agent-e2e\\projects\\episodes\\studio-2b0c3a549a069efd273809f2\\.runtime\\visual-workspace\\exports\\29d4feff5c804ad3a8eb7c45837b7a13\\episode.mp4 · Đúng bản xuất hiện tại\nCopy đường dẫn MP4\nReceipt & tệp kèm",
+    "project": "studio-2b0c3a549a069efd273809f2",
+    "finished_at": "2026-11-22T07:50:31.549Z",
+    "wall_seconds": 833.897
+  },
+  "reopen": {
+    "at": "2026-11-22T07:56:16.865Z",
+    "project": "studio-2b0c3a549a069efd273809f2",
+    "receipt": "COMPLETED · Cảnh s01\nĐã áp dụng · agent-ff86ee3bdfbf4c09a5da4e528d173969\n\ns01 · nhan-ma / neutral\n\nx: 100\n\n‹\n1 / 2 · 3 mục\n›\nChi tiết tác vụ",
+    "playback": {
+      "width": 1080,
+      "height": 1920,
+      "duration": 74.4,
+      "currentTime": 0.529666,
+      "muted": true,
+      "playing": true
+    },
+    "export_text": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\.runtime\\workflow-agent-e2e\\projects\\episodes\\studio-2b0c3a549a069efd273809f2\\.runtime\\visual-workspace\\exports\\29d4feff5c804ad3a8eb7c45837b7a13\\episode.mp4 · Đúng bản xuất hiện tại\nCopy đường dẫn MP4\nReceipt & tệp kèm",
+    "human_review": "PENDING"
+  },
+  "native_process_restart": {
+    "before_pid": 11252,
+    "after_pid": 4908
+  },
+  "remote_ci": "NOT_VERIFIED",
+  "export_id": "29d4feff5c804ad3a8eb7c45837b7a13",
+  "visual_revision": 2,
+  "voice_sha256": "e5f35bb23d0897bdf8a23fce95d03a7fdb203772eed82cbe2740f03806689394",
+  "source_sha256": "d5c77a2c5b2e3ef011799e98ae5aca04b131c6a3df486a518d1ed2515be1ab10",
+  "duration_seconds": 74.4,
+  "frames": 2232,
+  "review_gates": [
+    {
+      "id": "voice-listening",
+      "status": "PENDING"
+    },
+    {
+      "id": "visual-performance",
+      "status": "PENDING"
+    },
+    {
+      "id": "final-video",
+      "status": "PENDING"
+    }
+  ],
+  "risks": [
+    "Real voice reused with exact hashes; no fresh TTS generation claim",
+    "Cold voice metadata read measured 25.454s; overlapping reads prevented, DSP optimization deferred",
+    "Single-worker whole-episode export measured on this workstation only",
+    "Native automated playback is muted, not a listening review",
+    "Remote CI reported separately from local checks"
+  ],
+  "deferred": [
+    {
+      "owner": "P5/P6/P7",
+      "item": "Human model/palette/acting/final acceptance and remaining roadmap work"
+    }
+  ],
+  "rollback": "Revert task code only; retain original source, takes, task receipts, authored history and exports",
+  "handoff_ready": false
+}

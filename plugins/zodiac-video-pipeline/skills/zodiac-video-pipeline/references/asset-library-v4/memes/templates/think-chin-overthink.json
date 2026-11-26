@@ -1,0 +1,42 @@
+{
+  "format": "zodiac-meme-reference-bundle@1",
+  "version": "1.0",
+  "id": "think-chin-overthink",
+  "kind": "primary_meme_composition",
+  "source_references": [],
+  "roles": {
+    "actor": "existing scene participant"
+  },
+  "trigger_hints": [
+    "Nghĩ nát óc",
+    "Tối nay ăn gì?",
+    "Nghĩ ba tiếng, cuối cùng vẫn là mì gói."
+  ],
+  "mechanic": "express-reaction",
+  "reviewed_visual_note": "Original situation: Tối nay ăn gì? → Nghĩ ba tiếng, cuối cùng vẫn là mì gói. Native full-body gesture pose with performed face, voice-anchored reversal. Creative effect still requires human review.",
+  "reference_character_policy": {
+    "embedded_characters": "visual_reference_only",
+    "bind_roles_to_existing_scene_entities": true,
+    "spawn_from_reference": false,
+    "copy_character_groups": false
+  },
+  "appearance_lock": {
+    "preserve_body_profile": true,
+    "preserve_hair_identity": true,
+    "preserve_skin_palette": true,
+    "preserve_outfit_palette": true
+  },
+  "adaptation": {
+    "geometry_mode": "semantic_relative_geometry",
+    "recompute": [
+      "character_pose",
+      "hand_contact",
+      "eye_gaze",
+      "derived_anchors",
+      "occlusion"
+    ],
+    "caption_free_readability_required": false,
+    "meme_text_readability_required": true
+  },
+  "optional_text": "ĐỂ TỚ NGHĨ ĐÃ"
+}

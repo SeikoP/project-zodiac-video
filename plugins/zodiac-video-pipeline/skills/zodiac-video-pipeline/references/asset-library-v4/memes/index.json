@@ -2548,6 +2548,656 @@
         "prop": ""
       },
       "reference_url": "https://cdn.pico.vn/2026/01/15/17684493549289594310.jpeg"
+    },
+    {
+      "id": "cheer-too-early",
+      "source": "./templates/cheer-too-early.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "cheer",
+            "expression_id": "meme-smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_CHEER_TOO_EARLY",
+          "source_path": "../props/meme-label-cheer-too-early.svg",
+          "output_path": "assets/props/meme-label-cheer-too-early.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ĂN MỪNG SỚM QUÁ!",
+        "default_enabled": false,
+        "lines": [
+          "ĂN MỪNG",
+          "SỚM QUÁ!"
+        ]
+      },
+      "preview": {
+        "title": "Mừng hụt",
+        "setup": "Sếp bảo chiều nay có tin vui.",
+        "reaction": "Tin vui là họp lúc 6 giờ chiều.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "arms-crossed-refuse",
+      "source": "./templates/arms-crossed-refuse.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "arms-crossed",
+            "expression_id": "meme-deadpan"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_ARMS_CROSSED_REFUSE",
+          "source_path": "../props/meme-label-arms-crossed-refuse.svg",
+          "output_path": "assets/props/meme-label-arms-crossed-refuse.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "KHÔNG LÀ KHÔNG!",
+        "default_enabled": false,
+        "lines": [
+          "KHÔNG LÀ",
+          "KHÔNG!"
+        ]
+      },
+      "preview": {
+        "title": "Khoanh tay từ chối",
+        "setup": "Cho mượn xíu thôi mà.",
+        "reaction": "Xíu của mày là cả năm trời.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "shush-secret",
+      "source": "./templates/shush-secret.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "shush",
+            "expression_id": "meme-side-eye"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SHUSH_SECRET",
+          "source_path": "../props/meme-label-shush-secret.svg",
+          "output_path": "assets/props/meme-label-shush-secret.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "SUỴT! ĐỪNG NÓI AI",
+        "default_enabled": false,
+        "lines": [
+          "SUỴT!",
+          "ĐỪNG NÓI AI"
+        ]
+      },
+      "preview": {
+        "title": "Bí mật cả nhóm",
+        "setup": "Tao kể cái này, đừng nói ai nhé.",
+        "reaction": "Giờ cả nhóm chat biết hết rồi.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "think-chin-overthink",
+      "source": "./templates/think-chin-overthink.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "think-chin",
+            "expression_id": "meme-confused"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_THINK_CHIN_OVERTHINK",
+          "source_path": "../props/meme-label-think-chin-overthink.svg",
+          "output_path": "assets/props/meme-label-think-chin-overthink.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "ĐỂ TỚ NGHĨ ĐÃ",
+        "default_enabled": false,
+        "lines": [
+          "ĐỂ TỚ",
+          "NGHĨ ĐÃ"
+        ]
+      },
+      "preview": {
+        "title": "Nghĩ nát óc",
+        "setup": "Tối nay ăn gì?",
+        "reaction": "Nghĩ ba tiếng, cuối cùng vẫn là mì gói.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "point-up-idea",
+      "source": "./templates/point-up-idea.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "point-up",
+            "expression_id": "meme-smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_POINT_UP_IDEA",
+          "source_path": "../props/meme-label-point-up-idea.svg",
+          "output_path": "assets/props/meme-label-point-up-idea.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "CÓ Ý TƯỞNG RỒI!",
+        "default_enabled": false,
+        "lines": [
+          "CÓ Ý TƯỞNG",
+          "RỒI!"
+        ]
+      },
+      "preview": {
+        "title": "Ý tưởng lúc nửa đêm",
+        "setup": "Nảy ra ý tưởng hay lúc 3 giờ sáng.",
+        "reaction": "Sáng dậy quên sạch trơn.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "beckon-come-here",
+      "source": "./templates/beckon-come-here.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "beckon",
+            "expression_id": "meme-smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_BECKON_COME_HERE",
+          "source_path": "../props/meme-label-beckon-come-here.svg",
+          "output_path": "assets/props/meme-label-beckon-come-here.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "LẠI ĐÂY NÓI CHUYỆN",
+        "default_enabled": false,
+        "lines": [
+          "LẠI ĐÂY",
+          "NÓI CHUYỆN"
+        ]
+      },
+      "preview": {
+        "title": "Mời lại nói chuyện",
+        "setup": "Nghe nói mày nói xấu tao.",
+        "reaction": "Lại đây, tao nghe cho kỹ.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "wave-goodbye-late",
+      "source": "./templates/wave-goodbye-late.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "wave",
+            "expression_id": "meme-grimace"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_WAVE_GOODBYE_LATE",
+          "source_path": "../props/meme-label-wave-goodbye-late.svg",
+          "output_path": "assets/props/meme-label-wave-goodbye-late.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "TẠM BIỆT LẦN THỨ BA",
+        "default_enabled": false,
+        "lines": [
+          "TẠM BIỆT",
+          "LẦN THỨ BA"
+        ]
+      },
+      "preview": {
+        "title": "Chào mãi chưa về",
+        "setup": "Thôi tao về đây nhé.",
+        "reaction": "Chào ba lần rồi vẫn chưa ra tới cửa.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "salute-yes-boss",
+      "source": "./templates/salute-yes-boss.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "salute",
+            "expression_id": "meme-drained"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_SALUTE_YES_BOSS",
+          "source_path": "../props/meme-label-salute-yes-boss.svg",
+          "output_path": "assets/props/meme-label-salute-yes-boss.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "RÕ, THƯA SẾP!",
+        "default_enabled": false,
+        "lines": [
+          "RÕ, THƯA",
+          "SẾP!"
+        ]
+      },
+      "preview": {
+        "title": "Vâng thưa sếp",
+        "setup": "Mai đi làm thêm cuối tuần nhé?",
+        "reaction": "Rõ thưa sếp. Trong lòng đang khóc.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "hand-on-chest-promise",
+      "source": "./templates/hand-on-chest-promise.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "hand-on-chest",
+            "expression_id": "meme-smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_HAND_ON_CHEST_PROMISE",
+          "source_path": "../props/meme-label-hand-on-chest-promise.svg",
+          "output_path": "assets/props/meme-label-hand-on-chest-promise.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "TỚ THỀ LẦN CUỐI!",
+        "default_enabled": false,
+        "lines": [
+          "TỚ THỀ",
+          "LẦN CUỐI!"
+        ]
+      },
+      "preview": {
+        "title": "Lời thề thứ 47",
+        "setup": "Tao hứa không đến trễ nữa.",
+        "reaction": "Lời hứa thứ 47 của năm nay.",
+        "prop": ""
+      }
+    },
+    {
+      "id": "dance-payday",
+      "source": "./templates/dance-payday.json",
+      "frame_id": "single-character-focus",
+      "mechanic_id": "express-reaction",
+      "roles": {
+        "actor": {
+          "slot": "subject",
+          "kind": "character",
+          "required": true,
+          "acting": {
+            "pose_id": "dance",
+            "expression_id": "meme-smug"
+          }
+        },
+        "label": {
+          "slot": null,
+          "kind": "object",
+          "required": false
+        }
+      },
+      "layout": {
+        "actor": [
+          540,
+          850,
+          900,
+          1000
+        ],
+        "label": [
+          540,
+          220,
+          940,
+          280
+        ]
+      },
+      "required_contacts": [
+        "actor.pose→semantic_reaction"
+      ],
+      "effects": [],
+      "asset_requirements": [
+        {
+          "role": "label",
+          "optional": true,
+          "asset_id": "MEME_LABEL_DANCE_PAYDAY",
+          "source_path": "../props/meme-label-dance-payday.svg",
+          "output_path": "assets/props/meme-label-dance-payday.svg",
+          "category": "prop"
+        }
+      ],
+      "text_label": {
+        "role": "label",
+        "text": "CÓ LƯƠNG RỒI!",
+        "default_enabled": false,
+        "lines": [
+          "CÓ LƯƠNG",
+          "RỒI!"
+        ]
+      },
+      "preview": {
+        "title": "Ngày có lương",
+        "setup": "Lương vừa về tài khoản!",
+        "reaction": "Và biến mất sau mười phút.",
+        "prop": ""
+      }
     }
   ]
 }

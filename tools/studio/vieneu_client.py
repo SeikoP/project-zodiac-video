@@ -52,12 +52,31 @@ def stream_prediction(client, args, api_name: str, on_status):
     return result
 
 
+def dropdown_choice(config, prefix: str, fallback: str) -> str:
+    """Return the server's own spelling of a dropdown choice that starts with prefix.
+
+    VieNeu renames models between releases (v3.8.x lists "VieNeu-TTS-v3-Turbo (new release)"), and Gradio
+    rejects a value that is not in the choices, so a hard-coded name breaks model loading after an update.
+    """
+    for component in (config or {}).get("components", []):
+        if not isinstance(component, dict) or component.get("type") != "dropdown":
+            continue
+        for choice in (component.get("props") or {}).get("choices") or []:
+            value = choice[-1] if isinstance(choice, (list, tuple)) and choice else choice
+            if isinstance(value, str) and value.startswith(prefix):
+                return value
+    return fallback
+
+
 def stream_speech(client, args, api_name: str, on_status):
     result = stream_prediction(client, args, api_name, on_status)
     if isinstance(result, (tuple, list)) and result[0] is None and "Vui lòng tải model trước" in str(result[1]):
         on_status("VieNeu: đang nạp model vào server…")
-        loaded = stream_prediction(client, ["VieNeu-TTS-v3-Turbo", "VieNeu-Codec", "Auto", True,
-                                            "", "VieNeu-TTS-v3-Nano (preview)", ""], "load_model", on_status)
+        config = getattr(client, "config", None)
+        loaded = stream_prediction(client, [dropdown_choice(config, "VieNeu-TTS-v3-Turbo", "VieNeu-TTS-v3-Turbo"),
+                                            dropdown_choice(config, "VieNeu-Codec", "VieNeu-Codec"), "Auto", True,
+                                            "", dropdown_choice(config, "VieNeu-TTS-v3-Nano", "VieNeu-TTS-v3-Nano (preview)"), ""],
+                                   "load_model", on_status)
         if not str(loaded[0]).startswith("✅ Model đã tải thành công"):
             raise RuntimeError("VieNeu không nạp được model: " + str(loaded[0]))
         result = stream_prediction(client, args, api_name, on_status)

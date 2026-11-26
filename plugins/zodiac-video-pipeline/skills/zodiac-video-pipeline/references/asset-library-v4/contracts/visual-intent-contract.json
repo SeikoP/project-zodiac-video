@@ -343,7 +343,12 @@
       "braided-ponytail",
       "messy-top-bun",
       "half-up-long",
-      "blunt-lob"
+      "blunt-lob",
+      "twin-buns",
+      "cloud-puff",
+      "bowl-fringe",
+      "swept-pompadour",
+      "side-braid-bun"
     ],
     "expectation": "Current compiled assets only; no static historical geometry."
   },

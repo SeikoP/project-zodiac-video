@@ -1,0 +1,27 @@
+{
+  "format": "zodiac-visual-presentation@5",
+  "reference_renderer": "zodiac-renderer/2.0.2",
+  "video": {"width": 1080, "height": 1920},
+  "caption": {
+    "font_family": "Patrick Hand", "font_size_px": 84, "font_weight": 400,
+    "line_height": 1.15, "max_lines": 2, "padding_px": 12,
+    "safe_zone": {"x": 80, "y": 1470, "width": 920, "height": 360}
+  },
+  "watermark": {
+    "enabled": true, "text": "✦ bungmoto", "font_family": "sans-serif",
+    "font_size_px": 29, "font_weight": 400, "offset_px": {"x": 68, "y": 40},
+    "opacity": 0.45, "layer": 100
+  },
+  "asset_fit": "contain",
+  "transform_origin": "center center",
+  "source_assets": "native-v4-svg",
+  "motion": "pinned-remotion-stepped-on-twos",
+  "caption_sync": "measured-patrick-hand-pages-shared-with-srt@2",
+  "font_verification": "fail-closed-before-hyperframes-timeline@1",
+  "cover_source": "encoded-video-first-frame@1",
+  "series_topic_intro": "crooked-paper-native-actors-theme-topic@3",
+  "audio_mux_guard": "voice-video-duration-250ms@1",
+  "audio_source": "approved-voice-only@1",
+  "legacy_media": "reject-unmigrated-cover-and-soundtrack@1",
+  "approval_granted": false
+}

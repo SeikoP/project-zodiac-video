@@ -1,0 +1,11 @@
+{
+  "format": "zodiac-studio-transitions@1",
+  "note": "Studio/HyperFrames only. A transition belongs to the boundary AFTER its scene and is centred on it; the last scene has none.",
+  "default": {"preset": "dissolve", "frames": 14},
+  "presets": {
+    "cut": {"min_frames": 0, "max_frames": 0},
+    "dissolve": {"min_frames": 6, "max_frames": 30},
+    "paper-slide": {"min_frames": 6, "max_frames": 18},
+    "page-turn": {"min_frames": 9, "max_frames": 24}
+  }
+}

@@ -27,7 +27,7 @@ test('character diversity retains fresh silhouettes and interaction poses',async
  const preferred=freshPreferredHairIds(catalog);
  assert.ok(preferred.length>=8);
  assert.equal(preferred.includes('lopsided-bob'),false);
- assert.deepEqual(catalog.face_profiles.map(x=>x.id),['balanced']);
+ assert.equal(catalog.face_profiles[0].id,'balanced');assert.ok(catalog.face_profiles.length>=5);assert.ok(catalog.skin_tones.length>=5);
  assert.deepEqual(catalog.accessories,[]);assert.deepEqual(promotedAccessories.assets,[]);
  assert.ok(catalog.poses.length>=25);
  for(const id of ['curtain-bang','short-curl','low-ponytail','soft-mohawk'])assert.ok(preferred.includes(id),id+' fresh hair missing');

@@ -1,0 +1,3 @@
+tests/fixtures/phase2-gemini/narration.txt -text
+tests/fixtures/studio-p34-legacy/libra/*.svg -text
+plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/**/*.svg -text

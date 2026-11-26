@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Zodiac Studio V5 Preview",
+  "version": "0.1.0",
+  "identifier": "com.bungmoto.zodiac.studio.preview",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Zodiac Studio  ✦  Episode workflow",
+        "width": 1380,
+        "height": 860,
+        "minWidth": 800,
+        "minHeight": 580,
+        "maximized": true,
+        "center": true,
+        "decorations": false,
+        "backgroundColor": "#10121a"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; frame-src http://127.0.0.1:*; img-src 'self' asset: http://asset.localhost data:; media-src 'self' blob: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}

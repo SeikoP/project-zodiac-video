@@ -25,10 +25,10 @@ test('character compiler baseline is observable before geometry extraction',asyn
  const hashes=Object.fromEntries(cases.map(row=>[row.name,sha(compileCharacterSvg(row.identity,row.state).svg)]));
  console.log('CHARACTER_BASELINE_SHA '+JSON.stringify(hashes));
  assert.deepEqual(hashes,{
-  'lean-explain':'d7e5a44e63b9f2172cb8b969dc5a686bbcbfe9e943efa7ffa11d3d7ebab4105f',
-  'round-offer':'251246879b3d7f96885346772e512694eaa08740b591ac3f6df95b073b747963',
-  'stocky-phone':'693ce53785837dbffe30bf83ff883a089352ff28c2d51a0edba05f5ca4f1c203',
-  'petite-run':'4cfac2b010cda3d2bf6b3aff2577980f69cfce1c5768c909bb9920ae6e52e0f6'
+  'lean-explain':'8dd0ccf3508e321d091b793c4d1dd1b52b399fd3f8338d612e15d5f0e49a1ef6',
+  'round-offer':'18fe5ed2d30ede2daebba6d85e27c903097abbee17a24f00b72db847c7eeea84',
+  'stocky-phone':'6385269412240daff7864cb09dd18083f41cb94fff6128edf7bbcf401b45e698',
+  'petite-run':'a158bbe8f221a746128e41f532e687369c8d92dce88bb0d57ceb49926a4cd3ec'
  });
 });
 

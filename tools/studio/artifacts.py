@@ -6,6 +6,8 @@ import hashlib
 import json
 import os
 import shutil
+import time
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -76,13 +78,25 @@ class VoiceArtifactStore:
 
     @staticmethod
     def _atomic_write(path: Path, payload: dict) -> None:
+        if os.name == "nt":
+            absolute = str(path.resolve())
+            if not absolute.startswith("\\\\?\\"):
+                path = Path("\\\\?\\UNC\\"+absolute[2:] if absolute.startswith("\\\\") else "\\\\?\\"+absolute)
         path.parent.mkdir(parents=True, exist_ok=True)
-        temp = path.with_name(path.name + f".{os.getpid()}.tmp")
-        temp.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        os.replace(temp, path)
+        temp = path.with_name(path.name + f".{uuid.uuid4().hex}.tmp")
+        try:
+            temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            for attempt in range(20):
+                try:
+                    os.replace(temp, path)
+                    break
+                except PermissionError:
+                    if attempt == 19:
+                        raise
+                    # Windows readers briefly deny replacement of an open JSON file.
+                    time.sleep(.01)
+        finally:
+            temp.unlink(missing_ok=True)
 
     def _scene_dir(self, scene_id: str) -> Path:
         return self.base / scene_id
@@ -133,6 +147,23 @@ class VoiceArtifactStore:
         approval_source: str,
         migrated_from_checkpoint: bool = False,
     ) -> dict:
+        return self._register(scene_id, source_wav, identity=identity,
+                              approval_source=approval_source,
+                              migrated_from_checkpoint=migrated_from_checkpoint)
+
+    def register_candidate(self, scene_id: str, source_wav: Path, *,
+                           identity: VoiceIdentity, details: dict | None = None) -> dict:
+        """Technical audio is never a human listening approval."""
+        return self._register(scene_id, source_wav, identity=identity,
+                              approval_source="studio-voice-lab-technical",
+                              technical_only=True, details=details)
+
+    def takes(self, scene_id: str) -> list[dict]:
+        return [dict(t) for t in self._load(scene_id)["takes"] if isinstance(t, dict)]
+
+    def _register(self, scene_id: str, source_wav: Path, *, identity: VoiceIdentity,
+                  approval_source: str, migrated_from_checkpoint: bool = False,
+                  technical_only: bool = False, details: dict | None = None) -> dict:
         source_wav = Path(source_wav).resolve()
         wav_hash = file_sha256(source_wav)
         take_id = canonical_hash(
@@ -163,14 +194,16 @@ class VoiceArtifactStore:
         payload = self._load(scene_id)
         takes = [item for item in payload["takes"] if isinstance(item, dict)]
         existing = next((item for item in takes if item.get("take_id") == take_id), None)
+        if technical_only and existing:
+            return dict(existing)
 
         for item in takes:
-            if item.get("status") == VoiceTakeStatus.APPROVED and item.get("take_id") != take_id:
+            if not technical_only and item.get("status") == VoiceTakeStatus.APPROVED and item.get("take_id") != take_id:
                 item["status"] = VoiceTakeStatus.SUPERSEDED
 
         record = {
             "take_id": take_id,
-            "status": VoiceTakeStatus.APPROVED,
+            "status": VoiceTakeStatus.TECH_VALID if technical_only else VoiceTakeStatus.APPROVED,
             "path": artifact_path.relative_to(self.root).as_posix(),
             "wav_sha256": wav_hash,
             "text_hash": identity.text_hash,
@@ -179,6 +212,7 @@ class VoiceArtifactStore:
             "performance_context_hash": identity.performance_context_hash,
             "approval_source": approval_source,
             "migrated_from_checkpoint": bool(migrated_from_checkpoint),
+            **({"details": details} if details is not None else {}),
             "created_at": (
                 existing.get("created_at")
                 if existing
@@ -192,7 +226,8 @@ class VoiceArtifactStore:
             takes.append(record)
 
         payload["takes"] = takes
-        payload["active_take"] = take_id
+        if not technical_only:
+            payload["active_take"] = take_id
         self._atomic_write(self._index_path(scene_id), payload)
         return dict(record)
 

@@ -1,0 +1,625 @@
+{
+  "ok": true,
+  "strict": false,
+  "browserSkipped": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "nested_structure_needs_subcomposition",
+        "severity": "warning",
+        "message": "<div id=\"graphics\"> is a timeline element that contains nested <div>. The timeline shows one row per top-level element, and the root composition is built only from sub-compositions.",
+        "selector": "#graphics",
+        "dataAttributes": {},
+        "sourceFile": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\tmp\\vox-style-demo-10s\\index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Move <div id=\"graphics\"> and its contents into a sub-composition file and mount it with data-composition-src."
+      }
+    ],
+    "filesScanned": 1
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 11,
+    "infoCount": 0,
+    "findings": [
+      {
+        "selector": "div.masthead > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 130,
+          "width": 376.89,
+          "height": 30
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 108,
+          "top": 130,
+          "right": 484.89,
+          "bottom": 160,
+          "width": 376.89,
+          "height": 30
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "ZODIAC / MOTION STUDY",
+        "message": "<span> \"ZODIAC / MOTION STUDY\" is outside the safe area: TikTok (top edge), Instagram Reels (top edge), YouTube Shorts (top edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "span.tag",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 855.69,
+          "y": 139,
+          "width": 101.31,
+          "height": 30
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 855.69,
+          "top": 139,
+          "right": 957,
+          "bottom": 169,
+          "width": 101.31,
+          "height": 30
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "10 GIÂY",
+        "message": "<span> \"10 GIÂY\" is outside the safe area: TikTok (top edge), Instagram Reels (top edge), YouTube Shorts (top edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "p.question",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 245.45,
+          "width": 410.94,
+          "height": 39
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 108,
+          "top": 245.45,
+          "right": 518.94,
+          "bottom": 284.45,
+          "width": 410.94,
+          "height": 39
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "AI BẤM NÚT ĐẦU TIÊN?",
+        "message": "<p> \"AI BẤM NÚT ĐẦU TIÊN?\" is outside the safe area: TikTok (left edge), Instagram Reels (top edge), YouTube Shorts (top edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.footer",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 1775,
+          "width": 382.33,
+          "height": 26
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 108,
+          "top": 1775,
+          "right": 490.33,
+          "bottom": 1801,
+          "width": 382.33,
+          "height": 26
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "VOX-INSPIRED / DEMO HIỆU ỨNG",
+        "message": "<div> \"VOX-INSPIRED / DEMO HIỆU ỨNG\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 9.444,
+        "occurrences": 9,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889,
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "p.va-text",
+        "dataAttributes": {},
+        "sourceFile": "compositions/components/vox-annotate.html",
+        "bbox": {
+          "x": 89.98,
+          "y": 592.19,
+          "width": 900.02,
+          "height": 115
+        },
+        "time": 0.556,
+        "rect": {
+          "left": 89.98,
+          "top": 592.19,
+          "right": 990,
+          "bottom": 707.19,
+          "width": 900.02,
+          "height": 115
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "đi trước. Bạch Dương",
+        "message": "<p> \"đi trước. Bạch Dương\" is outside the safe area: TikTok (left and right edges), YouTube Shorts (right edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 0.556,
+        "lastSeen": 3.889,
+        "occurrences": 4,
+        "heldMs": 0,
+        "times": [
+          0.556,
+          1.667,
+          2.778,
+          3.889
+        ]
+      },
+      {
+        "selector": "div.labels > span:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 293.13,
+          "y": 1376,
+          "width": 88.92,
+          "height": 42
+        },
+        "time": 5,
+        "rect": {
+          "left": 293.13,
+          "top": 1376,
+          "right": 382.05,
+          "bottom": 1418,
+          "width": 88.92,
+          "height": 42
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "NGHĨ",
+        "message": "<span> \"NGHĨ\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 5,
+        "lastSeen": 9.444,
+        "occurrences": 5,
+        "heldMs": 0,
+        "times": [
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.labels > span:nth-of-type(2)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 708.33,
+          "y": 1376,
+          "width": 78.53,
+          "height": 42
+        },
+        "time": 5,
+        "rect": {
+          "left": 708.33,
+          "top": 1376,
+          "right": 786.86,
+          "bottom": 1418,
+          "width": 78.53,
+          "height": 42
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "LÀM",
+        "message": "<span> \"LÀM\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 5,
+        "lastSeen": 9.444,
+        "occurrences": 5,
+        "heldMs": 0,
+        "times": [
+          5,
+          6.111,
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.hf-catalog-animated-bar-chart.chart > header:nth-of-type(1) > div:nth-of-type(1) > h3:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 111.55,
+          "y": 970.15,
+          "width": 520.97,
+          "height": 47.02
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 111.55,
+          "top": 970.15,
+          "right": 632.52,
+          "bottom": 1017.17,
+          "width": 520.97,
+          "height": 47.02
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Khi cả nhóm còn đang nghĩ…",
+        "message": "<h3> \"Khi cả nhóm còn đang nghĩ…\" is outside the safe area: TikTok (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 6.111,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          6.111
+        ]
+      },
+      {
+        "selector": "div.hf-catalog-animated-bar-chart.chart > header:nth-of-type(1) > div:nth-of-type(1) > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 111.55,
+          "y": 1031.8,
+          "width": 611.46,
+          "height": 32.4
+        },
+        "time": 6.111,
+        "rect": {
+          "left": 111.55,
+          "top": 1031.8,
+          "right": 723.01,
+          "bottom": 1064.2,
+          "width": 611.46,
+          "height": 32.4
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Biểu đồ minh họa tính cách • không phải số liệu",
+        "message": "<p> \"Biểu đồ minh họa tính cách • không phải số liệu\" is outside the safe area: TikTok (left edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 6.111,
+        "lastSeen": 6.111,
+        "occurrences": 1,
+        "heldMs": 0,
+        "times": [
+          6.111
+        ]
+      },
+      {
+        "selector": "div.payoff > h2:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 1558.11,
+          "width": 672.41,
+          "height": 77
+        },
+        "time": 7.222,
+        "rect": {
+          "left": 108,
+          "top": 1558.11,
+          "right": 780.41,
+          "bottom": 1635.11,
+          "width": 672.41,
+          "height": 77
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Bạch Dương đã làm rồi.",
+        "message": "<h2> \"Bạch Dương đã làm rồi.\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 7.222,
+        "lastSeen": 9.444,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          7.222,
+          8.333,
+          9.444
+        ]
+      },
+      {
+        "selector": "div.payoff > p:nth-of-type(1)",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 1657.78,
+          "width": 607.45,
+          "height": 33
+        },
+        "time": 7.222,
+        "rect": {
+          "left": 108,
+          "top": 1657.78,
+          "right": 715.45,
+          "bottom": 1690.78,
+          "width": 607.45,
+          "height": 33
+        },
+        "code": "outside_safe_zone",
+        "severity": "warning",
+        "text": "Chữ lớn · nét bút · chú thích · biểu đồ · punch-",
+        "message": "<p> \"Chữ lớn · nét bút · chú thích · biểu đồ · punch-\" is outside the safe area: TikTok (bottom edge), Instagram Reels (bottom edge), YouTube Shorts (bottom edge).",
+        "fixHint": "Move the text inside the safe area, or mark text meant to sit there with data-layout-allow-safe-zone.",
+        "firstSeen": 7.222,
+        "lastSeen": 9.444,
+        "occurrences": 3,
+        "heldMs": 0,
+        "times": [
+          7.222,
+          8.333,
+          9.444
+        ]
+      }
+    ],
+    "duration": 10,
+    "samples": [
+      0.556,
+      1.667,
+      2.778,
+      3.889,
+      5,
+      6.111,
+      7.222,
+      8.333,
+      9.444
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 11,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      0.556,
+      2.778,
+      5,
+      7.222,
+      9.444
+    ],
+    "checked": 39,
+    "passed": 39
+  },
+  "craft": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 2,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and 5 text elements stay under it for 0.5 s or more, the smallest \"VOX-INSPIRED / DEMO HIỆU ỨNG\" at 22 px: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "VOX-INSPIRED / DEMO HIỆU ỨNG",
+        "selector": "div.footer",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 108,
+          "y": 1775,
+          "width": 382.33,
+          "height": 26
+        },
+        "time": 0,
+        "times": [
+          0,
+          0.25,
+          0.25,
+          3.125,
+          7.25
+        ],
+        "fontPx": 22,
+        "floorPx": 28,
+        "seconds": 10,
+        "elements": [
+          {
+            "selector": "div.footer",
+            "text": "VOX-INSPIRED / DEMO HIỆU ỨNG",
+            "fontPx": 22,
+            "time": 0,
+            "seconds": 10
+          },
+          {
+            "selector": "div.masthead > span:nth-of-type(1)",
+            "text": "ZODIAC / MOTION STUDY",
+            "fontPx": 25,
+            "time": 0.25,
+            "seconds": 9.75
+          },
+          {
+            "selector": "span.tag",
+            "text": "10 GIÂY",
+            "fontPx": 25,
+            "time": 0.25,
+            "seconds": 9.75
+          },
+          {
+            "selector": "div.hf-catalog-animated-bar-chart.chart > header:nth-of-type(1) > div:nth-of-type(1) > p:nth-of-type(1)",
+            "text": "Biểu đồ minh họa tính cách • không phải số liệu",
+            "fontPx": 26,
+            "time": 3.125,
+            "seconds": 6.875
+          },
+          {
+            "selector": "div.payoff > p:nth-of-type(1)",
+            "text": "Chữ lớn · nét bút · chú thích · biểu đồ · punch-in",
+            "fontPx": 27,
+            "time": 7.25,
+            "seconds": 2.75
+          }
+        ]
+      },
+      {
+        "code": "text_below_floor",
+        "severity": "warning",
+        "message": "Type floor is 28 px (2.6% of the 1080 px short side, what a phone can read) and \"HÀNH ĐỘNG TRƯỚC\" renders at 26 px for 2.13 s: set reading text to at least 28 px, or put data-layout-ignore on text that is texture rather than reading; see references/look.md.",
+        "text": "HÀNH ĐỘNG TRƯỚC",
+        "selector": "span.va-note",
+        "dataAttributes": {},
+        "sourceFile": "compositions/components/vox-annotate.html",
+        "bbox": {
+          "x": 427.81,
+          "y": 452.85,
+          "width": 252.74,
+          "height": 34
+        },
+        "time": 1.875,
+        "times": [
+          1.875
+        ],
+        "fontPx": 25.92,
+        "floorPx": 28,
+        "seconds": 2.125,
+        "elements": [
+          {
+            "selector": "span.va-note",
+            "text": "HÀNH ĐỘNG TRƯỚC",
+            "fontPx": 25.92,
+            "time": 1.875,
+            "seconds": 2.125
+          }
+        ]
+      }
+    ],
+    "enabled": true,
+    "step": 0.125,
+    "samples": 80
+  },
+  "audio": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "audio_none",
+        "severity": "info",
+        "message": "The film has no sound: no clip in it plays audio.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "index.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0
+      }
+    ]
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  }
+}

@@ -1,0 +1,73 @@
+import assert from 'node:assert/strict';
+import {pathToFileURL} from 'node:url';
+import {installWorkbenchFixture} from './studio_workbench_fixture.mjs';
+
+const {chromium}=await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href);
+const browser=await chromium.launch({executablePath:process.env.STUDIO_BROWSER,headless:true});
+try {
+ const page=await browser.newPage();
+ const errors=[]; page.on('pageerror',error=>errors.push(error.message));
+ await installWorkbenchFixture(page);
+ await page.route('**/src/main.tsx*',route=>route.fulfill({contentType:'application/javascript',body:`
+  import React from '/node_modules/.vite/deps/react.js';
+  import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
+  import VoiceLab from '/src/VoiceLab.tsx';
+  import '/src/style.css';
+  const root=ReactDOM.createRoot(document.getElementById('root'));
+  document.body.style.minWidth='0';
+  document.getElementById('root').style.cssText='display:flex;height:100dvh;min-width:0';
+  const request=window.layoutFixture;
+  window.audioUnits=[];
+  window.layoutFixture=(method,params)=>{if(method==='voice.audio')window.audioUnits.push(params.unit_id);return request(method,params);};
+  window.renderVoice=(props={})=>root.render(React.createElement(VoiceLab,{project:{project_id:'p1',display_title:'Fixture'},onChanged:()=>{},...props}));
+  window.renderVoice();
+ `}));
+ await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
+ await page.locator('.voice-unit').first().waitFor();
+ assert.equal(await page.locator('.voice-unit').count(),12,'every unit remains directly reachable without fixed pagination');
+ for(const [width,height] of [[1366,768],[700,600],[420,600]]) {
+  await page.setViewportSize({width,height});
+  const layout=await page.locator('.voice-layout').boundingBox();
+  const list=await page.locator('.voice-units').boundingBox();
+  const take=await page.locator('.voice-takes').boundingBox();
+  assert.ok(layout.height>100,'available viewport is used');
+  if(width<700) assert.ok(take.y>=list.y+list.height-1,'narrow standalone view stacks sections');
+  assert.ok(take.x>=0&&take.x+take.width<=width+1,'take panel fits horizontal bounds');
+  await page.locator('.voice-unit').last().click();
+  assert.equal(await page.locator('.voice-unit').last().getAttribute('aria-pressed'),'true');
+  await page.getByRole('button',{name:'Lưu khoảng nghỉ',exact:true}).scrollIntoViewIfNeeded();
+  await page.locator('.voice-takes audio').waitFor();
+  const bounds=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight}));
+  assert.ok(bounds.w<=width+1&&bounds.h<=height+1,JSON.stringify(bounds));
+ }
+ await page.setViewportSize({width:320,height:480});
+ await page.evaluate(()=>window.renderVoice({embedded:true,selectedUnitId:'u8'}));
+ await page.locator('.voice-workspace.voice-embedded').waitFor();
+ assert.equal(await page.locator('.voice-units:visible').count(),0,'graph owns unit selection');
+ assert.equal(await page.locator('.voice-workspace .page-header:visible').count(),0,'no duplicate heading in graph inspector');
+ await page.getByRole('button',{name:'Nghe toàn bài & timing',exact:true}).click();
+ await page.evaluate(()=>window.renderVoice({embedded:true,selectedUnitId:'u9'}));
+ await page.waitForFunction(()=>document.querySelector('.voice-workspace').classList.contains('voice-tab-takes'));
+ await page.locator('.voice-takes audio').waitFor();
+ await page.waitForFunction(()=>window.audioUnits.includes('u9'));
+ await page.getByRole('button',{name:'Tôi đã nghe hết và chấp nhận',exact:true}).scrollIntoViewIfNeeded();
+ assert.equal(await page.getByRole('button',{name:'Tôi đã nghe hết và chấp nhận',exact:true}).isDisabled(),true,'layout must not bypass listening gate');
+ await page.getByRole('button',{name:'Lưu khoảng nghỉ',exact:true}).scrollIntoViewIfNeeded();
+ const bounds=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight}));
+ assert.ok(bounds.w<=321&&bounds.h<=481,JSON.stringify(bounds));
+ await page.evaluate(()=>window.renderVoice({embedded:true}));
+ await page.getByLabel('Đoạn đọc',{exact:true}).selectOption('u11');
+ await page.waitForFunction(()=>window.audioUnits.at(-1)==='u11');
+ await page.setViewportSize({width:280,height:260});
+ await page.getByRole('button',{name:'Lưu khoảng nghỉ',exact:true}).scrollIntoViewIfNeeded();
+ const compact=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight}));
+ assert.ok(compact.w<=281&&compact.h<=261,JSON.stringify(compact));
+ await page.setViewportSize({width:700,height:600});
+ await page.evaluate(()=>window.renderVoice({selectedUnitId:'u11'}));
+ await page.waitForFunction(()=>{const item=document.querySelector('.voice-unit[aria-pressed="true"]'),list=document.querySelector('.voice-unit-list');if(!item||!list)return false;const i=item.getBoundingClientRect(),l=list.getBoundingClientRect();return i.top>=l.top-1&&i.bottom<=l.bottom+1;});
+ await page.locator('.voice-takes audio').evaluate(async audio=>{window.voicePlaying=audio;audio.muted=true;await audio.play();});
+ await page.evaluate(()=>window.renderVoice({active:false,selectedUnitId:'u11'}));
+ await page.waitForFunction(()=>window.voicePlaying.paused);
+ assert.deepEqual(errors,[]);
+ console.log('PASS VoiceLab complete scrollable list, adaptive standalone layout, embedded controls down to 280×260, selection and audio pause');
+} finally {await browser.close();}

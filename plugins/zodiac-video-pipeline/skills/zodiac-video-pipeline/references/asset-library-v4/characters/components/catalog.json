@@ -28,7 +28,10 @@
     "body_height_width_contract": "independent authored silhouette width and profile-specific leg reach; no whole-SVG scale; preserve identity across states",
     "state_budget_basis": "authored performed actions before SVG compilation",
     "fresh_hair_selection": "explicit_story_first_choice",
-    "co_visible_hair_diversity": "required_unless_authored_reuse_reason"
+    "co_visible_hair_diversity": "required_unless_authored_reuse_reason",
+    "optional_identity_fields": [
+      "skin_tone_id"
+    ]
   },
   "body_profiles": [
     {
@@ -205,6 +208,46 @@
       "selection_tier": "preferred_meme",
       "style_intent": "straight long bob with blunt shoulder-level edge",
       "silhouette_family": "lob_blunt",
+      "presentation": "feminine"
+    },
+    {
+      "id": "twin-buns",
+      "source_master": "twin-buns",
+      "selection_tier": "preferred_meme",
+      "style_intent": "two small top buns, youthful silhouette",
+      "silhouette_family": "buns_twin",
+      "presentation": "feminine"
+    },
+    {
+      "id": "cloud-puff",
+      "source_master": "cloud-puff",
+      "selection_tier": "preferred_meme",
+      "style_intent": "large soft cloud volume silhouette",
+      "silhouette_family": "short_cloud",
+      "presentation": "neutral"
+    },
+    {
+      "id": "bowl-fringe",
+      "source_master": "bowl-fringe",
+      "selection_tier": "preferred_meme",
+      "style_intent": "straight bowl fringe with side tabs",
+      "silhouette_family": "short_bowl",
+      "presentation": "neutral"
+    },
+    {
+      "id": "swept-pompadour",
+      "source_master": "swept-pompadour",
+      "selection_tier": "preferred_meme",
+      "style_intent": "lifted swept-back front silhouette",
+      "silhouette_family": "short_swept",
+      "presentation": "neutral"
+    },
+    {
+      "id": "side-braid-bun",
+      "source_master": "side-braid-bun",
+      "selection_tier": "preferred_meme",
+      "style_intent": "top bun with one side braid",
+      "silhouette_family": "bun_braid",
       "presentation": "feminine"
     }
   ],
@@ -389,6 +432,36 @@
     },
     {
       "id": "phone-call"
+    },
+    {
+      "id": "wave"
+    },
+    {
+      "id": "cheer"
+    },
+    {
+      "id": "arms-crossed"
+    },
+    {
+      "id": "think-chin"
+    },
+    {
+      "id": "shush"
+    },
+    {
+      "id": "hand-on-chest"
+    },
+    {
+      "id": "point-up"
+    },
+    {
+      "id": "beckon"
+    },
+    {
+      "id": "salute"
+    },
+    {
+      "id": "dance"
     }
   ],
   "crops": [
@@ -428,6 +501,41 @@
       "eye_scale_y": 1,
       "eye_offset_x": 0,
       "mark_style": "none"
+    },
+    {
+      "id": "wide-set",
+      "eye_scale_x": 1.12,
+      "eye_scale_y": 1,
+      "eye_offset_x": 0,
+      "mark_style": "none"
+    },
+    {
+      "id": "close-set",
+      "eye_scale_x": 0.9,
+      "eye_scale_y": 1,
+      "eye_offset_x": 0,
+      "mark_style": "none"
+    },
+    {
+      "id": "big-eyed",
+      "eye_scale_x": 1,
+      "eye_scale_y": 1.18,
+      "eye_offset_x": 0,
+      "mark_style": "none"
+    },
+    {
+      "id": "sleepy-small",
+      "eye_scale_x": 1.04,
+      "eye_scale_y": 0.82,
+      "eye_offset_x": 0,
+      "mark_style": "none"
+    },
+    {
+      "id": "round-wide",
+      "eye_scale_x": 1.1,
+      "eye_scale_y": 1.12,
+      "eye_offset_x": 0,
+      "mark_style": "none"
     }
   ],
   "accessories": [],
@@ -455,5 +563,31 @@
     "co_visible_rule": "Different recurring people visible together should use distinct hair silhouette_family unless an authored hair_reuse_reason explains the intentional match.",
     "override": "explicit episode design intent",
     "supporting_signs": "never infer unknown zodiac signs for supporting actors"
-  }
+  },
+  "skin_tones": [
+    {
+      "id": "light",
+      "hex": "#F1C6A0"
+    },
+    {
+      "id": "fair-pink",
+      "hex": "#F4CBB8"
+    },
+    {
+      "id": "honey",
+      "hex": "#E3AE7E"
+    },
+    {
+      "id": "tan",
+      "hex": "#C98F63"
+    },
+    {
+      "id": "brown",
+      "hex": "#B27A53"
+    },
+    {
+      "id": "deep",
+      "hex": "#8F5C3E"
+    }
+  ]
 }

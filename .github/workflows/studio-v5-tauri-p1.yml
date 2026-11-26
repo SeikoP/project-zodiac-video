@@ -1,0 +1,143 @@
+name: Zodiac Studio V5 P1 Windows host
+
+on:
+  push:
+    branches:
+      - experiment/studio-v5-p1-20261114
+      - experiment/main-2
+  pull_request:
+    paths:
+      - "apps/zodiac-studio/**"
+      - "tools/studio_project/**"
+      - "tests/test_studio_p1_*.py"
+      - "tests/test_studio_p2_*.py"
+      - "tests/test_studio_p34_*.py"
+      - "tests/studio_p34*"
+      - "tests/test_studio_p5_*.py"
+      - "tests/studio_p5*"
+      - "tests/test_studio_hyperframes_export.py"
+      - "tests/studio_hyperframes_export*"
+      - "tools/runner/process.py"
+      - "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4/**"
+      - "tests/test_studio_ideas.py"
+      - "tests/test_studio_agent_authoring.py"
+      - "tests/studio_ideas*"
+      - "tests/test_studio_ci.py"
+      - "tests/studio_episode_timeline.test.mjs"
+      - "tests/studio_workbench*"
+      - "tests/studio_compact_layout.mjs"
+      - ".github/workflows/studio-v5-tauri-p1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tauri-windows:
+    name: Tauri shell, Python RPC and native build
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/zodiac-studio/package.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/zodiac-studio/src-tauri -> target
+      - name: Install legacy Studio V2 test dependency
+        shell: pwsh
+        run: python -m pip install "tqdm>=4.66,<5" "fonttools>=4.55,<5"
+      - name: Frontend dependencies (locked)
+        working-directory: apps/zodiac-studio
+        run: pnpm install --frozen-lockfile
+      - name: Python P0/P1 contracts and integration
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p 'test_studio_project_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_studio_ideas.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/studio_ideas_prompt.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_studio_p1_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest tests.test_studio_agent_authoring -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_studio_p2_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest tests.test_studio_voice_worker tests.test_studio_agent_grammar_context tests.test_studio_authoring_binding -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_job5_historical_contract.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest tests.test_studio_ci -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: React TypeScript + Vite build
+        working-directory: apps/zodiac-studio
+        run: pnpm build
+      - name: P3/P4 compiler, SDK and visual-workspace integration
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p 'test_studio_p34_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/studio_p34_visual.test.mjs tests/studio_episode_timeline.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/studio_visual_migration.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tests -p 'test_studio_p5_*.py' -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/studio_p5_assets.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest tests.test_studio_hyperframes_export -q
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --test tests/studio_hyperframes_export.test.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Rust typecheck (locked)
+        working-directory: apps/zodiac-studio/src-tauri
+        run: cargo check --locked
+      - name: Browser workbench and compact layout fixtures
+        shell: pwsh
+        run: |
+          npm install --prefix .runtime/ci-browser --no-save --package-lock=false playwright@1.65.1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node .runtime/ci-browser/node_modules/playwright/cli.js install chromium
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:PLAYWRIGHT_MODULE = Join-Path $PWD '.runtime/ci-browser/node_modules/playwright/index.mjs'
+          $env:STUDIO_BROWSER = node --input-type=module -e "import {chromium} from './.runtime/ci-browser/node_modules/playwright/index.mjs'; console.log(chromium.executablePath())"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vite = Start-Process -FilePath 'node' -ArgumentList 'node_modules/vite/bin/vite.js --host 127.0.0.1 --port 1420 --strictPort' -WorkingDirectory (Join-Path $PWD 'apps/zodiac-studio') -WindowStyle Hidden -PassThru
+          try {
+            $ready = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+              try { $null = Invoke-WebRequest 'http://127.0.0.1:1420' -TimeoutSec 2; $ready = $true; break } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ready) { throw 'Studio Vite fixture server did not start' }
+            node tests/studio_workbench_browser.mjs
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            node tests/studio_compact_layout.mjs
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Stop-Process -Id $vite.Id -ErrorAction SilentlyContinue
+          }
+      - name: Rust host tests (locked)
+        working-directory: apps/zodiac-studio/src-tauri
+        run: cargo test --locked
+      - name: Tauri Windows executable (debug, no release bundle)
+        working-directory: apps/zodiac-studio
+        run: pnpm exec tauri build --debug --no-bundle
+      - name: Upload experimental desktop preview (not a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: zodiac-studio-p1-windows-debug
+          path: apps/zodiac-studio/src-tauri/target/debug/zodiac-studio-v5.exe
+          if-no-files-found: error
+          retention-days: 7

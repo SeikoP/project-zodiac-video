@@ -1,0 +1,396 @@
+{
+  "format": "zodiac-studio-phase-evidence@1",
+  "phase_id": "P0",
+  "task_id": "P0.1-P0.4-main2-verified",
+  "baseline_commit": "217cebe2471e24c6dab023b4cf5365ad5286fd1b",
+  "implementation_commit": "25e4933877bf053d3b9b3fd094675249a4ae2832",
+  "requirements": [
+    {
+      "id": "P0-01",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-new",
+        "node-current-assets",
+        "node-phase2-framework",
+        "node-selected-deps"
+      ],
+      "scope": "Source ownership, V4 asset diversity and baseline measurements: genuine unknowns remain null"
+    },
+    {
+      "id": "P0-02",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-new",
+        "session-legacy",
+        "state-legacy",
+        "cache"
+      ],
+      "scope": "Transactional registry/events with replay, stable SHA identity, restart and idempotent commands"
+    },
+    {
+      "id": "P0-03",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-new",
+        "node-phase1-export",
+        "node-local-bootstrap",
+        "zip-legacy",
+        "job5-history"
+      ],
+      "scope": "Two real source-bound approved v2 capsules and one real historical Job@5 archive; all sources preserved"
+    },
+    {
+      "id": "P0-04",
+      "status": "TESTED",
+      "test_refs": [
+        "p0-new",
+        "checklist",
+        "voice-legacy",
+        "library-legacy"
+      ],
+      "scope": "Evidence-only statuses, adversarial negative tests, technical gate; no synthetic human approval"
+    }
+  ],
+  "contracts": [
+    {
+      "name": "zodiac-phase1-handoff@2",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-job@5",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-visual-intent@1",
+      "result": "PRESERVED"
+    },
+    {
+      "name": "zodiac-studio-import@1",
+      "result": "NEW_VALIDATED"
+    },
+    {
+      "name": "zodiac-studio-phase-evidence@1",
+      "result": "NEW_VALIDATED"
+    }
+  ],
+  "reused_components": [
+    "canonical Node Phase 1 handoff inspector/materializer",
+    "Studio V2 VoiceArtifactStore index reader",
+    "Job@5 compatibility tests",
+    "native asset/preview/compiler legacy source"
+  ],
+  "changed_files": [
+    "docs/audits/2026-11-14-studio-phase00-baseline.md",
+    "docs/audits/2026-11-14-studio-v5-experimental-review.md",
+    "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/local-phase1-bootstrap.test.mjs",
+    "tests/studio_phase1_synthetic_fixture.mjs",
+    "tests/test_job5_historical_contract.py",
+    "tests/test_studio_production_checklist.py",
+    "tests/test_studio_project_baseline.py",
+    "tests/test_studio_project_evidence.py",
+    "tests/test_studio_project_import.py",
+    "tests/test_studio_project_registry.py",
+    "tools/control_plane/package_validation.py",
+    "tools/studio_project/__init__.py",
+    "tools/studio_project/evidence.py",
+    "tools/studio_project/handoff_bridge.mjs",
+    "tools/studio_project/importer.py",
+    "tools/studio_project/models.py",
+    "tools/studio_project/registry.py",
+    "tools/studio_project/status.py",
+    "tools/studio_qt/production_checklist.py"
+  ],
+  "test_runs": [
+    {
+      "id": "p0-new",
+      "command": "python -m unittest discover -s tests -p test_studio_project_*.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 48,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "checklist",
+      "command": "python -m unittest discover -s tests -p test_studio_production_checklist.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 16,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "job5-history",
+      "command": "python -m unittest discover -s tests -p test_job5_historical_contract.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 4,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "zip-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_zip_import.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 11,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "voice-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_voice.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 9,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "session-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_session.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 8,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "state-legacy",
+      "command": "python -m unittest discover -s tests -p test_studio_v2_state.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 7,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "library-legacy",
+      "command": "python -m unittest discover -s tests -p test_library.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 13,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "job5-import",
+      "command": "python -m unittest discover -s tests -p test_episode_job5_import.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 1,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "cache",
+      "command": "python -m unittest discover -s tests -p test_control_plane_cache.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 7,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "job5-boundary",
+      "command": "python -m unittest discover -s tests -p test_job5_import_preflight_boundary.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 1,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "spatial-contract",
+      "command": "python -m unittest discover -s tests -p test_spatial_contract_hash.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 1,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "contract-bundle",
+      "command": "python -m pytest tests/test_contract_bundle.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 2,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "contracts",
+      "command": "python -m unittest discover -s tests -p test_control_plane_contracts.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 8,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "job5-simplification",
+      "command": "python -m unittest discover -s tests -p test_simplification_package_import.py -q",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 3,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-phase1-export",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase1-handoff-export.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 4,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-local-bootstrap",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/local-phase1-bootstrap.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 4,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-current-assets",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/current-asset-surface.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 10,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-phase2-framework",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase2-framework.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 9,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-semantic-scene",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/scene-production-v2611.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 9,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    },
+    {
+      "id": "node-selected-deps",
+      "command": "node --test plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/orchestration/tests/phase02-selected-dependency-scope.test.mjs",
+      "status": "PASS",
+      "exit_code": 0,
+      "test_count": 1,
+      "log_ref": "studio-p0-main2-regressions.json",
+      "log_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb"
+    }
+  ],
+  "smoke_artifacts": [
+    {
+      "path": "studio-p0-real-source-smoke.json",
+      "sha256": "fb0e4cd3535f8ae64380dc7149a0668a6395e1a5322ec44c16ab4266a2e6e227"
+    },
+    {
+      "path": "studio-p0-real-legacy-job5-smoke.json",
+      "sha256": "aec17b20aecad1d6f333ec9b69cdabc052f0c698c539b778ca68f95e63731ff0"
+    }
+  ],
+  "review_gates": [
+    {
+      "id": "P0-REAL-V2-CAPSULE",
+      "status": "REVIEWED",
+      "evidence_ref": "studio-p0-real-source-smoke.json",
+      "evidence_sha256": "fb0e4cd3535f8ae64380dc7149a0668a6395e1a5322ec44c16ab4266a2e6e227",
+      "reviewed_scope": "Source-bound existing approval, not a new human decision"
+    },
+    {
+      "id": "P0-BASELINE-REGRESSIONS",
+      "status": "REVIEWED",
+      "evidence_ref": "studio-p0-main2-regressions.json",
+      "evidence_sha256": "eb2e1f9c756435425806decfdb92f8e4faa59df9ae77173f373a50bd9317f4cb",
+      "reviewed_scope": "21 groups, 176 tests, all pass"
+    },
+    {
+      "id": "P0-OLD-JOB5-REOPEN",
+      "status": "REVIEWED",
+      "evidence_ref": "studio-p0-real-legacy-job5-smoke.json",
+      "evidence_sha256": "aec17b20aecad1d6f333ec9b69cdabc052f0c698c539b778ca68f95e63731ff0",
+      "reviewed_scope": "Existing ZIP and canonical historical schema fingerprint"
+    },
+    {
+      "id": "P0-INDEPENDENT-AI-CODE-REVIEW",
+      "status": "REVIEWED",
+      "evidence_ref": "studio-p0-reviewed-findings.md",
+      "evidence_sha256": "e4ea89de01b44e6b39f4d6b6050b8f99b33995ad0f14a8046990e5ba7ce19687",
+      "reviewer_type": "AI_CODE_REVIEW",
+      "not_human_signoff": true,
+      "reviewed_scope": "Initial three P2 findings corrected; second Codex review found no actionable regressions"
+    }
+  ],
+  "risks": [
+    {
+      "code": "BASELINE_CHECKLIST_5_FAILURES",
+      "status": "RESOLVED",
+      "evidence_ref": "studio-p0-main2-regressions.json"
+    },
+    {
+      "code": "BASELINE_NODE_BOOTSTRAP_1_FAILURE",
+      "status": "RESOLVED",
+      "evidence_ref": "studio-p0-main2-regressions.json"
+    },
+    {
+      "code": "REAL_V2_CAPSULE_UNAVAILABLE",
+      "status": "RESOLVED",
+      "evidence_ref": "studio-p0-real-source-smoke.json"
+    },
+    {
+      "code": "HISTORICAL_JOB5_CONTRACT",
+      "status": "RESOLVED",
+      "evidence_ref": "studio-p0-real-legacy-job5-smoke.json"
+    },
+    {
+      "code": "INDEPENDENT_AI_REVIEW_FINDINGS_P2",
+      "status": "RESOLVED",
+      "evidence_ref": "studio-p0-reviewed-findings.md"
+    },
+    {
+      "code": "HUMAN_PRODUCTION_RELEASE_REVIEW",
+      "status": "OUT_OF_SCOPE_P0",
+      "notes": "Technical P0 gate is not a human creative signoff or authorization to production deploy"
+    }
+  ],
+  "deferred": [
+    {
+      "code": "P1_ONE_WINDOW_STUDIO",
+      "reason": "Ready for experiment; implementation belongs to P1"
+    },
+    {
+      "code": "P2_VOICE_LAB_LISTENING",
+      "reason": "No genuine user-take approval UI implemented by P0"
+    },
+    {
+      "code": "P3_V5_COMPILER",
+      "reason": "V5 compiler and new assets out of Phase 0 scope"
+    },
+    {
+      "code": "P7_VIDEO_E2E",
+      "reason": "No full MP4 production run or TTS performance claim in Phase 0"
+    }
+  ],
+  "rollback": "Revert Phase0-related commits and the main-2 experimental integration only; do not touch production main, source workspaces, original Job@5 packages or V4 assets. The experimental Studio registry is new and stores metadata only.",
+  "handoff_ready": true,
+  "environment": {
+    "os": "Windows 11",
+    "python": "3.11.9",
+    "node": "26.5.1",
+    "source": "Remote Desktop Commander, real local approved workspaces and Node/Python tests"
+  },
+  "note": "P0 engineering gate confirms source-bound existing approval only. Independent review was Codex AI, not human creative/release signoff. No one-window UI, voice-listening approval, Visual Review, final MP4 render or publishing was performed.",
+  "phase0_status": "TECHNICAL_MERGE_READY_FOR_PHASE1_EXPERIMENT"
+}

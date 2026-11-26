@@ -19,7 +19,7 @@ export function validateFreshAssetSelection({intent,production,policy}){
  for(const c of intent?.cast??[])if(hair.has(c.hair_id))fail('RETIRED_HAIR',c.entity_id);
  for(const [id,a] of [...Object.entries(production?.assets??{}),...Object.entries(intent?.assets??{})]){
   if(hair.has(a.character_blueprint?.hair_id))fail('RETIRED_HAIR',id);
-  const bp=a.character_blueprint;if(bp&&(!['plain-shirt','zodiac-glyph-shirt'].includes(bp.outfit_id)||(bp.face_profile_id??'balanced')!=='balanced'||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
+  const bp=a.character_blueprint;if(bp&&(!['plain-shirt','zodiac-glyph-shirt'].includes(bp.outfit_id)||!/^[a-z0-9-]+$/u.test(bp.face_profile_id??'balanced')||!/^[a-z0-9-]+$/u.test(bp.skin_tone_id??'light')||(bp.accessory_id??'none')!=='none'))fail('REMOVED_CHARACTER_FEATURE',id);
   if(bp?.outfit_id==='zodiac-glyph-shirt'&&!Object.hasOwn(zodiacGlyphPaths,bp.zodiac_sign_id))fail('ZODIAC_SIGN_INVALID',id);
   // Effects are optional emphasis, not mandatory and not forbidden for fresh work.
   const masters=[a.lineage?.source_master].flat(),p=String(a.path??'');

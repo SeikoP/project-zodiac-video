@@ -1,6 +1,6 @@
 {
   "format": "zodiac-v4-prop-catalog@1",
-  "version": "4.3",
+  "version": "4.4",
   "style_token": "zodiac-paper-doodle-meme-v4",
   "handmade_profile": "human-stroke-v2",
   "policy": {
@@ -746,6 +746,595 @@
       "contexts": [
         "optional-meme-lettering",
         "silent-judgment"
+      ]
+    },
+    {
+      "id": "phone-rounded",
+      "path": "props/phone-rounded.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-rounded",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          65,
+          180
+        ],
+        "right_grip": [
+          251,
+          180
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          86,
+          58,
+          144,
+          250
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          43
+        ],
+        "front_surface": [
+          86,
+          58,
+          144,
+          250
+        ],
+        "safe_overlay": [
+          86,
+          58,
+          144,
+          250
+        ]
+      },
+      "review": "PENDING"
+    },
+    {
+      "id": "phone-compact",
+      "path": "props/phone-compact.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-compact",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          54,
+          182
+        ],
+        "right_grip": [
+          268,
+          182
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          76,
+          95,
+          170,
+          170
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          82
+        ],
+        "front_surface": [
+          76,
+          95,
+          170,
+          170
+        ],
+        "safe_overlay": [
+          76,
+          95,
+          170,
+          170
+        ]
+      },
+      "review": "PENDING"
+    },
+    {
+      "id": "phone-angular",
+      "path": "props/phone-angular.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "reaction",
+        "daily-life",
+        "evidence"
+      ],
+      "identity": {
+        "family_id": "phone",
+        "model_id": "phone-angular",
+        "appearance_id": "semantic-shell",
+        "state_id": "idle",
+        "view_id": "front",
+        "owner_id": null,
+        "compatibility": "V5_MASTER"
+      },
+      "slots": {
+        "left_grip": [
+          44,
+          184
+        ],
+        "right_grip": [
+          272,
+          184
+        ],
+        "pivot": [
+          160,
+          190
+        ],
+        "screen": [
+          70,
+          62,
+          176,
+          235
+        ],
+        "body": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "case": [
+          44,
+          22,
+          228,
+          334
+        ],
+        "notification": [
+          230,
+          110
+        ],
+        "camera": [
+          160,
+          43
+        ],
+        "front_surface": [
+          70,
+          62,
+          176,
+          235
+        ],
+        "safe_overlay": [
+          70,
+          62,
+          176,
+          235
+        ]
+      },
+      "review": "PENDING"
+    },
+    {
+      "id": "route-planner-phone",
+      "path": "props/route-planner-phone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "route",
+        "restaurant",
+        "plan",
+        "chat",
+        "map",
+        "planning"
+      ]
+    },
+    {
+      "id": "saved-folder-phone",
+      "path": "props/saved-folder-phone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "saved",
+        "folder",
+        "love",
+        "chat",
+        "phone",
+        "evidence"
+      ]
+    },
+    {
+      "id": "banh-trang-nuong",
+      "path": "props/banh-trang-nuong.svg",
+      "role": "story_prop",
+      "contexts": [
+        "food",
+        "restaurant",
+        "street-food",
+        "date",
+        "meal"
+      ]
+    },
+    {
+      "id": "menu-photo",
+      "path": "props/menu-photo.svg",
+      "role": "story_prop",
+      "contexts": [
+        "menu",
+        "restaurant",
+        "photo",
+        "date",
+        "meal"
+      ]
+    },
+    {
+      "id": "laptop",
+      "path": "props/laptop.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "study",
+        "chat"
+      ]
+    },
+    {
+      "id": "alarm-clock",
+      "path": "props/alarm-clock.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "study",
+        "reaction"
+      ]
+    },
+    {
+      "id": "lightbulb",
+      "path": "props/lightbulb.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "megaphone",
+      "path": "props/megaphone.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "evidence"
+      ]
+    },
+    {
+      "id": "bubble-tea",
+      "path": "props/bubble-tea.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "takeaway-cup",
+      "path": "props/takeaway-cup.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "camera",
+      "path": "props/camera.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "evidence",
+        "social"
+      ]
+    },
+    {
+      "id": "potted-plant",
+      "path": "props/potted-plant.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "sunglasses",
+      "path": "props/sunglasses.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "game-controller",
+      "path": "props/game-controller.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "shopping-bag",
+      "path": "props/shopping-bag.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "clipboard",
+      "path": "props/clipboard.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "evidence",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "padlock",
+      "path": "props/padlock.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "reaction",
+        "general"
+      ]
+    },
+    {
+      "id": "paper-plane",
+      "path": "props/paper-plane.svg",
+      "role": "story_prop",
+      "contexts": [
+        "chat",
+        "social",
+        "reaction"
+      ]
+    },
+    {
+      "id": "trophy",
+      "path": "props/trophy.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "reaction",
+        "social"
+      ]
+    },
+    {
+      "id": "balloon",
+      "path": "props/balloon.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "piggy-bank",
+      "path": "props/piggy-bank.svg",
+      "role": "story_prop",
+      "contexts": [
+        "evidence",
+        "daily-life",
+        "reaction"
+      ]
+    },
+    {
+      "id": "earbuds-case",
+      "path": "props/earbuds-case.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "smartwatch",
+      "path": "props/smartwatch.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "evidence",
+        "general"
+      ]
+    },
+    {
+      "id": "flower-bouquet",
+      "path": "props/flower-bouquet.svg",
+      "role": "story_prop",
+      "contexts": [
+        "social",
+        "reaction",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "headphones",
+      "path": "props/headphones.svg",
+      "role": "story_prop",
+      "contexts": [
+        "study",
+        "daily-life",
+        "reaction"
+      ]
+    },
+    {
+      "id": "battery-low",
+      "path": "props/battery-low.svg",
+      "role": "story_prop",
+      "contexts": [
+        "reaction",
+        "evidence",
+        "daily-life"
+      ]
+    },
+    {
+      "id": "tote-bag",
+      "path": "props/tote-bag.svg",
+      "role": "story_prop",
+      "contexts": [
+        "daily-life",
+        "social",
+        "general"
+      ]
+    },
+    {
+      "id": "meme-label-cheer-too-early",
+      "path": "props/meme-label-cheer-too-early.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "cheer-too-early"
+      ]
+    },
+    {
+      "id": "meme-label-arms-crossed-refuse",
+      "path": "props/meme-label-arms-crossed-refuse.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "arms-crossed-refuse"
+      ]
+    },
+    {
+      "id": "meme-label-shush-secret",
+      "path": "props/meme-label-shush-secret.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "shush-secret"
+      ]
+    },
+    {
+      "id": "meme-label-think-chin-overthink",
+      "path": "props/meme-label-think-chin-overthink.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "think-chin-overthink"
+      ]
+    },
+    {
+      "id": "meme-label-point-up-idea",
+      "path": "props/meme-label-point-up-idea.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "point-up-idea"
+      ]
+    },
+    {
+      "id": "meme-label-beckon-come-here",
+      "path": "props/meme-label-beckon-come-here.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "beckon-come-here"
+      ]
+    },
+    {
+      "id": "meme-label-wave-goodbye-late",
+      "path": "props/meme-label-wave-goodbye-late.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "wave-goodbye-late"
+      ]
+    },
+    {
+      "id": "meme-label-salute-yes-boss",
+      "path": "props/meme-label-salute-yes-boss.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "salute-yes-boss"
+      ]
+    },
+    {
+      "id": "meme-label-hand-on-chest-promise",
+      "path": "props/meme-label-hand-on-chest-promise.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "hand-on-chest-promise"
+      ]
+    },
+    {
+      "id": "meme-label-dance-payday",
+      "path": "props/meme-label-dance-payday.svg",
+      "role": "meme_prop",
+      "contexts": [
+        "optional-meme-lettering",
+        "dance-payday"
       ]
     }
   ]

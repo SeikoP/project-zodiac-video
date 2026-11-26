@@ -1,0 +1,48 @@
+{
+  "signs": ["Bạch Dương", "Kim Ngưu", "Song Tử", "Cự Giải", "Sư Tử", "Xử Nữ", "Thiên Bình", "Bọ Cạp", "Nhân Mã", "Ma Kết", "Bảo Bình", "Song Ngư"],
+  "groups": [
+    {
+      "id": "love", "title": "Tình yêu", "subtitle": "Love & Relationships",
+      "concepts": [
+        {"id": "love-feeling", "title": "Yêu một cung hoàng đạo là cảm giác gì?", "direction": "Những điều khiến người khác rung động khi yêu cung này, rồi đảo chiều bằng một nhược điểm ít ai chịu nổi."},
+        {"id": "love-sincere", "title": "Khi một cung hoàng đạo thật lòng yêu", "direction": "Đối lập giữa cách họ cư xử với người bình thường và người thực sự quan trọng."},
+        {"id": "love-signs", "title": "Dấu hiệu cung này yêu bạn thật rồi", "direction": "Những hành động nhỏ vô thức tố cáo tình cảm dù miệng họ luôn phủ nhận."},
+        {"id": "love-jealous", "title": "Cung này khi ghen đáng sợ thế nào?", "direction": "Bề ngoài bình thản nhưng bên trong liên tục tưởng tượng hàng loạt tình huống."},
+        {"id": "love-tiring", "title": "Vì sao yêu cung này lại mệt?", "direction": "Bắt đầu bằng những tình huống yêu đương quen thuộc, tăng dần mâu thuẫn rồi tiết lộ nguyên nhân tâm lý."},
+        {"id": "love-head-heart", "title": "Cung này yêu bằng lý trí hay cảm xúc?", "direction": "Một cuộc chiến hài hước giữa trái tim và bộ não, trong đó quyết định cuối cùng trái ngược hoàn toàn với lời họ nói."},
+        {"id": "love-wrong-person", "title": "Khi cung này yêu nhầm người", "direction": "Từ một người tự tin biến thành người liên tục tìm lý do để biện hộ cho đối phương."},
+        {"id": "love-loyal", "title": "Cung này có dễ thay lòng không?", "direction": "Khai thác ranh giới giữa sự chung thủy, cảm giác nhàm chán và nhu cầu được thấu hiểu."},
+        {"id": "love-ending", "title": "Khi cung này hết yêu", "direction": "Đối chiếu cách họ yêu lúc đầu với sự im lặng, lạnh nhạt hoặc dứt khoát ở cuối mối quan hệ."},
+        {"id": "love-moved", "title": "Điều gì khiến cung này rung động?", "direction": "Những hành động tưởng nhỏ nhặt nhưng lại có sức ảnh hưởng lớn đến cảm xúc của họ."}
+      ]
+    },
+    {
+      "id": "healing", "title": "Tổn thương, chia tay & chữa lành", "subtitle": "Heartbreak & Healing",
+      "concepts": [
+        {"id": "healing-hurt", "title": "Khi cung này bị tổn thương", "direction": "Miệng nói không sao, tay vẫn làm những thói quen cũ. Một chi tiết nhỏ làm lộ điều họ đang cố giấu."},
+        {"id": "healing-breakup", "title": "Cung này sau khi chia tay", "direction": "Đối chiếu màn tuyên bố sống tốt với buổi tối đầu tiên một mình; kết bằng một hành động tự chăm sóc vụng về mà thật."},
+        {"id": "healing-forget", "title": "Cung này mất bao lâu để quên một người?", "direction": "Tưởng đã quên cho đến khi gặp một món ăn, bài hát hoặc địa điểm quen. Theo dõi cách họ vượt qua lần gợi nhớ đó."},
+        {"id": "healing-ex-message", "title": "Khi người yêu cũ nhắn tin cho cung này", "direction": "Một tin nhắn kéo cả hội đồng nội tâm vào tranh luận; quyết định cuối cùng bộc lộ ranh giới mới của nhân vật."},
+        {"id": "healing-rejected", "title": "Khi cung này không được chọn", "direction": "Đi từ so sánh bản thân với người khác đến nhận ra mình đã bỏ quên điều gì. Dùng tình huống cụ thể thay cho lời khuyên chung."},
+        {"id": "healing-silent", "title": "Vì sao cung này im lặng khi buồn?", "direction": "Người xung quanh tưởng họ lạnh nhạt, trong khi họ đang tập nói một câu rất đơn giản: hôm nay tôi không ổn."},
+        {"id": "healing-pretend", "title": "Cung này giả vờ ổn giỏi đến đâu?", "direction": "Phóng đại những màn bận rộn để né cảm xúc, rồi để một người quen nhận ra qua một thói quen nhỏ bị thay đổi."},
+        {"id": "healing-let-go", "title": "Khi cung này quyết định buông tay", "direction": "Không cần một cuộc cãi vã lớn: một lần ngừng chờ, ngừng giải thích hoặc cất món đồ cũ đánh dấu quyết định thật sự."},
+        {"id": "healing-trust", "title": "Cung này học cách tin người lần nữa", "direction": "Một người mới làm điều tử tế rất bình thường, còn nhân vật chuẩn bị đủ đường phòng thủ; sự tin tưởng đến từng hành động nhỏ."},
+        {"id": "healing-self", "title": "Cung này chữa lành theo cách nào?", "direction": "Cho nhân vật thử cách chữa lành không hợp mình trước khi tìm được một việc nhỏ có thể làm đều đặn; hài hước nhưng không phủ nhận nỗi buồn."}
+      ]
+    },
+    {
+      "id": "everyday", "title": "Hài hước & đời thường", "subtitle": "Memes & Everyday Life",
+      "concepts": [
+        {"id": "meme-broke", "title": "Cung này khi hết tiền", "direction": "Những quyết định phi lý, màn tự biện hộ và phản ứng khi nhìn số dư tài khoản."},
+        {"id": "meme-seen", "title": "Cung này khi bị người yêu seen", "direction": "Nhân cách hóa 7749 giả thuyết diễn ra trong đầu chỉ sau vài phút không nhận được tin nhắn."},
+        {"id": "meme-crush", "title": "Cung này khi crush nhắn tin", "direction": "Từ giả vờ bình tĩnh đến cuộc họp khẩn cấp giữa bộ não và trái tim."},
+        {"id": "meme-work", "title": "Cung này khi đi làm", "direction": "Đặt nhân vật vào các tình huống deadline, họp nhóm, tranh công và bất đồng quan điểm."},
+        {"id": "meme-mom", "title": "Cung này khi bị mẹ mắng", "direction": "Sự khác nhau giữa phản ứng ngoài mặt và suy nghĩ bên trong."},
+        {"id": "meme-drama", "title": "Cung này khi gặp drama", "direction": "Nhân vật chọn hóng chuyện, can thiệp, phân tích hay giả vờ không biết."},
+        {"id": "meme-drunk", "title": "Cung này khi say", "direction": "Phóng đại những đặc điểm tính cách vốn bị kiểm soát lúc tỉnh táo."},
+        {"id": "meme-polite-anger", "title": "Cung này khi tức giận nhưng phải lịch sự", "direction": "Cuộc chiến giữa biểu cảm bình thản và suy nghĩ đang bùng nổ."}
+      ]
+    }
+  ]
+}

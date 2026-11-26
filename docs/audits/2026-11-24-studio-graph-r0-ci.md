@@ -1,0 +1,42 @@
+# R0.1 — CI failure diagnosis and repair
+
+Date: 2026-11-24. Branch: `experiment/main-2`. Baseline: `6f4dbe2b147d7e71c8fbe9c8b771be6c766bd48f`.
+
+R0 remains IN PROGRESS. This receipt covers the first CI repair task, not native baseline completion or Graph acceptance.
+
+## Observed remote failure
+
+The exact HEAD push [run 45241235844](https://github.com/SeikoP/project-zodiac-video/actions/runs/45241235844), job `137926124275`, failed in Python P0/P1 contracts and integration. P0 passed 48 tests. The first failure was `IdeasTests.test_existing_registry_projects_survive_additive_schema`: its expected workspace retained Windows `RUNNER~1`, while the registry correctly returned the resolved `runneradmin` path. Later build, browser and Rust checks did not run. The last ten relevant push runs were failures; empty PR-only connector results would not establish green CI.
+
+The GitHub connector provided actual job summaries and logs. Its run-list wrapper only supports PR-triggered runs, so the push runs/check-runs were retrieved through authenticated GitHub REST using the existing Git credential helper, without logging credentials. `gh` is absent locally.
+
+## Scoped repair
+
+- Normalize the existing Ideas fixture root before constructing its expected ProjectHandle, matching the registry test convention. No registry or approval behavior changed.
+- Propagate P2 discovery failure immediately, before another Python command overwrites `$LASTEXITCODE`.
+- Add a regression that executes the workflow's actual PowerShell body with P2 returning 23; it verifies later suites never execute. Observed RED: workflow returned 0 and ran subsequent suites. Observed GREEN: exits 23 immediately.
+- Register timeline, workbench fixture and compact-layout paths. Provision pinned Playwright 1.65.1/Chromium and run both existing browser fixtures against Vite in the app directory, with bounded readiness and process cleanup. Graph tests will be registered when introduced.
+
+## Current local verification
+
+| Command | Actual result |
+| --- | --- |
+| `python -m unittest tests.test_studio_ci tests.test_studio_ideas -q` | 7 PASS, 1.445s |
+| `python -m unittest discover -s tests -p 'test_studio_*.py' -q` | 345 PASS, 343.649s; legacy Qt teardown emits `QNetworkAccessManager already deleted` tracebacks and an `invalidateFilter` deprecation; launcher absence message belongs to its expected failure test |
+| `node --test tests/studio_ideas_prompt.test.mjs tests/studio_p34_visual.test.mjs tests/studio_episode_timeline.test.mjs tests/studio_visual_migration.test.mjs tests/studio_p5_assets.test.mjs tests/studio_hyperframes_export.test.mjs` | 42 PASS, 16.274s |
+| `pnpm.cmd -C apps/zodiac-studio build` | PASS; existing >500kB chunk warning, entry 267.95kB, deferred tools 34.49kB, preview SDK 1055.12kB |
+| `node tests/studio_workbench_browser.mjs` | PASS at 1366×768, 1060×650, 1093×614 |
+| `node tests/studio_compact_layout.mjs` | PASS six views, inspector/voice/source/log tabs, pagination at the same three sizes |
+
+Browser setup: `PLAYWRIGHT_MODULE=<repo>/.runtime/workbench-tools/node_modules/playwright/index.mjs`; install using `node .runtime/workbench-tools/node_modules/playwright/cli.js install chromium`; set `STUDIO_BROWSER` to `chromium.executablePath()` from that module. The first launch found no installed Chromium; provisioning completed and both fixture checks then passed. These fixtures do not prove native app performance or human approval.
+
+Independent read-only review found no Critical/Important issue. Deferred minor: readiness accepts any HTTP responder on port 1420; checking the launched Vite process would diagnose a rare port collision sooner. Ruling: unchanged P0-before-pnpm ordering and unrelated path filters remain outside this bounded repair; current remote execution must expose any downstream failure rather than treating this local pass as full CI success.
+
+Remote run after first push: [45438169262](https://github.com/SeikoP/project-zodiac-video/actions/runs/45438169262) at `38a29008` passed the Ideas fixture and reached agent authoring. Its first root cause is `MODULE_NOT_FOUND: fontkit` in `visual_captions.mjs`: the existing dependency install step ran after Python suites that now call the compiler. The authoring suite reported 4 errors and 1 consequential failure (`VISUAL_BUILD_BLOCKED` instead of `AGENT_DEPENDENCIES_CHANGED`). Follow-up moves the existing frozen install before Python, without changing dependencies or weakening validation. Latest remote result after follow-up push: PENDING. Native cold startup, resource measurements, uninterrupted fresh agent, R1–R6 and human listening/visual/final-video gates remain open. No release or production merge performed.
+
+
+## Follow-up: Windows checkout byte integrity
+
+Run [45438847143](https://github.com/SeikoP/project-zodiac-video/actions/runs/45438847143) at `ccd91ebf` passed P0/P1/P2 and frontend build. P3/P4 Python passed 17 tests; compiler/timeline Node passed 16, migration passed 4. P5 discovery failed `test_actual_rpc_projects_share_verified_prop_history_without_approval` with `VISUAL_ASSET_HASH_MISMATCH scene-accent-cafe`.
+
+A real `git -c core.autocrlf=true checkout-index` reproduced the corruption: expected SHA `c278335ebd4e7249008ee5d91fe0859c4d4d6b87c1951c455b5f78ef58f937c1`, checkout SHA `c2f4527f0af42406d952b19628f31a917cae041eae50d3fc8a5b5a722a2ddce9`. The library's SVGs carry exact-byte identities, so `.gitattributes` now preserves those bytes with `-text`. No asset bytes or validators were changed. The regression checks every indexed scene accent through an actual Windows-style Git checkout, against the existing catalog hashes. The checkout/P2 CI regressions and P5 usage suite passed 10 tests in 90.521s. Next remote result remains pending.

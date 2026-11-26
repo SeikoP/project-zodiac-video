@@ -10,7 +10,7 @@ test('Phase 2 work units reduce model guidance without waiving entry capabilitie
  const design=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'design'});
  const scene=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'scene'});
  const validate=await loadStepContext('02-visual-production','visual_compile',flags,{...options,work_unit:'validate'});
- assert.ok(full.context_manifest.reduce((n,r)=>n+r.bytes,0)<70000);
+ assert.ok(full.context_manifest.reduce((n,r)=>n+r.bytes,0)<75000);
  for(const context of [design,scene]){
   assert.ok(context.context_manifest.reduce((n,r)=>n+r.bytes,0)<45000);
   assert.ok(context.required_references.includes('references/story-visual.md'));

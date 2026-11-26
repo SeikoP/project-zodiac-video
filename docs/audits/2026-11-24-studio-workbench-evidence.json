@@ -1,0 +1,273 @@
+{
+  "date": "2026-11-24",
+  "branch": "experiment/main-2",
+  "base_commit": "24ac9b72",
+  "model": "gpt-6-luna",
+  "human_review": "PENDING",
+  "remote_ci": "NOT_CHECKED",
+  "uninterrupted_fresh_agent_e2e": "OPEN: initial rendering-role labels corrected through GUI source import; fresh TTS/ASR recorded separately",
+  "native": {
+    "started_at": "2026-11-23T17:18:31.250Z",
+    "steps": [
+      {
+        "name": "voice and measured timing available in GUI",
+        "seconds": 0.391
+      },
+      {
+        "name": "episode built and real preview opened",
+        "seconds": 0.44
+      },
+      {
+        "name": "real voice crossed scene boundary continuously, ended and replayed from zero",
+        "seconds": 28.502
+      },
+      {
+        "name": "real scene agent edit confirmed and rebuilt",
+        "seconds": 24.38
+      },
+      {
+        "name": "scene edit undo and redo preserved canonical source through GUI",
+        "seconds": 27.063
+      },
+      {
+        "name": "MP4 exported and played in native GUI without quality approval",
+        "seconds": 337.346
+      }
+    ],
+    "human_review": "PENDING",
+    "transport": "native Tauri/Rust/Python",
+    "voice": "existing real selected takes; reused-audio iteration",
+    "boundary_playback": {
+      "boundary_ms": 7120.00256,
+      "pauses": 0
+    },
+    "timeline_audio": {
+      "duration": 74.8,
+      "currentTime": 8.023664,
+      "paused": true,
+      "muted": true
+    },
+    "workbench_context": {
+      "sceneId": "s03",
+      "entityId": "friend",
+      "timeMs": 15520
+    },
+    "playback": {
+      "width": 1080,
+      "height": 1920,
+      "duration": 74.8,
+      "currentTime": 0.522319,
+      "muted": true,
+      "playing": true
+    },
+    "export_text": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\.runtime\\workbench-e2e-final\\projects\\episodes\\studio-2b0c3a549a069efd273809f2\\.runtime\\visual-workspace\\exports\\1a5c1cd6d2d54ea9a1c2d539b3bb3b9c\\episode.mp4 · Đúng bản xuất hiện tại\nÂm thanh: chỉ giọng đọc đã chọn · Nhạc nền: 0 · SFX: 0\nCover series: Cách Nhân Mã yêu thật lòng · frame đầu MP4\nCopy đường dẫn MP4\nReceipt & tệp kèm",
+    "export_sha256": "741286251519520ee56a0456405cca620b1f241be8dcaba118f3167e5e283f0f",
+    "project": "studio-2b0c3a549a069efd273809f2",
+    "finished_at": "2026-11-23T17:25:29.375Z",
+    "wall_seconds": 418.122
+  },
+  "restart": {
+    "at": "2026-11-23T17:26:56.440Z",
+    "project": "studio-2b0c3a549a069efd273809f2",
+    "restored_context": {
+      "sceneId": "s03",
+      "entityId": "friend",
+      "timeMs": 15520
+    },
+    "receipt": "Model: gpt-6-luna\nCOMPLETED · Cảnh s01\nĐã áp dụng · agent-bf3aa45a20854bd7a4f650804eb07557\n\ns01 · sagittarius / neutral\n\nx: 610\n\n‹\n1 / 1 · 2 mục\n›\nChi tiết tác vụ",
+    "playback": {
+      "width": 1080,
+      "height": 1920,
+      "duration": 74.8,
+      "currentTime": 0.530973,
+      "muted": true,
+      "playing": true
+    },
+    "export_text": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\.runtime\\workbench-e2e-final\\projects\\episodes\\studio-2b0c3a549a069efd273809f2\\.runtime\\visual-workspace\\exports\\1a5c1cd6d2d54ea9a1c2d539b3bb3b9c\\episode.mp4 · Đúng bản xuất hiện tại\nÂm thanh: chỉ giọng đọc đã chọn · Nhạc nền: 0 · SFX: 0\nCover series: Cách Nhân Mã yêu thật lòng · frame đầu MP4\nCopy đường dẫn MP4\nReceipt & tệp kèm",
+    "human_review": "PENDING"
+  },
+  "media": {
+    "video": "E:\\projects\\project-zodiac-video\\.worktrees\\main-2\\.runtime\\workbench-e2e-final\\projects\\episodes\\studio-2b0c3a549a069efd273809f2\\.runtime\\visual-workspace\\exports\\1a5c1cd6d2d54ea9a1c2d539b3bb3b9c\\episode.mp4",
+    "revision": 6,
+    "hashes": {
+      "video": "741286251519520ee56a0456405cca620b1f241be8dcaba118f3167e5e283f0f",
+      "voice": "1d62f3bdd6ec0805ca4b1d33e6d7168667b0dec429a76ae44af88ccade12da64",
+      "captions": "da47bf27e01e53be17c7810aa03b9916090c952113f5943f8220432d93e4684c",
+      "cover": "0754120e1becbdd7f58c9000deb2ecd35629337bed4a7f9210fa00b6422c9603"
+    },
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "fps": "30/1",
+      "video_duration": "74.800000",
+      "audio_duration": "74.800000",
+      "audio_codec": "aac"
+    },
+    "full_decode": "PASS",
+    "cover_frame_zero_pixels": "MATCH",
+    "audio_contract": {
+      "mode": "approved-voice-only@1",
+      "voice_sha256": "1d62f3bdd6ec0805ca4b1d33e6d7168667b0dec429a76ae44af88ccade12da64",
+      "music_tracks": 0,
+      "sfx_tracks": 0
+    },
+    "human_review": "PENDING"
+  },
+  "source_repair": {
+    "source_sha256": "a9e695d265bd53f18e1b780db7e807c9c4659eda673b828ea464ae6d6fb5caff",
+    "changes": [
+      {
+        "scene": "s01",
+        "entity": "sagittarius",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s01",
+        "entity": "friend",
+        "before": "listener",
+        "after": "character"
+      },
+      {
+        "scene": "s02",
+        "entity": "sagittarius",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s02",
+        "entity": "friend",
+        "before": "listener",
+        "after": "character"
+      },
+      {
+        "scene": "s03",
+        "entity": "friend",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s03",
+        "entity": "sagittarius",
+        "before": "listener",
+        "after": "character"
+      },
+      {
+        "scene": "s04",
+        "entity": "sagittarius",
+        "before": "actor",
+        "after": "character"
+      },
+      {
+        "scene": "s04",
+        "entity": "route",
+        "before": "focus_prop",
+        "after": "interactive_prop"
+      },
+      {
+        "scene": "s04",
+        "entity": "food",
+        "before": "support_prop",
+        "after": "interactive_prop"
+      },
+      {
+        "scene": "s05",
+        "entity": "sagittarius",
+        "before": "subject",
+        "after": "character"
+      },
+      {
+        "scene": "s05",
+        "entity": "phone",
+        "before": "focus_prop",
+        "after": "interactive_prop"
+      },
+      {
+        "scene": "s06",
+        "entity": "sagittarius",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s06",
+        "entity": "friend",
+        "before": "listener",
+        "after": "character"
+      },
+      {
+        "scene": "s06",
+        "entity": "menu",
+        "before": "focus_prop",
+        "after": "interactive_prop"
+      },
+      {
+        "scene": "s07",
+        "entity": "sagittarius",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s07",
+        "entity": "friend",
+        "before": "listener",
+        "after": "character"
+      },
+      {
+        "scene": "s07",
+        "entity": "saved",
+        "before": "focus_prop",
+        "after": "interactive_prop"
+      },
+      {
+        "scene": "s08",
+        "entity": "friend",
+        "before": "speaker",
+        "after": "character"
+      },
+      {
+        "scene": "s08",
+        "entity": "sagittarius",
+        "before": "listener",
+        "after": "character"
+      }
+    ],
+    "apply": "GUI source import and validated save; no direct project writes"
+  },
+  "checks": {
+    "affected_backend": "34 PASS in 41.572s",
+    "role_authoring_grammar": "12 PASS in 19.088s",
+    "role_legacy_workspace": "17 PASS in 79.374s",
+    "voice_roundtrip_and_contracts": "19 PASS in 25.516s",
+    "compiler_node": "13 PASS",
+    "broader_node_before_role_regression": "43 PASS",
+    "browser": "PASS at 1366x768, 1060x650, 1093x614; pointer hit testing, playback, restoration",
+    "frontend_build": "PASS; existing chunk size warning",
+    "earlier_full_python": "337 PASS; non-fatal legacy Qt teardown tracebacks",
+    "earlier_rust": "2 PASS"
+  },
+  "reproduction": [
+    "Set PLAYWRIGHT_MODULE to installed Playwright module path and STUDIO_BROWSER to browser executable.",
+    "Use isolated ZODIAC_STUDIO_PROJECTS and approved handoff; run tests/studio_workflow_native.mjs against native app CDP9227. Optional STUDIO_E2E_GENERATE_VOICE=1 generates actual TTS/ASR.",
+    "Restart same native app/store, then run tests/studio_workflow_native_reopen.mjs.",
+    "ffprobe -v error -show_streams -show_format -of json episode.mp4",
+    "ffmpeg -v error -xerror -i episode.mp4 -f null -",
+    "Compare SHA256 of selected voice.wav and captions/cover against export receipt. Compare first video frame and cover using ffmpeg -map 0:v:0 -an -frames:v 1 -pix_fmt rgb24 -f hash -hash sha256 -."
+  ],
+  "remaining": [
+    "Uninterrupted fresh initial Luna source-to-MP4 acceptance",
+    "Human voice/visual/final video review",
+    "P5 gallery/phone/contact/palettes review",
+    "P6 complete media/audio/package library",
+    "P7 Audio Mix V2, BGM/SFX/ducking/rights and final acceptance"
+  ],
+  "source_sha256": {
+    "apps/zodiac-studio/src/VisualEditor.tsx": "32d9c4339340bc8cbb08845bd68feabd9c3a77f9839a49c3899ab328da031aad",
+    "apps/zodiac-studio/src/style.css": "417cce143451745df5671cbbf6a0990d96bf58c7f55dbbd0dc487ede7636a551",
+    "tools/studio_project/agent_authoring.py": "58e0195be79adf43456aff27bdf88709474cc88c7cf2bcbc740290d95a864b55",
+    "tools/studio_project/agent_bridge.py": "f4ff6bcf715c49132651ca985dc224337e2c2968d0f9ee738b29a46b3d08e659",
+    "tools/studio_project/visual_compiler.mjs": "9610fd687ed4c4b025341d6ddab8f49e5126073ed7557463bdeb990eed41c1db",
+    "tools/studio_project/voice_lab.py": "5aa9890dd6ac260d6fb3a2e303d4ca49a919f275cd94f64981c5c8c4d01d91b4",
+    "tests/studio_workflow_native.mjs": "2f2ad32900c1fe4d28de921353d4549c036f8114a03702840966f1bd8cf3225e",
+    "tests/studio_workflow_native_reopen.mjs": "8fe8a0e5cb458e15cd9d8341624640dfc8d272270913a69a5c62c3a59b823e77"
+  }
+}
