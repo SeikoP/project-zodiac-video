@@ -30,7 +30,7 @@ TRANSITIONS = json.loads((Path(__file__).with_name("transitions.json")).read_tex
 
 VISUAL_ROLES = frozenset({"character", "interactive_prop", "background", "foreground_environment", "story_object", "story_symbol", "effect",
                           "caption", "overlay", "story_visual", "prop", "object", "environment", "environment_cue", "character_pose",
-                          "story_prop", "story_effect"})
+                          "story_prop", "story_effect", "scene_accent"})
 
 PART_REPAIR = ("Your answer failed the validator. Correct only the invalid fields and return ONLY the complete JSON of the same kind, "
                "no markdown. Validator DATA: ")

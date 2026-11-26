@@ -367,6 +367,13 @@ class SceneAccentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             with_accent(accent_stage(anchor_id="a99"))
 
+    def test_part_validation_keeps_the_accent_as_it_is(self):
+        part = with_accent()
+        validated = json.loads(agent_parts.validate_scene(json.dumps(part, ensure_ascii=False), task()))["payload"]["scene"]
+        accent = next(e for e in validated["entities"] if e["kind"] == "scene_accent")
+        self.assertEqual(accent["visual_role"], "scene_accent")
+        self.assertEqual(accent, next(e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent"))
+
     def test_the_assembled_scene_still_compiles_with_an_accent(self):
         part = with_accent()
         intent = fixture_intent()
