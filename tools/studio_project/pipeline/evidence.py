@@ -54,10 +54,12 @@ def collect_evidence(service, project_id: str, *, running: str | None = None,
     video = project["status"]["video"]
     checks_state = receipt_state(workspace, "checks", source_hash)
     voice_job = (voice or {}).get("job") or {}
-    report = last_report(workspace) if intent and checks_state != "OK" else None
-    if report and not report.get("ok") and report.get("source_hash") == source_hash and report.get("issues"):
+    report = last_report(workspace) if intent else None
+    check_notes = len(report.get("notes") or []) if report and checks_state == "OK" and report.get("source_hash") == source_hash else 0
+    if report and checks_state != "OK" and not report.get("ok") and report.get("source_hash") == source_hash and report.get("issues"):
         # Running the checks step otherwise looks like nothing happened: say why it is still not done.
-        failed.setdefault("checks", f"{len(report['issues'])} vấn đề cần sửa, mở bước này để xem")
+        blocking = len(report["issues"]) - len(report.get("notes") or [])
+        failed.setdefault("checks", f"{blocking} vấn đề cần sửa, mở bước này để xem")
     return PipelineEvidence(
         content_approved=True,
         voice_units_total=len(units), voice_units_selected=selected, voice_assembled=bool(assembly),
@@ -80,4 +82,4 @@ def collect_evidence(service, project_id: str, *, running: str | None = None,
         voice_revision=(voice or {}).get("revision", 0),
         voice_job_done=int(voice_job.get("completed") or 0) if voice_job.get("status") == "RUNNING" else 0,
         voice_job_total=int(voice_job.get("total") or 0) if voice_job.get("status") == "RUNNING" else 0,
-        running_node=running or _running(visual, voice), failed=failed, notes=dict(notes or {}))
+        check_notes=check_notes, running_node=running or _running(visual, voice), failed=failed, notes=dict(notes or {}))

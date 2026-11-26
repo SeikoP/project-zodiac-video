@@ -162,6 +162,7 @@ impl Backend {
             "pipeline.evidence",
             "pipeline.autopilot.start",
             "pipeline.autopilot.stop",
+            "pipeline.card.resolve",
             "pipeline.gate.playback",
             "pipeline.gate.confirm",
         ];

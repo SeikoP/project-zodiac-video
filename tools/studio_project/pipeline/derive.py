@@ -40,6 +40,7 @@ class PipelineEvidence:
     voice_job_done: int = 0  # progress of the running voice/timing job, when there is one
     voice_job_total: int = 0
     running_node: str | None = None
+    check_notes: int = 0  # quality findings the checks step carried along without blocking
     failed: Mapping[str, str] = field(default_factory=dict)
     notes: Mapping[str, str] = field(default_factory=dict)  # live detail for a running node, e.g. agent attempt/elapsed
 
@@ -103,6 +104,8 @@ def _detail(status: str, node_id: str, e: PipelineEvidence) -> str:
         return e.notes[node_id]
     if status == "RUNNING" and node_id in ("voice", "timing") and e.voice_job_total:
         return f"Xong {e.voice_job_done}/{e.voice_job_total}"
+    if node_id == "checks" and status == "DONE" and e.check_notes:
+        return f"Xong, còn {e.check_notes} gợi ý chất lượng"
     if node_id == "voice":
         taken = f"{e.voice_units_selected}/{e.voice_units_total} đoạn có take"
         if status != "DONE" and e.voice_units_total and e.voice_units_selected == e.voice_units_total:

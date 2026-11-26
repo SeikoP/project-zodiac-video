@@ -26,7 +26,7 @@ _ALLOWED = frozenset({
     "voice.audio", "voice.playback", "voice.confirm",
     "visual.open", "visual.command", "visual.cancel", "visual.preview",
     "episode.build", "scene.compile", "video.export", "video.get", "assets.describe", "assets.gallery", "assets.find_candidates", "validation.get",
-    "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "validators.run",
+    "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "pipeline.card.resolve", "validators.run",
 })
 
 
@@ -87,6 +87,14 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         if pilot.record.state == "WAITING_GATE":  # the user's own confirmation resumes a waiting autopilot
             pilot.resume_after_gate(background=True)
         return result
+    if method == "pipeline.card.resolve":
+        _exact(p, "project_id", "scene_id", "choice")
+        for key in ("scene_id", "choice"):
+            if not isinstance(p[key], str):
+                raise StudioError("RPC_PARAMS_INVALID", f"{key} must be a string", "transport")
+        from .pipeline.cards import resolve
+        resolve(service.registry.get(p["project_id"]).workspace, p["scene_id"], p["choice"])
+        return {"scene_id": p["scene_id"], "choice": p["choice"]}
     if method == "pipeline.evidence":
         _exact(p, "project_id")
         from .pipeline.api import pipeline_evidence

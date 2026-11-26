@@ -18,6 +18,12 @@ NAMES = ("progressive-preflight", "scene-experience", "authoring-completeness", 
 UPSTREAM_CODES = frozenset({"STORY_VISUAL_DECISION", "STORY_VISUAL_DECISION_MISSING", "STORY_VISUAL_DIRECTION_MISSING",
                             "STORY_VISUAL_DIRECTION_REQUIRED"})
 STUDIO_CODES = frozenset({"VALIDATOR_PREREQUISITE_MISSING", "VALIDATOR_FAILED"})
+# Findings about how good a scene looks or acts: advice for the owner, never a reason to refuse to build. Anything else a
+# validator reports (a missing profile, a broken contract, missing Phase 1 input) is structural and still blocks.
+QUALITY_CODES = frozenset({
+    "ENVIRONMENT_VISUAL_UNDERDEVELOPED", "FRAME_OCCUPANCY_LOW", "PASSIVE_ACCENT_ONLY", "PASSIVE_STORYTELLING",
+    "VISUAL_DEPTH_UNDERDEVELOPED", "SCENE_EXPERIENCE_CRITERION_REVIEW", "STORY_FOCUS_GOAL_MISMATCH", "STORY_FOCUS_DISCONNECTED",
+})
 LAST_REPORT = Path(".runtime/pipeline/last-validation.json")
 
 
@@ -40,8 +46,14 @@ class ValidationReport:
     issues: tuple[Issue, ...]
     receipt_sha256: str
 
+    @property
+    def notes(self) -> tuple[Issue, ...]:
+        """The quality findings among the issues: carried along, not blocking."""
+        return tuple(i for i in self.issues if i.code in QUALITY_CODES)
+
     def to_dict(self) -> dict:
-        return {"ok": self.ok, "issues": [i.to_dict() for i in self.issues], "receipt_sha256": self.receipt_sha256}
+        return {"ok": self.ok, "issues": [i.to_dict() for i in self.issues], "notes": [i.to_dict() for i in self.notes],
+                "receipt_sha256": self.receipt_sha256}
 
 
 Runner = Callable[[Path, Sequence[str]], list[dict]]
@@ -79,11 +91,13 @@ def run_validators(service, project_id: str, names: Sequence[str], *, runner: Ru
     issues: list[Issue] = []
     ok = len(results) == len(names)
     for result in results:
-        if result.get("status") not in ("PASS", "SKIPPED"):  # REVIEW also blocks (plugin rule); SKIPPED = not applicable to Studio
+        found = [_issue(i) for i in result.get("issues", [])]
+        quality_only = bool(found) and all(i.code in QUALITY_CODES for i in found)
+        if result.get("status") not in ("PASS", "SKIPPED") and not quality_only:  # REVIEW also blocks, unless it is only advice
             ok = False
-        issues.extend(_issue(i) for i in result.get("issues", []))
+        issues.extend(found)
     receipt = canonical_hash({"names": sorted(names), "source_hash": source_hash, "results": results})
-    return ValidationReport(ok and not issues, tuple(issues), receipt)
+    return ValidationReport(ok and all(i.code in QUALITY_CODES for i in issues), tuple(issues), receipt)
 
 
 def checks_executor(names: Sequence[str]):

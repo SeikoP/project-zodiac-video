@@ -110,6 +110,12 @@ class DeriveTests(unittest.TestCase):
         self.assertIn("Kiểm tra bản soạn", nodes["build"].detail)
         self.assertNotIn("giọng", nodes["build"].detail)
 
+    def test_checks_done_with_notes_stays_done_and_says_how_many(self):
+        nodes = self.graph(done_evidence(check_notes=3))
+        self.assertEqual(nodes["checks"].status, "DONE")
+        self.assertIn("3", nodes["checks"].detail)
+        self.assertEqual(self.graph(done_evidence())["checks"].detail, "")
+
     def test_real_voice_change_still_says_source_or_voice_changed(self):
         self.assertIn("giọng", self.graph(done_evidence(current_voice_fingerprint="v2"))["build"].detail)
 

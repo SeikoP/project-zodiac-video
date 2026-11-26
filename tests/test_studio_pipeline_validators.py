@@ -82,14 +82,43 @@ class ValidatorTests(unittest.TestCase):
         original = validators.node_runner
         try:
             validators.node_runner = stub([{"name": "scene-experience", "status": "REVIEW",
-                                            "issues": [{"code": "PASSIVE_STORYTELLING", "scene_id": "s01"}]}])
+                                            "issues": [{"code": "EXPERIENCE_PROFILE_MISSING", "scene_id": "s01"}]}])
             result = checks_executor(["scene-experience"])(Ctx)
             self.assertFalse(result["ok"])
             self.assertIsNone(read_receipt(self.workspace, "checks"))
-            self.assertEqual(json.loads((self.workspace / validators.LAST_REPORT).read_text("utf-8"))["issues"][0]["code"], "PASSIVE_STORYTELLING")
+            self.assertEqual(json.loads((self.workspace / validators.LAST_REPORT).read_text("utf-8"))["issues"][0]["code"], "EXPERIENCE_PROFILE_MISSING")
             validators.node_runner = stub([{**PASS, "name": "scene-experience"}])
             self.assertTrue(checks_executor(["scene-experience"])(Ctx)["ok"])
             self.assertEqual(read_receipt(self.workspace, "checks")["source_hash"], "h1")
+        finally:
+            validators.node_runner = original
+
+    def test_quality_findings_alone_do_not_block_and_are_carried_as_notes(self):
+        runner = stub([{"name": "scene-experience", "status": "REVIEW", "issues": [
+            {"code": "PASSIVE_STORYTELLING", "scene_id": "s02"}, {"code": "FRAME_OCCUPANCY_LOW", "scene_id": "s03"}]}])
+        report = run_validators(self.service, "p", ["scene-experience"], runner=runner)
+        self.assertTrue(report.ok)
+        self.assertEqual([n.code for n in report.notes], ["PASSIVE_STORYTELLING", "FRAME_OCCUPANCY_LOW"])
+        self.assertEqual(len(report.issues), 2)
+        self.assertEqual(len(report.to_dict()["notes"]), 2)
+
+    def test_a_structural_failure_still_blocks_even_beside_quality_notes(self):
+        runner = stub([{"name": "scene-experience", "status": "REVIEW", "issues": [
+            {"code": "PASSIVE_STORYTELLING", "scene_id": "s02"}, {"code": "EXPERIENCE_PROFILE_MISSING", "scene_id": "s01"}]}])
+        report = run_validators(self.service, "p", ["scene-experience"], runner=runner)
+        self.assertFalse(report.ok)
+        self.assertEqual([n.code for n in report.notes], ["PASSIVE_STORYTELLING"])
+
+    def test_the_checks_node_writes_its_receipt_with_notes(self):
+        class Ctx:
+            service, project_id = self.service, "p"
+        original = validators.node_runner
+        try:
+            validators.node_runner = stub([{"name": "scene-experience", "status": "REVIEW",
+                                            "issues": [{"code": "PASSIVE_STORYTELLING", "scene_id": "s01"}]}])
+            self.assertTrue(checks_executor(["scene-experience"])(Ctx)["ok"])
+            self.assertEqual(read_receipt(self.workspace, "checks")["source_hash"], "h1")
+            self.assertEqual(len(validators.last_report(self.workspace)["notes"]), 1)
         finally:
             validators.node_runner = original
 
