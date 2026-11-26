@@ -13,7 +13,7 @@ class WebLocalHandoffReleaseTests(unittest.TestCase):
         self.assertRegex(plugin["version"],r"^\d+\.\d+\.\d+$")
         self.assertEqual(codex["version"],plugin["version"])
         self.assertEqual(state["plugin_version"],plugin["version"])
-        backup=json.loads((ROOT/"docs/backups/zodiac-2.7.16.json").read_text(encoding="utf-8"))
+        backup=json.loads((ROOT/"docs/archive/backups/zodiac-2.7.16.json").read_text(encoding="utf-8"))
         self.assertEqual(backup["backup_branch"],"backup/zodiac-2.7.16")
         self.assertEqual(backup["plugin_release_id"],"pluginrel_6aef5fcb6078819184d112c85268706a")
         readme=(ROOT/"README.md").read_text(encoding="utf-8")

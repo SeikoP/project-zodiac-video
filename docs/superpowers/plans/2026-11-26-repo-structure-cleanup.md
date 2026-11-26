@@ -34,7 +34,7 @@ The cause is the same everywhere: a new concern is added next to whatever is nea
 
 **0. Land the experiment.** Merge `experiment/main-2` into `main` with a merge commit (no fast-forward). Nothing is moved in this PR.
 
-**1. Hygiene, zero risk.** Add `tmp/` to `.gitignore`. Delete stale local branches and worktrees after confirming each is merged or has an owner (`git branch --merged main`; list the rest in the PR for a decision, never `-D` blindly).
+**1. Hygiene, zero risk. DONE (see PR for phase 1).** Add `tmp/` to `.gitignore`. Delete stale local branches and worktrees after confirming each is merged or has an owner (`git branch --merged main`; list the rest in the PR for a decision, never `-D` blindly).
 Move `docs/backups`, `docs/historical`, `docs/branch-hygiene` into `docs/archive/`.
 
 **2. Tests by area.** `tests/studio/{python,node,browser}/`, `tests/fixtures/` stays. Keep the commands in `CLAUDE.md` in sync (they name test files).
@@ -56,3 +56,8 @@ Fold `reviews`, `evidence`, `previews`, `zodiac-simplification-preview` into tho
 ## Done means
 
 `git status` is clean after a normal session; each rule has a failing-test counterpart; a new contributor can name the directory for a given change without searching.
+
+## Phase 1 result
+
+- `tmp/` is git-ignored. `docs/backups`, `docs/historical`, `docs/branch-hygiene` moved to `docs/archive/` (references in `branch-hygiene-once.yml` and `test_web_local_handoff_contract.py` updated).
+- Local branches merged into `main` deleted. Not merged and left for the owner: `claude/tiktok-live-experience-f5215d`, `codex/production-readiness-20261014`, `feat/garden-*` (5), `feat/performance-surfaces-2.9.0`, `fix/garden-live-connector-control`, `sync/local-latest-20261116`, `experiment/studio-v5-p34-20261115`.
