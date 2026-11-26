@@ -575,6 +575,8 @@ class StudioGraphicTests(unittest.TestCase):
     def test_none_and_invalid_graphics(self):
         self.assertFalse([e for e in self.scene({"motif": "none"})["scene"]["entities"] if e["id"].startswith("graphic_")])
         for bad in ({"motif": "route", "anchor_id": "a1", "caption": "x", "pins": ["only one"]}, {"motif": "galaxy"},
+                    {"motif": "receipt", "anchor_id": "a1", "title": "t", "total": "x", "items": []},      # empty content used to leave a picture with no states
+                    {"motif": "versus", "anchor_id": "a1", "left_title": "a", "right_title": "b", "rows": [{"left": "x", "right": "y"}]},
                     {"motif": "meter", "anchor_id": "a1", "title": "t", "left": "l", "right": "r", "level": "9"}):
             with self.assertRaises(ValueError, msg=bad):
                 self.scene(bad)

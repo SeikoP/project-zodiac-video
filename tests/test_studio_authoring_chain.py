@@ -201,6 +201,25 @@ class ChainTests(unittest.TestCase):
         self.assertEqual(sorted(c[1] for c in second.calls if isinstance(c, tuple) and c[0] == "stage"), ["s03", "s04"])
         self.assertEqual(json.loads(result.proposal["text"])["order"], ORDER)
 
+    def test_a_choice_that_cannot_be_drawn_is_chosen_again_with_the_reason_not_failed(self):
+        io = FakeIO()
+        seen = []
+        original = io.assemble
+
+        def assemble(skeleton, sid, stage, act):
+            if sid == "s02" and not seen:
+                seen.append(1)
+                raise authoring_chain.ChoiceError("assemble: STORY_VISUAL_ART_INVALID versus_side")
+            return original(skeleton, sid, stage, act)
+        io.assemble = assemble
+        fed = []
+        stage_request = io.stage_request
+        io.stage_request = lambda sk, sid, fb: (fed.append((sid, fb)) or stage_request(sk, sid, fb))
+        result = self.run_chain(io)
+        self.assertEqual(result.scenes["s02"].status, "ok")
+        again = [fb for sid, fb in fed if sid == "s02"][-1]
+        self.assertIn("versus_side", json.dumps(again))
+
     def test_a_model_failure_marks_the_scene_failed_and_withholds_the_proposal(self):
         io = FakeIO()
 

@@ -422,8 +422,9 @@ class AgentManager:
                 from .pipeline import cards
                 cards.save_cards(self.service.registry.get(project_id).workspace, result.cards)
             if result.proposal is None:
-                failed = [sid for sid, outcome in result.scenes.items() if outcome.status == "failed"]
-                raise RuntimeError("Chuỗi chưa xong" + (f"; cảnh lỗi: {', '.join(failed)}" if failed else ""))
+                failed = {sid: outcome.reason for sid, outcome in result.scenes.items() if outcome.status == "failed"}
+                detail = "; ".join(f"{sid}: {reason[:90]}" for sid, reason in failed.items())
+                raise RuntimeError("Chuỗi chưa xong" + (f"; cảnh lỗi: {detail}" if failed else ""))
             text, bound = agent_authoring.bind_proposal(result.proposal["text"], capsule)
             agent_authoring.proposal(text, self.service, project_id)
             self._update(group_id, preview=text, suggestion=text, raw_output_sha256=hashlib.sha256(text.encode("utf8")).hexdigest(),

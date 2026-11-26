@@ -235,6 +235,9 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     graphic_spec = None
     if graphic and not story_visuals:  # a scene carries one picture: the Phase 1 story visual wins
         graphic_spec = graphic_to_spec(graphic)  # ValueError for an invalid picture, never repaired
+        story_visual_art.visual_svg(graphic_spec)  # draws it once: a field that does not fit the art is refused here, with its reason
+        if story_visual_art.steps(graphic_spec) < 1:
+            raise ValueError(f"graphic {graphic['motif']!r} cần ít nhất một phần nội dung (hàng/mục/điểm/tin nhắn)")
     has_band = bool(story_visuals) or graphic_spec is not None
     props = {p["id"]: p for p in agent_authoring._library_props()}
     present = stage["present"]

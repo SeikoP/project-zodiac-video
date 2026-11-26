@@ -55,6 +55,7 @@ class SceneOutcome:
     status: str  # "ok" | "card" | "failed"
     rechoices: int = 0
     still: str | None = None
+    reason: str = ""  # why a scene failed (the model's last error), so a failed run says what went wrong
 
 
 @dataclass
@@ -92,6 +93,12 @@ def _author_scene(io, skeleton: str, sid: str, *, feedback=None, rechoices: int 
             act = io.choose("act", *io.act_request(skeleton, sid, stage, feedback))
             part = io.assemble(skeleton, sid, stage, act)
         except ChoiceError as error:
+            if str(error).startswith("assemble:") and rechoices < MAX_RECHOICES:
+                # the choice was well-formed but could not be drawn or placed: say why and choose again, from the stage
+                rechoices += 1
+                feedback = [{"code": "CHOICE_UNUSABLE", "detail": str(error)[:240]}]
+                stage = None
+                continue
             return {"text": None, "status": "failed", "rechoices": rechoices, "reason": str(error)}
         text = part["text"]
         issues = io.check_scene(skeleton, sid, text)
@@ -142,8 +149,11 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
         row = _author_scene(io, skeleton, sid)
         with lock:
             if row["status"] == "failed":
-                outcomes[sid] = SceneOutcome("failed", row["rechoices"])
+                outcomes[sid] = SceneOutcome("failed", row["rechoices"], reason=row.get("reason", ""))
+                stored.setdefault("failures", {})[sid] = row.get("reason", "")
+                io.save(stored)
                 return
+            stored.get("failures", {}).pop(sid, None)
             stored["scenes"][sid] = {k: row[k] for k in ("text", "status", "rechoices", "reason")}
             io.save(stored)
             outcomes[sid] = SceneOutcome(row["status"], row["rechoices"])
