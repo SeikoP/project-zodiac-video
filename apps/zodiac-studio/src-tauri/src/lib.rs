@@ -153,6 +153,7 @@ impl Backend {
             "scene.compile",
             "video.export",
             "video.get",
+            "video.reveal",
             "assets.describe",
             "assets.gallery",
             "assets.find_candidates",

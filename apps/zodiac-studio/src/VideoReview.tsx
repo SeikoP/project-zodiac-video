@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { backend, type VideoExport } from "./backend";
 import { statusFor, type IdeaBoard } from "./idea-board";
 
-export default function VideoReview({ initialConceptId, output = null, active = true, lockedSign = null }: { initialConceptId: string; output?: VideoExport | null; active?: boolean; lockedSign?: string | null }) {
+export default function VideoReview({ initialConceptId, output = null, active = true, lockedSign = null, onReveal }: { initialConceptId: string; output?: VideoExport | null; active?: boolean; lockedSign?: string | null; onReveal?: () => void }) {
   const [board, setBoard] = useState<IdeaBoard | null>(null);
   const [conceptId, setConceptId] = useState(initialConceptId);
   const [sign, setSign] = useState(lockedSign ?? "");
@@ -53,7 +53,7 @@ export default function VideoReview({ initialConceptId, output = null, active = 
     finally { changes.current++; setSaving(false); }
   }
   return <section className="video-review" aria-label="Xem và duyệt MP4">
-    <header className="ideas-heading"><h1>Xem & duyệt MP4</h1><label className="primary-btn review-file">Mở MP4
+    <header className="ideas-heading"><h1>Xem & duyệt MP4</h1>{output?.file_path && onReveal && <button className="primary-btn" onClick={onReveal}>Mở thư mục MP4</button>}<label className={(output?.file_path && onReveal ? "outline-btn" : "primary-btn") + " review-file"}>{output?.file_path && onReveal ? "Chọn MP4 khác…" : "Mở MP4"}
       <input aria-label="Mở MP4" type="file" accept=".mp4,video/mp4" disabled={saving} onChange={e => {
         const next = e.target.files?.[0]; if (!next) return;
         setReady(false); setMessage("");

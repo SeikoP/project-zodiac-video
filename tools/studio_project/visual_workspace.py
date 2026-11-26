@@ -852,6 +852,23 @@ class VisualWorkspace:
                 'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt) or
                     not export_audio_current(self.service.settings, handle.workspace, receipt), 'not_an_approval': True}
 
+    def reveal_video(self, project_id):
+        """Show the exported MP4 in the file manager (selected in its folder). Opens nothing else and takes no path from the UI."""
+        state = self.snapshot(project_id)
+        receipt = state.get('export')
+        if not receipt:
+            raise _error('VIDEO_MISSING', 'Xuất MP4 từ Visual Workspace trước')
+        handle = self._handle(project_id)
+        folder = _trusted_dir(handle.workspace, handle.workspace / '.runtime/visual-workspace/exports' / receipt['id'])
+        file = folder / 'episode.mp4'
+        if not file.is_file() or file.is_symlink():
+            raise _error('VIDEO_MISSING', 'Không thấy file MP4 đã xuất')
+        if os.name == 'nt':
+            subprocess.Popen(['explorer', f'/select,{file}'])
+        else:
+            subprocess.Popen(['xdg-open', str(folder)])
+        return {'folder': str(folder), 'file': str(file)}
+
     def audio_preview(self, project_id, build_id):
         from .audio_mix import render_mix
         handle = self._handle(project_id)

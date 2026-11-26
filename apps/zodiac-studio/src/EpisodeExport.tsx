@@ -66,7 +66,8 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
     </div>
     {error && <div className="inline-alert error" role="alert">{error}</div>}
     {state?.job && <div className="review-message" role="status">{jobText(state.job)}</div>}
-    <VideoReview initialConceptId={project?.concept_code || initialConceptId} lockedSign={project?.sign ?? null} output={video} active={active}/>
+    <VideoReview initialConceptId={project?.concept_code || initialConceptId} lockedSign={project?.sign ?? null} output={video} active={active}
+      onReveal={() => project && void backend.revealVideo(project.project_id).catch(e => setError(String(e)))}/>
     {publish && <div className="publish-copy" aria-label="Nội dung đăng">
       <div className="publish-copy-head"><strong>Nội dung đăng</strong>{copied && <small role="status">Đã copy {copied}</small>}
         <button className="subtle-btn" onClick={() => copy("tất cả", [publish.title, publish.description, tags].filter(Boolean).join("\n\n"))}>Copy tất cả</button></div>

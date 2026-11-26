@@ -203,6 +203,7 @@ export const backend = {
   authorAgentStart: (project_id: string, instruction: string) => request<AgentTask>("agent.author.start", { project_id, instruction }),
   exportVideo: (project_id: string, base_revision: number) => request<VisualState>('video.export', { project_id, base_revision }),
   video: (project_id: string) => request<VideoExport>('video.get', { project_id }),
+  revealVideo: (project_id: string) => request<{ folder: string; file: string }>('video.reveal', { project_id }),
   assetGallery: (project_id: string) => request<AssetGalleryData>("assets.gallery", { project_id }),
   ideas: () => request<IdeaBoard>("ideas.list"),
   ideaUpdate: (concept_id: string, sign: string, status: IdeaStatus) =>
