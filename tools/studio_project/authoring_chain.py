@@ -183,6 +183,16 @@ def _episode_loop(io, check_episode, skeleton, order, stored, outcomes, cards, l
         texts = {sid: stored["scenes"][sid]["text"] for sid in order}
         issues = [i for i in check_episode(skeleton, texts, order) if route(i) == "model"]
         if not issues:
+            # a clean episode means the quality findings an earlier run left on a scene are gone; art and owner questions stay
+            for sid in order:
+                row = stored["scenes"][sid]
+                reason = row.get("reason") or ""
+                if row.get("status") == "card" and reason and not any(k in reason for k in ("thiếu art", "cần chủ quyết", "Core không sửa được")):
+                    with lock:
+                        row.update(status="ok", reason="")
+                        cards[:] = [c for c in cards if c.scene_id != sid]
+                        outcomes[sid] = SceneOutcome("ok", outcomes[sid].rechoices)
+                        io.save(stored)
             return True
         by_scene: dict[str, list[dict]] = {}
         for found in issues:

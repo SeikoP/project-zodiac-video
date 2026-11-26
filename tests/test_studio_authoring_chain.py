@@ -140,6 +140,17 @@ class ChainTests(unittest.TestCase):
         self.assertEqual(result.cards, [])
         self.assertIsNotNone(result.proposal)
 
+    def test_a_clean_episode_clears_a_stale_quality_card_but_keeps_a_missing_art_card(self):
+        io = FakeIO()
+        io.stored = {"fingerprint": "fp1", "skeleton": "{}", "scenes": {
+            "s01": {"text": "t1", "status": "card", "rechoices": 5, "reason": "đã chọn lại 5 lần, còn: VISUAL_DEPTH_UNDERDEVELOPED"},
+            "s02": {"text": "t2", "status": "card", "rechoices": 0, "reason": "thiếu art: một quầy"},
+            "s03": {"text": "t3", "status": "ok", "rechoices": 0, "reason": ""}, "s04": {"text": "t4", "status": "ok", "rechoices": 0, "reason": ""}}}
+        io.check_episode = lambda skeleton, texts, order: []
+        result = self.run_chain(io)
+        self.assertEqual([c.scene_id for c in result.cards], ["s02"])
+        self.assertEqual(result.scenes["s01"].status, "ok")
+
     def test_an_episode_finding_that_never_clears_becomes_a_card_after_the_rounds_run_out(self):
         io = FakeIO()
         io.check_episode = lambda skeleton, texts, order: [{"code": "STORY_VISUAL_COVERAGE", "scene_id": "s02"}]
