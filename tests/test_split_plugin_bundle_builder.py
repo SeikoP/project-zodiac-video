@@ -113,13 +113,35 @@ class SplitPluginBundleTests(unittest.TestCase):
                 self.assertNotIn("run validators", prompt)
 
 
+    def test_web_audience_alignment_is_reachable_and_preserves_pov_flexibility(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", output)
+            with ZipFile(output) as z:
+                skill = z.read("skills/zodiac-video-web/SKILL.md").decode("utf-8")
+                mechanics = z.read("skills/zodiac-narrative-mechanics/SKILL.md").decode("utf-8")
+                prompt = json.loads(z.read("plugin.json"))["extensions"]["com.openai"]["interface"]["defaultPrompt"]
+                microphases = skill.split("## Creative microphases", 1)[1].split("## Creative-first rule", 1)[0]
+                for line in ("**Concept**", "**Narrative Design**", "**Content Review**"):
+                    step = next(s for s in microphases.splitlines() if line in s)
+                    self.assertIn("Audience Alignment", step)
+                for phrase in ("Viewer POV", "Role bias test", "Behavioral alternatives",
+                               "Recognition payoff", "Review and repair", "predominantly female audience",
+                               "explicit episode audience/POV overrides", "changing pronouns alone is not a repair",
+                               "love-sincere / Sagittarius", "no new mandatory JSON fields"):
+                    self.assertIn(phrase, skill)
+                self.assertIn("Audience Alignment Gate", mechanics)
+                self.assertIn("Invitations are one option", mechanics)
+                self.assertIn("Audience Alignment", prompt)
+                self.assertIn("role bias", prompt)
+
     def test_canonical_router_prompt_keeps_phase1_creative_checks(self):
         plugin_root = ROOT / "plugins/zodiac-video-pipeline"
         manifest = json.loads((plugin_root / "plugin.json").read_text(encoding="utf-8"))
         codex = json.loads((plugin_root / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
         prompt = manifest["extensions"]["com.openai"]["interface"]["defaultPrompt"].lower()
         self.assertEqual(prompt, codex["interface"]["defaultPrompt"].lower())
-        for requirement in ("broad-recognition", "zodiac-identity", "evidence-bounded", "audio-only", "silent-read"):
+        for requirement in ("broad-recognition", "zodiac-identity", "audience alignment", "role bias", "evidence-bounded", "audio-only", "silent-read"):
             self.assertIn(requirement, prompt)
         self.assertIn("no native source bootstrap", prompt)
 

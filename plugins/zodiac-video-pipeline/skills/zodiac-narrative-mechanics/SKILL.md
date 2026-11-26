@@ -13,7 +13,7 @@ Apply when the user asks for a different structure, stronger "bóc phốt"/dí d
 
 ## Editorial selection, before rewriting
 
-Describe the actual **behavioral contradiction**, why it is distinctive for the selected Zodiac lens, what changes under pressure, and what the audience should infer. Check broad recognition, sign-swap counterfactual, generic moral drift, and whether the story would still work after removing its incidental setting.
+Describe the actual **behavioral contradiction**, why it is distinctive for the selected Zodiac lens, what changes under pressure, and what the audience should infer. Check broad recognition, sign-swap counterfactual, generic moral drift, and whether the story would still work after removing its incidental setting. Apply the Web entrypoint's Audience Alignment Gate before choosing evidence or a story engine: select viewer POV, challenge cumulative role bias, and favor self-identification for sign-led episodes unless the user or premise calls for another POV. The channel's female-majority profile is not a license to stereotype.
 
 Consider different narrative engines only when they materially differ in how the viewer discovers the contradiction. Three useful candidates are:
 
@@ -25,7 +25,7 @@ Direct A/B comparison, an observed mini-sketch, or a unique format may beat all 
 
 ## Roast without flat listicles
 
-The narrator may sound like a friend uncovering receipts, teasing from observable actions rather than claiming hidden motives. For romance, contrast how a person treats casual invitations with how they **voluntarily** prioritize someone important; preserve the person's original identity. Let contradictions, consequences, failed excuses and changed choices create jokes. Do not add unrelated punchlines, humiliating labels or proof-free psychological claims. Do not make every example an appointment or text message.
+The narrator may sound like a friend uncovering receipts, teasing from observable actions rather than claiming hidden motives. For romance, contrast ordinary behavior with how a person **voluntarily** makes room for someone important; preserve their identity. Invitations are one option, not the default evidence. Use the intended viewer POV to choose varied choices and consequences rather than assuming who organizes dates, initiates, pays, or receives attention. Let contradictions, consequences, failed excuses and changed choices create jokes. Do not add unrelated punchlines, humiliating labels or proof-free psychological claims. Do not make every example an appointment or text message.
 
 Before Narration, write a short **second-half pulse** where each later beat changes the evidence, decision, social consequence, viewer interpretation or payoff. For Defense Collapse, the last defense must fail for a new reason; merely repeating the first accusation is not an ending. Treat a recurring phrase/object as a narrative motif only if its meaning changes and it passes a removal test.
 
@@ -37,4 +37,4 @@ Use `story_visual` only when a specific before/change/consequence (for example t
 
 ## Review boundary
 
-After the script, perform editorial review of hook, recognition, sign identity, semantic progression, comic escalation, 2nd-half pulse, callback and single-voice TTS clarity. Show the revised exact narration and the chosen mechanism. **Only a real explicit user Content Review approval may create an approval receipt or allow a Phase-1 handoff ZIP.** This skill never authorizes Visual Review, local production, or MP4 checklist completion.
+After the script, perform editorial review of hook, recognition, Audience Alignment (viewer POV and cumulative role bias), sign identity, semantic progression, comic escalation, 2nd-half pulse, callback and single-voice TTS clarity. Show the revised exact narration and the chosen mechanism. **Only a real explicit user Content Review approval may create an approval receipt or allow a Phase-1 handoff ZIP.** This skill never authorizes Visual Review, local production, or MP4 checklist completion.
