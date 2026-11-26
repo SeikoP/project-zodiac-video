@@ -27,7 +27,7 @@ _ALLOWED = frozenset({
     "voice.audio", "voice.playback", "voice.confirm",
     "visual.open", "visual.command", "visual.cancel", "visual.preview", "visual.episode_preview",
     "episode.build", "scene.compile", "video.export", "video.get", "video.reveal", "assets.describe", "assets.gallery", "assets.find_candidates", "validation.get",
-    "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "pipeline.card.resolve", "validators.run",
+    "pipeline.get", "pipeline.run", "pipeline.cancel", "pipeline.mode.set", "pipeline.evidence", "pipeline.gate.playback", "pipeline.gate.confirm", "pipeline.autopilot.start", "pipeline.autopilot.stop", "pipeline.card.resolve", "pipeline.authoring.discard", "validators.run",
 })
 
 
@@ -75,6 +75,11 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         _exact(p, "project_id", "node_id", "base_revision")
         from .pipeline.runner import run_node
         return run_node(service, p["project_id"], p["node_id"], p["base_revision"], caller="gui")
+    if method == "pipeline.authoring.discard":  # the explicit "Soạn lại từ đầu": the only thing that drops finished authoring parts
+        _exact(p, "project_id")
+        result = service.agent.discard_authoring_progress(p["project_id"])
+        from .pipeline.runner import pipeline_get
+        return {**result, "pipeline": pipeline_get(service, p["project_id"])}
     if method == "pipeline.cancel":
         _exact(p, "project_id")
         from .pipeline.runner import cancel_running

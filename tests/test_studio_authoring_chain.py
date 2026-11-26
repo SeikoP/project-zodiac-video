@@ -270,6 +270,25 @@ class LiveIOTests(unittest.TestCase):
             self.assertNotEqual(self.make(tmp, catalog="c2").fingerprint(), io.fingerprint())
             self.assertEqual(io.scene_ids(), ["s01"])
 
+    def test_another_instruction_keeps_the_stored_scenes_and_only_discard_clears_them(self):
+        import tempfile
+        from types import SimpleNamespace
+        from pathlib import Path
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            first = self.make(tmp)
+            first.save({"fingerprint": first.fingerprint(), "scenes": {"s01": {"text": "t"}}})
+            capsule = {"dependencies": {"voice": "v1"}, "source_hash": "s1", "catalog": {"x": "c1"}, "scene_ranges": [{"id": "s01"}]}
+            service = SimpleNamespace(visual=SimpleNamespace(_handle=lambda pid: SimpleNamespace(workspace=Path(tmp))),
+                                      voice=SimpleNamespace(snapshot=lambda pid: {"timing": {"words": []}}))
+            with mock.patch("tools.studio_project.agent_authoring.capsule", return_value=capsule):
+                retry = authoring_chain.LiveIO(service, "p", "làm đi\nSửa các lỗi sau:\n- X")  # the autopilot's retry wording
+            self.assertEqual(retry.fingerprint(), first.fingerprint())
+            self.assertEqual(retry.load()["scenes"]["s01"]["text"], "t")
+            self.assertTrue(retry.discard())
+            self.assertEqual(retry.load(), {})
+            self.assertFalse(retry.discard())
+
 
 class EpisodeCheckTests(unittest.TestCase):
     def test_a_proposal_error_naming_a_scene_and_validator_findings_come_back_tied_to_scenes(self):

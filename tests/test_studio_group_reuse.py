@@ -30,10 +30,37 @@ class GroupReuseTests(unittest.TestCase):
         self.assertEqual(self.reusable(), {"skeleton": SKELETON, "scenes": {"s01": "S01", "s02": "S02"}, "skeleton_error": None})
 
     def test_anything_that_changed_means_nothing_is_reused(self):
-        for changes in ({"dependencies": "dep2"}, {"visual_source_hash": "h2"}, {"instruction": "khác"}, {"status": "COMPLETED"},
+        for changes in ({"dependencies": "dep2"}, {"visual_source_hash": "h2"}, {"status": "COMPLETED"},
                         {"catalog_hash": "other"}):
             self.failed_group(**changes)
             self.assertEqual(self.reusable(), {}, changes)
+
+    def test_a_retry_with_another_instruction_still_reuses_what_worked(self):
+        # the autopilot appends the last attempt's findings to the instruction: that must not throw the finished scenes away
+        self.failed_group()
+        self.assertEqual(self.reusable(instruction="soạn\nSửa các lỗi sau:\n- X")["scenes"], {"s01": "S01", "s02": "S02"})
+
+    def test_only_an_explicit_discard_drops_the_stored_parts(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import MagicMock
+        self.failed_group(task_id="a" * 32)
+        with tempfile.TemporaryDirectory() as tmp:
+            store = Path(tmp) / ".runtime/chain-parts.json"
+            store.parent.mkdir(parents=True)
+            store.write_text("{}", "utf8")
+            self.manager.service = MagicMock(visual=MagicMock(_handle=lambda pid: MagicMock(workspace=Path(tmp))), project=lambda pid: {})
+            self.assertTrue(self.reusable())
+            self.assertTrue(self.manager.discard_authoring_progress(self.project["project_id"])["discarded"])
+            self.assertFalse(store.exists())
+            self.assertEqual(self.reusable(), {})
+
+    def test_discarding_is_refused_while_an_agent_is_working(self):
+        from tools.studio_project.models import StudioError
+        self.failed_group(task_id="live", status="RUNNING")
+        with self.assertRaises(StudioError) as caught:
+            self.manager.discard_authoring_progress(self.project["project_id"])
+        self.assertEqual(caught.exception.code, "AGENT_BUSY")
 
     def run_group(self, fail_with=None):
         calls = []

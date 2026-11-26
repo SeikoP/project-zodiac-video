@@ -284,19 +284,18 @@ class AgentManager:
         """What earlier failed or interrupted runs of this same job already got right:
         {"skeleton": text, "scenes": {id: text}, "skeleton_error": str | None}.
 
-        Reused only while the inputs are identical (voice/timing, source, catalog, instruction): the parts were authored
-        against exactly this. Runs are read newest first and merged, so a run that was cut short does not hide what an
+        Reused only while the inputs are identical (voice/timing, source, catalog): the parts were authored against exactly
+        this. The instruction is not an input: a retry carries the last attempt's findings in it and must still keep what worked. Runs are read newest first and merged, so a run that was cut short does not hide what an
         older one finished. A scene the validator blamed in any run is never reused. Runs written before part_texts
         had its current meaning (parts_rev 2) are rebuilt from their finished child tasks instead.
         """
-        identity = (capsule.get("dependencies"), capsule.get("source_hash"), agent_authoring.canonical_hash(capsule["catalog"]),
-                    capsule.get("instruction"))
+        identity = (capsule.get("dependencies"), capsule.get("source_hash"), agent_authoring.canonical_hash(capsule["catalog"]))
         with self._lock:
             groups = [t for t in self._tasks.values() if t["project_id"] == project_id and t.get("kind") == "episode.propose"
                       and t["status"] in ("FAILED", "INTERRUPTED") and (t.get("part_texts") or t.get("children"))]
         skeleton, skeleton_error, scenes, blamed = None, None, {}, set()
         for task in sorted(groups, key=lambda t: t.get("started_at", 0), reverse=True):
-            if (task.get("dependencies"), task.get("visual_source_hash"), task.get("catalog_hash"), task.get("instruction")) != identity:
+            if (task.get("dependencies"), task.get("visual_source_hash"), task.get("catalog_hash")) != identity:
                 break  # an older run was authored against older inputs
             current = task.get("parts_rev") == 2
             texts = (task.get("part_texts") or {}) if current else self._texts_from_children(task)
@@ -445,6 +444,21 @@ class AgentManager:
         if skill is not None:
             skill_digest.digest(skill)  # an unknown or missing skill kind fails now, not inside the agent turn
         return self.start(project_id, choice_task={"schema": schema, "data": prompt_data, **({"skill": skill} if skill else {})}, role=role)
+
+    def discard_authoring_progress(self, project_id: str) -> dict:
+        """The user's explicit "Soạn lại từ đầu": forget what earlier authoring runs finished, so the next run starts from the cast.
+
+        Retrying never does this (it keeps every finished scene); only this call, from the GUI, drops the stored parts."""
+        self.service.project(project_id)
+        with self._lock:
+            if any(t["project_id"] == project_id and t["status"] in ("STARTING", "RUNNING") for t in self._tasks.values()):
+                raise StudioError("AGENT_BUSY", "Đang soạn; dừng trước khi soạn lại từ đầu", "agent")
+            groups = [t["task_id"] for t in self._tasks.values() if t["project_id"] == project_id and t.get("kind") == "episode.propose"
+                      and t["status"] in ("FAILED", "INTERRUPTED", "CANCELLED")]
+        for task_id in groups:  # the older scene-by-scene path keeps its parts on the stopped runs
+            self._update(task_id, part_texts={}, children=[], blamed=[], skeleton_error=None)
+        removed = authoring_chain.discard_stored(self.service.visual._handle(project_id).workspace)
+        return {"discarded": removed or bool(groups)}
 
     def start_authoring_chain(self, project_id: str, instruction: str) -> dict:
         """Author the episode with the constructive chain (cast, then per scene stage/act/Core assembly). Same task shape as

@@ -166,6 +166,7 @@ impl Backend {
             "pipeline.autopilot.start",
             "pipeline.autopilot.stop",
             "pipeline.card.resolve",
+            "pipeline.authoring.discard",
             "pipeline.gate.playback",
             "pipeline.gate.confirm",
         ];

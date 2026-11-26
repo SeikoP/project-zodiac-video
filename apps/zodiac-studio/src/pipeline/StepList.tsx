@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { Check, Clock, Hand, LoaderCircle, Lock, OctagonX, Play, RotateCcw, type LucideIcon } from "lucide-react";
 import type { PipelineStore } from "./pipeline-store";
 import { groupByPhase, phasePrimary, runnableScenes, phaseProgress, RUNNABLE, STATUS_LABEL } from "./status";
@@ -31,11 +31,20 @@ function Compact({ all, store, onRun, blockerOf }: { all: PipelineNode[]; store:
   const { done, total, percent } = phaseProgress(all);
   const primary = phasePrimary(all.filter((n) => !blockerOf(n)));
   const running = all.some((n) => n.status === "RUNNING");
+  const [confirming, setConfirming] = useState(false);
+  // Only a step that failed or is waiting can have half-finished authoring behind it; "Chạy lại" keeps that work, this drops it.
+  const authoring = all.find((n) => n.id === "visual");
+  const canRestart = !!authoring && !running && ["FAILED", "STALE", "READY"].includes(authoring.status) && !blockerOf(authoring);
   return (
     <div className="phase-compact" data-phase="visual">
       <div className="phase-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Tiến độ hình ảnh"><span style={{ width: `${percent}%` }} /></div>
       <div className="phase-actions"><small>{done}/{total} bước xong · các cảnh và câu hỏi ở khung bên phải</small>
         {primary && !running && <button className="outline-btn phase-primary" onClick={() => onRun(primary.id)}>{primary.status === "READY" ? "Chạy" : "Chạy lại"}: {primary.title}</button>}
+        {canRestart && !confirming && <button className="subtle-btn phase-restart" onClick={() => setConfirming(true)}>Soạn lại từ đầu</button>}
+        {canRestart && confirming && <span className="phase-restart-confirm" role="alert">
+          <small>Bỏ các cảnh đã soạn xong và soạn lại toàn bộ (tốn thêm tài nguyên)?</small>
+          <button className="outline-btn" onClick={() => { setConfirming(false); void store.discardAuthoring(); }}>Bỏ và soạn lại</button>
+          <button className="subtle-btn" onClick={() => setConfirming(false)}>Giữ lại</button></span>}
         {!primary && !running && runnableScenes(all).length > 0 && <button className="outline-btn phase-primary" onClick={() => { void store.runScenes(); }}>Dựng các cảnh ({runnableScenes(all).length})</button>}
       </div>
     </div>

@@ -6,7 +6,7 @@ left (or any missing art) becomes an owner `Card` whose default keeps the scene 
 
 `run_chain` talks to the project through an `io` object (see `LiveIO`), so the loop is testable without a model. Finished parts
 are stored after every scene together with a fingerprint of the inputs they were authored against: a changed voice, source,
-catalog or instruction discards them, an app reset resumes from them.
+or catalog discards them (the instruction does not), an app reset resumes from them. `LiveIO.discard()` is the explicit start from scratch.
 """
 from __future__ import annotations
 
@@ -220,6 +220,14 @@ def _episode_loop(io, check_episode, skeleton, order, stored, outcomes, cards, l
     return True
 
 
+def discard_stored(workspace) -> bool:
+    """Forget every stored part, so the next run authors the whole episode again. Only an explicit user request does this."""
+    path = Path(workspace) / LiveIO.STORE
+    existed = path.exists()
+    path.unlink(missing_ok=True)
+    return existed
+
+
 class LiveIO:
     """The chain's ports on a real project: Codex choices through the bridge, Core assembly, the pipeline's own checks.
 
@@ -239,7 +247,9 @@ class LiveIO:
         self.words = (service.voice.snapshot(project_id).get("timing") or {}).get("words") or []
         self._fingerprint = agent_authoring.canonical_hash({
             "dependencies": self.capsule.get("dependencies"), "source": self.capsule.get("source_hash"),
-            "catalog": agent_authoring.canonical_hash(self.capsule["catalog"]), "instruction": instruction})
+            "catalog": agent_authoring.canonical_hash(self.capsule["catalog"])})
+        # The instruction is only a hint for the agents and is not part of the fingerprint: the autopilot appends the previous
+        # attempt's findings to it, so a retry would otherwise throw away every scene that already succeeded.
 
     def fingerprint(self) -> str:
         return self._fingerprint
@@ -252,6 +262,9 @@ class LiveIO:
             return json.loads((self.workspace / self.STORE).read_text("utf8"))
         except (OSError, ValueError):
             return {}
+
+    def discard(self) -> bool:
+        return discard_stored(self.workspace)
 
     def save(self, state: dict) -> None:
         path = self.workspace / self.STORE
