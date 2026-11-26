@@ -61,3 +61,9 @@ Fold `reviews`, `evidence`, `previews`, `zodiac-simplification-preview` into tho
 
 - `tmp/` is git-ignored. `docs/backups`, `docs/historical`, `docs/branch-hygiene` moved to `docs/archive/` (references in `branch-hygiene-once.yml` and `test_web_local_handoff_contract.py` updated).
 - Local branches merged into `main` deleted. Not merged and left for the owner: `claude/tiktok-live-experience-f5215d`, `codex/production-readiness-20261014`, `feat/garden-*` (5), `feat/performance-surfaces-2.9.0`, `fix/garden-live-connector-control`, `sync/local-latest-20261116`, `experiment/studio-v5-p34-20261115`.
+
+## Legacy GUI removal (part of phase 5, decided by the owner)
+
+Studio V5 (Tauri) is the only GUI. Removed: `tools/studio_qt/`, `tools/application/`, the Qt-only modules of `tools/studio/` (pipeline, preflight, renderer_repair, vieneu_client, messages_vi) and `tools/runner/observers.py`, PySide6 dependencies, the `zodiac-library` script, and 14 test files that only tested them.
+`tools/zodiac_qt.py` became `tools/zodiac_studio.py` (launcher of the Tauri exe). Kept because Studio Project Core imports them: `tools/studio/{artifacts,voice_catalog}.py`, `tools/studio_v2/*` (used by control_plane reset and voice/timing), `tools/runner/{process,audio,errors,package}.py`, `tools/control_plane/*`.
+Still open in phase 5: `tools/livestream-pk` (separate product) and whether the kept `studio_v2`/`runner` modules move under `tools/studio_project/` in phase 3.

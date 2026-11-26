@@ -1,6 +1,6 @@
 # Zodiac Studio V5 — HyperFrames build, editor and MP4 review export
 
-This is an **experimental one-window Tauri 2 + React host**, separate from production `zodiac` (PySide6). It uses the verified Python Project Core and shared V4/V5 compiler. Fresh review exports use pinned HyperFrames; existing Remotion packages retain their legacy rendering path.
+This is an **experimental one-window Tauri 2 + React host**, the only Zodiac GUI (the old PySide6 app was removed). It uses the verified Python Project Core and shared V4/V5 compiler. Fresh review exports use pinned HyperFrames; existing Remotion packages retain their legacy rendering path.
 
 ## Run on Windows
 
@@ -80,7 +80,7 @@ This is **source-tree development mode**, not a standalone distributable build. 
   hashes in the export receipt; the cover is a review candidate.
   Rebuild old previews once to produce export-bound source hashes. Review export
   does not grant voice/visual approval or complete the concept checklist.
-- One Tauri window with an integrated draggable titlebar, project/connection context and minimize/maximize/close controls. Legacy Qt remains the default fallback.
+- One Tauri window with an integrated draggable titlebar, project/connection context and minimize/maximize/close controls.
 - Opt-in `zodiac --v5-preview` launches an existing native executable from `ZODIAC_STUDIO_V5_EXE`; it does not compile or install a release.
 
 Voice Lab now splits approved narration into semantic speech units with exact UTF-8 ranges. Generate missing audio, retry one unit, select an immutable take, edit intentional pauses, assemble the episode and measure ASR word anchors. Waveforms and playback use actual WAV bytes. Pronunciation changes only the TTS input. `NORMAL`/`SHARP` records intent; it does not certify audible prosody.

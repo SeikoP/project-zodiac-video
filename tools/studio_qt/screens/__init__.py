@@ -1,1 +1,0 @@
-"""Task-centered Qt screens."""

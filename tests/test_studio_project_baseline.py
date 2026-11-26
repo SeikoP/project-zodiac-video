@@ -19,8 +19,6 @@ def baseline_sources(repo_root: Path) -> dict[str, Path]:
         "voice_store": Path("tools/studio/artifacts.py"),
         "timing": Path("tools/studio_v2/timing.py"),
         "voice": Path("tools/studio_v2/voice.py"),
-        "checklist": Path("tools/studio_qt/production_checklist.py"),
-        "library": Path("tools/application/library.py"),
         "artifact_graph": Path("tools/control_plane/artifact_graph.py"),
         "visual_source": ENGINE / "features/visual-composition/compile-visual-intent.mjs",
         "visual_preview": ENGINE / "features/visual-composition/build-native-preview-pairs.mjs",
@@ -48,8 +46,7 @@ class PhaseZeroBaselineTests(unittest.TestCase):
 
     def test_original_import_and_job5_contract_present(self):
         self.assertTrue((ROOT / "contracts/zodiac-job-v5.schema.json").is_file())
-        for p in ("tests/test_studio_v2_zip_import.py", "tests/test_studio_v2_voice.py",
-                  "tests/test_studio_production_checklist.py", "tests/test_library.py"):
+        for p in ("tests/test_studio_v2_zip_import.py", "tests/test_studio_v2_voice.py"):
             self.assertTrue((ROOT / p).is_file(), p)
 
     def test_voice_timing_and_render_contracts_are_pinned(self):
