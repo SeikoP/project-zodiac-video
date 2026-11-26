@@ -3,6 +3,16 @@ import { backend, type Project, type VideoExport, type VisualState } from "./bac
 import type { PipelineEvidence } from "./pipeline/types";
 import VideoReview from "./VideoReview";
 
+/** One plain sentence per job state: the raw renderer log line and status code mean nothing to the person using the app. */
+function jobText(job: NonNullable<VisualState["job"]>) {
+  const percent = job.render_percent === undefined ? "" : ` · ${job.render_percent}%`;
+  if (job.status === "RUNNING") return `Đang xuất MP4${percent}. ${job.message}`;
+  if (job.status === "COMPLETED") return "Lần xuất gần nhất đã xong.";
+  if (job.status === "INTERRUPTED") return "Lần xuất trước bị ngắt (Studio khởi động lại); bản MP4 tốt gần nhất vẫn được giữ.";
+  if (job.status === "CANCELLED") return "Lần xuất đã bị dừng.";
+  return `${job.message}${job.error ? ` · ${job.error}` : ""} · ${job.status}`;
+}
+
 export default function EpisodeExport({ project, initialConceptId, active }: { project: Project | null; initialConceptId: string; active: boolean }) {
   const [state, setState] = useState<VisualState | null>(null);
   const [video, setVideo] = useState<VideoExport | null>(null);
@@ -42,19 +52,20 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
   const copy = (label: string, text: string) => void navigator.clipboard.writeText(text).then(() => { setCopied(label); window.setTimeout(() => setCopied(""), 1800); }).catch(e => setError(String(e)));
   const tags = (publish?.hashtags ?? []).join(" ");
   const running = state?.job?.status === "RUNNING";
+  const current = !!(state?.export && video && !video.stale); // an MP4 for exactly the current source already exists
   return <section className="episode-export">
     <div className="export-controls"><strong>Xuất & duyệt</strong>
-      <button className="primary-btn" disabled={!project || busy || running || !state?.build || state.stale_preview} onClick={async () => {
+      <button className={current ? "outline-btn" : "primary-btn"} disabled={!project || busy || running || !state?.build || state.stale_preview} onClick={async () => {
         if (!project || !state) return;
         setBusy(true); setError("");
         try { setState(await backend.exportVideo(project.project_id, state.revision)); }
         catch (e) { setError(String(e)); } finally { setBusy(false); }
-      }}>Xuất MP4</button>
+      }}>{current ? "Xuất lại MP4" : "Xuất MP4"}</button>
       {running && <button className="outline-btn" onClick={() => project && void backend.visualCancel(project.project_id).then(setState).catch(e => setError(String(e)))}>Dừng tác vụ</button>}
-      <small>{state?.stale_preview ? "Hình ảnh đã đổi: chọn Hình ảnh trong Graph và dựng lại." : !state?.build ? "Dựng hình ảnh trước khi xuất." : "Xuất video không tự duyệt chất lượng."}</small>
+      <small>{state?.stale_preview ? "Hình ảnh đã đổi: chọn Hình ảnh trong Graph và dựng lại." : !state?.build ? "Dựng hình ảnh trước khi xuất." : current ? "Đã có MP4 đúng bản hiện tại. Chỉ bấm Xuất lại khi muốn render lại." : "Xuất video không tự duyệt chất lượng."}</small>
     </div>
     {error && <div className="inline-alert error" role="alert">{error}</div>}
-    {state?.job && <div className="review-message" role="status">{state.job.message} · {state.job.status}{state.job.render_percent === undefined ? "" : ` · ${state.job.render_percent}%`}{state.job.error && ` · ${state.job.error}`}</div>}
+    {state?.job && <div className="review-message" role="status">{jobText(state.job)}</div>}
     <VideoReview initialConceptId={project?.concept_code || initialConceptId} lockedSign={project?.sign ?? null} output={video} active={active}/>
     {publish && <div className="publish-copy" aria-label="Nội dung đăng">
       <div className="publish-copy-head"><strong>Nội dung đăng</strong>{copied && <small role="status">Đã copy {copied}</small>}
