@@ -41,6 +41,7 @@ DEFAULT_FLOOR = 1200
 CENTRE_Y = 800  # without a story visual the cast and props are centred about here, not left at the bottom of the field
 WALL_TOP, WALL_SIZE = 110, 200
 FEET = 0.82  # the characters' art leaves empty space under the feet: the visible figure ends at this fraction of its box
+HEAD_TOP = 0.24  # ...and the head starts about this far down its box: the art has empty space above the hair
 SUPPORT_SIZE, FOCUS_SIZE, DRESSING_SIZE = 180, 300, 240
 MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-reaction": "reflection", "facepalm": "reflection",
                     "point-choice": "relationship", "compare-group": "relationship", "compare-two-props": "relationship"}
@@ -373,7 +374,8 @@ def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: 
     actors = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
     top = min((r["y"] for r in actors), default=DEFAULT_FLOOR)
     if accent["accent_id"] == DRAWN:
-        _add_drawn_layers(scene, assets, accent, scene_id, anchor, has_story_visual, art_dir, top,
+        heads = min((r["y"] + round(r["height"] / FEET * HEAD_TOP) for r in actors), default=DEFAULT_FLOOR)
+        _add_drawn_layers(scene, assets, accent, scene_id, anchor, has_story_visual, art_dir, heads,
                           max((r["y"] + r["height"] for r in actors), default=DEFAULT_FLOOR))
         return
     else:
@@ -405,10 +407,8 @@ def _add_drawn_layers(scene: dict, assets: dict, accent: dict, scene_id: str, an
         width, height = 1080, round(view["h"] * scale)
         if kind == "floor":  # the drawn floor line lands just behind the actors' feet
             y = feet - 8 - round((view["floor_y"] - view["y"]) * scale)
-        elif has_story_visual:  # the story visual owns the top band: hang the wall under it, behind the cast's heads
-            y = STORY_BAND_BOTTOM + 10
-        else:
-            y = max(ACCENT_TOP, cast_top - height - 10)
+        else:  # hung just above the cast's heads, and under the story visual's band when there is one
+            y = max(STORY_BAND_BOTTOM + 10 if has_story_visual else ACCENT_TOP, cast_top - height - 10)
         y = max(0, min(y, limit - height))
         key = f"{scene_id}-accent-{kind}"
         assets[key] = layers[kind]["asset"]

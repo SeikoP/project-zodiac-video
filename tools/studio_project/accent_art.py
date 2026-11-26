@@ -305,8 +305,9 @@ def layer_view(spec, kind: str) -> dict | None:
     if not rows:
         return None
     if kind == "wall":
+        top = max(0, int(min(r["box"]["y"] for r in rows)) - 14)
         bottom = min(VIEW_H, int(max(r["box"]["y"] + r["box"]["h"] for r in rows)) + 14)
-        return {"y": 0, "w": VIEW_W, "h": bottom, "floor_y": FLOOR}
+        return {"y": top, "w": VIEW_W, "h": bottom - top, "floor_y": FLOOR}
     top = max(0, int(min(r["box"]["y"] for r in rows)) - 24)
     return {"y": top, "w": VIEW_W, "h": VIEW_H - top, "floor_y": FLOOR}
 

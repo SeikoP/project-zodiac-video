@@ -448,6 +448,14 @@ class DrawnAccentTests(unittest.TestCase):
             if story:                                                           # not hidden behind the story visual band
                 self.assertGreaterEqual(wall["y"], scene_assembler.STORY_BAND_BOTTOM)
 
+    def test_hung_parts_end_just_above_the_heads_not_the_empty_top_of_the_character_box(self):
+        part = self.drawn()
+        scene = part["payload"]["scene"]
+        box = min(_r["y"] for _r in (scene_assembler._rect(e) for e in scene["entities"] if e.get("kind") == "character"))
+        wall = self.accents(part)["wall"]["states"]["visible"]["transform"]
+        self.assertGreater(wall["y"] + wall["height"], box + 100)   # it reaches down past the box top, toward the real head line
+        self.assertLessEqual(wall["y"] + wall["height"], box + 0.24 * 840 + 5)
+
     def test_a_scene_with_only_hung_parts_has_no_floor_layer_and_the_reverse(self):
         wall_only = self.accents(self.drawn([{"part": "window", "at": "left", "size": "medium"}]))
         floor_only = self.accents(self.drawn([{"part": "counter", "at": "center", "size": "medium"}]))

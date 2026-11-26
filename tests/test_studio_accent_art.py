@@ -100,7 +100,7 @@ class LayerTests(unittest.TestCase):
             self.assertEqual((root.get("width"), root.get("height")), ("900", str(view["h"])))
             self.assertLess(view["h"], 420)
         wall, floor = accent_art.layer_view(self.S, "wall"), accent_art.layer_view(self.S, "floor")
-        self.assertEqual(wall["y"], 0)
+        self.assertLess(wall["y"], 40)
         self.assertEqual(floor["y"] + floor["h"], 420)
         self.assertEqual(accent_art.layer_view(self.S, "floor")["floor_y"], accent_art.FLOOR)
 
