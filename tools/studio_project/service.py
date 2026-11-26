@@ -5,9 +5,11 @@ Only safe metadata notes/tags are permitted in this phase.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
+import threading
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -35,6 +37,30 @@ class StudioProjectService:
         self._agent = None
         self._voice = None
         self._visual = None
+        self._scope = threading.local()
+
+    @contextlib.contextmanager
+    def read_scope(self):
+        """Within this block (this thread only) each project/visual/voice snapshot is computed once and reused.
+        One pipeline read used to rebuild the same snapshot six times (each one hashes project files): seconds per poll.
+        Never wrap code that writes and then reads again."""
+        if getattr(self._scope, 'cache', None) is not None:
+            yield
+            return
+        self._scope.cache = {}
+        try:
+            yield
+        finally:
+            self._scope.cache = None
+
+    def scoped(self, key, compute):
+        cache = getattr(self._scope, 'cache', None)
+        if cache is None:
+            return compute()
+        if key not in cache:
+            cache[key] = compute()
+        value = cache[key]
+        return dict(value) if isinstance(value, dict) else value  # a read scope: callers read, they do not edit nested data
 
     @property
     def visual(self):
@@ -130,7 +156,7 @@ class StudioProjectService:
         handle = self.registry.get(self._id(project_id))
         if handle is None:
             raise StudioError("PROJECT_NOT_FOUND", project_id, "project")
-        return self._snapshot(handle)
+        return self.scoped(('project', handle.project_id), lambda: self._snapshot(handle))
 
     def events(self, project_id: str, *, after_seq: int = 0) -> list[dict]:
         self.project(project_id)

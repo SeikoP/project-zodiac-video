@@ -12,7 +12,7 @@ try {
   await page.addInitScript(()=>{
     const fixture=window.layoutFixture;
     const roles=Object.fromEntries(['creative','repair','review','vision'].map(role=>[role,{model:'gpt-6-luna',effort:'high'}]));
-    window.settingsFixture={revision:0,values:{audio:{music_enabled:true,music_id:'',music_volume:.1,sfx_enabled:true,sfx_id:'',sfx_volume:.2,ducking:true},libraries:{music_dir:'E:/music',sfx_dir:'E:/sfx'},agents:roles,voice:{default:''},appearance:{theme:'light'}},effective_agents:roles,overrides:{},voices:['Hải Đăng'],themes:['light','dark'],system:{renderer:'HyperFrames 0.9.63',fps:30,render_workers:1}};
+    window.settingsFixture={revision:0,values:{audio:{music_enabled:true,music_id:'',music_volume:.1,sfx_enabled:true,sfx_id:'',sfx_volume:.2,ducking:true},libraries:{music_dir:'E:/music',sfx_dir:'E:/sfx',export_dir:'E:/videos'},agents:roles,voice:{default:''},appearance:{theme:'light'}},effective_agents:roles,overrides:{},voices:['Hải Đăng'],themes:['light','dark'],system:{renderer:'HyperFrames 0.9.63',fps:30,render_workers:1}};
     window.layoutFixture=(method,p)=>{
       if(method==='settings.get')return structuredClone(window.settingsFixture);
       if(method==='settings.update') {

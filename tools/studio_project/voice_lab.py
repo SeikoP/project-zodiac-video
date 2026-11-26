@@ -448,6 +448,9 @@ class VoiceLab:
         return self.snapshot(project_id)
 
     def snapshot(self, project_id):
+        return self.service.scoped(('voice', project_id), lambda: self._snapshot(project_id))
+
+    def _snapshot(self, project_id):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "voice-state"):
             state = self._read(handle)

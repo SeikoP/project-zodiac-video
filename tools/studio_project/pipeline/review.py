@@ -85,8 +85,11 @@ def _playbacks(root: Path) -> dict:
 
 def _require_ready(service, project_id: str) -> None:
     from .api import pipeline_get  # lazy: api -> evidence -> review would otherwise be a cycle
-    nodes = {n["id"]: n["status"] for n in pipeline_get(service, project_id)["nodes"]}
-    if nodes.get("visual_review") != "AWAITING_USER":
+    graph = {n["id"]: n for n in pipeline_get(service, project_id)["nodes"]}
+    gate = graph.get("visual_review") or {}
+    # A stale approval is reviewed again like a new one once every earlier step is done again.
+    renewable = gate.get("status") == "STALE" and all((graph.get(i) or {}).get("status") == "DONE" for i in gate.get("inputs", []))
+    if gate.get("status") != "AWAITING_USER" and not renewable:
         raise _error("PIPELINE_GATE_NOT_READY", "Agent đang hoàn thiện; chưa thể duyệt hình ảnh")
 
 

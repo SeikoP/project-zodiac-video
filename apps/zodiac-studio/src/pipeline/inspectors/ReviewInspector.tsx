@@ -12,7 +12,9 @@ export default function ReviewInspector({ project, node, active, blockedBy = [],
   const [media, setMedia] = useState<{ audioUrl: string; durationMs: number } | null>(null);
   const [remaining, setRemaining] = useState(10), [error, setError] = useState("");
   const requested = useRef(false);
-  const ready = node.status === "AWAITING_USER", done = node.status === "DONE";
+  // A stale approval (the build changed after it) is reviewed again like a new one, as long as every earlier step is done.
+  const renew = node.status === "STALE" && blockedBy.length === 0;
+  const ready = node.status === "AWAITING_USER" || renew, done = node.status === "DONE";
   const buildId = evidence?.build_id ?? null;
   const report = useCallback((reason: unknown) => {
     setError(reason instanceof Error ? reason.message : String(reason));
@@ -64,6 +66,7 @@ export default function ReviewInspector({ project, node, active, blockedBy = [],
     </div>
     <div className="review-controls">
       <h2>Duyệt hình ảnh</h2>
+      {renew && <p role="status">Bản dựng đã đổi sau lần duyệt trước. Xem lại và duyệt lại bản mới.</p>}
       {done && <p role="status">Đã duyệt bản dựng này. Sửa nguồn hoặc dựng lại sẽ cần duyệt lại.</p>}
       {!ready && !done && <p role="status">Chưa thể duyệt. {blockedBy.length ? `Cần hoàn tất: ${blockedBy.join(", ")}.` : node.detail || "Đang chờ bản dựng và kết quả kiểm tra."}</p>}
       {(ready || done) && <>

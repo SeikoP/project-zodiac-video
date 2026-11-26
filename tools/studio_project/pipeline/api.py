@@ -1,6 +1,7 @@
 """Public read entrypoint used by the RPC layer."""
 from __future__ import annotations
 
+import contextlib
 from typing import Mapping
 
 from . import agent_runs
@@ -20,6 +21,13 @@ def registry() -> Registry:
 
 def pipeline_get(service, project_id: str, *, running: str | None = None,
                  failed: Mapping[str, str] | None = None) -> dict:
+    scope = getattr(service, 'read_scope', None)  # services without it (test fakes) just read as before
+    with (scope() if scope else contextlib.nullcontext()):  # one snapshot of each kind per read, not one per consumer
+        return _pipeline_get(service, project_id, running=running, failed=failed)
+
+
+def _pipeline_get(service, project_id: str, *, running: str | None = None,
+                  failed: Mapping[str, str] | None = None) -> dict:
     tracked_running, tracked_failed = agent_runs.overlay(service, project_id)
     evidence = collect_evidence(service, project_id, running=running or tracked_running,
                                 failed={**tracked_failed, **(failed or {})}, notes=agent_runs.progress(service, project_id))

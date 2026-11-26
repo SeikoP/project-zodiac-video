@@ -29,15 +29,38 @@ def _json(path: Path) -> dict | None:
         return None
 
 
+_BIG = 1024 * 1024
+_roots: dict[str, Path] = {}
+
+
+def _real(root: Path) -> Path:
+    key = str(root)
+    if key not in _roots:
+        if len(_roots) > 200:
+            _roots.clear()
+        _roots[key] = root.resolve()
+    return _roots[key]
+_big_hashes: dict[tuple[str, int, int], str] = {}
+
+
 def _hash(path: Path, root: Path) -> str | None:
     try:
-        if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
+        if path.is_symlink() or not path.resolve().is_relative_to(_real(root)):
             return None
+        info = path.stat()
+        key = (str(path), info.st_mtime_ns, info.st_size)
+        if info.st_size >= _BIG and key in _big_hashes:  # status is polled every few seconds: do not re-read big media that did not change
+            return _big_hashes[key]
         digest = hashlib.sha256()
         with path.open("rb") as reader:
             for chunk in iter(lambda: reader.read(1024 * 1024), b""):
                 digest.update(chunk)
-        return digest.hexdigest()
+        result = digest.hexdigest()
+        if info.st_size >= _BIG:
+            if len(_big_hashes) > 500:
+                _big_hashes.clear()
+            _big_hashes[key] = result
+        return result
     except OSError:
         return None
 

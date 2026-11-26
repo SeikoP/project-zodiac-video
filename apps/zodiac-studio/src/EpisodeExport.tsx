@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { backend, type Project, type VideoExport, type VisualState } from "./backend";
 import type { PipelineEvidence } from "./pipeline/types";
 import VideoReview from "./VideoReview";
@@ -20,6 +20,7 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
   const [busy, setBusy] = useState(false);
   const [publish, setPublish] = useState<PipelineEvidence["publish"]>(null);
   const [copied, setCopied] = useState("");
+  const runningRef = useRef(false);
   useEffect(() => {
     if (!project || !active) return;
     let live = true;
@@ -40,8 +41,11 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
       } catch (e) { if (live) setError(String(e)); }
       finally { pending = false; }
     };
-    void refresh(); const timer = window.setInterval(() => void refresh(), 1500);
-    return () => { live = false; window.clearInterval(timer); };
+    // Poll fast only while a job runs; an idle page asks every few seconds (each ask reads and hashes project state).
+    let timer = 0;
+    const loop = async () => { await refresh(); if (live) timer = window.setTimeout(loop, runningRef.current ? 1500 : 6000); };
+    void loop();
+    return () => { live = false; window.clearTimeout(timer); };
   }, [project?.project_id, active]);
   useEffect(() => {
     if (!project || !active) return;
@@ -52,17 +56,18 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
   const copy = (label: string, text: string) => void navigator.clipboard.writeText(text).then(() => { setCopied(label); window.setTimeout(() => setCopied(""), 1800); }).catch(e => setError(String(e)));
   const tags = (publish?.hashtags ?? []).join(" ");
   const running = state?.job?.status === "RUNNING";
+  runningRef.current = running;
   const current = !!(state?.export && video && !video.stale); // an MP4 for exactly the current source already exists
   return <section className="episode-export">
     <div className="export-controls"><strong>Xuất & duyệt</strong>
-      <button className={current ? "outline-btn" : "primary-btn"} disabled={!project || busy || running || !state?.build || state.stale_preview} onClick={async () => {
+      <button className={current ? "outline-btn" : "primary-btn"} disabled={!project || busy || running || current || !state?.build || state.stale_preview} onClick={async () => {
         if (!project || !state) return;
         setBusy(true); setError("");
         try { setState(await backend.exportVideo(project.project_id, state.revision)); }
         catch (e) { setError(String(e)); } finally { setBusy(false); }
-      }}>{current ? "Xuất lại MP4" : "Xuất MP4"}</button>
+      }}>{current ? "Đã xuất" : "Xuất MP4"}</button>
       {running && <button className="outline-btn" onClick={() => project && void backend.visualCancel(project.project_id).then(setState).catch(e => setError(String(e)))}>Dừng tác vụ</button>}
-      <small>{state?.stale_preview ? "Hình ảnh đã đổi: chọn Hình ảnh trong Graph và dựng lại." : !state?.build ? "Dựng hình ảnh trước khi xuất." : current ? "Đã có MP4 đúng bản hiện tại. Chỉ bấm Xuất lại khi muốn render lại." : "Xuất video không tự duyệt chất lượng."}</small>
+      <small>{state?.stale_preview ? "Hình ảnh đã đổi: chọn Hình ảnh trong Graph và dựng lại." : !state?.build ? "Dựng hình ảnh trước khi xuất." : current ? "Đã có MP4 đúng bản hiện tại, không có gì thay đổi nên không cần xuất lại." : "Xuất video không tự duyệt chất lượng."}</small>
     </div>
     {error && <div className="inline-alert error" role="alert">{error}</div>}
     {state?.job && <div className="review-message" role="status">{jobText(state.job)}</div>}
@@ -75,7 +80,7 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
       {publish.description && <div className="publish-row"><span>{publish.description}</span><button className="subtle-btn" onClick={() => copy("mô tả", publish.description ?? "")}>Copy mô tả</button></div>}
       {tags && <div className="publish-row"><span>{tags}</span><button className="subtle-btn" onClick={() => copy("hashtag", tags)}>Copy hashtag</button></div>}
     </div>}
-    {video && <div className="export-path"><small>{video.file_path} · {video.stale ? "Nguồn đã thay đổi" : "Đúng bản xuất hiện tại"}</small>
+    {video && <div className="export-path"><small>{video.package_dir ? `Gói cuối: ${video.package_dir}` : video.file_path} · {video.stale ? "Nguồn đã thay đổi" : "Đúng bản xuất hiện tại"}</small>
       <small>{video.audio_contract ? `Giọng đã chọn · Nhạc nền: ${video.audio_contract.music_tracks} · SFX: ${video.audio_contract.sfx_tracks}${video.audio_contract.sfx_cues === undefined ? "" : ` (${video.audio_contract.sfx_cues} chuyển cảnh)`}` : "Gói cũ: chưa xác minh hợp đồng âm thanh"}</small>
       <small>{video.cover?.source_frame === 0 && video.cover_contract?.mode === "series-topic-opening@1"
         ? `Cover series: ${video.cover_contract.opening?.topic ?? "Chủ đề tập"} · frame đầu MP4`

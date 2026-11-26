@@ -41,9 +41,10 @@ class StudioSettings:
         source = ROOT.parents[1] if ROOT.parent.name == '.worktrees' else ROOT
         music = source/'assets/music'
         sfx = source/'tools/livestream-pk/public/sfx'
+        exports = source/'videos'  # on the repo's drive (not the app-data drive); /videos/ is git-ignored
         return {'audio': {'music_enabled': True, 'music_id': '', 'music_volume': .10,
                           'sfx_enabled': True, 'sfx_id': '', 'sfx_volume': .20, 'ducking': True},
-                'libraries': {'music_dir': str(music), 'sfx_dir': str(sfx)},
+                'libraries': {'music_dir': str(music), 'sfx_dir': str(sfx), 'export_dir': str(exports)},
                 'agents': {role: {'model': model, 'effort': effort} for role, (model, effort) in ROLE_DEFAULTS.items()},
                 'voice': {'default': ''}, 'appearance': {'theme': 'light'}}
 
@@ -53,6 +54,9 @@ class StudioSettings:
         try:
             if self.path.is_symlink(): raise ValueError('symlink')
             value = json.loads(self.path.read_text('utf8'))
+            libraries = value['values'].get('libraries')
+            if isinstance(libraries, dict):  # a settings file saved before a library existed gets its default
+                for key, path in self.defaults()['libraries'].items(): libraries.setdefault(key, path)
             self._validate(value['values'])
             if type(value['revision']) is not int or value['revision'] < 0: raise ValueError('revision')
             return value
@@ -97,6 +101,9 @@ class StudioSettings:
         if not isinstance(values['voice']['default'], str) or len(values['voice']['default']) > 120: raise ValueError('voice')
 
     def update(self, base_revision, values):
+        libraries = values.get('libraries') if isinstance(values, dict) else None
+        if isinstance(libraries, dict):  # a client built before a library existed still saves
+            for key, path in self.defaults()['libraries'].items(): libraries.setdefault(key, path)
         try: self._validate(values)
         except (ValueError, TypeError, KeyError) as error:
             raise StudioError('SETTINGS_INVALID', 'Cấu hình không hợp lệ: ' + str(error), 'settings') from error

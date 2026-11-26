@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { groupByPhase, phaseSummary } from '../apps/zodiac-studio/src/pipeline/status.ts';
-import { createPipelineStore } from '../apps/zodiac-studio/src/pipeline/pipeline-store.ts';
+import { createPipelineStore, POLL_IDLE_MS } from '../apps/zodiac-studio/src/pipeline/pipeline-store.ts';
 
 function nodes(sceneCount = 3) {
   const scenes = Array.from({ length: sceneCount }, (_, i) => `s${String(i + 1).padStart(2, '0')}`);
@@ -80,7 +80,7 @@ test('store polls faster while running and stops when hidden', async () => {
   assert.equal(env.live().at(-1).ms, 1500);
   env.live().forEach(t => env.timer.clear(t.id));
   await store.refresh();
-  assert.equal(env.live().at(-1).ms, 5000);
+  assert.equal(env.live().at(-1).ms, POLL_IDLE_MS);
   env.setHidden(true);
   assert.equal(env.live().length, 0, 'hiding the window cancels the poll');
   await store.refresh();

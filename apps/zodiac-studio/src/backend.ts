@@ -115,7 +115,7 @@ export type VideoExport = { id: string; revision: number; path: string; sha256: 
   audio_contract?: { mode: string; voice_sha256: string; music_tracks: number; sfx_tracks: number; sfx_cues?: number; mix_fingerprint?: string };
   cover_contract?: { mode: string; opening?: { sign: string; topic: string; series: string; duration_frames: number } };
   cover?: { source_frame?: number; sha256: string };
-  url?: string; file_path?: string; stale?: boolean };
+  url?: string; file_path?: string; package_dir?: string | null; stale?: boolean };
 export type CandidateResult = { status: string; source_sha256: string; catalog_revision: string;
   usage_evidence?: { coverage?: { truncated: boolean } } | null;
   bundles: { candidate_id: string; asset_id: string; entity_id: string; actors: { entity_id: string; states: string[] }[];
@@ -172,7 +172,7 @@ export async function request<T>(method: string, params: object = {}): Promise<T
 
 export type StudioPreferences = {
   audio: { music_enabled: boolean; music_id: string; music_volume: number; sfx_enabled: boolean; sfx_id: string; sfx_volume: number; ducking: boolean };
-  libraries: { music_dir: string; sfx_dir: string };
+  libraries: { music_dir: string; sfx_dir: string; export_dir: string };
   agents: Record<string, { model: string; effort: string }>;
   voice: { default: string }; appearance: { theme: string };
 };

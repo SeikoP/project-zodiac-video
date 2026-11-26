@@ -2,7 +2,7 @@ import { RUNNABLE } from "./status.ts";
 import type { NeedsYou, OwnerCard, PipelineApi, PipelineData, PipelineMode, PipelineNode, RunRecord, Selection } from "./types.ts";
 
 export const POLL_RUNNING_MS = 1500;
-export const POLL_IDLE_MS = 5000;
+export const POLL_IDLE_MS = 12000; // each read costs the backend ~2 s of file checks: ask less often while nothing runs
 
 export type PipelineSnapshot = {
   status: "idle" | "ready" | "error";

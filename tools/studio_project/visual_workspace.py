@@ -22,8 +22,16 @@ from tools.studio.artifacts import VoiceArtifactStore, canonical_hash, file_sha2
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
 from .settings import render_workers
-from .status import _hash, _export_matches_build
+from .status import _hash, _export_matches_build, _video_status
 from .visual_server import PreviewServer
+
+
+def _json_file(path):
+    try:
+        value = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
 from .audio_mix import export_audio_current
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -209,6 +217,9 @@ class VisualWorkspace:
         return value
 
     def snapshot(self, project_id):
+        return self.service.scoped(('visual', project_id), lambda: self._snapshot(project_id))
+
+    def _snapshot(self, project_id):
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "visual-state"):
             state, intent = self._read(handle)
@@ -647,6 +658,9 @@ class VisualWorkspace:
             with self._guard:
                 if project_id in self._workers and self._workers[project_id].is_alive():
                     raise _error('VISUAL_BUSY', 'Previous worker is still stopping')
+            if (state.get('export') and _video_status(handle.workspace) == 'EXPORTED' and
+                    export_audio_current(self.service.settings, handle.workspace, state['export'])):
+                return self.snapshot(project_id)  # an MP4 for exactly this source, voice and audio already exists: nothing to render
             with _exclusive_source_lock(handle.workspace, 'voice-state'):
                 inputs = self._export_inputs(handle, state, intent)
             job_id = uuid.uuid4().hex
@@ -677,6 +691,7 @@ class VisualWorkspace:
                     state['job'].update(status='COMPLETED', render_percent=100, message='MP4 HyperFrames đã xuất; chờ xem và duyệt')
                     self._event(state, 'video.exported', {'export_id': job_id, 'sha256': receipt['sha256'], 'not_an_approval': True})
                     self._save(handle, state)
+            self._deliver(handle, receipt)
         except Exception as error:
             with _exclusive_source_lock(handle.workspace, 'visual-state'):
                 state, _ = self._read(handle)
@@ -688,6 +703,48 @@ class VisualWorkspace:
                 self._workers.pop(project_id, None)
                 self._processes.pop(project_id, None)
                 self._job_ids.pop(project_id, None)
+
+    def _package_dir(self, handle):
+        """Where the final package of this episode lives: <export_dir>/<sign>-<concept> (or the project id)."""
+        scope = _json_file(handle.workspace / '.authoring/episode-scope.json')
+        raw = '-'.join(str(scope.get(k) or '') for k in ('sign', 'concept_code')).strip('-') or handle.project_id
+        name = re.sub(r'[^\w.-]+', '-', raw, flags=re.UNICODE).strip('-.')[:80] or handle.project_id
+        base = Path(self.service.settings.read()['values']['libraries']['export_dir'])
+        return base / name
+
+    def _deliver(self, handle, receipt):
+        """Copy the final package (MP4, cover, captions, publish text, receipt) to the export folder. Best effort: a failure here
+        never invalidates the export, it only means the package stays in the project store."""
+        try:
+            folder = self._package_dir(handle)
+            folder.mkdir(parents=True, exist_ok=True)
+            source = handle.workspace / Path(receipt['path']).parent
+            for name, target in (('episode.mp4', folder / (folder.name + '.mp4')), ('cover.png', folder / 'cover.png'),
+                                 ('captions.srt', folder / 'captions.srt'), ('receipt.json', folder / 'receipt.json')):
+                if (source / name).is_file() and not (source / name).is_symlink():
+                    shutil.copyfile(source / name, target)
+            publish = _json_file(handle.workspace / '.runtime/pipeline/receipts/publish.json').get('payload') or {}
+            if publish:
+                text = '\n\n'.join(p for p in (publish.get('title'), publish.get('description'), ' '.join(publish.get('hashtags') or [])) if p)
+                (folder / 'publish.txt').write_text(text + '\n', encoding='utf-8')
+        except OSError:
+            pass
+
+    def _reuse_render(self, handle, output):
+        """Copy the previous export's silent video when its composition is byte-identical (same frames, only audio differs)."""
+        try:
+            state, _ = self._read(handle)
+            previous = state.get('export') or {}
+            root, _ = self._paths(handle)
+            old = _trusted_dir(handle.workspace, root / 'exports' / previous['id'])
+            if old == output or any((old / name).is_symlink() or not (old / name).is_file() for name in ('index.html', 'video-only.mp4')):
+                return False
+            if (old / 'index.html').read_bytes() != (output / 'index.html').read_bytes() or (old / 'video-only.mp4').stat().st_size < 1024:
+                return False
+            shutil.copyfile(old / 'video-only.mp4', output / 'video-only.mp4')
+            return True
+        except (OSError, KeyError, ValueError, TypeError):
+            return False
 
     @staticmethod
     def _verify_export_probe(probe, receipt, voice_duration):
@@ -753,7 +810,10 @@ class VisualWorkspace:
         from .audio_mix import render_mix
         receipt['audio_contract'] = render_mix(output/'voice.wav', inputs['audio_plan'], output/'mix.wav', run=lambda command, **_: run(command))
         run(['node', str(cli), 'check', str(output)])
-        run(['node', str(cli), 'render', str(output), '--output', str(output / 'video-only.mp4'), '--fps', str(receipt['fps']), '--quality', 'looks', '--workers', str(render_workers()), '--no-best-effort'])
+        if self._reuse_render(handle, output):
+            log('Dùng lại hình đã render (chỉ đổi âm thanh)')
+        else:
+            run(['node', str(cli), 'render', str(output), '--output', str(output / 'video-only.mp4'), '--fps', str(receipt['fps']), '--quality', 'looks', '--workers', str(render_workers()), '--no-best-effort'])
         run(['ffmpeg', '-v', 'error', '-y', '-i', str(output / 'video-only.mp4'), '-i', str(output / 'mix.wav'), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-movflags', '+faststart', str(output / 'episode.mp4')])
         result = run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(output / 'episode.mp4')])
         probe = json.loads(result.stdout)
@@ -848,7 +908,10 @@ class VisualWorkspace:
                 self._server = PreviewServer(self._resource)
             url = self._server.video_url(project_id, receipt['id'])
         handle = self._handle(project_id)
-        return {**receipt, 'url': url, 'file_path': str(handle.workspace / receipt['path']),
+        package = self._package_dir(handle)
+        delivered = package / (package.name + '.mp4')
+        return {**receipt, 'url': url, 'file_path': str(delivered if delivered.is_file() else handle.workspace / receipt['path']),
+                'package_dir': str(package) if delivered.is_file() else None,
                 'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt) or
                     not export_audio_current(self.service.settings, handle.workspace, receipt), 'not_an_approval': True}
 
@@ -863,6 +926,9 @@ class VisualWorkspace:
         file = folder / 'episode.mp4'
         if not file.is_file() or file.is_symlink():
             raise _error('VIDEO_MISSING', 'Không thấy file MP4 đã xuất')
+        package = self._package_dir(handle)
+        if (package / (package.name + '.mp4')).is_file():  # show the delivered copy: that is where the person looks for it
+            folder, file = package, package / (package.name + '.mp4')
         if os.name == 'nt':
             subprocess.Popen(['explorer', f'/select,{file}'])
         else:
