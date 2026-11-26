@@ -358,7 +358,7 @@ class LiveIO:
         try:
             merged = agent_parts.merge(skeleton, texts, order)
             text, _ = agent_authoring.bind_proposal(merged, self.capsule)
-            final = agent_authoring.proposal(text, self.service, self.project_id)
+            final = agent_authoring.proposal(text, self.service, self.project_id, write_visuals=True)  # the story visual art must exist for the check
         except (StudioError, ValueError, KeyError, TypeError) as error:
             message = str(error)[:1500]
             named = agent_parts.failing_scenes(message, order)

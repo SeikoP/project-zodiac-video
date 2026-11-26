@@ -344,6 +344,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         _centre(scene)
     if has_accent:
         _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals), art_dir)
+    _separate_depth(scene)
     scene["camera"] = _camera(scene_id, scene)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
@@ -565,6 +566,22 @@ def _lean(by_id: dict, target: str) -> dict:
         return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 9, "dx": 0, "dy": HOP, "settle": "return"}}
     toward = 1 if others[0]["x"] > mine["x"] else -1
     return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 9 * toward, "dx": 28 * toward, "dy": HOP, "settle": "return"}}
+
+
+LAYER_NEAR = 25
+
+
+def _separate_depth(scene: dict) -> None:
+    """Readable depth needs the story entities on at least two layers. When everything is one layer (two actors and nothing else),
+    the second actor stands in front of the first: a real overlap order, no change to where anyone stands."""
+    story = [e for e in scene["entities"] if e.get("kind") in ("character", "object", "story_visual") and not e["id"].startswith("depth__")]
+    layers = {s.get("layer") for e in story for s in (e.get("states") or {}).values() if isinstance(s, dict)}
+    actors = [e for e in story if e["kind"] == "character"]
+    if len(layers) >= 2 or len(actors) < 2:
+        return
+    for state in (actors[1].get("states") or {}).values():
+        if isinstance(state, dict):
+            state["layer"] = LAYER_NEAR
 
 
 def _camera(scene_id: str, scene: dict) -> list[dict]:

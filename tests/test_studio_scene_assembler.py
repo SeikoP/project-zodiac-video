@@ -484,6 +484,14 @@ class DrawnAccentTests(unittest.TestCase):
         self.assertEqual(json.loads(out.stdout), {"status": "PASS", "issues": []})
 
 
+class DepthTests(unittest.TestCase):
+    def test_two_actors_alone_still_have_depth_separation_by_layer(self):
+        part = build(TWO, cast_of(TWO, 2), [], dressing="none")
+        layers = {st["layer"] for e in part["payload"]["scene"]["entities"] if e["kind"] == "character" for st in e["states"].values()}
+        self.assertGreaterEqual(len(layers), 2)
+        self.assertTrue(all(l < 40 for l in layers))  # still behind any story visual
+
+
 class StoryRevealTests(unittest.TestCase):
     def test_the_story_visual_appears_on_its_beat_not_at_the_top_of_the_scene(self):
         menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])
