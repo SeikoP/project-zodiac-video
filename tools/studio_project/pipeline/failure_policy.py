@@ -30,6 +30,8 @@ def origin(issue: dict) -> str:
 def route(issue: dict) -> str:
     """'core' | 'model' | 'owner' for one finding (a dict with a `code`). Unknown quality findings go to the model."""
     code = str((issue or {}).get("code") or "")
+    if code == "PROPOSAL_INVALID" and not (issue or {}).get("scene_id"):
+        return "owner"  # the merged episode is wrong somewhere no scene owns (cover, cast, assets): choosing scene 1 again cannot fix it
     if code in OWNER or code.startswith("NEW_"):
         return "owner"
     if code in CORE:

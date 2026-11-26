@@ -126,6 +126,10 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
     """Cast, then the scenes PARALLEL_SCENES at a time. `proposal` is None while any scene is unfinished or failed."""
     order = io.scene_ids()
     stored = io.load() or {}
+    legacy = getattr(io, "legacy_fingerprints", lambda: ())()
+    if stored.get("fingerprint") in legacy:  # stored before the instruction left the fingerprint: same inputs, keep the scenes
+        stored["fingerprint"] = io.fingerprint()
+        io.save(stored)
     if stored.get("fingerprint") != io.fingerprint():
         stored = {"fingerprint": io.fingerprint(), "skeleton": None, "scenes": {}}
     lock = threading.Lock()
@@ -253,6 +257,16 @@ class LiveIO:
 
     def fingerprint(self) -> str:
         return self._fingerprint
+
+    def legacy_fingerprints(self) -> tuple[str, ...]:
+        """Fingerprints written while the instruction was still part of it (the pipeline's own wording and this run's), so a
+        run saved by an older build is resumed instead of authored again."""
+        from . import agent_authoring
+        from .pipeline.runner import AUTHORING_INSTRUCTION
+        base = {"dependencies": self.capsule.get("dependencies"), "source": self.capsule.get("source_hash"),
+                "catalog": agent_authoring.canonical_hash(self.capsule["catalog"])}
+        return tuple(agent_authoring.canonical_hash({**base, "instruction": text})
+                     for text in dict.fromkeys((AUTHORING_INSTRUCTION, self.capsule.get("instruction") or "")))
 
     def scene_ids(self) -> list[str]:
         return [row["id"] for row in self.capsule["scene_ranges"]]

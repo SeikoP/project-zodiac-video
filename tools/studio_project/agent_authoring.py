@@ -196,7 +196,8 @@ def _capsule_body(service, project_id, instruction, state, voice, timing, handle
             "visual_contract": json.loads((ROOT / "tools/studio_project/visual_contract.json").read_text("utf8")),
             "dependencies": dependencies(service, project_id), "catalog": prompt_catalog(), "instruction": instruction,
             "narration_sha256": hashlib.sha256(narration.encode()).hexdigest(), "scene_ranges": ranges,
-            "narrative_plan": plan, "episode_scope": {k: scope[k] for k in ("concept_code", "sign", "title_working") if k in scope},
+            "narrative_plan": plan, "episode_scope": {**{k: scope[k] for k in ("concept_code", "sign", "title_working") if k in scope},
+                                                      **({"sign": scope_sign(scope)} if scope_sign(scope) else {})},
             "required_story_visual_ids": [row["id"] for row in plan.get("story_visuals", []) if isinstance(row, dict) and row.get("id")]
             if plan.get("story_visual_decision", {}).get("mode") == "required" else [],
             "visual_reuse": visual_reuse(service, project_id) or None,
@@ -215,6 +216,19 @@ def _capsule_body(service, project_id, instruction, state, voice, timing, handle
             }}
 
 
+def scope_sign(scope):
+    """The Vietnamese sign name a cover must carry. Older scopes store it as `sign`; `zodiac-episode-scope@1` only lists
+    `member_ids`, so a single-sign episode gets its name from that one member (None for several members or no scope)."""
+    sign = scope.get("sign")
+    if isinstance(sign, str) and sign.strip():
+        return sign.strip()
+    members = scope.get("member_ids")
+    if scope.get("episode_format") == "single_sign" and isinstance(members, list) and len(members) == 1:
+        return dict(zip(MEMBER_IDS, KNOWN_SIGNS)).get(members[0])
+    return None
+
+
+MEMBER_IDS = ("aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces")
 KNOWN_SIGNS = ("Bạch Dương", "Kim Ngưu", "Song Tử", "Cự Giải", "Sư Tử", "Xử Nữ",
                "Thiên Bình", "Bọ Cạp", "Nhân Mã", "Ma Kết", "Bảo Bình", "Song Ngư")
 
@@ -406,7 +420,7 @@ def proposal(text, service, project_id, *, write_visuals=False):
                            "Thiên Bình", "Bọ Cạp", "Nhân Mã", "Ma Kết", "Bảo Bình", "Song Ngư"}
             if scope.get("sign") in known_signs and not opening:
                 raise invalid("Mỗi tập mới cần cover giới thiệu series, cung và chủ đề.")
-            if opening and opening.get("sign") != scope.get("sign"):
+            if opening and scope_sign(scope) and opening.get("sign") != scope_sign(scope):
                 raise invalid("Cover phải ghi đúng tên cung trong Phase 1 đã duyệt.")
             if scope.get("concept_code") == "love-sincere" and opening.get("topic") not in (
                 f"Cách {scope['sign']} yêu thật lòng", f"Khi {scope['sign']} thật lòng yêu"):

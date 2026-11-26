@@ -188,6 +188,17 @@ class ChainTests(unittest.TestCase):
         self.assertEqual(second.calls.count("skeleton"), 1)
         self.assertEqual(sorted(c[1] for c in second.calls if isinstance(c, tuple) and c[0] == "stage"), ORDER)
 
+    def test_parts_saved_under_the_old_fingerprint_are_resumed_not_discarded(self):
+        first = FakeIO(fingerprint="old-with-instruction")
+        self.run_chain(first)
+        second = FakeIO(fingerprint="new")
+        second.legacy_fingerprints = lambda: ("old-with-instruction",)
+        second.stored = first.stored
+        self.run_chain(second)
+        self.assertEqual(second.calls.count("skeleton"), 0)  # nothing is authored again
+        self.assertEqual([c for c in second.calls if isinstance(c, tuple) and c[0] == "stage"], [])
+        self.assertEqual(second.stored["fingerprint"], "new")
+
     def test_after_an_app_reset_only_unfinished_scenes_call_the_model(self):
         first = FakeIO()
         stop = {"flag": False}
