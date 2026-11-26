@@ -218,7 +218,7 @@ class LiveIO:
     """
 
     STORE = ".runtime/chain-parts.json"
-    WAIT_SECONDS = 300.0
+    WAIT_SECONDS = 200.0  # a choice task is limited to 150 s by the bridge; past this the agent is stuck
 
     def __init__(self, service, project_id: str, instruction: str, capsule: dict | None = None):
         from . import agent_authoring
@@ -276,8 +276,17 @@ class LiveIO:
 
     def choose(self, kind: str, schema: dict, data: dict) -> dict:
         error = "không rõ"
-        for _ in range(2):  # a failed or schema-invalid reply is asked once more before the scene gives up
-            task = self._wait(self._start_choice(schema, data, kind)["task_id"])
+        for _ in range(2):  # a failed, stuck or schema-invalid reply is asked once more before the scene gives up
+            started = self._start_choice(schema, data, kind)
+            try:
+                task = self._wait(started["task_id"])
+            except ChoiceError as stuck:
+                try:
+                    self.service.agent.cancel(started["task_id"])
+                except Exception:
+                    pass
+                error = str(stuck)
+                continue
             if task["status"] == "COMPLETED" and task.get("suggestion"):
                 return json.loads(task["suggestion"])
             error = str(task.get("error") or task["status"])[:200]
