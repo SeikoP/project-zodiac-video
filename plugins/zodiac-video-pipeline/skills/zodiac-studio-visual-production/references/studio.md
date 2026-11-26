@@ -12,7 +12,7 @@ What Core already guarantees, so do not spend effort on it: one prop per family 
 Cast and identity reasons; the story mode and focus of each scene; which props the narration physically needs and which anchor each event lands on; the **setting of each scene** (scene accent, see `scene.md`); whether a Story Visual earns its place; acting that moves the story and reads at phone size. An agent that picks the same prop family for dressing and a handled prop, or an event on every word, is not using the skill.
 
 ## Known gaps (state them, do not paper over them)
-- The scene accent comes only from the registered accents (13 cues: clock, board, shelf, sign, lamp, windows, string lights, tree, cafe awning, framed note, two neutral marks). A setting the library cannot draw is a request for new art (`none_fits`), not a substitute and not a filler prop. Studio does not author accent SVGs.
+- The scene accent is drawn by Core from the parts you choose (window, awning, door, shelf, lamp, clock, board, menu board, sign, string lights, plant, curtain, picture, map, calendar, counter, tree), or is one of the registered library cues. Part drawings are Core's own and still need the owner's visual review. A place these parts cannot draw is a request for new art (`none_fits`), never a filler prop.
 - Cover opening, background music and sound effects are not yet supported by the HyperFrames export; unsupported requests are blocked, not silently dropped.
 
 ## Renderer: HyperFrames only

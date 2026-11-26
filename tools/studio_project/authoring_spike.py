@@ -19,6 +19,7 @@ from .service import StudioProjectService
 
 
 SAVE_DIR: Path | None = None
+WRITTEN: set = set()  # accent SVGs this tool wrote into the project's workspace; copied to --save-dir and removed at the end
 WORDS: list = []
 
 
@@ -73,7 +74,11 @@ def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str
         if act:
             try:
                 visuals = scene_assembler.story_visual_assets(context, intent.get("assets") or {}, scene_id)
-                part = scene_assembler.assemble_scene(menus, stage, act, scene_id, row["narration_range"], row["text"], goal, story_visuals=visuals)
+                part = scene_assembler.assemble_scene(menus, stage, act, scene_id, row["narration_range"], row["text"], goal, story_visuals=visuals,
+                                                      art_dir=service.visual._handle(project_id).workspace)
+                for asset in part["payload"]["assets"].values():
+                    if str(asset.get("path", "")).startswith(".authoring/agent-art/accent-"):
+                        WRITTEN.add(asset["path"])
                 result["notes"] = part.get("core_notes", [])
                 result["faults"] = [f["code"] for f in scene_assembler.scene_faults(part, list(visuals))]
                 task = {"scene_id": scene_id, "scene_range": row["narration_range"], "scene_text": row["text"],
@@ -129,6 +134,18 @@ def main() -> None:
         for run in range(1, args.runs + 1):
             r = one_run(service, args.project, capsule, intent, scene_id, narration, context)
             print(f"| {scene_id} | {run} | {'Y' if r['schema_valid'] else 'N'} | {'Y' if r['accepted'] else 'N'} | {'Y' if r['compiled'] else 'N'} | {','.join(r['faults']) or '-'} | {','.join(r['checks']) or '-'} | {'; '.join(r['notes']) or '-'} | {r['seconds']} | {r['error'] or ''} |", flush=True)
+    _finish(service, args.project)
+
+
+def _finish(service, project_id: str) -> None:
+    import shutil
+    workspace = service.visual._handle(project_id).workspace
+    for rel in sorted(WRITTEN):
+        source = workspace / rel
+        if SAVE_DIR and source.is_file():
+            (SAVE_DIR / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, SAVE_DIR / rel)
+        source.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
