@@ -11,7 +11,7 @@ One source tree for the Zodiac video system. Two products live in it:
 - `apps/zodiac-studio/` is **Zodiac Studio V5** (Tauri 2 + React + a Python backend). This is the app under active development on `experiment/main-2`.
 - `plugins/zodiac-video-pipeline/` is the plugin (skills, compilers, validators, asset library) that Studio's Python core calls into. Phase 1 (web) makes a handoff ZIP; Phase 2-3 (local) are what Studio drives.
 
-Legacy PySide6 app (`tools/zodiac_qt.py`, `tools/studio_qt/`, `tools/studio/`, `tools/runner/`) still exists; Studio V5 is separate from it.
+Studio V5 is the only GUI. The old PySide6 app was removed; `tools/zodiac_studio.py` (the `zodiac` command) only launches the Tauri executable, and `tools/studio/`, `tools/runner/`, `tools/studio_v2/` keep only the modules Studio Project Core imports (artifact store, voice catalog, process/audio helpers, voice and timing).
 
 ## Run the Studio app (Windows)
 

@@ -85,11 +85,8 @@ narration, publish references, and exact asset references before writing the
 workspace. Measured timing lives at `.runtime/timing.json`; it is created or
 attached after import.
 
-The PySide6 Task Workbench is the default GUI:
-
-```bash
-uv run zodiac
-```
+Zodiac Studio V5 (Tauri) is the only GUI. Run it from `apps/zodiac-studio` with `pnpm desktop:dev`,
+or launch a locally built executable with `ZODIAC_STUDIO_V5_EXE=<exe> uv run zodiac`.
 
 For Job@5, **Tiếp tục** reuses validated artifacts, while **Chạy toàn bộ**
 regenerates voice and every following stage. Select a pipeline row and use
@@ -197,24 +194,10 @@ Cài xong preflight chạy lại; chỉ khi mọi thứ xanh mới chạy TTS. N
 
 Studio không tạo ZIP publish thứ hai và không giữ `zodiac-story.with-music.mp4`; các tên legacy này được dọn nếu còn sót. Nhạc bundled trong repo là tùy chọn; nếu không có file mặc định, Studio bắt đầu ở trạng thái chưa chọn nhạc thay vì coi đó là lỗi môi trường.
 
-## PySide6 Task Workbench (default GUI)
+## Zodiac Studio V5
 
-This is a dark workstation with two top-level tabs: **Công việc / Workspace**
-combines recent-job selection with the seven-step production workbench, and
-**Media** manages the active job's video, audio, and image outputs. Video and
-music previews play inside the Qt app. It provides environment checks, audio
-settings, Remotion Studio, resume/run-all, rerun, safe
-stop, and output navigation. It adds keyboard shortcuts: `Ctrl+O` import,
-`Ctrl+R` continue, `Ctrl+Shift+R` run all, `Ctrl+L` logs, `Esc` back to jobs.
-Run `uv run zodiac` to open this GUI. PySide6 installs with the project's default
-dependencies.
-
-Luồng GUI: chọn ZIP trong `ready/` hoặc **Chọn ZIP từ máy…** → nhập và kiểm tra
-gói → Workspace tự kiểm tra môi trường → **Thiết lập** giọng/nhạc →
-**Tiếp tục quy trình**. Khi hoàn tất, nút chính chuyển thành **Xem video đầu ra**.
-Màn nhập hiện trạng thái/lỗi và giữ lựa chọn job khi làm mới. Media ưu tiên
-`zodiac-story.mp4` khi chưa chọn tệp, giữ tệp đang xem khi làm mới, và có
-**Mở Workspace** để quay về đúng job.
+Studio V5 (`apps/zodiac-studio`) is the single GUI: Tauri 2 + React over the Python Project Core
+(`tools/studio_project`). See `apps/zodiac-studio/README.md` and `CLAUDE.md`. The earlier PySide6 workbench was removed.
 
 Job@5 ghi thời gian các bước thành công vào `.runtime/performance.jsonl`.
 PLAN bao gồm audit payload và phục hồi cache; RENDER bao gồm QC và kiểm tra

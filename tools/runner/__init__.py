@@ -1,1 +1,1 @@
-"""Focused runner helpers shared by the application boundary."""
+"""Runner helpers (process, audio, errors, package) used by Studio Project Core."""

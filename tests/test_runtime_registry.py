@@ -49,11 +49,9 @@ def test_workspace_renderer_uses_package_pin_but_validates_through_registry(tmp_
 
 
 def test_current_paths_do_not_hardcode_runtime_defaults() -> None:
-    service = Path('tools/application/service.py').read_text(encoding='utf-8')
     controller = Path('tools/studio_v2/controller.py').read_text(encoding='utf-8')
     executor = Path('tools/studio_v2/executor.py').read_text(encoding='utf-8')
 
-    assert 'renderer_version="2.0.0"' not in service
     assert '_SUPPORTED_RENDERER_VERSIONS' not in controller
     assert 'renderer_version: str = "2.0.0"' not in executor
 

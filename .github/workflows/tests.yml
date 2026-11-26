@@ -47,15 +47,14 @@ jobs:
       - name: Architecture and registry regressions
         run: >-
           python -m pytest
-          tests/test_application_service.py
           tests/test_runner_modules.py
           tests/test_runtime_registry.py
           tests/test_contract_bundle.py
           tests/test_ci_layout.py -q
-      - name: Verify the GUI launcher
+      - name: Verify the Studio launcher
         run: |
           command -v zodiac
-          python -c "from tools.zodiac_qt import main; from tools.studio_qt.app import ZodiacQtApp; assert callable(main) and ZodiacQtApp"
+          python -c "from tools.zodiac_studio import main; assert callable(main)"
 
   renderer-smoke:
     name: smoke / renderer

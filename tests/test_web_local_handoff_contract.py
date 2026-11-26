@@ -18,8 +18,6 @@ class WebLocalHandoffReleaseTests(unittest.TestCase):
         self.assertEqual(backup["plugin_release_id"],"pluginrel_6aef5fcb6078819184d112c85268706a")
         readme=(ROOT/"README.md").read_text(encoding="utf-8")
         self.assertIn("phase1-done/",readme);self.assertIn("zodiac-video-local",readme);self.assertIn("zodiac-video-web",readme)
-        studio=(ROOT/"tools/studio_qt/app.py").read_text(encoding="utf-8")
-        self.assertIn('ROOT / "ready"',studio)
 
     def test_release_workflow_rebuilds_on_any_plugin_source_change(self):
         """Reference-only edits must not silently skip archive generation."""
