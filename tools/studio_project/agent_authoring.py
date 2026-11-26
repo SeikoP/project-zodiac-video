@@ -205,7 +205,7 @@ def _capsule_body(service, project_id, instruction, state, voice, timing, handle
                 "experience_profile": EXPERIENCE_PROFILE_RULE,
                 "grammar": {"type": "object", "example": {"frame_id": "single-character-focus", "mechanic_id": "explain", "bindings": {"subject": "actual_actor_entity_id"}},
                             "description": "Scene grammar MUST be this structured object, NEVER a prose description. Choose exact frame_id/mechanic_id from catalog, bind required frame slots to actual scene entity IDs and respect slot kinds/mechanic requirements. Put prose directing in semantic_goal or narrative_intent.reason."},
-                "format": "zodiac-visual-intent@1", "video": {"width": 1080, "height": 1920, "fps": 30},
+                "format": "zodiac-visual-intent@1", "video": {"width": 1080, "height": 1920, "fps": 24},
                 "cast": "Array of {entity_id,body_profile,hair_id,face_profile_id:'balanced',outfit_id:'plain-shirt',shirt_color_id:'coral' or 'teal',accessory_id:'none',variant_seed,asset_budget:{max_unique_states:8},states:{neutral:{pose_id:'neutral',expression_id:'deadpan'},reaction:{pose_id:catalog id,expression_id:catalog id}},design_intent:{selection_basis:'story_first',role:'lead' or 'support',identity_tension,audience_read,decision_reasons:{body_profile,hair_id,shirt_color_id},rejected_alternative:{choice,reason},reuse_strategy:'native_assembly_after_story',scene_anchor:{scene_id,excerpt,meaning},state_purposes:{neutral:reason,reaction:reason}}}",
                 "character_constraints": "When outfit_id is zodiac-glyph-shirt, zodiac_sign_id MUST be the matching English zodiac id (e.g. sagittarius); otherwise choose plain-shirt. Every cast state, including additional states, MUST have a design_intent.state_purposes entry with at least 18 characters. All choice reasons must have at least 18 characters. Entity visual_role MUST be character for actors, interactive_prop for ordinary objects, story_visual for Story Visual. Grammar slot names speaker/listener/subject/focus_prop are NOT visual roles.",
                 "episode_cast_plan": "{format:'zodiac-episode-cast-plan@1',bindings:[{member_id:English zodiac id,entity_id,scene_ids:[ids],role:'member',reason}]}",
@@ -290,8 +290,8 @@ def bind_proposal(text, context):
     if intent.get("narration_sha256") != context["narration_sha256"]:
         intent["narration_sha256"] = context["narration_sha256"]
         changed.append("narration_sha256")
-    if "video" not in intent:
-        intent["video"] = copy.deepcopy(context["schema"]["video"])
+    if "video" not in intent or (isinstance(intent["video"], dict) and intent["video"].get("fps") == 30):
+        intent["video"] = copy.deepcopy(context["schema"]["video"])  # 24 fps: faster render; a model-chosen 30 is Core's to correct
         changed.append("video")
     # Phase 1 owns the story-visual decision; the model only copied it, and a slip failed the whole compile.
     decision = (context.get("narrative_plan") or {}).get("story_visual_decision")

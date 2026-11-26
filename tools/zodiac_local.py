@@ -1072,8 +1072,11 @@ def run_tts_batch(
     frame_cap: str = DEFAULT_TTS_FRAME_CAP,
     frame_cap_scale: float = 1.0,
     max_chars: int = DEFAULT_TTS_MAX_CHARS,
+    temperature: float | None = None,
 ) -> None:
-    """Generate the given scene WAVs with VieNeu, in one subprocess call."""
+    """Generate the given scene WAVs with VieNeu, in one subprocess call.
+
+    ``temperature`` (direct SDK only) widens or narrows intonation variety; None keeps the engine default."""
     if not rows:
         return
     if max_chars < 32:
@@ -1188,6 +1191,8 @@ def run_tts_batch(
             "from apps.user_voices import load_user_voices\n"
             "rows = json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))\n"
             "mode, voice, backend, precision, frame_cap, frame_cap_scale, max_chars = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], float(sys.argv[7]), int(sys.argv[8])\n"
+            "temperature = float(sys.argv[9]) if len(sys.argv) > 9 and sys.argv[9] else None\n"
+            "sampling = {'temperature': temperature} if temperature is not None else {}\n"
             "kwargs = {}\n"
             "if mode == 'v3turbo': kwargs.update(backend=backend, precision=precision)\n"
             "tts = Vieneu(mode=mode, **kwargs)\n"
@@ -1215,7 +1220,7 @@ def run_tts_batch(
             "    turbo_module.max_expected_frames = _scaled_max_expected_frames\n"
             "for row in rows:\n"
             "    print('VieNeu:', row['scene_id'], flush=True)\n"
-            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars, apply_watermark=False), row['output'])\n"
+            "    tts.save(tts.infer(row['text'], voice=voice, max_chars=max_chars, apply_watermark=False, **sampling), row['output'])\n"
             "    print('VieNeu DONE:', row['scene_id'], flush=True)\n"
         )
         actual = effective_tts_generation_config(
@@ -1235,6 +1240,7 @@ def run_tts_batch(
         run_args = [
             str(python), "-X", "utf8", "-c", script, str(manifest),
             mode, voice, backend, precision, frame_cap, str(frame_cap_scale), str(max_chars),
+            "" if temperature is None else str(temperature),
         ]
     try:
         run_managed_subprocess(run_args, cwd=tts_root, check=True)

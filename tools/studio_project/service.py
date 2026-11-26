@@ -17,6 +17,7 @@ from .models import ProjectHandle, StudioError
 from .registry import EpisodeRegistry
 from .ideas import IdeasBoard
 from .status import resolve_episode_status
+from .settings import StudioSettings
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/references/asset-library-v4"
@@ -30,6 +31,7 @@ class StudioProjectService:
     def __init__(self, projects_root: Path):
         self.registry = EpisodeRegistry(Path(projects_root))
         self.ideas = IdeasBoard(self.registry)
+        self.settings = StudioSettings(self.registry.root)
         self._agent = None
         self._voice = None
         self._visual = None
@@ -56,6 +58,7 @@ class StudioProjectService:
         return self._agent
 
     def close(self) -> None:
+        self.settings.close()
         try:
             try:
                 if self._visual is not None:
@@ -75,6 +78,11 @@ class StudioProjectService:
 
     def _snapshot(self, handle: ProjectHandle) -> dict[str, Any]:
         status = asdict(resolve_episode_status(handle))
+        if status['video'] == 'EXPORTED':
+            from .audio_mix import export_audio_current
+            from .status import _json
+            receipt = (_json(handle.workspace/'.runtime/visual-workspace/state.json') or {}).get('export') or {}
+            if not export_audio_current(self.settings, handle.workspace, receipt): status['video'] = 'STALE'
         label = handle.episode_id
         sign = None
         concept_code = None

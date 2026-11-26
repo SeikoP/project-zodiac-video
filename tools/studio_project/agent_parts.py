@@ -195,6 +195,8 @@ def validate_skeleton(text: str, context: dict) -> str:
     repair_cast(cast, _catalog()["components"])  # a wrong pose/expression is fixed now, not found after eight scenes
     intent["narration_sha256"] = context["narration_sha256"]
     intent.setdefault("video", copy.deepcopy(context["schema"]["video"]))
+    if isinstance(intent["video"], dict) and intent["video"].get("fps") == 30:
+        intent["video"] = copy.deepcopy(context["schema"]["video"])  # 24 fps renders faster
     intent["taxonomy_version"] = "story_visual@1"
     decision = (context.get("narrative_plan") or {}).get("story_visual_decision")
     if isinstance(decision, dict):

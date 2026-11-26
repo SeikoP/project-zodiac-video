@@ -48,7 +48,7 @@ MODE_BY_MECHANIC = {"explain": "exposition", "react": "reflection", "express-rea
 MODE_BY_FAMILY = {"state": "exposition", "interaction": "behavior", "narrative": "payoff"}
 NEEDS_DRESSING = frozenset({"relationship", "behavior", "payoff"})
 DRESSING_FALLBACK = ("laptop", "notebook", "coffee-cup", "potted-plant", "book", "lightbulb")  # ordinary props that read as scenery
-FPS = 30
+FPS = 24
 LEAN = {"preset": "lean", "duration_frames": 12, "params": {"degrees": 8, "dx": 0, "dy": 0, "settle": "return"}}
 SWAP = {"preset": "state_swap", "duration_frames": 12}
 _VIEWBOX = re.compile(r'viewBox="\s*([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)')
@@ -381,6 +381,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         _add_accent(scene, assets, accent, menus, scene_id, scene_text, has_band, art_dir)
     _separate_depth(scene)
     prune_non_story_references(scene)
+    notes += _move(scene, menus)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
     if accent and accent["accent_id"] == NONE_FITS:  # the library has no such cue: ask for art, never substitute one
         part["asset_requests"] = [{"wanted": f"{accent['setting']}: {accent['visible_detail']}", "code": "NEW_VARIANT_MASTER_REQUIRED",
@@ -389,6 +390,18 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if notes:
         part["core_notes"] = notes
     return part
+
+
+def _move(scene: dict, menus: dict) -> list[str]:
+    """Core's acting and camera pass (scene_motion): reactions to pose changes and slow pushes on pictures."""
+    from . import scene_motion
+    by_text = {a["text"]: a.get("t") for a in menus["anchors"]}
+    times = {e["id"]: (0.0 if e["trigger"].get("type") == "scene_start" else by_text.get(e["trigger"].get("text")))
+             for e in scene["events"]}
+    known = [a["t"] for a in menus["anchors"] if a.get("t") is not None]
+    if not known:
+        return []
+    return scene_motion.animate(scene, menus["anchors"], times, FPS, max(known) + 1.2)
 
 
 def _centre(scene: dict) -> None:
@@ -566,9 +579,12 @@ def _reveal_plan(menus: dict, names: list[str], scene_text: str, story_reveal: s
     if not pool:
         return [(names[-1], first or {"type": "scene_start"})] if len(names) else []
     count, m = len(names), min(len(names), len(pool))
+    # The pieces belong to the beat that shows the picture: spread them over its first anchors, not to the end of the scene
+    # (a count that finishes three seconds after the words that justify it reads as a late picture).
+    reach = max(m - 1, int(0.6 * (len(pool) - 1)))
     plan = []
     for e in range(m):
-        position = round(e * (len(pool) - 1) / (m - 1)) if m > 1 else 0
+        position = round(e * reach / (m - 1)) if m > 1 else 0
         state = names[min(count - 1, round((e + 1) * count / m) - 1)]
         trigger = first if (e == 0 and first) else {"type": "voice_anchor", "text": pool[position]["text"]}
         if plan and plan[-1][1] == trigger:

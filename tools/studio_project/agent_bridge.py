@@ -52,16 +52,16 @@ def _role(role: str) -> str:
     return role if role in ROLE_DEFAULTS else "creative"
 
 
-def agent_model(role: str = "creative") -> str:
+def agent_model(role: str = "creative", preferences: dict | None = None) -> str:
     role = _role(role)
     names = ["ZODIAC_STUDIO_AGENT_MODEL"] if role == "creative" else []
     for name in [f"ZODIAC_STUDIO_{role.upper()}_MODEL", *names]:
         if os.environ.get(name, "").strip():
             return os.environ[name].strip()
-    return ROLE_DEFAULTS[role][0]
+    return (preferences or {}).get('agents', {}).get(role, {}).get('model', ROLE_DEFAULTS[role][0])
 
 
-def agent_effort(role: str = "creative") -> str:
+def agent_effort(role: str = "creative", preferences: dict | None = None) -> str:
     """Reasoning effort for a Studio agent turn of this role (see ROLE_DEFAULTS)."""
     role = _role(role)
     names = ["ZODIAC_STUDIO_AGENT_EFFORT"] if role == "creative" else []
@@ -69,7 +69,7 @@ def agent_effort(role: str = "creative") -> str:
         value = os.environ.get(name, "").strip().lower()
         if value in EFFORTS:
             return value
-    return ROLE_DEFAULTS[role][1]
+    return (preferences or {}).get('agents', {}).get(role, {}).get('effort', ROLE_DEFAULTS[role][1])
 
 
 class AgentManager:
@@ -164,8 +164,8 @@ class AgentManager:
             "credential_available": credential.is_file() and not credential.is_symlink(),
             "connection_status": "not_checked",
             "tools_enabled": False,
-            "model": agent_model("creative"),
-            "roles": {r: {"model": agent_model(r), "effort": agent_effort(r)} for r in ROLE_DEFAULTS},
+            "model": agent_model("creative", self.service.settings.read()['values']),
+            "roles": {r: {"model": agent_model(r, self.service.settings.read()['values']), "effort": agent_effort(r, self.service.settings.read()['values'])} for r in ROLE_DEFAULTS},
             "active": sum(t["status"] in ("STARTING", "RUNNING") for t in self._tasks.values()),
         }
 
@@ -482,7 +482,8 @@ class AgentManager:
                 "completed_at": None, "thread_id": None, "turn_id": None,
                 "preview": "", "suggestion": "", "error": None,
                 "kind": "project.inspect", "write_applied": False,
-                "role": _role(role), "model": agent_model(role),
+                "role": _role(role), "model": agent_model(role, self.service.settings.read()['values']),
+                "effort": agent_effort(role, self.service.settings.read()['values']),
                 "applied_command_id": None,
             }
             if visual_task is not None:
@@ -767,7 +768,7 @@ class AgentManager:
                         )
                     self._send(process, {"id": 3, "method": "turn/start", "params": {
                         "model": self.task(task_id).get("model", "gpt-6-luna"),
-                        "effort": agent_effort(self.task(task_id).get("role", "creative")),
+                        "effort": self.task(task_id).get("effort", agent_effort(self.task(task_id).get("role", "creative"))),
                         "threadId": thread_id, "approvalPolicy": "never",
                         "sandboxPolicy": {"type": "readOnly"},
                         **({"outputSchema": project["choice_task"]["schema"]} if "choice_task" in project else {}),
@@ -827,7 +828,7 @@ class AgentManager:
                             turn_request_id = 4
                             self._send(process, {"id": turn_request_id, "method": "turn/start", "params": {
                                 "threadId": thread_id, "model": self.task(task_id).get("model", "gpt-6-luna"),
-                                "effort": agent_effort(self.task(task_id).get("role", "creative")), "approvalPolicy": "never", "sandboxPolicy": {"type": "readOnly"},
+                                "effort": self.task(task_id).get("effort", agent_effort(self.task(task_id).get("role", "creative"))), "approvalPolicy": "never", "sandboxPolicy": {"type": "readOnly"},
                                 "input": [{"type": "text", "text": (agent_parts.PART_REPAIR if part is not None else "Your proposal failed the canonical validator. Correct the invalid fields and return ONLY the complete source.replace JSON. Preserve all approved story/voice anchors and use supplied catalog IDs/compatible frame bindings. Do not use tools or edit files. Validator DATA: ") + str(error)[:1500]}],
                             }})
                             continue

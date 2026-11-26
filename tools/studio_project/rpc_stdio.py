@@ -17,6 +17,7 @@ from .service import StudioProjectService
 
 _MAX_REQUEST_BYTES = 65536
 _ALLOWED = frozenset({
+    "settings.get", "settings.update", "audio.catalog", "audio.preview",
     "ideas.list", "ideas.update",
     "health", "projects.list", "projects.open", "projects.import",
     "projects.command", "events.list", "events.recent", "assets.list",
@@ -45,6 +46,18 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
     if method not in _ALLOWED:
         raise StudioError("RPC_METHOD_FORBIDDEN", "Operation is not permitted", "transport")
     p = _object(params)
+    if method == 'settings.get':
+        _exact(p)
+        return service.settings.snapshot()
+    if method == 'settings.update':
+        _exact(p, 'base_revision', 'values')
+        return service.settings.update(p['base_revision'], p['values'])
+    if method == 'audio.catalog':
+        _exact(p)
+        return service.settings.catalog()
+    if method == 'audio.preview':
+        _exact(p, 'project_id', 'build_id')
+        return service.visual.audio_preview(p['project_id'], p['build_id'])
     if method == 'video.export':
         _exact(p, 'project_id', 'base_revision')
         return service.visual.export(**p)

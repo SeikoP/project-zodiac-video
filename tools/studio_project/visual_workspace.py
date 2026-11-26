@@ -21,8 +21,10 @@ from tools.runner.process import observe_subprocesses, observe_subprocess_output
 from tools.studio.artifacts import VoiceArtifactStore, canonical_hash, file_sha256
 from .importer import _exclusive_source_lock, _trusted_dir
 from .models import StudioError
+from .settings import render_workers
 from .status import _hash, _export_matches_build
 from .visual_server import PreviewServer
+from .audio_mix import export_audio_current
 
 ROOT = Path(__file__).resolve().parents[2]
 ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,119}$")
@@ -134,7 +136,7 @@ class VisualWorkspace:
             "format": FORMAT, "project_id": handle.project_id, "source_identity": handle.imported_source_sha256,
             "revision": 0, "source_hash": canonical_hash(intent) if intent else None,
             "history": [intent] if intent else [], "history_index": 0 if intent else -1,
-            "theme": "light", "build": None, "job": None, "events": [], "commands": {},
+            "theme": self.service.settings.read()['values']['appearance']['theme'], "build": None, "job": None, "events": [], "commands": {},
         }
         if (state["format"] != FORMAT or state["source_identity"] != handle.imported_source_sha256 or
                 state["source_hash"] != (canonical_hash(intent) if intent else None)):
@@ -595,6 +597,8 @@ class VisualWorkspace:
         inputs = {'action': 'export_prepare', 'build_root': str(folder), 'manifest_sha256': file_sha256(folder / 'manifest.json'),
                   'source_sha256': state['source_hash'], 'voice_sha256': take['wav_sha256'], 'source_root': str(ROOT),
                   'audio': str(audio), 'voice_duration': take['duration_seconds']}
+        from .audio_mix import plan_mix
+        inputs['audio_plan'] = plan_mix(self.service.settings, manifest, take['duration_seconds'])
         inputs['binding'] = canonical_hash({'revision': state['revision'], 'build_id': build['id'], **inputs})
         return inputs
 
@@ -746,13 +750,15 @@ class VisualWorkspace:
         def run(command):
             with observe_subprocesses(process), observe_subprocess_output(log):
                 return run_managed_subprocess(command, cwd=output, check=True, capture_output=True, text=True)
+        from .audio_mix import render_mix
+        receipt['audio_contract'] = render_mix(output/'voice.wav', inputs['audio_plan'], output/'mix.wav', run=lambda command, **_: run(command))
         run(['node', str(cli), 'check', str(output)])
-        run(['node', str(cli), 'render', str(output), '--output', str(output / 'video-only.mp4'), '--fps', str(receipt['fps']), '--quality', 'looks', '--workers', '1', '--no-best-effort'])
-        run(['ffmpeg', '-v', 'error', '-y', '-i', str(output / 'video-only.mp4'), '-i', str(output / 'voice.wav'), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-movflags', '+faststart', str(output / 'episode.mp4')])
+        run(['node', str(cli), 'render', str(output), '--output', str(output / 'video-only.mp4'), '--fps', str(receipt['fps']), '--quality', 'looks', '--workers', str(render_workers()), '--no-best-effort'])
+        run(['ffmpeg', '-v', 'error', '-y', '-i', str(output / 'video-only.mp4'), '-i', str(output / 'mix.wav'), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-movflags', '+faststart', str(output / 'episode.mp4')])
         result = run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(output / 'episode.mp4')])
         probe = json.loads(result.stdout)
         video, audio = self._verify_export_probe(probe, receipt, inputs['voice_duration'])
-        if receipt.get('audio_contract') != {'mode': 'approved-voice-only@1', 'voice_sha256': inputs['voice_sha256'], 'music_tracks': 0, 'sfx_tracks': 0}:
+        if receipt['audio_contract']['voice_sha256'] != inputs['voice_sha256'] or receipt['audio_contract']['mix_fingerprint'] != inputs['audio_plan']['fingerprint']:
             raise _error('EXPORT_AUDIO_CONTRACT_INVALID', 'Audio mix contract changed or unsupported')
         cover_contract = receipt.get('cover_contract')
         if cover_contract != {'mode': 'first-encoded-video-frame@1'}:
@@ -799,6 +805,15 @@ class VisualWorkspace:
             return data
 
     def _resource(self, project_id, build_id, filename):
+        if filename == 'mix.wav':
+            if not re.fullmatch(r'[a-f0-9]{64}', build_id): raise _error('AUDIO_PREVIEW_INVALID', 'Invalid mix identity')
+            handle = self._handle(project_id)
+            folder = _trusted_dir(handle.workspace, handle.workspace/'.runtime/audio-mix')
+            file = folder/(build_id+'.wav')
+            metadata = self._read_json(folder/(build_id+'.json'))
+            if file.is_symlink() or file.stat().st_size > 256*1024*1024 or file_sha256(file) != metadata['mixed_sha256']:
+                raise _error('AUDIO_PREVIEW_DRIFT', 'Bản mix đã thay đổi; tải lại preview')
+            return file.read_bytes(), 'audio/wav'
         if filename == 'episode.mp4':
             return self._video_data(project_id, build_id), 'video/mp4'
         if not filename.endswith(".html"):
@@ -834,7 +849,27 @@ class VisualWorkspace:
             url = self._server.video_url(project_id, receipt['id'])
         handle = self._handle(project_id)
         return {**receipt, 'url': url, 'file_path': str(handle.workspace / receipt['path']),
-                'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt), 'not_an_approval': True}
+                'stale': receipt['revision'] != state['revision'] or state['stale_preview'] or not _export_matches_build(handle.workspace, state, receipt) or
+                    not export_audio_current(self.service.settings, handle.workspace, receipt), 'not_an_approval': True}
+
+    def audio_preview(self, project_id, build_id):
+        from .audio_mix import render_mix
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, 'visual-state'), _exclusive_source_lock(handle.workspace, 'voice-state'):
+            state, intent = self._read(handle)
+            if (state.get('build') or {}).get('id') != build_id: raise _error('AUDIO_PREVIEW_STALE', 'Bản dựng đã đổi; mở lại preview')
+            inputs = self._export_inputs(handle, state, intent)
+            identity = canonical_hash({'voice': inputs['voice_sha256'], 'mix': inputs['audio_plan']['fingerprint']})
+            folder = _trusted_dir(handle.workspace, handle.workspace/'.runtime/audio-mix')
+            output, metadata = folder/(identity+'.wav'), folder/(identity+'.json')
+            contract = self._read_json(metadata) if metadata.exists() else None
+            if not contract or not output.exists() or file_sha256(output) != contract['mixed_sha256']:
+                contract = render_mix(Path(inputs['audio']), inputs['audio_plan'], output)
+                VoiceArtifactStore._atomic_write(metadata, contract)
+        with self._guard:
+            if self._server is None: self._server = PreviewServer(self._resource)
+            url = f'{self._server.origin}/{self._server.token}/{project_id}/{identity}/mix.wav'
+        return {'url': url, 'fingerprint': identity, 'audio_contract': contract}
 
     def preview(self, project_id, scene_id, build_id=None):
         handle = self._handle(project_id)

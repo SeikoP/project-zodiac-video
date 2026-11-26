@@ -198,7 +198,7 @@ def main():
             root = Path("\\\\?\\UNC\\" + resolved[2:] if resolved.startswith("\\\\") else "\\\\?\\" + resolved)
         scene_dir = root/".runtime/tts-scenes"
         scene_dir.mkdir(parents=True, exist_ok=True)
-        production = {"video": {"fps": 30}, "scenes": []}
+        production = {"video": {"fps": 24}, "scenes": []}
         hashes = {}
         for unit in manifest["units"]:
             target = scene_dir/(unit["id"]+".wav")

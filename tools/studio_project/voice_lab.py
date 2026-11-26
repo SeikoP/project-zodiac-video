@@ -299,7 +299,7 @@ class VoiceLab:
         if not path.exists():
             return {"format": FORMAT, "project_id": handle.project_id, "source_sha256": handle.imported_source_sha256,
                     "narration_sha256": hashlib.sha256(raw).hexdigest(), "revision": 0, "units": plan,
-                    "voice": preferred_voice(), "job": None, "assembly": None, "timing": None, "playbacks": {}}
+                    "voice": self.service.settings.read()['values']['voice']['default'] or preferred_voice(), "job": None, "assembly": None, "timing": None, "playbacks": {}}
         if path.is_symlink():
             raise StudioError("VOICE_STATE_INVALID", "Symlink voice state rejected", "voice")
         try:
