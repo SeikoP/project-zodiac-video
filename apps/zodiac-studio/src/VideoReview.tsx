@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { backend, type VideoExport } from "./backend";
 import { statusFor, type IdeaBoard } from "./idea-board";
 
-export default function VideoReview({ initialConceptId, output = null, active = true }: { initialConceptId: string; output?: VideoExport | null; active?: boolean }) {
+export default function VideoReview({ initialConceptId, output = null, active = true, lockedSign = null }: { initialConceptId: string; output?: VideoExport | null; active?: boolean; lockedSign?: string | null }) {
   const [board, setBoard] = useState<IdeaBoard | null>(null);
   const [conceptId, setConceptId] = useState(initialConceptId);
-  const [sign, setSign] = useState("");
+  const [sign, setSign] = useState(lockedSign ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [ready, setReady] = useState(false);
@@ -17,6 +17,7 @@ export default function VideoReview({ initialConceptId, output = null, active = 
   const playerSource = url || output?.url || "";
   useEffect(() => { if (!active) player.current?.pause(); }, [active]);
   useEffect(() => { setConceptId(initialConceptId); }, [initialConceptId]);
+  useEffect(() => { if (lockedSign) setSign(lockedSign); }, [lockedSign]);
   useEffect(() => { setReady(false); }, [playerSource]);
   useEffect(() => {
     let active = true;
@@ -34,6 +35,8 @@ export default function VideoReview({ initialConceptId, output = null, active = 
     return () => URL.revokeObjectURL(next);
   }, [file]);
   const concept = board?.groups.flatMap(g => g.concepts).find(c => c.id === conceptId);
+  // An episode already knows its concept and sign: the export step shows them instead of asking again.
+  const locked = !!(concept && lockedSign);
   const approved = !!(board && concept && sign && statusFor(board, concept.id, sign) === "mp4_approved");
   async function approve(checked: boolean) {
     if (!ready || !concept || !sign || (!file && output?.stale)) return;
@@ -59,12 +62,13 @@ export default function VideoReview({ initialConceptId, output = null, active = 
       }}/></label></header>
     {file && output && <button className="outline-btn" onClick={() => { setFile(null); setUrl(""); setError(""); setMessage(""); }}>Dùng MP4 của episode</button>}
     {error && <div role="alert" className="inline-alert error">{error}</div>}
-    <div className="review-assignment">
+    {locked ? <div className="review-assignment locked"><span>Concept: <strong>{concept!.title}</strong></span><span>Cung: <strong>{sign}</strong></span></div>
+    : <div className="review-assignment">
       <label>Concept<select aria-label="Concept của MP4" value={concept?.id ?? ""} disabled={saving || !board} onChange={e => { setConceptId(e.target.value); setMessage(""); }}>
         <option value="">Chọn concept của video…</option>{board?.groups.map(g => <optgroup key={g.id} label={g.title}>{g.concepts.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</optgroup>)}</select></label>
       <label>Cung<select aria-label="Cung của MP4" value={sign} disabled={saving || !board} onChange={e => { setSign(e.target.value); setMessage(""); }}>
         <option value="">Chọn cung…</option>{board?.signs.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-    </div>
+    </div>}
     <div className="review-stage">{playerSource ? <video ref={player} key={playerSource} aria-label="MP4 cuối" src={playerSource} controls playsInline preload="metadata"
       onLoadedMetadata={e => {
         const video = e.currentTarget;
@@ -76,6 +80,6 @@ export default function VideoReview({ initialConceptId, output = null, active = 
     <label className="review-approval"><input type="checkbox" aria-label="MP4 đã được tôi xem và duyệt" checked={approved}
       disabled={!ready || !concept || !sign || saving || (!file && !!output?.stale)} onChange={e => void approve(e.target.checked)}/>
       <span>Cung này đã có MP4 được tôi xem và duyệt{sign ? `: ${sign}` : ""}.</span></label>
-    <div className="review-message" role="status">{message || (file ? file.name : output ? "MP4 của episode đang chọn. Chọn đúng concept và cung để duyệt." : "Chọn đúng concept và cung trước khi đánh dấu duyệt.")}</div>
+    <div className="review-message" role="status">{message || (file ? file.name : output ? "MP4 của episode đang chọn. Duyệt đúng concept và cung của episode này." : "Chọn đúng concept và cung trước khi đánh dấu duyệt.")}</div>
   </section>;
 }

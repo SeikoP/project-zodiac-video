@@ -1,20 +1,21 @@
-import { Activity, ArrowRight, Bot, Home, Layers3, Lightbulb, type LucideIcon } from "lucide-react";
+import { Activity, ArrowRight, Bot, Home, Layers3, Lightbulb, Settings, type LucideIcon } from "lucide-react";
 import type { Project } from "./backend";
 
-export type View = "overview" | "progress" | "assets" | "activity" | "agent" | "editor" | "voice" | "ideas" | "review";
-export type Group = "ideas" | "overview" | "assets";
+export type View = "overview" | "progress" | "assets" | "activity" | "agent" | "editor" | "voice" | "ideas" | "review" | "settings";
+export type Group = "ideas" | "overview" | "assets" | "settings";
 
 export const SECTIONS: { label: string; view: Group; icon: LucideIcon }[] = [
   { label: "Kế hoạch", view: "ideas", icon: Lightbulb },
   { label: "Episode", view: "overview", icon: Home },
   { label: "Tài nguyên", view: "assets", icon: Layers3 },
+  { label: "Cài đặt", view: "settings", icon: Settings },
 ];
 export const EPISODE_TABS: [View, string][] = [
   ["editor", "Quy trình"], ["overview", "Danh sách episode"],
 ];
 
 export function groupFor(view: View): Group {
-  return view === "ideas" || view === "progress" ? "ideas" : view === "assets" ? "assets" : "overview";
+  return view === "ideas" || view === "progress" ? "ideas" : view === "assets" ? "assets" : view === "settings" ? "settings" : "overview";
 }
 
 export function nextEpisodeStep(project: Project | null, buildReady: boolean): [View, string] {
@@ -49,7 +50,7 @@ export function WorkflowBar({ view, activeEpisodeView, projects, selectedId, onN
 }) {
   const group = groupFor(view);
   const tabs: [View, string][] = group === "ideas" ? [["ideas", "Concept & tiến độ"]]
-    : group === "overview" ? [] : [["assets", "Kho tài nguyên"]];
+    : group === "overview" ? [] : group === "settings" ? [["settings", "Cài đặt chung"]] : [["assets", "Kho tài nguyên"]];
   return <div className="workflow-bar">
     <nav className="workspace-tabs workflow-tabs" aria-label="Các bước làm việc">
       {tabs.length > 1 && tabs.map(([id, label]) => <button key={id} aria-pressed={(id === "overview" || id === "voice" || id === "editor" || id === "review")

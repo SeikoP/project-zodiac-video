@@ -6,7 +6,7 @@ import { PagedText } from "./Paged";
 
 const STATE_LABEL: Record<SignState, string> = { not_started: "Chưa làm", in_progress: "Đang làm", mp4_approved: "MP4 đã duyệt" };
 
-const STEPS = ["Chọn concept", "Chọn cung", "Copy prompt, dán vào ChatGPT", "Nhập ZIP đã duyệt ở tab Episode"];
+const STEPS = ["Chọn concept", "Chọn cung", "Copy prompt tổng (hoặc theo cung), dán vào ChatGPT", "Nhập ZIP đã duyệt ở tab Episode"];
 
 /**
  * One screen for planning: concepts on the left with progress, the 12 signs of the chosen concept on the right.
@@ -47,16 +47,18 @@ export default function Ideas({ projects, selectedProjectId, onOpenProject, onRe
   const q = query.trim().toLocaleLowerCase("vi");
   const visible = all.filter((c) => !q || (c.title + " " + c.direction).toLocaleLowerCase("vi").includes(q));
 
-  async function copy(sign: string) {
+  async function copy(sign?: string) {
     if (!board || !concept) return;
-    const text = buildIdeaPrompt(board, concept, sign);
-    if (!text) { setNotice({ text: `${sign} đã có MP4 duyệt cho concept này. Chọn cung khác.`, error: false }); return; }
+    const episodeSigns = board.signs.filter((s) => byKey.has(`${concept.id}|${s}`));
+    const text = buildIdeaPrompt(board, concept, sign, episodeSigns);
+    const label = sign ?? "concept này (agent tự chọn cung)";
+    if (!text) { setNotice({ text: sign ? `${sign} đã có MP4 duyệt cho concept này. Chọn cung khác.` : "Cả 12 cung của concept này đã có MP4 duyệt.", error: false }); return; }
     setBusy(true); setPromptFor(null);
     try {
       await navigator.clipboard.writeText(text);
-      setNotice({ text: `Đã copy prompt cho ${sign}. Mở ChatGPT, chọn @Zodiac-Video-Web, dán và gửi. Khi có ZIP đã duyệt, nhập ở tab Episode.`, error: false });
+      setNotice({ text: `Đã copy prompt cho ${label}. Mở ChatGPT, chọn @Zodiac-Video-Web, dán và gửi. Khi có ZIP đã duyệt, nhập ở tab Episode.`, error: false });
     } catch {
-      setPromptFor({ sign, text });
+      setPromptFor({ sign: label, text });
       setNotice({ text: "Không copy được tự động. Chọn văn bản bên dưới và bấm Ctrl+C.", error: true });
     } finally { setBusy(false); }
   }
@@ -105,7 +107,7 @@ export default function Ideas({ projects, selectedProjectId, onOpenProject, onRe
                       : <button className="outline-btn" disabled={busy || state === "mp4_approved"} onClick={() => void copy(sign)}><Copy size={13} /> Copy prompt cung này</button>}
                   </div>);
               })}</div>
-              <div className="plan-actions"><button className="subtle-btn" onClick={() => onReview(concept.id)}>Xem & duyệt MP4 của concept này</button></div>
+              <div className="plan-actions"><button className="primary-btn" disabled={busy} onClick={() => void copy()}><Copy size={13} /> Copy prompt tổng (agent tự chọn cung)</button> <button className="subtle-btn" onClick={() => onReview(concept.id)}>Xem & duyệt MP4 của concept này</button></div>
               {promptFor && <div className="idea-prompt"><strong>Prompt cho {promptFor.sign}</strong><PagedText key={promptFor.sign} text={promptFor.text} label="Prompt cho agent" /></div>}
             </section>)}
         </div>)}

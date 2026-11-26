@@ -191,6 +191,11 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     void backend.voiceOpen(projectId).then(async voice => {
       if(live)setVoiceInfo(voice);
       if (!voice.assembly || voice.assembly.valid===false || (state.build && voice.assembly.wav_sha256 !== state.build.voice_sha256)) { if (live) setAudioUrl(""); return; }
+      if (state.build?.id && !state.stale_preview) {
+        const mix = await backend.audioPreview(projectId, state.build.id);
+        if (live) setAudioUrl(mix.url);
+        return;
+      }
       local = URL.createObjectURL(await backend.voiceAudio(projectId, "episode", voice.assembly.take_id));
       if (live) setAudioUrl(local); else URL.revokeObjectURL(local);
     }).catch(failure => { if (live) report(failure); });

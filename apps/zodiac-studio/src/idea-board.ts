@@ -22,10 +22,10 @@ export function conceptById(board: IdeaBoard | null, id: string | null | undefin
   return undefined;
 }
 
-export function buildIdeaPrompt(board: IdeaBoard, concept: IdeaConcept, chosenSign?: string): string | null {
+export function buildIdeaPrompt(board: IdeaBoard, concept: IdeaConcept, chosenSign?: string, episodeSigns: string[] = []): string | null {
   const completed = board.signs.filter(sign => statusFor(board, concept.id, sign) === "mp4_approved");
-  const ongoing = board.signs.filter(sign => statusFor(board, concept.id, sign) === "in_progress");
-  const untouched = board.signs.filter(sign => statusFor(board, concept.id, sign) === "not_started");
+  const ongoing = board.signs.filter(sign => !completed.includes(sign) && (statusFor(board, concept.id, sign) === "in_progress" || episodeSigns.includes(sign)));
+  const untouched = board.signs.filter(sign => !completed.includes(sign) && !ongoing.includes(sign));
   if (completed.length === board.signs.length) return null;
   if (chosenSign && completed.includes(chosenSign)) return null;
   return [
@@ -37,7 +37,7 @@ export function buildIdeaPrompt(board: IdeaBoard, concept: IdeaConcept, chosenSi
     `Ý tưởng triển khai: ${concept.direction}`, "",
     `MP4 đã duyệt: ${completed.join(", ") || "Chưa có"}.`,
     `Đang làm: ${ongoing.join(", ") || "Chưa có"}.`,
-    chosenSign ? `Cung được chọn: ${chosenSign} (đã chốt, không đổi cung).` : `Cung được chọn: ${(untouched.length ? untouched : ongoing).join(", ")}`,
+    chosenSign ? `Cung được chọn: ${chosenSign} (đã chốt, không đổi cung).` : `Cung được chọn: ${(untouched.length ? untouched : ongoing).join(", ")} (agent tự chọn 1 cung hợp nhất)`,
     chosenSign ? "Viết tập này cho đúng cung đã chốt; giải thích ngắn vì sao concept hợp với cung đó và ghi rõ tên cung ngay đầu kết quả." : "Tự chọn đúng 1 cung trong danh sách được chọn, giải thích ngắn vì sao concept hợp với cung đó và ghi rõ tên cung ngay đầu kết quả.",
     untouched.length ? "Ưu tiên tập mới; không chọn lại cung đã có MP4 duyệt hoặc đang làm."
       : "Các cung còn lại đều đang làm: hỏi nguồn hiện có để tiếp tục phần còn thiếu, tránh tạo lại tập từ đầu.",

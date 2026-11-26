@@ -71,3 +71,7 @@
 .voice-steps li[data-state=done] { border-color:#5fbf8a; color:#a9e8c0; }
 .voice-steps li[data-state=done]>span { background:#5fbf8a; color:#0d2217; border-color:#5fbf8a; }
 .voice-next-hint { margin:0 0 8px; padding:8px 12px; border-left:4px solid #e0a84a; background:#2a2316; font-size:13px; }
+.voice-workspace.voice-workspace .voice-sentences { margin-top: 10px; }
+.voice-workspace.voice-workspace .voice-sentence { padding: 8px 0; border-top: 1px solid #2a2d3a; display: grid; gap: 6px; }
+.voice-workspace.voice-workspace .voice-sentence p { margin: 0; overflow-wrap: anywhere; font-size: 12px; }
+.voice-workspace.voice-workspace .voice-sentence .voice-pause { align-items: end; }

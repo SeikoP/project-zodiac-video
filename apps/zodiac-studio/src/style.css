@@ -49,7 +49,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .window-controls button:hover { background: #303441; color: #fff; }
 .window-controls .window-close:hover { background: #c42b36; color: #fff; }
 .window-controls button:focus-visible { outline-offset: -3px; }
-.top-actions { display: flex; gap: 17px; align-items: center; }
+.top-actions { display: flex; gap: 17px; align-items: center; margin-left: auto; }
 .titlebar-workflow { height:35px; min-width:0; border-top:1px solid #242733; }
 .workflow-bar { height:100%; display:flex; align-items:center; gap:12px; min-width:0; padding:0 12px; }
 .connection { display: inline-flex; align-items: center; gap: 8px; color: #89909a; font-size: 11px; }
@@ -782,3 +782,12 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .more-title { font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#9baac3; margin:12px 0 6px; }
 .side-scenes .stills-strip { grid-template-columns:repeat(auto-fill,56px); }
 .side-scenes .still-tile iframe { transform:scale(.0519); }
+
+/* Export step: publish copy + locked concept/sign (flat, divider-based) */
+.review-assignment.locked { display: flex; gap: 24px; padding: 8px 0; }
+.publish-copy { border-top: 1px solid var(--line, #2a2f3a); padding-top: 8px; display: grid; gap: 6px; }
+.publish-copy-head { display: flex; align-items: center; gap: 12px; }
+.publish-copy-head .subtle-btn { margin-left: auto; }
+.publish-row { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
+.publish-row span { overflow-wrap: anywhere; font-size: 13px; }
+.publish-row .subtle-btn { flex: none; }

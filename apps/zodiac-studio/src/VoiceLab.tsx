@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Headphones, LoaderCircle, Lock, Mic2, RefreshCcw, Waves } from "lucide-react";
-import { backend, type Project, type VoiceState, type VoiceTake } from "./backend";
+import { backend, type Project, type SpeechUnit, type VoiceScene, type VoiceState, type VoiceTake } from "./backend";
 import { approvalNoteText, listenHintText } from "./voice-approval";
 
-import { Paged, PagedText } from "./Paged";
+import { Paged } from "./Paged";
 import "./voice-layout.css";
 
 /** The backend reports job progress in English; show plain Vietnamese and keep the raw status code for scripts. */
@@ -27,6 +27,7 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
   const [playback, setPlayback] = useState("");
   const [ended, setEnded] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const free = unitId.startsWith("scene:"); // a scene can be accepted at will; sentences and the whole episode need the full listen
   useEffect(() => {
     let live = true, localUrl = "";
     void backend.voiceAudio(projectId, unitId, take.take_id).then(blob => {
@@ -42,7 +43,7 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
   }
   async function confirm() {
     setConfirming(true);
-    try { onChange(await backend.voiceConfirm(projectId, revision, unitId, take.take_id, playback)); }
+    try { onChange(await backend.voiceConfirm(projectId, revision, unitId, take.take_id, ended ? playback : "")); }
     catch (error) { onError(error); }
     finally { setConfirming(false); }
   }
@@ -58,10 +59,28 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
       onRateChange={() => { setEnded(false); setPlayback(""); }}/>
       : <p className="voice-muted"><LoaderCircle size={15} className="spin"/> Đang nạp audio…</p>}
     {take.warnings.length > 0 && <p className="voice-warning">Cần nghe kiểm tra: {take.warnings.join(" · ")}</p>}
-    <button className="outline-btn" disabled={listened || !ended || !playback || confirming} onClick={() => void confirm()}>
-      <CheckCircle2 size={15}/>{listened ? "Đã nghe và chấp nhận" : confirming ? "Đang lưu…" : "Tôi đã nghe hết và chấp nhận"}
+    <button className="outline-btn" disabled={listened || (!free && (!ended || !playback)) || confirming} onClick={() => void confirm()}>
+      <CheckCircle2 size={15}/>{listened ? (free ? "Đã chấp nhận" : "Đã nghe và chấp nhận") : confirming ? "Đang lưu…" : free ? "Chấp nhận cảnh này" : "Tôi đã nghe hết và chấp nhận"}
     </button>
-    {!listened && <small>Nghe hết bằng nút phát ở trên rồi xác nhận. Bỏ qua đoạn hoặc đổi tốc độ sẽ cần nghe lại.</small>}
+    {!listened && <small>{free ? "Nghe hay không là tuỳ bạn; bấm chấp nhận khi thấy ổn. Đổi take hoặc khoảng nghỉ sau này sẽ cần chấp nhận lại." : "Nghe hết bằng nút phát ở trên rồi xác nhận. Bỏ qua đoạn hoặc đổi tốc độ sẽ cần nghe lại."}</small>}
+  </div>;
+}
+
+function SentenceRow({ unit, disabled, onRetake, onSelect }: {
+  unit: SpeechUnit; disabled: boolean; onRetake: () => void; onSelect: (takeId: string, gapMs: number) => void;
+}) {
+  const [gap, setGap] = useState(unit.gap_after_ms);
+  useEffect(() => setGap(unit.gap_after_ms), [unit.id, unit.gap_after_ms]);
+  const selected = unit.takes.find(take => take.take_id === unit.selected_take);
+  return <div className="voice-sentence">
+    <p title={unit.text}>{unit.text.trim()}</p>
+    {selected ? <div className="voice-pause">
+      <label>Take<select value={selected.take_id} disabled={disabled} onChange={event => onSelect(event.target.value, unit.gap_after_ms)}>
+        {unit.takes.map((take, i) => <option value={take.take_id} key={take.take_id} disabled={take.valid === false}>Take {i+1} · {take.valid === false ? "cần tạo lại" : take.duration_seconds.toFixed(2)+"s"}</option>)}</select></label>
+      <label>Nghỉ sau (ms)<input type="number" min={0} max={1000} step={50} value={gap} disabled={disabled} onChange={event => setGap(Number(event.target.value))}/></label>
+      <button className="outline-btn" disabled={disabled || gap === unit.gap_after_ms} onClick={() => onSelect(selected.take_id, gap)}>Lưu nghỉ</button>
+      <button className="subtle-btn" disabled={disabled} onClick={onRetake}><RefreshCcw size={14}/> Tạo take khác</button>
+    </div> : <small className="voice-muted">Chưa có audio.</small>}
   </div>;
 }
 
@@ -77,7 +96,6 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
   const [speaker, setSpeaker] = useState("");
   const [intent, setIntent] = useState("NORMAL");
   const [pronunciation, setPronunciation] = useState("{}");
-  const [gap, setGap] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const initialized = useRef(false);
@@ -117,7 +135,6 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
     return () => { live = false; window.clearInterval(timer); };
   }, [projectId, active, report]);
   const unit = state?.units.find(item => item.id === activeId) ?? state?.units[0];
-  const selected = unit?.takes.find(take => take.take_id === unit.selected_take);
   const running = state?.job?.status === "RUNNING";
   const count = state?.units.filter(item => item.selected_take).length ?? 0;
   const approved = state?.status === "USER_LISTENED_APPROVED";
@@ -125,7 +142,11 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
   // 1 tạo audio, 2 ghép, 3 đo timing, 4 nghe & duyệt (bước của người). Máy làm 1-3 bằng một nút duy nhất.
   const step = !state ? 1 : count < total ? 1 : !state.assembly ? 2 : !state.timing ? 3 : 4;
   const NEXT_LABEL = ["", "Tạo audio còn thiếu", "Ghép audio đã chọn", "Đo timing bằng ASR"];
-  useEffect(() => { if (unit) setGap(unit.gap_after_ms); }, [unit?.id, unit?.gap_after_ms]);
+  // An older backend sends no scenes: fall back to one group per sentence so the list still works.
+  const scenes: VoiceScene[] = state?.scenes ?? state?.units.map(item => ({ id: item.id, title: item.text, unit_ids: [item.id], take: null })) ?? [];
+  const scene = scenes.find(item => unit && item.unit_ids.includes(unit.id)) ?? scenes[0];
+  const sceneUnits = scene ? state?.units.filter(item => scene.unit_ids.includes(item.id)) ?? [] : [];
+  const sceneHeard = (item: VoiceScene) => item.unit_ids.length > 0 && item.unit_ids.every(id => state?.units.find(u => u.id === id)?.listened);
   async function action(run: () => Promise<VoiceState>) {
     setBusy(true); setError("");
     try { changed(await run()); }
@@ -158,10 +179,10 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
       Bạn đã nghe mọi đoạn hiện tại. Chỗ nối giữa các đoạn chưa được nghe liền; nếu chấp nhận, bấm xác nhận.{" "}
       <button className="primary-btn" onClick={() => void backend.voiceConfirm(project.project_id, state.revision, "episode", "", "").then(changed).catch(report)}>Xác nhận từ các đoạn đã nghe</button></p>}
     {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)} {listenHintText(state)}</p>}
-    {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Việc của bạn: mở tab “Nghe toàn bài & timing”, nghe hết một lần rồi bấm xác nhận. Nghe từng đoạn là tuỳ chọn, không bắt buộc.</p>}
+    {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Việc của bạn: nghe lần lượt từng cảnh ở tab “Theo cảnh” (mỗi cảnh một lần) hoặc từng đoạn, rồi bấm xác nhận. Không cần nghe lại cả bài.</p>}
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
 
-    <div className="workspace-tabs">{[["takes", "Từng đoạn"], ["episode", "Nghe toàn bài & timing"], ["settings", "Thiết lập giọng"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
+    <div className="workspace-tabs">{[["takes", "Theo cảnh"], ["episode", "Nghe toàn bài & timing"], ["settings", "Thiết lập giọng"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
     <section className="panel voice-settings">
       <label>Giọng VieNeu<select value={speaker} disabled={!state || running || busy} onChange={event => setSpeaker(event.target.value)}>
         {state?.voices.map(voice => <option key={voice} value={voice}>{voice}</option>)}
@@ -183,30 +204,23 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
         {state.units.map((item, index) => <option key={item.id} value={item.id}>{index + 1}. {item.text}</option>)}
       </select></label>}
       <div className="voice-layout"><section className="panel voice-units">
-        <div className="panel-heading"><span className="panel-title"><Lock size={15}/> Bản kể đã khóa</span><span className="panel-meta">{count}/{state.units.length} đoạn có audio</span></div>
-        <div className="voice-unit-list" role="region" aria-label="Danh sách đoạn đọc">{state.units.map((item, index) => <button key={item.id} className={"voice-unit " + (unit?.id === item.id ? "active" : "")}
-          onClick={() => setActiveId(item.id)} aria-pressed={unit?.id === item.id}>
-          <span className="voice-unit-number">{String(index+1).padStart(2, "0")}</span><span className="voice-unit-text" title={item.text}>{item.text}</span>
-          <span className="voice-unit-state">{item.listened ? "Đã nghe" : item.selected_take ? "Chờ nghe" : "Chưa tạo"}</span>
+        <div className="panel-heading"><span className="panel-title"><Lock size={15}/> Bản kể đã khóa</span><span className="panel-meta">{scenes.filter(sceneHeard).length}/{scenes.length} cảnh đã nghe · {count}/{state.units.length} câu có audio</span></div>
+        <div className="voice-unit-list" role="region" aria-label="Danh sách cảnh">{scenes.map((item, index) => <button key={item.id} className={"voice-unit " + (scene?.id === item.id ? "active" : "")}
+          onClick={() => setActiveId(item.unit_ids[0])} aria-pressed={scene?.id === item.id}>
+          <span className="voice-unit-number">{String(index+1).padStart(2, "0")}</span><span className="voice-unit-text" title={item.title}>{item.title}</span>
+          <span className="voice-unit-state">{sceneHeard(item) ? "Đã nghe" : item.take ? "Chờ nghe" : "Chưa đủ audio"} · {item.unit_ids.length} câu</span>
         </button>)}</div>
       </section><section className="panel voice-takes">
-        <div className="panel-heading"><span className="panel-title"><Waves size={16}/> Take đang chọn</span>
-          <button className="subtle-btn" disabled={running || busy || !unit} onClick={() => unit && generate([unit.id])}><RefreshCcw size={14}/> Tạo take khác</button></div>
-        <div className="voice-take-body">{unit && <>
-          <PagedText key={unit.id} size={300} maxLines={3} label="Bản kể đoạn" text={unit.text}/>
-          {selected ? <>
-            <label>Đổi take (giữ nguyên các take cũ)<select value={selected.take_id} disabled={running || busy}
-              onChange={event => void action(() => backend.voiceSelect(project.project_id, state.revision, unit.id, event.target.value, unit.gap_after_ms))}>
-              {unit.takes.map((take, i) => <option value={take.take_id} key={take.take_id} disabled={take.valid === false}>Take {i+1} · {take.valid === false ? "Audio cần tạo lại" : take.duration_seconds.toFixed(2)+"s"} · {take.details?.voice || "Bản tương thích"}</option>)}
-            </select></label>
-            {selected.valid === false ? <p className="voice-warning">{selected.error} · Tạo take khác để phục hồi.</p> :
-              active && tab === "takes" && <WavePlayer key={unit.id+selected.take_id} projectId={project.project_id} unitId={unit.id} take={selected}
-                revision={state.revision} listened={!!unit.listened} onChange={changed} onError={report}/>}
-            <div className="voice-pause"><label>Khoảng nghỉ sau đoạn (ms)<input type="number" min={0} max={1000} step={50}
-              value={gap} disabled={running || busy} onChange={event => setGap(Number(event.target.value))}/></label>
-              <button className="outline-btn" disabled={running || busy || gap === unit.gap_after_ms}
-                onClick={() => void action(() => backend.voiceSelect(project.project_id, state.revision, unit.id, selected.take_id, gap))}>Lưu khoảng nghỉ</button></div>
-          </> : <div className="voice-empty"><Mic2 size={30}/><p>Tạo audio để nghe đoạn này. Không có audio mẫu giả lập.</p></div>}
+        <div className="panel-heading"><span className="panel-title"><Waves size={16}/> {scene?.title ?? "Cảnh"}</span></div>
+        <div className="voice-take-body">{scene && <>
+          {scene.take ? <WavePlayer key={scene.id + scene.take.take_id} projectId={project.project_id} unitId={"scene:" + scene.id} take={scene.take}
+              revision={state.revision} listened={sceneHeard(scene)} onChange={changed} onError={report}/>
+            : <div className="voice-empty"><Mic2 size={30}/><p>Cảnh này còn câu chưa có audio. Bấm “{NEXT_LABEL[1]}” ở trên.</p></div>}
+          <details className="voice-sentences"><summary>Chi tiết từng câu ({sceneUnits.length}) · đổi take, tạo lại, chỉnh khoảng nghỉ</summary>
+            {sceneUnits.map(item => <SentenceRow key={item.id} unit={item} disabled={running || busy}
+              onRetake={() => generate([item.id])}
+              onSelect={(takeId, gapMs) => void action(() => backend.voiceSelect(project.project_id, state.revision, item.id, takeId, gapMs))}/>)}
+          </details>
         </>}</div>
       </section></div>
       <section className="panel voice-episode"><div className="panel-heading"><span className="panel-title"><Headphones size={16}/> Nghe toàn bài & kiểm tra nối đoạn</span>

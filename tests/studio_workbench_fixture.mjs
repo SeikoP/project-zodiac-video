@@ -56,6 +56,7 @@ export async function installWorkbenchFixture(page) {
     window.voicePeak=Math.max(window.voicePeak||0,window.voicePending);
     return new Promise(resolve=>setTimeout(()=>{window.voicePending--;resolve(voice);},4000));
    }
+   if(method==='audio.preview') return {url:'data:audio/wav;base64,'+window.layoutFixture('voice.audio').data,fingerprint:'mix',audio_contract:{music_tracks:1,sfx_tracks:1,sfx_cues:11}};
    if(method==='voice.audio') {
     if(!window.voiceWav) {
      const n=8000*48, bytes=new Uint8Array(44+n*2),view=new DataView(bytes.buffer);

@@ -13,7 +13,7 @@ use tauri::Manager;
 fn retry_safe(method: &str) -> bool {
     matches!(method, "health" | "projects.list" | "projects.open" | "events.list" |
         "events.recent" | "assets.list" | "agent.health" | "agent.task" |
-        "agent.tasks" | "voice.audio")
+        "agent.tasks" | "voice.audio" | "settings.get" | "audio.catalog")
 }
 
 #[cfg(test)]
@@ -117,6 +117,7 @@ impl Backend {
 
     fn request(&mut self, method: &str, params: Value) -> Result<Value, String> {
         const METHODS: &[&str] = &[
+            "settings.get", "settings.update", "audio.catalog", "audio.preview",
             "ideas.list",
             "ideas.update",
             "health",

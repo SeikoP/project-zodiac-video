@@ -48,7 +48,7 @@ try {
  await page.waitForSelector('.episode-item');
  for(const [width,height] of [[1366,768],[1060,650],[1093,614]]) {
   await page.setViewportSize({width,height});
-  assert.equal(await page.locator('.primary-nav button').count(),3);
+  assert.equal(await page.locator('.primary-nav button').count(),4);
   for(const view of ['Danh sách','Kho tài nguyên','Nhật ký','Agent','Giọng đọc','Hình ảnh']) {
    if(view==='Kho tài nguyên') await page.locator('.primary-nav').getByRole('button',{name:'Tài nguyên',exact:true}).click();
    else if(view==='Giọng đọc'||view==='Hình ảnh') {

@@ -21,17 +21,16 @@ export default function ReviewInspector({ project, node, active, blockedBy = [],
 
   useEffect(() => {
     if (!watching || !active || !project || !buildId) return;
-    let live = true, url = "";
+    let live = true;
     setMedia(null);
     void Promise.all([backend.visualOpen(project.project_id), backend.voiceOpen(project.project_id)]).then(async ([visual, voice]) => {
       if (visual.build?.id !== buildId || visual.stale_preview) throw Error("Bản dựng đã thay đổi; mở lại phần duyệt.");
       if (!voice.assembly || voice.assembly.valid === false || voice.assembly.wav_sha256 !== visual.build.voice_sha256) throw Error("Giọng đọc đã thay đổi; dựng lại video trước khi duyệt.");
-      const blob = await backend.voiceAudio(project.project_id, "episode", voice.assembly.take_id);
+      const mix = await backend.audioPreview(project.project_id, buildId);
       if (!live) return;
-      url = URL.createObjectURL(blob);
-      setMedia({ audioUrl: url, durationMs: Math.max(...visual.build.scenes.map(s => s.end_ms)) });
+      setMedia({ audioUrl: mix.url, durationMs: Math.max(...visual.build.scenes.map(s => s.end_ms)) });
     }).catch(reason => { if (live) report(reason); });
-    return () => { live = false; if (url) URL.revokeObjectURL(url); };
+    return () => { live = false; };
   }, [watching, active, project?.project_id, buildId, report]);
 
   useEffect(() => {

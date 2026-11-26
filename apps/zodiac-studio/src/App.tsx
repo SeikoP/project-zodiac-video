@@ -18,6 +18,7 @@ import { StudioNavigation, WorkflowBar, nextEpisodeStep, type View } from "./stu
 const AssetGallery = lazy(() => import("./AssetGallery"));
 const Ideas = lazy(() => import("./Ideas"));
 const EpisodeShell = lazy(() => import("./pipeline/EpisodeShell"));
+const Settings = lazy(() => import("./Settings"));
 type Alert = { message: string; error: boolean } | null;
 const FIELDS = [
   { key: "content", label: "Nội dung" }, { key: "voice", label: "Giọng đọc" },
@@ -315,6 +316,7 @@ export default function App() {
           projects={projects} selectedId={selectedId} onNavigate={setView} onChoose={chooseProject} nextStep={nextStep}/></div>
       </header>
       <main className={"content view-" + view}>
+        {view === "settings" && <Suspense fallback={<p>Đang đọc cài đặt…</p>}><Settings /></Suspense>}
         {(view === "ideas" || view === "progress") && <Suspense fallback={<p>Đang mở thư viện ý tưởng…</p>}><Ideas mode={view} projects={projects} selectedProjectId={selectedId} onOpenProject={id => { chooseProject(id); setView("editor"); }} onReview={conceptId => { setReviewConceptId(conceptId); setView("review"); }}/></Suspense>}
         {alert && <div className={"inline-alert " + (alert.error ? "error" : "success")}>
           {alert.error ? <CircleAlert size={16}/> : <CheckCircle2 size={16}/>}

@@ -70,8 +70,11 @@ export type SpeechUnit = {
   id: string; text: string; source_range: [number, number]; selected_take: string | null;
   gap_after_ms: number; listened: { kind: string } | null; takes: VoiceTake[];
 };
+/** A review group of speech units (a plan scene, or a paragraph); `take` is the scene's joined audio once every unit has one. */
+export type VoiceScene = { id: string; title: string; unit_ids: string[]; take: (VoiceTake & { take_id: string }) | null };
 export type VoiceState = {
   project_id: string; narration_sha256: string; revision: number; voice: string; voices: string[]; status: string;
+  scenes?: VoiceScene[];
   units: SpeechUnit[]; assembly: (VoiceTake & { listened: { kind: string } | null }) | null;
   timing: { words: { text: string; startMs: number; endMs: number; source_range: [number, number]; anchor_id: string }[]; duration_seconds: number } | null;
   job: { id: string; action: string; status: string; completed: number; total: number; message: string; error: string | null } | null;
@@ -109,7 +112,7 @@ export type VisualState = { project_id: string; revision: number; source_hash: s
 export type VisualPreview = { url: string; html: string; sha256: string; scene: BuiltScene; build_id: string; revision: number; candidate_only: boolean; stale: boolean };
 export type VideoExport = { id: string; revision: number; path: string; sha256: string; renderer: string;
   duration_seconds: number; bytes: number; human_review: string; approval_granted: false;
-  audio_contract?: { mode: string; voice_sha256: string; music_tracks: number; sfx_tracks: number };
+  audio_contract?: { mode: string; voice_sha256: string; music_tracks: number; sfx_tracks: number; sfx_cues?: number; mix_fingerprint?: string };
   cover_contract?: { mode: string; opening?: { sign: string; topic: string; series: string; duration_frames: number } };
   cover?: { source_frame?: number; sha256: string };
   url?: string; file_path?: string; stale?: boolean };
@@ -167,7 +170,20 @@ export async function request<T>(method: string, params: object = {}): Promise<T
   return envelope.result;
 }
 
+export type StudioPreferences = {
+  audio: { music_enabled: boolean; music_id: string; music_volume: number; sfx_enabled: boolean; sfx_id: string; sfx_volume: number; ducking: boolean };
+  libraries: { music_dir: string; sfx_dir: string };
+  agents: Record<string, { model: string; effort: string }>;
+  voice: { default: string }; appearance: { theme: string };
+};
+export type StudioSettings = { revision: number; values: StudioPreferences; voices: string[]; themes: string[];
+  effective_agents: StudioPreferences["agents"]; overrides: Record<string, { model: boolean; effort: boolean }>; system: Record<string, string | number> };
+export type AudioAsset = { id: string; kind: "music" | "sfx"; title: string; url: string };
 export const backend = {
+  settings: () => request<StudioSettings>("settings.get"),
+  saveSettings: (base_revision: number, values: StudioPreferences) => request<StudioSettings>("settings.update", { base_revision, values }),
+  audioCatalog: () => request<{ items: AudioAsset[] }>("audio.catalog"),
+  audioPreview: (project_id: string, build_id: string) => request<{ url: string; fingerprint: string; audio_contract: { music_tracks: number; sfx_tracks: number; sfx_cues: number } }>("audio.preview", { project_id, build_id }),
   pipelineGet: (project_id: string) => request<PipelineData>("pipeline.get", { project_id }),
   pipelineRun: (project_id: string, node_id: string, base_revision: number) =>
     request<PipelineData>("pipeline.run", { project_id, node_id, base_revision }),

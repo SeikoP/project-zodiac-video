@@ -7,7 +7,7 @@ export function listenHintText(state: Pick<VoiceState, "segments_needing_listen"
   const ids = state?.segments_needing_listen ?? [];
   if (!state || ids.length === 0 || ids.length >= state.units.length) return null;
   const numbers = ids.map((id) => state.units.findIndex((u) => u.id === id) + 1).filter((n) => n > 0);
-  return `Chỉ cần nghe lại đoạn ${numbers.join(", ")} ở tab “Từng đoạn”, rồi ghép audio lại.`;
+  return `Chỉ cần nghe lại đoạn ${numbers.join(", ")} ở tab “Theo cảnh”, rồi ghép audio lại.`;
 }
 
 /** "Cần nghe lại vì đã đổi khoảng nghỉ (đoạn 2)" from the backend's approval_note; null when nothing was dropped. */
