@@ -68,7 +68,7 @@ export function TransitionTab({ scene, isLast, disabled, onSet, onSetEverywhere 
   useEffect(() => setDraft(null), [scene?.id]);
   if (!scene) return <p className="voice-muted">Chọn một cảnh trên timeline.</p>;
   if (isLast) return <p className="voice-muted">Cảnh cuối không có chuyển cảnh phía sau.</p>;
-  const current: Transition = scene.transition ?? { preset: "page-turn", frames: 12 };
+  const current: Transition = scene.transition ?? { preset: "dissolve", frames: 14 };
   const spec = TRANSITION_PRESETS[current.preset];
   return (
     <div className="visual-candidates"><strong>Chuyển sang cảnh sau · {transitionLabel(scene.transition?.preset)}</strong>

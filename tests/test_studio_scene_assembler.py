@@ -484,6 +484,30 @@ class DrawnAccentTests(unittest.TestCase):
         self.assertEqual(json.loads(out.stdout), {"status": "PASS", "issues": []})
 
 
+class StoryRevealTests(unittest.TestCase):
+    def test_the_story_visual_appears_on_its_beat_not_at_the_top_of_the_scene(self):
+        menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])
+        stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none"}
+        act = {"events": []}
+        late = TEXT.split()[2:5]
+        phrase = " ".join(late)
+        self.assertIn(phrase, TEXT)
+        part = scene_assembler.assemble_scene(menus, stage, act, "s01", RANGE, TEXT, GOAL, story_visuals=CHAT, story_reveal=phrase)
+        reveal = next(e for e in part["payload"]["scene"]["events"] if e["target"] == "sv01-chat-compare")
+        self.assertEqual(reveal["trigger"], {"type": "voice_anchor", "text": phrase})
+        plain = scene_assembler.assemble_scene(menus, stage, act, "s01", RANGE, TEXT, GOAL, story_visuals=CHAT)
+        first = next(e for e in plain["payload"]["scene"]["events"] if e["target"] == "sv01-chat-compare")
+        self.assertNotEqual(first["trigger"]["text"], phrase)
+
+    def test_the_reveal_text_is_the_beat_anchor_found_inside_the_scene(self):
+        context = {"narrative_plan": {"beats": [{"id": "B1", "voice_anchor": "Cả nhóm rủ thứ Bảy đi chơi, nó bảo"}],
+                                      "story_visuals": [{"id": "SV01", "beat_ids": ["B1"]}]},
+                   "required_story_visual_ids": ["SV01"],
+                   "scene_ranges": [{"id": "s02", "text": "Cả nhóm rủ thứ Bảy đi chơi, nó bảo: để xem."}]}
+        self.assertEqual(scene_assembler.story_reveal_text(context, "s02"), "Cả nhóm rủ thứ")
+        self.assertIsNone(scene_assembler.story_reveal_text(context, "s09"))
+
+
 class LivelyMotionTests(unittest.TestCase):
     """Boring scenes were the complaint: every scene gets a camera move, the cast walks in, and acting moves are bolder."""
 

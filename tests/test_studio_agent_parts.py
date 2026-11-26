@@ -80,7 +80,7 @@ class PartsTests(unittest.TestCase):
         agent_parts.validate_scene(scene_json("s01", transition={"preset": "page-turn", "frames": 12}), task)
         with self.assertRaises(ValueError) as caught:  # an unknown preset is a real mistake: the model is told the valid ones
             agent_parts.validate_scene(scene_json("s01", transition={"preset": "spin", "frames": 12}), task)
-        self.assertIn("cut, paper-slide hoặc page-turn", str(caught.exception))
+        self.assertIn("cut, dissolve, paper-slide hoặc page-turn", str(caught.exception))
         for preset, frames in (("page-turn", 3), ("cut", 6), ("page-turn", 9999)):  # a frame count out of range is mechanical: clamped, not retried
             spec = agent_parts.TRANSITIONS["presets"][preset]
             out = json.loads(agent_parts.validate_scene(scene_json("s01", transition={"preset": preset, "frames": frames}), task))

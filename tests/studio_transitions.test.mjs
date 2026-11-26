@@ -15,8 +15,8 @@ const node=()=>({style:{}});
 
 test('registry is Studio-only with bounded frame ranges',()=>{
   assert.equal(TRANSITIONS.format,'zodiac-studio-transitions@1');
-  assert.deepEqual(Object.keys(TRANSITIONS.presets).sort(),['cut','page-turn','paper-slide']);
-  assert.deepEqual(DEFAULT_TRANSITION,{preset:'page-turn',frames:12});
+  assert.deepEqual(Object.keys(TRANSITIONS.presets).sort(),['cut','dissolve','page-turn','paper-slide']);
+  assert.deepEqual(DEFAULT_TRANSITION,{preset:'dissolve',frames:14});
 });
 
 test('resolveTransition: nothing for cut or the last scene, clamped to 40% of the shorter neighbour',()=>{
@@ -27,7 +27,7 @@ test('resolveTransition: nothing for cut or the last scene, clamped to 40% of th
   assert.equal(short.frames,8);                  // 40% of 20
   assert.equal(short.before+short.after,8);
   assert.equal(resolveTransition({preset:'page-turn',frames:12},2,90),null); // too short to carry a transition
-  assert.equal(resolveTransition(undefined,90,90).preset,'page-turn');       // default when absent
+  assert.equal(resolveTransition(undefined,90,90).preset,'dissolve');         // default when absent
 });
 
 test('validateTransition rejects unknown presets and out-of-range frames',()=>{
@@ -225,4 +225,18 @@ test('a Core-measured enter distance follows the entity when it moves; an author
   fixed.scenes[0].events.unshift({id:'fly',target:t2.id,state_before:t2.initial_state,state_after:t2.initial_state,trigger:{type:'scene_start'},motion:{preset:'enter',duration_frames:12,params:{from:'left',distance:2000}}});
   t2.states[t2.initial_state].transform.x+=300;validateIntent(fixed,narration);
   assert.equal(fixed.scenes[0].events[0].motion.params.distance,2000);
+});
+
+test('dissolve fades one scene into the next using only opacity and a small transform, and resets cleanly',()=>{
+  const out=node(),inc=node();
+  paintTransition(out,inc,'dissolve',0,'#fff');
+  assert.equal(Number(out.style.opacity),1);
+  paintTransition(out,inc,'dissolve',.5,'#fff');
+  assert.ok(Number(out.style.opacity)>0&&Number(out.style.opacity)<1&&Number(inc.style.opacity)>0&&Number(inc.style.opacity)<1);
+  assert.equal(out.style.boxShadow,undefined);          // no blurred shadow, no 3D: nothing that repaints per frame
+  assert.ok(!/perspective|rotate/.test(out.style.transform));
+  paintTransition(out,inc,'dissolve',1,'#fff');
+  assert.equal(out.style.visibility,'hidden');
+  resetTransition(out);resetTransition(inc);
+  assert.equal(out.style.opacity,'');
 });

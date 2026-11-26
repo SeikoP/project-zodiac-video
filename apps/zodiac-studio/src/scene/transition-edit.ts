@@ -1,16 +1,17 @@
 import type { VisualIntent } from "../backend";
 
-export type TransitionPreset = "cut" | "paper-slide" | "page-turn";
+export type TransitionPreset = "cut" | "dissolve" | "paper-slide" | "page-turn";
 export type Transition = { preset: TransitionPreset; frames: number };
 
 /** Mirrors tools/studio_project/transitions.json (the compiler is the authority and re-validates). */
 export const TRANSITION_PRESETS: Record<TransitionPreset, { label: string; min: number; max: number }> = {
   "cut": { label: "Cắt thẳng", min: 0, max: 0 },
+  dissolve: { label: "Mờ dần", min: 6, max: 30 },
   "paper-slide": { label: "Trượt giấy", min: 6, max: 18 },
   "page-turn": { label: "Lật trang", min: 9, max: 24 },
 };
 
-export const transitionLabel = (preset: TransitionPreset | undefined) => preset ? TRANSITION_PRESETS[preset].label : `${TRANSITION_PRESETS["page-turn"].label} (mặc định)`;
+export const transitionLabel = (preset: TransitionPreset | undefined) => preset ? TRANSITION_PRESETS[preset].label : `${TRANSITION_PRESETS.dissolve.label} (mặc định)`;
 
 const clamp = (t: Transition): Transition => {
   const spec = TRANSITION_PRESETS[t.preset];

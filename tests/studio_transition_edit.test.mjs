@@ -25,7 +25,7 @@ test('apply to every scene skips the last one (it has no boundary after it)', ()
 
 test('unknown scene is rejected and labels are Vietnamese', () => {
   assert.throws(() => withTransition(intent(), 'nope', {preset: 'cut', frames: 0}), /nope/);
-  assert.deepEqual(Object.keys(TRANSITION_PRESETS), ['cut', 'paper-slide', 'page-turn']);
+  assert.deepEqual(Object.keys(TRANSITION_PRESETS), ['cut', 'dissolve', 'paper-slide', 'page-turn']);
   assert.equal(transitionLabel('page-turn'), 'Lật trang');
-  assert.equal(transitionLabel(undefined), 'Lật trang (mặc định)');
+  assert.equal(transitionLabel(undefined), 'Mờ dần (mặc định)');
 });

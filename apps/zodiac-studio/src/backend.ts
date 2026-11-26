@@ -92,7 +92,7 @@ export type AgentHealth = {
 export type VisualTransform = { x: number; y: number; width: number; height: number; rotation?: number };
 export type VisualEntity = { id: string; kind: string; initial_state: string; visual_role?: string;
   states: Record<string, { asset: string; transform: VisualTransform; visible?: boolean; opacity?: number; layer?: number }> };
-export type VisualScene = { id: string; transition?: { preset: "cut" | "paper-slide" | "page-turn"; frames: number }; semantic_goal: string; narration_range: [number, number]; entities: VisualEntity[];
+export type VisualScene = { id: string; transition?: { preset: "cut" | "dissolve" | "paper-slide" | "page-turn"; frames: number }; semantic_goal: string; narration_range: [number, number]; entities: VisualEntity[];
   events: { id: string; target: string; state_before: string; state_after: string; trigger: { type: string; text?: string } }[] };
 export type VisualIntent = { format: string; scenes: VisualScene[]; [key: string]: unknown };
 export type BuiltScene = { id: string; start_ms: number; end_ms: number; duration_seconds: number; preview_sha256: string;

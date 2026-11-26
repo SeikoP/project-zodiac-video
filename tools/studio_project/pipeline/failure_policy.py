@@ -15,6 +15,18 @@ OWNER = frozenset({
 })
 
 
+# Findings that come from WHEN things happen, not from what is on stage: only the act (events) is chosen again for these.
+ACT_ORIGIN = frozenset({
+    "PASSIVE_STORYTELLING", "PASSIVE_ACCENT_ONLY", "STORY_FOCUS_DISCONNECTED", "STORY_ENTITY_UNLINKED", "CHARACTER_ACTION_MISSING",
+    "SCENE_EVENTS_MISSING", "EVENT_TARGET_MISSING", "EVENT_STATE_AFTER_MISSING", "EVENT_STATE_BEFORE_MISSING",
+})
+
+
+def origin(issue: dict) -> str:
+    """Which choice produced the finding: 'act' (events and timing) or 'stage' (frame, cast, props, accent), the broader one."""
+    return "act" if str((issue or {}).get("code") or "") in ACT_ORIGIN else "stage"
+
+
 def route(issue: dict) -> str:
     """'core' | 'model' | 'owner' for one finding (a dict with a `code`). Unknown quality findings go to the model."""
     code = str((issue or {}).get("code") or "")

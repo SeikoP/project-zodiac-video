@@ -20,3 +20,9 @@ Phase 2 then:
 The Story Visual sits in its own band above the actors; actors, props and accents never overlap it. In review inspect every transition and the final frame at phone size, muted, without the brief: count and reveal timing, clipping, faces, handoffs, caption space. A machine PASS checks structure and does not prove the picture communicates. Changing the story meaning or necessary wording reopens Phase 1; drawing, geometry and treatment stay Phase 2.
 
 Story Visual art in Studio is **Core-rendered** from a small structured spec (templates such as `story_text`, `chat_compare`); the agent never emits raw SVG, HTML, scripts or URLs.
+
+## What the Ma Kết package did with it (use the same thinking)
+Ma Kết's three Story Visuals were not pictures placed in a scene; each one **was the scene's argument and it changed over time**: a workload board whose items moved from one side to the other until the partner's column read 0; three numbered offer/refuse frames that ended on a withdrawn hand; a tag on the very bag being handed over that changed from ĐỂ TÔI! to ĐƯỢC XÁCH!. In each, the actors changed state on the same voice anchors as the picture (weary → concerned while the offers were refused; accept while the tag changed), and a prop took part (the bag slipped, was retained, was accepted). So in Studio:
+- Reveal the Story Visual on the beat it explains, not at the top of the scene (Core uses the beat's own words).
+- Put a character acting event on the SAME anchor as the reveal and one more where the story turns, so the actors react to what the picture shows.
+- A prop belongs in the scene only if the narration handles it and one of your events acts on it; otherwise leave it out. Everything on screen either reveals, reacts to, or is acted on by the story beat.

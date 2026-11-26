@@ -22,9 +22,10 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from .models import StudioError
-from .pipeline.failure_policy import route
+from .pipeline.failure_policy import origin, route
 
-MAX_RECHOICES = 2
+MAX_RECHOICES = 5      # a scene is chosen again, from the choice that caused the finding, until its checks are clean (then a card)
+EPISODE_ROUNDS = 3     # after the scenes are merged, findings that name a scene send that scene back through the loop
 # Findings the episode-level proposal completes itself (story-visual briefs and coverage are filled in by `agent_authoring.proposal`),
 # so a single scene checked alone must not spend the model's re-choices on them.
 COMPLETED_LATER = frozenset({"NARRATIVE_BRIEF_REQUIRED", "STORY_VISUAL_ASSET_ROLE_INVALID", "STORY_VISUAL_COVERAGE_MISSING"})
@@ -67,12 +68,16 @@ def _summary(issues: list[dict]) -> str:
     return "; ".join(sorted({str(i.get("code") or "UNKNOWN") + (f" ({i['detail']})" if i.get("detail") else "") for i in issues}))
 
 
-def _author_scene(io, skeleton: str, sid: str) -> dict:
-    """One scene: choose, assemble, look, repair. Returns {text, status, rechoices, reason}."""
-    feedback, rechoices = None, 0
+def _author_scene(io, skeleton: str, sid: str, *, feedback=None, rechoices: int = 0) -> dict:
+    """One scene: choose, assemble, look, repair. Returns {text, status, rechoices, reason}.
+
+    A finding sends the scene back to the choice that caused it: events and timing problems choose the act again with the stage
+    kept; anything about the frame, cast, props or setting chooses the stage (and so the act) again. Each pass carries the findings."""
+    stage = None
     while True:
         try:
-            stage = io.choose("stage", *io.stage_request(skeleton, sid, feedback))
+            if stage is None:
+                stage = io.choose("stage", *io.stage_request(skeleton, sid, feedback))
             act = io.choose("act", *io.act_request(skeleton, sid, stage, feedback))
             part = io.assemble(skeleton, sid, stage, act)
         except ChoiceError as error:
@@ -90,6 +95,8 @@ def _author_scene(io, skeleton: str, sid: str) -> dict:
         if model and rechoices < MAX_RECHOICES and not reasons:
             rechoices += 1
             feedback = [{"code": i.get("code"), "detail": i.get("detail")} for i in model]
+            if any(origin(i) == "stage" for i in model):
+                stage = None  # the stage itself is the cause: choose it again; act-only findings keep it
             continue
         if model:
             reasons.append(f"đã chọn lại {rechoices} lần, còn: {_summary(model)}")
@@ -136,11 +143,50 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
     with ThreadPoolExecutor(max_workers=PARALLEL_SCENES) as pool:
         list(pool.map(work, todo))
     done = all(sid in outcomes and outcomes[sid].status != "failed" for sid in order)
+    check_episode = getattr(io, "check_episode", None)
+    if done and check_episode is not None:
+        done = _episode_loop(io, check_episode, skeleton, order, stored, outcomes, cards, lock, stopped)
     proposal = None
     if done:
         texts = {sid: stored["scenes"][sid]["text"] for sid in order}
         proposal = {"text": io.merge(skeleton, texts, order)}
     return ChainResult(proposal, sorted(cards, key=lambda c: order.index(c.scene_id)), {sid: outcomes[sid] for sid in order if sid in outcomes})
+
+
+def _episode_loop(io, check_episode, skeleton, order, stored, outcomes, cards, lock, stopped) -> bool:
+    """Check the merged episode; a finding that names a scene sends that scene back through its own loop, then check again.
+
+    Stops when nothing is left, or after EPISODE_ROUNDS; what remains becomes cards on the scenes it names (global ones on the first
+    scene). Returns False only when a model call failed or the run was stopped, so no half-checked proposal is offered."""
+    for round_no in range(EPISODE_ROUNDS + 1):
+        texts = {sid: stored["scenes"][sid]["text"] for sid in order}
+        issues = [i for i in check_episode(skeleton, texts, order) if route(i) == "model"]
+        if not issues:
+            return True
+        by_scene: dict[str, list[dict]] = {}
+        for found in issues:
+            by_scene.setdefault(found.get("scene_id") if found.get("scene_id") in order else order[0], []).append(found)
+        if round_no == EPISODE_ROUNDS or stopped():
+            for sid, rows in by_scene.items():
+                reason = f"sau khi ghép cả tập còn: {_summary(rows)}"
+                with lock:
+                    cards[:] = [c for c in cards if c.scene_id != sid] + [Card(sid, reason)]
+                    stored["scenes"][sid].update(status="card", reason=reason)
+                    outcomes[sid] = SceneOutcome("card", outcomes[sid].rechoices)
+                    io.save(stored)
+            return not stopped()
+        for sid, rows in by_scene.items():
+            feedback = [{"code": r.get("code"), "detail": r.get("detail")} for r in rows]
+            row = _author_scene(io, skeleton, sid, feedback=feedback, rechoices=outcomes[sid].rechoices)
+            with lock:
+                if row["status"] == "failed":
+                    outcomes[sid] = SceneOutcome("failed", row["rechoices"])
+                    return False
+                stored["scenes"][sid] = {k: row[k] for k in ("text", "status", "rechoices", "reason")}
+                outcomes[sid] = SceneOutcome(row["status"], row["rechoices"])
+                cards[:] = [c for c in cards if c.scene_id != sid] + ([Card(sid, row["reason"])] if row["status"] == "card" else [])
+                io.save(stored)
+    return True
 
 
 class LiveIO:
@@ -265,7 +311,8 @@ class LiveIO:
         visuals = scene_assembler.story_visual_assets(self.capsule, intent.get("assets") or {}, sid)
         try:
             part = scene_assembler.assemble_scene(menus, stage, act, sid, row["narration_range"], row["text"], self._goal(sid),
-                                                  story_visuals=visuals, art_dir=self.workspace)
+                                                  story_visuals=visuals, art_dir=self.workspace,
+                                                  story_reveal=scene_assembler.story_reveal_text(self.capsule, sid))
             task = {"scene_id": sid, "scene_range": row["narration_range"], "scene_text": row["text"],
                     "cast": [{"entity_id": m["entity_id"], "states": sorted(m["states"])} for m in intent["cast"]],
                     "story_visual_assets": visuals}
@@ -274,12 +321,9 @@ class LiveIO:
             raise ChoiceError(f"assemble: {str(error)[:200]}") from error
         return {"text": text, "asset_requests": part.get("asset_requests") or [], "notes": part.get("core_notes") or []}
 
-    def check_scene(self, skeleton: str, sid: str, text: str) -> list[dict]:
+    def _validator_issues(self, intent: dict) -> list[dict]:
+        """The plugin's scene validators on a copy of the workspace holding `intent`: [{code, scene_id, detail}]."""
         from .pipeline.validators import node_runner
-        payload = json.loads(text)["payload"]
-        intent = json.loads(json.dumps(self._intent(skeleton)))
-        intent["scenes"] = [payload["scene"]]
-        intent["assets"] = {**(intent.get("assets") or {}), **(payload.get("assets") or {})}
         found: list[dict] = []
         with tempfile.TemporaryDirectory() as tmp:
             copy = Path(tmp)
@@ -296,8 +340,33 @@ class LiveIO:
             (copy / ".authoring/visual-intent.json").write_text(json.dumps(intent, ensure_ascii=False), "utf8")
             for result in node_runner(copy, ("scene-experience", "story-visual-presence", "authoring-completeness")):
                 for issue in result.get("issues", []):
-                    if issue.get("scene_id") == sid and issue.get("code") not in COMPLETED_LATER:
-                        found.append({"code": issue.get("code"), "detail": result.get("name")})
+                    found.append({"code": issue.get("code"), "scene_id": issue.get("scene_id"), "detail": result.get("name")})
+        return found
+
+    def check_scene(self, skeleton: str, sid: str, text: str) -> list[dict]:
+        payload = json.loads(text)["payload"]
+        intent = json.loads(json.dumps(self._intent(skeleton)))
+        intent["scenes"] = [payload["scene"]]
+        intent["assets"] = {**(intent.get("assets") or {}), **(payload.get("assets") or {})}
+        return [i for i in self._validator_issues(intent) if i["scene_id"] == sid and i["code"] not in COMPLETED_LATER]
+
+    def check_episode(self, skeleton: str, texts: dict, order: list[str]) -> list[dict]:
+        """Everything the proposal check and the plugin validators say about the merged episode, tied to scenes where they name one."""
+        from . import agent_authoring, agent_parts
+        found: list[dict] = []
+        final = None
+        try:
+            merged = agent_parts.merge(skeleton, texts, order)
+            text, _ = agent_authoring.bind_proposal(merged, self.capsule)
+            final = agent_authoring.proposal(text, self.service, self.project_id)
+        except (StudioError, ValueError, KeyError, TypeError) as error:
+            message = str(error)[:1500]
+            named = agent_parts.failing_scenes(message, order)
+            found += [{"code": "PROPOSAL_INVALID", "scene_id": sid, "detail": message[:300]} for sid in named]
+            if not named:
+                found.append({"code": "PROPOSAL_INVALID", "scene_id": None, "detail": message[:300]})
+        if isinstance(final, dict):
+            found += [i for i in self._validator_issues(final) if i["code"] not in COMPLETED_LATER]
         return found
 
     def core_fix(self, sid: str, text: str, issues: list[dict]) -> str:

@@ -102,27 +102,63 @@ class ChainTests(unittest.TestCase):
         self.assertEqual(result.scenes["s02"].status, "ok")
         self.assertEqual(result.scenes["s02"].rechoices, 0)
 
-    def test_model_rechoices_are_capped_at_two_then_a_card_defaulting_to_accept(self):
+    def test_a_scene_is_chosen_again_until_clean_up_to_the_cap_then_a_card_defaulting_to_accept(self):
         bad = [{"code": "ENVIRONMENT_VISUAL_UNDERDEVELOPED"}]
-        io = FakeIO(issues={"s03": [bad, bad, bad, bad]})
+        io = FakeIO(issues={"s03": [bad] * 12})
         result = self.run_chain(io)
-        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s03")), 3)  # first choice + two re-choices
+        cap = authoring_chain.MAX_RECHOICES
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s03")), 1 + cap)
         outcome = result.scenes["s03"]
-        self.assertEqual((outcome.status, outcome.rechoices), ("card", 2))
+        self.assertEqual((outcome.status, outcome.rechoices), ("card", cap))
         card = next(c for c in result.cards if c.scene_id == "s03")
         self.assertEqual((card.default, card.options), ("accept", ("accept", "restage", "redo")))
         self.assertIn("ENVIRONMENT_VISUAL_UNDERDEVELOPED", card.reason)
         self.assertIsNotNone(result.proposal)  # a card never blocks the episode: the default keeps the scene as it is
 
+    def test_a_scene_that_gets_clean_after_three_tries_needs_no_card(self):
+        bad = [{"code": "ENVIRONMENT_VISUAL_UNDERDEVELOPED"}]
+        io = FakeIO(issues={"s03": [bad, bad, bad, []]})
+        result = self.run_chain(io)
+        self.assertEqual((result.scenes["s03"].status, result.scenes["s03"].rechoices), ("ok", 3))
+        self.assertEqual(result.cards, [])
+
+    def test_a_finding_goes_back_to_the_choice_that_caused_it(self):
+        io = FakeIO(issues={"s01": [[{"code": "PASSIVE_STORYTELLING"}], []], "s02": [[{"code": "ENVIRONMENT_VISUAL_UNDERDEVELOPED"}], []]})
+        self.run_chain(io)
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s01")), 1)   # an events problem keeps the stage
+        self.assertEqual(sum(1 for c in io.calls if c == ("act", "s01")), 2)
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s02")), 2)   # a composition problem chooses the stage again
+        self.assertEqual(sum(1 for c in io.calls if c == ("act", "s02")), 2)
+
+    def test_findings_on_the_merged_episode_send_the_named_scene_back_until_the_episode_is_clean(self):
+        io = FakeIO()
+        rounds = [[{"code": "STORY_VISUAL_COVERAGE", "scene_id": "s03"}], []]
+        io.check_episode = lambda skeleton, texts, order: rounds.pop(0)
+        result = self.run_chain(io)
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s03")), 2)
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s01")), 1)  # only the scene that was named
+        self.assertEqual(result.cards, [])
+        self.assertIsNotNone(result.proposal)
+
+    def test_an_episode_finding_that_never_clears_becomes_a_card_after_the_rounds_run_out(self):
+        io = FakeIO()
+        io.check_episode = lambda skeleton, texts, order: [{"code": "STORY_VISUAL_COVERAGE", "scene_id": "s02"}]
+        result = self.run_chain(io)
+        self.assertEqual(sum(1 for c in io.calls if c == ("stage", "s02")), 1 + authoring_chain.EPISODE_ROUNDS)
+        card = next(c for c in result.cards if c.scene_id == "s02")
+        self.assertIn("STORY_VISUAL_COVERAGE", card.reason)
+        self.assertEqual(result.scenes["s02"].status, "card")
+        self.assertIsNotNone(result.proposal)
+
     def test_a_rechoice_carries_the_findings_to_the_model(self):
         seen = []
-        io = FakeIO(issues={"s01": [[{"code": "PASSIVE_ACCENT_ONLY"}], []]})
+        io = FakeIO(issues={"s01": [[{"code": "VISUAL_DEPTH_UNDERDEVELOPED"}], []]})
         original = io.stage_request
         io.stage_request = lambda sk, sid, fb: (seen.append((sid, fb)) or original(sk, sid, fb))
         self.run_chain(io)
         first, second = [fb for sid, fb in seen if sid == "s01"]
         self.assertIsNone(first)
-        self.assertIn("PASSIVE_ACCENT_ONLY", json.dumps(second))
+        self.assertIn("VISUAL_DEPTH_UNDERDEVELOPED", json.dumps(second))
 
     def test_missing_art_is_a_card_not_a_substitute(self):
         io = FakeIO(requests={"s02": "một cửa hàng bánh tráng nướng"})
@@ -203,6 +239,25 @@ class LiveIOTests(unittest.TestCase):
             self.assertEqual(again.fingerprint(), io.fingerprint())
             self.assertNotEqual(self.make(tmp, catalog="c2").fingerprint(), io.fingerprint())
             self.assertEqual(io.scene_ids(), ["s01"])
+
+
+class EpisodeCheckTests(unittest.TestCase):
+    def test_a_proposal_error_naming_a_scene_and_validator_findings_come_back_tied_to_scenes(self):
+        import tempfile
+        from unittest import mock
+        from tools.studio_project.models import StudioError
+        with tempfile.TemporaryDirectory() as tmp:
+            io = LiveIOTests().make(tmp)
+            (io.workspace / ".authoring").mkdir()
+            skeleton = json.dumps({"payload": {"intent": {"scenes": [], "assets": {}}}})
+            with mock.patch("tools.studio_project.agent_parts.merge", return_value="{}"),                     mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])),                     mock.patch("tools.studio_project.agent_authoring.proposal", side_effect=StudioError("VISUAL_GRAMMAR", "s02 mechanic cannot bind", "visual")):
+                issues = io.check_episode(skeleton, {"s01": "{}"}, ["s01", "s02"])
+            self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("PROPOSAL_INVALID", "s02")])  # the scene the validator names is the one sent back
+            ok = {"scenes": [], "assets": {}}
+            found = [{"name": "story-visual-presence", "issues": [{"code": "STORY_VISUAL_COVERAGE", "scene_id": "s02"}, {"code": "NARRATIVE_BRIEF_REQUIRED", "scene_id": "s02"}]}]
+            with mock.patch("tools.studio_project.agent_parts.merge", return_value="{}"),                     mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])),                     mock.patch("tools.studio_project.agent_authoring.proposal", return_value=ok),                     mock.patch("tools.studio_project.pipeline.validators.node_runner", return_value=found):
+                issues = io.check_episode(skeleton, {"s01": "{}"}, ["s01", "s02"])
+            self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("STORY_VISUAL_COVERAGE", "s02")])  # briefs the proposal completes are not held against it
 
 
 class CheckFilterTests(unittest.TestCase):

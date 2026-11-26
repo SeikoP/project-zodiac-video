@@ -19,7 +19,7 @@ ACTING_STYLE = (
     "ANIMATION STYLE = limited 2D cut-out (flat paper-doodle characters and props). Only the part that carries the beat moves; "
     "everything else holds. Every scene is 3 beats tied to exact voice anchors: (1) intention, (2) action/contact, "
     "(3) readable reaction hold. Change pose/expression by HARD CUT (event motion preset 'state_swap', never a cross-fade). "
-    "Components that appear in a scene may FLY IN from outside the screen: {preset:'enter',duration_frames:6-30,params:{from:'left'|'right'|'top'|'bottom'}} with trigger {type:'scene_start'} and state_before == state_after (Core measures the distance). Scenes are joined by a page-turn that Core adds; set scene.transition {preset:'cut'|'paper-slide'|'page-turn',frames} only for a hard cut or a deliberate change of mood. "
+    "Components that appear in a scene may FLY IN from outside the screen: {preset:'enter',duration_frames:6-30,params:{from:'left'|'right'|'top'|'bottom'}} with trigger {type:'scene_start'} and state_before == state_after (Core measures the distance). Scenes are joined by a soft dissolve that Core adds; set scene.transition {preset:'cut'|'dissolve'|'paper-slide'|'page-turn',frames} only for a hard cut or a deliberate change of mood. "
     "Use at least ONE acting move per scene: {preset:'lean',duration_frames:12,params:{degrees:<=20,dx,dy,settle:'hold'|'return'}}, "
     "{preset:'recoil',...degrees<=12}, or {preset:'pull-with-prop',params:{dx,dy,group:[actorId,propId]}}; for these events "
     "state_before must equal state_after. At most one acting event per target at a time; add an explicit event returning "
@@ -250,7 +250,7 @@ def validate_scene(text: str, task: dict) -> str:
             frames = transition["frames"] = int(min(max(round(frames), spec["min_frames"]), spec["max_frames"]))  # clamp into the preset's range
         if spec is None or not isinstance(frames, int) or isinstance(frames, bool) or not spec["min_frames"] <= frames <= spec["max_frames"]:
             ranges = ", ".join(k + " " + str(v["min_frames"]) + "-" + str(v["max_frames"]) for k, v in TRANSITIONS["presets"].items())
-            raise ValueError("transition phải có preset cut, paper-slide hoặc page-turn và frames trong khoảng của preset (" + ranges + ")")
+            raise ValueError("transition phải có preset cut, dissolve, paper-slide hoặc page-turn và frames trong khoảng của preset (" + ranges + ")")
     for event in scene["events"]:
         if ((event.get("motion") or {}).get("preset")) == "enter":  # Core owns this rule: an enter is a scene-start entrance, state unchanged
             if (event.get("trigger") or {}).get("type") != "scene_start":

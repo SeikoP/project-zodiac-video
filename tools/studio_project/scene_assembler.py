@@ -225,7 +225,7 @@ def _ground(box: dict, floor: int) -> dict:
 
 
 def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_range: list[int], scene_text: str, goal: str,
-                   story_visuals: dict[str, str] | None = None, art_dir=None) -> dict:
+                   story_visuals: dict[str, str] | None = None, art_dir=None, story_reveal: str | None = None) -> dict:
     """Return ``{"kind":"scene.part","payload":{"scene":...,"assets":...}}`` that ``validate_scene`` accepts unchanged.
 
     ``story_visuals`` maps asset key -> label for the Phase 1 story visuals this scene must carry (declared in the skeleton).
@@ -333,7 +333,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
 
     act = {"events": [{**e, "target": alias.get(e["target"], e["target"])} for e in act["events"]
                       if alias.get(e["target"], e["target"]) is not None]}
-    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text)
+    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text, story_reveal)
     notes += timing_notes
     scene = {"id": scene_id, "narration_range": list(scene_range), "semantic_goal": goal,
              "grammar": {"frame_id": frame["id"], "mechanic_id": stage["mechanic_id"], "bindings": bindings},
@@ -481,7 +481,28 @@ def _first_words(text: str) -> str:
     return " ".join(text.split()[:2]) or text
 
 
-def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str) -> tuple[list[dict], list[str]]:
+def story_reveal_text(context: dict, scene_id: str) -> str | None:
+    """The first words of the Phase 1 beat this scene's Story Visual belongs to (an exact piece of the scene text), or None.
+
+    The story visual appears when the narration reaches its beat, not at the top of the scene."""
+    from .agent_parts import scene_text as text_of, story_visuals_by_scene
+    plan = context.get("narrative_plan") or {}
+    wanted = story_visuals_by_scene(context).get(scene_id, [])
+    beats = {b.get("id"): b for b in plan.get("beats", []) if isinstance(b, dict)}
+    scene = text_of(context, scene_id)
+    for visual in plan.get("story_visuals", []):
+        if visual.get("id") not in wanted:
+            continue
+        for beat_id in visual.get("beat_ids", []):
+            words = str((beats.get(beat_id) or {}).get("voice_anchor", "")).split()
+            for size in (4, 3, 2):
+                phrase = " ".join(words[:size])
+                if len(words) >= size and phrase and phrase in scene:
+                    return phrase
+    return None
+
+
+def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str, story_reveal: str | None = None) -> tuple[list[dict], list[str]]:
     by_id = {e["id"]: e for e in entities}
     anchors = {a["id"]: a for a in menus["anchors"]}
     current = {e["id"]: e["initial_state"] for e in entities}
@@ -494,7 +515,10 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
 
     for ident in sv_entities:  # revealed on the first anchor, or at the start when the scene has none
         first = min(anchors.values(), key=lambda a: a["at"], default=None)
-        trigger = {"type": "voice_anchor", "text": first["text"]} if first else {"type": "scene_start"}
+        if story_reveal and story_reveal in scene_text:  # on the beat the picture explains
+            trigger = {"type": "voice_anchor", "text": story_reveal}
+        else:
+            trigger = {"type": "voice_anchor", "text": first["text"]} if first else {"type": "scene_start"}
         add(ident, "hidden", "shown", trigger, "Hiện nội dung của cảnh", SWAP)
     busy_until: dict[str, float] = {}  # the export refuses a target's next acting event before the previous one has finished
     for entity in entities:  # the cast walks in from its own side at the scene start, so the opening beat already has movement

@@ -18,8 +18,8 @@ KINDS: dict[str, tuple[str, ...]] = {
     "skeleton": ("SKILL.md", "cast", "style", "concepts", "studio"),
     "scene": ("SKILL.md", "concepts", "scene", "acting", "story-visual", "studio"),
     "revise": ("SKILL.md", "concepts", "scene", "acting", "review", "studio"),
-    "stage": ("SKILL.md", "concepts", "scene", "studio"),
-    "act": ("SKILL.md", "concepts", "acting", "studio"),
+    "stage": ("SKILL.md", "concepts", "scene", "story-visual", "studio"),
+    "act": ("SKILL.md", "concepts", "acting", "story-visual", "studio"),
     "review": ("SKILL.md", "style", "scene", "review", "studio"),
 }
 _cache: dict[str, dict] = {}

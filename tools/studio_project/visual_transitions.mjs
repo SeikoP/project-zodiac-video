@@ -28,7 +28,14 @@ export function paintTransition(outgoing,incoming,preset,progress,paper){
   const out=outgoing.style,inc=incoming.style;
   out.zIndex='2';inc.zIndex='1';
   out.background=paper;out.backfaceVisibility='hidden';
-  if(preset==='paper-slide'){
+  if(preset==='dissolve'){
+    // Opacity and a small transform only: both stay on the compositor, so the move is smooth in the editor and identical in the export.
+    const e=p*p*(3-2*p);
+    out.opacity=String(1-e);
+    out.transformOrigin='50% 50%';
+    out.transform='translateX('+(-e*36)+'px) scale('+(1+0.025*e)+')';
+    inc.opacity=String(0.3+0.7*e);
+  }else if(preset==='paper-slide'){
     out.transformOrigin='0% 100%';
     out.transform='translateX('+(-p*1120)+'px) rotate('+(-4*p)+'deg)';
     out.boxShadow=(14*(1-p))+'px 0 28px rgba(0,0,0,'+(0.28*(1-p))+')';
@@ -44,5 +51,5 @@ export function paintTransition(outgoing,incoming,preset,progress,paper){
 
 export function resetTransition(node){
   const s=node.style;
-  for(const key of ['transform','transformOrigin','boxShadow','filter','background','backfaceVisibility','visibility','zIndex'])s[key]='';
+  for(const key of ['transform','transformOrigin','boxShadow','filter','background','backfaceVisibility','visibility','zIndex','opacity'])s[key]='';
 }
