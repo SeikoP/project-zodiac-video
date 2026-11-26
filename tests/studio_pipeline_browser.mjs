@@ -28,7 +28,7 @@ try {
  assert.ok(await compact.locator('.phase-primary').count()<=1);
  assert.equal(await page.locator('.stills-strip .still-tile').count(),12,'one tile per scene');
  assert.equal(await page.locator('.step-phase[data-phase=visual] > .phase-detail').count(),1);
- assert.equal(await page.locator('.step-phase[data-phase=visual] > ol').count(),0,'rows live only inside Chi tiết');
+ assert.equal(await page.locator('.step-phase[data-phase=visual] > ol .step-row[data-node-id=visual_review]').count(),1,'review is visible outside technical details');
  // an owner card shows its options with the default marked; answering records it
  await page.evaluate(()=>{window.pipelineCards=[{scene_id:'s2',reason:'thiếu art: quầy',options:['accept','restage','redo'],default:'accept'}];}); await poll();
  const card=page.locator('.owner-card[data-scene-id=s2]'); await card.waitFor();
@@ -67,7 +67,7 @@ try {
 
  // Voice and export each use their own full-width stage.
  await selectStep('voice');
- await page.getByRole('region',{name:'Danh sách đoạn đọc',exact:true}).waitFor();
+ await page.locator('.voice-workspace:visible').waitFor();
  assert.equal(await page.locator('.visual-stage:visible').count(),0,'voice gets the full stage');
  await selectStep('export');
  await page.locator('.episode-export:visible').waitFor();
@@ -79,13 +79,15 @@ try {
  await page.locator('.generic-inspector').getByRole('heading',{name:'mystery'}).waitFor();
 
  // user-only review gate: evidence, playback, confirm
+ await page.evaluate(()=>{window.reviewBuild='b'.repeat(32);});
  await selectStep('visual_review'); await page.keyboard.press('Enter');
  await page.getByRole('heading',{name:'Duyệt hình ảnh',exact:true}).waitFor();
+ await page.locator('.review-evidence > summary').click();
  await page.getByText('Tiêu đề đăng').waitFor();
  assert.equal(await page.getByRole('button',{name:'Duyệt hình ảnh',exact:true}).isDisabled(),true,'cannot confirm before watching');
  await page.getByRole('button',{name:'Bắt đầu xem bản dựng',exact:true}).click();
  await page.getByRole('button',{name:'Duyệt hình ảnh',exact:true}).waitFor();
- await page.waitForFunction(()=>![...document.querySelectorAll('button')].find(b=>b.textContent==='Duyệt hình ảnh')?.disabled);
+ await page.waitForFunction(()=>![...document.querySelectorAll('button')].find(b=>b.textContent==='Duyệt hình ảnh')?.disabled,{},{timeout:15000});
  await page.getByRole('button',{name:'Duyệt hình ảnh',exact:true}).click();
  await page.waitForFunction(()=>(window.pipelineCalls||[]).some(c=>c[0]==='pipeline.gate.confirm'));
  assert.deepEqual((await calls('pipeline.gate.confirm')).map(c=>c[1]),[{project_id:'p1',gate:'visual_review',base_revision:1,build_id:'b'.repeat(32),playback_id:'pb1'}]);

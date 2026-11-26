@@ -11,6 +11,7 @@ import { withTransition, withTransitionEverywhere } from "./scene/transition-edi
 import { buildBlockedText, buildJobMessage } from "./build-error";
 import EpisodeTimeline from "./EpisodeTimeline";
 import EpisodePlayer from "./EpisodePlayer";
+import { episodePreview } from "./episode-preview-cache";
 import {makeEpisodeTimeline, locateEpisodeTime} from "./episode-timeline";
 import {createPlaybackClock} from "./playback-clock";
 import type { WorkbenchSelection } from "./workbench-state";
@@ -40,11 +41,11 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   const [nextPreview,setNextPreview]=useState<VisualPreview | null>(null);
   const [frameReady,setFrameReady] = useState(false);
   const [time, setTime] = useState(0), [playing, setPlaying] = useState(false), [scale, setScale] = useState(.25);
-  const [sdkReady, setSdkReady] = useState(false), [audioUrl, setAudioUrl] = useState(""), [wholeVideo, setWholeVideo] = useState(false);
+  const [sdkReady, setSdkReady] = useState(false), [audioUrl, setAudioUrl] = useState(""), [wholeVideo, setWholeVideo] = useState(false), [wholeStart, setWholeStart] = useState(0), [wholePlay, setWholePlay] = useState(false);
   const [agentInstruction, setAgentInstruction] = useState(""), [agentTask, setAgentTask] = useState<AgentTask | null>(null);
   const iframe = useRef<HTMLIFrameElement>(null), viewport = useRef<HTMLDivElement>(null), sdk = useRef<Composition | null>(null);
   const loadedPreview = useRef<{ sha256: string; build_id: string; scene_id: string } | null>(null);
-  const audio = useRef<HTMLAudioElement>(null), playhead = useRef(0), pointer = useRef<{ x: number; y: number; transform: VisualTransform } | null>(null);
+  const wholeTime = useRef(0), audio = useRef<HTMLAudioElement>(null), playhead = useRef(0), pointer = useRef<{ x: number; y: number; transform: VisualTransform } | null>(null);
   const projectId = project?.project_id, running = state?.job?.status === "RUNNING";
   const scene = state?.intent?.scenes.find(s => s.id === sceneId) ?? state?.intent?.scenes[0];
   candidateContext.current=`${projectId}:${state?.revision}:${scene?.id}`;candidateQuery.current=query;
@@ -82,7 +83,10 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   useEffect(() => {
     if (projectId) onBuildReady?.(projectId, !!state?.build && !state.stale_preview);
   }, [projectId, state?.build?.id, state?.stale_preview, onBuildReady]);
-  useEffect(() => { if (!active) { setPlaying(false); audio.current?.pause(); } }, [active]);
+  useEffect(() => { if (!active) { setPlaying(false); setWholePlay(false); audio.current?.pause(); } }, [active]);
+  useEffect(() => {  // warm the whole-video page as soon as a fresh build exists, so pressing play finds it ready
+    if (active && projectId && state?.build?.id && !state.stale_preview) void episodePreview(projectId, state.build.id).catch(() => undefined);
+  }, [active, projectId, state?.build?.id, state?.stale_preview]);
   useEffect(() => {
     if (!projectId) return;
     let live = true;
@@ -210,6 +214,16 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
     const position=locateEpisodeTime(timeline,globalPlayhead.current);
     if(position && position.sceneId===preview.scene.id)send("seek",{time:position.localMs/1000});
   },[preview?.url,frameReady,active]);
+  /** Playing the timeline uses the whole-video page (one composition, nothing loaded at a scene boundary); scene by scene is the fallback. */
+  function startPlayback() {
+    if (state?.build?.id && !state.stale_preview && projectId && audioUrl !== undefined && state.intent) {
+      const from = globalPlayhead.current >= episodeDuration ? 0 : globalPlayhead.current;
+      setPlaying(false); setWholeStart(from); setWholePlay(true); setWholeVideo(true);
+      return;
+    }
+    if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);
+    setPlaying(!playing);
+  }
   function seekEpisode(value: number) {
     const at=Math.max(0,Math.min(episodeDuration,value));
     globalPlayhead.current=at; setEpisodeTime(at);
@@ -303,15 +317,15 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   if (!project) return null; // EpisodeShell shows the empty state before this component is mounted
 
   return <section className="visual-editor" data-has-source={!!state?.intent}>
-    <div className="hf-head"><span className="hf-brand"><Layers3 size={16}/><strong>Chọn cảnh · xem · chỉnh sửa</strong></span>
+    <div className="hf-head" hidden={!technicalOpen}><span className="hf-brand"><Layers3 size={16}/><strong>Chọn cảnh · xem · chỉnh sửa</strong></span>
       <span className="status-chip status-neutral">R{state?.revision ?? 0} · {sdkReady ? "HyperFrames SDK" : "Canonical Visual Intent"}</span></div>
     {error && <div className="inline-alert error" role="alert">{error}<button onClick={() => setError("")}>×</button></div>}
     <div className="visual-toolbar"><button className="outline-btn" onClick={() => { setGalleryOpen(!galleryOpen); setSourceOpen(false); setLogOpen(false); setEventsOpen(false); setPlaying(false); }}>Kho hình ảnh</button><button className="outline-btn" hidden={!technicalOpen} onClick={() => { setSourceOpen(!sourceOpen); setLogOpen(false); setGalleryOpen(false); setEventsOpen(false); }}><FileJson size={15}/>Nguồn Visual Intent</button>
-      <button className="outline-btn" aria-pressed={wholeVideo} disabled={!state?.build?.id || !!state?.stale_preview} onClick={() => { setPlaying(false); setWholeVideo(!wholeVideo); }}>{wholeVideo ? "Quay lại từng cảnh" : "Xem cả video"}</button>
+      <button className="outline-btn" aria-pressed={wholeVideo} disabled={!state?.build?.id || !!state?.stale_preview} onClick={() => { setPlaying(false); if (wholeVideo) seekEpisode(wholeTime.current); else { setWholeStart(globalPlayhead.current); setWholePlay(false); } setWholeVideo(!wholeVideo); }}>{wholeVideo ? "Quay lại từng cảnh" : "Xem cả video"}</button>
       <button className="outline-btn" disabled={disabled || !state?.can_undo} onClick={() => command("undo", {})}><Undo2 size={15}/>Undo</button>
       <button className="outline-btn" disabled={disabled || !state?.can_redo} onClick={() => command("redo", {})}>Redo</button>
-      <button className="outline-btn" aria-expanded={technicalOpen} onClick={()=>setTechnicalOpen(!technicalOpen)}>Chi tiết</button>
-      <label>Màu sắc<select value={state?.theme ?? "light"} disabled={disabled || !state?.intent} onChange={event => command("theme.select", { theme: event.target.value })}>
+      <button className="outline-btn" aria-expanded={technicalOpen} onClick={()=>setTechnicalOpen(!technicalOpen)}>Chi tiết kỹ thuật</button>
+      <label hidden={!technicalOpen}>Màu sắc<select value={state?.theme ?? "light"} disabled={disabled || !state?.intent} onChange={event => command("theme.select", { theme: event.target.value })}>
         {(themes.length ? themes : [{ id: "light", title: "Giấy sáng" }, { id: "dark", title: "Nền tối" }]).map(t => <option key={t.id} value={t.id}>{t.title ?? t.id}</option>)}</select></label>
       <button className="primary-btn" disabled={disabled || !state?.intent} onClick={() => state && void action(() => backend.episodeBuild(project.project_id, state.revision))}>
         {running ? <LoaderCircle size={15} className="spin"/> : <RefreshCcw size={15}/>}Dựng cả episode</button>
@@ -327,8 +341,9 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
       onSave={raw => { try { command("source.replace", { intent: JSON.parse(raw) }); } catch (failure) { report(failure); } }}/>}
     {state?.job && <div className="voice-progress" data-job-state={state.job.status} data-job-id={state.job.id}><span>{buildJobMessage(state.job.message)}</span><span>{state.job.status}{state.job.action === 'export' ? ` · HyperFrames MP4${state.job.render_percent === undefined ? '' : ` · ${state.job.render_percent}%`}` : ` · ${state.job.ready_scenes.length}/${state.job.total}`}</span>{state.job.error && <details open={!!buildBlockedText(state.job.error).summary}><summary>{buildBlockedText(state.job.error).summary || "Không dựng được · xem nguyên nhân"}</summary><pre>{buildBlockedText(state.job.error).detail}</pre></details>}</div>}
     {state?.stale_preview && <p className="voice-warning">Đang giữ preview tốt R{state.build?.revision}. Nguồn hiện tại R{state.revision}; dựng lại để xem thay đổi.</p>}
-    {wholeVideo && state?.build?.id && !state.stale_preview && projectId && <div className="panel visual-stage whole-video"><div className="panel-heading"><span>Cả video · có chuyển cảnh</span></div>
-      <EpisodePlayer projectId={projectId} buildId={state.build.id} audioUrl={audioUrl} durationMs={episodeDuration} onError={report}/></div>}
+    {wholeVideo && active && state?.build?.id && !state.stale_preview && projectId && <div className="panel visual-stage whole-video"><div className="panel-heading"><span>Cả video · có chuyển cảnh</span></div>
+      <EpisodePlayer projectId={projectId} buildId={state.build.id} audioUrl={audioUrl} durationMs={episodeDuration} onError={report}
+        startMs={wholeStart} autoplay={wholePlay} onTime={ms => { wholeTime.current = ms; }}/></div>}
     <div className="visual-layout" hidden={wholeVideo || sourceOpen || logOpen || galleryOpen || eventsOpen}>      <div className="panel visual-stage"><div className="panel-heading"><span>{scene ? `Xem trước · Cảnh ${(state?.intent?.scenes.findIndex(s => s.id === scene.id) ?? 0) + 1}/${state?.intent?.scenes.length ?? 0}` : "Xem trước"}</span><small>{scene?.semantic_goal ?? (preview ? "" : "Chưa dựng video")}</small></div>
         <div className="visual-viewport" ref={viewport}>{[preview,nextPreview].filter((p,i,a): p is VisualPreview=>!!p && a.findIndex(other=>other?.url===p.url)===i).map(p=>{
           const current=p.url===preview?.url;
@@ -346,10 +361,10 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
             onPointerMove={e => { const p = pointer.current; if (p) setDraft({ ...p.transform, x: Math.round(p.transform.x + (e.clientX - p.x) / scale), y: Math.round(p.transform.y + (e.clientY - p.y) / scale) }); }}
             onPointerUp={() => { if (pointer.current && draft) { pointer.current = null; void commitTransform(draft); } }}
             onPointerCancel={() => { pointer.current = null; if (selected) setDraft({ ...selected.transform }); }}/>}</div>
-        <div className="visual-transport"><button className="outline-btn" aria-label={playing ? "Tạm dừng cảnh" : "Phát từ cảnh này"} disabled={!preview || !duration || !!state?.stale_preview} onClick={() => {if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);setPlaying(!playing);}}>{playing ? <Pause size={16}/> : <Play size={16}/>}</button>
+        <div className="visual-transport"><button className="outline-btn" aria-label={playing ? "Tạm dừng cảnh" : "Phát từ cảnh này"} disabled={!preview || !duration || !!state?.stale_preview} onClick={startPlayback}>{playing ? <Pause size={16}/> : <Play size={16}/>}</button>
           <span>{time.toFixed(2)} / {duration.toFixed(2)}s</span><input type="range" aria-label="Measured scene timeline" min={0} max={duration || 1} step={1 / 30} value={time} onChange={e => { setPlaying(false); seek(Number(e.target.value)); }}/>
           <small>{audioUrl ? "Voice đã chọn" : "Preview không audio"}</small></div>{audioUrl && <audio ref={audio} src={audioUrl} preload="metadata" onEnded={()=>{seekEpisode(episodeDuration);setPlaying(false);}}/>}
-        <div className="visual-fidelity"><strong>{preview?.candidate_only ? "Candidate trong lúc dựng" : "Preview kỹ thuật"}</strong><span>SVG nguồn · timing ASR · chưa duyệt hình</span></div>
+        <div className="visual-fidelity" hidden={!technicalOpen}><strong>{preview?.candidate_only ? "Candidate trong lúc dựng" : "Preview kỹ thuật"}</strong><span>SVG nguồn · timing ASR · chưa duyệt hình</span></div>
         {built && <><p className="voice-muted">Caption contrast {built.qa.caption_contrast.toFixed(1)}:1 · QA {built.qa.status} · {built.qa.issues.map(i => i.code).join(", ") || "Không có cảnh báo kỹ thuật"}</p>
           {built.qa.review_warnings?.length ? <p className="voice-warning">Cần xem diễn xuất: {built.qa.review_warnings.map(item => item.detail).join(" · ")}</p> : null}</>}</div>
       <aside className="panel visual-inspector" hidden={inGap && !contextPanel}>{!contextPanel && sidePanelTop}{contextPanel ?? <>    {!state?.intent && <div className="panel initial-authoring"><strong>Trợ lý dựng hình</strong>
@@ -388,10 +403,10 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
         </>}</aside></div>
     {!sourceOpen && !logOpen && !galleryOpen && !eventsOpen && <>
       {timelineResult.error && <p className="voice-warning">{timelineResult.error}</p>}
-      <EpisodeTimeline scenes={timeline} sceneId={inGap ? undefined : scene?.id} timeMs={episodeTime} playing={playing} canPlay={(state?.intent ? !!preview && frameReady : !!audioUrl) && !stalePlayback && graphTarget?.stage !== 'voice' && graphTarget?.stage !== 'export'} voice={voiceInfo} titles={Object.fromEntries((state?.intent?.scenes ?? []).map(s=>[s.id,s.semantic_goal]))} onSeek={at=>{setPlaying(false);seekEpisode(at);}} onPlay={()=>{if(!playing && globalPlayhead.current>=episodeDuration)seekEpisode(0);setPlaying(!playing);}}/>
+      {!wholeVideo && <EpisodeTimeline scenes={timeline} sceneId={inGap ? undefined : scene?.id} timeMs={episodeTime} playing={playing} canPlay={(state?.intent ? !!preview && frameReady : !!audioUrl) && !stalePlayback && graphTarget?.stage !== 'voice' && graphTarget?.stage !== 'export'} voice={voiceInfo} titles={Object.fromEntries((state?.intent?.scenes ?? []).map(s=>[s.id,s.semantic_goal]))} onSeek={at=>{setPlaying(false);seekEpisode(at);}} onPlay={startPlayback}/>}
     </>}
-    {state?.build && <div className="visual-receipt">{state.build.scenes.length} scenes · {state.build.cache.reused} nodes cache / {state.build.cache.rebuilt} dựng lại · {(state.build.resources.wall_ms / 1000).toFixed(2)}s · {(state.build.resources.peak_rss_bytes / 1024 / 1024).toFixed(0)} MiB peak · Renderer parity: {state.build.renderer_parity}</div>}
-    <button className="subtle-btn log-toggle" aria-expanded={logOpen} onClick={() => { setLogOpen(!logOpen); setSourceOpen(false); setGalleryOpen(false); setEventsOpen(false); }}>{logOpen ? "Đóng nhật ký" : "Hoạt động chỉnh sửa và build"}</button>
+    {technicalOpen && state?.build && <div className="visual-receipt">{state.build.scenes.length} scenes · {state.build.cache.reused} nodes cache / {state.build.cache.rebuilt} dựng lại · {(state.build.resources.wall_ms / 1000).toFixed(2)}s · {(state.build.resources.peak_rss_bytes / 1024 / 1024).toFixed(0)} MiB peak · Renderer parity: {state.build.renderer_parity}</div>}
+    <button className="subtle-btn log-toggle" hidden={!technicalOpen} aria-expanded={logOpen} onClick={() => { setLogOpen(!logOpen); setSourceOpen(false); setGalleryOpen(false); setEventsOpen(false); }}>{logOpen ? "Đóng nhật ký" : "Hoạt động chỉnh sửa và build"}</button>
     {logOpen && <BuildLog events={state?.events ?? []}/>}
   </section>;
 }

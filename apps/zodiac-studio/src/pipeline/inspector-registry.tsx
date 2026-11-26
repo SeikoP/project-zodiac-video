@@ -10,6 +10,7 @@ export type InspectorProps = {
   /** Re-read pipeline and project state after the inspector changed something. */
   onChanged: () => void;
   onImport: () => void;
+  blockedBy?: string[];
 };
 export type Inspector = LazyExoticComponent<ComponentType<InspectorProps>>;
 

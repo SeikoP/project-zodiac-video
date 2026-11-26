@@ -15,6 +15,8 @@ try {
   const row=page.locator(`.step-row[data-node-id="${id}"]`);
   const phase=page.locator('.step-phase').filter({has:row});
   if(!await phase.evaluate(el=>el.open)) await phase.locator(':scope > summary').click();
+  const details=phase.locator('.phase-detail');
+  if(await details.count() && !await details.evaluate(el=>el.open)) await details.locator(':scope > summary').click();
   await row.locator('.step-main').click();
  }
  async function fit(label) {
@@ -80,17 +82,17 @@ try {
     await page.getByRole('button',{name:'Kho hình ảnh',exact:true}).click();
     await page.locator('.gallery-card').first().waitFor(); await fit('embedded gallery');
     await page.getByRole('button',{name:'Kho hình ảnh',exact:true}).click();
-    for(const tab of ['Sự kiện','Hình ảnh','Sửa cảnh','Đối tượng']) {
+    for(const tab of ['Nâng cao','Sửa cảnh','Đối tượng']) {
      await page.locator('.visual-inspector').getByRole('button',{name:tab,exact:true}).click(); await fit(`inspector ${tab}`);
-     if(tab==='Sự kiện') {
+     if(tab==='Nâng cao') {
       await page.getByRole('button',{name:'Chỉnh nhịp diễn theo lời kể',exact:true}).click(); await fit('acting editor');
       await page.getByRole('button',{name:'Sự kiện diễn xuất: trang sau',exact:true}).click(); await fit('acting event pages');
       await page.getByRole('button',{name:'Đóng',exact:true}).click();
      }
-     if(tab==='Hình ảnh') { await page.getByRole('button',{name:'Tìm bundle phù hợp',exact:true}).click(); await fit('candidates'); assert.match(await page.locator('.visual-candidates').filter({visible:true}).innerText(),/phạm vi quét giới hạn/); }
+     if(tab==='Nâng cao') { await page.getByRole('button',{name:'Tìm bundle phù hợp',exact:true}).click(); await fit('candidates'); assert.match(await page.locator('.visual-candidates').filter({visible:true}).allInnerTexts().then(texts=>texts.join('\n')),/phạm vi quét giới hạn/); }
 
     }
-    if(!await page.getByRole('button',{name:'Nguồn Visual Intent',exact:true}).isVisible()) await page.getByRole('button',{name:'Chi tiết',exact:true}).click();
+    if(!await page.getByRole('button',{name:'Nguồn Visual Intent',exact:true}).isVisible()) await page.getByRole('button',{name:'Chi tiết kỹ thuật',exact:true}).click();
     await page.getByRole('button',{name:'Nguồn Visual Intent',exact:true}).click(); await fit('source');
     await page.getByRole('button',{name:'Đọc nguồn hiện tại',exact:true}).click();
     const textBefore = await page.getByRole('textbox',{name:'Canonical Visual Intent',exact:true}).inputValue();

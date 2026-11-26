@@ -71,7 +71,7 @@ export default function StepList({ store, onOpen }: { store: PipelineStore; onOp
           <summary><span>{phase.title}</span><small>{finished}/{all.length}</small></summary>
           {phase.id === "visual" && <Compact all={all} store={store} onRun={run} />}
           {phase.id === "visual"
-            ? <details className="phase-detail" open={all.some((n) => n.id === selection.nodeId)}><summary>Chi tiết</summary>{rows(steps, scenes)}</details>
+            ? <>{rows(steps.filter(n => n.kind === "gate"), [])}<details className="phase-detail"><summary>Chi tiết kỹ thuật</summary>{rows(steps.filter(n => n.kind !== "gate"), scenes)}</details></>
             : rows(steps, scenes)}
         </details>);
       })}

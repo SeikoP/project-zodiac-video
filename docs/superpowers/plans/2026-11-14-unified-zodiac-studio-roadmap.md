@@ -224,6 +224,12 @@ P5 and P6 can be developed in isolated worktrees with shared P3/P4 interface fro
 
 ## What is deliberately NOT in the MVP
 
+2026-11-26 GUI follow-up: visible visual-review gate, dedicated whole-video review
+stage and collapsed technical controls implemented. Build, 24 Node tests, 32 Python
+tests, three browser suites and real native preview checked; see
+`docs/audits/2026-11-26-studio-visual-review.md`. This does not complete final MP4,
+release or publication gates, or resolve existing creative owner questions.
+
 - A normal post-approved script rewrite/editor, regeneration of Phase 1 creative evidence.
 - Full professional animation/keyframe composer, generic NLE/video-editing feature parity.
 - Full rewrite of V4 compilers, audio aligner, VoiceArtifactStore, package/cleanup logic.

@@ -54,10 +54,13 @@ export default function EpisodeShell({ project, active, tool, toolTick, selectio
   const changed = useCallback(() => { setVoiceRefresh((n) => n + 1); void store.refresh(); onChanged(); }, [store, onChanged]);
   const open = useCallback((id: string) => { store.select(id); }, [store]);
   // Voice, export and content have their own full-width panel; the visual steps keep the stage + scene inspector.
-  const fullStage = target.stage === "voice" || target.stage === "export" || target.stage === "content";
+  const reviewing = node?.id === "visual_review";
+  const fullStage = reviewing || target.stage === "voice" || target.stage === "export" || target.stage === "content";
   const panel = node && Inspector
     ? <Suspense fallback={<p>Đang mở phần đang chọn…</p>}>
-        <Inspector project={project} node={node} active={active} initialConceptId={initialConceptId} onChanged={changed} onImport={onImport} />
+        <Inspector key={reviewing ? `${projectId}:${snapshot.buildId}:${snapshot.revision}:${node.status}` : node.id}
+          project={project} node={node} active={active} initialConceptId={initialConceptId} onChanged={changed} onImport={onImport}
+          blockedBy={node.inputs.map(id => snapshot.nodes.find(n => n.id === id)).filter(n => n && n.status !== "DONE").map(n => n!.title)} />
       </Suspense>
     : undefined;
 
@@ -78,10 +81,10 @@ export default function EpisodeShell({ project, active, tool, toolTick, selectio
           <StepList store={store} onOpen={open} />
           <NeedsYou store={store} onOpen={open} />
         </div>
-        {fullStage && <div className="stage-panel">{panel}</div>}
+        {fullStage && <div className={"stage-panel" + (reviewing ? " review-stage-panel" : "")}>{panel}</div>}
         <div className="production-editor" style={fullStage ? { display: "none" } : undefined}>
           <Suspense fallback={<p>Đang mở phần đang chọn…</p>}>
-            <VisualEditor project={project} active={active} selection={selection} onSelectionChange={onSelectionChange} onBuildReady={onBuildReady}
+            <VisualEditor project={project} active={active && !fullStage} selection={selection} onSelectionChange={onSelectionChange} onBuildReady={onBuildReady}
               onVoice={() => open("voice")} graphTarget={target} contextPanel={fullStage ? undefined : panel} sidePanelTop={<section className="side-scenes"><h3>Các cảnh</h3><StillsStrip store={store} projectId={projectId} onOpen={open} /></section>} voiceRefresh={voiceRefresh}
               agentRunning={snapshot.nodes.some((n) => n.status === "RUNNING" && n.id.split(":")[0] === "visual")} />
           </Suspense>
