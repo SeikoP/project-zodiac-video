@@ -24,6 +24,16 @@ def latest_run(service, project_id: str) -> dict | None:
         return None
 
 
+def start_authoring(service, project_id: str, instruction: str, *, repair: bool = False) -> dict:
+    """Start the authoring run: the constructive chain by default, the old scene-by-scene path when ZODIAC_STUDIO_CHAIN=off.
+
+    A repair edits scenes of an existing episode (scene revisions), which the chain does not do, so it keeps the old path."""
+    from .. import authoring_chain
+    if authoring_chain.enabled() and not repair:
+        return service.agent.start_authoring_chain(project_id, instruction)
+    return service.agent.start_authoring_scenes(project_id, instruction, repair=repair)
+
+
 def pending_proposal(service, project_id: str) -> dict | None:
     """The newest authoring run if it FINISHED, was never applied and is still valid for today's source, voice and catalog.
 

@@ -144,7 +144,7 @@ class SchedulingTests(AutopilotCase):
             self.pilot.stop()
             return {}
         with patch("tools.studio_project.agent_authoring.capsule", side_effect=capsule), patch.object(
-                self.service.agent, "start_authoring_scenes", side_effect=AssertionError("launched after stop")):
+                self.service.agent, "start_authoring_chain", side_effect=AssertionError("launched after stop")):
             with self.assertRaises(StudioError) as caught:
                 autopilot_module.default_agent(self.service, "p", "visual", SimpleNamespace(id="visual"), "", 1)
         self.assertEqual(caught.exception.code, "AGENT_CANCELLED")

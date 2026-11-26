@@ -200,7 +200,7 @@ def default_agent(service, project_id: str, node_id: str, spec, context_text: st
     with pilot._state_lock:
         if pilot._stopped:
             raise StudioError("AGENT_CANCELLED", "Autopilot đã dừng", "pipeline")
-        task = service.agent.start_authoring_scenes(project_id, instruction, repair=repair)
+        task = agent_runs.start_authoring(service, project_id, instruction, repair=repair)
         agent_runs.track(service, project_id, node_id, task["task_id"])
     deadline = time.time() + 15 * 60
     while time.time() < deadline:

@@ -68,7 +68,7 @@ def _author(ctx):
                                                       command_id=f"run-apply-{pending['task_id']}"[:60])
         except StudioError:
             pass  # no longer applicable: author again
-    return ctx.service.agent.start_authoring_scenes(ctx.project_id, AUTHORING_INSTRUCTION)
+    return agent_runs.start_authoring(ctx.service, ctx.project_id, AUTHORING_INSTRUCTION)
 
 
 def _drafted(ctx):

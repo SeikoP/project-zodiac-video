@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import StudioError
-from . import agent_authoring, agent_frame_review, agent_parts, authoring_menus, skill_digest
+from . import agent_authoring, agent_frame_review, agent_parts, authoring_chain, authoring_menus, skill_digest
 
 TASK_ID = re.compile(r"^[0-9a-f]{32}$")
 DONE = frozenset({"COMPLETED", "FAILED", "CANCELLED", "INTERRUPTED"})
@@ -404,6 +404,28 @@ class AgentManager:
         except Exception as error:
             self._update(group_id, status="FAILED", error=str(error)[:350], completed_at=int(time.time()))
 
+    def _run_chain_group(self, group_id: str, capsule: dict) -> None:
+        project_id = self.task(group_id)["project_id"]
+        try:
+            self._update(group_id, status="RUNNING")
+            order = [row["id"] for row in capsule["scene_ranges"]]
+            self._update(group_id, parts_total=len(order))
+            io = authoring_chain.LiveIO(self.service, project_id, capsule.get("instruction") or "", capsule=capsule)
+            io.on_save = lambda state: [self._set_part(group_id, sid, "DONE", seconds=0) for sid in state.get("scenes", {})]
+            result = authoring_chain.run_chain(io, stopped=lambda: group_id in self._cancelled)
+            if result.cards:
+                from .pipeline import cards
+                cards.save_cards(self.service.registry.get(project_id).workspace, result.cards)
+            if result.proposal is None:
+                failed = [sid for sid, outcome in result.scenes.items() if outcome.status == "failed"]
+                raise RuntimeError("Chuỗi chưa xong" + (f"; cảnh lỗi: {', '.join(failed)}" if failed else ""))
+            text, bound = agent_authoring.bind_proposal(result.proposal["text"], capsule)
+            agent_authoring.proposal(text, self.service, project_id)
+            self._update(group_id, preview=text, suggestion=text, raw_output_sha256=hashlib.sha256(text.encode("utf8")).hexdigest(),
+                         bound_fields=bound, status="COMPLETED", completed_at=int(time.time()))
+        except Exception as error:
+            self._update(group_id, status="FAILED", error=str(error)[:350], completed_at=int(time.time()))
+
     def start_frame_review(self, project_id: str, review_task: dict) -> dict:
         """Have the vision role look at rendered frames (see agent_frame_review). Findings only; nothing is edited."""
         if not review_task.get("scenes"):
@@ -419,8 +441,16 @@ class AgentManager:
             skill_digest.digest(skill)  # an unknown or missing skill kind fails now, not inside the agent turn
         return self.start(project_id, choice_task={"schema": schema, "data": prompt_data, **({"skill": skill} if skill else {})}, role=role)
 
+    def start_authoring_chain(self, project_id: str, instruction: str) -> dict:
+        """Author the episode with the constructive chain (cast, then per scene stage/act/Core assembly). Same task shape as
+        start_authoring_scenes: a finished run is an `episode.propose` with a suggestion, applied by the usual path."""
+        if not isinstance(instruction, str) or not instruction.strip() or len(instruction) > 1200:
+            raise StudioError("AGENT_INSTRUCTION_INVALID", "Yêu cầu cần từ 1 đến 1200 ký tự.", "agent")
+        capsule = agent_authoring.capsule(self.service, project_id, instruction)
+        return self.start(project_id, author_task=capsule, group=True, chain=True)
+
     def start(self, project_id: str, *, visual_task=None, author_task=None, part_task=None, group=False, revise=None,
-              role: str = "creative", review_task=None, choice_task=None) -> dict:
+              role: str = "creative", review_task=None, choice_task=None, chain=False) -> dict:
         project = self.service.project(project_id)
         if self._bin() is None:
             raise StudioError("AGENT_UNAVAILABLE", "Codex App Server executable not found", "agent")
@@ -430,7 +460,8 @@ class AgentManager:
                 if any(t.get("kind") not in ("episode.part", "episode.propose") for t in active) or                         sum(t.get("kind") == "episode.part" for t in active) >= PARALLEL_AGENTS:
                     raise StudioError("AGENT_BUSY", "Agent slots are full", "agent")
             elif choice_task is not None:  # menu choices: PARALLEL_AGENTS at once, never beside another kind of task
-                if any(t.get("kind") != "scene.choice" for t in active) or len(active) >= PARALLEL_AGENTS:
+                choices = [t for t in active if t.get("kind") == "scene.choice"]
+                if any(t.get("kind") not in ("scene.choice", "episode.propose", "episode.part") for t in active) or len(choices) >= PARALLEL_AGENTS:
                     raise StudioError("AGENT_BUSY", "Agent slots are full", "agent")
             elif revise is not None:  # scene revisions: PARALLEL_AGENTS at once, never beside another kind of task
                 if any(t.get("kind") != "scene.revise" for t in active) or len(active) >= PARALLEL_AGENTS:
@@ -482,7 +513,7 @@ class AgentManager:
                 task.update(parts=[], children=[])
             self._tasks[task_id] = task
             self._save(task)
-            worker = threading.Thread(target=self._run_group if group else self._run, args=(task_id, project["author_task"] if group else project),
+            worker = threading.Thread(target=(self._run_chain_group if chain else self._run_group) if group else self._run, args=(task_id, project["author_task"] if group else project),
                                       name=f"zodiac-agent-{task_id[:8]}", daemon=True)
             self._threads[task_id] = worker
             worker.start()

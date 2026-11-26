@@ -11,6 +11,7 @@ catalog or instruction discards them, an app reset resumes from them.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import tempfile
 import threading
@@ -20,11 +21,17 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Callable
 
+from .models import StudioError
 from .pipeline.failure_policy import route
 
 MAX_RECHOICES = 2
 PARALLEL_SCENES = 2
 CARD_OPTIONS = ("accept", "restage", "redo")
+
+
+def enabled() -> bool:
+    """ZODIAC_STUDIO_CHAIN: 'on' (default) authors with the constructive chain, 'off' keeps the single-blob scene-by-scene path."""
+    return os.environ.get("ZODIAC_STUDIO_CHAIN", "on").strip().lower() not in ("off", "0", "false")
 
 
 class ChoiceError(Exception):
@@ -143,10 +150,11 @@ class LiveIO:
     STORE = ".runtime/chain-parts.json"
     WAIT_SECONDS = 300.0
 
-    def __init__(self, service, project_id: str, instruction: str):
+    def __init__(self, service, project_id: str, instruction: str, capsule: dict | None = None):
         from . import agent_authoring
         self.service, self.project_id = service, project_id
-        self.capsule = agent_authoring.capsule(service, project_id, instruction)
+        self.on_save = None  # progress hook: called with the stored state after every scene
+        self.capsule = capsule or agent_authoring.capsule(service, project_id, instruction)
         self.workspace = service.visual._handle(project_id).workspace
         self.words = (service.voice.snapshot(project_id).get("timing") or {}).get("words") or []
         self._fingerprint = agent_authoring.canonical_hash({
@@ -171,6 +179,8 @@ class LiveIO:
         tmp = path.with_suffix(".tmp")
         tmp.write_text(json.dumps(state, ensure_ascii=False), "utf8")
         tmp.replace(path)
+        if self.on_save:
+            self.on_save(state)
 
     def _wait(self, task_id: str) -> dict:
         end = time.monotonic() + self.WAIT_SECONDS
@@ -197,11 +207,21 @@ class LiveIO:
     def choose(self, kind: str, schema: dict, data: dict) -> dict:
         error = "không rõ"
         for _ in range(2):  # a failed or schema-invalid reply is asked once more before the scene gives up
-            task = self._wait(self.service.agent.start_choice(self.project_id, schema, data, skill=kind)["task_id"])
+            task = self._wait(self._start_choice(schema, data, kind)["task_id"])
             if task["status"] == "COMPLETED" and task.get("suggestion"):
                 return json.loads(task["suggestion"])
             error = str(task.get("error") or task["status"])[:200]
         raise ChoiceError(f"{kind}: {error}")
+
+    def _start_choice(self, schema: dict, data: dict, kind: str) -> dict:
+        end = time.monotonic() + self.WAIT_SECONDS
+        while True:  # a full agent slot is a wait, not a failure
+            try:
+                return self.service.agent.start_choice(self.project_id, schema, data, skill=kind)
+            except StudioError as error:
+                if error.code != "AGENT_BUSY" or time.monotonic() > end:
+                    raise ChoiceError(f"{kind}: {error}") from error
+                time.sleep(1.0)
 
     def _row(self, sid: str) -> dict:
         return next(r for r in self.capsule["scene_ranges"] if r["id"] == sid)

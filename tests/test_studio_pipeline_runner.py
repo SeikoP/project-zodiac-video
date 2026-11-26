@@ -116,7 +116,7 @@ class RunnerTests(unittest.TestCase):
     def test_visual_authoring_tracks_agent_task_as_running(self):
         service = self.service(visual=visual_state(intent=None, build=None, source_hash=None))
         result = run_node(service, "p", "visual", 5, caller="gui")
-        self.assertEqual(service.calls[0][0], "agent.start_authoring_scenes")
+        self.assertEqual(service.calls[0][0], "agent.start_authoring_chain")
         status = {n["id"]: n["status"] for n in result["nodes"]}
         self.assertEqual(status["visual"], "RUNNING")
 
