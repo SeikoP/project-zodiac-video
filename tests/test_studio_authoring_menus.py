@@ -145,3 +145,22 @@ class MenuTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RegisteredAccentTests(unittest.TestCase):
+    """A proposal may carry scene accents, but only the registered masters, byte-for-byte."""
+
+    def good(self):
+        row = menus_mod.accent_registry()["scene-accent-clock"]
+        return {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
+
+    def test_the_registered_accent_is_accepted(self):
+        self.assertTrue(agent_authoring.is_registered_accent(self.good()))
+
+    def test_anything_else_is_refused(self):
+        bad_path = {**self.good(), "path": "library:scene-set/accents/scene-accent-castle.svg"}
+        bad_hash = {**self.good(), "source_sha256": "0" * 64}
+        extra = {**self.good(), "visual": {"type": "svg"}}
+        wrong_category = {**self.good(), "category": "prop"}
+        for asset in (bad_path, bad_hash, extra, wrong_category):
+            self.assertFalse(agent_authoring.is_registered_accent(asset), asset)

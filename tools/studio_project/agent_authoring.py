@@ -79,6 +79,15 @@ def prop_families_manifest():
     return _MANIFEST_CACHE["value"]
 
 
+def is_registered_accent(asset) -> bool:
+    """A scene accent asset is valid only as the library's registered master, byte-for-byte (path and hash)."""
+    from .authoring_menus import accent_registry
+    if not isinstance(asset, dict) or asset.get("category") != "scene_accent" or set(asset) - {"path", "category", "source_sha256"}:
+        return False
+    row = next((r for r in accent_registry().values() if "library:scene-set/" + r["path"] == asset.get("path")), None)
+    return row is not None and asset.get("source_sha256") == row["asset_sha256"]
+
+
 def record_asset_requests(workspace, bad):
     """Write what the library lacks to .authoring/asset-requests.json (spec: assets.request_variant). It asks for new
     master art to be authored and reviewed by a person; it generates nothing and approves nothing."""
@@ -402,8 +411,10 @@ def proposal(text, service, project_id, *, write_visuals=False):
                 generated.add(key)
             elif asset.get("category") == "story_visual" and _stored_story_visual(asset, handle.workspace):
                 generated.add(key)  # already written by an earlier apply (a scene revision starts from the applied intent); the same placement rules apply
+            elif is_registered_accent(asset):
+                continue  # a registered scene accent master: the setting of a scene, not a prop
             elif set(asset) - {"path", "category", "source_sha256"} or asset.get("category") != "prop":
-                raise invalid("Chỉ được chọn đạo cụ trong catalog hoặc Story Visual dạng template đã duyệt.")
+                raise invalid("Chỉ được chọn đạo cụ, scene accent đã đăng ký trong thư viện hoặc Story Visual dạng template đã duyệt.")
             elif asset.get("path") not in allowed:
                 unknown_props[key] = str(asset.get("path"))
         if unknown_props:
