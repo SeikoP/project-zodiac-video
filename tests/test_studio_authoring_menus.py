@@ -143,7 +143,7 @@ class MenuTests(unittest.TestCase):
         accent = menus_mod.stage_schema(m)["properties"]["accent"]["properties"]
         self.assertEqual(accent["accent_id"]["enum"], ["drawn", "none_fits"])
         parts = accent["parts"]
-        self.assertEqual(parts["maxItems"], 3)
+        self.assertEqual(parts["maxItems"], 2)
         row = parts["items"]["properties"]
         self.assertEqual(row["part"]["enum"], sorted(m["accent_parts"]))
         self.assertEqual(row["at"]["enum"], ["left", "center", "right", "across"])

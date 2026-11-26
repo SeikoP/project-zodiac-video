@@ -12,6 +12,7 @@ import { buildBlockedText, buildJobMessage } from "./build-error";
 import EpisodeTimeline from "./EpisodeTimeline";
 import EpisodePlayer from "./EpisodePlayer";
 import {makeEpisodeTimeline, locateEpisodeTime} from "./episode-timeline";
+import {createPlaybackClock} from "./playback-clock";
 import type { WorkbenchSelection } from "./workbench-state";
 import type { GraphTarget } from "./workbench-state";
 
@@ -244,11 +245,11 @@ export default function VisualEditor({ project, active = true, onBuildReady, sel
   },[playing,active,audioUrl,stalePlayback,report]);
   useEffect(() => {
     if (!playing || !active || !episodeDuration || stalePlayback) return;
-    let frame=0,last=performance.now(),painted=0;
+    let frame=0,painted=0;
+    const steady=createPlaybackClock(globalPlayhead.current,audio.current && audioUrl ? ()=>audio.current ? audio.current.currentTime*1000 : null : null,performance.now());
     const tick=(now: number)=>{
-      const player=audio.current;
-      const at=Math.min(episodeDuration,player && audioUrl ? player.currentTime*1000 : globalPlayhead.current+now-last);
-      last=now;globalPlayhead.current=at;
+      const at=Math.min(episodeDuration,steady.at(now));  // steady frame clock; the voice only corrects a real drift
+      globalPlayhead.current=at;
       const position=locateEpisodeTime(timeline,at);
       if(position && position.sceneId!==scene?.id){setSceneId(position.sceneId);setEntityId("");setStateId("");}
       if(now-painted>=1000/30 || at>=episodeDuration){

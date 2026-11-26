@@ -156,6 +156,11 @@ class VisualWorkspaceTests(unittest.TestCase):
         self.visual.start(self.project,state["revision"]);warm=self.wait()
         self.assertEqual(warm["build"]["cache"]["rebuilt"],0);self.assertEqual(warm["approval"],"NOT_GRANTED")
 
+    def test_the_build_manifest_carries_each_scene_camera_so_export_can_repaint_the_same_preview(self):
+        state=self.built();folder=self.handle.workspace/".runtime/visual-workspace/builds"/state["build"]["id"]
+        rows=json.loads((folder/"manifest.json").read_text("utf8"))["performance_graph"]["scenes"]
+        self.assertTrue(all("camera" in row for row in rows))  # without it a scene with a camera move fails EXPORT_PREVIEW_DRIFT
+
     def test_the_whole_episode_previews_as_one_seekable_composition_and_is_cached(self):
         state=self.built();calls=[]
         def fake(handle,payload,*args,**kw):  # the fixture's synthetic acting is preview-valid but not export-valid: stand in for the painter

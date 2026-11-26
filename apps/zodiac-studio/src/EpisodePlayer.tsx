@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import { backend } from "./backend";
+import { createPlaybackClock } from "./playback-clock";
 
 type Timeline = { seek(time: number, suppressEvents?: boolean): void; pause(): void };
 
@@ -39,11 +40,11 @@ export default function EpisodePlayer({ projectId, buildId, audioUrl, durationMs
 
   useEffect(() => {
     if (!playing || !ready) { audio.current?.pause(); return; }
-    let handle = 0, last = performance.now();
+    let handle = 0;
     if (audio.current && audioUrl) { audio.current.currentTime = clock.current; void audio.current.play().catch((error) => { setPlaying(false); onError(error); }); }
+    const steady = createPlaybackClock(clock.current * 1000, audio.current && audioUrl ? () => (audio.current ? audio.current.currentTime * 1000 : null) : null, performance.now());
     const tick = (now: number) => {
-      const at = audio.current && audioUrl ? audio.current.currentTime : clock.current + (now - last) / 1000;
-      last = now;
+      const at = steady.at(now) / 1000;  // frame-timer clock, corrected by the voice only when they really drift apart
       if (at >= total) { seek(total); setPlaying(false); return; }
       seek(at); handle = requestAnimationFrame(tick);
     };

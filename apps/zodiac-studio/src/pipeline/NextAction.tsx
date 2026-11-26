@@ -38,7 +38,7 @@ export default function NextActionBanner({ store, onOpen }: { store: PipelineSto
   const action = nextAction(snap.nodes, snap.needsYou, running);
   return (
     <div className="next-action" data-tone={action.tone} role="status" aria-live="polite">
-      <div><strong>{action.text}</strong>{action.detail && <small>{action.detail}</small>}</div>
+      <div><strong>{action.text}</strong></div>
       {action.nodeId && action.button && (
         <button className="primary-btn" onClick={() => onOpen(action.nodeId!)}>{action.button} <ArrowRight size={13} aria-hidden="true" /></button>)}
     </div>

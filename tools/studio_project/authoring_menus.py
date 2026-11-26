@@ -11,7 +11,7 @@ import re
 from . import accent_art, agent_authoring, catalog_v5, prop_families
 
 MAX_EVENTS = 8
-MAX_PROPS = 3
+MAX_PROPS = 2  # few objects: each must be acted on, a crowd of them only clutters the frame
 MAX_PHRASE_WORDS = 6
 NONE = "none"
 NONE_FITS = "none_fits"
@@ -148,7 +148,7 @@ def stage_schema(menus: dict) -> dict:
                            "visible_detail": {"type": "string", "maxLength": 140},
                            "anchor_id": _enum([a["id"] for a in menus["anchors"]]),
                            # for accent_id "drawn": up to three parts Core draws, one per slot (left/center/right, or one wide part across)
-                           "parts": {"type": "array", "maxItems": 3,
+                           "parts": {"type": "array", "maxItems": 2,
                                      "items": _object({"part": _enum(sorted(menus["accent_parts"])), "at": _enum(list(accent_art.AT)),
                                                        "size": _enum(list(accent_art.SIZES))})}}),
     })

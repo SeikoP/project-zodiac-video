@@ -484,6 +484,67 @@ class DrawnAccentTests(unittest.TestCase):
         self.assertEqual(json.loads(out.stdout), {"status": "PASS", "issues": []})
 
 
+class LivelyMotionTests(unittest.TestCase):
+    """Boring scenes were the complaint: every scene gets a camera move, the cast walks in, and acting moves are bolder."""
+
+    def scene(self, scene_id="s01", present=2):
+        menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])
+        stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, present), "props": [], "dressing": "none"}
+        act = {"events": [{"anchor_id": menus["anchors"][0]["id"], "target": "ban", "action": "Chỉ tay", "state_after": "same"}]}
+        return scene_assembler.assemble_scene(menus, stage, act, scene_id, RANGE, TEXT, GOAL)["payload"]["scene"]
+
+    def test_every_scene_has_one_camera_move_that_stays_inside_the_canvas(self):
+        for scene_id in ("s01", "s02", "s03", "s04"):
+            camera = self.scene(scene_id)["camera"]
+            self.assertEqual(len(camera), 1, scene_id)
+            shot = camera[0]
+            self.assertEqual(shot["trigger"], {"type": "scene_start"})
+            self.assertTrue(0 < shot["duration_frames"] <= 300)
+            for framing in (shot["from"], shot["to"]):
+                self.assertTrue(1.0 <= framing["zoom"] <= 1.25, scene_id)
+                half_w, half_h = 540 / framing["zoom"], 960 / framing["zoom"]
+                self.assertGreaterEqual(framing["x"] - half_w, 0)
+                self.assertLessEqual(framing["x"] + half_w, 1080)
+                self.assertGreaterEqual(framing["y"] - half_h, 0)
+                self.assertLessEqual(framing["y"] + half_h, 1920)
+
+    def test_the_camera_alternates_between_pushing_in_and_pulling_out(self):
+        zoom_change = {sid: (lambda c: c["to"]["zoom"] - c["from"]["zoom"])(self.scene(sid)["camera"][0]) for sid in ("s01", "s02", "s03", "s04")}
+        self.assertGreater(zoom_change["s01"], 0)
+        self.assertLess(zoom_change["s02"], 0)
+        self.assertGreater(zoom_change["s03"], 0)
+        self.assertLess(zoom_change["s04"], 0)
+
+    def test_each_character_walks_in_from_its_own_side_at_the_scene_start(self):
+        scene = self.scene()
+        boxes = {e["id"]: scene_assembler._rect(e) for e in scene["entities"] if e["kind"] == "character"}
+        enters = {e["target"]: e for e in scene["events"] if e["motion"]["preset"] == "enter"}
+        self.assertEqual(set(enters), set(boxes))
+        for target, event in enters.items():
+            self.assertEqual(event["trigger"], {"type": "scene_start"})
+            self.assertEqual(event["state_before"], event["state_after"])
+            centre = boxes[target]["x"] + boxes[target]["width"] / 2
+            self.assertEqual(event["motion"]["params"]["from"], "left" if centre < 540 else "right", target)
+
+    def test_acting_waits_for_the_entrance_and_leans_toward_the_partner(self):
+        scene = self.scene()
+        enter = next(e for e in scene["events"] if e["target"] == "ban" and e["motion"]["preset"] == "enter")
+        lean = next(e for e in scene["events"] if e["target"] == "ban" and e["motion"]["preset"] == "lean")
+        self.assertLess(scene["events"].index(enter), scene["events"].index(lean))
+        params = lean["motion"]["params"]
+        self.assertGreaterEqual(abs(params["degrees"]), 8)
+        self.assertNotEqual(params["dx"], 0)
+        self.assertLess(params["dy"], 0)  # a small hop
+        mine, other = (scene_assembler._rect(e) for e in sorted((e for e in scene["entities"] if e["kind"] == "character"), key=lambda e: e["id"] != "ban"))
+        self.assertEqual(params["dx"] > 0, other["x"] > mine["x"])
+
+    def test_objects_are_kept_few(self):
+        self.assertEqual(authoring_menus.MAX_PROPS, 2)
+        menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])
+        accent = authoring_menus.stage_schema(menus)["properties"]["accent"]["properties"]["parts"]
+        self.assertEqual(accent["maxItems"], 2)
+
+
 class EventTimingTests(unittest.TestCase):
     """The real export refuses two acting events of one target that overlap (EXPORT_ACTING_TIMING_INVALID)."""
 
@@ -499,7 +560,7 @@ class EventTimingTests(unittest.TestCase):
         stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none"}
         events = [{"anchor_id": a["id"], "target": "ban", "action": "x", "state_after": "same"} for a in menus["anchors"][:4]]
         part = scene_assembler.assemble_scene(menus, stage, {"events": events}, "s01", RANGE, "Chờ nhé, để xem ngay, rồi sao nữa, thế đấy.", GOAL)
-        mine = [e for e in part["payload"]["scene"]["events"] if e["target"] == "ban"]
+        mine = [e for e in part["payload"]["scene"]["events"] if e["target"] == "ban" and e["trigger"]["type"] == "voice_anchor"]  # not the entrance
         at = {a["id"]: a["t"] for a in menus["anchors"]}
         by_trigger = {a["text"]: a["t"] for a in menus["anchors"]}
         times = [by_trigger[e["trigger"]["text"]] for e in mine]
@@ -513,7 +574,7 @@ class EventTimingTests(unittest.TestCase):
         stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none"}
         events = [{"anchor_id": a["id"], "target": "ban", "action": "x", "state_after": "same"} for a in menus["anchors"][:3]]
         part = scene_assembler.assemble_scene(menus, stage, {"events": events}, "s01", RANGE, "Chờ nhé, để xem ngay, rồi sao nữa, thế đấy.", GOAL)
-        self.assertEqual(len([e for e in part["payload"]["scene"]["events"] if e["target"] == "ban"]), 3)
+        self.assertEqual(len([e for e in part["payload"]["scene"]["events"] if e["target"] == "ban" and e["trigger"]["type"] == "voice_anchor"]), 3)
 
 
 class StoryVisualLookupTests(unittest.TestCase):

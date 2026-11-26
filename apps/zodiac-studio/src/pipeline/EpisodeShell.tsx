@@ -70,11 +70,11 @@ export default function EpisodeShell({ project, active, tool, toolTick, selectio
     <section className="production-manager" aria-label="Quản lý tổng thể episode">
       <div className="episode-bar">
         <EpisodeIdentity project={project} onPlan={onPlan} onImport={onImport} />
-        <NextActionBanner store={store} onOpen={open} />
         <AutopilotBar store={store} />
       </div>
       <div className="production-workspace" data-stage={target.stage}>
         <div className="production-side">
+          <NextActionBanner store={store} onOpen={open} />
           <StepList store={store} onOpen={open} />
           <NeedsYou store={store} onOpen={open} />
         </div>

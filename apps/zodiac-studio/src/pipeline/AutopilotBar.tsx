@@ -33,13 +33,12 @@ export default function AutopilotBar({ store }: { store: PipelineStore }) {
             onClick={() => void store.startAutopilot()}><Play size={13} aria-hidden="true" /> Chạy tự động</button>}
       <button role="switch" aria-checked={autopilot} className="outline-btn pipe-mode"
         onClick={() => void store.setMode(autopilot ? "confirm" : "autopilot")}>
-        {autopilot ? "Chế độ: Tự động" : "Chế độ: Từng bước"}<small> · đổi sang {autopilot ? "Từng bước" : "Tự động"}</small>
+        {autopilot ? "Tự động" : "Từng bước"}
       </button>
-      <span className="pipe-run-state" aria-live="polite">
+      {state !== "IDLE" && <span className="pipe-run-state" aria-live="polite">
         {STATE_LABEL[state] ?? state}
         {running && current ? ` · ${current.title} · ${seconds}s` : ""}
-      </span>
-      {!autopilot && !running && <span className="pipe-hint">Từng bước: bạn bấm Chạy ở mỗi thẻ. Đổi sang Tự động để máy chạy cả chuỗi.</span>}
+      </span>}
       {snap.error && <span className="pipe-error" role="alert">{snap.error}</span>}
     </div>
   );

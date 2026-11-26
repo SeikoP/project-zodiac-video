@@ -262,7 +262,7 @@ export async function buildEpisode(input){
     voice_sha256:input.timing.wav_sha256,timing_sha256:hash(input.timing),theme,compiler_sha256:compiler,scenes,dag,semantic_graph:buildPhase02SemanticGraph(intent),
     assets:Object.fromEntries(Object.entries(assetMap).map(([id,a])=>[id,{sha256:a.source_sha256,identity_signature:a.identity_signature??null}])),
     production_sha256:digest(await readFile(path.join(out,'production.json'))),
-    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,fps:t.fps,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events,words:t.words,measured:true}))},
+    performance_graph:{format:'zodiac-performance-graph@1',scenes:measured.map(t=>({scene_id:t.scene_id,fps:t.fps,source_range:t.narration_range,startMs:t.startMs,endMs:t.endMs,events:t.events,camera:t.camera,words:t.words,measured:true}))},
     contracts:{presentation_contract_sha256:digest(await readFile(new URL('./visual_contract.json',import.meta.url))),theme:'zodiac-visual-theme@1',performance:'zodiac-performance-graph@1',motion:MOTION.format,motion_registry_sha256:hash(MOTION),source_map:'zodiac-hyperframes-source-map@1',legacy:'V4_JOB5_DERIVED_PRODUCTION'},
     cache:{events,reused:events.filter(e=>e.hit).length,rebuilt:events.filter(e=>!e.hit).length,concurrency},
     resources:{wall_ms:Math.round(performance.now()-begun),cpu_microseconds:process.cpuUsage(usage),peak_rss_bytes:process.resourceUsage().maxRSS*1024,free_memory_bytes:os.freemem(),free_disk_bytes:Number(disk.bavail)*Number(disk.bsize),output_bytes:(await Promise.all(scenes.map(s=>stat(path.join(out,s.preview_file))))).reduce((n,s)=>n+s.size,0)},

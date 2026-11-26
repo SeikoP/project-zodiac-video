@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { Check, Clock, Hand, LoaderCircle, Lock, OctagonX, Play, RotateCcw, type LucideIcon } from "lucide-react";
 import type { PipelineStore } from "./pipeline-store";
-import { groupByPhase, phasePrimary, runnableScenes, phaseProgress, phaseSummary, RUNNABLE, STATUS_LABEL } from "./status";
+import { groupByPhase, phasePrimary, runnableScenes, phaseProgress, RUNNABLE, STATUS_LABEL } from "./status";
 import type { NodeStatus, PipelineNode } from "./types";
 import "./pipeline.css";
 
@@ -50,7 +50,6 @@ export default function StepList({ store, onOpen }: { store: PipelineStore; onOp
     return <section className="step-list" aria-label="Quy trình sản xuất"><p className="pipe-empty">
       {snap.error ? `Không tải được quy trình: ${snap.error}` : "Đang đọc trạng thái episode…"}</p></section>;
   }
-  const { done, total } = phaseSummary(nodes);
   const rows = (steps: PipelineNode[], scenes: PipelineNode[]) => (
     <ol>
       {steps.map((node) => <Row key={node.id} node={node} selected={selection.nodeId === node.id} onSelect={select} onRun={run} />)}
@@ -62,7 +61,6 @@ export default function StepList({ store, onOpen }: { store: PipelineStore; onOp
     </ol>);
   return (
     <section className="step-list" aria-label="Quy trình sản xuất">
-      <header className="step-head"><strong>Quy trình</strong><small>{done}/{total} bước xong</small></header>
       {groupByPhase(nodes).map(({ phase, steps, scenes }) => {
         const all = [...steps, ...scenes];
         const finished = all.filter((n) => n.status === "DONE").length;
