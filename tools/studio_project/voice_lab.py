@@ -422,22 +422,22 @@ class VoiceLab:
 
     def _can_confirm_from_segments(self, handle, state):
         assembly = state.get("assembly")
-        return bool(assembly and not assembly.get("listened") and state.get("episode_heard") == state["narration_sha256"]
-                    and not self._segments_needing_listen(handle, state))
+        # Hearing every segment is enough: the owner decided a second pass over the whole assembly is not required.
+        return bool(assembly and not assembly.get("listened") and not self._segments_needing_listen(handle, state))
 
     def confirm_from_segments(self, project_id, base_revision):
         """The user's explicit confirmation that the assembly may stand on what they already heard.
 
-        Only reachable from a user action (the GUI button); assemble() and the autopilot never call it. It needs the whole
-        episode to have been heard once for this narration and every segment of the current selection to carry a proof.
-        The seams around an edited unit and a changed pause were not played back: this click accepts that.
+        Only reachable from a user action (the GUI button); assemble() and the autopilot never call it. It needs every segment
+        of the current selection to carry a proof of the user's own listening. The seams between units, around an edited unit
+        and around a changed pause were not played back as a whole: this click accepts that.
         """
         handle = self._handle(project_id)
         with _exclusive_source_lock(handle.workspace, "voice-state"):
             state = self._read(handle)
             self._revision(state, base_revision)
             if not self._can_confirm_from_segments(handle, state):
-                raise StudioError("VOICE_SEGMENTS_NOT_HEARD", "Còn đoạn chưa nghe hoặc chưa nghe cả tập một lần", "voice")
+                raise StudioError("VOICE_SEGMENTS_NOT_HEARD", "Còn đoạn chưa nghe", "voice")
             stamps = [p["confirmed_at"] for p in state.get("segment_proofs", [])]
             state["assembly"]["listened"] = {"kind": "user_listened", "wav_sha256": state["assembly"]["wav_sha256"], "confirmed_at": time.time(),
                                              "narration_sha256": state["narration_sha256"], "derived_from": "segment_proofs",

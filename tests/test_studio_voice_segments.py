@@ -64,23 +64,26 @@ class SegmentProofTests(unittest.TestCase):
         self.assertNotEqual(state["status"], "USER_LISTENED_APPROVED")
         self.assertEqual(state["segments_needing_listen"], [u["id"] for u in state["units"][1:]])
 
-    def test_every_unit_heard_alone_still_needs_the_assembled_episode_once(self):
+    def test_every_unit_heard_alone_can_be_accepted_without_a_pass_over_the_whole_episode(self):
         state = self.create()
         for unit in state["units"]:
             state = self.listened(unit["id"], unit["selected_take"])
         state = self.lab.assemble(self.project, state["revision"])
         self.assertEqual(state["segments_needing_listen"], [])
-        self.assertEqual(state["status"], "TECHNICAL_VALID")  # seams between units were never heard
+        self.assertEqual(state["status"], "TECHNICAL_VALID")  # hearing never approves by itself
+        self.assertTrue(state["can_confirm_from_segments"])
+        state = self.lab.confirm_from_segments(self.project, state["revision"])  # only the user's explicit click approves
+        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
 
-    def test_confirming_from_segments_is_refused_when_anything_is_unheard_or_the_episode_was_never_heard(self):
+    def test_confirming_from_segments_is_refused_while_anything_is_unheard(self):
         state = self.create()
         state = self.lab.assemble(self.project, state["revision"])
         self.assertFalse(state["can_confirm_from_segments"])
         with self.assertRaises(StudioError) as caught:  # nothing heard at all
             self.lab.confirm_from_segments(self.project, state["revision"])
         self.assertEqual(caught.exception.code, "VOICE_SEGMENTS_NOT_HEARD")
-        for unit in state["units"]:  # every unit heard alone, the assembled episode never
-            state = self.listened(unit["id"], unit["selected_take"])
+        first = state["units"][0]  # one unit heard, the rest not
+        state = self.listened(first["id"], first["selected_take"])
         state = self.lab.assemble(self.project, state["revision"])
         self.assertFalse(state["can_confirm_from_segments"])
         with self.assertRaises(StudioError):

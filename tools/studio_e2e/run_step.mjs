@@ -6,7 +6,7 @@ export async function runStep(page, title, {timeoutSec = 120, pollMs = 3000, unt
   if (click) await page.click(`${rowOf(title)}?.querySelector('.step-run')`);
   let text = '';
   while ((Date.now() - started) / 1000 < timeoutSec) {
-    text = await page.eval(`${rowOf(title)}?.innerText.replace(/\n/g,' / ')`) ?? '';
+    text = await page.eval(`${rowOf(title)}?.innerText.replace(/\\n/g,' / ')`) ?? '';
     if (until.test(text)) return {seconds: (Date.now() - started) / 1000, text};
     await new Promise((resolve) => setTimeout(resolve, pollMs));
   }

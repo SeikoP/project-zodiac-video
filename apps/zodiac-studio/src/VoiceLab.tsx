@@ -155,7 +155,7 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
     {state && <ol className="voice-steps" aria-label="Các bước làm giọng">{["Tạo audio", "Ghép audio", "Đo timing", "Nghe toàn bài & duyệt"].map((label, index) => (
       <li key={label} data-state={approved || index + 1 < step ? "done" : index + 1 === step ? "current" : "todo"}><span>{index + 1}</span>{label}</li>))}</ol>}
     {state && step === 4 && !approved && state.can_confirm_from_segments && <p className="voice-next-hint" role="status">
-      Bạn đã nghe cả tập một lần và mọi đoạn hiện tại. Chỗ nối quanh đoạn vừa sửa chưa được nghe lại; nếu chấp nhận, bấm xác nhận.{" "}
+      Bạn đã nghe mọi đoạn hiện tại. Chỗ nối giữa các đoạn chưa được nghe liền; nếu chấp nhận, bấm xác nhận.{" "}
       <button className="primary-btn" onClick={() => void backend.voiceConfirm(project.project_id, state.revision, "episode", "", "").then(changed).catch(report)}>Xác nhận từ các đoạn đã nghe</button></p>}
     {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)} {listenHintText(state)}</p>}
     {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Việc của bạn: mở tab “Nghe toàn bài & timing”, nghe hết một lần rồi bấm xác nhận. Nghe từng đoạn là tuỳ chọn, không bắt buộc.</p>}
