@@ -30,3 +30,6 @@ assets/music/content-review-v3.md
 /blocked/
 /.plugin-sync
 /reviews
+
+# machine-local scratch (baselines, backups, proposals, logs): never tracked
+tmp/
