@@ -25,6 +25,9 @@ from .models import StudioError
 from .pipeline.failure_policy import route
 
 MAX_RECHOICES = 2
+# Findings the episode-level proposal completes itself (story-visual briefs and coverage are filled in by `agent_authoring.proposal`),
+# so a single scene checked alone must not spend the model's re-choices on them.
+COMPLETED_LATER = frozenset({"NARRATIVE_BRIEF_REQUIRED", "STORY_VISUAL_ASSET_ROLE_INVALID", "STORY_VISUAL_COVERAGE_MISSING"})
 PARALLEL_SCENES = 2
 CARD_OPTIONS = ("accept", "restage", "redo")
 
@@ -292,7 +295,7 @@ class LiveIO:
             (copy / ".authoring/visual-intent.json").write_text(json.dumps(intent, ensure_ascii=False), "utf8")
             for result in node_runner(copy, ("scene-experience", "story-visual-presence", "authoring-completeness")):
                 for issue in result.get("issues", []):
-                    if issue.get("scene_id") == sid:
+                    if issue.get("scene_id") == sid and issue.get("code") not in COMPLETED_LATER:
                         found.append({"code": issue.get("code"), "detail": result.get("name")})
         return found
 

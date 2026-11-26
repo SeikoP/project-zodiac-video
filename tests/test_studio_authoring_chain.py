@@ -205,5 +205,21 @@ class LiveIOTests(unittest.TestCase):
             self.assertEqual(io.scene_ids(), ["s01"])
 
 
+class CheckFilterTests(unittest.TestCase):
+    def test_findings_the_episode_proposal_completes_are_not_held_against_a_single_scene(self):
+        import tempfile
+        from unittest import mock
+        found = [{"name": "story-visual-presence", "issues": [
+            {"code": "NARRATIVE_BRIEF_REQUIRED", "scene_id": "s02"}, {"code": "STORY_VISUAL_COVERAGE_MISSING", "scene_id": "s02"},
+            {"code": "VISUAL_DEPTH_UNDERDEVELOPED", "scene_id": "s02"}, {"code": "PASSIVE_STORYTELLING", "scene_id": "s09"}]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            io = LiveIOTests().make(tmp)
+            text = json.dumps({"payload": {"scene": {"id": "s02"}, "assets": {}}})
+            skeleton = json.dumps({"payload": {"intent": {"scenes": [], "assets": {}}}})
+            with mock.patch("tools.studio_project.pipeline.validators.node_runner", return_value=found):
+                issues = io.check_scene(skeleton, "s02", text)
+        self.assertEqual([i["code"] for i in issues], ["VISUAL_DEPTH_UNDERDEVELOPED"])
+
+
 if __name__ == "__main__":
     unittest.main()
