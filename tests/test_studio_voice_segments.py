@@ -103,6 +103,28 @@ class SegmentProofTests(unittest.TestCase):
         state = dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": "episode", "take_id": "", "playback_id": "", "confirm": True, "base_revision": state["revision"]})
         self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
 
+    def test_one_click_approval_needs_no_listening_and_says_so(self):
+        from tools.studio_project.rpc_stdio import dispatch
+        state = self.create()
+        with self.assertRaises(StudioError) as caught:  # nothing to approve before the audio is assembled
+            self.lab.approve_episode(self.project, state["revision"])
+        self.assertEqual(caught.exception.code, "VOICE_NOT_ASSEMBLED")
+        state = self.lab.assemble(self.project, state["revision"])
+        self.assertNotEqual(state["status"], "USER_LISTENED_APPROVED")  # assembling never approves by itself
+        with self.assertRaises(StudioError):  # the click must be an explicit True
+            dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": "episode", "take_id": "", "playback_id": "", "confirm": "true", "base_revision": state["revision"]})
+        state = dispatch(self.service, "voice.confirm", {"project_id": self.project, "unit_id": "episode", "take_id": "", "playback_id": "", "confirm": True, "base_revision": state["revision"]})
+        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
+        self.assertEqual(state["assembly"]["listened"]["playback"], "skipped_by_user")
+        self.assertEqual(state["assembly"]["listened"]["derived_from"], "user_accepted")
+        self.assertEqual(state.get("segment_proofs", []), [])  # nothing is claimed as heard
+        unit = state["units"][0]  # a later edit still drops the approval; one more click restores it
+        state = self.lab.select(self.project, unit["id"], unit["selected_take"], state["revision"], unit["gap_after_ms"] + 50)
+        self.assertNotEqual(state["status"], "USER_LISTENED_APPROVED")
+        state = self.lab.assemble(self.project, state["revision"])
+        state = self.lab.approve_episode(self.project, state["revision"])
+        self.assertEqual(state["status"], "USER_LISTENED_APPROVED")
+
     def test_assembling_alone_never_mints_an_approval_even_when_every_segment_is_proven(self):
         state = self.approved()
         unit = state["units"][0]

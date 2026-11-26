@@ -50,8 +50,7 @@ try {
  await page.waitForFunction(()=>document.querySelector('.voice-workspace').classList.contains('voice-tab-takes'));
  await page.locator('.voice-takes audio').waitFor();
  await page.waitForFunction(()=>window.audioUnits.includes('u9'));
- await page.getByRole('button',{name:'Tôi đã nghe hết và chấp nhận',exact:true}).scrollIntoViewIfNeeded();
- assert.equal(await page.getByRole('button',{name:'Tôi đã nghe hết và chấp nhận',exact:true}).isDisabled(),true,'layout must not bypass listening gate');
+ assert.equal(await page.getByRole('button',{name:/đã nghe hết|Chấp nhận cảnh/}).count(),0,'no per-scene confirmation: approval is the single Duyệt giọng button');
  await page.getByRole('button',{name:'Lưu khoảng nghỉ',exact:true}).scrollIntoViewIfNeeded();
  const bounds=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight}));
  assert.ok(bounds.w<=321&&bounds.h<=481,JSON.stringify(bounds));

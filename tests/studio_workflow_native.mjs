@@ -38,22 +38,11 @@ try{
  assert.equal(await page.locator('.sidebar-nav button').count(),3);
  if(process.env.STUDIO_E2E_GENERATE_VOICE==='1') {
   await tab('Giọng đọc');
-  const generate=page.getByRole('button',{name:'Tạo audio còn thiếu',exact:true});await generate.waitFor({timeout:60000});
-  if(await generate.isEnabled()) {
-   const previous=await page.locator('.voice-job').getAttribute('data-job-id').catch(()=>null);
-   await generate.click();
-   await page.waitForFunction(id=>{const e=document.querySelector('.voice-job');return e?.dataset.jobId!==id && /COMPLETED|REVIEW|FAILED/.test(e?.textContent||'');},previous,{timeout:1800000});
-   assert.match(await page.locator('.voice-workspace .voice-job').innerText(),/COMPLETED/);
-  }
-  await record('fresh real speech units available; successful takes retained across retries');
-  await page.getByRole('button',{name:'Nghe toàn bài & timing',exact:true}).click();
-  await page.getByRole('button',{name:'Ghép audio đã chọn',exact:true}).click();
-  const align=page.getByRole('button',{name:'Đo timing bằng ASR',exact:true});await align.waitFor();
-  const previous=await page.locator('.voice-job').getAttribute('data-job-id').catch(()=>null);
-  await align.click();
-  await page.waitForFunction(id=>{const e=document.querySelector('.voice-job');return e?.dataset.jobId!==id && /COMPLETED|REVIEW|FAILED/.test(e?.textContent||'');},previous,{timeout:1800000});
+  const prepare=page.getByRole('button',{name:'Chuẩn bị giọng',exact:true});await prepare.waitFor({timeout:60000});
+  if(await prepare.isEnabled()) await prepare.click(); // one click chains generate, assemble and ASR timing
+  await page.locator('.voice-steps li[data-state=current]').filter({hasText:'Duyệt giọng'}).waitFor({timeout:1800000});
   assert.match(await page.locator('.voice-workspace .voice-job').innerText(),/COMPLETED/);
-  await record('fresh selected voice assembled and actual ASR measured via GUI');
+  await record('fresh real speech units generated, assembled and ASR measured through one GUI click');
  }
 
  await tab('Giọng đọc');await page.getByRole('button',{name:'Nghe toàn bài & timing',exact:true}).click();

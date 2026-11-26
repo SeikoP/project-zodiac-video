@@ -184,10 +184,10 @@ def dispatch(service: StudioProjectService, method: str, params: object) -> Any:
         return service.voice.playback(**p)
     if method == "voice.confirm":
         _exact(p, "project_id", "unit_id", "take_id", "playback_id", "confirm", "base_revision")
-        if p["unit_id"] == "episode" and not p["playback_id"]:  # no playback: the user's explicit "I heard these segments" click
+        if p["unit_id"] == "episode" and not p["playback_id"]:  # no playback: the user's explicit "Duyệt giọng" click, listening optional
             if p["confirm"] is not True:
                 raise StudioError("VOICE_LISTENING_CONFIRMATION_REQUIRED", "Explicit listening confirmation required", "voice")
-            result = service.voice.confirm_from_segments(p["project_id"], p["base_revision"])
+            result = service.voice.approve_episode(p["project_id"], p["base_revision"])
         else:
             result = service.voice.confirm(**p)
         if p["unit_id"] == "episode":

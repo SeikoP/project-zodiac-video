@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Headphones, LoaderCircle, Lock, Mic2, RefreshCcw, Waves } from "lucide-react";
 import { backend, type Project, type SpeechUnit, type VoiceScene, type VoiceState, type VoiceTake } from "./backend";
-import { approvalNoteText, listenHintText } from "./voice-approval";
+import { approvalNoteText } from "./voice-approval";
 
 import { Paged } from "./Paged";
 import "./voice-layout.css";
@@ -19,15 +19,11 @@ const JOB_MESSAGES: [RegExp, string][] = [
 ];
 const jobMessage = (message: string) => { const hit = JOB_MESSAGES.find(([pattern]) => pattern.test(message)); return hit ? message.replace(hit[0], hit[1]) : message; };
 
-function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onError }: {
-  projectId: string; unitId: string; take: VoiceTake; revision: number; listened: boolean;
-  onChange: (state: VoiceState) => void; onError: (error: unknown) => void;
+/** Optional listening aid: approval is the single "Duyệt giọng" button, so playing here proves nothing and is never required. */
+function WavePlayer({ projectId, unitId, take, onError }: {
+  projectId: string; unitId: string; take: VoiceTake; onError: (error: unknown) => void;
 }) {
   const [url, setUrl] = useState("");
-  const [playback, setPlayback] = useState("");
-  const [ended, setEnded] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const free = unitId.startsWith("scene:"); // a scene can be accepted at will; sentences and the whole episode need the full listen
   useEffect(() => {
     let live = true, localUrl = "";
     void backend.voiceAudio(projectId, unitId, take.take_id).then(blob => {
@@ -36,33 +32,16 @@ function WavePlayer({ projectId, unitId, take, revision, listened, onChange, onE
     }).catch(error => { if (live) onError(error); });
     return () => { live = false; if (localUrl) URL.revokeObjectURL(localUrl); };
   }, [projectId, unitId, take.take_id, onError]);
-  async function began() {
-    setEnded(false); setPlayback("");
-    try { setPlayback((await backend.voicePlayback(projectId, unitId, take.take_id)).playback_id); }
-    catch (error) { onError(error); }
-  }
-  async function confirm() {
-    setConfirming(true);
-    try { onChange(await backend.voiceConfirm(projectId, revision, unitId, take.take_id, ended ? playback : "")); }
-    catch (error) { onError(error); }
-    finally { setConfirming(false); }
-  }
   return <div className="voice-player">
     <svg className="voice-waveform" viewBox="0 0 512 72" role="img" aria-label="Biên độ đo từ audio thực tế">
       <line x1="0" x2="512" y1="36" y2="36" stroke="currentColor" opacity=".15"/>
       {take.peaks.map((height, i) => <line key={i} x1={i * 512 / take.peaks.length} x2={i * 512 / take.peaks.length}
         y1={36 - height * 34} y2={36 + height * 34} stroke="currentColor" strokeWidth="2"/>)}</svg>
     <div className="voice-player-caption"><span>{take.duration_seconds.toFixed(2)} giây · WAV thật</span>
-      <span>{listened ? "Đã xác nhận nghe" : "Chưa xác nhận nghe"}</span></div>
-    {url ? <audio controls src={url} preload="metadata" onPlay={() => void began()}
-      onEnded={() => setEnded(true)} onSeeking={() => { setEnded(false); setPlayback(""); }}
-      onRateChange={() => { setEnded(false); setPlayback(""); }}/>
+      <span>Nghe thử, không bắt buộc</span></div>
+    {url ? <audio controls src={url} preload="metadata"/>
       : <p className="voice-muted"><LoaderCircle size={15} className="spin"/> Đang nạp audio…</p>}
     {take.warnings.length > 0 && <p className="voice-warning">Cần nghe kiểm tra: {take.warnings.join(" · ")}</p>}
-    <button className="outline-btn" disabled={listened || (!free && (!ended || !playback)) || confirming} onClick={() => void confirm()}>
-      <CheckCircle2 size={15}/>{listened ? (free ? "Đã chấp nhận" : "Đã nghe và chấp nhận") : confirming ? "Đang lưu…" : free ? "Chấp nhận cảnh này" : "Tôi đã nghe hết và chấp nhận"}
-    </button>
-    {!listened && <small>{free ? "Nghe hay không là tuỳ bạn; bấm chấp nhận khi thấy ổn. Đổi take hoặc khoảng nghỉ sau này sẽ cần chấp nhận lại." : "Nghe hết bằng nút phát ở trên rồi xác nhận. Bỏ qua đoạn hoặc đổi tốc độ sẽ cần nghe lại."}</small>}
   </div>;
 }
 
@@ -141,12 +120,10 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
   const total = state?.units.length ?? 0;
   // 1 tạo audio, 2 ghép, 3 đo timing, 4 nghe & duyệt (bước của người). Máy làm 1-3 bằng một nút duy nhất.
   const step = !state ? 1 : count < total ? 1 : !state.assembly ? 2 : !state.timing ? 3 : 4;
-  const NEXT_LABEL = ["", "Tạo audio còn thiếu", "Ghép audio đã chọn", "Đo timing bằng ASR"];
   // An older backend sends no scenes: fall back to one group per sentence so the list still works.
   const scenes: VoiceScene[] = state?.scenes ?? state?.units.map(item => ({ id: item.id, title: item.text, unit_ids: [item.id], take: null })) ?? [];
   const scene = scenes.find(item => unit && item.unit_ids.includes(unit.id)) ?? scenes[0];
   const sceneUnits = scene ? state?.units.filter(item => scene.unit_ids.includes(item.id)) ?? [] : [];
-  const sceneHeard = (item: VoiceScene) => item.unit_ids.length > 0 && item.unit_ids.every(id => state?.units.find(u => u.id === id)?.listened);
   async function action(run: () => Promise<VoiceState>) {
     setBusy(true); setError("");
     try { changed(await run()); }
@@ -164,22 +141,35 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
     else if (step === 3) generate([], "align");
     else generate([]);
   }
+  // "Chuẩn bị giọng": one click chains generate → assemble → align. Each stage is tried once; a failed job or a stage that did not advance stops it.
+  const [preparing, setPreparing] = useState(false);
+  const tried = useRef<number[]>([]);
+  const baseJob = useRef<string | undefined>(undefined);
+  function prepare() {
+    tried.current = []; baseJob.current = state?.job?.id; setError(""); setPreparing(true);
+  }
+  useEffect(() => {
+    if (!preparing || !state || running || busy) return;
+    if (step === 4 || (state.job?.error && state.job.id !== baseJob.current) || tried.current.includes(step)) { setPreparing(false); return; }
+    tried.current.push(step);
+    runNext();
+  }, [preparing, state, running, busy, step]);
+  const approve = () => projectId && state && void action(() => backend.voiceConfirm(projectId, state.revision, "episode", "", ""));
   if (!project) return <section className="panel voice-empty"><Headphones size={30}/><h2>Chọn episode để mở Voice Lab</h2>
     <p>Nhập gói Phase 1 đã duyệt ở Tổng quan. Bản kể được giữ nguyên trong suốt quá trình tạo giọng.</p></section>;
   return <div ref={workspace} className={"voice-workspace voice-tab-" + tab + (embedded ? " voice-embedded" : "")}>
     <section className={embedded ? "voice-controls" : "page-header"}>{!embedded && <div><p className="eyebrow">VOICE FIRST / PHASE 2</p>
       <h1>Voice Lab<span className="star">✦</span></h1><p className="page-subtitle">Nghe giọng thật trước khi dựng hình. {project.display_title}</p></div>}
-      <div className="voice-header-actions">      <div className="voice-primary-actions">{step < 4 && <button className="primary-btn" disabled={!state || running || busy} onClick={runNext}><Mic2 size={15}/> {NEXT_LABEL[step]}</button>}
-        {running && <button className="outline-btn" onClick={() => projectId && void action(() => backend.voiceCancel(projectId))}>Dừng tạo audio</button>}</div>
+      <div className="voice-header-actions">      <div className="voice-primary-actions">
+        {step < 4 && <button className="primary-btn" disabled={!state || running || busy || preparing} onClick={prepare}><Mic2 size={15}/> {preparing ? "Đang chuẩn bị giọng…" : "Chuẩn bị giọng"}</button>}
+        {step === 4 && !approved && <button className="primary-btn" disabled={busy} onClick={approve}><CheckCircle2 size={15}/> Duyệt giọng</button>}
+        {running && <button className="outline-btn" onClick={() => { setPreparing(false); if (projectId) void action(() => backend.voiceCancel(projectId)); }}>Dừng tạo audio</button>}</div>
       <span className={"source-pill " + (approved ? "" : "offline")}><Headphones size={15}/>
-        {approved ? "Đã nghe & duyệt toàn bài" : "Đang chọn và kiểm tra audio"}</span></div></section>
-    {state && <ol className="voice-steps" aria-label="Các bước làm giọng">{["Tạo audio", "Ghép audio", "Đo timing", "Nghe toàn bài & duyệt"].map((label, index) => (
+        {approved ? "Đã duyệt giọng" : "Chưa duyệt giọng"}</span></div></section>
+    {state && <ol className="voice-steps" aria-label="Các bước làm giọng">{["Tạo audio", "Ghép audio", "Đo timing", "Duyệt giọng"].map((label, index) => (
       <li key={label} data-state={approved || index + 1 < step ? "done" : index + 1 === step ? "current" : "todo"}><span>{index + 1}</span>{label}</li>))}</ol>}
-    {state && step === 4 && !approved && state.can_confirm_from_segments && <p className="voice-next-hint" role="status">
-      Bạn đã nghe mọi đoạn hiện tại. Chỗ nối giữa các đoạn chưa được nghe liền; nếu chấp nhận, bấm xác nhận.{" "}
-      <button className="primary-btn" onClick={() => void backend.voiceConfirm(project.project_id, state.revision, "episode", "", "").then(changed).catch(report)}>Xác nhận từ các đoạn đã nghe</button></p>}
-    {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)} {listenHintText(state)}</p>}
-    {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Việc của bạn: nghe lần lượt từng cảnh ở tab “Theo cảnh” (mỗi cảnh một lần) hoặc từng đoạn, rồi bấm xác nhận. Không cần nghe lại cả bài.</p>}
+    {state && step === 4 && !approved && approvalNoteText(state) && <p className="voice-warning" role="status">{approvalNoteText(state)}</p>}
+    {state && step === 4 && !approved && <p className="voice-next-hint" role="status">Máy đã làm xong. Bấm “Duyệt giọng” để tiếp tục. Muốn nghe thử thì dùng tab “Nghe toàn bài &amp; timing”; không nghe cũng được.</p>}
     {error && <div className="inline-alert error" role="alert">{error}<button aria-label="Đóng thông báo" onClick={() => setError("")}>×</button></div>}
 
     <div className="workspace-tabs">{[["takes", "Theo cảnh"], ["episode", "Nghe toàn bài & timing"], ["settings", "Thiết lập giọng"]].map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
@@ -204,18 +194,17 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
         {state.units.map((item, index) => <option key={item.id} value={item.id}>{index + 1}. {item.text}</option>)}
       </select></label>}
       <div className="voice-layout"><section className="panel voice-units">
-        <div className="panel-heading"><span className="panel-title"><Lock size={15}/> Bản kể đã khóa</span><span className="panel-meta">{scenes.filter(sceneHeard).length}/{scenes.length} cảnh đã nghe · {count}/{state.units.length} câu có audio</span></div>
+        <div className="panel-heading"><span className="panel-title"><Lock size={15}/> Bản kể đã khóa</span><span className="panel-meta">{scenes.length} cảnh · {count}/{state.units.length} câu có audio</span></div>
         <div className="voice-unit-list" role="region" aria-label="Danh sách cảnh">{scenes.map((item, index) => <button key={item.id} className={"voice-unit " + (scene?.id === item.id ? "active" : "")}
           onClick={() => setActiveId(item.unit_ids[0])} aria-pressed={scene?.id === item.id}>
           <span className="voice-unit-number">{String(index+1).padStart(2, "0")}</span><span className="voice-unit-text" title={item.title}>{item.title}</span>
-          <span className="voice-unit-state">{sceneHeard(item) ? "Đã nghe" : item.take ? "Chờ nghe" : "Chưa đủ audio"} · {item.unit_ids.length} câu</span>
+          <span className="voice-unit-state">{item.take ? "Có audio" : "Chưa đủ audio"} ·{item.unit_ids.length} câu</span>
         </button>)}</div>
       </section><section className="panel voice-takes">
         <div className="panel-heading"><span className="panel-title"><Waves size={16}/> {scene?.title ?? "Cảnh"}</span></div>
         <div className="voice-take-body">{scene && <>
-          {scene.take ? <WavePlayer key={scene.id + scene.take.take_id} projectId={project.project_id} unitId={"scene:" + scene.id} take={scene.take}
-              revision={state.revision} listened={sceneHeard(scene)} onChange={changed} onError={report}/>
-            : <div className="voice-empty"><Mic2 size={30}/><p>Cảnh này còn câu chưa có audio. Bấm “{NEXT_LABEL[1]}” ở trên.</p></div>}
+          {scene.take ? <WavePlayer key={scene.id + scene.take.take_id} projectId={project.project_id} unitId={"scene:" + scene.id} take={scene.take} onError={report}/>
+            : <div className="voice-empty"><Mic2 size={30}/><p>Cảnh này còn câu chưa có audio. Bấm “Chuẩn bị giọng” ở trên.</p></div>}
           <details className="voice-sentences"><summary>Chi tiết từng câu ({sceneUnits.length}) · đổi take, tạo lại, chỉnh khoảng nghỉ</summary>
             {sceneUnits.map(item => <SentenceRow key={item.id} unit={item} disabled={running || busy}
               onRetake={() => generate([item.id])}
@@ -226,9 +215,9 @@ export default function VoiceLab({ project, onChanged, active = true, embedded =
       <section className="panel voice-episode"><div className="panel-heading"><span className="panel-title"><Headphones size={16}/> Nghe toàn bài & kiểm tra nối đoạn</span>
         </div>
         <div className="voice-take-body">{state.assembly ? active && tab === "episode" && <WavePlayer key={state.assembly.take_id} projectId={project.project_id}
-          unitId="episode" take={state.assembly} revision={state.revision} listened={!!state.assembly.listened} onChange={changed} onError={report}/>
-          : <p className="voice-muted">Chọn audio cho mọi đoạn rồi ghép. Không tự thêm một khoảng nghỉ bằng nhau ở mọi ranh giới.</p>}
-          <p className="voice-muted">Nghe hết audio toàn bài và xác nhận là đủ để “Đã nghe & duyệt”. Đổi take hoặc khoảng nghỉ sau đó sẽ cần nghe lại. ASR là bằng chứng timing, không phải duyệt giọng.</p>
+          unitId="episode" take={state.assembly} onError={report}/>
+          : <p className="voice-muted">Bấm “Chuẩn bị giọng” để tạo và ghép audio.</p>}
+          <p className="voice-muted">Nghe thử là tuỳ bạn; duyệt bằng nút “Duyệt giọng” ở trên. Đổi take hoặc khoảng nghỉ sau đó sẽ cần duyệt lại một lần. ASR là bằng chứng timing, không phải duyệt giọng.</p>
           {state.timing && <details className="voice-timing"><summary>{state.timing.words.length} từ có thời gian đo thực tế · {state.timing.duration_seconds.toFixed(2)} giây</summary>
             <Paged size={3} label="Timing">{state.timing.words.map(word => <div className="timing-word" key={word.anchor_id}>{word.text} · {(word.startMs/1000).toFixed(2)}s → {(word.endMs/1000).toFixed(2)}s</div>)}</Paged></details>}
         </div></section>

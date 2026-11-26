@@ -95,7 +95,7 @@ try {
  await page.evaluate(()=>{window.withPreviews=false;window.missingVoice=true;});
  await stage('Giọng đọc');
  await page.locator('.voice-workspace').waitFor();
- await page.getByRole('button',{name:'Tạo audio còn thiếu',exact:true}).waitFor({timeout:3000});
+ await page.getByRole('button',{name:'Chuẩn bị giọng',exact:true}).waitFor({timeout:3000});
  await stage('Hình ảnh');
  assert.match(await page.locator('.episode-timeline [aria-pressed=true]').getAttribute('aria-label'),/Cảnh 2 ·/);
  await page.getByLabel('Episode đang làm',{exact:true}).selectOption('p2');

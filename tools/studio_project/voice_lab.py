@@ -447,6 +447,33 @@ class VoiceLab:
             self._save(handle, state)
         return self.snapshot(project_id)
 
+    def approve_episode(self, project_id, base_revision):
+        """The user's single "Duyệt giọng" click. Listening is optional: nothing has to have been played first.
+
+        Only reachable from a user action (the GUI button via voice.confirm); assemble() and the autopilot never call it.
+        The approval is bound to the assembled audio, so a later take or pause change drops it. What the user did or did
+        not hear is recorded honestly: `playback: skipped_by_user` unless every segment already carries a listening proof.
+        """
+        handle = self._handle(project_id)
+        with _exclusive_source_lock(handle.workspace, "voice-state"):
+            state = self._read(handle)
+            self._revision(state, base_revision)
+            assembly = state.get("assembly")
+            if not assembly:
+                raise StudioError("VOICE_NOT_ASSEMBLED", "Ghép audio trước khi duyệt", "voice")
+            self._take(handle, state, "episode")  # the assembly must still match its file on disk
+            heard = not self._segments_needing_listen(handle, state)
+            stamps = [p["confirmed_at"] for p in state.get("segment_proofs", [])]
+            assembly["listened"] = {"kind": "user_listened", "wav_sha256": assembly["wav_sha256"], "confirmed_at": time.time(),
+                                    "narration_sha256": state["narration_sha256"],
+                                    "derived_from": "segment_proofs" if heard else "user_accepted",
+                                    **({"segments_heard_at": max(stamps)} if heard and stamps else {"playback": "skipped_by_user"})}
+            state.pop("approval_note", None)
+            state["playbacks"].pop("episode", None)
+            state["revision"] += 1
+            self._save(handle, state)
+        return self.snapshot(project_id)
+
     def snapshot(self, project_id):
         return self.service.scoped(('voice', project_id), lambda: self._snapshot(project_id))
 
