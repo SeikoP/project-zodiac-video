@@ -373,12 +373,9 @@ def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: 
     actors = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
     top = min((r["y"] for r in actors), default=DEFAULT_FLOOR)
     if accent["accent_id"] == DRAWN:
-        assets[key] = accent_art.normalized_accent({"parts": accent["parts"]}, directory=art_dir, write=art_dir is not None)
-        # the 900x420 picture sits above the cast (or behind the story visual), scaled down to the room there is
-        scale = 0.8 if has_story_visual else max(0.55, min(1.0, (top - ACCENT_TOP - 20) / accent_art.VIEW_H))
-        width, height = round(accent_art.VIEW_W * scale), round(accent_art.VIEW_H * scale)
-        y = ACCENT_TOP + 10 if has_story_visual else max(ACCENT_TOP, top - height - 20)
-        box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": width, "height": height}
+        _add_drawn_layers(scene, assets, accent, scene_id, anchor, has_story_visual, art_dir, top,
+                          max((r["y"] + r["height"] for r in actors), default=DEFAULT_FLOOR))
+        return
     else:
         row = accent_registry()[accent["accent_id"]]
         assets[key] = {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
@@ -393,6 +390,33 @@ def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: 
         "context": {"kind": "environment_detail", "setting": accent["setting"], "visible_detail": accent["visible_detail"]},
         "states": {"visible": _state(key, box, LAYER_ACCENT)},
         "narrative_intent": {"voice_anchor": anchor, "reason": accent["visible_detail"]}})
+
+
+def _add_drawn_layers(scene: dict, assets: dict, accent: dict, scene_id: str, anchor: str, has_story_visual: bool, art_dir,
+                      cast_top: int, feet: int) -> None:
+    """Core's drawing is two rear layers: what hangs sits above the cast's heads, what stands has its floor line on the actors' ground."""
+    scale = 1080 / accent_art.VIEW_W
+    layers = accent_art.normalized_layers({"parts": accent["parts"]}, directory=art_dir, write=art_dir is not None)
+    limit = CAPTION_ZONE["y"] - 10
+    for index, kind in enumerate(("wall", "floor")):
+        if kind not in layers:
+            continue
+        view = layers[kind]["view"]
+        width, height = 1080, round(view["h"] * scale)
+        if kind == "floor":  # the drawn floor line lands just behind the actors' feet
+            y = feet - 8 - round((view["floor_y"] - view["y"]) * scale)
+        elif has_story_visual:  # the story visual owns the top band: hang the wall under it, behind the cast's heads
+            y = STORY_BAND_BOTTOM + 10
+        else:
+            y = max(ACCENT_TOP, cast_top - height - 10)
+        y = max(0, min(y, limit - height))
+        key = f"{scene_id}-accent-{kind}"
+        assets[key] = layers[kind]["asset"]
+        scene["entities"].insert(index, {
+            "id": f"accent_{scene_id}_{kind}", "kind": "scene_accent", "visual_role": "scene_accent", "initial_state": "visible",
+            "context": {"kind": "environment_detail", "setting": accent["setting"], "visible_detail": accent["visible_detail"]},
+            "states": {"visible": _state(key, {"x": 0, "y": y, "width": width, "height": height}, LAYER_ACCENT + index)},
+            "narrative_intent": {"voice_anchor": anchor, "reason": accent["visible_detail"]}})
 
 
 def _rect(entity: dict) -> dict | None:

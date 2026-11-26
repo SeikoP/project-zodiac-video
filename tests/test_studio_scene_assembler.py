@@ -402,21 +402,57 @@ class DrawnAccentTests(unittest.TestCase):
         return scene_assembler.assemble_scene(menus, {**base_stage, "mechanic_id": "confront", "dressing": "none", "accent": accent},
                                               base_act, "s01", RANGE, TEXT, GOAL, story_visuals=story, art_dir=art_dir)
 
+    def accents(self, part):
+        return {e["id"].rsplit("_", 1)[1]: e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent"}
+
     def test_a_drawn_accent_is_rendered_into_the_workspace_and_declared(self):
         import tempfile
         from pathlib import Path
         from tools.studio_project import accent_art
         with tempfile.TemporaryDirectory() as tmp:
             part = self.drawn(art_dir=Path(tmp))
-            entity = next(e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent")
-            asset = part["payload"]["assets"][entity["states"]["visible"]["asset"]]
-            self.assertTrue(accent_art.is_drawn_accent(asset, Path(tmp)))
-            self.assertEqual(entity["context"]["setting"], "Quầy bánh tráng nướng")
-            t = entity["states"]["visible"]["transform"]
-            self.assertEqual(round(t["width"] / t["height"], 2), round(900 / 420, 2))
-            self.assertLess(entity["states"]["visible"]["layer"], scene_assembler.LAYER_CHARACTER)
-            self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"])
+            layers = self.accents(part)
+            self.assertEqual(set(layers), {"wall", "floor"})
+            for entity in layers.values():
+                asset = part["payload"]["assets"][entity["states"]["visible"]["asset"]]
+                self.assertTrue(accent_art.is_drawn_accent(asset, Path(tmp)))
+                self.assertEqual(entity["context"]["setting"], "Quầy bánh tráng nướng")
+                t = entity["states"]["visible"]["transform"]
+                self.assertLess(entity["states"]["visible"]["layer"], scene_assembler.LAYER_CHARACTER)
+                self.assertGreaterEqual(t["x"], 0)
+                self.assertLessEqual(t["x"] + t["width"], 1080)
+                self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"])
             self.assertEqual([e["id"] for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")], [])
+
+    def test_each_layer_keeps_its_drawing_proportions(self):
+        from tools.studio_project import accent_art
+        part = self.drawn()
+        for kind, entity in self.accents(part).items():
+            t = entity["states"]["visible"]["transform"]
+            view = accent_art.layer_view({"parts": self.PARTS}, kind)
+            self.assertAlmostEqual(t["width"] / t["height"], view["w"] / view["h"], delta=0.03, msg=kind)
+
+    def test_floor_parts_stand_on_the_actors_floor_line_and_wall_parts_hang_above_them(self):
+        from tools.studio_project import accent_art
+        for story in (None, CHAT):
+            part = self.drawn(story=story)
+            scene = part["payload"]["scene"]
+            feet = max(r["y"] + r["height"] for r in (scene_assembler._visible(e) for e in scene["entities"] if e.get("kind") == "character") if r)
+            layers = self.accents(part)
+            floor, wall = (layers[k]["states"]["visible"]["transform"] for k in ("floor", "wall"))
+            view = accent_art.layer_view({"parts": self.PARTS}, "floor")
+            scale = floor["height"] / view["h"]
+            ground = floor["y"] + (view["floor_y"] - view["y"]) * scale      # where the drawn floor line lands on the canvas
+            self.assertLessEqual(abs(ground - feet), 30, bool(story))
+            self.assertLess(wall["y"], ground - 150, bool(story))              # hung well above the ground line
+            if story:                                                           # not hidden behind the story visual band
+                self.assertGreaterEqual(wall["y"], scene_assembler.STORY_BAND_BOTTOM)
+
+    def test_a_scene_with_only_hung_parts_has_no_floor_layer_and_the_reverse(self):
+        wall_only = self.accents(self.drawn([{"part": "window", "at": "left", "size": "medium"}]))
+        floor_only = self.accents(self.drawn([{"part": "counter", "at": "center", "size": "medium"}]))
+        self.assertEqual(set(wall_only), {"wall"})
+        self.assertEqual(set(floor_only), {"floor"})
 
     def test_without_an_art_dir_the_asset_is_described_but_nothing_is_written(self):
         part = self.drawn()

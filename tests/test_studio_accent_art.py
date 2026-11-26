@@ -79,6 +79,50 @@ class RenderTests(unittest.TestCase):
                 accent_art.accent_svg(item)
 
 
+class LayerTests(unittest.TestCase):
+    """Things that hang go on a wall layer, things that stand go on a floor layer, so Core can seat each where it belongs."""
+
+    S = spec(("awning", "across", "medium"), ("counter", "center", "medium"), ("plant", "right", "small"))
+
+    def test_the_wall_layer_holds_only_hung_parts_and_the_floor_layer_only_standing_ones(self):
+        wall, floor = (accent_art.layer_svg(self.S, k) for k in ("wall", "floor"))
+        self.assertIsNotNone(wall)
+        self.assertIsNotNone(floor)
+        self.assertNotEqual(wall, floor)
+        self.assertIsNone(accent_art.layer_svg(spec(("window", "left", "small")), "floor"))
+        self.assertIsNone(accent_art.layer_svg(spec(("counter", "left", "small")), "wall"))
+
+    def test_each_layer_is_cropped_to_its_content_and_keeps_the_full_width(self):
+        for kind in ("wall", "floor"):
+            view = accent_art.layer_view(self.S, kind)
+            root = ET.fromstring(accent_art.layer_svg(self.S, kind).decode("utf8"))
+            self.assertEqual(root.get("viewBox"), f"0 {view['y']} 900 {view['h']}")
+            self.assertEqual((root.get("width"), root.get("height")), ("900", str(view["h"])))
+            self.assertLess(view["h"], 420)
+        wall, floor = accent_art.layer_view(self.S, "wall"), accent_art.layer_view(self.S, "floor")
+        self.assertEqual(wall["y"], 0)
+        self.assertEqual(floor["y"] + floor["h"], 420)
+        self.assertEqual(accent_art.layer_view(self.S, "floor")["floor_y"], accent_art.FLOOR)
+
+    def test_layers_use_the_canonical_palette_and_are_deterministic(self):
+        for kind in ("wall", "floor"):
+            svg = accent_art.layer_svg(self.S, kind)
+            self.assertEqual(svg, accent_art.layer_svg(self.S, kind))
+            colors = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}", svg.decode("utf8"))}
+            self.assertTrue(colors <= PALETTE, colors - PALETTE)
+            self.assertNotIn(b"<text", svg)
+
+    def test_normalized_layers_name_each_layer_once_and_skip_the_empty_one(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            both = accent_art.normalized_layers(self.S, directory=Path(tmp), write=True)
+            self.assertEqual(set(both), {"wall", "floor"})
+            self.assertNotEqual(both["wall"]["asset"]["path"], both["floor"]["asset"]["path"])
+            for row in both.values():
+                self.assertTrue(accent_art.is_drawn_accent(row["asset"], Path(tmp)))
+            only = accent_art.normalized_layers(spec(("window", "left", "small")), directory=Path(tmp), write=False)
+            self.assertEqual(set(only), {"wall"})
+
+
 class AssetTests(unittest.TestCase):
     def test_a_normalized_asset_is_content_addressed_and_only_written_on_request(self):
         with tempfile.TemporaryDirectory() as tmp:

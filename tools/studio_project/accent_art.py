@@ -292,24 +292,57 @@ def layout(spec) -> list[dict]:
     return out
 
 
-def accent_svg(spec) -> bytes:
+def _is_floor(row: dict) -> bool:
+    return PARTS[row["part"]]["mount"] == "floor"
+
+
+def layer_view(spec, kind: str) -> dict | None:
+    """The crop of the 900-wide picture a layer is drawn in: 'wall' (hung parts, from the top edge) or 'floor' (standing parts down to the floor).
+
+    `floor_y` is where the floor line sits inside the full picture, so Core can seat that line on the actors' ground.
+    """
+    rows = [r for r in layout(spec) if _is_floor(r) == (kind == "floor")]
+    if not rows:
+        return None
+    if kind == "wall":
+        bottom = min(VIEW_H, int(max(r["box"]["y"] + r["box"]["h"] for r in rows)) + 14)
+        return {"y": 0, "w": VIEW_W, "h": bottom, "floor_y": FLOOR}
+    top = max(0, int(min(r["box"]["y"] for r in rows)) - 24)
+    return {"y": top, "w": VIEW_W, "h": VIEW_H - top, "floor_y": FLOOR}
+
+
+def _render(spec, kind: str | None) -> bytes | None:
     rows = layout(spec)
+    if kind:
+        view = layer_view(spec, kind)
+        if view is None:
+            return None
+        rows = [r for r in rows if _is_floor(r) == (kind == "floor")]
+    else:
+        view = {"y": 0, "w": VIEW_W, "h": VIEW_H}
     seed = int(sha256(json.dumps(spec, sort_keys=True).encode())[:12], 16)
     drawing = Doodle(seed)
     for row in rows:
         box = row["box"]
         PARTS[row["part"]]["draw"](drawing, box["x"], box["y"], box["w"], box["h"])
-    floor = [r["box"] for r in rows if PARTS[r["part"]]["mount"] == "floor"]
+    floor = [r["box"] for r in rows if _is_floor(r)]
     if floor:  # things that stand need something to stand on: one low line under them all
         drawing.add(drawing.seg(min(b["x"] for b in floor) - 14, FLOOR + 3, max(b["x"] + b["w"] for b in floor) + 14, FLOOR + 3), BEIGE, 5)
-    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{VIEW_W}" height="{VIEW_H}" viewBox="0 0 {VIEW_W} {VIEW_H}">'
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{view["w"]}" height="{view["h"]}" viewBox="0 {view["y"]} {view["w"]} {view["h"]}">'
            '<metadata>style=zodiac-paper-doodle-meme-v4;handmade=human-stroke-v2</metadata>'
            '<g stroke-linecap="round" stroke-linejoin="round">' + "".join(drawing.out) + "</g></svg>")
     return svg.encode("utf8")
 
 
-def normalized_accent(spec, *, directory: Path, write: bool) -> dict:
-    svg = accent_svg(spec)
+def accent_svg(spec) -> bytes:
+    return _render(spec, None)
+
+
+def layer_svg(spec, kind: str) -> bytes | None:
+    return _render(spec, kind)
+
+
+def _asset(svg: bytes, directory: Path, write: bool) -> dict:
     digest = sha256(svg)
     rel = f".authoring/agent-art/accent-{digest}.svg"
     if write:
@@ -317,6 +350,20 @@ def normalized_accent(spec, *, directory: Path, write: bool) -> dict:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(svg)
     return {"path": rel, "category": "scene_accent", "source_sha256": digest, "creative_origin": dict(ORIGIN)}
+
+
+def normalized_accent(spec, *, directory: Path, write: bool) -> dict:
+    return _asset(accent_svg(spec), directory, write)
+
+
+def normalized_layers(spec, *, directory: Path, write: bool) -> dict:
+    """{'wall': {asset, view}, 'floor': {asset, view}} for the layers the spec actually has."""
+    out = {}
+    for kind in ("wall", "floor"):
+        svg = layer_svg(spec, kind)
+        if svg is not None:
+            out[kind] = {"asset": _asset(svg, directory, write), "view": layer_view(spec, kind)}
+    return out
 
 
 def is_drawn_accent(asset, directory: Path) -> bool:
