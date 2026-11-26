@@ -95,6 +95,7 @@ class ChainGroupTests(unittest.TestCase):
         self.workspace = pathlib.Path(tempfile.mkdtemp())
         service = type("S", (), {})()
         service.project = lambda pid: {"revision": 1, "source_sha256": "x", "status": {}}
+        service.settings = type("Settings", (), {"read": lambda self: {"values": {"agents": {}}}})()
         service.registry = type("R", (), {"root": self.workspace, "get": lambda s, pid: type("H", (), {"workspace": self.workspace})()})()
         return agent_bridge.AgentManager(service)
 
