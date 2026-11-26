@@ -112,13 +112,14 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
             "accent_parts": {name: meta["reads"] for name, meta in accent_art.PARTS.items()}}
 
 
-def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str) -> dict:
+def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str, used_motifs=()) -> dict:
     """What the stage choice is shown: the scene, and every menu it may pick from (accents with what they read as)."""
     return {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
             "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accent_parts")},
             "accent_rules": ("accent_id 'drawn' = Core draws your parts (two or three read as a place; each in its own slot: left, center, right; a "
                              "wide part - awning, string_lights, curtain - goes 'across' and then only floor parts may share it). 'none_fits' = the "
                              "place cannot be drawn from these parts; leave parts empty then."),
+            "graphic_rules": GRAPHIC_RULES, "motifs_already_used_in_other_scenes": sorted(set(used_motifs)),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
 
 
@@ -128,6 +129,35 @@ def _enum(values) -> dict:
 
 def _object(properties: dict) -> dict:
     return {"type": "object", "properties": properties, "required": list(properties), "additionalProperties": False}
+
+
+GRAPHIC_RULES = (
+    "graphic = an OPTIONAL picture Studio draws to make ONE story fact visible (not decoration). Pick 'none' unless the narration states "
+    "something countable, comparable or written that the viewer should SEE: a stamp (a verdict word), meter (a level between two sides), "
+    "versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a count), "
+    "chat_thread (messages). Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
+    "from the narration where possible. anchor_id = the words where the picture first appears; later pieces appear on the anchors after it.")
+GRAPHIC_MOTIFS = ("stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
+
+
+def _graphic_schema(menus: dict) -> dict:
+    anchor = _enum([a["id"] for a in menus["anchors"]])
+    text = lambda n: {"type": "string", "maxLength": n}  # noqa: E731
+    arr = lambda item, n: {"type": "array", "maxItems": n, "items": item}  # noqa: E731
+    return {"anyOf": [
+        _object({"motif": _enum(["none"])}),
+        _object({"motif": _enum(["stamp"]), "anchor_id": anchor, "text": text(16), "sub": text(30)}),
+        _object({"motif": _enum(["meter"]), "anchor_id": anchor, "title": text(24), "left": text(14), "right": text(14), "level": _enum(["1", "2", "3", "4"])}),
+        _object({"motif": _enum(["versus"]), "anchor_id": anchor, "left_title": text(14), "right_title": text(14),
+                 "rows": arr(_object({"left": text(24), "right": text(24)}), 3)}),
+        _object({"motif": _enum(["receipt"]), "anchor_id": anchor, "title": text(20), "total": text(24),
+                 "items": arr(_object({"name": text(22), "price": text(8)}), 4)}),
+        _object({"motif": _enum(["route"]), "anchor_id": anchor, "caption": text(34), "pins": arr(text(16), 4)}),
+        _object({"motif": _enum(["folder"]), "anchor_id": anchor, "name": text(28), "files": arr(text(24), 3)}),
+        _object({"motif": _enum(["tally"]), "anchor_id": anchor, "title": text(28), "count": _enum(["2", "3", "4", "5"]), "caption": text(40)}),
+        _object({"motif": _enum(["chat_thread"]), "anchor_id": anchor, "title": text(20),
+                 "messages": arr(_object({"from": _enum(["me", "them"]), "text": text(46)}), 4)}),
+    ]}
 
 
 def stage_schema(menus: dict) -> dict:
@@ -142,6 +172,7 @@ def stage_schema(menus: dict) -> dict:
         "props": {"type": "array", "maxItems": MAX_PROPS,
                   "items": _object({"prop_id": _enum(menus["props"]), "role": {"type": "string", "enum": ["focus", "support"]}})},
         "dressing": _enum(menus["dressing"]),
+        "graphic": _graphic_schema(menus),
         # the setting of the scene: a registered accent, what the narration places there, and the exact words it is bound to
         "accent": _object({"accent_id": _enum([DRAWN, NONE_FITS]),
                            "setting": {"type": "string", "maxLength": 80},

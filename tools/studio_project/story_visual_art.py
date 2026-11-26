@@ -13,7 +13,7 @@ from fontTools.ttLib import TTFont
 
 FONT = Path(__file__).resolve().parents[2] / "runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf"
 INK, PAPER, TEAL, CORAL, GOLD = "#2F3C44", "#FFFCF7", "#82BFB4", "#E97A66", "#F2C45C"
-ALLOWED = {"story_text", "chat_compare", "tally", "chat_thread"}
+ALLOWED = {"story_text", "chat_compare", "tally", "chat_thread", "stamp", "meter", "versus", "receipt", "route", "folder"}
 CLEAN = re.compile(r"^[^<>\x00-\x1f]{1,90}$", re.UNICODE)
 
 
@@ -87,6 +87,9 @@ def steps(spec) -> int:
     cell per count; a chat_thread one message per step; a story_text appears once."""
     if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
         reject("type")
+    if spec["type"] in ("stamp", "meter", "versus", "receipt", "route", "folder"):
+        from .graphic_motifs import steps as motif_steps
+        return motif_steps(spec)
     return {"story_text": 1, "chat_compare": 2, "tally": int(spec.get("count", 0)) if isinstance(spec.get("count"), int) else 0,
             "chat_thread": len(spec.get("messages") or [])}[spec["type"]]
 
@@ -147,7 +150,10 @@ def visual_svg(spec, step=None):
     if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
         reject("type")
     letterer = Letterer()
-    if spec["type"] == "tally":
+    if spec["type"] in ("stamp", "meter", "versus", "receipt", "route", "folder"):
+        from .graphic_motifs import DRAW
+        elements = DRAW[spec["type"]](letterer, spec, step)
+    elif spec["type"] == "tally":
         elements = _tally(letterer, spec, step)
     elif spec["type"] == "chat_thread":
         elements = _thread(letterer, spec, step)
@@ -201,16 +207,21 @@ def visual_svg(spec, step=None):
     return data
 
 
-def normalized_asset(spec, *, directory: Path, phase1_id: str, write: bool, step=None):
+def normalized_asset(spec, *, directory: Path, phase1_id: str, write: bool, step=None, studio: bool = False):
+    """The art file and its asset row. `studio` marks a Studio graphic (Studio's own creative addition, no Phase 1 direction):
+    its own category and file prefix, so the Phase 1 story-visual contract never applies to it."""
     svg = visual_svg(spec, step)
     sha = hashlib.sha256(svg).hexdigest()
-    rel = ".authoring/agent-art/story-" + sha + ".svg"
+    rel = ".authoring/agent-art/" + ("graphic-" if studio else "story-") + sha + ".svg"
     if write:
         path = directory / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.exists() and path.read_bytes() != svg:
             reject("content_hash_drift")
         path.write_bytes(svg)
+    if studio:
+        return {"path": rel, "category": "studio_graphic", "source_sha256": sha,
+                "creative_origin": {"mode": "studio_template", "template": spec["type"]}}
     return {"path": rel, "category": "story_visual", "source_sha256": sha,
             "creative_origin": {"mode": "phase1_directed", "phase1_visual_id": phase1_id},
             "source_visual_type": spec["type"]}

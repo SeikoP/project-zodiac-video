@@ -531,6 +531,68 @@ class ProgressiveStoryVisualTests(unittest.TestCase):
         self.assertEqual(node({"action": "validate_authoring", "intent": intent, "narration": TEXT})["status"], "VALID")
 
 
+class StudioGraphicTests(unittest.TestCase):
+    """Studio's own creative pictures: outside the Phase 1 story-visual contract, varied by motif, revealed on anchors."""
+
+    def scene(self, graphic, story=None):
+        menus = authoring_menus.scene_menus(CAPSULE, SKELETON, "s01", [])
+        words = TEXT.split()
+        menus["anchors"] = [{"id": f"a{i + 1}", "text": " ".join(words[i * 2:i * 2 + 2]), "at": i * 2, "t": round(i * 1.1, 2)} for i in range(max(1, len(words) // 2))]
+        base_stage, _ = choices(menus)
+        stage = {**base_stage, "mechanic_id": "confront", "dressing": "none", "props": [], "graphic": graphic}
+        return scene_assembler.assemble_scene(menus, stage, {"events": []}, "s01", RANGE, TEXT, GOAL, story_visuals=story, art_dir=None)["payload"]
+
+    ROUTE = {"motif": "route", "anchor_id": "a1", "caption": "Lộ trình cho người ấy", "pins": ["Quán A", "Quán B", "Quán C"]}
+
+    def test_a_graphic_is_a_prop_entity_with_studio_art_and_one_state_per_piece(self):
+        payload = self.scene(self.ROUTE)
+        entity = next(e for e in payload["scene"]["entities"] if e["id"] == "graphic_s01")
+        self.assertEqual((entity["kind"], entity["visual_role"]), ("object", "interactive_prop"))
+        self.assertEqual(list(entity["states"]), ["hidden", "step1", "step2", "step3"])
+        for state in ("step1", "step2", "step3"):
+            asset = payload["assets"][entity["states"][state]["asset"]]
+            self.assertEqual((asset["category"], asset["creative_origin"]["template"]), ("studio_graphic", "route"))
+            self.assertRegex(asset["path"], r"^\.authoring/agent-art/graphic-[0-9a-f]{64}\.svg$")
+        chain = [(e["state_before"], e["state_after"]) for e in payload["scene"]["events"] if e["target"] == "graphic_s01"]
+        self.assertEqual(chain, [("hidden", "step1"), ("step1", "step2"), ("step2", "step3")])
+
+    def test_the_first_piece_appears_on_the_chosen_anchor(self):
+        payload = self.scene(self.ROUTE)
+        first = next(e for e in payload["scene"]["events"] if e["target"] == "graphic_s01")
+        self.assertEqual(first["trigger"]["text"], " ".join(TEXT.split()[0:2]))
+
+    def test_the_graphic_scene_passes_the_compiler_validation(self):
+        payload = self.scene(self.ROUTE)
+        intent = fixture_intent()
+        intent["scenes"] = [payload["scene"]]
+        intent["assets"].update(payload["assets"])
+        self.assertEqual(node({"action": "validate_authoring", "intent": intent, "narration": TEXT})["status"], "VALID")
+
+    def test_a_phase_1_story_visual_wins_the_one_picture_slot(self):
+        payload = self.scene(self.ROUTE, story=CHAT)
+        self.assertFalse([e for e in payload["scene"]["entities"] if e["id"] == "graphic_s01"])
+
+    def test_none_and_invalid_graphics(self):
+        self.assertFalse([e for e in self.scene({"motif": "none"})["scene"]["entities"] if e["id"].startswith("graphic_")])
+        for bad in ({"motif": "route", "anchor_id": "a1", "caption": "x", "pins": ["only one"]}, {"motif": "galaxy"},
+                    {"motif": "meter", "anchor_id": "a1", "title": "t", "left": "l", "right": "r", "level": "9"}):
+            with self.assertRaises(ValueError, msg=bad):
+                self.scene(bad)
+
+    def test_every_motif_renders_through_the_assembler(self):
+        samples = [{"motif": "stamp", "anchor_id": "a1", "text": "ĐỂ XEM", "sub": "câu trả lời"},
+                   {"motif": "meter", "anchor_id": "a1", "title": "Quan tâm", "left": "Bạn", "right": "Người ấy", "level": "3"},
+                   {"motif": "versus", "anchor_id": "a1", "left_title": "Bạn", "right_title": "Người ấy", "rows": [{"left": "Hỏi 2 lần", "right": "Hỏi 1 lần"}, {"left": "Gửi giờ", "right": "Chốt ngay"}]},
+                   {"motif": "receipt", "anchor_id": "a1", "title": "Hóa đơn", "total": "Vẫn: để xem", "items": [{"name": "Hỏi lần 1", "price": "0đ"}, {"name": "Hỏi lần 2", "price": "0đ"}]},
+                   self.ROUTE,
+                   {"motif": "folder", "anchor_id": "a1", "name": "dẫn người ấy đi", "files": ["Quán", "Giờ"]},
+                   {"motif": "tally", "anchor_id": "a1", "title": "Mở chat", "count": "4", "caption": "4 lần"},
+                   {"motif": "chat_thread", "anchor_id": "a1", "title": "Hội bạn", "messages": [{"from": "them", "text": "Đi không?"}, {"from": "me", "text": "Để xem"}]}]
+        for graphic in samples:
+            payload = self.scene(graphic)
+            self.assertTrue([e for e in payload["scene"]["entities"] if e["id"] == "graphic_s01"], graphic["motif"])
+
+
 class StoryRevealTests(unittest.TestCase):
     def test_the_story_visual_appears_on_its_beat_not_at_the_top_of_the_scene(self):
         menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])

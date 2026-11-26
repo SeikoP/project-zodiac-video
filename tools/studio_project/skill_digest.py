@@ -11,7 +11,7 @@ import hashlib
 from .service import ROOT
 
 SKILL_DIR = ROOT / "plugins/zodiac-video-pipeline/skills/zodiac-studio-visual-production"
-BUDGET_CHARS = 24000
+BUDGET_CHARS = 26000
 HEADER = "## Zodiac Phase 2 skill (trusted project guidance; follow it)"
 
 KINDS: dict[str, tuple[str, ...]] = {

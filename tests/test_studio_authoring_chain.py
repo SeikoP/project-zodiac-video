@@ -260,6 +260,27 @@ class EpisodeCheckTests(unittest.TestCase):
             self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("STORY_VISUAL_COVERAGE", "s02")])  # briefs the proposal completes are not held against it
 
 
+class MotifRepeatTests(unittest.TestCase):
+    def part(self, *motifs):
+        return json.dumps({"payload": {"scene": {}, "assets": {f"k{i}": {"category": "studio_graphic", "creative_origin": {"template": m}} for i, m in enumerate(motifs)}}})
+
+    def test_the_motifs_of_a_stored_part_are_read_from_its_assets(self):
+        self.assertEqual(authoring_chain.graphic_motifs_of(self.part("tally", "tally")), ["tally"])
+        self.assertEqual(authoring_chain.graphic_motifs_of("not json"), [])
+
+    def test_the_second_scene_with_the_same_motif_is_sent_back(self):
+        import tempfile
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            io = LiveIOTests().make(tmp)
+            (io.workspace / ".authoring").mkdir()
+            with mock.patch("tools.studio_project.agent_parts.merge", return_value="{}"), \
+                    mock.patch("tools.studio_project.agent_authoring.bind_proposal", return_value=("{}", [])), \
+                    mock.patch("tools.studio_project.agent_authoring.proposal", return_value=None):
+                issues = io.check_episode("{}", {"s01": self.part("route"), "s02": self.part("route"), "s03": self.part("stamp")}, ["s01", "s02", "s03"])
+        self.assertEqual([(i["code"], i["scene_id"]) for i in issues], [("GRAPHIC_MOTIF_REPEATED", "s02")])
+
+
 class CheckFilterTests(unittest.TestCase):
     def test_findings_the_episode_proposal_completes_are_not_held_against_a_single_scene(self):
         import tempfile

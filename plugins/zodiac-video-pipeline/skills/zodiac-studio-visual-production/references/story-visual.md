@@ -26,3 +26,9 @@ Ma Kết's three Story Visuals were not pictures placed in a scene; each one **w
 - Reveal the Story Visual on the beat it explains, not at the top of the scene (Core uses the beat's own words).
 - Put a character acting event on the SAME anchor as the reveal and one more where the story turns, so the actors react to what the picture shows.
 - A prop belongs in the scene only if the narration handles it and one of your events acts on it; otherwise leave it out. Everything on screen either reveals, reacts to, or is acted on by the story beat.
+
+## Studio graphics: your own pictures (only the script is fixed)
+The owner approves the narration. Every picture decision after that is Studio's to invent, so Studio does not wait for a Phase 1 direction to draw a picture. In the stage choice, `graphic` is one optional drawing (stamp, meter, versus, receipt, route, folder, tally or chat_thread) that makes ONE fact of the scene visible: a verdict word, a level between two sides, two columns compared, items and a total, stops on a route, a named folder, a count, messages. Choose it when the narration states something the viewer can see better than hear; otherwise `none`.
+- Different motif in every scene. Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
+- Use the narration's own words in the fields, short. The first piece appears on the anchor you choose and the next pieces on the anchors after it, so pick the anchor where the fact is said.
+- A scene with a Phase 1 Story Visual keeps that one; no second picture.

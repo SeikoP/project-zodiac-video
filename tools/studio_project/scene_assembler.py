@@ -231,6 +231,11 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     required story visual in its own band above the actors. What it had to drop is reported in ``core_notes``."""
     _check(stage, act, menus)
     story_visuals = story_visuals or {}
+    graphic = stage.get("graphic") if isinstance(stage.get("graphic"), dict) and stage["graphic"].get("motif") != "none" else None
+    graphic_spec = None
+    if graphic and not story_visuals:  # a scene carries one picture: the Phase 1 story visual wins
+        graphic_spec = graphic_to_spec(graphic)  # ValueError for an invalid picture, never repaired
+    has_band = bool(story_visuals) or graphic_spec is not None
     props = {p["id"]: p for p in agent_authoring._library_props()}
     present = stage["present"]
     notes: list[str] = []
@@ -258,10 +263,10 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         if dressing != NONE:
             notes.append(f"dressing {dressing}: Core thêm vì cảnh cần lớp nền")
     focus_prop = next((p for p in kept if p["role"] == "focus"), None)
-    frame, mechanic_id, picked = _pick(stage["frame_id"], stage["mechanic_id"], len(present), len(kept) + len(story_visuals))
+    frame, mechanic_id, picked = _pick(stage["frame_id"], stage["mechanic_id"], len(present), len(kept) + (1 if has_band else 0))
     notes += picked
     stage = {**stage, "mechanic_id": mechanic_id}
-    slots = _below_band(PLACEMENT[frame["id"]]) if story_visuals else {name: dict(box) for name, box in PLACEMENT[frame["id"]].items()}
+    slots = _below_band(PLACEMENT[frame["id"]]) if has_band else {name: dict(box) for name, box in PLACEMENT[frame["id"]].items()}
 
     entities, assets, bindings, placed = [], {}, {}, []
     boxes_for = {}
@@ -304,6 +309,22 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
                          "states": states, "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
         sv_entities.append(asset_key.lower())
+        placed.append(STORY_VISUAL_BOX)
+    if graphic_spec is not None:
+        ident = f"graphic_{scene_id}"
+        states = {"hidden": _state(f"{scene_id}-graphic-step1", STORY_VISUAL_BOX, LAYER_STORY, False)}
+        names = []
+        for k in range(1, story_visual_art.steps(graphic_spec) + 1):
+            key = f"{scene_id}-graphic-step{k}"
+            assets[key] = story_visual_art.normalized_asset(graphic_spec, directory=art_dir, phase1_id="", write=art_dir is not None, step=k, studio=True)
+            states[f"step{k}"] = _state(key, STORY_VISUAL_BOX, LAYER_STORY)
+            names.append(f"step{k}")
+        reveal = next((a["text"] for a in menus["anchors"] if a["id"] == graphic.get("anchor_id")), None)
+        story_reveal = reveal if reveal and reveal in scene_text else story_reveal
+        entities.append({"id": ident, "kind": "object", "visual_role": "interactive_prop", "initial_state": "hidden", "states": states,
+                         "narrative_intent": {"voice_anchor": _first_words(reveal or scene_text), "reason": goal}})
+        sv_entities.append(ident)
+        sv_steps[ident] = names
         placed.append(STORY_VISUAL_BOX)
     for row in kept:
         library = props[row["prop_id"]]
@@ -351,10 +372,10 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
              "entities": entities, "events": events,
              "layout_contract": {"caption_safe_zone": dict(CAPTION_ZONE)},
              "experience_profile": _profile(menus, stage, entities, focus_prop, goal)}
-    if not story_visuals:
+    if not has_band:
         _centre(scene)
     if has_accent:
-        _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals), art_dir)
+        _add_accent(scene, assets, accent, menus, scene_id, scene_text, has_band, art_dir)
     _separate_depth(scene)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
@@ -490,6 +511,33 @@ def story_visual_assets(context: dict, intent_assets: dict, scene_id: str) -> di
 
 def _first_words(text: str) -> str:
     return " ".join(text.split()[:2]) or text
+
+
+def graphic_to_spec(graphic: dict) -> dict:
+    """The model's flat choice as the art module's spec (counts and levels arrive as text)."""
+    motif = graphic["motif"]
+    try:
+        if motif == "stamp":
+            return {"type": "stamp", "text": graphic["text"], "sub": graphic["sub"]}
+        if motif == "meter":
+            return {"type": "meter", "title": graphic["title"], "left": graphic["left"], "right": graphic["right"], "level": int(graphic["level"])}
+        if motif == "versus":
+            rows = graphic["rows"]
+            return {"type": "versus", "left": {"title": graphic["left_title"], "rows": [r["left"] for r in rows]},
+                    "right": {"title": graphic["right_title"], "rows": [r["right"] for r in rows]}}
+        if motif == "receipt":
+            return {"type": "receipt", "title": graphic["title"], "total": graphic["total"], "items": [dict(i) for i in graphic["items"]]}
+        if motif == "route":
+            return {"type": "route", "pins": list(graphic["pins"]), "caption": graphic["caption"]}
+        if motif == "folder":
+            return {"type": "folder", "name": graphic["name"], "files": list(graphic["files"])}
+        if motif == "tally":
+            return {"type": "tally", "title": graphic["title"], "count": int(graphic["count"]), "caption": graphic["caption"]}
+        if motif == "chat_thread":
+            return {"type": "chat_thread", "title": graphic["title"], "messages": [dict(m) for m in graphic["messages"]]}
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"graphic {motif!r} không hợp lệ: {error}") from error
+    raise ValueError(f"graphic motif {motif!r} không có trong danh sách")
 
 
 def _spec_steps(spec) -> int:

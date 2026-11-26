@@ -156,6 +156,24 @@ class MenuTests(unittest.TestCase):
             menus_mod.scene_menus(capsule(), SKELETON, "s99", [])
 
 
+class GraphicSchemaTests(unittest.TestCase):
+    def test_the_stage_offers_none_or_one_of_the_motifs_each_with_its_own_fields(self):
+        m = menus()
+        schema = menus_mod.stage_schema(m)["properties"]["graphic"]
+        motifs = [v["properties"]["motif"]["enum"][0] for v in schema["anyOf"]]
+        self.assertEqual(motifs, ["none", "stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread"])
+        good = {"motif": "tally", "anchor_id": m["anchors"][0]["id"], "title": "t", "count": "3", "caption": "c"}
+        self.assertEqual(menus_mod.schema_errors(good, schema), [])
+        self.assertTrue(menus_mod.schema_errors({**good, "count": "9"}, schema))
+        self.assertTrue(menus_mod.schema_errors({**good, "extra": 1}, schema))
+
+    def test_the_stage_data_carries_the_rules_and_the_motifs_other_scenes_used(self):
+        m = menus()
+        data = menus_mod.stage_data(m, "s01", "x", "y", used_motifs=["tally", "route", "tally"])
+        self.assertEqual(data["motifs_already_used_in_other_scenes"], ["route", "tally"])
+        self.assertIn("DIFFERENT motif", data["graphic_rules"])
+
+
 if __name__ == "__main__":
     unittest.main()
 

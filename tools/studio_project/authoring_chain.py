@@ -64,6 +64,17 @@ class ChainResult:
     scenes: dict = field(default_factory=dict)
 
 
+def graphic_motifs_of(text) -> list[str]:
+    """The Studio graphic motifs a stored scene part uses (read from the assets Core wrote)."""
+    try:
+        assets = json.loads(text)["payload"].get("assets") or {}
+    except (TypeError, ValueError, KeyError):
+        return []
+    return sorted({a["creative_origin"]["template"] for a in assets.values()
+                   if isinstance(a, dict) and a.get("category") == "studio_graphic" and isinstance(a.get("creative_origin"), dict)
+                   and a["creative_origin"].get("template")})
+
+
 def _summary(issues: list[dict]) -> str:
     return "; ".join(sorted({str(i.get("code") or "UNKNOWN") + (f" ({i['detail']})" if i.get("detail") else "") for i in issues}))
 
@@ -286,10 +297,18 @@ class LiveIO:
     def _goal(self, sid: str) -> str:
         return self._row(sid)["text"][:80]
 
+    def used_motifs(self, exclude: str | None = None) -> list[str]:
+        """The picture motifs the other scenes already stored, so a scene can choose a different one."""
+        found = []
+        for other, row in (self.load().get("scenes") or {}).items():
+            if other != exclude:
+                found += graphic_motifs_of(row.get("text"))
+        return found
+
     def stage_request(self, skeleton: str, sid: str, feedback):
         from . import authoring_menus
         menus = self._menus(skeleton, sid)
-        data = authoring_menus.stage_data(menus, sid, self._row(sid)["text"], self._goal(sid))
+        data = authoring_menus.stage_data(menus, sid, self._row(sid)["text"], self._goal(sid), used_motifs=self.used_motifs(exclude=sid))
         if feedback:
             data["previous_findings"] = feedback
         return authoring_menus.stage_schema(menus), data
@@ -368,6 +387,12 @@ class LiveIO:
                 found.append({"code": "PROPOSAL_INVALID", "scene_id": None, "detail": message[:300]})
         if isinstance(final, dict):
             found += [i for i in self._validator_issues(final) if i["code"] not in COMPLETED_LATER]
+        seen: dict[str, str] = {}
+        for sid in order:  # the same picture motif twice reads as a template, not as a story: the later scene chooses again
+            for motif in graphic_motifs_of(texts.get(sid)):
+                if motif in seen:
+                    found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
+                seen.setdefault(motif, sid)
         return found
 
     def core_fix(self, sid: str, text: str, issues: list[dict]) -> str:

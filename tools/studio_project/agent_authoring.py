@@ -352,6 +352,19 @@ def _substitute_missing_parts(intent):
     return changed
 
 
+def _stored_graphic(asset, workspace):
+    """A Studio graphic Core drew itself: its own category and file prefix, bytes still matching the hash."""
+    if not isinstance(asset, dict) or asset.get("category") != "studio_graphic" or set(asset) != {"path", "category", "source_sha256", "creative_origin"}:
+        return False
+    path, sha = str(asset.get("path", "")), asset.get("source_sha256")
+    if not re.fullmatch(r"\.authoring/agent-art/graphic-[0-9a-f]{64}\.svg", path) or not isinstance(sha, str) or sha not in path:
+        return False
+    try:
+        return hashlib.sha256((workspace / path).read_bytes()).hexdigest() == sha
+    except OSError:
+        return False
+
+
 def _stored_story_visual(asset, workspace):
     """A Story Visual asset exactly as normalized_asset() wrote it: same path pattern and file bytes matching its hash."""
     path, sha = str(asset.get("path", "")), asset.get("source_sha256")
@@ -417,6 +430,8 @@ def proposal(text, service, project_id, *, write_visuals=False):
                 generated.add(key)
             elif asset.get("category") == "story_visual" and _stored_story_visual(asset, handle.workspace):
                 generated.add(key)  # already written by an earlier apply (a scene revision starts from the applied intent); the same placement rules apply
+            elif _stored_graphic(asset, handle.workspace):
+                continue  # a Studio graphic: Studio's own creative addition, outside the Phase 1 story-visual contract
             elif accepted_accent(asset, handle.workspace):
                 continue  # a registered scene accent master or accent art Core drew: the setting of a scene, not a prop
             elif set(asset) - {"path", "category", "source_sha256"} or asset.get("category") != "prop":
