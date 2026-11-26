@@ -115,10 +115,10 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
 def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str) -> dict:
     """What the stage choice is shown: the scene, and every menu it may pick from (accents with what they read as)."""
     return {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
-            "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accents", "accent_reads", "accent_parts")},
-            "accent_rules": ("accent_id 'drawn' = Core draws your parts (1-3, each in its own slot: left, center, right; a wide part - awning, "
-                             "string_lights, curtain - goes 'across' and then only floor parts may share it). Use a registered accent_id only when it "
-                             "reads exactly as the place; 'none_fits' = the place cannot be drawn from these parts. Leave parts empty unless 'drawn'."),
+            "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accent_parts")},
+            "accent_rules": ("accent_id 'drawn' = Core draws your parts (two or three read as a place; each in its own slot: left, center, right; a "
+                             "wide part - awning, string_lights, curtain - goes 'across' and then only floor parts may share it). 'none_fits' = the "
+                             "place cannot be drawn from these parts; leave parts empty then."),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
 
 
@@ -143,7 +143,7 @@ def stage_schema(menus: dict) -> dict:
                   "items": _object({"prop_id": _enum(menus["props"]), "role": {"type": "string", "enum": ["focus", "support"]}})},
         "dressing": _enum(menus["dressing"]),
         # the setting of the scene: a registered accent, what the narration places there, and the exact words it is bound to
-        "accent": _object({"accent_id": _enum(menus["accents"] + [DRAWN, NONE_FITS]),
+        "accent": _object({"accent_id": _enum([DRAWN, NONE_FITS]),
                            "setting": {"type": "string", "maxLength": 80},
                            "visible_detail": {"type": "string", "maxLength": 140},
                            "anchor_id": _enum([a["id"] for a in menus["anchors"]]),

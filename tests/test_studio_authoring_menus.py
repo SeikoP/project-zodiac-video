@@ -132,7 +132,7 @@ class MenuTests(unittest.TestCase):
     def test_stage_schema_asks_for_a_setting_with_every_scene(self):
         m = menus()
         accent = menus_mod.stage_schema(m)["properties"]["accent"]
-        self.assertEqual(accent["properties"]["accent_id"]["enum"], m["accents"] + ["drawn", "none_fits"])
+        self.assertEqual(accent["properties"]["accent_id"]["enum"], ["drawn", "none_fits"])  # the stage asks for a drawing; registered masters are not offered
         self.assertEqual(accent["properties"]["anchor_id"]["enum"], [a["id"] for a in m["anchors"]])
         self.assertEqual(accent["properties"]["setting"]["maxLength"], 80)
         self.assertEqual(accent["properties"]["visible_detail"]["maxLength"], 140)
@@ -141,8 +141,7 @@ class MenuTests(unittest.TestCase):
     def test_stage_schema_offers_drawn_accents_with_parts(self):
         m = menus()
         accent = menus_mod.stage_schema(m)["properties"]["accent"]["properties"]
-        self.assertIn("drawn", accent["accent_id"]["enum"])
-        self.assertIn("none_fits", accent["accent_id"]["enum"])
+        self.assertEqual(accent["accent_id"]["enum"], ["drawn", "none_fits"])
         parts = accent["parts"]
         self.assertEqual(parts["maxItems"], 3)
         row = parts["items"]["properties"]
@@ -193,3 +192,12 @@ class RegisteredAccentTests(unittest.TestCase):
         wrong_category = {**self.good(), "category": "prop"}
         for asset in (bad_path, bad_hash, extra, wrong_category):
             self.assertFalse(agent_authoring.is_registered_accent(asset), asset)
+
+
+class StageDataTests(unittest.TestCase):
+    def test_the_stage_is_shown_the_drawing_parts_and_not_the_registered_cues(self):
+        data = menus_mod.stage_data(menus(), "s01", TEXT, "goal")
+        self.assertIn("accent_parts", data["menus"])
+        self.assertNotIn("accents", data["menus"])
+        self.assertNotIn("accent_reads", data["menus"])
+        self.assertIn("across", data["accent_rules"])
