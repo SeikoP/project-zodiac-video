@@ -6,7 +6,6 @@ entity id, asset key, layer, trigger text, profile and focus; an id outside the 
 """
 from __future__ import annotations
 
-import math
 import re
 
 from . import agent_authoring
@@ -52,8 +51,6 @@ DRESSING_FALLBACK = ("laptop", "notebook", "coffee-cup", "potted-plant", "book",
 FPS = 30
 LEAN = {"preset": "lean", "duration_frames": 12, "params": {"degrees": 8, "dx": 0, "dy": 0, "settle": "return"}}
 SWAP = {"preset": "state_swap", "duration_frames": 12}
-ENTER_FRAMES, HOP = 12, -12
-CAMERA_ZOOM, CAMERA_FRAMES = 1.12, 240  # a slow push-in (odd scenes) or pull-out (even scenes) so no scene is a still photograph
 _VIEWBOX = re.compile(r'viewBox="\s*([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)[ ,]+([-\d.]+)')
 
 
@@ -345,7 +342,6 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if has_accent:
         _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals), art_dir)
     _separate_depth(scene)
-    scene["camera"] = _camera(scene_id, scene)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
     if accent and accent["accent_id"] == NONE_FITS:  # the library has no such cue: ask for art, never substitute one
@@ -522,20 +518,13 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
             trigger = {"type": "voice_anchor", "text": first["text"]} if first else {"type": "scene_start"}
         add(ident, "hidden", "shown", trigger, "Hiện nội dung của cảnh", SWAP)
     busy_until: dict[str, float] = {}  # the export refuses a target's next acting event before the previous one has finished
-    for entity in entities:  # the cast walks in from its own side at the scene start, so the opening beat already has movement
-        if entity["kind"] != "character":
-            continue
-        box = _rect(entity)
-        side = "left" if box and box["x"] + box["width"] / 2 < 540 else "right"
-        add(entity["id"], entity["initial_state"], entity["initial_state"], {"type": "scene_start"}, "Bước vào khung hình",
-            {"preset": "enter", "duration_frames": ENTER_FRAMES, "params": {"from": side}})
-        busy_until[entity["id"]] = ENTER_FRAMES / FPS + 0.02
     dropped = []
+    leaned = False  # a character moves at most once per scene, and only when an event of the narration is acted out
     for row in sorted(act["events"], key=lambda r: anchors[r["anchor_id"]]["at"]):
         target = row["target"]
         when = anchors[row["anchor_id"]].get("t")
         if when is not None and when < busy_until.get(target, 0.0):
-            dropped.append(f"{target} @{when}s")
+            dropped.append(f"sự kiện của {target} @{when}s quá sát sự kiện trước, bỏ")
             continue
         if target not in by_id or by_id[target]["kind"] == "story_visual":
             raise ValueError(f"target {target!r} không có mặt trong cảnh")
@@ -543,7 +532,13 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
         if after not in by_id[target]["states"]:
             raise ValueError(f"state_after {after!r} không có trong {target}")
         trigger = {"type": "voice_anchor", "text": anchors[row["anchor_id"]]["text"]}
-        motion = SWAP if after != current[target] else _lean(by_id, target)
+        swapped = after != current[target]
+        if not swapped and by_id[target].get("kind") == "character":
+            if leaned:  # a second push of the same body adds nothing the viewer needs
+                dropped.append(f"chuyển động thừa của {target} bỏ: mỗi nhân vật chỉ nghiêng một lần mỗi cảnh")
+                continue
+            leaned = True
+        motion = SWAP if swapped else _lean(by_id, target)
         add(target, current[target], after, trigger, row["action"] or goal, motion)
         if when is not None:
             busy_until[target] = when + motion["duration_frames"] / FPS + 0.02
@@ -552,7 +547,7 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
         if first is not None:
             add(first["id"], first["initial_state"], first["initial_state"], {"type": "scene_start"}, "Bước vào khung hình",
                 {"preset": "enter", "duration_frames": 12, "params": {"from": "left"}})
-    return events, [f"sự kiện của {d} quá sát sự kiện trước, bỏ" for d in dropped]
+    return events, dropped
 
 
 def _lean(by_id: dict, target: str) -> dict:
@@ -563,9 +558,9 @@ def _lean(by_id: dict, target: str) -> dict:
     mine = _rect(me)
     others = [r for r in (_rect(e) for e in by_id.values() if e.get("kind") == "character" and e["id"] != target) if r]
     if not mine or not others:
-        return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 9, "dx": 0, "dy": HOP, "settle": "return"}}
+        return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 6, "dx": 0, "dy": 0, "settle": "return"}}
     toward = 1 if others[0]["x"] > mine["x"] else -1
-    return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 9 * toward, "dx": 28 * toward, "dy": HOP, "settle": "return"}}
+    return {"preset": "lean", "duration_frames": 14, "params": {"degrees": 7 * toward, "dx": 18 * toward, "dy": 0, "settle": "return"}}
 
 
 LAYER_NEAR = 25
@@ -582,19 +577,6 @@ def _separate_depth(scene: dict) -> None:
     for state in (actors[1].get("states") or {}).values():
         if isinstance(state, dict):
             state["layer"] = LAYER_NEAR
-
-
-def _camera(scene_id: str, scene: dict) -> list[dict]:
-    """One slow camera move for the whole scene, inside the canvas: push in on odd scenes, pull out on even ones."""
-    digits = "".join(c for c in scene_id if c.isdigit())
-    push = int(digits or 1) % 2 == 1
-    half_h = 960 / CAMERA_ZOOM
-    rows = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
-    centre = (min(r["y"] for r in rows) + max(r["y"] + r["height"] for r in rows)) / 2 if rows else 960
-    near = {"x": 540, "y": round(min(max(centre, math.ceil(half_h)), math.floor(1920 - half_h))), "zoom": CAMERA_ZOOM}
-    far = {"x": 540, "y": 960, "zoom": 1.0}
-    start, end = (far, near) if push else (near, far)
-    return [{"id": f"{scene_id}-camera", "trigger": {"type": "scene_start"}, "duration_frames": CAMERA_FRAMES, "from": start, "to": end}]
 
 
 def _profile(menus: dict, stage: dict, entities: list[dict], focus_prop: dict | None, goal: str) -> dict:

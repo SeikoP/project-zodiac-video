@@ -20,3 +20,6 @@ A meme is performed by the channel's own cast, never imported characters. Start 
 
 ## Sound and timing
 Voice timing is measured and authoritative. Do not delay narration or captions for visuals. HyperFrames has no audio of its own here: voice (and any approved music) is mixed at export.
+
+## Move only when it carries the story
+Studio adds no camera move and no automatic entrance. A character changes pose by hard cut (a state change on its anchor); a body movement (the lean) is allowed once per character per scene, and only for the beat where one person acts ON the other or on a prop. Do not choose an event just to make something move: an event whose only effect is a nudge is dropped.
