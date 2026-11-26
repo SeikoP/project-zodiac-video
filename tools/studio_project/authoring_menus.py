@@ -8,13 +8,14 @@ from __future__ import annotations
 import json
 import re
 
-from . import agent_authoring, catalog_v5, prop_families
+from . import accent_art, agent_authoring, catalog_v5, prop_families
 
 MAX_EVENTS = 8
 MAX_PROPS = 3
 MAX_PHRASE_WORDS = 6
 NONE = "none"
 NONE_FITS = "none_fits"
+DRAWN = "drawn"
 SAME = "same"
 ACTION_LIMIT = 80
 _CLAUSE = re.compile(r"[^,.;:!?…—\n]+")
@@ -107,13 +108,17 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
     accents = list(accent_registry())
     return {"frames": [f["id"] for f in catalog["frames"]], "mechanics": [m["id"] for m in catalog["mechanics"]],
             "cast": cast, "props": props, "dressing": props + [NONE], "anchors": anchors,
-            "accents": accents, "accent_reads": {i: ACCENT_READS.get(i, "registered scene accent") for i in accents}}
+            "accents": accents, "accent_reads": {i: ACCENT_READS.get(i, "registered scene accent") for i in accents},
+            "accent_parts": {name: meta["reads"] for name, meta in accent_art.PARTS.items()}}
 
 
 def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str) -> dict:
     """What the stage choice is shown: the scene, and every menu it may pick from (accents with what they read as)."""
     return {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
-            "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accents", "accent_reads")},
+            "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accents", "accent_reads", "accent_parts")},
+            "accent_rules": ("accent_id 'drawn' = Core draws your parts (1-3, each in its own slot: left, center, right; a wide part - awning, "
+                             "string_lights, curtain - goes 'across' and then only floor parts may share it). Use a registered accent_id only when it "
+                             "reads exactly as the place; 'none_fits' = the place cannot be drawn from these parts. Leave parts empty unless 'drawn'."),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
 
 
@@ -138,10 +143,14 @@ def stage_schema(menus: dict) -> dict:
                   "items": _object({"prop_id": _enum(menus["props"]), "role": {"type": "string", "enum": ["focus", "support"]}})},
         "dressing": _enum(menus["dressing"]),
         # the setting of the scene: a registered accent, what the narration places there, and the exact words it is bound to
-        "accent": _object({"accent_id": _enum(menus["accents"] + [NONE_FITS]),
+        "accent": _object({"accent_id": _enum(menus["accents"] + [DRAWN, NONE_FITS]),
                            "setting": {"type": "string", "maxLength": 80},
                            "visible_detail": {"type": "string", "maxLength": 140},
-                           "anchor_id": _enum([a["id"] for a in menus["anchors"]])}),
+                           "anchor_id": _enum([a["id"] for a in menus["anchors"]]),
+                           # for accent_id "drawn": up to three parts Core draws, one per slot (left/center/right, or one wide part across)
+                           "parts": {"type": "array", "maxItems": 3,
+                                     "items": _object({"part": _enum(sorted(menus["accent_parts"])), "at": _enum(list(accent_art.AT)),
+                                                       "size": _enum(list(accent_art.SIZES))})}}),
     })
 
 

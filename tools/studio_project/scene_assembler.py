@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 
 from . import agent_authoring
-from .authoring_menus import NONE, NONE_FITS, SAME, accent_registry
+from . import accent_art
+from .authoring_menus import DRAWN, NONE, NONE_FITS, SAME, accent_registry
 from .scene_repairs import prune_non_story_references
 
 CAPTION_ZONE = {"x": 80, "y": 1470, "width": 920, "height": 360}
@@ -144,8 +145,10 @@ def _check(stage: dict, act: dict, menus: dict) -> None:
         need(event["anchor_id"], anchors, "anchor_id")
     accent = stage.get("accent")
     if accent is not None:
-        need(accent["accent_id"], list(menus["accents"]) + [NONE_FITS], "accent_id")
+        need(accent["accent_id"], list(menus["accents"]) + [DRAWN, NONE_FITS], "accent_id")
         need(accent["anchor_id"], anchors, "accent anchor_id")
+        if accent["accent_id"] == DRAWN:
+            accent_art.layout({"parts": accent.get("parts", [])})  # ValueError for an invalid drawing, never repaired
 
 
 def _mode(mechanic_id: str) -> str:
@@ -218,7 +221,7 @@ def _ground(box: dict, floor: int) -> dict:
 
 
 def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_range: list[int], scene_text: str, goal: str,
-                   story_visuals: dict[str, str] | None = None) -> dict:
+                   story_visuals: dict[str, str] | None = None, art_dir=None) -> dict:
     """Return ``{"kind":"scene.part","payload":{"scene":...,"assets":...}}`` that ``validate_scene`` accepts unchanged.
 
     ``story_visuals`` maps asset key -> label for the Phase 1 story visuals this scene must carry (declared in the skeleton).
@@ -336,7 +339,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if not story_visuals:
         _centre(scene)
     if has_accent:
-        _add_accent(scene, assets, accent, menus, scene_id, scene_text)
+        _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals), art_dir)
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
     if accent and accent["accent_id"] == NONE_FITS:  # the library has no such cue: ask for art, never substitute one
@@ -363,20 +366,28 @@ def _centre(scene: dict) -> None:
                 state["transform"]["y"] += shift
 
 
-def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: str, scene_text: str) -> None:
-    """The scene's setting: a registered accent on a rear layer, canvas-native, declared with its context and exact anchor."""
-    row = accent_registry()[accent["accent_id"]]
+def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: str, scene_text: str, has_story_visual: bool, art_dir) -> None:
+    """The scene's setting: a rear, canvas-native cue (a registered master or art Core draws), declared with its context and anchor."""
     anchor = next(a["text"] for a in menus["anchors"] if a["id"] == accent["anchor_id"])
-    key = f"{scene_id}-{accent['accent_id']}"
-    assets[key] = {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
-    aspect = _aspect({"path": "scene-set/" + row["path"]})
+    key = f"{scene_id}-accent"
     actors = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
     top = min((r["y"] for r in actors), default=DEFAULT_FLOOR)
-    width = min(ACCENT_MAX_WIDTH, max(ACCENT_MIN, round((ACCENT_AREA * aspect) ** 0.5)))
-    height = round(width / aspect)
-    # a rear cue: it may reach behind the cast's heads, so it can be big enough to read as the place
-    y = max(ACCENT_TOP, top - round(height * ACCENT_OVERLAP))
-    box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": width, "height": height}
+    if accent["accent_id"] == DRAWN:
+        assets[key] = accent_art.normalized_accent({"parts": accent["parts"]}, directory=art_dir, write=art_dir is not None)
+        # the 900x420 picture sits above the cast (or behind the story visual), scaled down to the room there is
+        scale = 0.8 if has_story_visual else max(0.55, min(1.0, (top - ACCENT_TOP - 20) / accent_art.VIEW_H))
+        width, height = round(accent_art.VIEW_W * scale), round(accent_art.VIEW_H * scale)
+        y = ACCENT_TOP + 10 if has_story_visual else max(ACCENT_TOP, top - height - 20)
+        box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": width, "height": height}
+    else:
+        row = accent_registry()[accent["accent_id"]]
+        assets[key] = {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
+        aspect = _aspect({"path": "scene-set/" + row["path"]})
+        width = min(ACCENT_MAX_WIDTH, max(ACCENT_MIN, round((ACCENT_AREA * aspect) ** 0.5)))
+        height = round(width / aspect)
+        # a rear cue: it may reach behind the cast's heads, so it can be big enough to read as the place
+        y = max(ACCENT_TOP, top - round(height * ACCENT_OVERLAP))
+        box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": width, "height": height}
     scene["entities"].insert(0, {
         "id": "accent_" + scene_id, "kind": "scene_accent", "visual_role": "scene_accent", "initial_state": "visible",
         "context": {"kind": "environment_detail", "setting": accent["setting"], "visible_detail": accent["visible_detail"]},

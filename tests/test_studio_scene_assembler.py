@@ -392,6 +392,54 @@ class SceneAccentTests(unittest.TestCase):
         self.assertEqual(node({"action": "validate_authoring", "intent": intent, "narration": TEXT})["status"], "VALID")
 
 
+class DrawnAccentTests(unittest.TestCase):
+    PARTS = [{"part": "awning", "at": "across", "size": "medium"}, {"part": "counter", "at": "center", "size": "medium"}]
+
+    def drawn(self, parts=None, art_dir=None, story=None):
+        menus = authoring_menus.scene_menus(CAPSULE, SKELETON, "s01", [])
+        base_stage, base_act = choices(menus)
+        accent = {**accent_stage("drawn"), "setting": "Quầy bánh tráng nướng", "visible_detail": "Mái hiên sọc và quầy có hai ly", "parts": self.PARTS if parts is None else parts}
+        return scene_assembler.assemble_scene(menus, {**base_stage, "mechanic_id": "confront", "dressing": "none", "accent": accent},
+                                              base_act, "s01", RANGE, TEXT, GOAL, story_visuals=story, art_dir=art_dir)
+
+    def test_a_drawn_accent_is_rendered_into_the_workspace_and_declared(self):
+        import tempfile
+        from pathlib import Path
+        from tools.studio_project import accent_art
+        with tempfile.TemporaryDirectory() as tmp:
+            part = self.drawn(art_dir=Path(tmp))
+            entity = next(e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent")
+            asset = part["payload"]["assets"][entity["states"]["visible"]["asset"]]
+            self.assertTrue(accent_art.is_drawn_accent(asset, Path(tmp)))
+            self.assertEqual(entity["context"]["setting"], "Quầy bánh tráng nướng")
+            t = entity["states"]["visible"]["transform"]
+            self.assertEqual(round(t["width"] / t["height"], 2), round(900 / 420, 2))
+            self.assertLess(entity["states"]["visible"]["layer"], scene_assembler.LAYER_CHARACTER)
+            self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"])
+            self.assertEqual([e["id"] for e in part["payload"]["scene"]["entities"] if e["id"].startswith("depth__")], [])
+
+    def test_without_an_art_dir_the_asset_is_described_but_nothing_is_written(self):
+        part = self.drawn()
+        entity = next(e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent")
+        self.assertRegex(part["payload"]["assets"][entity["states"]["visible"]["asset"]]["path"], r"accent-[0-9a-f]{64}\.svg$")
+
+    def test_an_invalid_drawing_spec_is_rejected(self):
+        for parts in ([], [{"part": "castle", "at": "left", "size": "small"}],
+                      [{"part": "awning", "at": "across", "size": "small"}, {"part": "window", "at": "left", "size": "small"}]):
+            with self.assertRaises(ValueError, msg=parts):
+                self.drawn(parts)
+
+    def test_a_drawn_accent_passes_the_plugin_validator_and_part_validation(self):
+        part = self.drawn()
+        scene = part["payload"]["scene"]
+        validated = json.loads(agent_parts.validate_scene(json.dumps(part, ensure_ascii=False), task()))["payload"]["scene"]
+        self.assertEqual(next(e for e in validated["entities"] if e["kind"] == "scene_accent")["visual_role"], "scene_accent")
+        script = ("import('./plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/visual-composition/validate-canvas-accents.mjs')"
+                  ".then(m=>console.log(JSON.stringify(m.validateCanvasAccents(%s,%s))))" % (json.dumps({**scene, "voice": TEXT}), json.dumps(part["payload"]["assets"])))
+        out = subprocess.run(["node", "-e", script], cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf8")
+        self.assertEqual(json.loads(out.stdout), {"status": "PASS", "issues": []})
+
+
 class EventTimingTests(unittest.TestCase):
     """The real export refuses two acting events of one target that overlap (EXPORT_ACTING_TIMING_INVALID)."""
 

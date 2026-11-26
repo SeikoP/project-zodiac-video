@@ -88,6 +88,12 @@ def is_registered_accent(asset) -> bool:
     return row is not None and asset.get("source_sha256") == row["asset_sha256"]
 
 
+def accepted_accent(asset, workspace) -> bool:
+    """A scene accent is accepted as a registered library master or as art Core drew itself (hash-checked in the workspace)."""
+    from .accent_art import is_drawn_accent
+    return is_registered_accent(asset) or is_drawn_accent(asset, workspace)
+
+
 def record_asset_requests(workspace, bad):
     """Write what the library lacks to .authoring/asset-requests.json (spec: assets.request_variant). It asks for new
     master art to be authored and reviewed by a person; it generates nothing and approves nothing."""
@@ -411,8 +417,8 @@ def proposal(text, service, project_id, *, write_visuals=False):
                 generated.add(key)
             elif asset.get("category") == "story_visual" and _stored_story_visual(asset, handle.workspace):
                 generated.add(key)  # already written by an earlier apply (a scene revision starts from the applied intent); the same placement rules apply
-            elif is_registered_accent(asset):
-                continue  # a registered scene accent master: the setting of a scene, not a prop
+            elif accepted_accent(asset, handle.workspace):
+                continue  # a registered scene accent master or accent art Core drew: the setting of a scene, not a prop
             elif set(asset) - {"path", "category", "source_sha256"} or asset.get("category") != "prop":
                 raise invalid("Chỉ được chọn đạo cụ, scene accent đã đăng ký trong thư viện hoặc Story Visual dạng template đã duyệt.")
             elif asset.get("path") not in allowed:

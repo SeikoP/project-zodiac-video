@@ -132,11 +132,25 @@ class MenuTests(unittest.TestCase):
     def test_stage_schema_asks_for_a_setting_with_every_scene(self):
         m = menus()
         accent = menus_mod.stage_schema(m)["properties"]["accent"]
-        self.assertEqual(accent["properties"]["accent_id"]["enum"], m["accents"] + ["none_fits"])
+        self.assertEqual(accent["properties"]["accent_id"]["enum"], m["accents"] + ["drawn", "none_fits"])
         self.assertEqual(accent["properties"]["anchor_id"]["enum"], [a["id"] for a in m["anchors"]])
         self.assertEqual(accent["properties"]["setting"]["maxLength"], 80)
         self.assertEqual(accent["properties"]["visible_detail"]["maxLength"], 140)
         self.assertIn("accent", menus_mod.stage_schema(m)["required"])
+
+    def test_stage_schema_offers_drawn_accents_with_parts(self):
+        m = menus()
+        accent = menus_mod.stage_schema(m)["properties"]["accent"]["properties"]
+        self.assertIn("drawn", accent["accent_id"]["enum"])
+        self.assertIn("none_fits", accent["accent_id"]["enum"])
+        parts = accent["parts"]
+        self.assertEqual(parts["maxItems"], 3)
+        row = parts["items"]["properties"]
+        self.assertEqual(row["part"]["enum"], sorted(m["accent_parts"]))
+        self.assertEqual(row["at"]["enum"], ["left", "center", "right", "across"])
+        self.assertEqual(row["size"]["enum"], ["small", "medium", "large"])
+        self.assertIn("awning", m["accent_parts"])
+        self.assertIn("shop awning", m["accent_parts"]["awning"])
 
     def test_unknown_scene_is_an_error(self):
         with self.assertRaises(KeyError):
@@ -145,6 +159,21 @@ class MenuTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AcceptedAccentTests(unittest.TestCase):
+    def test_a_registered_or_a_drawn_accent_is_accepted_and_nothing_else(self):
+        import tempfile
+        from pathlib import Path
+        from tools.studio_project import accent_art
+        row = menus_mod.accent_registry()["scene-accent-clock"]
+        registered = {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            drawn = accent_art.normalized_accent({"parts": [{"part": "lamp", "at": "left", "size": "small"}]}, directory=Path(tmp), write=True)
+            self.assertTrue(agent_authoring.accepted_accent(registered, Path(tmp)))
+            self.assertTrue(agent_authoring.accepted_accent(drawn, Path(tmp)))
+            self.assertFalse(agent_authoring.accepted_accent({**drawn, "source_sha256": "0" * 64}, Path(tmp)))
+            self.assertFalse(agent_authoring.accepted_accent({"path": "assets/x.svg", "category": "scene_accent"}, Path(tmp)))
 
 
 class RegisteredAccentTests(unittest.TestCase):
