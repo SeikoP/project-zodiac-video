@@ -172,6 +172,8 @@ export const backend = {
   pipelineRun: (project_id: string, node_id: string, base_revision: number) =>
     request<PipelineData>("pipeline.run", { project_id, node_id, base_revision }),
   pipelineEvidence: (project_id: string) => request<PipelineEvidence>("pipeline.evidence", { project_id }),
+  pipelineCardResolve: (project_id: string, scene_id: string, choice: string) =>
+    request<{ scene_id: string; choice: string }>("pipeline.card.resolve", { project_id, scene_id, choice }),
   pipelineCancel: (project_id: string) => request<PipelineData>("pipeline.cancel", { project_id }),
   pipelineSetMode: (project_id: string, mode: PipelineMode) => request<{ mode: PipelineMode }>("pipeline.mode.set", { project_id, mode }),
   pipelineAutopilotStart: (project_id: string, base_revision: number) =>
@@ -267,6 +269,7 @@ export const pipelineApi: PipelineApi = {
   get: backend.pipelineGet,
   run: backend.pipelineRun,
   cancel: backend.pipelineCancel,
+  resolveCard: backend.pipelineCardResolve,
   autopilotStart: backend.pipelineAutopilotStart,
   autopilotStop: backend.pipelineAutopilotStop,
   setMode: backend.pipelineSetMode,

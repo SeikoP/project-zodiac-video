@@ -191,3 +191,51 @@ test('a disposed store ignores pending responses', async () => {
   assert.equal(store.getSnapshot(), before);
   assert.equal(env.live().length, 0);
 });
+
+// ---- compact visual phase (constructive pipeline) ----
+import { phasePrimary, phaseProgress, cardView } from '../apps/zodiac-studio/src/pipeline/status.ts';
+
+test('the visual phase offers one primary action: the first runnable step, never a gate or a scene', () => {
+  const list = nodes(3);
+  const set = (id, status) => { list.find(n => n.id === id).status = status; };
+  assert.equal(phasePrimary(list.filter(n => groupByPhase(list).find(g => g.phase.id === 'visual').steps.includes(n))), null);
+  set('visual', 'READY'); set('checks', 'READY'); set('scene:s01', 'READY'); set('visual_review', 'AWAITING_USER');
+  const visual = groupByPhase(list).find(g => g.phase.id === 'visual');
+  assert.equal(phasePrimary([...visual.steps, ...visual.scenes]).id, 'visual');
+  set('visual', 'DONE');
+  assert.equal(phasePrimary([...visual.steps, ...visual.scenes]).id, 'checks');
+  set('checks', 'DONE');
+  assert.notEqual(phasePrimary([...visual.steps, ...visual.scenes])?.kind, 'gate');
+  assert.ok(!String(phasePrimary([...visual.steps, ...visual.scenes])?.id).startsWith('scene:'));
+});
+
+test('phase progress is one bar: done over total', () => {
+  const list = nodes(2); list[4].status = 'RUNNING';
+  const visual = groupByPhase(list).find(g => g.phase.id === 'visual');
+  const all = [...visual.steps, ...visual.scenes];
+  assert.deepEqual(phaseProgress(all), { done: all.length - 0 - all.filter(n => n.status !== 'DONE').length, total: all.length, percent: Math.round((all.filter(n => n.status === 'DONE').length / all.length) * 100) });
+  assert.deepEqual(phaseProgress([]), { done: 0, total: 0, percent: 0 });
+});
+
+test('an owner card shows its three options with the default marked', () => {
+  const view = cardView({ scene_id: 's02', reason: 'thiếu art', options: ['accept', 'restage', 'redo'], default: 'accept' });
+  assert.deepEqual(view.options.map(o => o.id), ['accept', 'restage', 'redo']);
+  assert.deepEqual(view.options.filter(o => o.isDefault).map(o => o.id), ['accept']);
+  assert.ok(view.options.every(o => o.label && o.label !== o.id));
+});
+
+test('the store carries cards and the build id, and answering a card goes through the api then refreshes', async () => {
+  const env = fakeEnv();
+  const withCards = data({ cards: [{ scene_id: 's02', reason: 'x', options: ['accept', 'restage', 'redo'], default: 'accept' }], build_id: 'b1' });
+  const api = fakeApi([withCards, data({ cards: [], build_id: 'b1' })]);
+  const answered = [];
+  api.resolveCard = (p, s, c) => { answered.push([p, s, c]); return Promise.resolve({}); };
+  const store = createPipelineStore(api, { projectId: 'p', timer: env.timer, visibility: env.visibility });
+  await store.refresh();
+  assert.equal(store.getSnapshot().cards.length, 1);
+  assert.equal(store.getSnapshot().buildId, 'b1');
+  await store.resolveCard('s02', 'restage');
+  assert.deepEqual(answered, [['p', 's02', 'restage']]);
+  assert.equal(store.getSnapshot().cards.length, 0);
+  store.dispose();
+});

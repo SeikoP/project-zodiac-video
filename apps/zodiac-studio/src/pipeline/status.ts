@@ -1,4 +1,4 @@
-import type { NodeStatus, PipelineNode } from "./types";
+import type { NodeStatus, OwnerCard, PipelineNode } from "./types";
 
 export const STATUS_LABEL: Record<NodeStatus, string> = {
   DONE: "Xong", READY: "Sẵn sàng", RUNNING: "Đang chạy", STALE: "Cần làm lại", FAILED: "Lỗi",
@@ -30,6 +30,24 @@ export function groupByPhase(nodes: PipelineNode[]) {
     const inPhase = nodes.filter((node) => phaseOf(node) === phase.id);
     return { phase, steps: inPhase.filter((node) => !node.scene_id || !node.id.startsWith("scene:")), scenes: inPhase.filter((node) => node.id.startsWith("scene:")) };
   }).filter((group) => group.steps.length + group.scenes.length > 0);
+}
+
+/** The phase's single primary action: the first step (in order) that can run now. Gates are never run from here. */
+export function phasePrimary(nodes: PipelineNode[]): PipelineNode | null {
+  return nodes.find((n) => n.kind !== "gate" && n.id.split(":")[0] !== "scene" && RUNNABLE.includes(n.status)) ?? null;
+}
+
+export function phaseProgress(nodes: PipelineNode[]): { done: number; total: number; percent: number } {
+  const done = nodes.filter((n) => n.status === "DONE").length;
+  return { done, total: nodes.length, percent: nodes.length ? Math.round((done / nodes.length) * 100) : 0 };
+}
+
+export const CARD_LABEL: Record<string, string> = { accept: "Giữ như vậy", restage: "Dàn lại cảnh", redo: "Làm lại cảnh" };
+
+/** What an owner card shows: every option with its label, the default marked. */
+export function cardView(card: OwnerCard) {
+  return { sceneId: card.scene_id, reason: card.reason,
+    options: card.options.map((id) => ({ id, label: CARD_LABEL[id] ?? id, isDefault: id === card.default })) };
 }
 
 export function phaseSummary(nodes: PipelineNode[]): { done: number; total: number } {

@@ -74,7 +74,7 @@ export default function EpisodeShell({ project, active, tool, toolTick, selectio
       </div>
       <div className="production-workspace" data-stage={target.stage}>
         <div className="production-side">
-          <StepList store={store} onOpen={open} />
+          <StepList store={store} onOpen={open} projectId={projectId} />
           <NeedsYou store={store} onOpen={open} />
         </div>
         {fullStage && <div className="stage-panel">{panel}</div>}

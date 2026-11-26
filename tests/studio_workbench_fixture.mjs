@@ -26,11 +26,12 @@ export async function installWorkbenchFixture(page) {
     const base=[node('content',[],'gate'),node('voice',['content']),node('voice_review',['voice'],'gate'),node('timing',['voice_review']),node('visual',['timing']),node('checks',['visual']),node('assets',['checks']),node('cover',['checks']),node('publish',['checks']),
       ...scenes.map(x=>node('scene:'+x.id,['assets'],'fan','DONE',x.id)),node('build',ids),node('inspect',['build']),node('visual_review',['inspect','cover','publish'],'gate','AWAITING_USER'),node('export',['visual_review'],'step','PENDING')];
     if(window.unknownNode) base.push(node('mystery',['export']));
-    const data=()=>({format:'zodiac-pipeline@1',project_id:'p1',revision:1,revisions:{visual:1,voice:1},mode:window.pipelineMode||'confirm',run:window.pipelineRun||null,nodes:base.map(n=>({...n,status:status[n.id]||n.status}))});
+    const data=()=>({format:'zodiac-pipeline@1',project_id:'p1',revision:1,revisions:{visual:1,voice:1},mode:window.pipelineMode||'confirm',run:window.pipelineRun||null,cards:window.pipelineCards||[],build_id:'b'.repeat(32),nodes:base.map(n=>({...n,status:status[n.id]||n.status}))});
     if(['pipeline.get','pipeline.run','pipeline.cancel'].includes(method)) return data();
     if(method==='pipeline.evidence') return {build_id:'b'.repeat(32),revision:1,source_hash:'h',checks:{ok:true,issues:[],receipt_sha256:'r'},inspect:{build_id:'b',method:'structural',findings:[{scene_id:'s1',severity:'ok',note:'khung hình ổn'}]},cover:{headline:'Tiêu đề bìa',scene_id:'s1'},publish:{title:'Tiêu đề đăng',description:'Mô tả',hashtags:['#cung']}};
     if(method==='pipeline.autopilot.start') { window.pipelineRun={format:'zodiac-pipeline-run@1',run_id:'r1',state:'WAITING_GATE',node:'voice_review',log:[],needs_you:[{node_id:'voice_review',kind:'gate',title:'Cần bạn duyệt: Nghe giọng',detail:'Chờ bạn nghe giọng',issues:[]}]}; return window.pipelineRun; }
     if(method==='pipeline.autopilot.stop') return {state:'STOPPED'};
+    if(method==='pipeline.card.resolve') { window.pipelineCards=(window.pipelineCards||[]).filter(c=>c.scene_id!==p.scene_id); return {scene_id:p.scene_id,choice:p.choice}; }
     if(method==='pipeline.mode.set') { window.pipelineMode=p.mode; return {mode:p.mode}; }
     if(method==='pipeline.gate.playback') return {playback_id:'pb1'};
     if(method==='pipeline.gate.confirm') return {status:'APPROVED',build_id:p.build_id,source_hash:'h'};

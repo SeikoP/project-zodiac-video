@@ -38,6 +38,9 @@ export type RunRecord = {
   log: { at: number; node: string | null; text: string }[];
 };
 
+/** An open question the authoring chain could not settle itself; `default` keeps the scene as it is. */
+export type OwnerCard = { scene_id: string; reason: string; options: string[]; default: string };
+
 export type PipelineData = {
   format: string;
   project_id: string;
@@ -46,6 +49,8 @@ export type PipelineData = {
   mode: PipelineMode;
   run: RunRecord | null;
   nodes: PipelineNode[];
+  cards?: OwnerCard[];
+  build_id?: string | null;
 };
 
 /** Transport seam: the store never imports the Tauri backend, so it stays testable in Node. */
@@ -56,6 +61,7 @@ export type PipelineApi = {
   autopilotStart(projectId: string, baseRevision: number): Promise<RunRecord>;
   autopilotStop(projectId: string): Promise<RunRecord>;
   setMode(projectId: string, mode: PipelineMode): Promise<{ mode: PipelineMode }>;
+  resolveCard(projectId: string, sceneId: string, choice: string): Promise<unknown>;
 };
 
 export type Selection = { nodeId: string | null; sceneId: string | null };

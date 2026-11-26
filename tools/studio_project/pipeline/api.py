@@ -31,6 +31,10 @@ def pipeline_get(service, project_id: str, *, running: str | None = None,
     result["mode"] = get_mode(workspace)
     from .autopilot import autopilot_for
     result["run"] = autopilot_for(service, project_id).record.to_dict()
+    from . import cards
+    result["cards"] = [{"scene_id": c.scene_id, "reason": c.reason, "options": list(c.options), "default": c.default}
+                       for c in cards.list_cards(workspace)]
+    result["build_id"] = ((service.visual.snapshot(project_id) or {}).get("build") or {}).get("id")
     return result
 
 

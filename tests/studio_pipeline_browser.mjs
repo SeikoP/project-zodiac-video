@@ -13,12 +13,31 @@ try {
   const row=page.locator(`.step-row[data-node-id="${id}"]`);
   const phase=page.locator('.step-phase').filter({has:row});
   if(!await phase.evaluate(el=>el.open)) await phase.locator(':scope > summary').click();
+  const detail=phase.locator('.phase-detail');  // the visual phase keeps its rows under "Chi tiết"
+  if(await detail.count() && !await detail.evaluate(el=>el.open)) await detail.locator(':scope > summary').click();
   await row.locator('.step-main').click();
  };
  await page.goto(process.env.STUDIO_URL||'http://127.0.0.1:1420');
  await page.locator('.workflow-tabs').getByRole('button',{name:'Quy trình',exact:true}).click();
- await page.locator('.step-row:visible').first().waitFor({timeout:15000});
+ await page.locator('.phase-compact:visible').first().waitFor({timeout:15000});
  assert.ok(await page.locator('.step-row').count()>=13,'graph shows 13+ nodes');
+ // compact visual phase: one bar, at most one primary button, the strip, the old rows only under "Chi tiết"
+ const compact=page.locator('.phase-compact');
+ assert.equal(await compact.count(),1);
+ assert.equal(await compact.locator('[role=progressbar]').count(),1);
+ assert.ok(await compact.locator('.phase-primary').count()<=1);
+ assert.equal(await page.locator('.stills-strip .still-tile').count(),12,'one tile per scene');
+ assert.equal(await page.locator('.step-phase[data-phase=visual] > .phase-detail').count(),1);
+ assert.equal(await page.locator('.step-phase[data-phase=visual] > ol').count(),0,'rows live only inside Chi tiết');
+ // an owner card shows its options with the default marked; answering records it
+ await page.evaluate(()=>{window.pipelineCards=[{scene_id:'s2',reason:'thiếu art: quầy',options:['accept','restage','redo'],default:'accept'}];}); await poll();
+ const card=page.locator('.owner-card[data-scene-id=s2]'); await card.waitFor();
+ assert.equal(await card.locator('button').count(),3);
+ assert.equal(await card.locator('button[data-default=true]').getAttribute('data-option'),'accept');
+ await card.locator('button[data-option=restage]').click();
+ await page.waitForFunction(()=>(window.pipelineCalls||[]).some(c=>c[0]==='pipeline.card.resolve'));
+ assert.deepEqual((await calls('pipeline.card.resolve')).map(c=>c[1]),[{project_id:'p1',scene_id:'s2',choice:'restage'}]);
+ await card.waitFor({state:'detached'});
  assert.equal(await page.locator('.step-row[data-kind=gate] .step-run').count(),0,'gates have no run button');
  assert.equal(await page.locator('.production-manager').locator('.stage-row, .stat-card, .metric-card, .sidebar').count(),0,'no dashboard cards in Episode view');
  assert.equal(await page.locator('.next-action').count(),1);
@@ -34,6 +53,7 @@ try {
 
  // STALE node: one run with the current base_revision
  await page.evaluate(()=>{window.pipelineStatus={assets:'STALE'};}); await poll();
+ await selectStep('assets');
  await page.locator('.step-row[data-node-id=assets] small').filter({hasText:'Cần làm lại'}).waitFor();
  await page.locator('.step-row[data-node-id=assets] .step-run').click();
  await page.waitForFunction(()=>(window.pipelineCalls||[]).some(c=>c[0]==='pipeline.run'));

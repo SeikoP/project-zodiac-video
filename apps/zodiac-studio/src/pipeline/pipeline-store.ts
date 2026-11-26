@@ -1,4 +1,4 @@
-import type { NeedsYou, PipelineApi, PipelineData, PipelineMode, PipelineNode, RunRecord, Selection } from "./types.ts";
+import type { NeedsYou, OwnerCard, PipelineApi, PipelineData, PipelineMode, PipelineNode, RunRecord, Selection } from "./types.ts";
 
 export const POLL_RUNNING_MS = 1500;
 export const POLL_IDLE_MS = 5000;
@@ -12,6 +12,8 @@ export type PipelineSnapshot = {
   mode: PipelineMode;
   run: RunRecord | null;
   needsYou: NeedsYou[];
+  cards: OwnerCard[];
+  buildId: string | null;
   selection: Selection;
 };
 
@@ -23,7 +25,7 @@ export type Visibility = { isHidden(): boolean; subscribe(cb: () => void): () =>
 export type PipelineStoreOptions = { projectId: string; timer?: Timers; visibility?: Visibility };
 
 const EMPTY: PipelineSnapshot = {
-  status: "idle", error: null, data: null, nodes: [], revision: 0, mode: "confirm", run: null, needsYou: [],
+  status: "idle", error: null, data: null, nodes: [], revision: 0, mode: "confirm", run: null, needsYou: [], cards: [], buildId: null,
   selection: { nodeId: null, sceneId: null },
 };
 
@@ -79,7 +81,7 @@ export function createPipelineStore(api: PipelineApi, options: PipelineStoreOpti
     const keep = snapshot.selection.nodeId && data.nodes.some((n) => n.id === snapshot.selection.nodeId)
       ? snapshot.selection : EMPTY.selection;
     set({ status: "ready", error: null, data, nodes: data.nodes, revision: data.revision, mode: data.mode, run: data.run,
-      needsYou: data.run?.needs_you ?? [], selection: keep });
+      needsYou: data.run?.needs_you ?? [], cards: data.cards ?? [], buildId: data.build_id ?? null, selection: keep });
   };
 
   const fail = (error: unknown) => {
@@ -157,6 +159,8 @@ export function createPipelineStore(api: PipelineApi, options: PipelineStoreOpti
       const selection: Selection = node ? { nodeId: node.id, sceneId: node.scene_id } : EMPTY.selection;
       set({ ...snapshot, selection });
     },
+    /** Records the owner's answer to a card (never an approval); the chain reads it the next time it runs. */
+    resolveCard: (sceneId: string, choice: string) => act(() => api.resolveCard(projectId, sceneId, choice)),
     cancel: () => act(() => api.cancel(projectId)),
     startAutopilot: () => act(() => api.autopilotStart(projectId, snapshot.revision)),
     stopAutopilot: () => act(() => api.autopilotStop(projectId)),
