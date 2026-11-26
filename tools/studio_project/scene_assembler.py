@@ -9,11 +9,12 @@ from __future__ import annotations
 import re
 
 from . import agent_authoring
-from .authoring_menus import NONE, SAME
+from .authoring_menus import NONE, NONE_FITS, SAME, accent_registry
 from .scene_repairs import prune_non_story_references
 
 CAPTION_ZONE = {"x": 80, "y": 1470, "width": 920, "height": 360}
-LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 10, 20, 30, 40
+LAYER_ACCENT, LAYER_DRESSING, LAYER_CHARACTER, LAYER_PROP, LAYER_STORY = 5, 10, 20, 30, 40
+ACCENT_WIDTH, ACCENT_MIN, ACCENT_TOP = 760, 360, 110
 
 # frame id -> slot -> box (story field 1080x1400; the caption lane starts at y=1470). Characters keep the 1:2 ratio of the art.
 PLACEMENT: dict[str, dict[str, dict]] = {
@@ -141,6 +142,10 @@ def _check(stage: dict, act: dict, menus: dict) -> None:
     anchors = {a["id"] for a in menus["anchors"]}
     for event in act["events"]:
         need(event["anchor_id"], anchors, "anchor_id")
+    accent = stage.get("accent")
+    if accent is not None:
+        need(accent["accent_id"], list(menus["accents"]) + [NONE_FITS], "accent_id")
+        need(accent["anchor_id"], anchors, "accent anchor_id")
 
 
 def _mode(mechanic_id: str) -> str:
@@ -241,7 +246,9 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     if dressing != NONE and _family(dressing) in families:
         notes.append(f"dressing {dressing} bỏ: cùng họ {_family(dressing)} với vật của cảnh")
         dressing = NONE
-    if dressing == NONE and _mode(stage["mechanic_id"]) in NEEDS_DRESSING:  # the checks require a depth__ layer in these scenes
+    accent = stage.get("accent")
+    has_accent = bool(accent) and accent["accent_id"] != NONE_FITS
+    if dressing == NONE and not has_accent and _mode(stage["mechanic_id"]) in NEEDS_DRESSING:  # the checks require a depth__ layer in these scenes
         dressing = next((p for p in DRESSING_FALLBACK if p in props and _family(p) not in families), NONE)
         if dressing != NONE:
             notes.append(f"dressing {dressing}: Core thêm vì cảnh cần lớp nền")
@@ -328,8 +335,14 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
              "experience_profile": _profile(menus, stage, entities, focus_prop, goal)}
     if not story_visuals:
         _centre(scene)
+    if has_accent:
+        _add_accent(scene, assets, accent, menus, scene_id, scene_text, bool(story_visuals))
     prune_non_story_references(scene)
     part = {"kind": "scene.part", "payload": {"scene": scene, "assets": assets}}
+    if accent and accent["accent_id"] == NONE_FITS:  # the library has no such cue: ask for art, never substitute one
+        part["asset_requests"] = [{"wanted": f"{accent['setting']}: {accent['visible_detail']}", "code": "NEW_VARIANT_MASTER_REQUIRED",
+                                   "kind": "scene_accent", "scene_id": scene_id}]
+        notes.append("scene accent: thư viện không có cue phù hợp, đã ghi yêu cầu vẽ mới")
     if notes:
         part["core_notes"] = notes
     return part
@@ -348,6 +361,28 @@ def _centre(scene: dict) -> None:
         for state in (entity.get("states") or {}).values():
             if isinstance(state, dict) and state.get("transform"):
                 state["transform"]["y"] += shift
+
+
+def _add_accent(scene: dict, assets: dict, accent: dict, menus: dict, scene_id: str, scene_text: str, has_story_visual: bool) -> None:
+    """The scene's setting: a registered accent on a rear layer, canvas-native, declared with its context and exact anchor."""
+    row = accent_registry()[accent["accent_id"]]
+    anchor = next(a["text"] for a in menus["anchors"] if a["id"] == accent["anchor_id"])
+    key = f"{scene_id}-{accent['accent_id']}"
+    assets[key] = {"path": "library:scene-set/" + row["path"], "category": "scene_accent", "source_sha256": row["asset_sha256"]}
+    aspect = _aspect({"path": "scene-set/" + row["path"]})
+    actors = [r for r in (_visible(e) for e in scene["entities"] if e.get("kind") == "character") if r]
+    top = min((r["y"] for r in actors), default=DEFAULT_FLOOR)
+    width = ACCENT_WIDTH
+    while width / aspect > max(top - ACCENT_TOP - 30, 0) and width > ACCENT_MIN and not has_story_visual:
+        width -= 40  # shrink until it fits in the free band above the cast
+    height = round(width / aspect)
+    y = (max(ACCENT_TOP, top - height - 30) if not has_story_visual else max(ACCENT_TOP, top - round(height * 0.4)))
+    box = {"x": (1080 - width) // 2, "y": min(y, CAPTION_ZONE["y"] - height - 10), "width": round(width), "height": height}
+    scene["entities"].insert(0, {
+        "id": "accent_" + scene_id, "kind": "scene_accent", "visual_role": "scene_accent", "initial_state": "visible",
+        "context": {"kind": "environment_detail", "setting": accent["setting"], "visible_detail": accent["visible_detail"]},
+        "states": {"visible": _state(key, box, LAYER_ACCENT)},
+        "narrative_intent": {"voice_anchor": anchor, "reason": accent["visible_detail"]}})
 
 
 def _rect(entity: dict) -> dict | None:
@@ -380,7 +415,8 @@ def scene_faults(part: dict, required_story_visuals=()) -> list[dict]:
     for i, (a_id, a) in enumerate(rects):
         for b_id, b in rects[i + 1:]:
             behind = {a_id.startswith("depth__"), b_id.startswith("depth__")} == {True, False} and "character" in (kinds[a_id], kinds[b_id])
-            if _hits(a, b, margin=0) and not behind:
+            rear = "scene_accent" in (kinds[a_id], kinds[b_id])  # a rear context cue is independent of the actors
+            if _hits(a, b, margin=0) and not behind and not rear:
                 faults.append({"code": "ENTITY_OVERLAP", "entities": [a_id, b_id]})
     present = {e["id"] for e in scene["entities"]}
     faults += [{"code": "STORY_VISUAL_MISSING", "entity": key} for key in required_story_visuals if key.lower() not in present]

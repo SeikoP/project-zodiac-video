@@ -64,7 +64,7 @@ def one_run(service, project_id: str, capsule: dict, intent: dict, scene_id: str
     goal = next((s.get("semantic_goal") for s in intent.get("scenes", []) if s.get("id") == scene_id), row["text"][:80])
     began, result = time.monotonic(), {"scene": scene_id, "schema_valid": False, "accepted": False, "compiled": False, "seconds": 0.0, "error": None, "notes": [], "faults": [], "checks": []}
     stage, error = choose(service, project_id, authoring_menus.stage_schema(menus),
-                          {"scene_id": scene_id, "scene_text": row["text"], "goal": goal, "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing")}}, skill="stage")
+                          authoring_menus.stage_data(menus, scene_id, row["text"], goal), skill="stage")
     if stage:
         act, error = choose(service, project_id, authoring_menus.act_schema(menus, stage),
                             {"scene_id": scene_id, "scene_text": row["text"], "goal": goal, "stage": stage, "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]],

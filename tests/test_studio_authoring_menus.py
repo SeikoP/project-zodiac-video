@@ -122,6 +122,22 @@ class MenuTests(unittest.TestCase):
         self.assertEqual([a["t"] for a in m["anchors"]], [0.0, 0.6])  # seconds from the scene's first word
         self.assertIsNone(menus()["anchors"][0]["t"])  # no timing, no time
 
+    def test_accent_menu_lists_the_registered_scene_accents_with_what_they_read_as(self):
+        m = menus()
+        self.assertIn("scene-accent-clock", m["accents"])
+        self.assertEqual(len(m["accents"]), 13)
+        self.assertIn("clock", m["accent_reads"]["scene-accent-clock"])
+        self.assertEqual(set(m["accent_reads"]), set(m["accents"]))
+
+    def test_stage_schema_asks_for_a_setting_with_every_scene(self):
+        m = menus()
+        accent = menus_mod.stage_schema(m)["properties"]["accent"]
+        self.assertEqual(accent["properties"]["accent_id"]["enum"], m["accents"] + ["none_fits"])
+        self.assertEqual(accent["properties"]["anchor_id"]["enum"], [a["id"] for a in m["anchors"]])
+        self.assertEqual(accent["properties"]["setting"]["maxLength"], 80)
+        self.assertEqual(accent["properties"]["visible_detail"]["maxLength"], 140)
+        self.assertIn("accent", menus_mod.stage_schema(m)["required"])
+
     def test_unknown_scene_is_an_error(self):
         with self.assertRaises(KeyError):
             menus_mod.scene_menus(capsule(), SKELETON, "s99", [])

@@ -4,7 +4,7 @@
 `content` (gate) → `voice` → `voice_review` (gate) → `timing` → **`visual`** (author the Visual Intent) → `checks` → `assets` → `cover` → `publish` → `scene` (per-scene fan-out) → `build` → `inspect` → `visual_review` (gate) → `export`. Status is derived from on-disk evidence; the UI never stores it. Gates are completed only from the GUI.
 
 ## Authoring chain (constructive)
-cast → per scene **stage** (frame, mechanic, who is present with which state, props with a role, dressing) → per scene **act** (events: anchor, target, short action, new state) → Core assembles the scene → compile that scene → look at its frame. The agent chooses from menus of ids that exist; the answer schema makes any other id impossible. Core adds coordinates, asset keys, layers, trigger text, profile and focus.
+cast → per scene **stage** (frame, mechanic, who is present with which state, props with a role, dressing, the **accent** that sets the place) → per scene **act** (events: anchor, target, short action, new state) → Core assembles the scene → compile that scene → look at its frame. The agent chooses from menus of ids that exist; the answer schema makes any other id impossible. Core adds coordinates, asset keys, layers, trigger text, profile and focus.
 
 What Core already guarantees, so do not spend effort on it: one prop per family (dressing included, extras dropped with a note); no overlapping actors and props; the story visual in its own top band; props standing on the actors' floor line; frame and mechanic compatible (it substitutes the nearest valid pair and reports it); events of one target never overlapping in time; centred composition. It reports what it changed in `core_notes`.
 
@@ -12,7 +12,7 @@ What Core already guarantees, so do not spend effort on it: one prop per family 
 Cast and identity reasons; the story mode and focus of each scene; which props the narration physically needs and which anchor each event lands on; the **setting of each scene** (scene accent, see `scene.md`); whether a Story Visual earns its place; acting that moves the story and reads at phone size. An agent that picks the same prop family for dressing and a handled prop, or an event on every word, is not using the skill.
 
 ## Known gaps (state them, do not paper over them)
-- Studio has no scene-accent authoring path yet: until it does, a scene's setting can only be expressed through narrated props, which the contract treats as insufficient. Report this as a gap on each scene rather than adding a filler prop.
+- The scene accent comes only from the registered accents (13 cues: clock, board, shelf, sign, lamp, windows, string lights, tree, cafe awning, framed note, two neutral marks). A setting the library cannot draw is a request for new art (`none_fits`), not a substitute and not a filler prop. Studio does not author accent SVGs.
 - Cover opening, background music and sound effects are not yet supported by the HyperFrames export; unsupported requests are blocked, not silently dropped.
 
 ## Renderer: HyperFrames only

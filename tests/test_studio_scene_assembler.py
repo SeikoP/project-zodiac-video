@@ -297,6 +297,84 @@ class CompositionTests(unittest.TestCase):
             self.assertLessEqual(low, 1400, frame)
 
 
+def accent_stage(accent_id="scene-accent-clock", **over):
+    menus = authoring_menus.scene_menus(CAPSULE, SKELETON, "s01", [])
+    return {"accent_id": accent_id, "setting": "Phòng khách buổi tối", "visible_detail": "Đồng hồ treo tường phía sau nhóm",
+            "anchor_id": menus["anchors"][0]["id"], **over}
+
+
+def with_accent(accent=None, story=None, mechanic="confront", **kw):
+    menus = authoring_menus.scene_menus(CAPSULE, SKELETON, "s01", [])
+    base_stage, base_act = choices(menus)
+    stage = {**base_stage, "mechanic_id": mechanic, "accent": accent or accent_stage(), **kw}
+    return scene_assembler.assemble_scene(menus, stage, base_act, "s01", RANGE, TEXT, GOAL, story_visuals=story)
+
+
+class SceneAccentTests(unittest.TestCase):
+    """The setting of every scene: a registered accent, drawn canvas-native on a rear layer, declared with its context."""
+
+    def test_the_accent_entity_satisfies_the_plugins_canvas_accent_validator(self):
+        part = with_accent()
+        scene = part["payload"]["scene"]
+        entity = next(e for e in scene["entities"] if e["kind"] == "scene_accent")
+        self.assertEqual(entity["visual_role"], "scene_accent")
+        self.assertEqual(entity["context"], {"kind": "environment_detail", "setting": "Phòng khách buổi tối",
+                                              "visible_detail": "Đồng hồ treo tường phía sau nhóm"})
+        self.assertIn(entity["narrative_intent"]["voice_anchor"], TEXT)
+        asset = part["payload"]["assets"][entity["states"]["visible"]["asset"]]
+        self.assertEqual((asset["category"], asset["path"]), ("scene_accent", "library:scene-set/accents/scene-accent-clock.svg"))
+        scene_for_validator = {**scene, "voice": TEXT}
+        script = ("import('./plugins/zodiac-video-pipeline/skills/zodiac-video-pipeline/features/visual-composition/validate-canvas-accents.mjs')"
+                  ".then(m=>console.log(JSON.stringify(m.validateCanvasAccents(%s,%s))))" % (json.dumps(scene_for_validator), json.dumps(part["payload"]["assets"])))
+        out = subprocess.run(["node", "-e", script], cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf8")
+        self.assertEqual(json.loads(out.stdout), {"status": "PASS", "issues": []})
+
+    def test_the_accent_is_rear_inside_the_canvas_and_clear_of_the_caption_lane(self):
+        for story in (None, CHAT):
+            scene = with_accent(story=story)["payload"]["scene"]
+            box = next(e for e in scene["entities"] if e["kind"] == "scene_accent")["states"]["visible"]
+            self.assertLess(box["layer"], scene_assembler.LAYER_CHARACTER)
+            t = box["transform"]
+            self.assertGreaterEqual(t["x"], 0)
+            self.assertLessEqual(t["x"] + t["width"], 1080)
+            self.assertGreaterEqual(t["y"], 0)
+            self.assertLessEqual(t["y"] + t["height"], scene_assembler.CAPTION_ZONE["y"])
+
+    def test_an_accent_means_core_adds_no_filler_dressing(self):
+        scene = with_accent(dressing="none")["payload"]["scene"]
+        self.assertEqual([e["id"] for e in scene["entities"] if e["id"].startswith("depth__")], [])
+        self.assertTrue([e for e in build(TWO, cast_of(TWO, 2), ["phone-ping"], mechanic="confront")["payload"]["scene"]["entities"]
+                         if e["id"].startswith("depth__")], "without an accent the filler is still the fallback")
+
+    def test_the_accent_is_not_a_story_entity_and_never_a_fault(self):
+        part = with_accent()
+        scene = part["payload"]["scene"]
+        self.assertNotIn("accent", json.dumps(scene["experience_profile"]))
+        self.assertEqual(scene_assembler.scene_faults(part), [])
+
+    def test_no_accent_fits_is_a_request_not_a_substitute(self):
+        part = with_accent(accent_stage("none_fits", visible_detail="Một cửa hàng bánh tráng nướng bên đường"))
+        self.assertFalse([e for e in part["payload"]["scene"]["entities"] if e["kind"] == "scene_accent"])
+        self.assertEqual(part["asset_requests"][0]["code"], "NEW_VARIANT_MASTER_REQUIRED")
+        self.assertIn("bánh tráng", part["asset_requests"][0]["wanted"])
+        self.assertTrue(any("scene accent" in n.lower() for n in part["core_notes"]))
+
+    def test_an_accent_outside_the_menu_is_rejected_not_repaired(self):
+        with self.assertRaises(ValueError):
+            with_accent(accent_stage("scene-accent-castle"))
+
+    def test_an_accent_anchor_outside_the_scene_text_is_rejected(self):
+        with self.assertRaises(ValueError):
+            with_accent(accent_stage(anchor_id="a99"))
+
+    def test_the_assembled_scene_still_compiles_with_an_accent(self):
+        part = with_accent()
+        intent = fixture_intent()
+        intent["scenes"] = [part["payload"]["scene"]]
+        intent["assets"].update(part["payload"]["assets"])
+        self.assertEqual(node({"action": "validate_authoring", "intent": intent, "narration": TEXT})["status"], "VALID")
+
+
 class EventTimingTests(unittest.TestCase):
     """The real export refuses two acting events of one target that overlap (EXPORT_ACTING_TIMING_INVALID)."""
 

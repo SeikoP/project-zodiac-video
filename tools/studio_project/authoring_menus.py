@@ -5,6 +5,7 @@ answer impossible (every id field is an ``enum``). Core assembles the choices in
 """
 from __future__ import annotations
 
+import json
 import re
 
 from . import agent_authoring, catalog_v5, prop_families
@@ -13,9 +14,34 @@ MAX_EVENTS = 8
 MAX_PROPS = 3
 MAX_PHRASE_WORDS = 6
 NONE = "none"
+NONE_FITS = "none_fits"
 SAME = "same"
 ACTION_LIMIT = 80
 _CLAUSE = re.compile(r"[^,.;:!?…—\n]+")
+
+
+# What each registered scene accent reads as to a viewer. The registry only says "optional cue", which is no help in choosing.
+ACCENT_READS = {
+    "scene-accent-cafe": "cafe awning with hanging lights (cafe, street shop)",
+    "scene-accent-board": "notice board or blackboard (school, study, plans on a wall)",
+    "scene-accent-shelf": "shelf with books or jars (study, home)",
+    "scene-accent-clock": "round wall clock (time, schedule, waiting)",
+    "scene-accent-sign": "shop sign or menu board (cafe, food stall, street)",
+    "scene-accent-home-lamp": "table or wall lamp (home, evening, night)",
+    "scene-accent-cafe-window": "two-pane window (cafe, room, daylight or night)",
+    "scene-accent-class-window": "four-pane classroom window (school)",
+    "scene-accent-study-note": "framed note or picture on a wall (study, home)",
+    "scene-accent-street-tree": "small street tree or sprout (outdoors)",
+    "scene-accent-neutral-dot": "minimal neutral mark (only when nothing else reads)",
+    "scene-accent-neutral-line": "minimal neutral line (only when nothing else reads)",
+    "scene-accent-string-lights": "string of coloured lights (celebration, evening)",
+}
+
+
+def accent_registry() -> dict[str, dict]:
+    """id -> registry row (path, asset_sha256) of the scene accents the library registers."""
+    index = json.loads((agent_authoring.ASSETS / "scene-set/accents/index.json").read_text("utf8"))
+    return {row["id"]: row for row in index["accents"]}
 
 
 def _prop_ids() -> list[str]:
@@ -78,8 +104,17 @@ def scene_menus(capsule: dict, skeleton_intent: dict, scene_id: str, words: list
     cast = {m["entity_id"]: sorted(m.get("states") or {}) for m in skeleton_intent.get("cast", [])}
     anchors = _anchors(row["text"])
     _time(anchors, row, words)
+    accents = list(accent_registry())
     return {"frames": [f["id"] for f in catalog["frames"]], "mechanics": [m["id"] for m in catalog["mechanics"]],
-            "cast": cast, "props": props, "dressing": props + [NONE], "anchors": anchors}
+            "cast": cast, "props": props, "dressing": props + [NONE], "anchors": anchors,
+            "accents": accents, "accent_reads": {i: ACCENT_READS.get(i, "registered scene accent") for i in accents}}
+
+
+def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str) -> dict:
+    """What the stage choice is shown: the scene, and every menu it may pick from (accents with what they read as)."""
+    return {"scene_id": scene_id, "scene_text": scene_text, "goal": goal,
+            "menus": {k: menus[k] for k in ("frames", "mechanics", "cast", "props", "dressing", "accents", "accent_reads")},
+            "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
 
 
 def _enum(values) -> dict:
@@ -102,6 +137,11 @@ def stage_schema(menus: dict) -> dict:
         "props": {"type": "array", "maxItems": MAX_PROPS,
                   "items": _object({"prop_id": _enum(menus["props"]), "role": {"type": "string", "enum": ["focus", "support"]}})},
         "dressing": _enum(menus["dressing"]),
+        # the setting of the scene: a registered accent, what the narration places there, and the exact words it is bound to
+        "accent": _object({"accent_id": _enum(menus["accents"] + [NONE_FITS]),
+                           "setting": {"type": "string", "maxLength": 80},
+                           "visible_detail": {"type": "string", "maxLength": 140},
+                           "anchor_id": _enum([a["id"] for a in menus["anchors"]])}),
     })
 
 
