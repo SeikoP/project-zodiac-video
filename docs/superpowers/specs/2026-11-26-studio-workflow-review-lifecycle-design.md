@@ -1,6 +1,6 @@
 # Studio: danh tính gói, quyết định duyệt và vòng sửa video
 
-Trạng thái: đề xuất theo yêu cầu lập kế hoạch ngày 2026-11-26; chưa triển khai.
+Trạng thái: đề xuất đã điều chỉnh ngày 2026-11-26: bỏ Phase 2 (vòng trả sửa); bổ sung Cài đặt chung và nhạc/SFX đang triển khai.
 Phạm vi: Studio Preview tại worktree main-2. Không thay nguồn Phase 1 đã duyệt.
 
 ## 1. Những gì đã kiểm tra
@@ -34,7 +34,7 @@ Phạm vi: Studio Preview tại worktree main-2. Không thay nguồn Phase 1 đ�
 
 - Chỉ điền sẵn hai select: sửa được thao tác lặp, chưa giải quyết dấu duyệt sai
   phiên bản hoặc vòng trả sửa. Chỉ dùng như một phần của bản sửa đầy đủ.
-- Gắn duyệt với episode/export hiện tại và thêm vòng phản hồi: **đề xuất chọn**.
+- Gắn duyệt với episode/export hiện tại và bỏ/khôi phục bản xuất: **đề xuất chọn**.
   Tái sử dụng pipeline/store/player/canonical commands; có thêm model quyết định.
 - Thay toàn bộ workflow hoặc editor: chi phí và rủi ro lớn, không cần cho các lỗi
   đã xác nhận. Không đưa vào kế hoạch này.
@@ -53,10 +53,7 @@ vẫn được giữ và phân biệt với receipt duyệt một bản xuất x
 Màn cuối có preview lớn, danh tính ngắn và hai quyết định:
 
 - **Duyệt video**: sau khi người dùng phát/xem và chủ động xác nhận bản hiện tại.
-- **Chưa đạt, cần sửa**: ghi điều chưa ổn, có thể gắn cảnh hoặc mốc thời gian; giữ
-  MP4 để so sánh và mở đúng chỗ sửa. Không tự chạy model chỉ vì vừa từ chối.
-  Lấy sẵn mốc đang xem và cảnh tương ứng nếu xác định được; người dùng chỉ cần
-  ghi góp ý ngắn, không phải điền một biểu mẫu kỹ thuật.
+
 
 Thao tác phụ:
 
@@ -124,3 +121,19 @@ Thử cả đổi project khi đang phát, RPC mất phản hồi sau ghi, hủy
 khởi động lại giữa lúc bỏ bản xuất, nhiều episode cùng concept/cung và gói cũ.
 File test/synthetic receipt không xác nhận chất lượng gói thật. Nghiệm thu cuối
 cần người dùng xem MP4 thật; merge production/phát hành/đăng video là việc riêng.
+
+
+## 7. Điều chỉnh được yêu cầu: Cài đặt và âm thanh
+
+Phase 2/trả sửa tự động không còn trong phạm vi triển khai. Các mô tả đường sửa
+trong bảng dependency là hướng dẫn sửa thủ công, không phải yêu cầu thêm API feedback.
+
+Tab Cài đặt chung quản lý nhạc nền/SFX và mức âm, ducking, model/effort theo vai
+trò, giọng/theme mặc định cho gói mới, thư viện cục bộ. Thông số renderer/đường
+lưu và chế độ chạy theo episode được hiển thị đúng phạm vi. Env override có nhãn.
+
+Nguồn nhạc/SFX: kho livestream hiện có; không tải hoặc sửa kho livestream.
+Giọng nguồn được giữ nguyên byte. Preview và MP4 dùng cùng mix đã fingerprint.
+Nhạc loop/fade và giảm khi có giọng; SFX tối đa 0,55s ở chuyển cảnh, không giả
+định đây là SFX diễn xuất tự chọn theo mọi động tác. Đổi âm thanh chỉ stale MP4,
+không mất duyệt giọng/hình. User vẫn phải nghe và duyệt chất lượng bản mix.

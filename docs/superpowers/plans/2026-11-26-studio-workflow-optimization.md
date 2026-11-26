@@ -1,14 +1,14 @@
 # Kế hoạch tối ưu Studio từ nhập gói đến duyệt MP4
 
 > **For agentic workers:** triển khai tuần tự bằng superpowers:executing-plans.
-> Đây là kế hoạch theo yêu cầu của người dùng, chưa phải lệnh thực thi toàn bộ.
+> Kế hoạch đã được sửa phạm vi: bỏ Phase 2; Cài đặt và audio được yêu cầu triển khai ngay. Các phase còn lại chưa được thực thi trong lượt này.
 
 **Goal:** Danh tính tự đi theo gói; mọi bước có đường tiếp tục, trả sửa và giữ
 phiên bản; chỉ hoàn tất khi đúng MP4 đã được người dùng duyệt.
 
 **Architecture:** Tái sử dụng Tauri → RPC Python → Project Core, pipeline registry,
 store, VisualWorkspace và các player hiện có. Bổ sung quyết định duyệt bản xuất
-trong SQLite, gate cuối và vòng phản hồi. Không dựng thêm app/editor hay scheduler.
+trong SQLite, gate cuối và bỏ/khôi phục bản xuất. Không dựng thêm app/editor hay scheduler.
 
 **Tech Stack:** React/TypeScript, Tauri/Rust, Python/sqlite3, compiler/renderer hiện có.
 
@@ -42,7 +42,7 @@ trong SQLite, gate cuối và vòng phản hồi. Không dựng thêm app/editor
 
 ## Trải nghiệm từng bước
 
-| Bước | Máy làm | Người dùng thấy/làm | Khi không đạt | Điều kiện đi tiếp |
+| Bước | Máy làm | Người dùng thấy/làm | Khi chưa duyệt | Điều kiện đi tiếp |
 |---|---|---|---|---|
 | 1. Kế hoạch | Đọc catalog, nối các episode đúng concept/cung | Chọn ý tưởng/cung một lần; mở tập đang làm | Chọn lại trước tạo gói; gói nhập sai được báo rõ | Danh tính đủ và không mâu thuẫn |
 | 2. Nhập nguồn | Kiểm ZIP, manifest, hash, receipt; chống nhập trùng | Tóm tắt tên tập/cung/concept + nút Tiếp tục | Hiện đúng thiếu sót và cách sửa nguồn | Nội dung có approval hợp lệ |
@@ -51,9 +51,9 @@ trong SQLite, gate cuối và vòng phản hồi. Không dựng thêm app/editor
 | 5. Căn thời gian | Chạy ASR cho audio hiện tại, kiểm ranh giới | Tóm tắt khớp/chỗ cần kiểm; waveform khi cần | Retry align hoặc quay lại đoạn giọng lỗi | Timing khớp hash audio |
 | 6. Soạn hình | Agent đề xuất cảnh/diễn xuất theo nguồn và timing | Preview + timeline; danh sách thay đổi trước áp dụng | Góp ý cảnh cụ thể, giữ bản trước, Undo | Nguồn hình hợp lệ; áp dụng được kiểm revision |
 | 7. Dựng và kiểm | Resolve tài nguyên, dựng phần đổi, kiểm cấu trúc/ảnh | Kết quả ngắn, cảnh có vấn đề; kỹ thuật thu gọn | Phân lỗi cần sửa và góp ý thẩm mỹ | Hợp lệ kỹ thuật, thông tin kiểm đúng phương pháp |
-| 8. Duyệt hình | Phát đúng build, ghi phiên xem | Duyệt hình hoặc Cần sửa ở cảnh/mốc cụ thể | Mở cảnh tương ứng, giữ voice/timing | Người dùng duyệt đúng build |
+| 8. Duyệt hình | Phát đúng build, ghi phiên xem | Duyệt hình hoặc quay lại chỉnh thủ công | Mở cảnh tương ứng, giữ voice/timing | Người dùng duyệt đúng build |
 | 9. Xuất MP4 | Kiểm gate đầu vào, render/mux, probe/hash | Tiến độ render, Dừng; xong thì mở MP4 | Xuất lại nếu lỗi encode; sửa hình/voice nếu nội dung lỗi | File hiện tại hợp lệ, chưa đồng nghĩa hoàn tất |
-| 10. Duyệt MP4 | Gắn player với export và project | Danh tính tự nhận; Duyệt video / Chưa đạt / Bỏ bản xuất | Ghi feedback, trả đúng bước; có thể khôi phục bản bỏ | Receipt người dùng khớp MP4 hiện tại |
+| 10. Duyệt MP4 | Gắn player với export và project | Danh tính tự nhận; Duyệt video / Bỏ duyệt / Bỏ bản xuất | Giữ bản trước để chỉnh thủ công hoặc bỏ/khôi phục bản xuất | Receipt người dùng khớp MP4 hiện tại |
 | 11. Hoàn tất | Chiếu receipt sang Ideas, gom đường dẫn/sidecar | Hoàn tất, mở file, copy nội dung đăng | Bỏ duyệt hoặc mở vòng sửa có lịch sử | Không tự đăng, không giả định đã phát hành |
 
 Các bước 3–5 và 6–8 vẫn nằm trong nhóm Giọng/Hình, không thêm hàng loạt tab mới.
@@ -88,23 +88,22 @@ Các bước 3–5 và 6–8 vẫn nằm trong nhóm Giọng/Hình, không thêm
 
 **Proposed interfaces:**
 
-- `video.review.get(project_id, export_id)` trả quyết định, fingerprint, feedback.
+- `video.review.get(project_id, export_id)` trả quyết định, fingerprint và lịch sử.
 - `video.review.playback(project_id, export_id)` cấp phiên cho file hiện tại;
   GUI gọi sau sự kiện phát hợp lệ, không gọi trên loadedmetadata.
 - `video.review.decide(project_id, export_id, base_revision, expected_sha256,
-  command_id, decision, playback_id, feedback)`;
-  decision thuộc `approve | request_changes | revoke`.
-- `request_changes` nhận nhóm `visual | voice | export | publish | other`, ghi
-  chú, scene_id/time_ms tùy chọn. Revoke/request_changes không cần buộc xem lại.
+  command_id, decision, playback_id)`;
+  decision thuộc `approve | revoke`.
+
 
 - [ ] Test đỏ: duyệt A không duyệt B; sai project/hash/revision/stale/file mất
   bị từ chối; agent không thể cấp approval; command lặp không ghi hai lần.
 - [ ] Tạo bảng quyết định hiện tại và event history trong SQLite sẵn có; transaction
   chung, không vừa ghi JSON vừa cập nhật Ideas như hai nguồn chân lý độc lập.
 - [ ] Tái dùng xác minh export/manifest/voice hiện có trước quyết định; validate
-  decision, phạm vi cảnh/mốc, giới hạn độ dài feedback ở backend.
+  decision và phiên bản bản xuất ở backend.
 - [ ] Quyết định chỉ đổi trạng thái sau phản hồi thành công. Lỗi ghi giữ nguyên
-  nút, nội dung feedback và quyết định trước; stale giải thích mở lại bản hiện tại.
+  nút, quyết định trước; stale giải thích mở lại bản hiện tại.
 - [ ] Ideas chiếu các approval còn hiệu lực; bỏ duyệt một export không xóa thành
   quả của bản khác. Sửa `byKey` để không làm mất nhiều episode cùng concept/cung.
 - [ ] Giữ tiến độ legacy, đánh dấu là checklist cũ nếu không có liên kết export;
@@ -135,30 +134,6 @@ Các bước 3–5 và 6–8 vẫn nằm trong nhóm Giọng/Hình, không thêm
 
 **Xong Phase 1 khi:** không còn chọn lặp; mọi dấu duyệt truy được tới file;
 export 100% chưa làm toàn bộ quy trình báo hoàn tất.
-
-## Phase 2 — Từ chối và quay lại đúng chỗ sửa
-
-**Modify:** `video_review.py`, `pipeline/review.py`, `api.py`, `cards.py`,
-`autopilot.py`, `rpc_stdio.py`; frontend `ReviewInspector.tsx`, `VideoReview.tsx`,
-`EpisodeShell.tsx`, `workbench-state.ts`, các panel voice/scene liên quan.
-**Create tests:** `tests/test_studio_review_feedback.py`,
-`tests/studio_review_repair_browser.mjs`.
-
-- [ ] Test đỏ: phản hồi hình tại s03/mốc 25s mở đúng cảnh; feedback voice mở đúng
-  đoạn; lỗi encode giữ duyệt hình; publish-copy không kích hoạt TTS/render.
-- [ ] Cần sửa ghi vào quyết định backend và hiện bền sau restart. Phản hồi hình
-  cũng có ở Duyệt hình, cùng cấu trúc scene/time/reason.
-- [ ] Giữ “bản đang xem” để so sánh. Request changes không tự xóa hoặc thay nguồn,
-  không chạy model. Người dùng chọn Sửa cảnh/Tạo lại đoạn/Xuất lại.
-- [ ] Agent nhận feedback, phạm vi được sửa, revision và voice fingerprint; dùng
-  canonical commands hiện có. Xem danh sách thay đổi trước áp dụng.
-- [ ] Khi nguồn thực sự đổi, invalidate đúng dependency/gate theo bảng spec;
-  lỗi upstream trả về nguồn. Undo không giả tạo một lượt duyệt mới.
-- [ ] Phân biệt thẻ gợi ý agent (advisory) và yêu cầu sửa của người dùng (chưa thể
-  chốt); bấm trả sửa không được bị autopilot tự “giữ như vậy” rồi hoàn tất.
-
-**Xong khi:** từ MP4 chưa ổn có thể sửa một cảnh/đoạn, dựng lại phần cần thiết,
-xuất bản mới, quay lại duyệt mà không phải đi lại toàn bộ quy trình.
 
 ## Phase 3 — Bỏ bản xuất, khôi phục và lưu trữ
 
@@ -227,7 +202,7 @@ expected_sha256)`, `video.restore(project_id, export_id, command_id)`,
   cover mâu thuẫn. Copy đăng được sửa/duyệt riêng, không gọi là đã xuất bản.
 - [ ] Bàn giao đúng MP4, cover, SRT, caption/copy và quyết định duyệt cùng fingerprint.
 - [ ] Chạy native từ import → giọng → ASR → hình → sửa một cảnh → duyệt hình →
-  export → từ chối → sửa → export mới → người dùng duyệt → restart kiểm phục hồi.
+  export → chỉnh thủ công → export mới → người dùng duyệt → restart kiểm phục hồi.
 - [ ] Thử thêm hủy render, lỗi media, stale build, disconnect RPC, archive/restore,
   external MP4 và nhiều episode cùng concept/cung; không sửa dữ liệu thật để test.
 - [ ] So baseline Phase 4: số thao tác và công việc lặp giảm; file/gate/phản hồi
@@ -235,7 +210,7 @@ expected_sha256)`, `video.restore(project_id, export_id, command_id)`,
 
 ## Thứ tự bàn giao và kiểm tra
 
-`Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5`.
+`Phase 1 → Phase 3 → Phase 4 → Phase 5`. Phase 2 đã bỏ theo yêu cầu ngày 2026-11-26.
 Không tối ưu tốc độ trước khi danh tính/duyệt/trả sửa đúng. Mỗi phase là một mốc
 review độc lập; scope task nhỏ hơn có commit riêng và test đỏ/xanh phù hợp.
 
@@ -248,3 +223,15 @@ Publication, installer và merge main không nằm trong kế hoạch triển kh
 Người dùng biết đang làm tập nào, máy đang làm gì và mình cần quyết định gì.
 Không gán lại dữ liệu đã biết. Không đồng ý với video thì có thể trả sửa hoặc
 bỏ bản xuất mà giữ được nguyên liệu. Dấu Hoàn tất truy được tới đúng MP4 đã xem.
+
+
+## Bổ sung triển khai ngay — Cài đặt chung và audio
+
+Yêu cầu mới ngày 2026-11-26: bỏ Phase 2. Không triển khai vòng feedback/trả sửa.
+Tab Cài đặt tập trung nhạc/SFX, agent theo vai trò, giọng/theme mặc định, nguồn
+thư viện và thông tin renderer. Chế độ chạy tiếp tục được giữ theo từng episode.
+
+Dùng kho livestream có sẵn: nhạc nền loop/fade/ducking, SFX ngắn ở chuyển cảnh.
+Một bản mix FFmpeg dùng cho preview và MP4; đổi audio làm export cũ stale, giữ
+voice/timing và duyệt hình. Kiểm FFmpeg thật, GUI native và MP4 có audio.
+Bằng chứng: docs/audits/2026-11-26-studio-settings-audio.md.
