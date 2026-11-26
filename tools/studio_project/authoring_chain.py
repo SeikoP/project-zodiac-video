@@ -312,7 +312,8 @@ class LiveIO:
         try:
             part = scene_assembler.assemble_scene(menus, stage, act, sid, row["narration_range"], row["text"], self._goal(sid),
                                                   story_visuals=visuals, art_dir=self.workspace,
-                                                  story_reveal=scene_assembler.story_reveal_text(self.capsule, sid))
+                                                  story_reveal=scene_assembler.story_reveal_text(self.capsule, sid),
+                                                  story_specs={k: v for k, v in (intent.get("assets") or {}).items() if isinstance(v, dict) and isinstance(v.get("visual"), dict)})
             task = {"scene_id": sid, "scene_range": row["narration_range"], "scene_text": row["text"],
                     "cast": [{"entity_id": m["entity_id"], "states": sorted(m["states"])} for m in intent["cast"]],
                     "story_visual_assets": visuals}

@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 
 from . import agent_authoring
-from . import accent_art
+from . import accent_art, story_visual_art
 from .authoring_menus import DRAWN, NONE, NONE_FITS, SAME, accent_registry
 from .scene_repairs import prune_non_story_references
 
@@ -222,7 +222,8 @@ def _ground(box: dict, floor: int) -> dict:
 
 
 def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_range: list[int], scene_text: str, goal: str,
-                   story_visuals: dict[str, str] | None = None, art_dir=None, story_reveal: str | None = None) -> dict:
+                   story_visuals: dict[str, str] | None = None, art_dir=None, story_reveal: str | None = None,
+                   story_specs: dict | None = None) -> dict:
     """Return ``{"kind":"scene.part","payload":{"scene":...,"assets":...}}`` that ``validate_scene`` accepts unchanged.
 
     ``story_visuals`` maps asset key -> label for the Phase 1 story visuals this scene must carry (declared in the skeleton).
@@ -284,11 +285,24 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
     object_slots = _slots(frame, "object")
     character_bottoms = [b["y"] + round(b["height"] * FEET) for b in boxes_for.values()]
     floor = max(character_bottoms) if character_bottoms else DEFAULT_FLOOR
+    sv_steps: dict[str, list[str]] = {}
     for asset_key in story_visuals:
+        row = (story_specs or {}).get(asset_key) or {}
+        spec = row.get("visual")
+        count = _spec_steps(spec)
+        states = {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False)}
+        if count >= 2:  # revealed one piece at a time, each piece an asset of its own, on the beat's own anchors
+            names = []
+            for k in range(1, count + 1):
+                name, key = f"step{k}", f"{asset_key}-step{k}"
+                assets[key] = story_visual_art.normalized_asset(spec, directory=art_dir, phase1_id=row.get("phase1_visual_id") or asset_key, write=art_dir is not None, step=k)
+                states[name] = _state(key, STORY_VISUAL_BOX, LAYER_STORY)
+                names.append(name)
+            sv_steps[asset_key.lower()] = names
+        else:
+            states["shown"] = _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY)
         entities.append({"id": asset_key.lower(), "kind": "story_visual", "visual_role": "story_visual", "initial_state": "hidden",
-                         "states": {"hidden": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY, False),
-                                    "shown": _state(asset_key, STORY_VISUAL_BOX, LAYER_STORY)},
-                         "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
+                         "states": states, "narrative_intent": {"voice_anchor": _first_words(scene_text), "reason": goal}})
         sv_entities.append(asset_key.lower())
         placed.append(STORY_VISUAL_BOX)
     for row in kept:
@@ -330,7 +344,7 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
 
     act = {"events": [{**e, "target": alias.get(e["target"], e["target"])} for e in act["events"]
                       if alias.get(e["target"], e["target"]) is not None]}
-    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text, story_reveal)
+    events, timing_notes = _events(menus, act, entities, sv_entities, goal, scene_text, story_reveal, sv_steps)
     notes += timing_notes
     scene = {"id": scene_id, "narration_range": list(scene_range), "semantic_goal": goal,
              "grammar": {"frame_id": frame["id"], "mechanic_id": stage["mechanic_id"], "bindings": bindings},
@@ -478,6 +492,41 @@ def _first_words(text: str) -> str:
     return " ".join(text.split()[:2]) or text
 
 
+def _spec_steps(spec) -> int:
+    try:
+        return story_visual_art.steps(spec) if isinstance(spec, dict) else 0
+    except ValueError:
+        return 0
+
+
+def _reveal_plan(menus: dict, names: list[str], scene_text: str, story_reveal: str | None) -> list[tuple[str, dict]]:
+    """[(state, trigger)] for a picture shown piece by piece: the first piece on the beat's own words, the others spread over the
+    anchors that follow (at least half a second apart), and the last piece is always the last state reached."""
+    anchors = sorted(menus["anchors"], key=lambda a: a["at"])
+    start = next((i for i, a in enumerate(anchors) if story_reveal and story_reveal in a["text"]), 0)
+    pool, last = [], None
+    for a in anchors[start:]:
+        t = a.get("t")
+        if last is not None and t is not None and t - last < 0.5:
+            continue
+        pool.append(a)
+        last = t if t is not None else last
+    first = {"type": "voice_anchor", "text": story_reveal} if story_reveal and story_reveal in scene_text else None
+    if not pool:
+        return [(names[-1], first or {"type": "scene_start"})] if len(names) else []
+    count, m = len(names), min(len(names), len(pool))
+    plan = []
+    for e in range(m):
+        position = round(e * (len(pool) - 1) / (m - 1)) if m > 1 else 0
+        state = names[min(count - 1, round((e + 1) * count / m) - 1)]
+        trigger = first if (e == 0 and first) else {"type": "voice_anchor", "text": pool[position]["text"]}
+        if plan and plan[-1][1] == trigger:
+            continue
+        plan.append((state, trigger))
+    plan[-1] = (names[-1], plan[-1][1])
+    return plan
+
+
 def story_reveal_text(context: dict, scene_id: str) -> str | None:
     """The first words of the Phase 1 beat this scene's Story Visual belongs to (an exact piece of the scene text), or None.
 
@@ -499,7 +548,8 @@ def story_reveal_text(context: dict, scene_id: str) -> str | None:
     return None
 
 
-def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str, story_reveal: str | None = None) -> tuple[list[dict], list[str]]:
+def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str], goal: str, scene_text: str, story_reveal: str | None = None,
+            sv_steps: dict | None = None) -> tuple[list[dict], list[str]]:
     by_id = {e["id"]: e for e in entities}
     anchors = {a["id"]: a for a in menus["anchors"]}
     current = {e["id"]: e["initial_state"] for e in entities}
@@ -511,6 +561,10 @@ def _events(menus: dict, act: dict, entities: list[dict], sv_entities: list[str]
         current[target] = after
 
     for ident in sv_entities:  # revealed on the first anchor, or at the start when the scene has none
+        if (sv_steps or {}).get(ident):
+            for after, trigger in _reveal_plan(menus, sv_steps[ident], scene_text, story_reveal):
+                add(ident, current[ident], after, trigger, "Hiện thêm một phần của hình giải thích", SWAP)
+            continue
         first = min(anchors.values(), key=lambda a: a["at"], default=None)
         if story_reveal and story_reveal in scene_text:  # on the beat the picture explains
             trigger = {"type": "voice_anchor", "text": story_reveal}

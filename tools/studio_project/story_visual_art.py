@@ -13,7 +13,7 @@ from fontTools.ttLib import TTFont
 
 FONT = Path(__file__).resolve().parents[2] / "runtime/zodiac-renderer/2.0.2/renderer/fonts/PatrickHand-Regular.ttf"
 INK, PAPER, TEAL, CORAL, GOLD = "#2F3C44", "#FFFCF7", "#82BFB4", "#E97A66", "#F2C45C"
-ALLOWED = {"story_text", "chat_compare"}
+ALLOWED = {"story_text", "chat_compare", "tally", "chat_thread"}
 CLEAN = re.compile(r"^[^<>\x00-\x1f]{1,90}$", re.UNICODE)
 
 
@@ -82,11 +82,76 @@ class Letterer:
                        for index, line in enumerate(lines))
 
 
-def visual_svg(spec):
+def steps(spec) -> int:
+    """How many states the picture has when it is revealed one piece at a time: a chat_compare shows left then both; a tally one
+    cell per count; a chat_thread one message per step; a story_text appears once."""
+    if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
+        reject("type")
+    return {"story_text": 1, "chat_compare": 2, "tally": int(spec.get("count", 0)) if isinstance(spec.get("count"), int) else 0,
+            "chat_thread": len(spec.get("messages") or [])}[spec["type"]]
+
+
+def _tally(letterer, spec, step):
+    if set(spec) != {"type", "title", "count", "caption"} or not isinstance(spec["count"], int) or isinstance(spec["count"], bool) or not 2 <= spec["count"] <= 5:
+        reject("tally_fields")
+    title, caption = _text(spec["title"], 28), _text(spec["caption"], 40)
+    count, shown = spec["count"], spec["count"] if step is None else max(0, min(step, spec["count"]))
+    width = 960
+    cell, gap = 150, 24
+    left = (width - (count * cell + (count - 1) * gap)) / 2
+    out = ['<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430">',
+           f'<rect x="12" y="12" width="936" height="406" rx="40" fill="{PAPER}" stroke="{INK}" stroke-width="8"/>',
+           letterer.block(title, 480, 96, 54, 840, INK, 1, "center")]
+    for index in range(count):
+        x = left + index * (cell + gap)
+        on = index < shown
+        out += [f'<rect x="{x:.1f}" y="140" width="{cell}" height="{cell}" rx="30" fill="{CORAL if on else "#E9E6DF"}" stroke="{INK}" stroke-width="{7 if on else 4}" opacity="{1 if on else .55}"/>']
+        if on:
+            out.append(letterer.draw(str(index + 1), x + cell / 2, 140 + cell / 2 + 28, 84, INK, "center"))
+    if shown >= count:
+        out.append(letterer.block(caption, 480, 372, 50, 840, INK, 1, "center"))
+    out.append("</svg>")
+    return out
+
+
+def _thread(letterer, spec, step):
+    messages = spec.get("messages")
+    if set(spec) != {"type", "title", "messages"} or not isinstance(messages, list) or not 2 <= len(messages) <= 4:
+        reject("chat_thread_fields")
+    title = _text(spec["title"], 20)
+    rows = []
+    for item in messages:
+        if not isinstance(item, dict) or set(item) != {"from", "text"} or item["from"] not in ("me", "them"):
+            reject("chat_thread_message")
+        rows.append((item["from"], _text(item["text"], 46)))
+    shown = len(rows) if step is None else max(0, min(step, len(rows)))
+    out = ['<svg xmlns="http://www.w3.org/2000/svg" width="960" height="690" viewBox="0 0 960 690">',
+           f'<rect x="12" y="12" width="936" height="666" rx="44" fill="{PAPER}" stroke="{INK}" stroke-width="8"/>',
+           f'<rect x="17" y="17" width="926" height="112" rx="40" fill="{TEAL}" opacity=".65"/>',
+           letterer.block(title, 480, 92, 54, 760, INK, 1, "center")]
+    y = 160
+    for index, (who, text) in enumerate(rows):
+        if index >= shown:
+            break
+        mine = who == "me"
+        fill = CORAL if mine else "#E9E6DF"
+        x = 470 if mine else 52
+        out += [f'<rect x="{x}" y="{y}" width="438" height="118" rx="30" fill="{fill}"/>',
+                letterer.block(text, x + 24, y + 52, 42, 392, INK, 2)]
+        y += 138
+    out.append("</svg>")
+    return out
+
+
+def visual_svg(spec, step=None):
     if not isinstance(spec, dict) or spec.get("type") not in ALLOWED:
         reject("type")
     letterer = Letterer()
-    if spec["type"] == "story_text":
+    if spec["type"] == "tally":
+        elements = _tally(letterer, spec, step)
+    elif spec["type"] == "chat_thread":
+        elements = _thread(letterer, spec, step)
+    elif spec["type"] == "story_text":
         if set(spec) != {"type", "text", "purpose"} or spec["purpose"] not in ("contrast", "annotation", "payoff", "dialogue"):
             reject("story_text_fields")
         text = _text(spec["text"], 68)
@@ -111,6 +176,8 @@ def visual_svg(spec):
                            for field in ("sender", "question", "reply")})
         elements = ['<svg xmlns="http://www.w3.org/2000/svg" width="960" height="610" viewBox="0 0 960 610">']
         for index, entry in enumerate(panels):
+            if step == 1 and index == 1:
+                break  # first reveal: only the left conversation
             x = 12 + index * 486
             accent = CORAL if index == 0 else TEAL
             elements += [
@@ -134,8 +201,8 @@ def visual_svg(spec):
     return data
 
 
-def normalized_asset(spec, *, directory: Path, phase1_id: str, write: bool):
-    svg = visual_svg(spec)
+def normalized_asset(spec, *, directory: Path, phase1_id: str, write: bool, step=None):
+    svg = visual_svg(spec, step)
     sha = hashlib.sha256(svg).hexdigest()
     rel = ".authoring/agent-art/story-" + sha + ".svg"
     if write:
@@ -156,6 +223,11 @@ def visual_schema():
         "category:'story_visual',phase1_visual_id:'approved narrative_plan.story_visuals ID'} OR "
         "{visual:{type:'chat_compare',left:{sender,question,reply},right:{sender,question,reply}}, "
         "category:'story_visual',phase1_visual_id:'approved narrative_plan.story_visuals ID'}. "
+        "Two more templates REVEAL STEP BY STEP on the beat's anchors (each step is its own state): "
+        "{visual:{type:'tally',title:<=28 chars,count:2-5,caption:<=40 chars shown after the last cell}, category:'story_visual',phase1_visual_id} "
+        "for a repeated action that adds up (a count that reaches its meaning), and "
+        "{visual:{type:'chat_thread',title:<=20,messages:[{from:'me'|'them',text:<=46}] 2-4 messages}, category:'story_visual',phase1_visual_id} "
+        "for a conversation that unfolds; chat_compare also reveals left then right. "
         "Fixed boxes, so keep text SHORT: chat_compare sender <= 12 characters, question <= 34, reply <= 30 (story_text <= 40); "
         "a longer line fails validation with text_overflow. "
         "These are deterministic native vector artwork, not scene-wide text boards. "

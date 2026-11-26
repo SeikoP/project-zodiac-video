@@ -492,6 +492,45 @@ class DepthTests(unittest.TestCase):
         self.assertTrue(all(l < 40 for l in layers))  # still behind any story visual
 
 
+class ProgressiveStoryVisualTests(unittest.TestCase):
+    TALLY = {"visual": {"type": "tally", "title": "Mở đoạn chat", "count": 3, "caption": "3 lần trong 5 phút"},
+             "category": "story_visual", "phase1_visual_id": "SVX"}
+
+    def scene(self, art_dir=None, reveal=None):
+        menus = authoring_menus.scene_menus(CAPSULE, SKELETON, "s01", [])
+        words = TEXT.split()
+        menus["anchors"] = [{"id": f"a{i + 1}", "text": " ".join(words[i * 2:i * 2 + 2]), "at": i * 2, "t": round(i * 1.1, 2)} for i in range(max(1, len(words) // 2))]
+        base_stage, _ = choices(menus)
+        part = scene_assembler.assemble_scene(menus, {**base_stage, "mechanic_id": "confront", "dressing": "none", "props": []}, {"events": []}, "s01", RANGE, TEXT, GOAL,
+                                              story_visuals={"SVX": "tally"}, story_reveal=reveal, art_dir=art_dir, story_specs={"SVX": self.TALLY})
+        return part, menus
+
+    def test_a_tally_becomes_one_state_per_count_revealed_in_order_on_the_scene_anchors(self):
+        part, _ = self.scene()
+        entity = next(e for e in part["payload"]["scene"]["entities"] if e["id"] == "svx")
+        self.assertEqual(list(entity["states"]), ["hidden", "step1", "step2", "step3"])
+        assets = {entity["states"][s]["asset"] for s in ("step1", "step2", "step3")}
+        self.assertEqual(len(assets), 3)  # a different picture for every step
+        self.assertTrue(all(a in part["payload"]["assets"] and part["payload"]["assets"][a]["category"] == "story_visual" for a in assets))
+        chain = [(e["state_before"], e["state_after"]) for e in part["payload"]["scene"]["events"] if e["target"] == "svx"]
+        self.assertEqual(chain, [("hidden", "step1"), ("step1", "step2"), ("step2", "step3")])
+
+    def test_the_reveal_events_are_on_distinct_later_anchors(self):
+        part, _ = self.scene()
+        triggers = [e["trigger"]["text"] for e in part["payload"]["scene"]["events"] if e["target"] == "svx"]
+        self.assertEqual(len(set(triggers)), len(triggers))
+        self.assertTrue(all(t in TEXT for t in triggers))
+
+    def test_the_progressive_scene_passes_the_compilers_validation(self):
+        part, _ = self.scene()
+        intent = fixture_intent()
+        intent["scenes"] = [part["payload"]["scene"]]
+        intent["assets"].update(part["payload"]["assets"])
+        intent["assets"]["SVX"] = {"path": part["payload"]["assets"]["SVX-step1"]["path"], "category": "story_visual",
+                                   "source_sha256": part["payload"]["assets"]["SVX-step1"]["source_sha256"], "creative_origin": {"mode": "phase1_directed", "phase1_visual_id": "SVX"}}
+        self.assertEqual(node({"action": "validate_authoring", "intent": intent, "narration": TEXT})["status"], "VALID")
+
+
 class StoryRevealTests(unittest.TestCase):
     def test_the_story_visual_appears_on_its_beat_not_at_the_top_of_the_scene(self):
         menus = authoring_menus.scene_menus(CAPSULE, TWO, "s01", [])

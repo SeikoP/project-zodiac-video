@@ -53,7 +53,7 @@ def catalog():
             "props": [{k: r[k] for k in ("id", "path", "contexts") if k in r} for r in props],
             "frames": layouts.get("layouts", layouts.get("frames", [])),
             "mechanics": mechanics["mechanics"],
-            "story_visual_templates": ["story_text", "chat_compare"]}
+            "story_visual_templates": ["story_text", "chat_compare", "tally", "chat_thread"]}
 
 
 def prompt_catalog():
