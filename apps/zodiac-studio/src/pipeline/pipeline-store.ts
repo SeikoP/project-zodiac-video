@@ -1,3 +1,4 @@
+import { RUNNABLE } from "./status.ts";
 import type { NeedsYou, OwnerCard, PipelineApi, PipelineData, PipelineMode, PipelineNode, RunRecord, Selection } from "./types.ts";
 
 export const POLL_RUNNING_MS = 1500;
@@ -161,6 +162,19 @@ export function createPipelineStore(api: PipelineApi, options: PipelineStoreOpti
     },
     /** Records the owner's answer to a card (never an approval); the chain reads it the next time it runs. */
     resolveCard: (sceneId: string, choice: string) => act(() => api.resolveCard(projectId, sceneId, choice)),
+    /** Builds every scene that can be built, one after another (the backend runs one job at a time). Stops at the first failure. */
+    async runScenes(): Promise<boolean> {
+      for (;;) {
+        const next = snapshot.nodes.find((n) => n.id.startsWith("scene:") && RUNNABLE.includes(n.status));
+        if (!next) return true;
+        if (!(await act(() => api.run(projectId, next.id, snapshot.revision)))) return false;
+        for (let i = 0; i < 600 && snapshot.nodes.some((n) => n.status === "RUNNING"); i += 1) {
+          await new Promise<void>((resolve) => { timer.set(resolve, 1000); });
+          await refresh();
+        }
+        if (snapshot.nodes.find((n) => n.id === next.id)?.status === "FAILED") return false;
+      }
+    },
     cancel: () => act(() => api.cancel(projectId)),
     startAutopilot: () => act(() => api.autopilotStart(projectId, snapshot.revision)),
     stopAutopilot: () => act(() => api.autopilotStop(projectId)),

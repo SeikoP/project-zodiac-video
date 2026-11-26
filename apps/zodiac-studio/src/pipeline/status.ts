@@ -37,6 +37,11 @@ export function phasePrimary(nodes: PipelineNode[]): PipelineNode | null {
   return nodes.find((n) => n.kind !== "gate" && n.id.split(":")[0] !== "scene" && RUNNABLE.includes(n.status)) ?? null;
 }
 
+/** Scenes that can be built now. They are not the phase's primary button (that is a step), but they need one action of their own. */
+export function runnableScenes(nodes: PipelineNode[]): PipelineNode[] {
+  return nodes.filter((n) => n.id.startsWith("scene:") && RUNNABLE.includes(n.status));
+}
+
 export function phaseProgress(nodes: PipelineNode[]): { done: number; total: number; percent: number } {
   const done = nodes.filter((n) => n.status === "DONE").length;
   return { done, total: nodes.length, percent: nodes.length ? Math.round((done / nodes.length) * 100) : 0 };

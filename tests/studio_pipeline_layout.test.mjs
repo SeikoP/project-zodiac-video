@@ -239,3 +239,39 @@ test('the store carries cards and the build id, and answering a card goes throug
   assert.equal(store.getSnapshot().cards.length, 0);
   store.dispose();
 });
+
+test('with no runnable step but runnable scenes, the store builds the scenes one after another', async () => {
+  const env = fakeEnv();
+  const list = nodes(3);
+  const set = (id, status) => { list.find(n => n.id === id).status = status; };
+  ['scene:s01', 'scene:s02', 'scene:s03'].forEach(id => set(id, 'READY'));
+  const ran = [];
+  const api = {
+    get: () => Promise.resolve(structuredClone(data({ nodes: list }))),
+    run: (p, id) => { ran.push(id); set(id, 'DONE'); return Promise.resolve(structuredClone(data({ nodes: list }))); },
+    cancel: () => Promise.resolve(), autopilotStart: () => Promise.resolve({}), autopilotStop: () => Promise.resolve({}),
+    setMode: () => Promise.resolve({ mode: 'confirm' }), resolveCard: () => Promise.resolve({}),
+  };
+  const store = createPipelineStore(api, { projectId: 'p', timer: env.timer, visibility: env.visibility });
+  await store.refresh();
+  assert.equal(await store.runScenes(), true);
+  assert.deepEqual(ran, ['scene:s01', 'scene:s02', 'scene:s03']);
+  store.dispose();
+});
+
+test('runScenes stops at the first scene that fails', async () => {
+  const env = fakeEnv();
+  const list = nodes(2); list.find(n => n.id === 'scene:s01').status = 'READY'; list.find(n => n.id === 'scene:s02').status = 'READY';
+  const ran = [];
+  const api = {
+    get: () => Promise.resolve(structuredClone(data({ nodes: list }))),
+    run: (p, id) => { ran.push(id); list.find(n => n.id === id).status = 'FAILED'; return Promise.resolve({}); },
+    cancel: () => Promise.resolve(), autopilotStart: () => Promise.resolve({}), autopilotStop: () => Promise.resolve({}),
+    setMode: () => Promise.resolve({ mode: 'confirm' }), resolveCard: () => Promise.resolve({}),
+  };
+  const store = createPipelineStore(api, { projectId: 'p', timer: env.timer, visibility: env.visibility });
+  await store.refresh();
+  assert.equal(await store.runScenes(), false);
+  assert.deepEqual(ran, ['scene:s01']);
+  store.dispose();
+});

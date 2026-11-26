@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { Check, Clock, Hand, LoaderCircle, Lock, OctagonX, Play, RotateCcw, type LucideIcon } from "lucide-react";
 import type { PipelineStore } from "./pipeline-store";
-import { groupByPhase, phasePrimary, phaseProgress, phaseSummary, RUNNABLE, STATUS_LABEL } from "./status";
+import { groupByPhase, phasePrimary, runnableScenes, phaseProgress, phaseSummary, RUNNABLE, STATUS_LABEL } from "./status";
 import StillsStrip from "./StillsStrip";
 import type { NodeStatus, PipelineNode } from "./types";
 import "./pipeline.css";
@@ -35,6 +35,7 @@ function Compact({ all, store, projectId, onOpen, onRun }: { all: PipelineNode[]
       <div className="phase-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label="Tiến độ hình ảnh"><span style={{ width: `${percent}%` }} /></div>
       <div className="phase-actions"><small>{done}/{total} bước xong</small>
         {primary && !running && <button className="outline-btn phase-primary" onClick={() => onRun(primary.id)}>{primary.status === "READY" ? "Chạy" : "Chạy lại"}: {primary.title}</button>}
+        {!primary && !running && runnableScenes(all).length > 0 && <button className="outline-btn phase-primary" onClick={() => { void store.runScenes(); }}>Dựng các cảnh ({runnableScenes(all).length})</button>}
       </div>
       <StillsStrip store={store} projectId={projectId} onOpen={onOpen} />
     </div>
