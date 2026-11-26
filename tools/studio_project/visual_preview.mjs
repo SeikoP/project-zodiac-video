@@ -124,6 +124,7 @@ export function renderEpisode(rows,assets,themeId,fps,runtime,authoredPresentati
   const windows=rows.map((r,i)=>i<rows.length-1?resolveTransition(r.scene.transition,framesOf(r),framesOf(rows[i+1])):null);
   const script=`${presentationRuntime()}function start(){const T=${scriptJson(windows)},FPS=${fps},PAPER=${scriptJson(presentation.paper)};const rows=${scriptJson(modelRows)},factory=${createScenePainter.toString()};const painters=rows.map(row=>({row,node:document.getElementById(row.root),paint:factory(row.model,document.getElementById('caption-'+row.root))}));function paint(){const at=tl.time();let pair=null;
 for(let i=0;i<T.length;i++){const w=T[i];if(!w)continue;const b=painters[i].row.end,s=b-w.before/FPS,e=b+w.after/FPS;if(at>=s&&at<e){pair={i,w,s};break;}}
+const op=rows[0]&&rows[0].model&&rows[0].model.opening;if(op){const el=document.getElementById('series-opening');if(el){const f=Math.max(0,Math.floor(at*FPS+1e-4)),fadeAt=op.duration_frames-op.transition_frames;el.style.opacity=f>=op.duration_frames?'0':f<=fadeAt?'1':String((op.duration_frames-f)/op.transition_frames);}}
 painters.forEach((p,idx)=>{const active=at>=p.row.start&&at<p.row.end,inPair=pair!==null&&(idx===pair.i||idx===pair.i+1);
 p.node.style.opacity=(active||inPair)?'1':'0';
 const art=p.node.querySelector('.scene-art');

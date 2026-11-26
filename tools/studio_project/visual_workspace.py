@@ -871,14 +871,17 @@ class VisualWorkspace:
             manifest = self._read_json(manifest_path)
             if any(build.get(key) != value for key, value in manifest.items()):
                 raise _error("EXPORT_BUILD_DRIFT", "Build manifest changed")
+            here = Path(__file__).parent
+            # the page also depends on the painter code, so a code change must not serve an older page
             manifest_sha = file_sha256(manifest_path)
+            stamp = ":".join([manifest_sha] + [file_sha256(here/name) for name in ("visual_preview.mjs", "visual_transitions.mjs", "transitions.json", "visual_acting.mjs")])
             output = folder/"episode-preview"
             marker, page = output/"manifest.sha256", output/"index.html"
-            if not (page.is_file() and marker.is_file() and marker.read_text("utf8") == manifest_sha):
+            if not (page.is_file() and marker.is_file() and marker.read_text("utf8") == stamp):
                 self._node(handle, {"action": "export_prepare", "build_root": str(folder), "manifest_sha256": manifest_sha,
                                     "source_sha256": manifest["source_sha256"], "voice_sha256": manifest["voice_sha256"],
                                     "source_root": str(ROOT), "output": str(output)})
-                marker.write_text(manifest_sha, "utf8")
+                marker.write_text(stamp, "utf8")
             graph = (manifest.get("performance_graph") or {}).get("scenes") or []
             return {"html": page.read_text("utf8"), "build_id": build_id, "duration_ms": max((s.get("endMs", 0) for s in graph), default=0),
                     "stale": bool(build.get("revision") != state["revision"]), "not_an_approval": True}

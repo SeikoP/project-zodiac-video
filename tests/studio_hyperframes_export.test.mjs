@@ -178,3 +178,17 @@ test('subtitle cues retain Vietnamese source and global timing across scenes',as
  assert.equal(captions,'1\n00:00:00,000 --> 00:00:01,500\nNhân Mã hỏi thêm câu 1.\n\n2\n00:00:01,500 --> 00:00:03,000\nHội bạn hỏi thêm câu 2.\n');
  assert.equal(receipt.captions_sha256,digest(captions));
 });
+
+test('the opening title stays hidden when the playhead jumps past it without playing through it (scrubbing)',async()=>{
+ const opening={format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:'Nhân Mã',topic:'Cách Nhân Mã yêu thật lòng',duration_frames:45,transition_frames:9};
+ const runtime=await previewRuntime(path.resolve('.'));
+ const mk=id=>({id,entities:[{id:'hero',kind:'character',initial_state:'idle',states:{idle:{asset:'actor',transform:{x:260,y:500,width:490,height:700}}}}],events:[]});
+ const assets={actor:{svg:'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg>',source_sha256:'a'.repeat(64)}};
+ const time=(s,e)=>({fps:30,startMs:s,endMs:e,measured:true,words:[{text:'Nhân',startMs:s,endMs:s+250}],events:[]});
+ const full=renderEpisode([{scene:mk('s01'),time:time(0,3000)},{scene:mk('s02'),time:time(3000,6000)}],assets,'light',30,runtime,{},opening);
+ const played=await play(full.html);
+ const overlay=played.document.querySelector('#series-opening');
+ played.seek(4.5);                                  // straight into the second scene: the first scene's painter never ran
+ assert.equal(overlay.style.opacity,'0');
+ played.seek(0);assert.equal(overlay.style.opacity,'1');   // and it comes back when scrubbing to the start
+});
