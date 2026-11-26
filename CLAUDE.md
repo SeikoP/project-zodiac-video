@@ -23,6 +23,8 @@ pnpm install --frozen-lockfile
 pnpm desktop:dev          # Vite on 127.0.0.1:1420 + Tauri window + Python rpc_stdio child
 ```
 
+From the repo root: `pnpm studio` (same as above) or `pnpm studio:web` (frontend only, no Rust).
+
 On this machine `.\.runtime\run-main2.cmd` (ignored, machine-local) wraps the same command with the local compiler environment.
 
 - `ZODIAC_STUDIO_PROJECTS` points the app at an isolated project store; `ZODIAC_STUDIO_PYTHON` picks the interpreter; never run as administrator.

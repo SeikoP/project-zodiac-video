@@ -2,6 +2,8 @@
   "name": "project-zodiac-video",
   "private": true,
   "scripts": {
+    "studio": "pnpm --dir apps/zodiac-studio desktop:dev",
+    "studio:web": "pnpm --dir apps/zodiac-studio dev",
     "live": "npm --prefix tools/livestream-pk run live"
   }
 }
