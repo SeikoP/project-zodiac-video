@@ -26,6 +26,15 @@ class AuthoringBindingTests(unittest.TestCase):
         self.assertEqual(json.loads(text)["payload"]["intent"]["opening"]["sign"], "Thiên Bình")
         self.assertIn("opening_sign", changed)
 
+    def test_scope_v1_episodes_of_one_concept_are_recognised_by_the_ideas_board(self):
+        from tools.studio_project.service import scope_identity
+        for member, sign in (("libra", "Thiên Bình"), ("leo", "Sư Tử"), ("aries", "Bạch Dương")):
+            scope = {"format": "zodiac-episode-scope@1", "episode_id": f"love-sincere-{member}",
+                     "episode_format": "single_sign", "member_ids": [member]}
+            self.assertEqual(scope_identity(scope), (sign, "love-sincere"))
+        self.assertEqual(scope_identity({"sign": "Nhân Mã", "concept_code": "love-sincere"}), ("Nhân Mã", "love-sincere"))
+        self.assertEqual(scope_identity({"episode_id": "invented-libra", "episode_format": "single_sign", "member_ids": ["libra"]}), ("Thiên Bình", None))
+
     def test_a_proposal_error_no_scene_owns_is_not_sent_back_to_scene_one(self):
         from tools.studio_project.pipeline.failure_policy import route
         self.assertEqual(route({"code": "PROPOSAL_INVALID", "scene_id": None}), "owner")

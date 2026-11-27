@@ -27,6 +27,32 @@ PROJECT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,159}$")
 COMMAND_FIELDS = frozenset({"project_id", "command_id", "base_revision", "kind", "payload"})
 
 
+
+def _concept_ids() -> set[str]:
+    from .ideas import load_catalog
+    try:
+        return {c["id"] for g in load_catalog()["groups"] for c in g["concepts"]}
+    except Exception:
+        return set()
+
+
+
+def scope_identity(scope: dict) -> tuple[str | None, str | None]:
+    """Sign and concept of an episode scope; the Ideas board matches episodes on this pair."""
+    from .agent_authoring import MEMBER_IDS, scope_sign
+    sign = scope_sign(scope)
+    concept = scope.get("concept_code")
+    if isinstance(concept, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", concept.strip()):
+        return (sign[:64] if sign else None), concept.strip()
+    # zodiac-episode-scope@1 has no concept_code: Web names the episode "<concept>-<member>".
+    episode, members = scope.get("episode_id"), scope.get("member_ids")
+    if isinstance(episode, str) and isinstance(members, list) and len(members) == 1 and members[0] in MEMBER_IDS:
+        head = episode[: -len(members[0]) - 1] if episode.endswith("-" + members[0]) else None
+        if head and head in _concept_ids():
+            return (sign[:64] if sign else None), head
+    return (sign[:64] if sign else None), None
+
+
 class StudioProjectService:
     """Single P0 owner for project reads and safely bounded metadata writes."""
 
@@ -122,12 +148,7 @@ class StudioProjectService:
                     working = scope.get("title_working")
                     if isinstance(working, str) and working.strip():
                         label = " ".join(working.split())[:120]
-                    scope_sign = scope.get("sign")
-                    if isinstance(scope_sign, str):
-                        sign = scope_sign.strip()[:64]
-                    scope_concept = scope.get("concept_code")
-                    if isinstance(scope_concept, str) and re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", scope_concept.strip()):
-                        concept_code = scope_concept.strip()
+                    sign, concept_code = scope_identity(scope)
                 except (OSError, ValueError, TypeError):
                     pass
         return {
