@@ -442,20 +442,27 @@ class Autopilot:
             return False
         agent = getattr(self.service, "agent", None)
         if agent is None or not hasattr(agent, "start_frame_review") or getattr(agent, "_bin", lambda: None)() is None:
+            vision.log(self._workspace, {"event": "skipped", "reason": "không tìm thấy agent để xem khung hình"})
             return False
         try:
             seen = vision.review_current_build(self.service, self.project_id, lambda: self._stopped,
                                                lambda task_id: agent_runs.track(self.service, self.project_id, "inspect", task_id),
                                                self._sleep)
-        except StudioError:
+        except StudioError as error:
+            vision.log(self._workspace, {"event": "skipped", "reason": error.code})
             return False
         if seen is None:
+            vision.log(self._workspace, {"event": "skipped", "round": self._vision_rounds + 1,
+                                         "reason": vision.last_skip or "không có kết quả"})
             return False
         build_id, review = seen
         self._vision_rounds += 1
         vision.save(self._workspace, build_id, self._vision_rounds, {"scenes": review["scenes"]})
         from .. import agent_frame_review
         failing = agent_frame_review.scenes_to_fix(review)
+        vision.log(self._workspace, {"event": "reviewed", "round": self._vision_rounds, "build_id": build_id,
+                                     "fix": {sid: row["instruction"][:200] for sid, row in failing.items()},
+                                     "ok": [r["scene_id"] for r in review["scenes"] if r["scene_id"] not in failing]})
         if not failing:
             return False
         by_scene = {sid: [Issue(i["code"], "visual-intent", sid, (row["instruction"] + " — " + i["note"])[:400], "visual-intent")
@@ -465,6 +472,7 @@ class Autopilot:
         except StudioError:
             return False
         if not items:
+            vision.log(self._workspace, {"event": "repair_failed", "round": self._vision_rounds, "scenes": sorted(failing)})
             return False  # the findings stay on the inspect report for the human review
         revision = self._graph(self.service, self.project_id)["revision"]
         command_id = re.sub(r"[^A-Za-z0-9_.-]", ".", f"ap-{self._rec.run_id}-vision-{self._vision_rounds}")
@@ -477,7 +485,9 @@ class Autopilot:
         except StudioError:
             return False
         if not result.get("applied"):
+            vision.log(self._workspace, {"event": "repair_failed", "round": self._vision_rounds, "scenes": sorted(failing)})
             return False
+        vision.log(self._workspace, {"event": "repaired", "round": self._vision_rounds, "scenes": sorted(failing)})
         with self._state_lock:
             self._set("RUNNING", "inspect", (), f"Review khung hình: sửa {len(failing)} cảnh ({', '.join(sorted(failing))}); dựng lại")
         return True

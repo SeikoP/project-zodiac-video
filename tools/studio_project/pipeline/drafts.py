@@ -67,6 +67,11 @@ def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
             if row["severity"] == "warn":
                 findings.append(row)
                 flagged.add(row["scene_id"])
+        if not seen and vision.enabled():  # the human gate must see that nobody looked at this build's frames
+            rows = vision.load_log(Path(service.registry.get(project_id).workspace))
+            why = next((r.get("reason") for r in reversed(rows) if r.get("event") == "skipped"), None)
+            findings.append({"scene_id": "episode", "severity": "warn",
+                             "note": "Chưa có review khung hình cho bản dựng này" + (f": {why}" if why else " (autopilot chưa chạy bước xem hình)")})
         findings += [{"scene_id": s["id"], "severity": "ok",
                       "note": seen_rows.get(s["id"], {}).get("note") or "Không có cảnh báo kỹ thuật"} for s in scenes if s["id"] not in flagged]
         return "inspect.report", {"build_id": str(build["id"]), "method": "visual" if seen else "structural", "findings": findings[:200]}
