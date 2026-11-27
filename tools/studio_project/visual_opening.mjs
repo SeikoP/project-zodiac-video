@@ -80,7 +80,7 @@ export function openingHtml(opening,palette,scene=null,assets={},themeId='light'
  // Cover title changes semantics from hook to the current episode's topic, but preserves
  // the approved crooked-paper-note, identity strip, paper relief, and native scene visuals.
  return `<div id="series-opening" data-cover-opening="series-topic" data-cover-design="zodiac-paper-doodle-meme-v4"
- data-opening-duration="${opening.duration_frames}" style="position:absolute;left:0;top:0;width:1080px;height:1470px;z-index:80;pointer-events:none;opacity:1;background:${paper};font-family:ZodiacCaption,Arial,sans-serif;color:${ink}">
+ data-opening-duration="${opening.duration_frames}" style="position:absolute;left:0;top:0;width:1080px;height:1920px;z-index:80;pointer-events:none;opacity:1;background:${paper};font-family:ZodiacCaption,Arial,sans-serif;color:${ink}">
  <svg aria-hidden="true" viewBox="0 0 860 130" preserveAspectRatio="none" style="position:absolute;top:250px;left:110px;width:860px;height:130px;overflow:visible">
  <path d="${identityOutline}" fill="${warm}" transform="translate(6 10)"/>
  <path d="${identityOutline}" fill="${ochre}" stroke="${ink}" stroke-width="6" vector-effect="non-scaling-stroke"/></svg>

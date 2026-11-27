@@ -61,7 +61,7 @@ test('series-topic opening identifies zodiac and theme, begins at frame zero wit
  const full=renderEpisode([{scene,time}],assets,'light',30,runtime,{},opening);
  for(const html of [preview.html,full.html]){
   assert.match(html,/data-cover-opening="series-topic"/u);
-  assert.match(html,/height:1470px/u);
+  assert.match(html,/height:1920px/u);
   assert.match(html,/data-cover-design="zodiac-paper-doodle-meme-v4"/u);
   assert.match(html,/data-cover-native-actor="hero"/u);
   assert.match(html,/transform:rotate\(-2deg\)/u);
