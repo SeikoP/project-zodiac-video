@@ -8,6 +8,8 @@ The workflow has three ownership zones:
 
 Current user direction and genuine approvals govern the episode.
 
+Fresh runs use only the current request, authorized current attachments, canonical contracts, current-request research and minimized series selection. Follow `references/context-isolation.md`: exclude account memory, prior episodes and raw trackers unless explicitly authorized; retrieve only exact bounded references for opted-in continuity or current user-authorized style references through the style-only firewall. Revoked sources remain excluded.
+
 ## Phase 01 — creative-first Web
 
 Run:
