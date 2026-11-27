@@ -25,10 +25,14 @@ product: it is checked by people, never an approval, and it is not a second sour
   - `props`: only physical things the narration handles, each with the action that uses it.
   - `acting_turns`: the two or three moments where someone visibly changes (the words they land on), including the reaction beat.
   - `picture`: one of the picture motifs and the `fact` it makes visible, or `none` with the reason (characters and props already carry it).
+- `cover`: the cover is this episode's own, never the concept's template. `topic` (the opening's short theme, begins "Cách" or "Khi", names the
+  behaviour of THIS episode, not just the concept), `hook` (6-14 words stating this episode's contradiction or payoff, never the first narration
+  line and never cut mid-thought), `scene_id` (the scene whose cast and prop make the cover), `symbol` (the physical object or gesture that makes the
+  conflict readable) and `why`. Compare with `recent_episodes`: a topic or hook that reads like one of theirs with another sign's name is rejected.
 - `rhythm`: how pictures, settings and shots vary across the episode (no repeated motif, no identical framing in a row).
 - `rules_applied`: five rules of this skill you will rely on, each in your own words (a reading receipt, not a quote).
 - `risks`: anything the library cannot draw or the script leaves open; a gap is stated, never papered over.
 
 ## How the brief is used
-Core hands the whole brief to the cast choice, and the matching scene entry (with `story_read`, `tone`, `rhythm`) to every stage and act choice.
+The cover entry feeds the opening topic, the cover headline and the publish title. Core hands the whole brief to the cast choice, and the matching scene entry (with `story_read`, `tone`, `rhythm`) to every stage and act choice.
 A scene that drops a picture the brief planned is sent back with the brief's own fact. The brief never contains coordinates, asset keys or SVG.

@@ -172,7 +172,7 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
     except (KeyError, ValueError, StopIteration, TypeError):
         return None
     if len(tasks) < len(by_scene):
-        pilot.note_partial_revision(sorted(set(by_scene) - set(tasks)))
+        getattr(pilot, "note_partial_revision", lambda _skipped: None)(sorted(set(by_scene) - set(tasks)))
     return [{"kind": "visual.intent", "payload": {"command": "source.replace", "payload": {"intent": merged}},
              "voice_dependencies": fingerprints.pop()}]
 

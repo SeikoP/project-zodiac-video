@@ -92,8 +92,12 @@ class ReviseScenesTests(unittest.TestCase):
         self.assertLessEqual(agent.peak, 2)
         self.assertEqual(len(agent.started), 4)
 
-    def test_a_failed_revision_falls_back_to_none_so_the_caller_can_regenerate(self):
+    def test_a_failed_revision_of_one_scene_keeps_the_others(self):
         _, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]}, FakeAgent(fail={"s08"}))
+        self.assertIsNotNone(items)
+
+    def test_when_every_revision_fails_the_caller_regenerates(self):
+        _, items = self.run_repair({"s08": [issue("s08")]}, FakeAgent(fail={"s08"}))
         self.assertIsNone(items)
 
     def test_revisions_are_started_as_automatic_so_repair_text_cannot_open_the_guards(self):
@@ -109,7 +113,7 @@ class ReviseScenesTests(unittest.TestCase):
     def test_an_unexpected_error_in_a_revision_falls_back_instead_of_escaping(self):
         agent = FakeAgent()
         agent.boom = {"s08"}
-        _, items = self.run_repair({"s03": [issue("s03")], "s08": [issue("s08")]}, agent)
+        _, items = self.run_repair({"s08": [issue("s08")]}, agent)
         self.assertIsNone(items)
 
     def test_stopping_while_an_agent_runs_cancels_it(self):

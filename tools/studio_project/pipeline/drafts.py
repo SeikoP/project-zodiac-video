@@ -30,6 +30,16 @@ def _plan(service, project_id: str) -> dict:
         return {}
 
 
+def _cover_plan(service, project_id: str) -> dict:
+    """The cover the agent planned after reading the whole script (the production brief), or {} when there is none."""
+    path = Path(service.registry.get(project_id).workspace) / ".authoring/production-brief.json"
+    try:
+        cover = json.loads(path.read_text(encoding="utf-8")).get("brief", {}).get("cover")
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return cover if isinstance(cover, dict) else {}
+
+
 def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
     """(proposal kind, payload) for a drafted step; None when the step only needs a receipt (assets)."""
     intent, state = _intent(service, project_id)
@@ -38,12 +48,14 @@ def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
     if spec_id == "assets":
         return None
     if spec_id == "cover":
-        topic = str(opening.get("topic") or "").strip() or str(service.project(project_id).get("display_title") or "")
-        return "cover.design", {"headline": topic[:80] or "Tập mới", "scene_id": scenes[0]["id"]}
+        plan = _cover_plan(service, project_id)
+        topic = str(plan.get("hook") or "").strip() or str(opening.get("topic") or "").strip() or str(service.project(project_id).get("display_title") or "")
+        scene_id = plan.get("scene_id") if plan.get("scene_id") in {s.get("id") for s in scenes} else scenes[0]["id"]
+        return "cover.design", {"headline": topic[:80] or "Tập mới", "scene_id": scene_id}
     if spec_id == "publish":
         plan = _plan(service, project_id)
         sign = str(opening.get("sign") or plan.get("sign") or "").strip()
-        topic = str(opening.get("topic") or "").strip()
+        topic = str(_cover_plan(service, project_id).get("hook") or opening.get("topic") or "").strip()
         title = (f"{sign}: {topic}" if sign and topic else topic or str(service.project(project_id).get("display_title") or ""))[:100]
         goals = [str(s.get("semantic_goal") or "").strip() for s in scenes if s.get("semantic_goal")]
         description = (str(plan.get("core_premise") or "").strip() or " ".join(goals[:2]))[:2000]

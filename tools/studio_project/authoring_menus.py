@@ -134,7 +134,8 @@ BRIEF_RULES = (
     "sides), versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a "
     "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
-    "Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
+    "The cover is this episode's own (brief.md): topic, hook of 6-14 words stating its contradiction, a scene and a symbolic object, never the "
+    "concept template and never like recent_episodes. Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
     "is not 'they talk' (hand-over, prop as evidence, distance as meaning, accumulation, reaction chain, split stage, callback), make every "
     "prop DO something that changes on screen (verb first, library id second), tie each picture to what a character does on the same "
     "anchor (it must fail the removal test), vary the setting scene to scene, and say in 'rhythm' what differs from recent_episodes.")
@@ -161,6 +162,7 @@ def brief_schema(scene_ids: list[str], cast_ids: list[str] | None = None) -> dic
         "story_read": text(400), "tone": text(200),
         "characters": arr(_object({"who": text(40), "relation": text(160), "wants": text(120), "on_screen": {"type": "boolean"}}), 6),
         "scenes": {"type": "array", "minItems": len(scene_ids), "maxItems": len(scene_ids), "items": scene},
+        "cover": _object({"topic": text(60), "hook": text(100), "scene_id": _enum(scene_ids), "symbol": text(100), "why": text(160)}),
         "rhythm": text(300), "rules_applied": arr(text(200), 6), "risks": arr(text(200), 6)})
 
 
