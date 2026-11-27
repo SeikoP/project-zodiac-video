@@ -25,6 +25,10 @@ For an expressly reviewed, unchanged narration estimated over 120 seconds, the e
 ## Spoken readiness before Content Review
 Run references/short-form-duration.mjs against narration before approval. Review acronym, number, ellipsis and known foreign-word spans; keep performance tags outside approved narration. Estimate uses explicit token rate + pause + tail and is never measured TTS duration. Above 120 seconds requires editorial review or a documented exception, never automatic rewriting to a sentence/scene quota. Fresh scoped plans use Narrative 2.1; reviewed 2.0 single-sign readers remain supported. Review evidence, sign/member identity, motif repetition, specific premise and whole-episode payoff; return NEEDS_REVISION on editorial failures. Do not mutate narration after approval. Runner owns synthesis and measured timing; actual pronunciation, word timing, prosody, punchline landing and ending cadence require the evidence-bound TTS Performance Review in references/spoken-performance.md.
 
+## Single-sign skeleton and length (Web)
+
+A `single_sign` script follows one mode of `narration-skeleton.md`. The long profile normally lands at 100-165 seconds, so the 120-second rule above applies to it. On Web there is no native receipt: show the estimated length at Content Review, state that it is an estimate, and treat the user's explicit acceptance of that length as the review. Do not invent a `duration-exception.json` or quote the user for them.
+
 ## Second-half rhythm floor
 
 A script may begin fast and still fail because the back half becomes explanation. Protect a rhythm floor after the midpoint:

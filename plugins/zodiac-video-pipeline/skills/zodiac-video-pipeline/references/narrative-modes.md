@@ -17,3 +17,7 @@ Use `zodiac-identity-first.md` as the authority when scenes dominate. The decons
 Examples include detective case, QA/bug tracker, interrogation, mock documentary, POV reconstruction, countdown, trial, sports commentary or a custom mode. Do not create a sign→mode lookup table. Rank the mode from the episode's actual mechanics.
 
 Prefer **implicit viewer inference**: show the clue-reading, bug-checking, cross-examining or reconstructing behavior strongly enough that viewers can name the role themselves. Do not automatically put the role label in narration, cover or caption.
+
+## Narration skeleton modes
+
+Long profile, short profile and situation (see `narration-skeleton.md`) are paragraph layouts inside `character_deconstruction`, not Story Shapes. Situation mode is a scenario-led layout and must still pass the Scenario-dependency test: remove the situation and the Zodiac insight has to survive.

@@ -1,93 +1,86 @@
-# Narration skeleton — one fixed shape (short-form, profile style)
+# Narration skeleton — fixed shapes for a single-sign short-form script
 
-Use for a sign/topic profile that must hold a TikTok viewer: one claim, three proofs, one turn, one return. It does not apply to scene-driven story episodes. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt>`; the result is REVIEW or PASS and never an approval. The numbers are starting defaults to tune against real retention, not measured truths.
+Scope: `single_sign` episodes only. `element_group`, `comparison` and `ranked_shortlist` keep their own shape. A skeleton is a **paragraph layout inside the one Story Shape** (`character_deconstruction`), never a second Story Shape. Paragraph breaks stay the scene seams, so do not split a paragraph to add scenes. The numbers are starting defaults to tune against real retention, not measured truths.
 
-## The six paragraphs (blank line between each)
+## 1. Choose the mode (one per script, never mixed)
 
-| # | Slot | Job | Limit (tokens) |
-|---|------|-----|----------------|
-| 1 | Hook | A concrete claim that costs the viewer something. No greeting, no "hôm nay mình sẽ". | ≤16 |
-| 2 | Facet 1 | Surface → inside. Must carry a contrast marker (nhưng, thế nhưng, vậy mà, thế mà, trong khi, thật ra, chứ không, ngược lại, mà lại). | 20–60 |
-| 3 | Facet 2 | A different behavior, same shape. | 20–60 |
-| 4 | Facet 3 | A third behavior; the strongest goes here. | 20–60 |
-| 5 | Turn | One line that names the mechanism behind all three facets. | 10–40 |
-| 6 | Close | Returns to the hook with at least two of its non-topic words, now meaning something else. No goodbye, no call to action. | ≤25 |
+| Mode | Use when | Length |
+|------|----------|--------|
+| **Long profile** (default) | A one-sign profile and the brief does not ask for something shorter | 450-750 tokens, about 100-165 s |
+| **Short profile** | The user asks for a short video or a quick take | 120-300 tokens, about 27-67 s |
+| **Situation** | The user explicitly asks for "Khi <cung> + một tình huống", and the premise still passes the Scenario-dependency test | 220-480 tokens, about 50-105 s |
 
-Whole script 120–300 tokens (about 27–67 seconds at 270 tokens/minute). Any sentence over 20 tokens is flagged: write for one breath.
+Situation is the exception, not a default. The situation is only the carrier: remove it and the Zodiac insight must survive (Recognition & Identity Gate). If it does not, use a profile mode.
 
-## Rules that keep it from rambling
+Style source: `style-references/profile-structure-references.md` (three reference subtitles) is for structure and pacing only. Never copy their wording, never treat them as evidence, never paste their lines into a Writer Brief.
 
-- Three facets, not four. A fourth idea is a second video.
-- A facet that only restates the previous one is a defect, not a fourth beat.
-- The turn explains; it does not add a new behavior.
-- The close is the hook seen again. A recap or a moral is not a close.
-- Cut greeting, filler ("về cơ bản", "nói chung", "đừng quên") and any "theo dõi / phần sau" line; put calls to action in the caption.
-
-## Example (shape only, not evidence-checked)
-
-```
-Song Tử im lặng không phải vì hết chuyện. Họ đang chấm điểm bạn.
-
-Bạn kể một chuyện, Song Tử hỏi mười câu liền. Nhìn như tò mò, nhưng thật ra họ đang ghép bức tranh xem lời bạn có khớp nhau không. Câu nào lệch, họ nhớ.
-
-Bạn hứa một câu cho có, họ không cãi. Họ chỉ ngừng kể cho bạn nghe chuyện của họ, thế nhưng bạn thì cứ tưởng mọi thứ vẫn ổn.
-
-Khi giận, Song Tử cười rất duyên. Nhưng tin nhắn của họ ngắn dần, trả lời chậm dần. Đến khi bạn nhận ra, mình đã ra khỏi vòng trong rồi.
-
-Song Tử không lạnh lùng. Họ chỉ không phí sức vào người chưa chứng minh được sự thật thà.
-
-Nên lần sau Song Tử im lặng, đừng hỏi họ giận không. Hãy hỏi mình đã chấm điểm đúng chưa.
-```
-
-The hook says "im lặng" and "chấm điểm"; the close returns to both with a changed meaning.
-
-## Long profile mode (the shape of the three reference subtitles)
-
-Use for a single-sign profile that must run about two minutes. The three reference subtitles (Bạch Dương, Bọ Cạp, Song Tử; 121-139 seconds, 560-680 tokens) share one order: the things the sign cannot stand, outside versus inside, the dark side, the warm side, one closing line. This mode fixes that order. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=long-profile`.
+## 2. Long profile — ten paragraphs, blank line between each
 
 | # | Slot | Job | Limit (tokens) |
 |---|------|-----|----------------|
-| 1 | Hook | Promise a counted list that costs the viewer something | ≤24 |
+| 1 | Hook | Promise a counted list that costs the viewer something; the first sentence ends by token 16 | ≤24 |
 | 2-4 | Dealbreakers | "Thứ nhất / Thứ hai / Thứ ba": one thing each, with a concrete moment | 30-70 each |
-| 5 | Outer | How the sign looks from outside, then what is really going on (contrast marker required) | 50-130 |
-| 6 | Dark | What the sign does when it has given up on you (contrast marker required) | 50-130 |
-| 7 | Night | The private side (contrast marker required) | 50-130 |
-| 8 | Warm | What the sign does for someone it trusts | 50-130 |
+| 5 | Outer | How the sign looks from outside, then what is really going on (contrast marker) | 50-90 |
+| 6 | Dark | What the sign does once it has stopped caring (contrast marker) | 50-90 |
+| 7 | Night | The private side (contrast marker) | 50-90 |
+| 8 | Warm | What the sign does for someone it trusts | 50-90 |
 | 9 | Turn | The one mechanism under all of it | 15-55 |
 | 10 | Close | Returns to the hook's words with a changed meaning; no goodbye | ≤55 |
 
-Whole script 450-750 tokens (about 100-165 seconds at 270 tokens/minute). Sentences up to 22 tokens. Over 120 seconds the plugin's own duration check (`short-form-duration.mjs`) still requires an editorial review or `duration-exception.json`; that exception needs the user's own review quote and is never written for them.
+Sentences up to 22 tokens. Each section has a different semantic job, which is what keeps this from being "repeated trait listing". Contrast markers: nhưng, thế nhưng, vậy mà, thế mà, trong khi, thật ra, chứ không, ngược lại, mà lại.
 
-Foreign words such as "online" stay in the narration. Declare their reading in `spoken-performance-plan.json` (`pronunciation`) instead of rewriting the line.
+## 3. Short profile — six paragraphs
 
-## Situation mode (one sign, one relatable situation)
+| # | Slot | Job | Limit (tokens) |
+|---|------|-----|----------------|
+| 1 | Hook | A concrete claim that costs the viewer something; no greeting | ≤16 |
+| 2-4 | Facets | Surface to inside, each with a contrast marker | 20-60 each |
+| 5 | Turn | Names the mechanism behind all three | 10-40 |
+| 6 | Close | Returns to the hook's non-topic words, now meaning something else | ≤25 |
 
-Use when the video is "Khi <cung> + <tình huống ai cũng từng gặp>" (a group project, a parents' meeting, an exam) instead of a trait profile. The title is the hook; the sign walks through the situation in time order, one concrete moment per paragraph, and each moment goes a step further than the last. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=situation`.
+Three facets, not four: a fourth idea is a second video. Whole script 120-300 tokens; sentences up to 20.
 
-| Slot | Job | Limit (tokens) |
-|------|-----|----------------|
-| Hook | The situation plus a promise that costs something ("…có đúng một ngôi sao") | ≤16 |
-| Moments (6–14) | One specific action by the sign in that situation, in time order; no two moments open alike | 15–45 each |
-| Turn | The mechanism behind all moments, in one line | 10–40 |
-| Close | Returns to the hook's image with a changed meaning; no goodbye | ≤35 |
+## 4. Situation — hook, moments, turn, close
 
-Whole script 220–480 tokens (about 50–105 seconds). At least two moments need an outside-versus-inside contrast marker. These limits are defaults to tune on real retention, not measured truths.
+Hook (≤16) names the situation and a promise; 6-14 moments (15-45 each) are one concrete action each, in time order, no two opening alike, at least two with a contrast marker; turn 10-40; close ≤35 returns to the hook's image. Whole script 220-480 tokens.
 
-Why this mode exists: a profile of one sign gives the viewer one sign to recognise; a situation gives them a scene they have lived, which is the shape the top videos of a 586K-follower channel (`@cunghoangdao_tarot`, checked 2026-11-28 by title and view count only, scripts and retention unseen) share across about a dozen videos of 1.6-3.1M views. One channel is an observation, not a recurring pattern.
+## 5. How this fits the existing Phase 1 rules
 
-## Trend-phrase pass (after the draft, before Content Review)
+| Existing rule | Resolution |
+|---------------|-----------|
+| Narrative Design: "escalation rather than repeated trait listing" | Allowed because every long-profile section does a different job (warning, persona, withdrawal, private doubt, trust, mechanism). Two sections doing the same job are a defect. |
+| `01-content.md`: "no fixed duration band unless the brief requires one" | Bands apply only to `single_sign` scripts and only through the chosen mode. Other formats keep no band. |
+| `narration-rhythm.md`: over 120 s needs editorial review or an exception | Long profile usually lands near 120-135 s. On Web, state the estimated length at Content Review and get the user's explicit acceptance; the native `duration-exception.json` receipt is Local only and must carry the user's own quote. |
+| `narrative-modes.md`: scene/conversation/situation are illustration devices | Situation mode stays a layout under `character_deconstruction`. |
+| Recognition & Identity Gate: Scenario-dependency test | Situation mode must pass it (section 1). |
+| Retention: hook evidence by token 16, a pull at least every 90 tokens, over 90 s needs at least 5 pull beats and 2 reframes | Hook promise ends by token 16; no profile section exceeds 90 tokens; long profile has 10 beats and its outer and night sections are the two reframes. |
+| Engagement Design: one `beat_pull` per Narrative Plan beat | Use one beat per paragraph. Long profile: 10 beats; short profile: 6; situation: one per moment plus hook, turn, close. |
+| Second-half pulse | Dark, night, warm and turn are the post-midpoint jobs (consequence, contrast, payoff, reframe); do not add an explanation-only paragraph there. |
+| `engagement-engine.md`: `payoff_callback` | The close is the callback: hook words returning with new meaning. |
+| Foreign words in TTS preflight | Keep the word ("online") and declare its reading in `spoken-performance-plan.json`; do not rewrite natural speech. |
 
-Optional, at most **two** phrases per script. The aim is natural current speech in a slot that needs it, not slang for its own sake.
+## 6. Editorial shape check (Web has no validator; do this by hand before Content Review)
 
-1. Find the slot's job first (hook pressure, a verdict line, the close). Search by function, never by bulk slang keyword; the routing rules are in `research-and-viral-tools.md` (Narration step). Language evidence never supports a Zodiac trait.
-2. Each kept phrase goes in `.authoring/trend-phrases.json` (`zodiac-trend-phrases@1`): `phrase`, `slot` (hook, facet1-3, turn, close), `function`, `evidence_class`, `sources[]` with url and date, and a `natural_check` saying why this narrator can say it aloud.
-3. Classes follow the existing language taxonomy: `observed` (seen in an accessed source), `recurring` (three independent sites), `trend_candidate` (dated, growth unproven), `measured` (needs `platform` and `window`).
-4. Reject a phrase that sounds forced, stale, text-only or hard to say. Prefer none to a bad one.
+1. Count paragraphs against the mode. A different count means a different mode or a defect.
+2. Hook: does the promise land by token 16, with no greeting and no "hôm nay mình sẽ"?
+3. Does every section after the hook do a job no earlier section did?
+4. Is there an outside-versus-inside turn in every slot that requires one?
+5. Does any paragraph run past its ceiling, or any sentence past one breath?
+6. Does the close return to the hook's words with a changed meaning, with no goodbye, recap or call to action (put calls to action in the caption)?
+7. Read it aloud once: cut greeting, filler ("về cơ bản", "nói chung", "đừng quên") and any "theo dõi / phần sau" line.
+8. Estimated length: state it in the Content Review summary, flag anything over 120 s, and never present an estimate as measured.
 
-Check: `node references/validate-trend-phrases.mjs <workspace>`.
+Name every limit you knowingly exceed and why. Local can run the same check: `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=long-profile|short-profile|situation`. The result is REVIEW or PASS, never an approval.
 
-## Interaction with the rest of Phase 1
+## 7. Trend phrase pass (optional, at most two phrases)
 
-- Paragraph boundaries are still the scene seams, so a skeleton script yields six scenes. Do not split a paragraph to add scenes.
-- Evidence, voice profile, Engagement Design and the Retention Quality limits still apply. `engagement-design.json` should list the three facets as its three `beat_pull` entries (the hook and close ride on `entry_hook` and `payoff_callback`).
-- Approved narration stays byte-locked; this check never edits it.
+Natural current speech in a slot that needs it, not slang for its own sake.
+
+1. The writer never calls tools. When a slot needs a current phrase, mark a SEARCH need in the draft. Language research then runs through the Evidence/Concept route in `research-and-viral-tools.md` (Narration step: search by function, never by bulk slang keyword; Parallel Search primary, Exa for deeper discovery, Tavily fallback), and only a sourced language note returns to the writer.
+2. Classes follow the existing language taxonomy: `observed` (seen in an accessed source), `recurring` (three independent sites), `trend_candidate` (dated, growth unproven), `measured` (needs platform and time window). A roundup is a phrase corpus, not proof of current use. Language evidence never supports a Zodiac trait.
+3. Reject a phrase that sounds forced, stale, text-only or hard to say. Prefer none to a bad one.
+4. Record each kept phrase (phrase, slot, function, class, dated sources, why a narrator can say it aloud) in the Content Review summary. Local may keep it as `.authoring/trend-phrases.json` (`zodiac-trend-phrases@1`) and run `node references/validate-trend-phrases.mjs <workspace>`. It is not part of the `zodiac-phase1-handoff@2` inventory and changes nothing in Narrative Plan 2.1.
+
+## 8. Compatibility
+
+Narrative Plan stays `2.1` and the handoff stays `zodiac-phase1-handoff@2`. Every paragraph still gets a beat with an exact `voice_anchor` and `performance`; the skeleton only fixes how many paragraphs there are and what each one does.

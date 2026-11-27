@@ -10,11 +10,11 @@ test('Web narration context is bounded creative guidance with no native outputs 
  const {readFile}=await import('node:fs/promises'),{loadStepContext}=await import('../plan-step-context.mjs');
  const state=JSON.parse(await readFile(new URL('../pipeline-state.template.json',import.meta.url),'utf8'));
  const draft=await loadStepContext('01-content','narration',state.flags,{role:'draft'}),review=await loadStepContext('01-content','narration',state.flags,{role:'review'});
- assert.ok(draft.required_references.length<=5,draft.required_references.join('\n'));
- for(const ref of ['references/narration-rhythm.md','references/narrator-performance.md','references/performance-surfaces.md','references/voice-benchmark.md'])assert.ok(draft.required_references.includes(ref),ref);
+ assert.ok(draft.required_references.length<=7,draft.required_references.join('\n'));
+ for(const ref of ['references/narration-rhythm.md','references/narration-skeleton.md','references/style-references/profile-structure-references.md','references/narrator-performance.md','references/performance-surfaces.md','references/voice-benchmark.md'])assert.ok(draft.required_references.includes(ref),ref);
  assert.ok(!draft.required_references.includes('references/content-quality-engine.md'));
  assert.deepEqual(draft.required_references,review.required_references);
  assert.deepEqual(draft.required_outputs,[]);
  assert.deepEqual(draft.deferred_exit_capabilities,[]);
- assert.ok(draft.context_manifest.reduce((n,x)=>n+x.bytes,0)<30000);
+ assert.ok(draft.context_manifest.reduce((n,x)=>n+x.bytes,0)<50000);
 });

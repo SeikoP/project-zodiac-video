@@ -167,6 +167,64 @@ class SplitPluginBundleTests(unittest.TestCase):
                     self.assertIn(phrase, skill)
 
 
+    def test_web_distribution_packages_narration_skeleton_and_references(self):
+        import re
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", destination)
+            with ZipFile(destination) as archive:
+                names = set(archive.namelist())
+                text = lambda suffix: next(
+                    archive.read(n).decode("utf-8") for n in names if n.endswith(suffix)
+                )
+                skill = text("skills/zodiac-video-web/SKILL.md")
+                manifest = json.loads(text("orchestration/phases/01-content.json"))
+                plugin = json.loads(text("/plugin.json") if any(n.endswith("/plugin.json") for n in names) else text("plugin.json"))
+        base = "skills/zodiac-video-pipeline/"
+        skeleton = base + "references/narration-skeleton.md"
+        styles = base + "references/style-references/profile-structure-references.md"
+        for required in (skeleton, styles):
+            self.assertTrue(any(n.endswith(required) for n in names), required)
+        # Every reference the narration step loads must be inside the Web zip.
+        narration = next(s for s in manifest["steps"] if s["id"] == "narration")
+        for ref in narration["load_references"]:
+            self.assertTrue(
+                any(n.endswith(base + ref) for n in names), f"not packaged: {ref}"
+            )
+        # The Web entry skill can select a mode and apply the Trend Phrase Pass.
+        for phrase in (
+            "Narration shape",
+            "Narration shape check",
+            "Trend Phrase Pass",
+            "long profile",
+            "short profile",
+            "situation",
+            "narration-skeleton.md",
+        ):
+            self.assertIn(phrase.lower(), skill.lower(), phrase)
+        # Web has no native runtime: validators and tests are not shipped.
+        for n in names:
+            self.assertNotIn("validate-narration-skeleton", n)
+            self.assertNotIn("validate-trend-phrases", n)
+            self.assertFalse(n.endswith(".test.mjs"), n)
+        # Plan 2.1 / handoff@2 stay compatible.
+        self.assertTrue(any(n.endswith("contracts/phase1-handoff.mjs") for n in names))
+        self.assertIn("2.1", skill)
+        self.assertIn("zodiac-phase1-handoff@2", skill)
+        self.assertTrue(plugin["version"])
+
+    def test_plugin_manifests_share_one_version(self):
+        base = ROOT / "plugins/zodiac-video-pipeline"
+        versions = {
+            json.loads((base / "plugin.json").read_text(encoding="utf-8"))["version"],
+            json.loads((base / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))["version"],
+            json.loads(
+                (base / "skills/zodiac-video-pipeline/orchestration/pipeline-state.template.json")
+                .read_text(encoding="utf-8")
+            )["plugin_version"],
+        }
+        self.assertEqual(len(versions), 1, versions)
+
     def test_phase1_ci_no_longer_runs_legacy_native_web_authoring(self):
         workflow = (ROOT / ".github/workflows/phase1-voice-first.yml").read_text(encoding="utf-8")
         self.assertNotIn("phase01-agent-e2e.test.mjs", workflow)

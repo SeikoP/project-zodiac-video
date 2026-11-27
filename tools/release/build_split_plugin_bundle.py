@@ -35,6 +35,8 @@ WEB_CREATIVE_FILES={
     "skills/zodiac-video-pipeline/references/story-visual-direction.md",
     "skills/zodiac-video-pipeline/references/narration-rhythm.md",
     "skills/zodiac-video-pipeline/references/performance-surfaces.md",
+    "skills/zodiac-video-pipeline/references/narration-skeleton.md",
+    "skills/zodiac-video-pipeline/references/style-references/profile-structure-references.md",
 }
 
 def _canonical_eligible(rel: Path) -> bool:

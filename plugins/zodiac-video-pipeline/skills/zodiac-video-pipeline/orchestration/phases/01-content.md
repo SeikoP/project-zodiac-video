@@ -32,7 +32,7 @@ Novelty and emotional tension are more important than satisfying a fixed templat
 
 Build one coherent Story Spine with:
 - a hook that creates immediate tension or recognition;
-- escalation rather than repeated trait listing;
+- escalation rather than repeated trait listing (a fixed single-sign skeleton from `references/narration-skeleton.md` is allowed because each section does a different job; two sections with the same job are still a defect);
 - at least one reframe/reveal;
 - a payoff that changes how the opening is understood;
 - a **Narrative Motif** chosen before prose for story-driven concepts, with setup, friction, turn, payoff/callback and a removal test;
@@ -56,7 +56,7 @@ After the prose exists, bind the final narration back to the Narrative Plan befo
 
 Do not write to pass a validator. Editorial review happens after a real draft exists; the runnable beat binding is checked only after drafting and before approval.
 
-There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
+There is no fixed fictional-ad requirement and no fixed duration band unless the current brief requires one, except that a `single_sign` script follows one mode of `references/narration-skeleton.md` (long profile by default) and its band. When the user disables a parody/ad interruption, remove stale ad instructions and copy from all active Phase-1 creative artifacts before Content Review.
 
 ## Content Review
 

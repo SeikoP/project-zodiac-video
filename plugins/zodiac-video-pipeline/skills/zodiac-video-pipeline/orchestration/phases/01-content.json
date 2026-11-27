@@ -172,6 +172,8 @@
       "load_references": [
         "references/narrative-motif.md",
         "references/narration-rhythm.md",
+        "references/narration-skeleton.md",
+        "references/style-references/profile-structure-references.md",
         "references/narrator-performance.md",
         "references/performance-surfaces.md",
         "references/voice-benchmark.md"

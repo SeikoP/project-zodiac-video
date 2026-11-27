@@ -32,4 +32,4 @@ Classify findings:
 - **Trend candidate:** dated/current examples exist but growth is unproven.
 - **Measured trend:** dated platform, region, and time-window data show rising use.
 
-Do not infer a measured trend from one post, one roundup, or search-result counts. Preserve natural spoken Vietnamese; reject slang that sounds forced, stale, text-only, hard to say, or changes the character. Language evidence never supports a Zodiac trait.
+Do not infer a measured trend from one post, one roundup, or search-result counts. The optional Trend Phrase Pass in `narration-skeleton.md` (at most two phrases, each with a dated source and a stated job) uses this route and nothing else. Preserve natural spoken Vietnamese; reject slang that sounds forced, stale, text-only, hard to say, or changes the character. Language evidence never supports a Zodiac trait.

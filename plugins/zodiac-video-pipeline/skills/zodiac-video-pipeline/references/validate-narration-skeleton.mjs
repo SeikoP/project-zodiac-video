@@ -95,9 +95,10 @@ export function checkSituation(text,limits=SITUATION){
 export const LONG_PROFILE={
  slots:['hook','dealbreaker1','dealbreaker2','dealbreaker3','outer','dark','night','warm','turn','close'],
  hook_max_tokens:24,
+ hook_evidence_tokens:16,
  dealbreaker_tokens:[30,70],
  ordinals:['thứ nhất','thứ hai','thứ ba'],
- facet_tokens:[50,130],
+ facet_tokens:[50,90],
  contrast_slots:['outer','dark','night'],
  turn_tokens:[15,55],
  close_max_tokens:55,
@@ -113,6 +114,8 @@ export function checkLongProfile(text,limits=LONG_PROFILE){
  if(paras.length!==limits.slots.length){add('SLOT_COUNT','all','need exactly '+limits.slots.length+' paragraphs ('+limits.slots.join(', ')+'); found '+paras.length);return report(paras,count,total,issues,'long-profile');}
  const at=Object.fromEntries(limits.slots.map((s,i)=>[s,i]));
  if(count[at.hook]>limits.hook_max_tokens)add('HOOK_LONG','hook',count[at.hook]+' tokens, max '+limits.hook_max_tokens);
+ const firstSentence=words(paras[at.hook].split(/[.!?…]+/)[0]).length;
+ if(firstSentence>limits.hook_evidence_tokens)add('HOOK_EVIDENCE_LATE','hook','the promise ends at token '+firstSentence+'; retention needs it by token '+limits.hook_evidence_tokens);
  ['dealbreaker1','dealbreaker2','dealbreaker3'].forEach((s,k)=>{
   const n=count[at[s]];
   if(n<limits.dealbreaker_tokens[0]||n>limits.dealbreaker_tokens[1])add('DEALBREAKER_SIZE',s,n+' tokens, need '+limits.dealbreaker_tokens.join('-'));
@@ -140,10 +143,10 @@ function report(paras,count,total,issues,mode='profile'){
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
-  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt> [--mode=profile|situation|long-profile]');process.exit(2);}
+  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt> [--mode=short-profile|long-profile|situation]');process.exit(2);}
   const file=(await stat(input)).isFile()?input:await stat(path.join(input,'.authoring/narration.txt')).then(()=>path.join(input,'.authoring/narration.txt')).catch(e=>{if(e.code==='ENOENT')return path.join(input,'narration.txt');throw e;});
   const mode=(process.argv.find(a=>a.startsWith('--mode='))??'--mode=profile').slice(7);
-  const check={profile:checkSkeleton,situation:checkSituation,'long-profile':checkLongProfile}[mode];if(!check){console.error('Unknown mode '+mode);process.exit(2);}
+  const check={profile:checkSkeleton,'short-profile':checkSkeleton,situation:checkSituation,'long-profile':checkLongProfile}[mode];if(!check){console.error('Unknown mode '+mode);process.exit(2);}
   const result=check(await readFile(file,'utf8'));
   console.log(JSON.stringify(result,null,2));
   if(result.status!=='PASS')process.exitCode=1;
