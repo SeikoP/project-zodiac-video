@@ -57,6 +57,9 @@ class StudioSettings:
             libraries = value['values'].get('libraries')
             if isinstance(libraries, dict):  # a settings file saved before a library existed gets its default
                 for key, path in self.defaults()['libraries'].items(): libraries.setdefault(key, path)
+            agents = value['values'].get('agents')
+            if isinstance(agents, dict):  # a file saved before a role existed gets that role's default
+                for role, row in self.defaults()['agents'].items(): agents.setdefault(role, row)
             self._validate(value['values'])
             if type(value['revision']) is not int or value['revision'] < 0: raise ValueError('revision')
             return value
