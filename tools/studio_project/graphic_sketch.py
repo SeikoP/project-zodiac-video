@@ -25,29 +25,29 @@ def _check_parts(raw_parts, *, low: int, single_step: bool) -> list[dict]:
     if not isinstance(raw_parts, list) or not low <= len(raw_parts) <= MAX_PARTS:
         reject("sketch_parts")
     parts = []
-    for raw in raw_parts:
+    for index, raw in enumerate(raw_parts, 1):
         if not isinstance(raw, dict) or set(raw) != FIELDS:
-            reject("sketch_part_fields")
+            reject(f"sketch_part_fields: part {index} needs exactly {sorted(FIELDS)}")
         if raw["shape"] not in SHAPES or raw["color"] not in COLORS:
-            reject("sketch_part_choice")
+            reject(f"sketch_part_choice: part {index} shape {raw['shape']!r} / colour {raw['color']!r} is not on the menu")
         nums = [raw[k] for k in ("x", "y", "w", "h", "step")]
         if any(isinstance(n, bool) or not isinstance(n, int) for n in nums):
-            reject("sketch_part_number")
+            reject(f"sketch_part_number: part {index} needs whole numbers")
         x, y, w, h, step = nums
         linear = raw["shape"] in ("line", "arrow")
         inside = 0 <= x <= W and 0 <= y <= H and 0 <= x + w <= W and 0 <= y + h <= H
         if not inside or (not linear and (w < 20 or h < 20)):
-            reject("sketch_part_bounds")
+            reject(f"sketch_part_bounds: part {index} ({raw['shape']}) x={x} y={y} w={w} h={h}; it must stay inside {W}x{H} (x+w<={W}, y+h<={H}) and a box, circle, face, heart, star, check, cross, scribble or text needs w and h of at least 20")
         if not 1 <= step <= MAX_STEPS or (single_step and step != 1):
-            reject("sketch_part_step")
+            reject(f"sketch_part_step: part {index} step {step}" + (" (a hero state uses step 1 only)" if single_step else ""))
         text = raw["text"]
         if raw["shape"] == "text":
             text = _text(text, 28)
         elif raw["shape"] == "face":
             if text not in MOODS:
-                reject("sketch_face_mood")
+                reject(f"sketch_face_mood: part {index} text must be one of {list(MOODS)}")
         elif text not in ("", None):
-            reject("sketch_part_text")
+            reject(f"sketch_part_text: part {index} ({raw['shape']}) takes an empty text")
         parts.append({**raw, "text": text or ""})
     used = sorted({p["step"] for p in parts})
     if used != list(range(1, len(used) + 1)):

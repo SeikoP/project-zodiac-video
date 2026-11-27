@@ -191,7 +191,7 @@ GRAPHIC_RULES = (
     "end offset). Shapes: box, circle, line, arrow, text (a short label), face (text = happy|flat|angry|sad|surprised), check, cross, heart, star, scribble. "
     "Colours ink, paper, teal, coral, gold, card. step 1-4 = the order the parts appear on the anchors, steps with no gaps. Compose a picture of THIS story, not a "
     "chart: the cake cut in two unequal slices with a hand on one, a door with an arrow and a clock, two faces and a heart growing between them. "
-    "Keep parts apart, labels short (<=28 chars, text width must fit its box), keep 40px free at the edges. Never the same drawing as another scene. "
+    "x+w must be <= 960 and y+h <= 630 (a box, circle or face needs w,h of at least 20; only a line or arrow may have 0 or negative w,h). Keep parts apart, labels short (<=28 chars, text width must fit its box), keep 40px free at the edges. Never the same drawing as another scene. "
     "graphic = an OPTIONAL picture Studio draws to make ONE story fact visible (not decoration). Pick 'none' unless the narration states "
     "something countable, comparable or written that the viewer should SEE: a stamp (a verdict word), meter (a level between two sides), "
     "versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a count), "
@@ -210,10 +210,10 @@ def _graphic_schema(menus: dict) -> dict:
         _object({"motif": _enum(["hero"]), "anchor_id": anchor, "name": text(30),
                  "states": {"type": "array", "minItems": 2, "maxItems": 4, "items": _object({
                      "anchor_id": anchor,
-                     "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960), "h": _int(630),
+                     "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960, -960), "h": _int(630, -630),
                                            "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(1, 1)}), 14)})}}),
         _object({"motif": _enum(["sketch"]), "anchor_id": anchor,
-                 "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960), "h": _int(630),
+                 "parts": arr(_object({"shape": _enum(SKETCH_SHAPES), "x": _int(960), "y": _int(630), "w": _int(960, -960), "h": _int(630, -630),
                                        "color": _enum(tuple(SKETCH_COLORS)), "text": text(28), "step": _int(4, 1)}), 18)}),
         _object({"motif": _enum(["stamp"]), "anchor_id": anchor, "text": text(16), "sub": text(30)}),
         _object({"motif": _enum(["meter"]), "anchor_id": anchor, "title": text(24), "left": text(14), "right": text(14), "level": _enum(["1", "2", "3", "4"])}),

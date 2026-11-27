@@ -146,7 +146,7 @@ def _author_scene(io, skeleton: str, sid: str, *, feedback=None, rechoices: int 
             if str(error).startswith("assemble:") and rechoices < MAX_RECHOICES:
                 # the choice was well-formed but could not be drawn or placed: say why and choose again, from the stage
                 rechoices += 1
-                feedback = [{"code": "CHOICE_UNUSABLE", "detail": str(error)[:240]}]
+                feedback = [{"code": "CHOICE_UNUSABLE", "detail": str(error)[:420]}]
                 stage = None
                 continue
             return {"text": None, "status": "failed", "rechoices": rechoices, "reason": str(error)}
@@ -508,7 +508,7 @@ class LiveIO:
                     "story_visual_assets": visuals}
             text = agent_parts.validate_scene(json.dumps(part, ensure_ascii=False), task)
         except (ValueError, KeyError, TypeError) as error:  # an id outside the menus or a malformed choice
-            raise ChoiceError(f"assemble: {str(error)[:200]}") from error
+            raise ChoiceError(f"assemble: {str(error)[:420]}") from error
         return {"text": text, "asset_requests": part.get("asset_requests") or [], "notes": part.get("core_notes") or []}
 
     def _validator_issues(self, intent: dict) -> list[dict]:
@@ -566,7 +566,7 @@ class LiveIO:
         seen: dict[str, str] = {}
         for sid in order:  # the same picture motif twice reads as a template, not as a story: the later scene chooses again
             for motif in graphic_motifs_of(texts.get(sid)):
-                if motif in seen and motif != "sketch":  # a sketch is drawn anew each time
+                if motif in seen and motif != "sketch":  # a sketch is drawn anew each time
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
         for sid in order:  # the scene's own object, drawn and changed by the words: without it the picture is clip-art beside the actors
