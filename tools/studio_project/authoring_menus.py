@@ -184,7 +184,7 @@ GRAPHIC_RULES = (
     "HERO (required in every scene): the ONE object this scene is about (the cake, the pillow, the film, the message), drawn by you in 2-4 states that "
     "the narration changes: whole, then cut, then handed over, then left alone. Each state is a complete drawing (2-14 parts, same parts and 960x630 canvas "
     "as sketch, every step 1) that REPLACES the one before; the object FILLS the canvas (at least 55% of its width or height; Core refuses a speck) and each state differs from the one before by at least two parts (a slice cut away, a part moved, crossed out, added); each state has its own anchor_id, in the order of the words, and the first state's anchor is "
-    "the graphic's anchor_id. The change must be what the words say, and the scene must lose its plot without it: if the object could be deleted and "
+    "the graphic's anchor_id. The change must be what the words say, the STORY TEXT is part of the picture (merged with the story visual): every state letters at least one text part with words taken from this scene's narration (the phrase the viewer should remember, <=28 chars), so the drawing and the words are one thing; and the scene must lose its plot without it: if the object could be deleted and "
     "the story would read the same, you drew the wrong object. Draw the object itself, with its details (slices, a bite, a crack, a crossed-out line), "
     "never a label card; faces and hands of the characters are NOT drawn here, the characters are on stage. Library props are only background now. "
     "SKETCH (preferred): draw the scene's idea yourself as 3-18 parts on a 960x630 canvas (x,y = top-left, w,h = size; for line/arrow w,h are the "

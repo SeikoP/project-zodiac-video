@@ -79,8 +79,7 @@ class HeroTests(unittest.TestCase):
         menus = authoring_menus.scene_menus({"scene_ranges": [{"id": "s01", "narration_range": RANGE, "text": TEXT}]}, TWO, "s01", [])
         ids = [a["id"] for a in menus["anchors"]]
         graphic = {"motif": "hero", "anchor_id": ids[0], "name": "bánh", "states": [
-            {"anchor_id": ids[0], **{"parts": HERO["states"][0]["parts"]}}, {"anchor_id": ids[1], "parts": HERO["states"][1]["parts"]},
-            {"anchor_id": ids[2], "parts": HERO["states"][2]["parts"]}]}
+            {"anchor_id": ids[i], "parts": [*HERO["states"][i]["parts"], part("text", 300, 540, 360, 70, "ink", "cắt bánh")]} for i in range(3)]}
         stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none", "graphic": graphic}
         part_ = scene_assembler.assemble_scene(menus, stage, {"events": []}, "s01", RANGE, TEXT, GOAL)
         events = [e for e in part_["payload"]["scene"]["events"] if e["target"] == "graphic_s01"]
@@ -90,3 +89,22 @@ class HeroTests(unittest.TestCase):
         late_first = {**graphic, "states": [graphic["states"][1], graphic["states"][0], graphic["states"][2]]}
         with self.assertRaises(ValueError):
             scene_assembler.assemble_scene(menus, {**stage, "graphic": late_first}, {"events": []}, "s01", RANGE, TEXT, GOAL)
+
+
+class StoryTextTests(unittest.TestCase):
+    def test_a_hero_state_must_carry_words_from_the_scene(self):
+        from tests.test_studio_scene_assembler import TWO, GOAL, cast_of
+        from tools.studio_project import authoring_menus
+        text = "Kim Ngưu cắt bánh, đẩy phần to sang cho người yêu."
+        rng = [0, len(text.encode())]
+        menus = authoring_menus.scene_menus({"scene_ranges": [{"id": "s01", "narration_range": rng, "text": text}]}, TWO, "s01", [])
+        ids = [a["id"] for a in menus["anchors"]]
+
+        def build(label):
+            states = [{"anchor_id": ids[i], "parts": [*HERO["states"][i]["parts"], part("text", 300, 520, 360, 80, "ink", label)]} for i in range(2)]
+            stage = {"frame_id": "two-person-offset", "mechanic_id": "explain", "present": cast_of(TWO, 2), "props": [], "dressing": "none",
+                     "graphic": {"motif": "hero", "anchor_id": ids[0], "name": "bánh", "states": states}}
+            return scene_assembler.assemble_scene(menus, stage, {"events": []}, "s01", rng, text, GOAL)
+        self.assertTrue(build("đẩy phần to"))
+        with self.assertRaises(ValueError):
+            build("chuyện tình yêu")

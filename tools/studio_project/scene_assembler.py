@@ -246,6 +246,11 @@ def assemble_scene(menus: dict, stage: dict, act: dict, scene_id: str, scene_ran
         if any(i not in by_anchor for i in ids) or ids != sorted(set(ids), key=lambda i: by_anchor[i]["at"]) or ids[0] != graphic.get("anchor_id"):
             raise ValueError("hero: mỗi trạng thái cần một neo lời riêng, theo đúng thứ tự trong lời đọc, trạng thái đầu trùng anchor_id")
         hero_plan = [(f"step{k}", {"type": "voice_anchor", "text": by_anchor[i]["text"]}) for k, i in enumerate(ids, 1)]
+        spoken = {w.strip(".,;:!?…—\"'()").lower() for w in scene_text.split()}
+        for k, state in enumerate(graphic["states"], 1):  # story text is lettering INSIDE the picture: every state carries words of the script
+            words = [p["text"] for p in state["parts"] if p.get("shape") == "text" and p.get("text")]
+            if not any(all(w.strip(".,;:!?…—\"'()").lower() in spoken for w in text.split()) for text in words):
+                raise ValueError(f"hero state {k}: the story text is part of the picture; letter at least one text part whose words are taken from the narration of this scene")
     has_band = bool(story_visuals) or graphic_spec is not None
     props = {p["id"]: p for p in agent_authoring._library_props()}
     present = stage["present"]
