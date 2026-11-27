@@ -10,7 +10,7 @@ from tools.studio_project import agent_parts, skill_digest
 class DigestTests(unittest.TestCase):
     def test_each_task_kind_gets_its_modules_and_a_stable_hash(self):
         scene = skill_digest.digest("scene")
-        self.assertEqual(scene["modules"], ["SKILL.md", "concepts", "scene", "acting", "story-visual", "studio"])
+        self.assertEqual(scene["modules"], ["SKILL.md", "invention", "concepts", "scene", "acting", "story-visual", "studio"])
         self.assertIn("Scene Accent", scene["text"])
         self.assertIn("Story first, library second", scene["text"])
         self.assertEqual(scene["sha256"], skill_digest.digest("scene")["sha256"])

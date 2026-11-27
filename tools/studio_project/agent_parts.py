@@ -134,7 +134,7 @@ def _skeleton_prompt_body(task: dict) -> str:
         "member 4-6 state ids covering neutral, the reaction beats, and the acting beats of the story (use only known poses/expressions). "
         "Character design explanations must be full Vietnamese sentences of at least 18 characters each: identity_tension, audience_read, "
         "all body_profile/hair_id/shirt_color_id decision_reasons, rejected_alternative.reason, scene_anchor.meaning and every state_purposes value. "
-        "Choose 2 distinct cast identities from catalog; characters use entity_id-matching cast states. episode_cast_plan.bindings must list "
+        "Cast every person the script gives something to do or something done to (one to four members; when production_brief.characters lists on-screen people, cast each of them), visibly different from each other, from catalog identities; characters use entity_id-matching cast states. episode_cast_plan.bindings must list "
         "scene_ids for every scene in scene_ranges. assets holds ONLY the required story visuals (required_story_visual_ids) as "
         "{visual:{type,...},category:'story_visual',phase1_visual_id}; ordinary props are added later by the scene agents. "
         "Always include the opening (use suggested_opening_topic when available). Copy narrative_plan.story_visual_decision. "

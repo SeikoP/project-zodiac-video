@@ -76,6 +76,34 @@ def graphic_motifs_of(text) -> list[str]:
                    and a["creative_origin"].get("template")})
 
 
+def _scene_of(text):
+    try:
+        return json.loads(text)["payload"]
+    except (TypeError, ValueError, KeyError):
+        return {}
+
+
+def idle_props(text) -> list[str]:
+    """Props of a stored scene part that nothing ever does anything with (invention.md: a prop that only stands there is deleted)."""
+    part = _scene_of(text)
+    scene = part.get("scene") or {}
+    moved = {e.get("target") for e in scene.get("events") or [] if isinstance(e, dict)}
+    return sorted(e["id"] for e in scene.get("entities") or []
+                  if isinstance(e, dict) and e.get("visual_role") == "interactive_prop" and e.get("id") not in moved)
+
+
+def accent_hash(text) -> str | None:
+    """The identity of the setting a stored scene part draws (the accent asset's content hash), None when it has none."""
+    part = _scene_of(text)
+    for e in (part.get("scene") or {}).get("entities") or []:
+        if isinstance(e, dict) and e.get("kind") == "scene_accent":
+            for state in (e.get("states") or {}).values():
+                asset = (part.get("assets") or {}).get(state.get("asset") or state.get("asset_key") or "")
+                if isinstance(asset, dict) and asset.get("source_sha256"):
+                    return asset["source_sha256"]
+    return None
+
+
 def _summary(issues: list[dict]) -> str:
     return "; ".join(sorted({str(i.get("code") or "UNKNOWN") + (f" ({i['detail']})" if i.get("detail") else "") for i in issues}))
 
@@ -146,6 +174,12 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
         if stopped():
             return ChainResult(None)
         stored["skeleton"] = io.skeleton()
+        wanted = [c for c in (stored.get("brief") or {}).get("characters") or [] if isinstance(c, dict) and c.get("on_screen")]
+        counter = getattr(io, "cast_size", None)
+        if counter and wanted and counter(stored["skeleton"]) < min(len(wanted), 4):  # the cast is smaller than the people the brief puts on screen: once more
+            io.use_brief({**(stored.get("brief") or {}), "cast_findings": f"dàn nhân vật phải có đủ {min(len(wanted), 4)} người xuất hiện trên màn hình"})
+            stored["skeleton"] = io.skeleton()
+            io.use_brief(stored.get("brief") or {})
         io.save(stored)
     skeleton = stored["skeleton"]
     outcomes: dict[str, SceneOutcome] = {}
@@ -483,6 +517,12 @@ class LiveIO:
         intent["assets"] = {**(intent.get("assets") or {}), **(payload.get("assets") or {})}
         return [i for i in self._validator_issues(intent) if i["scene_id"] == sid and i["code"] not in COMPLETED_LATER]
 
+    def cast_size(self, skeleton: str) -> int:
+        try:
+            return len(json.loads(skeleton)["payload"]["intent"].get("cast") or [])
+        except (TypeError, ValueError, KeyError):
+            return 0
+
     def check_episode(self, skeleton: str, texts: dict, order: list[str]) -> list[dict]:
         """Everything the proposal check and the plugin validators say about the merged episode, tied to scenes where they name one."""
         from . import agent_authoring, agent_parts
@@ -506,6 +546,20 @@ class LiveIO:
                 if motif in seen:
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
+        for sid in order:  # a prop that nothing acts on is decoration: the scene's act is chosen again with the prop doing something
+            idle = idle_props(texts.get(sid))
+            if idle:
+                found.append({"code": "PROP_IDLE", "scene_id": sid,
+                              "detail": f"{', '.join(idle)} đứng yên, không có sự kiện nào dùng đến; cho nhân vật làm gì đó với vật (đưa, cầm, đẩy, mở) hoặc bỏ vật"})
+        used: dict[str, list[str]] = {}
+        for sid in order:  # the same drawn setting behind most of the episode reads as one room, not a story
+            digest = accent_hash(texts.get(sid))
+            if digest:
+                used.setdefault(digest, []).append(sid)
+        for digest, sids in used.items():
+            if len(sids) >= 3:
+                found += [{"code": "SETTING_REPEATED", "scene_id": sid, "detail": f"cùng một bối cảnh ở {len(sids)} cảnh ({', '.join(sids)}); vẽ nơi chốn theo việc nhân vật đang làm"}
+                          for sid in sids[2:]]
         for sid in order:  # the agent's own plan, written from one read of the whole script, is kept unless the picture cannot be drawn
             picture = (self.planned(sid) or {}).get("picture") or {}
             if picture.get("motif") not in (None, "none") and not graphic_motifs_of(texts.get(sid)):

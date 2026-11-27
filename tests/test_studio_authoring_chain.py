@@ -413,3 +413,24 @@ class ProductionBriefTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[1]["previous_findings"][0]["code"], "BRIEF_PICTURES_MISSING")
         self.assertEqual(brief, some)
+
+
+class InventionChecksTests(unittest.TestCase):
+    def part(self, entities, events, assets=None):
+        return json.dumps({"payload": {"scene": {"entities": entities, "events": events}, "assets": assets or {}}})
+
+    def test_a_prop_nothing_acts_on_is_idle(self):
+        from tools.studio_project.authoring_chain import idle_props
+        prop = {"id": "phone", "kind": "object", "visual_role": "interactive_prop"}
+        self.assertEqual(idle_props(self.part([prop], [{"target": "libra"}])), ["phone"])
+        self.assertEqual(idle_props(self.part([prop], [{"target": "phone"}])), [])
+
+    def test_the_setting_is_identified_by_its_asset_hash(self):
+        from tools.studio_project.authoring_chain import accent_hash
+        ent = {"id": "accent_s01", "kind": "scene_accent", "states": {"visible": {"asset": "s01-accent"}}}
+        self.assertEqual(accent_hash(self.part([ent], [], {"s01-accent": {"source_sha256": "abc"}})), "abc")
+        self.assertIsNone(accent_hash(self.part([], [])))
+
+    def test_prop_idle_goes_back_to_the_act_choice(self):
+        from tools.studio_project.pipeline.failure_policy import origin, route
+        self.assertEqual((route({"code": "PROP_IDLE"}), origin({"code": "PROP_IDLE"})), ("model", "act"))

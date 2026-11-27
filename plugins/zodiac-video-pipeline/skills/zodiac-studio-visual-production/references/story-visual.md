@@ -32,3 +32,6 @@ The owner approves the narration. Every picture decision after that is Studio's 
 - Different motif in every scene. Two scenes that both end in a tally or a chat read as a template, not as a story; Core sends the later scene back.
 - Use the narration's own words in the fields, short. The first piece appears on the anchor you choose and the next pieces on the anchors after it, so pick the anchor where the fact is said.
 - A scene with a Phase 1 Story Visual keeps that one; no second picture.
+
+## Not a label
+A Studio graphic that would read the same with the characters removed is a label card, not a story picture. Apply the five tests in `invention.md` (removal, anchor, change, own words, size) before choosing a motif, and prefer a picture the characters visibly react to on the same anchor. Different motif per scene is the minimum, not the goal: fill the fields with this moment's own words.

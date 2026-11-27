@@ -15,7 +15,7 @@ From the scene's narration name: the performer(s), the one visible action, the c
 - **Review:** a muted viewer must recognize the stated setting; the cue stays subordinate to the action. A drawing that mismatches the declaration fails Visual Review even when the declarations validate.
 
 ## 3. Props
-A prop is a physically handled item from the library, tied to an authored action. Each prop is either the focal entity or linked to it. Keep **one physical model per prop family in a scene** (a phone and a second phone is repetition, not richness); at most two support objects at a time. Match the spoken beat (food when food is spoken, a phone when texting). The library has no table, desk or chair. A needed prop that does not exist is requested, never substituted for a story prop. Never add a prop or accent only to turn a check green.
+A prop is a physically handled item from the library, tied to an authored action **that changes it on screen** (it moves, passes between people, changes state or is revealed); a prop that only stands there is removed (see `invention.md`). Each prop is either the focal entity or linked to it. Keep **one physical model per prop family in a scene** (a phone and a second phone is repetition, not richness); at most two support objects at a time. Match the spoken beat (food when food is spoken, a phone when texting). The library has no table, desk or chair. A needed prop that does not exist is requested, never substituted for a story prop. Never add a prop or accent only to turn a check green.
 
 ## 4. Experience profile (authoring-only)
 ```
