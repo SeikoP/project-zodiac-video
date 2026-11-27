@@ -119,6 +119,7 @@ def stage_data(menus: dict, scene_id: str, scene_text: str, goal: str, used_moti
             "accent_rules": ("accent_id 'drawn' = Core draws your parts (two or three read as a place; each in its own slot: left, center, right; a "
                              "wide part - awning, string_lights, curtain - goes 'across' and then only floor parts may share it). 'none_fits' = the "
                              "place cannot be drawn from these parts; leave parts empty then."),
+            "capacity_rules": "A frame holds at most 3 people, and only three-person-comparison holds 3 (it has no prop slot); with a prop on the stage at most 2 people. A cast of 4 means different scenes show different people, never 4 in one frame.",
             "graphic_rules": GRAPHIC_RULES, "motifs_already_used_in_other_scenes": sorted(set(used_motifs)),
             "anchors": [{"id": a["id"], "text": a["text"]} for a in menus["anchors"]]}
     if planned:  # the production brief, written after one read of the whole script: follow it unless it cannot be drawn
@@ -135,7 +136,7 @@ BRIEF_RULES = (
     "count), chat_thread (messages); choose 'none' for a scene only when the characters and props already carry it, and say why. Never "
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese. "
     "The cover is this episode's own (brief.md): topic, hook of 6-14 words stating its contradiction, a scene and a symbolic object, never the "
-    "concept template and never like recent_episodes. Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
+    "concept template and never like recent_episodes. who_on_stage per scene: A frame holds at most 3 people, and only three-person-comparison holds 3 (it has no prop slot); with a prop on the stage at most 2 people. A cast of 4 means different scenes show different people, never 4 in one frame. Follow invention.md: list every person who acts or is acted on (on_screen true) as a character, give EACH scene one story device that "
     "is not 'they talk' (hand-over, prop as evidence, distance as meaning, accumulation, reaction chain, split stage, callback), make every "
     "prop DO something that changes on screen (verb first, library id second), tie each picture to what a character does on the same "
     "anchor (it must fail the removal test), vary the setting scene to scene, and say in 'rhythm' what differs from recent_episodes.")

@@ -10,6 +10,8 @@ These are the failures this module exists to prevent. They were found in a finis
 ## 1. Who is on stage
 Cast **every person the script gives something to do or something done to** (the lead, the partner, each friend who speaks or is spoken about), one to four members. A person the script names but never shows acting may stay off screen, and the brief says so. Extras may share a body or hair with a lead only when they are visibly different people (outfit, colour, accessory). A scene about "two friends telling their sides" shows both friends; the frame for three people is `three-person-comparison`. Never reduce the cast to make the library easier.
 
+**Capacity.** One frame holds at most three people, and only `three-person-comparison` holds three (it has no prop slot); with a prop in the scene at most two people stand in it. A four-person cast means different scenes show different people; a scene that needs more people than a frame holds is told with the others reacting off-frame (an arm, a voice) or split over two beats.
+
 ## 2. Story devices: how a beat is told
 Every scene has exactly one **device** in the brief: the visible mechanism by which its beat is told. Pick one below or invent one and describe it in a sentence; "the characters stand and talk" is not a device.
 - **Hand-over.** A prop changes hands or owner on a voice anchor (`pass-object`, `offer-object`, `pull-with-prop`): a phone shown to the partner, a gift refused, a note pushed back.
