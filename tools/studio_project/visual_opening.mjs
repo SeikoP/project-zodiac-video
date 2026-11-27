@@ -30,7 +30,7 @@ export function validateSeriesOpening(opening,video) {
     opening.format!=='zodiac-series-opening@1'||opening.series!=='12 CUNG HOÀNG ĐẠO'||
     !SIGNS.has(opening.sign)||
     typeof opening.topic!=='string'||opening.topic.length>65||
-    !/^(Cách|Khi) /u.test(opening.topic)||!opening.topic.includes(opening.sign)||
+    !/^(Cách|Khi) /u.test(opening.topic)&&!opening.topic.startsWith(opening.sign+' ')||!opening.topic.includes(opening.sign)||
     /[<>\n\r]/u.test(opening.topic)||
     ![24,30].includes(video?.fps)||!Number.isInteger(opening.duration_frames)||
     opening.duration_frames<Math.round(.8*video.fps)||

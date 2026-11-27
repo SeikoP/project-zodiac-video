@@ -25,7 +25,7 @@ product: it is checked by people, never an approval, and it is not a second sour
   - `props`: only physical things the narration handles, each with the action that uses it.
   - `acting_turns`: the two or three moments where someone visibly changes (the words they land on), including the reaction beat.
   - `picture`: one of the picture motifs and the `fact` it makes visible, or `none` with the reason (characters and props already carry it).
-- `cover`: the cover is this episode's own, never the concept's template. `topic` (the opening's short theme, begins "Cách" or "Khi", names the
+- `cover`: the cover is this episode's own, never the concept's template. `topic` (the opening's short theme, begins "Cách" or "Khi", or with the sign's name followed by a space, names the
   behaviour of THIS episode, not just the concept; keep it plain: when the episode's working title already fits the rule, use it as is, for
   example "Kim Ngưu khi thật lòng yêu", and do not reword it to sound cleverer), `hook` (6-14 words stating this episode's contradiction or payoff, never the first narration
   line and never cut mid-thought), `scene_id` (the scene whose cast and prop make the cover), `symbol` (the physical object or gesture that makes the

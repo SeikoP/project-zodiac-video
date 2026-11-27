@@ -207,3 +207,12 @@ test('the cover keeps the series design whatever the editor theme: fixed palette
   assert.ok(tops.length&&tops.every(t=>t>=240),'sign strip must start at y>=240 (TikTok profile crop)');
  }
 });
+
+test('the cover topic may start with the sign ("Kim Ngưu khi thật lòng yêu") as well as Cách or Khi', async () => {
+  const {validateSeriesOpening}=await import('../tools/studio_project/visual_opening.mjs');
+  const make=topic=>({format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:'Kim Ngưu',topic,duration_frames:45,transition_frames:9});
+  const video={fps:24};
+  assert.ok(validateSeriesOpening(make('Kim Ngưu khi thật lòng yêu'),video));
+  assert.ok(validateSeriesOpening(make('Khi Kim Ngưu thật lòng yêu'),video));
+  assert.throws(()=>validateSeriesOpening(make('Thật lòng yêu thì Kim Ngưu làm gì'),video),/VISUAL_SERIES_OPENING_INVALID/);
+});
