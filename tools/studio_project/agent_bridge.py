@@ -42,10 +42,11 @@ EFFORTS = ("minimal", "low", "medium", "high", "xhigh")
 #   repair    automatic, validator-driven scene fixes                        luna high
 #   review    text triage of findings, deciding what to redo                 luna high
 #   vision    looking at rendered frames and judging them against the goal   sol medium
+#   design    the production brief, the cast and each scene's stage (ideas)  sol medium
 # Each role is overridable: ZODIAC_STUDIO_<ROLE>_MODEL / ZODIAC_STUDIO_<ROLE>_EFFORT (creative keeps the old
 # ZODIAC_STUDIO_AGENT_MODEL / ZODIAC_STUDIO_AGENT_EFFORT names).
 ROLE_DEFAULTS = {"creative": ("gpt-6-luna", "xhigh"), "repair": ("gpt-6-luna", "high"), "review": ("gpt-6-luna", "high"),
-                 "vision": ("gpt-6.1-sol", "medium")}
+                 "vision": ("gpt-6.1-sol", "medium"), "design": ("gpt-6.1-sol", "medium")}
 
 
 def _role(role: str) -> str:

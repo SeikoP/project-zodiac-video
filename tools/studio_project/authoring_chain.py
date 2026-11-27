@@ -365,7 +365,7 @@ class LiveIO:
             part = agent_parts.skeleton_task(self.capsule)
             if getattr(self, "_brief", None):
                 part["production_brief"] = self._brief  # the cast is designed for the story the brief read, not from scratch
-            task = self._wait(self.service.agent.start(self.project_id, part_task=part)["task_id"])
+            task = self._wait(self.service.agent.start(self.project_id, part_task=part, role="design")["task_id"])
             if task["status"] == "COMPLETED" and task.get("suggestion"):
                 return task["suggestion"]
             error = str(task.get("error") or task["status"])[:200]
@@ -393,7 +393,7 @@ class LiveIO:
         end = time.monotonic() + self.WAIT_SECONDS
         while True:  # a full agent slot is a wait, not a failure
             try:
-                return self.service.agent.start_choice(self.project_id, schema, data, skill=kind)
+                return self.service.agent.start_choice(self.project_id, schema, data, skill=kind, role="design" if kind in ("brief", "stage") else "creative")
             except StudioError as error:
                 if error.code != "AGENT_BUSY" or time.monotonic() > end:
                     raise ChoiceError(f"{kind}: {error}") from error
