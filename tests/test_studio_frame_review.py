@@ -56,6 +56,12 @@ class ValidateTests(unittest.TestCase):
             with self.assertRaises(StudioError, msg=text):
                 fr.validate(text, task())
 
+    def test_the_reviewer_is_told_the_cast_is_fixed(self):
+        built = fr.build_task({**INTENT, "cast": [{"entity_id": "libra"}, {"entity_id": "partner"}]}, {"s01": ["a.png"], "s02": ["b.png"]})
+        self.assertEqual(built["cast"], ["libra", "partner"])
+        self.assertIn("FIXED cast: libra, partner", fr.prompt(built))
+        self.assertIn("never ask for a new character", fr.prompt(built))
+
 
 if __name__ == "__main__":
     unittest.main()

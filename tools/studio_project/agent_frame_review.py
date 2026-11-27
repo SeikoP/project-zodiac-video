@@ -45,7 +45,8 @@ def build_task(intent: dict, frames: dict[str, list[str]]) -> dict:
         if paths:
             scenes.append({"scene_id": scene["id"], "goal": scene.get("semantic_goal", ""),
                            "narration_range": narration_ranges.get(scene["id"]), "frames": list(paths)})
-    return {"scenes": scenes}
+    cast = [m.get("entity_id") for m in intent.get("cast", []) if isinstance(m, dict) and m.get("entity_id")]
+    return {"scenes": scenes, "cast": cast}
 
 
 def image_paths(task: dict) -> list[str]:
@@ -65,7 +66,9 @@ def prompt(task: dict) -> str:
         "\"instruction\":string}]} with exactly one entry per listed scene. Allowed codes: " + ", ".join(sorted(CODES)) + ". "
         "verdict \"fix\" needs at least one issue and an `instruction`: one short Vietnamese sentence (max 250 characters) telling a "
         "scene editor what to change in this scene only (which entity, what, why). Use verdict \"ok\" with empty issues and "
-        "empty instruction when the scene works; prefer \"ok\" over nitpicking. No markdown, no extra text. Scenes: "
+        "empty instruction when the scene works; prefer \"ok\" over nitpicking. The episode has a FIXED cast: "
+        + ", ".join(task.get("cast") or []) + ". An instruction may only move, pose, turn or give actions to these characters and to library "
+        "props; never ask for a new character, extra person or crowd. No markdown, no extra text. Scenes: "
         + json.dumps(listing, ensure_ascii=False)
     )
 

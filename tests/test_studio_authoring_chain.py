@@ -397,5 +397,19 @@ class ProductionBriefTests(unittest.TestCase):
         dossier = io._dossier()
         self.assertEqual(dossier["writer_brief"], {"premise": "p"})
         self.assertEqual(dossier["narrative_plan"], {"beats": [1]})
-        self.assertIn("phone", dossier["vocabulary"]["props"])
+        self.assertTrue(dossier["vocabulary"]["props"])  # the library the stage menus offer, not the compact catalog
         self.assertEqual(len(dossier["narration_by_scene"]), 2)
+
+    def test_a_brief_of_only_none_is_put_back_to_the_agent_once(self):
+        io = self.make_io()
+        calls = []
+        none = {"scenes": [{"scene_id": s, "picture": {"motif": "none"}} for s in ("s01", "s02")]}
+        some = {"scenes": [{"scene_id": "s01", "picture": {"motif": "tally"}}, {"scene_id": "s02", "picture": {"motif": "none"}}]}
+        answers = [none, some]
+        io.choose = lambda kind, schema, data: (calls.append(data), answers.pop(0))[1]
+        io._dossier = lambda: {}
+        io.scene_ids = lambda: ["s01", "s02"]
+        brief = io.read_brief()
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1]["previous_findings"][0]["code"], "BRIEF_PICTURES_MISSING")
+        self.assertEqual(brief, some)

@@ -145,15 +145,18 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
         service.agent.cancel(task["task_id"])
         raise StudioError("AGENT_TIMEOUT", "Agent quá thời gian chờ", "agent")
 
-    try:
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            futures = {sid: pool.submit(one, sid, issues) for sid, issues in by_scene.items()}
-            tasks = {sid: future.result() for sid, future in futures.items()}
-    except StudioError as error:
-        if error.code == "AGENT_CANCELLED":
-            raise
-        return None
-    except Exception:  # a malformed revision must fall back to regenerating, not abort the repair
+    tasks: dict = {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = {sid: pool.submit(one, sid, issues) for sid, issues in by_scene.items()}
+        for sid, future in futures.items():  # one scene that cannot be revised must not throw away the others that were
+            try:
+                tasks[sid] = future.result()
+            except StudioError as error:
+                if error.code == "AGENT_CANCELLED":
+                    raise
+            except Exception:  # a malformed revision of one scene is skipped, not fatal
+                pass
+    if not tasks:
         return None
     fingerprints = {task["dependencies"] for task in tasks.values()}
     if len(fingerprints) != 1:  # the voice changed between the revisions: none of them can be trusted together
@@ -168,6 +171,8 @@ def _revise_scenes(service, project_id: str, node_id: str, by_scene: dict, pilot
                 merged.setdefault("assets", {}).setdefault(key, value)
     except (KeyError, ValueError, StopIteration, TypeError):
         return None
+    if len(tasks) < len(by_scene):
+        pilot.note_partial_revision(sorted(set(by_scene) - set(tasks)))
     return [{"kind": "visual.intent", "payload": {"command": "source.replace", "payload": {"intent": merged}},
              "voice_dependencies": fingerprints.pop()}]
 
@@ -434,6 +439,11 @@ class Autopilot:
         with self._state_lock:
             self._set("RUNNING", "inspect", (), f"Tự sửa bố cục {len(changes)} thực thể ({names}); dựng lại cảnh đã đổi")
         return True
+
+    def note_partial_revision(self, skipped: list[str]) -> None:
+        """Scenes whose revision could not be produced this round; the others are still applied."""
+        from . import vision
+        vision.log(self._workspace, {"event": "partial_repair", "round": self._vision_rounds, "skipped": skipped})
 
     def _vision_review(self) -> bool:
         """Look at the built frames (vision role), fix only the scenes that look wrong (repair role). True when a fix was applied."""

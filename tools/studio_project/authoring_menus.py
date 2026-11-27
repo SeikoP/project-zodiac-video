@@ -136,6 +136,11 @@ BRIEF_RULES = (
     "the same motif twice. Use only props, frames, mechanics and accent parts that exist in the vocabulary. Short, concrete, Vietnamese.")
 
 
+def pictures_owed(scene_count: int) -> int:
+    """How many scenes of an episode this long should carry a picture (at least one; about one in three)."""
+    return max(1, round(scene_count / 3)) if scene_count else 0
+
+
 def brief_data(dossier: dict) -> dict:
     return {"documents": dossier, "rules": BRIEF_RULES}
 
