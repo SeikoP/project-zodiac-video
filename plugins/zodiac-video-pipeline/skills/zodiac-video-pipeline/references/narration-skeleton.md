@@ -41,6 +41,17 @@ Nên lần sau Song Tử im lặng, đừng hỏi họ giận không. Hãy hỏi
 
 The hook says "im lặng" and "chấm điểm"; the close returns to both with a changed meaning.
 
+## Trend-phrase pass (after the draft, before Content Review)
+
+Optional, at most **two** phrases per script. The aim is natural current speech in a slot that needs it, not slang for its own sake.
+
+1. Find the slot's job first (hook pressure, a verdict line, the close). Search by function, never by bulk slang keyword; the routing rules are in `research-and-viral-tools.md` (Narration step). Language evidence never supports a Zodiac trait.
+2. Each kept phrase goes in `.authoring/trend-phrases.json` (`zodiac-trend-phrases@1`): `phrase`, `slot` (hook, facet1-3, turn, close), `function`, `evidence_class`, `sources[]` with url and date, and a `natural_check` saying why this narrator can say it aloud.
+3. Classes follow the existing language taxonomy: `observed` (seen in an accessed source), `recurring` (three independent sites), `trend_candidate` (dated, growth unproven), `measured` (needs `platform` and `window`).
+4. Reject a phrase that sounds forced, stale, text-only or hard to say. Prefer none to a bad one.
+
+Check: `node references/validate-trend-phrases.mjs <workspace>`.
+
 ## Interaction with the rest of Phase 1
 
 - Paragraph boundaries are still the scene seams, so a skeleton script yields six scenes. Do not split a paragraph to add scenes.
