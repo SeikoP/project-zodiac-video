@@ -42,7 +42,7 @@ export function validateSeriesOpening(opening,video) {
  }
  return opening;
 }
-export function openingHtml(opening,palette,scene=null,assets={},themeId='light'){
+export function openingHtml(opening,palette,scene=null,assets={},themeId='light',episodeScenes=null){
  if(!opening)return '';
  const paper=palette.paper??palette.canvas??'#F6F0E6';
  const ink=palette.ink??'#2F3C44';
@@ -62,27 +62,38 @@ export function openingHtml(opening,palette,scene=null,assets={},themeId='light'
   const b=positions[i];
   return `<img data-cover-native-actor="${escape(entity.id)}" draggable="false" src="data:image/svg+xml;base64,${src}" style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;object-fit:contain"/>`;
  }).join('');
- const propEntity=(scene?.entities??[]).find(e=>e.kind==='prop'&&Object.values(e.states).some(s=>s.visible!==false));
- const propState=propEntity&&Object.values(propEntity.states).find(s=>s.visible!==false);
- const propAsset=propState&&assets[propState.asset];
- const prop=propAsset?.svg?`<img data-cover-native-prop="${escape(propEntity.id)}" draggable="false" src="data:image/svg+xml;base64,${Buffer.from(resolvePaletteSvg(propAsset.svg,themeId)).toString('base64')}" style="position:absolute;left:746px;top:1090px;width:185px;height:250px;object-fit:contain;transform:rotate(9deg)"/>`:'';
+ // A few props the video really uses (any scene), each drawn from its own scene asset, fill the empty margins of the cover.
+ const seen=new Set();
+ const propSpots=[{x:22,y:1130,w:175,h:215,r:-8},{x:885,y:640,w:150,h:180,r:10},{x:22,y:830,w:140,h:170,r:-6}];
+ const props=[];
+ for(const sc of (episodeScenes??(scene?[scene]:[]))){
+  for(const e of sc.entities??[]){
+   if(props.length>=propSpots.length)break;
+   if(!(e.visual_role==='interactive_prop'&&e.kind==='object')&&e.kind!=='prop')continue;
+   const st=Object.values(e.states??{}).find(s=>s.visible!==false&&assets[s.asset]?.svg);
+   if(!st||seen.has(st.asset))continue;
+   seen.add(st.asset);
+   const p=propSpots[props.length];
+   props.push(`<img data-cover-native-prop="${escape(e.id)}" draggable="false" src="data:image/svg+xml;base64,${Buffer.from(resolvePaletteSvg(assets[st.asset].svg,themeId)).toString('base64')}" style="position:absolute;left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px;object-fit:contain;transform:rotate(${p.r}deg)"/>`);
+  }
+ }
+ const prop=props.join('');
  // Cover title changes semantics from hook to the current episode's topic, but preserves
  // the approved crooked-paper-note, identity strip, paper relief, and native scene visuals.
  return `<div id="series-opening" data-cover-opening="series-topic" data-cover-design="zodiac-paper-doodle-meme-v4"
  data-opening-duration="${opening.duration_frames}" style="position:absolute;left:0;top:0;width:1080px;height:1470px;z-index:80;pointer-events:none;opacity:1;background:${paper};font-family:ZodiacCaption,Arial,sans-serif;color:${ink}">
- <div style="position:absolute;top:100px;left:145px;width:790px;text-align:center;font-size:40px;letter-spacing:1px">${escape(opening.series)}</div>
- <svg aria-hidden="true" viewBox="0 0 860 130" preserveAspectRatio="none" style="position:absolute;top:235px;left:110px;width:860px;height:130px;overflow:visible">
+ <svg aria-hidden="true" viewBox="0 0 860 130" preserveAspectRatio="none" style="position:absolute;top:140px;left:110px;width:860px;height:130px;overflow:visible">
  <path d="${identityOutline}" fill="${warm}" transform="translate(6 10)"/>
  <path d="${identityOutline}" fill="${ochre}" stroke="${ink}" stroke-width="6" vector-effect="non-scaling-stroke"/></svg>
- <div style="position:absolute;top:233px;left:110px;width:860px;height:132px;display:flex;align-items:center;justify-content:center;gap:24px;font-size:65px;line-height:1;box-sizing:border-box">
+ <div style="position:absolute;top:138px;left:110px;width:860px;height:132px;display:flex;align-items:center;justify-content:center;gap:24px;font-size:65px;line-height:1;box-sizing:border-box">
  ${escape(opening.sign)} ${zodiacGlyph(opening.sign,ink).replace('width="150" height="150"','width="83" height="83"')}</div>
- <svg aria-hidden="true" viewBox="0 0 880 312" preserveAspectRatio="none" style="position:absolute;top:405px;left:72px;width:936px;height:312px;overflow:visible;transform:rotate(-2deg)">
+ <svg aria-hidden="true" viewBox="0 0 880 312" preserveAspectRatio="none" style="position:absolute;top:315px;left:72px;width:936px;height:312px;overflow:visible;transform:rotate(-2deg)">
  <path d="${noteOutline}" fill="${warm}" transform="translate(16 24)"/>
  <path d="${noteOutline}" fill="${card}" stroke="${ink}" stroke-width="6" vector-effect="non-scaling-stroke"/></svg>
- <div style="position:absolute;top:407px;left:84px;width:914px;height:305px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:19px 45px;font-size:${opening.topic.length>35?70:82}px;line-height:1.09;font-weight:400;text-align:center;text-wrap:balance;transform:rotate(-2deg)">
+ <div style="position:absolute;top:317px;left:84px;width:914px;height:305px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:19px 45px;font-size:${opening.topic.length>35?70:82}px;line-height:1.09;font-weight:400;text-align:center;text-wrap:balance;transform:rotate(-2deg)">
  ${escape(opening.topic)}</div>
  ${pictures}${prop}
- <svg aria-hidden="true" style="position:absolute;left:128px;top:1310px;width:185px;height:75px" viewBox="0 0 185 75" fill="none"><path d="M6 63 Q88 12 176 58" stroke="${ochre}" stroke-width="14" stroke-linecap="round"/></svg>
+ ${props.length?'':`<svg aria-hidden="true" style="position:absolute;left:128px;top:1310px;width:185px;height:75px" viewBox="0 0 185 75" fill="none"><path d="M6 63 Q88 12 176 58" stroke="${ochre}" stroke-width="14" stroke-linecap="round"/></svg>`}
  <svg aria-hidden="true" style="position:absolute;left:850px;top:777px;width:70px;height:77px" viewBox="0 0 70 77" fill="none"><path d="M36 70 L44 44 L68 33 L43 27 L35 3 L27 28 L4 34 L27 43 Z" stroke="${ink}" stroke-width="5"/></svg>
  </div>`;
 }

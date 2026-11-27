@@ -66,7 +66,7 @@ test('series-topic opening identifies zodiac and theme, begins at frame zero wit
   assert.match(html,/data-cover-native-actor="hero"/u);
   assert.match(html,/transform:rotate\(-2deg\)/u);
   assert.doesNotMatch(html,/background:linear-gradient\(/u);
-  assert.match(html,/12 CUNG HOÀNG ĐẠO/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="series-opening"'),html.indexOf('id="series-opening"')+900),/12 CUNG HOÀNG ĐẠO/u); // no series line above the sign strip
   assert.match(html,/Cách Nhân Mã yêu thật lòng/u);
   const played=await play(html);
   const overlay=played.document.querySelector('#series-opening');
