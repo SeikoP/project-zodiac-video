@@ -18,7 +18,7 @@ export function makeFixture(narration=Array.from({length:8},(_,i)=>`Song Tá»­ há
       entities:[{id:'gemini',kind:'character',initial_state:'neutral',visual_role:'character',states:Object.fromEntries(['neutral','asking','realizing'].map(s=>[s,{asset:'future-character',visible:true,layer:20,transform:{x:240,y:480,width:480,height:800}}]))},
         {id:'phone',kind:'object',visual_role:'interactive_prop',initial_state:'idle',states:{idle:{asset:'phone',visible:true,layer:25,transform:{x:760,y:760,width:180,height:260}}}}],
       events:tokens.length>=2?[{id:'ask',target:'gemini',state_before:'neutral',state_after:'asking',trigger:{type:'voice_anchor',text:tokens[Math.min(1,tokens.length-2)]},motion:{preset:'state_swap',duration_frames:12}},
-        {id:'react',target:'gemini',state_before:'asking',state_after:'realizing',trigger:{type:'voice_anchor',text:tokens.at(-1)},motion:{preset:'state_swap',duration_frames:12}}]:[]};
+        {id:'react',target:'gemini',state_before:'asking',state_after:'realizing',trigger:{type:'voice_anchor',text:tokens.at(-1)},motion:{preset:'state_swap',duration_frames:6,duration_override:true}}]:[]};
     scenes.push(scene);start=stop;
   }
   if(scenes.length && start<Buffer.byteLength(narration))scenes.at(-1).narration_range[1]=Buffer.byteLength(narration);

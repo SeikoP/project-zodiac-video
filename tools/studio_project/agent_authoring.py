@@ -506,6 +506,18 @@ def proposal(text, service, project_id, *, write_visuals=False):
                               "entity tham chiếu asset trong states và voice_anchor event reveal trong cảnh.")
         assert_prop_model_consistency(intent)
         service.visual._node(handle, {"action": "validate_authoring", "intent": intent, "narration": service.visual._narration(handle)})
+        # Replay every scene's events in measured voice time: the export and the build refuse a pose chain that is only
+        # valid in authored order, so the model must hear about it now, while it can still fix it.
+        timing = (service.voice.snapshot(project_id) or {}).get("timing")
+        if timing:
+            for scene in intent.get("scenes", []):
+                try:
+                    service.visual._node(handle, {"action": "validate_performance", "intent": intent, "scene_id": scene["id"],
+                                                  "narration": service.visual._narration(handle), "timing": timing})
+                except StudioError as error:
+                    raise invalid(f"Cảnh {scene['id']}: diễn xuất không hợp lệ theo thời gian giọng đọc ({error.message[:300]}). "
+                                  "Sự kiện được phát lại theo thứ tự cụm neo trong lời đọc: đổi tư thế phải đứng SAU cụm neo của tư thế cũ, "
+                                  "và mỗi nhân vật chỉ diễn một sự kiện tại một thời điểm.") from error
         # Stage deterministic SVG files only after all semantic/source validation passes.
         # This prevents invalid proposals from leaving unreferenced art in the project.
         if write_visuals:

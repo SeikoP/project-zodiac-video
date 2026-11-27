@@ -268,5 +268,21 @@ class VisualWorkspaceTests(unittest.TestCase):
         recovered=self.state();self.assertEqual(recovered["job"]["status"],"INTERRUPTED")
         self.assertEqual(recovered["intent"],self.intent)
 
+    def test_events_are_replayed_in_voice_time_order(self):
+        intent=copy.deepcopy(self.intent);scene=intent["scenes"][0];ask,react=scene["events"]
+        def check(events):
+            scene["events"]=events
+            return self.visual._node(self.handle,{"action":"validate_performance","intent":intent,"scene_id":scene["id"],
+                "narration":self.visual._narration(self.handle),"timing":self.voice["timing"]})
+        # An acting event anchored BEFORE the pose change is bound to the pose it actually meets in time order.
+        early=copy.deepcopy(ask);early.update(id="lean-early",state_before="realizing",state_after="realizing",
+            motion={"preset":"lean","duration_frames":6,"params":{"degrees":5,"dx":0,"dy":0,"settle":"return"}})
+        early["trigger"]={"type":"voice_anchor","text":"Song"}
+        self.assertEqual(check([ask,react,early])["status"],"VALID")
+        # A pose change whose "before" state is only reached later in voice time is refused with the scene named.
+        swapped=copy.deepcopy(react);swapped["trigger"]=copy.deepcopy(ask["trigger"]);late=copy.deepcopy(ask);late["trigger"]=copy.deepcopy(react["trigger"])
+        with self.assertRaises(StudioError) as caught:check([late,swapped])
+        self.assertIn("TRACE_STATE_BEFORE",str(caught.exception))
+
 
 if __name__=="__main__":unittest.main()

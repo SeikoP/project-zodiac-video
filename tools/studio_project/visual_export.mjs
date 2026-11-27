@@ -28,6 +28,7 @@ export async function prepareExport(input){
   traceSceneStates({...scene,events:time.events});
   const ends=new Map();
   for(const event of time.events){
+   if((event.motion?.preset??'state_swap')==='state_swap'&&event.state_before===event.state_after)continue;
    if(event.at+event.preview_duration>(time.endMs-time.startMs)/1000+.001||event.at<(ends.get(event.target)??0))throw Error('EXPORT_ACTING_TIMING_INVALID '+scene.id+'/'+event.id);
    ends.set(event.target,event.at+event.preview_duration);
   }

@@ -80,6 +80,8 @@ export function validateIntent(intent,narration){
   return projections;
 }
 
+// A state_swap that keeps the same state changes nothing on screen, so it cannot overlap anything.
+export const inertEvent=event=>(event.motion?.preset??'state_swap')==='state_swap'&&event.state_before===event.state_after;
 function measuredScenes(intent,narration,timing){
   assert(timing?.format==='zodiac-speech-time-map@2'&&timing.source==='measured_asr'&&timing.narration_sha256===digest(narration)&&Array.isArray(timing.words)&&timing.words.length,'VISUAL_MEASURED_TIMING_REQUIRED');
   const bytes=Buffer.from(narration),words=[];
@@ -124,6 +126,13 @@ function measuredScenes(intent,narration,timing){
       assert(acting||frames===motion.default_duration_frames||event.motion?.duration_override===true,'VISUAL_MOTION_OVERRIDE_REQUIRED');
       return {...event,at,measured:true,preview_motion:preset,preview_duration:frames/intent.video.fps,preview_params:acting?{...(event.motion?.params??{})}:null};
     }).sort((x,y)=>x.at-y.at);
+    // Acting events (state_before===state_after) mean "act in whatever pose the target is in at that moment".
+    // Authored order can differ from voice-anchor order, so bind them to the pose reached in TIME order.
+    const pose=Object.fromEntries((scene.entities??[]).map(e=>[e.id,e.initial_state]));
+    for(const event of events){
+      if(event.state_before===event.state_after&&pose[event.target]!==undefined)event.state_before=event.state_after=pose[event.target];
+      else if(event.state_after!==undefined)pose[event.target]=event.state_after;
+    }
     const camera=(scene.camera??[]).map(shot=>({id:shot.id,at:triggerAt(shot),duration:(shot.duration_frames??0)/intent.video.fps,from:shot.from,to:shot.to,reason:shot.reason??null})).sort((x,y)=>x.at-y.at);
     return {scene_id:scene.id,fps:intent.video.fps,startMs,endMs,words:selected,events,camera,narration_range:[a,b],measured:true};
   });
@@ -152,6 +161,7 @@ export async function buildEpisode(input){
       const ends=new Map(),duration=(scene.endMs-scene.startMs)/1000;
       for(const event of scene.events){
         assert(event.at+event.preview_duration<=duration+.001,'VISUAL_PERFORMANCE_OUTSIDE_SCENE '+event.id);
+        if(inertEvent(event))continue;
         assert(event.at>=(ends.get(event.target)??0),'VISUAL_PERFORMANCE_OVERLAP '+event.id);
         ends.set(event.target,event.at+event.preview_duration);
       }
@@ -162,6 +172,16 @@ export async function buildEpisode(input){
   if(['validate','validate_authoring'].includes(input.action))return {status:'VALID',source_sha256:hash(intent),scene_ids:intent.scenes.map(s=>s.id),projection_sha256:hash(projections),not_an_approval:true};
   const measured=measuredScenes(intent,narration,input.timing),theme=input.theme??'light';assert(THEMES[theme],'VISUAL_THEME_UNKNOWN');
   if(input.scene_id)assert(intent.scenes.some(s=>s.id===input.scene_id),'VISUAL_SCENE_UNKNOWN');
+  for(const t of measured){ // same gate as the export: a build that cannot be exported must fail here, naming the scene
+    const authored=intent.scenes.find(s=>s.id===t.scene_id),duration=(t.endMs-t.startMs)/1000,ends=new Map();
+    try{traceSceneStates({...authored,events:t.events});}catch(error){throw Error('VISUAL_EVENT_ORDER '+t.scene_id+': '+error.message+' (events are replayed in voice-anchor time order; a state change must come after the anchor of the state it leaves)');}
+    for(const event of t.events){
+      assert(event.at+event.preview_duration<=duration+.001,'VISUAL_PERFORMANCE_OUTSIDE_SCENE '+t.scene_id+'/'+event.id);
+      if(inertEvent(event))continue;
+      assert(event.at>=(ends.get(event.target)??0)-.001,'VISUAL_PERFORMANCE_OVERLAP '+t.scene_id+'/'+event.id);
+      ends.set(event.target,event.at+event.preview_duration);
+    }
+  }
   const cache=path.resolve(input.cache),out=path.resolve(input.output);
   await mkdir(cache,{recursive:true});await mkdir(out,{recursive:true});
   const disk=await statfs(out);assert(Number(disk.bavail)*Number(disk.bsize)>128*1024*1024,'VISUAL_DISK_BUDGET_EXCEEDED');
