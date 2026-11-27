@@ -44,10 +44,9 @@ export function validateSeriesOpening(opening,video) {
 }
 export function openingHtml(opening,palette,scene=null,assets={},themeId='light',episodeScenes=null){
  if(!opening)return '';
- const paper=palette.paper??palette.canvas??'#F6F0E6';
- const ink=palette.ink??'#2F3C44';
- const card=palette.surface??'#FFFDF9';
- const ochre=palette.primary??'#F2C45C';
+ // The cover is the series' pinned paper-doodle design (as the Remotion covers): its colours do not follow the editor theme.
+ const paper='#F6F0E6',ink='#2F3C44',card='#FFFDF9',ochre='#F2C45C';
+ themeId='light';
  const warm='#D0C1B3';
  const noteOutline='M14 10 C157 4 280 14 433 7 S698 8 862 5 Q870 5 870 15 C874 86 865 152 873 227 Q873 264 878 292 Q864 304 844 307 C701 301 572 312 430 305 S164 310 17 303 Q9 302 9 291 C5 214 13 137 7 57 Q4 26 14 10 Z';
  const identityOutline='M24 7 C211 3 333 10 482 6 S716 8 834 5 Q852 7 851 24 C847 51 855 82 850 105 Q848 124 829 123 C649 128 460 120 277 125 S95 121 25 124 Q8 122 9 106 C12 82 5 48 10 25 Q11 10 24 7 Z';
@@ -82,15 +81,15 @@ export function openingHtml(opening,palette,scene=null,assets={},themeId='light'
  // the approved crooked-paper-note, identity strip, paper relief, and native scene visuals.
  return `<div id="series-opening" data-cover-opening="series-topic" data-cover-design="zodiac-paper-doodle-meme-v4"
  data-opening-duration="${opening.duration_frames}" style="position:absolute;left:0;top:0;width:1080px;height:1470px;z-index:80;pointer-events:none;opacity:1;background:${paper};font-family:ZodiacCaption,Arial,sans-serif;color:${ink}">
- <svg aria-hidden="true" viewBox="0 0 860 130" preserveAspectRatio="none" style="position:absolute;top:140px;left:110px;width:860px;height:130px;overflow:visible">
+ <svg aria-hidden="true" viewBox="0 0 860 130" preserveAspectRatio="none" style="position:absolute;top:250px;left:110px;width:860px;height:130px;overflow:visible">
  <path d="${identityOutline}" fill="${warm}" transform="translate(6 10)"/>
  <path d="${identityOutline}" fill="${ochre}" stroke="${ink}" stroke-width="6" vector-effect="non-scaling-stroke"/></svg>
- <div style="position:absolute;top:138px;left:110px;width:860px;height:132px;display:flex;align-items:center;justify-content:center;gap:24px;font-size:65px;line-height:1;box-sizing:border-box">
+ <div style="position:absolute;top:248px;left:110px;width:860px;height:132px;display:flex;align-items:center;justify-content:center;gap:24px;font-size:65px;line-height:1;box-sizing:border-box">
  ${escape(opening.sign)} ${zodiacGlyph(opening.sign,ink).replace('width="150" height="150"','width="83" height="83"')}</div>
- <svg aria-hidden="true" viewBox="0 0 880 312" preserveAspectRatio="none" style="position:absolute;top:315px;left:72px;width:936px;height:312px;overflow:visible;transform:rotate(-2deg)">
+ <svg aria-hidden="true" viewBox="0 0 880 312" preserveAspectRatio="none" style="position:absolute;top:420px;left:72px;width:936px;height:312px;overflow:visible;transform:rotate(-2deg)">
  <path d="${noteOutline}" fill="${warm}" transform="translate(16 24)"/>
  <path d="${noteOutline}" fill="${card}" stroke="${ink}" stroke-width="6" vector-effect="non-scaling-stroke"/></svg>
- <div style="position:absolute;top:317px;left:84px;width:914px;height:305px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:19px 45px;font-size:${opening.topic.length>35?70:82}px;line-height:1.09;font-weight:400;text-align:center;text-wrap:balance;transform:rotate(-2deg)">
+ <div style="position:absolute;top:422px;left:84px;width:914px;height:305px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:19px 45px;font-size:${opening.topic.length>35?70:82}px;line-height:1.09;font-weight:400;text-align:center;text-wrap:balance;transform:rotate(-2deg)">
  ${escape(opening.topic)}</div>
  ${pictures}${prop}
  ${props.length?'':`<svg aria-hidden="true" style="position:absolute;left:128px;top:1310px;width:185px;height:75px" viewBox="0 0 185 75" fill="none"><path d="M6 63 Q88 12 176 58" stroke="${ochre}" stroke-width="14" stroke-linecap="round"/></svg>`}
