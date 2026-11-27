@@ -34,6 +34,10 @@ Use a Story Visual only when all are true:
 
 Generic scales, hearts, batteries, question marks, abstract meters, arrows between anonymous dots or decorative color changes fail this test unless the story-specific identities and causal change are visibly encoded.
 
+## Story Visual candidate review
+
+`omitted` is a decision, not a default. Before choosing it, name at least two candidates: for each, the narration paragraph, the story fact, the visible subject and the visible action. Score each candidate against the five conditions above and record which condition failed. For a long profile the Turn paragraph and one contrast paragraph (outer, dark or night) must be among the candidates. A reason such as "the characters and props already show it" is not enough on its own: say what the candidate would add, and which condition it fails. If one candidate passes all five, use it (one Story Visual per scene, no decoration). If none passes, `story_visual_decision` carries the per-candidate failed conditions in `reason`.
+
 ## Lettering inside the visual
 
 Use `lettering[]` only when the exact words are part of what the viewer must read. Keep it short. The words and drawing are not two competing concepts: Phase 2 bakes the lettering into the same Story Visual state/asset, using outlines rather than live SVG text.

@@ -12,7 +12,7 @@ Do not use a motif merely because a phrase sounds clever. A motif must carry sem
 
 ## Narrative Design contract
 
-For a story-driven concept, put one `narrative_motif` object in `narrative-plan.json` before prose is drafted:
+For a story-driven concept, design one `narrative_motif` object before prose is drafted. The object is the working shape of the decision. Narrative Plan 2.1 is a closed schema (`additionalProperties: false`), so `narrative-plan.json` must not contain `narrative_motif`: carry the motif in the Writer Brief as one `motif_candidates` entry (label, setup, friction, turn, payoff, callback, beat ids and removal test written out in one string). Only a legacy plan whose schema allows the field may hold the object itself:
 
 ```json
 {

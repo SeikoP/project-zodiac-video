@@ -44,6 +44,8 @@ Read `references/narration-skeleton.md`. Choose **one** mode before drafting and
 
 **Trend Phrase Pass** (optional, at most two phrases): the writer never calls tools. Mark a SEARCH need where a slot wants a current phrase; language research runs through the Evidence/Concept route in `references/research-and-viral-tools.md` (search by function, dated sources, `observed` / `recurring` needs three independent sites / `trend_candidate` / `measured`), and only a sourced language note returns to the writer. Keep a phrase only if it is natural to say aloud for this narrator; prefer none to a bad one. Language evidence never supports a Zodiac trait. Report kept phrases in the Content Review summary. They are not a handoff artifact, and Narrative Plan 2.1 and `zodiac-phase1-handoff@2` are unchanged: still one beat per paragraph with an exact `voice_anchor`.
 
+**Content Review evidence** (see section 6b of `narration-skeleton.md`): show the per-paragraph token table, name the swap sign in the sign-swap test, list audio-only defects found and fixed (referents, fragment ordinals), give the trend search status (`searched: yes/no`), and run the Story Visual candidate review (at least two candidates, the failed condition for each) before choosing `omitted`. Carry the Narrative Motif in the Writer Brief `motif_candidates`, never in Narrative Plan 2.1.
+
 Foreign words such as "online" stay in the narration; note their intended reading instead of rewriting natural speech.
 
 ## Recognition & Identity Gate

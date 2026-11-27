@@ -213,6 +213,37 @@ class SplitPluginBundleTests(unittest.TestCase):
         self.assertIn("zodiac-phase1-handoff@2", skill)
         self.assertTrue(plugin["version"])
 
+    def test_web_content_review_rules_close_the_2_13_0_gaps(self):
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "web.zip"
+            build_profile(ROOT, "web", destination)
+            with ZipFile(destination) as archive:
+                text = lambda suffix: next(
+                    archive.read(n).decode("utf-8") for n in archive.namelist() if n.endswith(suffix)
+                ).lower()
+                skill = text("zodiac-video-web/SKILL.md")
+                story = text("references/story-visual-direction.md")
+                motif = text("references/narrative-motif.md")
+                briefing = text("references/phase01-briefing.md")
+                skeleton = text("references/narration-skeleton.md")
+        for phrase in ("story visual candidate review", "at least two candidates", "which condition failed"):
+            self.assertIn(phrase, story, phrase)
+        self.assertIn("candidate review", skill)
+        for doc in (motif, briefing):
+            self.assertIn("motif_candidates", doc)
+        self.assertIn("must not contain `narrative_motif`", motif)
+        for phrase in (
+            "concept fit",
+            "hook carries the concept",
+            "per-paragraph token table",
+            "sign-swap test names the swap sign",
+            "referent",
+            "trend search status",
+        ):
+            self.assertIn(phrase, skeleton, phrase)
+        self.assertIn("per-paragraph token table", skill)
+        self.assertIn("trend search status", skill)
+
     def test_plugin_manifests_share_one_version(self):
         base = ROOT / "plugins/zodiac-video-pipeline"
         versions = {

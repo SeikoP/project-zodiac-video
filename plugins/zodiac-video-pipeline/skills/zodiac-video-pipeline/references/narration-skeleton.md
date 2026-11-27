@@ -72,6 +72,20 @@ Hook (≤16) names the situation and a promise; 6-14 moments (15-45 each) are on
 
 Name every limit you knowingly exceed and why. Local can run the same check: `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=long-profile|short-profile|situation`. The result is REVIEW or PASS, never an approval.
 
+## 6b. Concept fit, hook and Content Review evidence (long and short profile)
+
+**Concept fit.** Slots 2-4 keep "Thứ nhất / Thứ hai / Thứ ba", but their job follows the concept. For a warning concept ("điều sẽ làm cung này gạch tên bạn") they are dealbreakers. For a concept whose thesis contrasts two audiences (for example `love-sincere`: how the sign treats an ordinary person versus someone who really matters) each of the three must already show that contrast, so the thesis is visible by paragraph 2, not paragraph 5. Check: write the concept's one-line contrast, then point to it in each of paragraphs 2, 3 and 4.
+
+**Hook carries the concept.** The hook promises something that costs the viewer or names the concept's contrast. Delete the sign name from the hook: the concept (not just "a sign and a number") must still be readable. A hook that only announces a count of vague things ("ba kiểu … khó bỏ qua") fails.
+
+**Content Review evidence.** The review table shows evidence, not assertions:
+1. Per-paragraph token table (paragraph, tokens, limit) and the total.
+2. Sign-swap test names the swap sign and quotes the line that stops working. If nothing breaks, say so and rework the line.
+3. Audio-only review lists what was checked: unclear referent (who is "họ"/"người ấy"), fragment sentences that start an ordinal paragraph, lines that do not parse when spoken, repeated words. Name each defect and its fix. An empty list is written "none found after reading each paragraph".
+4. Trend search status: `searched: yes/no`, the function searched, and the outcome. "Không dùng" alone is not a record.
+5. Story Visual: the candidate review from `story-visual-direction.md` (at least two candidates, failed condition each).
+6. Motif: where it is carried (Writer Brief `motif_candidates`; never a field of Plan 2.1).
+
 ## 7. Trend phrase pass (optional, at most two phrases)
 
 Natural current speech in a slot that needs it, not slang for its own sake.

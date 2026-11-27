@@ -41,7 +41,7 @@ After explicit user approval, create a lightweight handoff capsule containing on
 
 ## Narrative Motif and second-half pulse
 
-For story-driven concepts, Narrative Design chooses a Phase-1 `narrative_motif` **before narration**. Describe its setup state, friction states, turn, payoff/callback, beat bindings and removal test. If removing it leaves only a list of examples, the motif is doing necessary story work. If a direct deconstruction does not need one, omit it explicitly with a specific reason.
+For story-driven concepts, Narrative Design chooses a Phase-1 `narrative_motif` **before narration**. In a Narrative Plan 2.1 run the motif travels in the Writer Brief `motif_candidates` entry, never as a `narrative_motif` field of the closed plan schema. Describe its setup state, friction states, turn, payoff/callback, beat bindings and removal test. If removing it leaves only a list of examples, the motif is doing necessary story work. If a direct deconstruction does not need one, omit it explicitly with a specific reason.
 
 Also map the second-half pulse before prose: after the midpoint, each beat should add action, decision, failed workaround, consequence, contrast, reframe or payoff. Do not spend the back half merely explaining the interpretation established by the front half.
 
