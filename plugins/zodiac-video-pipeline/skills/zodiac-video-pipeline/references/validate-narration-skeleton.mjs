@@ -50,15 +50,57 @@ export function checkSkeleton(text,limits=SKELETON){
  });
  return report(paras,count,total,issues);
 }
-function report(paras,count,total,issues){
- return {format:'zodiac-narration-skeleton@1',status:issues.length?'REVIEW':'PASS',paragraphs:paras.length,tokens_per_paragraph:count,total_tokens:total,estimated_seconds:Math.round(total/4.5),issues,not_an_approval:true};
+// Situation mode: one sign walks through one relatable situation; each paragraph is one concrete moment, in time order.
+export const SITUATION={
+ paragraphs:[8,16],
+ hook_max_tokens:16,
+ moment_tokens:[15,45],
+ turn_tokens:[10,40],
+ close_max_tokens:35,
+ total_tokens:[220,480],
+ sentence_max_tokens:20,
+ min_contrast_moments:2,
+ min_callback_words:2,
+ topic_word_share:0.4
+};
+export function checkSituation(text,limits=SITUATION){
+ const paras=String(text).replace(/\r\n/g,'\n').split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+ const issues=[],add=(code,where,detail)=>issues.push({code,where,detail});
+ const count=paras.map(p=>words(p).length),total=count.reduce((a,b)=>a+b,0);
+ if(paras.length<limits.paragraphs[0]||paras.length>limits.paragraphs[1]){add('SLOT_COUNT','all','need '+limits.paragraphs.join('-')+' paragraphs (hook, moments, turn, close); found '+paras.length);return report(paras,count,total,issues,'situation');}
+ const hook=paras[0],close=paras.at(-1),turn=paras.at(-2),moments=paras.slice(1,-2);
+ if(count[0]>limits.hook_max_tokens)add('HOOK_LONG','hook',count[0]+' tokens, max '+limits.hook_max_tokens);
+ moments.forEach((p,i)=>{
+  const n=count[i+1],where='moment'+(i+1);
+  if(n<limits.moment_tokens[0]||n>limits.moment_tokens[1])add('MOMENT_SIZE',where,n+' tokens, need '+limits.moment_tokens.join('-'));
+  const lead=words(p).slice(0,3).join(' ');
+  if(i>0&&lead===words(moments[i-1]).slice(0,3).join(' '))add('MOMENT_SAME_OPENING',where,'starts like the previous moment ("'+lead+'"): list-like, not escalating');
+ });
+ if(moments.filter(p=>CONTRAST.some(c=>has(p,c))).length<limits.min_contrast_moments)add('TOO_FEW_CONTRASTS','moments','need at least '+limits.min_contrast_moments+' moments where the outside and the inside disagree ('+CONTRAST.join(', ')+')');
+ if(count.at(-2)<limits.turn_tokens[0]||count.at(-2)>limits.turn_tokens[1])add('TURN_SIZE','turn',count.at(-2)+' tokens, need '+limits.turn_tokens.join('-'));
+ if(count.at(-1)>limits.close_max_tokens)add('CLOSE_LONG','close',count.at(-1)+' tokens, max '+limits.close_max_tokens);
+ if(total<limits.total_tokens[0]||total>limits.total_tokens[1])add('TOTAL_SIZE','all',total+' tokens, need '+limits.total_tokens.join('-'));
+ const sets=paras.map(p=>new Set(words(p)));
+ const topic=new Set([...new Set(sets.flatMap(s=>[...s]))].filter(w=>sets.filter(s=>s.has(w)).length>=Math.ceil(limits.topic_word_share*paras.length)));
+ const shared=[...sets[0]].filter(w=>sets.at(-1).has(w)&&!STOP.has(w)&&!topic.has(w));
+ if(shared.length<limits.min_callback_words)add('CLOSE_NO_CALLBACK','close','shares '+shared.length+' non-topic words with the hook, need '+limits.min_callback_words);
+ for(const phrase of CTA)if(has(close,phrase))add('CLOSE_CTA','close','"'+phrase+'" turns the ending into a goodbye; keep any call to action in the caption');
+ paras.forEach((p,i)=>{
+  for(const phrase of FILLER)if(has(p,phrase))add('FILLER','p'+(i+1),'"'+phrase+'" is read aloud by TTS and adds no information');
+  for(const s of p.split(/[.!?…]+|\n/).map(x=>x.trim()).filter(Boolean)){const n=words(s).length;if(n>limits.sentence_max_tokens)add('SENTENCE_LONG','p'+(i+1),n+' tokens: "'+s.slice(0,60)+'…"');}
+ });
+ return report(paras,count,total,issues,'situation');
+}
+function report(paras,count,total,issues,mode='profile'){
+ return {format:'zodiac-narration-skeleton@1',mode,status:issues.length?'REVIEW':'PASS',paragraphs:paras.length,tokens_per_paragraph:count,total_tokens:total,estimated_seconds:Math.round(total/4.5),issues,not_an_approval:true};
 }
 
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
-  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt>');process.exit(2);}
+  const input=process.argv[2];if(!input){console.error('Usage: node validate-narration-skeleton.mjs <workspace|narration.txt> [--mode=situation]');process.exit(2);}
   const file=(await stat(input)).isFile()?input:await stat(path.join(input,'.authoring/narration.txt')).then(()=>path.join(input,'.authoring/narration.txt')).catch(e=>{if(e.code==='ENOENT')return path.join(input,'narration.txt');throw e;});
-  const result=checkSkeleton(await readFile(file,'utf8'));
+  const situation=process.argv.includes('--mode=situation')||process.argv.includes('situation');
+  const result=(situation?checkSituation:checkSkeleton)(await readFile(file,'utf8'));
   console.log(JSON.stringify(result,null,2));
   if(result.status!=='PASS')process.exitCode=1;
  }catch(e){console.error(e.message);process.exitCode=2;}

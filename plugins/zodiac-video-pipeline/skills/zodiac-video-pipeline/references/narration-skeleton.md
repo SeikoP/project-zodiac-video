@@ -41,6 +41,21 @@ Nên lần sau Song Tử im lặng, đừng hỏi họ giận không. Hãy hỏi
 
 The hook says "im lặng" and "chấm điểm"; the close returns to both with a changed meaning.
 
+## Situation mode (one sign, one relatable situation)
+
+Use when the video is "Khi <cung> + <tình huống ai cũng từng gặp>" (a group project, a parents' meeting, an exam) instead of a trait profile. The title is the hook; the sign walks through the situation in time order, one concrete moment per paragraph, and each moment goes a step further than the last. Check with `node references/validate-narration-skeleton.mjs <workspace|narration.txt> --mode=situation`.
+
+| Slot | Job | Limit (tokens) |
+|------|-----|----------------|
+| Hook | The situation plus a promise that costs something ("…có đúng một ngôi sao") | ≤16 |
+| Moments (6–14) | One specific action by the sign in that situation, in time order; no two moments open alike | 15–45 each |
+| Turn | The mechanism behind all moments, in one line | 10–40 |
+| Close | Returns to the hook's image with a changed meaning; no goodbye | ≤35 |
+
+Whole script 220–480 tokens (about 50–105 seconds). At least two moments need an outside-versus-inside contrast marker. These limits are defaults to tune on real retention, not measured truths.
+
+Why this mode exists: a profile of one sign gives the viewer one sign to recognise; a situation gives them a scene they have lived, which is the shape the top videos of a 586K-follower channel (`@cunghoangdao_tarot`, checked 2026-11-28 by title and view count only, scripts and retention unseen) share across about a dozen videos of 1.6-3.1M views. One channel is an observation, not a recurring pattern.
+
 ## Trend-phrase pass (after the draft, before Content Review)
 
 Optional, at most **two** phrases per script. The aim is natural current speech in a slot that needs it, not slang for its own sake.
