@@ -695,7 +695,7 @@ class AgentManager:
             part = project.get("part_task")
             authoring = "author_task" in project or part is not None
             reviewing = "review_task" in project or "choice_task" in project
-            output_limit = agent_authoring.MAX_PROPOSAL if authoring else 16000 if reviewing else MAX_OUTPUT
+            output_limit = agent_authoring.MAX_PROPOSAL if authoring else 48000 if "choice_task" in project else 16000 if reviewing else MAX_OUTPUT  # a stage choice carries the drawn hero (up to 4 states of 14 parts)
             deadline = time.monotonic() + (600 if authoring else 300 if reviewing else MAX_TASK_SECONDS)
             while time.monotonic() < deadline:
                 if task_id in self._cancelled:
