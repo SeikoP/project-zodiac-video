@@ -135,7 +135,8 @@ GRAPHIC_RULES = (
     "graphic = an OPTIONAL picture Studio draws to make ONE story fact visible (not decoration). Pick 'none' unless the narration states "
     "something countable, comparable or written that the viewer should SEE: a stamp (a verdict word), meter (a level between two sides), "
     "versus (two columns of rows), receipt (items and a total), route (2-4 stops), folder (a named folder with files), tally (a count), "
-    "chat_thread (messages). Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
+    "chat_thread (messages). The episode needs at least one such picture (about one scene in four): Core sends a scene back when its "
+    "words state a countable, comparable or written fact and you chose 'none'. Use a DIFFERENT motif in every scene; never the same one twice. Fields are short, in Vietnamese, exact words "
     "from the narration where possible. anchor_id = the words where the picture first appears; later pieces appear on the anchors after it.")
 GRAPHIC_MOTIFS = ("stamp", "meter", "versus", "receipt", "route", "folder", "tally", "chat_thread")
 

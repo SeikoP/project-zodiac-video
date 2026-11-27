@@ -449,6 +449,10 @@ class LiveIO:
                 if motif in seen:
                     found.append({"code": "GRAPHIC_MOTIF_REPEATED", "scene_id": sid, "detail": f"{motif} đã dùng ở {seen[motif]}"})
                 seen.setdefault(motif, sid)
+        # The script, not Phase 1, decides whether the episode needs a picture: 'none' everywhere is refused when the words state facts.
+        from . import graphic_need
+        found += graphic_need.missing([(sid, next((r.get("text", "") for r in self.capsule.get("scene_ranges", []) if r.get("id") == sid), "")) for sid in order],
+                                      {sid for sid in order if graphic_motifs_of(texts.get(sid))})
         return found
 
     def core_fix(self, sid: str, text: str, issues: list[dict]) -> str:
