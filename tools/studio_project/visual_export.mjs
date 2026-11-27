@@ -23,7 +23,7 @@ export async function prepareExport(input){
   const built=manifest.scenes.find(row=>row.id===scene.id),time=manifest.performance_graph.scenes.find(row=>row.scene_id===scene.id);
   if(!built||built.qa.status!=='PASS'||!time?.words?.length)throw Error('EXPORT_REBUILD_REQUIRED '+scene.id);
   await read(built.preview_file,built.preview_sha256);
-  const preview=renderPreview(scene,assets,time,manifest.theme,runtime.gsap,runtime.font,{},production.scenes[0].id===scene.id?production.opening??null:null);
+  const preview=renderPreview(scene,assets,time,manifest.theme,runtime.gsap,runtime.font,{},production.scenes[0].id===scene.id?production.opening??null:null,production.scenes[0].id===scene.id&&production.opening?production.scenes:null);
   if(digest(preview.html)!==built.preview_sha256)throw Error('EXPORT_PREVIEW_DRIFT '+scene.id);
   traceSceneStates({...scene,events:time.events});
   const ends=new Map();
