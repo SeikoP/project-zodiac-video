@@ -76,6 +76,19 @@ def graphic_motifs_of(text) -> list[str]:
                    and a["creative_origin"].get("template")})
 
 
+def _keep_brief(io, record: dict) -> None:
+    """Leave the production brief (or why there is none) beside the Visual Intent: chain-parts are deleted when the run finishes."""
+    workspace = getattr(io, "workspace", None)
+    if workspace is None:
+        return
+    try:
+        folder = workspace / ".authoring"
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "production-brief.json").write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf8")
+    except OSError:
+        pass
+
+
 def _scene_of(text):
     try:
         return json.loads(text)["payload"]
@@ -167,8 +180,9 @@ def run_chain(io, *, stopped: Callable[[], bool]) -> ChainResult:
             try:
                 stored["brief"] = read_brief()
                 io.save(stored)
-            except ChoiceError:
-                pass
+                _keep_brief(io, {"brief": stored["brief"]})
+            except ChoiceError as error:
+                _keep_brief(io, {"failed": str(error)[:600]})  # the scenes choose alone, and the owner can see why
         io.use_brief(stored.get("brief") or {})
     if not stored.get("skeleton"):
         if stopped():
