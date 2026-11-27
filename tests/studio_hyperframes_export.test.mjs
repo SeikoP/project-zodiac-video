@@ -192,3 +192,18 @@ test('the opening title stays hidden when the playhead jumps past it without pla
  assert.equal(overlay.style.opacity,'0');
  played.seek(0);assert.equal(overlay.style.opacity,'1');   // and it comes back when scrubbing to the start
 });
+
+test('the cover keeps the series design whatever the editor theme: fixed palette, sign strip below the 3:4 profile crop, full frame',async()=>{
+ const {openingHtml}=await import('../tools/studio_project/visual_opening.mjs');
+ const opening={format:'zodiac-series-opening@1',series:'12 CUNG HOÀNG ĐẠO',sign:'Thiên Bình',topic:'Khi Thiên Bình bênh người yêu rồi vẫn góp ý',duration_frames:45,transition_frames:9};
+ for(const palette of [{},{primary:'#D56884',paper:'#FDEFF2',surface:'#FFF',ink:'#000'}]){
+  const html=openingHtml(opening,palette,null,{},'rose-social');
+  assert.match(html,/background:#F6F0E6/u);          // cream paper, never the theme's
+  assert.match(html,/fill="#F2C45C"/u);               // ochre sign strip, never the theme's primary
+  assert.doesNotMatch(html,/#D56884/iu);
+  assert.match(html,/width:1080px;height:1920px/u);   // covers the whole frame
+  assert.doesNotMatch(html,/12 CUNG HOÀNG ĐẠO/u);     // no series line
+  const tops=[...html.matchAll(/top:(\d+)px;left:110px;width:860px/gu)].map(m=>Number(m[1]));
+  assert.ok(tops.length&&tops.every(t=>t>=240),'sign strip must start at y>=240 (TikTok profile crop)');
+ }
+});

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { backend } from "../../backend";
 import EpisodePlayer from "../../EpisodePlayer";
 import type { InspectorProps } from "../inspector-registry";
+import PublishCopy from "../../PublishCopy";
 import { useEvidence } from "./useEvidence";
 
 /** The review player and the user-only gate stay together, independently of editor overlays. */
@@ -86,6 +87,7 @@ export default function ReviewInspector({ project, node, active, blockedBy = [],
           <li>Nội dung đăng: {evidence?.publish?.title ?? "chưa có"}</li>
         </ul>
       </details>
+      <PublishCopy publish={evidence?.publish ?? null} cover={evidence?.cover}/>
     </div>
   </div>;
 }

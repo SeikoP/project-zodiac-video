@@ -26,6 +26,7 @@ A missing prop, pose or art is **never fabricated**: it is a request recorded fo
 | --- | --- |
 | Reading the whole script and preparing the brief before building anything | `references/brief.md` |
 | Inventing devices, casting everyone the script needs, props that act, pictures about people | `references/invention.md` |
+| Publish copy: title, cover hook, caption, hashtags | `references/virality.md` |
 | Terms and data model (entity kinds, roles, states, events, layers, caption lane) | `references/concepts.md` |
 | Channel look, palette, caption and watermark, handmade rules | `references/style.md` |
 | Designing or choosing cast and identities | `references/cast.md` |

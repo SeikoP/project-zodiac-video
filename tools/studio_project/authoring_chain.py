@@ -393,7 +393,7 @@ class LiveIO:
         end = time.monotonic() + self.WAIT_SECONDS
         while True:  # a full agent slot is a wait, not a failure
             try:
-                return self.service.agent.start_choice(self.project_id, schema, data, skill=kind, role="design" if kind in ("brief", "stage") else "creative")
+                return self.service.agent.start_choice(self.project_id, schema, data, skill=kind, role="design" if kind in ("brief", "stage", "publish") else "creative")
             except StudioError as error:
                 if error.code != "AGENT_BUSY" or time.monotonic() > end:
                     raise ChoiceError(f"{kind}: {error}") from error

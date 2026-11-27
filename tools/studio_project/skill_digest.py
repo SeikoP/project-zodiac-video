@@ -22,6 +22,7 @@ KINDS: dict[str, tuple[str, ...]] = {
     "brief": ("SKILL.md", "brief", "invention", "concepts", "style", "cast", "scene", "acting", "story-visual", "review", "studio"),
     "stage": ("SKILL.md", "invention", "concepts", "scene", "story-visual", "studio"),
     "act": ("SKILL.md", "invention", "concepts", "acting", "story-visual", "studio"),
+    "publish": ("SKILL.md", "publish", "virality", "studio"),
     "review": ("SKILL.md", "invention", "style", "scene", "review", "studio"),
 }
 _cache: dict[str, dict] = {}

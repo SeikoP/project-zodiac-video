@@ -791,3 +791,7 @@ h1 { font-size:21px; letter-spacing:-.3px; }
 .publish-row { display: flex; align-items: flex-start; gap: 12px; justify-content: space-between; }
 .publish-row span { overflow-wrap: anywhere; font-size: 13px; }
 .publish-row .subtle-btn { flex: none; }
+.publish-row small { color: #9baac3; font-size: 11px; letter-spacing: .03em; text-transform: uppercase; }
+.publish-text { margin: 2px 0 0; font-size: 14px; overflow-wrap: anywhere; user-select: all; }
+.publish-text.multiline { white-space: pre-wrap; }
+.publish-copy .publish-copy-head small { color: #9baac3; }

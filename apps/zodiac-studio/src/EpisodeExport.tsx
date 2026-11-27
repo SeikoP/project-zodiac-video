@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { backend, type Project, type VideoExport, type VisualState } from "./backend";
 import type { PipelineEvidence } from "./pipeline/types";
+import PublishCopy from "./PublishCopy";
 import VideoReview from "./VideoReview";
 
 /** One plain sentence per job state: the raw renderer log line and status code mean nothing to the person using the app. */
@@ -19,7 +20,7 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [publish, setPublish] = useState<PipelineEvidence["publish"]>(null);
-  const [copied, setCopied] = useState("");
+  const [cover, setCover] = useState<PipelineEvidence["cover"]>(null);
   const runningRef = useRef(false);
   useEffect(() => {
     if (!project || !active) return;
@@ -50,11 +51,9 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
   useEffect(() => {
     if (!project || !active) return;
     let live = true;
-    backend.pipelineEvidence(project.project_id).then(e => { if (live) setPublish(e.publish); }).catch(() => { if (live) setPublish(null); });
+    backend.pipelineEvidence(project.project_id).then(e => { if (live) { setPublish(e.publish); setCover(e.cover); } }).catch(() => { if (live) { setPublish(null); setCover(null); } });
     return () => { live = false; };
   }, [project?.project_id, active, video?.id]);
-  const copy = (label: string, text: string) => void navigator.clipboard.writeText(text).then(() => { setCopied(label); window.setTimeout(() => setCopied(""), 1800); }).catch(e => setError(String(e)));
-  const tags = (publish?.hashtags ?? []).join(" ");
   const running = state?.job?.status === "RUNNING";
   runningRef.current = running;
   const current = !!(state?.export && video && !video.stale); // an MP4 for exactly the current source already exists
@@ -73,13 +72,6 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
     {state?.job && <div className="review-message" role="status">{jobText(state.job)}</div>}
     <VideoReview initialConceptId={project?.concept_code || initialConceptId} lockedSign={project?.sign ?? null} output={video} active={active}
       onReveal={() => project && void backend.revealVideo(project.project_id).catch(e => setError(String(e)))}/>
-    {publish && <div className="publish-copy" aria-label="Nội dung đăng">
-      <div className="publish-copy-head"><strong>Nội dung đăng</strong>{copied && <small role="status">Đã copy {copied}</small>}
-        <button className="subtle-btn" onClick={() => copy("tất cả", [publish.title, publish.description, tags].filter(Boolean).join("\n\n"))}>Copy tất cả</button></div>
-      {publish.title && <div className="publish-row"><span>{publish.title}</span><button className="subtle-btn" onClick={() => copy("tiêu đề", publish.title ?? "")}>Copy tiêu đề</button></div>}
-      {publish.description && <div className="publish-row"><span>{publish.description}</span><button className="subtle-btn" onClick={() => copy("mô tả", publish.description ?? "")}>Copy mô tả</button></div>}
-      {tags && <div className="publish-row"><span>{tags}</span><button className="subtle-btn" onClick={() => copy("hashtag", tags)}>Copy hashtag</button></div>}
-    </div>}
     {video && <div className="export-path"><small>{video.package_dir ? `Gói cuối: ${video.package_dir}` : video.file_path} · {video.stale ? "Nguồn đã thay đổi" : "Đúng bản xuất hiện tại"}</small>
       <small>{video.audio_contract ? `Giọng đã chọn · Nhạc nền: ${video.audio_contract.music_tracks} · SFX: ${video.audio_contract.sfx_tracks}${video.audio_contract.sfx_cues === undefined ? "" : ` (${video.audio_contract.sfx_cues} chuyển cảnh)`}` : "Gói cũ: chưa xác minh hợp đồng âm thanh"}</small>
       <small>{video.cover?.source_frame === 0 && video.cover_contract?.mode === "series-topic-opening@1"
@@ -88,5 +80,6 @@ export default function EpisodeExport({ project, initialConceptId, active }: { p
           ? "Cover: lấy đúng frame đầu MP4" : "Cover: chưa xác minh nguồn khung hình"}</small>
       <button className="subtle-btn" onClick={() => void navigator.clipboard.writeText(video.file_path ?? "").catch(e => setError(String(e)))}>Copy đường dẫn MP4</button>
       <details><summary>Receipt & tệp kèm</summary><small>SHA-256: {video.sha256}</small><small>MP4, captions.srt, cover.png và receipt được lưu cùng thư mục export.</small></details></div>}
+    <PublishCopy publish={publish} cover={cover}/>
   </section>;
 }

@@ -74,5 +74,5 @@ export type PipelineEvidence = {
   checks: { ok: boolean; issues: PipelineIssue[]; receipt_sha256: string } | null;
   inspect: { build_id: string; method: string; findings: { scene_id: string; severity: "ok" | "warn" | "fail"; note: string }[] } | null;
   cover: { headline?: string; scene_id?: string } | null;
-  publish: { title?: string; description?: string; hashtags?: string[] } | null;
+  publish: { title?: string; description?: string; hashtags?: string[]; cover_hook?: string; alt_hooks?: string[]; search_keyword?: string } | null;
 };

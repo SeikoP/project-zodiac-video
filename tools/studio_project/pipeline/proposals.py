@@ -104,9 +104,12 @@ def validate_proposal(kind: str, payload: Any, evidence: PipelineEvidence, *, ba
             issues.append(_issue("PROPOSAL_SCENE_UNKNOWN", "cover scene is not authored", scene_id=str(payload["scene_id"])))
     elif kind == "publish.copy":
         tags = payload.get("hashtags")
-        ok = (set(payload) == {"title", "description", "hashtags"} and isinstance(payload["title"], str) and 1 <= len(payload["title"]) <= 100
+        extra = {"alt_hooks", "cover_hook", "search_keyword"}
+        ok = ({"title", "description", "hashtags"} <= set(payload) <= {"title", "description", "hashtags"} | extra and isinstance(payload["title"], str) and 1 <= len(payload["title"]) <= 100
               and isinstance(payload["description"], str) and len(payload["description"]) <= 2200
-              and isinstance(tags, list) and len(tags) <= 30 and all(isinstance(t, str) and t for t in tags))
+              and isinstance(tags, list) and len(tags) <= 30 and all(isinstance(t, str) and t for t in tags)
+              and all(isinstance(payload.get(k, ""), str) for k in ("cover_hook", "search_keyword"))
+              and isinstance(payload.get("alt_hooks", []), list) and all(isinstance(h, str) for h in payload.get("alt_hooks", [])))
         if not ok:
             issues.append(_issue("PROPOSAL_PAYLOAD_INVALID", "publish.copy needs title<=100, description<=2200, hashtags<=30"))
     elif kind == "inspect.report":

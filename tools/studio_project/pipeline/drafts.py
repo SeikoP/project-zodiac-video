@@ -40,6 +40,15 @@ def _cover_plan(service, project_id: str) -> dict:
     return cover if isinstance(cover, dict) else {}
 
 
+def _brief(service, project_id: str) -> dict:
+    path = Path(service.registry.get(project_id).workspace) / ".authoring/production-brief.json"
+    try:
+        value = json.loads(path.read_text(encoding="utf-8")).get("brief")
+    except (OSError, ValueError, AttributeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
 def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
     """(proposal kind, payload) for a drafted step; None when the step only needs a receipt (assets)."""
     intent, state = _intent(service, project_id)
@@ -53,15 +62,18 @@ def draft(service, project_id: str, spec_id: str) -> tuple[str, dict] | None:
         scene_id = plan.get("scene_id") if plan.get("scene_id") in {s.get("id") for s in scenes} else scenes[0]["id"]
         return "cover.design", {"headline": topic[:80] or "Tập mới", "scene_id": scene_id}
     if spec_id == "publish":
+        from . import publish_copy
+        written = publish_copy.write(service, project_id)  # the agent reads the whole episode; None when it cannot answer
+        if written:
+            return "publish.copy", written
         plan = _plan(service, project_id)
         sign = str(opening.get("sign") or plan.get("sign") or "").strip()
         topic = str(_cover_plan(service, project_id).get("hook") or opening.get("topic") or "").strip()
         title = (f"{sign}: {topic}" if sign and topic else topic or str(service.project(project_id).get("display_title") or ""))[:100]
-        goals = [str(s.get("semantic_goal") or "").strip() for s in scenes if s.get("semantic_goal")]
-        description = (str(plan.get("core_premise") or "").strip() or " ".join(goals[:2]))[:2000]
-        slug = "".join(ch for ch in sign.title() if ch.isalnum()) if sign else ""
-        hashtags = [t for t in (f"#{slug}" if slug else "", "#cunghoangdao", "#12cunghoangdao", "#tamly", "#tinhyeu") if t]
-        return "publish.copy", {"title": title or "Tập mới", "description": description, "hashtags": hashtags}
+        brief = _brief(service, project_id)
+        description = str(brief.get("story_read") or plan.get("core_premise") or "").strip()[:300]
+        return "publish.copy", {"title": title or "Tập mới", "description": description,
+                                "hashtags": publish_copy.clean_tags(["#cunghoangdao", "#12cunghoangdao", "#tamly", "#tinhyeu"], sign)}
     if spec_id == "inspect":
         build = state.get("build")
         if not build:

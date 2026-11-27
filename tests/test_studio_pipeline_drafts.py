@@ -46,7 +46,7 @@ class DraftTests(unittest.TestCase):
         build = {"id": "b1", "qa": {"issues": [], "review_warnings": [{"scene_id": "s02", "detail": "Cảnh dài nhưng ít thay đổi"}]}}
         kind, payload = drafts.draft(service(build=build), "p", "inspect")
         self.valid(kind, payload)
-        self.assertEqual({f["scene_id"]: f["severity"] for f in payload["findings"]}, {"s02": "warn", "s01": "ok"})
+        self.assertEqual({f["scene_id"]: f["severity"] for f in payload["findings"] if f["scene_id"] != "episode"}, {"s02": "warn", "s01": "ok"})
         self.assertEqual(payload["method"], "structural")
 
     def test_inspect_needs_a_build_and_everything_needs_an_intent(self):
