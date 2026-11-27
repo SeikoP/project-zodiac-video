@@ -258,7 +258,9 @@ class SplitPluginBundleTests(unittest.TestCase):
                 phase = read("orchestration/phases/01-content.md")
         for doc in (skill, skeleton, engagement, phase):
             self.assertIn("narrative economy review", doc)
+        for doc in (skill, engagement, phase):
             self.assertIn("deletion test", doc)
+        self.assertIn("if removing a line or paragraph loses no useful meaning", skeleton)
         for phrase in ("concept-led facets", "concept-aligned friction",
                        "sign-specific behavior", "explanatory compression",
                        "hook-to-payoff accounting", "minimal repair and stop rule",
